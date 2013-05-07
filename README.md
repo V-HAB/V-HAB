@@ -3,14 +3,15 @@ V-HAB / STEPS Bootstrapping Package
 Downloaded from GITlab at http://steps.lrt.mw.tum.de
 
 How to get started with git / GITlab
------------------------------
-For Windows: 
+------------------------------------
+
+### Windows ###
 
 * If not already installed, download PuTTY at http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html
 * Install PuTTY
 * Download the SourceTree app at http://www.sourcetreeapp.com
 * Install SourceTree
-* In the first window enter your full, real name and your mytum e-mail address, then click next.
+* In the first window enter your full, real name and the e-mail address of your account here at the STEPS GITlab, then click next.
 * In the second window select 'PuTTY/Plink (recommended)', then click next.
 * The installer will ask you for your key file, just click 'cancel'.
 * In the third window do nothing, just click 'Finish'.
@@ -34,26 +35,36 @@ For Windows:
 * Now select a destination path on your system where you want to store your files and press 'clone'.
 * SourceTree will now download all neccessary files to your machine. 
 
-TODO Insert the following steps needed to create the user folder and commit and push it to the server.
+See next section on how to use the bootstrapping repository, e.g. how to download the tutorial.
 
-* Go to the local directory in Matlab, execute *init.m* and then your main script (main.m executes one of the tutorials).
+### Mac ###
+Coming soon ...
 
-For Mac: help yourself ...
 
-
+Bootstrapping Repository
+------------------------
 Basic repository with the framework for V-HAB / STEPS. Contains three directories:
 * core: central, shared V-HAB framework.
-* lib: helper functions, pre/post processing, logging, GUI, date functions, ...
+* lib: helper functions, pre/post processing, logging, GUI, date functions, ... (tbd)
 * user: user-specific simulations
 
-The core and lib packages are managed, i.e. most likely no changes should be done or can be commited to the online repository. Help can be found in class comments (HOW to use the class) and in the wiki of the according repository / project on GITlab.
+The core and lib packages are managed, i.e. most likely no changes should be done or can be commited to the online repository. Wiki of the according projects will soon contain some help.
+
+Get a tutorial:
+
+* Example: git@steps.lrt.mw.tum.de:tutorials/flow.git
+* Create a directory called '+tutorial' in the 'user' directory. Create a sub-directory called '+flow' (see the GIT repository path)
+* Click 'Clone / New' in SourceTree, paste the address above, and select the newly created directory as the destination path
+* Create a main script in the bootstrapping root directory called 'main_tutorial_flow.m', or copy and rename the template from 'user/+tutorial/+flow/+main_tutorial_flow.m.example' to the root directory.
+
 
 To create a new simulation project:
 * go to GITlab and create a new project (assuming your username is *bob* and your project is *alice*).
 * create a new directory locally inside the bootstrapping package: */user/bob/alice* (i.e. *{root}/user/{username}/{project}*)
 * ONLY package directories, classes and functions can be included ONLY in a project directory, i.e. only in */user/bob/alice*.
-* Copy the 'main.m' file in the bootstrapping root dir to e.g. main_alice.m, edit, execute. Has to reside within the bootstrapping directory. Your classes can be accessed with e.g. bob.alice.myClass().
+* Copy the 'main.m' file in the bootstrapping root dir to e.g. main_bob_alice.m, edit, execute. Has to reside within the bootstrapping directory. Your classes can be accessed with e.g. bob.alice.myClass().
 * Use SourceTreeApp or the GIT console to initialize a GIT directory within */user/bob/alice*. Add the remote repository (steps.lrt.mw.tum.de:bob/alice.git). Commit & push.
+
 
 About Matlab OOP
 ----------------
