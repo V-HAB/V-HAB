@@ -4,7 +4,8 @@ Downloaded from GITlab at http://steps.lrt.mw.tum.de
 
 How to get started with git / GITlab
 -----------------------------
-For Windows:
+For Windows: 
+
 * If not already installed, download PuTTY at http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html
 * Install PuTTY
 * Download the SourceTree app at http://www.sourcetreeapp.com
