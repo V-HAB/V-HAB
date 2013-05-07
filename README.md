@@ -9,21 +9,33 @@ For Windows:
 * If not already installed, download PuTTY at http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html
 * Install PuTTY
 * Download the SourceTree app at http://www.sourcetreeapp.com
-* Install, say yes or ok to everything and select PuTTY and not OpenSSH
-* Open SourceTree
+* Install SourceTree
+* In the first window enter your full, real name and your mytum e-mail address, then click next.
+* In the second window select 'PuTTY/Plink (recommended)', then click next.
+* The installer will ask you for your key file, just click 'cancel'.
+* In the third window do nothing, just click 'Finish'.
+* SourceTree should now open.
 * In the top menu select 'Tools' -> 'Create or Import SSH Keys'. This will open the PuTTY Key Generator.
 * Click 'Generate' and move the mouse around in the indicated area
-* Once the key generation is completed, enter a passphrase
-* Save the public key in a new directory anywhere on your system using the appendix '.pub'
-* Save the private key in the same directory using the appendix '.ppk'
-* In the top menu select 'Conversions' -> 'Export OpenSSH key' and save the key in the same directory as before without an appendix.
+* Once the key generation is completed, enter a passphrase and repeat it in the field below
+* Click 'Save public key' and save the file in a new directory anywhere on your system using the appendix '.pub'
+* Click 'Save private key' and save the file in the same directory as in the previous step, this time using the appendix '.ppk'
+* In the top menu select 'Conversions' -> 'Export OpenSSH key' and save the file in the same directory as before without an appendix.
 * Select the entire contents of the field 'Public key for pasting into OpenSSH authorized_keys file' and copy them to the clipboard. 
 * Close the PuTTY Key Generator
 * In the browser navigate to your profile page and select the tab 'SSH Keys'
 * Click 'Add new' and paste the copied key into the field 'Key', give it a title and click 'save'.
 * In the SourceTree top menu select 'Tools' -> 'Options' and in the 'General' tab set the SSH Client to 'OpenSSH' and click 'ok'.
-* Click 'clone / new' and enter git@steps.lrt.mw.tum.de:bootstrapping.git , then click 'clone'.
-* SourceTree will ask for your SSH key, select the file without the appendix that you created earlier
+* Click 'clone / new' and enter git@steps.lrt.mw.tum.de:bootstrapping.git in the field 'Source Path / URL'.
+* Once you try to edit the field 'Destination Path', a window will pop up asking you, if you want to launch the SSH Agent. Say yes.
+* Navigate to the folder you created earlier and select the file with the .ppk appendix.
+* Then click 'Retry' in the next pop up window.
+* The field 'Repository Type' should now say 'This is a Git repository'.
+* Now select a destination path on your system where you want to store your files and press 'clone'.
+* SourceTree will now download all neccessary files to your machine. 
+
+TODO Insert the following steps needed to create the user folder and commit and push it to the server.
+
 * Go to the local directory in Matlab, execute *init.m* and then your main script (main.m executes one of the tutorials).
 
 For Mac: help yourself ...
