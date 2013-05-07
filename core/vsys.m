@@ -6,14 +6,15 @@ classdef vsys < matter.container & systems.timed
     
     properties (SetAccess = protected, GetAccess = public)
         % Execute container .exec on this exec? Set to false if solver, atm
-        bExecuteContainer = true;
+        %TODO throw out? need solver anyway, and if just a manual one?
+        bExecuteContainer = false;
     end
     
     methods
         function this = vsys(oParent, sName, fTimeStep)
             % Time step [] means with parent, -1 for every tick, 0 for
             % global time step.
-            if nargin < 3, fTimeStep = []; end;
+            if nargin < 3, fTimeStep = false; end;
             
             % Leads to a double call of the sys constructor, that's ok
             % since this expected to happen and accordingly catched

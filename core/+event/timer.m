@@ -130,33 +130,36 @@ classdef timer < base
         
         function run(this)
             % Advance the timer one (global) time step
-            %keyboard();
-            % Get time step. Normally, this.fTimeStep, but if no afTimeStep
-            % is zero, then get min(afTimeStep) if > fTimeStep
-            % Find only of NOT dependent callbacks
-            fSysMinStep = min(this.afTimeStep(~this.abDependent));
             
-            %TODO wrong! Need to check every system's last execution + time
-            %     step and if that is lt curr time + sys min step!!
-            %   -> sys with longer time step could need execution before
-            %      the system with the shortest time step, if the first
-            %      system was not executed in a while!
-            if fSysMinStep > this.fTimeStep
-                fTimeStep = fSysMinStep;
-                
+            % If time is -1 the min. time step - first tick, advane to zero
+            if this.fTime == (-1 * this.fTimeStep)
+                fThisStep = this.fTimeStep;
             else
-                fTimeStep = this.fTimeStep;
+                % Determine next time step. Calculate last execution time plus
+                % current time step for every system that is not dependent,
+                % i.e. that has a 'real' time step set, not -1 which means that
+                % it is executed every timer tick.
+                fThisStep = min((this.afLastExec(~this.abDependent) + this.afTimeStep(~this.abDependent)));
+                
+                % Now fThisStep is actually an absolute time, so subtract
+                % the current time to get the time step
+                fThisStep = fThisStep - this.fTime;
             end
             
-            %disp(fTimeStep);
-            
+            % Calculated step smaller than the min. time step?
+            %TODO if one system has a time step of 0, the above calculation
+            %      with last exec/time step would be unnecessary, in that
+            %      case, directly set this.fTimeStep as fThisStep!
+            if fThisStep < this.fTimeStep
+                fThisStep = this.fTimeStep;
+            end
             
             % Set new time
-            this.fTime = this.fTime + fTimeStep;
+            this.fTime = this.fTime + fThisStep;
             
             % Find all cb's indices whose last exec + time step <= fTime
             % Dependent systems have -1 as time step - therefore this
-            % should ALWAYS be true!
+            % should always be true!
             abExec = this.afLastExec + this.afTimeStep <= this.fTime;
             
             % Execute found cbs
@@ -178,10 +181,11 @@ classdef timer < base
             % Set time step for a specific call back. Protected method, is
             % returned upon .bind!
             
-            if ~isempty(fTimeStep) && fTimeStep ~= 0
+            if ~isempty(fTimeStep) % && fTimeStep ~= 0
                 this.afTimeStep(iCB) = fTimeStep;
             else
-                this.afTimeStep(iCB) = this.fTimeStep;
+                %TODO could be 
+                this.afTimeStep(iCB) = 0;%this.fTimeStep;
             end
             
             
