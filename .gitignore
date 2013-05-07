@@ -1,0 +1,11 @@
+# Ignore for bootstrapping package
+
+# Ignore the actual code directories
+core/*
+!core/README_BOOTSTRAPPING.md
+user/+*
+lib/*
+!lib/README_BOOTSTRAPPING.md
+
+# We DO manage main.m and init.m, but NOT the main_xyz.m etc
+main_*.m
