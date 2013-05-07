@@ -2,6 +2,32 @@ V-HAB / STEPS Bootstrapping Package
 ===================================
 Downloaded from GITlab at http://steps.lrt.mw.tum.de
 
+How to get started with git / GITlab
+-----------------------------
+For Windows:
+* If not already installed, download PuTTY at http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html
+* Install PuTTY
+* Download the SourceTree app at http://www.sourcetreeapp.com
+* Install, say yes or ok to everything and select PuTTY and not OpenSSH
+* Open SourceTree
+* In the top menu select 'Tools' -> 'Create or Import SSH Keys'. This will open the PuTTY Key Generator.
+* Click 'Generate' and move the mouse around in the indicated area
+* Once the key generation is completed, enter a passphrase
+* Save the public key in a new directory anywhere on your system using the appendix '.pub'
+* Save the private key in the same directory using the appendix '.ppk'
+* In the top menu select 'Conversions' -> 'Export OpenSSH key' and save the key in the same directory as before without an appendix.
+* Select the entire contents of the field 'Public key for pasting into OpenSSH authorized_keys file' and copy them to the clipboard. 
+* Close the PuTTY Key Generator
+* In the browser navigate to your profile page and select the tab 'SSH Keys'
+* Click 'Add new' and paste the copied key into the field 'Key', give it a title and click 'save'.
+* In the SourceTree top menu select 'Tools' -> 'Options' and in the 'General' tab set the SSH Client to 'OpenSSH' and click 'ok'.
+* Click 'clone / new' and enter git@steps.lrt.mw.tum.de:bootstrapping.git , then click 'clone'.
+* SourceTree will ask for your SSH key, select the file without the appendix that you created earlier
+* Go to the local directory in Matlab, execute *init.m* and then your main script (main.m executes one of the tutorials).
+
+For Mac: help yourself ...
+
+
 Basic repository with the framework for V-HAB / STEPS. Contains three directories:
 * core: central, shared V-HAB framework.
 * lib: helper functions, pre/post processing, logging, GUI, date functions, ...
@@ -15,19 +41,6 @@ To create a new simulation project:
 * ONLY package directories, classes and functions can be included ONLY in a project directory, i.e. only in */user/bob/alice*.
 * Copy the 'main.m' file in the bootstrapping root dir to e.g. main_alice.m, edit, execute. Has to reside within the bootstrapping directory. Your classes can be accessed with e.g. bob.alice.myClass().
 * Use SourceTreeApp or the GIT console to initialize a GIT directory within */user/bob/alice*. Add the remote repository (steps.lrt.mw.tum.de:bob/alice.git). Commit & push.
-
-
-Get started with git / GITlab
------------------------------
-For Windows:
-* Download http://www.sourcetreeapp.com & PuTTY (http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html)
-* Install, select 'putty' and not OpenSSH
-* Select menu -> 'Create or Import SSH Key' -> create new RSA2 key. Add to your user profile in GITlab.
-* Click 'clone / new' and enter *git@steps.lrt.mw.tum.de:bootstrapping.git*, then click 'clone'.
-* Go to the local directory in Matlab, execute *init.m* and then your main script (main.m executes one of the tutorials).
-
-For Mac: help yourself ...
-
 
 About Matlab OOP
 ----------------
