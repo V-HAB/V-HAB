@@ -18,7 +18,7 @@ How to get started with git / GITlab
 * SourceTree should now open.
 * In the top menu select 'Tools' -> 'Create or Import SSH Keys'. This will open the PuTTY Key Generator.
 * Click 'Generate' and move the mouse around in the indicated area
-* Once the key generation is completed, enter a passphrase and repeat it in the field below
+* Once the key generation is completed, **enter a passphrase** (the password entered here has to be used again when adding the key to the available list of keys) and repeat it in the field below
 * Click 'Save public key' and save the file in a new directory anywhere on your system using the appendix '.pub'
 * Click 'Save private key' and save the file in the same directory as in the previous step, this time using the appendix '.ppk'
 * In the top menu select 'Conversions' -> 'Export OpenSSH key' and save the file in the same directory as before without an appendix.
@@ -29,7 +29,7 @@ How to get started with git / GITlab
 * In the SourceTree top menu select 'Tools' -> 'Options' and in the 'General' tab set the SSH Client to 'OpenSSH' and click 'ok'.
 * Click 'clone / new' and enter git@steps.lrt.mw.tum.de:bootstrapping.git in the field 'Source Path / URL'.
 * Once you try to edit the field 'Destination Path', a window will pop up asking you, if you want to launch the SSH Agent. Say yes.
-* Navigate to the folder you created earlier and select the file with the .ppk appendix.
+* Navigate to the folder you created earlier and select the file with the .ppk appendix (you probably have to enter the password you used when creating the key).
 * Then click 'Retry' in the next pop up window.
 * The field 'Repository Type' should now say 'This is a Git repository'.
 * Now select a destination path on your system where you want to store your files and press 'clone'.
