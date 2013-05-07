@@ -8,7 +8,7 @@ How to get started with git / GITlab
 ### Windows ###
 
 * If not already installed, download PuTTY at http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html
-* Install PuTTY
+* Install PuTTY (i.e. put the putty.exe in a place where you can find it again)
 * Download the SourceTree app at http://www.sourcetreeapp.com
 * Install SourceTree
 * In the first window enter your full, real name and the e-mail address of your account here at the STEPS GITlab, then click next.
@@ -69,8 +69,11 @@ To create a new simulation project:
 About Matlab OOP
 ----------------
 More about Matlab packages / class organization:
+
 * http://www.mathworks.de/de/help/matlab/matlab_oop/scoping-classes-with-packages.html
 * http://www.mathworks.de/de/help/matlab/matlab_oop/saving-class-files.html
+
 More about Matlab classes:
+
 * http://www.mathworks.de/de/help/matlab/ref/classdef.html
 * http://www.mathworks.de/de/help/matlab/object-oriented-programming-in-matlab.html
