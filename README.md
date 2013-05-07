@@ -26,7 +26,7 @@ For Windows:
 * Click 'clone / new' and enter *git@steps.lrt.mw.tum.de:bootstrapping.git*, then click 'clone'.
 * Go to the local directory in Matlab, execute *init.m* and then your main script (main.m executes one of the tutorials).
 
-For Mac: help yourself ... Pimmel
+For Mac: help yourself ...
 
 
 About Matlab OOP
