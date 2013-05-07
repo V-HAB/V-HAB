@@ -1,0 +1,6 @@
+# Ignore for core
+
++*/
+!+event/
+!+tools/
+README_BOOTSTRAPPING.md
