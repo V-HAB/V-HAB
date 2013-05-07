@@ -156,14 +156,13 @@ classdef flow < base & matlab.mixin.Heterogeneous
     
     
     %% Solver Methods - should be in solver.basic.matter.flow?
-    %  Need possibility to tell branch what kind of flow to create ... or
-    %  define in matter table or so -> str2func, store on attribute
-    %  See above, also possibility with proxy/decorator or something.
-    %
-    %   ??-> matter.container has to be solver.basic.matter.container,
-    %        needs to overwrite connectIFs to create a solver.*.branch
-    %        instead of matter.branch directly, this one creates a
-    %        solver.*.flow instead of matter.flow (* = basic.matter) ??
+    %TODO see matter.procs.exme, implement a more general version of these
+    %     methods. If a solver needs additional functionality that can't be
+    %     implemented by some kind of proxy object that gathers the needed
+    %     data from the objects, some way to replace flows/branches/procs
+    %     etc with solver-specific derived objects.
+    %     Only matter.procs.f2f components have to specificly derive from a
+    %     solver class to make sure they implement the according methods.
     methods
         
         function setSolverData(this, oExme, fFlowRate, mfData)

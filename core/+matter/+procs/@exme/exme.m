@@ -165,6 +165,45 @@ classdef exme < base
             
             arPartials = this.oPhase.afMass ./ sum(this.oPhase.afMass);
         end
+        
+        
+        
+        
+        
+        %% SOLVER STUFF
+        %TODO the solver methods shouldn't be directly in matter.procs.exme
+        %     and matter.flow, or changed to a more general functionality!
+        
+        % Method returns absolute values of pressure and temperature of the
+        % extracted matter
+        % For e.g. a liquid phase, the pressure would depend on gravity,
+        % filling level and position of the port, which could be
+        % implemented by a derived version of the EXME.
+        %TODO depending on phase type, different EXME implementations.
+        %     Solids do not have a pressure, liquids no fPressure, ...
+        function [ fPortPressure fPortTemperature ] = solverExtract(this, fFlowRate)
+            fPortPressure    = this.oPhase.fPressure;
+            fPortTemperature = this.oPhase.fTemp;
+        end
+        
+        % See above - liquid phase might not have fPressure, but a pressure
+        % needs to be calculated depending on the port position.
+        function fPortPressure = solverMerge(this, fFlowRate)
+            
+            fPortPressure = this.oPhase.fPressure;
+        end
+        
+        
+        function [ arPartialMass, fMolMass, fHeatCapacity ] = getMatterProperties(this)
+            %TODO Don't use arPartialmass, recalc - might not be updated?
+            arPartialMass = this.oPhase.arPartialMass;
+            %arPartialMass = this.oPhase.afMass ./ sum(this.oPhase.afMass);
+            
+            fMolMass      = this.oPhase.fMolMass;
+            fHeatCapacity = this.oPhase.fHeatCapacity;
+        end
+        
+        %%%%%%%% SOLVER END %%%%%%%%
     end
     
     %% Extract / Merge methods
