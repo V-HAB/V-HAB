@@ -43,7 +43,7 @@ See next section on how to use the bootstrapping repository, e.g. how to downloa
 
 ### Mac ###
 
-This section is currently incomplete. See the [Mac Setup Wiki Page](http://steps.lrt.mw.tum.de/bootstrapping/wikis/setup-instructions-mac) for a step-by-step guide with screenshots. 
+See the [Mac Setup Wiki Page](http://steps.lrt.mw.tum.de/bootstrapping/wikis/setup-instructions-mac) for a step-by-step guide with screenshots. 
 
 1. Download the SourceTree app at <http://www.sourcetreeapp.com/>. 
 2. If the downloaded disk image was not automatically opened, (double) click the downloaded file. A Finder window should appear with both the *SourceTree* app and (pointing with a big arrow to) the *Applications* folder. 
@@ -52,12 +52,18 @@ This section is currently incomplete. See the [Mac Setup Wiki Page](http://steps
 5. In the Terminal command prompt, enter `ssh-keygen -C 'email@address.com'` (where `email@address.com` is **your STEPS GITlab email address**). Press `Enter` to start the command. 
 6. The SSH key generator will ask for a file name, just press `Enter` to use the default file name. 
 7. You will then be asked for a passphrase that you can assign freely to protect your SSH key file (please use a **strong password**!). This password may be asked for when pushing commits to the STEPS server (however you can save the password in your Mac OS keychain). Please remember that this password cannot be recovered (if you forget the password, you will need to create a new keyfile and update your STEPS GITlab profile, see below)! Press `Enter` after typing in the password (while you type, you will neither see the password nor any indication that you are actually entering anything; this is intentional albeit confusing at first). 
-8. You will be asked to retype your chosen passphrase. Press 'Enter'. 
-9. Finally a random art image will be displayed; you\'re done here. Quit the Terminal. 
-10. Launch *SourceTree* from the *Applications* folder. 
-11. In the *Welcome* window, enter your full name and your STEPS GITlab email address (e.g. `username@mytum.de`). Make sure that both checkboxes are ticked, then click *Next*. 
-12. Skip the *Connect to online services* and *Find local repositories* form by clicking *Next* and *Finish*. 
-13. You can now create or clone repositories. (This guide will soon be updated with further instrucitons.) 
+8. You will be asked to retype your chosen passphrase. Press `Enter`. Finally a random art image will be displayed. 
+9. Then you have to add the public key to your STEPS GITlab account. First, enter `pbcopy << ~/.ssh/id_rsa.pub` and confirm with `Enter`, this will copy your public key to your clipboard (there will be no confirmation message in the Terminal). 
+10. In the browser, navigate to your profile page at <http://steps.lrt.mw.tum.de/> and select the tab *SSH Keys*. 
+11. Click *Add new* and paste (`CMD + V`) the copied key into the field *Key* (a cryptic text beginning with `ssh-rsa` and ending with your STEPS GITlab email address should appear; if not, repeat *step 9*), the title should then automatically be your STEPS GITlab email address. Click *save*. (You can quit the Terminal after successfully completing this step.) 
+12. Launch *SourceTree* from the *Applications* folder. 
+13. In the *Welcome* window, enter your full name and your STEPS GITlab email address (e.g. `username@mytum.de`). Make sure that both checkboxes are ticked, then click *Next*. 
+14. Skip the *Connect to online services* and *Find local repositories* form by clicking *Next* and *Finish*. 
+15. You can now create or clone repositories. Continue with *Clone a repository (Mac)* below. 
+
+### Clone a repository (Mac) ###
+
+Coming soon …
 
 
 Bootstrapping Repository
