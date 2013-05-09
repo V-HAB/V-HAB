@@ -5,36 +5,49 @@ classdef p2p < matter.flow
     %   - 
     
     
-    properties (SetAccess = private, GetAccess = private)
+    properties (SetAccess = protected, GetAccess = private)
         
     end
     
-    properties (SetAccess = protected, GetAccess = public)
+    properties (SetAccess = private, GetAccess = public)
         sName;
+        oStore;
     end
     
     
     
     methods
-        function this = p2p(oMT, sName, oPhaseIn, oPhaseOut)
+        function this = p2p(oStore, sName, sPhaseIn, sPhaseOut)
             % p2p constructor.
             %
             % Parameters:
             %   - sName         Name of the processor
             
             % Parent constructor
-            this@matter.flow(oMT);
+            this@matter.flow(oStore.oMT);
+            
+            % Find the phases
+            iPhaseIn  = find(strcmp({ oStore.aoPhases.sName }, sPhaseIn ), 1);
+            iPhaseOut = find(strcmp({ oStore.aoPhases.sName }, sPhaseOut), 1);
+            
+            if isempty(iPhaseIn) || isempty(iPhaseOut)
+                this.throw('p2p', 'Phase could not be found: in phase %s has index %i, %s has index %i', sPhaseIn, iPhaseIn, sPhaseOut, iPhaseOut);
+            end
             
             % Set name and a fake oBranch ref - back to ourself
             this.sName   = sName;
             this.oBranch = this;
+            this.oStore  = oStore;
+            
+            % Can only be done after this.oStore is set, store checks that!
+            this.oStore.addP2P(this);
             
             this.fFlowRate = 0;
             
             % Add ourselves to phase ports (default name!)
             %TODO do the phases need some .getPort or stuff?
-            oPhaseIn.toProcsEXME.default.addFlow(this);
-            oPhaseOut.toProcsEXME.default.addFlow(this);
+            oStore.aoPhases(iPhaseIn ).toProcsEXME.default.addFlow(this);
+            oStore.aoPhases(iPhaseOut).toProcsEXME.default.addFlow(this);
         end
     end
     
@@ -48,9 +61,17 @@ classdef p2p < matter.flow
         end
         
         function update(this, fTimeStep)
-            % Called by phase when merging stuff to update flow rates etc
+            % Calculate new flow rate in [kg/s]. The update method is
+            % called right before the phases merge/extract. The p2p merge
+            % or extract is done after the merge of the 'outer' flows and
+            % before the extract of those takes places.
+            % Therefore, at the point of p2p extraction, the whole (tempo-
+            % rary) mass flowing through the phase within that time step is
+            % stored in the phase.
+            % An absolute value for mass extraction has to be divided by
+            % the fTimeStep parameter to get a flow.
             
-            this.oOut.oPhase.update(fTimeStep);
+            %this.oOut.oPhase.update(fTimeStep);
         end
         
         

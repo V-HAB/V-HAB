@@ -18,6 +18,7 @@ classdef store < base
         
         % Processors - p2p (int/exme added to phase, f2f to container)
         toProcsP2P = struct(); %matter.procs.p2p.empty();
+        csProcsP2P;
         
         % Matter table
         oMT;
@@ -186,9 +187,36 @@ classdef store < base
             this.iPhases = length(this.aoPhases);
             this.bSealed = true;
             
+            this.csProcsP2P = fieldnames(this.toProcsP2P);
             
             % Update volume on phases
             this.setVolume();
+        end
+        
+        
+        
+        
+        
+        function addP2P(this, oProcP2P)
+            % Get sName from oProcP2P, add to toProcsP2P
+            %
+            
+            if this.bSealed
+                this.throw('addP2P', 'Store already sealed!');
+            elseif isfield(this.toProcsP2P, oProcP2P.sName)
+                this.throw('addP2P', 'P2P proc already exists!');
+            elseif this ~= oProcP2P.oStore
+                this.throw('addP2P', 'P2P proc does not have this store set as parent store!');
+            end
+            
+            this.toProcsP2P.(oProcP2P.sName) = oProcP2P;
+        end
+        
+        function createP2P(this, varargin)
+            % Helper to create a p2p proc - maybe use a helper method in
+            % matter.helpers.procs.p2p.create.*? Provide oMT etc.
+            %
+            %TODO implement
         end
     end
     
@@ -304,19 +332,6 @@ classdef store < base
         
         
         
-        
-        function addP2P(this, oProcP2P)
-            % Get sName from oProcP2P, add to toProcsP2P
-            %
-            %TODO implement
-        end
-        
-        function createP2P(this, varargin)
-            % Helper to create a p2p proc - maybe use a helper method in
-            % matter.helpers.procs.p2p.create.*? Provide oMT etc.
-            %
-            %TODO implement
-        end
     end
     
 end

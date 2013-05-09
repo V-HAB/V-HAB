@@ -90,6 +90,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % Register flow object with the matter table
             this.oMT.addFlow(this);
             
+            
+            % Preset ...
+            this.arPartialMass = zeros(1, this.oMT.iSpecies);
+            
             % See thFuncs definition above and addProc below.
             this.thFuncs = struct(...
                 ... %TODO check, but FR needs to be set by solver etc, so has public access

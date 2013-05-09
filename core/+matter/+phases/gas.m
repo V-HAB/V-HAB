@@ -89,10 +89,7 @@ classdef gas < matter.phase
             %TODO see above, generally support empty volume? Treat a zero
             %     and an empty ([]) volume differently?
             if ~isempty(this.fVolume)
-                this.calculatePressureCoefficient();
-                
-                %TODO mol mass zero if no mass - NaN
-                if isnan(this.fMassToPressure), this.fMassToPressure = 0; end;
+                this.fMassToPressure = this.calculatePressureCoefficient();
                 
                 %this.fPressure = sum(this.afMass) * this.fMassToPressure;
                 this.fPressure = this.fMass * this.fMassToPressure;
@@ -114,23 +111,27 @@ classdef gas < matter.phase
             % total pressure in the phase
             afPartialPressures = arFractions .* this.fPressure;
         end
-    end
-    
-    
-    %% Protected methods, called internally to update matter properties %%%
-    methods (Access = protected)
         
-        function calculatePressureCoefficient(this)
+        
+        function fMassToPressure = calculatePressureCoefficient(this)
             % p = m * (R_m * T / M / V)
             %
             %TODO matter table -> store mol mass this.fMolMass as kg/mol!
             %     move this calc to matter.table.calcGasPressure, or do
             %     some matter.helper.table.gas.pressure or so?
             
-            this.fMassToPressure = matter.table.C.R_m * this.fTemp / ((this.fMolMass / 1000) * this.fVolume);
+            fMassToPressure = matter.table.C.R_m * this.fTemp / ((this.fMolMass / 1000) * this.fVolume);
+            
+            %TODO mol mass zero if no mass - NaN, or Inf if mass zero
+            if isnan(fMassToPressure) || isinf(fMassToPressure)
+                fMassToPressure = 0;
+            end
         end
-        
-        
+    end
+    
+    
+    %% Protected methods, called internally to update matter properties %%%
+    methods (Access = protected)
         function setAttribute(this, sAttribute, xValue)
             % Internal helper, see @matter.phase class.
             %

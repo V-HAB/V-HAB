@@ -178,12 +178,17 @@ classdef phase < base & matlab.mixin.Heterogeneous
             %     relatives, update after EACH exme or once at the end?
             %     Because probably else problem if selective ex/normal ex?
             
-            
             if ~bNoEXMEs
                 for iI = 1:this.iProcsEXME
                     this.coProcsEXME{iI}.update(fTimeStep, 'merge');
                 end
             end
+            
+            
+            if strcmp(this.sName, 'air') && strcmp(this.oStore.sName, 'Filter')
+                %disp(this.afMass);
+            end
+            
             
             %TODO only recalculate after extract?
             this.fMass         = sum(this.afMass);
