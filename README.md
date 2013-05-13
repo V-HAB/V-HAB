@@ -103,11 +103,10 @@ The core and lib packages are managed, i.e. most likely no changes should be don
 ### To create a new simulation project: ###
 
 * go to GITlab and create a new project (assuming your username is `bob` and your project is `spacestation`).
-* create a new directory locally inside the bootstrapping package: `user/bob/spacestation` (i.e. `{steps}/user/{username}/{project}`)
-* ONLY package directories, classes and functions can be included ONLY in a project directory, i.e. only in `/user/bob/spacestation`.
+* create a new directory locally inside the bootstrapping package: `user/+bob/+spacestation` (i.e. `{steps}/user/+{username}/+{project}`)
+* ONLY package directories, classes and functions can be included ONLY in a project directory, i.e. only in `/user/+bob/+spacestation`.
 * Copy the `main.m` file in the bootstrapping root dir to e.g. `main_bob_spacestation.m`, edit, execute. Has to reside within the bootstrapping directory. Your classes can be accessed with e.g. `bob.spacestation.myClass()`. Please note that your main file is intentionally not inside the repository, and will thusly not be backuped by the version control system. 
-* Use SourceTreeApp or the GIT console to initialize a GIT directory within `/user/bob/spacestation`. Add the remote repository (`steps.lrt.mw.tum.de:bob/spacestation.git`). Commit & push.
-
+* Use SourceTreeApp or the GIT console to initialize a GIT directory within `/user/+bob/+spacestation`. Add the remote repository (`steps.lrt.mw.tum.de:bob/spacestation.git`). Commit & push.
 
 
 About Matlab OOP
