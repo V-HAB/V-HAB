@@ -40,6 +40,8 @@ The following steps are only required the first time you setup your development 
 * Now select a destination path on your system where you want to store your files and press *clone*.
 * SourceTree will now download all neccessary files to your machine. 
 
+**SSH Keys Troubleshooting**: SourceTree seems to have some bugs regarding the SSH Key handling. Further help can be found on the [SourceTree Website FAQ](http://sourcetreeapp.com/faq/) → *How do I set up SSH keys for authentication?* (last question). Further help in the [Bootstrapping Wiki - SSH Troubleshooting](http://steps.lrt.mw.tum.de/bootstrapping/wikis/ssh-troubleshooting) page.
+
 See next section on how to use the bootstrapping repository, e.g. how to download the tutorial.
 
 ### Mac ###
