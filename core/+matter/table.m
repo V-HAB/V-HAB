@@ -214,9 +214,9 @@ classdef table < base
             else
                 % Non existent ones are -1, so if any mass exists, the
                 % result will be negative --> check!
-                afCheck = this.tafCp.(oPhase.sType) .* oPhase.afMass;
+                afCheck = this.tafCp.(oPhase.sType) .* tools.round.prec(oPhase.afMass);
                 
-                if any(tools.round.prec(afCheck) < 0)
+                if any(afCheck < 0)
                     %TODO get negative indices with find(), display the
                     %     according species name that are a problem
                     this.throw('calculateHeatCapacity', 'Phase %s (type %s) in container %s contains mass for at least one species (first: %s) that have no heat capacity defined for this phase!', oPhase.sName, oPhase.sType, oPhase.oStore.sName, this.csSpecies{find(afCheck < 0, 1)});
