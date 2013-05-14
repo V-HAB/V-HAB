@@ -132,7 +132,8 @@ classdef timer < base
             % Advance the timer one (global) time step
             
             % If time is -1 the min. time step - first tick, advane to zero
-            if this.fTime == (-1 * this.fTimeStep)
+            %if this.fTime == (-1 * this.fTimeStep)
+            if this.fTime <= (10 * this.fTimeStep)
                 fThisStep = this.fTimeStep;
             else
                 % Determine next time step. Calculate last execution time plus
