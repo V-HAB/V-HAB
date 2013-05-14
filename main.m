@@ -10,7 +10,11 @@ oData = data(struct(...
     'oMT',    matter.table(), ...
     'oTimer', oTimer, ...
     'fTime',  0, ...                 % [s]
-    'oSolver', solver.basic.solver(oTimer) ...
+    ... the 2nd and 3rd parameters are solver limits, used to determine the tick length.
+    ... First param: if flow rate changed more than this ratio, time step is reduced
+    ... Second param: max change in phase masses in one time step
+    ... reduce if flow rates/pressures unstable, increase if simulation too slow
+    'oSolver', solver.basic.solver(oTimer, 0.001, 0.00025) ...
 ));
 
 % Creating the root system
@@ -22,9 +26,6 @@ oExample = tutorial.flow.Example(oRoot, 'Example');
 
 % Add system to solver
 oData.oSolver.addSystem(oExample);
-
-% Register solver on timer (0 = global timestep)
-%oData.oTimer.bind(@(oTimer) oData.oSolver.solve(oTimer), 0);
 
 
 % Cleaning up the workspace
@@ -45,7 +46,7 @@ csLog = {
 %% Simulation preparation
 
 %Number of simulation timesteps
-iTicks = 1000;
+iTicks = 3000;
 
 % Matrix for datalogging
 iLogInt = 1;
@@ -88,10 +89,10 @@ legend('Branch');
 ylabel('flow rate [kg/s]');
 xlabel('Time in s');
 
-figure('name', 'Time Step');
-hold on;
-grid minor;
-plot(mfLog(:,1), ones(size(mfLog, 1)), '-*');
-legend('Solver');
-ylabel('Time Step [kg/s]');
-xlabel('Time in s');
+% figure('name', 'Time Step');
+% hold on;
+% grid minor;
+% plot(mfLog(:,1), ones(size(mfLog, 1)), '-*');
+% legend('Solver');
+% ylabel('Time Step [kg/s]');
+% xlabel('Time in s');
