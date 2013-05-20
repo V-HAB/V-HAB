@@ -70,8 +70,9 @@ classdef p2p < matter.flow
             % stored in the phase.
             % An absolute value for mass extraction has to be divided by
             % the fTimeStep parameter to get a flow.
-            
-            %this.oOut.oPhase.update(fTimeStep);
+            % In case of flow through the filter volume >> the mass within,
+            % the in/out flow rates can be used for absorption flow rate
+            % calculations.
         end
         
         

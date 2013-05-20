@@ -29,7 +29,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         %TODO implement .update, get heat capacity depending on
         %     arPartialMass and Temperature
         fHeatCapacity = 0;      % [J/K/kg]
-        fMolMass      = 0;
+        fMolMass      = 0;      % [g/mol] NOT KG!
         
         % Partial masses in percent (ratio) in indexed vector (use oMT to
         % translate, e.g. this.oMT.tiN2I)

@@ -26,10 +26,6 @@ classdef exme < base
         setAttribute;
         
         
-        % Pressures for merge, extract; can be different due to some p2p
-        % extracting some stuff etc
-        fPressureMerge   = 0;
-        fPressureExtract = 0;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -52,6 +48,11 @@ classdef exme < base
         
         % Store in .extract for later use
         arPartials;
+        
+        
+        % TESTS - Pressures for merge
+        fPressureMerge   = 0;
+        fPressureExtract = 0;
     end
     
     
@@ -83,42 +84,18 @@ classdef exme < base
         
         function update(this, fTimeStep, sType)
             
-            
-            % First thing - before all merges - cache merge pressure
+            % TESTS
 %             if strcmp(sType, 'merge')
-%                 this.fPressureMerge = sum(this.oPhase.afMass) * this.oPhase.calculatePressureCoefficient();
+%                 %this.fPressureMerge = sum(this.oPhase.afMass) * this.oPhase.calculatePressureCoefficient();
+%                 %this.fPressureExtract = sum(this.oPhase.afMass) * this.oPhase.calculatePressureCoefficient();
 %             end
-            
             
             
             afFRs = this.getFRs();
             
-%             if strcmp(this.oPhase.oStore.sName, 'O2FeedMerge')
-%                 disp([ '---- ' sType ' - EXME ' this.sUUID ]);
-%                 disp(afFRs);
-%                 disp([ 'Phase ' this.oPhase.sUUID ]);
-%                 disp('>>>>>>>>');
-%             else
-%                 disp('XXXXXXXX');
-%             end
             
-            
-            %if strcmp(this.oPhase.sName, 'air') && strcmp(this.oPhase.oStore.sName, 'Filter')
-%                 disp('>>>>>>>>');
-%                 disp(this.oPhase.afMass);
-            %end
-            
-            
-            % Only merge or extract, depending on sType
-            %TODO p2p should be separately, called in phase.update. p2p's
-            %     update method should be called from solver when a phase
-            %     in the system is updated. Merge phase has to be executed
-            %     by solver as well, even if it is not connected to a
-            %     solved branch, to make sure its always updated when P2P
-            %     flowarte changes. P2ps do have to check the in- and
-            %     outflows of phase to determine how much they absorb.
-            %TODO p2p completely separated? At the moment the .update is
-            %     called here on 'merge', 
+            %  Extract p2ps or merge flows
+            %TODO has to be in phase, several EXMEs can exist with p2ps!
             for iI = 1:length(afFRs)
                 if afFRs(iI) < 0 && strcmp(sType, 'extract') && isa(this.aoFlows(iI), 'matter.procs.p2p')
                     this.extract(iI, afFRs(iI), fTimeStep);
@@ -130,23 +107,28 @@ classdef exme < base
             end
             
             
-            % In case of merge, the normal flows were processed, and now
-            % the p2p's will be merged. Therefore call 'update' on the p2p
-            % first, but only if that p2p does EXTRACT mass from this phase
+
+            % TESTS -- SEE BELOW!
+            % POST NORMAL mergers and PRE P2P mergers - cache pressure
 %             if strcmp(sType, 'merge')
-%                for iI = 1:length(afFRs)
-%                    if isa(this.aoFlows(iI), 'matter.procs.p2p')
-%                        %this.aoFlows(iI).update();
-%                    end
-%                end
+%                 %TEST - update p2p's here?
+% %                 for iI = 1:length(afFRs)
+% %                     if isa(this.aoFlows(iI), 'matter.procs.p2p')
+% %                         this.aoFlows(iI).update(fTimeStep);
+% %                     end
+% %                 end
+% %                 
+% %                 afFRs = this.getFRs();
+%                 
+%                 this.fPressureMerge = sum(this.oPhase.afMass) * this.oPhase.calculatePressureCoefficient();
+%                 
+%             % POST P2P extractors and PRE NORMAL extractor
+%             else
+%                 this.fPressureExtract = sum(this.oPhase.afMass) * this.oPhase.calculatePressureCoefficient();
 %             end
             
             
-            
-            %if strcmp(this.oPhase.sName, 'air') && strcmp(this.oPhase.oStore.sName, 'Filter')
-%                 disp(this.oPhase.afMass);
-            %end
-            
+            % Now the extract flows or merge p2ps
             for iI = 1:length(afFRs)
                 if afFRs(iI) < 0 && strcmp(sType, 'extract') && ~isa(this.aoFlows(iI), 'matter.procs.p2p')
                     this.extract(iI, afFRs(iI), fTimeStep);
@@ -157,20 +139,28 @@ classdef exme < base
                 end
             end
             
-            %if strcmp(this.oPhase.sName, 'air') && strcmp(this.oPhase.oStore.sName, 'Filter')
-%                 disp(this.oPhase.afMass);
-%                 disp('<<<<<<<<');
-            %end
-            
-%             if strcmp(this.oPhase.oStore.sName, 'O2FeedMerge')
-%                 disp('<<<<<<<<');
-%             end
-            
 
 
-            %Extract - last thing - cache extract pressure
+            % TESTS - due to p2p, theoretically different pressures at in
+            % and outflowing ports. However, ignore - generally just small
+            % amounts (e.g. CO2) extracted. If large percentages are
+            % extracted, possibly use three phases - in phase, absorbed,
+            % and out phase - 2nd p2p proc after in -> absorb p2p.
+            % Also, this would have to be done 'outside' the EXME, in the
+            % phase, as several EXMEs can exist.
 %             if strcmp(sType, 'extract')
-%                 this.fPressureExtract = sum(this.oPhase.afMass) * this.oPhase.calculatePressureCoefficient();
+%                 %this.fPressureExtract = sum(this.oPhase.afMass) * this.oPhase.calculatePressureCoefficient();
+%                 %this.fPressureMerge = sum(this.oPhase.afMass) * this.oPhase.calculatePressureCoefficient();
+%                 
+%                 fTmpPress =  sum(this.oPhase.afMass) * this.oPhase.calculatePressureCoefficient();
+%                 
+%                 if fTmpPress == 0
+%                     this.fPressureExtract = 0;
+%                     this.fPressureMerge   = 0;
+%                 else
+%                     this.fPressureExtract = fTmpPress * this.fPressureExtract / this.fPressureMerge;
+%                     this.fPressureMerge   = fTmpPress;
+%                 end
 %             end
         end
         
@@ -270,15 +260,8 @@ classdef exme < base
             % which might just selectively extract something!
             %TODO don't store this.arPartials, also for second case, use
             %     the stored arPartials on phase -> after extract p2p,
-            %     arPartials have to recalculated in phase
+            %     arPartials have to be recalculated in phase
             if isa(this.aoFlows(iFlow), 'matter.procs.p2p')
-                %keyboard();
-                %TODO see above, .update
-                %this.aoFlows(iFlow).update(fTimeStep);
-                
-                % Flowrate from flow after .update. Extract, so negative
-                %fFlowRate = -1 * abs(this.aoFlows(iFlow).fFlowRate);
-                
                 this.arPartials = this.aoFlows(iFlow).arPartialMass;
                 
             else
@@ -291,8 +274,6 @@ classdef exme < base
             afExtractedMass = this.arPartials * fFlowRate * fTimeStep;
             
             % Too much mass requested?
-            %TODO check for inf, nan etc, but if too large, just reduce
-            %     accordingly?
             if any(tools.round.prec(this.oPhase.afMass + afExtractedMass) < 0)
                 disp(this.oPhase.afMass + afExtractedMass);
                 this.throw('extract', 'Asked exme %s to extract more mass then available in phase %s (store %s)', this.sName, this.oPhase.sName, this.oPhase.oStore.sName);
@@ -360,18 +341,6 @@ classdef exme < base
             % influenced and less computation time, probably ...
             this.setAttribute('fTemp',  fTemp);
             this.setAttribute('afMass', afMass);
-            
-            
-            % If the connected flow is actually a p2p processor, call its
-            % update method --> we changed our mass etc, so it needs to
-            % recalculate flow rates etc
-            %TODO put somewhere else, makes sense here? what if several p2p
-            %     procs into this phase -> wait for ALL merges done and
-            %     then call update on p2ps in this.update()?
-            %   -> should be in something like the manual solver
-%             if isa(this.aoFlows(iFlow), 'matter.procs.p2p')
-%                 this.aoFlows(iFlow).update();
-%             end
         end
         
     end
