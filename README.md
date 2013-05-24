@@ -3,7 +3,16 @@ V-HAB / STEPS Bootstrapping Package
 
 Downloaded from GITlab at <http://steps.lrt.mw.tum.de/>
 
+Bootstrapping Repository
+------------------------
 
+Basic repository with the framework for V-HAB / STEPS. Contains three directories:
+
+* core: central, shared V-HAB framework.
+* lib: helper functions, pre/post processing, logging, GUI, date functions, … (TBD)
+* user: user-specific simulations
+
+The core and lib packages are managed, i.e. most likely no changes should be done or can be commited to the online repository. Wiki of the according projects will soon contain some help.
 
 How to get started with git / GITlab
 ------------------------------------
@@ -80,17 +89,12 @@ The following steps are the same for every new Repository you want to clone from
 To view a repository, double-click on its entry in the SourceTree *Bookmarks* window (when subsequently launching SourceTree, a repository may already be opened, check the window title to see which one it is!). Clicking on `master` under `Branches` will list the (local) commit history of the opened repository. To see the current status on the STEPS server, click on `origin/master` under `Remotes` (you may need to open the branches by clicking on the triangle). 
 
 
+Getting Started Programming
+----------------
 
-Bootstrapping Repository
-------------------------
+### How to update your local files ###
 
-Basic repository with the framework for V-HAB / STEPS. Contains three directories:
-
-* core: central, shared V-HAB framework.
-* lib: helper functions, pre/post processing, logging, GUI, date functions, … (TBD)
-* user: user-specific simulations
-
-The core and lib packages are managed, i.e. most likely no changes should be done or can be commited to the online repository. Wiki of the according projects will soon contain some help.
+If you want to update your local working copy files to the current version, select the bootstrapping repository in SourceTree and press "pull". This should load all new or changed files onto your machine. 
 
 ### To get a tutorial: ###
 
@@ -98,6 +102,8 @@ The core and lib packages are managed, i.e. most likely no changes should be don
 * Create a directory called `+tutorial` in the `user` directory. Create a sub-directory called `+flow` (see the GIT repository path)
 * Click *Clone / New* in SourceTree, paste the address above, and select the newly created directory as the destination path
 * Create a main script in the bootstrapping root directory called `main_tutorial_flow.m`, or copy and rename the template from `user/+tutorial/+flow/+main_tutorial_flow.m.example` to the root directory.
+* Run the init.m script in the root directory, this will add some paths to the MATLAB search path
+* Now you can run the main_xxx.m script.
 
 
 ### To create a new simulation project: ###
@@ -107,6 +113,30 @@ The core and lib packages are managed, i.e. most likely no changes should be don
 * ONLY package directories, classes and functions can be included ONLY in a project directory, i.e. only in `/user/+bob/+spacestation`.
 * Copy the `main.m` file in the bootstrapping root dir to e.g. `main_bob_spacestation.m`, edit, execute. Has to reside within the bootstrapping directory. Your classes can be accessed with e.g. `bob.spacestation.myClass()`. Please note that your main file is intentionally not inside the repository, and will thusly not be backuped by the version control system. 
 * Use SourceTreeApp or the GIT console to initialize a GIT directory within `/user/+bob/+spacestation`. Add the remote repository (`steps.lrt.mw.tum.de:bob/spacestation.git`). Commit & push.
+
+### Commiting and pushing files to the repository ###
+
+You should do this early and often to make sure none of your work is lost.
+
+Once you are at a point where you would like to commit the changes you have made to the code, you have to first commit the changes to your local repository. SourceTree lets you do this for several files at once so you don't have to repeat the process for every change you make. 
+
+* First open SourceTree and navigate to the repository tab in which you have made changes.
+* If you click on *Working Copy* inside the *File Status* section on the left you should see some files marked as modified in the portion of the window labled *Working Copy Changes*
+* To prepare for the commit you have to add the modified files to a list of files that will be commited together.
+* To do this, click the *Add/Remove* button in SourceTree.
+* A warning may appear saying *This action will remove all files missing from your working copy, and add all new ones.* I'm really sure what this means, but since I am sure that I don't have any missing files, I click *ok*.
+* Now the changed files in your local repository will appear in the window section labeled *Staged Changes*. 
+* Unless you want to keep working and change other files, you are now ready to commit the files to your local repository version control. 
+* To do this, click the *Commit* button in SourceTree.
+* A window will appear showing you all of the changes you have made to which files. At the top of this window is a text box for the commit message. It is very important that you enter a meaningful message here because it will help you track your changes later on and it will also let other users see, what has been changed. When writing the commit message the first word should be a keyword indicating what action you have performed (i.e. *add*, *edit*, *remove*, *fix*). If you look into the commit history of this readme file, you will see entries like *edit readme to include commit instructions*.
+* Press *commit* in the bottom right corner of the window if you are ready to commit.
+* After the process is complete, your local master branch is one step ahead of the master branch on the STEPS server. This is because at this point you have only commited your changes locally. To update the files on the STEPS server you need to *push* the changed files. To do this click the *push* button in SourceTree.
+* A window will appear in which you can make some selections. You should push to the *origin* repository (should be the only available option) and you should push your local master branch to the remote master branch. The checkbox labeled *Track?* should have a black square in it (I don't know what this means either...) and at the bottom of the window both *Select All* and *Push all tags* should be selected.
+* Once you have verified all this, press *ok*
+* After pushing your local master branch should match the *origin* master branch on the server and the process is complete. 
+
+
+Stage, commit, push...
 
 
 About Matlab OOP
