@@ -11,6 +11,7 @@ classdef liquid < matter.phase
         
         fVolume;                % Volume in m^3
         fPressure;              % Pressure in Pa
+        fDynamicViscosity;      % Dynamic Viscosity in Pa*s
         
     end
     
@@ -62,6 +63,17 @@ classdef liquid < matter.phase
             if ~isempty(this.fVolume)
                 % ?
             end
+        end
+    end
+    
+    %% Protected methods, called internally to update matter properties %%%
+    methods (Access = protected)
+        function setAttribute(this, sAttribute, xValue)
+            % Internal helper, see @matter.phase class.
+            %
+            %TODO throw out, all done with events hm?
+            
+            this.(sAttribute) = xValue;
         end
     end
     
