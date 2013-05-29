@@ -29,7 +29,7 @@ classdef liquid < matter.phase
             this.fDensity = this.fMass / this.fVolume;
             
             %TODO see .update(), also called from matter.phase constructor!
-            %this.update(0);
+            this.update(0);
         end
         
         function bSuccess = setVolume(this, fVolume)
@@ -41,6 +41,32 @@ classdef liquid < matter.phase
             return;
             %TODO with events:
             this.trigger('set.fVolume', struct('fVolume', fVolume, 'setAttribute', @this.setAttribute));
+            % So events can just set everything they want ...
+            % Or see human, events return data which is processed here??
+            % What is several events are registered? Different types of
+            % volume change etc ...? Normally just ENERGY should be
+            % provided to change the volume, and the actual change in
+            % volume is returned ...
+        end
+        
+        function bSuccess = setPressure(this, fPressure)
+            % Changes the pressure of the phase.
+            % In this version of the 'liquid' class, all liquids are
+            % considered inkompressible. The pressure of a liquid phase can
+            % therefore be set more or less arbitrarily. 
+            %
+            % Ideally, I would like to set the initial pressure only once, 
+            % maybe in the branch?
+            %
+            % TODO need some kind of check function here, possibly through
+            % matter.table to make sure the pressure isn't so low, that a
+            % phase change to gas takes place
+            
+            bSuccess = this.setParameter('fPressure', fPressure);
+            
+            return;
+            %TODO with events:
+            this.trigger('set.fPressure', struct('fPressure', fPressure, 'setAttribute', @this.setAttribute));
             % So events can just set everything they want ...
             % Or see human, events return data which is processed here??
             % What is several events are registered? Different types of

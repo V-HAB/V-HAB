@@ -398,6 +398,31 @@ classdef branch < base
             % Need that? For .update()?
         end
         
+        function setPressures(this, fPressure)
+            % For use only with liquids!!!
+            % Sets all flows and stores to the same pressure.
+            
+            bIsLiquid = 0;
+            
+            % Setting the pressures in the connected stores
+            for iI = 1:length(this.coExmes)
+                if strcmp(this.coExmes{iI}.oPhase.sType, 'liquid')
+                    bIsLiquid = bIsLiquid + 1; 
+                end
+            end
+            
+            % If not all of the connected phases are liquid, throw an
+            % error, else set the pressures in all phases to the same
+            % value.
+            if ~(bIsLiquid == length(this.coExmes))
+                this.throw('setPressures','Not all connected phases are liquid! Cannot use setPressures!');
+            else
+                for iI = 1:length(this.coExmes)
+                    this.coExmes{iI}.oPhase.setPressure(fPressure);
+                end
+            end
+        end
+        
         
         function arPartials = getPartials(this)
             % Get partials of inflow exme. If interface branch, get leftest
