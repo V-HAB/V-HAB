@@ -22,9 +22,16 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         % Flow rate, pressure and temperature of the matter stream
         % Initialize NOT with empty but some number ...?
+        % @type float
         fFlowRate    = 0;   % [kg/s]
+        
+        % @type float
         fPressure    = 0;  % [Pa]
+        
+        % @type float
         fTemp        = 0;   % [K]
+        
+        
         
         %TODO implement .update, get heat capacity depending on
         %     arPartialMass and Temperature
@@ -34,10 +41,12 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % Partial masses in percent (ratio) in indexed vector (use oMT to
         % translate, e.g. this.oMT.tiN2I)
         % Can be empty, won't be accessed if fFlowRate is zero ...?
+        % @type array
         arPartialMass;
         
         
-        % Matter table
+        % Reference to the matter table
+        % @type object
         oMT;
         
         % Branch the flow belongs to
@@ -47,6 +56,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         %TODO maybe several phases somehow (linked flows or something?). So
         %     same as in stores: available diameter has to be distributed
         %     throughout the flows (diam - fluid/solid = diam gas)
+        % @type float
         fDiameter;
     end
     
