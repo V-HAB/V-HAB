@@ -10,7 +10,13 @@ classdef p2p < matter.flow
     end
     
     properties (SetAccess = private, GetAccess = public)
+        % Name of the p2p processor
+        % @type string
+        % @default p2proc
         sName;
+        
+        % Parent store
+        % @type object
         oStore;
     end
     
