@@ -21,18 +21,24 @@ classdef branch < base
     
     properties (SetAccess = protected, GetAccess = public)
         % Reference to the parent matter container
+        % @type object
         oContainer;
         
         % Created from the store/interface names provided to the
         % createBranch method on matter.container (store1_port1__ifName, or
         % store1_port1__otherStore_somePort)
+        % @type string
         sName;
         
         % Names for left/right (cell with 1/2, can be accessed like
         % [ aoBranches.csNames ] --> cell with names, two rows, n cols
+        % @type cell
+        % @types string
         csNames = { ''; '' };
         
         % Interfaces left/right?
+        % @type array
+        % @types int
         abIf = [ false; false ];
         
         % When branch fully connected, contains references to the EXMEs at
@@ -40,23 +46,33 @@ classdef branch < base
         % automatically set for branch on the left side
         %coPhases = { matter.phase.empty(1, 0); matter.phase.empty(1, 0) };
         %coPhases = { []; [] };
+        % @type cell
+        % @types object
         coExmes = { []; [] };
         
         % Connected branches on the left (index 1, branch in subsystem) or
         % the right (index 2, branch in supsystem) side?
+        % @type cell
+        % @types object
         coBranches = { matter.branch.empty(1, 0); matter.branch.empty(1, 0) };
         
         % Flows belonging to this branch
+        % @type array
+        % @types object
         aoFlows = matter.flow.empty();
         
         % Array with f2f processors in between the flows
+        % @type array
+        % @types object
         aoFlowProcs = matter.procs.f2f.empty();
         
         % Amount of flows / procs
+        %TODO make transient!
         iFlows = 0;
         iFlowProcs = 0;
         
         % Current flow rate on branch
+        % @type float
         fFlowRate = 0;
         
         bSealed = false;

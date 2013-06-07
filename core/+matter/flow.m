@@ -42,6 +42,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % translate, e.g. this.oMT.tiN2I)
         % Can be empty, won't be accessed if fFlowRate is zero ...?
         % @type array
+        % @types float
         arPartialMass;
         
         
@@ -57,7 +58,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         %     same as in stores: available diameter has to be distributed
         %     throughout the flows (diam - fluid/solid = diam gas)
         % @type float
-        fDiameter;
+        fDiameter = 0;
     end
     
     properties (SetAccess = private, GetAccess = public)

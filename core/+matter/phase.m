@@ -27,16 +27,27 @@ classdef phase < base & matlab.mixin.Heterogeneous
     % Basic parameters
     properties (SetAccess = protected, GetAccess = public)
         % Masses for every species, temperature of phase
+        % @type array
+        % @types float
         afMass;             % [kg]
+        
+        % @type float
         fTemp;              % [K]
         
         %%%% Dependent variables:
         % Partial masses for every species and total mass
+        % @type array
+        % @types float
         arPartialMass;    % [%]
+        
+        % @type float
         fMass;              % [kg]
         
         % Mol mass, heat capacity
+        % @types float
         fMolMass;           % [g/mol]
+        
+        % @types float
         fHeatCapacity;      % [J/K]
         
     end

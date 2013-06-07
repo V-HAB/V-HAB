@@ -32,17 +32,23 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         
         % Connected matter flows (one for each port possible), indexed
         % according to port name in csPorts
+        % @type array
+        % @types object
         aoFlows = matter.flow.empty();
         
         % Sign. Depending on the "side" of the flow this processor is
         % connected to, the flow rate set for that flow is either out or in
         % when positive. This array here is accordingly filled with 1 / -1.
+        % @type array
+        % @types int
         aiSign = [ 0 0 ];
         
         % Matter table
+        % @type object
         oMT;
         
         % Name of processor.
+        % @type string
         sName;
         
         %TODO Need something like type, as for phases? Define what types of
