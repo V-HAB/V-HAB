@@ -24,11 +24,17 @@ classdef container < sys
         
         % Sealed?
         bSealed = false;
+        
+        
+        % Timer object - needs to be passed to stores etc ...
+        oTimerObj;
     end
     
     methods
-        function this = container(oParent, sName)
+        function this = container(oParent, sName, oTimerObj)
             this@sys(oParent, sName);
+            
+            this.oTimerObj = oTimerObj;
         end
         
         function afMass = getTotalPartialMasses(this)
@@ -93,7 +99,9 @@ classdef container < sys
             this.csProcsF2F = fieldnames(this.toProcsF2F);
             
             for iI = 1:length(this.csStores)
-                this.toStores.(this.csStores{iI}).seal();
+                % Stores need a timer object, to be accessed by the phases
+                % to e.g. register updates, find out elapsed time
+                this.toStores.(this.csStores{iI}).seal(this.oTimerObj);
             end
             
             

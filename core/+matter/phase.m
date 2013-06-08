@@ -67,6 +67,10 @@ classdef phase < base & matlab.mixin.Heterogeneous
         % Cache for procs ... see .update()
         coProcsEXME;
         iProcsEXME;
+        
+        
+        % Last time the phase was updated?
+        fLastExec = 0;
      end
     
     % Derived values
@@ -154,7 +158,24 @@ classdef phase < base & matlab.mixin.Heterogeneous
             this.update(0);
         end
         
-        function this = update(this, fTimeStep)
+        
+        
+        function this = massupdate(this)
+            %TODO13
+            % Update FLOW p2p procs!
+            % Merge/Extract all EXME flows -> get all fFR/arPartials, then
+            %   add/subtract in one command
+            % Check last update fMass/afMass + curr fMass/afMass + FRs -->
+            %   when do we need to update again because delta > X%?
+        end
+        
+        function this = update(this)
+            %TODO13
+            % Update matter properties
+            % Call update on each EXME flow (outdated)
+            
+            
+            
             % The .update method does actually add or subtract the mass
             % depending on the flow rates on exmes and the time step. So if
             % only an update of internal parameters is desired, call this

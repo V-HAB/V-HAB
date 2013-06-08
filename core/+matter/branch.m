@@ -1,4 +1,4 @@
-classdef branch < base
+classdef branch < base & event.source
     %BRANCH Summary of this class goes here
     %   Detailed explanation goes here
     %
@@ -60,6 +60,10 @@ classdef branch < base
         fFlowRate = 0;
         
         bSealed = false;
+        
+        % Does the branch need an update of e.g. a flow rate solver? Can be
+        % set e.g. through a flow proc that changed some internal state.
+        bOutdated = false;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -379,26 +383,12 @@ classdef branch < base
         
         
         
-        function update(this)
-            %TODO should be in solver.basic.matter.branch < matter.branch??
-            %     branch updates flows, not container?
-            %     what if a f2f comp does a big change, e.g. gets closed -
-            %     how does the solver get noticed? Through the branch? See
-            %     'outdated' in comment somewhere else (grep rulez!)
-            %     Solver executes when large fr changes, large dP changes
-            %     quickly again; with phases, waited until change > X%.
-            %     Update of store might also be delayed until phase change
-            %     > Y% (e.g. species masses or temp observed)
-            
-            this.fFlowRate = this.aoFlows(1).fFlowRate;
-        end
         
-        
-        function setPartials(this, arPartials)
+        function XXXsetPartials(this, arPartials)
             % Need that? For .update()?
         end
         
-        function setPressures(this, fPressure)
+        function XXXsetPressures(this, fPressure)
             % For use only with liquids!!!
             % Sets all flows and stores to the same pressure.
             
@@ -444,8 +434,41 @@ classdef branch < base
         end
         
         
+        function setOutdated(this)
+            this.bOutdated = true;
+            
+            %TODO13 solver - register on this here and then set callback
+            %   timestep to 0 - DON'T SOLVE IMMEDIATELY!!
+            this.trigger('outdated');
+        end
+        
+        
+        
+        
+        
+        function update(this)
+            %TODO should be in solver.basic.matter.branch < matter.branch??
+            %     branch updates flows, not container?
+            %     what if a f2f comp does a big change, e.g. gets closed -
+            %     how does the solver get noticed? Through the branch? See
+            %     'outdated' in comment somewhere else (grep rulez!)
+            %     Solver executes when large fr changes, large dP changes
+            %     quickly again; with phases, waited until change > X%.
+            %     Update of store might also be delayed until phase change
+            %     > Y% (e.g. species masses or temp observed)
+            
+            %this.fFlowRate = this.aoFlows(1).fFlowRate;
+            
+            %TODO13 set matter properties! Don't get flow rate - set 
+            %       through setFlowRate on this obj anyway!
+        end
+        
         function setFlowRate(this, fFlowRate)
             % Set flowrate for all flow objects
+            %
+            %TODO13 also needs to set matter properties, basically do all
+            %   the setSolver* stuff from flows! Therefore adapt chSetFRs,
+            %   needs to be an extended version that can set everyting ...
             
             if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
             
@@ -566,11 +589,16 @@ classdef branch < base
                 % which allows us to deconnect the flow from the f2f proc
                 % in the "outer" system (supsystem).
                 if this.abIf(2) && (this.iIfFlow == iI)
-                    [ this.chSetFRs{iI} this.hRemoveIfProc ] = this.aoFlows(iI).seal(true);
+                    [ this.chSetFRs{iI}, this.hRemoveIfProc ] = this.aoFlows(iI).seal(true);
                 else
                     this.chSetFRs{iI} = this.aoFlows(iI).seal();
                 end
             end
+            
+            for iI = 1:length(this.aoFlowProcs)
+                this.aoFlowProcs(iI).seal(this);
+            end
+            
             
             this.bSealed = true;
         end

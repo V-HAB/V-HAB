@@ -200,7 +200,7 @@ classdef exme < base
         end
         
         
-        function arPartials = getPartials(this)
+        function arPartials = XXgetPartials(this)
             % Get partial masses, CURRENT value, not stored, maybe outdated
             % one
             
@@ -222,18 +222,13 @@ classdef exme < base
         % implemented by a derived version of the EXME.
         %TODO depending on phase type, different EXME implementations.
         %     Solids do not have a pressure, liquids no fPressure, ...
-        function [ fPortPressure fPortTemperature ] = solverExtract(this, fFlowRate)
+        function [ fPortPressure, fPortTemperature ] = getPortProperties(this)
             %fPortPressure    = this.fPressureExtract;
-            fPortPressure    = this.oPhase.fPressure;
-            fPortTemperature = this.oPhase.fTemp;
-        end
-        
-        % See above - liquid phase might not have fPressure, but a pressure
-        % needs to be calculated depending on the port position.
-        function fPortPressure = solverMerge(this, fFlowRate)
+            %fPortPressure    = this.oPhase.fPressure;
             
-            fPortPressure = this.oPhase.fPressure;
-            %fPortPressure = this.fPressureMerge;
+            %TODO see above - specific EXMEs for each phase type!
+            fPortPressure    = this.oPhase.fMassToPressure * this.oPhase.fMass;
+            fPortTemperature = this.oPhase.fTemp;
         end
         
         

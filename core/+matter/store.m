@@ -34,6 +34,11 @@ classdef store < base
         % and they can only be connected to an interface branch of the
         % superior system)
         bSealed = false;
+        
+        
+        
+        % Timer object, needs to inherit from / implement event.timer
+        oTimer;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -61,15 +66,15 @@ classdef store < base
         end
         
         function update(this, fTimeStep)
-            % call .update on child phases
-            % then recalc volume stuff (gas vol = vol - solid/fluid vol)
+            % Update phases, then recalculate internal values as volume
+            % available for phases.
             %
-            %TODO if e.g. the volume of a liquid phase changes, need to re-
-            %     set the volume for the gas phase. Does not necessarily
-            %     need to happen every time, a filter might make sense to
-            %     only update the other phases if volume changed more than
-            %     X percent since last update ...? Use the events.source
-            %     filters?
+            %TODO don't update everything all the time? If one phase
+            %     changes, do not necessarily to update all other phases as
+            %     well? If liquid, need to update gas, but other way
+            %     around?
+            %     First update solids, then liquids, then gas?
+            %     Smarter ways for volume distribution?
             
             for iI = 1:this.iPhases, this.aoPhases(iI).update(fTimeStep); end;
         end
@@ -170,7 +175,7 @@ classdef store < base
         
         
         
-        function seal(this)
+        function seal(this, oTimer)
             % See doc for bSealed attr.
             %
             %TODO create indices of phases, their ports etc! Trigger event?
@@ -182,6 +187,15 @@ classdef store < base
             if this.bSealed, return; end;
             
             
+            if ~isa(oTimer, 'event.timer')
+                this.throw('Timer needs to inherit from event.timer');
+            end
+            
+            % Timer - oTimer.fTime is current time, e.g. used by phases to
+            % determine how much mass has to be merged/extracted depending
+            % on flow rate and elapsed time.
+            this.oTimer = oTimer;
+                        
             for iI = 1:length(this.aoPhases), this.aoPhases(iI).seal(); end;
             
             this.iPhases = length(this.aoPhases);
@@ -291,7 +305,7 @@ classdef store < base
             end
         end
         
-        function [ cParams sDefaultPhase ] = createPhaseParams(this, sHelper, varargin)
+        function [ cParams, sDefaultPhase ] = createPhaseParams(this, sHelper, varargin)
             % Returns a (row) cell with at least the first two parameters 
             % for the constructor of a phase class. First field is a refe-
             % rence  to this matter table, second the composition of the 

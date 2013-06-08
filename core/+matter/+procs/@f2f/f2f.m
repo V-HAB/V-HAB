@@ -47,6 +47,13 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         
         %TODO Need something like type, as for phases? Define what types of
         %     phases can be used with this processor?
+        
+        
+        % Reference to the branch object
+        oBranch;
+        
+        % Sealed?
+        bSealed = false;
     end
     
     
@@ -65,6 +72,16 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             
             % Create map for the func handles
             this.pthFlow = containers.Map('KeyType', 'single', 'ValueType', 'any');
+        end
+        
+        
+        function seal(this, oBranch)
+            if this.bSealed
+                this.throw('seal', 'Already sealed!');
+            end
+            
+            this.oBranch = oBranch;
+            this.bSealed = true;
         end
     end
     

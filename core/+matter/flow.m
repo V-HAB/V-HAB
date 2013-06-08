@@ -111,7 +111,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         end
         
         
-        function [ setFlowRate hRemoveIfProc ] = seal(this, bIf)
+        function [ setFlowRate, hRemoveIfProc ] = seal(this, bIf)
             if this.bSealed
                 this.throw('seal', 'Already sealed!');
             end
