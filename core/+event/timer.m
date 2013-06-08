@@ -191,7 +191,8 @@ classdef timer < base
             
             
             % Find dependent timed callbacks (when timer executes)
-            this.abDependent = this.afTimeStep == -1;
+            %this.abDependent = this.afTimeStep == -1;
+            this.abDependent(iCB) = (fTimeStep == -1);
         end
     end
 end
