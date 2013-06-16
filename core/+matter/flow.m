@@ -40,7 +40,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         % Matter table
         oMT;
-        
+    end
+    
+    properties (SetAccess = protected, GetAccess = public)
         % Branch the flow belongs to
         oBranch;
         
@@ -79,7 +81,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % Is returned to the f2f/exme procs whose base classes ensure that
         % they can only be called if the matter flow is actually flowing
         % from the processor into the flow!
-        thFuncs;
+        % NOW inactive.
+        %thFuncs;
     end
     
     %% Public methods
@@ -97,14 +100,14 @@ classdef flow < base & matlab.mixin.Heterogeneous
             this.arPartialMass = zeros(1, this.oMT.iSpecies);
             
             % See thFuncs definition above and addProc below.
-            this.thFuncs = struct(...
-                ... %TODO check, but FR needs to be set by solver etc, so has public access
-                ... 'setFlowRate',    @this.setFlowRate,    ...
-                'setPressure',    @this.setPressure,    ...
-                'setTemperature', @this.setTemperature, ...
-                'setHeatCapacity',@this.setHeatCapacity,...
-                'setPartialMass', @this.setPartialMass  ...
-            );
+%             this.thFuncs = struct(...
+%                 ... %TODO check, but FR needs to be set by solver etc, so has public access
+%                 ... 'setFlowRate',    @this.setFlowRate,    ...
+%                 'setPressure',    @this.setPressure,    ...
+%                 'setTemperature', @this.setTemperature, ...
+%                 'setHeatCapacity',@this.setHeatCapacity,...
+%                 'setPartialMass', @this.setPartialMass  ...
+%             );
         end
         
         
@@ -215,7 +218,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             % Provide struct with function handles allowing manipulation
             % of matter properties through the protected methods below!
-            thFuncs = this.thFuncs;
+            %thFuncs = this.thFuncs;
             
             % Last/first flow in branch, i.e. proc is an exme?
             if isa(oProc, 'matter.procs.exme')
@@ -225,7 +228,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % The proc is f2f - however, f2f's can't set the partial
             % masses, so remove that callback
             else
-                thFuncs = rmfield(thFuncs, 'setPartialMass');
+                %thFuncs = rmfield(thFuncs, 'setPartialMass');
             end
             
             thFuncs = struct();

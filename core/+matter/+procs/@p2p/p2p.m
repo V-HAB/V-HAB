@@ -5,15 +5,13 @@ classdef p2p < matter.flow
     %   - more than two phases possible?
     
     
-    properties (SetAccess = protected, GetAccess = private)
-        
+    properties (SetAccess = protected, GetAccess = public)
+        fLastUpdate = -1;
     end
     
     properties (SetAccess = private, GetAccess = public)
         sName;
         oStore;
-        
-        fLastUpdate;
     end
     
     
@@ -27,6 +25,11 @@ classdef p2p < matter.flow
             
             % Parent constructor
             this@matter.flow(oStore.oMT);
+            
+            
+            % Phases / ports
+            [ sPhaseIn,  sPortIn ]  = strtok(sPhaseIn, '.');
+            [ sPhaseOut, sPortOut ] = strtok(sPhaseOut, '.');
             
             % Find the phases
             iPhaseIn  = find(strcmp({ oStore.aoPhases.sName }, sPhaseIn ), 1);
@@ -44,12 +47,12 @@ classdef p2p < matter.flow
             % Can only be done after this.oStore is set, store checks that!
             this.oStore.addP2P(this);
             
-            this.fFlowRate = 0;
+            %this.fFlowRate = 0;
             
             % Add ourselves to phase ports (default name!)
             %TODO do the phases need some .getPort or stuff?
-            oStore.aoPhases(iPhaseIn ).toProcsEXME.default.addFlow(this);
-            oStore.aoPhases(iPhaseOut).toProcsEXME.default.addFlow(this);
+            oStore.aoPhases(iPhaseIn ).toProcsEXME.(sPortIn(2:end) ).addFlow(this);
+            oStore.aoPhases(iPhaseOut).toProcsEXME.(sPortOut(2:end)).addFlow(this);
         end
     end
     
@@ -64,7 +67,7 @@ classdef p2p < matter.flow
             % the inflowing phase properties through the according EXME.
             % This is needed to e.g. get the phase type for heat capacity
             % calculations.
-            oExme = this.(sif(this.aoFlows(1).fFlowRate < 0, 'oOut', 'oIn'));
+            oExme = this.(sif(this.fFlowRate < 0, 'oOut', 'oIn'));
         end
         
         
@@ -114,7 +117,7 @@ classdef p2p < matter.flow
             % Get missing values from exmes
             %, fTemp, fPressure
             
-            if nargin < 2, fFlowRate = this.fFlowRate; end;
+            if (nargin < 2) || isempty(fFlowRate), fFlowRate = this.fFlowRate; end;
             
             % We're a p2p, so we're directly connected to EXMEs
             oExme = this.(sif(fFlowRate >= 0, 'oIn', 'oOut'));

@@ -156,7 +156,7 @@ classdef exme < base
             if isa(this.aoFlows(1), 'matter.procs.p2ps.flow')
                 % Can only be one flow, if p2p!
                 %mrPartials = repmat(this.aoFlows(1).arPartials, length(afFlowRates), 1);
-                mrPartials   = this.aoFlows(1).arPartials;
+                mrPartials   = this.aoFlows(1).arPartialMass;
                 mfProperties = [ this.aoFlows(1).fTemp this.aoFlows(1).fHeatCapacity ];
             else
                 %TODO cache length!

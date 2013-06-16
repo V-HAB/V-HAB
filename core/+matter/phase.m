@@ -104,7 +104,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
         % Limit - how much can the phase mass (total or single species)
         % change before an update of the matter properties (of the whole
         % store) is triggered?
-        rMaxChange = 0.005;
+        rMaxChange = 0.01;
         fMaxStep   = 60;
     end
     
@@ -229,8 +229,8 @@ classdef phase < base & matlab.mixin.Heterogeneous
             
             % Check if that is a problem, i.e. negative masses.
             if any(tools.round.prec(this.afMass + afTotalInOuts) < 0)
-                disp(this.afMass + afExtractedMass);
-                this.throw('massupdate', 'Asked exme %s to extract more mass then available in phase %s (store %s)', this.sName, this.oPhase.sName, this.oPhase.oStore.sName);
+                disp(this.afMass + afTotalInOuts);
+                this.throw('massupdate', 'Extracted more mass then available in phase %s (store %s)', this.sName, this.oStore.sName);
             end
             
             % Do the actual adding/removing of mass.
@@ -475,6 +475,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
         
         
         function calculateTimeStep(this)
+            %keyboard();
             % Call p2ps.flow update methods (if not yet called)
             for iP = 1:this.iProcsP2Pflow
                 % That check would make more sense within the flow p2p
@@ -536,6 +537,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
             %          Still, logic required to update e.g. store's
             %          volume distribution if liquid phase changes etc.
             this.oStore.setNextExec(this.fLastMassUpdate + fTimeStep);
+            %this.oStore.setNextExec(this.fLastMassUpdate + 1);
             
             % Now up to date!
             this.bOutdatedTS = false;
