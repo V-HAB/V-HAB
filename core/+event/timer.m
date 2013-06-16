@@ -6,13 +6,16 @@ classdef timer < base
         % Master/Global time step, all other time steps have to be longer
         % than that - however not a 'real' multiple of that.
         % Fixed, can't be changed
-        fTimeStep = 1;  % [s]
+        fTimeStep = 0.1;  % [s]
     end
     
     properties (SetAccess = protected, GetAccess = public)
         
         % Current time
         fTime = 0;
+        
+        % Current tick
+        iTick = -1;
         
         % Start time
         fStart = 0;
@@ -37,6 +40,11 @@ classdef timer < base
         % smallest TS of any other sys is larger then global TS, timer
         % executes the larger TSs).
         abDependent = [];
+        
+        
+        % Post-tick stack: after systems are executed, all callbacks on
+        % this cell are executed and immediately removed.
+        chPostTick = {};
     end
     
     methods
@@ -115,6 +123,11 @@ classdef timer < base
             % Find dependent timed callbacks (when timer executes)
             this.abDependent = this.afTimeStep == -1;
         end
+        
+        
+        function bindPostTick(this, hCB)
+            this.chPostTick{end + 1} = hCB;
+        end
     end
     
     
@@ -133,6 +146,7 @@ classdef timer < base
             
             % If time is -1 the min. time step - first tick, advane to zero
             %if this.fTime == (-1 * this.fTimeStep)
+            %TODO throw out here. Include in solvers themselves.
             if this.fTime <= (10 * this.fTimeStep)
                 fThisStep = this.fTimeStep;
             else
@@ -157,6 +171,7 @@ classdef timer < base
             
             % Set new time
             this.fTime = this.fTime + fThisStep;
+            this.iTick = this.iTick + 1;
             
             % Find all cb's indices whose last exec + time step <= fTime
             % Dependent systems have -1 as time step - therefore this
@@ -172,6 +187,13 @@ classdef timer < base
             % this works, don't need find!
             this.afLastExec(abExec) = this.fTime;
             
+            
+            % Post-tick stack
+            while ~isempty(this.chPostTick)
+                this.chPostTick{1}();
+                this.chPostTick(1) = [];
+            end
+            
             % check for bRun -> if true, execute this.step() again!
             if this.bRun
                 this.run();
@@ -183,6 +205,8 @@ classdef timer < base
             % returned upon .bind!
             
             if ~isempty(fTimeStep) % && fTimeStep ~= 0
+                if fTimeStep < 0, fTimeStep = 0; end;
+                
                 this.afTimeStep(iCB) = fTimeStep;
             else
                 %TODO could be 

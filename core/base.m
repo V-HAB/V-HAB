@@ -5,7 +5,7 @@ classdef base < handle
     %NOTE prefixes:
     %   i = integer, f = float, r = ratio (percent), s = string, b = bool
     %   a = array, m = matrix, c = cell, t = struct
-    %   o = object, h = handle (file, graphics, ...), p = map
+    %   o = object, h = handle (file, graphics, function, ...), p = map
     %
     %   Awesome when mixed, e.g. taiSomething would be a struct, with each
     %   field holding an array of integers.

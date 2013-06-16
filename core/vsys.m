@@ -19,7 +19,7 @@ classdef vsys < matter.container & systems.timed
             % Leads to a double call of the sys constructor, that's ok
             % since this expected to happen and accordingly caught
             this@systems.timed(oParent, sName, 'oTimer', fTimeStep);
-            this@matter.container(oParent, sName, this.oTimer);
+            this@matter.container(oParent, sName);
             
 %             if nargin >= 3
 %                 this.setTimeStep(fTimeStep);
