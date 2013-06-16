@@ -2,7 +2,7 @@ classdef p2p < matter.flow
     %P2P
     %
     %TODO
-    %   - 
+    %   - more than two phases possible?
     
     
     properties (SetAccess = protected, GetAccess = private)
@@ -12,6 +12,8 @@ classdef p2p < matter.flow
     properties (SetAccess = private, GetAccess = public)
         sName;
         oStore;
+        
+        fLastUpdate;
     end
     
     
@@ -55,12 +57,23 @@ classdef p2p < matter.flow
     
     %% Methods required for the matter handling
     methods
+        
+        function oExme = getInEXME(this)
+            % Little bit of a fake method. The p2p sets the oBranch attri-
+            % bute to itself. By implementing this method, the flow can get
+            % the inflowing phase properties through the according EXME.
+            % This is needed to e.g. get the phase type for heat capacity
+            % calculations.
+            oExme = this.(sif(this.aoFlows(1).fFlowRate < 0, 'oOut', 'oIn'));
+        end
+        
+        
         function exec(this, fTime)
             % Called from subsystem to update the internal state of the
             % processor, e.g. change efficiencies etc
         end
         
-        function update(this, fTimeStep)
+        function update(this, fFlowRate, arPartials)
             % Calculate new flow rate in [kg/s]. The update method is
             % called right before the phases merge/extract. The p2p merge
             % or extract is done after the merge of the 'outer' flows and
@@ -73,17 +86,57 @@ classdef p2p < matter.flow
             % In case of flow through the filter volume >> the mass within,
             % the in/out flow rates can be used for absorption flow rate
             % calculations.
-        end
-        
-        
-        function arPartials = getPartials(this)
-            % Fake - we provide 'this' as oBranch --> the EXME.merge calls
-            % .getPartials on aoFlows(iFlow).oBranch but get's this method
-            % here
             
-            arPartials = this.arPartialMass;
+            
+            % Fake method, can be used to set a manual FR. If .update is
+            % not defined in a subclass, flow rate never changes on mass
+            % update sutff in phases, only if the .update method here is
+            % manually called including the flow rate parameter.
+            if nargin >= 3
+                this.setMatterProperties(fFlowRate, arPartials);
+            elseif nargin >= 2
+                this.setMatterProperties(fFlowRate);
+            else
+                this.setMatterProperties();
+            end
         end
     end
     
+    
+    methods (Access = protected)
+        function setData(this)
+            % Inactive ... badaboom
+            this.throw('Should that happen on a p2p processor?');
+        end
+        
+        
+        function setMatterProperties(this, fFlowRate, arPartialMass, fTemp, fPressure)
+            % Get missing values from exmes
+            %, fTemp, fPressure
+            
+            if nargin < 2, fFlowRate = this.fFlowRate; end;
+            
+            % We're a p2p, so we're directly connected to EXMEs
+            oExme = this.(sif(fFlowRate >= 0, 'oIn', 'oOut'));
+            
+            if nargin < 3 || isempty(arPartialMass)
+                % We also get the mol mass and heat capacity ... however, 
+                % setMatterProps calculates those anyway so ignore  them.
+                [ arPartialMass, ~, ~ ] = oExme.getMatterProperties();
+            end
+            
+            
+            % Get matter properties from in exme. 
+            [ fPortPressure, fPortTemperature ] = oExme.getPortProperties();
+            
+            % Check temp and pressure. First temp ... cause that might
+            % change in a p2p ... pressure not really.
+            if (nargin < 4) || isempty(fTemp),     fTemp     = fPortTemperature; end;
+            if (nargin < 5) || isempty(fPressure), fPressure = fPortPressure; end;
+                
+            
+            setMatterProperties@matter.flow(this, fFlowRate, arPartialMass, fTemp, fPressure);
+        end
+    end
 end
 

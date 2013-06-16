@@ -186,7 +186,7 @@ classdef table < base
             fMolecularMass = afMass ./ fMass * this.afMolMass';
         end
         
-        function fHeatCapacity = calculateHeatCapacity(this, oPhase)
+        function fHeatCapacity = calculateHeatCapacity(this, varargin)
             % Calculates the total heat capacity, see calcMolMass. Needs
             % the whole phase object to get phase type, temperature etc
             %
@@ -198,32 +198,56 @@ classdef table < base
             %     changed more than X percent?
             
             
-            if oPhase.fMass == 0
-                fHeatCapacity = 0;
-                return;
+            % Case one - just a phase object provided
+            if length(varargin) == 1
+                if ~isa(varargin{1}, 'matter.phase')
+                    this.throw('fHeatCapacity', 'If only one param provided, has to be a matter.phase (derivative)');
+                end
+                
+                if varargin{1}.fMass == 0
+                    fHeatCapacity = 0;
+                    return;
+                end
+                
+                sType  = varargin{1}.sType;
+                afMass = varargin{1}.afMass;
+                sId    = [ 'Phase ' varargin{1}.oStore.sName ' -> ' varargin{1}.sName ];
+                
+            % Assuming we have two params, the phase type and a vector with
+            % the mass of each species.
+            else
+                sType  = varargin{1};
+                afMass = varargin{2};
+            
+                if sum(afMass) == 0
+                    fHeatCapacity = 0;
+                    return;
+                end
+                
+                sId = 'Manually provided vector for species masses';
             end
             
             
             % Check if phase exists in heat capacities (at least one
             % species defined it)
-            if ~isfield(this.tafCp, oPhase.sType)
-                this.throw('calculateHeatCapacity', 'Phase %s not known in Cps', oPhase.sType);
+            if ~isfield(this.tafCp, sType)
+                this.throw('calculateHeatCapacity', 'Phase %s not known in Cps', sType);
             
             % Make sure that no mass exists in this phase for which the
             % heat capacity is not defined
             else
                 % Non existent ones are -1, so if any mass exists, the
                 % result will be negative --> check!
-                afCheck = this.tafCp.(oPhase.sType) .* tools.round.prec(oPhase.afMass);
+                afCheck = this.tafCp.(sType) .* tools.round.prec(afMass);
                 
                 if any(afCheck < 0)
                     %TODO get negative indices with find(), display the
                     %     according species name that are a problem
-                    this.throw('calculateHeatCapacity', 'Phase %s (type %s) in container %s contains mass for at least one species (first: %s) that have no heat capacity defined for this phase!', oPhase.sName, oPhase.sType, oPhase.oStore.sName, this.csSpecies{find(afCheck < 0, 1)});
+                    this.throw('calculateHeatCapacity', '%s (type %s) contains mass for at least one species (first: %s) that has no heat capacity defined for this phase!', sId, this.csSpecies{find(afCheck < 0, 1)});
                 end
             end
             
-            fHeatCapacity = oPhase.afMass ./ sum(oPhase.afMass) * this.tafCp.(oPhase.sType)';
+            fHeatCapacity = afMass ./ sum(afMass) * this.tafCp.(sType)';
         end
     end
     

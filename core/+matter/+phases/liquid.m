@@ -10,7 +10,12 @@ classdef liquid < matter.phase
         sType = 'liquid';
         
         fVolume;                % Volume in m^3
-        fPressure;              % Pressure in Pa
+        
+        % Pressure in Pa
+        %TODO see liquid exme, fPressure should NOT be defined here!
+        fPressure;
+        
+        
         fDynamicViscosity;      % Dynamic Viscosity in Pa*s
         
     end

@@ -43,9 +43,6 @@ classdef gas < matter.phase
             
             this.fVolume  = fVolume;
             this.fDensity = this.fMass / this.fVolume;
-            
-            %TODO see .update(), also called from matter.phase constructor!
-            this.update(0);
         end
         
         function rRelHumidity = get.rRelHumidity(this)
@@ -78,8 +75,8 @@ classdef gas < matter.phase
         end
         
         
-        function this = update(this, fTimeStep)
-            update@matter.phase(this, fTimeStep);
+        function this = update(this)
+            update@matter.phase(this);
             
             %TODO coeff m to p: also in liquids, plasma. Not solids, right?
             %     calc afPPs, rel humidity, ... --> in matter table!
