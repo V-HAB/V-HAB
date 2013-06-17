@@ -9,4 +9,12 @@ lib/*
 
 # We DO manage main.m and init.m, but NOT the main_xyz.m etc
 main_*.m
-main_*.asv
+
+# Exclude all Matlab autosave files
+#TODO also *.m~ ? (Mac)
+*.asv
+
+# Tests
+test_*.m
+
+.*
