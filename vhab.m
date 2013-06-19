@@ -4,7 +4,7 @@ classdef vhab
     
     properties (GetAccess = public, Constant = true)
         poSims   = containers.Map();
-        pOptions = containers.Map({ 'iTickRepIntv', 'iTimeRepIntv' }, { 10, 60 });
+        pOptions = containers.Map({ 'iTickRepIntv', 'iTimeRepIntv' }, { 100, 60 });
     end
     
     methods (Static = true)
@@ -15,6 +15,7 @@ classdef vhab
             addpath([ strrep(pwd(), '\', '/') '/core' ]);
             addpath([ strrep(pwd(), '\', '/') '/user' ]);
         end
+        
         
         function sSimulation = sim(sSimulation, varargin)
             vhab.init();
@@ -50,8 +51,8 @@ classdef vhab
             
             vhab.poSims.remove(csKeys);
             
-            clear classes;
-            clc;
+            %clear classes;
+            %clc;
         end
         
         function oSim = exec(sSimulation, varargin)
