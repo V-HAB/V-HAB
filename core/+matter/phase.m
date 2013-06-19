@@ -106,6 +106,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
         % store) is triggered?
         rMaxChange = 0.01;
         fMaxStep   = 60;
+        fFixedTS;
     end
     
     
@@ -300,12 +301,13 @@ classdef phase < base & matlab.mixin.Heterogeneous
         end
         
         function this = update(this)
-            %disp([ 'Update ' this.oStore.sName '-' this.sName '(@' num2str(this.oStore.oTimer.fTime) 's, last ' num2str(this.fLastUpdate) 's)' ]);
-            
             % Only update if not yet happened at the current time.
             if this.oStore.oTimer.fTime <= this.fLastUpdate
                 return;
             end;
+            
+            %disp([ num2str(this.oStore.oTimer.iTick) ': Phase ' this.oStore.sName '-' this.sName ' (@' num2str(this.oStore.oTimer.fTime) 's, last ' num2str(this.fLastUpdate) 's)' ]);
+            
             
             % Store update time
             this.fLastUpdate = this.oStore.oTimer.fTime;
@@ -490,42 +492,49 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 end
             end
             
-            % Calculate the change in total and partial mass since last
-            % update that already happend / was applied
-            rPreviousChange  = max(abs(this.fMassLastUpdate   / this.fMass  - 1));
-            arPreviousChange = abs(this.afMassLastUpdate ./ this.afMass - 1);
             
             
-            % Change in kg of partial masses per second
-            afChange = this.getTotalMassChange();
-            
-            % Only use entries where change is not zero
-            abChange = (afChange ~= 0);
-            
-            % Changes of species masses - get max. change, add the change
-            % that happend already since last update
-            rChangePerSecond = max(abs(afChange(abChange) ./ this.afMass(abChange) - 0) + arPreviousChange(abChange));
-            
-            % Change per second of TOTAL mass
-            fChange = sum(afChange);
-            
-            % No change? Use max. change per second --> one second timestep
-            if fChange == 0
-                rTotalPerSecond = this.rMaxChange + rPreviousChange;
+            if ~isempty(this.fFixedTS)
+                fTimeStep = this.fFixedTS;
             else
-                rTotalPerSecond = abs(fChange / this.fMass - 0) + rPreviousChange;
+
+                % Calculate the change in total and partial mass since last
+                % update that already happend / was applied
+                rPreviousChange  = max(abs(this.fMassLastUpdate   / this.fMass  - 1));
+                arPreviousChange = abs(this.afMassLastUpdate ./ this.afMass - 1);
+
+
+                % Change in kg of partial masses per second
+                afChange = this.getTotalMassChange();
+
+                % Only use entries where change is not zero
+                abChange = (afChange ~= 0);
+
+                % Changes of species masses - get max. change, add the change
+                % that happend already since last update
+                rChangePerSecond = max(abs(afChange(abChange) ./ this.afMass(abChange) - 0) + arPreviousChange(abChange));
+
+                % Change per second of TOTAL mass
+                fChange = sum(afChange);
+
+                % No change? Use max. change per second --> one second timestep
+                if fChange == 0
+                    rTotalPerSecond = this.rMaxChange + rPreviousChange;
+                else
+                    rTotalPerSecond = abs(fChange / this.fMass - 0) + rPreviousChange;
+                end
+
+                % Derive timestep, use the max change (total mass or one of the
+                % species change)
+                %NOTE if some species has zero mass, but then one of the flows
+                %     starts to introduce some of that species, the first tick
+                %     the rChangePerSecond will be Inf, therefore fTimeStep
+                %     will be zero - this is ok, if a new species is introduced
+                %     a short time step is fine.
+                fTimeStep = this.rMaxChange / max([ rChangePerSecond rTotalPerSecond ]);
+
+                if fTimeStep > this.fMaxStep, fTimeStep = this.fMaxStep; end;
             end
-            
-            % Derive timestep, use the max change (total mass or one of the
-            % species change)
-            %NOTE if some species has zero mass, but then one of the flows
-            %     starts to introduce some of that species, the first tick
-            %     the rChangePerSecond will be Inf, therefore fTimeStep
-            %     will be zero - this is ok, if a new species is introduced
-            %     a short time step is fine.
-            fTimeStep = this.rMaxChange / max([ rChangePerSecond rTotalPerSecond ]);
-            
-            if fTimeStep > this.fMaxStep, fTimeStep = this.fMaxStep; end;
             
             
             % Set new time step (on store, only sets that if smaller then

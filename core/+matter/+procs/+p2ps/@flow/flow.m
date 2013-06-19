@@ -28,11 +28,30 @@ classdef flow < matter.procs.p2p
     
     %% Internal helper methods
     methods (Access = protected)
-        function [ afFlowRates, mrPartials ] = getInFlows(this)
+        function [ afInFlowrates, mfInPartials ] = getInFlows(this, sPhase)
             % Return vector with all INWARD flow rates and matrix with 
             % partial masses of each in flow
             
-            %TODO-NOW
+            if nargin < 2, sPhase = 'in'; end;
+            
+            oPhase = sif(strcmp(sPhase, 'in'), this.oIn.oPhase, this.oOut.oPhase);
+            
+            %CHECK store on obj var, as long as the amount of inflows
+            %      doesn't change -> kind of preallocated?
+            mfInPartials  = zeros(0, this.oMT.iSpecies);
+            afInFlowrates = [];
+            
+            % See phase.getTotalMassChange
+            for iI = 1:oPhase.iProcsEXME
+                [ afFlowRates, mrFlowPartials, mfProperties ] = oPhase.coProcsEXME{iI}.getFlowData();
+                
+                abInf = (afFlowRates > 0);
+                
+                if any(abInf)
+                    mfInPartials  = [ mfInPartials;  mrFlowPartials(abInf, :) ];
+                    afInFlowrates = [ afInFlowrates; afFlowRates(1, abInf) ];
+                end
+            end
         end
         
         
