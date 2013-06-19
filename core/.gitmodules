@@ -7,3 +7,12 @@
 [submodule "+geom"]
 	path = +geom
 	url = git@steps.lrt.mw.tum.de:core/geom.git
+[submodule "+solver/+matter/+base"]
+	path = +solver/+matter/+base
+	url = git@steps.lrt.mw.tum.de:core/solver-matter-base.git
+[submodule "+solver/+matter/+manual"]
+	path = +solver/+matter/+manual
+	url = git@steps.lrt.mw.tum.de:core/solver-matter-manual.git
+[submodule "+solver/+matter/+linear"]
+	path = +solver/+matter/+linear
+	url = git@steps.lrt.mw.tum.de:core/solver-matter-linear.git
