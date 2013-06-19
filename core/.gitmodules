@@ -7,6 +7,3 @@
 [submodule "+geom"]
 	path = +geom
 	url = git@steps.lrt.mw.tum.de:core/geom.git
-[submodule "+solver/+basic"]
-	path = +solver/+basic
-	url = git@steps.lrt.mw.tum.de:core/solver-basic.git
