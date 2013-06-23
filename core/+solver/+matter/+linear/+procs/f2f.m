@@ -5,6 +5,9 @@ classdef f2f < matter.procs.f2f
     properties (SetAccess = protected, GetAccess = public, Abstract = true)
         fHydrDiam;
         fHydrLength;
+        
+        fDeltaTemp;
+        bActive;
     end
     
     methods

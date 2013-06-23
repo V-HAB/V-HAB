@@ -40,17 +40,31 @@ classdef branch < solver.matter.base.branch
                 return;
             end
             
-            %this.fLastUpdate = this.oBranch.oContainer.oTimer.fTime;
+            % Checking if there are any active processors in the branch,
+            % if yes, update them.
+            abActiveProcs = [ this.oBranch.aoFlowProcs.bActive ];
+            for iI = 1:length(abActiveProcs)
+                if abActiveProcs(iI)
+                    this.oBranch.aoFlowProcs(iI).update();
+                end
+            end
             
-            %disp([ num2str(this.oBranch.oContainer.oTimer.iTick) ': Branch ' this.oBranch.sName  '(@' num2str(this.oBranch.oContainer.oTimer.fTime) 's' ]);
-            
-            
+            % Getting the temperature differences for each processor in the
+            % branch
+            afTemps = [ this.oBranch.aoFlowProcs.fDeltaTemp ];
+                        
             afHydrDiam   = [ this.oBranch.aoFlowProcs.fHydrDiam ];
             afHydrLength = [ this.oBranch.aoFlowProcs.fHydrLength ];
             
+            afNegHydrDiam = find(afHydrDiam < 0);
+            fPressureRises = sum(this.oBranch.aoFlowProcs(afNegHydrDiam).fDeltaPressure);
             
-            %this.oBranch.oContainer.oTimer.fTime
-            
+            if ~isempty(afNegHydrDiam)
+                afPosHydrDiam = afHydrDiam(afHydrDiam>0);
+                afHydrLength  = afHydrLength(afHydrDiam>0);
+            else
+                afPosHydrDiam = afHydrDiam;
+            end
             %TODO real calcs, also derive pressures/temperatures
             %     check active components - get pressure rise / hydr.
             %     diameter depending on flow rate
@@ -58,12 +72,12 @@ classdef branch < solver.matter.base.branch
             %        set to true. For these comps, call some updHydrDiam.
             %        The comps use the LAST pressures / flow rate to calc.
             %        a hydraulic diameter and update fHydrDiam.
-            fCoeff = sum(afHydrDiam * 0.000001 ./ afHydrLength);
+            fCoeff = sum(afPosHydrDiam * 0.000001 ./ afHydrLength);
             
             fPressureLeft  = this.oBranch.coExmes{1}.getPortProperties();
             fPressureRight = this.oBranch.coExmes{2}.getPortProperties();
             
-            fFlowRate = fCoeff * (fPressureLeft - fPressureRight);
+            fFlowRate = fCoeff * (fPressureLeft - fPressureRight + fPressureRises);
             %TODO see above
             
             
@@ -126,7 +140,7 @@ classdef branch < solver.matter.base.branch
             
             
             % Sets new flow rate
-            update@solver.matter.base.branch(this, fFlowRate);
+            update@solver.matter.base.branch(this, fFlowRate, [], afTemps);
         end
     end
 end
