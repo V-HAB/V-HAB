@@ -57,7 +57,11 @@ classdef branch < solver.matter.base.branch
             afHydrLength = [ this.oBranch.aoFlowProcs.fHydrLength ];
             
             afNegHydrDiam = find(afHydrDiam < 0);
-            fPressureRises = sum(this.oBranch.aoFlowProcs(afNegHydrDiam).fDeltaPressure);
+            if ~(isemtpy(afNegHydrDiam))
+                fPressureRises = sum(this.oBranch.aoFlowProcs(afNegHydrDiam).fDeltaPressure);
+            else
+                fPressureRises = 0;
+            end
             
             if ~isempty(afNegHydrDiam)
                 afPosHydrDiam = afHydrDiam(afHydrDiam>0);
