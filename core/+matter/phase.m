@@ -302,7 +302,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
         
         function this = update(this)
             % Only update if not yet happened at the current time.
-            if this.oStore.oTimer.fTime <= this.fLastUpdate
+            if (this.oStore.oTimer.fTime <= this.fLastUpdate) || (this.oStore.oTimer.fTime < 0)
                 return;
             end;
             
@@ -414,7 +414,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                     end
                 end
                 
-                this.update();
+                %this.update();
             end
         end
     end
