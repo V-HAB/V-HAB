@@ -52,23 +52,26 @@ classdef branch < solver.matter.base.branch
             % Getting the temperature differences for each processor in the
             % branch
             afTemps = [ this.oBranch.aoFlowProcs.fDeltaTemp ];
-                        
+            
+            % Getting all hydraulic diameters and lengths
             afHydrDiam   = [ this.oBranch.aoFlowProcs.fHydrDiam ];
             afHydrLength = [ this.oBranch.aoFlowProcs.fHydrLength ];
             
+            % Find all components with negative hydraulic diameters
             afNegHydrDiam = find(afHydrDiam < 0);
-            if afNegHydrDiam == 0;
-                fPressureRises = sum(this.oBranch.aoFlowProcs(afNegHydrDiam).fDeltaPressure);
-            else
-                fPressureRises = 0;
-            end
-            
             if ~isempty(afNegHydrDiam)
+                % If there are any components that produce a pressure rise
+                % sum them up and create new arrays with just the
+                % components producing pressure drops
+                fPressureRises = sum(this.oBranch.aoFlowProcs(afNegHydrDiam).fDeltaPressure);
                 afPosHydrDiam = afHydrDiam(afHydrDiam>0);
                 afHydrLength  = afHydrLength(afHydrDiam>0);
             else
+                fPressureRises = 0;
                 afPosHydrDiam = afHydrDiam;
             end
+            
+           
             %TODO real calcs, also derive pressures/temperatures
             %     check active components - get pressure rise / hydr.
             %     diameter depending on flow rate
