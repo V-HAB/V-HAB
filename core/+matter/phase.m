@@ -187,6 +187,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % Handle temperature
                 this.fTemp = fTemp;
             else
+                % Set this to zero to handle empty phases
                 this.fMass = 0;
                 % No mass - no temp
                 this.fTemp = 0;
