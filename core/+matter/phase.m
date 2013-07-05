@@ -153,6 +153,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
             
             % Preset masses
             this.afMass = zeros(1, this.oMT.iSpecies);
+            this.arPartialMass = zeros(1, this.oMT.iSpecies);
             
             % Mass provided?
             %TODO do all that in a protected addMass method? Especially the
@@ -186,6 +187,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % Handle temperature
                 this.fTemp = fTemp;
             else
+                this.fMass = 0;
                 % No mass - no temp
                 this.fTemp = 0;
             end
