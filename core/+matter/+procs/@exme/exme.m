@@ -173,6 +173,16 @@ classdef exme < base
                         mfProperties(iF, :) = [ this.aoFlows(iF).fTemp this.aoFlows(iF).fHeatCapacity ];
                         
                     else % extract or zero - phase partials
+                        %NOTE possibility to implement special EXME that
+                        %     provides an adjusted partial masses vector.
+                        %     For example a filter with an inflow at one
+                        %     end, and then throughout the axial dimension,
+                        %     some additional outflow ports. EXMEs would be
+                        %     linked to the filter model and know their
+                        %     position -> could ask the filter model for
+                        %     the partial pressure of the filtered species
+                        %     at that position and adjust the partial mass
+                        %     here accordingly.
                         mrPartials(iF, :)   = this.oPhase.arPartialMass;
                         mfProperties(iF, :) = [ this.oPhase.fTemp this.oPhase.fHeatCapacity ];
                     end

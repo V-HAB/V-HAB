@@ -64,6 +64,12 @@ classdef store < base
         setTimeStep;
     end
     
+    properties (SetAccess = public, GetAccess = public)
+        % When store executes, this is set as the default time step. Any of
+        % the phases can set a lower one.
+        fDefaultTimeStep = 60;
+    end
+    
     
     methods
         function this = store(oMT, sName, fVolume)
@@ -92,6 +98,11 @@ classdef store < base
             
             
             this.fLastUpdate = this.oTimer.fTime;
+            this.fTimeStep   = this.fDefaultTimeStep;
+            
+            % Set the default time step - can be overwritten by phases
+            %TODO register post-post-tick-callback and only set then?
+            this.setTimeStep(this.fTimeStep);
             
             % Update phases
             for iI = 1:this.iPhases, this.aoPhases(iI).update(); end;
@@ -116,9 +127,11 @@ classdef store < base
             % yes, calc the new time step with fTime and set!
             %TODO should timer somehow always provide the last exec time
             %     for each subsystem, on each callback execution?
-            if (this.fLastUpdate + this.fTimeStep) < fTime
+            if (this.fLastUpdate + this.fTimeStep) > fTime
+                this.fTimeStep = fTime - this.fLastUpdate;
+                
                 % If time step < 0, timer sets it to 0!
-                this.setTimeStep(fTime - this.fLastUpdate);
+                this.setTimeStep(this.fTimeStep);
             end
         end
     end

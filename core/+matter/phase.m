@@ -41,6 +41,8 @@ classdef phase < base & matlab.mixin.Heterogeneous
         %TODO heat capacity with 0 initialized because needed on first
         %     .update call (from .seal())
         
+        
+        afMassLost;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -104,9 +106,14 @@ classdef phase < base & matlab.mixin.Heterogeneous
         % Limit - how much can the phase mass (total or single species)
         % change before an update of the matter properties (of the whole
         % store) is triggered?
-        rMaxChange = 0.01;
-        fMaxStep   = 60;
+        rMaxChange = 0.05;
+        fMaxStep   = 15;
         fFixedTS;
+        
+        % If true, massupdate triggers all branches to re-calculate their
+        % flow rates. Use when volumes of phase compared to flow rates are
+        % small!
+        bSynced = false;
     end
     
     
@@ -188,14 +195,18 @@ classdef phase < base & matlab.mixin.Heterogeneous
             else
                 % No mass - no temp
                 this.fTemp = 0;
+                
+                % Partials also to zeros
+                this.arPartialMass = this.afMass;
             end
             
             % Now update the matter properties
             this.fMolMass      = this.oMT.calculateMolecularMass(this.afMass);
             this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
             
-            
-            
+            % Mass
+            this.fMass = sum(this.afMass);
+            this.afMassLost = zeros(1, this.oMT.iSpecies);
             
             % Preset the cached masses (see calculateTimeStep)
             this.fMassLastUpdate  = 0;
@@ -228,17 +239,28 @@ classdef phase < base & matlab.mixin.Heterogeneous
             afTotalInOuts = afTotalInOuts * fTimeStep;
             %afTotalInOuts = this.getTotalMassChange() * fTimeStep;
             
-            % Check if that is a problem, i.e. negative masses.
-            if any(tools.round.prec(this.afMass + afTotalInOuts) < 0)
-                disp(this.afMass + afTotalInOuts);
-                this.throw('massupdate', 'Extracted more mass then available in phase %s (store %s)', this.sName, this.oStore.sName);
-            end
-            
             % Do the actual adding/removing of mass.
             %TODO-NOW check if p2p stuff works, and manipulator stuff!
             %         the outflowing EXMEs need to get the right partial
             %         masses, e.g. if a p2p in between extracs a species!
             this.afMass = this.afMass + afTotalInOuts;
+            
+            
+            % Check if that is a problem, i.e. negative masses.
+            %abNegative = (this.afMass + afTotalInOuts) < 0;
+            abNegative = this.afMass < 0;
+            
+            if any(abNegative)
+                disp(this.afMass + afTotalInOuts);
+                this.throw('massupdate', 'Extracted more mass then available in phase %s (store %s)', this.sName, this.oStore.sName);
+                
+                % Subtract - negative - added
+                %NOTE uncomment this, comment out the two lines above if
+                %     negative masses should just be logged
+                %this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
+                %this.afMass(abNegative) = 0;
+            end
+            
             
             
             %%%% Now calculate the new temperature of the phase using the
@@ -296,6 +318,14 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % make sure the time step calculation callback is executed
             % after the flow rate update callbacks in the branches.
             if (nargin < 2) || isempty(bSetOutdatedTS) || bSetOutdatedTS
+                if this.bSynced
+                    %TODO check if branche that called this massupdate
+                    %   method is not executed again, and if flow rates are
+                    %   actually calcualted before the phase sets the 
+                    %   new time step!
+                    this.setBranchesOutdated();
+                end
+                
                 this.setOutdatedTS();
             end
         end
@@ -338,22 +368,8 @@ classdef phase < base & matlab.mixin.Heterogeneous
             this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
             
             
-            % Loop through exmes / flows and set outdated, i.e. request re-
-            % calculation of flow rate.
-            for iE = 1:this.iProcsEXME
-                for iF = 1:length(this.coProcsEXME{iE}.aoFlows)
-                    oBranch = this.coProcsEXME{iE}.aoFlows(iF).oBranch;
-                    
-                    % Make sure it's not a p2ps.flow - their update method
-                    % is called in time step calculation method
-                    if isa(oBranch, 'matter.branch')
-                        % Tell branch to recalculate flow rate (done after
-                        % the current tick, in timer post tick).
-                        oBranch.setOutdated();
-                    end
-                end
-            end
-            
+            % Triggers all branchs to recalculate flow rate
+            this.setBranchesOutdated();
             
             % Register time step calculation on post tick
             this.setOutdatedTS();
@@ -422,6 +438,25 @@ classdef phase < base & matlab.mixin.Heterogeneous
     
     %% Internal, protected methods
     methods (Access = protected)
+        function setBranchesOutdated(this)
+            % Loop through exmes / flows and set outdated, i.e. request re-
+            % calculation of flow rate.
+            for iE = 1:this.iProcsEXME
+                for iF = 1:length(this.coProcsEXME{iE}.aoFlows)
+                    oBranch = this.coProcsEXME{iE}.aoFlows(iF).oBranch;
+                    
+                    % Make sure it's not a p2ps.flow - their update method
+                    % is called in time step calculation method
+                    if isa(oBranch, 'matter.branch')
+                        % Tell branch to recalculate flow rate (done after
+                        % the current tick, in timer post tick).
+                        oBranch.setOutdated();
+                    end
+                end
+            end
+        end
+        
+        
         function [ afTotalInOuts, mfInflowDetails ] = getTotalMassChange(this)
             % Get vector with total mass change through all EXME flows
             % witin one second, i.e. [kg/s].
@@ -493,7 +528,6 @@ classdef phase < base & matlab.mixin.Heterogeneous
             end
             
             
-            
             if ~isempty(this.fFixedTS)
                 fTimeStep = this.fFixedTS;
             else
@@ -502,7 +536,12 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % update that already happend / was applied
                 rPreviousChange  = max(abs(this.fMassLastUpdate   / this.fMass  - 1));
                 arPreviousChange = abs(this.afMassLastUpdate ./ this.afMass - 1);
-
+                
+                % Should only happen if fMass (therefore afMass) is zero!
+                if isnan(rPreviousChange)
+                    rPreviousChange  = 0;
+                    arPreviousChange = this.afMass; % ... set to zeros!
+                end
 
                 % Change in kg of partial masses per second
                 afChange = this.getTotalMassChange();
@@ -535,6 +574,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
                 if fTimeStep > this.fMaxStep, fTimeStep = this.fMaxStep; end;
             end
+            
             
             
             % Set new time step (on store, only sets that if smaller then

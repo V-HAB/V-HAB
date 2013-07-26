@@ -98,15 +98,20 @@ classdef gas < matter.phase
             %TODO see @matter.flow.getPartialPressures
             %     PROTECTED! automatically called in .update() -> afPPs!
             
-            % Calculating the number of mols for each species
-            afMols = this.arPartialMass ./ this.oStore.oMT.afMolMass;
-            % Calculating the total number of mols
-            fGasAmount = sum(afMols);
-            % Calculating the partial amount of each species by mols
-            arFractions = afMols ./ fGasAmount;
-            % Calculating the partial pressures by multiplying with the
-            % total pressure in the phase
-            afPartialPressures = arFractions .* this.fPressure;
+            % No mass? 
+            if this.fMass == 0
+                afPartialPressures = this.arPartialMass;
+            else
+                % Calculating the number of mols for each species
+                afMols = this.arPartialMass ./ this.oStore.oMT.afMolMass;
+                % Calculating the total number of mols
+                fGasAmount = sum(afMols);
+                % Calculating the partial amount of each species by mols
+                arFractions = afMols ./ fGasAmount;
+                % Calculating the partial pressures by multiplying with the
+                % total pressure in the phase
+                afPartialPressures = arFractions .* this.fPressure;
+            end
         end
         
         
