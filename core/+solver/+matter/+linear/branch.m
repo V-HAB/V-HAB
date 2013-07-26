@@ -1,10 +1,10 @@
 classdef branch < solver.matter.base.branch
     
     properties (SetAccess = public, GetAccess = public)
-        rMaxChange = 0.2;
-        rSetChange = 0.05;
+        rMaxChange = 0.030;
+        rSetChange = 0.015;
         iRemChange = 0;
-        fMaxStep   = 60;
+        fMaxStep   = 15;
         
         % Fixed time step - set to empty ([]) to deactivate
         fFixedTS = [];
