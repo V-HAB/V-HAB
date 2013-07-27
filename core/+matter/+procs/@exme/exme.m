@@ -148,7 +148,7 @@ classdef exme < base
             % Also returns matrix with two columns containing temperature 
             % and the heat capacity and for each flow!
             
-            afFlowRates  = this.getFRs();
+            afFlowRates  = this.getFRs()';
             mrPartials   = zeros(length(afFlowRates), length(this.oPhase.arPartialMass));
             mfProperties = zeros(length(afFlowRates), 2);
             

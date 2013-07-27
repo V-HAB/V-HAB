@@ -85,6 +85,10 @@ classdef phase < base & matlab.mixin.Heterogeneous
         % Last time the phase was updated?
         fLastMassUpdate = 0;
         fLastUpdate = -10;
+        
+        
+        % Manipulators
+        toManips = struct('vol', [], 'temp', [], 'partial', []);
      end
     
     % Derived values
@@ -212,6 +216,27 @@ classdef phase < base & matlab.mixin.Heterogeneous
             this.fMassLastUpdate  = 0;
             this.afMassLastUpdate = zeros(1, this.oMT.iSpecies);
         end
+
+
+
+        function hRemove = addManipulator(this, oManip)
+            sManipType = [];
+            
+            if     isa(oManip, 'matter.manips.vol'),     sManipType = 'vol';
+            elseif isa(oManip, 'matter.manips.temp'),    sManipType = 'temp';
+            elseif isa(oManip, 'matter.manips.partial'), sManipType = 'partial';
+            end
+            
+            if ~isempty(this.toManips.(sManipType))
+                this.throw('addManipulator', 'A manipulator of type %s is already set for phase %s (store %s)', sManipType, this.sName, this.oStore.sName);
+            end
+            
+            % Set manipulator
+            this.toManips.(sManipType) = oManip;
+            
+            % Remove fct call to detach manipulator
+            hRemove = @() this.detachManipulator(sManipType);
+        end
         
         
         
@@ -226,7 +251,6 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % to massupdate, e.g. by a p2ps.flow, nothing happens!
             this.fLastMassUpdate = fTime;
             
-            
             % All in-/outflows in [kg/s] and multiply with curernt time
             % step, also get the inflow rates / temperature / heat capacity
             [ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
@@ -234,6 +258,16 @@ classdef phase < base & matlab.mixin.Heterogeneous
             if any(afTotalInOuts ~= 0)
                 %keyboard();
             end
+            
+            
+            % Check manipulator
+            if ~isempty(this.toManips.partial)
+                this.toManips.partial.update();
+                
+                % Add the changes from the manipulator to the total inouts
+                afTotalInOuts = afTotalInOuts + this.toManips.partial.afPartial;
+            end
+            
             
             % Multiply with current time step
             afTotalInOuts = afTotalInOuts * fTimeStep;
@@ -438,6 +472,13 @@ classdef phase < base & matlab.mixin.Heterogeneous
     
     %% Internal, protected methods
     methods (Access = protected)
+        function detachManipulator(this, sManip)
+            %CHECK several manipulators possible?
+            
+            this.toManips.(sManip) = [];
+        end
+        
+        
         function setBranchesOutdated(this)
             % Loop through exmes / flows and set outdated, i.e. request re-
             % calculation of flow rate.
@@ -480,6 +521,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % at each flow, negative being an extraction!
                 % mrFlowPartials is matrix, each row has partial ratios for
                 % a flow, cols are the different species.
+                % mfProperties contains temp, heat capacity
                 
                 % So bsxfun with switched afFlowRates (to col vector) will
                 % multiply every column value in the flow partials matrix
@@ -488,7 +530,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % each element in second row with 2nd element on fr, ...)
                 % Then we sum() the resulting matrix which sums up column
                 % wise ...
-                mfTotalFlows(iI, :) = sum(bsxfun(@times, afFlowRates', mrFlowPartials), 1);
+                mfTotalFlows(iI, :) = sum(bsxfun(@times, afFlowRates, mrFlowPartials), 1);
                 % ... and now we got a vector with the absolute mass in-/
                 % outflow for the current EXME for each species and for one
                 % second!

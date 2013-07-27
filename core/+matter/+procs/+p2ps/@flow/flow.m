@@ -28,9 +28,13 @@ classdef flow < matter.procs.p2p
     
     %% Internal helper methods
     methods (Access = protected)
-        function [ afInFlowrates, mfInPartials ] = getInFlows(this, sPhase)
+        function [ afInFlowrates, mrInPartials ] = getInFlows(this, sPhase)
             % Return vector with all INWARD flow rates and matrix with 
             % partial masses of each in flow
+            %
+            %TODO also check for matter.manips.partial, and take the change
+            %     due to that also into account ... just as another flow
+            %     rate? Should the phase do that?
             
             if nargin < 2, sPhase = 'in'; end;
             
@@ -38,7 +42,7 @@ classdef flow < matter.procs.p2p
             
             %CHECK store on obj var, as long as the amount of inflows
             %      doesn't change -> kind of preallocated?
-            mfInPartials  = zeros(0, this.oMT.iSpecies);
+            mrInPartials  = zeros(0, this.oMT.iSpecies);
             afInFlowrates = [];
             
             % See phase.getTotalMassChange
@@ -48,9 +52,21 @@ classdef flow < matter.procs.p2p
                 abInf = (afFlowRates > 0);
                 
                 if any(abInf)
-                    mfInPartials  = [ mfInPartials;  mrFlowPartials(abInf, :) ];
-                    afInFlowrates = [ afInFlowrates; afFlowRates(1, abInf) ];
+                    mrInPartials  = [ mrInPartials;  mrFlowPartials(abInf, :) ];
+                    afInFlowrates = [ afInFlowrates; afFlowRates(abInf) ];
                 end
+            end
+            
+            
+            % Check manipulator for partial
+            if ~isempty(oPhase.toManips.partial)
+                % Was updated just this tick - partial changes in kg/s
+                % Only get positive values, i.e. produced species
+                afManipPartials = oPhase.toManips.partial.afPartial(oPhase.toManips.partial.afPartial > 0);
+                fManipFlowRate  = sum(afManipPartials);
+                
+                mrInPartials  = [ mrInPartials;  afManipPartials / fManipFlowRate ];
+                afInFlowrates = [ afInFlowrates; fManipFlowRate ];
             end
         end
         
