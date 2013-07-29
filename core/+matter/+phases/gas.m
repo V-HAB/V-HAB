@@ -91,6 +91,8 @@ classdef gas < matter.phase
                 %this.fPressure = sum(this.afMass) * this.fMassToPressure;
                 this.fPressure = this.fMass * this.fMassToPressure;
                 this.afPP      = this.getPartialPressures();
+            else
+                this.fPressure = 0;
             end
         end
         
@@ -100,6 +102,8 @@ classdef gas < matter.phase
             
             % No mass? 
             if this.fMass == 0
+                % Partials have to be zero, as fMass is zero which is the
+                % sum() of afMass. arPartials derived from afMass.
                 afPartialPressures = this.arPartialMass;
             else
                 % Calculating the number of mols for each species
