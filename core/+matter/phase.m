@@ -84,6 +84,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
         
         % Last time the phase was updated?
         fLastMassUpdate = 0;
+        % Time step in last massupdate
+        fMassUpdateTimeStep = 0;
+        
         fLastUpdate = -10;
         
         
@@ -249,7 +252,8 @@ classdef phase < base & matlab.mixin.Heterogeneous
             
             % Immediately set fLastMassUpdate, so if there's a recursive call 
             % to massupdate, e.g. by a p2ps.flow, nothing happens!
-            this.fLastMassUpdate = fTime;
+            this.fLastMassUpdate     = fTime;
+            this.fMassUpdateTimeStep = fTimeStep;
             
             % All in-/outflows in [kg/s] and multiply with curernt time
             % step, also get the inflow rates / temperature / heat capacity
@@ -261,9 +265,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
             
             
             % Check manipulator
-            if ~isempty(this.toManips.partial)
+            if ~isempty(this.toManips.partial) && ~isempty(this.toManips.partial.afPartial)
                 this.toManips.partial.update();
-                
+                %keyboard();
                 % Add the changes from the manipulator to the total inouts
                 afTotalInOuts = afTotalInOuts + this.toManips.partial.afPartial;
             end
@@ -277,7 +281,10 @@ classdef phase < base & matlab.mixin.Heterogeneous
             %TODO-NOW check if p2p stuff works, and manipulator stuff!
             %         the outflowing EXMEs need to get the right partial
             %         masses, e.g. if a p2p in between extracs a species!
-            this.afMass = this.afMass + afTotalInOuts;
+            %CHECK    ok to round? default uses 1e8 ... should be coupled
+            %         to the min. time step!
+            %this.afMass =  tools.round.prec(this.afMass + afTotalInOuts, 10);
+            this.afMass =  this.afMass + afTotalInOuts;
             
             
             % Check if that is a problem, i.e. negative masses.
@@ -285,14 +292,14 @@ classdef phase < base & matlab.mixin.Heterogeneous
             abNegative = this.afMass < 0;
             
             if any(abNegative)
-                disp(this.afMass + afTotalInOuts);
-                this.throw('massupdate', 'Extracted more mass then available in phase %s (store %s)', this.sName, this.oStore.sName);
+                %disp(this.afMass + afTotalInOuts);
+                %this.throw('massupdate', 'Extracted more mass then available in phase %s (store %s)', this.sName, this.oStore.sName);
                 
                 % Subtract - negative - added
                 %NOTE uncomment this, comment out the two lines above if
                 %     negative masses should just be logged
-                %this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
-                %this.afMass(abNegative) = 0;
+                this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
+                this.afMass(abNegative) = 0;
             end
             
             
@@ -457,7 +464,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 for iE = 1:this.iProcsEXME
                     % If p2p flow, cannot be port 'default', i.e. just one
                     % flow possible!
-                    if isa(this.coProcsEXME{iE}.aoFlows(1), 'matter.procs.p2ps.flow')
+                    if ~isempty(this.coProcsEXME{iE}.aoFlows) && isa(this.coProcsEXME{iE}.aoFlows(1), 'matter.procs.p2ps.flow')
                         this.iProcsP2Pflow = this.iProcsP2Pflow + 1;
                         
                         this.coProcsP2Pflow{this.iProcsP2Pflow} = this.coProcsEXME{iE}.aoFlows(1);
@@ -523,6 +530,8 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % a flow, cols are the different species.
                 % mfProperties contains temp, heat capacity
                 
+                if isempty(afFlowRates), continue; end;
+                
                 % So bsxfun with switched afFlowRates (to col vector) will
                 % multiply every column value in the flow partials matrix
                 % with the value in flow rates at the according position
@@ -531,6 +540,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % Then we sum() the resulting matrix which sums up column
                 % wise ...
                 mfTotalFlows(iI, :) = sum(bsxfun(@times, afFlowRates, mrFlowPartials), 1);
+                
                 % ... and now we got a vector with the absolute mass in-/
                 % outflow for the current EXME for each species and for one
                 % second!
@@ -554,6 +564,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
         
         
         function calculateTimeStep(this)
+            
+            
+            
             %keyboard();
             % Call p2ps.flow update methods (if not yet called)
             for iP = 1:this.iProcsP2Pflow
@@ -568,6 +581,20 @@ classdef phase < base & matlab.mixin.Heterogeneous
                     this.coProcsP2Pflow{iP}.update();
                 end
             end
+            
+            
+            % Check manipulator
+            %TODO allow user to set a this.bManipBeforeP2P or so, and if
+            %     true execute the [manip].update() before the P2Ps update!
+            if ~isempty(this.toManips.partial)
+                %keyboard();
+                this.toManips.partial.update();
+                
+                % Add the changes from the manipulator to the total inouts
+                %afTotalInOuts = afTotalInOuts + this.toManips.partial.afPartial;
+            end
+            
+            
             
             
             if ~isempty(this.fFixedTS)
@@ -594,6 +621,10 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % Changes of species masses - get max. change, add the change
                 % that happend already since last update
                 rChangePerSecond = max(abs(afChange(abChange) ./ this.afMass(abChange) - 0) + arPreviousChange(abChange));
+                %ISSUE if a species is newly introduced, mass is 0 -->
+                %      division is Inf --> + something is NaN -> ignored.
+                %      ==> in such a case, compare with total amount of
+                %          mass ...
 
                 % Change per second of TOTAL mass
                 fChange = sum(afChange);

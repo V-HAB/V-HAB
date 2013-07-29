@@ -59,14 +59,22 @@ classdef flow < matter.procs.p2p
             
             
             % Check manipulator for partial
-            if ~isempty(oPhase.toManips.partial)
+            if ~isempty(oPhase.toManips.partial) && ~isempty(oPhase.toManips.partial.afPartial)
                 % Was updated just this tick - partial changes in kg/s
                 % Only get positive values, i.e. produced species
-                afManipPartials = oPhase.toManips.partial.afPartial(oPhase.toManips.partial.afPartial > 0);
-                fManipFlowRate  = sum(afManipPartials);
+                afTmpPartials    = oPhase.toManips.partial.afPartial;
+                aiTmpPartialsPos = afTmpPartials > 0;
+                afManipPartials  = zeros(1, length(afTmpPartials));
                 
-                mrInPartials  = [ mrInPartials;  afManipPartials / fManipFlowRate ];
-                afInFlowrates = [ afInFlowrates; fManipFlowRate ];
+                afManipPartials(aiTmpPartialsPos) = afTmpPartials(aiTmpPartialsPos);
+                %afManipPartials = oPhase.toManips.partial.afPartial(oPhase.toManips.partial.afPartial > 0);
+                fManipFlowRate  = sum(afManipPartials);
+                %keyboard();
+                
+                if fManipFlowRate > 0
+                    mrInPartials  = [ mrInPartials;  afManipPartials / fManipFlowRate ];
+                    afInFlowrates = [ afInFlowrates; fManipFlowRate ];
+                end
             end
         end
         

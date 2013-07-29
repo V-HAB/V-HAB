@@ -153,7 +153,7 @@ classdef exme < base
             mfProperties = zeros(length(afFlowRates), 2);
             
             %TODO store that on attribute as bP2P = true or something?
-            if isa(this.aoFlows(1), 'matter.procs.p2ps.flow')
+            if ~isempty(this.aoFlows) && isa(this.aoFlows(1), 'matter.procs.p2ps.flow')
                 % Can only be one flow, if p2p!
                 %mrPartials = repmat(this.aoFlows(1).arPartials, length(afFlowRates), 1);
                 mrPartials   = this.aoFlows(1).arPartialMass;

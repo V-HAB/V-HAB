@@ -10,6 +10,12 @@ classdef manip < base
     %                           would be called in setVolume
     %       matter.manips.partials.xyz can change partial masses in a phase
     %                           within the .massupdate method
+    %
+    %TODO when to use getInFlows, when to use getMasses? If getMasses is
+    %     used, the .updateAbsolute() should probably be used for setting.
+    %     Define some isStationary, compare masses vs. inFRs * timestep
+    %     => if inFRs*TS > 0.1 * masses ...?
+    %     => just always use masses?
     
     properties (SetAccess = private, GetAccess = public)
         oPhase;
@@ -55,7 +61,7 @@ classdef manip < base
     
     methods (Access = protected)
         function fTimeStep = getTimeStep(this)
-            fTimeStep = this.oPhase.oStore.oTimer.fTime - this.oPhase.fLastMassUpdate;
+            fTimeStep = this.oPhase.fMassUpdateTimeStep;%oStore.oTimer.fTime - this.oPhase.fLastMassUpdate;
         end
         
         
@@ -87,13 +93,13 @@ classdef manip < base
             end
             
             % 
-%             fTimeStep = this.getTimeStep();
-%             
-%             if fTimeStep > 0
-%                 mrInPartials  = [ mrInPartials;  this.oPhase.arPartialMass ];
-%                 %CHECK does that make sense? Treat the stored mass as a flow?
-%                 afInFlowrates = [ afInFlowrates; this.oPhase.fMass / fTimeStep ];
-%             end
+            fTimeStep = this.getTimeStep();
+            
+            if fTimeStep > 0
+                mrInPartials  = [ mrInPartials;  this.oPhase.arPartialMass ];
+                %CHECK does that make sense? Treat the stored mass as a flow?
+                afInFlowrates = [ afInFlowrates; this.oPhase.fMass / fTimeStep ];
+            end
         end
         
         function [ afInMasses, mrInPartials ] = getMasses(this)
@@ -101,8 +107,6 @@ classdef manip < base
             % partial masses of each in flow MULTIPLIED with current time
             % step so the become absolute masses. Then the currently stored
             % mass is added!
-            %
-            %TODO when to use getInFlows, when to use getMasses?
             
             % Get last time step
             fTimeStep = this.getTimeStep();
