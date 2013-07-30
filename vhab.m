@@ -87,6 +87,7 @@ classdef vhab
         function disp(oEvt)
             oSim     = oEvt.oCaller;
             %pOptions = vhab.pOptions;
+            %TODO better reporting options ... see below
             
             if mod(oSim.oTimer.iTick, vhab.pOptions('iTickRepIntv')) == 0
                 %TODO store last tick disp fTime on some containers.Map!
@@ -116,9 +117,10 @@ classdef vhab
         
         
         function plot(sSim, tOpt)
-            %TODO tOpt on first level -> plot with name, axis labels etc
+            %TODO implement configurable plot functionality?
+            %     tOpt on first level -> plot with name, axis labels etc
             %     then 'tData' -> reference mfLog entries and provide name
-            %     --> tOpt on simulation object (as csLogs)
+            %     --> tOpt on simulation object (like csLogs)
         end
     end
     
