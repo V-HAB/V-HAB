@@ -567,7 +567,16 @@ classdef phase < base & matlab.mixin.Heterogeneous
         
         
         function calculateTimeStep(this)
-            
+            % Check manipulator
+            %TODO allow user to set a this.bManipBeforeP2P or so, and if
+            %     true execute the [manip].update() before the P2Ps update!
+            if ~isempty(this.toManips.partial)
+                %keyboard();
+                this.toManips.partial.update();
+                
+                % Add the changes from the manipulator to the total inouts
+                %afTotalInOuts = afTotalInOuts + this.toManips.partial.afPartial;
+            end
             
             
             %keyboard();
@@ -583,18 +592,6 @@ classdef phase < base & matlab.mixin.Heterogeneous
                     % will prevent this .massupdate from re-executing.
                     this.coProcsP2Pflow{iP}.update();
                 end
-            end
-            
-            
-            % Check manipulator
-            %TODO allow user to set a this.bManipBeforeP2P or so, and if
-            %     true execute the [manip].update() before the P2Ps update!
-            if ~isempty(this.toManips.partial)
-                %keyboard();
-                this.toManips.partial.update();
-                
-                % Add the changes from the manipulator to the total inouts
-                %afTotalInOuts = afTotalInOuts + this.toManips.partial.afPartial;
             end
             
             
