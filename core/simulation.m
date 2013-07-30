@@ -4,6 +4,8 @@ classdef simulation < base & event.source
     %
     % The constructor of the derived class needs to or should set csLog,
     % and either iSimTicks of fSimTime.
+    %
+    %TODO mass logging of all phases in oMT!
     
     properties
         % Amount of ticks
@@ -14,6 +16,10 @@ classdef simulation < base & event.source
         
         % Use time or ticks to check if simulation finished?
         bUseTime = true;
+        
+        
+        % Interval in which the mass balance logs are written
+        iMassLogInterval = 100;
     end
     
     % Properties to be set by classes deriving from this one
@@ -47,6 +53,14 @@ classdef simulation < base & event.source
         % Matlab date number -> object/sim created
         fCreated = 0;
         sCreated = '';
+        
+        % Variables holding the sum of lost mass / total mass, species-wise
+        mfTotalMass = [];
+        mfLostMass  = [];
+    end
+    
+    properties (GetAccess = public, Dependent = true)
+        fSimFactor;
     end
     
     methods
@@ -95,6 +109,14 @@ classdef simulation < base & event.source
             % Remember the time of object creation
             this.fCreated = now();
             this.sCreated = datestr(this.fCreated);
+            
+            
+            % Init the mass log matrices - don't log yet, system's not
+            % initialized yet! Just create with one row, for the initial
+            % mass log. Subsequent logs dynamically allocate new memory -
+            % bad for performance, but only happens every Xth tick ...
+            this.mfTotalMass = zeros(0, this.oData.oMT.iSpecies);
+            this.mfLostMass  = zeros(0, this.oData.oMT.iSpecies);
         end
         
         
@@ -155,6 +177,13 @@ classdef simulation < base & event.source
         
         
         function tick(this)
+            % Pre-check -> timer tick at -1 --> initial call. So do the
+            % mass log, need the initial values.
+            if this.oData.oTimer.iTick == -1
+                this.masslog();
+            end
+            
+            
             % Advance one tick
             
             this.trigger('tick.pre');
@@ -170,7 +199,17 @@ classdef simulation < base & event.source
             this.fRuntimeLog = this.fRuntimeLog + toc(hTimer);
             
             this.trigger('tick.post');
+            
+            
+            % Mass log?
+            %TODO do by time, not tick? Every 1s, 10s, 100s ...?
+            %     see old main script, need a var like fNextLogTime, just
+            %     compare this.oData.oTimer.fTIme >= this.fNexLogTime.
+            if mod(this.oData.oTimer.iTick, this.iMassLogInterval) == 0
+                this.masslog();
+            end
         end
+        
         
         function log(this)
             iTmpSize = size(this.mfLog, 1);
@@ -183,6 +222,32 @@ classdef simulation < base & event.source
                 this.mfLog(this.oTimer.iTick + 1, iL) = eval([ 'this.oRoot.' this.csLog{iL} ]);
             end
         end
+        
+        function masslog(this)
+            iIdx = size(this.mfTotalMass, 1) + 1;
+            
+            % Total mass: sum over all mass stored in all phases, for each
+            % species separately.
+            this.mfTotalMass(iIdx, :) = sum(reshape([ this.oData.oMT.aoPhases.afMass ], [], this.oData.oMT.iSpecies));
+            
+            % Lost mass: logged by phases if more mass is extracted then
+            % available (for each species separately).
+            this.mfLostMass(iIdx, :)  = sum(reshape([ this.oData.oMT.aoPhases.afMassLost ], [], this.oData.oMT.iSpecies));
+            
+            %NOTE in base workspace, get the total mass that was lost:
+            %   >> sum(oLastSimObj.mfLostMass(end, :))
+            
+            %     compare the initial and the end total masses (comparing
+            %     the total values - in case of a manipulator that adapts
+            %     the partials, can't really compare species-wise):
+            %   >> fTotalMassStart = sum(oLastSimObj.mfTotalMass(1, :))
+            %   >> fTotalMassEnd   = sum(oLastSimObj.mfTotalMass(end, :))
+            %   >> fTotlaMassStart - fTotalMassEnd
+            %
+            %TODO implement methods for that ... break down everything down
+            %     to the moles and compare these?! So really count every
+            %     atom, not the molecules ... compare enthalpy etc?
+        end
     end
     
     
@@ -194,6 +259,10 @@ classdef simulation < base & event.source
             
             %TODO What if sim already runs?
             this.mfLog = nan(1000, length(csLog));
+        end
+        
+        function fSimFactor = get.fSimFactor(this)
+            fSimFactor = this.fSimTime / (this.fRuntimeTick + this.fRuntimeLog);
         end
     end
 end
