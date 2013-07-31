@@ -595,8 +595,6 @@ classdef phase < base & matlab.mixin.Heterogeneous
             end
             
             
-            
-            
             if ~isempty(this.fFixedTS)
                 fTimeStep = this.fFixedTS;
             else
@@ -617,15 +615,16 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
                 % Only use entries where change is not zero
                 abChange = (afChange ~= 0);
-
+                
                 % Changes of species masses - get max. change, add the change
                 % that happend already since last update
-                rChangePerSecond = max(abs(afChange(abChange) ./ this.afMass(abChange) - 0) + arPreviousChange(abChange));
-                %ISSUE if a species is newly introduced, mass is 0 -->
-                %      division is Inf --> + something is NaN -> ignored.
-                %      ==> in such a case, compare with total amount of
-                %          mass ...
-
+                arPreviousChange = abs(afChange(abChange) ./ tools.round.prec(this.afMass(abChange), this.oStore.oTimer.iPrecision)) + arPreviousChange(abChange);
+                
+                % Only use non-inf --> inf if current mass of according
+                % species is zero. If new species enters phase, still
+                % covered through the overall mass check.
+                rChangePerSecond = max(arPreviousChange(~isinf(arPreviousChange)));
+                
                 % Change per second of TOTAL mass
                 fChange = sum(afChange);
 
