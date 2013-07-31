@@ -208,7 +208,27 @@ classdef simulation < base & event.source
             if mod(this.oData.oTimer.iTick, this.iMassLogInterval) == 0
                 this.masslog();
             end
+            
+            % Sim finished?
+            if (this.bUseTime && (this.oTimer.fTime >= this.fSimTime)) || (~this.bUseTime && (this.oTimer.iTick >= this.iSimTicks))
+                this.finish();
+            end
         end
+        
+        
+        function finish(this)
+            %TODO put in vhab class -> just trigger 'finish' here!
+            disp('----------------');
+            disp([ 'Sim Time:     ' num2str(this.oTimer.fTime) 's' ]);
+            disp([ 'Sim Runtime:  ' num2str(this.fRuntimeTick + this.fRuntimeLog) 's, from that for dumping: ' num2str(this.fRuntimeLog) 's' ]);
+            disp([ 'Sim factor:   ' num2str(this.fSimFactor) ' [-] (ratio)' ]);
+            disp([ 'Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
+            disp([ 'Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :))) 'kg' ]);
+            disp([ 'Minimum Time Step * Total Sim Time: ' num2str(this.oTimer.fTimeStep * this.oTimer.fTime) ]);
+            disp([ 'Minimum Time Step * Total Ticks:    ' num2str(this.oTimer.fTimeStep * this.oTimer.iTick) ]);
+            disp('----------------');
+        end
+        
         
         
         function log(this)

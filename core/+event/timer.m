@@ -3,10 +3,14 @@ classdef timer < base
     %   Detailed explanation goes here
     
     properties (SetAccess = private, GetAccess = public)
-        % Master/Global time step, all other time steps have to be longer
-        % than that - however not a 'real' multiple of that.
-        % Fixed, can't be changed
+        % Minimum time step, no individual time steps shorter than this one
+        % possible.
         fTimeStep = 0.1;  % [s]
+        
+        
+        % "Accuracy" of simulation - min time step. Use as
+        % precision for rounding.
+        iPrecision = 1;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -61,6 +65,9 @@ classdef timer < base
                 % Set time to -1 * time step -> first step is init!
                 this.fTime = -1 * this.fTimeStep;
             end
+            
+            % Precision of simulation
+            this.iPrecision = floor(log10(1 / this.fTimeStep));
         end
         
         
