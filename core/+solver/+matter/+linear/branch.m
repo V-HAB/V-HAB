@@ -147,6 +147,10 @@ classdef branch < solver.matter.base.branch
             
             
             % Sets new flow rate
+            %TODO set pressures according to relative weight of hydr.
+            %     diameter or length including active stuff -> e.g. in a
+            %     fan loop from Atmos back to Atmos, all flows get the same
+            %     pressure ...
             update@solver.matter.base.branch(this, fFlowRate, [], afTemps);
         end
     end
