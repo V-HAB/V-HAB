@@ -53,6 +53,13 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         
         %TODO Need something like type, as for phases? Define what types of
         %     phases can be used with this processor?
+        
+        
+        % Reference to the branch object
+        oBranch;
+        
+        % Sealed?
+        bSealed = false;
     end
     
     
@@ -71,6 +78,16 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             
             % Create map for the func handles
             this.pthFlow = containers.Map('KeyType', 'single', 'ValueType', 'any');
+        end
+        
+        
+        function seal(this, oBranch)
+            if this.bSealed
+                this.throw('seal', 'Already sealed!');
+            end
+            
+            this.oBranch = oBranch;
+            this.bSealed = true;
         end
     end
     
@@ -124,7 +141,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             
             % Set the other stuff
             this.aiSign(iIdx)  = iSign;
-            this.pthFlow(iIdx) = thFlow;
+            %this.pthFlow(iIdx) = thFlow;
         end
     end
     
@@ -159,7 +176,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             end
             
             this.aiSign(iIdx)  = 0;
-            this.pthFlow(iIdx) = struct();
+            %this.pthFlow(iIdx) = struct();
         end
     end
     
@@ -247,40 +264,6 @@ classdef f2f < base & matlab.mixin.Heterogeneous
                 
                 % Dirty (?) ... bool true = 1, false = 0 -> index 2 / 1
                 oFlow = this.aoFlows((fFlowRate > 0) + 1);
-            end
-        end
-        
-        %function set(iPort, sFunc, varargin)
-        function set(this, sFunc, varargin)
-            % Call func handle to set matter property. Only works if flow
-            % of matter goes INTO that flow. No check for iPort etc - speed
-            % ...?
-            %
-            % func without set*, just 'Temperature' etc
-            %
-            %TODO write some wrapper methods to make access more intuitive?
-            %     however speed might be relevant ...?
-            %     completely different? just trust everyone?
-            
-            % Only one of those things should be positive, one should be
-            % negative. Or both zero.
-            afFRs = this.getFRs();
-            
-            % Both zero - can't set anything!
-            if ~any(afFRs)
-                this.throw('set', 'Can''t set when flow rate is zero!');
-                
-            % If both negative / both positive, product is positive - error
-            elseif (afFRs(1) * afFRs(2)) > 0
-                this.throw('set', 'Both flows are in or out, need one in, one out!');
-                
-            else
-                iIdx = find(afFRs < 0, 1);
-                
-                if isempty(iIdx), this.throw('set', 'No flow to write to found!');
-                else
-                    this.pthFlow(iIdx).([ 'set' sFunc ])(varargin{:});
-                end
             end
         end
     end

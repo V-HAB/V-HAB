@@ -10,7 +10,12 @@ classdef liquid < matter.phase
         sType = 'liquid';
         
         fVolume;                % Volume in m^3
-        fPressure;              % Pressure in Pa
+        
+        % Pressure in Pa
+        %TODO see liquid exme, fPressure should NOT be defined here!
+        fPressure;
+        
+        
         fDynamicViscosity;      % Dynamic Viscosity in Pa*s
         
     end
@@ -29,7 +34,7 @@ classdef liquid < matter.phase
             this.fDensity = this.fMass / this.fVolume;
             
             %TODO see .update(), also called from matter.phase constructor!
-            this.update(0);
+            %this.update();
         end
         
         function bSuccess = setVolume(this, fVolume)
@@ -75,8 +80,8 @@ classdef liquid < matter.phase
             % volume is returned ...
         end
         
-        function this = update(this, fTimeStep)
-            update@matter.phase(this, fTimeStep);
+        function this = update(this)
+            update@matter.phase(this);
             
             %TODO coeff m to p: also in fluids, plasma. Not solids, right?
             %     calc arPPs, rel humidity, ...

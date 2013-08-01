@@ -1,4 +1,4 @@
-classdef branch < base
+classdef branch < base & event.source
     %BRANCH Summary of this class goes here
     %   Detailed explanation goes here
     %
@@ -76,12 +76,16 @@ classdef branch < base
         fFlowRate = 0;
         
         bSealed = false;
+        
+        % Does the branch need an update of e.g. a flow rate solver? Can be
+        % set e.g. through a flow proc that changed some internal state.
+        bOutdated = false;
     end
     
     properties (SetAccess = private, GetAccess = private)
-        % Cell containing the function handles to set the flow rate on each
-        % matter flow of the branch
-        chSetFRs;
+        % Function handle to the protected flow method setData, used to
+        % update values within the flow objects array
+        hSetFlowData;
         
         % If the RIGHT side of the branch is an interface (i.e. i/f to the
         % parent system), store its index on the aoFlows here to make it
@@ -105,6 +109,9 @@ classdef branch < base
         % Callback from the interface flow seal method, can be used to
         % disconnect the if flow and the according f2f proc in the supsys
         hRemoveIfProc;
+        
+        % Flow rate handler - only one can be set!
+        oHandler;
     end
     
     methods
@@ -378,7 +385,7 @@ classdef branch < base
                 iF = this.iIfFlow + 1;
                 
                 this.aoFlows    (iF:end) = [];
-                this.chSetFRs   (iF:end) = [];
+                %this.chSetFRs   (iF:end) = [];
                 % One flow proc less than flows
                 this.aoFlowProcs((iF - 1):end) = [];
                 
@@ -395,85 +402,85 @@ classdef branch < base
         
         
         
+        
+        
+        function setOutdated(this)
+            % Can be used by phases or f2f processors to request recalc-
+            % ulation of the flow rate, e.g. after some internal parameters
+            % changed (closing a valve).
+            
+            % Only trigger if not yet set
+            if ~this.bOutdated
+                this.bOutdated = true;
+
+                % Trigger outdated so e.g. the branch solver can register a
+                % postTick callback on the timer to recalc flow rate.
+                this.trigger('outdated');
+            end
+        end
+        
+        
+        function setFlowRate = registerHandlerFR(this, oHandler)
+            % Only one handler can be registered
+            %   and gets a fct handle to the internal setFlowRate method.
+            %   One solver obj per branch, atm no possibility for de-
+            %   connect that one.
+            %TODO Later, either check if solver obj is
+            %     deleted and if yes, allow new one; or some sealed methods
+            %     and private attrs on the basic branch solver class, and
+            %     on setFRhandler, the branch solver provides fct callback
+            %     to release the solver -> deletes the stored fct handle to
+            %     the setFlowRate method of the branch. The branch calls
+            %     this fct before setting a new solver.
+            
+            
+            if ~isempty(this.oHandler)
+                this.throw('registerHandlerFR', 'Can only set one handler!');
+            end
+            
+            this.oHandler = oHandler;
+            setFlowRate   = @this.setFlowRate;
+        end
+        
+    
+        function oExme = getInEXME(this)
+            oExme = this.coExmes{sif(this.aoFlows(1).fFlowRate < 0, 2, 1)};
+        end
+        
+        
+        
+        
         function update(this)
-            %TODO should be in solver.basic.matter.branch < matter.branch??
-            %     branch updates flows, not container?
-            %     what if a f2f comp does a big change, e.g. gets closed -
-            %     how does the solver get noticed? Through the branch? See
-            %     'outdated' in comment somewhere else (grep rulez!)
-            %     Solver executes when large fr changes, large dP changes
-            %     quickly again; with phases, waited until change > X%.
-            %     Update of store might also be delayed until phase change
-            %     > Y% (e.g. species masses or temp observed)
-            
-            this.fFlowRate = this.aoFlows(1).fFlowRate;
-        end
-        
-        
-        function setPartials(this, arPartials)
-            % Need that? For .update()?
-        end
-        
-        function setPressures(this, fPressure)
-            % For use only with liquids!!!
-            % Sets all flows and stores to the same pressure.
-            
-            bIsLiquid = 0;
-            
-            % Setting the pressures in the connected stores
-            for iI = 1:length(this.coExmes)
-                if strcmp(this.coExmes{iI}.oPhase.sType, 'liquid')
-                    bIsLiquid = bIsLiquid + 1; 
-                end
-            end
-            
-            % If not all of the connected phases are liquid, throw an
-            % error, else set the pressures in all phases to the same
-            % value.
-            if ~(bIsLiquid == length(this.coExmes))
-                this.throw('setPressures','Not all connected phases are liquid! Cannot use setPressures!');
-            else
-                for iI = 1:length(this.coExmes)
-                    this.coExmes{iI}.oPhase.setPressure(fPressure);
-                end
-            end
-        end
-        
-        
-        function arPartials = getPartials(this)
-            % Get partials of inflow exme. If interface branch, get leftest
-            % branch and exmes from there.
-            
-            if this.abIf(1)
-                arPartials = this.coBranches{1}.getPartials();
-                
-            else
-                % Get inflow exme
-                oExme = this.coExmes{sif(this.aoFlows(1).fFlowRate < 0, 2, 1)};
-                
-                if isempty(oExme)
-                    this.throw('getPartials', 'Inflow EXME not connected ... this shouldn''t happen ...?');
-                end
-                
-                arPartials = oExme.getPartials();
-            end
-        end
-        
-        
-        function setFlowRate(this, fFlowRate)
-            % Set flowrate for all flow objects
-            
-            if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
-            
-            this.fFlowRate = fFlowRate;
-            
-            cellfun(@(cB) cB(this.fFlowRate), this.chSetFRs, 'UniformOutput', false);
+            %TODO just get the matter properties from the inflowing EXME
+            %     and set (arPartialMass, MolMass, Heat Capacity)?
         end
     end
     
     
     % Methods provided to a connected subsystem branch
     methods (Access = protected)
+        
+        function setFlowRate(this, fFlowRate, afPressure, afTemp)
+            % Set flowrate for all flow objects
+            
+            if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
+            
+            % Connected phases have to do a massupdate
+            for iE = sif(this.fFlowRate >= 0, 1:2, 2:1)
+                this.coExmes{iE}.oPhase.massupdate();
+            end
+            
+            
+            
+            this.fFlowRate = fFlowRate;
+            this.bOutdated = false;
+            
+            % Update data in flows
+            this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure, afTemp);
+        end
+    
+        
+        
         function updateConnectedBranches(this)
             % Get func handles fr / phase from 
             
@@ -492,7 +499,7 @@ classdef branch < base
                 % Get set fr func callbacks and phase on the right side of
                 % the overall branch, write right phase to cell
                 %[ chSetFRs, this.coPhases{2} ] = this.getBranchData(this);
-                [ chSetFRs, this.coExmes{2} aoFlows aoFlowProcs ] = this.hGetBranchData();
+                [ this.coExmes{2} aoFlows aoFlowProcs ] = this.hGetBranchData();
                 
                 
                 % Only do if we got a right phase, i.e. the (maybe several)
@@ -500,7 +507,7 @@ classdef branch < base
                 if ~isempty(this.coExmes{2})
                     % Just select to this.iIfFlow, maytbe chSetFrs was
                     % already extended previously
-                    this.chSetFRs = [ this.chSetFRs(1:this.iIfFlow) chSetFRs ];
+                    %this.chSetFRs = [ this.chSetFRs(1:this.iIfFlow) chSetFRs ];
                     this.aoFlows  = [ this.aoFlows(1:this.iIfFlow) aoFlows ];
                     
                     % One flow proc less than flows
@@ -531,7 +538,8 @@ classdef branch < base
             this.hUpdateConnectedBranches = [];
         end
         
-        function [ chSetFRs oRightPhase aoFlows aoFlowProcs ] = getBranchData(this)
+        %function [ chSetFRs oRightPhase aoFlows aoFlowProcs ] = getBranchData(this)
+        function [ oRightPhase, aoFlows, aoFlowProcs ] = getBranchData(this)
             % if coBranch{2} set, pass through. add own callbacks to cell,
             % leave phase untouched
             
@@ -541,9 +549,9 @@ classdef branch < base
             
             % Branch set on the right
             if ~isempty(this.coBranches{2})
-                [ chSetFRs oRightPhase aoFlows aoFlowProcs ] = this.hGetBranchData();
+                [ oRightPhase, aoFlows, aoFlowProcs ] = this.hGetBranchData();
                 
-                chSetFRs = [ this.chSetFRs chSetFRs ];
+                %chSetFRs = [ this.chSetFRs chSetFRs ];
                 aoFlows  = [ this.aoFlows aoFlows ];
                 
                 aoFlowProcs = [ this.aoFlowProcs aoFlowProcs ];
@@ -551,11 +559,11 @@ classdef branch < base
             % No branch set on the right side, but got an interface on that
             % side, so return empty for the right phase!
             elseif this.abIf(2)
-                chSetFRs    = this.chSetFRs;
+                %chSetFRs    = this.chSetFRs;
                 oRightPhase = [];
                 
             else
-                chSetFRs = this.chSetFRs;
+                %chSetFRs = this.chSetFRs;
                 %oRightPhase = this.coPhases{2};
                 oRightPhase = this.coExmes{2};
                 
@@ -582,11 +590,22 @@ classdef branch < base
                 % which allows us to deconnect the flow from the f2f proc
                 % in the "outer" system (supsystem).
                 if this.abIf(2) && (this.iIfFlow == iI)
-                    [ this.chSetFRs{iI} this.hRemoveIfProc ] = this.aoFlows(iI).seal(true);
+                    %[ this.chSetFRs{iI}, this.hRemoveIfProc ] = this.aoFlows(iI).seal(true);
+                    [ this.hSetFlowData, this.hRemoveIfProc ] = this.aoFlows(iI).seal(true);
+                
+                % Only need the callback reference once ...
+                elseif iI == 1
+                    this.hSetFlowData = this.aoFlows(iI).seal();
                 else
-                    this.chSetFRs{iI} = this.aoFlows(iI).seal();
+                    %this.chSetFRs{iI} = 
+                    this.aoFlows(iI).seal();
                 end
             end
+            
+            for iI = 1:length(this.aoFlowProcs)
+                this.aoFlowProcs(iI).seal(this);
+            end
+            
             
             this.bSealed = true;
         end

@@ -25,6 +25,9 @@ classdef store < base
         % @types string
         csProcsP2P;
         
+        % Should also (as csProcsP2P) transient
+        aiProcsP2Pstationary;
+        
         % Matter table
         % @type object
         oMT;
@@ -41,6 +44,13 @@ classdef store < base
         % and they can only be connected to an interface branch of the
         % superior system)
         bSealed = false;
+        
+        
+        
+        % Timer object, needs to inherit from / implement event.timer
+        oTimer;
+        fLastUpdate = 0;
+        fTimeStep = 0;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -58,6 +68,16 @@ classdef store < base
         fVolume = 0;
     end
     
+    properties (SetAccess = protected, GetAccess = protected)
+        setTimeStep;
+    end
+    
+    properties (SetAccess = public, GetAccess = public)
+        % When store executes, this is set as the default time step. Any of
+        % the phases can set a lower one.
+        fDefaultTimeStep = 60;
+    end
+    
     
     methods
         function this = store(oMT, sName, fVolume)
@@ -68,18 +88,59 @@ classdef store < base
             if nargin >= 3, this.fVolume = fVolume; end;
         end
         
-        function update(this, fTimeStep)
-            % call .update on child phases
-            % then recalc volume stuff (gas vol = vol - solid/fluid vol)
+        
+        function exec(this)
+            %TODO-NOW this.toProcsP2P exec, flow and stationary.
+        end
+        
+        function update(this)
+            % Update phases, then recalculate internal values as volume
+            % available for phases.
             %
-            %TODO if e.g. the volume of a liquid phase changes, need to re-
-            %     set the volume for the gas phase. Does not necessarily
-            %     need to happen every time, a filter might make sense to
-            %     only update the other phases if volume changed more than
-            %     X percent since last update ...? Use the events.source
-            %     filters?
+            %TODO don't update everything all the time? If one phase
+            %     changes, do not necessarily to update all other phases as
+            %     well? If liquid, need to update gas, but other way
+            %     around?
+            %     First update solids, then liquids, then gas?
+            %     Smarter ways for volume distribution?
             
-            for iI = 1:this.iPhases, this.aoPhases(iI).update(fTimeStep); end;
+            
+            this.fLastUpdate = this.oTimer.fTime;
+            this.fTimeStep   = this.fDefaultTimeStep;
+            
+            % Set the default time step - can be overwritten by phases
+            %TODO register post-post-tick-callback and only set then?
+            this.setTimeStep(this.fTimeStep);
+            
+            % Update phases
+            for iI = 1:this.iPhases, this.aoPhases(iI).update(); end;
+            
+            % Update stationary P2P processors
+            for iP = this.aiProcsP2Pstationary
+                this.toProcsP2P(this.csProcsP2P{iP}).update();
+            end
+            
+            
+            %TODO check volume stuff
+        end
+        
+        function setNextExec(this, fTime)
+            % Set a time step for updating the store and all phases. Only
+            % sets shorter times for updating!
+            % IMPORTANT - parameter does NOT define next time step but next
+            %             EXECUTION time (absolute).
+            
+            % Check if last update time (same as the one stored within the
+            % timer) plus current time step larger then new exec time - if
+            % yes, calc the new time step with fTime and set!
+            %TODO should timer somehow always provide the last exec time
+            %     for each subsystem, on each callback execution?
+            if (this.fLastUpdate + this.fTimeStep) > fTime
+                this.fTimeStep = fTime - this.fLastUpdate;
+                
+                % If time step < 0, timer sets it to 0!
+                this.setTimeStep(this.fTimeStep);
+            end
         end
     end
     
@@ -178,7 +239,7 @@ classdef store < base
         
         
         
-        function seal(this)
+        function seal(this, oTimer)
             % See doc for bSealed attr.
             %
             %TODO create indices of phases, their ports etc! Trigger event?
@@ -190,15 +251,40 @@ classdef store < base
             if this.bSealed, return; end;
             
             
-            for iI = 1:length(this.aoPhases), this.aoPhases(iI).seal(); end;
+            if ~isa(oTimer, 'event.timer')
+                this.throw('Timer needs to inherit from event.timer');
+            end
             
-            this.iPhases = length(this.aoPhases);
-            this.bSealed = true;
+            % Timer - oTimer.fTime is current time, e.g. used by phases to
+            % determine how much mass has to be merged/extracted depending
+            % on flow rate and elapsed time.
+            this.oTimer = oTimer;
             
+            % Bind the .update method to the timer, with a time step of 0
+            % (i.e. smallest step), will be adapted after each .update
+            this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0);
+            
+            
+            this.iPhases    = length(this.aoPhases);
             this.csProcsP2P = fieldnames(this.toProcsP2P);
+            
+            % Find stationary p2ps
+            %TODO split those up completely, stationary/flow p2ps?
+            for iI = 1:length(this.csProcsP2P)
+                if isa(this.toProcsP2P.(this.csProcsP2P{iI}), 'matter.procs.p2ps.stationary')
+                    this.aiProcsP2Pstationary(end + 1) = iI;
+                end
+            end
+            
             
             % Update volume on phases
             this.setVolume();
+            
+            
+            % Seal phases
+            for iI = 1:length(this.aoPhases), this.aoPhases(iI).seal(); end;
+            
+            this.bSealed = true;
         end
         
         
@@ -208,6 +294,7 @@ classdef store < base
         function addP2P(this, oProcP2P)
             % Get sName from oProcP2P, add to toProcsP2P
             %
+            %TODO better way of handling stationary and flow p2ps!
             
             if this.bSealed
                 this.throw('addP2P', 'Store already sealed!');
@@ -299,7 +386,7 @@ classdef store < base
             end
         end
         
-        function [ cParams sDefaultPhase ] = createPhaseParams(this, sHelper, varargin)
+        function [ cParams, sDefaultPhase ] = createPhaseParams(this, sHelper, varargin)
             % Returns a (row) cell with at least the first two parameters 
             % for the constructor of a phase class. First field is a refe-
             % rence  to this matter table, second the composition of the 

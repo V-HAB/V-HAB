@@ -43,9 +43,6 @@ classdef gas < matter.phase
             
             this.fVolume  = fVolume;
             this.fDensity = this.fMass / this.fVolume;
-            
-            %TODO see .update(), also called from matter.phase constructor!
-            this.update(0);
         end
         
         function rRelHumidity = get.rRelHumidity(this)
@@ -78,8 +75,8 @@ classdef gas < matter.phase
         end
         
         
-        function this = update(this, fTimeStep)
-            update@matter.phase(this, fTimeStep);
+        function this = update(this)
+            update@matter.phase(this);
             
             %TODO coeff m to p: also in liquids, plasma. Not solids, right?
             %     calc afPPs, rel humidity, ... --> in matter table!
@@ -94,6 +91,8 @@ classdef gas < matter.phase
                 %this.fPressure = sum(this.afMass) * this.fMassToPressure;
                 this.fPressure = this.fMass * this.fMassToPressure;
                 this.afPP      = this.getPartialPressures();
+            else
+                this.fPressure = 0;
             end
         end
         
@@ -101,15 +100,22 @@ classdef gas < matter.phase
             %TODO see @matter.flow.getPartialPressures
             %     PROTECTED! automatically called in .update() -> afPPs!
             
-            % Calculating the number of mols for each species
-            afMols = this.arPartialMass ./ this.oStore.oMT.afMolMass;
-            % Calculating the total number of mols
-            fGasAmount = sum(afMols);
-            % Calculating the partial amount of each species by mols
-            arFractions = afMols ./ fGasAmount;
-            % Calculating the partial pressures by multiplying with the
-            % total pressure in the phase
-            afPartialPressures = arFractions .* this.fPressure;
+            % No mass? 
+            if this.fMass == 0
+                % Partials have to be zero, as fMass is zero which is the
+                % sum() of afMass. arPartials derived from afMass.
+                afPartialPressures = this.arPartialMass;
+            else
+                % Calculating the number of mols for each species
+                afMols = this.arPartialMass ./ this.oStore.oMT.afMolMass;
+                % Calculating the total number of mols
+                fGasAmount = sum(afMols);
+                % Calculating the partial amount of each species by mols
+                arFractions = afMols ./ fGasAmount;
+                % Calculating the partial pressures by multiplying with the
+                % total pressure in the phase
+                afPartialPressures = arFractions .* this.fPressure;
+            end
         end
         
         

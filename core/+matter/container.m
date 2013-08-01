@@ -76,10 +76,10 @@ classdef container < sys
             % actual mass moving, so if just update of internal parameters
             % desired, call oPhase.update(0).
             %TODO Call EXEC, not update!
-            for iI = 1:length(this.csStores), this.toStores.(this.csStores{iI}).update(fTimeStep); end;
+            for iI = 1:length(this.csStores), this.toStores.(this.csStores{iI}).exec(fTimeStep); end;
             
             %TODO .exec, not .update (see above)
-            for iI = 1:length(this.csProcsF2F), this.toProcsF2F.(this.csProcsF2F{iI}).update(fTimeStep); end;
+            for iI = 1:length(this.csProcsF2F), this.toProcsF2F.(this.csProcsF2F{iI}).exec(fTimeStep); end;
         end
         
         
@@ -93,7 +93,9 @@ classdef container < sys
             this.csProcsF2F = fieldnames(this.toProcsF2F);
             
             for iI = 1:length(this.csStores)
-                this.toStores.(this.csStores{iI}).seal();
+                % Stores need a timer object, to be accessed by the phases
+                % to e.g. register updates, find out elapsed time
+                this.toStores.(this.csStores{iI}).seal(this.oTimer);
             end
             
             

@@ -23,9 +23,9 @@ fMolMassH2O = 18;
 
 % Check input arguments, set default
 %TODO for fTemp, rRH, fPress -> key/value pairs?
-if nargin < 3, fTemperature = 273.15; end;
-if nargin < 4, rRH          = 0;      end;
-if nargin < 5, fPressure    = 101325; end;
+if nargin < 3 || isempty(fTemperature), fTemperature = 273.15; end;
+if nargin < 4 || isempty(rRH),          rRH          = 0;      end;
+if nargin < 5 || isempty(fPressure),    fPressure    = 101325; end;
 
 % p V = m / M * R_m * T -> mol mass in g/mol so divide
 fMass = fPressure * fVolume * (fMolMassAir / 1000) / fRm / fTemperature;

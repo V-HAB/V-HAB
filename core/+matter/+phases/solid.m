@@ -1,4 +1,4 @@
-classdef Solid < Matter
+classdef solid < Matter
     %SOLID Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -8,7 +8,7 @@ classdef Solid < Matter
     end
     
     methods
-        function this = Solid(tfMasses, fTemp)
+        function this = solid(tfMasses, fTemp)
             this@Matter(tfMasses, fTemp);
             
             csKeys = fieldnames(tfMasses);

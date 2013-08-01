@@ -48,8 +48,11 @@ classdef phase < base & matlab.mixin.Heterogeneous
         fMolMass;           % [g/mol]
         
         % @types float
-        fHeatCapacity;      % [J/K]
+        fHeatCapacity = 0;  % [J/K]
+        %TODO heat capacity with 0 initialized because needed on first
+        %     .update call (from .seal()) --> still needed?
         
+        afMassLost;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -78,12 +81,63 @@ classdef phase < base & matlab.mixin.Heterogeneous
         % Cache for procs ... see .update()
         coProcsEXME;
         iProcsEXME;
+        
+        
+        % List with all p2p flow processors (matter.procs.p2ps.flow) that
+        % are connected to an EXME of this phase.
+        % Used to quickly access the objects on .massupdate, created on
+        % .seal()
+        %TODO make Transient, reload on loadobj
+        coProcsP2Pflow;
+        iProcsP2Pflow;
+        
+        
+        % Last time the phase was updated?
+        fLastMassUpdate = 0;
+        % Time step in last massupdate
+        fMassUpdateTimeStep = 0;
+        
+        fLastUpdate = -10;
+        
+        
+        % Manipulators
+        toManips = struct('vol', [], 'temp', [], 'partial', []);
      end
     
     % Derived values
     properties (SetAccess = protected, GetAccess = public)
         % Not handled by Matter, has to be set by derived state class
         fDensity = -1;      % [kg/m^3]
+    end
+    
+    % 
+    properties (SetAccess = private, GetAccess = private)
+        % Fct callback on timer. Used for setting the time step for the
+        % calculateTimeStep method.
+        %setTimeStep;
+        bOutdatedTS = false;
+    end
+    
+    
+    properties (SetAccess = public, GetAccess = public)
+        % Limit - how much can the phase mass (total or single species)
+        % change before an update of the matter properties (of the whole
+        % store) is triggered?
+        rMaxChange = 0.05;
+        fMaxStep   = 15;
+        fFixedTS;
+        
+        % If true, massupdate triggers all branches to re-calculate their
+        % flow rates. Use when volumes of phase compared to flow rates are
+        % small!
+        bSynced = false;
+    end
+    
+    
+    properties (SetAccess = private, GetAccess = public, Transient = true)
+        % Mass in phase at last update.
+        fMassLastUpdate;
+        afMassLastUpdate;
     end
     
     methods
@@ -123,6 +177,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
             
             % Preset masses
             this.afMass = zeros(1, this.oMT.iSpecies);
+            this.arPartialMass = zeros(1, this.oMT.iSpecies);
             
             % Mass provided?
             %TODO do all that in a protected addMass method? Especially the
@@ -146,100 +201,232 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
                 % Calculate total mass
                 this.fMass = sum(this.afMass);
+                
 
                 % Calculate the partial masses
-                for iI = 1:length(csKeys)
-                    sKey = csKeys{iI};
-                    this.arPartialMass(this.oMT.tiN2I.(sKey)) = this.afMass(this.oMT.tiN2I.(sKey)) / this.fMass;
+                if this.fMass > 0, this.arPartialMass = this.afMass / this.fMass;
+                else               this.arPartialMass = this.afMass; % afMass is just zeros
                 end
                 
                 % Handle temperature
                 this.fTemp = fTemp;
             else
+                % Set this to zero to handle empty phases
+                this.fMass = 0;
                 % No mass - no temp
                 this.fTemp = 0;
+                
+                % Partials also to zeros
+                this.arPartialMass = this.afMass;
             end
             
-            % Immediately calc matter params
-            %TODO check - if mass 0 --> NaNs!
-            this.update(0);
+            % Now update the matter properties
+            this.fMolMass      = this.oMT.calculateMolecularMass(this.afMass);
+            this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
+            
+            % Mass
+            this.fMass = sum(this.afMass);
+            this.afMassLost = zeros(1, this.oMT.iSpecies);
+            
+            % Preset the cached masses (see calculateTimeStep)
+            this.fMassLastUpdate  = 0;
+            this.afMassLastUpdate = zeros(1, this.oMT.iSpecies);
+        end
+
+
+
+        function hRemove = addManipulator(this, oManip)
+            sManipType = [];
+            
+            if     isa(oManip, 'matter.manips.vol'),     sManipType = 'vol';
+            elseif isa(oManip, 'matter.manips.temp'),    sManipType = 'temp';
+            elseif isa(oManip, 'matter.manips.partial'), sManipType = 'partial';
+            end
+            
+            if ~isempty(this.toManips.(sManipType))
+                this.throw('addManipulator', 'A manipulator of type %s is already set for phase %s (store %s)', sManipType, this.sName, this.oStore.sName);
+            end
+            
+            % Set manipulator
+            this.toManips.(sManipType) = oManip;
+            
+            % Remove fct call to detach manipulator
+            hRemove = @() this.detachManipulator(sManipType);
         end
         
-        function this = update(this, fTimeStep)
-            % The .update method does actually add or subtract the mass
-            % depending on the flow rates on exmes and the time step. So if
-            % only an update of internal parameters is desired, call this
-            % method without a parameter or .update(0)
+        
+        
+        function this = massupdate(this, bSetOutdatedTS)
+            fTime     = this.oStore.oTimer.fTime;
+            fTimeStep = fTime - this.fLastMassUpdate;
             
-            % Don't execute the merge/extract if time step = 0 -> just
-            % update of matter properties
-            %TODO two separate methods? make a method similar to flows to
-            %     merge/extract on a number of phases at once, maybe some
-            %     vector operations (same matter table!).
-            %     See below, setParam -> some static, class (and not obj)
-            %     based event for params like volume, always exec .update
-            %     after that event.
-            bNoEXMEs = (nargin < 2) || isempty(fTimeStep) || (fTimeStep == 0);
+            % Return if no time has passed
+            if fTimeStep == 0, return; end;
             
-            %TODO first do all mergers, then calc all new things, then exs?
-            % mergers, p2p mergers, .update(), p2p extract, extract, update
-            %   - with p2p -> first outer merge, inner merge, then inner
-            %     extract (selective exme), outer extract
-            %   - e.g. arPartials of phase required in each EXME for
-            %     relatives, update after EACH exme or once at the end?
-            %     Because probably else problem if selective ex/normal ex?
+            % Immediately set fLastMassUpdate, so if there's a recursive call 
+            % to massupdate, e.g. by a p2ps.flow, nothing happens!
+            this.fLastMassUpdate     = fTime;
+            this.fMassUpdateTimeStep = fTimeStep;
             
-            if ~bNoEXMEs
-                for iI = 1:this.iProcsEXME
-                    this.coProcsEXME{iI}.update(fTimeStep, 'merge');
+            % All in-/outflows in [kg/s] and multiply with curernt time
+            % step, also get the inflow rates / temperature / heat capacity
+            [ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
+            
+            if any(afTotalInOuts ~= 0)
+                %keyboard();
+            end
+            
+            
+            % Check manipulator
+            if ~isempty(this.toManips.partial) && ~isempty(this.toManips.partial.afPartial)
+                this.toManips.partial.update();
+                %keyboard();
+                % Add the changes from the manipulator to the total inouts
+                afTotalInOuts = afTotalInOuts + this.toManips.partial.afPartial;
+            end
+            
+            
+            % Multiply with current time step
+            afTotalInOuts = afTotalInOuts * fTimeStep;
+            %afTotalInOuts = this.getTotalMassChange() * fTimeStep;
+            
+            % Do the actual adding/removing of mass.
+            %TODO-NOW check if p2p stuff works, and manipulator stuff!
+            %         the outflowing EXMEs need to get the right partial
+            %         masses, e.g. if a p2p in between extracs a species!
+            %CHECK    ok to round? default uses 1e8 ... should be coupled
+            %         to the min. time step!
+            %this.afMass =  tools.round.prec(this.afMass + afTotalInOuts, 10);
+            this.afMass =  this.afMass + afTotalInOuts;
+            
+            
+            % Check if that is a problem, i.e. negative masses.
+            %abNegative = (this.afMass + afTotalInOuts) < 0;
+            abNegative = this.afMass < 0;
+            
+            if any(abNegative)
+                %disp(this.afMass + afTotalInOuts);
+                %this.throw('massupdate', 'Extracted more mass then available in phase %s (store %s)', this.sName, this.oStore.sName);
+                
+                % Subtract - negative - added
+                %NOTE uncomment this, comment out the two lines above if
+                %     negative masses should just be logged
+                this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
+                this.afMass(abNegative) = 0;
+            end
+            
+            
+            
+            %%%% Now calculate the new temperature of the phase using the
+            % inflowing enthalpies / inner energies / ... whatever.
+            
+            % Convert flow rates to masses
+            mfInflowDetails(:, 1) = mfInflowDetails(:, 1) * fTimeStep;
+            
+            % Add the phase mass and stuff
+            if ~isempty(mfInflowDetails) % no inflows?
+                %mfInflowDetails = [ this.fMass, this.fTemp, this.fHeatCapacity ];
+                mfInflowDetails(end + 1, 1:3) = [ this.fMass, this.fTemp, this.fHeatCapacity ];
+                
+                % Calculate inner energy (m * c_p * T) for all masses
+                afEnergy = mfInflowDetails(:, 1) .* mfInflowDetails(:, 3) .* mfInflowDetails(:, 2);
+                
+                % For all masses - mass * heat capacity - helper
+                afMassTimesCP = mfInflowDetails(:, 1) .* mfInflowDetails(:, 3);
+                
+                % New temperature
+                %keyboard();
+                this.fTemp = sum(afEnergy) / sum(afMassTimesCP);
+            end
+            
+            % Logic for deriving new temperature:
+            % Inner Energy
+            %   Q = m * c_p * T
+            % 
+            % Total energy, mass:
+            %   Q_t = Q_1 + Q_2 + ...
+            %   m_t = m_1 + m_2 + ...
+            %
+            % Total Heat capacity of the mixture
+            %   c_p,t = (c_p,1*m_1 + c_p,2*m_2 + ...) / (m_1 + m_2 + ...)
+            %
+            %
+            % Temperature from total energy of a mix
+            %   T_t = Q_t / (m_t * c_p,t)
+            %       = (m_1 * c_p,1 * T_1 + m_2 * c_p,2 * T_2 + ...) /
+            %         ((m_1 + m_2 + ...) * (c_p,1*m_1 + ...) / (m_1 + ...))
+            %       = (m_1 * c_p,1 * T_1 + m_2 * c_p,2 * T_2 + ...) /
+            %               (c_p,1*m_1 + c_p,2*m_2 + ...)
+            %
+            %
+            %TODO see http://de.wikipedia.org/wiki/Innere_Energie
+            %     also see EXME, old .merge
+            %     -> handle further things?
+            
+            
+            % Update total mass
+            this.fMass = sum(this.afMass);
+            
+            % Only set outdatedTS (so in post tick, new time step is
+            % calculated) if 2nd param is not false. Used by .update() to
+            % make sure the time step calculation callback is executed
+            % after the flow rate update callbacks in the branches.
+            if (nargin < 2) || isempty(bSetOutdatedTS) || bSetOutdatedTS
+                if this.bSynced
+                    %TODO check if branche that called this massupdate
+                    %   method is not executed again, and if flow rates are
+                    %   actually calcualted before the phase sets the 
+                    %   new time step!
+                    this.setBranchesOutdated();
                 end
+                
+                this.setOutdatedTS();
             end
+        end
+        
+        function this = update(this)
+            % Only update if not yet happened at the current time.
+            if (this.oStore.oTimer.fTime <= this.fLastUpdate) || (this.oStore.oTimer.fTime < 0)
+                return;
+            end;
+            
+            %disp([ num2str(this.oStore.oTimer.iTick) ': Phase ' this.oStore.sName '-' this.sName ' (@' num2str(this.oStore.oTimer.fTime) 's, last ' num2str(this.fLastUpdate) 's)' ]);
             
             
-            if strcmp(this.sName, 'air') && strcmp(this.oStore.sName, 'Filter')
-                %disp(this.afMass);
-            end
+            % Store update time
+            this.fLastUpdate = this.oStore.oTimer.fTime;
             
             
-            %TODO only recalculate after extract?
-            this.fMass         = sum(this.afMass);
-            % No mass - partials zero
+            % Move matter in/out. Param false passed to prevent massupd
+            % from registering the time step calculation callback on post
+            % step. Needs to be added later, after the branches are set to
+            % recalculate their flow rates - which they do post-step as
+            % well. Therefore make sure that this.calculateTimeStep is
+            % executed after the flow rate calculators.
+            this.massupdate(false);
+            
+            
+            % Cache old fMass / afMass - need that in time step
+            % calculations!
+            this.fMassLastUpdate  = this.fMass;
+            this.afMassLastUpdate = this.afMass;
+            
+            
+            % Partial masses
             if this.fMass > 0, this.arPartialMass = this.afMass / this.fMass;
             else               this.arPartialMass = this.afMass; % afMass is just zeros
             end
             
-            
-            
             % Now update the matter properties
-            this.fMolMass = this.oMT.calculateMolecularMass(this.afMass);
-            
-            %TODO see table - maybe Cps dependent on temperature and other
-            %     stuff here - so maybe calcHeatCaps has to re-calc the mix
-            %     total heat capacity with a callback to get the single
-            %     heat capacities of the matter types depenedent on phase,
-            %     temperature etc
-            %     Might be a more or less simple 2d interpolation if just
-            %     lookup tables, right?
+            this.fMolMass      = this.oMT.calculateMolecularMass(this.afMass);
             this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
             
             
+            % Triggers all branchs to recalculate flow rate
+            this.setBranchesOutdated();
             
-            if ~bNoEXMEs
-                for iI = 1:this.iProcsEXME
-                    this.coProcsEXME{iI}.update(fTimeStep, 'extract');
-                    
-                end
-            end
-            
-            % And again update partials in case of selective EXMEs
-            this.fMass         = sum(this.afMass);
-            % No mass - partials zero
-            if this.fMass > 0, this.arPartialMass = this.afMass / this.fMass;
-            else               this.arPartialMass = this.afMass;
-            end
-            
-            this.fMolMass = this.oMT.calculateMolecularMass(this.afMass);
-            this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
+            % Register time step calculation on post tick
+            this.setOutdatedTS();
         end
     end
     
@@ -250,7 +437,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
     % the store's bSealed attr, so nothing can be changed later.
     methods
         
-        function setAttribute = addProcEXME(this, oProcEXME)
+        function addProcEXME(this, oProcEXME)
             % Adds a exme proc, i.e. a port. Returns a function handle to
             % the this.setAttribute method (actually the one of the derived
             % class) which allows manipulation of all set protected
@@ -260,8 +447,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 this.throw('addProcEXME', 'The store to which this phase belongs is sealed, so no ports can be added any more.');
             end
             
-            if ~isa(oProcEXME, 'matter.procs.exme')
-                this.throw('addProcEXME', 'Provided object ~isa matter.procs.f2f.');
+            
+            if ~isa(oProcEXME, [ 'matter.procs.exmes.' this.sType ])
+                this.throw('addProcEXME', [ 'Provided object ~isa matter.procs.exmes.' this.sType ]);
                 
             elseif ~isempty(oProcEXME.oPhase)
                 this.throw('addProcEXME', 'Processor has already a phase set as parent.');
@@ -274,13 +462,29 @@ classdef phase < base & matlab.mixin.Heterogeneous
             
             
             this.toProcsEXME.(oProcEXME.sName) = oProcEXME;
-            setAttribute = @this.setAttribute;
         end
         
         function seal(this)
             if ~this.oStore.bSealed
                 this.coProcsEXME = struct2cell(this.toProcsEXME)';
                 this.iProcsEXME  = length(this.coProcsEXME);
+                
+                
+                % Get all p2p flow processors on EXMEs
+                this.coProcsP2Pflow = {};
+                this.iProcsP2Pflow  = 0;
+                
+                for iE = 1:this.iProcsEXME
+                    % If p2p flow, cannot be port 'default', i.e. just one
+                    % flow possible!
+                    if ~isempty(this.coProcsEXME{iE}.aoFlows) && isa(this.coProcsEXME{iE}.aoFlows(1), 'matter.procs.p2ps.flow')
+                        this.iProcsP2Pflow = this.iProcsP2Pflow + 1;
+                        
+                        this.coProcsP2Pflow{this.iProcsP2Pflow} = this.coProcsEXME{iE}.aoFlows(1);
+                    end
+                end
+                
+                %this.update();
             end
         end
     end
@@ -288,6 +492,200 @@ classdef phase < base & matlab.mixin.Heterogeneous
     
     %% Internal, protected methods
     methods (Access = protected)
+        function detachManipulator(this, sManip)
+            %CHECK several manipulators possible?
+            
+            this.toManips.(sManip) = [];
+        end
+        
+        
+        function setBranchesOutdated(this)
+            % Loop through exmes / flows and set outdated, i.e. request re-
+            % calculation of flow rate.
+            for iE = 1:this.iProcsEXME
+                for iF = 1:length(this.coProcsEXME{iE}.aoFlows)
+                    oBranch = this.coProcsEXME{iE}.aoFlows(iF).oBranch;
+                    
+                    % Make sure it's not a p2ps.flow - their update method
+                    % is called in time step calculation method
+                    if isa(oBranch, 'matter.branch')
+                        % Tell branch to recalculate flow rate (done after
+                        % the current tick, in timer post tick).
+                        oBranch.setOutdated();
+                    end
+                end
+            end
+        end
+        
+        
+        function [ afTotalInOuts, mfInflowDetails ] = getTotalMassChange(this)
+            % Get vector with total mass change through all EXME flows
+            % witin one second, i.e. [kg/s].
+            %
+            % The second output parameter is a matrix containing all inflow
+            % rates, temperatures and heat capacities for calculating the
+            % inflowing enthalpy/inner energy
+            
+            % Total flows - one row (see below) for each EXME, amount of
+            % columns is the amount of species (partial masses)
+            mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSpecies);
+            
+            % Each row: flow rate, temperature, heat capacity
+            mfInflowDetails = zeros(0, 3);
+            
+            % Get flow rates and partials from EXMEs
+            for iI = 1:this.iProcsEXME
+                [ afFlowRates, mrFlowPartials, mfProperties ] = this.coProcsEXME{iI}.getFlowData();
+                
+                % The afFlowRates is a row vector containing the flow rate
+                % at each flow, negative being an extraction!
+                % mrFlowPartials is matrix, each row has partial ratios for
+                % a flow, cols are the different species.
+                % mfProperties contains temp, heat capacity
+                
+                if isempty(afFlowRates), continue; end;
+                
+                % So bsxfun with switched afFlowRates (to col vector) will
+                % multiply every column value in the flow partials matrix
+                % with the value in flow rates at the according position
+                % (i.e. each element in first row with first element of fr,
+                % each element in second row with 2nd element on fr, ...)
+                % Then we sum() the resulting matrix which sums up column
+                % wise ...
+                mfTotalFlows(iI, :) = sum(bsxfun(@times, afFlowRates, mrFlowPartials), 1);
+                
+                % ... and now we got a vector with the absolute mass in-/
+                % outflow for the current EXME for each species and for one
+                % second!
+                
+                
+                % Calculate inner energy of INflows, per sec
+                abInf    = (afFlowRates > 0);
+                %TODO store as attribute for 'automatic' preallocation,
+                %     replace rows instead of append.
+                if any(abInf)
+                    mfInflowDetails = [ mfInflowDetails; afFlowRates(abInf), mfProperties(abInf, 1), mfProperties(abInf, 2) ];
+                end
+            end
+            
+            
+            % Now sum up in-/outflows over all EXMEs and multiply with the
+            % time step!
+            afTotalInOuts = sum(mfTotalFlows, 1);
+        end
+        
+        
+        
+        function calculateTimeStep(this)
+            % Check manipulator
+            %TODO allow user to set a this.bManipBeforeP2P or so, and if
+            %     true execute the [manip].update() before the P2Ps update!
+            if ~isempty(this.toManips.partial)
+                %keyboard();
+                this.toManips.partial.update();
+                
+                % Add the changes from the manipulator to the total inouts
+                %afTotalInOuts = afTotalInOuts + this.toManips.partial.afPartial;
+            end
+            
+            
+            %keyboard();
+            % Call p2ps.flow update methods (if not yet called)
+            for iP = 1:this.iProcsP2Pflow
+                % That check would make more sense within the flow p2p
+                % update method - however, that method will be overloaded
+                % in p2ps to include the model to derive the flow rate, so
+                % would have to be manually added in each derived p2p ...
+                if this.coProcsP2Pflow{iP}.fLastUpdate < this.fLastMassUpdate
+                    % Triggers the .massupdate of both connected phases
+                    % which is ok, because the fTimeStep == 0 check above
+                    % will prevent this .massupdate from re-executing.
+                    this.coProcsP2Pflow{iP}.update();
+                end
+            end
+            
+            
+            if ~isempty(this.fFixedTS)
+                fTimeStep = this.fFixedTS;
+            else
+
+                % Calculate the change in total and partial mass since last
+                % update that already happend / was applied
+                rPreviousChange  = max(abs(this.fMassLastUpdate   / this.fMass  - 1));
+                arPreviousChange = abs(this.afMassLastUpdate ./ this.afMass - 1);
+                
+                % Should only happen if fMass (therefore afMass) is zero!
+                if isnan(rPreviousChange)
+                    rPreviousChange  = 0;
+                    arPreviousChange = this.afMass; % ... set to zeros!
+                end
+
+                % Change in kg of partial masses per second
+                afChange = this.getTotalMassChange();
+
+                % Only use entries where change is not zero
+                abChange = (afChange ~= 0);
+                
+                % Changes of species masses - get max. change, add the change
+                % that happend already since last update
+                arPreviousChange = abs(afChange(abChange) ./ tools.round.prec(this.afMass(abChange), this.oStore.oTimer.iPrecision)) + arPreviousChange(abChange);
+                
+                % Only use non-inf --> inf if current mass of according
+                % species is zero. If new species enters phase, still
+                % covered through the overall mass check.
+                rChangePerSecond = max(arPreviousChange(~isinf(arPreviousChange)));
+                
+                % Change per second of TOTAL mass
+                fChange = sum(afChange);
+
+                % No change? Use max. change per second --> one second timestep
+                if fChange == 0
+                    rTotalPerSecond = this.rMaxChange + rPreviousChange;
+                else
+                    rTotalPerSecond = abs(fChange / this.fMass - 0) + rPreviousChange;
+                end
+
+                % Derive timestep, use the max change (total mass or one of the
+                % species change)
+                %NOTE if some species has zero mass, but then one of the flows
+                %     starts to introduce some of that species, the first tick
+                %     the rChangePerSecond will be Inf, therefore fTimeStep
+                %     will be zero - this is ok, if a new species is introduced
+                %     a short time step is fine.
+                fTimeStep = this.rMaxChange / max([ rChangePerSecond rTotalPerSecond ]);
+
+                if fTimeStep > this.fMaxStep, fTimeStep = this.fMaxStep; end;
+            end
+            
+            
+            
+            % Set new time step (on store, only sets that if smaller then
+            % the currently set time step, btw).
+            %CHECK     don't really need the whole store to update, p2p
+            %          procs are always updated if one of the connected
+            %          phases is updated, massupd also always done.
+            %          Just register own callback and exec .update()!
+            %          Still, logic required to update e.g. store's
+            %          volume distribution if liquid phase changes etc.
+            this.oStore.setNextExec(this.fLastMassUpdate + fTimeStep);
+            %this.oStore.setNextExec(this.fLastMassUpdate + 1);
+            
+            % Now up to date!
+            this.bOutdatedTS = false;
+        end
+        
+        function setOutdatedTS(this)
+            %if ~this.bOutdatedTS
+                this.bOutdatedTS = true;
+                
+                %this.setTimeStep(0);
+                this.oStore.oTimer.bindPostTick(@this.calculateTimeStep);
+            %end
+        end
+        
+        
+        
+        
         function this = updateMatterTable(this)
             % Update matter table from parent oStore. The afMass vector is 
             % automatically rearranged to fit the new matter table.
@@ -339,6 +737,22 @@ classdef phase < base & matlab.mixin.Heterogeneous
             %   xNewValue   - value to set param to
             %   setValue    - function handle to set the struct returned by
             %                 the processor (params key, value).
+            %
+            %TODO   need that method so e.g. a gas phase can change the
+            %       fVolume property, and some external manipulator can be
+            %       called from here to e.g. change the temperature due to
+            %       the volume change stuff.
+            %       -> how to define which manipulators to use? This class
+            %          here should handle the manipulators for its own
+            %          properties (fTemp, fVol) etc - but depending on
+            %          phase type. Specific phase type class should handle
+            %          manips for their properties (gas -> fPressure).
+            %          SEE setAttribute -> provide generic functionality to
+            %          trigger an event or external handler when a property
+            %          is changed -> different manipulators can be attached
+            %          to different phases and properties
+            %       -> just make properties SetAcc protected or create some
+            %          more specific setVol, setTemp etc. methods?
             
             bSuccess = false;
             txValues = [];
@@ -347,7 +761,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
             %     events' that happen generally on e.g.
             %     matter.phase.setVolume?
             this.setAttribute(sParamName, xNewValue);
-            this.update(0);
+            this.update();
             
             return;
             
