@@ -53,6 +53,11 @@ classdef branch < solver.matter.base.branch
             % branch
             afTemps = [ this.oBranch.aoFlowProcs.fDeltaTemp ];
             
+            % Check if all the temperature deltas are assigned
+            if ~(length(afTemps) == this.oBranch.iFlowProcs)
+                this.throw('solver', 'Solver error, make sure all of your flow 2 flow procs have their delta temps and pressures assigned!');
+            end
+            
             % Getting all hydraulic diameters and lengths
             afHydrDiam   = [ this.oBranch.aoFlowProcs.fHydrDiam ];
             afHydrLength = [ this.oBranch.aoFlowProcs.fHydrLength ];
