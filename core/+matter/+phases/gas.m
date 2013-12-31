@@ -99,6 +99,9 @@ classdef gas < matter.phase
         function [ afPartialPressures ] = getPartialPressures(this)
             %TODO see @matter.flow.getPartialPressures
             %     PROTECTED! automatically called in .update() -> afPPs!
+            %
+            %TODO allow param (cell, string, index) --> select species for
+            %     whom to get partial pressure
             
             % No mass? 
             if this.fMass == 0

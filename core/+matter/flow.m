@@ -339,7 +339,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % If e.g. a valve is shut in the branch, this method is however
             % called without those params, so we need to check that and in
             % that case make no changes to fPressure / fTemp in the flows.
-            if nargin >= 4
+            % So get pressure/temperature of in exme (if FR provided)
+            if nargin >= 3
+                %TODO get exme from this.oBranch, depending on fFlowRate?
                 [ fPortPress, fPortTemp ] = oExme.getPortProperties();
             else
                 fPortPress = 0;
@@ -363,6 +365,17 @@ classdef flow < base & matlab.mixin.Heterogeneous
             bSkipPT      = (nargin < 4) || isempty(afPressures); % skip pressure, temp?
             bSkipT       = (nargin < 5) || isempty(afTemps);     % skip temp?
             
+            %TODO find out correct behaviour here ... don't set pressures
+            %     or temps (from solver init?) if those params are empty or
+            %     not provided --> but they're also empty if no f2fs exist
+            %     in this branch!!
+            %     then however length(this) == 1 -> use that?
+            %     or just ALWAYS set the flow params for those flows
+            %     directly connected to the EXMEs?
+            %     ALSO: if no afPress/afTemps, just distribute equally!?
+            %if bSkipT || bSkipPT, this.warn('setData', 'setData on flows w/o press/temp (or just empty) --> difference: no delta temp/press (cause no f2f) or really don''t set??'); end;
+            if (bSkipT || bSkipPT) && (iL > 1), this.warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end;
+            
             for iI = 1:iL
                 % Only set those params if oExme was provided
                 if ~isempty(oExme)
@@ -376,6 +389,13 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 if bSkipFRandPT, continue; end;
                 
                 this(iI).fFlowRate = fFlowRate;
+                
+                % If only one flow, no f2f exists --> set pressure, temp
+                % according to IN exme
+                if iL == 1
+                    this.fPressure = fPortPress;
+                    this.fTemp     = fPortTemp;
+                end
                 
                 
                 % Skip pressure, temperature?

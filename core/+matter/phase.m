@@ -421,6 +421,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
             this.fMolMass      = this.oMT.calculateMolecularMass(this.afMass);
             this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
             
+            if this.oStore.oTimer.fTime > 1050 && strcmp([ this.oStore.sName '-' this.sName ], 'Assembly_L-air')
+                %keyboard();
+            end
             
             % Triggers all branchs to recalculate flow rate
             this.setBranchesOutdated();
@@ -431,7 +434,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
     end
     
     
-    %% Methods for adding ports etc
+    %% Methods for adding ports, getting flow information etc
     % The EXME procs get an instance to this object on construction and
     % call the addProcEXME here, therefore not protected - but checks
     % the store's bSealed attr, so nothing can be changed later.
@@ -484,38 +487,14 @@ classdef phase < base & matlab.mixin.Heterogeneous
                     end
                 end
                 
+                %CHECK update here or not?
                 %this.update();
             end
         end
-    end
-    
-    
-    %% Internal, protected methods
-    methods (Access = protected)
-        function detachManipulator(this, sManip)
-            %CHECK several manipulators possible?
-            
-            this.toManips.(sManip) = [];
-        end
         
         
-        function setBranchesOutdated(this)
-            % Loop through exmes / flows and set outdated, i.e. request re-
-            % calculation of flow rate.
-            for iE = 1:this.iProcsEXME
-                for iF = 1:length(this.coProcsEXME{iE}.aoFlows)
-                    oBranch = this.coProcsEXME{iE}.aoFlows(iF).oBranch;
-                    
-                    % Make sure it's not a p2ps.flow - their update method
-                    % is called in time step calculation method
-                    if isa(oBranch, 'matter.branch')
-                        % Tell branch to recalculate flow rate (done after
-                        % the current tick, in timer post tick).
-                        oBranch.setOutdated();
-                    end
-                end
-            end
-        end
+        
+        
         
         
         function [ afTotalInOuts, mfInflowDetails ] = getTotalMassChange(this)
@@ -525,6 +504,10 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % The second output parameter is a matrix containing all inflow
             % rates, temperatures and heat capacities for calculating the
             % inflowing enthalpy/inner energy
+            %
+            %TODO on .seal() and when branches are (re)connected, write all
+            %     flow objects connected to the EXMEs to this.aoFlowsEXMEs
+            %     or something, in order to access them more quickly here!
             
             % Total flows - one row (see below) for each EXME, amount of
             % columns is the amount of species (partial masses)
@@ -576,6 +559,40 @@ classdef phase < base & matlab.mixin.Heterogeneous
         
         
         
+        
+    end
+    
+    
+    %% Internal, protected methods
+    methods (Access = protected)
+        function detachManipulator(this, sManip)
+            %CHECK several manipulators possible?
+            
+            this.toManips.(sManip) = [];
+        end
+        
+        
+        function setBranchesOutdated(this)
+            % Loop through exmes / flows and set outdated, i.e. request re-
+            % calculation of flow rate.
+            for iE = 1:this.iProcsEXME
+                for iF = 1:length(this.coProcsEXME{iE}.aoFlows)
+                    oBranch = this.coProcsEXME{iE}.aoFlows(iF).oBranch;
+                    
+                    % Make sure it's not a p2ps.flow - their update method
+                    % is called in time step calculation method
+                    if isa(oBranch, 'matter.branch')
+                        % Tell branch to recalculate flow rate (done after
+                        % the current tick, in timer post tick).
+                        oBranch.setOutdated();
+                    end
+                end
+            end
+        end
+        
+        
+        
+        
         function calculateTimeStep(this)
             % Check manipulator
             %TODO allow user to set a this.bManipBeforeP2P or so, and if
@@ -604,7 +621,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 end
             end
             
-            
+            %keyboard();
             if ~isempty(this.fFixedTS)
                 fTimeStep = this.fFixedTS;
             else
@@ -624,6 +641,11 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 afChange = this.getTotalMassChange();
 
                 % Only use entries where change is not zero
+                % If some species changed a bit, but less then the thres-
+                % hold, and does not any more - not taken into account. It
+                % can still change in relation to other species, where mass
+                % flows in/out, but that should be covered by the total
+                % mass change check.
                 abChange = (afChange ~= 0);
                 
                 % Changes of species masses - get max. change, add the change
@@ -638,9 +660,16 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % Change per second of TOTAL mass
                 fChange = sum(afChange);
 
-                % No change? Use max. change per second --> one second timestep
+                % No change in total mass?
                 if fChange == 0
-                    rTotalPerSecond = this.rMaxChange + rPreviousChange;
+                    %OLD
+                    % % Use max. change per second --> one second timestep
+                    % rTotalPerSecond = this.rMaxChange + rPreviousChange;
+                    
+                    % Set total change to zero -> time step should be Inf
+                    rTotalPerSecond = 0;
+                
+                % Total change [ratio] of mass in phase
                 else
                     rTotalPerSecond = abs(fChange / this.fMass - 0) + rPreviousChange;
                 end

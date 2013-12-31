@@ -105,6 +105,10 @@ classdef exme < base
             elseif ~isempty(this.aoFlows) && ~strcmp(this.sName, 'default')
                 this.throw('addFlow', 'Only procs with the name ''default'' can handle several MFs ...');
             
+            % .p2p but not a .p2ps.flow? Can only connect .flow P2P proc!
+            elseif ~isa(oFlow, 'matter.procs.p2ps.flow') && isa(oFlow, 'matter.procs.p2p')
+                this.throw('addFlow', 'A p2p processor connected to an EXME needs to inherit from matter.procs.p2ps.flow!');
+            
             % Of p2p, only one flow can be connected, i.e. name cannot be
             % 'default' (which allows several flows)
             elseif isa(oFlow, 'matter.procs.p2ps.flow') && strcmp(this.sName, 'default')

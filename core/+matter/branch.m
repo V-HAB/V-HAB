@@ -410,6 +410,8 @@ classdef branch < base & event.source
             % changed (closing a valve).
             
             % Only trigger if not yet set
+            %CHECK inactivated here --> solvers and otehr "clients" should
+            %      check themselves!
             if ~this.bOutdated
                 this.bOutdated = true;
 
