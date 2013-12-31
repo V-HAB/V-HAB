@@ -6,8 +6,13 @@ classdef branch < solver.matter.base.branch
         iRemChange = 0;
         fMaxStep   = 15;
         
+        iDampFR    = 0;
+        
         % Fixed time step - set to empty ([]) to deactivate
         fFixedTS = [];
+        
+        % Coefficient for FR calculation
+        fCoeffFR = 0.0000133;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -79,7 +84,7 @@ classdef branch < solver.matter.base.branch
             %        set to true. For these comps, call some updHydrDiam.
             %        The comps use the LAST pressures / flow rate to calc.
             %        a hydraulic diameter and update fHydrDiam.
-            fCoeff = sum(afPosHydrDiam * 0.000001 ./ afHydrLength);
+            fCoeff = sum(afPosHydrDiam * this.fCoeffFR ./ afHydrLength);
             
             fPressureLeft  = this.oBranch.coExmes{1}.getPortProperties();
             fPressureRight = this.oBranch.coExmes{2}.getPortProperties();
@@ -87,6 +92,10 @@ classdef branch < solver.matter.base.branch
             fFlowRate = fCoeff * (fPressureLeft - fPressureRight + fPressureRises);
             %TODO see above
             
+            % Damp flow rate?
+            %TODO only if it gets bigger or smaller? Time-specific? Right
+            %     now tick length not taken into account ...
+            fFlowRate = (fFlowRate + this.iDampFR * this.fFlowRate) / (1 + this.iDampFR);
             
             
             
