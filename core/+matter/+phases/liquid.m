@@ -12,9 +12,9 @@ classdef liquid < matter.phase
         fVolume;                % Volume in m^3
         
         % Pressure in Pa
-        %TODO see liquid exme, fPressure should NOT be defined here!
+        % the pressure in the tank without the influence of gravity or
+        % acceleration even if these effects exist
         fPressure;
-        
         
         fDynamicViscosity;      % Dynamic Viscosity in Pa*s
         
@@ -27,11 +27,12 @@ classdef liquid < matter.phase
         % fVolume   : Volume of the phase
         % fTemp     : Temperature of matter in phase
         
-        function this = liquid(oStore, sName, tfMasses, fVolume, fTemp)
+        function this = liquid(oStore, sName, tfMasses, fVolume, fTemp, fPressure)
             this@matter.phase(oStore, sName, tfMasses, fTemp);
             
             this.fVolume  = fVolume;
             this.fDensity = this.fMass / this.fVolume;
+            this.fPressure = fPressure;
             
             %TODO see .update(), also called from matter.phase constructor!
             %this.update();
@@ -56,9 +57,6 @@ classdef liquid < matter.phase
         
         function bSuccess = setPressure(this, fPressure)
             % Changes the pressure of the phase.
-            % In this version of the 'liquid' class, all liquids are
-            % considered inkompressible. The pressure of a liquid phase can
-            % therefore be set more or less arbitrarily. 
             %
             % Ideally, I would like to set the initial pressure only once, 
             % maybe in the branch?
@@ -67,7 +65,10 @@ classdef liquid < matter.phase
             % matter.table to make sure the pressure isn't so low, that a
             % phase change to gas takes place
             
+            
+            %TO DO: Get new Density for new pressure
             bSuccess = this.setParameter('fPressure', fPressure);
+            
             
             return;
             %TODO with events:
@@ -80,6 +81,22 @@ classdef liquid < matter.phase
             % volume is returned ...
         end
         
+        function bSuccess = setMass(this, fMass)
+
+            bSuccess = this.setParameter('fMass', fMass);
+            this.fDensity = this.fMass / this.fVolume;
+  
+            return;
+        end
+        
+        function bSuccess = setTemp(this, fTemp)
+
+            bSuccess = this.setParameter('fTemp', fTemp);
+            this.fDensity = this.fMass / this.fVolume;
+            
+            return;
+        end
+
         function this = update(this)
             update@matter.phase(this);
             
