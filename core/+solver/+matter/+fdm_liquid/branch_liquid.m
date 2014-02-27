@@ -302,84 +302,77 @@ classdef branch_liquid < solver.matter.base.branch
                         %temperature
                         
                         %case of proc which also is a pipe
-                        if (mDeltaPressureComp(n) ~= 0 || mDeltaTempComp(n) ~= 0) && (mHydrLength(n) ~= 0 && mHydrDiam(n) ~= 0)
-                            %the values for pressure and temp loss over
+                        if mDeltaTempComp(n) ~= 0 && mHydrLength(n) ~= 0
+                            %the values for temperature change over
                             %this type of flow proc are spread over all the
                             %cells of the proc
-                            for m = (k-(this.inCells-1)):k
-                                %if the pressure difference over the cell
-                                %is equal or even larger than the pressure
-                                %difference the flow proc can provide
-                                %nothing should be done.
-                                if abs(mPressure(m)-mPressure(m-1)) < abs(mDeltaPressureComp(n)/this.inCells) && mDirectionDeltaPressureComp(n) ~= 0
-                                    mPressure(m) = mPressure(m-1)+((mDirectionDeltaPressureComp(n)*mDeltaPressureComp(n)/this.inCells)-(mPressure(m)-mPressure(m-1)));
-                                elseif abs(mPressure(m)-mPressure(m-1)) < abs(mDeltaPressureComp(n)/this.inCells) && mDirectionDeltaPressureComp(n) == 0
-                                    %in this case the flow proc does not have a specified direction but instead
-                                    %represents a pressure drop which always is directed against the flow
-                                    if mFlowSpeed(m) >= 0
-                                        mPressure(m) = mPressure(m-1)+((-1*mDeltaPressureComp(n)/this.inCells)-(mPressure(m)-mPressure(m-1)));
-                                    else
-                                        mPressure(m) = mPressure(m-1)+((1*mDeltaPressureComp(n)/this.inCells)-(mPressure(m)-mPressure(m-1)));
+                            if this.fMassFlowOld > 0
+                                for m = (k-(this.inCells-1)):k
+                                    mTemperature(m) = mTemperature(m)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(m)-mTemperature(m-1)));
+                                    if mTemperature(m) < 0
+                                        mTemperature(m) = 0;
                                     end
-                                end
-                                
-                              	mTemperature(m) = mTemperature(m-1)+(mDeltaTempComp(n)/this.inCells);
-                                if mPressure(m) < 0
-                                    mPressure(m) = 0;
-                                end
-                                if mTemperature(m) < 0
-                                    mTemperature(m) = 0;
-                                end
-                                mDensity(m) = solver.matter.fdm_liquid.functions.LiquidDensity(mTemperature(m), mPressure(m), fFixDensity, fFixTemperature, fMolMassH2O, ...
-                                 fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                                    mDensity(m) = solver.matter.fdm_liquid.functions.LiquidDensity(mTemperature(m), mPressure(m), fFixDensity, fFixTemperature, fMolMassH2O, ...
+                                        fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
                              
-                             	mInternalEnergy(m) = fHeatCapacity*(mTemperature(m)-fTempRef)*mDensity(m);                            
+                                    mInternalEnergy(m) = fHeatCapacity*(mTemperature(m)-fTempRef)*mDensity(m);
+                                end
+                            elseif this.fMassFlowOld < 0
+                                for m = (k+(this.inCells-1)):-1:k
+                                    mTemperature(m) = mTemperature(m)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(m)-mTemperature(m+1)));
+                                    if mTemperature(m) < 0
+                                        mTemperature(m) = 0;
+                                    end
+                                    mDensity(m) = solver.matter.fdm_liquid.functions.LiquidDensity(mTemperature(m), mPressure(m), fFixDensity, fFixTemperature, fMolMassH2O, ...
+                                        fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                             
+                                    mInternalEnergy(m) = fHeatCapacity*(mTemperature(m)-fTempRef)*mDensity(m);
+                                end
+                            %TO DO: what should be done with heaters in
+                            %case of no flow?
+                            else
+                                
                             end
- 
+
                         %case of a pure proc at the end of the branch
-                        elseif n == iNumberOfProcs && ~((mDeltaPressureComp(n) ~= 0 || mDeltaTempComp(n) ~= 0) && (mHydrLength(n) ~= 0 && mHydrDiam(n) ~= 0))
+                        elseif n == iNumberOfProcs && mDeltaTempComp(n) ~= 0 && mHydrLength(n) == 0 
                             %in this case there if no cell after the flow
                             %proc and therefore the values have to be
                             %assigned to last cell in the branch
-                          	if abs(mPressure(end)-mPressure(end-1)) < abs(mDeltaPressureComp(n)/this.inCells) && mDirectionDeltaPressureComp(n) ~= 0
-                                    mPressure(end) = mPressure(end-1)+((mDirectionDeltaPressureComp(n)*mDeltaPressureComp(n)/this.inCells)-(mPressure(end)-mPressure(end-1)));
-                           	elseif abs(mPressure(end)-mPressure(end-1)) < abs(mDeltaPressureComp(n)/this.inCells) && mDirectionDeltaPressureComp(n) == 0
-                                    %in this case the flow proc does not have a specified direction but instead
-                                    %represents a pressure drop which always is directed against the flow
-                                if mFlowSpeed(end) >= 0
-                                    mPressure(end) = mPressure(end-1)+((-1*mDeltaPressureComp(n)/this.inCells)-(mPressure(end)-mPressure(end-1)));
-                                else
-                                    mPressure(end) = mPressure(end-1)+((1*mDeltaPressureComp(n)/this.inCells)-(mPressure(end)-mPressure(end-1)));
-                                end
+                            if this.fMassFlowOld > 0
+                                mTemperature(end) = mTemperature(end)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(end)-mTemperature(end-1)));
+                            elseif this.fMassFlowOld < 0
+                                mTemperature(end) = mTemperature(end)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(end)-fTemperatureBoundary2));
                             end
-                            mTemperature(end) = mTemperature(end-1) + mDeltaTempComp(n);
-                            if mPressure(end) < 0
-                                mPressure(end) = 0;
-                            end
+                            
                             if mTemperature(end) < 0
                                 mTemperature(end) = 0;
                             end
                             mDensity(end) = solver.matter.fdm_liquid.functions.LiquidDensity(mTemperature(end), mPressure(end), fFixDensity, fFixTemperature, fMolMassH2O, ...
                              fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-                            mInternalEnergy(end) = fHeatCapacity*(mTemperature(end)-fTempRef)*mDensity(end);    
+                            mInternalEnergy(end) = fHeatCapacity*(mTemperature(end)-fTempRef)*mDensity(end); 
+                        %case of a pure proc at the beginning of a branch    
+                        elseif n == 1 && mDeltaTempComp(n) ~= 0 && mHydrLength(n) == 0 
+                            if this.fMassFlowOld > 0
+                                mTemperature(1) = mTemperature(1)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(1)-fTemperatureBoundary1));
+                            elseif this.fMassFlowOld < 0
+                                mTemperature(1) = mTemperature(1)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(1)-mTemperature(2)));
+                            end
+                            
+                            if mTemperature(end) < 0
+                                mTemperature(end) = 0;
+                            end
+                            mDensity(end) = solver.matter.fdm_liquid.functions.LiquidDensity(mTemperature(end), mPressure(end), fFixDensity, fFixTemperature, fMolMassH2O, ...
+                             fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                            mInternalEnergy(end) = fHeatCapacity*(mTemperature(end)-fTempRef)*mDensity(end);
                         %case of a pure proc somewehre in the branch    
-                        elseif mHydrLength(n+1) == 0;
+                        elseif mHydrLength(n) == 0 && mDeltaTempComp(n) ~= 0;
                             %assigns the changed values to the cell after
                             %the proc
-                            if abs(mPressure(k+1)-mPressure(k)) < abs(mDeltaPressureComp(n)/this.inCells) && mDirectionDeltaPressureComp(n) ~= 0
-                                mPressure(k+1) = mPressure(k)+((mDirectionDeltaPressureComp(n)*mDeltaPressureComp(n)/this.inCells)-(mPressure(k+1)-mPressure(k)));
-                            elseif abs(mPressure(k+1)-mPressure(k)) < abs(mDeltaPressureComp(n)/this.inCells) && mDirectionDeltaPressureComp(n) == 0
-                                    %in this case the flow proc does not have a specified direction but instead
-                                    %represents a pressure drop which always is directed against the flow
-                                if mFlowSpeed(k+1) >= 0
-                                    mPressure(k+1) = mPressure(k)+((-1*mDeltaPressureComp(n)/this.inCells)-(mPressure(k+1)-mPressure(k)));
-                                else
-                                    mPressure(k+1) = mPressure(k)+((1*mDeltaPressureComp(n)/this.inCells)-(mPressure(k+1)-mPressure(k)));
-                                end    
-                            end
-                            mTemperature(k+1) = mTemperature(k) + mDeltaTempComp(n+1);
-                            if mPressure(k+1) < 0
-                                mPressure(k+1) = 0;
+                            if this.fMassFlowOld > 0
+                                mTemperature(k+1) = mTemperature(k+1)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(k+1)-mTemperature(k)));
+                            elseif this.fMassFlowOld < 0
+                                mTemperature(k-1) = mTemperature(k-1)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(k-1)-mTemperature(k)));
                             end
                             if mTemperature(k+1) < 0
                                 mTemperature(k+1) = 0;
@@ -413,14 +406,36 @@ classdef branch_liquid < solver.matter.base.branch
                         mStateVector(k,2) = mDensity(k,1)*mFlowSpeed(k,1);
                         mStateVector(k,3) = mInternalEnergy(k,1);
                 end
+                
+                %assigning the pressure difference of the flow procs
+                %directly to the cells leads to wrong results since some 
+                %cells in the middle of the branch will have a higher
+                %pressure than their neighbours in both directions.
+                %Therefore the pressure difference from procs is applied to
+                %the boundaries instead
+                fPressureBoundary1WithProcs = fPressureBoundary1;
+                fPressureBoundary2WithProcs = fPressureBoundary2;
+                for k = 1:iNumberOfProcs
+                    if mDirectionDeltaPressureComp(k) > 0
+                        fPressureBoundary1WithProcs = fPressureBoundary1WithProcs + mDeltaPressureComp(k);
+                    elseif mDirectionDeltaPressureComp(k) < 0
+                        fPressureBoundary2WithProcs = fPressureBoundary2WithProcs + mDeltaPressureComp(k);
+                    else
+                        if this.fMassFlowOld > 0
+                            fPressureBoundary1WithProcs = fPressureBoundary1WithProcs - mDeltaPressureComp(k);
+                        elseif this.fMassFlowOld < 0
+                            fPressureBoundary2WithProcs = fPressureBoundary2WithProcs - mDeltaPressureComp(k);
+                        end
+                    end
+                end
  
                 %calculates the Godunov Fluxes and wave speed estimates at the
                 %in- and outlet of the branch
-                [mGodunovFlux(1,:), mMaxWaveSpeed(1,1), mPressureStar(1,1)] = solver.matter.fdm_liquid.functions.HLLC(fPressureBoundary1, fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
+                [mGodunovFlux(1,:), mMaxWaveSpeed(1,1), mPressureStar(1,1)] = solver.matter.fdm_liquid.functions.HLLC(fPressureBoundary1WithProcs, fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
                     mPressure(1), mDensity(1), mFlowSpeed(1), mInternalEnergy(1), fTemperatureBoundary1, mTemperature(1));
                 [mGodunovFlux((this.inCells*iNumberOfPipes)+1,:), mMaxWaveSpeed((this.inCells*iNumberOfPipes)+1, 1), mPressureStar((this.inCells*iNumberOfPipes)+1,1)] = ...
                         solver.matter.fdm_liquid.functions.HLLC(mPressure(this.inCells*iNumberOfPipes), mDensity(this.inCells*iNumberOfPipes), mFlowSpeed(this.inCells*iNumberOfPipes), mInternalEnergy(this.inCells*iNumberOfPipes),...
-                        fPressureBoundary2, fDensityBoundary2, fFlowSpeedBoundary2, fInternalEnergyBoundary2, mTemperature(end), fTemperatureBoundary2);
+                        fPressureBoundary2WithProcs, fDensityBoundary2, fFlowSpeedBoundary2, fInternalEnergyBoundary2, mTemperature(end), fTemperatureBoundary2);
                 
                 %calculates the solution of the Riemann Problem and returns
                 %the required Godunov fluxes for each cell boundary and the 
@@ -486,6 +501,9 @@ classdef branch_liquid < solver.matter.base.branch
                 mStateVectorNew = zeros(this.inCells*iNumberOfPipes, 3);
 
                 n = 1;
+                %the part DeltaTime/DeltaX in this calculation differs from
+                %the literature because it also accounts for different
+                %section areas inside the branch
                 for k = 1:1:this.inCells*iNumberOfPipes
                     mStateVectorNew(k,1) = mStateVector(k,1)+(fTimeStep/mCellLength(n))*(mGodunovFlux(k,1)-mGodunovFlux(k+1,1)); 
                     mStateVectorNew(k,2) = mStateVector(k,2)+(fTimeStep/mCellLength(n))*(mGodunovFlux(k,2)-mGodunovFlux(k+1,2)); 
@@ -595,6 +613,10 @@ classdef branch_liquid < solver.matter.base.branch
                 fTemperatureBoundary1New = (fInternalEnergyBoundary1New/(fHeatCapacity*fDensityBoundary1New))+fTempRef;
                 fTemperatureBoundary2New = (fInternalEnergyBoundary2New/(fHeatCapacity*fDensityBoundary2New))+fTempRef;         
 
+              	if this.oBranch.oContainer.oTimer.fTime > 0.3
+                    stop=1;
+                end
+                
              	%for the next time step it is necessary to save the flow 
                 %speed of the fluid at the two exmes    
                 fFlowSpeedBoundary1New = mGodunovFlux(1,1)/fDensityBoundary1New;
@@ -865,7 +887,7 @@ classdef branch_liquid < solver.matter.base.branch
                 if this.oBranch.oContainer.oTimer.iTick == 120
                     stop=1;
                 end
-                if  min(mPressureNew) < 1*10^5 || max(mPressureNew) > 3*10^5
+                if  min(mPressureNew) < 0.5*10^5 || max(mPressureNew) > 6*10^5
                     stop=1;
                 end
             end
