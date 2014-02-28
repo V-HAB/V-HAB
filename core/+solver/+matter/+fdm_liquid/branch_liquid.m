@@ -79,6 +79,9 @@ classdef branch_liquid < solver.matter.base.branch
         mDensityOld = 'empty';
         mFlowSpeedOld = 'empty';
         
+        %Delta temperature in the pipes created from flow procs
+        mDeltaTemperaturePipe = 'empty';
+        
         
     end
 
@@ -186,42 +189,24 @@ classdef branch_liquid < solver.matter.base.branch
             %value from the previous timestep can be used again.
             elseif  this.iMassFlowResidualCounter == 10
                 
-                fTimeStep = 2;
+                fTimeStep = inf;
                 
                 this.setTimeStep(fTimeStep);
                 
-                %TO DO:Check how temperature calculation should be
-                %implemented here
-                mTemperature = zeros((length(this.mInternalEnergyOld)), 1);
-                for k = 1:length(this.mInternalEnergyOld)
-                    mTemperature(k,1) = (this.mInternalEnergyOld(k,1)/(fHeatCapacity*this.mDensityOld(k,1)))+fTempRef;
+                %TO DO: Add calculation of Temperature in Pipes?
+                if this.fMassFlowOld >= 0
+                    fTemperatureBoundary2New = fTemperatureBoundary2 + (fTimeStep*this.fMassFlowOld*fHeatCapacity)/(fMassBoundary2*fHeatCapacity)*((fTemperatureBoundary1+sum(mDeltaTempComp))-fTemperatureBoundary2);
+                    fTemperatureBoundary1New = fTemperatureBoundary1;
+                else
+                    fTemperatureBoundary1New = fTemperatureBoundary1 + (fTimeStep*this.fMassFlowOld*fHeatCapacity)/(fMassBoundary1*fHeatCapacity)*((fTemperatureBoundary2+sum(mDeltaTempComp))-fTemperatureBoundary1);
+                    fTemperatureBoundary2New = fTemperatureBoundary2;
                 end
                 
-                mTempBranch = zeros(iNumberOfProcs, 1);
-                
-                iNumberOfPipes = length(this.mInternalEnergyOld)/this.inCells;
-                n = 1;
-                k = this.inCells;
-                if iNumberOfPipes > 1
-                    while n <= iNumberOfProcs
-                        
-                        mTempBranch(n) = mTemperature(k);
-                        
-                        %in the case that a pure flow proc was used the
-                        %index for the pipe should not be increased
-                        if mHydrLength(n) == 0
-                            k = k+0;
-                        else 
-                            k = k+this.inCells;
-                        end
-                        
-                        n = n+1;
-                        
-                    end
-                end
-                
+                %setPortProperties(this, fPortPressure, fPortTemperature, fFlowSpeed, fLiquidLevel, fAcceleration, fDensity)
+                this.oBranch.coExmes{1}.setPortProperties(fPressureBoundary1, fTemperatureBoundary1New, fFlowSpeedBoundary1, fLiquidLevel1, fAcceleration1, fDensityBoundary1);
+                this.oBranch.coExmes{2}.setPortProperties(fPressureBoundary2, fTemperatureBoundary2New, fFlowSpeedBoundary2, fLiquidLevel2, fAcceleration2, fDensityBoundary2);
 
-                update@solver.matter.base.branch(this, this.fMassFlowOld, '', mTempBranch);
+                update@solver.matter.base.branch(this, this.fMassFlowOld);
             
             %if none of the above conditions applies it is necessary to 
             %calculate the values for the branch using the full numerical 
@@ -322,116 +307,7 @@ classdef branch_liquid < solver.matter.base.branch
                 for k = 1:this.inCells*iNumberOfPipes
                     mTemperature(k,1) = (mInternalEnergy(k,1)/(fHeatCapacity*mDensity(k,1)))+fTempRef;
                 end
-                %calculates the boundary values inside the branch resulting
-                %from components.   
-                n = 1;
-                k = this.inCells;
-                if iNumberOfPipes > 1
-                    while n <= iNumberOfProcs
-                        %two different cases of flow processors have to be
-                        %distinguished. One if a pure processor which only
-                        %changes pressure or temperature but is assumed to
-                        %have no length and diameter. Therefore it is left
-                        %out in the discretization of the problem. The
-                        %other possible processor combines the aspects of
-                        %a pipe and a proc because it has a length and a
-                        %diameter but also changes the pressure or the
-                        %temperature
-                        
-                        %case of proc which also is a pipe
-                        if mDeltaTempComp(n) ~= 0 && mHydrLength(n) ~= 0
-                            %the values for temperature change over
-                            %this type of flow proc are spread over all the
-                            %cells of the proc
-                            if this.fMassFlowOld > 0
-                                for m = (k-(this.inCells-1)):k
-                                    mTemperature(m) = mTemperature(m)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(m)-mTemperature(m-1)));
-                                    if mTemperature(m) < 0
-                                        mTemperature(m) = 0;
-                                    end
-                                    mDensity(m) = solver.matter.fdm_liquid.functions.LiquidDensity(mTemperature(m), mPressure(m), fFixDensity, fFixTemperature, fMolMassH2O, ...
-                                        fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-                             
-                                    mInternalEnergy(m) = fHeatCapacity*(mTemperature(m)-fTempRef)*mDensity(m);
-                                end
-                            elseif this.fMassFlowOld < 0
-                                for m = (k+(this.inCells-1)):-1:k
-                                    mTemperature(m) = mTemperature(m)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(m)-mTemperature(m+1)));
-                                    if mTemperature(m) < 0
-                                        mTemperature(m) = 0;
-                                    end
-                                    mDensity(m) = solver.matter.fdm_liquid.functions.LiquidDensity(mTemperature(m), mPressure(m), fFixDensity, fFixTemperature, fMolMassH2O, ...
-                                        fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-                             
-                                    mInternalEnergy(m) = fHeatCapacity*(mTemperature(m)-fTempRef)*mDensity(m);
-                                end
-                            %TO DO: what should be done with heaters in
-                            %case of no flow?
-                            else
-                                
-                            end
-
-                        %case of a pure proc at the end of the branch
-                        elseif n == iNumberOfProcs && mDeltaTempComp(n) ~= 0 && mHydrLength(n) == 0 
-                            %in this case there if no cell after the flow
-                            %proc and therefore the values have to be
-                            %assigned to last cell in the branch
-                            if this.fMassFlowOld > 0
-                                mTemperature(end) = mTemperature(end)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(end)-mTemperature(end-1)));
-                            elseif this.fMassFlowOld < 0
-                                mTemperature(end) = mTemperature(end)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(end)-fTemperatureBoundary2));
-                            end
-                            
-                            if mTemperature(end) < 0
-                                mTemperature(end) = 0;
-                            end
-                            mDensity(end) = solver.matter.fdm_liquid.functions.LiquidDensity(mTemperature(end), mPressure(end), fFixDensity, fFixTemperature, fMolMassH2O, ...
-                             fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-                            mInternalEnergy(end) = fHeatCapacity*(mTemperature(end)-fTempRef)*mDensity(end); 
-                        %case of a pure proc at the beginning of a branch    
-                        elseif n == 1 && mDeltaTempComp(n) ~= 0 && mHydrLength(n) == 0 
-                            if this.fMassFlowOld > 0
-                                mTemperature(1) = mTemperature(1)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(1)-fTemperatureBoundary1));
-                            elseif this.fMassFlowOld < 0
-                                mTemperature(1) = mTemperature(1)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(1)-mTemperature(2)));
-                            end
-                            
-                            if mTemperature(end) < 0
-                                mTemperature(end) = 0;
-                            end
-                            mDensity(end) = solver.matter.fdm_liquid.functions.LiquidDensity(mTemperature(end), mPressure(end), fFixDensity, fFixTemperature, fMolMassH2O, ...
-                             fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-                            mInternalEnergy(end) = fHeatCapacity*(mTemperature(end)-fTempRef)*mDensity(end);
-                        %case of a pure proc somewehre in the branch    
-                        elseif mHydrLength(n) == 0 && mDeltaTempComp(n) ~= 0;
-                            %assigns the changed values to the cell after
-                            %the proc
-                            if this.fMassFlowOld > 0
-                                mTemperature(k+1) = mTemperature(k+1)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(k+1)-mTemperature(k)));
-                            elseif this.fMassFlowOld < 0
-                                mTemperature(k-1) = mTemperature(k-1)+((mDeltaTempComp(n)/this.inCells)-(mTemperature(k-1)-mTemperature(k)));
-                            end
-                            if mTemperature(k+1) < 0
-                                mTemperature(k+1) = 0;
-                            end
-                            mDensity(k+1) = solver.matter.fdm_liquid.functions.LiquidDensity(mTemperature(k+1), mPressure(k+1), fFixDensity, fFixTemperature, fMolMassH2O, ...
-                             fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-                            mInternalEnergy(k+1) = fHeatCapacity*(mTemperature(k+1)-fTempRef)*mDensity(k+1);
-                        end
-                        
-                        %in the case that a pure flow proc was used the
-                        %index for the pipe should not be increased
-                        if mHydrLength(n) == 0 && mHydrDiam(n) == 0
-                            k = k+0;
-                        else 
-                            k = k+this.inCells;
-                        end
-                        
-                        n = n+1;
-                        
-                    end
-                end
-                
+               
                 %calculates the state vectors for each cell according to [5]
                 %page equation
                 %each line in the matrix corresponds to one state vector with
@@ -439,9 +315,9 @@ classdef branch_liquid < solver.matter.base.branch
                 mStateVector = zeros(this.inCells*iNumberOfPipes, 3);
 
                 for k = 1:1:this.inCells*iNumberOfPipes
-                        mStateVector(k,1) = mDensity(k,1); 
-                        mStateVector(k,2) = mDensity(k,1)*mFlowSpeed(k,1);
-                        mStateVector(k,3) = mInternalEnergy(k,1);
+                    mStateVector(k,1) = mDensity(k,1); 
+                    mStateVector(k,2) = mDensity(k,1)*mFlowSpeed(k,1);
+                    mStateVector(k,3) = mInternalEnergy(k,1);
                 end
                 
                 %calculates the Godunov Fluxes and wave speed estimates at the
@@ -514,15 +390,73 @@ classdef branch_liquid < solver.matter.base.branch
 
                 %calculates the new cell values according to [5] page equation
                 mStateVectorNew = zeros(this.inCells*iNumberOfPipes, 3);
-
-                n = 1;
+                
                 %the part DeltaTime/DeltaX in this calculation differs from
                 %the literature because it also accounts for different
-                %section areas inside the branch
+                %section areas inside the branch. This is accomplished by
+                %using A(k-1)/(A(k)L(k)) instead of simply the cell length
+                
+                %the indices for the not zero hydraulic length entries are
+                %used instead of the diameter because it could be possible
+                %that a valve with diameter 0 is used
+                
+                n = 1;
+                iNotZeroHydrLength = find(mHydrLength);
                 for k = 1:1:this.inCells*iNumberOfPipes
-                    mStateVectorNew(k,1) = mStateVector(k,1)+(fTimeStep/mCellLength(n))*(mGodunovFlux(k,1)-mGodunovFlux(k+1,1)); 
-                    mStateVectorNew(k,2) = mStateVector(k,2)+(fTimeStep/mCellLength(n))*(mGodunovFlux(k,2)-mGodunovFlux(k+1,2)); 
-                    mStateVectorNew(k,3) = mStateVector(k,3)+(fTimeStep/mCellLength(n))*(mGodunovFlux(k,3)-mGodunovFlux(k+1,3));
+                    if length(iNotZeroHydrLength) == 1
+                        mStateVectorNew(k,1) = mStateVector(k,1)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,1)-mGodunovFlux(k+1,1));
+                        mStateVectorNew(k,2) = mStateVector(k,2)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,2)-mGodunovFlux(k+1,2));
+                        mStateVectorNew(k,3) = mStateVector(k,3)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,3)-mGodunovFlux(k+1,3));
+                    elseif n == 1
+                        if (mGodunovFlux(k,1)-mGodunovFlux(k+1,1)) >= 0
+                            mStateVectorNew(k,1) = mStateVector(k,1)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,1)-mGodunovFlux(k+1,1));
+                        else
+                            mStateVectorNew(k,1) = mStateVector(k,1)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n+1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,1)-mGodunovFlux(k+1,1)); 
+                        end
+                        if (mGodunovFlux(k,2)-mGodunovFlux(k+1,2)) >= 0
+                            mStateVectorNew(k,2) = mStateVector(k,2)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,2)-mGodunovFlux(k+1,2));
+                        else
+                            mStateVectorNew(k,2) = mStateVector(k,2)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n+1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,2)-mGodunovFlux(k+1,2)); 
+                        end
+                        if (mGodunovFlux(k,3)-mGodunovFlux(k+1,3)) >= 0
+                            mStateVectorNew(k,3) = mStateVector(k,3)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,3)-mGodunovFlux(k+1,3));
+                        else
+                            mStateVectorNew(k,3) = mStateVector(k,3)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n+1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,3)-mGodunovFlux(k+1,3));
+                        end
+                    elseif n == length(mCellLength)
+                        if (mGodunovFlux(k,1)-mGodunovFlux(k+1,1)) >= 0
+                            mStateVectorNew(k,1) = mStateVector(k,1)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n-1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,1)-mGodunovFlux(k+1,1)); 
+                        else
+                            mStateVectorNew(k,1) = mStateVector(k,1)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,1)-mGodunovFlux(k+1,1)); 
+                        end
+                        if (mGodunovFlux(k,2)-mGodunovFlux(k+1,2)) >= 0
+                            mStateVectorNew(k,2) = mStateVector(k,2)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n-1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,2)-mGodunovFlux(k+1,2)); 
+                        else
+                            mStateVectorNew(k,2) = mStateVector(k,2)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,2)-mGodunovFlux(k+1,2)); 
+                        end
+                        if (mGodunovFlux(k,3)-mGodunovFlux(k+1,3)) >= 0
+                            mStateVectorNew(k,3) = mStateVector(k,3)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n-1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,3)-mGodunovFlux(k+1,3));
+                        else
+                            mStateVectorNew(k,3) = mStateVector(k,3)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,3)-mGodunovFlux(k+1,3));
+                        end      
+                    else
+                        if (mGodunovFlux(k,1)-mGodunovFlux(k+1,1)) >= 0
+                             mStateVectorNew(k,1) = mStateVector(k,1)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n-1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,1)-mGodunovFlux(k+1,1)); 
+                        else
+                            mStateVectorNew(k,1) = mStateVector(k,1)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n+1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,1)-mGodunovFlux(k+1,1)); 
+                        end
+                        if (mGodunovFlux(k,2)-mGodunovFlux(k+1,2)) >= 0
+                            mStateVectorNew(k,2) = mStateVector(k,2)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n-1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,2)-mGodunovFlux(k+1,2)); 
+                        else
+                            mStateVectorNew(k,2) = mStateVector(k,2)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n+1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,2)-mGodunovFlux(k+1,2)); 
+                        end
+                        if (mGodunovFlux(k,2)-mGodunovFlux(k+1,2)) >= 0
+                            mStateVectorNew(k,3) = mStateVector(k,3)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n-1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,3)-mGodunovFlux(k+1,3));
+                        else
+                            mStateVectorNew(k,3) = mStateVector(k,3)+((fTimeStep*mHydrDiam(iNotZeroHydrLength(n+1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*(mGodunovFlux(k,3)-mGodunovFlux(k+1,3));
+                        end  
+                    end
+       
                     if mod(k,this.inCells) == 0
                         n = n+1;
                     end
@@ -546,27 +480,6 @@ classdef branch_liquid < solver.matter.base.branch
                    mPressureNew(k) = solver.matter.fdm_liquid.functions.LiquidPressure(mTemperatureNew(k),...
                        mDensityNew(k), fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                        fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-                end
-                
-                %TO DO: This was implemented because with additional
-                %heating there were some configurations that crashed
-                %because errors amplified themselves.Maybe find other
-                %possible solution?
-                
-                %checks wether the pressure in the cells has unlogic
-                %results
-                for k=2:1:((this.inCells*iNumberOfPipes)-1)
-                    %if pressure in one cell is lower or larger than in
-                    %BOTH neighbouring cells it is calculated as average
-                    %between these two cells.
-                    if (mPressureNew(k)< mPressureNew(k-1) && mPressureNew(k) < mPressureNew(k+1)) || (mPressureNew(k)> mPressureNew(k-1) && mPressureNew(k) > mPressureNew(k+1))
-                        mPressureNew(k) = (mPressureNew(k-1)+mPressureNew(k+1))/2;
-                        mDensityNew(k) = solver.matter.fdm_liquid.functions.LiquidDensity(mTemperatureNew(k),...
-                            mPressureNew(k), fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-                        
-                        this.iErrorCounter = this.iErrorCounter+1;
-                    end
                 end
   
                 %TO DO: Get from Matter Table
@@ -647,8 +560,71 @@ classdef branch_liquid < solver.matter.base.branch
                 %from the internal energy values of the boundary phases the
                 %temperature can be calculated
                 fTemperatureBoundary1New = (fInternalEnergyBoundary1New/(fHeatCapacity*fDensityBoundary1New))+fTempRef;
-                fTemperatureBoundary2New = (fInternalEnergyBoundary2New/(fHeatCapacity*fDensityBoundary2New))+fTempRef;         
+                fTemperatureBoundary2New = (fInternalEnergyBoundary2New/(fHeatCapacity*fDensityBoundary2New))+fTempRef;
+                
+                %Temperature in the pipes without the influence of flow
+                %procs
+                mTemperaturePipe = zeros(iNumberOfPipes,1);
+                mTemperaturePipeNew = zeros(iNumberOfPipes,1);
+                mMassPipe = zeros(iNumberOfPipes,1);
+                mDeltaTemperaturePipeNew = zeros(iNumberOfPipes,1);
+                if strcmp(this.mDeltaTemperaturePipe, 'empty')
+                    this.mDeltaTemperaturePipe = zeros(iNumberOfPipes,1);
+                end
+                n = 1;
+                k = this.inCells;
+                while n <= iNumberOfPipes
+                    
+                    mTemperaturePipe(n) = (sum(mTemperatureNew(k-(this.inCells-1):k))/this.inCells)+this.mDeltaTemperaturePipe(n); 
+                    
+                    mMassPipe(n) = (sum(mDensityNew(k-(this.inCells-1):k))/this.inCells)*(pi*(mHydrDiam(notZeroHydrDiam(n))/2)^2)*mCellLength(n);
+                        
+                    if mHydrLength(n) == 0 
+                        k = k+0;
+                    else 
+                        k = k+this.inCells;
+                    end
+                    n = n+1;
+                end
+                n = 1;
+                m = 1;
+                k = this.inCells;
+                while m <= iNumberOfProcs
+                    
+                    if n == 1 && fMassFlow >= 0
+                        mDeltaTemperaturePipeNew(n) = ((fTimeStep*fMassFlow)/(mMassPipe(n)))*(fTemperatureBoundary1New-mTemperaturePipe(n));
+                    elseif n == iNumberOfPipes && fMassFlow < 0
+                        mDeltaTemperaturePipeNew(n) = ((fTimeStep*fMassFlow)/(mMassPipe(n)))*(fTemperatureBoundary2New-mTemperaturePipe(n));
+                    elseif fMassFlow >= 0
+                        mDeltaTemperaturePipeNew(n) = ((fTimeStep*fMassFlow)/(mMassPipe(n)))*(mTemperaturePipe(n-1)-mTemperaturePipe(n));
+                    else
+                        mDeltaTemperaturePipeNew(n) = ((fTimeStep*fMassFlow)/(mMassPipe(n)))*(mTemperaturePipe(n+1)-mTemperaturePipe(n));
+                    end
 
+                    mDeltaTemperaturePipeNew(n) = mDeltaTemperaturePipeNew(n)+mDeltaTempComp(m);
+                    
+                    this.mDeltaTemperaturePipe(n) = mDeltaTemperaturePipeNew(n);
+                    
+                    mTemperaturePipeNew(n) = (sum(mTemperatureNew(k-(this.inCells-1):k))/this.inCells)+mDeltaTemperaturePipeNew(n); 
+               
+                    if mHydrLength(m) ~= 0
+                        n = n+1;
+                        k = k+this.inCells;
+                    else
+                        n = n+0;
+                        k = k+0;
+                    end
+                    m = m+1;
+                end
+      
+                if fMassFlow >= 0
+                    fTemperatureBoundary2NewWithProcs = fTemperatureBoundary2New;
+                    fTemperatureBoundary1NewWithProcs = fTemperatureBoundary1 + (fTimeStep*fMassFlow*fHeatCapacity)/(fMassBoundary2New*fHeatCapacity)*mTemperaturePipeNew(end);
+                else
+                    fTemperatureBoundary2NewWithProcs = fTemperatureBoundary2 + (fTimeStep*fMassFlow*fHeatCapacity)/(fMassBoundary2New*fHeatCapacity)*mTemperaturePipeNew(1);
+                    fTemperatureBoundary1NewWithProcs = fTemperatureBoundary1New;
+                end
+                
              	%for the next time step it is necessary to save the flow 
                 %speed of the fluid at the two exmes    
                 fFlowSpeedBoundary1New = mGodunovFlux(1,1)/fDensityBoundary1New;
@@ -734,11 +710,8 @@ classdef branch_liquid < solver.matter.base.branch
                 %Pressure calculation in the case that any tank also
                 %contains a gas phase.
                 
-                %TO DO: The approach with incompressible liquid also does
-                %not work because the volume increase in the liquid is too
-                %high and lets the density become low enough for it to get
-                %negative pressure results. Therefore an iterative solution
-                %is required
+                %Iterative solution for the tank pressures with additional
+                %gas phase
                 fErrorTank1 = abs(mPressureGas(1)-fPressureBoundary1New);
                 fErrorTank1Prev = fErrorTank1;
                 counter = 1;
@@ -816,9 +789,13 @@ classdef branch_liquid < solver.matter.base.branch
                 %a gas phase is also present in the tank
                 if mMolMassGas(1) ~= 0
                     mVolumeBoundaryNew(1) = (mVolumeTank(1)-mVolumeGasNew(1));
+                else
+                    mVolumeBoundaryNew(1) = mVolumeLiquid(1);
                 end
                 if mMolMassGas(2) ~= 0
                     mVolumeBoundaryNew(2) = (mVolumeTank(2)-mVolumeGasNew(2));
+                else
+                    mVolumeBoundaryNew(2) = mVolumeLiquid(2);
                 end
   
                 %Both tanks contain a liquid+gas phase
@@ -863,8 +840,8 @@ classdef branch_liquid < solver.matter.base.branch
                 %sets the new values for pressure, temperature and flow
                 %speed at the exmes
                 %setPortProperties(this, fPortPressure, fPortTemperature, fFlowSpeed, fLiquidLevel, fAcceleration, fDensity)
-                this.oBranch.coExmes{1}.setPortProperties(fPressureExme1, fTemperatureBoundary1New, fFlowSpeedBoundary1New, fLiquidLevel1New, fAcceleration1, fDensityBoundary1New);
-                this.oBranch.coExmes{2}.setPortProperties(fPressureExme2, fTemperatureBoundary2New, fFlowSpeedBoundary2New, fLiquidLevel2New, fAcceleration2, fDensityBoundary2New);
+                this.oBranch.coExmes{1}.setPortProperties(fPressureExme1, fTemperatureBoundary1NewWithProcs, fFlowSpeedBoundary1New, fLiquidLevel1New, fAcceleration1, fDensityBoundary1New);
+                this.oBranch.coExmes{2}.setPortProperties(fPressureExme2, fTemperatureBoundary2NewWithProcs, fFlowSpeedBoundary2New, fLiquidLevel2New, fAcceleration2, fDensityBoundary2New);
                 
                 %writes values for the massflow into the object parameters
                 %to decide in the next step wether further numeric
@@ -912,15 +889,6 @@ classdef branch_liquid < solver.matter.base.branch
                 %branch(this, fFlowRate, afPressures, afTemps)
                 update@solver.matter.base.branch(this, fMassFlow);
                 
-                
-                %stops for debugging purposes to set break points at
-                %certain times
-                if this.oBranch.oContainer.oTimer.iTick >= 25
-                    stop=1;
-                end
-                if  min(mPressureNew) < 0.5*10^5 || max(mPressureNew) > 6*10^5
-                    stop=1;
-                end
             end
 
             
