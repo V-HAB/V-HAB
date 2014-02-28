@@ -65,8 +65,7 @@ classdef liquid < matter.procs.exme
         function [ ] = setPortProperties(this, fPortPressure, fPortTemperature, fFlowSpeed, fLiquidLevel, fAcceleration, fDensity)
             
             this.fPressure = fPortPressure;
-            fDensity = 0;
-            
+
             if nargin == 3
                 this.oPhase.setTemp(fPortTemperature);
             elseif nargin == 4
@@ -76,16 +75,15 @@ classdef liquid < matter.procs.exme
                 this.oPhase.setTemp(fPortTemperature);
                 this.fLiquidLevel = fLiquidLevel;
                 this.fFlowSpeed = fFlowSpeed;
-            elseif nargin == 6
+            elseif nargin >= 6
                 this.oPhase.setTemp(fPortTemperature);
                 this.fLiquidLevel = fLiquidLevel;
                 this.fFlowSpeed = fFlowSpeed;
                 this.fAcceleration = fAcceleration;
-            elseif nargin == 7
-                this.oPhase.setTemp(fPortTemperature);
-                this.fLiquidLevel = fLiquidLevel;
-                this.fFlowSpeed = fFlowSpeed;
-                this.fAcceleration = fAcceleration;
+            end
+            
+            if nargin < 7
+                fDensity = 0;
             end
             
             this.oPhase.setPressure(this.fPressure-(this.fLiquidLevel*...
