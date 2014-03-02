@@ -461,7 +461,7 @@ classdef branch_liquid < solver.matter.base.branch
                         %check if first cell has a valve to the left
                         if k == 1 && mHydrDiamValve(1) ~= -1 && mGodunovFlux(k,1) >= 0
                             mStateVectorNew(k,1) = mStateVector(k,1)+...
-                                (((fTimeStep*mHydrDiamValve(1))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k,1))...
+                                (((fTimeStep*((mHydrDiamValve(1)/2)^2))/((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n))*mGodunovFlux(k,1))...
                                 -((fTimeStep/mCellLength(n))*mGodunovFlux(k+1,1));
                         %the case of no valve at right boundary and negative 
                         %flow speed are identival in the calculation
@@ -473,7 +473,7 @@ classdef branch_liquid < solver.matter.base.branch
                         elseif k == this.inCells*iNumberOfPipes && mHydrDiamValve(end) ~= -1 && mGodunovFlux(k+1,1) < 0
                             mStateVectorNew(k,1) = mStateVector(k,1)+...
                                 ((fTimeStep/mCellLength(n))*mGodunovFlux(k,1))...
-                                -(((fTimeStep*mHydrDiamValve(end))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k+1,1));
+                                -(((fTimeStep*((mHydrDiamValve(end)/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k+1,1));
                         %the case of no valve at right boundary and negative 
                         %flow speed are identival in the calculation
                         elseif k == this.inCells*iNumberOfPipes
@@ -485,7 +485,7 @@ classdef branch_liquid < solver.matter.base.branch
                         %new pipe (no valve between)    
                         elseif mod(k, this.inCells) == 1 && mGodunovFlux(k,1) >= 0 && mHydrDiamValve(iNotZeroHydrLength(n)-1) == -1
                             mStateVectorNew(k,1) = mStateVector(k,1)+...
-                                (((fTimeStep*mHydrDiam(iNotZeroHydrLength(n-1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k,1))...
+                                (((fTimeStep*(mHydrDiam(iNotZeroHydrLength(n-1))/2)^2)/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k,1))...
                                 -((fTimeStep/mCellLength(n))*mGodunovFlux(k+1,1));
                         %if the end of this pipe is reached and the flow is
                         %negative use diameter of next pipe with volume of this
@@ -493,13 +493,13 @@ classdef branch_liquid < solver.matter.base.branch
                         elseif mod(k, this.inCells) == 0 && mGodunovFlux(k+1,1) < 0 && mHydrDiamValve(iNotZeroHydrLength(n)+1) == -1
                             mStateVectorNew(k,1) = mStateVector(k,1)+...
                             ((fTimeStep/mCellLength(n))*mGodunovFlux(k,1))...
-                            -(((fTimeStep*mHydrDiam(iNotZeroHydrLength(n+1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k+1,1));
+                            -(((fTimeStep*(mHydrDiam(iNotZeroHydrLength(n+1))/2)^2)/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k+1,1));
                         %if the start of the next pipe is reached, the flow
                         %is positive and a valve is in between use diameter of
                         %valve
                         elseif mod(k, this.inCells) == 1 && mGodunovFlux(k,1) >= 0 && mHydrDiamValve(iNotZeroHydrLength(n)-1) ~= -1
                             mStateVectorNew(k,1) = mStateVector(k,1)+...
-                                (((fTimeStep*mHydrDiamValve(iNotZeroHydrLength(n)-1))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k,1))...
+                                (((fTimeStep*((mHydrDiamValve(iNotZeroHydrLength(n)-1))/2)^2)/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k,1))...
                                 -((fTimeStep/mCellLength(n))*mGodunovFlux(k+1,1));
                         %if the end of this pipe is reached, the flow is
                         %negative and a valve is in between use diameter of
@@ -507,7 +507,7 @@ classdef branch_liquid < solver.matter.base.branch
                         elseif mod(k, this.inCells) == 0 && mGodunovFlux(k+1,1) < 0 && mHydrDiamValve(iNotZeroHydrLength(n)+1) ~= -1
                             mStateVectorNew(k,1) = mStateVector(k,1)+...
                                 ((fTimeStep/mCellLength(n))*mGodunovFlux(k,1))...
-                                -(((fTimeStep*mHydrDiamValve(iNotZeroHydrLength(n)+1))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k+1,1));
+                                -(((fTimeStep*((mHydrDiamValve(iNotZeroHydrLength(n)+1)/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k+1,1));
                         %case of any non start/end of pipe cell. Here the diameter 
                         %has no influence since it is identical for both cells  
                         else
@@ -519,7 +519,7 @@ classdef branch_liquid < solver.matter.base.branch
                         %check if first cell has a valve to the left
                         if k == 1 && mHydrDiamValve(1) ~= -1 && mGodunovFlux(k,2) >= 0
                             mStateVectorNew(k,2) = mStateVector(k,2)+...
-                                (((fTimeStep*mHydrDiamValve(1))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k,2))...
+                                (((fTimeStep*((mHydrDiamValve(1)/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k,2))...
                                 -((fTimeStep/mCellLength(n))*mGodunovFlux(k+1,2));
                         %the case of no valve at right boundary and negative 
                         %flow speed are identival in the calculation
@@ -531,7 +531,7 @@ classdef branch_liquid < solver.matter.base.branch
                         elseif k == this.inCells*iNumberOfPipes && mHydrDiamValve(end) ~= -1 && mGodunovFlux(k+1,2) < 0
                             mStateVectorNew(k,2) = mStateVector(k,2)+...
                                 ((fTimeStep/mCellLength(n))*mGodunovFlux(k,2))...
-                                -(((fTimeStep*mHydrDiamValve(end))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k+1,2));
+                                -(((fTimeStep*((mHydrDiamValve(end)/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k+1,2));
                         %the case of no valve at right boundary and negative 
                         %flow speed are identival in the calculation
                         elseif k == this.inCells*iNumberOfPipes
@@ -543,7 +543,7 @@ classdef branch_liquid < solver.matter.base.branch
                         %new pipe (no valve between)    
                         elseif mod(k, this.inCells) == 1 && mGodunovFlux(k,2) >= 0 && mHydrDiamValve(iNotZeroHydrLength(n)-1) == -1
                             mStateVectorNew(k,2) = mStateVector(k,2)+...
-                                (((fTimeStep*mHydrDiam(iNotZeroHydrLength(n-1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k,2))...
+                                (((fTimeStep*((mHydrDiam(iNotZeroHydrLength(n-1))/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k,2))...
                                 -((fTimeStep/mCellLength(n))*mGodunovFlux(k+1,2));
                         %if the end of this pipe is reached and the flow is
                         %negative use diameter of next pipe with volume of this
@@ -551,13 +551,13 @@ classdef branch_liquid < solver.matter.base.branch
                         elseif mod(k, this.inCells) == 0 && mGodunovFlux(k+1,2) < 0 && mHydrDiamValve(iNotZeroHydrLength(n)+1) == -1
                             mStateVectorNew(k,2) = mStateVector(k,2)+...
                                 ((fTimeStep/mCellLength(n))*mGodunovFlux(k,2))...
-                                -(((fTimeStep*mHydrDiam(iNotZeroHydrLength(n+1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k+1,2));
+                                -(((fTimeStep*((mHydrDiam(iNotZeroHydrLength(n+1))/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k+1,2));
                         %if the start of the next pipe is reached, the flow
                         %is positive and a valve is in between use diameter of
                         %valve
                         elseif mod(k, this.inCells) == 1 && mGodunovFlux(k,2) >= 0 && mHydrDiamValve(iNotZeroHydrLength(n)-1) ~= -1
                             mStateVectorNew(k,2) = mStateVector(k,2)+...
-                                (((fTimeStep*mHydrDiamValve(iNotZeroHydrLength(n)-1))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k,2))...
+                                (((fTimeStep*((mHydrDiamValve(iNotZeroHydrLength(n)-1)/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k,2))...
                                 -((fTimeStep/mCellLength(n))*mGodunovFlux(k+1,2));
                         %if the end of this pipe is reached, the flow is
                         %negative and a valve is in between use diameter of
@@ -565,7 +565,7 @@ classdef branch_liquid < solver.matter.base.branch
                         elseif mod(k, this.inCells) == 0 && mGodunovFlux(k+1,2) < 0 && mHydrDiamValve(iNotZeroHydrLength(n)+1) ~= -1
                             mStateVectorNew(k,2) = mStateVector(k,2)+...
                                 ((fTimeStep/mCellLength(n))*mGodunovFlux(k,2))...
-                                -(((fTimeStep*mHydrDiamValve(iNotZeroHydrLength(n)+1))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k+1,2));
+                                -(((fTimeStep*((mHydrDiamValve(iNotZeroHydrLength(n)+1)/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k+1,2));
                         %case of any non start/end of pipe cell. Here the diameter 
                         %has no influence since it is identical for both cells  
                         else
@@ -577,7 +577,7 @@ classdef branch_liquid < solver.matter.base.branch
                         %check if first cell has a valve to the left
                         if k == 1 && mHydrDiamValve(1) ~= -1 && mGodunovFlux(k,3) >= 0
                             mStateVectorNew(k,3) = mStateVector(k,3)+...
-                                (((fTimeStep*mHydrDiamValve(1))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k,3))...
+                                (((fTimeStep*((mHydrDiamValve(1)/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k,3))...
                                 -((fTimeStep/mCellLength(n))*mGodunovFlux(k+1,3));
                         %the case of no valve at right boundary and negative 
                         %flow speed are identival in the calculation
@@ -589,7 +589,7 @@ classdef branch_liquid < solver.matter.base.branch
                         elseif k == this.inCells*iNumberOfPipes && mHydrDiamValve(end) ~= -1 && mGodunovFlux(k+1,3) < 0
                             mStateVectorNew(k,3) = mStateVector(k,3)+...
                                 ((fTimeStep/mCellLength(n))*mGodunovFlux(k,3))...
-                                -(((fTimeStep*mHydrDiamValve(end))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k+1,3));
+                                -(((fTimeStep*((mHydrDiamValve(end)/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k+1,3));
                         %the case of no valve at right boundary and negative 
                         %flow speed are identival in the calculation
                         elseif k == this.inCells*iNumberOfPipes
@@ -601,7 +601,7 @@ classdef branch_liquid < solver.matter.base.branch
                         %new pipe (no valve between)    
                         elseif mod(k, this.inCells) == 1 && mGodunovFlux(k,3) >= 0 && mHydrDiamValve(iNotZeroHydrLength(n)-1) == -1
                             mStateVectorNew(k,3) = mStateVector(k,3)+...
-                                (((fTimeStep*mHydrDiam(iNotZeroHydrLength(n-1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k,3))...
+                                (((fTimeStep*((mHydrDiam(iNotZeroHydrLength(n-1))/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k,3))...
                                 -((fTimeStep/mCellLength(n))*mGodunovFlux(k+1,3));
                         %if the end of this pipe is reached and the flow is
                         %negative use diameter of next pipe with volume of this
@@ -609,13 +609,13 @@ classdef branch_liquid < solver.matter.base.branch
                         elseif mod(k, this.inCells) == 0 && mGodunovFlux(k+1,3) < 0 && mHydrDiamValve(iNotZeroHydrLength(n)+1) == -1
                             mStateVectorNew(k,3) = mStateVector(k,3)+...
                                 ((fTimeStep/mCellLength(n))*mGodunovFlux(k,3))...
-                                -(((fTimeStep*mHydrDiam(iNotZeroHydrLength(n+1)))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k+1,3));
+                                -(((fTimeStep*((mHydrDiam(iNotZeroHydrLength(n+1))/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k+1,3));
                         %if the start of the next pipe is reached, the flow
                         %is positive and a valve is in between use diameter of
                         %valve
                         elseif mod(k, this.inCells) == 1 && mGodunovFlux(k,3) >= 0 && mHydrDiamValve(iNotZeroHydrLength(n)-1) ~= -1
                             mStateVectorNew(k,3) = mStateVector(k,3)+...
-                                (((fTimeStep*mHydrDiamValve(iNotZeroHydrLength(n)-1))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k,3))...
+                                (((fTimeStep*((mHydrDiamValve(iNotZeroHydrLength(n)-1)/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k,3))...
                                 -((fTimeStep/mCellLength(n))*mGodunovFlux(k+1,3));
                         %if the end of this pipe is reached, the flow is
                         %negative and a valve is in between use diameter of
@@ -623,7 +623,7 @@ classdef branch_liquid < solver.matter.base.branch
                         elseif mod(k, this.inCells) == 0 && mGodunovFlux(k+1,3) < 0 && mHydrDiamValve(iNotZeroHydrLength(n)+1) ~= -1
                             mStateVectorNew(k,3) = mStateVector(k,3)+...
                                 ((fTimeStep/mCellLength(n))*mGodunovFlux(k,3))...
-                                -(((fTimeStep*mHydrDiamValve(iNotZeroHydrLength(n)+1))/(mHydrDiam(iNotZeroHydrLength(n))*mCellLength(n)))*mGodunovFlux(k+1,3));
+                                -(((fTimeStep*((mHydrDiamValve(iNotZeroHydrLength(n)+1)/2)^2))/(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n)))*mGodunovFlux(k+1,3));
                         %case of any non start/end of pipe cell. Here the diameter 
                         %has no influence since it is identical for both cells  
                         else
@@ -728,18 +728,18 @@ classdef branch_liquid < solver.matter.base.branch
                 %in order to compare them to the averaged mass flow. In
                 %case that a valve is placed directly at a tank this is
                 %necessary to limit the mass flow
-                if mHydrDiamValve(1) ~= -1 && mGodunovFlux(1,1) < 0
-                    fMassFlowBoundary1Exact = ((pi*(mHydrDiam(1)/2)^2)/fVolumeBoundary1)*(0-mGodunovFlux(1,1));
-                    if fMassFlow > fMassFlowBoundary1Exact
-                        fMassFlow = fMassFlowBoundary1Exact;
-                    end
-                end
-                if mHydrDiamValve(end) ~= -1 && mGodunovFlux(end,1) >= 0
-                    fMassFlowBoundary2Exact = ((pi*(mHydrDiam(1)/2)^2)/fVolumeBoundary1)*(0-mGodunovFlux(1,1));
-                    if fMassFlow > fMassFlowBoundary2Exact
-                        fMassFlow = fMassFlowBoundary2Exact;
-                    end
-                end
+%                 if ((mHydrDiamValve(1)/2)^2) ~= -1 && mGodunovFlux(1,1) < 0
+%                     fMassFlowBoundary1Exact = ((pi*(mHydrDiam(1)/2)^2)/fVolumeBoundary1)*(0-mGodunovFlux(1,1));
+%                     if fMassFlow > fMassFlowBoundary1Exact
+%                         fMassFlow = fMassFlowBoundary1Exact;
+%                     end
+%                 end
+%                 if ((mHydrDiamValve(end)/2)^2) ~= -1 && mGodunovFlux(end,1) >= 0
+%                     fMassFlowBoundary2Exact = ((pi*(mHydrDiam(1)/2)^2)/fVolumeBoundary1)*(0-mGodunovFlux(1,1));
+%                     if fMassFlow > fMassFlowBoundary2Exact
+%                         fMassFlow = fMassFlowBoundary2Exact;
+%                     end
+%                 end
                 
                 %%
                 %calculation of new boundary values for mass, density, 
@@ -790,7 +790,7 @@ classdef branch_liquid < solver.matter.base.branch
                     
                     mTemperaturePipe(n) = (sum(mTemperatureNew(k-(this.inCells-1):k))/this.inCells)+this.mDeltaTemperaturePipe(n); 
                     
-                    mMassPipe(n) = (sum(mDensityNew(k-(this.inCells-1):k))/this.inCells)*(pi*(mHydrDiam(iNotZeroHydrLength(n))/2)^2)*mCellLength(n);
+                    mMassPipe(n) = (sum(mDensityNew(k-(this.inCells-1):k))/this.inCells)*(pi*(((mHydrDiam(iNotZeroHydrLength(n))/2)^2)/2)^2)*mCellLength(n);
                         
                     if mHydrLength(n) == 0 
                         k = k+0;
@@ -944,18 +944,40 @@ classdef branch_liquid < solver.matter.base.branch
                 %%
                 %calculation of the correct pressure and volume in the
                 %tanks if liquid and gas phases are used
-                
+
                 %Pressure calculation in the case that tank 1 also
                 %contains a gas phase using a iterative process. 
-                fErrorTank1 = abs(mPressureGas(1)-fPressureBoundary1New);
-                fErrorTank1Prev = fErrorTank1;
+                
+                %the initial step and initial error is calculating from the
+                %assumption that the liquid is incompressible which is the
+                %most accurate one
+                fDensityLiquid1Incomp = fMassBoundary1New/(mVolumeTank(1)-mVolumeGasNew(1));
+                mPressureGas1New = (mMassGas(1)*fR*mTempGas(1))/(mMolMassGas(1)*10^-3*mVolumeGasNew(1));
+                fPressureLiquid1Incomp = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary1New,...
+                            fDensityLiquid1Incomp, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                fErrorTank1 = abs(mPressureGas1New-fPressureLiquid1Incomp);
+                fErrorTank1Prev = fErrorTank1-0.1;
+                fErrorMinTank1 = fErrorTank1; 
+                fVolumeGas1MinError = mVolumeGasNew(1);
+                
                 counter = 1;
-                iSign = 1;
-                n = -3;
+                
+                %if the mass flow is positive matter is taken out of tank 1
+                %meaning the volume of the gas has to increase. However the
+                %first assumption for this increased volume is already to
+                %high so the sign for the iteration should start with a
+                %negative sign
+                if fMassFlow >= 0
+                    iSign = -1;
+                else
+                    iSign = 1;
+                end
+                n = -7;
                 if mMolMassGas(1) ~= 0
-                    while fErrorTank1 >10^-5 && counter <= 200
+                    while fErrorTank1 >10^-5 && counter <= 500
                         
-                        if fErrorTank1 > fErrorTank1Prev
+                        if fErrorTank1 > fErrorTank1Prev 
                             %switches the sign for the delta Volume if the
                             %error from the previous step is smaller than
                             %from the new one and also changes the sign if
@@ -971,27 +993,56 @@ classdef branch_liquid < solver.matter.base.branch
                         fDensityLiquid1New = fMassBoundary1New/(mVolumeTank(1)-mVolumeGasNew(1));
                         
                         mPressureGas(1) = (mMassGas(1)*fR*mTempGas(1))/(mMolMassGas(1)*10^-3*mVolumeGasNew(1));
-                        fPressureLiquid1 = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary1New,...
+                        fPressureLiquid1 = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary2New,...
                             fDensityLiquid1New, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                             fCriticalPressure, fBoilingPressure, fBoilingTemperature);
                         
                         fErrorTank1Prev = fErrorTank1;
                         fErrorTank1 = abs(mPressureGas(1)-fPressureLiquid1);
                         
+                        if fErrorTank1 < fErrorMinTank1
+                            fVolumeGas1MinError = mVolumeGasNew(1);
+                            fErrorMinTank1 = fErrorTank1;
+                        end
+                        if fErrorTank1 > fErrorTank1Prev
+                            mVolumeGasNew(1) = fVolumeGas1MinError;
+                        end
+                        
                         counter = counter+1;
                         
                     end
                 end
-                
+
                 %Pressure calculation in the case that tank 2 also
                 %contains a gas phase using a iterative process. 
-               	fErrorTank2 = abs(mPressureGas(2)-fPressureBoundary2New);
-                fErrorTank2Prev = fErrorTank2;
+                
+               	%the initial step and initial error is calculating from the
+                %assumption that the liquid is incompressible which is the
+                %most accurate one
+                fDensityLiquid2Incomp = fMassBoundary2New/(mVolumeTank(2)-mVolumeGasNew(2));
+                mPressureGas2New = (mMassGas(2)*fR*mTempGas(2))/(mMolMassGas(2)*10^-3*mVolumeGasNew(2));
+                fPressureLiquid2Incomp = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary2New,...
+                            fDensityLiquid2Incomp, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                fErrorTank2 = abs(mPressureGas2New-fPressureLiquid2Incomp);
+                fErrorTank2Prev = fErrorTank2-0.1;
+                fErrorMinTank2 = fErrorTank2; 
+                fVolumeGas2MinError = mVolumeGasNew(2);
+                
                 counter = 1;
-                iSign = 1;
-                n = -3;
+                %if the mass flow is positive matter is pushed into tank 2
+                %meaning the volume of the gas has to decrease. However the
+                %first assumption for this decreased volume is already to
+                %low so the sign for the iteration should start with a
+                %positive sign
+                if fMassFlow >= 0
+                    iSign = 1;
+                else
+                    iSign = -1;
+                end
+                n = -7;
                 if mMolMassGas(2) ~= 0
-                    while fErrorTank2 >10^-5 && counter <= 200
+                    while fErrorTank2 >10^-5 && counter <= 500
                         
                         if fErrorTank2 > fErrorTank2Prev 
                             %switches the sign for the delta Volume if the
@@ -1018,9 +1069,23 @@ classdef branch_liquid < solver.matter.base.branch
                         
                         counter = counter+1;
                         
+                        if fErrorTank2 < fErrorMinTank2
+                            fVolumeGas2MinError = mVolumeGasNew(2);
+                            fErrorMinTank2 = fErrorTank2;
+                        end
+                        if fErrorTank2 > fErrorTank2Prev
+                            mVolumeGasNew(2) = fVolumeGas2MinError;
+                        end
+                        
+                        if fMassFlow < 0 && mVolumeGasNew(2) < (mVolumeTank(2)-mVolumeLiquid(2))
+                            mVolumeGasNew(2) = (mVolumeTank(2)-mVolumeLiquid(2));
+                        elseif fMassFlow >= 0 && mVolumeGasNew(2) > (mVolumeTank(2)-mVolumeLiquid(2))
+                            mVolumeGasNew(2) = (mVolumeTank(2)-mVolumeLiquid(2));
+                        end
+                        
                     end
                 end
-                
+
                 %% 
                 %decision which values for pressure and volume in which
                 %tank should be used
@@ -1100,6 +1165,16 @@ classdef branch_liquid < solver.matter.base.branch
                     this.fMassFlowDiff = fMassFlow-this.fMassFlowOld;
                 end
 
+                if this.fMassFlowOld < fMassFlow
+                    stop = 1;
+                end
+                if this.oBranch.oContainer.oTimer.fTime > 0.7865
+                    stop = 1;
+                end
+                if this.oBranch.oContainer.oTimer.fTime > 0.9
+                    stop = 1;
+                end
+                
                 this.fMassFlowOld = fMassFlow;
                 
                 if strcmp(this.fInitialPressureDifference, 'empty')
