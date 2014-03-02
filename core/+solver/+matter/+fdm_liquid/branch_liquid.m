@@ -778,6 +778,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %Temperature in the pipes without the influence of flow
                 %procs
                 mTemperaturePipe = zeros(iNumberOfPipes,1);
+                mTemperaturePipeWithProcs = zeros(iNumberOfPipes,1);
                 mTemperaturePipeNew = zeros(iNumberOfPipes,1);
                 mMassPipe = zeros(iNumberOfPipes,1);
                 mDeltaTemperaturePipeNew = zeros(iNumberOfPipes,1);
@@ -803,23 +804,11 @@ classdef branch_liquid < solver.matter.base.branch
                 m = 1;
                 k = this.inCells;
                 while n <= iNumberOfPipes
+                    %TO DO: Add correct temperature calculation the one
+                    %from before was simply wrong.
                     
-                    if n == 1 && fMassFlow >= 0
-                        mDeltaTemperaturePipeNew(n) = ((fTimeStep*fMassFlow)/(mMassPipe(n)))*(fTemperatureBoundary1New-mTemperaturePipe(n));
-                    elseif n == iNumberOfPipes && fMassFlow < 0
-                        mDeltaTemperaturePipeNew(n) = ((fTimeStep*fMassFlow)/(mMassPipe(n)))*(fTemperatureBoundary2New-mTemperaturePipe(n));
-                    elseif fMassFlow >= 0
-                        mDeltaTemperaturePipeNew(n) = ((fTimeStep*fMassFlow)/(mMassPipe(n)))*(mTemperaturePipe(n-1)-mTemperaturePipe(n));
-                    else
-                        mDeltaTemperaturePipeNew(n) = ((fTimeStep*fMassFlow)/(mMassPipe(n)))*(mTemperaturePipe(n+1)-mTemperaturePipe(n));
-                    end
-
-                    mDeltaTemperaturePipeNew(n) = mDeltaTemperaturePipeNew(n)+mDeltaTempComp(m);
+                    mTemperaturePipeWithProcs(n) = mTemperaturePipe(n)+mDeltaTempComp(m);
                     
-                    this.mDeltaTemperaturePipe(n) = mDeltaTemperaturePipeNew(n);
-                    
-                    mTemperaturePipeNew(n) = (sum(mTemperatureNew(k-(this.inCells-1):k))/this.inCells)+mDeltaTemperaturePipeNew(n); 
-               
                     if mHydrLength(m) ~= 0
                         n = n+1;
                         k = k+this.inCells;
@@ -832,9 +821,11 @@ classdef branch_liquid < solver.matter.base.branch
       
                 if fMassFlow >= 0
                     fTemperatureBoundary2NewWithProcs = fTemperatureBoundary2New;
-                    fTemperatureBoundary1NewWithProcs = fTemperatureBoundary1 + (fTimeStep*fMassFlow*fHeatCapacity)/(fMassBoundary2New*fHeatCapacity)*mTemperaturePipeNew(end);
+                    fTemperatureBoundary1NewWithProcs = fTemperatureBoundary1New;
+                    %fTemperatureBoundary1NewWithProcs = fTemperatureBoundary1 + (fTimeStep*fMassFlow*fHeatCapacity)/(fMassBoundary2New*fHeatCapacity)*mTemperaturePipeNew(end);
                 else
-                    fTemperatureBoundary2NewWithProcs = fTemperatureBoundary2 + (fTimeStep*fMassFlow*fHeatCapacity)/(fMassBoundary2New*fHeatCapacity)*mTemperaturePipeNew(1);
+                    %fTemperatureBoundary2NewWithProcs = fTemperatureBoundary2 + (fTimeStep*fMassFlow*fHeatCapacity)/(fMassBoundary2New*fHeatCapacity)*mTemperaturePipeNew(1);
+                    fTemperatureBoundary2NewWithProcs = fTemperatureBoundary2New;
                     fTemperatureBoundary1NewWithProcs = fTemperatureBoundary1New;
                 end
                 
@@ -882,8 +873,13 @@ classdef branch_liquid < solver.matter.base.branch
                    
                 %the new volumes in the phases at each boundary assuming
                 %the liquid phase is incompressible compared to gas phases
-                mVolumeBoundaryNew(1) = fVolumeBoundary1 - fTimeStep*(fMassFlow/mDensity(1));
-                mVolumeBoundaryNew(2) = fVolumeBoundary2 + fTimeStep*(fMassFlow/mDensity(end));
+                if fMassFlow >= 0
+                    mVolumeBoundaryNew(1) = fVolumeBoundary1 - fTimeStep*(fMassFlow/fDensityBoundary1);
+                    mVolumeBoundaryNew(2) = fVolumeBoundary2 + fTimeStep*(fMassFlow/mDensity(end));
+                else
+                    mVolumeBoundaryNew(1) = fVolumeBoundary1 - fTimeStep*(fMassFlow/mDensity(1));
+                    mVolumeBoundaryNew(2) = fVolumeBoundary2 + fTimeStep*(fMassFlow/fDensityBoundary2);
+                end
                 
                 %%
                 %getting the values for additional gas phases in the tanks
@@ -943,148 +939,205 @@ classdef branch_liquid < solver.matter.base.branch
 
                 %%
                 %calculation of the correct pressure and volume in the
-                %tanks if liquid and gas phases are used
+                %tanks if liquid and gas phases are used with a nested
+                %intervall approach
 
                 %Pressure calculation in the case that tank 1 also
-                %contains a gas phase using a iterative process. 
+                %contains a gas phase using an iterative nested intervall
+                %scheme 
                 
-                %the initial step and initial error is calculating from the
-                %assumption that the liquid is incompressible which is the
-                %most accurate one
-                fDensityLiquid1Incomp = fMassBoundary1New/(mVolumeTank(1)-mVolumeGasNew(1));
-                mPressureGas1New = (mMassGas(1)*fR*mTempGas(1))/(mMolMassGas(1)*10^-3*mVolumeGasNew(1));
-                fPressureLiquid1Incomp = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary1New,...
-                            fDensityLiquid1Incomp, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-                fErrorTank1 = abs(mPressureGas1New-fPressureLiquid1Incomp);
-                fErrorTank1Prev = fErrorTank1-0.1;
-                fErrorMinTank1 = fErrorTank1; 
-                fVolumeGas1MinError = mVolumeGasNew(1);
+                %the left and right border for the search intervall are
+                %calculated
+                fVolumeGas1_X = mVolumeTank(1)-mVolumeLiquid(1);
+                fVolumeGas1_Y = mVolumeGasNew(1);
                 
-                counter = 1;
-                
-                %if the mass flow is positive matter is taken out of tank 1
-                %meaning the volume of the gas has to increase. However the
-                %first assumption for this increased volume is already to
-                %high so the sign for the iteration should start with a
-                %negative sign
-                if fMassFlow >= 0
-                    iSign = -1;
-                else
-                    iSign = 1;
+                fErrorTank1_X = 1;
+                fErrorTank1_Y = 1;
+                counter1 = 1;
+                %if the two border do not contain the zero point it is 
+                %necessary to shift the borders until they contain it
+                while sign(fErrorTank1_X) == sign(fErrorTank1_Y) && counter1 <= 200
+                    fDensityLiquid1_X = fMassBoundary1New/(mVolumeTank(1)-fVolumeGas1_X);
+                    mPressureGas1_X = (mMassGas(1)*fR*mTempGas(1))/(mMolMassGas(1)*10^-3*fVolumeGas1_X);
+                    fPressureLiquid1_X = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary1New,...
+                                fDensityLiquid1_X, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                                fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                    fErrorTank1_X = mPressureGas1_X-fPressureLiquid1_X;      
+
+                    fDensityLiquid1_Y = fMassBoundary1New/(mVolumeTank(1)-fVolumeGas1_Y);
+                    mPressureGas1_Y = (mMassGas(1)*fR*mTempGas(1))/(mMolMassGas(1)*10^-3*fVolumeGas1_Y);
+                    fPressureLiquid1_Y = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary1New,...
+                                fDensityLiquid1_Y, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                                fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                    fErrorTank1_Y = mPressureGas1_Y-fPressureLiquid1_Y;  
+                    
+                    %if the signs are identical the search intervall is
+                    %increased. Depending on wether the sign is positive or
+                    %negative the left or right border for the search
+                    %intervall is moved
+                    if fMassFlow >= 0
+                        if sign(fErrorTank1_X) == sign(fErrorTank1_Y) && sign(fErrorTank1_Y) == 1
+                            fVolumeGas1_Y = fVolumeGas1_Y + (0.0001*fVolumeGas1_Y);
+                        elseif sign(fErrorTank1_X) == sign(fErrorTank1_Y) && sign(fErrorTank1_X) == -1
+                            fVolumeGas1_X = fVolumeGas1_X - (0.0001*fVolumeGas1_X);
+                        end
+                    elseif fMassFlow < 0
+                        if sign(fErrorTank1_X) == sign(fErrorTank1_Y) && sign(fErrorTank1_Y) == -1
+                            fVolumeGas1_Y = fVolumeGas1_Y - (0.0001*fVolumeGas1_Y);
+                        elseif sign(fErrorTank1_X) == sign(fErrorTank1_Y) && sign(fErrorTank1_X) == 1
+                            fVolumeGas1_X = fVolumeGas1_X + (0.0001*fVolumeGas1_X);
+                        end
+                    end
+                    counter1 = counter1 + 1;
                 end
-                n = -7;
+       
+                fErrorTank1 = fErrorTank1_Y;
+   
+                counter1 = 1;
+                
                 if mMolMassGas(1) ~= 0
-                    while fErrorTank1 >10^-5 && counter <= 500
+                    while abs(fErrorTank1) > 10^-5 && counter1 <= 500
                         
-                        if fErrorTank1 > fErrorTank1Prev 
-                            %switches the sign for the delta Volume if the
-                            %error from the previous step is smaller than
-                            %from the new one and also changes the sign if
-                            %it happens after the second iteration step
-                            iSign = -iSign;
-                            if counter > 2
-                                n = n-1;
-                            end
+                        fVolumeGas1_Z = fVolumeGas1_X+((fVolumeGas1_Y-fVolumeGas1_X)/2);
+                        
+                        if (fVolumeGas1_Z - fVolumeGas1_X) == 0
+                            %in this case the numerical accuracy is reached
+                            %and a more accurate result is not possible.
+                            counter1 = 600;
                         end
+
+                        fDensityLiquid1_X = fMassBoundary1New/(mVolumeTank(1)-fVolumeGas1_X);
+                        fDensityLiquid1_Z = fMassBoundary1New/(mVolumeTank(1)-fVolumeGas1_Z);
                         
-                        mVolumeGasNew(1) = mVolumeGasNew(1)+ (iSign)*(mVolumeGasNew(1)*1*10^(n));
+                        mPressureGas1_X = (mMassGas(1)*fR*mTempGas(1))/(mMolMassGas(1)*10^-3*fVolumeGas1_X);
+                        mPressureGas1_Z = (mMassGas(1)*fR*mTempGas(1))/(mMolMassGas(1)*10^-3*fVolumeGas1_Z);
                         
-                        fDensityLiquid1New = fMassBoundary1New/(mVolumeTank(1)-mVolumeGasNew(1));
-                        
-                        mPressureGas(1) = (mMassGas(1)*fR*mTempGas(1))/(mMolMassGas(1)*10^-3*mVolumeGasNew(1));
-                        fPressureLiquid1 = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary2New,...
-                            fDensityLiquid1New, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                        fPressureLiquid1_X = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary1New,...
+                            fDensityLiquid1_X, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                        fPressureLiquid1_Z = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary1New,...
+                            fDensityLiquid1_Z, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                             fCriticalPressure, fBoilingPressure, fBoilingTemperature);
                         
-                        fErrorTank1Prev = fErrorTank1;
-                        fErrorTank1 = abs(mPressureGas(1)-fPressureLiquid1);
+                        fErrorTank1_X = mPressureGas1_X-fPressureLiquid1_X;
+                        fErrorTank1_Z = mPressureGas1_Z-fPressureLiquid1_Z;
+                        fErrorTank1 = fErrorTank1_Z;
                         
-                        if fErrorTank1 < fErrorMinTank1
-                            fVolumeGas1MinError = mVolumeGasNew(1);
-                            fErrorMinTank1 = fErrorTank1;
+                        if fErrorTank1_Z == 0
+                            counter1 = inf;
+                        elseif sign(fErrorTank1_Z) == sign(fErrorTank1_X)
+                            fVolumeGas1_X = fVolumeGas1_Z;
+                        else
+                            fVolumeGas1_Y = fVolumeGas1_Z;
                         end
-                        if fErrorTank1 > fErrorTank1Prev
-                            mVolumeGasNew(1) = fVolumeGas1MinError;
-                        end
-                        
-                        counter = counter+1;
+                 
+                        counter1 = counter1+1;
                         
                     end
+                    mVolumeGasNew(1) = fVolumeGas1_Z;
+                    fDensityBoundary1New = fDensityLiquid1_Z;
+                    mPressureGas(1) = mPressureGas1_Z;
                 end
 
                 %Pressure calculation in the case that tank 2 also
-                %contains a gas phase using a iterative process. 
+                %contains a gas phase using an iterative nested intervall 
+                %scheme 
                 
-               	%the initial step and initial error is calculating from the
-                %assumption that the liquid is incompressible which is the
-                %most accurate one
-                fDensityLiquid2Incomp = fMassBoundary2New/(mVolumeTank(2)-mVolumeGasNew(2));
-                mPressureGas2New = (mMassGas(2)*fR*mTempGas(2))/(mMolMassGas(2)*10^-3*mVolumeGasNew(2));
-                fPressureLiquid2Incomp = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary2New,...
-                            fDensityLiquid2Incomp, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-                fErrorTank2 = abs(mPressureGas2New-fPressureLiquid2Incomp);
-                fErrorTank2Prev = fErrorTank2-0.1;
-                fErrorMinTank2 = fErrorTank2; 
-                fVolumeGas2MinError = mVolumeGasNew(2);
+                %the left and right border for the search intervall are
+                %calculated
+                fVolumeGas2_X = mVolumeTank(2)-mVolumeLiquid(2);
+                fVolumeGas2_Y = mVolumeGasNew(2);
                 
-                counter = 1;
-                %if the mass flow is positive matter is pushed into tank 2
-                %meaning the volume of the gas has to decrease. However the
-                %first assumption for this decreased volume is already to
-                %low so the sign for the iteration should start with a
-                %positive sign
-                if fMassFlow >= 0
-                    iSign = 1;
-                else
-                    iSign = -1;
+                fErrorTank2_X = 1;
+                fErrorTank2_Y = 1;
+                counter2 = 1;
+                %if the two border do not contain the zero point it is 
+                %necessary to shift the borders until they contain it
+                while sign(fErrorTank2_X) == sign(fErrorTank2_Y) && counter2 <= 200
+                    fDensityLiquid2_X = fMassBoundary2New/(mVolumeTank(2)-fVolumeGas2_X);
+                    mPressureGas2_X = (mMassGas(2)*fR*mTempGas(2))/(mMolMassGas(2)*10^-3*fVolumeGas2_X);
+                    fPressureLiquid2_X = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary2New,...
+                                fDensityLiquid2_X, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                                fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                    fErrorTank2_X = mPressureGas2_X-fPressureLiquid2_X;      
+
+                    fDensityLiquid2_Y = fMassBoundary2New/(mVolumeTank(2)-fVolumeGas2_Y);
+                    mPressureGas2_Y = (mMassGas(2)*fR*mTempGas(2))/(mMolMassGas(2)*10^-3*fVolumeGas2_Y);
+                    fPressureLiquid2_Y = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary2New,...
+                                fDensityLiquid2_Y, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                                fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                    fErrorTank2_Y = mPressureGas2_Y-fPressureLiquid2_Y;  
+                    
+                    %if the signs are identical the search intervall is
+                    %increased. Depending on wether the sign is positive or
+                    %negative the left or right border for the search
+                    %intervall is moved
+                    if fMassFlow >= 0
+                        if sign(fErrorTank2_X) == sign(fErrorTank2_Y) && sign(fErrorTank2_Y) == -1
+                            fVolumeGas2_Y = fVolumeGas2_Y - (0.0001*fVolumeGas2_Y);
+                        elseif sign(fErrorTank2_X) == sign(fErrorTank2_Y) && sign(fErrorTank2_X) == 1
+                            fVolumeGas2_X = fVolumeGas2_X + (0.0001*fVolumeGas2_X);
+                        end
+                    elseif fMassFlow < 0
+                        if sign(fErrorTank2_X) == sign(fErrorTank2_Y) && sign(fErrorTank2_Y) == -1
+                            fVolumeGas2_Y = fVolumeGas2_Y + (0.0001*fVolumeGas2_Y);
+                        elseif sign(fErrorTank2_X) == sign(fErrorTank2_Y) && sign(fErrorTank2_X) == 1
+                            fVolumeGas2_X = fVolumeGas2_X - (0.0001*fVolumeGas2_X);
+                        end
+                    end
+                    
+                    counter2 = counter2 + 1;
                 end
-                n = -7;
+       
+                fErrorTank2 = fErrorTank2_Y;
+   
+                counter2 = 1;
+                
                 if mMolMassGas(2) ~= 0
-                    while fErrorTank2 >10^-5 && counter <= 500
+                    while abs(fErrorTank2) > 10^-5 && counter2 <= 500
                         
-                        if fErrorTank2 > fErrorTank2Prev 
-                            %switches the sign for the delta Volume if the
-                            %error from the previous step is smaller than
-                            %from the new one and also changes the sign if
-                            %it happens after the second iteration step
-                            iSign = -iSign;
-                            if counter > 2
-                                n = n-1;
-                            end
+                        fVolumeGas2_Z = fVolumeGas2_X+((fVolumeGas2_Y-fVolumeGas2_X)/2);
+                        
+                        if (fVolumeGas2_Z - fVolumeGas2_X) == 0
+                            %in this case the numerical accuracy is reached
+                            %and a more accurate result is not possible.
+                            counter2 = 600;
                         end
+
+                        fDensityLiquid2_X = fMassBoundary2New/(mVolumeTank(2)-fVolumeGas2_X);
+                        fDensityLiquid2_Z = fMassBoundary2New/(mVolumeTank(2)-fVolumeGas2_Z);
                         
-                        mVolumeGasNew(2) = mVolumeGasNew(2)+ (iSign)*(mVolumeGasNew(2)*1*10^(n));
+                        mPressureGas2_X = (mMassGas(2)*fR*mTempGas(2))/(mMolMassGas(2)*10^-3*fVolumeGas2_X);
+                        mPressureGas2_Z = (mMassGas(2)*fR*mTempGas(2))/(mMolMassGas(2)*10^-3*fVolumeGas2_Z);
                         
-                        fDensityLiquid2New = fMassBoundary2New/(mVolumeTank(2)-mVolumeGasNew(2));
-                        
-                        mPressureGas(2) = (mMassGas(2)*fR*mTempGas(2))/(mMolMassGas(2)*10^-3*mVolumeGasNew(2));
-                        fPressureLiquid2 = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary2New,...
-                            fDensityLiquid2New, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                        fPressureLiquid2_X = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary2New,...
+                            fDensityLiquid2_X, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                        fPressureLiquid2_Z = solver.matter.fdm_liquid.functions.LiquidPressure(fTemperatureBoundary2New,...
+                            fDensityLiquid2_Z, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                             fCriticalPressure, fBoilingPressure, fBoilingTemperature);
                         
-                        fErrorTank2Prev = fErrorTank2;
-                        fErrorTank2 = abs(mPressureGas(2)-fPressureLiquid2);
+                        fErrorTank2_X = mPressureGas2_X-fPressureLiquid2_X;
+                        fErrorTank2_Z = mPressureGas2_Z-fPressureLiquid2_Z;
+                        fErrorTank2 = fErrorTank2_Z;
                         
-                        counter = counter+1;
-                        
-                        if fErrorTank2 < fErrorMinTank2
-                            fVolumeGas2MinError = mVolumeGasNew(2);
-                            fErrorMinTank2 = fErrorTank2;
+                        if fErrorTank2_Z == 0
+                            counter2 = inf;
+                        elseif sign(fErrorTank2_Z) == sign(fErrorTank2_X)
+                            fVolumeGas2_X = fVolumeGas2_Z;
+                        else
+                            fVolumeGas2_Y = fVolumeGas2_Z;
                         end
-                        if fErrorTank2 > fErrorTank2Prev
-                            mVolumeGasNew(2) = fVolumeGas2MinError;
-                        end
-                        
-                        if fMassFlow < 0 && mVolumeGasNew(2) < (mVolumeTank(2)-mVolumeLiquid(2))
-                            mVolumeGasNew(2) = (mVolumeTank(2)-mVolumeLiquid(2));
-                        elseif fMassFlow >= 0 && mVolumeGasNew(2) > (mVolumeTank(2)-mVolumeLiquid(2))
-                            mVolumeGasNew(2) = (mVolumeTank(2)-mVolumeLiquid(2));
-                        end
+                 
+                        counter2 = counter2+1;
                         
                     end
+                    mVolumeGasNew(2) = fVolumeGas2_Z;
+                    fDensityBoundary2New = fDensityLiquid2_Z;
+                    mPressureGas(2) = mPressureGas2_Z;
                 end
+                
+                
 
                 %% 
                 %decision which values for pressure and volume in which
@@ -1163,16 +1216,6 @@ classdef branch_liquid < solver.matter.base.branch
                 %calculation is required
                 if ~strcmp(this.fMassFlowOld, 'empty')
                     this.fMassFlowDiff = fMassFlow-this.fMassFlowOld;
-                end
-
-                if this.fMassFlowOld < fMassFlow
-                    stop = 1;
-                end
-                if this.oBranch.oContainer.oTimer.fTime > 0.7865
-                    stop = 1;
-                end
-                if this.oBranch.oContainer.oTimer.fTime > 0.9
-                    stop = 1;
                 end
                 
                 this.fMassFlowOld = fMassFlow;
