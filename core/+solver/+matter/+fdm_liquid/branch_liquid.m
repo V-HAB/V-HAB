@@ -43,6 +43,11 @@ classdef branch_liquid < solver.matter.base.branch
         %user
         inCells = 5;
         
+        %Courant Number used to calculate the timestep. For CourantNumber =
+        %1 the timestep becomes maximal but sometimes a smaller timestep is
+        %necessary
+        fCourantNumber = 1;
+        
         %residual target for pressure initialized to 10^-5 if norhting else
         %is specified by user 
         fPressureResidual = 10^-5;
@@ -86,7 +91,7 @@ classdef branch_liquid < solver.matter.base.branch
     end
 
     methods 
-        function this = branch_liquid(oBranch, iCells, fPressureResidual, fMassFlowResidual)
+        function this = branch_liquid(oBranch, iCells, fPressureResidual, fMassFlowResidual, fCourantNumber)
             this@solver.matter.base.branch(oBranch);  
             
             if nargin == 2
@@ -98,6 +103,15 @@ classdef branch_liquid < solver.matter.base.branch
                 this.inCells = iCells;
                 this.fPressureResidual = fPressureResidual;
                 this.fMassFlowResidual = fMassFlowResidual;
+            elseif nargin == 5
+                this.inCells = iCells;
+                this.fPressureResidual = fPressureResidual;
+                this.fMassFlowResidual = fMassFlowResidual;
+                this.fCourantNumber = fCourantNumber;
+            end
+            
+            if this.fCourantNumber < 0 || this.fCourantNumber > 1
+               error('possible range for the courant number is [0,1]') 
             end
             
         end
@@ -203,19 +217,6 @@ classdef branch_liquid < solver.matter.base.branch
                 fTimeStep = inf;
                 
                 this.setTimeStep(fTimeStep);
-                
-                %TO DO: Add calculation of Temperature in Pipes?
-                if this.fMassFlowOld >= 0
-                    fTemperatureBoundary2New = fTemperatureBoundary2 + (fTimeStep*this.fMassFlowOld*fHeatCapacity)/(fMassBoundary2*fHeatCapacity)*((fTemperatureBoundary1+sum(mDeltaTempComp))-fTemperatureBoundary2);
-                    fTemperatureBoundary1New = fTemperatureBoundary1;
-                else
-                    fTemperatureBoundary1New = fTemperatureBoundary1 + (fTimeStep*this.fMassFlowOld*fHeatCapacity)/(fMassBoundary1*fHeatCapacity)*((fTemperatureBoundary2+sum(mDeltaTempComp))-fTemperatureBoundary1);
-                    fTemperatureBoundary2New = fTemperatureBoundary2;
-                end
-                
-                %setPortProperties(this, fPortPressure, fPortTemperature, fFlowSpeed, fLiquidLevel, fAcceleration, fDensity)
-                this.oBranch.coExmes{1}.setPortProperties(fPressureBoundary1, fTemperatureBoundary1New, fFlowSpeedBoundary1, fLiquidLevel1Old, fAcceleration1, fDensityBoundary1);
-                this.oBranch.coExmes{2}.setPortProperties(fPressureBoundary2, fTemperatureBoundary2New, fFlowSpeedBoundary2, fLiquidLevel2Old, fAcceleration2, fDensityBoundary2);
 
                 update@solver.matter.base.branch(this, this.fMassFlowOld);
             
@@ -277,9 +278,12 @@ classdef branch_liquid < solver.matter.base.branch
                 %%
                 %calculates the initial boundary values for the internal
                 %energy
-
-                fInternalEnergyBoundary1 = fHeatCapacity*(fTemperatureBoundary1-fTempRef)*fDensityBoundary1;
-                fInternalEnergyBoundary2 = fHeatCapacity*(fTemperatureBoundary2-fTempRef)*fDensityBoundary2;
+                
+                %normally the flow speed also has to be taken into account
+                %when calculation the internal energy. But for the stores a
+                %flow speed of 0 m/s is assumed.
+                fInternalEnergyBoundary1 = (fHeatCapacity*(fTemperatureBoundary1-fTempRef))*fDensityBoundary1;
+                fInternalEnergyBoundary2 = (fHeatCapacity*(fTemperatureBoundary2-fTempRef))*fDensityBoundary2;
 
                 %gets the number of pipes or more accuratly the number of
                 %components which have a HydrLength and should
@@ -335,9 +339,15 @@ classdef branch_liquid < solver.matter.base.branch
                     mFlowSpeed = zeros(this.inCells*iNumberOfPipes, 1);
                     
                     for k = 1:1:(this.inCells*iNumberOfPipes)
-                        mPressure(k,1) = min(fPressureBoundary1WithProcs, fPressureBoundary2WithProcs);
-                        mInternalEnergy(k,1) = min(fInternalEnergyBoundary1, fInternalEnergyBoundary2);
-                        mDensity(k,1) = min(fDensityBoundary1WithProcs, fDensityBoundary2WithProcs);
+                        if fPressureBoundary1WithProcs <= fPressureBoundary2WithProcs
+                            mPressure(k,1) = fPressureBoundary1WithProcs;
+                            mInternalEnergy(k,1) = fInternalEnergyBoundary1;
+                            mDensity(k,1) = fDensityBoundary1WithProcs;
+                        else
+                            mPressure(k,1) = fPressureBoundary2WithProcs;
+                            mInternalEnergy(k,1) = fInternalEnergyBoundary2;
+                            mDensity(k,1) = fDensityBoundary2WithProcs;
+                        end
                     end
                     
                 else
@@ -351,7 +361,7 @@ classdef branch_liquid < solver.matter.base.branch
                 
                 mTemperature = zeros((this.inCells*iNumberOfPipes), 1);
                 for k = 1:this.inCells*iNumberOfPipes
-                    mTemperature(k,1) = (mInternalEnergy(k,1)/(fHeatCapacity*mDensity(k,1)))+fTempRef;
+                    mTemperature(k,1) = ((mInternalEnergy(k,1)-0.5*mDensity(k)*mFlowSpeed(k)^2)/(fHeatCapacity*mDensity(k,1)))+fTempRef;
                 end
                
                 %calculates the state vectors for each cell according to [5]
@@ -424,9 +434,6 @@ classdef branch_liquid < solver.matter.base.branch
                 %delets all zeros from the cell length vector
                 mCellLength = mCellLength(mCellLength~=0);
                 
-                %Sets the Courant Number for the maximum allowable time step
-                CourantNumber = 1;
-                
                 fTimeStep = 1000;
 
                 %calculates the time step according to [5] page equation
@@ -434,9 +441,9 @@ classdef branch_liquid < solver.matter.base.branch
                 for k = 1:this.inCells*iNumberOfPipes
                     %TO DO Check Conditions on this if check
                     if mMaxWaveSpeed(k) >= 0 && mod(k,this.inCells) == 0 && k ~= this.inCells*iNumberOfPipes
-                        fTimeStepTemp = (CourantNumber*mCellLength(n+1))/abs(mMaxWaveSpeed(k));
+                        fTimeStepTemp = (this.fCourantNumber*mCellLength(n+1))/abs(mMaxWaveSpeed(k));
                     elseif mod(k,this.inCells) ~= 0 || ( mMaxWaveSpeed(k) < 0 && mod(k,this.inCells) == 0)
-                        fTimeStepTemp = (CourantNumber*mCellLength(n))/abs(mMaxWaveSpeed(k));
+                        fTimeStepTemp = (this.fCourantNumber*mCellLength(n))/abs(mMaxWaveSpeed(k));
                     end
                     
                     if fTimeStepTemp < fTimeStep
@@ -485,7 +492,7 @@ classdef branch_liquid < solver.matter.base.branch
                 end           
 
                 for k=1:1:this.inCells*iNumberOfPipes
-                   mTemperatureNew(k) = (mInternalEnergyNew(k)/(fHeatCapacity*mDensity(k)))+fTempRef;
+                   mTemperatureNew(k) = ((mInternalEnergyNew(k)-0.5*mDensityNew(k)*mFlowSpeedNew(k)^2)/(fHeatCapacity*mDensity(k)))+fTempRef;
                    mPressureNew(k) = solver.matter.fdm_liquid.functions.LiquidPressure(mTemperatureNew(k),...
                        mDensityNew(k), fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                        fCriticalPressure, fBoilingPressure, fBoilingTemperature);
@@ -689,7 +696,6 @@ classdef branch_liquid < solver.matter.base.branch
                    if mVolumeTank(k)-mVolumeLiquid(k) ~= 0
                        for m = 1:iNumberOfPhases(k)
                            if strcmp(this.oBranch.coExmes{k}.oPhase.oStore.aoPhases(m).sType, 'gas')
-                               %mPressureGas(k) = this.oBranch.coExmes{k}.oPhase.oStore.aoPhases(m).fPressure;
                                mMolMassGas(k) = this.oBranch.coExmes{k}.oPhase.oStore.aoPhases(m).fMolMass;
                                mMassGas(k) = this.oBranch.coExmes{k}.oPhase.oStore.aoPhases(m).fMass;
                                mTempGas(k) = this.oBranch.coExmes{k}.oPhase.oStore.aoPhases(m).fTemp;
@@ -1030,6 +1036,10 @@ classdef branch_liquid < solver.matter.base.branch
                 this.mInternalEnergyOld = mInternalEnergyNew;
                 this.mDensityOld = mDensityNew;
                 this.mFlowSpeedOld = mFlowSpeedNew;
+                
+                if min(mPressureNew) < 0.5*10^5
+                    stop = 1;
+                end
                 
                 %%
                 %finnaly sets the time step for the branch as well as the
