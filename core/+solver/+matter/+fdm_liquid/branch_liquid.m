@@ -110,8 +110,8 @@ classdef branch_liquid < solver.matter.base.branch
                 this.fCourantNumber = fCourantNumber;
             end
             
-            if this.fCourantNumber < 0 || this.fCourantNumber > 1
-               error('possible range for the courant number is [0,1]') 
+            if this.fCourantNumber <= 0 || this.fCourantNumber > 1
+               error('possible range for the courant number is ]0,1]') 
             end
             
         end
@@ -282,6 +282,9 @@ classdef branch_liquid < solver.matter.base.branch
                 %normally the flow speed also has to be taken into account
                 %when calculation the internal energy. But for the stores a
                 %flow speed of 0 m/s is assumed.
+                %Internal Energy according to [5] page 88 equation (3.3)
+                %using the equation c_p*DeltaTemp for the specific internal
+                %energy
                 fInternalEnergyBoundary1 = (fHeatCapacity*(fTemperatureBoundary1-fTempRef))*fDensityBoundary1;
                 fInternalEnergyBoundary2 = (fHeatCapacity*(fTemperatureBoundary2-fTempRef))*fDensityBoundary2;
                 
@@ -425,13 +428,15 @@ classdef branch_liquid < solver.matter.base.branch
                 fCellLength = sum(mHydrLength)/this.inCells;
 
 
-                %calculates the time step according to [5] page equation
+                %calculates the time step according to [5] page 221 
+                %equation (6.17)
                 fTimeStep = (this.fCourantNumber*fCellLength)/abs(max(mMaxWaveSpeed(k)));
                 
                 %%
                 %calculation of new state vector
 
-                %calculates the new cell values according to [5] page equation
+                %calculates the new cell values according to [5] page 217 
+                %equation (6.11)
                 mStateVectorNew = zeros(this.inCells, 3);
 
                 for k = 1:1:this.inCells 
@@ -451,13 +456,23 @@ classdef branch_liquid < solver.matter.base.branch
                 mPressureNew = zeros(this.inCells,1);
                 mTemperatureNew = zeros(this.inCells,1);
                 %calculates the flow speed, pressure, density and internal
-                %energy for the cells from the state vectors
+                %energy for the cells from the state vectors according to
+                %their definition from [5] page 3 equation (1.7). Note that
+                %here only the one dimensional case is considered which
+                %leaves the values for flow speeds (v and w ) in other 
+                %direction out thus giving a vector with three entries 
+                %instead of five 
                 for k = 1:1:this.inCells
                     mDensityNew(k) = mStateVectorNew(k,1);
                     mFlowSpeedNew(k) = mStateVectorNew(k,2)/mStateVectorNew(k,1);
                     mInternalEnergyNew(k) = mStateVectorNew(k,3);
                 end           
 
+                %calculates the values for temperature according to [5]
+                %page 88 equation (3.3) using c_p*DeltaTemp als specific
+                %internal energy. 
+                %Pressure is calculated using the liquid pressure
+                %correlation. For more information view the function file
                 for k=1:1:this.inCells
                    mTemperatureNew(k) = ((mInternalEnergyNew(k)-0.5*mDensityNew(k)*mFlowSpeedNew(k)^2)/(fHeatCapacity*mDensity(k)))+fTempRef;
                    mPressureNew(k) = solver.matter.fdm_liquid.functions.LiquidPressure(mTemperatureNew(k),...
@@ -508,12 +523,19 @@ classdef branch_liquid < solver.matter.base.branch
                 %flow rates for each cell
                 mMassFlow = zeros(this.inCells, 1);
 
+                %mass flow is Density*FlowSpeed*Area and the second entry
+                %of the statevector is Density*FlowSpeed which means it
+                %only has to be multiplied with the Area to gain the mass
+                %flow
                 for k = 1:this.inCells
                     mMassFlow(k) = (pi*(fMinHydrDiam/2)^2)*mStateVectorNew(k,2);
                 end
                 
                 %the actually used scalar mass flow is calculated by
-                %averaging the individual cell values      
+                %averaging the individual cell values. This leads to small 
+                %errors and can crash the solver for small tanks but is 
+                %necessary in order to set a consistent flow rate over the 
+                %branch in V-HAB      
                 fMassFlow = sum(mMassFlow)/(this.inCells);
                 
                 %%
@@ -527,13 +549,15 @@ classdef branch_liquid < solver.matter.base.branch
                 fMassBoundary1New = fMassBoundary1 - fTimeStep*fMassFlow;
                 fMassBoundary2New = fMassBoundary2 + fTimeStep*fMassFlow;
      
-                %new values for the densities are calculated
+                %new values for the densities are calculated without regard
+                %to possible changes in the volume
                 fDensityBoundary1New = fMassBoundary1New/fVolumeBoundary1;
                 fDensityBoundary2New = fMassBoundary2New/fVolumeBoundary2;
                 
                 %the new internal energy values of the boundary phases are
                 %calculated from the internal energy flows at each side of
-                %the branch
+                %the branch (this does not yet take temperature changes
+                %from flow procs into account)
                 fInternalEnergyBoundary1New = fInternalEnergyBoundary1 + ((fTimeStep*...
                     (pi*(fMinHydrDiam/2)^2))/fVolumeBoundary1)*(0-mGodunovFlux(1,3));
                 fInternalEnergyBoundary2New = fInternalEnergyBoundary2 + ((fTimeStep*...
@@ -548,6 +572,11 @@ classdef branch_liquid < solver.matter.base.branch
                 %calculation of the new boundary values for temperature
                 %with the influence of the flow procs 
       
+                %basically two different types of temperature changing flow
+                %procs are assumed. One simply generates a fix Temperature
+                %Difference while the other heats or cools to a certain
+                %temperature. By adding the effects of both types the total
+                %temperature difference from all flow procs is calculated
                 mDeltaTempCompTot = zeros(iNumberOfProcs, 1);
                 for n = 1:iNumberOfProcs
                     if mTempComp(n) ~= 0;
@@ -567,6 +596,10 @@ classdef branch_liquid < solver.matter.base.branch
                 %the Heat transferred through the branch because of comps
                 fHeatComp = fTimeStep*abs(fMassFlow)*fHeatCapacity*fDeltaTempCompTot;
                 
+                %depending on which way the fluid moves either boundary 1
+                %or 2 changes its temperature because of the flow procs.
+                %(only the boundary into which the mass flows can change
+                %its temperature because of procs)
                 if fMassFlow >= 0
                     fTemperatureBoundary1NewWithProcs = fTemperatureBoundary1New;
                     fTemperatureBoundary2NewWithProcs = fTemperatureBoundary2New + fHeatComp/(fMassBoundary2New*fHeatCapacity);
@@ -580,10 +613,14 @@ classdef branch_liquid < solver.matter.base.branch
                 %influence
                 
              	%for the next time step it is necessary to save the flow 
-                %speed of the fluid at the two exmes    
+                %speed of the fluid at the two exmes which can be gained by 
+                %dividing the first entry of the Godunov Flux which is
+                %Density*FlowSpeed with the Density.
                 fFlowSpeedBoundary1New = mGodunovFlux(1,1)/fDensityBoundary1New;
                 fFlowSpeedBoundary2New = mGodunovFlux(this.inCells+1,1)/fDensityBoundary2New;
 
+                %The friction calculation done for the cell flow speeds
+                %also has to be done for the boundary flow speeds.
               	fReBoundary1New = (fFlowSpeedBoundary1New * fMinHydrDiam)/(fDynamicViscosity/fDensityBoundary1);
                 fReBoundary2New = (fFlowSpeedBoundary2New * fMinHydrDiam)/(fDynamicViscosity/fDensityBoundary2);
                 
@@ -998,10 +1035,6 @@ classdef branch_liquid < solver.matter.base.branch
                 this.mInternalEnergyOld = mInternalEnergyNew;
                 this.mDensityOld = mDensityNew;
                 this.mFlowSpeedOld = mFlowSpeedNew;
-                
-                if min(mPressureNew) < 0.5*10^5 || fPressureBoundary2New < 0.5*10^5 || fPressureBoundary1New < 0.5*10^5
-                    stop = 1;
-                end
                 
                 %%
                 %finnaly sets the time step for the branch as well as the
