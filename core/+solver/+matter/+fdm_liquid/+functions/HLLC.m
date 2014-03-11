@@ -41,9 +41,11 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     end
 
     if fPressureLeft < 0 || fPressureRight < 0
-        error('negative pressure not allowed in Riemann Solver! Try increasing number of cells for the branch')
+        string = sprintf('negative pressure not allowed in Riemann Solver! This error can have different reasons: \n -the number of cells for the branch is to low \n -the diameter of the pipes is large compared to the volume of a tank \n -the pressures set in the system are wrong (e.g. a pump that has a too high pressure jump)');
+        error(string)
     elseif fDensityLeft < 0 || fDensityRight <0
-        error('negative densities not allowed in Riemann Solver! Try increasing number of cells for the branch')
+        string = sprintf('negative densities not allowed in Riemann Solver! This error can have different reasons: \n -the number of cells for the branch is to low \n -the diameter of the pipes is large compared to the volume of a tank \n -the pressures set in the system are wrong (e.g. a pump that has a too high pressure jump)');
+        error(string)
     end
 
     %TO DO make dependant on matter table or better take the density_0 from table

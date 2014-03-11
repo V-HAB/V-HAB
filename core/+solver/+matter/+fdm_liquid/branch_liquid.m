@@ -284,11 +284,6 @@ classdef branch_liquid < solver.matter.base.branch
                 %flow speed of 0 m/s is assumed.
                 fInternalEnergyBoundary1 = (fHeatCapacity*(fTemperatureBoundary1-fTempRef))*fDensityBoundary1;
                 fInternalEnergyBoundary2 = (fHeatCapacity*(fTemperatureBoundary2-fTempRef))*fDensityBoundary2;
-
-                %gets the number of pipes or more accuratly the number of
-                %components which have a HydrLength and should
-                %be treated like pipes in the discretisation
-                iNumberOfPipes = length(mHydrLength)-sum(mHydrLength == 0); 
                 
                 %%
                 %calculates the boundary pressures and densities with 
@@ -333,12 +328,12 @@ classdef branch_liquid < solver.matter.base.branch
                 %the cells are initialzied on the minimum boundary values
                 if strcmp(this.mPressureOld,'empty')
                     
-                    mPressure = zeros(this.inCells*iNumberOfPipes, 1);
-                    mInternalEnergy = zeros(this.inCells*iNumberOfPipes, 1);
-                    mDensity = zeros(this.inCells*iNumberOfPipes, 1);
-                    mFlowSpeed = zeros(this.inCells*iNumberOfPipes, 1);
+                    mPressure = zeros(this.inCells, 1);
+                    mInternalEnergy = zeros(this.inCells, 1);
+                    mDensity = zeros(this.inCells, 1);
+                    mFlowSpeed = zeros(this.inCells, 1);
                     
-                    for k = 1:1:(this.inCells*iNumberOfPipes)
+                    for k = 1:1:(this.inCells)
                         if fPressureBoundary1WithProcs <= fPressureBoundary2WithProcs
                             mPressure(k,1) = fPressureBoundary1WithProcs;
                             mInternalEnergy(k,1) = fInternalEnergyBoundary1;
@@ -359,8 +354,8 @@ classdef branch_liquid < solver.matter.base.branch
                     mFlowSpeed = this.mFlowSpeedOld;  %velocity [m/s]
                 end
                 
-                mTemperature = zeros((this.inCells*iNumberOfPipes), 1);
-                for k = 1:this.inCells*iNumberOfPipes
+                mTemperature = zeros((this.inCells), 1);
+                for k = 1:this.inCells
                     mTemperature(k,1) = ((mInternalEnergy(k,1)-0.5*mDensity(k)*mFlowSpeed(k)^2)/(fHeatCapacity*mDensity(k,1)))+fTempRef;
                 end
                
@@ -368,9 +363,9 @@ classdef branch_liquid < solver.matter.base.branch
                 %page equation
                 %each line in the matrix corresponds to one state vector with
                 %the entries (Density, Density*FlowSpeed, InternalEnergy)
-                mStateVector = zeros(this.inCells*iNumberOfPipes, 3);
+                mStateVector = zeros(this.inCells, 3);
 
-                for k = 1:1:this.inCells*iNumberOfPipes
+                for k = 1:1:this.inCells
                     mStateVector(k,1) = mDensity(k,1); 
                     mStateVector(k,2) = mDensity(k,1)*mFlowSpeed(k,1);
                     mStateVector(k,3) = mInternalEnergy(k,1);
@@ -381,44 +376,44 @@ classdef branch_liquid < solver.matter.base.branch
                 %HLLC approximate Riemann solver
                 
                 %preallocation of vectors
-                mGodunovFlux = zeros((this.inCells*iNumberOfPipes)+1, 3);
-                mMaxWaveSpeed = zeros((this.inCells*iNumberOfPipes)+1, 1);
-                mPressureStar = zeros((this.inCells*iNumberOfPipes)+1, 1);
+                mGodunovFlux = zeros((this.inCells)+1, 3);
+                mMaxWaveSpeed = zeros((this.inCells)+1, 1);
+                mPressureStar = zeros((this.inCells)+1, 1);
 
                 %calculates the Godunov Fluxes and wave speed estimates at the
                 %in- and outlet of the branch
                 [mGodunovFlux(1,:), mMaxWaveSpeed(1,1), mPressureStar(1,1)] = solver.matter.fdm_liquid.functions.HLLC(fPressureBoundary1WithProcs, fDensityBoundary1WithProcs, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
                     mPressure(1), mDensity(1), mFlowSpeed(1), mInternalEnergy(1), fTemperatureBoundary1, mTemperature(1));
-                [mGodunovFlux((this.inCells*iNumberOfPipes)+1,:), mMaxWaveSpeed((this.inCells*iNumberOfPipes)+1, 1), mPressureStar((this.inCells*iNumberOfPipes)+1,1)] = ...
-                        solver.matter.fdm_liquid.functions.HLLC(mPressure(this.inCells*iNumberOfPipes), mDensity(this.inCells*iNumberOfPipes), mFlowSpeed(this.inCells*iNumberOfPipes), mInternalEnergy(this.inCells*iNumberOfPipes),...
+                [mGodunovFlux((this.inCells)+1,:), mMaxWaveSpeed((this.inCells)+1, 1), mPressureStar((this.inCells)+1,1)] = ...
+                        solver.matter.fdm_liquid.functions.HLLC(mPressure(this.inCells), mDensity(this.inCells), mFlowSpeed(this.inCells), mInternalEnergy(this.inCells),...
                         fPressureBoundary2WithProcs, fDensityBoundary2WithProcs, fFlowSpeedBoundary2, fInternalEnergyBoundary2, mTemperature(end), fTemperatureBoundary2);
                 
                 %calculates the solution of the Riemann Problem and returns
                 %the required Godunov fluxes for each cell boundary and the 
                 %maximum wave speed estimates.
-                for k = 1:1:((this.inCells)*iNumberOfPipes)-1 
+                for k = 1:1:(this.inCells)-1 
                     
                     [mGodunovFlux(k+1,:), mMaxWaveSpeed(k+1), mPressureStar(k+1)] = solver.matter.fdm_liquid.functions.HLLC(mPressure(k), mDensity(k), mFlowSpeed(k), mInternalEnergy(k),...
                     mPressure(k+1), mDensity(k+1), mFlowSpeed(k+1), mInternalEnergy(k+1), mTemperature(k), mTemperature(k+1));
                    
                 end
 
-    %the numbering of the Godunov Fluxes "mGodunovFlux" is done according to 
-    %the following sketch, using the first and last entry as the flux over the
-    %branch boundaries. The flow direction of the fluid is not restricted and 
-    %can change during the calculation           
-    %
-    %       Flux 1        Flux 2      Flux 3       Flux 4     Flux 5     Flux 6
-    %             ___________________________________________________________
-    %           |           |            |           |           |           |
-    %           |           |            |           |           |           |
-    %           |   cell 1  |    cell 2  |   cell 3  |   cell 4  |   cell 5  |
-    %           |           |            |           |           |           |
-    %           |___________|____________|___________|___________|___________|
-    %
-    %in the case that several components are discretised as pipes
-    %the cells and fluxes simply are counted as if it was a single large
-    %pipe
+%the numbering of the Godunov Fluxes "mGodunovFlux" is done according to 
+%the following sketch, using the first and last entry as the flux over the
+%branch boundaries. The flow direction of the fluid is not restricted and 
+%can change during the calculation           
+%
+%       Flux 1        Flux 2      Flux 3       Flux 4     Flux 5     Flux 6
+%             ___________________________________________________________
+%           |           |            |           |           |           |
+%           |           |            |           |           |           |
+%           |   cell 1  |    cell 2  |   cell 3  |   cell 4  |   cell 5  |
+%           |           |            |           |           |           |
+%           |___________|____________|___________|___________|___________|
+%
+%in the case that several components are discretised as pipes
+%the cells and fluxes simply are counted as if it was a single large
+%pipe
 
                 %%
                 %calculates the cell length of the components in the branch
@@ -427,50 +422,22 @@ classdef branch_liquid < solver.matter.base.branch
                 
                 %defines the cell length by dividing the whole length of the
                 %pipe with the number of vells
-                mCellLength = zeros(iNumberOfProcs, 1);
-                for k = 1:iNumberOfProcs
-                    mCellLength(k) = mHydrLength(k)/this.inCells;
-                end
-                %delets all zeros from the cell length vector
-                mCellLength = mCellLength(mCellLength~=0);
-                
-                fTimeStep = 1000;
+                fCellLength = sum(mHydrLength)/this.inCells;
+
 
                 %calculates the time step according to [5] page equation
-                n = 1;
-                for k = 1:this.inCells*iNumberOfPipes
-                    %TO DO Check Conditions on this if check
-                    if mMaxWaveSpeed(k) >= 0 && mod(k,this.inCells) == 0 && k ~= this.inCells*iNumberOfPipes
-                        fTimeStepTemp = (this.fCourantNumber*mCellLength(n+1))/abs(mMaxWaveSpeed(k));
-                    elseif mod(k,this.inCells) ~= 0 || ( mMaxWaveSpeed(k) < 0 && mod(k,this.inCells) == 0)
-                        fTimeStepTemp = (this.fCourantNumber*mCellLength(n))/abs(mMaxWaveSpeed(k));
-                    end
-                    
-                    if fTimeStepTemp < fTimeStep
-                        fTimeStep = fTimeStepTemp;
-                    end
-                    
-                    if mod(k,this.inCells) == 0
-                        n = n+1;
-                    end
-                end
+                fTimeStep = (this.fCourantNumber*fCellLength)/abs(max(mMaxWaveSpeed(k)));
                 
                 %%
                 %calculation of new state vector
 
                 %calculates the new cell values according to [5] page equation
-                mStateVectorNew = zeros(this.inCells*iNumberOfPipes, 3);
-                %counter for the pipes
-                n = 1;
-                for k = 1:1:this.inCells*iNumberOfPipes 
-                    mStateVectorNew(k,1) = mStateVector(k,1)+(fTimeStep/mCellLength(n))*(mGodunovFlux(k,1)-mGodunovFlux(k+1,1));
-                    mStateVectorNew(k,2) = mStateVector(k,2)+(fTimeStep/mCellLength(n))*(mGodunovFlux(k,2)-mGodunovFlux(k+1,2));
-                    mStateVectorNew(k,3) = mStateVector(k,3)+(fTimeStep/mCellLength(n))*(mGodunovFlux(k,3)-mGodunovFlux(k+1,3));
-                    
-                 	if mod(k,this.inCells) == 0
-                        n = n+1;
-                  	end
+                mStateVectorNew = zeros(this.inCells, 3);
 
+                for k = 1:1:this.inCells 
+                    mStateVectorNew(k,1) = mStateVector(k,1)+(fTimeStep/fCellLength)*(mGodunovFlux(k,1)-mGodunovFlux(k+1,1));
+                    mStateVectorNew(k,2) = mStateVector(k,2)+(fTimeStep/fCellLength)*(mGodunovFlux(k,2)-mGodunovFlux(k+1,2));
+                    mStateVectorNew(k,3) = mStateVector(k,3)+(fTimeStep/fCellLength)*(mGodunovFlux(k,3)-mGodunovFlux(k+1,3));     
                 end
                 
                 
@@ -478,20 +445,20 @@ classdef branch_liquid < solver.matter.base.branch
                 %calculation of new cell values for density,
                 %temperature, pressure, internal energy and flow speed
                 
-                mDensityNew = zeros(this.inCells*iNumberOfPipes,1);
-                mFlowSpeedNew = zeros(this.inCells*iNumberOfPipes, 1);
-                mInternalEnergyNew = zeros(this.inCells*iNumberOfPipes,1);
-                mPressureNew = zeros(this.inCells*iNumberOfPipes,1);
-                mTemperatureNew = zeros(this.inCells*iNumberOfPipes,1);
+                mDensityNew = zeros(this.inCells,1);
+                mFlowSpeedNew = zeros(this.inCells, 1);
+                mInternalEnergyNew = zeros(this.inCells,1);
+                mPressureNew = zeros(this.inCells,1);
+                mTemperatureNew = zeros(this.inCells,1);
                 %calculates the flow speed, pressure, density and internal
                 %energy for the cells from the state vectors
-                for k = 1:1:this.inCells*iNumberOfPipes
+                for k = 1:1:this.inCells
                     mDensityNew(k) = mStateVectorNew(k,1);
                     mFlowSpeedNew(k) = mStateVectorNew(k,2)/mStateVectorNew(k,1);
                     mInternalEnergyNew(k) = mStateVectorNew(k,3);
                 end           
 
-                for k=1:1:this.inCells*iNumberOfPipes
+                for k=1:1:this.inCells
                    mTemperatureNew(k) = ((mInternalEnergyNew(k)-0.5*mDensityNew(k)*mFlowSpeedNew(k)^2)/(fHeatCapacity*mDensity(k)))+fTempRef;
                    mPressureNew(k) = solver.matter.fdm_liquid.functions.LiquidPressure(mTemperatureNew(k),...
                        mDensityNew(k), fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
@@ -505,10 +472,10 @@ classdef branch_liquid < solver.matter.base.branch
                 fDynamicViscosity = 1001.6*10^-6; %kg/(m s)
                 
                 %calculates the pressure loss in the cells of the pipe
-%                 mDeltaPressure = zeros(this.inCells*iNumberOfPipes, 1);
-                mRe = zeros(this.inCells*iNumberOfPipes, 1);
-                n = 1;
-                 for k = 1:this.inCells*iNumberOfPipes
+%                 mDeltaPressure = zeros(this.inCells, 1);
+                mRe = zeros(this.inCells, 1);
+                
+                for k = 1:this.inCells
 %                     mDeltaPressure(k) = solver.matter.fdm_liquid.functions.pressure_loss_pipe(mHydrDiam(n), mHydrLength(n),...
 %                             mFlowSpeedNew(k), fDynamicViscosity, mDensityNew(k), 0);
 %                         
@@ -516,11 +483,6 @@ classdef branch_liquid < solver.matter.base.branch
 %                     
                     mRe(k) = (mFlowSpeed(k) * fMinHydrDiam)/(fDynamicViscosity/mDensity(k));
                     
-                  	if mod(k,this.inCells) == 0 
-                        while mHydrLength(n) == 0
-                            n = n+1;
-                        end
-                    end
                 end
                 
                 %TO DO: no good equation found for the friction influence 
@@ -531,7 +493,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %according to literature (Dubbel) the average flow speed in
                 %laminar case is 0.5*vmax and in turbulent case it is about
                 %0.84*vmax so these values will be used atm        
-                for k = 1:this.inCells*iNumberOfPipes
+                for k = 1:this.inCells
                     if mRe(k) <= 2320
                         mFlowSpeedNew(k) = 0.5*mFlowSpeedNew(k);
                     else
@@ -544,15 +506,15 @@ classdef branch_liquid < solver.matter.base.branch
 
                 %vector for the mass flow which contains the individual
                 %flow rates for each cell
-                mMassFlow = zeros(this.inCells*iNumberOfPipes, 1);
+                mMassFlow = zeros(this.inCells, 1);
 
-                for k = 1:this.inCells*iNumberOfPipes
+                for k = 1:this.inCells
                     mMassFlow(k) = (pi*(fMinHydrDiam/2)^2)*mStateVectorNew(k,2);
                 end
                 
                 %the actually used scalar mass flow is calculated by
                 %averaging the individual cell values      
-                fMassFlow = sum(mMassFlow)/(this.inCells*iNumberOfPipes);
+                fMassFlow = sum(mMassFlow)/(this.inCells);
                 
                 %%
                 %calculation of new boundary values for mass, density, 
@@ -575,7 +537,7 @@ classdef branch_liquid < solver.matter.base.branch
                 fInternalEnergyBoundary1New = fInternalEnergyBoundary1 + ((fTimeStep*...
                     (pi*(fMinHydrDiam/2)^2))/fVolumeBoundary1)*(0-mGodunovFlux(1,3));
                 fInternalEnergyBoundary2New = fInternalEnergyBoundary2 + ((fTimeStep*...
-                    (pi*(fMinHydrDiam/2)^2))/fVolumeBoundary2)*(mGodunovFlux(this.inCells*iNumberOfPipes+1,3)-0);
+                    (pi*(fMinHydrDiam/2)^2))/fVolumeBoundary2)*(mGodunovFlux(this.inCells+1,3)-0);
 
                 %from the internal energy values of the boundary phases the
                 %temperature can be calculated
@@ -587,15 +549,15 @@ classdef branch_liquid < solver.matter.base.branch
                 %with the influence of the flow procs 
       
                 mDeltaTempCompTot = zeros(iNumberOfProcs, 1);
-                k = this.inCells;
                 for n = 1:iNumberOfProcs
                     if mTempComp(n) ~= 0;
-                        mDeltaTempCompTot(n) = (mTempComp(n)-mTemperature(k))+mDeltaTempComp(n);
+                        if fMassFlow >= 0
+                            mDeltaTempCompTot(n) = (mTempComp(n)-mTemperature(this.inCells))+mDeltaTempComp(n);
+                        else
+                            mDeltaTempCompTot(n) = (mTempComp(n)-mTemperature(1))+mDeltaTempComp(n);
+                        end
                     elseif mDeltaTempComp(n) ~= 0 && mTempComp(n) == 0
                         mDeltaTempCompTot(n) = mDeltaTempComp(n);
-                    end
-                    if mHydrLength(n) ~= 0
-                        k = k+this.inCells;
                     end
                 end
                 
@@ -620,7 +582,7 @@ classdef branch_liquid < solver.matter.base.branch
              	%for the next time step it is necessary to save the flow 
                 %speed of the fluid at the two exmes    
                 fFlowSpeedBoundary1New = mGodunovFlux(1,1)/fDensityBoundary1New;
-                fFlowSpeedBoundary2New = mGodunovFlux(this.inCells*iNumberOfPipes+1,1)/fDensityBoundary2New;
+                fFlowSpeedBoundary2New = mGodunovFlux(this.inCells+1,1)/fDensityBoundary2New;
 
               	fReBoundary1New = (fFlowSpeedBoundary1New * fMinHydrDiam)/(fDynamicViscosity/fDensityBoundary1);
                 fReBoundary2New = (fFlowSpeedBoundary2New * fMinHydrDiam)/(fDynamicViscosity/fDensityBoundary2);
@@ -1037,7 +999,7 @@ classdef branch_liquid < solver.matter.base.branch
                 this.mDensityOld = mDensityNew;
                 this.mFlowSpeedOld = mFlowSpeedNew;
                 
-                if min(mPressureNew) < 0.5*10^5
+                if min(mPressureNew) < 0.5*10^5 || fPressureBoundary2New < 0.5*10^5 || fPressureBoundary1New < 0.5*10^5
                     stop = 1;
                 end
                 
