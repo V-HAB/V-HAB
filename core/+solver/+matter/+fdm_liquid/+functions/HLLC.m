@@ -296,7 +296,7 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     elseif fWaveSpeedStar <= 0 && 0 <= fWaveSpeedRight   
         mGodunovFlux = [fDensityRightStar*fFlowSpeedStar, fDensityRightStar*(fFlowSpeedStar^2)+fPressureStar, fFlowSpeedStar*(fInternalEnergyRightStar+fPressureStar)];
     elseif 0 >= fWaveSpeedRight 
-        mGodunovFlux = [fDensityLeft*fFlowSpeedLeft, fDensityLeft*(fFlowSpeedLeft^2)+fPressureLeft, fFlowSpeedLeft*(fInternalEnergyLeft+fPressureLeft)];
+        mGodunovFlux = [fDensityRight*fFlowSpeedRight, fDensityRight*(fFlowSpeedRight^2)+fPressureRight, fFlowSpeedRight*(fInternalEnergyRight+fPressureRight)];
     else
         error('an error in the riemann solver prevented calculation of fluxes')
     end
