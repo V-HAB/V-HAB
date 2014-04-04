@@ -38,8 +38,19 @@ classdef store < base
         % superior system)
         bSealed = false;
         
+        %%
+        %This is only important for gravity or likewise driven systems 
+        %where the position of ports and geometry of the store is no longer
+        %insignifcant.
+        %Geometry struct of the store with the possible inputs: (atm only
+        %Box shape)
+        % sGeometry = struct('Shape', 'Box', 'Area', 0.5, 'HeightExMe', 0.5)
+        %   "Box"       : Could be a rectangular shaped store or a zylinder
+        %                 with its axis congruent to the acceleration
+        sGeometry = struct('Shape','Box', 'Area', 1, 'HeightExMe', 0);        
+
         
-        
+        %%
         % Timer object, needs to inherit from / implement event.timer
         oTimer;
         fLastUpdate = 0;
@@ -72,12 +83,17 @@ classdef store < base
     
     
     methods
-        function this = store(oMT, sName, fVolume)
+        function this = store(oMT, sName, fVolume, sGeometry)
             this.sName = sName;
             
             this.setMatterTable(oMT);
             
-            if nargin >= 3, this.fVolume = fVolume; end;
+            if nargin == 3
+                this.fVolume = fVolume; 
+            elseif nargin >= 4
+                this.fVolume = fVolume; 
+                this.sGeometry = sGeometry;
+            end
         end
         
         
