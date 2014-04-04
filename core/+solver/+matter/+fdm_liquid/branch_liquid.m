@@ -354,17 +354,6 @@ classdef branch_liquid < solver.matter.base.branch
                             mDensity(k,1) = mDensityBoundary2WithProcs;
                         end
                     end
-                %because of numerical instability in rapid temperature and 
-                %density changes for the cells it is necessary to reset the
-                %cell values if the flow direction gets reversed    
-                elseif ((sum(this.mFlowSpeedOld)/length(this.mFlowSpeedOld)) >= 0) && (fPressureBoundary1WithProcs < fPressureBoundary2WithProcs) && (abs(fTemperatureBoundary1-fTemperatureBoundary2) > 1)
-                    mPressure(k,1) = fPressureBoundary2WithProcs;
-                	mInternalEnergy(k,1) = fInternalEnergyBoundary2;
-                 	mDensity(k,1) = mDensityBoundary2WithProcs;
-                elseif ((sum(this.mFlowSpeedOld)/length(this.mFlowSpeedOld)) < 0) && (fPressureBoundary1WithProcs > fPressureBoundary2WithProcs) && (abs(fTemperatureBoundary1-fTemperatureBoundary2) > 1)
-                    mPressure(k,1) = fPressureBoundary1WithProcs;
-                  	mInternalEnergy(k,1) = fInternalEnergyBoundary1;
-                  	mDensity(k,1) = mDensityBoundary1WithProcs;
                 else
                     %variables from the flow processors (these are vectors
                     %containing the values for each cell)
