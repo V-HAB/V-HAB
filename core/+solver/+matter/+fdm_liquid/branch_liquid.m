@@ -98,10 +98,6 @@ classdef branch_liquid < solver.matter.base.branch
         
         %these values are not required for the calculation but can be used
         %to plot the respective values.
-        fTotalPressureErrorTank1 = 0;
-        fTotalPressureErrorTank2 = 0;
-        iNestedIntervallCounterTank1 = 0;
-        iNestedIntervallCounterTank2 = 0;
         fTimeStepBranch
         
     end
@@ -579,17 +575,17 @@ classdef branch_liquid < solver.matter.base.branch
                 %%
                 %calculation of boundary flow speeds and the first component 
                 %of the virtual godunov fluxes
-                mVirtualGodunovFlux = zeros((this.inCells+1),1);
+                mVirtualGodunovFlux = zeros((this.inCells+1),3);
                 mGodunovFlowSpeed = zeros((this.inCells+1),1);
                 if fFlowSpeedBoundary1New >= 0
-                    mVirtualGodunovFlux(1) = fFlowSpeedBoundary1New*fDensityBoundary1;
+                    mVirtualGodunovFlux(1,1) = fFlowSpeedBoundary1New*fDensityBoundary1;
                 else
-                    mVirtualGodunovFlux(1) = fFlowSpeedBoundary1New*mVirtualDensity(1);
+                    mVirtualGodunovFlux(1,1) = fFlowSpeedBoundary1New*mVirtualDensity(1);
                 end
                 if fFlowSpeedBoundary2New >= 0
-                    mVirtualGodunovFlux(end) = fFlowSpeedBoundary2New*mVirtualDensity(end);
+                    mVirtualGodunovFlux(end,1) = fFlowSpeedBoundary2New*mVirtualDensity(end);
                 else
-                    mVirtualGodunovFlux(end) = fFlowSpeedBoundary2New*fDensityBoundary1;
+                    mVirtualGodunovFlux(end,1) = fFlowSpeedBoundary2New*fDensityBoundary1;
                 end
                 
                 mGodunovFlowSpeed(1) = fFlowSpeedBoundary1New;
@@ -598,10 +594,10 @@ classdef branch_liquid < solver.matter.base.branch
                 for k = 2:this.inCells
                     if mGodunovFlux(k,1) >= 0
                         mGodunovFlowSpeed(k) = mGodunovFlux(k,1)/mDensity(k-1);
-                        mVirtualGodunovFlux(k) = mVirtualDensity(k-1)*mGodunovFlowSpeed(k); 
+                        mVirtualGodunovFlux(k,1) = mVirtualDensity(k-1)*mGodunovFlowSpeed(k); 
                     else
                         mGodunovFlowSpeed(k) = mGodunovFlux(k,1)/mDensity(k);
-                        mVirtualGodunovFlux(k) = mVirtualDensity(k)*mGodunovFlowSpeed(k); 
+                        mVirtualGodunovFlux(k,1) = mVirtualDensity(k)*mGodunovFlowSpeed(k); 
                     end
                 end
              
@@ -637,7 +633,6 @@ classdef branch_liquid < solver.matter.base.branch
                     else
                         mStateVectorNew(k,2) = mStateVector(k,2)+(fTimeStep/fCellLength)*(mGodunovFlux(k,2)-mGodunovFlux(k+1,2));
                     end
-                    mStateVectorNew(k,3) = mStateVector(k,3)+(fTimeStep/fCellLength)*(mGodunovFlux(k,3)-mGodunovFlux(k+1,3)); 
                 end
 
 
@@ -665,7 +660,6 @@ classdef branch_liquid < solver.matter.base.branch
                 for k = 1:1:this.inCells
                     mDensityNew(k) = mStateVectorNew(k,1);
                     mFlowSpeedNew(k) = mStateVectorNew(k,2)/mStateVectorNew(k,1);
-                    mInternalEnergyNew(k) = mStateVectorNew(k,3);
                 end
 
                 %%
@@ -689,6 +683,43 @@ classdef branch_liquid < solver.matter.base.branch
                 %necessary in order to set a consistent flow rate over the 
                 %branch in V-HAB      
                 fMassFlow = sum(mMassFlow)/(this.inCells);
+                
+                %%
+                %calculates the third entry for the state vector, the
+                %internal energy
+                if fFlowSpeedBoundary1New >= 0
+                    mVirtualGodunovFlux(1,3) = fFlowSpeedBoundary1New*(fInternalEnergyBoundary1+fPressureBoundary1);
+                else
+                    mVirtualGodunovFlux(1,3) = fFlowSpeedBoundary1New*(mVirtualInternalEnergy(1)+mVirtualPressure(1));
+                end
+                if fFlowSpeedBoundary2New >= 0
+                    mVirtualGodunovFlux(end,3) = fFlowSpeedBoundary2New*(mVirtualInternalEnergy(end)+mVirtualPressure(end));
+                else
+                    mVirtualGodunovFlux(end,3) = fFlowSpeedBoundary2New*(fInternalEnergyBoundary2+fPressureBoundary2);
+                end
+                
+                for k = 2:this.inCells
+                    if mGodunovFlux(k,1) >= 0
+                        mVirtualGodunovFlux(k,3) = mGodunovFlowSpeed(k)*(mVirtualInternalEnergy(k-1)+mVirtualPressure(k-1));
+                    else
+                        mVirtualGodunovFlux(k,3) = mGodunovFlowSpeed(k)*(mVirtualInternalEnergy(k)+mVirtualPressure(k));
+                    end
+                end
+                
+                
+                for k = 1:1:this.inCells
+                   	if sum(mDeltaTempComp(mCompCellPosition==k)) ~= 0
+                        if fMassFlow >= 0
+                            mStateVectorNew(k,3) = mStateVector(k,3)+(fTimeStep/fCellLength)*(mGodunovFlux(k,3)-mVirtualGodunovFlux(k+1,3)); 
+                        else
+                            mStateVectorNew(k,3) = mStateVector(k,3)+(fTimeStep/fCellLength)*(mVirtualGodunovFlux(k,3)-mGodunovFlux(k+1,3)); 
+                        end
+                    else
+                        mStateVectorNew(k,3) = mStateVector(k,3)+(fTimeStep/fCellLength)*(mGodunovFlux(k,3)-mGodunovFlux(k+1,3)); 
+                    end
+                    mInternalEnergyNew(k) = mStateVectorNew(k,3);
+                end
+                
 
                 %%
                 %calculates the values for temperature according to [5]
@@ -697,23 +728,8 @@ classdef branch_liquid < solver.matter.base.branch
                 %Pressure is calculated using the liquid pressure
                 %correlation. For more information view the function file
 
-                if fMassFlow >= 0
-                    mTemperatureNew(1) = ((mDensity(1)*fCellLength*mTemperature(1))+(fMassFlow*fTimeStep*fTemperatureBoundary1)-(mGodunovFlux(2,1)*fTimeStep*mTemperature(1)))/((mDensity(1)*fCellLength)+(fMassFlow*fTimeStep)-(mGodunovFlux(2,1)*fTimeStep));
-                    mTemperatureNew(end) = ((mDensity(end)*fCellLength*mTemperature(end))+(mGodunovFlux(end,1)*fTimeStep*mTemperature(end-1))-(fMassFlow*fTimeStep*mTemperature(end)))/((mDensity(end)*fCellLength)+(mGodunovFlux(end,1)*fTimeStep)-(fMassFlow*fTimeStep));
-                    for k=2:1:(this.inCells-1)
-                        mTemperatureNew(k) = ((mDensity(k)*fCellLength*mTemperature(k))+(mGodunovFlux(k,1)*fTimeStep*mTemperature(k-1))-(mGodunovFlux(k+1,1)*fTimeStep*mTemperature(k)))/((mDensity(k)*fCellLength)+(mGodunovFlux(k,1)*fTimeStep)-(mGodunovFlux(k+1,1)*fTimeStep));
-                    end
-                else
-                    mTemperatureNew(1) = ((mDensity(1)*fCellLength*mTemperature(1))-(mGodunovFlux(2,1)*fTimeStep*mTemperature(2))+fMassFlow*fTimeStep*mTemperature(1))/((mDensity(1)*fCellLength)+(fMassFlow*fTimeStep)-(mGodunovFlux(2,1)*fTimeStep));
-                    mTemperatureNew(end) = ((mDensity(end)*fCellLength*mTemperature(end))+(mGodunovFlux(end,1)*fTimeStep*mTemperature(end))-(fMassFlow*fTimeStep*fTemperatureBoundary2))/((mDensity(end)*fCellLength)+(mGodunovFlux(end,1)*fTimeStep)-(fMassFlow*fTimeStep));
-                    for k=2:1:(this.inCells-1)
-                        mTemperatureNew(k) = ((mDensity(k)*fCellLength*mTemperature(k))+(mGodunovFlux(k,1)*fTimeStep*mTemperature(k))-(mGodunovFlux(k+1,1)*fTimeStep*mTemperature(k+1)))/((mDensity(k)*fCellLength)+(mGodunovFlux(k,1)*fTimeStep)-(mGodunovFlux(k+1,1)*fTimeStep));
-                    end
-                end           
-
                 for k=1:1:this.inCells
-                   mInternalEnergyNew(k) = mDensityNew(k)*(0.5*mFlowSpeed(k)^2+fHeatCapacity*(mTemperatureNew(k)-fTempRef)); 
-                   %mTemperatureNew(k) = ((mInternalEnergyNew(k)-0.5*mDensityNew(k)*mFlowSpeedNew(k)^2)/(fHeatCapacity*mDensity(k)))+fTempRef;
+                   mTemperatureNew(k) = ((mInternalEnergyNew(k)-0.5*mDensityNew(k)*mFlowSpeedNew(k)^2)/(fHeatCapacity*mDensity(k)))+fTempRef;
                    mPressureNew(k) = solver.matter.fdm_liquid.functions.LiquidPressure(mTemperatureNew(k),...
                        mDensityNew(k), fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                        fCriticalPressure, fBoilingPressure, fBoilingTemperature);
@@ -730,18 +746,8 @@ classdef branch_liquid < solver.matter.base.branch
 
                 %with the densities and the fluxes the new virtual
                 %temperatures can be calculated
-                if fMassFlow >= 0
-                    mVirtualTemperatureNew(1) = ((mVirtualDensity(1)*fCellLength*mVirtualTemperature(1))+(fMassFlow*fTimeStep*fTemperatureBoundary1)-(mVirtualGodunovFlux(2)*fTimeStep*mVirtualTemperature(1)))/((mVirtualDensity(1)*fCellLength)+(fMassFlow*fTimeStep)-(mVirtualGodunovFlux(2)*fTimeStep));
-                    mVirtualTemperatureNew(end) = ((mVirtualDensity(end)*fCellLength*mVirtualTemperature(end))+(mVirtualGodunovFlux(end)*fTimeStep*mVirtualTemperature(end-1))-(fMassFlow*fTimeStep*mVirtualTemperature(end)))/((mVirtualDensity(end)*fCellLength)+(mVirtualGodunovFlux(end)*fTimeStep)-(fMassFlow*fTimeStep));
-                    for k=2:1:(this.inCells-1)
-                        mVirtualTemperatureNew(k) = ((mVirtualDensity(k)*fCellLength*mVirtualTemperature(k))+(mVirtualGodunovFlux(k,1)*fTimeStep*mVirtualTemperature(k-1))-(mVirtualGodunovFlux(k+1,1)*fTimeStep*mVirtualTemperature(k)))/((mVirtualDensity(k)*fCellLength)+(mVirtualGodunovFlux(k,1)*fTimeStep)-(mVirtualGodunovFlux(k+1,1)*fTimeStep));
-                    end
-                else
-                    mVirtualTemperatureNew(1) = ((mVirtualDensity(1)*fCellLength*mVirtualTemperature(1))-(mVirtualGodunovFlux(2,1)*fTimeStep*mVirtualTemperature(2))+fMassFlow*fTimeStep*mVirtualTemperature(1))/((mVirtualDensity(1)*fCellLength)+(fMassFlow*fTimeStep)-(mVirtualGodunovFlux(2,1)*fTimeStep));
-                    mVirtualTemperatureNew(end) = ((mVirtualDensity(end)*fCellLength*mVirtualTemperature(end))+(mVirtualGodunovFlux(end,1)*fTimeStep*mVirtualTemperature(end))-(fMassFlow*fTimeStep*fTemperatureBoundary2))/((mVirtualDensity(end)*fCellLength)+(mVirtualGodunovFlux(end,1)*fTimeStep)-(fMassFlow*fTimeStep));
-                    for k=2:1:(this.inCells-1)
-                        mVirtualTemperatureNew(k) = ((mVirtualDensity(k)*fCellLength*mVirtualTemperature(k))+(mVirtualGodunovFlux(k,1)*fTimeStep*mVirtualTemperature(k))-(mVirtualGodunovFlux(k+1,1)*fTimeStep*mVirtualTemperature(k+1)))/((mVirtualDensity(k)*fCellLength)+(mVirtualGodunovFlux(k,1)*fTimeStep)-(mVirtualGodunovFlux(k+1,1)*fTimeStep));
-                    end
+                for k = 1:this.inCells
+                    mVirtualTemperatureNew(k) = mTemperatureNew(k)-sum(mDeltaTempComp(mCompCellPosition==k));
                 end
 
                 for k = 1:this.inCells
@@ -919,11 +925,15 @@ classdef branch_liquid < solver.matter.base.branch
                 %tells the stores when to update
                 this.oBranch.coExmes{1, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
                 this.oBranch.coExmes{2, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
-                
+
                 %calls the update for the base branch using the newly
                 %calculated mass flow
                 %branch(this, fFlowRate, afPressures, afTemps)
                 update@solver.matter.base.branch(this, fMassFlow, afPressure, afTemps);
+                
+                for k = 1: length(this.oBranch.aoFlowProcs)
+                    this.oBranch.aoFlowProcs(1,k).update();
+                end
                 
             end
 

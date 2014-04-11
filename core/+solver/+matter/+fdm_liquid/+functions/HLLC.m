@@ -177,7 +177,7 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     %the pressure can be calculated according to [5] page 324 equation
     %(10.36)
 	fPressureStarTemp = fPressureLeft+fDensityLeft*(fWaveSpeedLeftPVRS-...
-                            fFlowSpeedLeft)*(fWaveSpeedStarPVRS-fFlowSpeedRight);   
+                            fFlowSpeedLeft)*(fWaveSpeedStarPVRS-fFlowSpeedLeft);   
 
     %ensures that the reference Density at low pressure is lower than the
     %other densities
