@@ -41,7 +41,7 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     end
 
     if fPressureLeft < 0 || fPressureRight < 0
-        string = sprintf('negative pressure not allowed in Riemann Solver! This error can have different reasons: \n -the number of cells for the branch is to low \n -the diameter of the pipes is large compared to the volume of a tank \n -the pressures set in the system are wrong (e.g. a pump that has a too high pressure jump)');
+        string = sprintf('negative pressure not allowed in Riemann Solver! This error can have different reasons: \n -the number of cells for the branch is to low \n -the courant number is to high (if active flowcomps like pumps are used this is the probable cause) \n -the diameter of the pipes is large compared to the volume of a tank \n -the pressures set in the system are wrong (e.g. a pump that has a too high pressure jump)');
         error(string)
     elseif fDensityLeft < 0 || fDensityRight <0
         string = sprintf('negative densities not allowed in Riemann Solver! This error can have different reasons: \n -the number of cells for the branch is to low \n -the diameter of the pipes is large compared to the volume of a tank \n -the pressures set in the system are wrong (e.g. a pump that has a too high pressure jump)');
@@ -177,7 +177,7 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     %the pressure can be calculated according to [5] page 324 equation
     %(10.36)
 	fPressureStarTemp = fPressureLeft+fDensityLeft*(fWaveSpeedLeftPVRS-...
-                            fFlowSpeedLeft)*(fWaveSpeedStarPVRS-fFlowSpeedLeft);   
+                            fFlowSpeedLeft)*(fWaveSpeedStarPVRS-fFlowSpeedRight);   
 
     %ensures that the reference Density at low pressure is lower than the
     %other densities
