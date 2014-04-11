@@ -43,6 +43,32 @@ classdef liquid < matter.phase
             % change registered, do nothing.
             
             bSuccess = this.setParameter('fVolume', fVolume);
+            this.fDensity = this.fMass / this.fVolume;
+            
+            %fix matter values required to use the correlations for
+            %density and pressure. 
+
+            %TO DO make dependant on matter table
+            %values for water
+            %density at one fixed datapoint
+            fFixDensity = 998.21;        %g/dm³
+            %temperature for the fixed datapoint
+            fFixTemperature = 293.15;           %K
+            %Molar Mass of the compound
+            fMolMassH2O = 18.01528;       %g/mol
+            %critical temperature
+            fCriticalTemperature = 647.096;         %K
+            %critical pressure
+            fCriticalPressure = 220.64*10^5;      %N/m² = Pa
+
+            %boiling point normal pressure
+            fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
+            %normal boiling point temperature
+            fBoilingTemperature = 373.124;      %K
+                
+            this.fPressure = solver.matter.fdm_liquid.functions.LiquidPressure(this.fTemp,...
+                            this.fDensity, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
             
             return;
             %TODO with events:
@@ -109,7 +135,35 @@ classdef liquid < matter.phase
             %     Or makes sense to always check for an empty fVolume? Does
             %     it happen that fVol is empty, e.g. gas solved in fluid?
             if ~isempty(this.fVolume)
-                % ?
+                
+                %fix matter values required to use the correlations for
+                %density and pressure. 
+                
+                %TO DO make dependant on matter table
+                %values for water
+                %density at one fixed datapoint
+                fFixDensity = 998.21;        %g/dm³
+                %temperature for the fixed datapoint
+                fFixTemperature = 293.15;           %K
+                %Molar Mass of the compound
+                fMolMassH2O = 18.01528;       %g/mol
+                %critical temperature
+                fCriticalTemperature = 647.096;         %K
+                %critical pressure
+                fCriticalPressure = 220.64*10^5;      %N/m² = Pa
+
+                %boiling point normal pressure
+                fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
+                %normal boiling point temperature
+                fBoilingTemperature = 373.124;      %K
+                
+                fDensity = this.fMass/this.fVolume;
+                this.fPressure = solver.matter.fdm_liquid.functions.LiquidPressure(this.fTemp,...
+                                fDensity, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                                fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+            end
+            for k = 1:length(this.coProcsEXME)
+                this.coProcsEXME{1, k}.update();
             end
         end
     end

@@ -4,6 +4,8 @@ classdef liquid < matter.procs.exme
 
         % Pressure on the exme
         fPressure; %in Pa
+        
+        fTemperature; %in K
   
         %level of liquid above the exme, not overall level in the store
         fLiquidLevel = 0; % in m
@@ -15,24 +17,16 @@ classdef liquid < matter.procs.exme
         %sign)
         fAcceleration; %in m/s²
         
-        %Flow speed over this port
-        fFlowSpeed; %in m/s
-        
     end
     
     methods
-        function this = liquid(oPhase, sName, fFlowSpeed, fAcceleration)
+        function this = liquid(oPhase, sName, fAcceleration)
             this@matter.procs.exme(oPhase, sName);
             
             if nargin == 3
-                this.fAcceleration = 0;
-                this.fFlowSpeed = fFlowSpeed;
-            elseif nargin == 4
                 this.fAcceleration = fAcceleration;
-                this.fFlowSpeed = fFlowSpeed;
             else
                 this.fAcceleration = 0;
-                this.fFlowSpeed = 0;
             end
             
             sGeometryTank = this.oPhase.oStore.sGeometry;
@@ -62,39 +56,34 @@ classdef liquid < matter.procs.exme
             %gravity
             this.fPressure = this.oPhase.fPressure + this.fLiquidLevel*...
                 this.fAcceleration*this.oPhase.fDensity;
+            
+            this.fTemperature = this.oPhase.fTemp;
         
         end
         
-        function [ fPortPressure, fPortTemperature , fPortFlowSpeed, fPortAcceleration] = getPortProperties(this)
+        function [ fPortPressure, fPortTemperature ] = getPortProperties(this)
             
             fPortPressure    = this.fPressure;
+            fPortTemperature = this.fTemperature;
             
-            fPortTemperature = this.oPhase.fTemp;
-            
-            fPortFlowSpeed = this.fFlowSpeed;
-            
-            fPortAcceleration = this.fAcceleration;
         end
-        function [ ] = setPortProperties(this, fPressureTank, fPortTemperature, fFlowSpeed, fAcceleration, fDensity)
+        
+        function [ ] = setPortAcceleration(this, fAcceleration)
+            
+            this.fAcceleration = fAcceleration;
+            
+        end
+        
+        function this = update(this)
            
-            if nargin == 3
-                this.oPhase.setTemp(fPortTemperature);
-            elseif nargin == 4
-                this.oPhase.setTemp(fPortTemperature);
-                this.fFlowSpeed = fFlowSpeed;
-            elseif nargin >= 5
-                this.oPhase.setTemp(fPortTemperature);
-                this.fFlowSpeed = fFlowSpeed;
-                this.fAcceleration = fAcceleration;
-            end
-            
-            if nargin < 6
-                fDensity = 0;
-            end
-            
             sGeometryTank = this.oPhase.oStore.sGeometry;
             fVolumeTank = this.oPhase.oStore.fVolume;
             fVolumeLiquid = this.oPhase.fVolume;
+            fPressureTank = this.oPhase.fPressure;
+            fMassTank = this.oPhase.fMass;
+            
+            this.fTemperature = this.oPhase.fTemp;
+            fDensityLiquid = fMassTank/fVolumeLiquid;
             
             if strcmp(sGeometryTank.Shape, 'box') || strcmp(sGeometryTank.Shape,'Box')
                 fAreaTank = sGeometryTank.Area;
@@ -117,11 +106,7 @@ classdef liquid < matter.procs.exme
             %calculates the pressure at the exme by using the inherent tank
             %pressure for 0g and adding the pressure which is created by
             %gravity
-            this.fPressure = fPressureTank + this.fLiquidLevel*...
-                this.fAcceleration*fDensity;   
-            
-            this.oPhase.setPressure(fPressureTank);
-            
+            this.fPressure = fPressureTank + this.fLiquidLevel*this.fAcceleration*fDensityLiquid;   
             
         end
     end
