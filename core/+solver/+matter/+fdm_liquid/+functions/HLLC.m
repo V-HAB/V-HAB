@@ -41,10 +41,10 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     end
 
     if fPressureLeft < 0 || fPressureRight < 0
-        string = sprintf('negative pressure not allowed in Riemann Solver! This error can have different reasons: \n -the number of cells for the branch is to low \n -the courant number is to high (if active flowcomps like pumps are used this is the probable cause) \n -the diameter of the pipes is large compared to the volume of a tank \n -the pressures set in the system are wrong (e.g. a pump that has a too high pressure jump)');
+        string = sprintf('negative pressure not allowed in Riemann Solver!\n First try decreasing the Courant Number of the Branch if this does not help see list of other possible errors:\n -the number of cells for the branch is too low \n -the diameter of the pipes is large compared to the volume of a tank \n -the pressures set in the system are wrong (e.g. a pump that has a too high pressure jump)');
         error(string)
     elseif fDensityLeft < 0 || fDensityRight <0
-        string = sprintf('negative densities not allowed in Riemann Solver! This error can have different reasons: \n -the number of cells for the branch is to low \n -the diameter of the pipes is large compared to the volume of a tank \n -the pressures set in the system are wrong (e.g. a pump that has a too high pressure jump)');
+        string = sprintf('negative densities not allowed in Riemann Solver!\n First try decreasing the Courant Number other possible error might be wrong temperature in the system');
         error(string)
     end
 
@@ -298,7 +298,7 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     elseif 0 >= fWaveSpeedRight 
         mGodunovFlux = [fDensityRight*fFlowSpeedRight, fDensityRight*(fFlowSpeedRight^2)+fPressureRight, fFlowSpeedRight*(fInternalEnergyRight+fPressureRight)];
     else
-        error('an error in the riemann solver prevented calculation of fluxes')
+        error('an error in the riemann solver prevented calculation of fluxes. Most likley somewhere a NaN occured')
     end
 
     if abs(fWaveSpeedLeft) >= abs(fWaveSpeedRight) && abs(fWaveSpeedLeft) >= abs(fWaveSpeedStar)
@@ -310,7 +310,8 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     end
     
     if ~isreal(mGodunovFlux)
-        error('an error in the riemann solver lead to imaginary results! Try increasing number of cells for the branch')
+        string = sprintf('an error in the riemann solver lead to imaginary results!\n First try decreasing the Courant Number of the Branch if this does not help see list of other possible errors:\n -the number of cells for the branch is too low \n -the diameter of the pipes is large compared to the volume of a tank \n -the pressures set in the system are wrong (e.g. a pump that has a too high pressure jump)');
+        error(string)
     end
         
 end
