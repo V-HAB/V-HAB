@@ -101,7 +101,8 @@ classdef store < base
                 this.fVolume = fVolume;
                 this.iIncompressible = iIncompressible;
             elseif nargin >= 5
-                this.fVolume = fVolume; 
+                this.fVolume = fVolume;
+                this.iIncompressible = iIncompressible;
                 this.sGeometry = sGeometry;
             end
         end
@@ -146,18 +147,50 @@ classdef store < base
             end
             
             if this.iIncompressible == 0 && iGasPhaseExists == 1
+                %ideal gas constant
+                fR = matter.table.C.R_m;
+
+                %fix matter values required to use the correlations for
+                %density and pressure. 
+
+                %TO DO make dependant on matter table
+                %values for water
+                %density at one fixed datapoint
+                fFixDensity = 998.21;        %g/dm³
+                %temperature for the fixed datapoint
+                fFixTemperature = 293.15;           %K
+                %Molar Mass of the compound
+                fMolMassH2O = 18.01528;       %g/mol
+                %critical temperature
+                fCriticalTemperature = 647.096;         %K
+                %critical pressure
+                fCriticalPressure = 220.64*10^5;      %N/m² = Pa
+
+                %boiling point normal pressure
+                fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
+                %normal boiling point temperature
+                fBoilingTemperature = 373.124;      %K
+
                 for k = 1:length(this.aoPhases)
                     if strcmp(this.aoPhases(k).sType, 'gas')
                         fVolumeGasOld = this.aoPhases(k).fVolume;
-                        %fPressureGas = this.aoPhases(k).fPressure;
                         fMolMassGas = this.aoPhases(k).fMolMass;
                         fMassGasOld = this.aoPhases(k).fMass;
                         fMassGasTimeStep = this.aoPhases(k).fMassUpdateTimeStep;
                         fTempGasOld = this.aoPhases(k).fTemp;
                         if ~isempty(this.aoPhases(k).coProcsEXME)
-                            fFlowRateGas = this.aoPhases(k).coProcsEXME{1}.aoFlows.fFlowRate;
-                            fPressureGasFlow = this.aoPhases(k).coProcsEXME{1}.aoFlows.fPressure;
-                            fTemperatureGasFlow = this.aoPhases(k).coProcsEXME{1}.aoFlows.fTemp;
+                            fFlowRateGas = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            fPressureGasFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            fTemperatureGasFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            fMolMassGasFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            fDensityGasFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            for n = 1:length(this.aoPhases(k).coProcsEXME)
+                                fFlowRateGas(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fFlowRate;
+                                fPressureGasFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fPressure;
+                                fTemperatureGasFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fTemp;
+                                fMolMassGasFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fMolMass;
+                                fDensityGasFlow(n) = (fR*fTemperatureGasFlow(n))/(fMolMassGasFlow(n)*10^-3*fPressureGasFlow(n));
+                            end
                         else
                             fFlowRateGas = 0;
                         end
@@ -168,9 +201,18 @@ classdef store < base
                         fMassLiquidTimeStep = this.aoPhases(k).fMassUpdateTimeStep;
                         fTempLiquidOld = this.aoPhases(k).fTemp;
                         if ~isempty(this.aoPhases(k).coProcsEXME)
-                            fFlowRateLiquid = this.aoPhases(k).coProcsEXME{1}.aoFlows.fFlowRate;
-                            fPressureLiquidFlow = this.aoPhases(k).coProcsEXME{1}.aoFlows.fPressure;
-                            fTemperatureLiquidFlow = this.aoPhases(k).coProcsEXME{1}.aoFlows.fTemp;
+                            fFlowRateLiquid = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            fPressureLiquidFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            fTemperatureLiquidFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            fDensityLiquidFlow = zeros(1:length(this.aoPhases(k).coProcsEXME));
+                            for n = 1:length(this.aoPhases(k).coProcsEXME)
+                                fFlowRateLiquid(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fFlowRate;
+                                fPressureLiquidFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fPressure;
+                                fTemperatureLiquidFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fTemp;
+                                fDensityLiquidFlow(n) = solver.matter.fdm_liquid.functions.LiquidDensity(fTemperatureLiquidFlow(n),...
+                                        fPressureLiquidFlow(n), fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                                        fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                            end
                         else
                             fFlowRateLiquid = 0; 
                         end
@@ -178,56 +220,27 @@ classdef store < base
                 end
                 
                 if fFlowRateLiquid ~= 0 || fFlowRateGas ~= 0
-                    %ideal gas constant
-                    fR = matter.table.C.R_m;
-
-                    %fix matter values required to use the correlations for
-                    %density and pressure. 
-
-                    %TO DO make dependant on matter table
-                    %values for water
-                    %density at one fixed datapoint
-                    fFixDensity = 998.21;        %g/dm³
-                    %temperature for the fixed datapoint
-                    fFixTemperature = 293.15;           %K
-                    %Molar Mass of the compound
-                    fMolMassH2O = 18.01528;       %g/mol
-                    %critical temperature
-                    fCriticalTemperature = 647.096;         %K
-                    %critical pressure
-                    fCriticalPressure = 220.64*10^5;      %N/m² = Pa
-
-                    %boiling point normal pressure
-                    fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
-                    %normal boiling point temperature
-                    fBoilingTemperature = 373.124;      %K
                     
-                    fMassGas = fMassGasOld + fMassGasTimeStep*fFlowRateGas;
-                    fMassLiquid = fMassLiquidOld + fMassLiquidTimeStep*fFlowRateLiquid;
-
+                    fMassGas = fMassGasOld + fMassGasTimeStep*sum(fFlowRateGas);
+                    fMassLiquid = fMassLiquidOld + fMassLiquidTimeStep*sum(fFlowRateLiquid);
+                    
                     %the left and right border for the search intervall are
                     %calculated (The if query has to be so long and
                     %calculate with abs() because the place where the
                     %values are added/subtracted changes depending on their
                     %direction)
-                    if fFlowRateLiquid >= 0 && fFlowRateGas == 0
-                        fDensityLiquidFlow = solver.matter.fdm_liquid.functions.LiquidDensity(fTemperatureLiquidFlow,...
-                                    fPressureLiquidFlow, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                                    fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                    if sum(fFlowRateLiquid) > 0 && sum(fFlowRateGas) == 0
                         %for no gas flows and a positiv liquid flow the
                         %lower volume boundary can be defined by
                         %subtracting the volume of water that flowed into
                         %the store from the old gas volume while assuming
                         %the liquid to be incompressible
-                        fVolumeGas_X = fVolumeGasOld - abs((fMassLiquidTimeStep*fFlowRateLiquid)/fDensityLiquidFlow);
+                        fVolumeGas_X = fVolumeGasOld - abs(sum((fMassLiquidTimeStep*fFlowRateLiquid)./fDensityLiquidFlow));
                         %the higher volume boundary is simply the old gas
                         %volume
                         fVolumeGas_Y = fVolumeGasOld;
                         
-                    elseif fFlowRateLiquid < 0 && fFlowRateGas == 0
-                        fDensityLiquidFlow = solver.matter.fdm_liquid.functions.LiquidDensity(fTemperatureLiquidFlow,...
-                                    fPressureLiquidFlow, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                                    fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                    elseif sum(fFlowRateLiquid) < 0 && sum(fFlowRateGas) == 0
                         %for no gas flows and a negativ liquid flow the
                         %lower volume boundary is simply the old gas
                         %volume
@@ -236,10 +249,9 @@ classdef store < base
                         %adding the volume of water that flowed out of 
                         %the store to the old gas volume while assuming
                         %the liquid to be incompressible
-                        fVolumeGas_Y = fVolumeGasOld  + abs((fMassLiquidTimeStep*fFlowRateLiquid)/fDensityLiquidFlow);
+                        fVolumeGas_Y = fVolumeGasOld  + abs(sum((fMassLiquidTimeStep*fFlowRateLiquid)./fDensityLiquidFlow));
                         
-                    elseif fFlowRateGas >= 0 && fFlowRateLiquid == 0
-                        fDensityGasFlow = (fR*fTemperatureGasFlow)/(fMolMassGas*10^-3*fPressureGasFlow);
+                    elseif sum(fFlowRateGas) > 0 && sum(fFlowRateLiquid) == 0
                         %for no liquid flow and a positiv gas flow the
                         %lower volume boundary is simply the old gas volume
                         fVolumeGas_X = fVolumeGasOld;
@@ -247,40 +259,32 @@ classdef store < base
                         %adding the volume of gas that flowed into the
                         %store to the old gas volume assuming the volume
                         %flow to be incompressible
-                        fVolumeGas_Y = fVolumeGasOld  + abs((fMassGasTimeStep*fFlowRateGas)/fDensityGasFlow);
+                        fVolumeGas_Y = fVolumeGasOld  + abs(sum((fMassGasTimeStep*fFlowRateGas)./fDensityGasFlow));
                         
-                    elseif fFlowRateGas < 0 && fFlowRateLiquid == 0
+                    elseif sum(fFlowRateGas) < 0 && sum(fFlowRateLiquid) == 0
                         fDensityGasFlow = (fR*fTemperatureGasFlow)/(fMolMassGas*10^-3*fPressureGasFlow);
                         %for no liquid flow and a negativ gas flow the
                         %lower volume boundary can be defined by
                         %subtracting the volume of gas that flowed into the
                         %store to the old gas volume assuming the volume
                         %flow to be incompressible
-                        fVolumeGas_X = fVolumeGasOld - abs((fMassGasTimeStep*fFlowRateGas)/fDensityGasFlow);
+                        fVolumeGas_X = fVolumeGasOld - abs(sum((fMassGasTimeStep*fFlowRateGas)./fDensityGasFlow));
                         %the higher volume boundary is simply the old gas 
                         %volume
                         fVolumeGas_Y = fVolumeGasOld;
                         
-                    elseif fFlowRateLiquid >= 0 && fFlowRateGas >= 0
-                        fDensityLiquidFlow = solver.matter.fdm_liquid.functions.LiquidDensity(fTemperatureLiquidFlow,...
-                                    fPressureLiquidFlow, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                                    fCriticalPressure, fBoilingPressure, fBoilingTemperature);                         
-                        fDensityGasFlow = (fR*fTemperatureGasFlow)/(fMolMassGas*10^-3*fPressureGasFlow);
+                    elseif sum(fFlowRateLiquid) >= 0 && sum(fFlowRateGas) >= 0
                         %in the case that both flow are positive the lower
                         %volume boundary can be defined by subtracting the 
                         %incompressible volumeflow of water from the old gas
                         %volume
-                        fVolumeGas_X = fVolumeGasOld - abs((fMassLiquidTimeStep*fFlowRateLiquid)/fDensityLiquidFlow);
+                        fVolumeGas_X = fVolumeGasOld - abs(sum((fMassLiquidTimeStep*fFlowRateLiquid)./fDensityLiquidFlow));
                         %the higher volume boundary can be defined by
                         %adding the incompressible volumeflow of gas into
                         %the tank to the old gas volume
                         fVolumeGas_Y = fVolumeGasOld + abs((fMassGasTimeStep*fFlowRateGas)/fDensityGasFlow);
                         
-                    elseif fFlowRateLiquid < 0 && fFlowRateGas >= 0
-                        fDensityLiquidFlow = solver.matter.fdm_liquid.functions.LiquidDensity(fTemperatureLiquidFlow,...
-                                    fPressureLiquidFlow, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                                    fCriticalPressure, fBoilingPressure, fBoilingTemperature);                         
-                        fDensityGasFlow = (fR*fTemperatureGasFlow)/(fMolMassGas*10^-3*fPressureGasFlow);
+                    elseif sum(fFlowRateLiquid) < 0 && sum(fFlowRateGas) >= 0
                         %in the case that the liquid flow is negative and 
                         %the gas flow positive the lower volume boundary 
                         %is simply the old gas volume
@@ -289,38 +293,30 @@ classdef store < base
                         %adding the incompressible volumeflow of gas into
                         %the tank to the old gas volume and subtracting the
                         %incompressible water flow from the tank as well
-                        fVolumeGas_Y = fVolumeGasOld + abs((fMassGasTimeStep*fFlowRateGas)/fDensityGasFlow)  - abs((fMassLiquidTimeStep*fFlowRateLiquid)/fDensityLiquidFlow);
+                        fVolumeGas_Y = fVolumeGasOld + abs(sum((fMassGasTimeStep*fFlowRateGas)./fDensityGasFlow))  - abs(sum((fMassLiquidTimeStep*fFlowRateLiquid)./fDensityLiquidFlow));
                         
-                 	elseif fFlowRateLiquid >= 0 && fFlowRateGas < 0
-                        fDensityLiquidFlow = solver.matter.fdm_liquid.functions.LiquidDensity(fTemperatureLiquidFlow,...
-                                    fPressureLiquidFlow, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                                    fCriticalPressure, fBoilingPressure, fBoilingTemperature);                         
-                        fDensityGasFlow = (fR*fTemperatureGasFlow)/(fMolMassGas*10^-3*fPressureGasFlow);
+                 	elseif sum(fFlowRateLiquid) >= 0 && sum(fFlowRateGas) < 0
                         %in the case that the liquid flow is positive and 
                         %the gas flow  negative the lower volume boundary 
                         %can be defined by subtracting the incompressible 
                         %volumeflow of gas into the tank from the old gas 
                         %volume and subtracting the incompressible water 
                         %flow from the tank as well
-                        fVolumeGas_X = fVolumeGasOld - abs((fMassGasTimeStep*fFlowRateGas)/fDensityGasFlow)  - abs((fMassLiquidTimeStep*fFlowRateLiquid)/fDensityLiquidFlow);
+                        fVolumeGas_X = fVolumeGasOld - abs(sum((fMassGasTimeStep*fFlowRateGas)./fDensityGasFlow))  - abs(sum((fMassLiquidTimeStep*fFlowRateLiquid)./fDensityLiquidFlow));
                         %the higher volume boundary is simply the old gas
                         %volume
                         fVolumeGas_Y = fVolumeGasOld;
                         
-                 	elseif fFlowRateLiquid < 0 && fFlowRateGas < 0
-                        fDensityLiquidFlow = solver.matter.fdm_liquid.functions.LiquidDensity(fTemperatureLiquidFlow,...
-                                    fPressureLiquidFlow, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                                    fCriticalPressure, fBoilingPressure, fBoilingTemperature);                         
-                        fDensityGasFlow = (fR*fTemperatureGasFlow)/(fMolMassGas*10^-3*fPressureGasFlow);
+                 	elseif sum(fFlowRateLiquid) < 0 && sum(fFlowRateGas) < 0
                         %in the case that both flow are negative the lower
                         %volume boundary can be defined by subtracting the 
                         %incompressible volumeflow of gas from the old gas
                         %volume
-                        fVolumeGas_X = fVolumeGasOld - abs((fMassGasTimeStep*fFlowRateGas)/fDensityGasFlow);
+                        fVolumeGas_X = fVolumeGasOld - abs(sum((fMassGasTimeStep*fFlowRateGas)./fDensityGasFlow));
                         %the higher volume boundary can be defined by
                         %adding the incompressible volumeflow of water into
                         %the tank to the old gas volume
-                        fVolumeGas_Y = fVolumeGasOld + abs((fMassLiquidTimeStep*fFlowRateLiquid)/fDensityLiquidFlow);
+                        fVolumeGas_Y = fVolumeGasOld + abs(sum((fMassLiquidTimeStep*fFlowRateLiquid)./fDensityLiquidFlow));
 
                     end
 
@@ -329,9 +325,6 @@ classdef store < base
                     counter1 = 1;
                     %if the two border do not contain the zepoint it is 
                     %necessary to shift the borders until they contain it
-                    
-                    %SOMEHOW THE VALUES FOR GAS MASS IN THE PRESSUro RE
-                    %CALCULATION WHERE CHANGED TO MOL MASS! CHANGE THIS
                     while sign(fErrorStore_X) == sign(fErrorStore_Y) && counter1 <= 200
                         fDensityLiquid_X = fMassLiquid/(this.fVolume-fVolumeGas_X);
                         fPressureGas_X = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas_X);
@@ -430,6 +423,8 @@ classdef store < base
                             this.aoPhases(k).coProcsEXME{:}.update();
                         end
                     end
+                    %TO DO: Seem to have an error here, the pressure for
+                    %both stores is dropping in test systems! 
 
                     this.fTotalPressureErrorStore = this.fTotalPressureErrorStore+fErrorStore;
                     this.iNestedIntervallCounterStore = counter1;
