@@ -157,7 +157,23 @@ classdef liquid < matter.phase
                 %normal boiling point temperature
                 fBoilingTemperature = 373.124;      %K
                 
-                fDensity = this.fMass/this.fVolume;
+                %TO DO: Is the calculation here all right or is there some
+                %way to get the update of the phase superclass to run
+                %before this update?
+                
+                %The mass of the phase that is saved as this.fMass is still
+                %an old value because the update of the phase.m superclass
+                %which would change it runs AFTER this liquid phase update.
+                %For this reason the mass of the phase at this point has to
+                %be changed by adding the sum over the total in and
+                %outflows to get correct pressure values for the phase.
+                [ afTotalInOuts ] = this.getTotalMassChange(); 
+                %TO DO:is just the sum over the total in outs correct here? in
+                %the phase file something from manips is added to it (line
+                %272)
+                fTimeStep = this.oStore.oTimer.fTime-this.oStore.fLastUpdate;
+                fMassNow = sum(this.afMass + fTimeStep*afTotalInOuts);
+                fDensity = fMassNow/this.fVolume;
                 this.fPressure = solver.matter.fdm_liquid.functions.LiquidPressure(this.fTemp,...
                                 fDensity, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                                 fCriticalPressure, fBoilingPressure, fBoilingTemperature);
