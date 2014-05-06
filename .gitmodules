@@ -4,3 +4,6 @@
 [submodule "lib"]
 	path = lib
 	url = git@steps.lrt.mw.tum.de:lib.git
+[submodule "user/+tutorials/+simple_flow"]
+	path = user/+tutorials/+simple_flow
+	url = git@steps.lrt.mw.tum.de:tutorials/simple_flow.git
