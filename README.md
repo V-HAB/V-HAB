@@ -92,19 +92,17 @@ To view a repository, double-click on its entry in the SourceTree *Bookmarks* wi
 Getting Started Programming
 ----------------
 
+### Create your user folder ###
+
+Once you have successfully cloned the bootstrapping project onto your hard drive, navigate to the `user` folder. There create a folder using the following naming  scheme: `+username`. Your username is the first two letters of your last name and the first two letters of your first name. So if your name is Max Mustermann, your username would be `muma`.
+
+### Check out the tutorials! ###
+
+Inside the directory `user/+tutorials` you will find a few tutorials to get you started. Some of them also have read me files like the one you are reading right now, be sure to check them out. To run one of the tutorials, enter the following command into the MATLAB command window: For example the „simple_flow“ tutorial is `vhab.exec(’tutorials.simple_flow.setup’)`. Once the simulation has completed (you will see this by the outputs in the command window), you can plot the results of your simulation by entering `oLastSimObj.plot()` in the command window. Now you can play around with some of the parameters of the systems inside the tutorial and see what happens. 
+
 ### How to update your local files ###
 
 If you want to update your local working copy files to the current version, select the bootstrapping repository in SourceTree and press "pull". This should load all new or changed files onto your machine. 
-
-### To get a tutorial: ###
-
-* Example: `git@steps.lrt.mw.tum.de:tutorials/flow.git`
-* Create a directory called `+tutorial` in the `user` directory. Create a sub-directory called `+flow` (see the GIT repository path)
-* Click *Clone / New* in SourceTree, paste the address above, and select the newly created directory as the destination path
-* Create a main script in the bootstrapping root directory called `main_tutorial_flow.m`, or copy and rename the template from `user/+tutorial/+flow/+main_tutorial_flow.m.example` to the root directory.
-* Run the init.m script in the root directory, this will add some paths to the MATLAB search path
-* Now you can run the main_xxx.m script.
-
 
 ### To create a new simulation project: ###
 
