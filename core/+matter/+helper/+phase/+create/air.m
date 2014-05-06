@@ -1,4 +1,4 @@
-function [ cParams sDefaultPhase ] = air(~, fVolume, fTemperature, rRH, fPressure)
+function [ cParams, sDefaultPhase ] = air(~, fVolume, fTemperature, rRH, fPressure)
 %AIR helper to create an air matter phase.
 %   If just volume given, created to suit the ICAO International Standard
 %   Atmosphere of 101325 Pa, 15°C and 0% relative humidity, see:
@@ -12,10 +12,10 @@ function [ cParams sDefaultPhase ] = air(~, fVolume, fTemperature, rRH, fPressur
 
 % Molecular mass (air, constant, from:
 % http://www.engineeringtoolbox.com/molecular-mass-air-d_679.html)
-fMolMassAir = 28.97;    % [g/mol]
+% fMolMassAir = 28.97;    % [g/mol]
 % Not exactly true since some trace gases are missing here. Updated from 
 % the mol mass calculated by the matter class - fits better
-fMolMassAir = 29.088;
+fMolMassAir = 29.088;     % [g/mol]
 
 % Values from @matter.table
 fRm         = 8.314472;
