@@ -2,8 +2,22 @@
 
 # Ignore the actual code directories
 core/*
+
+# Do include the readme file
 !core/README_BOOTSTRAPPING.md
+
+
+
+# Ignore all user folders
 user/+*
+
+# Do include the tutorials readme file
+# This doesn't work... No idea why...
+!user/+tutorials/README_TUTORIALS.md
+# Have to use this:
+!user/+tutorials
+
+# Ignore all files and folders in lib, except the readme file
 lib/*
 !lib/README_BOOTSTRAPPING.md
 
