@@ -6,16 +6,13 @@ core/*
 # Do include the readme file
 !core/README_BOOTSTRAPPING.md
 
-
-
-# Ignore all user folders
+# Ignore all user folders except the tutorials folder
 user/+*
-
-# Do include the tutorials readme file
-# This doesn't work... No idea why...
-!user/+tutorials/README_TUTORIALS.md
-# Have to use this:
 !user/+tutorials
+
+# Ignore all files and folders in tutorials, except the readme
+user/+tutorials/*
+!user/+tutorials/README_TUTORIALS.md
 
 # Ignore all files and folders in lib, except the readme file
 lib/*
@@ -31,4 +28,5 @@ main_*.m
 # Tests
 test_*.m
 
+# Ignore invisible files like .DS_Store from Macs
 .*
