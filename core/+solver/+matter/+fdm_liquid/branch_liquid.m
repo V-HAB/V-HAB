@@ -1,62 +1,70 @@
 classdef branch_liquid < solver.matter.base.branch
-    %%Godunov Solver branch for compressible liquids
-    %
-    %this is a solver for flows in a branch containing liquids it can be
-    %called using 
-    %
-    %solver.matter.fdm_liquid.branch_liquid(oBranch, iCells, fPressureResidual,...
-    %                                fMassFlowResidual)
-    %
-    %If the solver becomes instable decrease the Courant Number for reduced
-    %time step.
-    %
-    %iCells: this value sets the discretization of the branch, for
-    %        example for iCells = 3 the branch will consit of three cells. 
-    %        For faster speed few cells should be chosen while for accurate 
-    %        result more cells are necessary. Initialised to 5 if nothing
-    %        is specified. Basically the rule applies that for a larger 
-    %        pressure difference a higher number of cells is required.
-    %
-    %fPressureResidual: sets the residual target for the pressure
-    %                   difference depending on the initial pressure. 
-    %                   Meaning the residual target is multiplied by the
-    %                   initial pressure difference to get a target
-    %                   pressure difference after which the calculation is
-    %                   assumed as finished. Initialzied to 10^-5 if 
-    %                   nothing is specified
-    %
-    %fMassFlowResidual: sets the residual target for the massflow
-    %                   depending on the maximum massflow during the 
-    %                   simulation. Meaning the residual target is 
-    %                   multiplied by the maximum massflow that occured so
-    %                   far in the simulation to get a target
-    %                   massflow difference after which the calculation is
-    %                   assumed to have reached a time independend stead 
-    %                   state. Initialzied to 10^-10 if nothing is specified
-    %
-    %sCourantAdaption: is a struct that allows to set certain values for
-    %                  the adaption of the courant number that directly
-    %                  influences the time step. Its fields are:
-    %                  bAdaption: which is a either true or false and 
-    %                             decides whether the courant number should 
-    %                             be increased at all 
-    %            fIncreaseFactor: is a factor multiplied to the courant 
-    %                             number of the current step to increase
-    %                             it. Therefore the factor should be larger
-    %                             than 1.
-    %      iTicksBetweenIncrease: Decides how many ticks the solver will
-    %                             wait between the increases of the courant
-    %                             number.
-    %              iInitialTicks: Decides after how many ticks the increase
-    %                             should start.
-    %
-    %example struct: sCourantAdaption = struct( 'bAdaption', false,...
-    %       'fIncreaseFactor', 1.001, 'iTicksBetweenIncrease', 100,...
-    %       'iInitialTicks', 10000);
-    %
-    %if one of the two residual conditions shall not be applied for the
-    %simulation the residual simply has to be set to 0
-    
+%%Godunov Solver branch for compressible liquids
+%
+%this is a solver for flows in a branch containing liquids it can be
+%called using 
+%
+%solver.matter.fdm_liquid.branch_liquid(oBranch, iCells,...
+%               fPressureResidual, fMassFlowResidual, fCourantNumber,...
+%               sCourantAdaption)
+%
+%If the solver becomes instable decrease the Courant Number for reduced
+%time step.
+%
+%iCells: this value sets the discretization of the branch, for
+%        example for iCells = 3 the branch will consit of three cells. 
+%        For faster speed few cells should be chosen while for accurate 
+%        result more cells are necessary. Initialised to 5 if nothing
+%        is specified. Basically the rule applies that for a larger 
+%        pressure difference a higher number of cells is required.
+%
+%fPressureResidual: sets the residual target for the pressure
+%                   difference depending on the initial pressure. 
+%                   Meaning the residual target is multiplied by the
+%                   initial pressure difference to get a target
+%                   pressure difference after which the calculation is
+%                   assumed as finished. Initialzied to 10^-5 if 
+%                   nothing is specified
+%
+%fMassFlowResidual: sets the residual target for the massflow
+%                   depending on the maximum massflow during the 
+%                   simulation. Meaning the residual target is 
+%                   multiplied by the maximum massflow that occured so
+%                   far in the simulation to get a target
+%                   massflow difference after which the calculation is
+%                   assumed to have reached a time independend stead 
+%                   state. Initialzied to 10^-10 if nothing is specified
+%
+%fCourantNumber: is used to set the initial, or if adaption is disabled the
+%                overall courant number. The courant number is a factor
+%                that directily influences the time step with values
+%                between ]0,1]. For a courant number of 0.5 the time step
+%                is only half of its value and for 0.1 its only one tenth
+%                etc.
+%
+%sCourantAdaption: is a struct that allows to set certain values for
+%                  the adaption of the courant number that directly
+%                  influences the time step. Its fields are:
+%                  bAdaption: which is a either true or false and 
+%                             decides whether the courant number should 
+%                             be increased at all 
+%            fIncreaseFactor: is a factor multiplied to the courant 
+%                             number of the current step to increase
+%                             it. Therefore the factor should be larger
+%                             than 1.
+%      iTicksBetweenIncrease: Decides how many ticks the solver will
+%                             wait between the increases of the courant
+%                             number.
+%              iInitialTicks: Decides after how many ticks the increase
+%                             should start.
+%
+%example struct: sCourantAdaption = struct( 'bAdaption', false,...
+%       'fIncreaseFactor', 1.001, 'iTicksBetweenIncrease', 100,...
+%       'iInitialTicks', 10000);
+%
+%if one of the two residual conditions shall not be applied for the
+%simulation the residual simply has to be set to 0
+
     %the source "Riemann Solvers and Numerical Methods for Fluid Dynamics" 
     %from E.F. Toro will be denoted as number [5]
    
@@ -134,6 +142,9 @@ classdef branch_liquid < solver.matter.base.branch
     end
 
     methods 
+        %%
+        %definition of the branch and the possible input values.
+        %For explanation about the values see initial comment section.
         function this = branch_liquid(oBranch, iCells, fPressureResidual, fMassFlowResidual, fCourantNumber, sCourantAdaption)
             this@solver.matter.base.branch(oBranch);  
             
@@ -160,13 +171,25 @@ classdef branch_liquid < solver.matter.base.branch
                 this.sCourantAdaption.iTimeStepAdaption = 0;
             end
             
+            %because of the logic of the adaption algorithm the Adaption of
+            %the courant number is completly stopped for the value 2.
+            if this.sCourantAdaption.bAdaption == 0
+                this.sCourantAdaption.bAdaption = 2;
+            end
+            
+            %checks the range of the courant number. For 0 or smaller the
+            %calculation will no longer work while numbers larger than 1
+            %are considered instable but if the user defines them they can
+            %be used (with crashes in the solver most probable)
             if this.fCourantNumber <= 0
                error('courant number of 0 or lower is not allowed')
             elseif this.fCourantNumber > 1
-                string('normally allowed range for courant number is ]0,1]');
+                string('normally allowed range for courant number is ]0,1] and the current definition of a number larger than one will most likely lead to stability problems');
                 disp(string);
             end
             
+            %with this the branch is considered not updated after its
+            %initilaization
             oBranch.setOutdated();
             
         end
@@ -176,7 +199,8 @@ classdef branch_liquid < solver.matter.base.branch
         
         function update(this)
             
-            %% get all neccessary variables
+            %% 
+            %get all neccessary variables from the boundaries, procs etc
             
             %a Temperature Reference has to be defined in order to
             %calculate the internal Energy
@@ -185,8 +209,12 @@ classdef branch_liquid < solver.matter.base.branch
           	%TO DO: Get from Matter Table
             fHeatCapacity = 4185; %J/(kg K)
             
+            %gets the total number of processors used in the branch
             iNumberOfProcs = length(this.oBranch.aoFlowProcs);
             
+            %the meta values are used to decide whether a component even
+            %has the respective attribute because not necessarily all
+            %components have alle the attributes
             mHydrDiam = zeros(iNumberOfProcs,1);
             mHydrDiamValve = zeros(iNumberOfProcs,1);
             mHydrLength = zeros(iNumberOfProcs,1);
@@ -207,6 +235,9 @@ classdef branch_liquid < solver.matter.base.branch
                 metaDeltaTempComp = findprop(this.oBranch.aoFlowProcs(1,k), 'fDeltaTemp');
                 metaTempComp = findprop(this.oBranch.aoFlowProcs(1,k), 'fTemp');
                 
+                %if the processor with index k has the respective property
+                %its value is written into the respective vector. If not
+                %the vector entry remains zero or for the diameter -1.
                 if ~isempty(metaHydrDiam)
                     mHydrDiam(k) = [ this.oBranch.aoFlowProcs(1,k).fHydrDiam ];
                 end
@@ -216,6 +247,9 @@ classdef branch_liquid < solver.matter.base.branch
                 if ~isempty(metaHydrDiam) && mHydrLength(k) == 0
                     mHydrDiamValve(k) = [ this.oBranch.aoFlowProcs(1,k).fHydrDiam ];
                 else
+                    %this is necessary in order to discern between procs
+                    %that simply dont have a diameter definition and one
+                    %that actually have a diameter of 0 like closed valves.
                     mHydrDiamValve(k) = -1;
                 end
                 if ~isempty(metaDeltaPressure)
@@ -236,26 +270,39 @@ classdef branch_liquid < solver.matter.base.branch
                  
             end
             
-            %get the properties at the left and right side of the branch
+            %get the properties at the left and right side of the branch.
+            %It is important to get the pressure from the exme and not the 
+            %store since the liquid exme also tales gravity effects into 
+            %account.
             [fPressureBoundary1, fTemperatureBoundary1]  = this.oBranch.coExmes{1}.getPortProperties();
             [fPressureBoundary2, fTemperatureBoundary2]  = this.oBranch.coExmes{2}.getPortProperties();
+            
+            %volume and mass are then taken fromt he respective phase
             
             fVolumeBoundary1 = this.oBranch.coExmes{1}.oPhase.fVolume;  
             fVolumeBoundary2 = this.oBranch.coExmes{2}.oPhase.fVolume; 
             fMassBoundary1 = this.oBranch.coExmes{1}.oPhase.fMass; 
             fMassBoundary2 = this.oBranch.coExmes{2}.oPhase.fMass;
             
+            %either takes the values from the previous time step for the
+            %boundary flow speeds between the first/last cell and the
+            %stores or uses the initialization of 0 for the first time step.
             fFlowSpeedBoundary1 = this.fFlowSpeedBoundary1Old;
             fFlowSpeedBoundary2 = this.fFlowSpeedBoundary2Old;
             
+            %density in the phases at each side of the store are
+            %mass/volume
             fDensityBoundary1 = fMassBoundary1/fVolumeBoundary1;
             fDensityBoundary2 = fMassBoundary2/fVolumeBoundary2;
             
             %if the pressure difference between the two boundaries of the
-            %branch is lower than a certain threshhold the pressure is
-            %averaged and the timestep can be of any size
+            %branch is lower than a certain threshhold the system is 
+            %assumed to have reached a balanced state, averaging the 
+            %remaining pressure difference and allowing infinite time
+            %steps.
             if this.iPressureResidualCounter == 100 && this.oBranch.oContainer.oTimer.iTick > 1000
                 
+                %TO DO: Get avergaing to work here again?
                 %fPressureBoundaryNew = (fPressureBoundary1+fPressureBoundary2)/2;
                 fMassFlow = 0;
                 update@solver.matter.base.branch(this, fMassFlow);
@@ -298,6 +345,8 @@ classdef branch_liquid < solver.matter.base.branch
                     end
                 end
                 
+                %checks if either the a pipe had diameter 0 or if a valve
+                %has diameter zero
                 if bAbort || length(find(mHydrDiamValve)) ~= length(mHydrDiamValve)
                     this.fMassFlowOld = 0;
                     %sets the timestep from this branch for the base branch
@@ -370,6 +419,11 @@ classdef branch_liquid < solver.matter.base.branch
                     end
                 end
                 
+                %calculates the densities of the boundaries using the
+                %liquid density correlation. If this is not done and the
+                %density is calculated from mass/volume it is possible that
+                %from an initialization that did not use the correlation
+                %the solver crashes.
                 fDensityBoundary1 = solver.matter.fdm_liquid.functions.LiquidDensity(fTemperatureBoundary1,...
                        fPressureBoundary1, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                        fCriticalPressure, fBoilingPressure, fBoilingTemperature);
@@ -384,7 +438,14 @@ classdef branch_liquid < solver.matter.base.branch
                 %previous time step
                 
                 %in the first step where no values inside the cells exist
-                %the cells are initialzied on the minimum boundary values
+                %the cells are initialzied on the minimum temperature
+                %boundary values because an increase in temperature is more
+                %stable than a decrease
+                
+                %note the difference between the virtual pressure and the
+                %later defined pressure is that in the virtual pressure
+                %variable for each no influence from procs in the cell
+                %itself is applied
                 if strcmp(this.mVirtualPressureOld,'empty')
                     
                     mVirtualInternalEnergy = zeros(this.inCells, 1);
@@ -422,15 +483,10 @@ classdef branch_liquid < solver.matter.base.branch
                 end
                 
 
-                %%
-                %calculates the cell length of the components in the branch
-                %and then derives the maximum time step from the respective
-                %wavespeed in a cell and the cell length
-                
+                %%                
                 %defines the cell length by dividing the whole length of the
-                %pipe with the number of vells
+                %branch with the number of vells
                 fCellLength = sum(mHydrLength)/this.inCells;
-
 
                 %%
                 %since not every component is discretized on its own it is
@@ -445,6 +501,9 @@ classdef branch_liquid < solver.matter.base.branch
                             mCompCellPosition(k) = mCompCellPosition(k)+1;
                         end
                     end
+                %the definition for the end position changes if the flow
+                %direction changes since the previous inlet of the
+                %component is now its outlet
                 else
                     mCompCellPosition(1) = 1;
                     for k = 2:length(mHydrLength)
@@ -452,7 +511,7 @@ classdef branch_liquid < solver.matter.base.branch
                     end
                 end
                 
-                %mPressure contains the actuall cell values including the
+                %mPressure contains the actual cell values including the
                 %proc pressure
                 mPressureWithoutLoss = mVirtualPressure;
                 mPressure = mVirtualPressure;
@@ -505,7 +564,8 @@ classdef branch_liquid < solver.matter.base.branch
 %the numbering of the Godunov Fluxes "mGodunovFlux" is done according to 
 %the following sketch, using the first and last entry as the flux over the
 %branch boundaries. The flow direction of the fluid is not restricted and 
-%can change during the calculation           
+%can change during the calculation but the numbering of the fluxes and
+%cells remains the same regardless of the flow case.
 %
 %       Flux 1        Flux 2      Flux 3       Flux 4     Flux 5     Flux 6
 %             ___________________________________________________________
@@ -524,10 +584,18 @@ classdef branch_liquid < solver.matter.base.branch
                 mMaxWaveSpeed = zeros((this.inCells)+1, 1);
                 mPressureStar = zeros((this.inCells)+1, 1);
                 
-                %This calculation is only correct for the first Godunov
-                %Flux component, for the other Godunov Fluxes the pressures
-                %have to be set differntly and these will be calculated
-                %later on.
+                %This calculation is only correct directly for the first
+                %Godunov Flux component. For the second component some
+                %changes have to be made at the position of pressure
+                %influencing procs but in all other cases the here
+                %calculated fluxes are used.
+                %Note that for this calculation pressure loss in the cells
+                %is neglected. This is the case because the pressure loss
+                %is modelled as a reduction in flow speed at the end of the
+                %step calculation. This proved to be a lot more stable
+                %since modelling the pressure directly here resulted in
+                %sometimes having the loss pull the fluid faster through
+                %the pipes etc.
                 
                 if mCompCellPosition(1) == 1 &&  sum(mDeltaPressureComp(mCompCellPosition == 1).*mDirectionDeltaPressureComp(mCompCellPosition == 1)) < 0 
                     [mGodunovFlux(1,:), mMaxWaveSpeed(1,1), mPressureStar(1,1)] = solver.matter.fdm_liquid.functions.HLLC(fPressureBoundary1, fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
@@ -640,28 +708,42 @@ classdef branch_liquid < solver.matter.base.branch
                             fPressureBoundary2, fDensityBoundary2, fFlowSpeedBoundary2, fInternalEnergyBoundary2, mVirtualTemperature(k-1), fTemperatureBoundary2);
                         mMomentumGodunovFlux_k_1(k,:) = mMomentumGodunovFlux_k(k,:);
                         
-                    elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) >= 0) || (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) > 0)
-                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mPressureWithoutLoss(k-1)+2*sum(mDeltaPressureComp(mCompCellPosition == k)), mDensity(k-1), mFlowSpeed(k-1), mInternalEnergy(k-1),...
-                            mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mTemperature(k-1), mVirtualTemperature(k));
+                    elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) == 0) && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) == 0)
                         
-                        [mMomentumGodunovFlux_k_1(k,:)] = mGodunovFlux(k,2);
+                        mMomentumGodunovFlux_k(k,2) = mGodunovFlux(k,2);
+                        mMomentumGodunovFlux_k_1(k,2) = mGodunovFlux(k,2);
                         
-                    elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) < 0) || (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) > 0)
+                    elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) == 0) && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) > 0)
                         [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1)+2*sum(mDeltaPressureComp(mCompCellPosition == k)), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
                             mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
                         
                         [mMomentumGodunovFlux_k_1(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
-                            mVirtualPressure(k)+2*sum(mDeltaPressureComp(mCompCellPosition == k-1)), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
-
-                    elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) < 0) && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) <= 0)
-                        [mMomentumGodunovFlux_k(k,:)] = mGodunovFlux(k,2);
+                            mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
+                        
+                    elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) > 0) && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) == 0)
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mPressureWithoutLoss(k-1), mDensity(k-1), mFlowSpeed(k-1), mInternalEnergy(k-1),...
+                            mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mTemperature(k-1), mVirtualTemperature(k));
+                        
+                        [mMomentumGodunovFlux_k_1(k,:)] = mMomentumGodunovFlux_k(k,:);
+                        
+                    elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) == 0) && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) < 0)
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mPressureWithoutLoss(k-1), mDensity(k-1), mFlowSpeed(k-1), mInternalEnergy(k-1),...
+                            mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mTemperature(k-1), mVirtualTemperature(k));
+                        
+                        [mMomentumGodunovFlux_k_1(k,:)] = mMomentumGodunovFlux_k(k,:);
+                        
+                    elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) < 0) && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) == 0)
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
+                            mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
                         
                         [mMomentumGodunovFlux_k_1(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
-                            mPressureWithoutLoss(k)+2*sum(mDeltaPressureComp(mCompCellPosition == k-1)), mDensity(k), mFlowSpeed(k), mInternalEnergy(k), mVirtualTemperature(k-1), mTemperature(k));
-                                            
+                            mVirtualPressure(k)+2*sum(mDeltaPressureComp(mCompCellPosition == k-1)), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
+                        
+                    %TO DO: Currently the implementation does not allow for
+                    %systems where active pressure influencing components
+                    %are to close to another.
                     else
-                        mMomentumGodunovFlux_k(k,2) = mGodunovFlux(k,2);
-                        mMomentumGodunovFlux_k_1(k,2) = mGodunovFlux(k,2);
+                        error('active pressure influencing components have to be sperated by at least one cell to the left and right. Therefore check the overall setup of your system and increase the number of cells.')
                     end
                 end
                 
@@ -702,8 +784,7 @@ classdef branch_liquid < solver.matter.base.branch
                 end
                 
                 %%
-                %calculation of boundary flow speeds and the first two
-                %components of the virtual godunov fluxes
+                %calculation of the flow speeds at the cell boundaries
                 mGodunovFlowSpeed = zeros((this.inCells+1),1);
                 
                 mGodunovFlowSpeed(1) = fFlowSpeedBoundary1New;
@@ -722,10 +803,12 @@ classdef branch_liquid < solver.matter.base.branch
                 %is possible to increase the courant number by a certain
                 %amount and still retain stable simulation. 
                 
-                %For some system there is a stability limit how far the 
-                %courant number may be increased there in case
+                %For some systems there is a stability limit how far the 
+                %courant number may be increased. Therefore in case
                 %instabilities are detected the courant number is reduced a
-                %bit and the adaption is stopped.
+                %bit and the adaption is stopped. However this a not a
+                %foolproof algorithm and the adaption may still lead to
+                %instabilities.
                 if this.sCourantAdaption.bAdaption == 1 && (this.oBranch.oContainer.oTimer.iTick > 10000) && (this.bStopTimeStepAdaption == 0)
                     for k = 1:this.inCells
                         if ((sign(this.mPressureOld(k)-this.mPressureOld1(k)) ~= sign(this.mPressureOld1(k)-this.mPressureOld2(k))) && (sign(this.mPressureOld1(k)-this.mPressureOld2(k)) ~= sign(this.mPressureOld2(k)-this.mPressureOld3(k))) && (abs(this.mPressureOld(k)-this.mPressureOld1(k)) > this.fMaxPressureDifference*10^-5))
@@ -734,18 +817,35 @@ classdef branch_liquid < solver.matter.base.branch
                     end
                 end
                 
+                %increases the courant number by a factor or sets it to one
+                %if its value is already 0.9999
                 if this.sCourantAdaption.bAdaption == 1 && this.sCourantAdaption.iTimeStepAdaption >= 0 && this.fCourantNumber < 0.9999 && this.oBranch.oContainer.oTimer.iTick > this.sCourantAdaption.iInitialTicks && mod(this.oBranch.oContainer.oTimer.iTick, this.sCourantAdaption.iTicksBetweenIncrease) == 0
                     this.fCourantNumber = this.fCourantNumber*this.sCourantAdaption.fIncreaseFactor;
                 elseif this.sCourantAdaption.bAdaption == 1 && this.sCourantAdaption.iTimeStepAdaption >= 0 && this.fCourantNumber >= 0.9999 && this.oBranch.oContainer.oTimer.iTick > this.sCourantAdaption.iInitialTicks && mod(this.oBranch.oContainer.oTimer.iTick, this.sCourantAdaption.iTicksBetweenIncrease) == 0
                     this.fCourantNumber = 1;
                 end
+                
+                %if instabilities were detected in the previous time step
+                %the courant number is decreased again and the adaption is
+                %completly halted.
                 if this.sCourantAdaption.bAdaption == 0
                     this.fCourantNumber = this.fCourantNumber/(this.sCourantAdaption.fIncreaseFactor^100);
                     this.sCourantAdaption.bAdaption = 2;
                 end
                 
+                %%
+                %a while loop either keeps iterating until the values for
+                %the pressure are not negative or till an error occurs.
+                %Generally if negative pressures are detected the loop is
+                %only allowed to run one more time with a decreased courant
+                %number and if that also leads to negative results it will
+                %abort calculation and return an error.
+                
+                %initilization values that are only required to get the
+                %while loop into its first iteration.
                 mPressureNew = -1;
                 mVirtualPressureNew = -1;
+                
                 while (min(mPressureNew) < 0 || min(mVirtualPressure) < 0)
                 
                 %%
@@ -791,13 +891,17 @@ classdef branch_liquid < solver.matter.base.branch
                 end
                 
                 %%
-                %test section for the implementation of pressure loss in
-                %the form of a flow speed loss using F=m*a and then
-                %integrating the acceleration (assuming its constant over
-                %the timestep)
+                %implementation of the pressure loss as a flow speed loss 
+                %using F=m*a and then integrating the acceleration 
+                %(assuming it is constant over the timestep) leads to an
+                %equation for a reduced in flow speed:
+                % (p*delat_t)/(rho*L)
                 this.mFlowSpeedLoss = zeros(this.inCells,1);
                 this.mPressureLoss = zeros(this.inCells,1);
                 
+                %writing the pressure and flow speed loss to the branch
+                %object is only necessary to be able to plot them. It is
+                %not used in any way for the calculation.
                 for k = 1:this.inCells
                     this.mPressureLoss(k) = mTotalPressureLossCell(k);
 
@@ -830,73 +934,90 @@ classdef branch_liquid < solver.matter.base.branch
                 %averaging the individual cell values. This leads to small 
                 %errors and can crash the solver for small tanks but is 
                 %necessary in order to set a consistent flow rate over the 
-                %branch in V-HAB      
+                %branch in V-HAB which was one condition for the solver.     
                 fMassFlow = sum(mMassFlow)/(this.inCells);
                 
                 %%
-                %calculates the third entry for the state vector, the
-                %internal energy
-                mVirtualGodunovFlux = zeros(this.inCells+1, 3);
-                if fFlowSpeedBoundary1New >= 0
-                    mGodunovFlux(1,3) = fFlowSpeedBoundary1New*(fInternalEnergyBoundary1+fPressureBoundary1);
-                    mVirtualGodunovFlux(1,3) = fFlowSpeedBoundary1New*(fInternalEnergyBoundary1+fPressureBoundary1);
-                else
-                    mGodunovFlux(1,3) = fFlowSpeedBoundary1New*(mInternalEnergy(1)+mPressure(1));
-                    mVirtualGodunovFlux(1,3) = fFlowSpeedBoundary1New*(mVirtualInternalEnergy(1)+mVirtualPressure(1));
-                end
-                if fFlowSpeedBoundary2New >= 0
-                    mGodunovFlux(end,3) = fFlowSpeedBoundary2New*(mInternalEnergy(end)+mPressure(end));
-                    mVirtualGodunovFlux(end,3) = fFlowSpeedBoundary2New*(mVirtualInternalEnergy(end)+mVirtualPressure(end));
-                else
-                    mGodunovFlux(end,3) = fFlowSpeedBoundary2New*(fInternalEnergyBoundary2+fPressureBoundary2);
-                    mVirtualGodunovFlux(end,3) = fFlowSpeedBoundary2New*(fInternalEnergyBoundary2+fPressureBoundary2);
+                %calculates the new cell temperatures from the first law of
+                %thermodynamics. This is not done by the internal energy
+                %that is part of the godunov fluxes because a correct
+                %equation for the internal energy of liquids was missing
+                %which lead to errors in the calculation.
+                
+                %TO DO: If temp dependent heat capacity is introduced this
+                %section has to be reworked.
+                
+                %the calculation is based upon the principle that the
+                %ingoing fluxes use the actual temperature with proc
+                %influence from the neighboring cells while the outgoing
+                %fluxes use the virtual temperature without the temp
+                %influence of the procs in the cell itself.
+                if mGodunovFlux(1,1) >= 0 && mGodunovFlux(2,1) >= 0
+                	mVirtualTemperatureNew(1) = ((mVirtualTemperature(1)-fTempRef)*fCellLength*mDensity(1)+(mGodunovFlux(1,1)*(fTemperatureBoundary1-fTempRef)-mGodunovFlux(2,1)*(mVirtualTemperature(1)-fTempRef))*fTimeStep)/(fCellLength*mDensityNew(1))+fTempRef;
+                elseif mGodunovFlux(1,1) < 0 && mGodunovFlux(2,1) < 0
+                    mVirtualTemperatureNew(1) = ((mVirtualTemperature(1)-fTempRef)*fCellLength*mDensity(1)+(mGodunovFlux(1,1)*(mVirtualTemperature(1)-fTempRef)-mGodunovFlux(2,1)*(mTemperature(2)-fTempRef))*fTimeStep)/(fCellLength*mDensityNew(1))+fTempRef;
+                elseif mGodunovFlux(1,1) >= 0 && mGodunovFlux(2,1) < 0
+                    mVirtualTemperatureNew(1) = ((mVirtualTemperature(1)-fTempRef)*fCellLength*mDensity(1)+(mGodunovFlux(1,1)*(fTemperatureBoundary1-fTempRef)-mGodunovFlux(2,1)*(mTemperature(2)-fTempRef))*fTimeStep)/(fCellLength*mDensityNew(1))+fTempRef;
+                elseif mGodunovFlux(1,1) < 0 && mGodunovFlux(2,1) >= 0
+                    mVirtualTemperatureNew(1) = ((mVirtualTemperature(1)-fTempRef)*fCellLength*mDensity(1)+(mGodunovFlux(1,1)*(mVirtualTemperature(1)-fTempRef)-mGodunovFlux(2,1)*(mVirtualTemperature(1)-fTempRef))*fTimeStep)/(fCellLength*mDensityNew(1))+fTempRef;
                 end
                 
-                for k = 2:this.inCells
-                    if mGodunovFlux(k,1) >= 0
-                        mGodunovFlux(k,3) = mGodunovFlowSpeed(k)*(mInternalEnergy(k-1)+mPressure(k-1));
-                        mVirtualGodunovFlux(k,3) = mGodunovFlowSpeed(k)*(mVirtualInternalEnergy(k-1)+mVirtualPressure(k-1));
-                    else
-                        mGodunovFlux(k,3) = mGodunovFlowSpeed(k)*(mInternalEnergy(k)+mPressure(k));
-                        mVirtualGodunovFlux(k,3) = mGodunovFlowSpeed(k)*(mVirtualInternalEnergy(k)+mVirtualPressure(k));
+                if mGodunovFlux(end-1,1) >= 0 && mGodunovFlux(end,1) >= 0
+                	mVirtualTemperatureNew(end) = ((mVirtualTemperature(end)-fTempRef)*fCellLength*mDensity(end)+(mGodunovFlux(end-1,1)*(mTemperature(end-1)-fTempRef)-mGodunovFlux(end,1)*(mVirtualTemperature(end)-fTempRef))*fTimeStep)/(fCellLength*mDensityNew(end))+fTempRef;
+                elseif mGodunovFlux(end-1,1) < 0 && mGodunovFlux(end,1) < 0
+                    mVirtualTemperatureNew(end) = ((mVirtualTemperature(end)-fTempRef)*fCellLength*mDensity(end)+(mGodunovFlux(end-1,1)*(mVirtualTemperature(end)-fTempRef)-mGodunovFlux(end,1)*(fTemperatureBoundary2-fTempRef))*fTimeStep)/(fCellLength*mDensityNew(end))+fTempRef;
+                elseif mGodunovFlux(end-1,1) >= 0 && mGodunovFlux(end,1) < 0
+                    mVirtualTemperatureNew(end) = ((mVirtualTemperature(end)-fTempRef)*fCellLength*mDensity(end)+(mGodunovFlux(end-1,1)*(mTemperature(end-1)-fTempRef)-mGodunovFlux(end,1)*(fTemperatureBoundary2-fTempRef))*fTimeStep)/(fCellLength*mDensityNew(end))+fTempRef;
+                elseif mGodunovFlux(end-1,1) < 0 && mGodunovFlux(end,1) >= 0
+                    mVirtualTemperatureNew(end) = ((mVirtualTemperature(end)-fTempRef)*fCellLength*mDensity(end)+(mGodunovFlux(end-1,1)*(mVirtualTemperature(end)-fTempRef)-mGodunovFlux(end,1)*(mVirtualTemperature(end)-fTempRef))*fTimeStep)/(fCellLength*mDensityNew(end))+fTempRef;
+                end
+                
+                for k = 2:(this.inCells-1)
+                    if mGodunovFlux(k,1) >= 0 && mGodunovFlux(k+1,1) >= 0
+                        mVirtualTemperatureNew(k) = ((mVirtualTemperature(k)-fTempRef)*fCellLength*mDensity(k)+(mGodunovFlux(k,1)*(mTemperature(k-1)-fTempRef)-mGodunovFlux(k+1,1)*(mVirtualTemperature(k)-fTempRef))*fTimeStep)/(fCellLength*mDensityNew(k))+fTempRef;
+                    elseif mGodunovFlux(k,1) < 0 && mGodunovFlux(k+1,1) < 0
+                        mVirtualTemperatureNew(k) = ((mVirtualTemperature(k)-fTempRef)*fCellLength*mDensity(k)+(mGodunovFlux(k,1)*(mVirtualTemperature(k)-fTempRef)-mGodunovFlux(k+1,1)*(mTemperature(k+1)-fTempRef))*fTimeStep)/(fCellLength*mDensityNew(k))+fTempRef;
+                    elseif mGodunovFlux(k,1) >= 0 && mGodunovFlux(k+1,1) < 0
+                        mVirtualTemperatureNew(k) = ((mVirtualTemperature(k)-fTempRef)*fCellLength*mDensity(k)+(mGodunovFlux(k,1)*(mTemperature(k-1)-fTempRef)-mGodunovFlux(k+1,1)*(mTemperature(k+1)-fTempRef))*fTimeStep)/(fCellLength*mDensityNew(k))+fTempRef;
+                    elseif mGodunovFlux(k,1) < 0 && mGodunovFlux(k+1,1) >= 0
+                        mVirtualTemperatureNew(k) = ((mVirtualTemperature(k)-fTempRef)*fCellLength*mDensity(k)+(mGodunovFlux(k,1)*(mVirtualTemperature(k)-fTempRef)-mGodunovFlux(k+1,1)*(mVirtualTemperature(k)-fTempRef))*fTimeStep)/(fCellLength*mDensityNew(k))+fTempRef;
                     end
                 end
                 
-                for k = 1:1:this.inCells
-                    if mGodunovFlux(k,1) >= 0
-                        mStateVectorNew(k,3) = mStateVector(k,3)+(fTimeStep/fCellLength)*(mGodunovFlux(k,3)-mVirtualGodunovFlux(k+1,3)); 
-                    else
-                        mStateVectorNew(k,3) = mStateVector(k,3)+(fTimeStep/fCellLength)*(mVirtualGodunovFlux(k,3)-mGodunovFlux(k+1,3)); 
-                    end
-                    mInternalEnergyNew(k) = mStateVectorNew(k,3);
+                for k = 1:this.inCells
+                    mTemperatureNew(k) = mVirtualTemperatureNew(k) + sum(mDeltaTempComp(mCompCellPosition == k));
                 end
+                
                 %%
                 %calculates the values for temperature according to [5]
                 %page 88 equation (3.3) using c_p*DeltaTemp als specific
-                %internal energy. 
+                %internal energy.
                 %Pressure is calculated using the liquid pressure
                 %correlation. For more information view the function file
                 for k=1:1:this.inCells
-                    mTemperatureNew(k) = ((mInternalEnergyNew(k)-0.5*mDensityNew(k)*mFlowSpeedNew(k)^2)/(fHeatCapacity*mDensity(k)))+fTempRef;
+                    %mTemperatureNew(k) = (((mInternalEnergyNew(k)/mDensityNew(k))-0.5*mFlowSpeedNew(k)^2)/(fHeatCapacity))+fTempRef;
                     mPressureNew(k) = solver.matter.fdm_liquid.functions.LiquidPressure(mTemperatureNew(k),...
                        mDensityNew(k), fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                        fCriticalPressure, fBoilingPressure, fBoilingTemperature);
                 end
-                
+                if this.oBranch.oContainer.oTimer.fTime > 0.085
+                    stop = 1;
+                end
                 %%
-                %calculation of the virtual values
+                %calculation of the virtual cell values
 
                 %from the fluxes the new virtual densities are calculated
                 for k = 1:this.inCells
                     mVirtualDensityNew(k) = mVirtualDensity(k) + (fTimeStep/fCellLength)*(mGodunovFlux(k,1)-mGodunovFlux(k+1,1));
                 end
-
-                %with the densities and the fluxes the new virtual
-                %temperatures can be calculated
-                for k = 1:this.inCells
-                    mVirtualTemperatureNew(k) = mTemperatureNew(k)-sum(mDeltaTempComp(mCompCellPosition==k));
-                end
+ 
+%                 for k = 1:this.inCells
+%                     mVirtualTemperatureNew(k) = mTemperatureNew(k)-sum(mDeltaTempComp(mCompCellPosition==k));
+%                 end
                 
+                %using the new virtual density and temperature the new
+                %internal energy can be calculated as well as the virtual
+                %pressure.
                 for k = 1:this.inCells
                     mVirtualInternalEnergyNew(k) = mVirtualDensityNew(k)*(0.5*mFlowSpeed(k)^2+fHeatCapacity*(mVirtualTemperatureNew(k)-fTempRef));
                     mVirtualPressureNew(k) = solver.matter.fdm_liquid.functions.LiquidPressure(mVirtualTemperatureNew(k),...
@@ -905,12 +1026,22 @@ classdef branch_liquid < solver.matter.base.branch
                 end
                 
                 %%
+                %this section decreases the time step again if the previous
+                %increase lead to negative pressures
+                
+                %in case the pressure is still negative after reducing the
+                %courant number again the solver will abort calculation and
+                %return an error
                 if this.sCourantAdaption.iTimeStepAdaption < 0 && (min(mPressureNew) < 0 || min(mVirtualPressure) < 0)
                     string = sprintf('negative pressure occured in the solver!\n First try decreasing the Courant Number of the Branch if this does not help see list of other possible errors:\n -the number of cells for the branch is too low \n -the diameter of the pipes is large compared to the volume of a tank \n -the pressures set in the system are wrong (e.g. a pump that has a too high pressure jump)');
                     error(string)
                 end
-                %this section decreases the time step again if the previous
-                %increase lead to negative pressures
+                
+                %if negative pressures are detected for the first time the
+                %courant number is reduced again to the previous level and
+                %the whole calculation is redone. Setting the
+                %iTimeStepAdaption variable will prevent a new increase of
+                %the courant number for the next 1000 ticks
                 if (min(mPressureNew) < 0 || min(mVirtualPressure) < 0) && this.fCourantNumber ~= 1
                     this.fCourantNumber = this.fCourantNumber/this.sCourantAdaption.fIncreaseFactor;
                     this.sCourantAdaption.iTimeStepAdaption = -1000;
@@ -919,23 +1050,35 @@ classdef branch_liquid < solver.matter.base.branch
                     this.sCourantAdaption.iTimeStepAdaption = -1000;
                 end
             
+                %end of the while loop
                 end
                 
+                %increases the variable iTimeStepAdaption by one for each
+                %solver tick and if the value is positive again the solver
+                %is allowed to increase the courant number again
                 if this.sCourantAdaption.iTimeStepAdaption < 0
                     this.sCourantAdaption.iTimeStepAdaption = this.sCourantAdaption.iTimeStepAdaption+1;
                 end
 
                 %%
-                %all necessary values for the cells are calculated. Now the
-                %respective values have to be set to the flows by
-                %calculation the delta pressure and delta temperature
-                %between each flow
+                %calculates the temperature and pressure for the flows and
+                %from these values the delta vectors required by the base
+                %branch are derived.
                 
                 afPressure = zeros(iNumberOfProcs,1);
                 afTemps = zeros(iNumberOfProcs,1);
                 mFlowTemp = zeros(length(this.oBranch.aoFlows),1);
                 mFlowPressure = zeros(length(this.oBranch.aoFlows),1);
           
+                %the difficulty when calculating the flow values is that
+                %multiple components may be placed in the same cell. If 
+                %only the cell values was used for the flows all the flows
+                %between those components would have the same values which
+                %is wrong. Therefore it is necessary to take the cell value
+                %and then subtract all the influences of processors the
+                %fluid has not already passed. This again means that the
+                %calculation has to be dependent on the flow direction in
+                %the branch.
                 if fMassFlow >= 0
                     mFlowTemp(1) = this.oBranch.coExmes{1, 1}.fTemperature;
                     mFlowTemp(end) = mTemperatureNew(end);
@@ -999,7 +1142,7 @@ classdef branch_liquid < solver.matter.base.branch
                 end
                 
                 %Positive Deltas for Pressure and Temperature mean a
-                %decrease in Temperature, negative an increase!
+                %decrease, negative an increase!
                 for k = 1:iNumberOfProcs
                     afTemps(k) = mFlowTemp(k)-mFlowTemp(k+1);
                     afPressure(k) = mFlowPressure(k)-mFlowPressure(k+1);
@@ -1034,6 +1177,10 @@ classdef branch_liquid < solver.matter.base.branch
                     this.iMassFlowResidualCounter = 0;
                 end
                 
+                %if the difference between the two boundary pressures is
+                %smaller than the initial pressure multiplied with the
+                %residual target the counter for how often this has
+                %happened in a row is increased.
                 if this.fPressureResidual ~= 0 && ~strcmp(this.fMaxPressureDifference, 'empty') && (abs(fPressureBoundary1-fPressureBoundary2) < this.fMaxPressureDifference*this.fPressureResidual)
                     this.iPressureResidualCounter = this.iPressureResidualCounter+1;
                 elseif this.iPressureResidualCounter ~= 0 && (abs(fPressureBoundary1-fPressureBoundary2) > this.fMaxPressureDifference*this.fPressureResidual)
@@ -1092,9 +1239,6 @@ classdef branch_liquid < solver.matter.base.branch
                 end
                 
             end
-
-            
         end
     end
- 
 end
