@@ -64,6 +64,9 @@ classdef branch_liquid < solver.matter.base.branch
 %
 %if one of the two residual conditions shall not be applied for the
 %simulation the residual simply has to be set to 0
+%
+%Information for the programming of components that work with this solver:
+%TO DO:
 
     %the source "Riemann Solvers and Numerical Methods for Fluid Dynamics" 
     %from E.F. Toro will be denoted as number [5]
@@ -91,9 +94,7 @@ classdef branch_liquid < solver.matter.base.branch
         fMassFlowMin = 'empty'; %kg/s
         
         %the mass flow of the previous timestep is saved in this variable
-        fMassFlowOld = 'empty'; %kg/s
-        %difference between the mass flows of the two previous time steps
-        fMassFlowDiff = 'empty'; %kg/s
+        mMassFlowOld = 'empty'; %kg/s
         
         %counter for the number of steps the mass flow difference has been
         %lower than the residual target. After a certian number is reached
@@ -108,6 +109,8 @@ classdef branch_liquid < solver.matter.base.branch
         
         %the initial pressure difference
         fMaxPressureDifference = 0; %Pa
+        
+        iSteadyState = 0;
         
         %values inside the branch cells for the previous time step
         mVirtualPressureOld = 'empty';
@@ -300,7 +303,7 @@ classdef branch_liquid < solver.matter.base.branch
             %assumed to have reached a balanced state, averaging the 
             %remaining pressure difference and allowing infinite time
             %steps.
-            if this.iPressureResidualCounter == 100 && this.oBranch.oContainer.oTimer.iTick > 1000
+            if this.iPressureResidualCounter == 1000 && this.oBranch.oContainer.oTimer.iTick > 1000
                 
                 %TO DO: Get avergaing to work here again?
                 %fPressureBoundaryNew = (fPressureBoundary1+fPressureBoundary2)/2;
@@ -314,20 +317,37 @@ classdef branch_liquid < solver.matter.base.branch
                 this.setTimeStep(2);
                 
                 update@solver.matter.base.branch(this, 0);
-                
+            %%    
             %if the counter for how often the residual target for the mass
             %flow has been undercut reaches a certain value the steady time
             %independent state is reached and the massflow
             %value from the previous timestep can be used again.
-            elseif  this.iMassFlowResidualCounter == 100 && this.oBranch.oContainer.oTimer.iTick > 1000
+            elseif  (this.iMassFlowResidualCounter == 2 && this.oBranch.oContainer.oTimer.iTick > 1000 && this.iSteadyState < 100) || (this.iSteadyState < 100 && this.iSteadyState ~= 0)
                 
-                fTimeStep = inf;
+                if this.iSteadyState == 0
+                    this.iSteadyState = 1;
+                else
+                    this.iSteadyState = this.iSteadyState+1;
+                end
+                
+                fTimeStep = 0.0001;
                 
                 this.setTimeStep(fTimeStep);
-
-                update@solver.matter.base.branch(this, this.fMassFlowOld);
-                %TO DO: Temperature Calculation in this case?
             
+                fMassFlow = sum(this.mMassFlowOld)/length(this.mMassFlowOld);
+                update@solver.matter.base.branch(this, fMassFlow);
+                
+                %tells the stores when to update
+                this.oBranch.coExmes{1, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
+                this.oBranch.coExmes{2, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
+                
+                for k = 1: length(this.oBranch.aoFlowProcs)
+                    this.oBranch.aoFlowProcs(1,k).update();
+                end
+                
+                %TO DO: Temperature Calculation in this case?
+                
+            %%    
             %if none of the above conditions applies it is necessary to 
             %calculate the values for the branch using the full numerical 
             %scheme    
@@ -348,7 +368,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %checks if either the a pipe had diameter 0 or if a valve
                 %has diameter zero
                 if bAbort || length(find(mHydrDiamValve)) ~= length(mHydrDiamValve)
-                    this.fMassFlowOld = 0;
+                    this.mMassFlowOld(1) = 0;
                     %sets the timestep from this branch for the base branch
                     this.setTimeStep(inf);
 
@@ -363,7 +383,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %because if a relevant element has the entry zero the
                 %calculation is aborted by the above conditions.
                 fMinHydrDiam = min(mHydrDiam(mHydrDiam > 0));
-
+                
                 %%
                 %fix matter values required to use the correlations for
                 %density and pressure. 
@@ -411,9 +431,9 @@ classdef branch_liquid < solver.matter.base.branch
                     elseif mDirectionDeltaPressureComp(k) < 0
                         fPressureBoundary2WithProcs = fPressureBoundary2WithProcs + mDeltaPressureComp(k);
                     else
-                        if ~strcmp(this.fMassFlowOld, 'empty') && this.fMassFlowOld > 0
+                        if ~strcmp(this.mMassFlowOld(1), 'empty') && this.mMassFlowOld(1) > 0
                             fPressureBoundary1WithProcs = fPressureBoundary1WithProcs - mDeltaPressureComp(k);
-                        elseif ~strcmp(this.fMassFlowOld, 'empty') && this.fMassFlowOld < 0
+                        elseif ~strcmp(this.mMassFlowOld(1), 'empty') && this.mMassFlowOld(1) < 0
                             fPressureBoundary2WithProcs = fPressureBoundary2WithProcs - mDeltaPressureComp(k);
                         end
                     end
@@ -494,7 +514,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %For a pipe having a length of 0.3m with a cell length
                 %of 0.16 m the entry of mCompCellPosition would be 2
                 mCompCellPosition = zeros(this.inCells, 1);
-                if (~strcmp(this.fMassFlowOld, 'empty') && this.fMassFlowOld >= 0) || (fPressureBoundary1WithProcs >= fPressureBoundary2WithProcs)
+                if (~strcmp(this.mMassFlowOld(1), 'empty') && this.mMassFlowOld(1) >= 0) || (fPressureBoundary1WithProcs >= fPressureBoundary2WithProcs)
                     for k = 1:length(mHydrLength)
                         mCompCellPosition(k)=ceil(sum(mHydrLength(1:k))/fCellLength);
                         if (mod(sum(mHydrLength(1:k)),fCellLength) == 0) && (mCompCellPosition(k) ~= this.inCells)
@@ -698,12 +718,12 @@ classdef branch_liquid < solver.matter.base.branch
                 mMomentumGodunovFlux_k_1 = zeros((this.inCells)+1, 3);
                 
                 for k = 1:this.inCells+1
-                    if k == 1
+                    if k == 1 && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) == 0)
                         [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(fPressureBoundary1, fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
                             mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), fTemperatureBoundary1, mVirtualTemperature(k));
                         mMomentumGodunovFlux_k_1(k,:) = mMomentumGodunovFlux_k(k,:);
                         
-                    elseif k == this.inCells+1
+                    elseif k == this.inCells+1 && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) == 0)
                         [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
                             fPressureBoundary2, fDensityBoundary2, fFlowSpeedBoundary2, fInternalEnergyBoundary2, mVirtualTemperature(k-1), fTemperatureBoundary2);
                         mMomentumGodunovFlux_k_1(k,:) = mMomentumGodunovFlux_k(k,:);
@@ -714,7 +734,7 @@ classdef branch_liquid < solver.matter.base.branch
                         mMomentumGodunovFlux_k_1(k,2) = mGodunovFlux(k,2);
                         
                     elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) == 0) && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) > 0)
-                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1)+2*sum(mDeltaPressureComp(mCompCellPosition == k)), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1)+2*sum(abs(mDeltaPressureComp(mCompCellPosition == k))), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
                             mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
                         
                         [mMomentumGodunovFlux_k_1(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
@@ -737,13 +757,13 @@ classdef branch_liquid < solver.matter.base.branch
                             mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
                         
                         [mMomentumGodunovFlux_k_1(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
-                            mVirtualPressure(k)+2*sum(mDeltaPressureComp(mCompCellPosition == k-1)), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
+                            mVirtualPressure(k)+2*sum(abs(mDeltaPressureComp(mCompCellPosition == k-1))), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
                         
                     %TO DO: Currently the implementation does not allow for
                     %systems where active pressure influencing components
                     %are to close to another.
                     else
-                        error('active pressure influencing components have to be sperated by at least one cell to the left and right. Therefore check the overall setup of your system and increase the number of cells.')
+                        error('active pressure influencing components have to be seperated by at least one cell to the left and right.\n Therefore check the overall setup of your system and increase the number of cells.\n Also it is not allowed for such a component to be placed in the first cell currently')
                     end
                 end
                 
@@ -809,7 +829,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %bit and the adaption is stopped. However this a not a
                 %foolproof algorithm and the adaption may still lead to
                 %instabilities.
-                if this.sCourantAdaption.bAdaption == 1 && (this.oBranch.oContainer.oTimer.iTick > 10000) && (this.bStopTimeStepAdaption == 0)
+                if this.sCourantAdaption.bAdaption == 1 && (this.oBranch.oContainer.oTimer.iTick > 10000)
                     for k = 1:this.inCells
                         if ((sign(this.mPressureOld(k)-this.mPressureOld1(k)) ~= sign(this.mPressureOld1(k)-this.mPressureOld2(k))) && (sign(this.mPressureOld1(k)-this.mPressureOld2(k)) ~= sign(this.mPressureOld2(k)-this.mPressureOld3(k))) && (abs(this.mPressureOld(k)-this.mPressureOld1(k)) > this.fMaxPressureDifference*10^-5))
                             this.sCourantAdaption.bAdaption = 0; 
@@ -1000,9 +1020,6 @@ classdef branch_liquid < solver.matter.base.branch
                        mDensityNew(k), fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                        fCriticalPressure, fBoilingPressure, fBoilingTemperature);
                 end
-                if this.oBranch.oContainer.oTimer.fTime > 0.085
-                    stop = 1;
-                end
                 %%
                 %calculation of the virtual cell values
 
@@ -1155,28 +1172,38 @@ classdef branch_liquid < solver.matter.base.branch
                 %writes values for the massflow into the object parameters
                 %to decide in the next step wether further numeric
                 %calculation is required
-                if ~strcmp(this.fMassFlowOld, 'empty')
-                    this.fMassFlowDiff = fMassFlow-this.fMassFlowOld;
+                if strcmp(this.mMassFlowOld, 'empty')
+                    this.mMassFlowOld = zeros(5000,1);
                 end
                 
-                this.fMassFlowOld = fMassFlow;
+                for k = 2:5000
+                   this.mMassFlowOld(k) = this.mMassFlowOld(k-1);
+                end
+                
+                this.mMassFlowOld(1) = fMassFlow;
                 
                 if this.fMaxPressureDifference < abs(fPressureBoundary1WithProcs-fPressureBoundary2WithProcs)
                     this.fMaxPressureDifference = abs(fPressureBoundary1WithProcs-fPressureBoundary2WithProcs);
                 end 
                 
-                %if the difference between the massflow of the two previous 
-                %timesteps is less than the residual target the counter for
-                %the number of times this has happened in a row is
-                %increased
-                if  this.fMassFlowResidual ~= 0 && ~strcmp(this.fMassFlowDiff, 'empty') && (abs(this.fMassFlowDiff) < this.fMassFlowResidual)
+                fAverageMassFlow1 = sum(this.mMassFlowOld(1:2500))/length(this.mMassFlowOld(1:2500));
+                fAverageMassFlow2 = sum(this.mMassFlowOld(2501:5000))/length(this.mMassFlowOld(2501:5000));
+                
+                fAverageMassFlowDiff = fAverageMassFlow1-fAverageMassFlow2;
+                
+                %if the difference between the average massflow of the last
+                %100 time steps and the averagev massflow of the 100 
+                %timesteps before that is less than the residual target 
+                %the counter for the number of times this has happened in a
+                %row is increased
+                if  this.fMassFlowResidual ~= 0 && this.oBranch.oContainer.oTimer.iTick > 1000 && mod(this.oBranch.oContainer.oTimer.iTick,1000) == 0 && (abs(fAverageMassFlowDiff) < this.fMassFlowResidual)
                     this.iMassFlowResidualCounter = this.iMassFlowResidualCounter+1;
-                elseif this.iMassFlowResidualCounter ~= 0 && (abs(this.fMassFlowDiff) > this.fMassFlowResidual)
+                elseif this.iMassFlowResidualCounter ~= 0 && this.oBranch.oContainer.oTimer.iTick > 1000 && mod(this.oBranch.oContainer.oTimer.iTick,1000) == 0 && (abs(fAverageMassFlowDiff) > this.fMassFlowResidual)
                     %resets the counter to 0 if the target is no longer
                     %reached
                     this.iMassFlowResidualCounter = 0;
                 end
-                
+                 
                 %if the difference between the two boundary pressures is
                 %smaller than the initial pressure multiplied with the
                 %residual target the counter for how often this has
@@ -1220,6 +1247,24 @@ classdef branch_liquid < solver.matter.base.branch
                     end
                 end
                 
+                %if the solver had already reached a steady state the
+                %solver still calculates one complete loop every 0.1s. For
+                %this purpose this variable tells the solver that the
+                %steady state had been reached and the loop has been
+                %calculated.
+                if this.iSteadyState >= 100
+                    this.iSteadyState = 1;
+                end
+                
+                if this.oBranch.oContainer.oTimer.fTime > 0.001
+                    stop = 1;
+                end
+                if this.oBranch.oContainer.oTimer.fTime > 0.01
+                    stop = 1;
+                end
+                if this.oBranch.oContainer.oTimer.fTime > 0.07
+                    stop = 1;
+                end
                 %finnaly sets the time step for the branch as well as the
                 %mass flow rate
                 
