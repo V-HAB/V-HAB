@@ -375,6 +375,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
                 % Calculates the pressure for the NEXT flow, so make sure
                 % this is not the last one!
+                % The 'natural' thing to happen (passive components) is a
+                % pressure drop, therefore positive values represent
+                % pressure drops, negative ones a rise in pressure.
+                % I.e. afPressures = afPressureDROPS
                 if iI < iL, fPortPress = fPortPress - afPressures(iI); end;
                 
                 
@@ -383,6 +387,11 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
                 this(iI).fTemp = fPortTemp;
                 
+                % Due to friction etc, the 'natural' thing is that the
+                % temperature increases, therefore: positive values
+                % represent a temperature INCREASE.
+                %TODO right now afTemps represents temperature DROPS,
+                %     change that?
                 if iI < iL, fPortTemp = fPortTemp - afTemps(iI); end;
             end
         end
