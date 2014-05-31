@@ -4,6 +4,11 @@ classdef branch_liquid < solver.matter.base.branch
 %this is a solver for flows in a branch containing liquids it can be
 %called using 
 %
+%WARNING: Currently fix matter values for water are set in the solver. If a
+%         calcuation with a different should be made these values have to
+%         be changed manually. Simply search this file for TO DO and all
+%         sections where this is the case can be found easily.
+%
 %solver.matter.fdm_liquid.branch_liquid(oBranch, iCells,...
 %               fPressureResidual, fMassFlowResidual, fCourantNumber,...
 %               sCourantAdaption)
@@ -67,7 +72,47 @@ classdef branch_liquid < solver.matter.base.branch
 %simulation the residual simply has to be set to 0
 %
 %Information for the programming of components that work with this solver:
-%TO DO:
+%
+%The solver searches each component for the following properties:
+%
+%   fHydrDiam     :The hydraulic diameter of the component which is used to
+%                  calculate the crosssection area of the component. The
+%                  smallest hydraulic diameter is set as the overall
+%                  diameter for the calculation and therefore used to
+%                  calculate massflows etc. If an actual component(like a
+%                  pipe or a valve) as a hydraulic diameter of zero the
+%                  massflow will also be zero and the solver will not
+%                  calculate anything. However if the property is not
+%                  defined it will not influence the calculation and the
+%                  minimum hydraulic diameter of another component will be
+%                  used.
+%
+%   fHydrLength   :The hydraulic length is used to calculate the overall
+%                  length of the branch. The sum over all hydraulic
+%                  lengthes of the components will be divided with the
+%                  number of cells to get the cell length necessary to
+%                  calculate the cell volume and therefore the cell values.
+%
+%   fDeltaPressure:This property is used to set changes in pressures
+%                  created from components. The value should always be
+%                  positive the inlfuence of the pressure difference is
+%                  discerned by the next property iDir.
+%
+%   iDir          :This property decides whether the pressure difference is
+%                  undirected and therefore a pressure loss that always
+%                  acts against the flow or if the pressure difference is
+%                  assosciated with a defined direction that can either be
+%                  negative or positive. The values should be 0 in case of
+%                  undirected and -1 or +1 in case of a directed  pressure
+%                  difference
+%
+%   fDeltaTemp    :This property decides how much the fluid will increase
+%                  or decrease its temperature. For a temperature increase
+%                  the value should be positive and for a decrease negative
+%
+%If any of these properties is not defined in the component it will be set
+%to zero for the calculation but the solver will not crash. Any properties 
+%that use different names will have no influence on the solver.
 
     %the source "Riemann Solvers and Numerical Methods for Fluid Dynamics" 
     %from E.F. Toro will be denoted as number [5]
@@ -224,9 +269,7 @@ classdef branch_liquid < solver.matter.base.branch
             mHydrLength = zeros(iNumberOfProcs,1);
             mDeltaPressureComp = zeros(iNumberOfProcs,1);
             mDirectionDeltaPressureComp = zeros(iNumberOfProcs,1); 
-            mMaxDeltaPressureComp = zeros(iNumberOfProcs,1); 
             mDeltaTempComp = zeros(iNumberOfProcs,1);
-            mTempComp = zeros(iNumberOfProcs,1);
             
             for k = 1:iNumberOfProcs
                 %checks wether the flow procs contain the properties of
@@ -235,9 +278,7 @@ classdef branch_liquid < solver.matter.base.branch
                 metaHydrLength = findprop(this.oBranch.aoFlowProcs(1,k), 'fHydrLength');
                 metaDeltaPressure = findprop(this.oBranch.aoFlowProcs(1,k), 'fDeltaPressure');
                 metaDirectionDeltaPressure = findprop(this.oBranch.aoFlowProcs(1,k), 'iDir');
-                metaMaxDeltaPressure = findprop(this.oBranch.aoFlowProcs(1,k), 'fMaxDeltaP');
                 metaDeltaTempComp = findprop(this.oBranch.aoFlowProcs(1,k), 'fDeltaTemp');
-                metaTempComp = findprop(this.oBranch.aoFlowProcs(1,k), 'fTemp');
                 
                 %if the processor with index k has the respective property
                 %its value is written into the respective vector. If not
@@ -262,16 +303,9 @@ classdef branch_liquid < solver.matter.base.branch
                 if ~isempty(metaDirectionDeltaPressure)
                     mDirectionDeltaPressureComp(k) = [ this.oBranch.aoFlowProcs(1,k).iDir ];
                 end
-                if ~isempty(metaMaxDeltaPressure)
-                    mMaxDeltaPressureComp(k) = [ this.oBranch.aoFlowProcs(1,k).fMaxDeltaP ];
-                end
                 if ~isempty(metaDeltaTempComp)
                     mDeltaTempComp(k) = [ this.oBranch.aoFlowProcs(1,k).fDeltaTemp ];
                 end
-                if ~isempty(metaTempComp)
-                    mTempComp(k) = [ this.oBranch.aoFlowProcs(1,k).fTemp ];
-                end
-                 
             end
             
             %get the properties at the left and right side of the branch.
@@ -1271,20 +1305,15 @@ classdef branch_liquid < solver.matter.base.branch
                     this.iSteadyState = 1;
                 end
                 
-                if this.oBranch.oContainer.oTimer.fTime > 0.1
-                    stop = 1;
-                end
-                if this.oBranch.oContainer.oTimer.fTime > 0.05
-                    stop = 1;
-                end
-                if this.oBranch.oContainer.oTimer.fTime > 0.07
-                    stop = 1;
-                end
-                %finnaly sets the time step for the branch as well as the
+                %finally sets the time step for the branch as well as the
                 %mass flow rate
                 
                 %sets the timestep from this branch for the base branch
                 this.setTimeStep(fTimeStep);
+                
+                if this.oBranch.oContainer.oTimer.iTick > 100
+                    stop = 1;
+                end
                 
                 %tells the stores when to update
                 this.oBranch.coExmes{1, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
