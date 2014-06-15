@@ -1,4 +1,4 @@
-function [ cParams, sDefaultPhase ] = SuitAtmosphere(~, fVolume, fTemperature, fPressure)
+function [ cParams, sDefaultPhase ] = SuitAtmosphere(~, fVolume, fTemperature, rRH, fPressure)
 %SUITATMOSPHERE helper to create a matter phase with a standard space suit
 %   atmosphere using 100% oxygen.
 %   If just volume given, created as a 100% oxygen atmosphere at 29647 Pa, 
