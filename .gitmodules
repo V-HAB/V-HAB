@@ -19,3 +19,6 @@
 [submodule "user/+tutorials/+p2p"]
 	path = user/+tutorials/+p2p
 	url = git@steps.lrt.mw.tum.de:tutorials/p2p.git
+[submodule "user/+tutorials/+subsystems"]
+	path = user/+tutorials/+subsystems
+	url = C:\\STEPS Gitlab\\user\\+tutorials\\+subsystems
