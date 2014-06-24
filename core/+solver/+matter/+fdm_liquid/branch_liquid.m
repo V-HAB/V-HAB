@@ -1099,7 +1099,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %courant number again the solver will abort calculation and
                 %return an error
                 if this.sCourantAdaption.iTimeStepAdaption < 0 && (min(mPressureNew) < 0 || min(mVirtualPressure) < 0)
-                    string = sprintf('negative pressure occured in the solver!\n First try decreasing the Courant Number of the Branch if this does not help see list of other possible errors:\n -the number of cells for the branch is too low \n -the diameter of the pipes is large compared to the volume of a tank \n -the pressures set in the system are wrong (e.g. a pump that has a too high pressure jump)');
+                    string = sprintf('negative pressure occured in the solver!\n First try decreasing the Courant Number of the Branch if this does not help see list of other possible errors:\n -the number of cells for the branch is too low \n -the diameter of the pipes is large compared to the volume of a tank \n -the pressures set in the system are wrong (e.g. a pump that has a too high pressure jump) \n -the system is subjected to excessiv cooling');
                     error(string)
                 end
                 
