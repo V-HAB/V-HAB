@@ -22,3 +22,6 @@
 [submodule "user/+tutorials/+subsystems"]
 	path = user/+tutorials/+subsystems
 	url = git@steps.lrt.mw.tum.de:tutorials/subsystems.git
+[submodule "user/+tutorials/+manual_solver"]
+	path = user/+tutorials/+manual_solver
+	url = git@steps.lrt.mw.tum.de:tutorials/manual_solver.git
