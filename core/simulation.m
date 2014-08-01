@@ -5,7 +5,7 @@ classdef simulation < base & event.source
     % The constructor of the derived class needs to or should set csLog,
     % and either iSimTicks of fSimTime.
     %
-    %TODO mass logging of all phases in oMT!
+    
     
     properties
         % Amount of ticks

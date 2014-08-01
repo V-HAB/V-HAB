@@ -151,7 +151,7 @@ classdef timer < base
         function run(this)
             % Advance the timer one (global) time step
             
-            % If time is -1 the min. time step - first tick, advane to zero
+            % If time is -1 the min. time step - first tick, advance to zero
             %if this.fTime == (-1 * this.fTimeStep)
             %TODO throw out here. Include in solvers themselves.
             if this.fTime <= (10 * this.fTimeStep)
