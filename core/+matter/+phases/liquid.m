@@ -29,12 +29,39 @@ classdef liquid < matter.phase
         % fVolume   : Volume of the phase
         % fTemp     : Temperature of matter in phase
         
+        %TO DO: The parent class requires that the liquid phase definition
+        %has fPressure as input but since density, temperature and pressure
+        %are not independent it is not allowed to set all three. Therefore
+        %the unused parameter fPressure exists here but the pressure is
+        %actually calculated through the correlation.
         function this = liquid(oStore, sName, tfMasses, fVolume, fTemp, fPressure)
             this@matter.phase(oStore, sName, tfMasses, fTemp);
             
             this.fVolume  = fVolume;
             this.fDensity = this.fMass / this.fVolume;
-            this.fPressure = fPressure;
+            this.fTemp = fTemp;
+            
+            %TO DO make dependant on matter table
+            %values for water
+            %density at one fixed datapoint
+            fFixDensity = 998.21;        %g/dm³
+            %temperature for the fixed datapoint
+            fFixTemperature = 293.15;           %K
+            %Molar Mass of the compound
+            fMolMassH2O = 18.01528;       %g/mol
+            %critical temperature
+            fCriticalTemperature = 647.096;         %K
+            %critical pressure
+            fCriticalPressure = 220.64*10^5;      %N/m² = Pa
+
+            %boiling point normal pressure
+            fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
+            %normal boiling point temperature
+            fBoilingTemperature = 373.124;      %K
+                
+            this.fPressure = matter.phases.functions.LiquidPressure(this.fTemp,...
+                            this.fDensity, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
             
             %TODO see .update(), also called from matter.phase constructor!
             %this.update();
@@ -68,7 +95,7 @@ classdef liquid < matter.phase
             %normal boiling point temperature
             fBoilingTemperature = 373.124;      %K
                 
-            this.fPressure = solver.matter.fdm_liquid.functions.LiquidPressure(this.fTemp,...
+            this.fPressure = matter.phases.functions.LiquidPressure(this.fTemp,...
                             this.fDensity, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                             fCriticalPressure, fBoilingPressure, fBoilingTemperature);
             
@@ -160,7 +187,7 @@ classdef liquid < matter.phase
                 fBoilingTemperature = 373.124;      %K
                 
                 fDensity = this.fMass/this.fVolume;
-                this.fPressure = solver.matter.fdm_liquid.functions.LiquidPressure(this.fTemp,...
+                this.fPressure = matter.phases.functions.LiquidPressure(this.fTemp,...
                                 fDensity, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                                 fCriticalPressure, fBoilingPressure, fBoilingTemperature);
                 this.fLastUpdateLiquid = this.oStore.oTimer.fTime;            
