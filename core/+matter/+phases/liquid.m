@@ -38,8 +38,8 @@ classdef liquid < matter.phase
             this@matter.phase(oStore, sName, tfMasses, fTemp);
             
             this.fVolume  = fVolume;
-            this.fDensity = this.fMass / this.fVolume;
             this.fTemp = fTemp;
+            this.fPressure = fPressure;
             
             %TO DO make dependant on matter table
             %values for water
@@ -59,10 +59,12 @@ classdef liquid < matter.phase
             %normal boiling point temperature
             fBoilingTemperature = 373.124;      %K
                 
-            this.fPressure = matter.phases.functions.LiquidPressure(this.fTemp,...
-                            this.fDensity, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+            this.fDensity = matter.phases.functions.LiquidDensity(this.fTemp,...
+                            this.fPressure, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                             fCriticalPressure, fBoilingPressure, fBoilingTemperature);
             
+            this.fMass = this.fDensity*this.fVolume;
+                        
             %TODO see .update(), also called from matter.phase constructor!
             %this.update();
         end
@@ -120,11 +122,32 @@ classdef liquid < matter.phase
             % matter.table to make sure the pressure isn't so low, that a
             % phase change to gas takes place
             
-            
-            %TO DO: Get new Density for new pressure
             bSuccess = this.setParameter('fPressure', fPressure);
-            
-            
+            %Get new Density for new pressure
+            %TO DO make dependant on matter table
+            %values for water
+            %density at one fixed datapoint
+            fFixDensity = 998.21;        %g/dm³
+            %temperature for the fixed datapoint
+            fFixTemperature = 293.15;           %K
+            %Molar Mass of the compound
+            fMolMassH2O = 18.01528;       %g/mol
+            %critical temperature
+            fCriticalTemperature = 647.096;         %K
+            %critical pressure
+            fCriticalPressure = 220.64*10^5;      %N/m² = Pa
+
+            %boiling point normal pressure
+            fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
+            %normal boiling point temperature
+            fBoilingTemperature = 373.124;      %K
+                
+            this.fDensity = matter.phases.functions.LiquidDensity(this.fTemp,...
+                            this.fPressure, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
+                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+            this.fMass = this.fDensity*this.fVolume;
+                        
+                        
             return;
             %TODO with events:
             this.trigger('set.fPressure', struct('fPressure', fPressure, 'setAttribute', @this.setAttribute));
