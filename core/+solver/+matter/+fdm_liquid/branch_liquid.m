@@ -1290,11 +1290,14 @@ classdef branch_liquid < solver.matter.base.branch
                 this.fTimeStepBranch = fTimeStep;
                 this.mTemperatureOld = mTemperatureNew;
                 this.mVirtualTemperatureOld = mVirtualTemperatureNew;
-                for k = 1:length(this.oBranch.oContainer.aoBranches)
-                    if strcmp(this.oBranch.sName, this.oBranch.oContainer.aoBranches(k).sName)
-                        this.oBranch.oContainer.aoLiquidBranch{k} = this;
-                    end
-                end
+                
+                %This part is only necessary if cell values are of interest
+                %and should be plotted
+%                 for k = 1:length(this.oBranch.oContainer.aoBranches)
+%                     if strcmp(this.oBranch.sName, this.oBranch.oContainer.aoBranches(k).sName)
+%                         this.oBranch.oContainer.aoLiquidBranch{k} = this;
+%                     end
+%                 end
                 
                 %if the solver had already reached a steady state the
                 %solver still calculates one complete loop every 0.1s. For
