@@ -310,7 +310,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % connected to EXMEs).
             sPhaseType = this.oBranch.getInEXME().oPhase.sType;
             
-            this.fHeatCapacity = this.oMT.calculateHeatCapacity(sPhaseType, this.arPartialMass);
+            this.fHeatCapacity = this.oMT.calculateHeatCapacity(sPhaseType, this.arPartialMass, this.fTemp, this.fPressure);
         end
         
         

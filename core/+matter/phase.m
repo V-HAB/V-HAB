@@ -185,25 +185,10 @@ classdef phase < base & matlab.mixin.Heterogeneous
                     sKey = csKeys{iI};
                     
                     %orginal:if ~isfield(this.oMT.tiN2I, sKey), this.throw('phase', 'Matter type %s unkown to matter.table', sKey); end;
+                    % call mattertable if species is not in struct for
+                    % Massvector constructing
                     if ~isfield(this.oMT.tiN2I, sKey)
-                        this.oMT = matter.table(this,'import',sKey, fTemp);
-                        %{
-                        sCreate = ((input(sprintf('Matter type %s unkown to matter.table. Do you want do create or import it? [y/n/i] ',sKey), 's')));
-                        if sCreate == 'y'
-                            this.oMT = matter.table(this,'insert',sKey);
-                            %neuinitialisierung
-                            %clear('this.oStore');
-                            %this.oStore = oStore.addPhase(this);
-                            %this.updateMatterTable();
-                        elseif sCreate == 'i'
-                            this.oMT = matter.table(this,'import',sKey);
-                        else
-                            this.oMT = matter.table(this,'check',sKey);
-                            if isempty(this.oMT)
-                                this.throw('phase', 'Matter type %s unkown to matter.table', sKey);
-                            end
-                        end
-                        %}
+                        this.oMT = matter.table(this,sKey);
                         
                     end
                     
