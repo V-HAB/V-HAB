@@ -179,6 +179,9 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
 	fPressureStarTemp = fPressureLeft+fDensityLeft*(fWaveSpeedLeftPVRS-...
                             fFlowSpeedLeft)*(fWaveSpeedStarPVRS-fFlowSpeedLeft);   
 
+    if fPressureStarTemp < 0
+        fPressureStarTemp = 1;
+    end
     %ensures that the reference Density at low pressure is lower than the
     %other densities
     if fDensity_0 >= fDensityLeftStarTemp
@@ -250,6 +253,9 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     fPressureStar = fPressureLeft+fDensityLeft*(fWaveSpeedLeftTemp-...
                             fFlowSpeedLeft)*(fWaveSpeedStarTemp-fFlowSpeedLeft);   
 
+    if fPressureStar < 0
+        fPressureStar = 1;
+    end
     %ensures that the reference Density at low pressure is lower than the
     %other densities
     if fDensity_0 >= fDensityLeftStar

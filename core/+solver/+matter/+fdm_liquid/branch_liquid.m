@@ -420,7 +420,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %if the solver has already reached steady state the courant
                 %number for the occasional recalculation is set to 1
                 if this.iSteadyState > 0
-                    this.fCourant = 1;
+                    this.fCourantNumber = 1;
                 end
                 
                 %%
@@ -1293,11 +1293,14 @@ classdef branch_liquid < solver.matter.base.branch
                 
                 %This part is only necessary if cell values are of interest
                 %and should be plotted
-%                 for k = 1:length(this.oBranch.oContainer.aoBranches)
-%                     if strcmp(this.oBranch.sName, this.oBranch.oContainer.aoBranches(k).sName)
-%                         this.oBranch.oContainer.aoLiquidBranch{k} = this;
-%                     end
-%                 end
+                metaaoLiquidBranch = findprop((this.oBranch.oContainer), 'aoLiquidBranch');
+                if ~isempty(metaaoLiquidBranch)
+                    for k = 1:length(this.oBranch.oContainer.aoBranches)
+                        if strcmp(this.oBranch.sName, this.oBranch.oContainer.aoBranches(k).sName)
+                            this.oBranch.oContainer.aoLiquidBranch{k} = this;
+                        end
+                    end
+                end
                 
                 %if the solver had already reached a steady state the
                 %solver still calculates one complete loop every 0.1s. For
