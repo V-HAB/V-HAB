@@ -128,11 +128,11 @@ classdef branch_liquid < solver.matter.base.branch
         %necessary
         fCourantNumber = 1;
         
-        %residual target for pressure initialized to 10^-5 if norhting else
+        %residual target for pressure initialized to 10^-5 if nothing else
         %is specified by user 
         fPressureResidual = 10^-5;
         
-        %residual target for mass flow initialized to 10^-10 if norhting 
+        %residual target for mass flow initialized to 10^-10 if nothing 
         %else is specified by user 
         fMassFlowResidual = 10^-10;
         
@@ -215,8 +215,8 @@ classdef branch_liquid < solver.matter.base.branch
                 this.inCells = iCells;
                 this.fPressureResidual = fPressureResidual;
                 this.fMassFlowResidual = fMassFlowResidual;
-                this.fCourantNumber = fCourantNumber;
-                this.sCourantAdaption = sCourantAdaption;
+                this.fCourantNumber    = fCourantNumber;
+                this.sCourantAdaption  = sCourantAdaption;
                 this.sCourantAdaption.iTimeStepAdaption = 0;
             end
                         
