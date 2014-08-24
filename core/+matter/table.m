@@ -49,6 +49,7 @@ classdef table < base
         % cellarray of all saved species
         csSpecies;
         
+        % number of species in phase
         iSpecies;
         
         % all proptertys and data for all species is stored in this struct
@@ -110,9 +111,6 @@ classdef table < base
             % from species worksheet if exist
             % gets matterobject from parent phaseclass and needed species
             % (sKey)
-                   
-            % Create zero/empty palceholder matter flow
-            this.oFlowZero = matter.flow(this, []);
             
             % if no arguments from call received it creates the MatterData
             % from worksheet MatterData, else the Mattertableobject from
@@ -122,6 +120,8 @@ classdef table < base
                 this = oParent.oMT;
                 this.createMatterData(oParent, sKey);
             else
+                % Create zero/empty palceholder matter flow
+                this.oFlowZero = matter.flow(this, []);
                 this.createMatterData();
             end
         end
@@ -170,11 +170,6 @@ classdef table < base
                     this.throw('fHeatCapacity', 'If only one param provided, has to be a matter.phase (derivative)');
                 end
                 
-                % if no mass given also no heatcapacity possible
-                if varargin{1}.fMass == 0
-                    return;
-                end
-                
                 % initialise attributes from phase object
                 sType  = varargin{1}.sType;
                 sName = varargin{1}.sName;
@@ -182,6 +177,12 @@ classdef table < base
                 fT = varargin{1}.fTemp;
                 fP = varargin{1}.fPressure;
                 if isempty(fP); fP = 100000; end; % std pressure (Pa)
+                
+                % if no mass given also no heatcapacity possible
+                if varargin{1}.fMass == 0 || sum(isnan(afMass)) == length(afMass)
+                    return;
+                end
+                
 
                 sId    = [ 'Phase ' varargin{1}.oStore.sName ' -> ' varargin{1}.sName ];
                 
@@ -193,7 +194,7 @@ classdef table < base
                 afMass = varargin{2};
                 
                 % if no mass given also no heatcapacity possible
-                if sum(afMass) == 0
+                if sum(afMass) == 0 || sum(isnan(afMass)) == length(afMass)
                     return;
                 end
                 
@@ -215,12 +216,6 @@ classdef table < base
                 fP = 100000;
             elseif strcmpi(sType, 'solid') && this.bSolid
                 fP = 100000;
-            end
-            
-            % if all entries in Mass vector are NaN it has to be converted
-            % to a zero vector
-            if sum(isnan(afMass)) == length(afMass)
-                afMass = zeros(1,length(afMass));
             end
             
             % initialise attributes for next run (only done first time)
@@ -273,11 +268,12 @@ classdef table < base
 
             % look what species has mass so heatcapacity can calculated
             if any(afMass > 0) % needed? should always true because of check in firstplace
-                iIndex = find(afMass>0);
+                aiIndexes = find(afMass>0);
                 % go through all species that have mass and sum them up
                 for i=1:length(find(afMass>0))
-                    c_p = this.FindProperty(fT, fP, this.csSpecies{iIndex(i)}, 'c_p', sType);
-                    fHeatCapacity = fHeatCapacity + afMass(iIndex(i)) ./ sum(afMass) * c_p;
+                    fCp = this.FindProperty(this.csSpecies{aiIndexes(i)}, 'c_p', 'Temperature', fT, 'Pressure', fP, sType);
+                    %fCp = this.FindProperty(fT, fP, this.csSpecies{aiIndexes(i)}, 'c_p', sType);
+                    fHeatCapacity = fHeatCapacity + afMass(aiIndexes(i)) ./ sum(afMass) * fCp;
                 end
                 % save heatcapacity for next run
                 this.cfLastProps.fCp = fHeatCapacity;
@@ -285,7 +281,7 @@ classdef table < base
             end
             
             % if no species has a valid heatcapacity an error trown out
-            if isempty(fHeatCapacity)
+            if isempty(fHeatCapacity) || isnan(fHeatCapacity)
                 this.throw('calculateHeatCapacity','Error in HeatCapacity calculation!');
             end
         end
@@ -369,9 +365,8 @@ classdef table < base
                 this.aoFlows(iInd) = [];
             end
         end
+    
     end
-    
-    
     %% Protected, internal methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     methods (Access = protected)
         
@@ -389,78 +384,94 @@ classdef table < base
         end
         
     %% Methods for import of data
-        function createMatterData(this, oParent, sKey)
-            % handles imported data. At first call at initialisation it
+        function this = createMatterData(this, oParent, sKey)
+            % handles import of data. At first call (at initialisation) it
             % loads the standard worksheet MatterData and save the needed
             % structures etc. If called with arguments the parent object
             % must have a field with a valid phase and the species (sKey)
             % has to be handed over
+            %
+            % createMatterData returns
+            %  this  - oMT object 
+            %
+            % inputs:
+            % oParent: Partent object, needed for verification of phase
+            % sKey: speciesname (also worksheet name)
             
-            %% Zugriff auf bestimmte Reiter in der MatterXLS
+            %% Access specific worksheets in MatterXLS
+            % executed if no inputs handed over
             if nargin > 1
-                % oParent: Partent object, needed for verification of phase
-                % handle: handle what should be done (import etc.); not used at moment
-                % sKey: speciesname (also worksheet name)
-                % fTemp: temperature at which properties are searched
-                % fPres: pressure at which propterties are searched
-                Worksheet = sKey;
-                this.ttxMatter.(sKey) = this.Matterimport(strrep('core\+matter\Matter.xlsx','\',filesep), Worksheet);%, fTemp, fPres);
-                % look if species is already imported
-                if isfield(this.ttxMatter, sKey)
-                    % check if phase in parent object are present
-                    if isobject(oParent)
-                        if ~isprop(oParent, 'sType')
-                            this.throw('table:import','no phasetype from parent class received');
-                        elseif ~any(strcmpi({'solid','gas','liquid'},oParent.sType))
-                            this.trow('table:import','no valid phasetype from parent class received');
-                        end
+                % call of Matterimport that imports the needed worksheetdata then 
+                % it checks if correct phase from parent object is handed over
+                % after that it checks also type of pressure and corrects vaulues if needed
+                % fields that created at the first exection and used in other classes 
+                % had to include the new species
+
+                % import from worksheet
+                this.ttxMatter.(sKey) = this.Matterimport(strrep('core\+matter\Matter.xlsx','\',filesep), sKey);
+                
+                % check if phase in parent object are present
+                if isobject(oParent)
+                    if ~isprop(oParent, 'sType')
+                        this.throw('table:import','no phasetype from parent class received');
+                    elseif ~any(strcmpi({'solid','gas','liquid'},oParent.sType))
+                        this.trow('table:import','no valid phasetype from parent class received');
                     end
+                end
 
-                    % handle Pressure values (convert bar in Pa)
-                    iColumn = this.FindColumn('Pressure', sKey);
-                    if strcmpi(this.ttxMatter.(sKey).import.text(6,iColumn), 'bar')
-                        this.ttxMatter.(sKey).import.num(5:end,iColumn) = this.ttxMatter.(sKey).import.num(5:end,iColumn)*100000;
-                    elseif strcmpi(this.ttxMatter.(sKey).import.text(6,iColumn), 'Pa')
-                        % nothing, all good
-                    else
-                        this.throw('table:createMatterData',sprintf('Pressure-type %s unkown', this.ttxMatter.(sKey).import.text(6,iColumn)));
-                    end
-
-                    if ~any(strcmp(this.csSpecies, sKey))
-                        % new species, so some fields has to be extend if not already there
-                        iIndex = this.iSpecies+1;
-                        this.csSpecies{iIndex} = sKey;
-                        this.tiN2I.(sKey) = iIndex;
-                        this.iSpecies = iIndex;
-                        this.afMolMass(iIndex) = this.ttxMatter.(sKey).fMolMass;
-                        cPhases = fieldnames(this.tafDensity);
-
-                        % go through all phases (solid, gas, liquid) and write correct value in array tafCp
-                        % and tafDensity from new import
-                        for i=1:length(cPhases)
-                            % if value of density is stored in fRoh and is a number and in right phase
-                            if isfield(this.ttxMatter.(sKey), 'fRoh') && ~isnan(this.ttxMatter.(sKey).fRoh) && strcmp(oParent.sType, cPhases{i})
-                                this.tafDensity.(cPhases{i})(iIndex) = this.ttxMatter.(sKey).fRoh;
-                            else % std is -1
-                                this.tafDensity.(cPhases{i})(iIndex) = -1;
-                            end
-
-                        end
-                    end
-                    
+                % handle Pressure values (convert bar in Pa)
+                iColumn = this.FindColumn('Pressure', sKey);
+                if strcmpi(this.ttxMatter.(sKey).import.text(6,iColumn), 'bar')
+                    this.ttxMatter.(sKey).import.num(5:end,iColumn) = this.ttxMatter.(sKey).import.num(5:end,iColumn)*100000;
+                elseif strcmpi(this.ttxMatter.(sKey).import.text(6,iColumn), 'Pa')
+                    % nothing, all good
+                else
+                    this.throw('table:createMatterData',sprintf('Pressure-type %s unkown', this.ttxMatter.(sKey).import.text(6,iColumn)));
                 end
                 
+                % new species, so some fields has to be extend if not already there
+                if ~any(strcmp(this.csSpecies, sKey))
+                    % index of new species is one times higher than last one 
+                    iIndex = this.iSpecies+1;
+                    % write new speciesname in cellarray
+                    this.csSpecies{iIndex} = sKey;
+                    % index of new species into number2index array
+                    this.tiN2I.(sKey) = iIndex;
+                    this.iSpecies = iIndex;
+                    % molmass of species into molmass array
+                    this.afMolMass(iIndex) = this.ttxMatter.(sKey).fMolMass;
+
+                    % go through all phases (solid, gas, liquid) and write correct value in array tafCp
+                    % and tafDensity from new import
+                    cPhases = fieldnames(this.tafDensity);
+                    for i=1:length(cPhases)
+                        % if value of density is stored in fRoh and is a number and in right phase
+                        if isfield(this.ttxMatter.(sKey), 'fRoh') && ~isnan(this.ttxMatter.(sKey).fRoh) && strcmp(oParent.sType, cPhases{i})
+                            this.tafDensity.(cPhases{i})(iIndex) = this.ttxMatter.(sKey).fRoh;
+                        else % std is -1
+                            this.tafDensity.(cPhases{i})(iIndex) = -1;
+                        end
+
+                    end
+                end
+                                    
             else
-                %% load standard Mattertable
-                % this is executed at first (class simulation)
+                %% load MatterData (standard Mattertable)
+                % this is executed at first (from class simulation)
+                
+                % import worksheet MatterData
                 this.ttxMatter = this.Matterimport(strrep('core\+matter\Matter.xlsx','\',filesep), 'MatterData');
             
+                % get all species
                 this.csSpecies = fieldnames(this.ttxMatter);
+                % get number of species
                 this.iSpecies  = length(this.csSpecies);
 
+                % preallocation
                 this.afMolMass = zeros(1, this.iSpecies);
                 this.tiN2I     = struct();
 
+                % write attributes of all species
                 for iI = 1:this.iSpecies
                     % Configuration
                     tCfg = this.ttxMatter.(this.csSpecies{iI});
@@ -534,15 +545,32 @@ classdef table < base
         end
         
         function ttxImportMatter = Matterimport(this, sFile, sIndex)
+            % importfunction that handles import from species worksheet for
+            % one species or at initialisation the import from worksheet
+            % MatterData
+            % first it looks if speciesdata is already importet (for a specific species)
+            % after import with xlsread it gets the data in the right
+            % format for later use
+            %
+            % Matterimport returns
+            %  ttxImportMatter - struct with all data
+            %
+            % inputs
+            % sFile: complete filename of MatterXLS
+            % sIndex: worksheet/species name
             
-            % store all worksheets form excelfile and look if is readable
+            % store all worksheets form excelfile and look if file is readable
+            % worksheetnames used in FindProperty to look if maybe more
+            % data is availeable
             [sStatus, this.asWorksheets] = xlsfinfo(sFile);
             if ~any(strcmp(sStatus, {'Microsoft Excel Spreadsheet', 'Microsoft Macintosh Excel Spreadsheet'}))
                 this.throw('table:Matterimport',sprintf('File %s has wrong format for Matterimport',sFile));
             end
+            
             %% import worksheet MatterData (standard Mattertable)
-            % this is executed at first (in class simulation)
+            % this is executed at first (from class simulation)
             if strcmp(sIndex, 'MatterData') && any(strcmpi(this.asWorksheets, 'MatterData'))
+                % import of worksheet
                 [import.num, import.text, import.raw] = xlsread(sFile, sIndex);
                 % store tablelength and column of density ("codename" of first property to store in phase) to save all properties
                 % search for empty cell in first row; column before is last Tablecolumn
@@ -563,17 +591,16 @@ classdef table < base
                     iRow = find(strcmp(import.text(3:end,1),scSpecies{i})); 
                     %disp(scSpecies{i});
                     if ~isempty(iRow)
-                        % rownumbers of .num and .text/.raw are 2 rows
-                        % different because of headers
+                        % rownumbers of .num and .text/.raw are 2 rows different because of headers
                         iRow = iRow +2;
                         ttxImportMatter.(scSpecies{i}).import.num = import.num(iRow-2,:);
-                        ttxImportMatter.(scSpecies{i}).import.num(:,iTableLength+1:end) = [];
+                        ttxImportMatter.(scSpecies{i}).import.num(:,iTableLength+1:end) = []; % overhead not needed
                         ttxImportMatter.(scSpecies{i}).import.text = import.text(1:2,:);
                         ttxImportMatter.(scSpecies{i}).import.text = [ttxImportMatter.(scSpecies{i}).import.text; import.text(iRow,:)];
-                        ttxImportMatter.(scSpecies{i}).import.text(:,iTableLength+1:end) = [];
+                        ttxImportMatter.(scSpecies{i}).import.text(:,iTableLength+1:end) = []; % overhead not needed
                         ttxImportMatter.(scSpecies{i}).import.raw = import.raw(1:2,:);
                         ttxImportMatter.(scSpecies{i}).import.raw = [ttxImportMatter.(scSpecies{i}).import.raw; import.raw(iRow,:)];
-                        ttxImportMatter.(scSpecies{i}).import.raw(:,iTableLength+1:end) = [];
+                        ttxImportMatter.(scSpecies{i}).import.raw(:,iTableLength+1:end) = []; % overhead not needed
                         % go through all properties before density
                         for j = 4:iColumn-1
                             if ~isnan(import.num(iRow(1)-2,j-3))
@@ -594,14 +621,16 @@ classdef table < base
                 end
             %% import specific species worksheet
             else
-                % first look if data is already imported
+                % first look if data is not already imported
                 if ~isfield(this.ttxMatter, sIndex)
+                    % import worksheet
                     [import.num, import.text, import.raw] = xlsread(sFile, sIndex);
                     % save data for later use
                     ttxImportMatter.import.text = import.text;
                     ttxImportMatter.import.num = import.num;
                     ttxImportMatter.import.raw = import.raw;
                     ttxImportMatter.SpeciesName = import.text{1,1};
+                    % get length of columns
                     iTableLength = size(import.text,2);
                     % save all constants of species defined in first four rows 
                     for i = 4:iTableLength
@@ -609,9 +638,21 @@ classdef table < base
                             ttxImportMatter.(import.text{3,i}) = import.num(1,i);
                         end
                     end
+                    % numeric import is mostly minor than other because in
+                    % the first lines are often no numbers
+                    % for easier handling in later functions get this the
+                    % same size
+                    iLengthRaw = size(import.raw,1);
+                    iLengthNum = size(import.num,1);
+                    if iLengthRaw > iLengthNum
+                        afNewArray(iLengthRaw,size(import.num,2)) = 0;
+                        afNewArray(:,:) = nan;
+                        afNewArray((iLengthRaw-iLengthNum)+1:end,:) = ttxImportMatter.import.num;
+                        ttxImportMatter.import.num = afNewArray;
+                    end
                 % check size of imported data (data from MatterData has max
                 % size of 5)
-                elseif size(this.ttxMatter.(sIndex).import.raw, 1) < 6
+                elseif length(this.ttxMatter.(sIndex).import.raw(:,1)) < 6
                     % save data from worksheet MatterData
                     ttxImportMatter.MatterData.raw = this.ttxMatter.(sIndex).import.raw;
                     ttxImportMatter.MatterData.num = this.ttxMatter.(sIndex).import.num;
@@ -630,14 +671,25 @@ classdef table < base
                             ttxImportMatter.(import.text{3,i}) = import.num(1,i);
                         end
                     end
-                    
+                    % numeric import is mostly minor than other because in
+                    % the first lines are often no numbers
+                    % for easier handling in later functions get this the
+                    % same size
+                    iLengthRaw = size(import.raw,1);
+                    iLengthNum = size(import.num,1);
+                    if iLengthRaw > iLengthNum
+                        afNewArray(iLengthRaw,size(ttxImportMatter.import.num,2)) = 0;
+                        afNewArray(:,:) = nan;
+                        afNewArray((iLengthRaw-iLengthNum)+1:end,:) = ttxImportMatter.import.num;
+                        ttxImportMatter.import.num = afNewArray;
+                    end
                 % data is already imported -> get back
                 else
                     return;
                 end
                 
                 % look if some values safed as kJ -> has to convert do J (*1000)
-                iTableLength = size(ttxImportMatter.import.text, 2);
+                iTableLength = size(ttxImportMatter.import.text,2);
                 for i = 1:iTableLength
                     if strncmp(ttxImportMatter.import.text{6,i}, 'kJ', 2)
                        ttxImportMatter.import.text{6,i} = strrep(ttxImportMatter.import.text{6,i}, 'kJ', 'J');
@@ -650,8 +702,16 @@ classdef table < base
         
     %% helper methods
         function [iColumn, iTableLength] = FindColumn(this, sPropertyName, sSpecies, iRow)
-            % 
-            % sPropertyName: search string
+            % most used function (call often in loops)
+            % finds the column of a property and if wished the columnlength of
+            % the table
+            %
+            % FindColumn returns
+            %  iColumn - number of column
+            %  iTableLength - length of table
+            %
+            % inputs:
+            % sPropertyName: name of searched property
             % sSpecies: speciesname
             % iRow: rownumber in which the search string stays, optional
             
@@ -663,49 +723,67 @@ classdef table < base
             % if rownumbers is also given
             if nargin > 3 && ~isempty(iRow)
                     iColumn = find(strcmp(this.ttxMatter.(sSpecies).import.text(iRow,:),sPropertyName));
+                    return
             else
                 % if raw data has max 5 rows it has to be from worksheet MatterData (2 lines heading +max 3 phases)
-                if size(this.ttxMatter.(sSpecies).import.raw,1)>5
+                if length(this.ttxMatter.(sSpecies).import.raw(:,1)) > 5
                     iColumn = find(strcmp(this.ttxMatter.(sSpecies).import.text(5,:),sPropertyName)); % row 5 is std propertyname
                     if isempty(iColumn)
                         iColumn = find(strcmp(this.ttxMatter.(sSpecies).import.text(7,:),sPropertyName)); % search row 7 as alternative
                     end
+                    return
                 else
                     if strcmpi(sPropertyName,'c_p'); sPropertyName = 'SHC'; end;
                     iColumn = find(strcmp(this.ttxMatter.(sSpecies).import.text(1,:),sPropertyName)); % row 1 is std propertyname in MatterData
                     if isempty(iColumn)
                         iColumn = find(strcmp(this.ttxMatter.(sSpecies).import.text(2,:),sPropertyName)); % search row 2 as alternative
                     end
+                    return
                 end
             end
         end
         
         function [fMin, fMax] = FindRange(this, sSpecies, xForProp)
+            % looks what maximum and minimum values are in a column
+            % used in FindProperty to look if searched values are in range
+            % of the given worksheetdata
+            %
+            % FindRange returns
+            %  fMin: minimum value of column
+            %  fMax: maximum value of column
+            %
+            % inputs:
             % sSpecies: speciesname
             % xForProp: string of property or number of column
             
-            % depending on the input, look for column of property
+            % depending on the input, look for column or property
            if ischar(xForProp)
                iColumn = this.FindColumn(xForProp, sSpecies);
            elseif isnumeric(xForProp)
                iColumn = xForProp;
+           else
+               this.thow('table:FindRange','Wrong input');
            end
            
+           % only look for maximum values if searched too
            if nargout == 2
-               
+               % get maximum value
                fMax = max(this.ttxMatter.(sSpecies).import.num(:,iColumn));
            end
+           % get minimum value
            fMin = min(this.ttxMatter.(sSpecies).import.num(:,iColumn));
         end
         
-        function property = FindProperty(this, fT, fP, sSpecies, sProperty, sPhase)
+        % old FindProperty
+        % not used at moment
+        function fProperty = FindProperty_old(this, fT, fP, sSpecies, sProperty, sPhase)
             % fT: temperature
             % fP: pressure
             % sSpecies: species name for which property is searched
             % sProperty: name of the searched property
             % sPhase: phasetype, optional
             
-            property = 0;
+            fProperty = 0;
             if nargin < 5
                 sPhase = [];
             end
@@ -717,11 +795,11 @@ classdef table < base
             end
             % check if Species is already imported
             if ~isfield(this.ttxMatter, sSpecies)
-                this.createMatterData([], [], sSpecies);
+                this.createMatterData([], sSpecies);
             end
             
             
-            [iColumn, ~] = this.FindColumn(sProperty, sSpecies);
+            iColumn = this.FindColumn(sProperty, sSpecies);
             % property c_p are often written as SHC (Are they the same
             % values?
             if isempty(iColumn) && strcmp(sProperty, 'c_p')
@@ -732,23 +810,23 @@ classdef table < base
                 this.throw('table:FindProperty',sprintf('Can´t find property %s in worksheet %s', sProperty, sSpecies));
             end
             
+            iRowsP = [];
             if strcmpi(sPhase, 'solid') && this.bSolid
                 iColumnPhase = this.FindColumn('Phase',sSpecies);
-                rowsP = find(strcmpi(this.ttxMatter.(sSpecies).import.text(:,iColumnPhase), 'solid'));
+                iRowsP = find(strcmpi(this.ttxMatter.(sSpecies).import.text(:,iColumnPhase), 'solid'));
                 fP = 100000;
             elseif strcmpi(sPhase, 'liquid') && this.bLiquid
                 iColumnPhase = this.FindColumn('Phase',sSpecies);
-                rowsP = find(strcmpi(this.ttxMatter.(sSpecies).import.text(:,iColumnPhase), 'liquid'));
+                iRowsP = find(strcmpi(this.ttxMatter.(sSpecies).import.text(:,iColumnPhase), 'liquid'));
                 fP = 100000;
-            else
-                rowsP = [];
             end
-            % for checking of temp or pres out of table values
-            abOutOfRange = [0; 0];
                     
             % over 3 rows in import.num only possible if not from worksheet
             % MatterData (max 3 phases)
-            if size(this.ttxMatter.(sSpecies).import.num,1) > 3
+            if length(this.ttxMatter.(sSpecies).import.num(:,1)) > 3
+                % for checking of temp or pres out of table values
+                abOutOfRange = [false; false];
+
                 % look if data is in range of table
                 [fMin, fMax] = this.FindRange(sSpecies, 'fP');
                 if fP > fMax
@@ -771,181 +849,366 @@ classdef table < base
                     %disp('fTmin');
                 end
                 
-                if isempty(rowsP)
+                if isempty(iRowsP)
                     % look if pressure is stored
-                    rowsP = find(this.ttxMatter.(sSpecies).import.num(:,3) == fP);
+                    iRowsP = find(this.ttxMatter.(sSpecies).import.num(:,3) == fP);
                 end
                 % look if temperature is stored
-                rowsT = find(this.ttxMatter.(sSpecies).import.num(:,2) == fT);
-                if ~any(rowsP) && ~(abOutOfRange(1) && abOutOfRagne(2))
+                iRowsT = find(this.ttxMatter.(sSpecies).import.num(:,2) == fT);
+                if ~any(iRowsP) && ~(abOutOfRange(1) || abOutOfRange(2))
                     % pressure not in table
-                    if any(rowsT)
+                    if any(iRowsT)
                         % temperature found -> interpolation only over pressure
-                        temp = this.ttxMatter.(sSpecies).import.num(rowsT,:);
+                        temp = this.ttxMatter.(sSpecies).import.num(iRowsT,:);
                         temp = sortrows(temp,3);
                         [~,rows,~] = unique(temp(:,3),'rows');
                         temp = temp(rows,:); %!% temp speichern damit nicht für alle spalten neu ausgeführt werden muss?
-                        property = interp1(temp(:,3),temp(:,iColumn),fP); %interp1(fPressure, fProperty, fP) 
+                        fProperty = interp1(temp(:,3),temp(:,iColumn),fP); %interp1(fPressure, fProperty, fP) 
                     else
                         % interpolation over temperature and pressure needed
                         temp = this.ttxMatter.(sSpecies).import.num;
                         temp(1:4,:) = [];
                         % noch nicht das Gelbe vom Ei :(
-                        property = griddata(temp(:,2),temp(:,3),meshgrid(temp(:,iColumn)),fT,fP);
-                        if property < min(temp(:,iColumn)) || property > max(temp(:,iColumn))
-                            %disp(sprintf('out of range for species %s',sSpecies,' -> []'));
-                            property = [];
+                        fProperty = griddata(temp(:,2),temp(:,3),meshgrid(temp(:,iColumn)),fT,fP);
+                        if fProperty < min(temp(:,iColumn)) || fProperty > max(temp(:,iColumn))
+                            fprintf(2,'out of range for species %s',sSpecies,' -> []');
+                            fProperty = [];
                         end
                         
                     end
-                else
+                elseif ~(abOutOfRange(1) || abOutOfRange(2))
                     % pressure in table
-                     if any(rowsT)
+                     if any(iRowsT)
                         % pressure and temperature given -> no interpolation needed
-                        property = this.ttxMatter.(sSpecies).import.num((this.ttxMatter.(sSpecies).import.num(:,2) == fT & this.ttxMatter.(sSpecies).import.num(:,3) == fP), iColumn);
+                        fProperty = this.ttxMatter.(sSpecies).import.num((this.ttxMatter.(sSpecies).import.num(:,2) == fT & this.ttxMatter.(sSpecies).import.num(:,3) == fP), iColumn);
                      else
                         % temperature not in table -> interpolation over temperature needed
-                        temp = this.ttxMatter.(sSpecies).import.num(rowsP,:);
+                        temp = this.ttxMatter.(sSpecies).import.num(iRowsP,:);
                         temp = sortrows(temp,2);
-                        [~,rows,~] = unique(temp(:,2),'rows');
+                        [~,rows] = unique(temp(:,2),'rows');
                         temp = temp(rows,:); %!% temp speichern damit nicht für alle spalten neu ausgeführt werden muss?
-                        property = interp1(temp(:,2),temp(:,iColumn),fT);
-                    end
+                        fProperty = interp1(temp(:,2),temp(:,iColumn),fT);
+                     end
                 end
 
                 % when no property is found, look if maybe better data is stored from worksheet MatterData
-                if (isempty(property) || isnan(property)) && isfield(this.ttxMatter.(sSpecies), 'MatterData')
+                if (isempty(fProperty) || isnan(fProperty) || fProperty == 0) && isfield(this.ttxMatter.(sSpecies), 'MatterData')
                     
                     rowPhase = find(strcmpi(this.ttxMatter.(sSpecies).MatterData.text(:,3), sPhase), 1, 'first');
                     if isempty(rowPhase)
-                        property = 0;
+                        fProperty = 0;
                     else
-                        property = this.ttxMatter.(sSpecies).MatterData.num(rowPhase-2,iColumn-3);
+                        iColumn = find(strcmp(this.ttxMatter.(sSpecies).MatterData.text(1,:), sPropertyName)); % row 1 is std propertyname in MatterData
+                        if isempty(iColumn) && strcmp(sProperty, 'c_p')
+                            iColumn = find(strcmp(this.ttxMatter.(sSpecies).MatterData.text(1,:), 'SHC')); 
+                        end
+                        fProperty = this.ttxMatter.(sSpecies).MatterData.num(rowPhase-2,iColumn-3);
                     end
                 end
+            elseif isfield(this.ttxMatter.(sSpecies), 'MatterData')
+                    rowPhase = find(strcmpi(this.ttxMatter.(sSpecies).MatterData.text(:,3), sPhase), 1, 'first');
+                    if isempty(rowPhase)
+                        fProperty = 0;
+                    else
+                        fProperty = this.ttxMatter.(sSpecies).MatterData.num(rowPhase-2,iColumn-3);
+                    end
+                
             else
                 % look if a worksheet of that species exist when not std atm. or no phase is stored
-                if any(strcmpi(this.asWorksheets, sSpecies))
-                    this.createMatterData([], [], sSpecies);
-                    property = this.FindProperty(fT, fP, sSpecies, sProperty, sPhase);
-                else
-                    rowPhase = find(strcmpi(this.ttxMatter.(sSpecies).import.text(:,3), sPhase), 1, 'first');
-                    if isempty(rowPhase)
-                        property = 0;
+                rowPhase = find(strcmpi(this.ttxMatter.(sSpecies).import.text(:,3), sPhase), 1, 'first');
+                if isempty(rowPhase)
+                    if any(strcmpi(this.asWorksheets, sSpecies))
+                        this.createMatterData([], sSpecies);
+                        fProperty = this.FindProperty(sSpecies, sProperty, 'Temperature', fT, 'Pressure', fP, sPhase);
+                        %fProperty = this.FindProperty(fT, fP, sSpecies, sProperty, sPhase);
                     else
-                        property = this.ttxMatter.(sSpecies).import.num(rowPhase-2,iColumn-3);
+                        fProperty = 0;
                     end
+                else
+                    fProperty = this.ttxMatter.(sSpecies).import.num(rowPhase-2,iColumn-3);
                 end
             end
-            if isnan(property); property = 0; end;
+            if isnan(fProperty); fProperty = 0; end;
         end
  
-        % same as FindProperty but has to indepentent of special dependency
-        % (not Temp and/or Pres dependency)
-        function property = FindProperty2(this, sSpecies, sProperty, xFirstDep, xSecondDep, sPhase)
-            % fT: temperature
-            % fP: pressure
-            % caImport: all stored importdata (num, text, raw)
-            % iColumn; column of property
-            % iTableLength: lenght of table
-            l = 1;
-            property = 0;
+        % same as old FindProperty but indepentent of special dependency
+        % (not only Temp and/or Pres dependency)
+        % e.g. this.FindProperty('CO2','c_p','Pressure',120000,'alpha',0.15,'liquid') 
+        function fProperty = FindProperty(this, sSpecies, sProperty, sFirstDepName, fFirstDepValue, sSecondDepName, fSecondDepValue, sPhase)
+            % search for property values for specific dependency-values 
+            % one dependency is needed and a second one is optional
+            % interpolates given worksheetdata if not in worksheet MatterData
+            %
+            % FindProperty returns
+            %  fProperty - (interpolated) value of searched property
+            %
+            % inputs:
+            % sSpecies: speciesname for structfield
+            % sProperty: propertyname for column
+            % sFirstDepName: name of dependency 1 for column, e.g. 'Temperature'
+            % sFirstDepValue: value of dependency 1
+            % sSecondDepName: name of dependency 2 for column, e.g. 'Pressure', optional
+            % sFirstDepValue: value of dependency 2, optional
+            % sPhase: phase for row in MatterData, optional
+            
+            fProperty = 0;
+            % check inputs on correctness
             switch nargin
-                case 5
-                    if isa(xSecondDep, 'char') && strcmpi({'solid','liquid','gas'}, xSecondDep)
-                        sPhase = xSecondDep;
-                        xSecondDep = [];
-                        dependencies = 1;
+                case 8 
+                    % check if all inputs have correct type
+                    if ~ischar(sSpecies) || ~ischar(sProperty) || ~(ischar(sFirstDepName) || isempty(sFirstDepName)) || ~isnumeric(fFirstDepValue) || ~(ischar(sSecondDepName) || isempty(sSecondDepName)) || ~isnumeric(fSecondDepValue) || ~ischar(sPhase) || ~ischar(sSpecies)
+                        this.trow('table:FindProperty','Some inputs have wrong type');
                     else
-                        sPhase = [];
-                        dependencies = 2;
+                        % number of dependencies
+                        iDependencies = 2;
                     end
-                case 4
-                    xSecondDep = [];
-                    sPhase = [];
-                    dependencies = 1;
+                case 7
+                    % check if all inputs have correct type
+                    if ~ischar(sSpecies) || ~ischar(sProperty) || ~(ischar(sFirstDepName) || isempty(sFirstDepName)) || ~isnumeric(fFirstDepValue) || ~(ischar(sSecondDepName) || isempty(sSecondDepName)) || ~isnumeric(fSecondDepValue) || ~ischar(sSpecies)
+                        this.trow('table:FindProperty','Some inputs have wrong type');
+                    else
+                        % number of dependencies
+                        iDependencies = 2;
+                    end
+                case 6 
+                    % check if sPhase is given
+                    if isa(sSecondDepName, 'char') && strcmpi({'solid','liquid','gas'}, sSecondDepName)
+                        sPhase = sSecondDepName;
+                        sSecondDepName = [];
+                        iDependencies = 1;
+                    else
+                        this.throw('table:FindProperty','Input phase is not correct');
+                    end
+                case 5
+                    % check if value of first dependency is numeric
+                    if isnumeric(fFirstDepValue)
+                        sSecondDepName = [];
+                        sPhase = [];
+                        iDependencies = 1;
+                    else
+                        this.trow('table:FindProperty','Wrong inputtype for first dependency');
+                    end
                 otherwise
-                    dependencies = 2;
+                    % at least one dependency has to be given over
+                    this.trow('table:FindProperty','Not enough inputs');
             end
             
-            % check if dependencies valid; if only second valid -> handle it to firstdep
-            if (isempty(xFirstDep) || isnan(fP)) && (isempty(xSecondDep) || isnan(xSecondDep))
-                xFirstDep = xSecondDep;
-                xSecondDep = [];
-            else
+            % check if dependencies are valid; if only second valid -> handle it to firstdep
+            if isempty(sFirstDepName) && ~(isempty(sSecondDepName) || isnan(sSecondDepName))
+                sFirstDepName = sSecondDepName;
+                sSecondDepName = [];
+                fFirstDepValue = fSecondDepValue;
+                fSecondDepValue = [];
+                iDependencies = 1;
+            end
+            % last check on correctness
+            if isempty(sFirstDepName) || ~isa(sFirstDepName,'char') || isempty(fFirstDepValue)
                 this.throw('table:FindProperty',sprintf('no valid dependency was transmitted for property %s',sProperty));
             end
             
             % check if Species is already imported
             if ~isfield(this.ttxMatter, sSpecies)
-                this.createMatterData([], [], sSpecies);%, fT, fP);
+                this.createMatterData([], sSpecies);
             end
             
-            [iColumn, iTableLength] = this.FindColumn(sProperty, sSpecies);
+            % get column of searched property
+            iColumn = this.FindColumn(sProperty, sSpecies);
+            % property c_p are often written as SHC (Are they the same values?)
+            if isempty(iColumn) && strcmp(sProperty, 'c_p')
+                iColumn = this.FindColumn('SHC', sSpecies);
+            end
+            % if no column found, property is not in worksheet
+            if isempty(iColumn)
+                this.throw('table:FindProperty',sprintf('Can´t find property %s in worksheet %s', sProperty, sSpecies));
+            end
             
-            % over 3 rows in import.num only possible if not from worksheet MatterData
-            if size(this.ttxMatter.(sSpecies).import.num,1)>3
-                if strcmpi(sPhase, 'solid') && this.bSolid
-                    iColumnPhase = this.FindColumn('Phase',sSpecies);
-                    rowsP = find(strcmpi(this.ttxMatter.(sSpecies).import.text(:,iColumnPhase), 'solid'));
-                    fP = 100000;
-                elseif strcmpi(sPhase, 'liquid') && this.bLiquid
-                    iColumnPhase = this.FindColumn('Phase',sSpecies);
-                    rowsP = find(strcmpi(this.ttxMatter.(sSpecies).import.text(:,iColumnPhase), 'liquid'));
-                    fP = 100000;
-                else
-                    % look if pressure is stored
-                    rowsP = find(this.ttxMatter.(sSpecies).import.num(:,3) == fP);
-                end
-                % look if temperature is stored
-                rowsT = find(this.ttxMatter.(sSpecies).import.num(:,2)==fT);
-                if ~any(rowsP)
-                    % pressure not in table
-                    if any(rowsT)
-                        % temperature found -> interpolation only over pressure
-                        temp = this.ttxMatter.(sSpecies).import.num(rowsT,:);
-                        temp = sortrows(temp,3);
-                        [~,rows,~] = unique(temp(:,3),'rows');
-                        temp = temp(rows,:); %!% temp speichern damit nicht für alle spalten neu ausgeführt werden muss?
-                        property = interp1(temp(:,3),temp(:,iColumn),fP); %interp1(fPressure, fProperty, fP) 
-                    else
-                        % interpolation over temperature and pressure needed
-                        temp = this.ttxMatter.(sSpecies).import.num;
-                        temp(1:4,:) = [];
-                        property = griddata(temp(:,2),temp(:,3),temp(:,iColumn),fT,fP);
-%                         property = interp2(unique(temp(:,2),'rows','sorted'),unique(temp(:,3),'rows','sorted'),unique(temp(:,iColumn),'rows','sorted'),fT,fP);
-%                         X = caImport.num(~isnan(caImport.num(:,2)),2);
-%                         Y = caImport.num(~isnan(caImport.num(:,3)),3);
-%                         V = caImport.num(~isnan(caImport.num(:,iColumn)),iColumn);
-%                         temp = scatteredInterpolant(X,Y,V);
-%                         property = temp(fT,fP); 
-                        
-                    end
-                else
-                    % pressure in table
-                     if any(rowsT)
-                        % pressure and temperature given -> no interpolation needed
-                        property = this.ttxMatter.(sSpecies).import.num((this.ttxMatter.(sSpecies).import.num(:,2) == fT & this.ttxMatter.(sSpecies).import.num(:,3) == fP), iColumn);
-                     else
-                        % temperature not in table -> interpolation over temperature needed
-                        temp = this.ttxMatter.(sSpecies).import.num(rowsP,:);
-                        temp = sortrows(temp,2);
-                        [~,rows,~] = unique(temp(:,2),'rows');
-                        temp = temp(rows,:); %!% temp speichern damit nicht für alle spalten neu ausgeführt werden muss?
-                        property = interp1(temp(:,2),temp(:,iColumn),fT);
-                    end
-                end
+            iRowsFirst = [];
+            % get column of first dependency
+            iColumnFirst = this.FindColumn(sFirstDepName, sSpecies);
+            % sometimes property Temperature are given 2 times (C and K)
+            % second column is used
+            if length(iColumnFirst) > 1 && strcmpi(sFirstDepName, 'Temperature')
+                iColumnFirst = iColumnFirst(2);
+            end
+            % handling of incompressible phases
+%             if strcmpi(sPhase, 'solid') && this.bSolid
+%                 iColumnPhase = this.FindColumn('Phase',sSpecies);
+%                 iRowsFirst = find(strcmpi(this.ttxMatter.(sSpecies).import.text(:,iColumnPhase), 'solid'));
+%             elseif strcmpi(sPhase, 'liquid') && this.bLiquid
+%                 iColumnPhase = this.FindColumn('Phase',sSpecies);
+%                 iRowsFirst = find(strcmpi(this.ttxMatter.(sSpecies).import.text(:,iColumnPhase), 'liquid'));
+%             end
+                    
+            % over 3 rows in import.num only possible if not from worksheet
+            % MatterData (max 3 phases)
+            if size(this.ttxMatter.(sSpecies).import.num,1) > 3
+                % initialise array for checking if dependencies are out of table values
+                abOutOfRange = [false; false];
 
-                l = l + iTableLength;
-            else
-                rowsP = find(strcmpi(this.ttxMatter.(sSpecies).import.text(:,3), sPhase));
-                if isempty(rowsP)
-                    property = 0;
+                % look if data for first dependency is in range of table
+                [fMin, fMax] = this.FindRange(sSpecies, sFirstDepName);
+                if fFirstDepValue > fMax
+                    fFirstDepValue = fMax;
+                    abOutOfRange(1) = true;
+                    %disp('fPmax');
+                elseif fFirstDepValue < fMin
+                    fFirstDepValue = fMin;
+                    abOutOfRange(1) = true;
+                    %disp(sprintf('fPmin %s', sSpecies));
+                end
+                % some checks only needed if second dependency is given
+                if iDependencies == 2
+                    % look if data for second dependency is in range of table
+                    [fMin, fMax] = this.FindRange(sSpecies, sSecondDepName);
+                    if fSecondDepValue > fMax
+                        fSecondDepValue = fMax;
+                        abOutOfRange(2) = true;
+                        %disp('fTmax');
+                    elseif fSecondDepValue < fMin
+                        fSecondDepValue = fMin;
+                        abOutOfRange(2) = true;
+                        %disp('fTmin');
+                    end
+                    % get column of second dependency
+                    iColumnSecond = this.FindColumn(sSecondDepName, sSpecies);
+                    % get columns with already given values of searched second dependency
+                    iRowsSecond = find(this.ttxMatter.(sSpecies).import.num(:,iColumnSecond) == fSecondDepValue);
+                end
+                
+                
+                if isempty(iRowsFirst)
+                    % get columns with already given values of searched first dependency
+                    % sometimes it doesn´t find it right, why?
+                    iRowsFirst = find(this.ttxMatter.(sSpecies).import.num(:,iColumnFirst) == fFirstDepValue);
+                end
+                % only one dependency
+                if iDependencies == 1
+                    % check if is in range of table
+                    if ~isempty(iRowsFirst) && ~abOutOfRange(1)
+                        % dependencyvalue in table
+                        % direct usage
+                        fProperty = this.ttxMatter.(sSpecies).import.num((this.ttxMatter.(sSpecies).import.num(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
+                    elseif ~abOutOfRange(1)
+                        % only in range of table
+                        % interpolation needed
+                        % create a temporary array because inperp1 need
+                        % stricly monotonic increasing data
+                        afTemporary = this.ttxMatter.(sSpecies).import.num(:,[iColumn, iColumnFirst]);
+                        afTemporary = sortrows(afTemporary,2);
+                        [~,rows] = unique(afTemporary(:,2),'rows');
+                        afTemporary = afTemporary(rows,:); %!% temp speichern damit nicht für alle spalten neu ausgeführt werden muss?
+                        fProperty = interp1(afTemporary(:,2),afTemporary(:,1),fFirstDepValue); % interp1(aFirstDepValue, aProperty, fFirstDepValue) 
+                    else
+                        % dependencyvalue is out of range 
+                        % look if phase of species is in MatterData
+                        iRowsFirstMatterData = find(strcmpi(this.ttxMatter.(sSpecies).MatterData.text(:,3), sPhase), 1, 'first');
+                        if isempty(iRowsFirstMatterData)
+                            % not in MatterData 
+                            % get 'best' value in Range of speciestable
+                            fProperty = this.ttxMatter.(sSpecies).import.num((this.ttxMatter.(sSpecies).import.num(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
+                        else
+                            % get the data from the MatterDataworksheet
+                            % get column of property
+                            iColumn = find(strcmp(this.ttxMatter.(sSpecies).MatterData.text(1,:), sPropertyName)); % row 1 is std propertyname in MatterData
+                            if isempty(iColumn) && strcmp(sProperty, 'c_p')
+                                % if heatcapacity (c_p) is searched, it is written as SHC in MatterData
+                                iColumn = find(strcmp(this.ttxMatter.(sSpecies).MatterData.text(1,:), 'SHC')); 
+                            end
+                            % get the propertyvalue
+                            fProperty = this.ttxMatter.(sSpecies).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
+                        end
+                    end
                 else
-                    property = this.ttxMatter.(sSpecies).import.num(rowsP-2,iColumn-3);
+                    % two Dependencies
+                    % look if both dependencies are in range of table
+                    if ~(abOutOfRange(1) || abOutOfRange(2))
+                        if ~isempty(iRowsFirst) && ~isempty(iRowsSecond) && intersect(iRowsFirst,iRowsSecond)
+                            % both dependency directly given
+                            % get propertyvalue
+                            fProperty = this.ttxMatter.(sSpecies).import.num(intersect(iRowsFirst,iRowsSecond), iColumn);
+                        else
+                            % dependency not directly given
+                            % interpolation over both dependencies needed
+                            % create temporary array because inperpolation
+                            % doesn´t allow nan values
+                            afTemporary = this.ttxMatter.(sSpecies).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
+                            afTemporary(isnan(afTemporary)) = 0;
+                            afTemporary = sortrows(afTemporary,1);
+                            % noch nicht das gelbe vom ei :(griddata
+                            fProperty = griddata(afTemporary(:,2),afTemporary(:,3),(afTemporary(:,1)),fFirstDepValue,fSecondDepValue);
+                            % check if found propertyvalue is in range of table (no extrapolation)
+                            if fProperty < min(afTemporary(:,1)) || fProperty > max(afTemporary(:,1))
+                                fprintf(2,'out of range for species %s',sSpecies,' -> []');
+                                fProperty = [];
+                            end
+                        end
+                    else
+                        % one or more dependencies are out of range
+                        % look if data is in MatterData
+                        iRowsFirstMatterData = find(strcmpi(this.ttxMatter.(sSpecies).MatterData.text(:,3), sPhase), 1, 'first');
+                        if isempty(iRowsFirstMatterData)
+                            % no found data in MatterData
+                            % get 'best' value in Range of speciestable
+                            % create temporary array because inperpolation
+                            % doesn´t allow nan values
+                            afTemporary = this.ttxMatter.(sSpecies).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
+                            afTemporary(isnan(afTemporary)) = 0;
+                            afTemporary = sortrows(afTemporary,1);
+                            % noch nicht das gelbe vom ei :(
+                            fProperty = griddata(afTemporary(:,2),afTemporary(:,3),meshgrid(afTemporary(:,1)),fFirstDepValue,fSecondDepValue);
+                            % check if found propertyvalue is in range of table (no extrapolation)
+                            if fProperty < min(afTemporary(:,1)) || fProperty > max(afTemporary(:,1))
+                                fprintf(2,'out of range for species %s',sSpecies,' -> []');
+                                fProperty = [];
+                            end
+                        else
+                            % data found in MatterData
+                            % get column of property
+                            iColumn = find(strcmp(this.ttxMatter.(sSpecies).MatterData.text(1,:), sPropertyName)); % row 1 is std propertyname in MatterData
+                            if isempty(iColumn) && strcmp(sProperty, 'c_p')
+                                % if heatcapacity (c_p) is searched, it is written as SHC in MatterData
+                                iColumn = find(strcmp(this.ttxMatter.(sSpecies).MatterData.text(1,:), 'SHC')); 
+                            end
+                             % get the propertyvalue
+                            fProperty = this.ttxMatter.(sSpecies).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
+                        end
+                    end
+                    
+                end
+            % check if species is in MatterData     
+            elseif isfield(this.ttxMatter.(sSpecies), 'MatterData')
+                % get the rows of the phase of the species
+                rowPhase = find(strcmpi(this.ttxMatter.(sSpecies).MatterData.text(:,3), sPhase), 1, 'first');
+                if isempty(rowPhase)
+                    % no phase for species found
+                    fProperty = 0;
+                else
+                    % get the propertyvalue
+                    fProperty = this.ttxMatter.(sSpecies).MatterData.num(rowPhase-2,iColumn-3);
+                end
+                
+            else
+                % look if a worksheet of that species exist when not std atm. or no phase is stored
+                rowPhase = find(strcmpi(this.ttxMatter.(sSpecies).import.text(:,3), sPhase), 1, 'first');
+                if isempty(rowPhase)
+                    % no phase found
+                    % look if a worksheet for the species exitst in MatterXLS
+                    if any(strcmpi(this.asWorksheets, sSpecies))
+                        % import the speciesworksheet
+                        this.createMatterData([], sSpecies);
+                        % get the propertyvalue
+                        fProperty = this.FindProperty(sSpecies, sProperty, 'Temperature', fT, 'Pressure', fP, sPhase);
+                    else
+                        % no worksheet found
+                        fProperty = 0;
+                    end
+                else
+                    % get the propertyvalue
+                    fProperty = this.ttxMatter.(sSpecies).import.num(rowPhase-2,iColumn-3);
                 end
             end
-            if isnan(property); property = 0; end;
+            % final check when found propertyvalue is nan
+            if isnan(fProperty); fProperty = 0; end;
         end
     end
     
