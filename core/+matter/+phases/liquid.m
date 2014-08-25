@@ -186,7 +186,7 @@ classdef liquid < matter.phase
             %TODO change phase contructor, don't call .update() directly?
             %     Or makes sense to always check for an empty fVolume? Does
             %     it happen that fVol is empty, e.g. gas solved in fluid?
-            if ~isempty(this.fVolume) && this.fLastUpdateLiquid ~= this.oStore.oTimer.fTime
+            if ~isempty(this.fVolume) && this.fLastUpdateLiquid ~= this.oStore.oTimer.fTime && this.oStore.iIncompressible == 0
                 
                 %fix matter values required to use the correlations for
                 %density and pressure. 
