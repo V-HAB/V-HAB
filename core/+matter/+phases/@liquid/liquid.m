@@ -59,7 +59,7 @@ classdef liquid < matter.phase
             %normal boiling point temperature
             fBoilingTemperature = 373.124;      %K
                 
-            this.fDensity = matter.phases.functions.LiquidDensity(this.fTemp,...
+            this.fDensity = this.LiquidDensity(this.fTemp,...
                             this.fPressure, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                             fCriticalPressure, fBoilingPressure, fBoilingTemperature);
             
@@ -142,7 +142,7 @@ classdef liquid < matter.phase
             %normal boiling point temperature
             fBoilingTemperature = 373.124;      %K
                 
-            this.fDensity = matter.phases.functions.LiquidDensity(this.fTemp,...
+            this.fDensity = this.LiquidDensity(this.fTemp,...
                             this.fPressure, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                             fCriticalPressure, fBoilingPressure, fBoilingTemperature);
             this.fMass = this.fDensity*this.fVolume;
@@ -181,7 +181,6 @@ classdef liquid < matter.phase
             %TODO coeff m to p: also in fluids, plasma. Not solids, right?
             %     calc arPPs, rel humidity, ...
             %
-            
             % Check for volume not empty, when called from constructor
             %TODO change phase contructor, don't call .update() directly?
             %     Or makes sense to always check for an empty fVolume? Does
@@ -210,7 +209,7 @@ classdef liquid < matter.phase
                 fBoilingTemperature = 373.124;      %K
                 
                 fDensity = this.fMass/this.fVolume;
-                this.fPressure = matter.phases.functions.LiquidPressure(this.fTemp,...
+                this.fPressure = this.LiquidPressure(this.fTemp,...
                                 fDensity, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
                                 fCriticalPressure, fBoilingPressure, fBoilingTemperature);
                 this.fLastUpdateLiquid = this.oStore.oTimer.fTime;            
