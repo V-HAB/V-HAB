@@ -431,7 +431,7 @@ classdef store < base
 
             % Update stationary P2P processors
             for iP = this.aiProcsP2Pstationary
-                this.toProcsP2P(this.csProcsP2P{iP}).update();
+                this.toProcsP2P.(this.csProcsP2P{iP}).update();
             end
             
             this.fLastUpdate = this.oTimer.fTime;
