@@ -23,22 +23,21 @@ classdef branch_liquid < solver.matter.base.branch
 %        is specified. Basically the rule applies that for a larger 
 %        pressure difference a higher number of cells is required.
 %
-%fPressureResidual: sets the residual target for the pressure
+%fPressureResidualFactor: sets the residual target factor for the pressure
 %                   difference depending on the initial pressure. 
-%                   Meaning the residual target is multiplied by the
-%                   initial pressure difference to get a target
+%                   Meaning the PressureResidualFactor is multiplied with
+%                   the initial pressure difference to get a target
 %                   pressure difference after which the calculation is
-%                   assumed as finished. Initialzied to 10^-5 if 
-%                   nothing is specified
+%                   assumed as finished. Disabled if nothing is specified
 %
-%fMassFlowResidual: sets the residual target for the massflow
+%fMassFlowResidualFactor: sets the residual target for the massflow
 %                   depending on the maximum massflow during the 
-%                   simulation. Meaning the residual target is 
-%                   multiplied by the maximum massflow that occured so
+%                   simulation. Meaning the MassFlowResidualFactor is 
+%                   multiplied with the maximum massflow that occured so
 %                   far in the simulation to get a target
 %                   massflow difference after which the calculation is
 %                   assumed to have reached a time independend stead 
-%                   state. Initialzied to 10^-10 if nothing is specified
+%                   state. Disabled if nothing is specified
 %
 %fCourantNumber: is used to set the initial, or if adaption is disabled the
 %                overall courant number. The courant number is a factor
@@ -128,13 +127,13 @@ classdef branch_liquid < solver.matter.base.branch
         %necessary
         fCourantNumber = 1;
         
-        %residual target for pressure initialized to 10^-5 if nothing else
-        %is specified by user 
-        fPressureResidual = 10^-5;
+        %residual target factor for pressure (see the comment for the input
+        %variables at the beginning of this file for further explanation)
+        fPressureResidualFactor = 0;
         
-        %residual target for mass flow initialized to 10^-10 if nothing 
-        %else is specified by user 
-        fMassFlowResidual = 10^-10;
+        %residual target for mass flow (see the comment for the input
+        %variables at the beginning of this file for further explanation)
+        fMassFlowResidualFactor = 0;
         
         %the minimum mass flow during the simulation is saved in this variable
         fMassFlowMin = 'empty'; %kg/s
@@ -194,27 +193,27 @@ classdef branch_liquid < solver.matter.base.branch
         %%
         %definition of the branch and the possible input values.
         %For explanation about the values see initial comment section.
-        function this = branch_liquid(oBranch, iCells, fPressureResidual, fMassFlowResidual, fCourantNumber, sCourantAdaption)
+        function this = branch_liquid(oBranch, iCells, fPressureResidualFactor, fMassFlowResidualFactor, fCourantNumber, sCourantAdaption)
             this@solver.matter.base.branch(oBranch);  
             
             if nargin == 2
                 this.inCells = iCells;
             elseif nargin == 3
                 this.inCells = iCells;
-                this.fPressureResidual = fPressureResidual;
+                this.fPressureResidualFactor = fPressureResidualFactor;
             elseif nargin == 4
                 this.inCells = iCells;
-                this.fPressureResidual = fPressureResidual;
-                this.fMassFlowResidual = fMassFlowResidual;
+                this.fPressureResidualFactor = fPressureResidualFactor;
+                this.fMassFlowResidualFactor = fMassFlowResidualFactor;
             elseif nargin == 5
                 this.inCells = iCells;
-                this.fPressureResidual = fPressureResidual;
-                this.fMassFlowResidual = fMassFlowResidual;
+                this.fPressureResidualFactor = fPressureResidualFactor;
+                this.fMassFlowResidualFactor = fMassFlowResidualFactor;
                 this.fCourantNumber = fCourantNumber;
             elseif nargin == 6    
                 this.inCells = iCells;
-                this.fPressureResidual = fPressureResidual;
-                this.fMassFlowResidual = fMassFlowResidual;
+                this.fPressureResidualFactor = fPressureResidualFactor;
+                this.fMassFlowResidualFactor = fMassFlowResidualFactor;
                 this.fCourantNumber    = fCourantNumber;
                 this.sCourantAdaption  = sCourantAdaption;
                 this.sCourantAdaption.iTimeStepAdaption = 0;
@@ -1245,9 +1244,9 @@ classdef branch_liquid < solver.matter.base.branch
                 %timesteps before that is less than the residual target 
                 %the counter for the number of times this has happened in a
                 %row is increased
-                if  this.fMassFlowResidual ~= 0 && this.oBranch.oContainer.oTimer.iTick > 1000 && mod(this.oBranch.oContainer.oTimer.iTick,1000) == 0 && (abs(fAverageMassFlowDiff) < this.fMassFlowResidual)
+                if  this.fMassFlowResidualFactor ~= 0 && this.oBranch.oContainer.oTimer.iTick > 1000 && mod(this.oBranch.oContainer.oTimer.iTick,1000) == 0 && (abs(fAverageMassFlowDiff) < this.fMassFlowResidualFactor)
                     this.iMassFlowResidualCounter = this.iMassFlowResidualCounter+1;
-                elseif this.iMassFlowResidualCounter ~= 0 && this.oBranch.oContainer.oTimer.iTick > 1000 && mod(this.oBranch.oContainer.oTimer.iTick,1000) == 0 && (abs(fAverageMassFlowDiff) > this.fMassFlowResidual)
+                elseif this.iMassFlowResidualCounter ~= 0 && this.oBranch.oContainer.oTimer.iTick > 1000 && mod(this.oBranch.oContainer.oTimer.iTick,1000) == 0 && (abs(fAverageMassFlowDiff) > this.fMassFlowResidualFactor)
                     %resets the counter to 0 if the target is no longer
                     %reached
                     this.iMassFlowResidualCounter = 0;
@@ -1257,9 +1256,9 @@ classdef branch_liquid < solver.matter.base.branch
                 %smaller than the initial pressure multiplied with the
                 %residual target the counter for how often this has
                 %happened in a row is increased.
-                if this.fPressureResidual ~= 0 && ~strcmp(this.fMaxPressureDifference, 'empty') && (abs(fPressureBoundary1-fPressureBoundary2) < this.fMaxPressureDifference*this.fPressureResidual)
+                if this.fPressureResidualFactor ~= 0 && ~strcmp(this.fMaxPressureDifference, 'empty') && (abs(fPressureBoundary1-fPressureBoundary2) < this.fMaxPressureDifference*this.fPressureResidualFactor)
                     this.iPressureResidualCounter = this.iPressureResidualCounter+1;
-                elseif this.iPressureResidualCounter ~= 0 && (abs(fPressureBoundary1-fPressureBoundary2) > this.fMaxPressureDifference*this.fPressureResidual)
+                elseif this.iPressureResidualCounter ~= 0 && (abs(fPressureBoundary1-fPressureBoundary2) > this.fMaxPressureDifference*this.fPressureResidualFactor)
                     %resets the counter to 0 if the target is no longer
                     %reached
                     this.iPressureResidualCounter = 0;
