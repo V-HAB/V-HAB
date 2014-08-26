@@ -527,6 +527,10 @@ classdef store < base
                 else                       this.aoPhases(end + 1) = oPhase;
                 end
             end
+            
+            if strcmp(oPhase.sType, 'liquid')
+                oPhase.addFunctionHandles(@this.LiquidDensity, @this.LiquidPressure);
+            end
         end
         
         
