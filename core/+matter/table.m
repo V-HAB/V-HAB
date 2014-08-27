@@ -92,10 +92,10 @@ classdef table < base
         % of the matter properties is allowed?
         rMaxChange = 0.01;
         
-        % liquids are considered inkompressible
+        % liquids are considered inkompressible if this is true
         bLiquid = true;
         
-        % solids are inkompressible
+        % solids are inkompressible if this is true
         bSolid = true;
         
     end
@@ -188,6 +188,8 @@ classdef table < base
                 
             % Assuming we have two or more params, the phase type, a vector with
             % the mass of each species and current temperature and pressure
+            %CHECK: As far as I can see, only matter.flow.m uses this,
+            %could change that file and get rid of this if condition.
             else
                 sType  = varargin{1};
                 sName = 'manual'; % can anything else, just used for check of last attributes
@@ -210,22 +212,25 @@ classdef table < base
                 sId = 'Manually provided vector for species masses';
             end
             
-            % fluids and/or solids are handled as incompressible usually
-            % can be changed over the public properties bLiquid and bSolid 
-            if strcmpi(sType, 'liquid') && this.bLiquid
-                fP = 100000;
-            elseif strcmpi(sType, 'solid') && this.bSolid
-                fP = 100000;
-            end
+            % Commented the following lines, handling of the decision
+            % incompressible/compressible is done in the phases for now.
+            
+%             % fluids and/or solids are handled as incompressible usually
+%             % can be changed over the public properties bLiquid and bSolid 
+%             if strcmpi(sType, 'liquid') && this.bLiquid
+%                 fP = 100000;
+%             elseif strcmpi(sType, 'solid') && this.bSolid
+%                 fP = 100000;
+%             end
             
             % initialise attributes for next run (only done first time)
             if ~isfield(this.cfLastProps, 'fCp')
-                this.cfLastProps.fT = fT;
-                this.cfLastProps.fP = fP;
+                this.cfLastProps.fT     = fT;
+                this.cfLastProps.fP     = fP;
                 this.cfLastProps.afMass = afMass;
-                this.cfLastProps.fCp = 0;
-                this.cfLastProps.sType = sType;
-                this.cfLastProps.sName= sName;
+                this.cfLastProps.fCp    = 0;
+                this.cfLastProps.sType  = sType;
+                this.cfLastProps.sName  = sName;
             end
             
             % if same Phase and Type as lasttime, it has to be checked if

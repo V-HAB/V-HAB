@@ -310,6 +310,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % connected to EXMEs).
             sPhaseType = this.oBranch.getInEXME().oPhase.sType;
             
+            %CHECK: This might also be done by just passing the phase object to
+            % the matter table directly... I don't know why this is done
+            % like this. It could save an if condition in table.m
             this.fHeatCapacity = this.oMT.calculateHeatCapacity(sPhaseType, this.arPartialMass, this.fTemp, this.fPressure);
         end
         
