@@ -51,8 +51,20 @@ classdef vhab
             
             vhab.poSims.remove(csKeys);
             
-            %clear classes;
-            %clc;
+            % Clearing the workspace and old classes
+            % This is done to ensure that all classes are correctly
+            % recompiled. If this is not done, some existing classes might
+            % be reused without taking into account changes made to them in
+            % between simulation runs. 
+            % If there are still open windows, MATLAB will issue warnings
+            % about the window classes, that they can't be deleted. These
+            % warnings are supressed by turning off all warnings before
+            % clearing. They are turned back on afterwards. 
+            warning('off','all');
+            evalin('base','clear all');
+            evalin('base','clear classes');
+            warning('on','all');
+            
         end
         
         function oSim = exec(sSimulation, varargin)
