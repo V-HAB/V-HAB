@@ -55,7 +55,7 @@ classdef table < base
         
         % Store the names of all Worksheets in file Matter.xlsx; used in function FindProperty
         % to look if maybe 'better'/new data than that in MatterData are saved for that species
-        asWorksheets
+        asWorksheets = [];
         
         % caching of property values; used to look if last value is x%
         % other than the last run
@@ -169,7 +169,7 @@ classdef table < base
                 end
                 
                 % initialise attributes from phase object
-                sType  = varargin{1}.sType;
+                sPhase  = varargin{1}.sType;
                 sName = varargin{1}.sName;
                 afMass = varargin{1}.afMass;
                 fT = varargin{1}.fTemp;
@@ -181,15 +181,15 @@ classdef table < base
                     return;
                 end
                 
-
-                sId    = [ 'Phase ' varargin{1}.oStore.sName ' -> ' varargin{1}.sName ];
+                % not used
+                %sId    = [ 'Phase ' varargin{1}.oStore.sName ' -> ' varargin{1}.sName ];
                 
             % Assuming we have two or more params, the phase type, a vector with
             % the mass of each species and current temperature and pressure
             %CHECK: As far as I can see, only matter.flow.m uses this,
             %could change that file and get rid of this if condition.
             else
-                sType  = varargin{1};
+                sPhase  = varargin{1};
                 sName = 'manual'; % can anything else, just used for check of last attributes
                 afMass = varargin{2};
                 
@@ -207,7 +207,8 @@ classdef table < base
                     fP = 100000; % std pressure (Pa)
                 end
                 
-                sId = 'Manually provided vector for species masses';
+                % not used
+                %sId = 'Manually provided vector for species masses';
             end
             
             % Commented the following lines, handling of the decision
@@ -227,7 +228,7 @@ classdef table < base
                 this.cfLastProps.fP     = fP;
                 this.cfLastProps.afMass = afMass;
                 this.cfLastProps.fCp    = 0;
-                this.cfLastProps.sType  = sType;
+                this.cfLastProps.sPhase  = sPhase;
                 this.cfLastProps.sName  = sName;
             end
             
@@ -236,7 +237,8 @@ classdef table < base
             % last time
             % percentage of change can be handled over the public property
             % rMaxChange; std is 0.01 (1%)
-            if strcmp(sType, this.cfLastProps.sType) && strcmp(sName, this.cfLastProps.sName)
+            %disp(['phase: ', sPhase,' species ', sName]);
+            if strcmp(sPhase, this.cfLastProps.sPhase) && strcmp(sName, this.cfLastProps.sName)
                 aCheck{1} = [fT; this.cfLastProps.fT];
                 aCheck{2} = [fP; this.cfLastProps.fP];
                 aCheck{3} = [afMass; this.cfLastProps.afMass];
@@ -265,7 +267,7 @@ classdef table < base
                     this.cfLastProps.fT = fT;
                     this.cfLastProps.fP = fP;
                     this.cfLastProps.afMass = afMass;
-                    this.cfLastProps.sType = sType;
+                    this.cfLastProps.sPhase = sPhase;
                     this.cfLastProps.sName = sName;
             end
 
@@ -275,7 +277,7 @@ classdef table < base
                 % go through all species that have mass and calculate the heatcapacity of each. then add this to the
                 % rest
                 for i=1:length(find(afMass>0))
-                    fCp = this.FindProperty(this.csSpecies{aiIndexes(i)}, 'c_p', 'Temperature', fT, 'Pressure', fP, sType);
+                    fCp = this.FindProperty(this.csSpecies{aiIndexes(i)}, 'c_p', 'Temperature', fT, 'Pressure', fP, sPhase);
                     %fCp = this.FindProperty(fT, fP, this.csSpecies{aiIndexes(i)}, 'c_p', sType); % Old FindProperty
                     fHeatCapacity = fHeatCapacity + afMass(aiIndexes(i)) ./ sum(afMass) * fCp;
                 end
@@ -462,7 +464,7 @@ classdef table < base
             % sFirstDepValue: value of dependency 2, optional
             % sPhase: only specific phase searched; selects only rows with that phase in MatterData, optional
             
-            fProperty = 0;
+            %fProperty = 0;
             
             % check inputs on correctness
             switch nargin
@@ -509,7 +511,7 @@ classdef table < base
             end
             
             % check if dependencies are valid; if only second valid -> handle it to firstdep
-            if (isempty(sFirstDepName) || isnan(sFirstDepName)) && ~(isempty(sSecondDepName) || isnan(sSecondDepName))
+            if (isempty(sFirstDepName) || ischar(sFirstDepName)) && ~(isempty(sSecondDepName) || ischar(sSecondDepName))
                 sFirstDepName = sSecondDepName;
                 sSecondDepName = [];
                 fFirstDepValue = fSecondDepValue;
@@ -518,7 +520,7 @@ classdef table < base
                 iDependencies = 1;
             end
             % last check of parameters
-            if isempty(sFirstDepName) || ~isa(sFirstDepName,'char') || isempty(fFirstDepValue)
+            if isempty(sFirstDepName) || ~ischar(sFirstDepName) || isempty(fFirstDepValue)
                 this.throw('table:FindProperty',sprintf('no valid dependency was transmitted for property %s',sProperty));
             end
             
@@ -538,13 +540,6 @@ classdef table < base
                 this.throw('table:FindProperty',sprintf('Can´t find property %s in worksheet %s', sProperty, sSpecies));
             end
             
-            iRowsFirst = [];
-            % get column of first dependency
-            iColumnFirst = this.FindColumn(sFirstDepName, sSpecies);
-            % if properties are given 2 times (e.g. Temperature has C and K columns), second column is used
-            if length(iColumnFirst) > 1 
-                iColumnFirst = iColumnFirst(2);
-            end
             
             % handling of incompressible phases
 %             if strcmpi(sPhase, 'solid') && this.bSolid
@@ -557,13 +552,27 @@ classdef table < base
                     
             % over 3 rows in import.num only possible if not from worksheet
             % MatterData (max 3 phases)
-            if size(this.ttxMatter.(sSpecies).import.num,1) > 3
+            if size(this.ttxMatter.(sSpecies).import.num, 1) > 3
+                % get column of first dependency
+                iColumnFirst = this.FindColumn(sFirstDepName, sSpecies);
+                % if properties are given 2 times (e.g. Temperature has C and K columns), second column is used
+                if length(iColumnFirst) > 1 
+                    iColumnFirst = iColumnFirst(2);
+                elseif isempty(iColumnFirst) && strcmp(sFirstDepName, 'c_p')
+                % property c_p are often written as SHC (Are they the same values?)
+                    iColumnFirst = this.FindColumn('SHC', sSpecies);
+                end
+                % if no column found, property is not in worksheet
+                if isempty(iColumnFirst)
+                    this.throw('table:FindProperty',sprintf('Can´t find property %s in worksheet %s', sFirstDepName, sSpecies));
+                end
+                
                 % initialise array for checking if dependencies are out of table values
                 abOutOfRange = [false; false];
 
                 % look if data for first dependency is in range of table
                 % if not in range, first look if data is given in worksheet MatterData before interpolate
-                [fMin, fMax] = this.FindRange(sSpecies, sFirstDepName);
+                [fMin, fMax] = this.FindRange(sSpecies, iColumnFirst);
                 if fFirstDepValue > fMax
                     % First dependency is greater than max value in table
                     % set dependency equal max table value
@@ -575,36 +584,8 @@ classdef table < base
                     fFirstDepValue = fMin;
                     abOutOfRange(1) = true;
                 end
-                
-                % some checks only needed if second dependency is given
-                if iDependencies == 2
-                    % get column of second dependency
-                    iColumnSecond = this.FindColumn(sSecondDepName, sSpecies);
-                    
-                    % look if data for second dependency is in range of table
-                    % if not in range, first look if data is given in worksheet MatterData before interpolate
-                    [fMin, fMax] = this.FindRange(sSpecies, iColumnSecond);
-                    if fSecondDepValue > fMax
-                        % Second dependency is greater than max value in table
-                        % set dependency equal max table value
-                        fSecondDepValue = fMax;
-                        abOutOfRange(2) = true;
-                    elseif fSecondDepValue < fMin
-                        % Second dependency is less than min value in table
-                        % set dependency equal min table value
-                        fSecondDepValue = fMin;
-                        abOutOfRange(2) = true;
-                    end
-                    
-                    % get columns with already given values of searched second dependency
-                    iRowsSecond = find(this.ttxMatter.(sSpecies).import.num(:,iColumnSecond) == fSecondDepValue);
-                end
-                
-                if isempty(iRowsFirst)
-                    % get rows with already given values of searched first dependency
-                    % sometimes it doesn´t find it right, why?
-                    iRowsFirst = find(this.ttxMatter.(sSpecies).import.num(:,iColumnFirst) == fFirstDepValue);
-                end
+                           
+                iRowsFirst = find(this.ttxMatter.(sSpecies).import.num(:,iColumnFirst) == fFirstDepValue);
                 
                 % only one dependency given
                 if iDependencies == 1
@@ -644,6 +625,36 @@ classdef table < base
                     end
                 else
                     % two Dependencies
+                    % get column of second dependency
+                    iColumnSecond = this.FindColumn(sSecondDepName, sSpecies);
+                    
+                    % property c_p are often written as SHC (Are they the same values?)
+                    if isempty(iColumnSecond) && strcmp(sSecondDepName, 'c_p')
+                        iColumnSecond = this.FindColumn('SHC', sSpecies);
+                    end
+                    % if no column found, property is not in worksheet
+                    if isempty(iColumnSecond)
+                        this.throw('table:FindProperty',sprintf('Can´t find property %s in worksheet %s', sSecondDepName, sSpecies));
+                    end
+                    
+                    % look if data for second dependency is in range of table
+                    % if not in range, first look if data is given in worksheet MatterData before interpolate
+                    [fMin, fMax] = this.FindRange(sSpecies, iColumnSecond);
+                    if fSecondDepValue > fMax
+                        % Second dependency is greater than max value in table
+                        % set dependency equal max table value
+                        fSecondDepValue = fMax;
+                        abOutOfRange(2) = true;
+                    elseif fSecondDepValue < fMin
+                        % Second dependency is less than min value in table
+                        % set dependency equal min table value
+                        fSecondDepValue = fMin;
+                        abOutOfRange(2) = true;
+                    end
+                    
+                    % get columns with already given values of searched second dependency
+                    iRowsSecond = find(this.ttxMatter.(sSpecies).import.num(:,iColumnSecond) == fSecondDepValue);
+
                     % look if both dependencies are in range of table
                     if ~(abOutOfRange(1) || abOutOfRange(2))
                         if ~isempty(iRowsFirst) && ~isempty(iRowsSecond) && intersect(iRowsFirst,iRowsSecond)
@@ -653,37 +664,104 @@ classdef table < base
                         else
                             % dependency not directly given
                             % interpolation over both dependencies needed
-                            % create temporary array because inperpolation doesn´t allow nan values
-                            afTemporary = this.ttxMatter.(sSpecies).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
-                            afTemporary(isnan(afTemporary)) = 0;
-                            afTemporary = sortrows(afTemporary,1);
                             % look why warning is given out and/or suppres it
-                            fProperty = griddata(afTemporary(:,2),afTemporary(:,3),(afTemporary(:,1)),fFirstDepValue,fSecondDepValue);
-                            % check if found propertyvalue is in range of table (no extrapolation)
-                            if fProperty < min(afTemporary(:,1)) || fProperty > max(afTemporary(:,1))
-                                fprintf(2,'out of range for species %s',sSpecies,' -> []');
-                                fProperty = [];
+                            warning('off', 'all');
+                            % before executing the slow scatteredInterpolant, look if all properties same as last time
+                            try
+                                if iColumn == this.cfLastProps.iColumn && iColumnFirst == this.cfLastProps.iColumnFirst && ...
+                                    iColumnSecond == this.cfLastProps.iColumnSecond && strcmp(sProperty, this.cfLastProps.sProperty) && ...
+                                    strcmp(sFirstDepName, this.cfLastProps.sFirstDepName) && strcmp(sSecondDepName, this.cfLastProps.sSecondDepName)
+                                    aCheck{1} = [fFirstDepValue; this.cfLastProps.fFirstDepValue];
+                                    aCheck{2} = [fSecondDepValue; this.cfLastProps.fSecondDepValue];
+                                    aDiff = cell(1,length(aCheck));
+                                    for i=1:length(aCheck)
+                                        if aCheck{i}(1,:) ~= 0
+                                            aDiff{i} = abs(diff(aCheck{i})/aCheck{i}(1,:));
+                                        else
+                                            aDiff{i} = 0;
+                                        end
+                                    end
+                                    % more than 1% difference (or what is defined in rMaxChange) from last 
+                                    % -> recalculate and save attributes for next run
+                                    if any(cell2mat(aDiff) > this.rMaxChange) 
+                                            % create temporary array because scatteredInterpolant doesn´t allow nan values
+                                            afTemporary = this.ttxMatter.(sSpecies).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
+                                            afTemporary(isnan(afTemporary)) = 0;
+                                            afTemporary = sortrows(afTemporary,1);
+                                            % interpolate linear with no extrapolation
+                                            F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
+                                            fProperty = F(fFirstDepValue, fSecondDepValue);
+                                            % save properties for next run
+                                            this.cfLastProps.fProperty = fProperty;
+                                            this.cfLastProps.iColumn = iColumn;
+                                            this.cfLastProps.iColumnFirst = iColumnFirst;
+                                            this.cfLastProps.iColumnSecond = iColumnSecond;
+                                            this.cfLastProps.sProperty = sProperty;
+                                            this.cfLastProps.fFirstDepValue = fFirstDepValue;
+                                            this.cfLastProps.sFirstDepName = sFirstDepName;
+                                            this.cfLastProps.fSecondDepValue = fSecondDepValue;
+                                            this.cfLastProps.sSecondDepName = sSecondDepName;
+                                    else
+                                            fProperty = this.cfLastProps.fProperty;
+                                    end
+                                else
+                                    % create temporary array because scatteredInterpolant doesn´t allow nan values
+                                    afTemporary = this.ttxMatter.(sSpecies).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
+                                    afTemporary(isnan(afTemporary)) = 0;
+                                    afTemporary = sortrows(afTemporary,1);
+                                    % interpolate linear with no extrapolation
+                                    F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
+                                    fProperty = F(fFirstDepValue, fSecondDepValue);
+                                    % save properties for next run
+                                    this.cfLastProps.fProperty = fProperty;
+                                    this.cfLastProps.iColumn = iColumn;
+                                    this.cfLastProps.iColumnFirst = iColumnFirst;
+                                    this.cfLastProps.iColumnSecond = iColumnSecond;
+                                    this.cfLastProps.sProperty = sProperty;
+                                    this.cfLastProps.fFirstDepValue = fFirstDepValue;
+                                    this.cfLastProps.sFirstDepName = sFirstDepName;
+                                    this.cfLastProps.fSecondDepValue = fSecondDepValue;
+                                    this.cfLastProps.sSecondDepName = sSecondDepName;
+                                end
+                            catch 
+                               % the struct has to be constructed for the first time
+                                % create temporary array because griddata doesn´t allow nan values
+                                afTemporary = this.ttxMatter.(sSpecies).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
+                                afTemporary(isnan(afTemporary)) = 0;
+                                afTemporary = sortrows(afTemporary,1);
+                                % interpolate linear with no extrapolation
+                                F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
+                                fProperty = F(fFirstDepValue, fSecondDepValue);
+                                % save properties for next run
+                                this.cfLastProps.fProperty = fProperty;
+                                this.cfLastProps.iColumn = iColumn;
+                                this.cfLastProps.iColumnFirst = iColumnFirst;
+                                this.cfLastProps.iColumnSecond = iColumnSecond;
+                                this.cfLastProps.sProperty = sProperty;
+                                this.cfLastProps.fFirstDepValue = fFirstDepValue;
+                                this.cfLastProps.sFirstDepName = sFirstDepName;
+                                this.cfLastProps.fSecondDepValue = fSecondDepValue;
+                                this.cfLastProps.sSecondDepName = sSecondDepName;
                             end
+                            %disp(['property: ', sProperty, ' first dep: ', sFirstDepName, ' first value: ', num2str(fFirstDepValue), ' second dep: ', sSecondDepName, ' second value: ', num2str(fSecondDepValue), ' column: ', num2str(iColumn)]);
+                            %fProperty = griddata(afTemporary(:,2),afTemporary(:,3),(afTemporary(:,1)),fFirstDepValue,fSecondDepValue,'linear');
+                            warning('on', 'all');
+                            % check if found propertyvalue is in range of table (no extrapolation)
+                            % not more needed
+%                             if fProperty < min(afTemporary(:,1)) || fProperty > max(afTemporary(:,1))
+%                                 fprintf(2,'out of range for species %s',sSpecies,' -> []');
+%                                 fProperty = [];
+%                             end
                         end
                     else
                         % one or more dependencies are out of range
                         % look if data is in MatterData
-                        iRowsFirstMatterData = find(strcmpi(this.ttxMatter.(sSpecies).MatterData.text(:,3), sPhase), 1, 'first');
-                        if isempty(iRowsFirstMatterData)
-                            % no found data in MatterData
-                            % get 'best' value in Range of speciestable
-                            % create temporary array because inperpolation doesn´t allow nan values
-                            afTemporary = this.ttxMatter.(sSpecies).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
-                            afTemporary(isnan(afTemporary)) = 0;
-                            afTemporary = sortrows(afTemporary,1);
-                            % look why warning is given out and/or suppres it
-                            fProperty = griddata(afTemporary(:,2),afTemporary(:,3),meshgrid(afTemporary(:,1)),fFirstDepValue,fSecondDepValue);
-                            % check if found propertyvalue is in range of table (no extrapolation)
-                            if fProperty < min(afTemporary(:,1)) || fProperty > max(afTemporary(:,1))
-                                fprintf(2,'out of range for species %s',sSpecies,' -> []');
-                                fProperty = [];
-                            end
+                        if isfield(this.ttxMatter.(sSpecies), 'MatterData')
+                            iRowsFirstMatterData = find(strcmpi(this.ttxMatter.(sSpecies).MatterData.text(:,3), sPhase), 1, 'first');
                         else
+                            iRowsFirstMatterData = [];
+                        end
+                        if iRowsFirstMatterData
                             % data found in MatterData
                             % first get column of property
                             iColumn = find(strcmp(this.ttxMatter.(sSpecies).MatterData.text(1,:), sPropertyName)); % row 1 is std propertyname in MatterData
@@ -693,6 +771,91 @@ classdef table < base
                             end
                              % get the propertyvalue
                             fProperty = this.ttxMatter.(sSpecies).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
+                        else
+                            % no found data in MatterData
+                            % get 'best' value in Range of speciestable
+                            warning('off', 'all');
+                            % before executing the slow scatteredInterpolant, look if all properties same as last time
+                            try
+                                if iColumn == this.cfLastProps.iColumn && iColumnFirst == this.cfLastProps.iColumnFirst && ...
+                                    iColumnSecond == this.cfLastProps.iColumnSecond && strcmp(sProperty, this.cfLastProps.sProperty) && ...
+                                    strcmp(sFirstDepName, this.cfLastProps.sFirstDepName) && strcmp(sSecondDepName, this.cfLastProps.sSecondDepName)
+                                    aCheck{1} = [fFirstDepValue; this.cfLastProps.fFirstDepValue];
+                                    aCheck{2} = [fSecondDepValue; this.cfLastProps.fSecondDepValue];
+                                    aDiff = cell(1,length(aCheck));
+                                    for i=1:length(aCheck)
+                                        if aCheck{i}(1,:) ~= 0
+                                            aDiff{i} = abs(diff(aCheck{i})/aCheck{i}(1,:));
+                                        else
+                                            aDiff{i} = 0;
+                                        end
+                                    end
+                                    % more than 1% difference (or what is defined in
+                                    % rMaxChange) from last -> recalculate c_p and save
+                                    % attributes for next run
+                                    if any(cell2mat(aDiff) > this.rMaxChange) 
+                                        % create temporary array because griddata doesn´t allow nan values
+                                        afTemporary = this.ttxMatter.(sSpecies).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
+                                        afTemporary(isnan(afTemporary)) = 0;
+                                        afTemporary = sortrows(afTemporary,1);
+                                        % interpolate linear with no extrapolation
+                                        F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
+                                        fProperty = F(fFirstDepValue, fSecondDepValue);
+                                        % save properties for next run
+                                        this.cfLastProps.fProperty = fProperty;
+                                        this.cfLastProps.iColumn = iColumn;
+                                        this.cfLastProps.iColumnFirst = iColumnFirst;
+                                        this.cfLastProps.iColumnSecond = iColumnSecond;
+                                        this.cfLastProps.sProperty = sProperty;
+                                        this.cfLastProps.fFirstDepValue = fFirstDepValue;
+                                        this.cfLastProps.sFirstDepName = sFirstDepName;
+                                        this.cfLastProps.fSecondDepValue = fSecondDepValue;
+                                        this.cfLastProps.sSecondDepName = sSecondDepName;
+                                    else
+                                        fProperty = this.cfLastProps.fProperty;
+                                    end
+                                else
+                                    % create temporary array because griddata doesn´t allow nan values
+                                    afTemporary = this.ttxMatter.(sSpecies).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
+                                    afTemporary(isnan(afTemporary)) = 0;
+                                    afTemporary = sortrows(afTemporary,1);
+                                    % interpolate linear with no extrapolation
+                                    F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
+                                    fProperty = F(fFirstDepValue, fSecondDepValue);
+                                    % save properties for next run
+                                    this.cfLastProps.fProperty = fProperty;
+                                    this.cfLastProps.iColumn = iColumn;
+                                    this.cfLastProps.iColumnFirst = iColumnFirst;
+                                    this.cfLastProps.iColumnSecond = iColumnSecond;
+                                    this.cfLastProps.sProperty = sProperty;
+                                    this.cfLastProps.fFirstDepValue = fFirstDepValue;
+                                    this.cfLastProps.sFirstDepName = sFirstDepName;
+                                    this.cfLastProps.fSecondDepValue = fSecondDepValue;
+                                    this.cfLastProps.sSecondDepName = sSecondDepName;
+                                end
+                            catch 
+                               % the struct has to be constructed for the first time
+                                % create temporary array because griddata doesn´t allow nan values
+                                afTemporary = this.ttxMatter.(sSpecies).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
+                                afTemporary(isnan(afTemporary)) = 0;
+                                afTemporary = sortrows(afTemporary,1);
+                                % interpolate linear with no extrapolation
+                                F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
+                                fProperty = F(fFirstDepValue, fSecondDepValue);
+                                % save properties for next run
+                                this.cfLastProps.fProperty = fProperty;
+                                this.cfLastProps.iColumn = iColumn;
+                                this.cfLastProps.iColumnFirst = iColumnFirst;
+                                this.cfLastProps.iColumnSecond = iColumnSecond;
+                                this.cfLastProps.sProperty = sProperty;
+                                this.cfLastProps.fFirstDepValue = fFirstDepValue;
+                                this.cfLastProps.sFirstDepName = sFirstDepName;
+                                this.cfLastProps.fSecondDepValue = fSecondDepValue;
+                                this.cfLastProps.sSecondDepName = sSecondDepName;
+                            end
+                            %disp(['property: ', sProperty, ' first dep: ', sFirstDepName, ' first value: ', num2str(fFirstDepValue), ' second dep: ', sSecondDepName, ' second value: ', num2str(fSecondDepValue), ' column: ', num2str(iColumn)]);
+                            %fProperty = griddata(afTemporary(:,2),afTemporary(:,3),(afTemporary(:,1)),fFirstDepValue,fSecondDepValue,'linear');
+                            warning('on', 'all');
                         end
                     end
                     
@@ -701,13 +864,14 @@ classdef table < base
             % get species property from MatterData     
             else
                 % get the rows of the phase of the species
-                rowPhase = find(strcmpi(this.ttxMatter.(sSpecies).MatterData.text(:,3), sPhase), 1, 'first');
-                if isempty(rowPhase)
+                % dynamic search of column phase?
+                rowPhase = find(strcmp(this.ttxMatter.(sSpecies).import.text(:,3), sPhase), 1, 'first');
+                if rowPhase
+                    % get the propertyvalue
+                    fProperty = this.ttxMatter.(sSpecies).import.raw{rowPhase,iColumn};%fProperty = this.ttxMatter.(sSpecies).MatterData.num(rowPhase-2,iColumn-3);
+                else
                     % no phase for species found
                     fProperty = 0;
-                else
-                    % get the propertyvalue
-                    fProperty = this.ttxMatter.(sSpecies).MatterData.num(rowPhase-2,iColumn-3);
                 end
              
             end
@@ -987,13 +1151,14 @@ classdef table < base
             % inputs
             % sFile: complete filename of MatterXLS
             % sWorksheetname: worksheet name
-            
             % store all worksheets form excelfile and look if file is readable
             % worksheetnames used in FindProperty to look if maybe more
             % data is availeable
-            [sStatus, this.asWorksheets] = xlsfinfo(sFile);
-            if ~any(strcmp(sStatus, {'Microsoft Excel Spreadsheet', 'Microsoft Macintosh Excel Spreadsheet'}))
-                this.throw('table:Matterimport',sprintf('File %s has wrong format for Matterimport',sFile));
+            if isempty(this.asWorksheets)
+                [sStatus, this.asWorksheets] = xlsfinfo(sFile);
+                if ~any(strcmp(sStatus, {'Microsoft Excel Spreadsheet', 'Microsoft Macintosh Excel Spreadsheet'}))
+                    this.throw('table:Matterimport',sprintf('File %s has wrong format for Matterimport',sFile));
+                end
             end
             
             %% import worksheet MatterData (standard Mattertable)
@@ -1001,7 +1166,9 @@ classdef table < base
             if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(this.asWorksheets, 'MatterData'))
                 
                 % import of worksheet
-                [import.num, import.text, import.raw] = xlsread(sFile, sWorksheetname);
+                %[import.num, import.text, import.raw] = xlsread(sFile, sWorksheetname);
+                
+                [import.num, import.text, import.raw] = this.customXlsread(sFile, sWorksheetname);
                 
                 % Search for empty cell in first row.; Column before is last Tablecolumn. All data after that is not
                 % imported.
@@ -1018,7 +1185,8 @@ classdef table < base
                 % go through all unique species
                 for i = 1:length(scSpecies)
                     % set speciesname as fieldname
-                    ttxImportMatter = setfield(ttxImportMatter, scSpecies{i},'');
+                    ttxImportMatter.(scSpecies{i}) = [];
+                    %ttxImportMatter = setfield(ttxImportMatter, scSpecies{i},'');
                     
                     % select all rows of that species
                     % species can have more than one phase
@@ -1071,7 +1239,8 @@ classdef table < base
                 end
                 
                 % import worksheet sWorksheetname
-                [import.num, import.text, import.raw] = xlsread(sFile, sWorksheetname);
+                [import.num, import.text, import.raw] = this.customXlsread(sFile, sWorksheetname);
+                %[import.num, import.text, import.raw] = xlsread(sFile, sWorksheetname);
 
                 % save data for later use
                 ttxImportMatter.import.text = import.text;
@@ -1141,13 +1310,14 @@ classdef table < base
                     return
             else
                 % if raw data has max 5 rows it has to be from worksheet MatterData (2 lines heading +max 3 phases)
-                if length(this.ttxMatter.(sSpecies).import.raw(:,1)) > 5
+                if size(this.ttxMatter.(sSpecies).import.raw, 1) > 5
                     iColumn = find(strcmp(this.ttxMatter.(sSpecies).import.text(5,:),sPropertyName)); % row 5 is std propertyname
                     if isempty(iColumn)
                         iColumn = find(strcmp(this.ttxMatter.(sSpecies).import.text(7,:),sPropertyName)); % search row 7 as alternative
                     end
                     return
                 else
+                    % Heatcapacity is written SHC in worksheet MatterData
                     if strcmpi(sPropertyName,'c_p'); sPropertyName = 'SHC'; end;
                     iColumn = find(strcmp(this.ttxMatter.(sSpecies).import.text(1,:),sPropertyName)); % row 1 is std propertyname in MatterData
                     if isempty(iColumn)
@@ -1172,10 +1342,10 @@ classdef table < base
             % xForProp: string of property or number of column
             
             % depending on the input, look for column or property
-           if ischar(xForProp)
-               iColumn = this.FindColumn(xForProp, sSpecies);
-           elseif isnumeric(xForProp)
+           if isnumeric(xForProp)
                iColumn = xForProp;
+           elseif ischar(xForProp)
+               iColumn = this.FindColumn(xForProp, sSpecies);
            else
                this.thow('table:FindRange','Wrong input');
            end
@@ -1187,6 +1357,297 @@ classdef table < base
            end
            % get minimum value
            fMin = min(this.ttxMatter.(sSpecies).import.num(:,iColumn));
+        end
+        
+        function [numOut, textOut, rawOut] = customXlsread(~, sFile, sWorksheetname)
+           % this is a customised xlsread function
+           % no unnecessary functionality like xml import function and lots of queries removed
+           % it is used in Matterimport
+           %
+           % customXlsread returns
+           %  numOut: numeric data from worksheet
+           %  textOut: string data from worksheet
+           %  rawOut: all data from worksheet
+           %
+           % inputs:
+           % sFile: filename of excelfile
+           % sWorksheetname: name of worksheet for import
+           
+           % no arguments handed over, abort function
+           if nargin < 3 || isempty(sFile) || isempty(sWorksheetname)
+               numOut = [];
+               textOut = [];
+               rawOut = [];
+               return
+           end
+           
+           % used activeXserver is only available at windows
+           basicMode = ~ispc;
+           
+            % Try to reuse an existing COM server instance if possible
+            try
+                Excel = actxGetRunningServer('excel.application');
+                % no crash so probably succeeded to connect to a running server
+            catch
+                % Never mind - try to continue normally to start the COM server and connect to it
+                try
+                    Excel = actxserver('excel.application');
+                catch
+                    % no activeXserver available or excel not installed, use basic mode of xlsread
+                    basicMode = true;
+                end
+            end
+            
+            % use xlsread in basic mode
+            if basicMode
+                [numOut, textOut, rawOut] = xlsread(sFile, sWorksheetname, '', 'basic');
+                return
+            end
+            
+            % try to get full path of file
+            try
+                sFile = validpath(sFile);
+            catch exception
+                error(message('MATLAB:xlsread:FileNotFound', sFile, exception.message));
+            end
+            
+            readOnly = true;
+            Excel.DisplayAlerts = 0;
+
+            % Associate event handler for COM object event at run time
+            registerevent(Excel,{'WorkbookActivate', @WorkbookActivateHandler});
+            % open worksheet in readonly mode
+            Excel.workbooks.Open(sFile, 0, readOnly);
+            
+            % wait for response from activeXserver to open worksheet
+            for i = 1:500
+                try
+                    workbook.FileFormat;
+                    break;
+                catch exception %#ok<NASGU>
+                    pause(0.01);
+                end
+            end
+
+            WorkSheets = workbook.Worksheets;
+
+            % Get name of specified worksheet from workbook
+            try
+                TargetSheet = get(WorkSheets,'item',sWorksheetname);
+            catch  %#ok<CTCH>
+                error(message('MATLAB:xlsread:WorksheetNotFound', sWorksheetname));
+            end
+
+            %Activate silently fails if the sheet is hidden
+            set(TargetSheet, 'Visible','xlSheetVisible');
+            % activate worksheet
+            Activate(TargetSheet);
+
+            % get range of worksheet
+            DataRange = workbook.ActiveSheet.UsedRange;
+            
+            % get data from worksheet
+            rawOut = DataRange.Value;
+            if ~iscell(rawOut)
+                rawOut = {rawOut};
+            end
+
+            % get numeric and text data splited from worksheetdata
+            [numOut, textOut] = xlsreadSplitNumericAndText(rawOut); 
+
+            % nested functions
+            % used from private folder iofun on matlabpath
+            % -------------------------------------------------------------------------
+            % for workbook activation
+            function WorkbookActivateHandler(varargin)
+                    workbook = varargin{3};
+            end
+            % -------------------------------------------------------------------------
+            % for Split Numeric And Text
+            function [numericData, textData] = xlsreadSplitNumericAndText(data)
+                % xlsreadSplitNumericAndText parses raw data into numeric and text arrays.
+                %   [numericData, textData] = xlsreadSplitNumericAndText(DATA) takes cell
+                %   array DATA from spreadsheet and returns a double array numericData and
+                %   a cell string array textData.
+                %
+                %   See also XLSREAD, XLSWRITE, XLSFINFO.
+
+                %   Copyright 1984-2012 The MathWorks, Inc.
+
+
+                % ensure data is in cell array
+                if ischar(data)
+                    data = cellstr(data);
+                elseif isnumeric(data) || islogical(data)
+                    data = num2cell(data);
+                end
+
+                % Check if raw data is empty
+                if isempty(data)
+                    % Abort when all data cells are empty.
+                    textData = {};
+                    numericData = [];
+                    return
+                end
+
+                % Initialize textData as an empty cellstr of the right size.
+                textData = cell(size(data));
+                textData(:) = {''};
+
+                % Find non-numeric entries in data cell array
+                isTextMask = cellfun('isclass',data,'char');
+
+                % Place text cells in text array
+                if any(isTextMask(:))
+                    textData(isTextMask) = data(isTextMask);
+                else
+                    textData = {};
+                end
+                % Excel returns COM errors when it has a #N/A field.
+                textData = strrep(textData,'ActiveX VT_ERROR: ','#N/A');
+
+                % Trim the leading and trailing empties from textData
+                emptyTextMask = cellfun('isempty', textData);
+                textData = filterDataUsingMask(textData, emptyTextMask);
+
+                % place NaN in empty numeric cells
+                if any(isTextMask(:))
+                    data(isTextMask)={NaN};
+                end
+
+                % Find non-numeric entries in data cell array
+                isLogicalMask = cellfun('islogical',data);
+
+                % Convert cell array to numeric array through concatenating columns then
+                % rows.
+                cols = size(data,2);
+                tempDataColumnCell = cell(1,cols);
+                % Concatenate each column first
+                for n = 1:cols
+                    tempDataColumnCell{n} = cat(1, data{:,n});
+                end
+                % Now concatenate the single column of cells into a numeric array.
+                numericData = cat(2, tempDataColumnCell{:});
+
+                % Trim all-NaN leading and trailing rows and columns from numeric array
+                isNaNMask = isnan(numericData);
+                if all(isNaNMask(:))
+                    numericData = [];
+                else
+                    [numericData, isNaNMask] = filterDataUsingMask(numericData, isNaNMask);
+                end
+
+                % Restore logical type if all values were logical.
+                if any(isLogicalMask(:)) && ~any(isNaNMask(:))
+                    numericData = logical(numericData);
+                end
+
+                % Ensure numericArray is 0x0 empty.
+                if isempty(numericData)
+                    numericData = [];
+                end
+            end 
+            function  [row, col] = getCorner(mask, firstlast)
+                isLast = strcmp(firstlast,'last');
+
+                % Find first (or last) row that is not all true in the mask.
+                row = find(~all(mask,2), 1, firstlast);
+                if isempty(row)
+                    row = emptyCase(isLast, size(mask,1));
+                end
+
+                % Find first (or last) column that is not all true in the mask.
+                col = find(~all(mask,1), 1, firstlast);
+                % Find returns empty if there are no rows/columns that contain a false value.
+                if isempty(col)
+                    col = emptyCase(isLast, size(mask,2));
+                end    
+            end
+            function [data, mask] = filterDataUsingMask(data, mask)
+                [rowStart, colStart] = getCorner(mask, 'first');
+                [rowEnd, colEnd] = getCorner(mask, 'last');
+                data = data(rowStart:rowEnd, colStart:colEnd);
+                mask = mask(rowStart:rowEnd, colStart:colEnd);
+            end
+            function dim = emptyCase(isLast, dimSize)
+                if isLast
+                    dim = dimSize;
+                else
+                    dim = 1;
+                end
+            end
+            % -------------------------------------------------------------------------
+            % for generation of full filepath
+            function filenameOut = validpath(filename)
+                % VALIDPATH builds a full path from a partial path specification
+                %   FILENAME = VALIDPATH(FILENAME) returns a string vector containing full
+                %   path to a file. FILENAME is string vector containing a partial path
+                %   ending in a file or directory name. May contain ..\  or ../ or \\. The
+                %   current directory (pwd) is prepended to create a full path if
+                %   necessary. On UNIX, when the path starts with a tilde, '~', then the
+                %   current directory is not prepended.
+                %
+                %   See also XLSREAD, XLSWRITE, XLSFINFO.
+
+                %   Copyright 1984-2012 The MathWorks, Inc.
+
+                %First check for wild cards, since that is not supported.
+                if strfind(filename, '*') > 0
+                    error(message('MATLAB:xlsread:Wildcard', filename));
+                end
+
+                % break partial path in to file path parts.
+                [Directory, file, ext] = fileparts(filename);
+
+                if ~isempty(ext)
+                    filenameOut = getFullName(filename);
+                else
+                    extIn = matlab.io.internal.xlsreadSupportedExtensions;
+                    for ii = 1:length(extIn)
+                        try                                                                %#ok<TRYNC>
+                            filenameOut = getFullName(fullfile(Directory, [file, extIn{i}]));
+                            return;
+                        end
+                    end
+                    error(message('MATLAB:xlsread:FileDoesNotExist', filename));    
+                end
+            end
+            function absolutepath=abspath(partialpath)
+
+                % parse partial path into path parts
+                [pathname, filename, ext] = fileparts(partialpath);
+                % no path qualification is present in partial path; assume parent is pwd, except
+                % when path string starts with '~' or is identical to '~'.
+                if isempty(pathname) && strncmp('~', partialpath, 1)
+                    Directory = pwd;
+                elseif isempty(regexp(partialpath,'(.:|\\\\)', 'once')) && ...
+                        ~strncmp('/', partialpath, 1) && ...
+                        ~strncmp('~', partialpath, 1);
+                    % path did not start with any of drive name, UNC path or '~'.
+                    Directory = [pwd,filesep,pathname];
+                else
+                    % path content present in partial path; assume relative to current directory,
+                    % or absolute.
+                    Directory = pathname;
+                end
+
+                % construct absolute filename
+                absolutepath = fullfile(Directory,[filename,ext]);
+            end
+            function filename = getFullName(filename)
+                FileOnPath = which(filename);
+                if isempty(FileOnPath)
+                    % construct full path to source file
+                    filename = abspath(filename);
+                    if isempty(dir(filename)) && ~isdir(filename)
+                        % file does not exist. Terminate importation of file.
+                        error(message('MATLAB:xlsread:FileDoesNotExist', filename));
+                    end
+                else
+                    filename = FileOnPath;
+                end
+            end
+            % -------------------------------------------------------------------------
         end
         
     end
