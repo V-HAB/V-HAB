@@ -45,8 +45,19 @@ classdef gas < matter.phase
             this.fDensity = this.fMass / this.fVolume;
         end
         
+        % Function rRelHumidity calculates the relative humidity of the gas
+        % by using the MAGNUS Formula(validity: -45°C <= T <= 60°C, for
+        % water); Formula is only correct for pure steam, not the mixture
+        % of air and water; enhancement factors can be used by a
+        % Poynting-Correction (pressure and temperature dependent); the values of the enhancement factors are in
+        % the range of 1+- 10^-3; thus they are neglected.
+        % Source: Important new Values of the Physical Constants of 1986, Vapour
+        % Pressure Formulations based on ITS-90, and Psychrometer Formulae. In: Z. Meteorol.
+        % 40, 5, S. 340-344, (1990)
+
         function rRelHumidity = get.rRelHumidity(this)
-            rRelHumidity = 0; %Calculate this here...;
+            fSaturationVapourPressure=6.11213 * exp(17.62 * (this.fTemp-273.15) / (243.12 + (this.fTemp-273.15))) * 100; % calculate saturation vapour pressure [Pa]; MAGNUS Formula; validity: -45°C <= T <= 60°C, for water 
+            rRelHumidity = this.afPP(this.oMT.tiN2I.H2O)/fSaturationVapourPressure; %calculate relative humidity
         end
         
         
