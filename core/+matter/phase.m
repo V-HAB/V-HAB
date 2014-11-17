@@ -634,7 +634,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
                 % No change? Use max. change per second --> one second timestep
                 if fChange == 0
-                    rTotalPerSecond = this.rMaxChange + rPreviousChange;
+                    rTotalPerSecond = (this.rMaxChange + rPreviousChange) / this.fMaxStep;
                 else
                     rTotalPerSecond = abs(fChange / this.fMass - 0) + rPreviousChange;
                 end
@@ -650,8 +650,6 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
                 if fTimeStep > this.fMaxStep, fTimeStep = this.fMaxStep; end;
             end
-            
-            
             
             % Set new time step (on store, only sets that if smaller then
             % the currently set time step, btw).
