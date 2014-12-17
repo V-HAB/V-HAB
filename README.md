@@ -6,13 +6,14 @@ Downloaded from GITlab at <http://steps.lrt.mw.tum.de/>
 Bootstrapping Repository
 ------------------------
 
-Basic repository with the framework for V-HAB / STEPS. Contains three directories:
+Basic repository with the framework for V-HAB / STEPS. Contains four directories:
 
 * core: central, shared V-HAB framework.
 * lib: helper functions, pre/post processing, logging, GUI, date functions, … (TBD)
 * user: user-specific simulations
+* data: user-generated simulation results (e.g. logs, plots, spreadsheets)
 
-The core and lib packages are managed, i.e. most likely no changes should be done or can be commited to the online repository. Wiki of the according projects will soon contain some help.
+The core and lib packages are managed, i.e. most likely no changes should be done or can be committed to the online repository. Wiki of the according projects will soon contain some help.
 
 How to get started with git / GITlab
 ------------------------------------

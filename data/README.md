@@ -1,0 +1,1 @@
+This folder is intended for simulation results. No code or documentation shall be placed here (except explanation of results). 

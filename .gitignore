@@ -10,9 +10,13 @@ core/*
 user/+*
 !user/+tutorials
 
-# Ignore all files and folders in tutorials, except the readme
+# Ignore all files and folders in tutorials, except README
 user/+tutorials/*
 !user/+tutorials/README_TUTORIALS.md
+
+# Ignore simulation results, excepct README
+data/*
+!data/README.md
 
 # Ignore all files and folders in lib, except the readme file
 lib/*
