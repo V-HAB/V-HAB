@@ -25,3 +25,9 @@
 [submodule "user/+tutorials/+manual_solver"]
 	path = user/+tutorials/+manual_solver
 	url = git@steps.lrt.mw.tum.de:tutorials/manual_solver.git
+[submodule "user/+tutorials/+plant_module"]
+	path = user/+tutorials/+plant_module
+	url = git@steps.lrt.mw.tum.de:tutorials/plantmodule.git
+[submodule "user/+tutorials/+algae_module"]
+	path = user/+tutorials/+algae_module
+	url = git@steps.lrt.mw.tum.de:tutorials/algaemodule.git
