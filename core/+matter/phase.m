@@ -161,6 +161,8 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % the oStore attribute here is empty!
             this.oStore = oStore.addPhase(this);
             
+            % DELETE? This is only necessary if the number of species
+            % changes during runtime...
             % Set the matter table
             %this.oMT = oMT;
             this.updateMatterTable();

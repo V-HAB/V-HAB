@@ -1,5 +1,5 @@
 classdef table < base
-    %MATTERTABLE Summary of this class goes here
+    %MATTERTABLE Contains all matter related data and some functions
     %   Detailed explanation goes here
     %
     % MatterTable properties:
@@ -8,35 +8,27 @@ classdef table < base
     %                     extracted on initializion from ttxMatter
     %
     %TODO
-    %   - heat/thermal conductivity
-    %   - heat transfer coefficient between matter types, phases? provide
-    %     that directly to a processor added between two phases?
-    %   -> values dependant from temp, phase, ... -> different ways to
-    %      provide them, e.g. lookup tables etc
-    %      Each e.g. flow than has to specificly call MT and calculate heat
-    %      capacity if needed.
-    %
-    %   - "meta" matter whose parameters are not defined that specificly?
-    %     e.g. generic food types/contents for human
-
+    % Get rid of all the flow, phase, masslog and whatever stuff. That
+    % doesn't belong in the matter table. 
+    
     properties (Constant = true, GetAccess = public)
         % Some constants
         %
         %   - gas constant (R_m) in J/(K Mol)
-        %   - gravitational constant (fGravitationConst) in 10^-11 m^3/(kg s^2)
-        %   - Avogadro constant (fAvogadroConst) in 10^23 1/Mol
-        %   - Boltzmann constant (fBoltzmannConst) in 10^-23 J/K
+        %   - gravitational constant (fGravitationConst) in m^3/(kg s^2)
+        %   - Avogadro constant (fAvogadroConst) in 1/Mol
+        %   - Boltzmann constant (fBoltzmannConst) J/K
+        %   - Stefan-Boltzmann constant (fStefanBoltzmannConst) in W/(m^2 K^4)
+        
         C = struct( ...
             'R_m', 8.314472, ...
-            'fGravitationConst', 6.67384, ...
-            'fAvogadroConst', 6.02214129, ...
-            'fBoltzmannConst', 1.3806488 ...
+            'fGravitationConst', 6.67384e-11, ... 
+            'fAvogadroConst', 6.02214129e23, ...
+            'fBoltzmannConst', 1.3806488e-23, ...
+            'fStefanBoltzmannConst', 5.670373e-8 ...
         );
     end
     
-    %QUESTION: Why can't these be included with the constant properties
-    %above?
-    %ANSWER: because now we create these dynamically on construction!
     properties (SetAccess = protected, GetAccess = public)
         % Mapping of species names to according index, cell with species
         % names and total amount of species
@@ -50,11 +42,14 @@ classdef table < base
         % number of species in phase
         iSpecies;
         
-        % all proptertys and data for all species is stored in this struct
+        % all propterties and data for all species are stored in this struct
         ttxMatter;
         
         % Store the names of all Worksheets in file Matter.xlsx; used in function FindProperty
         % to look if maybe 'better'/new data than that in MatterData are saved for that species
+        % CHECK: Why would this be needed? All of the data should be loaded
+        % when the simulation starts and it will not change during runtime.
+        % So the "best" data should always be available, right?
         asWorksheets = [];
         
         % caching of property values; used to look if last value is x%
@@ -73,7 +68,7 @@ classdef table < base
         
         % Heat capacities. Key is phase name. If value in specific matter
         % type not provided, -1 written. Same for densities.
-        % tafCp; No longer needed. Now dynamical generated
+        % tafCp; No longer needed. Now dynamically generated
         tafDensity;
         
         % Refernce to all phases and flows that use this matter table
@@ -91,10 +86,10 @@ classdef table < base
         rMaxChange = 0.01;
         
         % liquids are considered inkompressible if this is true
-        bLiquid = true;
+        bIncompressibleLiquids = true;
         
         % solids are inkompressible if this is true
-        bSolid = true;
+        bIncompressibleSolids = true;
         
     end
     
@@ -114,6 +109,9 @@ classdef table < base
             % from worksheet MatterData, else the Mattertableobject from
             % the parent are loaded and the arguments hand over to
             % createMatterData
+            
+            % CHECK If I delete all of this stuff, would the constructor
+            % then just contain everything inside createMatterData()?
             if nargin > 0
                 this = oParent.oMT;
                 this.createMatterData(oParent, sSpeciesname);
@@ -923,9 +921,6 @@ classdef table < base
                 this.aoPhases(iInd) = [];
             end
         end
-        
-        
-        
         
         function afMass = addFlow(this, oFlow, oOldMT)
             % Add flow
