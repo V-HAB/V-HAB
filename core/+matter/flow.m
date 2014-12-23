@@ -97,7 +97,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             
             % Preset ...
-            this.arPartialMass = zeros(1, this.oMT.iSpecies);
+            this.arPartialMass = zeros(1, this.oMT.iSubstances);
             
             % See thFuncs definition above and addProc below.
 %             this.thFuncs = struct(...

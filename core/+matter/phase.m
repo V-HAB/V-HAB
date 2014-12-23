@@ -26,12 +26,12 @@ classdef phase < base & matlab.mixin.Heterogeneous
     
     % Basic parameters
     properties (SetAccess = protected, GetAccess = public)
-        % Masses for every species, temperature of phase
+        % Masses for every substance, temperature of phase
         afMass;             % [kg]
         fTemp;              % [K]
         
         %%%% Dependent variables:
-        % Partial masses for every species and total mass
+        % Partial masses for every substance and total mass
         arPartialMass;    % [%]
         fMass;              % [kg]
         
@@ -110,7 +110,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
     
     
     properties (SetAccess = public, GetAccess = public)
-        % Limit - how much can the phase mass (total or single species)
+        % Limit - how much can the phase mass (total or single substances)
         % change before an update of the matter properties (of the whole
         % store) is triggered?
         rMaxChange = 0.05;
@@ -144,7 +144,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
             %             provided, but then no mass can be extracted or
             %             merged.
             %   tfMass  - optional. Struct containing the initial masses. 
-            %             Keys refer to the name of the according species
+            %             Keys refer to the name of the according substance
             %   fTemp 	- temperature of the initial mass, has to be given
             %             if  tfMass is provided
             
@@ -161,15 +161,15 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % the oStore attribute here is empty!
             this.oStore = oStore.addPhase(this);
             
-            % DELETE? This is only necessary if the number of species
+            % DELETE? This is only necessary if the number of substances
             % changes during runtime...
             % Set the matter table
             %this.oMT = oMT;
             this.updateMatterTable();
             
             % Preset masses
-            this.afMass = zeros(1, this.oMT.iSpecies);
-            this.arPartialMass = zeros(1, this.oMT.iSpecies);
+            this.afMass = zeros(1, this.oMT.iSubstances);
+            this.arPartialMass = zeros(1, this.oMT.iSubstances);
             
             % Mass provided?
             %TODO do all that in a protected addMass method? Especially the
@@ -187,7 +187,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                     sKey = csKeys{iI};
                     
                     %orginal:if ~isfield(this.oMT.tiN2I, sKey), this.throw('phase', 'Matter type %s unkown to matter.table', sKey); end;
-                    % call mattertable if species is not in struct for
+                    % call mattertable if substance is not in struct for
                     % Massvector constructing
                     if ~isfield(this.oMT.tiN2I, sKey)
                         this.oMT = matter.table(this,sKey);
@@ -224,11 +224,11 @@ classdef phase < base & matlab.mixin.Heterogeneous
             
             % Mass
             this.fMass = sum(this.afMass);
-            this.afMassLost = zeros(1, this.oMT.iSpecies);
+            this.afMassLost = zeros(1, this.oMT.iSubstances);
             
             % Preset the cached masses (see calculateTimeStep)
             this.fMassLastUpdate  = 0;
-            this.afMassLastUpdate = zeros(1, this.oMT.iSpecies);
+            this.afMassLastUpdate = zeros(1, this.oMT.iSubstances);
         end
 
 
@@ -291,7 +291,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % Do the actual adding/removing of mass.
             %TODO-NOW check if p2p stuff works, and manipulator stuff!
             %         the outflowing EXMEs need to get the right partial
-            %         masses, e.g. if a p2p in between extracs a species!
+            %         masses, e.g. if a p2p in between extracs a substance!
             %CHECK    ok to round? default uses 1e8 ... should be coupled
             %         to the min. time step!
             %this.afMass =  tools.round.prec(this.afMass + afTotalInOuts, 10);
@@ -525,8 +525,8 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % inflowing enthalpy/inner energy
             
             % Total flows - one row (see below) for each EXME, amount of
-            % columns is the amount of species (partial masses)
-            mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSpecies);
+            % columns is the amount of substance (partial masses)
+            mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSubstances);
             
             % Each row: flow rate, temperature, heat capacity
             mfInflowDetails = zeros(0, 3);
@@ -538,7 +538,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % The afFlowRates is a row vector containing the flow rate
                 % at each flow, negative being an extraction!
                 % mrFlowPartials is matrix, each row has partial ratios for
-                % a flow, cols are the different species.
+                % a flow, cols are the different substances.
                 % mfProperties contains temp, heat capacity
                 
                 if isempty(afFlowRates), continue; end;
@@ -553,7 +553,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 mfTotalFlows(iI, :) = sum(bsxfun(@times, afFlowRates, mrFlowPartials), 1);
                 
                 % ... and now we got a vector with the absolute mass in-/
-                % outflow for the current EXME for each species and for one
+                % outflow for the current EXME for each substance and for one
                 % second!
                 
                 
@@ -624,12 +624,12 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % Only use entries where change is not zero
                 abChange = (afChange ~= 0);
                 
-                % Changes of species masses - get max. change, add the change
+                % Changes of substance masses - get max. change, add the change
                 % that happend already since last update
                 arPreviousChange = abs(afChange(abChange) ./ tools.round.prec(this.afMass(abChange), this.oStore.oTimer.iPrecision)) + arPreviousChange(abChange);
                 
                 % Only use non-inf --> inf if current mass of according
-                % species is zero. If new species enters phase, still
+                % substance is zero. If new substance enters phase, still
                 % covered through the overall mass check.
                 rChangePerSecond = max(arPreviousChange(~isinf(arPreviousChange)));
                 
@@ -644,11 +644,11 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 end
 
                 % Derive timestep, use the max change (total mass or one of the
-                % species change)
-                %NOTE if some species has zero mass, but then one of the flows
-                %     starts to introduce some of that species, the first tick
+                % substance change)
+                %NOTE if some substance has zero mass, but then one of the flows
+                %     starts to introduce some of that substance, the first tick
                 %     the rChangePerSecond will be Inf, therefore fTimeStep
-                %     will be zero - this is ok, if a new species is introduced
+                %     will be zero - this is ok, if a new substance is introduced
                 %     a short time step is fine.
                 fTimeStep = this.rMaxChange / max([ rChangePerSecond rTotalPerSecond ]);
 
