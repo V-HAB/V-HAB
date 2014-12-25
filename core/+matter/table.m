@@ -320,12 +320,8 @@ classdef table < base
                 this.createMatterData([], sSubstance);
             end
             
-            
             iColumn = this.FindColumn(sProperty, sSubstance);
-            % property c_p are often written as SHC (Are they the same values?
-            if isempty(iColumn) && strcmp(sProperty, 'c_p')
-                iColumn = this.FindColumn('SHC', sSubstance);
-            end
+            
             % property is not in worksheet
             if isempty(iColumn)
                 this.throw('table:FindProperty',sprintf('Can´t find property %s in worksheet %s', sProperty, sSubstance));
@@ -416,9 +412,6 @@ classdef table < base
                         fProperty = 0;
                     else
                         iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sPropertyName)); % row 1 is std propertyname in MatterData
-                        if isempty(iColumn) && strcmp(sProperty, 'c_p')
-                            iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), 'SHC'));
-                        end
                         fProperty = this.ttxMatter.(sSubstance).MatterData.num(rowPhase-2,iColumn-3);
                     end
                 end
@@ -543,11 +536,7 @@ classdef table < base
             
             % get column of searched property
             iColumn = this.FindColumn(sProperty, sSubstance);
-            % property c_p are often written as SHC (Are they the same
-            % values?) --> yes! So I'll delete this once and for all...
-            if isempty(iColumn) && strcmp(sProperty, 'c_p')
-                iColumn = this.FindColumn('SHC', sSubstance);
-            end
+            
             % if no column found, property is not in worksheet
             if isempty(iColumn)
                 this.throw('table:FindProperty',sprintf('Can´t find property %s in worksheet %s', sProperty, sSubstance));
@@ -573,9 +562,6 @@ classdef table < base
                 % if properties are given 2 times (e.g. Temperature has C and K columns), second column is used
                 if length(iColumnFirst) > 1
                     iColumnFirst = iColumnFirst(2);
-                elseif isempty(iColumnFirst) && strcmp(sFirstDepName, 'c_p')
-                    % property c_p are often written as SHC (Are they the same values?)
-                    iColumnFirst = this.FindColumn('SHC', sSubstance);
                 end
                 % if no column found, property is not in worksheet
                 if isempty(iColumnFirst)
@@ -630,10 +616,6 @@ classdef table < base
                             % get the data from the MatterData-worksheet
                             % first get column of property
                             iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sPropertyName)); % row 1 is std propertyname in MatterData
-                            if isempty(iColumn) && strcmp(sProperty, 'c_p')
-                                % if heatcapacity (c_p) is searched, it is written as SHC in MatterData
-                                iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), 'SHC'));
-                            end
                             % get the propertyvalue
                             fProperty = this.ttxMatter.(sSubstance).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
                         end
@@ -643,10 +625,6 @@ classdef table < base
                     % get column of second dependency
                     iColumnSecond = this.FindColumn(sSecondDepName, sSubstance);
                     
-                    % property c_p are often written as SHC (Are they the same values?)
-                    if isempty(iColumnSecond) && strcmp(sSecondDepName, 'c_p')
-                        iColumnSecond = this.FindColumn('SHC', sSubstance);
-                    end
                     % if no column found, property is not in worksheet
                     if isempty(iColumnSecond)
                         this.throw('table:FindProperty',sprintf('Can´t find property %s in worksheet %s', sSecondDepName, sSubstance));
@@ -780,10 +758,6 @@ classdef table < base
                             % data found in MatterData
                             % first get column of property
                             iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sPropertyName)); % row 1 is std propertyname in MatterData
-                            if isempty(iColumn) && strcmp(sProperty, 'c_p')
-                                % if heatcapacity (c_p) is searched, it is written as SHC in MatterData
-                                iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), 'SHC'));
-                            end
                             % get the propertyvalue
                             fProperty = this.ttxMatter.(sSubstance).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
                         else
@@ -1042,7 +1016,7 @@ classdef table < base
                 elseif strcmpi(this.ttxMatter.(sSubstancename).import.text(6,iColumn), 'Pa')
                     % nothing, all good
                 else
-                    this.throw('table:createMatterData',sprintf('Pressure-type %s unkown', this.ttxMatter.(sSubstancename).import.text(6,iColumn)));
+                    this.throw('table:createMatterData',sprintf('Pressure unit %s unkown', this.ttxMatter.(sSubstancename).import.text(6,iColumn)));
                 end
                 
                 % new substance, so some fields, like number of substances and molmass array, has to be extend
@@ -1057,7 +1031,7 @@ classdef table < base
                     % molmass of substance into molmass array
                     this.afMolMass(iIndex) = this.ttxMatter.(sSubstancename).fMolMass;
                     
-                    % go through all phases (solid, gas, liquid) and write correct value in array tafCp
+                    % go through all phases (solid, gas, liquid) and write correct value in array tafDensity
                     % and tafDensity from new import
                     cPhases = fieldnames(this.tafDensity);
                     for i=1:length(cPhases)
@@ -1357,10 +1331,6 @@ classdef table < base
                     end
                     return
                 else
-                    % Heatcapacity is written SHC in worksheet MatterData
-                    % Will probably be able to delete this as soon as SHC
-                    % is gone from the Excel file
-                    if strcmpi(sPropertyName,'c_p'); sPropertyName = 'SHC'; end;
                     
                     % Since we don't have a specific worksheet for this
                     % species, we use the column as given in the MatterData
