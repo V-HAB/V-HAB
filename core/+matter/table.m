@@ -281,7 +281,7 @@ classdef table < base
                 % go through all substances that have mass and calculate the heatcapacity of each. then add this to the
                 % rest
                 for i=1:length(find(afMass>0))
-                    fCp = this.FindProperty(this.csSubstances{aiIndexes(i)}, 'c_p', 'Temperature', fT, 'Pressure', fP, sPhase);
+                    fCp = this.FindProperty(this.csSubstances{aiIndexes(i)}, 'Heat Capacity', 'Temperature', fT, 'Pressure', fP, sPhase);
                     %fCp = this.FindProperty_old(fT, fP, this.csSubstances{aiIndexes(i)}, 'c_p', sType); % Old FindProperty
                     fHeatCapacity = fHeatCapacity + afMass(aiIndexes(i)) ./ sum(afMass) * fCp;
                 end
@@ -1315,7 +1315,7 @@ classdef table < base
                 return
             else
                 % if raw data for this specific substance has more than 5
-                % rows or less it has to be from its own worksheet in the
+                % rows it has to be from its own worksheet in the
                 % Excel file. The MatterData worksheet can have a maximum
                 % of 5 lines (2 lines heading + max 3 phases(gas, liquid,
                 % solid).
