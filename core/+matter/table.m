@@ -50,7 +50,7 @@ classdef table < base
         % CHECK: Why would this be needed? All of the data should be loaded
         % when the simulation starts and it will not change during runtime.
         % So the "best" data should always be available, right?
-        asWorksheets = [];
+        csWorksheets = [];
         
         % CHECK: I'm pretty sure this is not needed either, but I haven't
         % really looked at calcHeatCap...
@@ -96,34 +96,166 @@ classdef table < base
     end
     
     methods
-        function this = table(oParent, sSubstanceNames)
+        function this = table(oParent)
             % constructor of class and handles calling of Mattercreation
-            %
-            % first execution at initialisation from class simulation with
-            % no input arguments; imports worksheet MatterData
-            %
-            % following calls from class phase if substance not found; import
-            % from substance worksheet if exist
-            % gets matterobject from parent phaseclass and needed substance
-            % (sSubstanceNames)
             
-            % if no arguments from call received it creates the MatterData
-            % from worksheet MatterData, else the Mattertableobject from
-            % the parent are loaded and the arguments hand over to
-            % createMatterData
+            %% Importing data vom 'MatterData' worksheet
+            % import from worksheet MatterData (strrep with filesep is used for compatibility of MS and Mac OS)
+            this.ttxMatter = this.MatterImport(strrep('core\+matter\Matter.xlsx','\',filesep), 'MatterData');
             
-            % CHECK If I delete all of this stuff, would the constructor
-            % then just contain everything inside createMatterData()? Or
-            % not delete this and run a loop of MatterImport after this
-            % across all Excel worksheets?
-            if nargin > 0
-                this = oParent.oMT;
-                this.createMatterData(oParent, sSubstanceNames);
-            else
-                % Create zero/empty palceholder matter flow
-                this.oFlowZero = matter.flow(this, []);
-                this.createMatterData();
+            % get all substances
+            this.csSubstances = fieldnames(this.ttxMatter);
+            % get number of substances
+            this.iSubstances  = length(this.csSubstances);
+            
+            % preallocation
+            this.afMolMass = zeros(1, this.iSubstances);
+            this.tiN2I     = struct();
+            
+            % write attributes of all substances
+            for iI = 1:this.iSubstances
+                % Configuration
+                tCfg = this.ttxMatter.(this.csSubstances{iI});
+                
+                % Name to index
+                this.tiN2I.(this.csSubstances{iI}) = iI;
+                
+                
+                % Molecular mass - directly provided
+                if isfield(tCfg, 'fMolMass')
+                    this.afMolMass(iI) = tCfg.fMolMass(1);
+                    
+                else
+                    % Extract the atomic elements from matter name and
+                    % check if molecular mass provided for each of them
+                    tElements  = matter.table.extractAtomicTypes(this.csSubstances{iI});
+                    csElements = fieldnames(tElements);
+                    b404       = isempty(csElements);
+                    fMolMass   = 0;
+                    
+                    if ~b404
+                        for iE = 1:length(csElements)
+                            % Check if element exists and has mol mass def
+                            if isfield(this.ttxMatter, csElements{iE}) || isfield(this.ttxMatter.(csElements{iE}), 'fMolMass')
+                                fMolMass = fMolMass + tElements.(csElements{iE}) * this.ttxMatter.(csElements{iE}).fMolMass;
+                            else
+                                b404 = true;
+                                break;
+                            end
+                        end
+                    end
+                    
+                    if b404
+                        % Some elements not found so reset (might be there
+                        % from previous calcs?)
+                        if isfield(this.ttxMatter.(this.csSubstances{iI}), 'tComponents')
+                            this.ttxMatter.(this.csSubstances{iI}).tComponents = struct();
+                        end
+                        
+                        %this.throw('createMatterData', 'Type %s has no molecular mass provided and not all elements of matter type (molecule) could be found to calculate molecular mass', this.csSubstances{iI});
+                        this.afMolMass(iI) = -1;
+                    else
+                        % Write components on matter definition
+                        this.ttxMatter.(this.csSubstances{iI}).tComponents = tElements;
+                        this.afMolMass(iI) = fMolMass;
+                    end
+                end
+                
+                % Go through phases and write density
+                if isfield(tCfg, 'ttxPhases')
+                    csPhases = fieldnames(tCfg.ttxPhases);
+                    
+                    for iP = 1:length(csPhases)
+                        sP = csPhases{iP};
+                        
+                        % densities phase not there yet? Preset with -1
+                        if ~isfield(this.tafDensity, sP)
+                            this.tafDensity.(sP) = -1 * ones(1, this.iSubstances);
+                        end
+                        
+                        % Density given?
+                        if isfield(tCfg.ttxPhases.(sP), 'fDensity')
+                            this.tafDensity.(sP)(iI) = tCfg.ttxPhases.(sP).fDensity;
+                        end
+                    end
+                end
+                
             end
+            
+            %% Importing from individual worksheets
+            
+            for iI = 3:length(this.csWorksheets)
+                sSubstancename = this.csWorksheets{iI};
+                
+            % import from worksheet sSubstancename (strrep with filesep is used for compatibility of MS and Mac OS)
+                this.ttxMatter.(sSubstancename) = this.MatterImport(strrep('core\+matter\Matter.xlsx','\',filesep), sSubstancename);
+                
+                % handle Pressure values (convert bar in Pa if necessary)
+                iColumn = this.FindColumn('Pressure', sSubstancename);
+                if strcmpi(this.ttxMatter.(sSubstancename).import.text(6,iColumn), 'bar')
+                    this.ttxMatter.(sSubstancename).import.num(5:end,iColumn) = this.ttxMatter.(sSubstancename).import.num(5:end,iColumn)*100000;
+                elseif strcmpi(this.ttxMatter.(sSubstancename).import.text(6,iColumn), 'Pa')
+                    % nothing, all good
+                else
+                    this.throw('table:createMatterData',sprintf('Pressure unit %s unkown', this.ttxMatter.(sSubstancename).import.text(6,iColumn)));
+                end
+                
+                % new substance, so some fields, like number of substances
+                % and molmass array, has to be extended
+                if ~any(strcmp(this.csSubstances, sSubstancename))
+                    % index of new substance is one times higher than last one
+                    iIndex = this.iSubstances+1;
+                    % write new substancename in cellarray
+                    this.csSubstances{iIndex} = sSubstancename;
+                    % index of new substance into number2index array
+                    this.tiN2I.(sSubstancename) = iIndex;
+                    this.iSubstances = iIndex;
+                    
+                    % molmass of substance into molmass array
+                    this.afMolMass(iIndex) = this.ttxMatter.(sSubstancename).fMolMass;
+                    
+                    % go through all phases (solid, gas, liquid) and write
+                    % correct value in array tafDensity from new import.
+                    cPhases = fieldnames(this.tafDensity);
+                    for i=1:length(cPhases)
+                        % if value of density is stored in fDensity and is a number and in right phase
+                        if isfield(this.ttxMatter.(sSubstancename), 'fDensity') && ~isnan(this.ttxMatter.(sSubstancename).fDensity) && strcmp(oParent.sType, cPhases{i})
+                            this.tafDensity.(cPhases{i})(iIndex) = this.ttxMatter.(sSubstancename).fDensity;
+                        else % std is -1
+                            this.tafDensity.(cPhases{i})(iIndex) = -1;
+                        end
+                        
+                    end
+                end
+            end
+            
+            %             % first execution at initialisation from class simulation with
+            %             % no input arguments; imports worksheet MatterData
+            %             %
+            %             % following calls from class phase if substance not found; import
+            %             % from substance worksheet if exist
+            %             % gets matterobject from parent phaseclass and needed substance
+            %             % (sSubstanceNames)
+            %
+            %             % if no arguments from call received it creates the MatterData
+            %             % from worksheet MatterData, else the Mattertableobject from
+            %             % the parent are loaded and the arguments hand over to
+            %             % createMatterData
+            %
+            %             % CHECK If I delete all of this stuff, would the constructor
+            %             % then just contain everything inside createMatterData()? Or
+            %             % not delete this and run a loop of MatterImport after this
+            %             % across all Excel worksheets?
+            %             if nargin > 0
+            %                 this = oParent.oMT;
+            %                 this.createMatterData(oParent, sSubstanceNames);
+            %             else
+            %                 % Create zero/empty palceholder matter flow
+            %                 this.oFlowZero = matter.flow(this, []);
+            %                 this.createMatterData();
+            %             end
+            
+
         end
     end
     
@@ -240,7 +372,7 @@ classdef table < base
             % percentage of change can be handled over the public property
             % rMaxChange; std is 0.01 (1%)
             %disp(['phase: ', sPhase,' substance ', sName]);
-            if strcmp(sPhase, this.cfLastProps.sPhase) && strcmp(sName, this.cfLastProps.sName) 
+            if strcmp(sPhase, this.cfLastProps.sPhase) && strcmp(sName, this.cfLastProps.sName)
                 % Could the above condition be fooled by non-unique phase
                 % names?
                 aCheck{1} = [fT; this.cfLastProps.fT];
@@ -411,7 +543,7 @@ classdef table < base
                     if isempty(rowPhase)
                         fProperty = 0;
                     else
-                        iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sPropertyName)); % row 1 is std propertyname in MatterData
+                        iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sProperty)); % row 1 is std propertyname in MatterData
                         fProperty = this.ttxMatter.(sSubstance).MatterData.num(rowPhase-2,iColumn-3);
                     end
                 end
@@ -427,7 +559,7 @@ classdef table < base
                 % look if a worksheet of that substance exists if no std atm. or no phase is stored
                 rowPhase = find(strcmpi(this.ttxMatter.(sSubstance).import.text(:,3), sPhase), 1, 'first');
                 if isempty(rowPhase)
-                    if any(strcmpi(this.asWorksheets, sSubstance))
+                    if any(strcmpi(this.csWorksheets, sSubstance))
                         this.createMatterData([], sSubstance);
                         fProperty = this.FindProperty(sSubstance, sProperty, 'Temperature', fT, 'Pressure', fP, sPhase);
                     else
@@ -543,7 +675,7 @@ classdef table < base
             end
             
             % CHECK: Why is this commented out? Looks like it can go since
-            % iRowsFirst will be overwritten later. 
+            % iRowsFirst will be overwritten later.
             % handling of incompressible phases
             %             if strcmpi(sPhase, 'solid') && this.bSolid
             %                 iColumnPhase = this.FindColumn('Phase',sSubstance);
@@ -615,7 +747,7 @@ classdef table < base
                         else
                             % get the data from the MatterData-worksheet
                             % first get column of property
-                            iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sPropertyName)); % row 1 is std propertyname in MatterData
+                            iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sProperty)); % row 1 is std propertyname in MatterData
                             % get the propertyvalue
                             fProperty = this.ttxMatter.(sSubstance).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
                         end
@@ -755,15 +887,16 @@ classdef table < base
                             iRowsFirstMatterData = [];
                         end
                         if iRowsFirstMatterData
+                            keyboard();
                             % data found in MatterData
                             % first get column of property
-                            iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sPropertyName)); % row 1 is std propertyname in MatterData
+                            iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sProperty)); % row 1 is std propertyname in MatterData
                             % get the propertyvalue
                             fProperty = this.ttxMatter.(sSubstance).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
                         else
                             % no found data in MatterData
                             % get 'best' value in Range of substancetable
-                            warning('off', 'all'); keyboard();
+                            warning('off', 'all');
                             % before executing the slow scatteredInterpolant, look if all properties same as last time
                             try
                                 if iColumn == this.cfLastProps.iColumn && iColumnFirst == this.cfLastProps.iColumnFirst && ...
@@ -850,7 +983,7 @@ classdef table < base
                     
                 end
                 
-            
+                
             else
                 %% Finding properties in generic MatterData worksheet
                 % get the rows of the phase of the substance
@@ -990,147 +1123,148 @@ classdef table < base
             
             %% Access specific worksheets in MatterXLS
             % executed if no inputs handed over
-            if nargin > 1
+%             if nargin > 1
                 % First it checks if correct phase from parent object is handed over.
                 % Then call of MatterImport that imports the needed worksheetdata.
                 % After that it checks also type of pressure and corrects vaulues if needed
                 % fields that created at the first exection and used in other classes
                 % had to include the new substance
                 
-                % check if phase in parent object are present
-                if isobject(oParent)
-                    if ~isprop(oParent, 'sType')
-                        this.throw('table:import','no phasetype from parent class received');
-                    elseif ~any(strcmpi({'solid','gas','liquid'},oParent.sType))
-                        this.trow('table:import','no valid phasetype from parent class received');
-                    end
-                end
-                
-                % import from worksheet sSubstancename (strrep with filesep is used for compatibility of MS and Mac OS)
-                this.ttxMatter.(sSubstancename) = this.MatterImport(strrep('core\+matter\Matter.xlsx','\',filesep), sSubstancename);
-                
-                % handle Pressure values (convert bar in Pa if necessary)
-                iColumn = this.FindColumn('Pressure', sSubstancename);
-                if strcmpi(this.ttxMatter.(sSubstancename).import.text(6,iColumn), 'bar')
-                    this.ttxMatter.(sSubstancename).import.num(5:end,iColumn) = this.ttxMatter.(sSubstancename).import.num(5:end,iColumn)*100000;
-                elseif strcmpi(this.ttxMatter.(sSubstancename).import.text(6,iColumn), 'Pa')
-                    % nothing, all good
-                else
-                    this.throw('table:createMatterData',sprintf('Pressure unit %s unkown', this.ttxMatter.(sSubstancename).import.text(6,iColumn)));
-                end
-                
-                % new substance, so some fields, like number of substances and molmass array, has to be extend
-                if ~any(strcmp(this.csSubstances, sSubstancename))
-                    % index of new substance is one times higher than last one
-                    iIndex = this.iSubstances+1;
-                    % write new substancename in cellarray
-                    this.csSubstances{iIndex} = sSubstancename;
-                    % index of new substance into number2index array
-                    this.tiN2I.(sSubstancename) = iIndex;
-                    this.iSubstances = iIndex;
-                    % molmass of substance into molmass array
-                    this.afMolMass(iIndex) = this.ttxMatter.(sSubstancename).fMolMass;
-                    
-                    % go through all phases (solid, gas, liquid) and write correct value in array tafDensity
-                    % and tafDensity from new import
-                    cPhases = fieldnames(this.tafDensity);
-                    for i=1:length(cPhases)
-                        % if value of density is stored in fRoh and is a number and in right phase
-                        if isfield(this.ttxMatter.(sSubstancename), 'fRoh') && ~isnan(this.ttxMatter.(sSubstancename).fRoh) && strcmp(oParent.sType, cPhases{i})
-                            this.tafDensity.(cPhases{i})(iIndex) = this.ttxMatter.(sSubstancename).fRoh;
-                        else % std is -1
-                            this.tafDensity.(cPhases{i})(iIndex) = -1;
-                        end
-                        
-                    end
-                end
-                
-            else
+%                 % check if phase in parent object are present
+%                 if isobject(oParent)
+%                     if ~isprop(oParent, 'sType')
+%                         this.throw('table:import','no phasetype from parent class received');
+%                     elseif ~any(strcmpi({'solid','gas','liquid'},oParent.sType))
+%                         this.trow('table:import','no valid phasetype from parent class received');
+%                     end
+%                 end
+%                 
+%                 % import from worksheet sSubstancename (strrep with filesep is used for compatibility of MS and Mac OS)
+%                 this.ttxMatter.(sSubstancename) = this.MatterImport(strrep('core\+matter\Matter.xlsx','\',filesep), sSubstancename);
+%                 
+%                 % handle Pressure values (convert bar in Pa if necessary)
+%                 iColumn = this.FindColumn('Pressure', sSubstancename);
+%                 if strcmpi(this.ttxMatter.(sSubstancename).import.text(6,iColumn), 'bar')
+%                     this.ttxMatter.(sSubstancename).import.num(5:end,iColumn) = this.ttxMatter.(sSubstancename).import.num(5:end,iColumn)*100000;
+%                 elseif strcmpi(this.ttxMatter.(sSubstancename).import.text(6,iColumn), 'Pa')
+%                     % nothing, all good
+%                 else
+%                     this.throw('table:createMatterData',sprintf('Pressure unit %s unkown', this.ttxMatter.(sSubstancename).import.text(6,iColumn)));
+%                 end
+%                 
+%                 % new substance, so some fields, like number of substances
+%                 % and molmass array, has to be extended
+%                 if ~any(strcmp(this.csSubstances, sSubstancename))
+%                     % index of new substance is one times higher than last one
+%                     iIndex = this.iSubstances+1;
+%                     % write new substancename in cellarray
+%                     this.csSubstances{iIndex} = sSubstancename;
+%                     % index of new substance into number2index array
+%                     this.tiN2I.(sSubstancename) = iIndex;
+%                     this.iSubstances = iIndex;
+%                     % molmass of substance into molmass array
+%                     this.afMolMass(iIndex) = this.ttxMatter.(sSubstancename).fMolMass;
+%                     
+%                     % go through all phases (solid, gas, liquid) and write
+%                     % correct value in array tafDensity from new import.
+%                     cPhases = fieldnames(this.tafDensity);
+%                     for i=1:length(cPhases)
+%                         % if value of density is stored in fDensity and is a number and in right phase
+%                         if isfield(this.ttxMatter.(sSubstancename), 'fDensity') && ~isnan(this.ttxMatter.(sSubstancename).fDensity) && strcmp(oParent.sType, cPhases{i})
+%                             this.tafDensity.(cPhases{i})(iIndex) = this.ttxMatter.(sSubstancename).fDensity;
+%                         else % std is -1
+%                             this.tafDensity.(cPhases{i})(iIndex) = -1;
+%                         end
+%                         
+%                     end
+%                 end
+%                 
+%             else
                 %% load MatterData (standard Mattertable)
                 % this is executed at initialisation (from class simulation)
                 
-                % import from worksheet MatterData (strrep with filesep is used for compatibility of MS and Mac OS)
-                this.ttxMatter = this.MatterImport(strrep('core\+matter\Matter.xlsx','\',filesep), 'MatterData');
-                
-                % get all substances
-                this.csSubstances = fieldnames(this.ttxMatter);
-                % get number of substances
-                this.iSubstances  = length(this.csSubstances);
-                
-                % preallocation
-                this.afMolMass = zeros(1, this.iSubstances);
-                this.tiN2I     = struct();
-                
-                % write attributes of all substances
-                for iI = 1:this.iSubstances
-                    % Configuration
-                    tCfg = this.ttxMatter.(this.csSubstances{iI});
-                    
-                    % Name to index
-                    this.tiN2I.(this.csSubstances{iI}) = iI;
-                    
-                    
-                    % Molecular mass - directly provided
-                    if isfield(tCfg, 'fMolMass')
-                        this.afMolMass(iI) = tCfg.fMolMass(1);
-                        
-                    else
-                        % Extract the atomic elements from matter name and
-                        % check if molecular mass provided for each of them
-                        tElements  = matter.table.extractAtomicTypes(this.csSubstances{iI});
-                        csElements = fieldnames(tElements);
-                        b404       = isempty(csElements);
-                        fMolMass   = 0;
-                        
-                        if ~b404
-                            for iE = 1:length(csElements)
-                                % Check if element exists and has mol mass def
-                                if isfield(this.ttxMatter, csElements{iE}) || isfield(this.ttxMatter.(csElements{iE}), 'fMolMass')
-                                    fMolMass = fMolMass + tElements.(csElements{iE}) * this.ttxMatter.(csElements{iE}).fMolMass;
-                                else
-                                    b404 = true;
-                                    break;
-                                end
-                            end
-                        end
-                        
-                        if b404
-                            % Some elements not found so reset (might be there
-                            % from previous calcs?)
-                            if isfield(this.ttxMatter.(this.csSubstances{iI}), 'tComponents')
-                                this.ttxMatter.(this.csSubstances{iI}).tComponents = struct();
-                            end
-                            
-                            %this.throw('createMatterData', 'Type %s has no molecular mass provided and not all elements of matter type (molecule) could be found to calculate molecular mass', this.csSubstances{iI});
-                            this.afMolMass(iI) = -1;
-                        else
-                            % Write components on matter definition
-                            this.ttxMatter.(this.csSubstances{iI}).tComponents = tElements;
-                            this.afMolMass(iI) = fMolMass;
-                        end
-                    end
-                    
-                    % Go through phases and write density
-                    if isfield(tCfg, 'ttxPhases')
-                        csPhases = fieldnames(tCfg.ttxPhases);
-                        
-                        for iP = 1:length(csPhases)
-                            sP = csPhases{iP};
-                            
-                            % densities phase not there yet? Preset with -1
-                            if ~isfield(this.tafDensity, sP)
-                                this.tafDensity.(sP) = -1 * ones(1, this.iSubstances);
-                            end
-                            
-                            % Density given?
-                            if isfield(tCfg.ttxPhases.(sP), 'fDensity')
-                                this.tafDensity.(sP)(iI) = tCfg.ttxPhases.(sP).fDensity;
-                            end
-                        end
-                    end
-                    
-                end
-            end
+                %                 % import from worksheet MatterData (strrep with filesep is used for compatibility of MS and Mac OS)
+                %                 this.ttxMatter = this.MatterImport(strrep('core\+matter\Matter.xlsx','\',filesep), 'MatterData');
+                %
+                %                 % get all substances
+                %                 this.csSubstances = fieldnames(this.ttxMatter);
+                %                 % get number of substances
+                %                 this.iSubstances  = length(this.csSubstances);
+                %
+                %                 % preallocation
+                %                 this.afMolMass = zeros(1, this.iSubstances);
+                %                 this.tiN2I     = struct();
+                %
+                %                 % write attributes of all substances
+                %                 for iI = 1:this.iSubstances
+                %                     % Configuration
+                %                     tCfg = this.ttxMatter.(this.csSubstances{iI});
+                %
+                %                     % Name to index
+                %                     this.tiN2I.(this.csSubstances{iI}) = iI;
+                %
+                %
+                %                     % Molecular mass - directly provided
+                %                     if isfield(tCfg, 'fMolMass')
+                %                         this.afMolMass(iI) = tCfg.fMolMass(1);
+                %
+                %                     else
+                %                         % Extract the atomic elements from matter name and
+                %                         % check if molecular mass provided for each of them
+                %                         tElements  = matter.table.extractAtomicTypes(this.csSubstances{iI});
+                %                         csElements = fieldnames(tElements);
+                %                         b404       = isempty(csElements);
+                %                         fMolMass   = 0;
+                %
+                %                         if ~b404
+                %                             for iE = 1:length(csElements)
+                %                                 % Check if element exists and has mol mass def
+                %                                 if isfield(this.ttxMatter, csElements{iE}) || isfield(this.ttxMatter.(csElements{iE}), 'fMolMass')
+                %                                     fMolMass = fMolMass + tElements.(csElements{iE}) * this.ttxMatter.(csElements{iE}).fMolMass;
+                %                                 else
+                %                                     b404 = true;
+                %                                     break;
+                %                                 end
+                %                             end
+                %                         end
+                %
+                %                         if b404
+                %                             % Some elements not found so reset (might be there
+                %                             % from previous calcs?)
+                %                             if isfield(this.ttxMatter.(this.csSubstances{iI}), 'tComponents')
+                %                                 this.ttxMatter.(this.csSubstances{iI}).tComponents = struct();
+                %                             end
+                %
+                %                             %this.throw('createMatterData', 'Type %s has no molecular mass provided and not all elements of matter type (molecule) could be found to calculate molecular mass', this.csSubstances{iI});
+                %                             this.afMolMass(iI) = -1;
+                %                         else
+                %                             % Write components on matter definition
+                %                             this.ttxMatter.(this.csSubstances{iI}).tComponents = tElements;
+                %                             this.afMolMass(iI) = fMolMass;
+                %                         end
+                %                     end
+                %
+                %                     % Go through phases and write density
+                %                     if isfield(tCfg, 'ttxPhases')
+                %                         csPhases = fieldnames(tCfg.ttxPhases);
+                %
+                %                         for iP = 1:length(csPhases)
+                %                             sP = csPhases{iP};
+                %
+                %                             % densities phase not there yet? Preset with -1
+                %                             if ~isfield(this.tafDensity, sP)
+                %                                 this.tafDensity.(sP) = -1 * ones(1, this.iSubstances);
+                %                             end
+                %
+                %                             % Density given?
+                %                             if isfield(tCfg.ttxPhases.(sP), 'fDensity')
+                %                                 this.tafDensity.(sP)(iI) = tCfg.ttxPhases.(sP).fDensity;
+                %                             end
+                %                         end
+                %                     end
+                %
+                %                 end
+%             end
         end
         
         function ttxImportMatter = MatterImport(this, sFile, sWorksheetname)
@@ -1149,8 +1283,8 @@ classdef table < base
             % store all worksheets from Excel file and look if file is readable
             % worksheetnames used in FindProperty to look if maybe more
             % data is available
-            if isempty(this.asWorksheets)
-                [sStatus, this.asWorksheets] = xlsfinfo(sFile);
+            if isempty(this.csWorksheets)
+                [sStatus, this.csWorksheets] = xlsfinfo(sFile);
                 if ~any(strcmp(sStatus, {'Microsoft Excel Spreadsheet', 'Microsoft Macintosh Excel Spreadsheet'}))
                     this.throw('table:MatterImport',sprintf('File %s has wrong format for MatterImport',sFile));
                 end
@@ -1158,7 +1292,7 @@ classdef table < base
             
             %% import worksheet MatterData (standard Mattertable)
             % this is executed at initialisation (from class simulation)
-            if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(this.asWorksheets, 'MatterData'))
+            if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(this.csWorksheets, 'MatterData'))
                 
                 % import of worksheet
                 [import.num, import.text, import.raw] = this.customXlsread(sFile, sWorksheetname);
@@ -1187,39 +1321,39 @@ classdef table < base
                 ttxImportMatter = struct;
                 
                 % go through all unique substances
-                for i = 1:length(scSubstances)
+                for iI = 1:length(scSubstances)
                     % set substancename as fieldname
-                    ttxImportMatter.(scSubstances{i}) = [];
+                    ttxImportMatter.(scSubstances{iI}) = [];
                     %ttxImportMatter = setfield(ttxImportMatter, scSubstances{i},'');
                     
                     % select all rows of that substance
                     % substances can have more than one phase
-                    iRows = find(strcmp(import.text(3:end,1),scSubstances{i}));
+                    iRows = find(strcmp(import.text(3:end,1),scSubstances{iI}));
                     if ~isempty(iRows)
                         % rownumbers of .num and .text/.raw are 2 rows different because of headers
                         iRows = iRows +2;
                         % store all data of current substance
-                        ttxImportMatter.(scSubstances{i}).import.num = import.num(iRows-2,:);
-                        ttxImportMatter.(scSubstances{i}).import.num(:,iTableLength+1:end) = []; % overhead not needed
-                        ttxImportMatter.(scSubstances{i}).import.text = import.text(1:2,:);
-                        ttxImportMatter.(scSubstances{i}).import.text = [ttxImportMatter.(scSubstances{i}).import.text; import.text(iRows,:)];
-                        ttxImportMatter.(scSubstances{i}).import.text(:,iTableLength+1:end) = []; % overhead not needed
-                        ttxImportMatter.(scSubstances{i}).import.raw = import.raw(1:2,:);
-                        ttxImportMatter.(scSubstances{i}).import.raw = [ttxImportMatter.(scSubstances{i}).import.raw; import.raw(iRows,:)];
-                        ttxImportMatter.(scSubstances{i}).import.raw(:,iTableLength+1:end) = []; % overhead not needed
+                        ttxImportMatter.(scSubstances{iI}).import.num = import.num(iRows-2,:);
+                        ttxImportMatter.(scSubstances{iI}).import.num(:,iTableLength+1:end) = []; % overhead not needed
+                        ttxImportMatter.(scSubstances{iI}).import.text = import.text(1:2,:);
+                        ttxImportMatter.(scSubstances{iI}).import.text = [ttxImportMatter.(scSubstances{iI}).import.text; import.text(iRows,:)];
+                        ttxImportMatter.(scSubstances{iI}).import.text(:,iTableLength+1:end) = []; % overhead not needed
+                        ttxImportMatter.(scSubstances{iI}).import.raw = import.raw(1:2,:);
+                        ttxImportMatter.(scSubstances{iI}).import.raw = [ttxImportMatter.(scSubstances{iI}).import.raw; import.raw(iRows,:)];
+                        ttxImportMatter.(scSubstances{iI}).import.raw(:,iTableLength+1:end) = []; % overhead not needed
                         
                         % go through all properties before density
                         % this properties are constant and only needed one time
                         for j = 4:iColumn-1
                             if ~isnan(import.num(iRows(1)-2,j-3))
-                                ttxImportMatter.(scSubstances{i}).(import.text{2,j}) = import.num(iRows(1)-2,j-3);
+                                ttxImportMatter.(scSubstances{iI}).(import.text{2,j}) = import.num(iRows(1)-2,j-3);
                             end
                         end
                         % go through all phases and save all remaining properties for that specific phase
                         for z = 1:length(iRows)
                             for j = iColumn:iTableLength
                                 if ~isnan(import.num(iRows(z)-2,j-3))
-                                    ttxImportMatter.(scSubstances{i}).ttxPhases.(import.text{iRows(z),3}).(import.text{2,j}) = import.num(iRows(z)-2,j-3);
+                                    ttxImportMatter.(scSubstances{iI}).ttxPhases.(import.text{iRows(z),3}).(import.text{2,j}) = import.num(iRows(z)-2,j-3);
                                 end
                             end
                             
@@ -1253,13 +1387,20 @@ classdef table < base
                 ttxImportMatter.import.raw = import.raw;
                 ttxImportMatter.SubstancesName = import.text{1,1};
                 
-                % get last column (length of table)
-                iTableLength = size(import.text,2);
+                % Finding the empty cells in the text array of the first
+                % row, this way we can figure out, how many constants there
+                % are in this specific worksheet
+                % Since the first three cells are irrelevant, we start
+                % looking in the fourth column
+                [~, emptyColumns] = find(strcmp(import.text(1,4:end),''));
+                iNumberOfConstants = emptyColumns(1)-1;
                 
-                % save all constants of substances defined in first four rows
-                for i = 4:iTableLength
-                    if ~isempty(import.text{3,i}) &&  ~isnan(import.num(1,i))
-                        ttxImportMatter.(import.text{3,i}) = import.num(1,i);
+                % save all constants of substances defined in first four
+                % rows, since we ignore the first three columns, we have to
+                % add 3 to the end of the range
+                for iI = 4:(iNumberOfConstants + 3)
+                    if ~isempty(import.text{3,iI}) &&  ~isnan(import.num(1,iI))
+                        ttxImportMatter.(import.text{3,iI}) = import.num(1,iI);
                     end
                 end
                 
@@ -1278,10 +1419,10 @@ classdef table < base
                 
                 % look if some values safed as kJ -> has to convert do J (*1000)
                 iTableLength = size(ttxImportMatter.import.text,2);
-                for i = 1:iTableLength
-                    if strncmp(ttxImportMatter.import.text{6,i}, 'kJ', 2)
-                        ttxImportMatter.import.text{6,i} = strrep(ttxImportMatter.import.text{6,i}, 'kJ', 'J');
-                        ttxImportMatter.import.num(:,i) = ttxImportMatter.import.num(:,i)*1000;
+                for iI = 1:iTableLength
+                    if strncmp(ttxImportMatter.import.text{6,iI}, 'kJ', 2)
+                        ttxImportMatter.import.text{6,iI} = strrep(ttxImportMatter.import.text{6,iI}, 'kJ', 'J');
+                        ttxImportMatter.import.num(:,iI) = ttxImportMatter.import.num(:,iI)*1000;
                     end
                 end
                 
@@ -1290,7 +1431,7 @@ classdef table < base
         
         
         %% helper methods
-        function [iColumn, iTableLength] = FindColumn(this, sPropertyName, sSubstance, iRow)
+        function [iColumn, iTableLength] = FindColumn(this, sProperty, sSubstance, iRow)
             % most used function (often called in loops)
             % finds the column of a property and if wished the columnlength of
             % the table
@@ -1300,7 +1441,7 @@ classdef table < base
             %  iTableLength - length of table
             %
             % inputs:
-            % sPropertyName: name of searched property
+            % sProperty: name of searched property
             % sSubstance: substancename
             % iRow: rownumber in which the search string stays, optional
             
@@ -1311,7 +1452,7 @@ classdef table < base
             
             % if rownumbers is also given
             if nargin > 3 && ~isempty(iRow)
-                iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(iRow,:),sPropertyName));
+                iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(iRow,:),sProperty));
                 return
             else
                 % if raw data for this specific substance has more than 5
@@ -1321,27 +1462,26 @@ classdef table < base
                 % solid).
                 if size(this.ttxMatter.(sSubstance).import.raw, 1) > 5
                     % row 5 is the fixed location of the property name
-                    iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(5,:),sPropertyName));
+                    iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(5,:),sProperty));
                     % Maybe the user didn't pay attention, but just in
                     % case, if someone entered the variable name as 'char'
                     % here, it will still return the correct value. Boy, we
                     % are nice programmers...
                     if isempty(iColumn)
-                        iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(7,:),sPropertyName));
+                        iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(7,:),sProperty));
                     end
                     return
                 else
-                    
                     % Since we don't have a specific worksheet for this
                     % species, we use the column as given in the MatterData
                     % worksheet. Here the property name is in row 1
-                    iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(1,:),sPropertyName)); % row 1 is std propertyname in MatterData
+                    iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(1,:),sProperty)); % row 1 is std propertyname in MatterData
                     
                     % Again we try to correct for user error if the
                     % variable name was entered instead of the property
                     % name.
                     if isempty(iColumn)
-                        iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(2,:),sPropertyName)); % search row 2 as alternative
+                        iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(2,:),sProperty)); % search row 2 as alternative
                     end
                     
                     % do we really need this?
