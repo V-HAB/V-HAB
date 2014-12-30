@@ -887,7 +887,6 @@ classdef table < base
                             iRowsFirstMatterData = [];
                         end
                         if iRowsFirstMatterData
-                            keyboard();
                             % data found in MatterData
                             % first get column of property
                             iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sProperty)); % row 1 is std propertyname in MatterData

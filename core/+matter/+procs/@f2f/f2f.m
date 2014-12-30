@@ -68,7 +68,9 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             this.sName = sName;
             
             % Preset the flow array with a default, zero FR matter flow
-            for iI = 1:this.iPorts, this.aoFlows(iI) = this.oMT.oFlowZero; end;
+            for iI = 1:this.iPorts
+                this.aoFlows(iI) = matter.flow(this.oMT, []); 
+            end
             
             % Create map for the func handles
             this.pthFlow = containers.Map('KeyType', 'single', 'ValueType', 'any');
