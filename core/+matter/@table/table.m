@@ -29,6 +29,14 @@ classdef table < base
             'fBoltzmannConst', 1.3806488e-23, ...
             'fStefanBoltzmannConst', 5.670373e-8 ...
             );
+        
+        % Some standard values for use in any place where an actual value
+        % is not given or needed.
+        
+        Standard = struct( ...
+            'Temperature', 288.15, ... % K (25°C)
+            'Pressure', 101325 ...     % Pa (sea-level pressure)
+            );
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -262,171 +270,6 @@ classdef table < base
     %% Methods for calculating matter properties %%%%%%%%%%%%%%%%%%%%%%%%%%
     methods
         
-        function fMolecularMass = calculateMolecularMass(this, afMass)
-            % Calculates the total molecular masses for a provided mass
-            % vector based on the matter table. Can be used by phase, flow
-            % and others to update their value.
-            %
-            % calculateMolecularMass returns
-            %   fMolecularMass  - molecular mass of mix, g/mol
-            
-            fMass = sum(afMass);
-            
-            if fMass == 0
-                fMolecularMass = 0;
-                return;
-            end
-            
-            fMolecularMass = afMass ./ fMass * this.afMolMass';
-        end
-        
-        function fHeatCapacity = calculateHeatCapacity(this, varargin)
-            % Calculates the total heat capacity, see calcMolMass. Needs
-            % the whole phase object to get phase type, temperature etc
-            % alternative way is hand over needed attributes manually
-            %
-            % calculateHeatCapacity returns
-            %  fHeatCapacity  - specific heat capacity of mix, J/kgK 
-            
-            %TODO
-            %   - enhanced Cp calculation (here or in derived class, or
-            %     with some event/callback functionality?) to include the
-            %     temperature dependency. Include a way to e.g. only do an
-            %     actual recalculation if substance masses/temperature
-            %     changed more than X percent?
-            fHeatCapacity = 0;
-            
-            % Case one - just a phase object provided
-            if length(varargin) == 1
-                if ~isa(varargin{1}, 'matter.phase')
-                    this.throw('fHeatCapacity', 'If only one param provided, has to be a matter.phase (derivative)');
-                end
-                
-                % initialise attributes from phase object
-                sPhase  = varargin{1}.sType;
-                sName = varargin{1}.sName;
-                afMass = varargin{1}.afMass;
-                fT = varargin{1}.fTemp;
-                fP = varargin{1}.fPressure;
-                if isempty(fP); fP = 100000; end; % std pressure (Pa)
-                
-                % if no mass given also no heatcapacity possible
-                if varargin{1}.fMass == 0 || sum(isnan(afMass)) == length(afMass)
-                    return;
-                end
-                
-                % not used
-                %sId    = [ 'Phase ' varargin{1}.oStore.sName ' -> ' varargin{1}.sName ];
-                
-                % Assuming we have two or more params, the phase type, a vector with
-                % the mass of each substance and current temperature and pressure
-                %CHECK: As far as I can see, only matter.flow.m uses this,
-                %could change that file and get rid of this if condition.
-            else
-                sPhase  = varargin{1};
-                sName = 'manual'; % can anything else, just used for check of last attributes
-                afMass = varargin{2};
-                
-                % if no mass given also no heatcapacity possible
-                if sum(afMass) == 0 || sum(isnan(afMass)) == length(afMass)
-                    return;
-                end
-                
-                % if additional temperature and pressure given
-                if nargin > 2
-                    fT = varargin{3};
-                    fP = varargin{4};
-                else
-                    fT = 288.15; % std temperature (K)
-                    fP = 100000; % std pressure (Pa)
-                end
-                
-                % not used
-                %sId = 'Manually provided vector for substance masses';
-            end
-            
-            % Commented the following lines, handling of the decision
-            % incompressible/compressible is done in the phases for now.
-            
-            %             % fluids and/or solids are handled as incompressible usually
-            %             % can be changed over the public properties bLiquid and bSolid
-            %             if strcmpi(sType, 'liquid') && this.bLiquid
-            %                 fP = 100000;
-            %             elseif strcmpi(sType, 'solid') && this.bSolid
-            %                 fP = 100000;
-            %             end
-            
-            % initialise attributes for next run (only done first time)
-            if ~isfield(this.cfLastProps, 'fCp')
-                this.cfLastProps.fT     = fT;
-                this.cfLastProps.fP     = fP;
-                this.cfLastProps.afMass = afMass;
-                this.cfLastProps.fCp    = 0;
-                this.cfLastProps.sPhase  = sPhase;
-                this.cfLastProps.sName  = sName;
-            end
-            
-            % if same Phase and Type as lasttime, it has to be checked if
-            % temperature, pressure or mass has changed more than x% from
-            % last time
-            % percentage of change can be handled over the public property
-            % rMaxChange; std is 0.01 (1%)
-            %disp(['phase: ', sPhase,' substance ', sName]);
-            if strcmp(sPhase, this.cfLastProps.sPhase) && strcmp(sName, this.cfLastProps.sName)
-                % Could the above condition be fooled by non-unique phase
-                % names?
-                aCheck{1} = [fT; this.cfLastProps.fT];
-                aCheck{2} = [fP; this.cfLastProps.fP];
-                aCheck{3} = [afMass; this.cfLastProps.afMass];
-                aDiff = cell(1,length(aCheck));
-                for i=1:length(aCheck)
-                    if aCheck{i}(1,:) ~= 0
-                        aDiff{i} = abs(diff(aCheck{i})/aCheck{i}(1,:));
-                    else
-                        aDiff{i} = 0;
-                    end
-                end
-                % more than 1% difference (or what is defined in
-                % rMaxChange) from last -> recalculate c_p and save
-                % attributes for next run
-                if any(cell2mat(aDiff) > this.rMaxChange)
-                    this.cfLastProps.fT = fT;
-                    this.cfLastProps.fP = fP;
-                    this.cfLastProps.afMass = afMass;
-                else
-                    fHeatCapacity = this.cfLastProps.fCp;
-                    if fHeatCapacity
-                        return;
-                    end
-                end
-            else
-                this.cfLastProps.fT = fT;
-                this.cfLastProps.fP = fP;
-                this.cfLastProps.afMass = afMass;
-                this.cfLastProps.sPhase = sPhase;
-                this.cfLastProps.sName = sName;
-            end
-            
-            % look which substances have mass so heatcapacity can calculated
-            if any(afMass > 0) % needed? should always true because of check in firstplace
-                aiIndexes = find(afMass>0);
-                % go through all substances that have mass and calculate the heatcapacity of each. then add this to the
-                % rest
-                for i=1:length(find(afMass>0))
-                    fCp = this.FindProperty(this.csSubstances{aiIndexes(i)}, 'Heat Capacity', 'Temperature', fT, 'Pressure', fP, sPhase);
-                    %fCp = this.FindProperty_old(fT, fP, this.csSubstances{aiIndexes(i)}, 'c_p', sType); % Old FindProperty
-                    fHeatCapacity = fHeatCapacity + afMass(aiIndexes(i)) ./ sum(afMass) * fCp;
-                end
-                % save heatcapacity for next call of this routine
-                this.cfLastProps.fCp = fHeatCapacity;
-                
-            end
-            
-            % if no substancs has a valid heatcapacity an error thrown out
-            if isempty(fHeatCapacity) || isnan(fHeatCapacity)
-                this.throw('calculateHeatCapacity','Error in HeatCapacity calculation!');
-            end
-        end
         %% old FindProperty
         % not used at moment
         % if new FindProperty is good, this function can be deleted
