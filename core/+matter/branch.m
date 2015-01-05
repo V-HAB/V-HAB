@@ -428,7 +428,8 @@ classdef branch < base & event.source
         
     
         function oExme = getInEXME(this)
-            oExme = this.coExmes{sif(this.aoFlows(1).fFlowRate < 0, 2, 1)};
+            %oExme = this.coExmes{sif(this.aoFlows(1).fFlowRate < 0, 2, 1)};
+            oExme = this.coExmes{sif(this.fFlowRate < 0, 2, 1)};
         end
         
         
