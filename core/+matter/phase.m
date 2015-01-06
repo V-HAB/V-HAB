@@ -186,13 +186,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 for iI = 1:length(csKeys)
                     sKey = csKeys{iI};
                     
-                    %orginal:if ~isfield(this.oMT.tiN2I, sKey), this.throw('phase', 'Matter type %s unkown to matter.table', sKey); end;
-                    % call mattertable if substance is not in struct for
-                    % Massvector constructing
-                    if ~isfield(this.oMT.tiN2I, sKey)
-                        this.oMT = matter.table(this,sKey);
-                        
-                    end
+                    % Throw an error if the matter species is not in the
+                    % matter table
+                    if ~isfield(this.oMT.tiN2I, sKey), this.throw('phase', 'Matter type %s unkown to matter.table', sKey); end;
                     
                     this.afMass(this.oMT.tiN2I.(sKey)) = tfMass.(sKey);
                 end
