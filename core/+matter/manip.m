@@ -114,7 +114,7 @@ classdef manip < base
             
             %CHECK store on obj var, as long as the amount of inflows
             %      doesn't change -> kind of preallocated?
-            mrInPartials  = zeros(0, this.oPhase.oMT.iSpecies);
+            mrInPartials  = zeros(0, this.oPhase.oMT.iSubstances);
             afInMasses = [];
             
             % See phase.getTotalMassChange
