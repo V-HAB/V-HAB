@@ -254,16 +254,6 @@ classdef simulation < base & event.source
             % available (for each substance separately).
             this.mfLostMass(iIdx, :)  = sum(reshape([ this.oData.oMT.aoPhases.afMassLost ], [], this.oData.oMT.iSubstances));
             
-            %NOTE in base workspace, get the total mass that was lost:
-            %   >> sum(oLastSimObj.mfLostMass(end, :))
-            
-            %     compare the initial and the end total masses (comparing
-            %     the total values - in case of a manipulator that adapts
-            %     the partials, can't really compare substance-wise):
-            %   >> fTotalMassStart = sum(oLastSimObj.mfTotalMass(1, :))
-            %   >> fTotalMassEnd   = sum(oLastSimObj.mfTotalMass(end, :))
-            %   >> fTotlaMassStart - fTotalMassEnd
-            %
             %TODO implement methods for that ... break down everything down
             %     to the moles and compare these?! So really count every
             %     atom, not the molecules ... compare enthalpy etc?

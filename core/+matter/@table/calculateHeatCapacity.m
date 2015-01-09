@@ -1,16 +1,16 @@
 function fHeatCapacity = calculateHeatCapacity(this, varargin)
 %CALCULATEHEATCAPACITY Summary of this function goes here
-    % Calculates the total heat capacity by adding the single
-    % substance capacities weighted with their mass fraction. (Same
-    % as in calcMolMass) Can use either a phase object as input
-    % parameter, or the phase type (sType) and the masses array
-    % (afMass). Optially temperature and pressure can be passed as
-    % third and fourth parameters, respectively.
-    %
-    % calculateHeatCapacity returns
-    %  fHeatCapacity  - specific, isobaric heat capacity of mix in J/kgK 
+% Calculates the total heat capacity by adding the single
+% substance capacities weighted with their mass fraction. (Same
+% as in calcMolMass) Can use either a phase object as input
+% parameter, or the phase type (sType) and the masses array
+% (afMass). Optially temperature and pressure can be passed as
+% third and fourth parameters, respectively.
+%
+% calculateHeatCapacity returns
+%  fHeatCapacity  - specific, isobaric heat capacity of mix in J/kgK 
 
-fHeatCapacity = 0;
+fHeatCapacity = -1;
 
 % Case one - just a phase object provided
 if length(varargin) == 1
@@ -130,6 +130,7 @@ end
 aiIndexes = find(afMass>0);
 % go through all substances that have mass and calculate the heatcapacity of each. then add this to the
 % rest
+keyboard();
 for i=1:length(find(afMass>0))
     fCp = this.FindProperty(this.csSubstances{aiIndexes(i)}, 'Heat Capacity', 'Temperature', fT, 'Pressure', fP, sPhase);
     %fCp = this.FindProperty_old(fT, fP, this.csSubstances{aiIndexes(i)}, 'c_p', sType); % Old FindProperty
@@ -142,8 +143,7 @@ end
 
 % If none of the substances has a valid heatcapacity an error
 % is thrown.
-if isempty(fHeatCapacity) || isnan(fHeatCapacity)
-    keyboard();
+if (fHeatCapacity < 0 || isnan(fHeatCapacity)) && ~(sum(afMass) == 0)
     this.throw('calculateHeatCapacity','Error in HeatCapacity calculation!');
 end
 end
