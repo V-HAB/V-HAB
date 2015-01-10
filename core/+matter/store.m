@@ -148,27 +148,6 @@ classdef store < base
                 %ideal gas constant
                 fR = matter.table.C.R_m;
 
-                %fix matter values required to use the correlations for
-                %density and pressure. 
-
-                %TO DO make dependant on matter table
-                %values for water
-                %density at one fixed datapoint
-                fFixDensity = 998.21;        %g/dm³
-                %temperature for the fixed datapoint
-                fFixTemperature = 293.15;           %K
-                %Molar Mass of the compound
-                fMolMassH2O = 18.01528;       %g/mol
-                %critical temperature
-                fCriticalTemperature = 647.096;         %K
-                %critical pressure
-                fCriticalPressure = 220.64*10^5;      %N/m² = Pa
-
-                %boiling point normal pressure
-                fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
-                %normal boiling point temperature
-                fBoilingTemperature = 373.124;      %K
-
                 for k = 1:length(this.aoPhases)
                     if strcmp(this.aoPhases(k).sType, 'gas')
                         fVolumeGasOld = this.aoPhases(k).fVolume;
@@ -207,9 +186,7 @@ classdef store < base
                                 mFlowRateLiquid(n) =  this.aoPhases(k).coProcsEXME{n}.aiSign*this.aoPhases(k).coProcsEXME{n}.aoFlows.fFlowRate;
                                 mPressureLiquidFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fPressure;
                                 mTemperatureLiquidFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fTemp;
-                                mDensityLiquidFlow(n) = this.LiquidDensity(mTemperatureLiquidFlow(n),...
-                                        mPressureLiquidFlow(n), fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                                        fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                                mDensityLiquidFlow(n) = this.oMT.FindProperty('H2O','fDensity','Pressure',mPressureLiquidFlow(n),'Temperature',(mTemperatureLiquidFlow(n)-273.15),'liquid');
                             end
                         else
                             mFlowRateLiquid = 0; 
@@ -335,16 +312,12 @@ classdef store < base
                     while sign(fErrorStore_X) == sign(fErrorStore_Y) && counter1 <= 500
                         fDensityLiquid_X = fMassLiquid/(this.fVolume-fVolumeGas_X);
                         fPressureGas_X = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas_X);
-                        fPressureLiquid_X = this.LiquidPressure(fTempLiquidOld,...
-                                    fDensityLiquid_X, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                                    fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                        fPressureLiquid_X = this.oMT.FindProperty('H2O','Pressure','fDensity',fDensityLiquid_X,'Temperature',(fTempLiquidOld-273.15),'liquid');
                         fErrorStore_X = fPressureGas_X-fPressureLiquid_X;      
 
                         fDensityLiquid_Y = fMassLiquid/(this.fVolume-fVolumeGas_Y);
                         fPressureGas_Y = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas_Y);
-                        fPressureLiquid_Y = this.LiquidPressure(fTempLiquidOld,...
-                                    fDensityLiquid_Y, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                                    fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                        fPressureLiquid_Y = this.oMT.FindProperty('H2O','Pressure','fDensity',fDensityLiquid_Y,'Temperature',(fTempLiquidOld-273.15),'liquid');
                         fErrorStore_Y = fPressureGas_Y-fPressureLiquid_Y;  
 
                         %if the signs are identical the search intervall is
@@ -379,17 +352,14 @@ classdef store < base
                         end
 
                         fDensityLiquid_X = fMassLiquid/(this.fVolume-fVolumeGas_X);
-                        fDensityLiquid1_Z = fMassLiquid/(this.fVolume-fVolumeGas1_Z);
+                        fDensityLiquid_Z = fMassLiquid/(this.fVolume-fVolumeGas1_Z);
 
                         fPressureGas_X = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas_X);
                         fPressureGas1_Z = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas1_Z);
 
-                        fPressureLiquid_X = this.LiquidPressure(fTempLiquidOld,...
-                            fDensityLiquid_X, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-                        fPressureLiquid1_Z = this.LiquidPressure(fTempLiquidOld,...
-                            fDensityLiquid1_Z, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                        fPressureLiquid_X = this.oMT.FindProperty('H2O','Pressure','fDensity',fDensityLiquid_X,'Temperature',(fTempLiquidOld-273.15),'liquid');
+                        
+                        fPressureLiquid1_Z = this.oMT.FindProperty('H2O','Pressure','fDensity',fDensityLiquid_Z,'Temperature',(fTempLiquidOld-273.15),'liquid');
 
                         fErrorStore_X = fPressureGas_X-fPressureLiquid_X;
                         fErrorTank1_Z = fPressureGas1_Z-fPressureLiquid1_Z;
@@ -526,10 +496,6 @@ classdef store < base
                 if isempty(this.aoPhases), this.aoPhases          = oPhase;
                 else                       this.aoPhases(end + 1) = oPhase;
                 end
-            end
-            
-            if strcmp(oPhase.sType, 'liquid')
-                oPhase.addFunctionHandles(@this.LiquidDensity, @this.LiquidPressure);
             end
         end
         

@@ -482,11 +482,11 @@ classdef table < base
                         % number of dependencies
                         iDependencies = 1;
                     else
-                        this.trow('table:FindProperty','Wrong inputtype for first dependency');
+                        this.throw('table:FindProperty','Wrong inputtype for first dependency');
                     end
                 otherwise
                     % at least one dependency has to be given over
-                    this.trow('table:FindProperty','Not enough inputs');
+                    this.throw('table:FindProperty','Not enough inputs');
             end
             
             % check if dependencies are valid; if only second valid -> handle it to firstdep
