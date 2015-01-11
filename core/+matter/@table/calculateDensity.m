@@ -11,36 +11,36 @@ function fDensity = calculateDensity(this, varargin)
 % calculateDensity returns
 %  fDensitiy - density of matter in current state in kg/m^3
 
-fDensity = -1;
-
 % Case one - just a phase object provided
 if length(varargin) == 1
-    if ~isa(varargin{1}, 'matter.phase') || ~isa(varargin{1}, 'matter.flow')
-        this.throw('fHeatCapacity', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
+    if ~isa(varargin{1}, 'matter.phase') && ~isa(varargin{1}, 'matter.flow')
+        this.throw('calculateDensity', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
     end
     
+    % Getting the phase type (gas, liquid, solid) depending on the object
+    % type
     if isa(varargin{1}, 'matter.phase')
-        % initialize attributes from phase object
-        sPhase        = varargin{1}.sType;
-        afMass        = varargin{1}.afMass;
-        fTemperature  = varargin{1}.fTemp;
-        fPressure     = varargin{1}.fPressure;
-        
-        
-        % if no mass given also no density possible
-        if varargin{1}.fMass == 0 || sum(isnan(afMass)) == length(afMass)
-            fDensity = 0;
-            return;
-        end
+        sPhase = varargin{1}.sType;
     elseif isa(varargin{1}, 'matter.flow')
-        
+        sPhase = varargin{1}.oBranch.getInEXME().oPhase.sType;
     end
     
-else
-    sPhase  = varargin{1};
-    afMass  = varargin{2};
+    fTemperature = varargin{1}.fTemp;
+    fPressure    = varargin{1}.fPressure;
+    arPartialMass = varargin{1}.arPartialMass;
     
-    % if no mass given also no heatcapacity possible
+    % in no mass given also no density possible
+    if sum(arPartialMass) == 0;
+        fDensity = 0;
+        return;
+    end
+else
+    sPhase = varargin{1};
+    afMass = varargin{2};
+    
+    arPartialMass = afMass ./ sum(afMass);
+    
+    % if no mass given also no density possible
     if sum(afMass) == 0 || sum(isnan(afMass)) == length(afMass)
         fDensity = 0;
         return;
@@ -55,22 +55,20 @@ end
 
 if isempty(fPressure);    fPressure    = this.Standard.Pressure;    end; % std pressure (Pa)
 if isempty(fTemperature); fTemperature = this.Standard.Temperature; end; % std temperature (K)
-        
 
-% look which substances have mass so heatcapacity can calculated
-aiIndexes = find(afMass>0);
-% go through all substances that have mass and calculate the heatcapacity of each. then add this to the
-% rest
-for i=1:length(find(afMass>0))
-    fRho = this.FindProperty(this.csSubstances{aiIndexes(i)}, 'Heat Capacity', 'Temperature', fTemperature, 'Pressure', fPressure, sPhase);
-    
-    fDensity = fDensity + afMass(aiIndexes(i)) ./ sum(afMass) * fRho;
+% Find the indices of all substances that are in the flow
+aiIndices = find(arPartialMass > 0);
+fRho = zeros(1, length(aiIndices));
+
+for iI = 1:length(aiIndices)
+    fRho(iI) = this.FindProperty(this.csSubstances{aiIndices(iI)}, 'Density', 'Temperature', fTemperature, 'Pressure', fPressure, sPhase);
 end
 
-% If none of the substances has a valid heatcapacity an error
-% is thrown.
-if (fDensity < 0 || isnan(fDensity)) && sum(afMass) == 0
-    this.throw('calculateHeatCapacity','Error in HeatCapacity calculation!');
+fDensity = sum(fRho .* arPartialMass(aiIndices));
+
+% If none of the substances has a valid density an error is thrown.
+if fDensity < 0 || isnan(fDensity)
+    this.throw('calculateDensity','Error in Density calculation!');
 end
 
 end
