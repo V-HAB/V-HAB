@@ -240,7 +240,6 @@ classdef simulation < base & event.source
 
             for iL = this.aiLog
                 try 
-                    keyboard();
                     this.mfLog(this.oTimer.iTick + 1, iL) = eval([ 'this.oRoot.' this.csLog{iL} ]);
                 catch
                     this.throw('simulation','Error trying to log this.oRoot.%s. \nPlease check your logging configuration in setup.m!', this.csLog{iL});
