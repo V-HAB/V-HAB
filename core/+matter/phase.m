@@ -704,13 +704,6 @@ classdef phase < base & matlab.mixin.Heterogeneous
         end
         
         
-        
-        
-        
-        
-        
-        
-        
         function setAttribute(this, sAttribute, xValue)
             % Internal method that needs to be copied to every child.
             % Required to enable the phase class to adapt values on the

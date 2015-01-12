@@ -112,6 +112,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         
         function this = update(this)
+            disp('flow update')
             % At the moment done through the solver specific methods ...
         end
         
