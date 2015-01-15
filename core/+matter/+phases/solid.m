@@ -1,15 +1,17 @@
-classdef solid < Matter
+classdef solid < matter.phase
     %SOLID Summary of this class goes here
     %   Detailed explanation goes here
     
-    properties
+    properties (SetAccess = protected, GetAccess = public)
         afVolume;       % Array containing the volume of the individual species in m^3
         fVolume = 0;    % Volume of all solid species in m^3
+        
+        sType = 'solid';
     end
     
     methods
-        function this = solid(tfMasses, fTemp)
-            this@Matter(tfMasses, fTemp);
+        function this = solid(oStore, sName, tfMasses, fTemp)
+            this@matter.phase(oStore, sName, tfMasses, fTemp);
             
             csKeys = fieldnames(tfMasses);
             for iI = 1:length(csKeys)
