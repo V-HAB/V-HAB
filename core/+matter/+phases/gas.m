@@ -12,6 +12,7 @@ classdef gas < matter.phase
     
     properties (SetAccess = protected, GetAccess = public)
         % Phase type (for matter table etc)
+        % @type string
         sType = 'gas';
         
         fVolume;                % Volume in m^3
@@ -99,9 +100,6 @@ classdef gas < matter.phase
         function [ afPartialPressures ] = getPartialPressures(this)
             %TODO see @matter.flow.getPartialPressures
             %     PROTECTED! automatically called in .update() -> afPPs!
-            %
-            %TODO allow param (cell, string, index) --> select species for
-            %     whom to get partial pressure
             
             % No mass? 
             if this.fMass == 0
@@ -135,6 +133,9 @@ classdef gas < matter.phase
             if isnan(fMassToPressure) || isinf(fMassToPressure)
                 fMassToPressure = 0;
             end
+        end
+        function setProperty(this, sAttribute, xValue)
+            this.(sAttribute) = xValue;
         end
     end
     

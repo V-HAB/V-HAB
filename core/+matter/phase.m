@@ -43,12 +43,17 @@ classdef phase < base & matlab.mixin.Heterogeneous
         % @type float
         fMass;              % [kg]
         
-        % Mol mass, heat capacity
+        % Mol mass
         % @types float
         fMolMass;           % [g/mol]
         
+        % SPECIFIC heat capacity!
         % @types float
-        fHeatCapacity = 0;  % [J/K]
+        %TODO rename to fSpecificHeatCapacity, implement .getHeatCapacity
+        %     that returns this.fSpecificHeatCapacity * this.fMass
+        %     Keep fHeatCapacity, implement get.fHeatCapacity that warns
+        %     and instead returns fSpecificHeatCapacity or .getHeatCap (?)
+        fHeatCapacity = 0;  % [J/(K*kg(]
         %TODO heat capacity with 0 initialized because needed on first
         %     .update call (from .seal()) --> still needed?
         
@@ -63,6 +68,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
         oMT;
         
         % Name of phase
+        % @type string
         sName;
         
         % Internal processors have to be used if a specific parameter shall
@@ -696,6 +702,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
             %          Just register own callback and exec .update()!
             %          Still, logic required to update e.g. store's
             %          volume distribution if liquid phase changes etc.
+            %TODO do that within the phase. Call update method of phase,
+            %     then check how much the contents have changed since store
+            %     last updated, depending on that call update on store
             this.oStore.setNextExec(this.fLastMassUpdate + fTimeStep);
             %this.oStore.setNextExec(this.fLastMassUpdate + 1);
             

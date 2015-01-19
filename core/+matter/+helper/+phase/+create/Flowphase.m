@@ -1,4 +1,4 @@
-function [ cParams sDefaultPhase ] = air(~, fVolume, fTemperature, rRH, fPressure)
+function [ cParams sDefaultPhase ] = Flowphase(~, fVolume, fTemperature, rRH, fPressure)
 %AIR helper to create an air matter phase.
 %   If just volume given, created to suit the ICAO International Standard
 %   Atmosphere of 101325 Pa, 15°C and 0% relative humidity, see:
@@ -20,35 +20,31 @@ fMolMassAir = 29.088;
 % Values from @matter.table
 fRm         = 8.314472;
 fMolMassH2O = 18;
-
+fMolMassCO2 = 44;
+fMolMassO2 = 32;
 % Check input arguments, set default
 %TODO for fTemp, rRH, fPress -> key/value pairs?
-if nargin < 3 || isempty(fTemperature), fTemperature = 273.15; end;
-if nargin < 4 || isempty(rRH),          rRH          = 0;      end;
-if nargin < 5 || isempty(fPressure),    fPressure    = 101325; end;
+if nargin < 3, fTemperature = 273.15; end;
+if nargin < 4, rRH          = 0;      end;
+if nargin < 5, fPressure    = 101325; end;
 
 % p V = m / M * R_m * T -> mol mass in g/mol so divide
-fMass = fPressure * fVolume * (fMolMassAir / 1000) / fRm / fTemperature;
+fMass = fPressure * fVolume * (fMolMassH2O / 1000) / fRm / fTemperature;
 
 % Matter composition
 tfMass = struct(...
-    'N2',  0.75518 * fMass, ...
-    'O2',  0.23135 * fMass, ...
-    'Ar',  0.01288 * fMass, ...
-    'CO2', 0.00058 * fMass ...
+    'H2O',  0.5 * fMass, ...
+    'CO2',  0.25 * fMass, ...
+    'O2',  0.25 * fMass ...
 );
 
 % Check relative humidity - add?
 % See http://en.wikipedia.org/wiki/Vapor_pressure
 if rRH > 0
-       % Dodm: formula for temperature as °C not K
-       %convert first
-    fTC = fTemperature - 273.15;    
-    fSatPressure = 6.11213 * exp(17.62 * fTC / (243.12 + fTC)) * 100;
+    fSatPressure = 6.11213 * exp(17.62 * fTemperature / (243.12 + fTemperature)) * 100;
     
     % Pressure to absolute mass - pV = nRT -> p is saturation pressure
- 
-    tfMass.H2O = fSatPressure * rRH * (fMolMassH2O / 1000) / fRm / fTemperature * fVolume;
+    tfMass.H2O = fSatPressure * (fMolMassH2O / 1000) / fRm / fTemperature * fVolume;
 end
 
 

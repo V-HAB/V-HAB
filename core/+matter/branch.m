@@ -435,13 +435,15 @@ classdef branch < base & event.source
             %     the setFlowRate method of the branch. The branch calls
             %     this fct before setting a new solver.
             
-            
             if ~isempty(this.oHandler)
                 this.throw('registerHandlerFR', 'Can only set one handler!');
             end
             
             this.oHandler = oHandler;
+            
+            
             setFlowRate   = @this.setFlowRate;
+            %setFlowRate   = @(varargin) this.setFlowRate(varargin{:});
         end
         
     

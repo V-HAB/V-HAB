@@ -6,10 +6,14 @@ classdef container < sys
         % Stores stored as struct.
         %CHECK change to mixin array? Do we need that?
         %aoStores = matter.store.empty();
+        % @type struct
+        % @types object
         toStores = struct();
         
         % Branches stored as mixin (?) array, so e.g. all flow rates can be
         % extracted with [ this.aoBranches.fFlowRate ]
+        % @type array
+        % @types object
         aoBranches = matter.branch.empty();
         
         % Processors - also stored in the branch they belong to, but might
