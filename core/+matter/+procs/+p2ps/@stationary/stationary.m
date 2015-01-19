@@ -46,9 +46,13 @@ classdef stationary < matter.procs.p2p
             
             this.fLastUpdate = this.oStore.oTimer.fTime;
             
+            % The phase that called update already did matterupdate, but 
+            % set the fLastUpd to curr time so doesn't do that again
+            this.oIn.oPhase.massupdate();
+            this.oOut.oPhase.massupdate();
             
-            
-            setMatterProperties@matter.flow(this, fFlowRate, arPartials);
+            % Set matter properties. Calculates mol mass, heat capacity etc
+            setMatterProperties@matter.procs.p2p(this, fFlowRate, arPartials);
             
         end
     end

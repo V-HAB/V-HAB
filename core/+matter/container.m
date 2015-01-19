@@ -185,15 +185,16 @@ classdef container < sys
             
         end
         
-        function createBranch(this, sLeft, csProcs, sRight)
+        function [oBranch] = createBranch(this, sLeft, csProcs, sRight)
             
             
             if this.bSealed
                 this.throw('createBranch', 'Can''t create branches any more, sealed.');
             end
             
+            oBranch = matter.branch(this, sLeft, csProcs, sRight);
             
-            this.aoBranches(end + 1, 1) = matter.branch(this, sLeft, csProcs, sRight);
+            this.aoBranches(end + 1, 1) = oBranch;
         end
     end
     
