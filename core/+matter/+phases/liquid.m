@@ -44,43 +44,14 @@ classdef liquid < matter.phase
             this.fVolume  = fVolume;
             this.fTemp = fTemp;
             this.fPressure = fPressure;
-            
-            %TO DO make dependant on matter table
-            %values for water
-            %density at one fixed datapoint
-            fFixDensity = 998.21;        %g/dm³
-            %temperature for the fixed datapoint
-            fFixTemperature = 293.15;           %K
-            %Molar Mass of the compound
-            fMolMassH2O = 18.01528;       %g/mol
-            %critical temperature
-            fCriticalTemperature = 647.096;         %K
-            %critical pressure
-            fCriticalPressure = 220.64*10^5;      %N/m² = Pa
-
-            %boiling point normal pressure
-            fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
-            %normal boiling point temperature
-            fBoilingTemperature = 373.124;      %K
-                
-            this.fDensity = this.hLiquidDensity(this.fTemp,...
-                            this.fPressure, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+             
+            this.fDensity = this.oMT.FindProperty('H2O','fDensity','Pressure',fPressure,'Temperature',(fTemp-273.15),'liquid');
             
             this.fMass = this.fDensity*this.fVolume;
                         
             %TODO see .update(), also called from matter.phase constructor!
             %this.update();
         end
-        
-        % Function to add the function handles from the store's
-        % correlations to the phase
-        function addFunctionHandles(this, hLiquidDensity, hLiquidPressure)
-            this.hLiquidDensity  = hLiquidDensity;
-            this.hLiquidPressure = hLiquidPressure;
-            
-        end
-        
         
         function bSuccess = setVolume(this, fVolume)
             % Changes the volume of the phase. If no processor for volume
@@ -89,30 +60,7 @@ classdef liquid < matter.phase
             bSuccess = this.setParameter('fVolume', fVolume);
             this.fDensity = this.fMass / this.fVolume;
             
-            %fix matter values required to use the correlations for
-            %density and pressure. 
-
-            %TO DO make dependant on matter table
-            %values for water
-            %density at one fixed datapoint
-            fFixDensity = 998.21;        %g/dm³
-            %temperature for the fixed datapoint
-            fFixTemperature = 293.15;           %K
-            %Molar Mass of the compound
-            fMolMassH2O = 18.01528;       %g/mol
-            %critical temperature
-            fCriticalTemperature = 647.096;         %K
-            %critical pressure
-            fCriticalPressure = 220.64*10^5;      %N/m² = Pa
-
-            %boiling point normal pressure
-            fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
-            %normal boiling point temperature
-            fBoilingTemperature = 373.124;      %K
-                
-            this.fPressure = this.hLiquidPressure(this.fTemp,...
-                            this.fDensity, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+            this.fPressure = this.oMT.FindProperty('H2O','Pressure','fDensity',this.fDensity,'Temperature',(this.fTemp-273.15),'liquid');
             
             return;
             %TODO with events:
@@ -137,27 +85,9 @@ classdef liquid < matter.phase
             
             bSuccess = this.setParameter('fPressure', fPressure);
             %Get new Density for new pressure
-            %TO DO make dependant on matter table
-            %values for water
-            %density at one fixed datapoint
-            fFixDensity = 998.21;        %g/dm³
-            %temperature for the fixed datapoint
-            fFixTemperature = 293.15;           %K
-            %Molar Mass of the compound
-            fMolMassH2O = 18.01528;       %g/mol
-            %critical temperature
-            fCriticalTemperature = 647.096;         %K
-            %critical pressure
-            fCriticalPressure = 220.64*10^5;      %N/m² = Pa
-
-            %boiling point normal pressure
-            fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
-            %normal boiling point temperature
-            fBoilingTemperature = 373.124;      %K
-                
-            this.fDensity = this.hLiquidDensity(this.fTemp,...
-                            this.fPressure, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+            
+            this.fDensity = this.oMT.FindProperty('H2O','fDensity','Pressure',fPressure,'Temperature',(this.fTemp-273.15),'liquid');
+            
             this.fMass = this.fDensity*this.fVolume;
                         
                         
@@ -200,31 +130,8 @@ classdef liquid < matter.phase
             %     it happen that fVol is empty, e.g. gas solved in fluid?
             if ~isempty(this.fVolume) && this.fLastUpdateLiquid ~= this.oStore.oTimer.fTime && this.oStore.iIncompressible == 0
                 
-                %fix matter values required to use the correlations for
-                %density and pressure. 
-                
-                %TO DO make dependant on matter table
-                %values for water
-                %density at one fixed datapoint
-                fFixDensity = 998.21;        %g/dm³
-                %temperature for the fixed datapoint
-                fFixTemperature = 293.15;           %K
-                %Molar Mass of the compound
-                fMolMassH2O = 18.01528;       %g/mol
-                %critical temperature
-                fCriticalTemperature = 647.096;         %K
-                %critical pressure
-                fCriticalPressure = 220.64*10^5;      %N/m² = Pa
-
-                %boiling point normal pressure
-                fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
-                %normal boiling point temperature
-                fBoilingTemperature = 373.124;      %K
-                
                 fDensity = this.fMass/this.fVolume;
-                this.fPressure = this.hLiquidPressure(this.fTemp,...
-                                fDensity, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                                fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                this.fPressure = this.oMT.FindProperty('H2O','Pressure','fDensity',fDensity,'Temperature',(this.fTemp-273.15),'liquid');
                 this.fLastUpdateLiquid = this.oStore.oTimer.fTime;            
             end
             for k = 1:length(this.coProcsEXME)

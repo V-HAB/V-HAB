@@ -1,4 +1,4 @@
-function [ cParams, sDefaultPhase ] = water(~, fVolume, fTemperature, fPressure)
+function [ cParams, sDefaultPhase ] = water(system, fVolume, fTemperature, fPressure)
 %helper to create a water phase
 %
 % Parameters:
@@ -23,25 +23,7 @@ if nargin < 4, fPressure    = 28300; end;
 
 %%Density calculation for water
 
-%TO DO make dependant on matter table
-%density at one fixed datapoint
-fFixDensity = 998.21;        %g/dm³
-%temperature for the fixed datapoint
-fFixTemperature = 293.15;           %K
-%Molar Mass of the compound
-fMolMassH2O = 18.01528;       %g/mol
-%critical temperature
-fCriticalTemperature = 647.096;         %K
-%critical pressure
-fCriticalPressure = 220.64*10^5;      %N/m² = Pa
-
-%boiling point normal pressure
-fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
-%normal boiling point temperature
-fBoilingTemperature = 373.124;      %K
-
-fDensity = solver.matter.fdm_liquid.functions.LiquidDensity(fTemperature, fPressure, fFixDensity, fFixTemperature, fMolMassH2O, ...
-    fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+fDensity = system.oMT.FindProperty('H2O','fDensity','Pressure',fPressure,'Temperature',(fTemperature-273.15),'liquid');
 
 %%
 
