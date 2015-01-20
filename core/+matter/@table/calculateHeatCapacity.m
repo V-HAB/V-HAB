@@ -48,6 +48,10 @@ else
         fP = this.Standard.Pressure;    % std pressure (Pa)
     end
     
+    if nargin > 4
+        sPhase = varargin{5};
+    end
+    
 end
 
 
@@ -59,7 +63,7 @@ aiIndices = find(afMass>0);
 fCp = zeros(length(aiIndices), 1);      % Initialize an arry filled with zeros
 
 for iI=1:length(find(afMass>0))
-    fCp(iI) = this.FindProperty(this.csSubstances{aiIndices(iI)}, 'Heat Capacity', 'Temperature', fT, 'Pressure', fP, sPhase);
+    fCp(iI) = this.findProperty(this.csSubstances{aiIndices(iI)}, 'Heat Capacity', 'Temperature', fT, 'Pressure', fP, sPhase);
 end
 
 % Multiply the individual heat capacities with the partial masses

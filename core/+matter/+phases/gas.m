@@ -138,7 +138,7 @@ classdef gas < matter.phase
             %     move this calc to matter.table.calcGasPressure, or do
             %     some matter.helper.table.gas.pressure or so?
             
-            fMassToPressure = matter.table.C.R_m * this.fTemp / ((this.fMolMass / 1000) * this.fVolume);
+            fMassToPressure = matter.table.Const.fUniversalGas * this.fTemp / ((this.fMolMass / 1000) * this.fVolume);
             
             %TODO mol mass zero if no mass - NaN, or Inf if mass zero
             if isnan(fMassToPressure) || isinf(fMassToPressure)

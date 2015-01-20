@@ -10,7 +10,6 @@ function fDensity = calculateDensity(this, varargin)
 %
 % calculateDensity returns
 %  fDensitiy - density of matter in current state in kg/m^3
-
 % Case one - just a phase object provided
 if length(varargin) == 1
     if ~isa(varargin{1}, 'matter.phase') && ~isa(varargin{1}, 'matter.flow')
@@ -61,7 +60,7 @@ aiIndices = find(arPartialMass > 0);
 fRho = zeros(1, length(aiIndices));
 
 for iI = 1:length(aiIndices)
-    fRho(iI) = this.FindProperty(this.csSubstances{aiIndices(iI)}, 'Density', 'Temperature', fTemperature, 'Pressure', fPressure, sPhase);
+    fRho(iI) = this.findProperty(this.csSubstances{aiIndices(iI)}, 'Density', 'Temperature', fTemperature, 'Pressure', fPressure, sPhase);
 end
 
 fDensity = sum(fRho .* arPartialMass(aiIndices));

@@ -5,9 +5,12 @@ classdef table < base
     %   describing bodys of matter.
     %
     % MatterTable properties:
-    %   tiN2I           - Struct to map the bu,md to blah
+    %   ttxMatter       - Contains all matter data 
     %   afMolMass       - Vector with mol masses for each substance,
     %                     extracted on initializion from ttxMatter
+    %   tiN2I           - Struct to map the bu,md to blah
+    %   csSubstances    - Cell array with all substance names
+    %   iSubstances     - Number of substances in the table
     %
     %TODO
     % Get rid of all the flow, phase, masslog and whatever stuff. That
@@ -16,49 +19,64 @@ classdef table < base
     properties (Constant = true, GetAccess = public)
         % Some constants
         %
-        %   - gas constant (R_m) in J/(K Mol)
-        %   - gravitational constant (fGravitationConst) in m^3/(kg s^2)
-        %   - Avogadro constant (fAvogadroConst) in 1/Mol
-        %   - Boltzmann constant (fBoltzmannConst) J/K
-        %   - Stefan-Boltzmann constant (fStefanBoltzmannConst) in W/(m^2 K^4)
+        %   - universal gas constant (fUniversalGas) in J/(K Mol)
+        %   - gravitational constant (fGravitation) in m^3/(kg s^2)
+        %   - Avogadro constant (fAvogadro) in 1/Mol
+        %   - Boltzmann constant (fBoltzmann) J/K
+        %   - Stefan-Boltzmann constant (fStefanBoltzmann) in W/(m^2 K^4)
         
-        C = struct( ...
-            'R_m', 8.314472, ...
-            'fGravitationConst', 6.67384e-11, ...
-            'fAvogadroConst', 6.02214129e23, ...
-            'fBoltzmannConst', 1.3806488e-23, ...
-            'fStefanBoltzmannConst', 5.670373e-8 ...
+        Const = struct( ...
+            'fUniversalGas',     8.314472,      ...
+            'fGravitation',      6.67384e-11,   ...
+            'fAvogadro',         6.02214129e23, ...
+            'fBoltzmann',        1.3806488e-23, ...
+            'fStefanBoltzmann',  5.670373e-8    ...
             );
         
         % Some standard values for use in any place where an actual value
         % is not given or needed.
         
         Standard = struct( ...
-            'Temperature', 288.15, ... % K (25 deg C)
-            'Pressure', 101325 ...     % Pa (sea-level pressure)
+            'Temperature', 288.15, ...   % K (25 deg C)
+            'Pressure',    101325  ...    % Pa (sea-level pressure)
             );
     end
     
     properties (SetAccess = protected, GetAccess = public)
-        % Mapping of substance names to according index, cell with substance
-        % names and total amount of substances
-        tiN2I;
-        
-        % cellarray of all saved substances
-        csSubstances;
-        
-        % number of substances in phase
-        iSubstances;
-        
-        % all propterties and data for all substances are stored in this struct
+        % This struct is the heart of the matter table. In it all data on
+        % each substance is stored. The key for each substance is its name,
+        % e.g. 'H2O' for water, or 'He' for Helium. In the case of complex
+        % substances it does not have to be a chemical formula, e.g.
+        % 'brine' or 'inedibleBiomass'.
         ttxMatter;
         
-        
-        % Molecular masses of the substance in g/mol
+        % An array containing the molecular masses of each substance in 
+        % g/mol. We keep this in a separate array to enable fast
+        % calculation of the total molecular mass of a phase or flow. The
+        % order in which the substances are stored is identical to the
+        % order in ttxMatter. Also, using an array makes it easy to loop
+        % through the individual values with simple for-loops.
         %TODO store as kg/mol so e.g. phases.gas doesn't have to convert
         afMolMass;
+        
+        % This struct maps all substance names according to an index, hence 
+        % the name N2I, for 'name to index'. The index corresponds to the 
+        % order in which the substances are stored in ttxMatter. 
+        % Since the flows and phases have all masses or partial masses in 
+        % an array rather than a struct or value class helps to loop 
+        % through all substances fast. With this struct, the index of
+        % individual substances can be extracted when needed. 
+        tiN2I;
+        
+        % A cell array with the names of all substances contained in the
+        % matter table
+        csSubstances;
+        
+        % The number of all substances contained in this matter table
+        iSubstances;
+        
     end
-    
+        
     properties %DELETE THESE WHEN READY
         % Why do we need all of this? Seems like this should be in a
         % separate class.
@@ -72,112 +90,197 @@ classdef table < base
     
     methods
         function this = table()
-            % constructor of class and handles calling of Mattercreation
+            % Class constructor
             
-            %% Importing data vom 'MatterData' worksheet
-            % import from worksheet MatterData (strrep with filesep is used for compatibility of MS and Mac OS)
-            [ this.ttxMatter, csWorksheets ] = this.MatterImport(strrep('core\+matter\Matter.xlsx','\',filesep), 'MatterData');
+            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Check for pre-existing data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            % First we'll check if the Excel source file for all the matter
+            % data has changed since this constructor was last run. If not,
+            % then we can just use the existing data without having to go
+            % through the entire import process again. 
+
+            % Loading the previously saved information about the current
+            % matter data, if it exists.
+            tOldFileInfo = dir(strrep('data\MatterDataInfo.mat', '\', filesep));
+            
+            if ~isempty(tOldFileInfo)
+                % If there is existing data, we get the file information on
+                % the current Matter.xlsx file so we can compare the two.
+                load(strrep('data\MatterDataInfo.mat', '\', filesep));
+                tNewFileInfo = dir(strrep('core\+matter\Matter.xlsx', '\', filesep));
+                if tNewFileInfo.datenum <= tMatterDataInfo.datenum
+                    % If the current Excel file is not newer than the one 
+                    % used to create the stored data, we can just use that.
+                    load(strrep('data\MatterData.mat', '\', filesep));
+                    % The return command ends the constructor method
+                    return;
+                end
+            end
+            
+            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Introduction %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            % Now that we have determined, that there is no pre-existing 
+            % data we have to call importMatterData() a few times to fill 
+            % the ttxMatter struct with data from the given Excel file.
+            % The Excel file has one general worksheet which contains basic
+            % information about every element in the periodic table and
+            % some compounds. It also contains basic information about
+            % substances which cannot be clealy defined (e.g. 'inedible
+            % biomass' or 'brine'), but still need to be used in more
+            % top-level simulations.
+            % The Excel file also contains worksheets for individual
+            % substances. These substance-specific worksheets contain many
+            % datapoints for several key properties at different
+            % temperatures, pressures etc. The findProperty() method uses
+            % these datapoints to interpolate between them if called. 
+            
+            
+            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Importing data vom 'MatterData' worksheet %%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            % First we import all of the data contained in the general
+            % 'MatterData' worksheet.
+            
+            % Calling the importMatterData method (strrep with filesep is 
+            % used for compatibility of MS and Mac OS, it replaces the
+            % backslash with the current system fileseparator, on Macs and
+            % Linux, this is the forward slash.)
+            [ this.ttxMatter, csWorksheets ] = importMatterData(strrep('core\+matter\Matter.xlsx','\',filesep), 'MatterData');
             
             % get all substances
             this.csSubstances = fieldnames(this.ttxMatter);
             % get number of substances
             this.iSubstances  = length(this.csSubstances);
             
-            % preallocation
+            % Initializing the class properties that will be subsequently
+            % filled with data. This is done to preallocate the memory. If
+            % it is not done, MATLAB gives a warning and suggests to do
+            % this.
             this.afMolMass = zeros(1, this.iSubstances);
             this.tiN2I     = struct();
             
-            % write attributes of all substances
+            % Now we go through all substances in the 'MatterData'
+            % worksheet and fill the ttxMatter struct
             for iI = 1:this.iSubstances
-                % Configuration
-                tCfg = this.ttxMatter.(this.csSubstances{iI});
-                
-                % Name to index
+                % Creating a temporary variable to make the code more
+                % readable.
+                tSubstance = this.ttxMatter.(this.csSubstances{iI});
+
+                % Adding an entry to the name to index struct
                 this.tiN2I.(this.csSubstances{iI}) = iI;
                 
                 
-                % Molecular mass - directly provided
-                if isfield(tCfg, 'fMolMass')
-                    this.afMolMass(iI) = tCfg.fMolMass(1);
-                    
-                else
-                    % Extract the atomic elements from matter name and
-                    % check if molecular mass provided for each of them
+                % If the molecular mass of the substance is not directly
+                % provided by the 'MatterData' worksheet, we try to
+                % calculate it. This is only possible if the substance name
+                % is given as a chemical formula, e.g. 'H2O' for water.
+                if ~isfield(tSubstance, 'fMolMass')
+                    % Extract the atomic elements from matter name
                     tElements  = matter.table.extractAtomicTypes(this.csSubstances{iI});
+                    % Saving the different elements of the substance into a
+                    % cell array.
                     csElements = fieldnames(tElements);
-                    b404       = isempty(csElements);
+                    
+                    % Initializing the mol mass variable
                     fMolMass   = 0;
                     
-                    if ~b404
-                        for iE = 1:length(csElements)
-                            % Check if element exists and has mol mass def
-                            if isfield(this.ttxMatter, csElements{iE}) || isfield(this.ttxMatter.(csElements{iE}), 'fMolMass')
-                                fMolMass = fMolMass + tElements.(csElements{iE}) * this.ttxMatter.(csElements{iE}).fMolMass;
-                            else
-                                b404 = true;
-                                break;
-                            end
+                    % Now we loop through all the elements of the
+                    % substance, check if a molecular mass is given an add
+                    % them up.
+                    for iE = 1:length(csElements)
+                        if isfield(this.ttxMatter, csElements{iE}) && isfield(this.ttxMatter.(csElements{iE}), 'fMolMass')
+                            fMolMass = fMolMass + tElements.(csElements{iE}) * this.ttxMatter.(csElements{iE}).fMolMass;
+                        else
+                            % Throwing an error because there is no entry
+                            % for this specific element
+                            this.throw('table:constructor', 'No molecular mass provided for element ''%s''', this.csSubstances{iI});
                         end
                     end
                     
-                    if b404
-                        % Some elements not found so reset (might be there
-                        % from previous calcs?)
-                        if isfield(this.ttxMatter.(this.csSubstances{iI}), 'tComponents')
-                            this.ttxMatter.(this.csSubstances{iI}).tComponents = struct();
-                        end
-                        
-                        %this.throw('createMatterData', 'Type %s has no molecular mass provided and not all elements of matter type (molecule) could be found to calculate molecular mass', this.csSubstances{iI});
-                        this.afMolMass(iI) = -1;
-                    else
-                        % Write components on matter definition
-                        this.ttxMatter.(this.csSubstances{iI}).tComponents = tElements;
-                        this.afMolMass(iI) = fMolMass;
-                    end
-                end
-           end
-            
-            %% Importing from individual worksheets
-            
-            for iI = 3:length(csWorksheets)
-                sSubstancename = csWorksheets{iI};
-                
-                % import from worksheet sSubstancename (strrep with filesep is used for compatibility of MS and Mac OS)
-                this.ttxMatter.(sSubstancename) = this.MatterImport(strrep('core\+matter\Matter.xlsx','\',filesep), sSubstancename);
-                
-                % handle Pressure values (convert bar in Pa if necessary)
-                iColumn = this.FindColumn('Pressure', sSubstancename);
-                if strcmpi(this.ttxMatter.(sSubstancename).import.text(6,iColumn), 'bar')
-                    this.ttxMatter.(sSubstancename).import.num(5:end,iColumn) = this.ttxMatter.(sSubstancename).import.num(5:end,iColumn)*100000;
-                elseif strcmpi(this.ttxMatter.(sSubstancename).import.text(6,iColumn), 'Pa')
-                    % nothing, all good
-                else
-                    this.throw('table:createMatterData',sprintf('Pressure unit %s unkown', this.ttxMatter.(sSubstancename).import.text(6,iColumn)));
-                end
-                
-                % new substance, so some fields, like number of substances
-                % and molmass array, has to be extended
-                if ~any(strcmp(this.csSubstances, sSubstancename))
-                    % index of new substance is one times higher than last one
-                    iIndex = this.iSubstances+1;
-                    % write new substancename in cellarray
-                    this.csSubstances{iIndex} = sSubstancename;
-                    % index of new substance into number2index array
-                    this.tiN2I.(sSubstancename) = iIndex;
-                    this.iSubstances = iIndex;
+                    % Last steps are adding the elements to the substance's
+                    % entry in the ttxMatter struct and creating an entry
+                    % in the mol mass array.
+                    this.ttxMatter.(this.csSubstances{iI}).tElements = tElements;
+                    this.afMolMass(iI) = fMolMass;
                     
-                    % molmass of substance into molmass array
-                    this.afMolMass(iIndex) = this.ttxMatter.(sSubstancename).fMolMass;
                 end
             end
+            
+            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Importing from individual worksheets %%%%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            % Now we import all of the data contained in the individual
+            % worksheets of the Excel file.
+            
+            % Looping throuhg all of the worksheets. The first worksheet
+            % ('Info') just contains information on how to add data to the
+            % Exel file. We just imported the second worksheet,
+            % 'MatterData', so now we start at number 3. 
+            for iI = 3:length(csWorksheets)
+                
+                % Getting the substance name from the worksheet name.
+                sSubstancename = csWorksheets{iI};
+                
+                % Calling the importMatterData method (strrep with filesep is
+                % used for compatibility of MS and Mac OS, it replaces the
+                % backslash with the current system fileseparator, on Macs and
+                % Linux, this is the forward slash.)
+                this.ttxMatter.(sSubstancename) = importMatterData(strrep('core\+matter\Matter.xlsx','\',filesep), sSubstancename);
+                
+                % Now we need to update some of the global information 
+                if ~any(strcmp(this.csSubstances, sSubstancename))
+                    
+                    % First we increment the total number of substances
+                    this.iSubstances = this.iSubstances+1;
+                    % Write new substancename into the cellarray
+                    this.csSubstances{this.iSubstances} = sSubstancename;
+                    % Add index of new substance to name to index struct
+                    this.tiN2I.(sSubstancename) = this.iSubstances;
+                    % Write mol mass of substance into mol mass array
+                    this.afMolMass(this.iSubstances) = this.ttxMatter.(sSubstancename).fMolMass;
+                
+                end
+            end
+            
+            % Now we save the data into a .mat file, so if the matter table
+            % doesn't change, we don't have to run through the entire
+            % constructor again. To do this, we just place the entire table
+            % object into the file.
+            
+            % Creating the file name
+            filename = strrep('data\MatterData.mat', '\', filesep);
+            save(filename, 'this');
+            keyboard();
+            % To make it a little easier and faster to handle, we'll save
+            % the Excel file information into a separate file. That way we
+            % only have to load a small file rather than the entire matter
+            % table at the beginning of this constructor.
+            tMatterDataInfo = dir(strrep('core\+matter\Matter.xlsx','\',filesep));
+            filename = strrep('data\MatterDataInfo.mat', '\', filesep);
+            save(filename, 'tMatterDataInfo');
+            
+
+            % Now we are done. All of the data has been written into the
+            % matter table and the data has been saved for future use. 
+            % Let the simulations begin!
+            
         end
     end
     
-    %% Method for calculating matter properties %%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Method for calculating matter properties %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     methods
         % FindProperty
         % Example input: this.FindProperty('CO2','c_p','Pressure',120000,'alpha',0.15,'liquid')
-        function fProperty = FindProperty(this, sSubstance, sProperty, sFirstDepName, fFirstDepValue, sSecondDepName, fSecondDepValue, sPhase)
+        function fProperty = findProperty(this, sSubstance, sProperty, sFirstDepName, fFirstDepValue, sSecondDepName, fSecondDepValue, sPhaseType)
             % search for property values for specific dependency-values
             % one dependency is needed and a second one is optional
             % interpolates given worksheetdata if not in worksheet MatterData
@@ -192,9 +295,9 @@ classdef table < base
             
             fProperty = [];
             
-             if ~isempty(this.aoPhases(1).oStore.oTimer) && this.aoPhases(1).oStore.oTimer.fTime > 40.3 && strcmp(sSubstance, 'CO2')
-                 keyboard();
-             end
+%              if ~isempty(this.aoPhases(1).oStore.oTimer) && this.aoPhases(1).oStore.oTimer.fTime > 40.3 && strcmp(sSubstance, 'CO2')
+%                  keyboard();
+%              end
             
             %TODO See if we actually need the phase and flow object input
             % possiblity. Might also be better to do this in the externally
@@ -204,9 +307,9 @@ classdef table < base
             % varargin
             % Can either be a phase or flow object (oPhase, oFlow), one or
             % two dependencies, and the phase of the substance
-            % sFirstDepName: name of dependency 1 (parameter for FindColumn), e.g. 'Temperature'
+            % sFirstDepName: name of dependency 1 (parameter for findColumn), e.g. 'Temperature'
             % sFirstDepValue: value of dependency 1
-            % sSecondDepName: name of dependency 2 (parameter for FindColumn), e.g. 'Pressure', optional
+            % sSecondDepName: name of dependency 2 (parameter for findColumn), e.g. 'Pressure', optional
             % sFirstDepValue: value of dependency 2, optional
             % sPhase: only specific phase searched; selects only rows with that phase in MatterData,
             %         'gas', 'liquid' or 'solid', optional
@@ -214,57 +317,95 @@ classdef table < base
             % If phase or flow objects are given, the two dependencies will
             % be set to temperature and pressure
             
-            % check inputs on correctness
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Checking inputs for correctness %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
             switch nargin
-                case 8 %must be: this, Substancename, Property, FirstDependency, FirstDependencyValue, SecondDependency, SecondDependenyValue, Phase
+                %---------------------------------------------------------%
+                case 8 % Two dependencies plus phase type
+                    
+                    % input parameters must be: 
+                    % this, Substancename, Property, 
+                    % FirstDependency, FirstDependencyValue, 
+                    % SecondDependency, SecondDependenyValue, 
+                    % Phase type
+                    
                     % check if all inputs have correct type
                     if ~ischar(sSubstance) || ~ischar(sProperty) || ~(ischar(sFirstDepName) || ...
                             isempty(sFirstDepName)) || ~isnumeric(fFirstDepValue) ||...
                             ~(ischar(sSecondDepName) || isempty(sSecondDepName)) ||...
-                            ~isnumeric(fSecondDepValue) || ~ischar(sPhase) || ~ischar(sSubstance)
-                        this.trow('table:FindProperty','Some inputs have wrong type');
+                            ~isnumeric(fSecondDepValue) || ~ischar(sPhaseType) || ~ischar(sSubstance)
+                        this.throw('table:FindProperty','Some inputs have wrong type');
                     else
                         % number of dependencies
                         iDependencies = 2;
                     end
-                case 7 %must be: this, Substancename, Property, FirstDependency, FirstDependencyValue, SecondDependency, SecondDependenyValue
+                %---------------------------------------------------------%    
+                case 7 % Two dependencies without phase type
+                    
+                    % input parameters must be: 
+                    % this, Substancename, Property, 
+                    % FirstDependency, FirstDependencyValue, 
+                    % SecondDependency, SecondDependenyValue, 
+                    
                     % check if all inputs have correct type
                     if ~ischar(sSubstance) || ~ischar(sProperty) || ~(ischar(sFirstDepName) ||...
                             isempty(sFirstDepName)) || ~isnumeric(fFirstDepValue) ||...
                             ~(ischar(sSecondDepName) || isempty(sSecondDepName)) ||...
                             ~isnumeric(fSecondDepValue) || ~ischar(sSubstance)
-                        this.trow('table:FindProperty','Some inputs have wrong type');
+                        this.throw('table:FindProperty','Some inputs have wrong type');
                     else
                         % number of dependencies
                         iDependencies = 2;
-                        sPhase = [];
+                        sPhaseType = [];
                     end
-                case 6 %must be: this, Substancename, Property, FirstDependency, FirstDependencyValue, Phase
+                %---------------------------------------------------------%
+                case 6 % One dependency plus phase type
+                    
+                    % input parameters must be: 
+                    % this, Substancename, Property, 
+                    % FirstDependency, FirstDependencyValue, 
+                    % Phase type
+                    
                     % check if sPhase is given as last parameter
                     if isa(sSecondDepName, 'char') && strcmpi({'solid','liquid','gas'}, sSecondDepName)
-                        sPhase = sSecondDepName;
+                        sPhaseType = sSecondDepName;
                         sSecondDepName = [];
                         % number of dependencies
                         iDependencies = 1;
                     else
                         this.throw('table:FindProperty','Input phase is not correct');
                     end
-                case 5 %must be: this, Substancename, Property, FirstDependency, FirstDependencyValue
+                %---------------------------------------------------------%
+                case 5 % One dependency without phase type
+                    
+                    % input parameters must be: 
+                    % this, Substancename, Property, 
+                    % FirstDependency, FirstDependencyValue, 
+                    
                     % check if value of first dependency is numeric
                     if isnumeric(fFirstDepValue)
                         sSecondDepName = [];
-                        sPhase = [];
+                        sPhaseType = [];
                         % number of dependencies
                         iDependencies = 1;
                     else
                         this.throw('table:FindProperty','Wrong inputtype for first dependency');
                     end
+                %---------------------------------------------------------%
                 otherwise
                     % at least one dependency has to be given over
                     this.throw('table:FindProperty','Not enough inputs');
+                %---------------------------------------------------------%
             end
             
-            % check if dependencies are valid; if only second valid -> handle it to firstdep
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Determining the number of dependencies %%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
+            % check if dependencies are valid
+            % if only second dependency is valid -> make it the first
             if (isempty(sFirstDepName) || ~ischar(sFirstDepName)) && ~(isempty(sSecondDepName) || ischar(sSecondDepName))
                 sFirstDepName = sSecondDepName;
                 sSecondDepName = [];
@@ -278,27 +419,23 @@ classdef table < base
                 this.throw('table:FindProperty',sprintf('no valid dependency was transmitted for property %s',sProperty));
             end
             
-            % check if Substance is already imported
-            if ~isfield(this.ttxMatter, sSubstance)
-                % This should never happen...
-                this.createMatterData([], sSubstance);
-            end
-            
-            % get column of searched property
-            iColumn = this.FindColumn(sProperty, sSubstance);
+             % get column of searched property
+            iColumn = this.findColumn(sProperty, sSubstance);
             
             % if no column found, property is not in worksheet
             if isempty(iColumn)
                 this.throw('table:FindProperty',sprintf('Cannot find property %s in worksheet %s', sProperty, sSubstance));
             end
             
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Finding properties in dedicated data worksheet %%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            %% Finding properties in dedicated data worksheet
             % over 3 rows in import.num only possible if not from worksheet
             % MatterData (max 3 phases)
             if size(this.ttxMatter.(sSubstance).import.num, 1) > 3
                 % get column of first dependency
-                iColumnFirst = this.FindColumn(sFirstDepName, sSubstance);
+                iColumnFirst = this.findColumn(sFirstDepName, sSubstance);
                 % if properties are given 2 times (e.g. Temperature has C and K columns), second column is used
                 if length(iColumnFirst) > 1
                     iColumnFirst = iColumnFirst(2);
@@ -338,16 +475,16 @@ classdef table < base
                     elseif ~abOutOfRange(1)
                         % only in range of table
                         % interpolation needed
-                        % create a temporary array because inperp1 need stricly monotonic increasing data
+                        % create a temporary array because interp1 need stricly monotonic increasing data
                         afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst]);
                         afTemporary = sortrows(afTemporary,2);
                         [~,rows] = unique(afTemporary(:,2),'rows');
-                        afTemporary = afTemporary(rows,:); % save afTemporary so that it doesn't have to do it again for all columns?
-                        fProperty = interp1(afTemporary(:,2),afTemporary(:,1),fFirstDepValue); % interp1(aFirstDepValue, aProperty, fFirstDepValue)
+                        afTemporary = afTemporary(rows,:); 
+                        fProperty = interp1(afTemporary(:,2),afTemporary(:,1),fFirstDepValue); 
                     else
                         % dependencyvalue is out of range
                         % look if phase of substance is in MatterData
-                        iRowsFirstMatterData = find(strcmpi(this.ttxMatter.(sSubstance).MatterData.text(:,3), sPhase), 1, 'first');
+                        iRowsFirstMatterData = find(strcmpi(this.ttxMatter.(sSubstance).MatterData.text(:,3), sPhaseType), 1, 'first');
                         if isempty(iRowsFirstMatterData)
                             % not in MatterData
                             % get 'best' value in Range of substancetable
@@ -363,7 +500,7 @@ classdef table < base
                 else
                     % two Dependencies
                     % get column of second dependency
-                    iColumnSecond = this.FindColumn(sSecondDepName, sSubstance);
+                    iColumnSecond = this.findColumn(sSecondDepName, sSubstance);
                     
                     % if no column found, property is not in worksheet
                     if isempty(iColumnSecond)
@@ -397,26 +534,32 @@ classdef table < base
                         else
                             % dependency not directly given
                             % interpolation over both dependencies needed
-                            % look why warning is given out and/or suppres it
-                            warning('off', 'all');
                             
-                            % create temporary array because scatteredInterpolant doesn't allow nan values
+                            % create temporary array because scatteredInterpolant doesn't allow NaN values
                             afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
-                            afTemporary(isnan(afTemporary)) = 0;
+                            
+                            % Now we remove all rows that contain NaN values
+                            afTemporary(any(isnan(afTemporary), 2), :) = [];
+                            
+                            % only unique values are needed (also scatteredInterpolant would give out a warning in that case)
+                            afTemporary = unique(afTemporary,'rows');
+                            
+                            % Sorting the rows by the value of fProperty
+                            %CHECK Does scatteredInterpolant() need a
+                            %sorted matrix? Could save this step
                             afTemporary = sortrows(afTemporary,1);
+                            
                             % interpolate linear with no extrapolation
+                            %CHECK Does it make sense not to extrapolate?
                             F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
                             fProperty = F(fFirstDepValue, fSecondDepValue);
-                            
-                            
-                            warning('on', 'all');
                             
                         end
                     else
                         % one or more dependencies are out of range
                         % look if data is in MatterData
                         if isfield(this.ttxMatter.(sSubstance), 'MatterData')
-                            iRowsFirstMatterData = find(strcmpi(this.ttxMatter.(sSubstance).MatterData.text(:,3), sPhase), 1, 'first');
+                            iRowsFirstMatterData = find(strcmpi(this.ttxMatter.(sSubstance).MatterData.text(:,3), sPhaseType), 1, 'first');
                         else
                             iRowsFirstMatterData = [];
                         end
@@ -428,20 +571,27 @@ classdef table < base
                             % get the propertyvalue
                             fProperty = this.ttxMatter.(sSubstance).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
                         else
-                            % no found data in MatterData
+                            % no data found in MatterData
                             % get 'best' value in Range of substancetable
-                            warning('off', 'all');
-                            % before executing the slow scatteredInterpolant, look if all properties same as last time
                             
-                            
-                            % create temporary array because griddata doesn't allow nan values
+                            % create temporary array because scatteredInterpolant doesn't allow NaN values
                             afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
-                            afTemporary(isnan(afTemporary)) = 0;
+                            
+                            % Now we remove all rows that contain NaN values
+                            afTemporary(any(isnan(afTemporary), 2), :) = [];
+                            
+                            % only unique values are needed (also scatteredInterpolant would give out a warning in that case)
+                            afTemporary = unique(afTemporary,'rows');
+                            
+                            % Sorting the rows by the value of fProperty
+                            %CHECK Does scatteredInterpolant() need a
+                            %sorted matrix? Could save this step
                             afTemporary = sortrows(afTemporary,1);
+                            
                             % interpolate linear with no extrapolation
+                            %CHECK Does it make sense not to extrapolate?
                             F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
                             fProperty = F(fFirstDepValue, fSecondDepValue);
-                            warning('on', 'all');
                         end
                     end
                     
@@ -449,26 +599,31 @@ classdef table < base
                 
                 
             else
-                %% Finding properties in generic MatterData worksheet
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % Finding properties in generic MatterData worksheet %%%%%%
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                
                 % get the rows of the phase of the substance
                 % dynamic search of column phase?
-                rowPhase = find(strcmp(this.ttxMatter.(sSubstance).import.text(:,3), sPhase), 1, 'first');
+                rowPhase = find(strcmp(this.ttxMatter.(sSubstance).import.text(:,3), sPhaseType), 1, 'first');
                 if rowPhase
                     % get the propertyvalue
-                    fProperty = this.ttxMatter.(sSubstance).import.raw{rowPhase,iColumn};%fProperty = this.ttxMatter.(sSubstance).MatterData.num(rowPhase-2,iColumn-3);
+                    fProperty = this.ttxMatter.(sSubstance).import.raw{rowPhase,iColumn};
                 end
                 
             end
             
-            % Check to see if what we got in the end is an actual value
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Check to see if what we got in the end is an actual value %%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             if isnan(fProperty) || isempty(fProperty)
                 keyboard();
                 this.throw('findProperty', 'Error using findProperty. No valid value for %s of %s found in matter table.', sProperty, sSubstance);
             end
         end
-    
-    %% Methods for handling of related phases and flows %%%%%%%%%%%%%%%%%%%
-        
+    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Methods for handling of related phases and flows %%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function afMass = addPhase(this, oPhase, oOldMT)
             % Add phase
             %disp('Add phase')
@@ -544,181 +699,21 @@ classdef table < base
         end
         
     end
-    %% Protected, internal methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Protected, internal methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     methods (Access = protected)
-        
-        
-        function [ ttxImportMatter, csWorksheets ] = MatterImport(this, sFile, sWorksheetname)
-            % Import function that handles import from substances worksheet for
-            % one substance or at initialisation the import from worksheet MatterData.
-            % First it looks if substancedata is already imported (for a specific substance).
-            % After import with xlsread it gets the data in the right
-            % format for later use
-            %
-            % MatterImport returns
-            %  ttxImportMatter - struct with all data
-            %  csWorksheets    - cell array with the names of all the
-            %                    worksheets in the Excel file
-            %
-            % input parameters
-            % sFile: complete filename of MatterXLS
-            % sWorksheetname: worksheet name
             
-            % store all worksheets from Excel file and look if file is readable
-            % worksheetnames used in FindProperty to look if maybe more
-            % data is available
-            [sStatus, csWorksheets] = xlsfinfo(sFile);
-            if ~any(strcmp(sStatus, {'Microsoft Excel Spreadsheet', 'Microsoft Macintosh Excel Spreadsheet'}))
-                this.throw('table:MatterImport',sprintf('File %s has wrong format for MatterImport',sFile));
-            end
-            
-            %% import worksheet MatterData (standard Mattertable)
-            % this is executed at initialisation (from class simulation)
-            if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData'))
-                
-                % import of worksheet
-                [import.num, import.text, import.raw] = this.customXlsread(sFile, sWorksheetname);
-                
-                % Search for empty cell in first row.; Column before is last
-                % Tablecolumn. All data after that is not imported. Then
-                % store table length
-                [~, emptyColumns] = find(strcmp(import.text(1,:),''));
-                iTableLength = emptyColumns(1)-1;
-                
-                % Storing the column of the melting point
-                % ("codename" of first property to store in phase) to
-                % save all properties. The properties to the left of
-                % melting point are considered constant and independent of
-                % phase, temperature, pressure, etc.
-                % NOTE: Currently there is only one constant property,
-                % which is molar mass. We are leaving this in here though
-                % just in case another constant property is added in the
-                % future.
-                iColumn = find(strcmp(import.text(2,:),'fMeltPoint'));
-                
-                % only unique substances are needed
-                scSubstances = unique(import.text(3:end,1));
-                
-                % Initialize the struct in which all substances are later stored
-                ttxImportMatter = struct;
-                
-                % go through all unique substances
-                for iI = 1:length(scSubstances)
-                    % set substancename as fieldname
-                    ttxImportMatter.(scSubstances{iI}) = [];
-                    %ttxImportMatter = setfield(ttxImportMatter, scSubstances{i},'');
-                    
-                    % select all rows of that substance
-                    % substances can have more than one phase
-                    iRows = find(strcmp(import.text(3:end,1),scSubstances{iI}));
-                    if ~isempty(iRows)
-                        % rownumbers of .num and .text/.raw are 2 rows different because of headers
-                        iRows = iRows +2;
-                        % store all data of current substance
-                        ttxImportMatter.(scSubstances{iI}).import.num = import.num(iRows-2,:);
-                        ttxImportMatter.(scSubstances{iI}).import.num(:,iTableLength+1:end) = []; % overhead not needed
-                        ttxImportMatter.(scSubstances{iI}).import.text = import.text(1:2,:);
-                        ttxImportMatter.(scSubstances{iI}).import.text = [ttxImportMatter.(scSubstances{iI}).import.text; import.text(iRows,:)];
-                        ttxImportMatter.(scSubstances{iI}).import.text(:,iTableLength+1:end) = []; % overhead not needed
-                        ttxImportMatter.(scSubstances{iI}).import.raw = import.raw(1:2,:);
-                        ttxImportMatter.(scSubstances{iI}).import.raw = [ttxImportMatter.(scSubstances{iI}).import.raw; import.raw(iRows,:)];
-                        ttxImportMatter.(scSubstances{iI}).import.raw(:,iTableLength+1:end) = []; % overhead not needed
-                        
-                        % go through all properties before density
-                        % this properties are constant and only needed one time
-                        for j = 4:iColumn-1
-                            if ~isnan(import.num(iRows(1)-2,j-3))
-                                ttxImportMatter.(scSubstances{iI}).(import.text{2,j}) = import.num(iRows(1)-2,j-3);
-                            end
-                        end
-                        % go through all phases and save all remaining properties for that specific phase
-                        for z = 1:length(iRows)
-                            for j = iColumn:iTableLength
-                                if ~isnan(import.num(iRows(z)-2,j-3))
-                                    ttxImportMatter.(scSubstances{iI}).ttxPhases.(import.text{iRows(z),3}).(import.text{2,j}) = import.num(iRows(z)-2,j-3);
-                                end
-                            end
-                            
-                        end
-                        
-                    end
-                end
-                %% import specific substance worksheet
-            else
-                % first look if data is not already imported
-                % if data is imported check size of imported data (data from MatterData has max size of 5)
-                if isfield(this.ttxMatter, sWorksheetname) && length(this.ttxMatter.(sWorksheetname).import.raw(:,1)) < 6
-                    
-                    % save substance data from worksheet MatterData
-                    ttxImportMatter.MatterData.raw = this.ttxMatter.(sWorksheetname).import.raw;
-                    ttxImportMatter.MatterData.num = this.ttxMatter.(sWorksheetname).import.num;
-                    ttxImportMatter.MatterData.text = this.ttxMatter.(sWorksheetname).import.text;
-                    
-                    % data is already imported -> get back
-                elseif isfield(this.ttxMatter, sWorksheetname)
-                    return;
-                end
-                
-                % import worksheet sWorksheetname
-                [import.num, import.text, import.raw] = this.customXlsread(sFile, sWorksheetname);
-                %[import.num, import.text, import.raw] = xlsread(sFile, sWorksheetname);
-                
-                % save data for later use
-                ttxImportMatter.import.text = import.text;
-                ttxImportMatter.import.num = import.num;
-                ttxImportMatter.import.raw = import.raw;
-                ttxImportMatter.SubstancesName = import.text{1,1};
-                
-                % Finding the empty cells in the text array of the first
-                % row, this way we can figure out, how many constants there
-                % are in this specific worksheet
-                % Since the first three cells are irrelevant, we start
-                % looking in the fourth column
-                [~, emptyColumns] = find(strcmp(import.text(1,4:end),''));
-                iNumberOfConstants = emptyColumns(1)-1;
-                
-                % save all constants of substances defined in first four
-                % rows, since we ignore the first three columns, we have to
-                % add 3 to the end of the range
-                for iI = 4:(iNumberOfConstants + 3)
-                    if ~isempty(import.text{3,iI}) &&  ~isnan(import.num(1,iI))
-                        ttxImportMatter.(import.text{3,iI}) = import.num(1,iI);
-                    end
-                end
-                
-                % numeric import is mostly minor than other because in
-                % the first lines are often no numbers
-                % for easier handling in later functions get this the
-                % same size
-                iLengthRaw = size(import.raw,1);
-                iLengthNum = size(import.num,1);
-                if iLengthRaw > iLengthNum
-                    afNewArray(iLengthRaw,size(import.num,2)) = 0;
-                    afNewArray(:,:) = nan;
-                    afNewArray((iLengthRaw-iLengthNum)+1:end,:) = ttxImportMatter.import.num;
-                    ttxImportMatter.import.num = afNewArray;
-                end
-                
-                % look if some values safed as kJ -> has to convert do J (*1000)
-                iTableLength = size(ttxImportMatter.import.text,2);
-                for iI = 1:iTableLength
-                    if strncmp(ttxImportMatter.import.text{6,iI}, 'kJ', 2)
-                        ttxImportMatter.import.text{6,iI} = strrep(ttxImportMatter.import.text{6,iI}, 'kJ', 'J');
-                        ttxImportMatter.import.num(:,iI) = ttxImportMatter.import.num(:,iI)*1000;
-                    end
-                end
-                
-            end
-        end
-        
-        
-        %% helper methods
-        function [iColumn, iTableLength] = FindColumn(this, sProperty, sSubstance, iRow)
+    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function [iColumn, iTableLength] = findColumn(this, sProperty, sSubstance, iRow)
             % most used function (often called in loops)
             % finds the column of a property and if wished the columnlength of
             % the table
             %
-            % FindColumn returns
+            % findColumn returns
             %  iColumn - number of column
             %  iTableLength - length of table
             %
@@ -789,7 +784,7 @@ classdef table < base
             if isnumeric(xProperty)
                 iColumn = xProperty;
             elseif ischar(xProperty)
-                iColumn = this.FindColumn(xProperty, sSubstance);
+                iColumn = this.findColumn(xProperty, sSubstance);
             else
                 this.thow('table:FindRange','Wrong input');
             end
@@ -803,313 +798,12 @@ classdef table < base
             fMin = min(this.ttxMatter.(sSubstance).import.num(:,iColumn));
         end
         
-        function [numOut, textOut, rawOut] = customXlsread(~, sFile, sWorksheetname)
-            % this is a customised xlsread function
-            % no unnecessary functionality like xml import function and lots of queries removed
-            % it is used in MatterImport
-            %
-            % customXlsread returns
-            %  numOut: numeric data from worksheet
-            %  textOut: string data from worksheet
-            %  rawOut: all data from worksheet
-            %
-            % inputs:
-            % sFile: filename of excelfile
-            % sWorksheetname: name of worksheet for import
-            
-            % no arguments handed over, abort function
-            if nargin < 3 || isempty(sFile) || isempty(sWorksheetname)
-                numOut = [];
-                textOut = [];
-                rawOut = [];
-                return
-            end
-            
-            % used activeXserver is only available at windows
-            basicMode = ~ispc;
-            
-            % Try to reuse an existing COM server instance if possible
-            try
-                Excel = actxGetRunningServer('excel.application');
-                % no crash so probably succeeded to connect to a running server
-            catch
-                % Never mind - try to continue normally to start the COM server and connect to it
-                try
-                    Excel = actxserver('excel.application');
-                catch
-                    % no activeXserver available or excel not installed, use basic mode of xlsread
-                    basicMode = true;
-                end
-            end
-            
-            % use xlsread in basic mode
-            if basicMode
-                [numOut, textOut, rawOut] = xlsread(sFile, sWorksheetname, '', 'basic');
-                return
-            end
-            
-            % try to get full path of file
-            try
-                sFile = validpath(sFile);
-            catch exception
-                error(message('MATLAB:xlsread:FileNotFound', sFile, exception.message));
-            end
-            
-            readOnly = true;
-            Excel.DisplayAlerts = 0;
-            
-            % Associate event handler for COM object event at run time
-            registerevent(Excel,{'WorkbookActivate', @WorkbookActivateHandler});
-            % open worksheet in readonly mode
-            Excel.workbooks.Open(sFile, 0, readOnly);
-            
-            % wait for response from activeXserver to open worksheet
-            for i = 1:500
-                try
-                    workbook.FileFormat;
-                    break;
-                catch exception %#ok<NASGU>
-                    pause(0.01);
-                end
-            end
-            
-            WorkSheets = workbook.Worksheets;
-            
-            % Get name of specified worksheet from workbook
-            try
-                TargetSheet = get(WorkSheets,'item',sWorksheetname);
-            catch  %#ok<CTCH>
-                error(message('MATLAB:xlsread:WorksheetNotFound', sWorksheetname));
-            end
-            
-            %Activate silently fails if the sheet is hidden
-            set(TargetSheet, 'Visible','xlSheetVisible');
-            % activate worksheet
-            Activate(TargetSheet);
-            
-            % get range of worksheet
-            DataRange = workbook.ActiveSheet.UsedRange;
-            
-            % get data from worksheet
-            rawOut = DataRange.Value;
-            if ~iscell(rawOut)
-                rawOut = {rawOut};
-            end
-            
-            % get numeric and text data splited from worksheetdata
-            [numOut, textOut] = xlsreadSplitNumericAndText(rawOut);
-            
-            % nested functions
-            % used from private folder iofun on matlabpath
-            
-            % -------------------------------------------------------------------------
-            % for workbook activation
-            function WorkbookActivateHandler(varargin)
-                workbook = varargin{3};
-            end
-            
-            % -------------------------------------------------------------------------
-            % for Split Numeric And Text
-            function [numericData, textData] = xlsreadSplitNumericAndText(data)
-                % xlsreadSplitNumericAndText parses raw data into numeric and text arrays.
-                %   [numericData, textData] = xlsreadSplitNumericAndText(DATA) takes cell
-                %   array DATA from spreadsheet and returns a double array numericData and
-                %   a cell string array textData.
-                %
-                %   See also XLSREAD, XLSWRITE, XLSFINFO.
-                
-                %   Copyright 1984-2012 The MathWorks, Inc.
-                
-                
-                % ensure data is in cell array
-                if ischar(data)
-                    data = cellstr(data);
-                elseif isnumeric(data) || islogical(data)
-                    data = num2cell(data);
-                end
-                
-                % Check if raw data is empty
-                if isempty(data)
-                    % Abort when all data cells are empty.
-                    textData = {};
-                    numericData = [];
-                    return
-                end
-                
-                % Initialize textData as an empty cellstr of the right size.
-                textData = cell(size(data));
-                textData(:) = {''};
-                
-                % Find non-numeric entries in data cell array
-                isTextMask = cellfun('isclass',data,'char');
-                
-                % Place text cells in text array
-                if any(isTextMask(:))
-                    textData(isTextMask) = data(isTextMask);
-                else
-                    textData = {};
-                end
-                % Excel returns COM errors when it has a #N/A field.
-                textData = strrep(textData,'ActiveX VT_ERROR: ','#N/A');
-                
-                % Trim the leading and trailing empties from textData
-                emptyTextMask = cellfun('isempty', textData);
-                textData = filterDataUsingMask(textData, emptyTextMask);
-                
-                % place NaN in empty numeric cells
-                if any(isTextMask(:))
-                    data(isTextMask)={NaN};
-                end
-                
-                % Find non-numeric entries in data cell array
-                isLogicalMask = cellfun('islogical',data);
-                
-                % Convert cell array to numeric array through concatenating columns then
-                % rows.
-                cols = size(data,2);
-                tempDataColumnCell = cell(1,cols);
-                % Concatenate each column first
-                for n = 1:cols
-                    tempDataColumnCell{n} = cat(1, data{:,n});
-                end
-                % Now concatenate the single column of cells into a numeric array.
-                numericData = cat(2, tempDataColumnCell{:});
-                
-                % Trim all-NaN leading and trailing rows and columns from numeric array
-                isNaNMask = isnan(numericData);
-                if all(isNaNMask(:))
-                    numericData = [];
-                else
-                    [numericData, isNaNMask] = filterDataUsingMask(numericData, isNaNMask);
-                end
-                
-                % Restore logical type if all values were logical.
-                if any(isLogicalMask(:)) && ~any(isNaNMask(:))
-                    numericData = logical(numericData);
-                end
-                
-                % Ensure numericArray is 0x0 empty.
-                if isempty(numericData)
-                    numericData = [];
-                end
-            end
-            
-            % -------------------------------------------------------------------------
-            function  [row, col] = getCorner(mask, firstlast)
-                isLast = strcmp(firstlast,'last');
-                
-                % Find first (or last) row that is not all true in the mask.
-                row = find(~all(mask,2), 1, firstlast);
-                if isempty(row)
-                    row = emptyCase(isLast, size(mask,1));
-                end
-                
-                % Find first (or last) column that is not all true in the mask.
-                col = find(~all(mask,1), 1, firstlast);
-                % Find returns empty if there are no rows/columns that contain a false value.
-                if isempty(col)
-                    col = emptyCase(isLast, size(mask,2));
-                end
-            end
-            
-            % -------------------------------------------------------------------------
-            function [data, mask] = filterDataUsingMask(data, mask)
-                [rowStart, colStart] = getCorner(mask, 'first');
-                [rowEnd, colEnd] = getCorner(mask, 'last');
-                data = data(rowStart:rowEnd, colStart:colEnd);
-                mask = mask(rowStart:rowEnd, colStart:colEnd);
-            end
-            
-            % -------------------------------------------------------------------------
-            function dim = emptyCase(isLast, dimSize)
-                if isLast
-                    dim = dimSize;
-                else
-                    dim = 1;
-                end
-            end
-            
-            % -------------------------------------------------------------------------
-            % for generation of full filepath
-            function filenameOut = validpath(filename)
-                % VALIDPATH builds a full path from a partial path specification
-                %   FILENAME = VALIDPATH(FILENAME) returns a string vector containing full
-                %   path to a file. FILENAME is string vector containing a partial path
-                %   ending in a file or directory name. May contain ..\  or ../ or \\. The
-                %   current directory (pwd) is prepended to create a full path if
-                %   necessary. On UNIX, when the path starts with a tilde, '~', then the
-                %   current directory is not prepended.
-                %
-                %   See also XLSREAD, XLSWRITE, XLSFINFO.
-                
-                %   Copyright 1984-2012 The MathWorks, Inc.
-                
-                %First check for wild cards, since that is not supported.
-                if strfind(filename, '*') > 0
-                    error(message('MATLAB:xlsread:Wildcard', filename));
-                end
-                
-                % break partial path in to file path parts.
-                [Directory, file, ext] = fileparts(filename);
-                
-                if ~isempty(ext)
-                    filenameOut = getFullName(filename);
-                else
-                    extIn = matlab.io.internal.xlsreadSupportedExtensions;
-                    for ii = 1:length(extIn)
-                        try                                                                %#ok<TRYNC>
-                            filenameOut = getFullName(fullfile(Directory, [file, extIn{i}]));
-                            return;
-                        end
-                    end
-                    error(message('MATLAB:xlsread:FileDoesNotExist', filename));
-                end
-            end
-            
-            % -------------------------------------------------------------------------
-            function absolutepath=abspath(partialpath)
-                
-                % parse partial path into path parts
-                [pathname, filename, ext] = fileparts(partialpath);
-                % no path qualification is present in partial path; assume parent is pwd, except
-                % when path string starts with '~' or is identical to '~'.
-                if isempty(pathname) && strncmp('~', partialpath, 1)
-                    Directory = pwd;
-                elseif isempty(regexp(partialpath,'(.:|\\\\)', 'once')) && ...
-                        ~strncmp('/', partialpath, 1) && ...
-                        ~strncmp('~', partialpath, 1);
-                    % path did not start with any of drive name, UNC path or '~'.
-                    Directory = [pwd,filesep,pathname];
-                else
-                    % path content present in partial path; assume relative to current directory,
-                    % or absolute.
-                    Directory = pathname;
-                end
-                
-                % construct absolute filename
-                absolutepath = fullfile(Directory,[filename,ext]);
-            end
-            
-            % -------------------------------------------------------------------------
-            function filename = getFullName(filename)
-                FileOnPath = which(filename);
-                if isempty(FileOnPath)
-                    % construct full path to source file
-                    filename = abspath(filename);
-                    if isempty(dir(filename)) && ~isdir(filename)
-                        % file does not exist. Terminate importation of file.
-                        error(message('MATLAB:xlsread:FileDoesNotExist', filename));
-                    end
-                else
-                    filename = FileOnPath;
-                end
-            end
-            % -------------------------------------------------------------------------
-        end
-        
     end
     
-    %% Static helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Static helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  
     methods (Static = true)
         function tElements = extractAtomicTypes(sMolecule)
             % Extracts the single atoms out of a molecule string, e.g. CO2
