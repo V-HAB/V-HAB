@@ -299,7 +299,6 @@ classdef table < base
             % sSubstance: substance name for structfield
             % sProperty: property name for column
             %
-            
             fProperty = [];
             
 %              if ~isempty(this.aoPhases(1).oStore.oTimer) && this.aoPhases(1).oStore.oTimer.fTime > 40.3 && strcmp(sSubstance, 'CO2')
@@ -324,7 +323,7 @@ classdef table < base
             % If phase or flow objects are given, the two dependencies will
             % be set to temperature and pressure
             
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Checking inputs for correctness %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
@@ -407,7 +406,7 @@ classdef table < base
                 %---------------------------------------------------------%
             end
             
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Determining the number of dependencies %%%%%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
@@ -434,13 +433,22 @@ classdef table < base
                 this.throw('table:FindProperty',sprintf('Cannot find property %s in worksheet %s', sProperty, sSubstance));
             end
             
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Finding properties in dedicated data worksheet %%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             % over 3 rows in import.num only possible if not from worksheet
             % MatterData (max 3 phases)
             if size(this.ttxMatter.(sSubstance).import.num, 1) > 3
+                
+                % initialise array for checking if dependencies are out of 
+                % table value range
+                abOutOfRange = [false; false];
+                
+                %---------------------------------------------------------%
+                % Getting the first dependency and check for out of range
+                %---------------------------------------------------------%
+                
                 % get column of first dependency
                 iColumnFirst = this.findColumn(sFirstDepName, sSubstance);
                 % if properties are given 2 times (e.g. Temperature has C and K columns), second column is used
@@ -451,9 +459,6 @@ classdef table < base
                 if isempty(iColumnFirst)
                     this.throw('table:FindProperty',sprintf('Cannot find property %s in worksheet %s', sFirstDepName, sSubstance));
                 end
-                
-                % initialise array for checking if dependencies are out of table values
-                abOutOfRange = [false; false];
                 
                 % look if data for first dependency is in range of table
                 % if not in range, first look if data is given in worksheet MatterData before interpolate
@@ -472,7 +477,10 @@ classdef table < base
                 
                 iRowsFirst = find(this.ttxMatter.(sSubstance).import.num(:,iColumnFirst) == fFirstDepValue);
                 
-                % only one dependency given
+                %---------------------------------------------------------%
+                % Only one dependency is given
+                %---------------------------------------------------------%
+                
                 if iDependencies == 1
                     
                     if ~isempty(iRowsFirst) && ~abOutOfRange(1)
@@ -505,7 +513,11 @@ classdef table < base
                         end
                     end
                 else
-                    % two Dependencies
+                
+                %---------------------------------------------------------%
+                % Two dependencies are given.
+                % Getting the second dependency and check for out of range
+                %---------------------------------------------------------%
                     % get column of second dependency
                     iColumnSecond = this.findColumn(sSecondDepName, sSubstance);
                     
@@ -532,15 +544,20 @@ classdef table < base
                     % get columns with already given values of searched second dependency
                     iRowsSecond = find(this.ttxMatter.(sSubstance).import.num(:,iColumnSecond) == fSecondDepValue);
                     
-                    % look if both dependencies are in range of table
                     if ~(abOutOfRange(1) || abOutOfRange(2))
+                        
+                        %-------------------------------------------------%
+                        % Both dependencies are in range
+                        %-------------------------------------------------%
                         if ~isempty(iRowsFirst) && ~isempty(iRowsSecond) && intersect(iRowsFirst,iRowsSecond)
-                            % both dependency directly given
-                            % get propertyvalue
+                            % If the desired property for the given
+                            % dependencies is directly given in the matter
+                            % table, we just get it. 
                             fProperty = this.ttxMatter.(sSubstance).import.num(intersect(iRowsFirst,iRowsSecond), iColumn);
                         else
-                            % dependency not directly given
-                            % interpolation over both dependencies needed
+                            % If the property is not directly given an
+                            % interpolation over both dependencies is 
+                            % needed.
                             
                             % create temporary array because scatteredInterpolant doesn't allow NaN values
                             afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
@@ -548,13 +565,13 @@ classdef table < base
                             % Now we remove all rows that contain NaN values
                             afTemporary(any(isnan(afTemporary), 2), :) = [];
                             
-                            % only unique values are needed (also scatteredInterpolant would give out a warning in that case)
+                            % Only unique values are needed (also scatteredInterpolant would give out a warning in that case)
                             afTemporary = unique(afTemporary,'rows');
-                            
-                            % Sorting the rows by the value of fProperty
-                            %CHECK Does scatteredInterpolant() need a
-                            %sorted matrix? Could save this step
-                            afTemporary = sortrows(afTemporary,1);
+                            % Sometimes there are also multiple values for
+                            % the same combination of dependencies. Here we
+                            % get rid of those too.
+                            [ ~, aIndices ] = unique(afTemporary(:, [2 3]), 'rows');
+                            afTemporary = afTemporary(aIndices, :);
                             
                             % interpolate linear with no extrapolation
                             %CHECK Does it make sense not to extrapolate?
@@ -589,11 +606,11 @@ classdef table < base
                             
                             % only unique values are needed (also scatteredInterpolant would give out a warning in that case)
                             afTemporary = unique(afTemporary,'rows');
-                            
-                            % Sorting the rows by the value of fProperty
-                            %CHECK Does scatteredInterpolant() need a
-                            %sorted matrix? Could save this step
-                            afTemporary = sortrows(afTemporary,1);
+                            % Sometimes there are also multiple values for
+                            % the same combination of dependencies. Here we
+                            % get rid of those too.
+                            [ ~, aIndices ] = unique(afTemporary(:, [2 3]), 'rows');
+                            afTemporary = afTemporary(aIndices, :);
                             
                             % interpolate linear with no extrapolation
                             %CHECK Does it make sense not to extrapolate?
