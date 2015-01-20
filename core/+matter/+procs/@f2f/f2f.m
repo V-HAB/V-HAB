@@ -205,6 +205,8 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             
             
             if ~any(afFRs)
+                %CHECK Does it really make sense to do this, just because
+                %the flow rates are zero? Shouldn't that be possible?
                 this.throw('get', 'Can''t get when flow rate is zero!');
 
             elseif (afFRs(1) * afFRs(2)) > 0

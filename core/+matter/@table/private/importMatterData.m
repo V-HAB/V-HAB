@@ -20,6 +20,7 @@ function [ ttxImportMatter, csWorksheets ] = importMatterData(sFile, sWorksheetn
 [sStatus, csWorksheets] = xlsfinfo(sFile);
 
 if ~any(strcmp(sStatus, {'Microsoft Excel Spreadsheet', 'Microsoft Macintosh Excel Spreadsheet'}))
+    % this is not going to work...
     this.throw('table:MatterImport',sprintf('File %s has wrong format for MatterImport',sFile));
 end
 
