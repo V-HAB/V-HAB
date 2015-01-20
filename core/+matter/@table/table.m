@@ -202,13 +202,20 @@ classdef table < base
                         end
                     end
                     
-                    % Last steps are adding the elements to the substance's
-                    % entry in the ttxMatter struct and creating an entry
-                    % in the mol mass array.
+                    % Now we add a struct with all the elements of the
+                    % substance to its entry in the ttxMatter struct.
                     this.ttxMatter.(this.csSubstances{iI}).tElements = tElements;
-                    this.afMolMass(iI) = fMolMass;
                     
+                else
+                    
+                    % If the molecular mass is directly given, then we can
+                    % just use the given value.
+                    fMolMass = tSubstance.fMolMass;
                 end
+                
+                % And finally we create an entry in the mol mass array.
+                this.afMolMass(iI) = fMolMass;
+                
             end
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
