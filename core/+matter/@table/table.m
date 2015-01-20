@@ -256,7 +256,7 @@ classdef table < base
             % Creating the file name
             filename = strrep('data\MatterData.mat', '\', filesep);
             save(filename, 'this');
-            keyboard();
+
             % To make it a little easier and faster to handle, we'll save
             % the Excel file information into a separate file. That way we
             % only have to load a small file rather than the entire matter
