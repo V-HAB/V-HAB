@@ -257,6 +257,16 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % SEE BELOW
     end
     
+    %% Public methods that take care of calculations that are needed a lot
+    methods (Access = public)
+        % This function calculates the current volumetric flow rate based
+        % on the current state of the matter flowing through the flow. 
+        function fVolumetricFlowRate = calculateVolumetricFlowRate(this)
+            fVolumetricFlowRate = this.fPressure * this.fMolMass / ...
+                                  this.oMT.C.R_m / this.fTemp;
+        end
+    end
+    
     %% Methods to set matter properties, accessible through handles
     % See above, handles are returned when adding procs or on .seal()
     methods (Access = protected)
