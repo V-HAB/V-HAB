@@ -1,4 +1,4 @@
-function [ ttxImportMatter, csWorksheets ] = importMatterData(sFile, sWorksheetname)
+function [ ttxImportMatter, csWorksheets ] = importMatterData(this, sFile, sWorksheetname)
 % Import function that handles import from substances worksheet for
 % one substance or at initialisation the import from worksheet MatterData.
 % First it looks if substancedata is already imported (for a specific substance).
@@ -97,23 +97,9 @@ if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData
     end
     %% import specific substance worksheet
 else
-%     % first look if data is not already imported
-%     % if data is imported check size of imported data (data from MatterData has max size of 5)
-%     if isfield(ttxMatter, sWorksheetname) && length(ttxMatter.(sWorksheetname).import.raw(:,1)) < 6
-%         
-%         % save substance data from worksheet MatterData
-%         ttxImportMatter.MatterData.raw  = ttxMatter.(sWorksheetname).import.raw;
-%         ttxImportMatter.MatterData.num  = ttxMatter.(sWorksheetname).import.num;
-%         ttxImportMatter.MatterData.text = ttxMatter.(sWorksheetname).import.text;
-%         
-%         % data is already imported -> get back
-%     elseif isfield(this.ttxMatter, sWorksheetname)
-%         return;
-%     end
     
     % import worksheet sWorksheetname
     [import.num, import.text, import.raw] = customXLSread(sFile, sWorksheetname);
-    %[import.num, import.text, import.raw] = xlsread(sFile, sWorksheetname);
     
     % save data for later use
     ttxImportMatter.import.text    = import.text;
@@ -134,7 +120,12 @@ else
     % add 3 to the end of the range
     for iI = 4:(iNumberOfConstants + 3)
         if ~isempty(import.text{3,iI}) &&  ~isnan(import.num(1,iI))
+            
             ttxImportMatter.(import.text{3,iI}) = import.num(1,iI);
+            
+            if strcmp(import.text{3,iI}, 'fMolMass')
+                ttxImportMatter.fMolarMass = import.num(1,iI) / 1000;
+            end
         end
     end
     
@@ -151,14 +142,16 @@ else
         ttxImportMatter.import.num = afNewArray;
     end
     
-    % look if some values safed as kJ -> has to convert do J (*1000)
-    iTableLength = size(ttxImportMatter.import.text,2);
-    for iI = 1:iTableLength
-        if strncmp(ttxImportMatter.import.text{6,iI}, 'kJ', 2)
-            ttxImportMatter.import.text{6,iI} = strrep(ttxImportMatter.import.text{6,iI}, 'kJ', 'J');
-            ttxImportMatter.import.num(:,iI)  = ttxImportMatter.import.num(:,iI)*1000;
-        end
-    end
+% We shouldn't need this because all of the values in the matter table MUST
+% be in Joule
+%     % look if some values saved as kJ -> has to convert do J (*1000)
+%     iTableLength = size(ttxImportMatter.import.text,2);
+%     for iI = 1:iTableLength
+%         if strncmp(ttxImportMatter.import.text{6,iI}, 'kJ', 2)
+%             ttxImportMatter.import.text{6,iI} = strrep(ttxImportMatter.import.text{6,iI}, 'kJ', 'J');
+%             ttxImportMatter.import.num(:,iI)  = ttxImportMatter.import.num(:,iI)*1000;
+%         end
+%     end
     
 end
 
