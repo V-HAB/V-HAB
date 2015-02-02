@@ -146,7 +146,7 @@ classdef store < base
             
             if this.iIncompressible == 0 && iGasPhaseExists == 1 && this.oTimer.fTime-this.fLastUpdate > 0
                 %ideal gas constant
-                fR = matter.table.C.R_m;
+                fR = matter.table.Const.fUniversalGas;
 
                 for k = 1:length(this.aoPhases)
                     if strcmp(this.aoPhases(k).sType, 'gas')
@@ -186,7 +186,7 @@ classdef store < base
                                 mFlowRateLiquid(n) =  this.aoPhases(k).coProcsEXME{n}.aiSign*this.aoPhases(k).coProcsEXME{n}.aoFlows.fFlowRate;
                                 mPressureLiquidFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fPressure;
                                 mTemperatureLiquidFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fTemp;
-                                mDensityLiquidFlow(n) = this.oMT.FindProperty('H2O','fDensity','Pressure',mPressureLiquidFlow(n),'Temperature',(mTemperatureLiquidFlow(n)-273.15),'liquid');
+                                mDensityLiquidFlow(n) = this.oMT.findProperty('H2O','fDensity','Pressure',mPressureLiquidFlow(n),'Temperature',(mTemperatureLiquidFlow(n)-273.15),'liquid');
                             end
                         else
                             mFlowRateLiquid = 0; 
@@ -312,12 +312,12 @@ classdef store < base
                     while sign(fErrorStore_X) == sign(fErrorStore_Y) && counter1 <= 500
                         fDensityLiquid_X = fMassLiquid/(this.fVolume-fVolumeGas_X);
                         fPressureGas_X = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas_X);
-                        fPressureLiquid_X = this.oMT.FindProperty('H2O','Pressure','fDensity',fDensityLiquid_X,'Temperature',(fTempLiquidOld-273.15),'liquid');
+                        fPressureLiquid_X = this.oMT.findProperty('H2O','Pressure','fDensity',fDensityLiquid_X,'Temperature',(fTempLiquidOld-273.15),'liquid');
                         fErrorStore_X = fPressureGas_X-fPressureLiquid_X;      
 
                         fDensityLiquid_Y = fMassLiquid/(this.fVolume-fVolumeGas_Y);
                         fPressureGas_Y = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas_Y);
-                        fPressureLiquid_Y = this.oMT.FindProperty('H2O','Pressure','fDensity',fDensityLiquid_Y,'Temperature',(fTempLiquidOld-273.15),'liquid');
+                        fPressureLiquid_Y = this.oMT.findProperty('H2O','Pressure','fDensity',fDensityLiquid_Y,'Temperature',(fTempLiquidOld-273.15),'liquid');
                         fErrorStore_Y = fPressureGas_Y-fPressureLiquid_Y;  
 
                         %if the signs are identical the search intervall is
@@ -357,9 +357,9 @@ classdef store < base
                         fPressureGas_X = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas_X);
                         fPressureGas1_Z = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas1_Z);
 
-                        fPressureLiquid_X = this.oMT.FindProperty('H2O','Pressure','fDensity',fDensityLiquid_X,'Temperature',(fTempLiquidOld-273.15),'liquid');
+                        fPressureLiquid_X = this.oMT.findProperty('H2O','Pressure','fDensity',fDensityLiquid_X,'Temperature',(fTempLiquidOld-273.15),'liquid');
                         
-                        fPressureLiquid1_Z = this.oMT.FindProperty('H2O','Pressure','fDensity',fDensityLiquid_Z,'Temperature',(fTempLiquidOld-273.15),'liquid');
+                        fPressureLiquid1_Z = this.oMT.findProperty('H2O','Pressure','fDensity',fDensityLiquid_Z,'Temperature',(fTempLiquidOld-273.15),'liquid');
 
                         fErrorStore_X = fPressureGas_X-fPressureLiquid_X;
                         fErrorTank1_Z = fPressureGas1_Z-fPressureLiquid1_Z;

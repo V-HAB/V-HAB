@@ -23,7 +23,7 @@ if nargin < 4, fPressure    = 28300; end;
 
 %%Density calculation for water
 
-fDensity = system.oMT.FindProperty('H2O','fDensity','Pressure',fPressure,'Temperature',(fTemperature-273.15),'liquid');
+fDensity = system.oMT.findProperty('H2O','fDensity','Pressure',fPressure,'Temperature',(fTemperature-273.15),'liquid');
 
 %%
 
