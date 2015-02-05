@@ -20,14 +20,14 @@ disp('+---------------------------------------------------------------------+');
 sLine = '';
 
 while ~isempty(sResults)
-    [ sLine sResults ] = strtok(strtrim(sResults), sprintf('\n'));
+    [ sLine, sResults ] = strtok(strtrim(sResults), sprintf('\n'));
     
-    [ sFile sContext ] = strtok(sLine, '    ');
+    [ sFile, sContext ] = strtok(sLine, '    ');
     
     sFile = strtrim(sFile);
     sContext = strtrim(sContext);
     
-    [ sFile sLine ] = strtok(sFile(1:(end - 1)), ':');
+    [ sFile, sLine ] = strtok(sFile(1:(end - 1)), ':');
     
     disp([ '<a href="matlab:opentoline(' sFile ',' sLine(2:end) ')">' sFile ':' sLine(2:end) '</a>    ' sContext ]);
 end
@@ -46,9 +46,9 @@ disp('+---------------------------------------------------------------------+');
 sLine = '';
 
 while ~isempty(sResults)
-    [ sLine sResults ] = strtok(strtrim(sResults), sprintf('\n'));
+    [ sLine, sResults ] = strtok(strtrim(sResults), sprintf('\n'));
     
-    [ sFile sContext ] = strtok(sLine, '    ');
+    [ sFile, sContext ] = strtok(sLine, '    ');
     
     sFile = strtrim(sFile);
     sContext = strtrim(sContext);
