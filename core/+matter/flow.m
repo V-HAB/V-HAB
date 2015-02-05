@@ -31,6 +31,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         %     arPartialMass and Temperature
         fHeatCapacity = 0;      % [J/K/kg]
         fMolMass      = 0;      % [g/mol] NOT KG!
+        fMolarMass    = 0;      % [kg/mol]
         
         % Partial masses in percent (ratio) in indexed vector (use oMT to
         % translate, e.g. this.oMT.tiN2I)
@@ -156,6 +157,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
             afMols = this.arPartialMass ./ this.oMT.afMolMass;
             % Calculating the total number of mols
             fGasAmount = sum(afMols);
+            
+            %TODO Do this using matter table!
+            %fGasAmount = this.oMT.calculateMols(this);
+            
             % Calculating the partial amount of each species by mols
             arFractions = afMols ./ fGasAmount;
             % Calculating the partial pressures by multiplying with the
@@ -264,7 +269,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         function fVolumetricFlowRate = calculateVolumetricFlowRate(this)
             fVolumetricFlowRate = this.fFlowRate / ...
                                 ( this.fPressure * this.fMolMass / ...
-                                ( this.oMT.C.R_m * this.fTemp          ) );
+                                ( this.oMT.Const.fUniversalGas * this.fTemp  ) );
         end
     end
     
