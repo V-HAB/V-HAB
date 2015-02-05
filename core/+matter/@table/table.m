@@ -58,6 +58,7 @@ classdef table < base
         % through the individual values with simple for-loops.
         %TODO store as kg/mol so e.g. phases.gas doesn't have to convert
         afMolMass;
+        afMolarMass;
         
         % This struct maps all substance names according to an index, hence
         % the name N2I, for 'name to index'. The index corresponds to the
@@ -163,8 +164,9 @@ classdef table < base
             % filled with data. This is done to preallocate the memory. If
             % it is not done, MATLAB gives a warning and suggests to do
             % this.
-            this.afMolMass = zeros(1, this.iSubstances);
-            this.tiN2I     = struct();
+            this.afMolMass   = zeros(1, this.iSubstances);
+            this.afMolarMass = zeros(1, this.iSubstances);
+            this.tiN2I       = struct();
             
             % Now we go through all substances in the 'MatterData'
             % worksheet and fill the ttxMatter struct
@@ -195,6 +197,9 @@ classdef table < base
                     
                     % Initializing the mol mass variable
                     fMolMass   = 0;
+                    fMolarMass   = 0;
+                    
+                    %%% Temporary Duplication for transition to molar mass in kg/mol %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     
                     % Now we loop through all the elements of the
                     % substance, check if a molecular mass is given an add
@@ -209,6 +214,21 @@ classdef table < base
                         end
                     end
                     
+                    % Now we loop through all the elements of the
+                    % substance, check if a molecular mass is given an add
+                    % them up.
+                    for iE = 1:length(csElements)
+                        if isfield(this.ttxMatter, csElements{iE}) && isfield(this.ttxMatter.(csElements{iE}), 'fMolarMass')
+                            fMolarMass = fMolarMass + tElements.(csElements{iE}) * this.ttxMatter.(csElements{iE}).fMolarMass;
+                        else
+                            % Throwing an error because there is no entry
+                            % for this specific element
+                            this.throw('table:constructor', 'No molecular mass provided for element ''%s''', this.csSubstances{iI});
+                        end
+                    end
+                    
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    
                     % Now we add a struct with all the elements of the
                     % substance to its entry in the ttxMatter struct.
                     this.ttxMatter.(this.csSubstances{iI}).tElements = tElements;
@@ -218,11 +238,12 @@ classdef table < base
                     % If the molecular mass is directly given, then we can
                     % just use the given value.
                     fMolMass = tSubstance.fMolMass;
+                    fMolarMass = tSubstance.fMolarMass;
                 end
                 
                 % And finally we create an entry in the mol mass array.
-                this.afMolMass(iI) = fMolMass;
-                
+                this.afMolMass(iI)   = fMolMass;
+                this.afMolarMass(iI) = fMolarMass;
             end
             
             
@@ -264,7 +285,8 @@ classdef table < base
                     this.tiN2I.(sSubstancename) = this.iSubstances;
                     % Write mol mass of substance into mol mass array
                     this.afMolMass(this.iSubstances) = this.ttxMatter.(sSubstancename).fMolMass;
-                    
+                    % Write mol mass of substance into mol mass array
+                    this.afMolarMass(this.iSubstances) = this.ttxMatter.(sSubstancename).fMolarMass;
                 end
             end
             
@@ -585,24 +607,84 @@ classdef table < base
                             % interpolation over both dependencies is
                             % needed.
                             
-                            % create temporary array because scatteredInterpolant doesn't allow NaN values
-                            afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
+                            % Check and see, if this interpolation has been
+                            % done before and use those values for better
+                            % performance.
                             
-                            % Now we remove all rows that contain NaN values
-                            afTemporary(any(isnan(afTemporary), 2), :) = [];
+                            % First we need to create the unique ID for
+                            % this specific interpolation to see, if it
+                            % already exists.
+                            % We start by getting the columns used for this
+                            % specific interpolation.
+                            iNumberOfColumns = length(this.ttxMatter.(sSubstance).import.text(:,5));
                             
-                            % Only unique values are needed (also scatteredInterpolant would give out a warning in that case)
-                            afTemporary = unique(afTemporary,'rows');
-                            % Sometimes there are also multiple values for
-                            % the same combination of dependencies. Here we
-                            % get rid of those too.
-                            [ ~, aIndices ] = unique(afTemporary(:, [2 3]), 'rows');
-                            afTemporary = afTemporary(aIndices, :);
+                            % Now we create an array filled with zeros and
+                            % set the columns used to 1
+                            aiID = zeros(iNumberOfColumns, 1);
+                            aiID([iColumn, iColumnFirst, iColumnSecond]) = 1;
                             
-                            % interpolate linear with no extrapolation
-                            %CHECK Does it make sense not to extrapolate?
-                            F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
-                            fProperty = F(fFirstDepValue, fSecondDepValue);
+                            % To get an ID that can be used as a key in a
+                            % struct, we turn the resulting binary number
+                            % into a decimal and then into a string.
+                            sID = ['ID',num2str(bi2de(aiID.'))];
+                            
+                            % Now we check if this interpolation already
+                            % exists. If yes, we just use the saved
+                            % function.
+                            
+                            bInterpolationPresent = false;
+                            
+                            if isfield(this.ttxMatter.(sSubstance), 'tInterpolations') 
+                                if isfield(this.ttxMatter.(sSubstance).tInterpolations, strrep(sProperty, ' ', ''))
+                                    if isfield(this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')), sID)
+                                        bInterpolationPresent = true;
+                                    end
+                                end
+                            end
+                            
+                            if bInterpolationPresent
+                                % We know there is data, so we use it. 
+                                fProperty = this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue, fSecondDepValue);
+
+                            else
+                                % The interpolation function does not yet
+                                % exist, so we have to go and run the
+                                % interpolation.
+                                
+                                % create temporary array because scatteredInterpolant doesn't allow NaN values
+                                afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
+                                
+                                % Now we remove all rows that contain NaN values
+                                afTemporary(any(isnan(afTemporary), 2), :) = [];
+                                
+                                % Only unique values are needed (also scatteredInterpolant would give out a warning in that case)
+                                afTemporary = unique(afTemporary,'rows');
+                                % Sometimes there are also multiple values for
+                                % the same combination of dependencies. Here we
+                                % get rid of those too.
+                                [ ~, aIndices ] = unique(afTemporary(:, [2 3]), 'rows');
+                                afTemporary = afTemporary(aIndices, :);
+                                
+                                % interpolate linear with no extrapolation
+                                %CHECK Does it make sense not to extrapolate?
+                                F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
+                                fProperty = F(fFirstDepValue, fSecondDepValue);
+                                
+                                % To make this faster the next time around, we
+                                % save the scatteredInterpolant into the matter
+                                % table.
+                                
+                                this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = F;
+                                
+                                % This addition to the matter table will be
+                                % overwritten, when the next simulation
+                                % starts, even if Matter.xlsx has not
+                                % changed. To prevent this, we need to save
+                                % the table object again.
+                                filename = strrep('data\MatterData.mat', '\', filesep);
+                                save(filename, 'this');
+                            end
+                            
                             
                         end
                     else

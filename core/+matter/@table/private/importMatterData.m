@@ -142,6 +142,11 @@ else
         ttxImportMatter.import.num = afNewArray;
     end
     
+    % Finally, we create a struct for possible interpolations that can be
+    % save into the matter table for increased simulation performance.
+    tInterpolations = struct();
+    ttxImportMatter.tInterpolations = tInterpolations;
+    
 % We shouldn't need this because all of the values in the matter table MUST
 % be in Joule
 %     % look if some values saved as kJ -> has to convert do J (*1000)
