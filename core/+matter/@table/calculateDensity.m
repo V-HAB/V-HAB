@@ -57,13 +57,13 @@ if isempty(fTemperature); fTemperature = this.Standard.Temperature; end; % std t
 
 % Find the indices of all substances that are in the flow
 aiIndices = find(arPartialMass > 0);
-fRho = zeros(1, length(aiIndices));
+afRho = zeros(1, length(aiIndices));
 
 for iI = 1:length(aiIndices)
-    fRho(iI) = this.findProperty(this.csSubstances{aiIndices(iI)}, 'Density', 'Temperature', fTemperature, 'Pressure', fPressure, sPhase);
+    afRho(iI) = this.findProperty(this.csSubstances{aiIndices(iI)}, 'Density', 'Temperature', fTemperature, 'Pressure', fPressure, sPhase);
 end
 
-fDensity = sum(fRho .* arPartialMass(aiIndices));
+fDensity = sum(afRho .* arPartialMass(aiIndices));
 
 % If none of the substances has a valid density an error is thrown.
 if fDensity < 0 || isnan(fDensity)

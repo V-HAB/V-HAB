@@ -8,7 +8,7 @@ function fHeatCapacity = calculateHeatCapacity(this, varargin)
 % third and fourth parameters, respectively.
 %
 % calculateHeatCapacity returns
-%  fHeatCapacity  - specific, isobaric heat capacity of mix in J/kgK 
+%  fHeatCapacity  - specific, isobaric heat capacity of mix in J/kgK?
 
 % Case one - just a phase object provided
 if length(varargin) == 1
@@ -60,14 +60,14 @@ aiIndices = find(afMass>0);
 
 % go through all substances that have mass and get the heatcapacity of each. then add this to the
 % rest
-fCp = zeros(length(aiIndices), 1);      % Initialize an arry filled with zeros
+afCp = zeros(length(aiIndices), 1);      % Initialize an arry filled with zeros
 
 for iI=1:length(find(afMass>0))
-    fCp(iI) = this.findProperty(this.csSubstances{aiIndices(iI)}, 'Heat Capacity', 'Temperature', fT, 'Pressure', fP, sPhase);
+    afCp(iI) = this.findProperty(this.csSubstances{aiIndices(iI)}, 'Heat Capacity', 'Temperature', fT, 'Pressure', fP, sPhase);
 end
 
 % Multiply the individual heat capacities with the partial masses
-fHeatCapacity = afMass(aiIndices) / sum(afMass) * fCp;
+fHeatCapacity = afMass(aiIndices) / sum(afMass) * afCp;
 
 % If none of the substances has a valid heatcapacity an error is thrown.
 if (fHeatCapacity < 0 || isnan(fHeatCapacity)) && ~(sum(afMass) == 0)
