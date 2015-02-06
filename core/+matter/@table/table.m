@@ -238,7 +238,12 @@ classdef table < base
                     % If the molecular mass is directly given, then we can
                     % just use the given value.
                     fMolMass = tSubstance.fMolMass;
-                    fMolarMass = tSubstance.fMolarMass;
+                    if ~isfield(tSubstance, 'fMolarMass')
+                        fMolarMass = fMolMass / 1000;
+                        tSubstance.fMolarMass = fMolarMass;
+                    else
+                        fMolarMass = tSubstance.fMolarMass;
+                    end
                 end
                 
                 % And finally we create an entry in the mol mass array.
@@ -481,6 +486,8 @@ classdef table < base
                 this.throw('table:FindProperty',sprintf('Cannot find property %s in worksheet %s', sProperty, sSubstance));
             end
             
+            sReportString = 'Nothing to report.';
+            
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Finding properties in dedicated data worksheet %%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -534,6 +541,7 @@ classdef table < base
                         % dependencyvalue in table and in range of table
                         % direct usage
                         fProperty = this.ttxMatter.(sSubstance).import.num((this.ttxMatter.(sSubstance).import.num(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
+                        sReportString = 'One dependency in range. Got value directly from matter table.';
                     elseif ~abOutOfRange(1)
                         % only in range of table
                         % interpolation needed
@@ -543,6 +551,7 @@ classdef table < base
                         [~,rows] = unique(afTemporary(:,2),'rows');
                         afTemporary = afTemporary(rows,:);
                         fProperty = interp1(afTemporary(:,2),afTemporary(:,1),fFirstDepValue);
+                        sReportString = 'One dependency in range. Got value by interpolation.';
                     else
                         % dependencyvalue is out of range
                         % look if phase of substance is in MatterData
@@ -551,12 +560,14 @@ classdef table < base
                             % not in MatterData
                             % get 'best' value in Range of substancetable
                             fProperty = this.ttxMatter.(sSubstance).import.num((this.ttxMatter.(sSubstance).import.num(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
+                            sReportString = 'One dependency out of range. Got best value in range.';
                         else
                             % get the data from the MatterData-worksheet
                             % first get column of property
                             iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sProperty)); % row 1 is std propertyname in MatterData
                             % get the propertyvalue
                             fProperty = this.ttxMatter.(sSubstance).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
+                            sReportString = 'One dependency out of range. Got best value from MatterData.';
                         end
                     end
                 else
@@ -601,6 +612,8 @@ classdef table < base
                             % dependencies is directly given in the matter
                             % table, we just get it.
                             fProperty = this.ttxMatter.(sSubstance).import.num(intersect(iRowsFirst,iRowsSecond), iColumn);
+                            
+                            sReportString = 'Both dependencies in range. Got value directly from matter table.';
                             
                         else
                             % If the property is not directly given an
@@ -685,7 +698,7 @@ classdef table < base
                                 save(filename, 'this');
                             end
                             
-                            
+                            sReportString = 'Both dependencies in range. Got value by interpolation.';
                         end
                     else
                         %-------------------------------------------------%
@@ -705,6 +718,8 @@ classdef table < base
                             iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sProperty)); % row 1 is std propertyname in MatterData
                             % get the propertyvalue
                             fProperty = this.ttxMatter.(sSubstance).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
+                            
+                            sReportString = 'One or more out of range. Got value from MatterData.';
                         else
                             % no data found in MatterData
                             % get 'best' value in Range of substancetable
@@ -728,6 +743,8 @@ classdef table < base
                             %CHECK Does it make sense not to extrapolate?
                             F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
                             fProperty = F(fFirstDepValue, fSecondDepValue);
+                            
+                            sReportString = 'One or more out of range. Got the best possible in range value through interpolation.';
                         end
                     end
                     
@@ -747,6 +764,8 @@ classdef table < base
                     fProperty = this.ttxMatter.(sSubstance).import.raw{rowPhase,iColumn};
                 end
                 
+                sReportString = 'Just took the value from the ''Matter Data'' worksheet.';
+                
             end
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -756,6 +775,7 @@ classdef table < base
                 keyboard();
                 this.throw('findProperty', 'Error using findProperty. No valid value for %s of %s found in matter table.', sProperty, sSubstance);
             end
+            %disp(sReportString)
         end
         
         
