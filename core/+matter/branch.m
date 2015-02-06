@@ -450,7 +450,7 @@ classdef branch < base & event.source
             if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
             
             % Connected phases have to do a massupdate
-            for iE = sif(this.fFlowRate >= 0, 1:2, 2:1)
+            for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
                 this.coExmes{iE}.oPhase.massupdate();
             end
             
@@ -596,4 +596,3 @@ classdef branch < base & event.source
     end
     
 end
-
