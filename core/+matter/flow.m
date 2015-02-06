@@ -267,9 +267,13 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % This function calculates the current volumetric flow rate based
         % on the current state of the matter flowing through the flow.
         function fVolumetricFlowRate = calculateVolumetricFlowRate(this)
-            fVolumetricFlowRate = this.fFlowRate / ...
-                                ( this.fPressure * this.fMolMass / ...
-                                ( this.oMT.Const.fUniversalGas * this.fTemp  ) );
+            if this.fFlowRate
+                fVolumetricFlowRate = this.fFlowRate / ...
+                                    ( this.fPressure * this.fMolMass / ...
+                                    ( this.oMT.Const.fUniversalGas * this.fTemp  ) );
+            else
+                fVolumetricFlowRate = 0;
+            end
         end
     end
     
