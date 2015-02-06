@@ -23,9 +23,9 @@ fMolMassH2O = 18;
 fRw = 461.9151; %sezifische Gaskonstante Wasser [J/(kg*K)]
 % Check input arguments, set default
 %TODO for fTemp, rRH, fPress -> key/value pairs?
-if nargin < 3 || isempty(fTemperature), fTemperature = 273.15; end;
+if nargin < 3 || isempty(fTemperature), fTemperature = matter.table.Standard.Temperature; end;
 if nargin < 4 || isempty(rRH),          rRH          = 0;      end;
-if nargin < 5 || isempty(fPressure),    fPressure    = 101325; end;
+if nargin < 5 || isempty(fPressure),    fPressure    = matter.table.Standard.Pressure; end;
 
 % Calculation of the saturation vapour pressure
 % by using the MAGNUS Formula(validity: -45°C <= T <= 60°C, for
