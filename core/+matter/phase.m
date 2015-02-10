@@ -486,7 +486,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
         end
 
 
-
+        % Moved to public methods, sometimes external access required
         function [ afTotalInOuts, mfInflowDetails ] = getTotalMassChange(this)
             % Get vector with total mass change through all EXME flows
             % witin one second, i.e. [kg/s].
