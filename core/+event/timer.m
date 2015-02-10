@@ -183,7 +183,9 @@ classdef timer < base
             % Find all cb's indices whose last exec + time step <= fTime
             % Dependent systems have -1 as time step - therefore this
             % should always be true!
-            abExec = this.afLastExec + this.afTimeStep <= this.fTime;
+            %abExec = this.afLastExec + this.afTimeStep <= this.fTime;
+            abExec = this.afLastExec + this.afTimeStep <= (this.fTime + fThisStep / 2);
+            
             
             % Execute found cbs
             % The indexing type for the cell only works if the array is of
