@@ -96,9 +96,11 @@ classdef manip < base
             fTimeStep = this.getTimeStep();
             
             if fTimeStep > 0
+                %CHECK deactivated for now .... e.g. weird for partials
+                %manip.
                 mrInPartials  = [ mrInPartials;  this.oPhase.arPartialMass ];
                 %CHECK does that make sense? Treat the stored mass as a flow?
-                afInFlowrates = [ afInFlowrates; this.oPhase.fMass / fTimeStep ];
+                afInFlowrates = [ afInFlowrates; this.oPhase.fMass / 1 ]; %fTimeStep ];
             end
         end
         

@@ -140,6 +140,10 @@ classdef store < base
                 
                 % If time step < 0, timer sets it to 0!
                 this.setTimeStep(this.fTimeStep);
+                %disp([ this.sName '  ' num2str(this.oTimer.iTick) '  ' num2str(this.fTimeStep) ]);
+            else
+                %keyboard();
+                %disp([ this.sName '  ' num2str(this.oTimer.iTick) '   SAME   ' num2str(this.fTimeStep) ]);
             end
         end
     end
@@ -171,6 +175,8 @@ classdef store < base
             
             % Find out if default port of a phase should be used
             %TODO check for empty aoPhases ...
+            %TODO throw out! Default ports will be removed anyways. Right
+            %     now a port can't have the same name than a phase!
             iIdx = find(strcmp({ this.aoPhases.sName }, sPort), 1);
             
             if ~isempty(iIdx)

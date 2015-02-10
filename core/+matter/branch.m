@@ -409,6 +409,8 @@ classdef branch < base & event.source
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
+            %disp(['Branch - trigger Update at ' num2str(this.oContainer.oTimer.iTick) ]);
+            
             % Only trigger if not yet set
             %CHECK inactivated here --> solvers and otehr "clients" should
             %      check themselves!
@@ -470,7 +472,7 @@ classdef branch < base & event.source
             if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
             
             % Connected phases have to do a massupdate
-            for iE = sif(this.fFlowRate >= 0, 1:2, 2:1)
+            for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
                 this.coExmes{iE}.oPhase.massupdate();
             end
             
@@ -480,6 +482,7 @@ classdef branch < base & event.source
             this.bOutdated = false;
             
             % Update data in flows
+            %keyboard();
             this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure, afTemp);
         end
     
@@ -616,4 +619,3 @@ classdef branch < base & event.source
     end
     
 end
-

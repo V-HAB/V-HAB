@@ -58,6 +58,11 @@ classdef flow < matter.procs.p2p
             end
             
             
+            % Add inner mass - mass, but assume timestep of 1s for process.
+            %mrInPartials  = [ mrInPartials;  oPhase.arPartialMass ];
+            %afInFlowrates = [ afInFlowrates; oPhase.fMass / 1 ];
+            
+            
             % Check manipulator for partial
             if ~isempty(oPhase.toManips.partial) && ~isempty(oPhase.toManips.partial.afPartial)
                 % Was updated just this tick - partial changes in kg/s
