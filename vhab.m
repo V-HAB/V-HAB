@@ -67,18 +67,21 @@ classdef vhab
             
         end
         
-        function oSim = exec(sSimulation, varargin)
-            % Clear all existing sims, and run provided sim (uses the
-            % default max. time/tick conditions on the sim object)
-            
-            vhab.clear();
-            
-            sSimulation = vhab.sim(sSimulation, varargin{:});
-            
-            oSim = vhab.poSims(sSimulation);
-            
-            oSim.run();
-        end
+        function oSimRtn = exec(sSimulation, varargin)
+           % Clear all existing sims, and run provided sim (uses the
+           % default max. time/tick conditions on the sim object)
+
+           vhab.clear();
+
+           sSimulation = vhab.sim(sSimulation, varargin{:});
+
+           oSim = vhab.poSims(sSimulation);
+
+           oSim.run();
+
+
+           if nargout >= 1, oSimRtn = oSim; end;
+       end
         
         
         function setReportInterval(iTicks, fTime)
