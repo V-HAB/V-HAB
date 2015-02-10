@@ -393,6 +393,8 @@ classdef branch < base & event.source
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
+            %disp(['Branch - trigger Update at ' num2str(this.oContainer.oTimer.iTick) ]);
+            
             % Only trigger if not yet set
             if ~this.bOutdated
                 this.bOutdated = true;
@@ -460,6 +462,7 @@ classdef branch < base & event.source
             this.bOutdated = false;
             
             % Update data in flows
+            %keyboard();
             this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure, afTemp);
         end
     

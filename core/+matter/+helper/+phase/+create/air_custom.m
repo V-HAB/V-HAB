@@ -1,4 +1,4 @@
-function [ cParams, sDefaultPhase ] = air(~, fVolume, fTemperature, rRH, fPressure)
+function [ cParams, sDefaultPhase ] = air_custom(~, fVolume, trMasses, fTemperature, rRH, fPressure)
 %AIR helper to create an air matter phase.
 %   If just volume given, created to suit the ICAO International Standard
 %   Atmosphere of 101325 Pa, 15[C] and 0% relative humidity, see:
@@ -23,9 +23,9 @@ fMolMassH2O = 18;
 fRw = 461.9151; %sezifische Gaskonstante Wasser [J/(kg*K)]
 % Check input arguments, set default
 %TODO for fTemp, rRH, fPress -> key/value pairs?
-if nargin < 3 || isempty(fTemperature), fTemperature = 273.15; end;
-if nargin < 4 || isempty(rRH),          rRH          = 0;      end;
-if nargin < 5 || isempty(fPressure),    fPressure    = 101325; end;
+if nargin < 4 || isempty(fTemperature), fTemperature = 273.15; end;
+if nargin < 5 || isempty(rRH),          rRH          = 0;      end;
+if nargin < 6 || isempty(fPressure),    fPressure    = 101325; end;
 
 % Calculation of the saturation vapour pressure
 % by using the MAGNUS Formula(validity: -45[C] <= T <= 60[C], for
@@ -47,12 +47,23 @@ fMolarFractionH2O=fMassFractionH2O/fMolMassH2O*fMolMassAir; % calculate molar fr
 fMassGes = (fPressure) * fVolume * ((fMolarFractionH2O*fMolMassH2O+(1-fMolarFractionH2O)*fMolMassAir) / 1000) / fRm / fTemperature; %calculate total mass
 fMass=fMassGes*(1-fMassFractionH2O); % calculate dry air mass
 
+
+% Defaults, if not set
+if ~isstruct(trMasses), trMasses = struct(); end;
+
+if ~isfield(trMasses, 'O2'), trMasses.O2  = 0.23135; end;
+if ~isfield(trMasses, 'Ar'), trMasses.Ar  = 0.01288; end;
+if ~isfield(trMasses, 'Ar'), trMasses.CO2 = 0.00058; end;
+
+% N2 takes remaining fraction
+trMasses.N2 = 1 - trMasses.O2 - trMasses.Ar - trMasses.CO2;
+
 % Matter composition
 tfMass = struct(...
-    'N2',  0.75518 * fMass, ...
-    'O2',  0.23135 * fMass, ...
-    'Ar',  0.01288 * fMass, ...
-    'CO2', 0.00058 * fMass ...
+    'N2',  trMasses.N2  * fMass, ...
+    'O2',  trMasses.O2  * fMass, ...
+    'Ar',  trMasses.Ar  * fMass, ...
+    'CO2', trMasses.CO2 * fMass ...
 );
 tfMass.H2O=fMassGes*fMassFractionH2O; %calculate H2O mass
 

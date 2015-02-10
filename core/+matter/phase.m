@@ -114,7 +114,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
         % change before an update of the matter properties (of the whole
         % store) is triggered?
         rMaxChange = 0.05;
-        fMaxStep   = 15;
+        fMaxStep   = 3600;
         fFixedTS;
         
         % If true, massupdate triggers all branches to re-calculate their
@@ -250,6 +250,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
             fTime     = this.oStore.oTimer.fTime;
             fTimeStep = fTime - this.fLastMassUpdate;
             
+            
+            %disp([ 'massupdate ' this.oStore.sName ' at ' num2str(fTime) ' TS ' num2str(fTimeStep) ' T ' num2str(this.oStore.oTimer.iTick) '  from phase ' sif((nargin >= 2) && ~bSetOutdatedTS, 'y', 'n')]);
+            
             % Return if no time has passed
             if fTimeStep == 0, return; end;
             
@@ -288,6 +291,8 @@ classdef phase < base & matlab.mixin.Heterogeneous
             %         to the min. time step!
             %this.afMass =  tools.round.prec(this.afMass + afTotalInOuts, 10);
             this.afMass =  this.afMass + afTotalInOuts;
+            
+            %disp([ 'massupdate ' this.oStore.sName ' at ' num2str(fTime) ' TS ' num2str(fTimeStep) ' T ' num2str(this.oStore.oTimer.iTick) ' m ' num2str(sum(afTotalInOuts)) '  from phase ' sif((nargin >= 2) && ~bSetOutdatedTS, 'y', 'n')]);
             
             
             % Check if that is a problem, i.e. negative masses.
@@ -369,7 +374,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                     %   new time step!
                     this.setBranchesOutdated();
                 end
-                
+                %keyboard();
                 this.setOutdatedTS();
             end
         end
@@ -380,6 +385,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 return;
             end;
             
+            %keyboard();
             %disp([ num2str(this.oStore.oTimer.iTick) ': Phase ' this.oStore.sName '-' this.sName ' (@' num2str(this.oStore.oTimer.fTime) 's, last ' num2str(this.fLastUpdate) 's)' ]);
             
             
@@ -395,11 +401,17 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % executed after the flow rate calculators.
             this.massupdate(false);
             
+            % Cache current fMass / afMass so they represent the values at
+            % the last phase update. Needed in phase time step calculation.
+            this.fMassLastUpdate  = this.fMass;
+            this.afMassLastUpdate = this.afMass;
+            
+            
             
             % Cache old fMass / afMass - need that in time step
             % calculations!
-            this.fMassLastUpdate  = this.fMass;
-            this.afMassLastUpdate = this.afMass;
+            %this.fMassLastUpdate  = this.fMass;
+            %this.afMassLastUpdate = this.afMass;
             
             
             % Partial masses
@@ -499,6 +511,13 @@ classdef phase < base & matlab.mixin.Heterogeneous
                     % Make sure it's not a p2ps.flow - their update method
                     % is called in time step calculation method
                     if isa(oBranch, 'matter.branch')
+                        % We can't directly set this oBranch as outdated if
+                        % it is just connected to an interface, because the
+                        % solver is assigned to the 'leftest' branch.
+                        while ~isempty(oBranch.coBranches{1})
+                            oBranch = oBranch.coBranches{1};
+                        end
+                        
                         % Tell branch to recalculate flow rate (done after
                         % the current tick, in timer post tick).
                         oBranch.setOutdated();
@@ -582,7 +601,8 @@ classdef phase < base & matlab.mixin.Heterogeneous
             
             
             %TODO move this to another function or class or whatever. Why
-            %is this executed here anyway?
+            % is this executed here anyway? Shouldn't that be done in the
+            % Store after all phases have updated?
             %keyboard();
             % Call p2ps.flow update methods (if not yet called)
             for iP = 1:this.iProcsP2Pflow
@@ -599,12 +619,13 @@ classdef phase < base & matlab.mixin.Heterogeneous
             end
             
             
+            
             if ~isempty(this.fFixedTS)
                 fTimeStep = this.fFixedTS;
             else
 
-                % Calculate the change in total and partial mass since last
-                % update that already happend / was applied
+                % Calculate the change in total and partial mass since the
+                % phase was last updated
                 rPreviousChange  = max(abs(this.fMassLastUpdate   / this.fMass  - 1));
                 arPreviousChange = abs(this.afMassLastUpdate ./ this.afMass - 1);
                 
@@ -634,7 +655,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
                 % No change? Use max. change per second --> one second timestep
                 if fChange == 0
-                    rTotalPerSecond = (this.rMaxChange + rPreviousChange) / this.fMaxStep;
+                    rTotalPerSecond = this.rMaxChange + rPreviousChange;
                 else
                     rTotalPerSecond = abs(fChange / this.fMass - 0) + rPreviousChange;
                 end
@@ -649,6 +670,14 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 fTimeStep = this.rMaxChange / max([ rChangePerSecond rTotalPerSecond ]);
 
                 if fTimeStep > this.fMaxStep, fTimeStep = this.fMaxStep; end;
+            end
+            
+            
+            %disp([ this.oStore.sName '    ' num2str(this.oStore.oTimer.iTick) '  TS  ' num2str(fTimeStep) '   fC ' num2str(fChange) '   rCPS ' num2str(rChangePerSecond) ]);
+            if strcmp(this.oStore.sName, 'Tank_1') && (this.oStore.oTimer.iTick >= 57)
+                %keyboard();
+                %disp([ num2str(this.oStore.oTimer.iTick) '    ' num2str(fTimeStep) ]);
+                %keyboard();
             end
             
             % Set new time step (on store, only sets that if smaller then

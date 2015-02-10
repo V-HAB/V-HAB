@@ -15,11 +15,27 @@ function fLiterPerMin = SLM(oFlow, bSTP)
 %   - bSTP      Get temperature and pressure from flow, or use STP values?
 %               NOTE: default is TRUE!
 
-if ~isa(oFlow, 'matter.flow')
-    error('Has to be a matter.flow');
-end
-
 if nargin < 2, bSTP = true; end;
+
+if ~isa(oFlow, 'matter.flow')
+    % Has to be an instance of matter.flow OR a struct containing all
+    % necessary information!
+    if ~isstruct(oFlow)
+        error('First param either has to be a matter.flow, or a struct!');
+    end
+    
+    % Flow rate, molecular mass have to be there!
+    if ~isfield(oFlow, 'fFlowRate') || ~isfield(oFlow, 'fMolMass')
+        error('Provided struct doesn''t contain fFlowRate || fMolMass');
+    end
+    
+    % If NOT standard temp, pressure, need those values as well!
+    if ~bSTP
+        if ~isfield(oFlow, 'fTemp') || ~isfield(oFlow, 'fPressure')
+            error('Standard temperature and pressure was false, but provided struct doesn''t contain fTemp || fPressure');
+        end
+    end
+end
 
 % Get flow rate [kg/s]
 fFlowRate = oFlow.fFlowRate;
