@@ -12,7 +12,7 @@ classdef branch < solver.matter.base.branch
         fFixedTS = [];
         
         % Coefficient for FR calculation
-        fCoeffFR = 0.0000133;
+        fCoeffFR = 0.00000133;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -101,7 +101,7 @@ classdef branch < solver.matter.base.branch
             %TODO only if it gets bigger or smaller? Time-specific? Right
             %     now tick length not taken into account ...
             fFlowRate = (fFlowRate + this.iDampFR * this.fFlowRate) / (1 + this.iDampFR);
-            
+
             
             
             if ~isempty(this.fFixedTS)
