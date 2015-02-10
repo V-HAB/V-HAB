@@ -32,8 +32,8 @@ classdef branch < solver.matter.base.branch
         function this = branch(oBranch, rMaxChange, iRemChange)
             this@solver.matter.base.branch(oBranch);
             
-            if nargin >= 2, this.rMaxChange = rMaxChange; end;
-            if nargin >= 3, this.iRemChange = iRemChange; end;
+            if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end;
+            if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end;
         end
         
         
