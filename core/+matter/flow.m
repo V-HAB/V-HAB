@@ -322,6 +322,12 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % branch can set stuff.
             %
             % Is only called by branch (?), for all flows in branch
+            %
+            %
+            %TODO
+            % - right now, solver provide flow rate and pressure drops in
+            %   'sync', i.e. if flow rate is negative, pressure drops will
+            %   be negative values. Should all that be handled here?
             
             % We need the initial pressure and temperature of the inflowing
             % matter, as the values in afPressure / afTemps are relative
@@ -349,9 +355,15 @@ classdef flow < base & matlab.mixin.Heterogeneous
             end
             
             iL = length(this);
+            
+            % If no pressure drops / temperature changes are provided, only
+            % set according values in flows if only one flow available,
+            % meaning that the branch doesn't contain any f2fs.
+            %TODO check - do we need the isempty check at all? Just throw
+            %     out? Check for isnan() or something?
             bSkipFRandPT = (nargin < 3) || isempty(fFlowRate);   % skip flow rate, pressure, temp?
-            bSkipPT      = (nargin < 4) || isempty(afPressures); % skip pressure, temp?
-            bSkipT       = (nargin < 5) || isempty(afTemps);     % skip temp?
+            bSkipPT      = (nargin < 4) || (isempty(afPressures) && (iL > 1)); % skip pressure, temp?
+            bSkipT       = (nargin < 5) || (isempty(afTemps) && (iL > 1));     % skip temp?
             
             for iI = 1:iL
                 % Only set those params if oExme was provided
@@ -385,6 +397,12 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
                 if iI < iL, fPortTemp = fPortTemp - afTemps(iI); end;
             end
+            
+
+%             disp('---');
+%             disp([ this.fFlowRate ]);
+%             disp([ this.fPressure ]);
+%             disp([ this.fTemp ]);
         end
     end
     
