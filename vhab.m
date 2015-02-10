@@ -20,9 +20,9 @@ classdef vhab
         function sSimulation = sim(sSimulation, varargin)
             vhab.init();
             
-            if length(strfind(sSimulation, '.')) == 1
-                sSimulation = [ sSimulation '.main' ];
-            end
+            %if length(strfind(sSimulation, '.')) == 1
+            %    sSimulation = [ sSimulation '.main' ];
+            %end
             
             poSims = vhab.poSims;
             
@@ -106,6 +106,12 @@ classdef vhab
                 %disp([ num2str(oSim.oTimer.iTick) ' (' num2str(oRoot.oData.oTimer.fTime - fLastTickDisp) 's)' ]);
                 %fLastTickDisp = oRoot.oData.oTimer.fTime;
                 disp([ num2str(oSim.oTimer.iTick) ' (' num2str(oSim.oTimer.fTime) 's)' ]);
+                
+                
+                if exist('STOP', 'file') == 2
+                    oSim.iSimTicks = oSim.oTimer.iTick + 5;
+                    oSim.bUseTime  = false;
+                end
             end
             
             %TODO see above, store somewhere. For Sim vs. Real Time, use
