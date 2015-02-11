@@ -115,8 +115,8 @@ classdef simulation < base & event.source
             % initialized yet! Just create with one row, for the initial
             % mass log. Subsequent logs dynamically allocate new memory -
             % bad for performance, but only happens every Xth tick ...
-            this.mfTotalMass = zeros(0, this.oData.oMT.iSpecies);
-            this.mfLostMass  = zeros(0, this.oData.oMT.iSpecies);
+            this.mfTotalMass = zeros(0, this.oData.oMT.iSubstances);
+            this.mfLostMass  = zeros(0, this.oData.oMT.iSubstances);
         end
         
         
@@ -244,6 +244,7 @@ classdef simulation < base & event.source
                 catch
                     this.throw('simulation','Error trying to log this.oRoot.%s. \nPlease check your logging configuration in setup.m!', this.csLog{iL});
                 end
+
             end
         end
         
@@ -252,22 +253,12 @@ classdef simulation < base & event.source
             
             % Total mass: sum over all mass stored in all phases, for each
             % species separately.
-            this.mfTotalMass(iIdx, :) = sum(reshape([ this.oData.oMT.aoPhases.afMass ], [], this.oData.oMT.iSpecies));
+            this.mfTotalMass(iIdx, :) = sum(reshape([ this.oData.oMT.aoPhases.afMass ], [], this.oData.oMT.iSubstances));
             
             % Lost mass: logged by phases if more mass is extracted then
-            % available (for each species separately).
-            this.mfLostMass(iIdx, :)  = sum(reshape([ this.oData.oMT.aoPhases.afMassLost ], [], this.oData.oMT.iSpecies));
+            % available (for each substance separately).
+            this.mfLostMass(iIdx, :)  = sum(reshape([ this.oData.oMT.aoPhases.afMassLost ], [], this.oData.oMT.iSubstances));
             
-            %NOTE in base workspace, get the total mass that was lost:
-            %   >> sum(oLastSimObj.mfLostMass(end, :))
-            
-            %     compare the initial and the end total masses (comparing
-            %     the total values - in case of a manipulator that adapts
-            %     the partials, can't really compare species-wise):
-            %   >> fTotalMassStart = sum(oLastSimObj.mfTotalMass(1, :))
-            %   >> fTotalMassEnd   = sum(oLastSimObj.mfTotalMass(end, :))
-            %   >> fTotlaMassStart - fTotalMassEnd
-            %
             %TODO implement methods for that ... break down everything down
             %     to the moles and compare these?! So really count every
             %     atom, not the molecules ... compare enthalpy etc?
