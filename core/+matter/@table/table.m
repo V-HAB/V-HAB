@@ -762,9 +762,14 @@ classdef table < base
                 if rowPhase
                     % get the propertyvalue
                     fProperty = this.ttxMatter.(sSubstance).import.raw{rowPhase,iColumn};
+                    if isnan(fProperty) || isempty(fProperty)
+                        this.throw('findProperty', 'Error using find Property. The matter data for %s does not include a value for %s.', sSubstance, sProperty);
+                    end
+                    
+                    sReportString = 'Just took the value from the ''Matter Data'' worksheet.';
+                else
+                    this.throw('findProperty', 'Error using find Property. The matter data for %s does not include %s phase.', sSubstance, sPhaseType);
                 end
-                
-                sReportString = 'Just took the value from the ''Matter Data'' worksheet.';
                 
             end
             
