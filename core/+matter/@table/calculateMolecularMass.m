@@ -16,4 +16,6 @@ end
 
 fMolecularMass = afMass ./ fMass * this.afMolMass';
 
+%TODO Replace with this line once transition to molar mass in kg/mol is complete
+%fMolecularMass = afMass ./ fMass * this.afMolarMass';
 end
