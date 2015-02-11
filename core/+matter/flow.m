@@ -323,19 +323,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % partial mass is used, which should make no difference.
             this.fMolMass = this.oMT.calculateMolecularMass(this.arPartialMass);
             
-            % Heat capacity. Normally, the phase passes an object of its
-            % own, which allows the matter table to e.g. find out the phase
-            % type (gas, liquid etc).
-            % Here we pass that information directly, calcHeatCap checks
-            % for that case. The oBranch references back to the p2p itself
+            % Heat capacity. The oBranch references back to the p2p itself
             % which provides the getInEXME method (p2p is always directly
             % connected to EXMEs).
-            sPhaseType = this.oBranch.getInEXME().oPhase.sType;
-            
-            %CHECK: This might also be done by just passing the phase object to
-            % the matter table directly... I don't know why this is done
-            % like this. It could save an if condition in table.m
-            this.fHeatCapacity = this.oMT.calculateHeatCapacity(sPhaseType, this.arPartialMass, this.fTemp, this.fPressure);
+            this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
         end
         
         
