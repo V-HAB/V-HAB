@@ -131,7 +131,7 @@ classdef branch < base & event.source
                 this.aoFlows(end + 1) = oFlow;
                 
                 % Split to store name / port name
-                [ sStore sPort ] = strtok(sLeft, '.');
+                [ sStore, sPort ] = strtok(sLeft, '.');
                 
                 
                 % Get store name from parent
@@ -199,7 +199,7 @@ classdef branch < base & event.source
                 
             else
                 % Split to store name / port name
-                [ sStore sPort ] = strtok(sRight, '.');
+                [ sStore, sPort ] = strtok(sRight, '.');
                 
                 
                 % Get store name from container
@@ -294,7 +294,7 @@ classdef branch < base & event.source
             this.updateConnectedBranches();
         end
         
-        function [ hGetBranchData hSetDisconnected ] = setConnected(this, oSubSysBranch, hUpdateConnectedBranches)
+        function [ hGetBranchData, hSetDisconnected ] = setConnected(this, oSubSysBranch, hUpdateConnectedBranches)
             if ~this.abIf(1)
                 this.throw('setConnected', 'Left side of this branch is not an interface!');
             
@@ -484,7 +484,7 @@ classdef branch < base & event.source
                 % Get set fr func callbacks and phase on the right side of
                 % the overall branch, write right phase to cell
                 %[ chSetFRs, this.coPhases{2} ] = this.getBranchData(this);
-                [ this.coExmes{2} aoFlows aoFlowProcs ] = this.hGetBranchData();
+                [ this.coExmes{2}, aoFlows, aoFlowProcs ] = this.hGetBranchData();
                 
                 
                 % Only do if we got a right phase, i.e. the (maybe several)
