@@ -26,7 +26,7 @@ lib/*
 main_*.m
 
 # Exclude all Matlab autosave files
-#TODO also *.m~ ? (Mac)
+*.m~
 *.asv
 
 # Tests
