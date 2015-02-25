@@ -56,8 +56,12 @@ classdef gas < matter.phase
         % 40, 5, S. 340-344, (1990)
 
         function rRelHumidity = get.rRelHumidity(this)
-            fSaturationVapourPressure=6.11213 * exp(17.62 * (this.fTemp-273.15) / (243.12 + (this.fTemp-273.15))) * 100; % calculate saturation vapour pressure [Pa]; MAGNUS Formula; validity: -45�C <= T <= 60�C, for water 
-            rRelHumidity = this.afPP(this.oMT.tiN2I.H2O)/fSaturationVapourPressure; %calculate relative humidity
+            if this.afMass(this.oMT.tiN2I.H2O)
+                fSaturationVapourPressure=6.11213 * exp(17.62 * (this.fTemp-273.15) / (243.12 + (this.fTemp-273.15))) * 100; % calculate saturation vapour pressure [Pa]; MAGNUS Formula; validity: -45???C <= T <= 60???C, for water
+                rRelHumidity = this.afPP(this.oMT.tiN2I.H2O)/fSaturationVapourPressure; %calculate relative humidity
+            else
+                rRelHumidity = 0;
+            end
         end
         
         
