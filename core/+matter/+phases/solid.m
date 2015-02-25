@@ -16,7 +16,7 @@ classdef solid < matter.phase
             csKeys = fieldnames(tfMasses);
             for iI = 1:length(csKeys)
                 sKey = csKeys{iI};
-                this.afVolume(this.oMT.tiN2I.(sKey)) = this.afMass(this.oMT.tiN2I.(sKey)) / this.oMT.ttxMatter.(sKey).fSolidDensity;
+                this.afVolume(this.oMT.tiN2I.(sKey)) = this.afMass(this.oMT.tiN2I.(sKey)) / this.oMT.ttxMatter.(sKey).ttxPhases.solid.fDensity;
             end
             this.fVolume  = sum(this.afVolume);
             this.fDensity = this.fMass / this.fVolume;
