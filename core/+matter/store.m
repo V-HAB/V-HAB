@@ -686,6 +686,17 @@ classdef store < base
             %   sPhaseName  - path (with package) to the according class,
             %                 only returned if requested
             
+            % If the first item of varargin is a string, then it is a
+            % user-provided name for the phase to be created. If it is
+            % anything else, it is one of the parameters.
+            if ischar(varargin{1})
+                sPhaseName   = varargin{1};
+                cPhaseParams = varargin(2:end);
+            else
+                sPhaseName = sHelper;
+                cPhaseParams = varargin; 
+            end
+            
             % Check if the calling code (this.create() or external)
             % requests two outputs - also need to provide the name of the
             % phase class
@@ -694,17 +705,16 @@ classdef store < base
                 if nargout(str2func([ 'matter.helper.phase.create.' sHelper ])) < 2
                     this.throw('createPhaseparams', 'Helper %s does not support to return a default phase class path.', sHelper);
                 end
-                
-                [ cParams, sDefaultPhase ] = matter.helper.phase.create.(sHelper)(this, varargin{:});
+                [ cParams, sDefaultPhase ] = matter.helper.phase.create.(sHelper)(this, cPhaseParams{:});
             else
-                cParams       = matter.helper.phase.create.(sHelper)(this, varargin{:});
+                cParams       = matter.helper.phase.create.(sHelper)(this, cPhaseParams{:});
                 sDefaultPhase = '';
             end
             
             % The name of the phase will be automatically the helper name!
             % If that should be prevented, createPhaseParams has to be used
             % directly and phase constructor manually called.
-            cParams = [ { this sHelper } cParams ];
+            cParams = [ { this sPhaseName } cParams ];
             %cParams = { this sHelper cParams{:} };
         end
         

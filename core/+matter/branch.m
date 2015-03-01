@@ -501,6 +501,21 @@ classdef branch < base & event.source
                     this.iFlows     = length(this.aoFlows);
                     this.iFlowProcs = length(this.aoFlowProcs);
                 end
+                
+                % Since the subsystem branch is already sealed, we have to
+                % do it manually here for the new members of this sealed
+                % branch. This seal stuff doesn't make sense...
+                for iI = 1:this.iFlows
+                    if ~this.aoFlows(iI).bSealed
+                        this.aoFlows(iI).seal(false, this);
+                    end
+                end
+                
+                for iI = 1:this.iFlowProcs
+                    if ~this.aoFlowProcs(iI).bSealed
+                        this.aoFlowProcs(iI).seal(this);
+                    end
+                end
             end
         end
         
@@ -568,6 +583,13 @@ classdef branch < base & event.source
                 this.throw('seal', 'Already sealed');
             end
             
+            if this.abIf(1)
+                % If this branch has an interface on the left side, it is a
+                % supersystem branch with an interface to a subsystem. The
+                % subsystem will already have sealed all of the flows and
+                % procs, so we can just skip it here. 
+                return;
+            end
             
             for iI = 1:length(this.aoFlows)
                 % If last flow and right interface, provide true as param,
