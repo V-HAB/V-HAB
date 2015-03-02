@@ -10,7 +10,7 @@ classdef vhab
     methods (Static = true)
         function init()
             % check if subdirs on path!
-            
+            disp('V-HAB Initialization')
             addpath([ strrep(pwd(), '\', '/') '/lib' ]);
             addpath([ strrep(pwd(), '\', '/') '/core' ]);
             addpath([ strrep(pwd(), '\', '/') '/user' ]);
@@ -33,8 +33,11 @@ classdef vhab
             
             % Create new sim and write to poSims by path
             simConstructor      = str2func(sSimulation);
+            disp('Assembling Simulation Model...')
+            hTimer = tic();
             %TODO seems to not work, vhab.poSims still empty after .exec??
             poSims(sSimulation) = simConstructor(varargin{:});
+            disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
             
             poSims(sSimulation).bind('tick.post', @vhab.disp);
             
@@ -55,11 +58,11 @@ classdef vhab
             % This is done to ensure that all classes are correctly
             % recompiled. If this is not done, some existing classes might
             % be reused without taking into account changes made to them in
-            % between simulation runs. 
+            % between simulation runs.
             % If there are still open windows, MATLAB will issue warnings
             % about the window classes, that they can't be deleted. These
             % warnings are supressed by turning off all warnings before
-            % clearing. They are turned back on afterwards. 
+            % clearing. They are turned back on afterwards.
             warning('off','all');
             evalin('base','clear all');
             evalin('base','clear classes');
@@ -68,20 +71,23 @@ classdef vhab
         end
         
         function oSimRtn = exec(sSimulation, varargin)
-           % Clear all existing sims, and run provided sim (uses the
-           % default max. time/tick conditions on the sim object)
-
-           vhab.clear();
-
-           sSimulation = vhab.sim(sSimulation, varargin{:});
-
-           oSim = vhab.poSims(sSimulation);
-
-           oSim.run();
-
-
-           if nargout >= 1, oSimRtn = oSim; end;
-       end
+            % Clear all existing sims, and run provided sim (uses the
+            % default max. time/tick conditions on the sim object)
+            disp('Clearing MATLAB classes...')
+            hTimer = tic();
+            vhab.clear();
+            disp(['Classes cleared in ', num2str(toc(hTimer)), ' seconds!'])
+            
+            sSimulation = vhab.sim(sSimulation, varargin{:});
+            
+            oSim = vhab.poSims(sSimulation);
+            
+            disp('Starting simulation run...')
+            oSim.run();
+            
+            
+            if nargout >= 1, oSimRtn = oSim; end;
+        end
         
         
         function setReportInterval(iTicks, fTime)
@@ -125,15 +131,15 @@ classdef vhab
             %        attributes to those runs? (sim vs. real time can be
             %        examined for each run separately ...)
             
-%             if oRoot.oData.oTimer.fTime >= fNextDisp
-%                 fNextDisp = fNextDisp + 60;
-%                 fElapsed  = fElapsed + toc(hElapsed);
-% 
-%                 disp([ 'Sim  Time: ' tools.secs2hms(oRoot.oData.oTimer.fTime) ]);
-%                 disp([ 'Real Time: ' tools.secs2hms(fElapsed) ]);
-% 
-%                 hElapsed = tic();
-%             end
+            %             if oRoot.oData.oTimer.fTime >= fNextDisp
+            %                 fNextDisp = fNextDisp + 60;
+            %                 fElapsed  = fElapsed + toc(hElapsed);
+            %
+            %                 disp([ 'Sim  Time: ' tools.secs2hms(oRoot.oData.oTimer.fTime) ]);
+            %                 disp([ 'Real Time: ' tools.secs2hms(fElapsed) ]);
+            %
+            %                 hElapsed = tic();
+            %             end
         end
         
         
