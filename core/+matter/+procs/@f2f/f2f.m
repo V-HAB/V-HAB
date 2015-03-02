@@ -187,7 +187,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         end
         
         
-        function [ oFlowIn oFlowOut ] = getFlows(this, fFlowRate)
+        function [ oFlowIn, oFlowOut ] = getFlows(this, fFlowRate)
             afFRs = this.getFRs();
             
             
