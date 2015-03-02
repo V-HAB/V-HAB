@@ -93,7 +93,9 @@ classdef simulation < base & event.source
             end
             
             if ~isfield(tData, 'oMT')
+                hTimer = tic();
                 tData.oMT = matter.table();
+                disp(['Matter Table created in ', num2str(toc(hTimer)), ' seconds.'])
             end
             
             % Create data object
