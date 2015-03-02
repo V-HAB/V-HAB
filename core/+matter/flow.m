@@ -118,7 +118,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         end
         
         
-        function [ setData, hRemoveIfProc ] = seal(this, bIf)
+        function [ setData, hRemoveIfProc ] = seal(this, bIf, oBranch)
             if this.bSealed
                 this.throw('seal', 'Already sealed!');
             end
@@ -132,6 +132,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
             if ~isempty(this.oIn) && isempty(this.oOut) && (nargin > 1) && bIf
                 this.bInterface = true;
                 hRemoveIfProc   = @this.removeIfProc;
+            end
+            
+            if nargin > 2
+                this.oBranch = oBranch; 
             end
         end
         
