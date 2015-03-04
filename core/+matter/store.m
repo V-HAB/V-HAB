@@ -693,7 +693,7 @@ classdef store < base
                 sPhaseName   = varargin{1};
                 cPhaseParams = varargin(2:end);
             else
-                sPhaseName = sHelper;
+                sPhaseName = [this.sName, '_Phase_', num2str(length(this.aoPhases)+1)];
                 cPhaseParams = varargin; 
             end
             
