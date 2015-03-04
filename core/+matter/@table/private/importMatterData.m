@@ -93,6 +93,10 @@ if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData
                 
             end
             
+            % Since none of the substances in the "Matter Data" worksheet
+            % will enable interpolation of their properties, we can just
+            % set the variable to false here. 
+            ttxImportMatter.(scSubstances{iI}).bInterpolations = false;
         end
     end
     %% import specific substance worksheet
@@ -143,9 +147,13 @@ else
     end
     
     % Finally, we create a struct for possible interpolations that can be
-    % save into the matter table for increased simulation performance.
+    % save into the matter table for increased simulation performance. And
+    % to make searching in the matter table itself faster, we also add a
+    % boolean variable as an indicator if there are interpolations present
+    % at all. 
     tInterpolations = struct();
     ttxImportMatter.tInterpolations = tInterpolations;
+    ttxImportMatter.bInterpolations = false; 
     
 % We shouldn't need this because all of the values in the matter table MUST
 % be in Joule

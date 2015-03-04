@@ -627,27 +627,16 @@ classdef table < base
                             % First we need to create the unique ID for
                             % this specific interpolation to see, if it
                             % already exists.
-                            % We start by getting the columns used for this
-                            % specific interpolation.
-                            iNumberOfColumns = length(this.ttxMatter.(sSubstance).import.text(:,5));
-                            
-                            % Now we create an array filled with zeros and
-                            % set the columns used to 1
-                            aiID = zeros(iNumberOfColumns, 1);
-                            aiID([iColumn, iColumnFirst, iColumnSecond]) = 1;
-                            
-                            % To get an ID that can be used as a key in a
-                            % struct, we turn the resulting binary number
-                            % into a decimal and then into a string.
-                            sID = ['ID',num2str(bi2de(aiID.'))];
-                            
+                            sID = sprintf('ID%X', iColumn * 10000 + iColumnFirst * 100 + iColumnSecond);
+
+
                             % Now we check if this interpolation already
                             % exists. If yes, we just use the saved
                             % function.
                             
                             bInterpolationPresent = false;
                             
-                            if isfield(this.ttxMatter.(sSubstance), 'tInterpolations') 
+                            if this.ttxMatter.(sSubstance).bInterpolations == true 
                                 if isfield(this.ttxMatter.(sSubstance).tInterpolations, strrep(sProperty, ' ', ''))
                                     if isfield(this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')), sID)
                                         bInterpolationPresent = true;
@@ -688,6 +677,7 @@ classdef table < base
                                 % table.
                                 
                                 this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = F;
+                                this.ttxMatter.(sSubstance).bInterpolations = true; 
                                 
                                 % This addition to the matter table will be
                                 % overwritten, when the next simulation
