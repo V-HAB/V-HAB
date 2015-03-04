@@ -5,12 +5,16 @@ classdef vhab
     properties (GetAccess = public, Constant = true)
         poSims   = containers.Map();
         pOptions = containers.Map({ 'iTickRepIntv', 'iTimeRepIntv' }, { 100, 60 });
+        
+        fLastDispTime = 0;      % So we can calulate the delta t between the 100*X ticks display
     end
     
     methods (Static = true)
         function init()
             % check if subdirs on path!
-            disp('V-HAB Initialization')
+            disp('--------------------------------------')
+            disp('-------- V-HAB Initialization --------')
+            disp('--------------------------------------')
             addpath([ strrep(pwd(), '\', '/') '/lib' ]);
             addpath([ strrep(pwd(), '\', '/') '/core' ]);
             addpath([ strrep(pwd(), '\', '/') '/user' ]);
@@ -82,6 +86,8 @@ classdef vhab
             
             oSim = vhab.poSims(sSimulation);
             
+            disp('Initialization complete!')
+            disp('--------------------------------------')
             disp('Starting simulation run...')
             oSim.run();
             
@@ -114,8 +120,10 @@ classdef vhab
                 %TODO store last tick disp fTime on some containers.Map!
                 %disp([ num2str(oSim.oTimer.iTick) ' (' num2str(oRoot.oData.oTimer.fTime - fLastTickDisp) 's)' ]);
                 %fLastTickDisp = oRoot.oData.oTimer.fTime;
-                disp([ num2str(oSim.oTimer.iTick) ' (' num2str(oSim.oTimer.fTime) 's)' ]);
-                
+                fDeltaTime = oSim.oTimer.fTime - oSim.oTimer.fLastTickDisp;
+                oSim.oTimer.fLastTickDisp = oSim.oTimer.fTime;
+                %disp([ num2str(oSim.oTimer.iTick), ' (', num2str(oSim.oTimer.fTime), 's) (Delta Time ', num2str(fDeltaTime), 's)']);
+                fprintf('%i\t(%fs)\t(Tick Delta %fs)\n', oSim.oTimer.iTick, oSim.oTimer.fTime, fDeltaTime);
                 
                 if exist('STOP', 'file') == 2
                     oSim.iSimTicks = oSim.oTimer.iTick + 5;
