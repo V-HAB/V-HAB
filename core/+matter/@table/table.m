@@ -702,7 +702,7 @@ classdef table < base
                             iRowsFirstMatterData = [];
                         end
                         
-                        if iRowsFirstMatterData
+                        if ~isempty(iRowsFirstMatterData)
                             % data found in MatterData
                             % first get column of property
                             iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sProperty)); % row 1 is std propertyname in MatterData
@@ -711,28 +711,79 @@ classdef table < base
                             
                             sReportString = 'One or more out of range. Got value from MatterData.';
                         else
-                            % no data found in MatterData
-                            % get 'best' value in Range of substancetable
                             
-                            % create temporary array because scatteredInterpolant doesn't allow NaN values
-                            afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
+                            % If the property is not directly given an
+                            % interpolation over both dependencies is
+                            % needed.
                             
-                            % Now we remove all rows that contain NaN values
-                            afTemporary(any(isnan(afTemporary), 2), :) = [];
+                            % Check and see, if this interpolation has been
+                            % done before and use those values for better
+                            % performance.
                             
-                            % only unique values are needed (also scatteredInterpolant would give out a warning in that case)
-                            afTemporary = unique(afTemporary,'rows');
+                            % First we need to create the unique ID for
+                            % this specific interpolation to see, if it
+                            % already exists.
+                            sID = sprintf('ID%X', iColumn * 10000 + iColumnFirst * 100 + iColumnSecond);
+
+
+                            % Now we check if this interpolation already
+                            % exists. If yes, we just use the saved
+                            % function.
                             
-                            % Sometimes there are also multiple values for
-                            % the same combination of dependencies. Here we
-                            % get rid of those too.
-                            [ ~, aIndices ] = unique(afTemporary(:, [2 3]), 'rows');
-                            afTemporary = afTemporary(aIndices, :);
+                            bInterpolationPresent = false;
                             
-                            % interpolate linear with no extrapolation
-                            %CHECK Does it make sense not to extrapolate?
-                            F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
-                            fProperty = F(fFirstDepValue, fSecondDepValue);
+                            if this.ttxMatter.(sSubstance).bInterpolations == true 
+                                if isfield(this.ttxMatter.(sSubstance).tInterpolations, strrep(sProperty, ' ', ''))
+                                    if isfield(this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')), sID)
+                                        bInterpolationPresent = true;
+                                    end
+                                end
+                            end
+                            
+                            if bInterpolationPresent
+                                % We know there is data, so we use it. 
+                                fProperty = this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue, fSecondDepValue);
+
+                            else
+                                % The interpolation function does not yet
+                                % exist, so we have to go and run the
+                                % interpolation.
+                                this.iInterpolationCount = this.iInterpolationCount + 1; 
+                                fprintf('Creating a new interpolation, Nr. %i\n', this.iInterpolationCount);
+                                % create temporary array because scatteredInterpolant doesn't allow NaN values
+                                afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
+                                
+                                % Now we remove all rows that contain NaN values
+                                afTemporary(any(isnan(afTemporary), 2), :) = [];
+                                
+                                % Only unique values are needed (also scatteredInterpolant would give out a warning in that case)
+                                afTemporary = unique(afTemporary,'rows');
+                                % Sometimes there are also multiple values for
+                                % the same combination of dependencies. Here we
+                                % get rid of those too.
+                                [ ~, aIndices ] = unique(afTemporary(:, [2 3]), 'rows');
+                                afTemporary = afTemporary(aIndices, :);
+                                
+                                % interpolate linear with no extrapolation
+                                %CHECK Does it make sense not to extrapolate?
+                                F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
+                                fProperty = F(fFirstDepValue, fSecondDepValue);
+                                
+                                % To make this faster the next time around, we
+                                % save the scatteredInterpolant into the matter
+                                % table.
+                                
+                                this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = F;
+                                this.ttxMatter.(sSubstance).bInterpolations = true; 
+                                
+                                % This addition to the matter table will be
+                                % overwritten, when the next simulation
+                                % starts, even if Matter.xlsx has not
+                                % changed. To prevent this, we need to save
+                                % the table object again.
+                                filename = strrep('data\MatterData.mat', '\', filesep);
+                                save(filename, 'this');
+                            end
                             
                             sReportString = 'One or more out of range. Got the best possible in range value through interpolation.';
                         end
