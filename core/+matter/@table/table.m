@@ -627,28 +627,18 @@ classdef table < base
                             % First we need to create the unique ID for
                             % this specific interpolation to see, if it
                             % already exists.
-                            sID = sprintf('ID%X', iColumn * 10000 + iColumnFirst * 100 + iColumnSecond);
+                            sID = sprintf('ID%X', iColumnFirst * 100 + iColumnSecond);
 
 
                             % Now we check if this interpolation already
                             % exists. If yes, we just use the saved
                             % function.
                             
-                            bInterpolationPresent = false;
-                            
-                            if this.ttxMatter.(sSubstance).bInterpolations == true 
-                                if isfield(this.ttxMatter.(sSubstance).tInterpolations, strrep(sProperty, ' ', ''))
-                                    if isfield(this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')), sID)
-                                        bInterpolationPresent = true;
-                                    end
-                                end
-                            end
-                            
-                            if bInterpolationPresent
-                                % We know there is data, so we use it. 
+                            try
+                                % If there is data, we use it. 
                                 fProperty = this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue, fSecondDepValue);
 
-                            else
+                            catch
                                 % The interpolation function does not yet
                                 % exist, so we have to go and run the
                                 % interpolation.
@@ -723,33 +713,22 @@ classdef table < base
                             % First we need to create the unique ID for
                             % this specific interpolation to see, if it
                             % already exists.
-                            sID = sprintf('ID%X', iColumn * 10000 + iColumnFirst * 100 + iColumnSecond);
+                            sID = sprintf('ID%X', iColumnFirst * 100 + iColumnSecond);
 
 
                             % Now we check if this interpolation already
                             % exists. If yes, we just use the saved
                             % function.
                             
-                            bInterpolationPresent = false;
-                            
-                            if this.ttxMatter.(sSubstance).bInterpolations == true 
-                                if isfield(this.ttxMatter.(sSubstance).tInterpolations, strrep(sProperty, ' ', ''))
-                                    if isfield(this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')), sID)
-                                        bInterpolationPresent = true;
-                                    end
-                                end
-                            end
-                            
-                            if bInterpolationPresent
-                                % We know there is data, so we use it. 
+                            try
+                                % If there is data, we use it.
                                 fProperty = this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue, fSecondDepValue);
-
-                            else
+                            catch
+                            
                                 % The interpolation function does not yet
                                 % exist, so we have to go and run the
                                 % interpolation.
-                                this.iInterpolationCount = this.iInterpolationCount + 1; 
-                                fprintf('Creating a new interpolation, Nr. %i\n', this.iInterpolationCount);
+                                
                                 % create temporary array because scatteredInterpolant doesn't allow NaN values
                                 afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
                                 
