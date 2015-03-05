@@ -627,7 +627,7 @@ classdef table < base
                             % First we need to create the unique ID for
                             % this specific interpolation to see, if it
                             % already exists.
-                            sID = sprintf('ID%X', iColumnFirst * 100 + iColumnSecond);
+                            sID = sprintf('ID%i', iColumnFirst * 100 + iColumnSecond);
 
 
                             % Now we check if this interpolation already
@@ -713,7 +713,7 @@ classdef table < base
                             % First we need to create the unique ID for
                             % this specific interpolation to see, if it
                             % already exists.
-                            sID = sprintf('ID%X', iColumnFirst * 100 + iColumnSecond);
+                            sID = sprintf('ID%i', iColumnFirst * 100 + iColumnSecond);
 
 
                             % Now we check if this interpolation already
