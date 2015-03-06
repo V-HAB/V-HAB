@@ -34,8 +34,8 @@ if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData
     % Search for empty cell in first row.; Column before is last
     % Tablecolumn. All data after that is not imported. Then
     % store table length
-    [~, emptyColumns] = find(strcmp(import.text(1,:),''));
-    iTableLength = emptyColumns(1)-1;
+    [~, aEmptyColumns] = find(strcmp(import.text(1,:),''));
+    iTableLength = aEmptyColumns(1)-1;
     
     % Storing the column of the melting point
     % ("codename" of first property to store in phase) to
@@ -53,6 +53,31 @@ if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData
     
     % Initialize the struct in which all substances are later stored
     ttxImportMatter = struct;
+    
+    % To improve the matter table performance, by avoinding frequent calls 
+    % find() to get the column indices, we add a struct with the property 
+    % names as keys and their indices in the ttxMatter struct as values.
+    
+    % First create the empty struct
+    tColumns = struct();
+    
+    % Sometimes there are empty columns at the end, so we need to know how
+    % many. find() returns a vector, so we use array index 1 to be sure to
+    % get the first one.
+    [~, aEmptyColumns] = find(strcmp(import.text(1,:),''));
+    
+    if isempty(aEmptyColumns)
+        iNumberOfColumns = length(import.text(5,:));
+    else
+        iNumberOfColumns = aEmptyColumns(1) - 1;
+    end
+
+    % Now we go through all columns and create the key/value pairs
+    % accordingly
+    for iI = 1:iNumberOfColumns
+        sPropertyName = strrep(import.text{1,iI},' ','');
+        tColumns.(sPropertyName) = iI;
+    end
     
     % go through all unique substances
     for iI = 1:length(scSubstances)
@@ -97,6 +122,9 @@ if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData
             % will enable interpolation of their properties, we can just
             % set the variable to false here. 
             ttxImportMatter.(scSubstances{iI}).bInterpolations = false;
+            
+            % Finally we add the tColumns struct to every substance 
+            ttxImportMatter.(scSubstances{iI}).tColumns = tColumns;
         end
     end
     %% import specific substance worksheet
@@ -116,8 +144,8 @@ else
     % are in this specific worksheet
     % Since the first three cells are irrelevant, we start
     % looking in the fourth column
-    [~, emptyColumns] = find(strcmp(import.text(1,4:end),''));
-    iNumberOfConstants = emptyColumns(1)-1;
+    [~, aEmptyColumns] = find(strcmp(import.text(1,4:end),''));
+    iNumberOfConstants = aEmptyColumns(1)-1;
     
     % save all constants of substances defined in first four
     % rows, since we ignore the first three columns, we have to
@@ -132,7 +160,7 @@ else
             end
         end
     end
-    
+     
     % numeric import is mostly minor than other because in
     % the first lines are often no numbers
     % for easier handling in later functions get this the
@@ -145,6 +173,75 @@ else
         afNewArray((iLengthRaw-iLengthNum)+1:end,:) = ttxImportMatter.import.num;
         ttxImportMatter.import.num = afNewArray;
     end
+    
+    
+    % To improve the matter table performance, by avoinding frequent calls 
+    % find() to get the column indices, we add a struct with the property 
+    % names as keys and their indices in the ttxMatter struct as values.
+    
+    % First create the empty struct
+    ttxImportMatter.tColumns = struct();
+    
+    % Sometimes there are empty columns at the end, so we need to know how
+    % many. find() returns a vector, so we use array index 1 to be sure to
+    % get the first one.
+    [~, aEmptyColumns] = find(strcmp(import.text(5,:),''));
+    
+    if isempty(aEmptyColumns)
+        iNumberOfColumns = length(import.text(5,:));
+    else
+        iNumberOfColumns = aEmptyColumns(1) - 1;
+    end
+
+    % Now we go through all columns and create the key/value pairs
+    % accordingly
+    for iI = 1:iNumberOfColumns
+        % We can skip the temperature in celcius
+        if ~strcmp(import.text{6,iI}, 'C')
+            sPropertyName = strrep(import.text{5,iI},' ','');
+            ttxImportMatter.tColumns.(sPropertyName) = iI;
+        end
+    end
+    
+    % In an effort to further increase the performance of the matter table
+    % by avoiding frequent calls of min() and max(), we include these
+    % extremes in the ttxMatter struct statically. 
+    
+    % First create the empty struct
+    ttxImportMatter.ttExtremes = struct();
+    
+    % Now we go through each column, using the iNumberOfColumns variable we
+    % created earlier, create another struct for each individual property,
+    % with two key/value pairs: one for the minimum and one for the maximum
+    % value.
+    for iI = 1:iNumberOfColumns
+        % We can't find min and max for the 'Phase' column, but for every
+        % other one we can.
+        if ~strcmp(import.text{5,iI}, 'Phase')
+            % Creating the struct
+            sStructName = ['t',strrep(import.text{5,iI},' ','')];
+            ttxImportMatter.ttExtremes.(sStructName) = struct();
+            
+            try
+                % Getting the min and max values
+                fMin = min(import.num(:,iI));
+                fMax = max(import.num(:,iI));
+            catch
+                % There may be only NaNs in the last column, if so we just
+                % don't add the property struct to tExtremes
+                break;
+            end
+            
+            % Some of the columns may contain only NaNs, in this case we 
+            % don't add the property struct to tExtremes
+            if ~(isnan(fMin) || isnan(fMax))
+                % Writing the values to the struct
+                ttxImportMatter.ttExtremes.(sStructName).Min = fMin;
+                ttxImportMatter.ttExtremes.(sStructName).Max = fMax;
+            end
+        end
+    end
+    
     
     % Finally, we create a struct for possible interpolations that can be
     % save into the matter table for increased simulation performance. And

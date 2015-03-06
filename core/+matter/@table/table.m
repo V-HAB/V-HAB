@@ -479,7 +479,8 @@ classdef table < base
             end
             
             % get column of searched property
-            iColumn = this.findColumn(sProperty, sSubstance);
+            %iColumn = this.findColumn(sProperty, sSubstance);
+            iColumn = this.ttxMatter.(sSubstance).tColumns.(strrep(sProperty,' ',''));
             
             % if no column found, property is not in worksheet
             if isempty(iColumn)
@@ -504,7 +505,7 @@ classdef table < base
                 %---------------------------------------------------------%
                 
                 % get column of first dependency
-                iColumnFirst = this.findColumn(sFirstDepName, sSubstance);
+                iColumnFirst = this.ttxMatter.(sSubstance).tColumns.(strrep(sFirstDepName,' ',''));
                 % if properties are given 2 times (e.g. Temperature has C and K columns), second column is used
                 if length(iColumnFirst) > 1
                     iColumnFirst = iColumnFirst(2);
@@ -516,7 +517,9 @@ classdef table < base
                 
                 % look if data for first dependency is in range of table
                 % if not in range, first look if data is given in worksheet MatterData before interpolate
-                [fMin, fMax] = this.FindRange(sSubstance, iColumnFirst);
+                fMin = this.ttxMatter.(sSubstance).ttExtremes.(['t',strrep(sFirstDepName,' ','')]).Min;
+                fMax = this.ttxMatter.(sSubstance).ttExtremes.(['t',strrep(sFirstDepName,' ','')]).Max;
+                
                 if fFirstDepValue > fMax
                     % First dependency is greater than max value in table
                     % set dependency equal max table value
@@ -577,8 +580,8 @@ classdef table < base
                     % Getting the second dependency and check for out of range
                     %---------------------------------------------------------%
                     % get column of second dependency
-                    iColumnSecond = this.findColumn(sSecondDepName, sSubstance);
-                    
+                    iColumnSecond = this.ttxMatter.(sSubstance).tColumns.(strrep(sSecondDepName,' ',''));
+                
                     % if no column found, property is not in worksheet
                     if isempty(iColumnSecond)
                         this.throw('table:FindProperty',sprintf('Cannot find property %s in worksheet %s', sSecondDepName, sSubstance));
@@ -586,7 +589,8 @@ classdef table < base
                     
                     % look if data for second dependency is in range of table
                     % if not in range, first look if data is given in worksheet MatterData before interpolate
-                    [fMin, fMax] = this.FindRange(sSubstance, iColumnSecond);
+                    fMin = this.ttxMatter.(sSubstance).ttExtremes.(['t',strrep(sSecondDepName,' ','')]).Min;
+                    fMax = this.ttxMatter.(sSubstance).ttExtremes.(['t',strrep(sSecondDepName,' ','')]).Max;
                     if fSecondDepValue > fMax
                         % Second dependency is greater than max value in table
                         % set dependency equal max table value
@@ -883,98 +887,6 @@ classdef table < base
         
     end
     
-    
-    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Protected, internal methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    methods (Access = protected)
-        
-        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function [iColumn, iTableLength] = findColumn(this, sProperty, sSubstance, iRow)
-            % This function is used to find the column of a property and if
-            % desired wished the columnlength of the table
-            %
-            % findColumn returns
-            %  iColumn - number of column
-            %  iTableLength - length of table
-            %
-            % inputs:
-            % sProperty: name of searched property
-            % sSubstance: substancename
-            % iRow: rownumber in which the search string stays, optional
-            
-            % only calculate tablelength if is searched too
-            if nargout == 2
-                iTableLength = size(this.ttxMatter.(sSubstance).import.text,2);
-            end
-            
-            if nargin > 3 && ~isempty(iRow)
-                % if rownumbers is also given we can just get the column
-                iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(iRow,:),sProperty));
-                
-                % Check if the substance has an individual worksheet or if the
-                % data is in the 'MatterData' worksheet
-            elseif this.ttxMatter.(sSubstance).bIndividualWorksheet
-                % row 5 is the fixed location of the property name
-                iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(5,:),sProperty));
-                % Maybe the user didn't pay attention, but just in
-                % case, if someone entered the variable name as 'char'
-                % here, it will still return the correct value. Boy, we
-                % are nice programmers...
-                if isempty(iColumn)
-                    iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(7,:),sProperty));
-                end
-            else
-                % Since we don't have a specific worksheet for this
-                % species, we use the column as given in the MatterData
-                % worksheet. Here the property name is in row 1
-                iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(1,:),sProperty)); % row 1 is std propertyname in MatterData
-                
-                % Again we try to correct for user error if the
-                % variable name was entered instead of the property
-                % name.
-                if isempty(iColumn)
-                    iColumn = find(strcmp(this.ttxMatter.(sSubstance).import.text(2,:),sProperty)); % search row 2 as alternative
-                end
-            end
-        end
-        
-        function [fMin, fMax] = FindRange(this, sSubstance, xProperty)
-            % This function gets the range of values for a specific
-            % property.
-            % Used in findProperty to look if searched values are in range
-            % of the given worksheetdata
-            %
-            % FindRange returns
-            %  fMin: minimum value of column
-            %  fMax: maximum value of column
-            %
-            % inputs:
-            % sSubstance: substance name
-            % xProperty: property name as string or number of column
-            
-            % depending on the input, look for column or property
-            if isnumeric(xProperty)
-                iColumn = xProperty;
-            elseif ischar(xProperty)
-                iColumn = this.findColumn(xProperty, sSubstance);
-            else
-                this.thow('table:FindRange','Wrong input');
-            end
-            
-            % only look for maximum values if searched too
-            if nargout == 2
-                % get maximum value
-                fMax = max(this.ttxMatter.(sSubstance).import.num(:,iColumn));
-            end
-            % get minimum value
-            fMin = min(this.ttxMatter.(sSubstance).import.num(:,iColumn));
-        end
-        
-    end
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Static helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
