@@ -45,7 +45,7 @@ classdef liquid < matter.phase
             this.fTemp = fTemp;
             this.fPressure = fPressure;
              
-            this.fDensity = this.oMT.findProperty('H2O','fDensity','Pressure',fPressure,'Temperature',(fTemp-273.15),'liquid');
+            this.fDensity = this.oMT.findProperty('H2O','Density','Pressure',fPressure,'Temperature',(fTemp-273.15),'liquid');
             
             this.fMass = this.fDensity*this.fVolume;
                         
@@ -60,11 +60,11 @@ classdef liquid < matter.phase
             bSuccess = this.setParameter('fVolume', fVolume);
             this.fDensity = this.fMass / this.fVolume;
             
-            this.fPressure = this.oMT.findProperty('H2O','Pressure','fDensity',this.fDensity,'Temperature',(this.fTemp-273.15),'liquid');
+            this.fPressure = this.oMT.findProperty('H2O','Pressure','Density',this.fDensity,'Temperature',(this.fTemp-273.15),'liquid');
             
             return;
             %TODO with events:
-            this.trigger('set.fVolume', struct('fVolume', fVolume, 'setAttribute', @this.setAttribute));
+            %this.trigger('set.fVolume', struct('fVolume', fVolume, 'setAttribute', @this.setAttribute));
             % So events can just set everything they want ...
             % Or see human, events return data which is processed here??
             % What is several events are registered? Different types of
@@ -86,14 +86,14 @@ classdef liquid < matter.phase
             bSuccess = this.setParameter('fPressure', fPressure);
             %Get new Density for new pressure
             
-            this.fDensity = this.oMT.findProperty('H2O','fDensity','Pressure',fPressure,'Temperature',(this.fTemp-273.15),'liquid');
+            this.fDensity = this.oMT.findProperty('H2O','Density','Pressure',fPressure,'Temperature',(this.fTemp-273.15),'liquid');
             
             this.fMass = this.fDensity*this.fVolume;
                         
                         
             return;
             %TODO with events:
-            this.trigger('set.fPressure', struct('fPressure', fPressure, 'setAttribute', @this.setAttribute));
+            %this.trigger('set.fPressure', struct('fPressure', fPressure, 'setAttribute', @this.setAttribute));
             % So events can just set everything they want ...
             % Or see human, events return data which is processed here??
             % What is several events are registered? Different types of
@@ -131,7 +131,7 @@ classdef liquid < matter.phase
             if ~isempty(this.fVolume) && this.fLastUpdateLiquid ~= this.oStore.oTimer.fTime && this.oStore.iIncompressible == 0
                 
                 fDensity = this.fMass/this.fVolume;
-                this.fPressure = this.oMT.findProperty('H2O','Pressure','fDensity',fDensity,'Temperature',(this.fTemp-273.15),'liquid');
+                this.fPressure = this.oMT.findProperty('H2O','Pressure','Density',fDensity,'Temperature',(this.fTemp-273.15),'liquid');
                 this.fLastUpdateLiquid = this.oStore.oTimer.fTime;            
             end
             for k = 1:length(this.coProcsEXME)
