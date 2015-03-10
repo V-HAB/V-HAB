@@ -33,9 +33,13 @@ if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData
 
     % Search for empty cell in first row.; Column before is last
     % Tablecolumn. All data after that is not imported. Then
-    % store table length
+    % store table length 
     [~, aEmptyColumns] = find(strcmp(import.text(1,:),''));
-    iTableLength = aEmptyColumns(1)-1;
+    if isempty(aEmptyColumns)
+        iTableLength = length(import.text(1,:));
+    else
+        iTableLength = aEmptyColumns(1)-1;
+    end
     
     % Storing the column of the melting point
     % ("codename" of first property to store in phase) to
@@ -108,11 +112,16 @@ if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData
                     ttxImportMatter.(scSubstances{iI}).(import.text{2,j}) = import.num(iRows(1)-2,j-3);
                 end
             end
+            
             % go through all phases and save all remaining properties for that specific phase
             for z = 1:length(iRows)
                 for j = iColumn:iTableLength
+                    try
                     if ~isnan(import.num(iRows(z)-2,j-3))
                         ttxImportMatter.(scSubstances{iI}).ttxPhases.(import.text{iRows(z),3}).(import.text{2,j}) = import.num(iRows(z)-2,j-3);
+                    end
+                    catch
+                        keyboard(); 
                     end
                 end
                 
