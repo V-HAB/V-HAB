@@ -33,4 +33,4 @@ main_*.m
 test_*.m
 
 # Ignore invisible files like .DS_Store from Macs
-.*
+.DS_Store
