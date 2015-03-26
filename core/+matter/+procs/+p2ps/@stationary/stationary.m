@@ -42,7 +42,7 @@ classdef stationary < matter.procs.p2p
         
         
         function setMatterProperties(this, fFlowRate, arPartials)
-            
+            if nargin < 3, arPartials = []; end;
             
             this.fLastUpdate = this.oStore.oTimer.fTime;
             
