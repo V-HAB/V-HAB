@@ -12,6 +12,7 @@ classdef gas < matter.phase
     
     properties (SetAccess = protected, GetAccess = public)
         % Phase type (for matter table etc)
+        % @type string
         sType = 'gas';
         
         fVolume;                % Volume in m^3
@@ -148,6 +149,9 @@ classdef gas < matter.phase
             if isnan(fMassToPressure) || isinf(fMassToPressure)
                 fMassToPressure = 0;
             end
+        end
+        function setProperty(this, sAttribute, xValue)
+            this.(sAttribute) = xValue;
         end
     end
     

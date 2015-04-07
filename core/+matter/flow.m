@@ -23,9 +23,16 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         % Flow rate, pressure and temperature of the matter stream
         % Initialize NOT with empty but some number ...?
+        % @type float
         fFlowRate    = 0;   % [kg/s]
+        
+        % @type float
         fPressure    = 0;  % [Pa]
+        
+        % @type float
         fTemp        = 0;   % [K]
+        
+        
         
         %TODO implement .update, get heat capacity depending on
         %     arPartialMass and Temperature
@@ -36,10 +43,13 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % Partial masses in percent (ratio) in indexed vector (use oMT to
         % translate, e.g. this.oMT.tiN2I)
         % Can be empty, won't be accessed if fFlowRate is zero ...?
+        % @type array
+        % @types float
         arPartialMass;
         
         
-        % Matter table
+        % Reference to the matter table
+        % @type object
         oMT;
     end
     
@@ -51,8 +61,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
         %TODO maybe several phases somehow (linked flows or something?). So
         %     same as in stores: available diameter has to be distributed
         %     throughout the flows (diam - fluid/solid = diam gas)
-        %     MOVE to protected SetAccess
-        fDiameter;
+        % @type float
+        fDiameter = 0;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -355,7 +365,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % If e.g. a valve is shut in the branch, this method is however
             % called without those params, so we need to check that and in
             % that case make no changes to fPressure / fTemp in the flows.
-            if nargin >= 4
+            % So get pressure/temperature of in exme (if FR provided)
+            if nargin >= 3
+                %TODO get exme from this.oBranch, depending on fFlowRate?
                 [ fPortPress, fPortTemp ] = oExme.getPortProperties();
             else
                 fPortPress = 0;
@@ -385,6 +397,17 @@ classdef flow < base & matlab.mixin.Heterogeneous
             bSkipPT      = (nargin < 4) || (isempty(afPressures) && (iL > 1)); % skip pressure, temp?
             bSkipT       = (nargin < 5) || (isempty(afTemps) && (iL > 1));     % skip temp?
             
+            %TODO find out correct behaviour here ... don't set pressures
+            %     or temps (from solver init?) if those params are empty or
+            %     not provided --> but they're also empty if no f2fs exist
+            %     in this branch!!
+            %     then however length(this) == 1 -> use that?
+            %     or just ALWAYS set the flow params for those flows
+            %     directly connected to the EXMEs?
+            %     ALSO: if no afPress/afTemps, just distribute equally!?
+            %if bSkipT || bSkipPT, this.warn('setData', 'setData on flows w/o press/temp (or just empty) --> difference: no delta temp/press (cause no f2f) or really don''t set??'); end;
+            if (bSkipT || bSkipPT) && (iL > 1), this.warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end;
+            
             for iI = 1:iL
                 % Only set those params if oExme was provided
                 if ~isempty(oExme)
@@ -398,6 +421,13 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 if bSkipFRandPT, continue; end;
                 
                 this(iI).fFlowRate = fFlowRate;
+                
+                % If only one flow, no f2f exists --> set pressure, temp
+                % according to IN exme
+                if iL == 1
+                    this.fPressure = fPortPress;
+                    this.fTemp     = fPortTemp;
+                end
                 
                 
                 % Skip pressure, temperature?

@@ -21,18 +21,24 @@ classdef branch < base & event.source
     
     properties (SetAccess = protected, GetAccess = public)
         % Reference to the parent matter container
+        % @type object
         oContainer;
         
         % Created from the store/interface names provided to the
         % createBranch method on matter.container (store1_port1__ifName, or
         % store1_port1__otherStore_somePort)
+        % @type string
         sName;
         
         % Names for left/right (cell with 1/2, can be accessed like
         % [ aoBranches.csNames ] --> cell with names, two rows, n cols
+        % @type cell
+        % @types string
         csNames = { ''; '' };
         
         % Interfaces left/right?
+        % @type array
+        % @types int
         abIf = [ false; false ];
         
         % When branch fully connected, contains references to the EXMEs at
@@ -40,23 +46,33 @@ classdef branch < base & event.source
         % automatically set for branch on the left side
         %coPhases = { matter.phase.empty(1, 0); matter.phase.empty(1, 0) };
         %coPhases = { []; [] };
+        % @type cell
+        % @types object
         coExmes = { []; [] };
         
         % Connected branches on the left (index 1, branch in subsystem) or
         % the right (index 2, branch in supsystem) side?
+        % @type cell
+        % @types object
         coBranches = { matter.branch.empty(1, 0); matter.branch.empty(1, 0) };
         
         % Flows belonging to this branch
+        % @type array
+        % @types object
         aoFlows = matter.flow.empty();
         
         % Array with f2f processors in between the flows
+        % @type array
+        % @types object
         aoFlowProcs = matter.procs.f2f.empty();
         
         % Amount of flows / procs
+        %TODO make transient!
         iFlows = 0;
         iFlowProcs = 0;
         
         % Current flow rate on branch
+        % @type float
         fFlowRate = 0;
         
         bSealed = false;
@@ -200,7 +216,6 @@ classdef branch < base & event.source
             else
                 % Split to store name / port name
                 [ sStore, sPort ] = strtok(sRight, '.');
-                
                 
                 % Get store name from container
                 if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end;
@@ -393,7 +408,10 @@ classdef branch < base & event.source
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
+            
             % Only trigger if not yet set
+            %CHECK inactivated here --> solvers and otehr "clients" should
+            %      check themselves!
             if ~this.bOutdated
                 this.bOutdated = true;
 
@@ -417,19 +435,19 @@ classdef branch < base & event.source
             %     the setFlowRate method of the branch. The branch calls
             %     this fct before setting a new solver.
             
-            
             if ~isempty(this.oHandler)
                 this.throw('registerHandlerFR', 'Can only set one handler!');
             end
             
             this.oHandler = oHandler;
+            
             setFlowRate   = @this.setFlowRate;
+            %setFlowRate   = @(varargin) this.setFlowRate(varargin{:});
         end
         
     
         function oExme = getInEXME(this)
-            %oExme = this.coExmes{sif(this.aoFlows(1).fFlowRate < 0, 2, 1)};
-            oExme = this.coExmes{sif(this.fFlowRate < 0, 2, 1)};
+            oExme = this.coExmes{sif(this.aoFlows(1).fFlowRate < 0, 2, 1)};
         end
         
         
@@ -451,7 +469,7 @@ classdef branch < base & event.source
             if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
             
             % Connected phases have to do a massupdate
-            for iE = sif(this.fFlowRate >= 0, 1:2, 2:1)
+            for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
                 this.coExmes{iE}.oPhase.massupdate();
             end
             
@@ -619,4 +637,3 @@ classdef branch < base & event.source
     end
     
 end
-

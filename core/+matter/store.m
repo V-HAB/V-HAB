@@ -11,6 +11,8 @@ classdef store < base
     properties (SetAccess = private, GetAccess = public)
         % Phases - mixin arrays, with the base class being matter.phase who
         % is abstract - therefore can't create empty - see matter.table ...
+        % @type array
+        % @types object
         aoPhases = [];
         
         % Amount of phases
@@ -18,15 +20,20 @@ classdef store < base
         
         % Processors - p2p (int/exme added to phase, f2f to container)
         toProcsP2P = struct(); %matter.procs.p2p.empty();
-        csProcsP2P;
+        
+        % @type cell
+        % @types string
+        csProcsP2P = {};
         
         % Should also (as csProcsP2P) transient
         aiProcsP2Pstationary;
         
         % Matter table
+        % @type object
         oMT;
         
         % Name of store
+        % @type string
         sName;
         
         % If the initial configuration of the store and all its phases,
@@ -71,6 +78,7 @@ classdef store < base
         %     (gas isochoric etc, solids, ...). Does not necessarily change
         %     store volume, but if store volume is reduced, the phase vol
         %     change things have to be taken into account.
+        % @type float
         fVolume = 0;
         
         %Parameter to check wether liquids should be calculated as
