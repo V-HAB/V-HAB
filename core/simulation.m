@@ -93,7 +93,9 @@ classdef simulation < base & event.source
             end
             
             if ~isfield(tData, 'oMT')
+                hTimer = tic();
                 tData.oMT = matter.table();
+                disp(['Matter Table created in ', num2str(toc(hTimer)), ' seconds.'])
             end
             
             % Create data object
@@ -115,8 +117,8 @@ classdef simulation < base & event.source
             % initialized yet! Just create with one row, for the initial
             % mass log. Subsequent logs dynamically allocate new memory -
             % bad for performance, but only happens every Xth tick ...
-            this.mfTotalMass = zeros(0, this.oData.oMT.iSpecies);
-            this.mfLostMass  = zeros(0, this.oData.oMT.iSpecies);
+            this.mfTotalMass = zeros(0, this.oData.oMT.iSubstances);
+            this.mfLostMass  = zeros(0, this.oData.oMT.iSubstances);
         end
         
         
@@ -218,7 +220,7 @@ classdef simulation < base & event.source
         
         function finish(this)
             %TODO put in vhab class -> just trigger 'finish' here!
-            disp('----------------');
+            disp('--------------------------------------');
             disp([ 'Sim Time:     ' num2str(this.oTimer.fTime) 's' ]);
             disp([ 'Sim Runtime:  ' num2str(this.fRuntimeTick + this.fRuntimeLog) 's, from that for dumping: ' num2str(this.fRuntimeLog) 's' ]);
             disp([ 'Sim factor:   ' num2str(this.fSimFactor) ' [-] (ratio)' ]);
@@ -226,7 +228,7 @@ classdef simulation < base & event.source
             disp([ 'Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :))) 'kg' ]);
             disp([ 'Minimum Time Step * Total Sim Time: ' num2str(this.oTimer.fTimeStep * this.oTimer.fTime) ]);
             disp([ 'Minimum Time Step * Total Ticks:    ' num2str(this.oTimer.fTimeStep * this.oTimer.iTick) ]);
-            disp('----------------');
+            disp('--------------------------------------');
         end
         
         
@@ -244,6 +246,7 @@ classdef simulation < base & event.source
                 catch
                     this.throw('simulation','Error trying to log this.oRoot.%s. \nPlease check your logging configuration in setup.m!', this.csLog{iL});
                 end
+
             end
         end
         
@@ -252,22 +255,12 @@ classdef simulation < base & event.source
             
             % Total mass: sum over all mass stored in all phases, for each
             % species separately.
-            this.mfTotalMass(iIdx, :) = sum(reshape([ this.oData.oMT.aoPhases.afMass ], [], this.oData.oMT.iSpecies));
+            this.mfTotalMass(iIdx, :) = sum(reshape([ this.oData.oMT.aoPhases.afMass ], [], this.oData.oMT.iSubstances));
             
             % Lost mass: logged by phases if more mass is extracted then
-            % available (for each species separately).
-            this.mfLostMass(iIdx, :)  = sum(reshape([ this.oData.oMT.aoPhases.afMassLost ], [], this.oData.oMT.iSpecies));
+            % available (for each substance separately).
+            this.mfLostMass(iIdx, :)  = sum(reshape([ this.oData.oMT.aoPhases.afMassLost ], [], this.oData.oMT.iSubstances));
             
-            %NOTE in base workspace, get the total mass that was lost:
-            %   >> sum(oLastSimObj.mfLostMass(end, :))
-            
-            %     compare the initial and the end total masses (comparing
-            %     the total values - in case of a manipulator that adapts
-            %     the partials, can't really compare species-wise):
-            %   >> fTotalMassStart = sum(oLastSimObj.mfTotalMass(1, :))
-            %   >> fTotalMassEnd   = sum(oLastSimObj.mfTotalMass(end, :))
-            %   >> fTotlaMassStart - fTotalMassEnd
-            %
             %TODO implement methods for that ... break down everything down
             %     to the moles and compare these?! So really count every
             %     atom, not the molecules ... compare enthalpy etc?
