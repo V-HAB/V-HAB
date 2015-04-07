@@ -31,6 +31,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         %     arPartialMass and Temperature
         fHeatCapacity = 0;      % [J/K/kg]
         fMolMass      = 0;      % [g/mol] NOT KG!
+        fMolarMass    = 0;      % [kg/mol]
         
         % Partial masses in percent (ratio) in indexed vector (use oMT to
         % translate, e.g. this.oMT.tiN2I)
@@ -97,7 +98,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             
             % Preset ...
-            this.arPartialMass = zeros(1, this.oMT.iSpecies);
+            this.arPartialMass = zeros(1, this.oMT.iSubstances);
             
             % See thFuncs definition above and addProc below.
 %             this.thFuncs = struct(...
@@ -112,11 +113,12 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         
         function this = update(this)
+            disp('flow update')
             % At the moment done through the solver specific methods ...
         end
         
         
-        function [ setData, hRemoveIfProc ] = seal(this, bIf)
+        function [ setData, hRemoveIfProc ] = seal(this, bIf, oBranch)
             if this.bSealed
                 this.throw('seal', 'Already sealed!');
             end
@@ -130,6 +132,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
             if ~isempty(this.oIn) && isempty(this.oOut) && (nargin > 1) && bIf
                 this.bInterface = true;
                 hRemoveIfProc   = @this.removeIfProc;
+            end
+            
+            if nargin > 2
+                this.oBranch = oBranch; 
             end
         end
         
@@ -155,6 +161,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
             afMols = this.arPartialMass ./ this.oMT.afMolMass;
             % Calculating the total number of mols
             fGasAmount = sum(afMols);
+            
+            %TODO Do this using matter table!
+            %fGasAmount = this.oMT.calculateMols(this);
+            
             % Calculating the partial amount of each species by mols
             arFractions = afMols ./ fGasAmount;
             % Calculating the partial pressures by multiplying with the
@@ -256,6 +266,22 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % SEE BELOW
     end
     
+    %% Public methods that take care of calculations that are needed a lot
+    methods (Access = public)
+        % This function calculates the current volumetric flow rate based
+        % on the current state of the matter flowing through the flow.
+        function fVolumetricFlowRate = calculateVolumetricFlowRate(this)
+            if this.fFlowRate
+                fVolumetricFlowRate = this.fFlowRate / ...
+                                    ( this.fPressure * this.fMolMass / ...
+                                    ( this.oMT.Const.fUniversalGas * this.fTemp  ) );
+            else
+                fVolumetricFlowRate = 0;
+            end
+        end
+    end
+    
+
     %% Methods to set matter properties, accessible through handles
     % See above, handles are returned when adding procs or on .seal()
     methods (Access = protected)
@@ -301,16 +327,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % partial mass is used, which should make no difference.
             this.fMolMass = this.oMT.calculateMolecularMass(this.arPartialMass);
             
-            % Heat capacity. Normally, the phase passes an object of its
-            % own, which allows the matter table to e.g. find out the phase
-            % type (gas, liquid etc).
-            % Here we pass that information directly, calcHeatCap checks
-            % for that case. The oBranch references back to the p2p itself
+            % Heat capacity. The oBranch references back to the p2p itself
             % which provides the getInEXME method (p2p is always directly
             % connected to EXMEs).
-            sPhaseType = this.oBranch.getInEXME().oPhase.sType;
-            
-            this.fHeatCapacity = this.oMT.calculateHeatCapacity(sPhaseType, this.arPartialMass);
+            this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
         end
         
         
@@ -387,6 +407,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
                 % Calculates the pressure for the NEXT flow, so make sure
                 % this is not the last one!
+                % The 'natural' thing to happen (passive components) is a
+                % pressure drop, therefore positive values represent
+                % pressure drops, negative ones a rise in pressure.
+                % I.e. afPressures = afPressureDROPS
                 if iI < iL, fPortPress = fPortPress - afPressures(iI); end;
                 
                 
@@ -395,6 +419,11 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
                 this(iI).fTemp = fPortTemp;
                 
+                % Due to friction etc, the 'natural' thing is that the
+                % temperature increases, therefore: positive values
+                % represent a temperature INCREASE.
+                %TODO right now afTemps represents temperature DROPS,
+                %     change that?
                 if iI < iL, fPortTemp = fPortTemp - afTemps(iI); end;
             end
             

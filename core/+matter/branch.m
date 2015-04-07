@@ -131,7 +131,7 @@ classdef branch < base & event.source
                 this.aoFlows(end + 1) = oFlow;
                 
                 % Split to store name / port name
-                [ sStore sPort ] = strtok(sLeft, '.');
+                [ sStore, sPort ] = strtok(sLeft, '.');
                 
                 
                 % Get store name from parent
@@ -199,7 +199,7 @@ classdef branch < base & event.source
                 
             else
                 % Split to store name / port name
-                [ sStore sPort ] = strtok(sRight, '.');
+                [ sStore, sPort ] = strtok(sRight, '.');
                 
                 
                 % Get store name from container
@@ -294,7 +294,7 @@ classdef branch < base & event.source
             this.updateConnectedBranches();
         end
         
-        function [ hGetBranchData hSetDisconnected ] = setConnected(this, oSubSysBranch, hUpdateConnectedBranches)
+        function [ hGetBranchData, hSetDisconnected ] = setConnected(this, oSubSysBranch, hUpdateConnectedBranches)
             if ~this.abIf(1)
                 this.throw('setConnected', 'Left side of this branch is not an interface!');
             
@@ -393,8 +393,6 @@ classdef branch < base & event.source
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
-            %disp(['Branch - trigger Update at ' num2str(this.oContainer.oTimer.iTick) ]);
-            
             % Only trigger if not yet set
             if ~this.bOutdated
                 this.bOutdated = true;
@@ -430,7 +428,8 @@ classdef branch < base & event.source
         
     
         function oExme = getInEXME(this)
-            oExme = this.coExmes{sif(this.aoFlows(1).fFlowRate < 0, 2, 1)};
+            %oExme = this.coExmes{sif(this.aoFlows(1).fFlowRate < 0, 2, 1)};
+            oExme = this.coExmes{sif(this.fFlowRate < 0, 2, 1)};
         end
         
         
@@ -452,7 +451,7 @@ classdef branch < base & event.source
             if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
             
             % Connected phases have to do a massupdate
-            for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
+            for iE = sif(this.fFlowRate >= 0, 1:2, 2:1)
                 this.coExmes{iE}.oPhase.massupdate();
             end
             
@@ -462,7 +461,6 @@ classdef branch < base & event.source
             this.bOutdated = false;
             
             % Update data in flows
-            %keyboard();
             this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure, afTemp);
         end
     
@@ -486,7 +484,7 @@ classdef branch < base & event.source
                 % Get set fr func callbacks and phase on the right side of
                 % the overall branch, write right phase to cell
                 %[ chSetFRs, this.coPhases{2} ] = this.getBranchData(this);
-                [ this.coExmes{2} aoFlows aoFlowProcs ] = this.hGetBranchData();
+                [ this.coExmes{2}, aoFlows, aoFlowProcs ] = this.hGetBranchData();
                 
                 
                 % Only do if we got a right phase, i.e. the (maybe several)
@@ -502,6 +500,21 @@ classdef branch < base & event.source
                     
                     this.iFlows     = length(this.aoFlows);
                     this.iFlowProcs = length(this.aoFlowProcs);
+                end
+                
+                % Since the subsystem branch is already sealed, we have to
+                % do it manually here for the new members of this sealed
+                % branch. This seal stuff doesn't make sense...
+                for iI = 1:this.iFlows
+                    if ~this.aoFlows(iI).bSealed
+                        this.aoFlows(iI).seal(false, this);
+                    end
+                end
+                
+                for iI = 1:this.iFlowProcs
+                    if ~this.aoFlowProcs(iI).bSealed
+                        this.aoFlowProcs(iI).seal(this);
+                    end
                 end
             end
         end
@@ -570,6 +583,13 @@ classdef branch < base & event.source
                 this.throw('seal', 'Already sealed');
             end
             
+            if this.abIf(1)
+                % If this branch has an interface on the left side, it is a
+                % supersystem branch with an interface to a subsystem. The
+                % subsystem will already have sealed all of the flows and
+                % procs, so we can just skip it here. 
+                return;
+            end
             
             for iI = 1:length(this.aoFlows)
                 % If last flow and right interface, provide true as param,
@@ -599,3 +619,4 @@ classdef branch < base & event.source
     end
     
 end
+

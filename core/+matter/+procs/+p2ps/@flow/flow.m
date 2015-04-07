@@ -42,7 +42,7 @@ classdef flow < matter.procs.p2p
             
             %CHECK store on obj var, as long as the amount of inflows
             %      doesn't change -> kind of preallocated?
-            mrInPartials  = zeros(0, this.oMT.iSpecies);
+            mrInPartials  = zeros(0, this.oMT.iSubstances);
             afInFlowrates = [];
             
             % See phase.getTotalMassChange

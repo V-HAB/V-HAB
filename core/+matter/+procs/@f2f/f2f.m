@@ -68,7 +68,9 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             this.sName = sName;
             
             % Preset the flow array with a default, zero FR matter flow
-            for iI = 1:this.iPorts, this.aoFlows(iI) = this.oMT.oFlowZero; end;
+            for iI = 1:this.iPorts
+                this.aoFlows(iI) = matter.flow(this.oMT, []); 
+            end
             
             % Create map for the func handles
             this.pthFlow = containers.Map('KeyType', 'single', 'ValueType', 'any');
@@ -185,7 +187,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         end
         
         
-        function [ oFlowIn oFlowOut ] = getFlows(this, fFlowRate)
+        function [ oFlowIn, oFlowOut ] = getFlows(this, fFlowRate)
             afFRs = this.getFRs();
             
             
@@ -203,6 +205,8 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             
             
             if ~any(afFRs)
+                %CHECK Does it really make sense to do this, just because
+                %the flow rates are zero? Shouldn't that be possible?
                 this.throw('get', 'Can''t get when flow rate is zero!');
 
             elseif (afFRs(1) * afFRs(2)) > 0

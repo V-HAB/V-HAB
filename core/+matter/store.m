@@ -38,12 +38,26 @@ classdef store < base
         % superior system)
         bSealed = false;
         
+        %%
+        %This is only important for gravity or likewise driven systems 
+        %where the position of ports and geometry of the store is no longer
+        %insignifcant.
+        %Geometry struct of the store with the possible inputs: (atm only
+        %Box shape)
+        % sGeometry = struct('Shape', 'Box', 'Area', 0.5, 'HeightExMe', 0.5)
+        %   "Box"       : Could be a rectangular shaped store or a zylinder
+        %                 with its axis congruent to the acceleration
+        sGeometry = struct('Shape','Box', 'Area', 1, 'HeightExMe', 0);        
+
         
-        
+        %%
         % Timer object, needs to inherit from / implement event.timer
         oTimer;
         fLastUpdate = 0;
         fTimeStep = 0;
+        
+        fTotalPressureErrorStore = 0;
+        iNestedIntervallCounterStore = 0;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -58,6 +72,10 @@ classdef store < base
         %     store volume, but if store volume is reduced, the phase vol
         %     change things have to be taken into account.
         fVolume = 0;
+        
+        %Parameter to check wether liquids should be calculated as
+        %compressible or incompressible compared to gas phases in the store
+        iIncompressible = 1;
     end
     
     properties (SetAccess = protected, GetAccess = protected)
@@ -72,12 +90,21 @@ classdef store < base
     
     
     methods
-        function this = store(oMT, sName, fVolume)
+        function this = store(oMT, sName, fVolume, iIncompressible, sGeometry)
             this.sName = sName;
             
             this.setMatterTable(oMT);
             
-            if nargin >= 3, this.fVolume = fVolume; end;
+            if nargin == 3
+                this.fVolume = fVolume; 
+            elseif nargin == 4
+                this.fVolume = fVolume;
+                this.iIncompressible = iIncompressible;
+            elseif nargin >= 5
+                this.fVolume = fVolume;
+                this.iIncompressible = iIncompressible;
+                this.sGeometry = sGeometry;
+            end
         end
         
         
@@ -96,24 +123,289 @@ classdef store < base
             %     First update solids, then liquids, then gas?
             %     Smarter ways for volume distribution?
             
-            
-            this.fLastUpdate = this.oTimer.fTime;
             this.fTimeStep   = this.fDefaultTimeStep;
             
             % Set the default time step - can be overwritten by phases
             %TODO register post-post-tick-callback and only set then?
             this.setTimeStep(this.fTimeStep);
             
+            %TODO check volume stuff
+            
+            %%
+            %calculates the volume of liquid and gas phase if both phases
+            %are present in one store
+            
+            %getting the values for gas and liquid phases in the tank
+
+            iGasPhaseExists = 0;
+            for k = 1:length(this.aoPhases)
+                if strcmp(this.aoPhases(k).sType, 'gas')
+                    iGasPhaseExists = 1;
+                end
+            end
+            
+            if this.iIncompressible == 0 && iGasPhaseExists == 1 && this.oTimer.fTime-this.fLastUpdate > 0
+                %ideal gas constant
+                fR = matter.table.Const.fUniversalGas;
+
+                for k = 1:length(this.aoPhases)
+                    if strcmp(this.aoPhases(k).sType, 'gas')
+                        fVolumeGasOld = this.aoPhases(k).fVolume;
+                        fMolMassGas = this.aoPhases(k).fMolMass;
+                        fMassGasOld = this.aoPhases(k).fMass;
+                        fMassGasTimeStep = this.oTimer.fTime-this.aoPhases(k).fLastMassUpdate;
+                        fTempGasOld = this.aoPhases(k).fTemp;
+                        if ~isempty(this.aoPhases(k).coProcsEXME)
+                            mFlowRateGas = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            mPressureGasFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            mTemperatureGasFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            mMolMassGasFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            mDensityGasFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            for n = 1:length(this.aoPhases(k).coProcsEXME)
+                                mFlowRateGas(n) = this.aoPhases(k).coProcsEXME{n}.aiSign*this.aoPhases(k).coProcsEXME{n}.aoFlows.fFlowRate;
+                                mPressureGasFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fPressure;
+                                mTemperatureGasFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fTemp;
+                                mMolMassGasFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fMolMass;
+                                mDensityGasFlow(n) = (fR*mTemperatureGasFlow(n))/(mMolMassGasFlow(n)*10^-3*mPressureGasFlow(n));
+                            end
+                        else
+                            mFlowRateGas = 0;
+                        end
+                    end
+
+                    if strcmp(this.aoPhases(k).sType, 'liquid')
+                        fMassLiquidOld = this.aoPhases(k).fMass;
+                        fMassLiquidTimeStep = this.oTimer.fTime-this.aoPhases(k).fLastMassUpdate;
+                        fTempLiquidOld = this.aoPhases(k).fTemp;
+                        if ~isempty(this.aoPhases(k).coProcsEXME)
+                            mFlowRateLiquid = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            mPressureLiquidFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            mTemperatureLiquidFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            mDensityLiquidFlow = zeros(length(this.aoPhases(k).coProcsEXME),1);
+                            for n = 1:length(this.aoPhases(k).coProcsEXME)
+                                mFlowRateLiquid(n) =  this.aoPhases(k).coProcsEXME{n}.aiSign*this.aoPhases(k).coProcsEXME{n}.aoFlows.fFlowRate;
+                                mPressureLiquidFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fPressure;
+                                mTemperatureLiquidFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fTemp;
+                                mDensityLiquidFlow(n) = this.oMT.findProperty('H2O','fDensity','Pressure',mPressureLiquidFlow(n),'Temperature',(mTemperatureLiquidFlow(n)-273.15),'liquid');
+                            end
+                        else
+                            mFlowRateLiquid = 0; 
+                        end
+                    end
+                end
+                 
+                if max(abs(mFlowRateLiquid)) ~= 0 || max(abs(mFlowRateGas)) ~= 0
+                    fTimeStepVolume = min(fMassGasTimeStep, fMassLiquidTimeStep);
+                    fMassGas = fMassGasOld + fTimeStepVolume*sum(mFlowRateGas);
+                    fMassLiquid = fMassLiquidOld + fTimeStepVolume*sum(mFlowRateLiquid);
+                    
+                    %the left and right border for the search intervall are
+                    %calculated (The if query has to be so long and
+                    %calculate with abs() because the place where the
+                    %values are added/subtracted changes depending on their
+                    %direction)
+                    if sum(mFlowRateLiquid) > 0 && sum(mFlowRateGas) == 0
+                        %for no gas flows and a positiv liquid flow the
+                        %lower volume boundary can be defined by
+                        %subtracting the volume of water that flowed into
+                        %the store from the old gas volume while assuming
+                        %the liquid to be incompressible
+                        fVolumeGas_X = fVolumeGasOld - abs(sum((fTimeStepVolume*mFlowRateLiquid)./mDensityLiquidFlow));
+                        %the higher volume boundary is simply the old gas
+                        %volume
+                        fVolumeGas_Y = fVolumeGasOld;
+                        
+                    elseif sum(mFlowRateLiquid) < 0 && sum(mFlowRateGas) == 0
+                        %for no gas flows and a negativ liquid flow the
+                        %lower volume boundary is simply the old gas
+                        %volume
+                        fVolumeGas_X = fVolumeGasOld;
+                        %the higher volume boundary can be defined by
+                        %adding the volume of water that flowed out of 
+                        %the store to the old gas volume while assuming
+                        %the liquid to be incompressible
+                        fVolumeGas_Y = fVolumeGasOld  + abs(sum((fTimeStepVolume*mFlowRateLiquid)./mDensityLiquidFlow));
+                        
+                    elseif sum(mFlowRateGas) > 0 && sum(mFlowRateLiquid) == 0
+                        %for no liquid flow and a positiv gas flow the
+                        %lower volume boundary is simply the old gas volume
+                        fVolumeGas_X = fVolumeGasOld;
+                        %the higher volume boundary can be defined by
+                        %adding the volume of gas that flowed into the
+                        %store to the old gas volume assuming the volume
+                        %flow to be incompressible
+                        fVolumeGas_Y = fVolumeGasOld  + abs(sum((fTimeStepVolume*mFlowRateGas)./mDensityGasFlow));
+                        
+                    elseif sum(mFlowRateGas) < 0 && sum(mFlowRateLiquid) == 0
+                        mDensityGasFlow = (fR*mTemperatureGasFlow)/(fMolMassGas*10^-3*mPressureGasFlow);
+                        %for no liquid flow and a negativ gas flow the
+                        %lower volume boundary can be defined by
+                        %subtracting the volume of gas that flowed into the
+                        %store to the old gas volume assuming the volume
+                        %flow to be incompressible
+                        fVolumeGas_X = fVolumeGasOld - abs(sum((fTimeStepVolume*mFlowRateGas)./mDensityGasFlow));
+                        %the higher volume boundary is simply the old gas 
+                        %volume
+                        fVolumeGas_Y = fVolumeGasOld;
+                        
+                    elseif sum(mFlowRateLiquid) >= 0 && sum(mFlowRateGas) >= 0
+                        %in the case that both flow are positive the lower
+                        %volume boundary can be defined by subtracting the 
+                        %incompressible volumeflow of water from the old gas
+                        %volume
+                        fVolumeGas_X = fVolumeGasOld - abs(sum((fTimeStepVolume*mFlowRateLiquid)./mDensityLiquidFlow));
+                        %the higher volume boundary can be defined by
+                        %adding the incompressible volumeflow of gas into
+                        %the tank to the old gas volume
+                        fVolumeGas_Y = fVolumeGasOld + abs((fTimeStepVolume*mFlowRateGas)/mDensityGasFlow);
+                        
+                    elseif sum(mFlowRateLiquid) < 0 && sum(mFlowRateGas) >= 0
+                        %in the case that the liquid flow is negative and 
+                        %the gas flow positive the lower volume boundary 
+                        %is simply the old gas volume
+                        fVolumeGas_X = fVolumeGasOld;
+                        %the higher volume boundary can be defined by
+                        %adding the incompressible volumeflow of gas into
+                        %the tank to the old gas volume and subtracting the
+                        %incompressible water flow from the tank as well
+                        fVolumeGas_Y = fVolumeGasOld + abs(sum((fTimeStepVolume*mFlowRateGas)./mDensityGasFlow))  - abs(sum((fTimeStepVolume*mFlowRateLiquid)./mDensityLiquidFlow));
+                        
+                 	elseif sum(mFlowRateLiquid) >= 0 && sum(mFlowRateGas) < 0
+                        %in the case that the liquid flow is positive and 
+                        %the gas flow  negative the lower volume boundary 
+                        %can be defined by subtracting the incompressible 
+                        %volumeflow of gas into the tank from the old gas 
+                        %volume and subtracting the incompressible water 
+                        %flow from the tank as well
+                        fVolumeGas_X = fVolumeGasOld - abs(sum((fTimeStepVolume*mFlowRateGas)./mDensityGasFlow))  - abs(sum((fTimeStepVolume*mFlowRateLiquid)./mDensityLiquidFlow));
+                        %the higher volume boundary is simply the old gas
+                        %volume
+                        fVolumeGas_Y = fVolumeGasOld;
+                        
+                 	elseif sum(mFlowRateLiquid) < 0 && sum(mFlowRateGas) < 0
+                        %in the case that both flow are negative the lower
+                        %volume boundary can be defined by subtracting the 
+                        %incompressible volumeflow of gas from the old gas
+                        %volume
+                        fVolumeGas_X = fVolumeGasOld - abs(sum((fTimeStepVolume*mFlowRateGas)./mDensityGasFlow));
+                        %the higher volume boundary can be defined by
+                        %adding the incompressible volumeflow of water into
+                        %the tank to the old gas volume
+                        fVolumeGas_Y = fVolumeGasOld + abs(sum((fTimeStepVolume*mFlowRateLiquid)./mDensityLiquidFlow));
+                    end
+                    for k = 1:length(mFlowRateGas)
+                        if mFlowRateGas(k) == 0
+                            mDensityGasFlow(k) = 1;
+                        end
+                    end
+                    for k = 1:length(mFlowRateLiquid)
+                        if mFlowRateLiquid(k) == 0
+                            mDensityLiquidFlow(k) = 1;
+                        end
+                    end
+
+                    fErrorStore_X = 1;
+                    fErrorStore_Y = 1;
+                    counter1 = 1;
+                    %if the two borders do not contain the zepoint it is 
+                    %necessary to shift the borders until they contain it
+                    while sign(fErrorStore_X) == sign(fErrorStore_Y) && counter1 <= 500
+                        fDensityLiquid_X = fMassLiquid/(this.fVolume-fVolumeGas_X);
+                        fPressureGas_X = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas_X);
+                        fPressureLiquid_X = this.oMT.findProperty('H2O','Pressure','fDensity',fDensityLiquid_X,'Temperature',(fTempLiquidOld-273.15),'liquid');
+                        fErrorStore_X = fPressureGas_X-fPressureLiquid_X;      
+
+                        fDensityLiquid_Y = fMassLiquid/(this.fVolume-fVolumeGas_Y);
+                        fPressureGas_Y = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas_Y);
+                        fPressureLiquid_Y = this.oMT.findProperty('H2O','Pressure','fDensity',fDensityLiquid_Y,'Temperature',(fTempLiquidOld-273.15),'liquid');
+                        fErrorStore_Y = fPressureGas_Y-fPressureLiquid_Y;  
+
+                        %if the signs are identical the search intervall is
+                        %increased. Depending on wether the sign is positive or
+                        %negative the left or right border for the search
+                        %intervall is moved
+                        if sign(fErrorStore_X) == sign(fErrorStore_Y) && sign(fErrorStore_Y) == 1
+                            fVolumeGas_Y = fVolumeGas_Y + (10*(abs(sum((fTimeStepVolume*mFlowRateGas)./mDensityGasFlow)) + abs(sum((fTimeStepVolume*mFlowRateLiquid)./mDensityLiquidFlow))));
+                        elseif sign(fErrorStore_X) == sign(fErrorStore_Y) && sign(fErrorStore_X) == -1
+                            fVolumeGas_X = fVolumeGas_X - (10*(abs(sum((fTimeStepVolume*mFlowRateGas)./mDensityGasFlow)) + abs(sum((fTimeStepVolume*mFlowRateLiquid)./mDensityLiquidFlow))));
+                        end
+                        counter1 = counter1 + 1;
+                    end
+                    
+                    fErrorStore = fErrorStore_Y;
+
+                    counter1 = 1;
+
+                    if abs(fErrorStore_Y) <= 10^-5
+                        fVolumeGasNew = fVolumeGas_Y;
+                        fVolumeLiquidNew = this.fVolume-fVolumeGas_Y;
+                    end
+
+                    while abs(fErrorStore) > 10^-5 && counter1 <= 500
+
+                        fVolumeGas1_Z = fVolumeGas_X+((fVolumeGas_Y-fVolumeGas_X)/2);
+
+                        if (fVolumeGas1_Z - fVolumeGas_X) == 0
+                            %in this case the numerical accuracy is reached
+                            %and a more accurate result is not possible.
+                            counter1 = 600;
+                        end
+
+                        fDensityLiquid_X = fMassLiquid/(this.fVolume-fVolumeGas_X);
+                        fDensityLiquid_Z = fMassLiquid/(this.fVolume-fVolumeGas1_Z);
+
+                        fPressureGas_X = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas_X);
+                        fPressureGas1_Z = (fMassGas*fR*fTempGasOld)/(fMolMassGas*10^-3*fVolumeGas1_Z);
+
+                        fPressureLiquid_X = this.oMT.findProperty('H2O','Pressure','fDensity',fDensityLiquid_X,'Temperature',(fTempLiquidOld-273.15),'liquid');
+                        
+                        fPressureLiquid1_Z = this.oMT.findProperty('H2O','Pressure','fDensity',fDensityLiquid_Z,'Temperature',(fTempLiquidOld-273.15),'liquid');
+
+                        fErrorStore_X = fPressureGas_X-fPressureLiquid_X;
+                        fErrorTank1_Z = fPressureGas1_Z-fPressureLiquid1_Z;
+                        fErrorStore = fErrorTank1_Z;
+
+                        if fErrorTank1_Z == 0
+                            counter1 = inf;
+                        elseif sign(fErrorTank1_Z) == sign(fErrorStore_X)
+                            fVolumeGas_X = fVolumeGas1_Z;
+                        else
+                            fVolumeGas_Y = fVolumeGas1_Z;
+                        end
+
+                        counter1 = counter1+1;
+
+                        if abs(fErrorStore_Y) > 10^-5
+                            fVolumeGasNew = fVolumeGas1_Z;
+                            fVolumeLiquidNew = this.fVolume-fVolumeGas1_Z;
+                        end
+                    end
+                    
+                    for k = 1:length(this.aoPhases)
+                        if strcmp(this.aoPhases(k).sType, 'gas')
+                            this.aoPhases(k).setVolume(fVolumeGasNew);
+                        end
+
+                        if strcmp(this.aoPhases(k).sType, 'liquid')
+                            this.aoPhases(k).setVolume(fVolumeLiquidNew);
+                        end
+                    end
+
+                    this.fTotalPressureErrorStore = this.fTotalPressureErrorStore+fErrorStore;
+                    this.iNestedIntervallCounterStore = counter1;
+                end  
+            end
+            
             % Update phases
             for iI = 1:this.iPhases, this.aoPhases(iI).update(); end;
-            
+
             % Update stationary P2P processors
             for iP = this.aiProcsP2Pstationary
                 this.toProcsP2P.(this.csProcsP2P{iP}).update();
             end
             
+            this.fLastUpdate = this.oTimer.fTime;
             
-            %TODO check volume stuff
         end
         
         function setNextExec(this, fTime)
@@ -400,6 +692,17 @@ classdef store < base
             %   sPhaseName  - path (with package) to the according class,
             %                 only returned if requested
             
+            % If the first item of varargin is a string, then it is a
+            % user-provided name for the phase to be created. If it is
+            % anything else, it is one of the parameters.
+            if ischar(varargin{1})
+                sPhaseName   = varargin{1};
+                cPhaseParams = varargin(2:end);
+            else
+                sPhaseName = [this.sName, '_Phase_', num2str(length(this.aoPhases)+1)];
+                cPhaseParams = varargin; 
+            end
+            
             % Check if the calling code (this.create() or external)
             % requests two outputs - also need to provide the name of the
             % phase class
@@ -408,17 +711,16 @@ classdef store < base
                 if nargout(str2func([ 'matter.helper.phase.create.' sHelper ])) < 2
                     this.throw('createPhaseparams', 'Helper %s does not support to return a default phase class path.', sHelper);
                 end
-                
-                [ cParams, sDefaultPhase ] = matter.helper.phase.create.(sHelper)(this, varargin{:});
+                [ cParams, sDefaultPhase ] = matter.helper.phase.create.(sHelper)(this, cPhaseParams{:});
             else
-                cParams       = matter.helper.phase.create.(sHelper)(this, varargin{:});
+                cParams       = matter.helper.phase.create.(sHelper)(this, cPhaseParams{:});
                 sDefaultPhase = '';
             end
             
             % The name of the phase will be automatically the helper name!
             % If that should be prevented, createPhaseParams has to be used
             % directly and phase constructor manually called.
-            cParams = [ { this sHelper } cParams ];
+            cParams = [ { this sPhaseName } cParams ];
             %cParams = { this sHelper cParams{:} };
         end
         

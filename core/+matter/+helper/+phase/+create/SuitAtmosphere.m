@@ -2,7 +2,7 @@ function [ cParams, sDefaultPhase ] = SuitAtmosphere(~, fVolume, fTemperature, r
 %SUITATMOSPHERE helper to create a matter phase with a standard space suit
 %   atmosphere using 100% oxygen.
 %   If just volume given, created as a 100% oxygen atmosphere at 29647 Pa, 
-%   20?C and 0% relative humidity.
+%   20°C and 0% relative humidity.
 %
 % SuitVolume Parameters:
 %   fVolume         - Volume in SI m3
@@ -12,10 +12,10 @@ function [ cParams, sDefaultPhase ] = SuitAtmosphere(~, fVolume, fTemperature, r
 
 % Values from @matter.table
 fRm         = 8.314472;
-% fMolMassH2O = 18;
-% fMolMassO2  = 32;
-% fMolMassCO2 = 44;
-% fMolMassN2  = 28;
+fMolMassH2O = 18;
+fMolMassO2  = 32;
+fMolMassCO2 = 44;
+fMolMassN2  = 28;
 
 % Check input arguments, set default
 %TODO for fTemp, rRH, fPress -> key/value pairs?
@@ -28,9 +28,9 @@ fMass = fPressure * fVolume * (fMolMassO2 / 1000) / fRm / fTemperature;
 
 % Matter composition
 tfMass = struct(...
-    'O2', fMass ...
-    ...'CO2', 0.05 * fMass, ...
-    ...'H2O', 0.10 * fMass...
+    'O2', fMass * 0.999, ...
+    'CO2', fMass * 0.001 ...
+    ...'O2', fMass ...
 );
 
 % Check relative humidity - add? For now its just zero.
