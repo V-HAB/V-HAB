@@ -47,7 +47,7 @@ classdef partial < matter.manip
             if ~isempty(afFlowRates)
                 afFlowRate = sum(bsxfun(@times, afFlowRates, mrInPartials), 1);
             else
-                afFlowRate = zeros(1, this.oPhase.oMT.iSpecies);
+                afFlowRate = zeros(1, this.oPhase.oMT.iSubstances);
             end
         end
         

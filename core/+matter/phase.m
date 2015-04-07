@@ -201,7 +201,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 for iI = 1:length(csKeys)
                     sKey = csKeys{iI};
                     
-                    % Throw an error if the matter species is not in the
+                    % Throw an error if the matter substance is not in the
                     % matter table
                     if ~isfield(this.oMT.tiN2I, sKey), this.throw('phase', 'Matter type %s unkown to matter.table', sKey); end;
 
@@ -502,9 +502,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
             %     flow objects connected to the EXMEs to this.aoFlowsEXMEs
             %     or something, in order to access them more quickly here!
 
-            % Total flows - one row (see below) for each EXME, amount of
-            % columns is the amount of species (partial masses)
-            mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSpecies);
+            % Total flows - one row (see below) for each EXME, number of
+            % columns is the number of substances (partial masses)
+            mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSubstances);
 
             % Each row: flow rate, temperature, heat capacity
             mfInflowDetails = zeros(0, 3);
@@ -516,7 +516,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % The afFlowRates is a row vector containing the flow rate
                 % at each flow, negative being an extraction!
                 % mrFlowPartials is matrix, each row has partial ratios for
-                % a flow, cols are the different species.
+                % a flow, cols are the different substances.
                 % mfProperties contains temp, heat capacity
 
                 if isempty(afFlowRates), continue; end;
@@ -531,7 +531,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 mfTotalFlows(iI, :) = sum(bsxfun(@times, afFlowRates, mrFlowPartials), 1);
 
                 % ... and now we got a vector with the absolute mass in-/
-                % outflow for the current EXME for each species and for one
+                % outflow for the current EXME for each substance and for one
                 % second!
 
 
@@ -668,9 +668,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 afChange = this.getTotalMassChange();
 
                 % Only use entries where change is not zero
-                % If some species changed a bit, but less then the thres-
+                % If some substance changed a bit, but less then the thres-
                 % hold, and does not any more - not taken into account. It
-                % can still change in relation to other species, where mass
+                % can still change in relation to other substances, where mass
                 % flows in/out, but that should be covered by the total
                 % mass change check.
                 abChange = (afChange ~= 0);
