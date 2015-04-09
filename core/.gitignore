@@ -1,6 +1,9 @@
 # Ignore for core
 
 +*/
+!+solver/
+!+solver/+matter/
+!+solver/+matter/+linear
 !+event/
 !+tools/
 README_BOOTSTRAPPING.md
