@@ -4,6 +4,7 @@
 !+solver/
 !+solver/+matter/
 !+solver/+matter/+linear
+!+solver/+matter/+fdm_liquid
 !+event/
 !+tools/
 README_BOOTSTRAPPING.md
