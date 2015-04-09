@@ -16,6 +16,3 @@
 [submodule "+solver/+matter/+iterative"]
 	path = +solver/+matter/+iterative
 	url = http://steps.lrt.mw.tum.de/core/solver-matter-iterative.git
-[submodule "+solver/+matter/+fdm_liquid"]
-	path = +solver/+matter/+fdm_liquid
-	url = http://steps.lrt.mw.tum.de/core/solver-matter-fdm_liquid.git
