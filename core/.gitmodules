@@ -13,9 +13,6 @@
 [submodule "+solver/+matter/+manual"]
 	path = +solver/+matter/+manual
 	url = git@steps.lrt.mw.tum.de:core/solver-matter-manual.git
-[submodule "+solver/+matter/+linear"]
-	path = +solver/+matter/+linear
-	url = git@steps.lrt.mw.tum.de:core/solver-matter-linear.git
 [submodule "+solver/+matter/+iterative"]
 	path = +solver/+matter/+iterative
 	url = http://steps.lrt.mw.tum.de/core/solver-matter-iterative.git
