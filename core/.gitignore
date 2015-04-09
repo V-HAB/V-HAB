@@ -1,6 +1,7 @@
 # Ignore for core
 
 +*/
+!+matter/
 !+solver/
 !+solver/+matter/
 !+solver/+matter/+linear
