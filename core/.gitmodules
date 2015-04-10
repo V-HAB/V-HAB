@@ -1,6 +1,0 @@
-[submodule "+systems"]
-	path = +systems
-	url = git@steps.lrt.mw.tum.de:core/systems.git
-[submodule "+geom"]
-	path = +geom
-	url = git@steps.lrt.mw.tum.de:core/geom.git
