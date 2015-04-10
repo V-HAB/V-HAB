@@ -4,8 +4,8 @@ classdef vhab
     
     properties (GetAccess = public, Constant = true)
         poSims   = containers.Map();
-        pOptions = containers.Map({ 'iTickRepIntv', 'iTimeRepIntv' }, { 100, 60 });
-        
+        pOptions = containers.Map({ 'iTickRepIntv', 'iTimeRepIntv', 'bDump', 'sHost' }, { 100, 60, false, '' });
+
         fLastDispTime = 0;      % So we can calulate the delta t between the 100*X ticks display
     end
     
@@ -71,7 +71,6 @@ classdef vhab
             evalin('base','clear all');
             evalin('base','clear classes');
             warning('on','all');
-            
         end
         
         function oSimRtn = exec(sSimulation, varargin)
@@ -103,18 +102,65 @@ classdef vhab
             pOptions = vhab.pOptions;
             
             if ~isempty(iTicks)
-                poOptions('iTickRepIntv') = iTicks;
+                pOptions('iTickRepIntv') = iTicks;
             end
             
             if nargin >= 2
-                poOptions('iTimeRepIntv') = fTime;
+                pOptions('iTimeRepIntv') = fTime;
             end
         end
         
+        function setDump(bDump)
+            pOptions = vhab.pOptions;
+            
+            if nargin < 1 || isempty(bDump), bDump = false; end;
+            
+            pOptions('bDump') = ~~bDump;
+            
+            if nargin >= 2
+                pOptions('sHost') = sHost;
+            end
+            
+            
+            % Also set config in base - create serializers
+            base.activateSerializers();
+        end
+        
         function disp(oEvt)
+            pOptions = vhab.pOptions;
+            
+            
             oSim     = oEvt.oCaller;
             %pOptions = vhab.pOptions;
             %TODO better reporting options ... see below
+            
+            
+            % LOGGER / Serializer (ignore for now)
+            
+            %disp('#######################################################');
+            %disp(vhab.pOptions('bDump'));
+            %disp('#######################################################');
+            if pOptions('bDump')
+                %TODO-OKT14 this host thing is a bad hack, probably doesn't always work so change the serializer, either implement some nice way to
+                %           send options to serializer (host), or at least serializer should prefix every sURL with something,
+                %           so URIs can really be identified (e.g. 'uri:/matter/store/abc' or so) - or just localhost/127.0.0.1?
+                % AND also the Inf/NaN stuff!
+                
+                sHost = pOptions('sHost');
+                
+                if ~isempty(sHost)
+                    %disp([ '>>{{>>' strrep(base.dump(), '":"/', [ '":"' sHost '/' ]) '<<}}<<' ]);
+                    disp([ '>>{{>>' strrep(strrep(base.dump(), '"/', [ '"' sHost '/' ]), ':Inf', ':null') '<<}}<<' ]);
+                else
+                    disp([ '>>{{>>' strrep(base.dump(), ':Inf', ':null') '<<}}<<' ]);
+                end
+                
+                
+                return;
+            end
+            
+            
+            
             
             if mod(oSim.oTimer.iTick, vhab.pOptions('iTickRepIntv')) == 0
                 %TODO store last tick disp fTime on some containers.Map!

@@ -7,19 +7,29 @@ classdef simulation < base & event.source
     %
     
     
-    properties
+    properties (SetAccess = public, GetAccess = public)
         % Amount of ticks
+        % @type int
         iSimTicks = 100;
         
         % Simulation time [s]
+        % @type int
         fSimTime  = 3600 * 1;
         
         % Use time or ticks to check if simulation finished?
+        % @type int
         bUseTime = true;
         
         
         % Interval in which the mass balance logs are written
         iMassLogInterval = 100;
+        
+        
+        % Preallocation - how much rows should be preallocated for logging?
+        iPrealloc = 1000;
+        
+        % Dump mfLog to .mat file when re-preallocating?
+        bDumpToMat = false;
     end
     
     % Properties to be set by classes deriving from this one
@@ -31,16 +41,28 @@ classdef simulation < base & event.source
     
     properties (SetAccess = private, GetAccess = public)
         % Name of sim
+        % @type string
         sName;
         
         % Logged data
         mfLog;
         aiLog;
         
+        % Current index in logging
+        iLogIdx = 0;
+        
+        % How much allocated?
+        iAllocated = 0;
+        
+        % Parsed/evald logginng!
+        logData;
+        
         % Root system
+        % @type object
         oRoot;
         
         % Timer
+        % @type object
         oTimer;
         
         % Data
@@ -52,6 +74,8 @@ classdef simulation < base & event.source
         
         % Matlab date number -> object/sim created
         fCreated = 0;
+        
+        % @type string
         sCreated = '';
         
         % Variables holding the sum of lost mass / total mass, species-wise
@@ -134,7 +158,33 @@ classdef simulation < base & event.source
                 end
                 
                 this.tick();
+                
+                % Stopped?
+                if this.bDumpToMat && (this.oTimer.iTick > 0) && (mod(this.oTimer.iTick, this.iPrealloc) == 0)
+                    sFile = [ 'data/runs/' this.sUUID '/STOP' ];
+                    
+                    % Always do that!
+                    disp('#############################################');
+                    disp('Writing sim obj to .mat!');
+                    this.finish();
+                    
+                    disp([ 'Checking for STOP file: ' sFile ]);
+                    
+                    if exist(sFile, 'file') == 2
+                        disp('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
+                        disp('STOPPED by STOP file. Har. Restart with "oLastSimObj.run()"');
+                        
+                        break;
+                    end
+                end
             end
+        end
+        
+        
+        function pause(this, varargin)
+            this.iSimTicks = this.oTimer.iTick;
+            this.bUseTime  = false;
+            disp('##################### PAUSE ###################');
         end
         
         
@@ -229,25 +279,85 @@ classdef simulation < base & event.source
             disp([ 'Minimum Time Step * Total Sim Time: ' num2str(this.oTimer.fTimeStep * this.oTimer.fTime) ]);
             disp([ 'Minimum Time Step * Total Ticks:    ' num2str(this.oTimer.fTimeStep * this.oTimer.iTick) ]);
             disp('--------------------------------------');
+
+            %TODO if bDump, write .mat!
+            if this.bDumpToMat
+                sMat = [ 'data/runs/' this.sUUID '/_simObj.mat' ];
+                disp(['DUMPING - write to .mat: ' sMat]);
+   
+                oLastSimObj = this;
+                save(sMat, 'oLastSimObj');
+            end
         end
         
         
         
         function log(this)
-            iTmpSize = size(this.mfLog, 1);
-
-            if this.oTimer.iTick > iTmpSize
-                this.mfLog((iTmpSize + 1):(iTmpSize + 1000), :) = nan(1000, length(this.csLog));
+            %iTmpSize = size(this.mfLog, 1);
+            this.iLogIdx = this.iLogIdx + 1;
+            
+            %TODO
+            %   - instead of hardcoded 1000 - get from this.iPrealloc
+            %   - value this.iDump (or make eq iPrealloc?) -> dump mfLog:
+            %       - write to [uuid]/[cnt].mat, clean mfLog
+            %       - at the end, for plotAll or so, do some .reloadLog()
+            %       -> mat files within SimObj uuid Dir --> load all
+            %          and re-create mfLog!
+            
+            % HERE if bDump and > iTmpSize - WRITE (use iCnt?) to MAT!
+            %   then just reset vars to NaN on mfLog, do not append!
+            
+            %if this.oTimer.iTick > iTmpSize
+            if this.iLogIdx > this.iAllocated
+                if this.bDumpToMat
+                    if ~isdir([ 'data/runs/' this.sUUID ])
+                        mkdir([ 'data/runs/' this.sUUID ]);
+                    end
+                    
+                    
+                    sMat = [ 'data/runs/' this.sUUID '/dump_' num2str(this.oTimer.iTick) '.mat' ];
+                    
+                    disp('#############################################');
+                    disp(['DUMPING - write to .mat: ' sMat]);
+                    
+                    mfLog = this.mfLog;
+                    save(sMat, 'mfLog');
+                    
+                    disp('... done!');
+                    
+                    this.mfLog(:, :) = nan(this.iPrealloc, length(this.csLog));
+                    this.iLogIdx     = 1;
+                else
+                    this.iAllocated = this.iAllocated + this.iPrealloc;
+                    
+                    %this.mfLog((iTmpSize + 1):(iTmpSize + this.iPrealloc), :) = nan(this.iPrealloc, length(this.csLog));
+                    this.mfLog(this.iLogIdx:(this.iLogIdx + this.iPrealloc - 1), :) = nan(this.iPrealloc, length(this.csLog));
+                end
             end
-
-            for iL = this.aiLog
-                try 
-                    this.mfLog(this.oTimer.iTick + 1, iL) = eval([ 'this.oRoot.' this.csLog{iL} ]);
-                catch
-                    this.throw('simulation','Error trying to log this.oRoot.%s. \nPlease check your logging configuration in setup.m!', this.csLog{iL});
+            
+            % Create one loggin function!
+            if isempty(this.logData)
+                sCmd = '[';
+                
+                for iL = this.aiLog
+                    sCmd = [ sCmd 'this.oRoot.' this.csLog{iL} ',' ];
                 end
 
+                sCmd = [ sCmd(1:(end - 1)) ']' ];
+                
+                this.logData = eval([ '@() ' sCmd ]);
             end
+            
+            %this.mfLog(this.oTimer.iTick + 1, :) = this.logData();
+            
+            try
+                this.mfLog(this.iLogIdx, :) = this.logData();
+            catch
+                this.throw('simulation','Error trying to log this.oRoot.%s. \nPlease check your logging configuration in setup.m!', this.csLog{iL});
+            end
+            %for iL = this.aiLog
+            %    this.mfLog(this.oTimer.iTick + 1, iL) = eval([ 'this.oRoot.' this.csLog{iL} ]);
+            %end
         end
         
         function masslog(this)
@@ -265,6 +375,30 @@ classdef simulation < base & event.source
             %     to the moles and compare these?! So really count every
             %     atom, not the molecules ... compare enthalpy etc?
         end
+        
+        
+        function readData(this)
+            if this.bDumpToMat
+                sDir    = [ 'data/runs/' this.sUUID '/' ];
+                tDir    = dir(sDir);
+                aiDumps = [];
+                
+                for iD = 1:length(tDir)
+                    if (length(tDir(iD).name) > 5) && strcmp(tDir(iD).name(1:5), 'dump_')
+                        %disp([ sDir tDir(iD).name ]);
+                        aiDumps(end + 1) = str2double(tDir(iD).name(6:(end - 4)));
+                    end
+                end
+                
+                aiDumps = sort(aiDumps);
+                
+                for iF = length(aiDumps):-1:1
+                    tFile = load([ sDir 'dump_' num2str(aiDumps(iF)) '.mat' ]);
+                    
+                    this.mfLog = [ tFile.mfLog; this.mfLog ];
+                end
+            end
+        end
     end
     
     
@@ -275,11 +409,16 @@ classdef simulation < base & event.source
             this.aiLog = 1:length(csLog);
             
             %TODO What if sim already runs?
-            this.mfLog = nan(1000, length(csLog));
+            this.mfLog      = nan(this.iPrealloc, length(csLog));
+            this.iAllocated = this.iPrealloc;
         end
         
         function fSimFactor = get.fSimFactor(this)
-            fSimFactor = this.fSimTime / (this.fRuntimeTick + this.fRuntimeLog);
+            if isempty(this.oTimer) || (this.oTimer.fTime == -10)
+                fSimFactor = nan;
+            else
+                fSimFactor = this.oTimer.fTime / (this.fRuntimeTick + this.fRuntimeLog);
+            end
         end
     end
 end

@@ -37,7 +37,7 @@ classdef source < base % < hobj
         
         % sType refers to event name, possibly hierachical (e.g.
         % schedule.exercise.bicycle); must not contain underscores
-        function [ this iId ] = bind(this, sType, callBack, aiFilters, tStorage)
+        function [ this, iId ] = bind(this, sType, callBack, aiFilters, tStorage)
             % Default filter - just empty array
             if nargin < 4, aiFilters = []; end;
             
@@ -292,8 +292,17 @@ classdef source < base % < hobj
                             
                             % Ok, that didn't work, so now without return
                             % STUPID MATLAB!
-                            catch
-                                callBack(oEvent);
+                            %catch
+                            %    callBack(oEvent);
+                            %end
+                            catch oErr
+                                % If error is not 'Too many output 
+                                % arguments' or 'undefined func', throw!
+                                if ~strcmp(oErr.identifier, 'MATLAB:maxlhs') && ~strcmp(oErr.identifier, 'MATLAB:UndefinedFunction')
+                                    rethrow(oErr);
+                                else
+                                    callBack(oEvent);
+                                end
                             end
                         end
                         

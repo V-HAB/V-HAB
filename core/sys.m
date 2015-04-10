@@ -4,20 +4,29 @@ classdef sys < base & event.source
     
     properties (SetAccess = protected, GetAccess = public)
         % Name of the system - has to be struct-compatible!
+        % @type string
         sName;
         
         % Parent system
         %TODO need several hierarchies, e.g. a matter parent, but also
         %     energy, geometric, command parents and children?
+        % @type object
         oParent;
         
         % Child systems
         %TODO could also be a mixin aoChildren, "sys" as mutual interface?
+        % @type struct
+        % @types object
         toChildren = struct();
+        %TODO transient - restore on loadobj from toChildren - for now
+        %     dumped as struct dumping is not yet implemented
+        % Xtype cell
+        % Xtypes string
         csChildren = {};
         iChildren  = 0;
         
         % Data attached to the system - inherited from parent!
+        % @XXtype object
         oData;
     end
     
