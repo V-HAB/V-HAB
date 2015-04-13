@@ -6,10 +6,9 @@ classdef HX < vsys
 % Fluid 1, FlowProc 1 is the one with the fluid flowing through the pipes
 % if there are any pipes.
 %
-%WARNING: TO DO: (Delete after matter table update) At the moment the 
-%   material values of the fluids which are not support by matter table
-%   are fixed values for air at 10°C and 60°C.These values include dynamic
-%   viscosity etc
+%WARNING: TO DO: (Delete after it is solved) at the moment some matter
+%                 values are only taken for the most prominent species
+%                 flowing through the heat exchanger and not the mixture
 %
 %The component uses the following user inputs:
 %
@@ -344,7 +343,7 @@ classdef HX < vsys
             fEntryTemp_2 = oFlows_2.fTemp;
             fCp_1 = oFlows_1.fHeatCapacity;
             fCp_2 = oFlows_2.fHeatCapacity;
-            
+
             %For changes in entry temperature that are larger than 0.1 K or
             %changes in massflow which are larger than 1 g/sec the heat
             %exchanger is calculated anew
@@ -355,65 +354,22 @@ classdef HX < vsys
                 (abs(fMassFlow_1-this.fMassFlow_Old_1) > 0.001) ||...
                 (abs(fEntryTemp_2-this.fEntryTemp_Old_2) > 0.1)||...
                 (abs(fMassFlow_2-this.fMassFlow_Old_2) > 0.001)
-            
-                %TO DO: Delete after matter table support has been extended
-                %preset additional material values not yet supported by 
-                %matter table.
                 
-                %Water at 20°C and 1 bar
-                fDynVisc_1 = 1001.6;
-                fConductivity_1 = 599.5;
-                
-                %Water at 40°C and 1 bar
-                fDynVisc_2 = 652.98;
-                fConductivity_2 = 628.6;
-                
-%                 %Air at 10°C as static input defined here
-%                 fDynVisc_1 = 17.715*10^(-6);
-%                 fDensity_1 = 1.2306;
-%                 fConductivity_1 = 25.121*10^(-3);
-%                 %Air at 60°C as static input defined here
-%                 fDynVisc_2 = 20.099*10^(-6);
-%                 fDensity_2 =  1.0455;
-%                 fConductivity_2 =  28.804*10^(-3);
-
-                
-                %TO DO make dependant on matter table
-                %density at one fixed datapoint
-                fFixDensity = 998.21;        %g/dm³
-                %temperature for the fixed datapoint
-                fFixTemperature = 293.15;           %K
-                %Molar Mass of the compound
-                fMolMassH2O = 18.01528;       %g/mol
-                %critical temperature
-                fCriticalTemperature = 647.096;         %K
-                %critical pressure
-                fCriticalPressure = 220.64*10^5;      %N/m² = Pa
-
-                %boiling point normal pressure
-                fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
-                %normal boiling point temperature
-                fBoilingTemperature = 373.124;      %K
-                
-                %TO DO:Replace after matter table is able of intelligent
-                %calculation.
-%                 if fEntryTemp_1 == 0
-%                     fDensity_1 = 0;
-%                 else
-%                     fDensity_1 = solver.matter.fdm_liquid.functions.LiquidDensity(fEntryTemp_1, oFlows_1.fPressure, fFixDensity, fFixTemperature, fMolMassH2O, ...
-%                         fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-%                 end
-%                 
-%                 if fEntryTemp_2 == 0
-%                     fDensity_2 = 1000;
-%                 else
-%                     fDensity_2 = solver.matter.fdm_liquid.functions.LiquidDensity(fEntryTemp_2, oFlows_2.fPressure, fFixDensity, fFixTemperature, fMolMassH2O, ...
-%                         fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-%                 end
                 
                 fDensity_1 = this.oData.oMT.calculateDensity(oFlows_1);
                 fDensity_2 = this.oData.oMT.calculateDensity(oFlows_2);
                 
+                sSubstanceFlow1 = oFlows_1.oMT.csSubstances(find(oFlows_1.arPartialMass == max(oFlows_1.arPartialMass)));
+                sSubstanceFlow1 = sSubstanceFlow1{1};
+                sSubstanceFlow2 = oFlows_2.oMT.csSubstances(find(oFlows_2.arPartialMass == max(oFlows_2.arPartialMass)));
+                sSubstanceFlow2 = sSubstanceFlow2{1};
+
+                fDynVisc_1 = oFlows_1.oMT.findProperty(sSubstanceFlow1, 'Dynamic Viscosity', 'Pressure', oFlows_1.fPressure, 'Temperature',oFlows_1.fTemp, oFlows_1.oBranch.coExmes{1,1}.oPhase.sType);
+                fConductivity_1 = oFlows_1.oMT.findProperty(sSubstanceFlow1, 'Thermal Conductivity', 'Pressure', oFlows_1.fPressure, 'Temperature',oFlows_1.fTemp, oFlows_1.oBranch.coExmes{1,1}.oPhase.sType);
+
+                fDynVisc_2 = oFlows_2.oMT.findProperty(sSubstanceFlow2, 'Dynamic Viscosity', 'Pressure', oFlows_2.fPressure, 'Temperature',oFlows_2.fTemp, oFlows_2.oBranch.coExmes{1,1}.oPhase.sType);
+                fConductivity_2 = oFlows_2.oMT.findProperty(sSubstanceFlow2, 'Thermal Conductivity', 'Pressure', oFlows_2.fPressure, 'Temperature',oFlows_2.fTemp, oFlows_2.oBranch.coExmes{1,1}.oPhase.sType);
+            
                 %sets the structs for the two fluids according to the
                 %definition from HX_main
                 Fluid_1.Massflow                = fMassFlow_1;
