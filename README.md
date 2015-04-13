@@ -9,7 +9,7 @@ Bootstrapping Repository
 Basic repository with the framework for V-HAB / STEPS. Contains four directories:
 
 * core: central, shared V-HAB framework.
-* lib: helper functions, pre/post processing, logging, GUI, date functions, … (TBD)
+* lib: helper functions, pre/post processing, logging, GUI, date functions, ... (TBD)
 * user: user-specific simulations
 * data: user-generated simulation results (e.g. logs, plots, spreadsheets)
 
@@ -31,18 +31,18 @@ The following steps are only required the first time you setup your development 
 * The installer will ask you for your key file, just click *cancel*.
 * In the third window do nothing, just click *Finish*.
 * SourceTree should now open.
-* In the top menu select *Tools* → *Create or Import SSH Keys*. This will open the PuTTY Key Generator.
+* In the top menu select *Tools* -> *Create or Import SSH Keys*. This will open the PuTTY Key Generator.
 * Click *Generate* and move the mouse around in the indicated area
 * Once the key generation is completed, **enter a passphrase** (the password entered here has to be used again when adding the key to the available list of keys) and repeat it in the field below
 * Click *Save public key* and save the file in a new directory anywhere on your system using the appendix `.pub`. 
 * Click *Save private key* and save the file in the same directory as in the previous step, this time using the appendix `.ppk`. 
-* In the top menu select *Conversions* → *Export OpenSSH key* and save the file in the same directory as before without an appendix.
+* In the top menu select *Conversions* -> *Export OpenSSH key* and save the file in the same directory as before without an appendix.
 * Select the entire contents of the field *Public key for pasting into OpenSSH authorized_keys file* and copy them to the clipboard. 
 * Close the PuTTY Key Generator. 
 * In the browser navigate to your profile page at <http://steps.lrt.mw.tum.de/> and select the tab *SSH Keys*. 
 * Click *Add new* and paste the copied key into the field *Key*, give it a title and click *save*.
-* In the SourceTree top menu select *Tools* → *Options* and in the *General* tab set the SSH Client to *OpenSSH* and click *ok*.
-* Click *clone / new* and enter `git@steps.lrt.mw.tum.de:bootstrapping.git` in the field *Source Path / URL*.
+* In the SourceTree top menu select *Tools* -> *Options* and in the *General* tab set the SSH Client to *OpenSSH* and click *ok*.
+* Click *clone / new* and enter `git@steps.lrt.mw.tum.de:steps/base.git` in the field *Source Path / URL*.
 * Once you try to edit the field *Destination Path*, a window will pop up asking you, if you want to launch the SSH Agent. Say yes.
 * Navigate to the folder you created earlier and select the file with the `.ppk` appendix (you probably have to enter the password you used when creating the key).
 * Then click *Retry* in the next pop up window.
@@ -50,7 +50,7 @@ The following steps are only required the first time you setup your development 
 * Now select a destination path on your system where you want to store your files and press *clone*.
 * SourceTree will now download all neccessary files to your machine. 
 
-**SSH Keys Troubleshooting**: SourceTree seems to have some bugs regarding the SSH Key handling. Further help can be found on the [SourceTree Website FAQ](http://sourcetreeapp.com/faq/) → *How do I set up SSH keys for authentication?* (last question). Further help in the [Bootstrapping Wiki - SSH Troubleshooting](http://steps.lrt.mw.tum.de/bootstrapping/wikis/ssh-troubleshooting) page.
+**SSH Keys Troubleshooting**: SourceTree seems to have some bugs regarding the SSH Key handling. Further help can be found on the [SourceTree Website FAQ](http://sourcetreeapp.com/faq/) -> *How do I set up SSH keys for authentication?* (last question). Further help in the [Bootstrapping Wiki - SSH Troubleshooting](http://steps.lrt.mw.tum.de/bootstrapping/wikis/ssh-troubleshooting) page.
 
 See next section on how to use the bootstrapping repository, e.g. how to download the tutorial.
 
@@ -61,7 +61,7 @@ See the [Mac Setup Wiki Page](http://steps.lrt.mw.tum.de/bootstrapping/wikis/set
 1. Download the SourceTree app at <http://www.sourcetreeapp.com/> (do not use the version from the Mac App Store as it is outdated). 
 2. If the downloaded disk image was not automatically opened, (double) click the downloaded file. A Finder window should appear with both the *SourceTree* app and (pointing with a big arrow to) the *Applications* folder. 
 3. To install SourceTree drag the *SourceTree* app and drop it onto the *Applications* folder. (You can then unmount the disk image and remove the downloaded file.) 
-4. To setup the SSH keys (required for pushing changes from your local repository to the [STEPS server](http://steps.lrt.mw.tum.de)), open *Terminal* (either open Spotlight search and enter `Terminal` or launch Terminal from *Applications* → *Utilites*). 
+4. To setup the SSH keys (required for pushing changes from your local repository to the [STEPS server](http://steps.lrt.mw.tum.de)), open *Terminal* (either open Spotlight search and enter `Terminal` or launch Terminal from *Applications* -> *Utilites*). 
 5. In the Terminal command prompt, enter `ssh-keygen -C 'email@address.com'` (where `email@address.com` is **your STEPS GITlab email address**). Press `Enter` to start the command. 
 6. The SSH key generator will ask for a file name, just press `Enter` to use the default file name. 
 7. You will then be asked for a passphrase that you can assign freely to protect your SSH key file (please use a **strong password**!). This password may be asked for when pushing commits to the STEPS server (however you can save the password in your Mac OS keychain). Please remember that this password cannot be recovered (if you forget the password, you will need to create a new keyfile, see *steps 4-8*, and update your STEPS GITlab profile, see *steps 9-11*)! Press `Enter` after typing in the password (while you type, you will neither see the password nor any indication that you are actually entering anything; this is intentional albeit confusing at first). 
@@ -80,10 +80,10 @@ The following steps are the same for every new Repository you want to clone from
 
 1. Visit the page of the project you want to clone (e.g. <http://steps.lrt.mw.tum.de/bootstrapping>). 
 2. Locate and copy the SSH address of the repository at the top of the project timeline (e. g. `git@steps.lrt.mw.tum.de:bootstrapping.git`). 
-3. In the SourceTree *Bookmarks* window, click the top left icon which says *Add repository* on hover (or select *File* → *New / Clone* from the top menu). Make sure the *Clone repository* tab is selected. 
+3. In the SourceTree *Bookmarks* window, click the top left icon which says *Add repository* on hover (or select *File* -> *New / Clone* from the top menu). Make sure the *Clone repository* tab is selected. 
 4. In the field *Source Path / URL*, paste (`CMD + V`) the SSH address of the repository you want to clone (see *step 2*). 
 5. Choose a bookmark name (in our example, `bootstrapping` is pre-selected, I suggest changing this to `STEPS` or `STEPS bootstrapping`). This is the name that will be displayed in the *Bookmarks* window of SourceTree. 
-6. Choose a *Destination Path* by clicking the ellipsis (`…`) or entering the path directly into the field. I recommend adding a new folder *STEPS* in the *Documents* directory (i.e. destination path is `/Users/{yourusername}/Documents/STEPS`). 
+6. Choose a *Destination Path* by clicking the ellipsis (`...`) or entering the path directly into the field. I recommend adding a new folder *STEPS* in the *Documents* directory (i.e. destination path is `/Users/{yourusername}/Documents/STEPS`). 
 7. Make sure that under *Advanced options* (may need to be opened by clicking the triangle) the checkboxes *Recurse submodules* and *Get working copy* are ticked. Leave the rest as-is. 
 8. Before clicking *Clone*, make sure that it says `This is a Git repository` below the *Source Path / URL* field. Finally a progress window will appear, and as soon as it says `Completed successfully` you're good to go and you can click *Close*! 
 
@@ -99,7 +99,7 @@ Once you have successfully cloned the bootstrapping project onto your hard drive
 
 ### Check out the tutorials! ###
 
-Inside the directory `user/+tutorials` you will find a few tutorials to get you started. Some of them also have read me files like the one you are reading right now, be sure to check them out. To run one of the tutorials, enter the following command into the MATLAB command window: For example the „simple_flow“ tutorial is `vhab.exec(’tutorials.simple_flow.setup’)`. Once the simulation has completed (you will see this by the outputs in the command window), you can plot the results of your simulation by entering `oLastSimObj.plot()` in the command window. Now you can play around with some of the parameters of the systems inside the tutorial and see what happens. 
+Inside the directory `user/+tutorials` you will find a few tutorials to get you started. Some of them also have read me files like the one you are reading right now, be sure to check them out. To run one of the tutorials, enter the following command into the MATLAB command window: For example the "simple_flow" tutorial is `vhab.exec('tutorials.simple_flow.setup')`. Once the simulation has completed (you will see this by the outputs in the command window), you can plot the results of your simulation by entering `oLastSimObj.plot()` in the command window. Now you can play around with some of the parameters of the systems inside the tutorial and see what happens. 
 
 ### How to update your local files ###
 
