@@ -8,7 +8,7 @@ classdef manip < base
     %                           that was required for the vol change and 
     %                           the change in temperature within the gas,
     %                           would be called in setVolume
-    %       matter.manips.partials.xyz can change partial masses in a phase
+    %       matter.manips.mass.xyz can change partial masses in a phase
     %                           within the .massupdate method
     %
     %TODO when to use getInFlows, when to use getMasses? If getMasses is

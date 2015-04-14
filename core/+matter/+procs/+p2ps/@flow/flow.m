@@ -32,7 +32,7 @@ classdef flow < matter.procs.p2p
             % Return vector with all INWARD flow rates and matrix with 
             % partial masses of each in flow
             %
-            %TODO also check for matter.manips.partial, and take the change
+            %TODO also check for matter.manips.mass, and take the change
             %     due to that also into account ... just as another flow
             %     rate? Should the phase do that?
             
@@ -64,15 +64,15 @@ classdef flow < matter.procs.p2p
             
             
             % Check manipulator for partial
-            if ~isempty(oPhase.toManips.partial) && ~isempty(oPhase.toManips.partial.afPartial)
+            if ~isempty(oPhase.toManips.mass) && ~isempty(oPhase.toManips.mass.afPartial)
                 % Was updated just this tick - partial changes in kg/s
                 % Only get positive values, i.e. produced species
-                afTmpPartials    = oPhase.toManips.partial.afPartial;
+                afTmpPartials    = oPhase.toManips.mass.afPartial;
                 aiTmpPartialsPos = afTmpPartials > 0;
                 afManipPartials  = zeros(1, length(afTmpPartials));
                 
                 afManipPartials(aiTmpPartialsPos) = afTmpPartials(aiTmpPartialsPos);
-                %afManipPartials = oPhase.toManips.partial.afPartial(oPhase.toManips.partial.afPartial > 0);
+                %afManipPartials = oPhase.toManips.mass.afPartial(oPhase.toManips.mass.afPartial > 0);
                 fManipFlowRate  = sum(afManipPartials);
                 %keyboard();
                 

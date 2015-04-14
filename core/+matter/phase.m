@@ -107,7 +107,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
 
         % Manipulators
-        toManips = struct('vol', [], 'temp', [], 'partial', []);
+        toManips = struct('vol', [], 'temp', [], 'mass', []);
      end
 
     % Derived values
@@ -247,9 +247,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
         function hRemove = addManipulator(this, oManip)
             sManipType = [];
 
-            if     isa(oManip, 'matter.manips.vol'),     sManipType = 'vol';
-            elseif isa(oManip, 'matter.manips.temp'),    sManipType = 'temp';
-            elseif isa(oManip, 'matter.manips.partial'), sManipType = 'partial';
+            if     isa(oManip, 'matter.manips.vol'),  sManipType = 'vol';
+            elseif isa(oManip, 'matter.manips.temp'), sManipType = 'temp';
+            elseif isa(oManip, 'matter.manips.mass'), sManipType = 'mass';
             end
 
             if ~isempty(this.toManips.(sManipType))
@@ -290,11 +290,11 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
 
             % Check manipulator
-            if ~isempty(this.toManips.partial) && ~isempty(this.toManips.partial.afPartial)
-                this.toManips.partial.update();
+            if ~isempty(this.toManips.mass) && ~isempty(this.toManips.mass.afPartial)
+                this.toManips.mass.update();
                 %keyboard();
                 % Add the changes from the manipulator to the total inouts
-                afTotalInOuts = afTotalInOuts + this.toManips.partial.afPartial;
+                afTotalInOuts = afTotalInOuts + this.toManips.mass.afPartial;
             end
 
 
@@ -620,12 +620,12 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % Check manipulator
             %TODO allow user to set a this.bManipBeforeP2P or so, and if
             %     true execute the [manip].update() before the P2Ps update!
-            if ~isempty(this.toManips.partial)
+            if ~isempty(this.toManips.mass)
                 %keyboard();
-                this.toManips.partial.update();
+                this.toManips.mass.update();
 
                 % Add the changes from the manipulator to the total inouts
-                %afTotalInOuts = afTotalInOuts + this.toManips.partial.afPartial;
+                %afTotalInOuts = afTotalInOuts + this.toManips.mass.afPartial;
             end
 
 
