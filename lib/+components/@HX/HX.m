@@ -364,10 +364,10 @@ classdef HX < vsys
                 sSubstanceFlow2 = oFlows_2.oMT.csSubstances(find(oFlows_2.arPartialMass == max(oFlows_2.arPartialMass)));
                 sSubstanceFlow2 = sSubstanceFlow2{1};
 
-                fDynVisc_1 = oFlows_1.oMT.findProperty(sSubstanceFlow1, 'Dynamic Viscosity', 'Pressure', oFlows_1.fPressure, 'Temperature',oFlows_1.fTemp, oFlows_1.oBranch.coExmes{1,1}.oPhase.sType);
+                fDynVisc_1 = oFlows_1.oMT.calculateDynamicViscosity(oFlows_1);
                 fConductivity_1 = oFlows_1.oMT.findProperty(sSubstanceFlow1, 'Thermal Conductivity', 'Pressure', oFlows_1.fPressure, 'Temperature',oFlows_1.fTemp, oFlows_1.oBranch.coExmes{1,1}.oPhase.sType);
 
-                fDynVisc_2 = oFlows_2.oMT.findProperty(sSubstanceFlow2, 'Dynamic Viscosity', 'Pressure', oFlows_2.fPressure, 'Temperature',oFlows_2.fTemp, oFlows_2.oBranch.coExmes{1,1}.oPhase.sType);
+                fDynVisc_2 = oFlows_2.oMT.calculateDynamicViscosity(oFlows_2);
                 fConductivity_2 = oFlows_2.oMT.findProperty(sSubstanceFlow2, 'Thermal Conductivity', 'Pressure', oFlows_2.fPressure, 'Temperature',oFlows_2.fTemp, oFlows_2.oBranch.coExmes{1,1}.oPhase.sType);
             
                 %sets the structs for the two fluids according to the
