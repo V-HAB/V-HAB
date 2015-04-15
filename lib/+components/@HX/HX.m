@@ -6,10 +6,6 @@ classdef HX < vsys
 % Fluid 1, FlowProc 1 is the one with the fluid flowing through the pipes
 % if there are any pipes.
 %
-%WARNING: TO DO: (Delete after it is solved) at the moment some matter
-%                 values are only taken for the most prominent species
-%                 flowing through the heat exchanger and not the mixture
-%
 %The component uses the following user inputs:
 %
 %sHX_type with information about what type of heat exchanger should be
@@ -355,21 +351,15 @@ classdef HX < vsys
                 (abs(fEntryTemp_2-this.fEntryTemp_Old_2) > 0.1)||...
                 (abs(fMassFlow_2-this.fMassFlow_Old_2) > 0.001)
                 
-                
                 fDensity_1 = this.oData.oMT.calculateDensity(oFlows_1);
                 fDensity_2 = this.oData.oMT.calculateDensity(oFlows_2);
                 
-                sSubstanceFlow1 = oFlows_1.oMT.csSubstances(find(oFlows_1.arPartialMass == max(oFlows_1.arPartialMass)));
-                sSubstanceFlow1 = sSubstanceFlow1{1};
-                sSubstanceFlow2 = oFlows_2.oMT.csSubstances(find(oFlows_2.arPartialMass == max(oFlows_2.arPartialMass)));
-                sSubstanceFlow2 = sSubstanceFlow2{1};
-
                 fDynVisc_1 = oFlows_1.oMT.calculateDynamicViscosity(oFlows_1);
-                fConductivity_1 = oFlows_1.oMT.findProperty(sSubstanceFlow1, 'Thermal Conductivity', 'Pressure', oFlows_1.fPressure, 'Temperature',oFlows_1.fTemp, oFlows_1.oBranch.coExmes{1,1}.oPhase.sType);
-
+                fConductivity_1 = oFlows_1.oMT.calculateThermalConductivity(oFlows_1);
+                
                 fDynVisc_2 = oFlows_2.oMT.calculateDynamicViscosity(oFlows_2);
-                fConductivity_2 = oFlows_2.oMT.findProperty(sSubstanceFlow2, 'Thermal Conductivity', 'Pressure', oFlows_2.fPressure, 'Temperature',oFlows_2.fTemp, oFlows_2.oBranch.coExmes{1,1}.oPhase.sType);
-            
+                fConductivity_2 = oFlows_1.oMT.calculateThermalConductivity(oFlows_2);
+                
                 %sets the structs for the two fluids according to the
                 %definition from HX_main
                 Fluid_1.Massflow                = fMassFlow_1;
