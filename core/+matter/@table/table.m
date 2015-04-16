@@ -154,7 +154,7 @@ classdef table < base
             % backslash with the current system fileseparator, on Macs and
             % Linux, this is the forward slash.)
             [ this.ttxMatter, csWorksheets ] = importMatterData(this, strrep('core\+matter\Matter.xlsx','\',filesep), 'MatterData');
-            
+             
             % get all substances
             this.csSubstances = fieldnames(this.ttxMatter);
             % get number of substances
@@ -302,7 +302,7 @@ classdef table < base
             
             % Creating the file name
             filename = strrep('data\MatterData.mat', '\', filesep);
-            save(filename, 'this');
+            save(filename, 'this', '-v7');
             
             % To make it a little easier and faster to handle, we'll save
             % the Excel file information into a separate file. That way we
@@ -310,7 +310,7 @@ classdef table < base
             % table at the beginning of this constructor.
             tMatterDataInfo = dir(strrep('core\+matter\Matter.xlsx','\',filesep));
             filename = strrep('data\MatterDataInfo.mat', '\', filesep);
-            save(filename, 'tMatterDataInfo');
+            save(filename, 'tMatterDataInfo', '-v7');
             
             
             % Now we are done. All of the data has been written into the
@@ -679,7 +679,7 @@ classdef table < base
                                 % changed. To prevent this, we need to save
                                 % the table object again.
                                 filename = strrep('data\MatterData.mat', '\', filesep);
-                                save(filename, 'this');
+                                save(filename, 'this', '-v7');
                             end
                             
                             sReportString = 'Both dependencies in range. Got value by interpolation.';
@@ -765,7 +765,7 @@ classdef table < base
                                 % changed. To prevent this, we need to save
                                 % the table object again.
                                 filename = strrep('data\MatterData.mat', '\', filesep);
-                                save(filename, 'this');
+                                save(filename, 'this', '-v7');
                             end
                             
                             sReportString = 'One or more out of range. Got the best possible in range value through interpolation.';
