@@ -3,12 +3,12 @@ classdef manip < base
     %   All manips in manips.[x].[y] use this as a base class. The type in
     %   the manip package path (x) defines the attribute of the phase that
     %   is changed:
-    %       matter.manips.temps.xyz can manipulate fTemp in .update()
-    %       matter.manips.vols.gas.xyz can for example calcualte the work
+    %       matter.manips.temperature.xyz can manipulate fTemp in .update()
+    %       matter.manips.volume.gas.xyz can for example calcualte the work
     %                           that was required for the vol change and 
     %                           the change in temperature within the gas,
     %                           would be called in setVolume
-    %       matter.manips.mass.xyz can change partial masses in a phase
+    %       matter.manips.substances.xyz can change partial masses in a phase
     %                           within the .massupdate method
     %
     %TODO when to use getInFlows, when to use getMasses? If getMasses is

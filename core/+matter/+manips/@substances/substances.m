@@ -1,5 +1,5 @@
-classdef mass < matter.manip
-    %PARTIAl
+classdef substances < matter.manip
+    %SUBSTANCES
     %
     %TODO
     %   - differences for solid, gas, liquid ...?
@@ -13,7 +13,7 @@ classdef mass < matter.manip
     end
     
     methods
-        function this = mass(sName, oPhase)
+        function this = substances(sName, oPhase)
             this@matter.manip(sName, oPhase);
         end
         

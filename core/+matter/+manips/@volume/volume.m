@@ -1,5 +1,5 @@
-classdef vol < matter.manip
-    %VOL 
+classdef volume < matter.manip
+    %VOLUME
     
     
     properties (SetAccess = private, GetAccess = public)
@@ -15,7 +15,7 @@ classdef vol < matter.manip
     end
     
     methods
-        function this = vol(sName, oPhase, sRequiredType, sType)
+        function this = volume(sName, oPhase, sRequiredType, sType)
             if nargin < 3, sRequiredType = []; end;
             
             this@matter.manip(sName, oPhase, sRequiredType);
