@@ -1,5 +1,5 @@
-classdef temp < matter.manip
-    %TEMP
+classdef temperature < matter.manip
+    %TEMPERATURE
     %
     %TODO what about different phase types (solid/gas/...), with e.g. not a
     %     perfectly distributed temperature ...? provide some helpers for a
@@ -19,7 +19,7 @@ classdef temp < matter.manip
     end
     
     methods
-        function this = temp(sName, oPhase, sRequiredType)
+        function this = temperature(sName, oPhase, sRequiredType)
             if nargin < 3, sRequiredType = []; end;
             
             this@matter.manip(sName, oPhase, sRequiredType);

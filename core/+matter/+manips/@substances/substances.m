@@ -1,5 +1,5 @@
-classdef partial < matter.manip
-    %PARTIAl
+classdef substances < matter.manip
+    %SUBSTANCES
     %
     %TODO
     %   - differences for solid, gas, liquid ...?
@@ -13,14 +13,15 @@ classdef partial < matter.manip
     end
     
     methods
-        function this = partial(sName, oPhase)
+        function this = substances(sName, oPhase)
             this@matter.manip(sName, oPhase);
         end
         
         function update(this, afPartial, bAbsolute)
-            % Set a afPartial FLOWRATE in kg/s. If bAbsolute is false
-            % (default), afPartial is kg/s. If true, assumed to be kg and
-            % converted to kg/s using last time step.
+            % afPartial can contain either partial flow rates in kg/s or 
+            % absolute partial masses in kg. This is indicated by the 
+            % bAbsolute parameter. If it is true, axPartial is assumed to 
+            % be in kg and will be converted to kg/s using last time step.
             
             if (nargin >= 3) && ~isempty(bAbsolute) && bAbsolute
                 fTimeStep = this.getTimeStep();
