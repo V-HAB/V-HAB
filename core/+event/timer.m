@@ -5,20 +5,24 @@ classdef timer < base
     properties (SetAccess = private, GetAccess = public)
         % Minimum time step, no individual time steps shorter than this one
         % possible.
+        % @type float
         fTimeStep = 0.1;  % [s]
         
         
         % "Accuracy" of simulation - min time step. Use as
         % precision for rounding.
+        % @type int
         iPrecision = 1;
     end
     
     properties (SetAccess = protected, GetAccess = public)
         
         % Current time
+        % @type float
         fTime = 0;
         
         % Current tick
+        % @type int
         iTick = -1;
         
         % Start time

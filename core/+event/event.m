@@ -10,6 +10,8 @@ classdef event < handle
     end
     
     properties (Access = public)
+        tData;
+        
         % Store current token for setInterval calls etc - e.g.
         % oEvent.oCaller.setTimeout(oEvent.sToken, 245)
         sToken = [];
@@ -37,6 +39,8 @@ classdef event < handle
             this.sType   = sType;
             this.oCaller = oCaller;
             this.xData   = xData;
+            
+            this.tData = xData;
         end
         
         

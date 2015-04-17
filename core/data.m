@@ -1,4 +1,4 @@
-classdef data < dynamicprops & event.source
+classdef data < dynamicprops % & event.source
     %DATA Holds data for a system, can be extended and linked to each other
     %   Using the dynamicprops, arbitrary fields can be added to an
     %   instance of this object. If another data object is created, a
@@ -89,7 +89,9 @@ classdef data < dynamicprops & event.source
             
             
             % Trigger event
-            this.trigger([ 'change.' sKey ], struct('sKey', sKey, 'xValue', this.(sKey)));
+            % For now, inactive. Maybe replace with Matlab triggers?
+            % Branch 'logging' needs this removed!
+            %this.trigger([ 'change.' sKey ], struct('sKey', sKey, 'xValue', this.(sKey)));
         end
         
         function remove(this, sKey)
@@ -113,7 +115,9 @@ classdef data < dynamicprops & event.source
                 
                 this.toProps = rmfield(this.toProps, sKey);
                 
-                this.trigger([ 'delete.' sKey ], struct('sKey', sKey, 'xOldValue', xOldValue));
+                % For now, inactive. Maybe replace with Matlab triggers?
+                % Branch 'logging' needs this removed!
+                %this.trigger([ 'delete.' sKey ], struct('sKey', sKey, 'xOldValue', xOldValue));
             end
         end
         
