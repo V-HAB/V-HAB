@@ -42,7 +42,7 @@ The following steps are only required the first time you setup your development 
 * In the browser navigate to your profile page at <http://steps.lrt.mw.tum.de/> and select the tab *SSH Keys*. 
 * Click *Add new* and paste the copied key into the field *Key*, give it a title and click *save*.
 * In the SourceTree top menu select *Tools* -> *Options* and in the *General* tab set the SSH Client to *OpenSSH* and click *ok*.
-* Click *clone / new* and enter `git@steps.lrt.mw.tum.de:steps/base.git` in the field *Source Path / URL*.
+* Click *clone / new* and enter `git@steps.lrt.mw.tum.de:steps/steps-base.git` in the field *Source Path / URL*.
 * Once you try to edit the field *Destination Path*, a window will pop up asking you, if you want to launch the SSH Agent. Say yes.
 * Navigate to the folder you created earlier and select the file with the `.ppk` appendix (you probably have to enter the password you used when creating the key).
 * Then click *Retry* in the next pop up window.
@@ -79,7 +79,7 @@ See the [Mac Setup Wiki Page](http://steps.lrt.mw.tum.de/bootstrapping/wikis/set
 The following steps are the same for every new Repository you want to clone from the STEPS GITlab server. 
 
 1. Visit the page of the project you want to clone (e.g. <http://steps.lrt.mw.tum.de/bootstrapping>). 
-2. Locate and copy the SSH address of the repository at the top of the project timeline (e. g. `git@steps.lrt.mw.tum.de:bootstrapping.git`). 
+2. Locate and copy the SSH address of the repository at the top of the project timeline (e. g. `git@steps.lrt.mw.tum.de:steps/steps-base.git`). 
 3. In the SourceTree *Bookmarks* window, click the top left icon which says *Add repository* on hover (or select *File* -> *New / Clone* from the top menu). Make sure the *Clone repository* tab is selected. 
 4. In the field *Source Path / URL*, paste (`CMD + V`) the SSH address of the repository you want to clone (see *step 2*). 
 5. Choose a bookmark name (in our example, `bootstrapping` is pre-selected, I suggest changing this to `STEPS` or `STEPS bootstrapping`). This is the name that will be displayed in the *Bookmarks* window of SourceTree. 
@@ -107,11 +107,11 @@ If you want to update your local working copy files to the current version, sele
 
 ### To create a new simulation project: ###
 
-* go to GITlab and create a new project (assuming your username is `bob` and your project is `spacestation`).
-* create a new directory locally inside the bootstrapping package: `user/+bob/+spacestation` (i.e. `{steps}/user/+{username}/+{project}`)
-* ONLY package directories, classes and functions can be included ONLY in a project directory, i.e. only in `/user/+bob/+spacestation`.
-* Copy the `main.m` file in the bootstrapping root dir to e.g. `main_bob_spacestation.m`, edit, execute. Has to reside within the bootstrapping directory. Your classes can be accessed with e.g. `bob.spacestation.myClass()`. Please note that your main file is intentionally not inside the repository, and will thusly not be backuped by the version control system. 
-* Use SourceTreeApp or the GIT console to initialize a GIT directory within `/user/+bob/+spacestation`. Add the remote repository (`steps.lrt.mw.tum.de:bob/spacestation.git`). Commit & push.
+* Go to the Gitlab server at `steps.lrt.mw.tum.de` and create a new project. The following points assume your username is `bobo` and your project is called `spacestation`.
+* Create a local directory inside the STEPS `user` folder with your username preceeded by a plus sign, e.g. `user/+bobo`. Inside that directory create another one with your project name also prefixed by a `+`, e.g. `user/+bobo/+spacestation`. I.e. the pattern is `{steps-base}/user/+{username}/+{projectname}`).
+* Put your project files (classes, functions) and folders (package directories) **only** into the project directory (e.g. in `user/+bobo/+spacestation`). Do **not** add any additional files like documents, papers, results, plots, etc. to the project directory. For results and plots, use the `data` directory in the STEPS base folder.
+* Every system needs a `setup.m` that initializes a simulation in the project directory, e.g. `/user/+bobo/+spacestation/setup.m`. The simulation can then be started by executing `vhab.exec('bobo.spacestation.setup');` in the MATLAB console. Your classes can be accessed with e.g. `bobo.spacestation.myClass()`.
+* Use the SourceTree app or the GIT console to initialize a GIT directory within `/user/+bobo/+spacestation`. Add the remote repository (`steps.lrt.mw.tum.de:bobo/spacestation.git`). Commit & push.
 
 ### Commiting and pushing files to the repository ###
 
