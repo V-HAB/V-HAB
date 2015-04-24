@@ -56,41 +56,9 @@ classdef base < handle
     end
     
     methods (Static = true)
-        function sUUID = randomUUID(bStructable)
-            % Create a 16byte number "Universally Unique IDentifier" (UUID)
-            % represented by 32 hexadecimal digits) that can be used as an 
-            % unique identifier for any kind of object, element, etc.
-            % If bStructable is false, the UUID contains hyphens and may 
-            % begin with a number; if true (default), a UUID starting with 
-            % a number is discarded and a new one is created before 
-            % returning, and the hyphens are removed (therefore the UUID 
-            % can be used as a key in a struct).
-            %
-            %NOTE: "practically unique", not "guaranteed unique" (see 
-            %      Wikipedia), but since 32 hexadecimal digits result in 
-            %      16^32 possible UUIDs, one can be reasonably confident 
-            %      that the id is unique!
-            %
-            % http://en.wikipedia.org/wiki/Universally_unique_identifier
-            % http://docs.oracle.com/javase/6/docs/api/java/util/UUID.html
-
-
-            if nargin < 1, bStructable = true; end;
-
-
-            if bStructable
-                sUUID = '1';
-                oGen  = java.util.UUID.randomUUID();
-
-                % If the first character of the UUID is a number, generate a new one!
-                while ~isnan(str2double(sUUID(1)))
-                    sUUID = char(oGen.randomUUID().toString());
-                end
-
-                sUUID = strrep(sUUID, '-', '');
-            else
-                sUUID = char(java.util.UUID.randomUUID().toString());
-            end
+        function randomUUID(~)
+            %RANDOMUUID [removed, use |tools.getPseudoUUID()| instead]
+            this.throw('base::randomUUID', '|base.randomUUID()| has been removed. Use |tools.getPseudoUUID()| instead.');
         end
     end
     
@@ -207,7 +175,7 @@ classdef base < handle
             this.oMeta   = metaclass(this);
             this.sEntity = this.oMeta.Name;
             
-            this.sUUID = base.randomUUID();
+            this.sUUID = tools.getPseudoUUID();
             
             % URL - used as identification for logging
             %CHECK prefix something like localhost?
