@@ -1,5 +1,5 @@
 classdef branch < solver.matter.base.branch
-    %
+    %BRANCH Branch class for iterative matter flow solver
     %
     %TODO
     % - if e.g. constant pressure EXME and connected phase becomes empty,

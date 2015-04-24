@@ -1,9 +1,14 @@
 classdef simulation < base & event.source
-    %SIM Summary of this class goes here
-    %   Detailed explanation goes here
+    %SIM V-HAB Simulation Class
+    %   Objects instatiated from this class contain all necessary
+    %   information to run a V-HAB simulation. They include the root vsys
+    %   object, the timer and data objects and logged simulation data.
+    %   It also contains the tick() method which advances the timer one
+    %   time step (or tick) ahead until the total simulated time has
+    %   reached the user-defined value.
     %
-    % The constructor of the derived class needs to or should set csLog,
-    % and either iSimTicks of fSimTime.
+    %TODO The constructor of the derived class needs to or should set 
+    %   csLog, and either iSimTicks of fSimTime.
     %
     
     
