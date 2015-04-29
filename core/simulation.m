@@ -280,9 +280,10 @@ classdef simulation < base & event.source
         function finish(this)
             %TODO put in vhab class -> just trigger 'finish' here!
             disp('--------------------------------------');
-            disp([ 'Sim Time:     ' num2str(this.oTimer.fTime) 's' ]);
+            disp([ 'Sim Time:     ' num2str(this.oTimer.fTime) 's in ' num2str(this.oTimer.iTick) ' ticks' ]);
             disp([ 'Sim Runtime:  ' num2str(this.fRuntimeTick + this.fRuntimeLog) 's, from that for dumping: ' num2str(this.fRuntimeLog) 's' ]);
             disp([ 'Sim factor:   ' num2str(this.fSimFactor) ' [-] (ratio)' ]);
+            disp([ 'Avg Time/Tick:' num2str(this.oTimer.fTime / this.oTimer.iTick) ' [s]' ]);
             disp([ 'Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
             disp([ 'Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :))) 'kg' ]);
             disp([ 'Minimum Time Step * Total Sim Time: ' num2str(this.oTimer.fTimeStep * this.oTimer.fTime) ]);
