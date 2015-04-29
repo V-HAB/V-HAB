@@ -8,6 +8,11 @@ classdef simulation < base & event.source
     
     
     properties (SetAccess = public, GetAccess = public)
+        sStorageName;
+        sDescription;
+    end
+    
+    properties (SetAccess = public, GetAccess = public)
         % Amount of ticks
         % @type int
         iSimTicks = 100;
@@ -78,6 +83,9 @@ classdef simulation < base & event.source
         % @type string
         sCreated = '';
         
+        % String for disk storage
+        sStorageDir;
+        
         % Variables holding the sum of lost mass / total mass, species-wise
         mfTotalMass = [];
         mfLostMass  = [];
@@ -135,7 +143,8 @@ classdef simulation < base & event.source
             % Remember the time of object creation
             this.fCreated = now();
             this.sCreated = datestr(this.fCreated);
-            
+            %this.sStorageDir = [ datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') '_' this.sUUID ];
+            this.sStorageDir = [ datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') '_' this.sName ];
             
             % Init the mass log matrices - don't log yet, system's not
             % initialized yet! Just create with one row, for the initial
@@ -161,7 +170,7 @@ classdef simulation < base & event.source
                 
                 % Stopped?
                 if this.bDumpToMat && (this.oTimer.iTick > 0) && (mod(this.oTimer.iTick, this.iPrealloc) == 0)
-                    sFile = [ 'data/runs/' this.sUUID '/STOP' ];
+                    sFile = [ 'data/runs/' this.sStorageDir '/STOP' ];
                     
                     % Always do that!
                     disp('#############################################');
@@ -282,7 +291,11 @@ classdef simulation < base & event.source
 
             %TODO if bDump, write .mat!
             if this.bDumpToMat
-                sMat = [ 'data/runs/' this.sUUID '/_simObj.mat' ];
+                if ~isdir([ 'data/runs/' this.sStorageDir ])
+                    mkdir([ 'data/runs/' this.sStorageDir ]);
+                end
+                
+                sMat = [ 'data/runs/' this.sStorageDir '/_simObj.mat' ];
                 disp(['DUMPING - write to .mat: ' sMat]);
    
                 oLastSimObj = this;
@@ -310,12 +323,12 @@ classdef simulation < base & event.source
             %if this.oTimer.iTick > iTmpSize
             if this.iLogIdx > this.iAllocated
                 if this.bDumpToMat
-                    if ~isdir([ 'data/runs/' this.sUUID ])
-                        mkdir([ 'data/runs/' this.sUUID ]);
+                    if ~isdir([ 'data/runs/' this.sStorageDir ])
+                        mkdir([ 'data/runs/' this.sStorageDir ]);
                     end
                     
                     
-                    sMat = [ 'data/runs/' this.sUUID '/dump_' num2str(this.oTimer.iTick) '.mat' ];
+                    sMat = [ 'data/runs/' this.sStorageDir '/dump_' num2str(this.oTimer.iTick) '.mat' ];
                     
                     disp('#############################################');
                     disp(['DUMPING - write to .mat: ' sMat]);
@@ -341,6 +354,7 @@ classdef simulation < base & event.source
                 
                 for iL = this.aiLog
                     sCmd = [ sCmd 'this.oRoot.' this.csLog{iL} ',' ];
+                    %sCmd = [ sCmd sprintf('this.oRoot.%s,\n', this.csLog{iL}) ];
                 end
 
                 sCmd = [ sCmd(1:(end - 1)) ']' ];
@@ -379,7 +393,7 @@ classdef simulation < base & event.source
         
         function readData(this)
             if this.bDumpToMat
-                sDir    = [ 'data/runs/' this.sUUID '/' ];
+                sDir    = [ 'data/runs/' this.sStorageDir '/' ];
                 tDir    = dir(sDir);
                 aiDumps = [];
                 
