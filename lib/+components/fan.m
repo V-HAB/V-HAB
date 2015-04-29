@@ -125,8 +125,8 @@ classdef fan < matter.procs.f2f
             
             % Support these two solver architectures - hydr used by the
             % linear solver, fct by the iterative.
-            this.supportSolver('hydr', -1, 1, true, @this.update);
-            this.supportSolver('fct',  @this.solverDeltas);
+            this.supportSolver('hydraulic', -1, 1, true, @this.update);
+            this.supportSolver('callback',  @this.solverDeltas);
             this.supportSolver('manual', true, @this.updateManualSolver);
         end
         

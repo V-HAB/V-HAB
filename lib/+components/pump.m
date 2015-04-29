@@ -33,9 +33,9 @@ classdef pump < solver.matter.linear.procs.f2f
 %             this.fHydrDiam = -5;
 %             this.fHydrLength = 0.1;
             
-            this.supportSolver('hydr', -5, 0.1, true, @this.update);
+            this.supportSolver('hydraulic', -5, 0.1, true, @this.update);
             %TODO support that!
-            %this.supportSolver('fct',  @this.solverDeltas);
+            %this.supportSolver('callback',  @this.solverDeltas);
         end
         
         function fDeltaPressure = update(this)

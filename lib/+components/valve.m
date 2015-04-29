@@ -49,8 +49,8 @@ classdef valve < matter.procs.f2f
             
             
             
-            this.supportSolver('hydr', this.fHydrDiam, this.fHydrLength, true, @this.update);
-            this.supportSolver('fct',  @this.solverDeltas);
+            this.supportSolver('hydraulic', this.fHydrDiam, this.fHydrLength, true, @this.update);
+            this.supportSolver('callback',  @this.solverDeltas);
             this.supportSolver('manual', false);
         end
         

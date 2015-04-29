@@ -18,7 +18,7 @@ classdef hx_flow < matter.procs.f2f
             
             this.oParent     = oParent;
             
-            this.supportSolver('fct',  @this.solverDeltas);
+            this.supportSolver('callback',  @this.solverDeltas);
             this.supportSolver('manual', true, @this.updateManualSolver);
         end
         

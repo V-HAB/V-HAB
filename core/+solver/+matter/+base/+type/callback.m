@@ -1,5 +1,5 @@
-classdef fct < handle
-    %FCT Summary of this class goes here
+classdef callback < handle
+    %CALLBACK Delta Pressure Calculation via Specific Function
     %   Detailed explanation goes here
     
     properties
@@ -7,7 +7,7 @@ classdef fct < handle
     end
     
     methods
-        function this = fct(solverDeltas)
+        function this = callback(solverDeltas)
             this.calculateDeltas = solverDeltas;
         end
     end

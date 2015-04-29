@@ -35,8 +35,8 @@ classdef pipe < matter.procs.f2f
             this.fLength   = fLength;
             this.fDiameter = fDiameter;
             
-            this.supportSolver('hydr', fDiameter, fLength);
-            this.supportSolver('fct',  @this.solverDeltas);
+            this.supportSolver('hydraulic', fDiameter, fLength);
+            this.supportSolver('callback',  @this.solverDeltas);
             this.supportSolver('manual', false);
             
 

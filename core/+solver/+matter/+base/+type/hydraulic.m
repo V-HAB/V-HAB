@@ -1,5 +1,5 @@
-classdef hydr < handle
-    %HYDR Summary of this class goes here
+classdef hydraulic < handle
+    %HYDRAULIC Delta Pressure Calculation via Hydraulic Length and Diameter
     %   Detailed explanation goes here
     
     properties
@@ -13,7 +13,7 @@ classdef hydr < handle
     end
     
     methods
-        function this = hydr(fHydrDiam, fHydrLength, bActive, calcMethod)
+        function this = hydraulic(fHydrDiam, fHydrLength, bActive, calcMethod)
             this.fHydrDiam    = fHydrDiam;
             this.fHydrLength  = fHydrLength;
             % Active component? Needs fct handle to calculate delta p

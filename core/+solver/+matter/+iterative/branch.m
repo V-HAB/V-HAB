@@ -48,7 +48,7 @@ classdef branch < solver.matter.base.branch
     
     methods
         function this = branch(oBranch, rMaxChange, iRemChange)
-            this@solver.matter.base.branch(oBranch, [], 'fct');
+            this@solver.matter.base.branch(oBranch, [], 'callback');
             
             if nargin >= 2, this.rMaxChange = rMaxChange; end;
             if nargin >= 3, this.iRemChange = iRemChange; end;

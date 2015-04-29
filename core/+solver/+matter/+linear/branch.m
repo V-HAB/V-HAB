@@ -31,7 +31,7 @@ classdef branch < solver.matter.base.branch
     
     methods
         function this = branch(oBranch, rMaxChange, iRemChange)
-            this@solver.matter.base.branch(oBranch, [], 'hydr');
+            this@solver.matter.base.branch(oBranch, [], 'hydraulic');
             
             if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end;
             if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end;
