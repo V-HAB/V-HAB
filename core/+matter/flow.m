@@ -408,6 +408,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
             %if bSkipT || bSkipPT, this.warn('setData', 'setData on flows w/o press/temp (or just empty) --> difference: no delta temp/press (cause no f2f) or really don''t set??'); end;
             if (bSkipT || bSkipPT) && (iL > 1), this.warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end;
             
+            % Rounding precision
+            iPrec = this(1).oBranch.oContainer.oTimer.iPrecision;
+            
             for iI = 1:iL
                 % Only set those params if oExme was provided
                 if ~isempty(oExme)
@@ -434,6 +437,17 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 if bSkipPT, continue; end;
                 
                 this(iI).fPressure = fPortPress;
+                
+                if tools.round.prec(fPortPress, iPrec) < 0
+                    this(iI).fPressure = 0;
+                    
+                    % Only warn for > 1Pa ... because ...
+                    if fPortPress < -10
+                        this(1).warn('setData', 'Setting a negative pressure lt -1Pa (%f) for the LAST flow in branch "%s"!', fPortPress, this(1).oBranch.sName);
+                    elseif iI ~= iL
+                        this(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, this(1).oBranch.sName);
+                    end
+                end
                 
                 % Calculates the pressure for the NEXT flow, so make sure
                 % this is not the last one!
