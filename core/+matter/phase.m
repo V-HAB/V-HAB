@@ -488,6 +488,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
             elseif isfield(this.toProcsEXME, oProcEXME.sName)
                 this.throw('addProcEXME', 'Proc %s already exists.', oProcEXME.sName);
 
+            elseif strcmp(oProcEXME.sName, 'default')
+                this.throw('addProcEXME', 'Default EXMEs are not allowed any more!');
+
             end
 
 
@@ -622,6 +625,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
         
        
         function calculateTimeStep(this)
+            
             %TODO move this to another function or class or whatever. Why
             %is this executed here anyway?
             % Check manipulator
