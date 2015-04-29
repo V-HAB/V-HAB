@@ -40,10 +40,37 @@ classdef branch < base & event.source
         bRegisteredOutdated = false;
     end
     
+    properties (SetAccess = private, GetAccess = public)
+        % Solving mechanism supported by the solver
+        sSolverType;
+        
+        % Cached solving objs (from [procs].toSolver.hydr)
+        aoSolverProps;
+    end
+    
     
     methods
-        function this = branch(oBranch, fInitialFlowRate)
+        function this = branch(oBranch, fInitialFlowRate, sSolverType)
             this.oBranch = oBranch;
+            
+            
+            if nargin >= 3 && ~isempty(sSolverType)
+                this.sSolverType = sSolverType;
+                
+                % Cache the solver objects for quick access later
+                %TODO re-cache if e.g. branch re-connected to another IF!
+                this.aoSolverProps = solver.matter.base.type.(this.sSolverType).empty(0, size(this.oBranch.aoFlowProcs, 2));
+
+                for iP = 1:length(this.oBranch.aoFlowProcs)
+                    if ~isfield(this.oBranch.aoFlowProcs(iP).toSolve, this.sSolverType)
+                        this.throw('ctor', 'Flow Proc %i does not support the %s solving method!', iP, this.sSolverType);
+                    end
+
+                    this.aoSolverProps(iP) = this.oBranch.aoFlowProcs(iP).toSolve.(this.sSolverType);
+                end
+            end
+            
+            
             
             % Branch allows only one solver to take control
             this.setBranchFR = this.oBranch.registerHandlerFR(this);
