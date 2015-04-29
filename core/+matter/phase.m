@@ -58,6 +58,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
         %     .update call (from .seal()) --> still needed?
 
         afMassLost;
+        
+        
+        fTimeStep;
     end
 
     properties (SetAccess = private, GetAccess = public)
@@ -102,8 +105,15 @@ classdef phase < base & matlab.mixin.Heterogeneous
         fLastMassUpdate = 0;
         % Time step in last massupdate
         fMassUpdateTimeStep = 0;
+        
+        % Current total mass in- or outflow (if negative value), for all
+        % substances combined. Used to improve pressure estimation in 
+        % EXMEs.
+        fCurrentTotalMassInOut = 0;
+        
 
         fLastUpdate = -10;
+        fLastTimeStepCalculation = -10;
 
 
         % Manipulators
@@ -129,7 +139,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
         % Limit - how much can the phase mass (total or single substances)
         % change before an update of the matter properties (of the whole
         % store) is triggered?
-        rMaxChange = 0.05;
+        rMaxChange = 0.25;
         fMaxStep   = 3600;
         fFixedTS;
 
@@ -137,6 +147,12 @@ classdef phase < base & matlab.mixin.Heterogeneous
         % flow rates. Use when volumes of phase compared to flow rates are
         % small!
         bSynced = false;
+        
+        
+        %{
+        iRememberDeltaSign = 25;
+        abDeltaPositive    = [ true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false ];
+        %}
     end
 
 
@@ -167,15 +183,16 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % Parent has to be a or derive from matter.store
             if ~isa(oStore, 'matter.store'), this.throw('phase', 'Provided oStore parameter has to be a matter.store'); end;
 
-
             % Set name
             this.sName = sName;
-
 
             % Parent store - FIRST call addPhase on parent, THEN set the
             % store as the parent - matter.store.addPhase only does that if
             % the oStore attribute here is empty!
-            this.oStore = oStore.addPhase(this);
+            %CHECK changed, see connector_store, need oStore already set
+            this.oStore = oStore;
+            this.oStore.addPhase(this);
+
             % DELETE? This is only necessary if the number of substances
             % changes during runtime...
             % Set the matter table
@@ -245,13 +262,14 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
 
         function hRemove = addManipulator(this, oManip)
+
             sManipType = [];
 
             if     isa(oManip, 'matter.manips.volume'),      sManipType = 'volume';
             elseif isa(oManip, 'matter.manips.temperature'), sManipType = 'temperature';
             elseif isa(oManip, 'matter.manips.substances'),  sManipType = 'substances';
             end
-             
+
             if ~isempty(this.toManips.(sManipType))
                 this.throw('addManipulator', 'A manipulator of type %s is already set for phase %s (store %s)', sManipType, this.sName, this.oStore.sName);
             end
@@ -261,45 +279,43 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
             % Remove fct call to detach manipulator
             hRemove = @() this.detachManipulator(sManipType);
+
         end
 
+        function this = massupdate(this)
 
-
-        function this = massupdate(this, bSetOutdatedTS)
             fTime     = this.oStore.oTimer.fTime;
-            fTimeStep = fTime - this.fLastMassUpdate;
-
-
-            %disp([ 'massupdate ' this.oStore.sName ' at ' num2str(fTime) ' TS ' num2str(fTimeStep) ' T ' num2str(this.oStore.oTimer.iTick) '  from phase ' sif((nargin >= 2) && ~bSetOutdatedTS, 'y', 'n')]);
+            fLastStep = fTime - this.fLastMassUpdate;
 
             % Return if no time has passed
-            if fTimeStep == 0, return; end;
+            if fLastStep == 0,
+                return;
+            end;
 
             % Immediately set fLastMassUpdate, so if there's a recursive call
             % to massupdate, e.g. by a p2ps.flow, nothing happens!
             this.fLastMassUpdate     = fTime;
-            this.fMassUpdateTimeStep = fTimeStep;
+            this.fMassUpdateTimeStep = fLastStep;
 
             % All in-/outflows in [kg/s] and multiply with curernt time
             % step, also get the inflow rates / temperature / heat capacity
             [ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
 
-            if any(afTotalInOuts ~= 0)
-                %keyboard();
-            end
-
-
             % Check manipulator
             if ~isempty(this.toManips.substances) && ~isempty(this.toManips.substances.afPartial)
+                %TODO should the update be called in calcNewTS as well,
+                %     just like the update methods for flow p2ps?
                 this.toManips.substances.update();
-                %keyboard();
+                
                 % Add the changes from the manipulator to the total inouts
                 afTotalInOuts = afTotalInOuts + this.toManips.substances.afPartial;
             end
-
-
+            
+            % Cache total mass in/out so the EXMEs can use that
+            this.fCurrentTotalMassInOut = sum(afTotalInOuts);
+            
             % Multiply with current time step
-            afTotalInOuts = afTotalInOuts * fTimeStep;
+            afTotalInOuts = afTotalInOuts * fLastStep;
             %afTotalInOuts = this.getTotalMassChange() * fTimeStep;
 
             % Do the actual adding/removing of mass.
@@ -330,12 +346,11 @@ classdef phase < base & matlab.mixin.Heterogeneous
             end
 
 
-
             %%%% Now calculate the new temperature of the phase using the
             % inflowing enthalpies / inner energies / ... whatever.
 
             % Convert flow rates to masses
-            mfInflowDetails(:, 1) = mfInflowDetails(:, 1) * fTimeStep;
+            mfInflowDetails(:, 1) = mfInflowDetails(:, 1) * fLastStep;
 
             % Add the phase mass and stuff
             if ~isempty(mfInflowDetails) % no inflows?
@@ -388,56 +403,47 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % Update total mass
             this.fMass = sum(this.afMass);
 
-            % Only set outdatedTS (so in post tick, new time step is
-            % calculated) if 2nd param is not false. Used by .update() to
-            % make sure the time step calculation callback is executed
-            % after the flow rate update callbacks in the branches.
-            if (nargin < 2) || isempty(bSetOutdatedTS) || bSetOutdatedTS
-                if this.bSynced
-                    %TODO check if branche that called this massupdate
-                    %   method is not executed again, and if flow rates are
-                    %   actually calcualted before the phase sets the
-                    %   new time step!
-                    this.setBranchesOutdated();
-                end
-                %keyboard();
-                this.setOutdatedTS();
+            
+            % If synced, trigger 'fr recalc' in all branches
+            if this.bSynced
+                this.setBranchesOutdated();
             end
+            
+            % Phase sets new time step (registered with parent store, used
+            % for all phases of that store)
+            this.setOutdatedTS();
         end
+        
+        
+        
 
         function this = update(this)
             % Only update if not yet happened at the current time.
             if (this.oStore.oTimer.fTime <= this.fLastUpdate) || (this.oStore.oTimer.fTime < 0)
                 return;
-            end;
+            end
 
             %keyboard();
             %disp([ num2str(this.oStore.oTimer.iTick) ': Phase ' this.oStore.sName '-' this.sName ' (@' num2str(this.oStore.oTimer.fTime) 's, last ' num2str(this.fLastUpdate) 's)' ]);
-
-
+            
             % Store update time
             this.fLastUpdate = this.oStore.oTimer.fTime;
 
 
-            % Move matter in/out. Param false passed to prevent massupd
-            % from registering the time step calculation callback on post
-            % step. Needs to be added later, after the branches are set to
-            % recalculate their flow rates - which they do post-step as
-            % well. Therefore make sure that this.calculateTimeStep is
-            % executed after the flow rate calculators.
-            this.massupdate(false);
+            % Massupdate triggers setBranchesOutdated for this.bSynced
+            % automatically, so only trigger if this phase is not synced.
+            if ~this.bSynced
+                this.setBranchesOutdated();
+            end
+            
+            % Actually move the mass into/out of the phase.
+            this.massupdate();
 
             % Cache current fMass / afMass so they represent the values at
             % the last phase update. Needed in phase time step calculation.
             this.fMassLastUpdate  = this.fMass;
             this.afMassLastUpdate = this.afMass;
-
-
-
-            % Cache old fMass / afMass - need that in time step
-            % calculations!
-            %this.fMassLastUpdate  = this.fMass;
-            %this.afMassLastUpdate = this.afMass;
+            
 
 
             % Partial masses
@@ -448,16 +454,6 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % Now update the matter properties
             this.fMolMass      = this.oMT.calculateMolecularMass(this.afMass);
             this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
-
-            if this.oStore.oTimer.fTime > 1050 && strcmp([ this.oStore.sName '-' this.sName ], 'Assembly_L-air')
-                %keyboard();
-            end
-
-            % Triggers all branchs to recalculate flow rate
-            this.setBranchesOutdated();
-
-            % Register time step calculation on post tick
-            this.setOutdatedTS();
         end
     end
 
@@ -656,14 +652,15 @@ classdef phase < base & matlab.mixin.Heterogeneous
             end
 
 
-            
+
             if ~isempty(this.fFixedTS)
-                fTimeStep = this.fFixedTS;
+                fNewStep = this.fFixedTS;
             else
 
                 % Calculate the change in total and partial mass since the
                 % phase was last updated
-                rPreviousChange  = max(abs(this.fMassLastUpdate   / this.fMass  - 1));
+                rPreviousChange  = this.fMass / this.fMassLastUpdate - 1;
+
                 arPreviousChange = abs(this.afMassLastUpdate ./ this.afMass - 1);
 
                 % Should only happen if fMass (therefore afMass) is zero!
@@ -694,59 +691,83 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
                 % Change per second of TOTAL mass
                 fChange = sum(afChange);
-
+                
                 % No change in total mass?
                 if fChange == 0
-                    rTotalPerSecond = this.rMaxChange + rPreviousChange;
+                    rTotalPerSecond = 0;
                 else
-                    rTotalPerSecond = abs(fChange / this.fMass - 0) + rPreviousChange;
+                    rTotalPerSecond = abs(fChange / this.fMass);
                 end
+                
 
-                % Derive timestep, use the max change (total mass or one of the
-                % substance change)
-                %NOTE if some substance has zero mass, but then one of the flows
-                %     starts to introduce some of that substance, the first tick
-                %     the rChangePerSecond will be Inf, therefore fTimeStep
-                %     will be zero - this is ok, if a new substance is introduced
-                %     a short time step is fine.
-                fTimeStep = this.rMaxChange / max([ rChangePerSecond rTotalPerSecond ]);
+                % Derive timestep, use the max change (total mass or one of
+                % the substances change)
+                %fNewStep = this.rMaxChange / max([ rChangePerSecond rTotalPerSecond ]);
+                fNewStep = (this.rMaxChange - rPreviousChange) / max([ rChangePerSecond rTotalPerSecond ]);
+                
+                
+                %{
+                %CHECK can calulateTimeStep be called multiple times in one
+                %      tick?
+                iRemDeSi = this.iRememberDeltaSign;
+                iPrec    = this.oStore.oTimer.iPrecision;
+                iExpRem  = 0;
+                iExpDelta= 0; % inactive right now!
+                
+                
+                if this.fLastTimeStepCalculation < this.oStore.oTimer.fTime
+                    this.abDeltaPositive(1:iRemDeSi)   = this.abDeltaPositive(2:(iRemDeSi + 1));
+                    this.abDeltaPositive(iRemDeSi + 1) = fChange > 0;
 
-                if fTimeStep > this.fMaxStep, fTimeStep = this.fMaxStep; end;
+                    if tools.round.prec(fChange, iPrec) == tools.round.prec(this.fLastTotalChange, iPrec)
+                        %this.abDeltaPositive(iRemDeSi + 1) = this.abDeltaPositive(iRemDeSi);
+                    end
+                end
+                
+                this.fLastTimeStepCalculation = this.oStore.oTimer.fTime;
+                
+                
+                aiChanges = abs(diff(this.abDeltaPositive));
+                afExp     = (1:iRemDeSi) .^ iExpRem;
+                arExp     = afExp ./ sum(afExp);% * 1.5;
+                rChanges  = sum(arExp .* aiChanges);
+                
+                fNewStep = interp1([ 0 1 ], [ this.oStore.oTimer.fTimeStep fNewStep ], (1 - rChanges) ^ iExpDelta, 'linear', 'extrap');
+                %}
+                
+
+                if fNewStep > this.fMaxStep
+                    fNewStep = this.fMaxStep;
+                elseif fNewStep < 0
+                    fNewStep = 0;
+                end
             end
 
-
-            %disp([ this.oStore.sName '    ' num2str(this.oStore.oTimer.iTick) '  TS  ' num2str(fTimeStep) '   fC ' num2str(fChange) '   rCPS ' num2str(rChangePerSecond) ]);
-            if strcmp(this.oStore.sName, 'Tank_1') && (this.oStore.oTimer.iTick >= 57)
-                %keyboard();
-                %disp([ num2str(this.oStore.oTimer.iTick) '    ' num2str(fTimeStep) ]);
-                %keyboard();
-            end
 
             % Set new time step (on store, only sets that if smaller then
             % the currently set time step, btw).
             %CHECK     don't really need the whole store to update, p2p
             %          procs are always updated if one of the connected
             %          phases is updated, massupd also always done.
-            %          Just register own callback and exec .update()!
+            %          Just register own .update() method!
             %          Still, logic required to update e.g. store's
             %          volume distribution if liquid phase changes etc.
-            %TODO do that within the phase. Call update method of phase,
-            %     then check how much the contents have changed since store
-            %     last updated, depending on that call update on store
-            this.oStore.setNextExec(this.fLastMassUpdate + fTimeStep);
-            %this.oStore.setNextExec(this.fLastMassUpdate + 1);
+            this.oStore.setNextExec(this.fLastMassUpdate + fNewStep);
+            
+            % Cache - e.g. for logging purposes
+            this.fTimeStep = fNewStep;
 
             % Now up to date!
             this.bOutdatedTS = false;
         end
 
+        
         function setOutdatedTS(this)
-            %if ~this.bOutdatedTS
+            if ~this.bOutdatedTS
                 this.bOutdatedTS = true;
 
-                %this.setTimeStep(0);
                 this.oStore.oTimer.bindPostTick(@this.calculateTimeStep);
-            %end
+            end
         end
 
 
