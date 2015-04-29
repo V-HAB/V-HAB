@@ -37,7 +37,7 @@ classdef Example < vsys
             matter.procs.exmes.gas(oAirPhase, 'Port_2');
              
             % Adding a pipe to connect the tanks
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe', 0.5, 0.005));
+            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe', 1.5, 0.005));
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
