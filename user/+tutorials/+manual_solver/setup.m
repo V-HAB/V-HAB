@@ -44,6 +44,10 @@ classdef setup < simulation
                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fPressure';  % 4
                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
                 'toChildren.Example.aoBranches(1).fFlowRate';                % 6
+                'toChildren.Example.aoBranches(1).aoFlows(2).fTemp';
+                'toChildren.Example.aoBranches(1).aoFlows(3).fTemp';         % 8
+                'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemp';
+                'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemp';
                 
                 };
             
@@ -85,6 +89,14 @@ classdef setup < simulation
             legend('Branch');
             ylabel('flow rate [kg/s]');
             ylim([0, 1.1]);
+            xlabel('Time in s');
+            
+            figure('name', 'Temperatures');
+            hold on;
+            grid minor;
+            plot(this.mfLog(:,1), this.mfLog(:, 7:10));
+            legend('Pre Heater', 'Post Heater', 'Tank 1', 'Tank 2');
+            ylabel('Temperature [K]');
             xlabel('Time in s');
             
             figure('name', 'Time Steps');
