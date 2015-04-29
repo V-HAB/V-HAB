@@ -10,16 +10,16 @@ classdef pump < solver.matter.linear.procs.f2f
         
         fFlowRateSP;            % Flow rate setpoint in kg/s
         iDir;                   % Direction of flow [ 1 -1 ]
-        fDeltaPressure = 0;     % Pressure difference created by the pump in Pa
+%         fDeltaPressure = 0;     % Pressure difference created by the pump in Pa
         
     end
     
     properties (SetAccess = protected, GetAccess = public)
-        fHydrDiam   = -1;       % Needs to be smaller than 0 for the solver
-                                % to recognize it as pump
-        fHydrLength = 0.1;      % Irrelevant
-        fDeltaTemp  = 0;
-        bActive     = true;     % Needs to be true if delta pressure not constant
+%         fHydrDiam   = -1;       % Needs to be smaller than 0 for the solver
+%                                 % to recognize it as pump
+%         fHydrLength = 0.1;      % Irrelevant
+%         fDeltaTemp  = 0;
+%         bActive     = true;     % Needs to be true if delta pressure not constant
     end
     
     
@@ -30,11 +30,15 @@ classdef pump < solver.matter.linear.procs.f2f
             this.fFlowRateSP = abs(fFlowRateSP);
             this.iDir = sif(fFlowRateSP > 0, 1, -1);
             
-            this.fHydrDiam = -5;
-            this.fHydrLength = 0.1;
+%             this.fHydrDiam = -5;
+%             this.fHydrLength = 0.1;
+            
+            this.supportSolver('hydr', -5, 0.1, true, @this.update);
+            %TODO support that!
+            %this.supportSolver('fct',  @this.solverDeltas);
         end
         
-        function update(this)
+        function fDeltaPressure = update(this)
             % Getting the flow object unless the flow is smaller than the
             % minimum flow
             %keyboard();
@@ -44,18 +48,18 @@ classdef pump < solver.matter.linear.procs.f2f
                 % If the flow rate is smaller than the minimum flow rate,
                 % the pressure delta is maximum
                 %this.fDeltaPressure = this.iDir * this.fMaxDeltaP;
-                this.fDeltaPressure = this.fDeltaPressure + 1000;
+                fDeltaPressure = this.fDeltaPressure + 1000;
                 return;
             end
             
             if oFlowIn.fFlowRate > this.fMaxFlowRate
-                this.fDeltaPressure = this.fDeltaPressure - 100;
+                fDeltaPressure = this.fDeltaPressure - 100;
             else
                 % Changeing the delta pressure of the fan according to the
                 % current flow rate and the flow rate setpoint. 
                 % This is not very accurate...
                 rFactor = abs((this.fFlowRateSP - oFlowIn.fFlowRate) / this.fFlowRateSP);
-                this.fDeltaPressure = this.fDeltaPressure * (1 + rFactor);
+                fDeltaPressure = this.fDeltaPressure * (1 + rFactor);
             end
         end
         

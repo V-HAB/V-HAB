@@ -1,4 +1,4 @@
-classdef valve < solver.matter.iterative.procs.f2f
+classdef valve < matter.procs.f2f
     %VALVE Rudimentary model of a valve to set the flow rate to zero or full
     
     properties
@@ -13,16 +13,6 @@ classdef valve < solver.matter.iterative.procs.f2f
         fHydrDiameter_open;
         fHydrDiam;
         fHydrLength;
-        
-        %Delta pressure, is needed to set the flow rate to zero
-        fDeltaPressure = 0;
-        fDeltaPress    = 0;
-        
-        %Valve does not influence temperature
-        fDeltaTemp = 0;
-        
-        %Is valve active or not? This is needed for one of the solvers
-        bActive = true;
     end
     
     methods
@@ -34,16 +24,10 @@ classdef valve < solver.matter.iterative.procs.f2f
             %   fLength:        hydraulic length of the valve, needed for
             %                   the solver [m]
             
-            this@solver.matter.iterative.procs.f2f(oMT, sName);
+            this@matter.procs.f2f(oMT, sName);
             
             this.bValveOpen = bValveOpen;
             
-            %Default setting of diameter of valve. Through diameter=0, the
-            %valve has no influence on the flow rate calculation of the
-            %solver, which makes sense because the valve is much thiner
-            %and shorter than the pipes around it. So it has in fact no
-            %influence on the gas flow if it is open
-            this.fHydrDiam=0;
             
             %If the valve closes, we need a negative diameter value which
             %means we need a value which is not zero
@@ -52,36 +36,48 @@ classdef valve < solver.matter.iterative.procs.f2f
             %If the valve opens again, we need the default setting back
             this.fHydrDiameter_open=0;
             
+            %Default setting of diameter of valve. Through diameter=0, the
+            %valve has no influence on the flow rate calculation of the
+            %solver, which makes sense because the valve is much thiner
+            %and shorter than the pipes around it. So it has in fact no
+            %influence on the gas flow if it is open
+            this.fHydrDiam=sif(this.bValveOpen, this.fHydrDiameter_open, this.fHydrDiameter_close);
+            
+            
             %Assigning the length of the valve
             this.fHydrLength=fLength;
             
+            
+            
+            this.supportSolver('hydr', this.fHydrDiam, this.fHydrLength, true, @this.update);
+            this.supportSolver('fct',  @this.solverDeltas);
+            this.supportSolver('manual', false);
         end
         
         
         function setValvePos(this, bValveOpen)
             this.bValveOpen = ~~bValveOpen;
+            
+            
+            this.oBranch.setOutdated();
         end
         
-        function update(this)
+        function fDeltaPressure = update(this)
+            oHydr = this.toSolve.hydr;
             
             %if valve closes, assign delta pressure to erase the pressure
             %difference within the branch
             %if valve opens again, set everything back
             if ~this.bValveOpen
                 
-                this.fHydrDiam=-this.fHydrDiameter_close;
-                this.fDeltaPressure=-this.oBranch.coExmes{1}.getPortProperties();
+                oHydr.fHydrDiam=-this.fHydrDiameter_close;
+                fDeltaPressure=-this.oBranch.coExmes{1}.getPortProperties();
                 
             else
-                this.fHydrDiam=this.fHydrDiameter_open;
-                this.fDeltaPressure=0;
+                oHydr.fHydrDiam=this.fHydrDiameter_open;
+                fDeltaPressure=0;
                 
             end
-            
-            % Need to do this because one solver wants fDeltaPress, the
-            % other wants fDeltaPressure... Will be changed in the future.
-            % Hopefully...
-            this.fDeltaPress = this.fDeltaPressure;
             
         end
         

@@ -4,19 +4,11 @@ classdef fan_old < matter.procs.f2f
     %   taken from AIAA-2012-3460 for a fan running at 4630 RMP
     
     properties
-        fDeltaPressure;      % Pressure difference created by the fan in Pa
         fMaxDeltaP;          % Maximum pressure rise in [Pa]
         iDir = 1;            % Direction of flow
        
     end
-    
-    properties (SetAccess = protected, GetAccess = public)
-        fHydrDiam = -1;         % Hydraulic diameter negative to indicate pressure rise
-        fHydrLength = 1;        % This just has to be there because of parent class and solver, value is irrelevant
-        fDeltaTemp = 0;         % This fan model does not include temperature changes
-        bActive = true;         % Must be true so the update function is called from the branch solver
-    end
-    
+        
     methods
         function this = fan_old(oMT, sName, fMaxDeltaP, bReverse)
             this@matter.procs.f2f(oMT, sName);
@@ -26,9 +18,14 @@ classdef fan_old < matter.procs.f2f
             if (nargin >= 4) && islogical(bReverse) && bReverse
                 this.iDir = -1;
             end
+            
+            
+            this.supportSolver('hydr', -1, 1, true, @this.update);
+            this.supportSolver('fct',  @this.solverDeltas);
+            this.supportSolver('manual', true, @this.updateManualSolver);
         end
         
-        function update(this)
+        function fDeltaPressure = update(this)
            
             % Getting the flow object if the flow rate is not zero
             if ~(this.aoFlows(1).fFlowRate == 0)
@@ -36,7 +33,7 @@ classdef fan_old < matter.procs.f2f
             else
                 % If the current flow rate is zero, the pressure rise is at
                 % maximum
-                this.fDeltaPressure = this.fMaxDeltaP;
+                fDeltaPressure = this.fMaxDeltaP;
                 return;
             end
             
@@ -47,7 +44,7 @@ classdef fan_old < matter.procs.f2f
             if oFlowIn.fFlowRate > fMaxFR
                 % If the flow rate is greater than the max flow rate for the
                 % fan, the pressure rise is zero
-                this.fDeltaPressure = 0;
+                fDeltaPressure = 0;
                 
             elseif oFlowIn.fFlowRate < 0
                 % If the flow rate is negative i.e. against the direction
@@ -55,7 +52,7 @@ classdef fan_old < matter.procs.f2f
                 % resistance in the branch
             else
                 % Iterpolation between max delta P and max flow rate
-                this.fDeltaPressure = -1 * this.fMaxDeltaP / fMaxFR * oFlowIn.fFlowRate + this.fMaxDeltaP;
+                fDeltaPressure = -1 * this.fMaxDeltaP / fMaxFR * oFlowIn.fFlowRate + this.fMaxDeltaP;
             end
             
         end
@@ -104,6 +101,11 @@ classdef fan_old < matter.procs.f2f
                 % Iterpolation between max delta P and max flow rate
                 fDeltaPress = -1 * (this.fMaxDeltaP - this.fMaxDeltaP / fMaxFR * fFlowRate);
             end
+            
+        end
+        
+        function fDeltaTemperature = updateManualSolver(this)
+            fDeltaTemperature = this.fDeltaTemperature;
             
         end
     end

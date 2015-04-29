@@ -1,4 +1,4 @@
-classdef pipe < solver.matter.iterative.procs.f2f
+classdef pipe < matter.procs.f2f
     %PIPE Summary of this class goes here
     %   Detailed explanation goes here
 
@@ -16,45 +16,34 @@ classdef pipe < solver.matter.iterative.procs.f2f
 
     end
 
-    properties (SetAccess = public, GetAccess = public)
+    properties (SetAccess = protected, GetAccess = public)
         % Length, diameter in [m]
         fLength   = 0;
         fDiameter = 0;
     end
 
     properties (SetAccess = protected, GetAccess = public)
-        fHydrDiam;
-        fHydrLength;
-        bActive         = false;
-
-        fDeltaTemp      = 0;
-        fDeltaPressure  = 0;
-        fDeltaPress     = 0;
         fRoughness      = 0;
-
-
-        fLastLambda = 0.08;
-
     end
 
     methods
         function  this = pipe(oMT, sName, fLength, fDiameter, fRoughness)
             %this@solver.basic.matter.procs.f2f(oMT, sName);
-            this@solver.matter.iterative.procs.f2f(oMT, sName);
+            this@matter.procs.f2f(oMT, sName);
             %this@matter.procs.f2f(oMT, sName);
 
             this.fLength   = fLength;
             this.fDiameter = fDiameter;
-
-            % Linear solver
-            this.fHydrDiam   = fDiameter;
-            this.fHydrLength = fLength;
+            
+            this.supportSolver('hydr', fDiameter, fLength);
+            this.supportSolver('fct',  @this.solverDeltas);
+            this.supportSolver('manual', false);
+            
 
             if nargin == 5
                this.fRoughness = fRoughness;
             end
-
-
+            
 
             %this.toSolver.hydraulic
             %this.oSolvers
@@ -65,7 +54,9 @@ classdef pipe < solver.matter.iterative.procs.f2f
             % method needs access to this obj e.g. for roughness etc
         end
 
-        function update(this)
+        function fDeltaPressure = update(this)
+            %TODO not an active component, delete this method?
+            
             bZeroFlows = 0;
             for k = 1:length(this.aoFlows)
                 if this.aoFlows(1,k).fFlowRate == 0
@@ -130,10 +121,9 @@ classdef pipe < solver.matter.iterative.procs.f2f
 
                 fFlowSpeed = oFlowIn.fFlowRate/(fDensity*pi*0.25*this.fHydrDiam^2);
 
-                this.fDeltaPressure = pressure_loss_pipe(this.fHydrDiam, this.fHydrLength,...
+                fDeltaPressure = pressure_loss_pipe(this.fHydrDiam, this.fHydrLength,...
                                 fFlowSpeed, fDynamicViscosity, fDensity, this.fRoughness, 0);
 
-                this.fDeltaPress = this.fDeltaPressure;
             end
 
 
@@ -161,7 +151,7 @@ classdef pipe < solver.matter.iterative.procs.f2f
             % No pressure at all ... normally just return, drop zero
 % <<<<<<< Updated upstream
             if fAveragePressure == 0
-                fDeltaPress = 1; % 0 not good for solver ... :)
+                fDeltaPress = 0; % no pressure? -> no pressure drop!
                                  % FR (kg/s) should be small compared to
                                  % drop, so send that?
 % =======
@@ -210,6 +200,8 @@ classdef pipe < solver.matter.iterative.procs.f2f
             try
                 fDensity = this.oMT.calculateDensity(oFlowIn);
             catch oErr
+                %TODO solver should handle that, could also be an issue if
+                %     temperature is zero
                 fMolMass = sif(oFlowIn.fMolMass > 0, oFlowIn.fMolMass, 1);
                 %CHECK e.g. fRoh - used for fV and Re - so doesn't really make
                 %      sense to include. Need another way to calculate Re/V?
