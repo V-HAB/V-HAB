@@ -562,7 +562,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
 
 
-        function seal(this)
+        function seal(this, oData)
             if ~this.oStore.bSealed
                 this.coProcsEXME = struct2cell(this.toProcsEXME)';
                 this.iProcsEXME  = length(this.coProcsEXME);
@@ -581,9 +581,6 @@ classdef phase < base & matlab.mixin.Heterogeneous
                         this.coProcsP2Pflow{this.iProcsP2Pflow} = this.coProcsEXME{iE}.aoFlows(1);
                     end
                 end
-
-                %CHECK update here or not?
-                %this.update();
             end
         end
     end

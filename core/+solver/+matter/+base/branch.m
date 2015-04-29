@@ -132,20 +132,8 @@ classdef branch < base & event.source
             end
             
             % No pressure? Distribute equally.
-            if nargin < 3 || isempty(afPressures)
-                fPressureDiff = (this.oBranch.coExmes{1}.getPortProperties() - this.oBranch.coExmes{2}.getPortProperties());
-                
-                % Each flow proc produces the same pressure drop, the sum
-                % being the actual pressure difference.
-                %NOTE if e.g. 'right' pressure higher then left, pressure
-                %     diffs here become negative, as if each component
-                %     would be a fan producing a pressure rise. But this is
-                %     only to cope with initial states until solver
-                %     realizes that matter would actually flow the other
-                %     direction.
-                afPressures = ones(1, this.oBranch.iFlowProcs) * fPressureDiff / this.oBranch.iFlowProcs;
-                
-                if this.fFlowRate < 0, afPressures = -1 * afPressures; end;
+            if nargin < 3 % || isempty(afPressures)
+                afPressures = [];
             end
             
             

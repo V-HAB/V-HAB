@@ -468,7 +468,11 @@ classdef branch < base & event.source
             
             if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
             
-            % Connected phases have to do a massupdate
+            
+            
+            % Connected phases have to do a massupdate before we set the
+            % new flow rate - so the mass for the LAST time step, with the
+            % old flow rate, is actually moved from tank to tank.
             for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
                 this.coExmes{iE}.oPhase.massupdate();
             end
@@ -478,8 +482,38 @@ classdef branch < base & event.source
             this.fFlowRate = fFlowRate;
             this.bOutdated = false;
             
+            
+            % The following checks used to be in the base solver, moved
+            % here because ... hmm, that seems to make more sense?
+            
+            % No temperature vector given? Create zeros - no temp change
+            if nargin < 4 || isempty(afTemp)
+                afTemp = zeros(1, this.iFlowProcs);
+            end
+            
+            
+            % No pressure? Distribute equally.
+            if nargin < 3 || isempty(afPressure)
+                fPressureDiff = (this.coExmes{1}.getPortProperties() - this.coExmes{2}.getPortProperties());
+                
+                % Each flow proc produces the same pressure drop, the sum
+                % being the actual pressure difference.
+                %NOTE if e.g. 'right' pressure higher then left, pressure
+                %     diffs here become negative, as if each component
+                %     would be a fan producing a pressure rise. But this is
+                %     only to cope with initial states until solver
+                %     realizes that matter would actually flow the other
+                %     direction.
+                afPressure = ones(1, this.iFlowProcs) * fPressureDiff / this.iFlowProcs;
+                
+                if this.fFlowRate < 0, afPressure = -1 * afPressure; end;
+            end
+            
+            
+            
             % Update data in flows
             this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure, afTemp);
+            
         end
     
         
