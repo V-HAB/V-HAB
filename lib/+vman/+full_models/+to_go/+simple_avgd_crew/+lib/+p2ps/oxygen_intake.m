@@ -35,10 +35,10 @@ classdef oxygen_intake < matter.procs.p2ps.flow
             [ afFlowRate, mrPartials ] = this.getInFlows();
             
             % Nothing flows in, so nothing absorbed ...
-            if isempty(afFlowRate) && (this.fRequestedOxygenIntake > 0)
+            if isempty(afFlowRate)
                 this.setMatterProperties(0, this.arExtractPartials);
                 
-                this.warn('update', 'Cannot breathe ... no flow!');
+                if this.fRequestedOxygenIntake > 0, this.warn('update', 'Cannot breathe ... no flow!'); end;
                 
                 return;
             end
