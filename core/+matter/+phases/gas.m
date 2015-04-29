@@ -55,7 +55,8 @@ classdef gas < matter.phase
         % Source: Important new Values of the Physical Constants of 1986, Vapour
         % Pressure Formulations based on ITS-90, and Psychrometer Formulae. In: Z. Meteorol.
         % 40, 5, S. 340-344, (1990)
-
+        %TODO don't like the getter method. Slow! RH should be calculated
+        %     in .update() method and stored on this.rRelHumidity!
         function rRelHumidity = get.rRelHumidity(this)
             if this.afMass(this.oMT.tiN2I.H2O)
                 fSaturationVapourPressure=6.11213 * exp(17.62 * (this.fTemp-273.15) / (243.12 + (this.fTemp-273.15))) * 100; % calculate saturation vapour pressure [Pa]; MAGNUS Formula; validity: -45???C <= T <= 60???C, for water

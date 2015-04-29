@@ -96,10 +96,11 @@ classdef manip < base
             fTimeStep = this.getTimeStep();
             
             if fTimeStep > 0
-                %CHECK deactivated for now .... e.g. weird for partials
-                %manip.
+                %CHECK *contents of phase also included in FR, with 1s TS*
+                %      deactivate that? change? right now, mass to flow
+                %      rate with fixed 1s time step ... make configurable?
+                %      exclude for stationary manips?
                 mrInPartials  = [ mrInPartials;  this.oPhase.arPartialMass ];
-                %CHECK does that make sense? Treat the stored mass as a flow?
                 afInFlowrates = [ afInFlowrates; this.oPhase.fMass / 1 ]; %fTimeStep ];
             end
         end

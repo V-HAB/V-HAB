@@ -7,6 +7,8 @@ classdef branch < solver.matter.base.branch
 %
 %TODO
 %   - check mass flows into both phases -> take into account?
+%   - check oPhases --> bSynced could probably be deactivated if the only
+%     other connected branch is the one we're aligned with?
 %   - own time step?
     
     properties (SetAccess = protected, GetAccess = public)
