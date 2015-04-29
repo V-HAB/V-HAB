@@ -347,10 +347,17 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
                 % For all masses - mass * heat capacity - helper
                 afMassTimesCP = mfInflowDetails(:, 1) .* mfInflowDetails(:, 3);
-
+                
                 % New temperature
-                %keyboard();
+                fOldTemp   = this.fTemp;
                 this.fTemp = sum(afEnergy) / sum(afMassTimesCP);
+                
+                
+                if isnan(this.fTemp)
+                    this.warn('massupdate', 'TEMPERATURE IS NAN!!! Store: %s, Phase: %s - old temp used. Maybe phase was empty?', this.oStore.sName, this.sName);
+                    this.fTemp = fOldTemp;
+                end
+
             end
 
             % Logic for deriving new temperature:
