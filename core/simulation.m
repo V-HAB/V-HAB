@@ -119,7 +119,10 @@ classdef simulation < base & event.source
             end
             
             if (nargin < 2) || isempty(fMinStep), fMinStep = 1e-8; end;
-            
+
+
+            %%% Global objects and settings for constructors
+
             if ~isfield(tData, 'oTimer')
                 tData.oTimer = event.timer(fMinStep);
             end
@@ -129,6 +132,30 @@ classdef simulation < base & event.source
                 tData.oMT = matter.table();
                 disp(['Matter Table created in ', num2str(toc(hTimer)), ' seconds.'])
             end
+            
+            % Basic parameters can be stored here. Reference systems by
+            % their constructor names.
+            if ~isfield(tData, 'oParams'), tData.oParams = containers.Map(); end;
+            
+            
+            %%% Global parameters to tune solving process.
+            
+            % Used to adjust the rMaxChange parameter in (gas) phases. Can
+            % still be set manually (after .seal() was called). Sets the
+            % rMaxChange value according to the volume multiplied by this
+            % parameter here.
+            tData.rUpdateFrequency = 1;
+            
+            %  For each (iterative) solver, a dampening value can be set in
+            %  the constructor which is multiplied with this value
+            tData.rSolverDampening = 1;
+            
+            %TODO increase accuracy/fidelity of solvers (i.e. shorter time
+            %     steps, lower solving error allowed, etc).
+            tData.rSolverFidelity  = 1;
+            
+            
+            %%% Initialize root system, simulation parameters
             
             % Create data object
             this.oData = data(tData);
