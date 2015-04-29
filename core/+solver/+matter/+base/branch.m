@@ -118,9 +118,18 @@ classdef branch < base & event.source
             
             this.fLastUpdate = this.oBranch.oContainer.oTimer.fTime;
             
-            
             if nargin >= 2
+
+                % If mass in inflowing tank is smaller than the precision
+                % ofthe simulation, set flow rate to zero
+                oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
+
+                if tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
+                    fFlowRate = 0;
+                end
+
                 this.fFlowRate = fFlowRate;
+
             end
             
             this.bRegisteredOutdated = false;
