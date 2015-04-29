@@ -42,6 +42,9 @@ classdef gas < matter.phase
             
             this@matter.phase(oStore, sName, tfMasses, fTemp);
             
+            % Get volume from 
+            if nargin < 4 || isempty(fVolume), fVolume = oStore.fVolume; end;
+            
             this.fVolume  = fVolume;
             this.fDensity = this.fMass / this.fVolume;
         end
