@@ -18,22 +18,6 @@ classdef setup < simulation
             % Creating the root object
             oExample = tutorials.heat_exchanger.systems.Example(this.oRoot, 'Example');
             
-            %% Ignore the contents of this section
-            % Set a veeery high fixed time step - the solver will still be
-            % called by the phase update methods!
-            %oB1.fFixedTS = 10000;
-            
-%             aoPhases = this.oRoot.toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases;
-%             aoPhases(1).bSynced = true;
-            
-            % Set fixed time steps for all phases, synced. Means that every
-            % tick each phase and both branches are solved.
-            % Decrease if flow rates unstable, increase if too slow. If un-
-            % stable AND too slow, buy a new computer.
-%             aoPhases = this.oRoot.toChildren.Example.toStores.Tank_1.aoPhases;
-%             aoPhases(1).fFixedTS = 0.5;
-%             aoPhases = this.oRoot.toChildren.Example.toStores.Tank_2.aoPhases;
-%             aoPhases(1).fFixedTS = 0.5;
             
             %% Logging
             % Creating a cell setting the log items
@@ -41,21 +25,24 @@ classdef setup < simulation
                 % System timer
                 'oData.oTimer.fTime';                                                   % 1
                 
-%                 % Add other parameters here
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fPressure';             % 2
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fPressure';             % 4
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
-%                 'toChildren.Example.toChildren.SubSystem.aoBranches(1).fFlowRate';      % 6
-%                 'toChildren.Example.toChildren.SubSystem.aoBranches(2).fFlowRate';      % 7
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(1).fPressure';   % 8
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(1).fMass';       % 9
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(2).fPressure';   % 10
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(2).fMass';       % 11
-%                 'toChildren.Example.toChildren.SubSystem.aoBranches(2).fFlowRate';                 % 12
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)';%13
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)';%14
-%                 
+                % Add other parameters here
+                'toChildren.Example.toStores.Tank_1.aoPhases(1).fPressure';             % 2
+                'toChildren.Example.toStores.Tank_2.aoPhases(1).fPressure';             
+                'toChildren.Example.toStores.Tank_3.aoPhases(1).fPressure';             % 4
+                'toChildren.Example.toStores.Tank_4.aoPhases(1).fPressure';             
+                'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';                 % 6
+                'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
+                'toChildren.Example.toStores.Tank_3.aoPhases(1).fMass';                 % 8
+                'toChildren.Example.toStores.Tank_4.aoPhases(1).fMass';
+                'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemperature';          % 10
+                'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemperature';
+                'toChildren.Example.toStores.Tank_3.aoPhases(1).fTemperature';          % 12
+                'toChildren.Example.toStores.Tank_4.aoPhases(1).fTemperature';
+                'toChildren.Example.toProcsF2F.HeatExchanger_1.fDeltaTemp';             % 14
+                'toChildren.Example.toProcsF2F.HeatExchanger_2.fDeltaTemp';
+                'toChildren.Example.aoBranches(1).fFlowRate';                           % 16
+                'toChildren.Example.aoBranches(2).fFlowRate'; 
+                
                 
                 };
             
@@ -77,35 +64,43 @@ classdef setup < simulation
             figure('name', 'Tank Pressures');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [2 4 8]));
-            legend('Tank 1', 'Tank 2', 'Filter');
+            plot(this.mfLog(:,1), this.mfLog(:, 2:5));
+            legend('Tank 1', 'Tank 2', 'Tank 3', 'Tank_4');
             ylabel('Pressure in Pa');
             xlabel('Time in s');
             
             figure('name', 'Tank Masses');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [3 5 9 11]));
-            legend('Tank 1', 'Tank 2', 'Filter', 'Absorber');
+            plot(this.mfLog(:,1), this.mfLog(:, 6:9 ));
+            legend('Tank 1', 'Tank 2', 'Tank 3', 'Tank_4');
             ylabel('Mass in kg');
             xlabel('Time in s');
             
-            figure('name', 'Flow Rate');
+            figure('name', 'Tank Temperatures');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [6 7 12]));
-            legend('In', 'Out', 'Filter Flow');
+            plot(this.mfLog(:,1), this.mfLog(:, 10:13 ));
+            legend('Tank 1', 'Tank 2', 'Tank 3', 'Tank_4');
+            ylabel('Temperature in K');
+            xlabel('Time in s');
+            
+            figure('name', 'Tank Temperatures');
+            hold on;
+            grid minor;
+            plot(this.mfLog(:,1), this.mfLog(:, 14:15 ));
+            legend('HX Flow 1', 'HX Flow 2');
+            ylabel('Temperature in K');
+            xlabel('Time in s');
+            
+            figure('name', 'Flow Rates');
+            hold on;
+            grid minor;
+            plot(this.mfLog(:,1), this.mfLog(:, 16:17));
+            legend('Gas Branch', 'Liquid Branch');
             ylabel('flow rate [kg/s]');
             xlabel('Time in s');
             
-            figure('name', 'O2 Percentages');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [13 14]) * 100);
-            legend('Tank 1', 'Tank 2');
-            ylabel('O2 [%]');
-            xlabel('Time in s');
-
             figure('name', 'Time Steps');
             hold on;
             grid minor;

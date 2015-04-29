@@ -1,7 +1,12 @@
 classdef Example < vsys
-    %EXAMPLE Example simulation for a system with subsystems in V-HAB 2.0
-    %   TODO Insert proper description here
-    
+    %EXAMPLE Example simulation for a system with a heat exchanger in V-HAB 2.0
+    %   This system has four stores with one phase each. There are two gas
+    %   phases and two liquid phases. The gas phases and the liquid phases
+    %   are connected to each other with two branches. A heat exchanger
+    %   provides two f2f processors, one of each is integrated into each of
+    %   the two branches. The flow through the gas branch is driven by the
+    %   pressure difference between the two tanks. The flow through the
+    %   liquid branch is set by using a manual solver branch. 
     properties
         
     end
@@ -26,13 +31,13 @@ classdef Example < vsys
             this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1));
             
             % Adding a phase to the store 'Tank_1', 1 m^3 air
-            oGasPhase = this.toStores.Tank_1.createPhase('SuitAtmosphere', 2);
+            oGasPhase = this.toStores.Tank_1.createPhase('air', 2);
             
             % Creating a second store, volume 1 m^3
             this.addStore(matter.store(this.oData.oMT, 'Tank_2', 1));
             
             % Adding a phase to the store 'Tank_2', 2 m^3 air
-            oAirPhase = this.toStores.Tank_2.createPhase('SuitAtmosphere', 1);
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 1);
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
