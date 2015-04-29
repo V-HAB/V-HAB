@@ -367,7 +367,16 @@ classdef simulation < base & event.source
             try
                 this.mfLog(this.iLogIdx, :) = this.logData();
             catch
-                this.throw('simulation','Error trying to log this.oRoot.%s. \nPlease check your logging configuration in setup.m!', this.csLog{iL});
+                % Don't know where in anonymous log function the error
+                % happend, so go through logs one by one - one of them
+                % should throw an error!
+                for iL = this.aiLog
+                    try
+                        eval([ 'this.oRoot.' this.csLog{iL} ';' ]);
+                    catch oErr
+                        this.throw('simulation','Error trying to log this.oRoot.%s.\nError Message: %s\nPlease check your logging configuration in setup.m!', this.csLog{iL}, oErr.message);
+                    end
+                end
             end
             %for iL = this.aiLog
             %    this.mfLog(this.oTimer.iTick + 1, iL) = eval([ 'this.oRoot.' this.csLog{iL} ]);
