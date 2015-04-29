@@ -222,6 +222,13 @@ classdef timer < base
             % Set time step for a specific call back. Protected method, is
             % returned upon .bind!
             
+            
+            
+            % Find dependent timed callbacks (when timer executes)
+            %this.abDependent = this.afTimeStep == -1;
+            this.abDependent(iCB) = (fTimeStep == -1);
+            
+            
             if ~isempty(fTimeStep) % && fTimeStep ~= 0
                 if fTimeStep < 0, fTimeStep = 0; end;
                 
@@ -231,10 +238,6 @@ classdef timer < base
                 this.afTimeStep(iCB) = 0;%this.fTimeStep;
             end
             
-            
-            % Find dependent timed callbacks (when timer executes)
-            %this.abDependent = this.afTimeStep == -1;
-            this.abDependent(iCB) = (fTimeStep == -1);
         end
     end
 end
