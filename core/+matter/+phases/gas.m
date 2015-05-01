@@ -151,9 +151,22 @@ classdef gas < matter.phase
                 fMassToPressure = 0;
             end
         end
+
+
         function setProperty(this, sAttribute, xValue)
             this.(sAttribute) = xValue;
         end
+
+
+        function seal(this, oData)
+
+            seal@matter.phase(this, oData);
+
+            % Auto-Set rMaxChange.
+            this.rMaxChange = sif(this.fVolume <= 0.25, this.fVolume, 0.25) * oData.rUpdateFrequency;
+
+        end
+
     end
     
     
