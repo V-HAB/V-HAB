@@ -1,4 +1,4 @@
-function arrangeWindows()
+function arrangeWindows(aWindows)
 %ARRANGEWINDOWS Arranges figure windows for better user experience
 %   This function arranges any number of windows between 1 and 15 in a 
 %   regular pattern for any screen size.
@@ -9,7 +9,9 @@ function arrangeWindows()
 set(groot, 'ScreenPixelsPerInch', 96);
 
 % Getting the number of windows
-aWindows = flipud(get(0,'Children'));
+if nargin < 1 || isempty(aWindows)
+    aWindows = flipud(get(0,'Children'));
+end
 iNumberOfWindows = length(aWindows);
 
 % if there are 3 windows or less, do nothing.
