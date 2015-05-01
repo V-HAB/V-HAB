@@ -399,6 +399,18 @@ classdef simulation < base & event.source
                 end
             end
         end
+
+        function saveFullObj(this, sDir)
+
+            this.readData();
+
+            oSimObj = this;
+            sMat    = sif(isempty(this.sStorageName), this.sStorageDir, this.sStorageName);
+
+            save([ 'data/full/' sDir '/' sMat '.mat' ], 'oSimObj');
+
+        end
+
     end
     
     
