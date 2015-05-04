@@ -3,11 +3,7 @@ classdef manual < handle
     %   Detailed explanation goes here
     
     properties
-        oProc; 
-        
-        bActive           = false;
-        fDeltaTemperature = 0;
-        
+        bActive = false;
         updateProperties;
     end
     
@@ -22,8 +18,9 @@ classdef manual < handle
         end
         
         
-        function updateDeltaTemperature(this)
-            this.fDeltaTemperature = this.updateProperties();
+        function update(this)
+            %TODO Insert something here that can update the fHeatFlow
+            %property of the f2f-processors.
             
         end
     end

@@ -121,7 +121,7 @@ classdef branch < base & event.source
             end
         end
         
-        function update(this, fFlowRate, afPressures, afTemps)
+        function update(this, fFlowRate, afPressures)
             % Inherited class can overload .update and write this.fFlowRate
             % and subsequently CALL THE PARENT METHOD by
             % update@solver.matter.base.branch(this);
@@ -155,12 +155,6 @@ classdef branch < base & event.source
             
             this.bRegisteredOutdated = false;
             
-            
-            % No temperature vector given? Create zeros - no temp change
-            if nargin < 4 || isempty(afTemps)
-                afTemps = zeros(1, this.oBranch.iFlowProcs);
-            end
-            
             % No pressure given? Just make sure we have the variable
             % 'afPressures' set, the parent class knows what to do. In this
             % case it will distribute the pressure drops equally onto all 
@@ -168,6 +162,12 @@ classdef branch < base & event.source
             if nargin < 3
                 afPressures = [];
             end
+            
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Jonas will enter the code for temperature calculation here. %
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            
             
             
             this.setBranchFR(this.fFlowRate, afPressures, afTemps);

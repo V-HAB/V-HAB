@@ -61,9 +61,6 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         % Sealed?
         bSealed = false;
         
-        
-        
-        
         % Supported sovling mechanisms.
         %TODO should access be protected, and obj passed to solver another
         %     way (instead of solver directly accessing it)?

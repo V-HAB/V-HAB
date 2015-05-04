@@ -1,4 +1,10 @@
 classdef branch < solver.matter.base.branch
+     %BRANCH Linear hydraulic solver branch for matter flows
+     %  TODO Insert nice description here   
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %-- Properties -------------------------------------------------------%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     properties (SetAccess = public, GetAccess = public)
         rMaxChange = 0.030;
@@ -23,11 +29,9 @@ classdef branch < solver.matter.base.branch
         
     end
     
-    properties (SetAccess = private, GetAccess = public)
-        
-    end
-    
-    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %-- Methods ----------------------------------------------------------%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     methods
         function this = branch(oBranch, rMaxChange, iRemChange)
@@ -35,8 +39,6 @@ classdef branch < solver.matter.base.branch
             
             if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end;
             if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end;
-            
-            
             
         end
     end
@@ -156,10 +158,6 @@ classdef branch < solver.matter.base.branch
                 if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end;
 
                 this.setTimeStep(fNewStep);
-                %this.setTimeStep(10);
-    %             disp(this.rFlowRateChange);
-    %             disp(fNewStep);
-    %             disp('---------');
                 this.fTimeStep = fNewStep;
             end
             

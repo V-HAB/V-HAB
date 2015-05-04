@@ -484,7 +484,7 @@ classdef branch < base & event.source
     % Methods provided to a connected subsystem branch
     methods (Access = protected)
         
-        function setFlowRate(this, fFlowRate, afPressure, afTemp)
+        function setFlowRate(this, fFlowRate, afPressure)
             % Set flowrate for all flow objects
             
             if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
@@ -507,11 +507,12 @@ classdef branch < base & event.source
             % The following checks used to be in the base solver, moved
             % here because ... hmm, that seems to make more sense?
             
-            % No temperature vector given? Create zeros - no temp change
-            if nargin < 4 || isempty(afTemp)
-                afTemp = zeros(1, this.iFlowProcs);
-            end
-            
+            %TODO use fHeatFlows to calculate temp changes!
+%             for iF = 1:this.iFlowProcs
+%                 if this.aoFlowProcs(iF).fHeatFlow ~= 0
+%                     this.warn('setFlowRate', 'Branch %s: Heat flow for flow comp %i not zero, but not implemented yet in branch!', this.sName, iF);
+%                 end
+%             end
             
             % No pressure? Distribute equally.
             if nargin < 3 || isempty(afPressure)
@@ -533,7 +534,7 @@ classdef branch < base & event.source
             
             
             % Update data in flows
-            this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure, afTemp);
+            this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure);
             
         end
     

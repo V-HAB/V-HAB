@@ -92,7 +92,7 @@ classdef branch < solver.matter.base.branch
     
     methods (Access = protected)
         
-        %% Update function, called directly by timer
+        %% Update functions, called directly by timer
         function update(this)
 
             if this.oBranch.oContainer.oTimer.fTime < 0
@@ -112,7 +112,7 @@ classdef branch < solver.matter.base.branch
             
             % Actually compute the new flow rate and the associated delta
             % pressures as well as delta temperatures.
-            [ fFlowRate, afDeltaP, afDeltaT ] = this.solveFlowRate();
+            [ fFlowRate, afDeltaP ] = this.solveFlowRate();
             
             % See base branch, same check here - if input phase nearly
             % empty, just set flow rate to zero
@@ -141,7 +141,7 @@ classdef branch < solver.matter.base.branch
         
         
         %% Solve branch
-        function [ fFlowRate, afDeltaP, afDeltaT ] = solveFlowRate(this)
+        function [ fFlowRate, afDeltaP ] = solveFlowRate(this)
             % Calculates flow rate for a branch. Flow rate fFlowRate here
             % is NOT signed (negative/positive depending on direction, left
             % to right is positive), therefore iDir value maintained.
@@ -156,11 +156,9 @@ classdef branch < solver.matter.base.branch
             % Data matrix - rows equals amount of flow procs minus two (the
             % EXMEs), columns are the pressure drops and temperature
             % changes returned by the components (f2f processors)
-            mfData = zeros(oBranch.iFlowProcs, 2);
+            mfData = zeros(oBranch.iFlowProcs, 1);
             
             afDeltaP = [];
-            afDeltaT = [];
-            
             
             %%% Old flow rate, pressure differences etc
             fFlowRate = oBranch.fFlowRate;
@@ -202,7 +200,7 @@ classdef branch < solver.matter.base.branch
                 
                 % Create array with indices of flows in flow direction for 
                 % update method
-                aiFlows = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
+                %aiFlows = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
                 
                 % Preset pressure drop to zero, set initial flow rate
                 fPressDrop = 0;
@@ -239,12 +237,12 @@ classdef branch < solver.matter.base.branch
                     
                     % See above
                     fPressDrop = 0;
-                    aiFlows    = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
+                    %aiFlows    = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
                     %TODO Do solverInit again for molar masses etc?
                     
                     for iP = oBranch.iFlowProcs:-1:1
                         
-                        [ mfData(iP, 1), mfData(iP, 2) ] = this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
+                        mfData(iP, 1) = this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
                         
                         fPressDrop = fPressDrop + mfData(iP, 1);
                         
@@ -312,7 +310,7 @@ classdef branch < solver.matter.base.branch
                     
                     % Gather the information from each processor
                     
-                    [ mfData(iP, 1), mfData(iP, 2) ] = this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
+                    mfData(iP, 1) = this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
                     
                     fPressDrop = fPressDrop + mfData(iP, 1);
                     
@@ -345,7 +343,7 @@ classdef branch < solver.matter.base.branch
                     for iP = 1:oBranch.iFlowProcs
                         
                         %TODO Should probably reset the molmass etc
-                        [ mfData(iP, 1), mfData(iP, 2) ] = this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
+                        mfData(iP, 1) = this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
                         
                         fPressDrop = fPressDrop + mfData(iP, 1);
                         
@@ -502,7 +500,7 @@ classdef branch < solver.matter.base.branch
                 % of the direction, if it is positive.
                 for iP = aiProcs
                     % Gather the information from each processor
-                    [ mfData(iP, 1), mfData(iP, 2) ] = this.aoSolverProps(iP).calculateDeltas(iDir * fTmpFlowRate);
+                    mfData(iP, 1) = this.aoSolverProps(iP).calculateDeltas(iDir * fTmpFlowRate);
                 end
                 
                 
@@ -571,7 +569,7 @@ classdef branch < solver.matter.base.branch
                     % Get other pressure diff, preset the indices vectors
                     %fPressDiff = sif(iDir > 0, fPressDiffL2R, fPressDiffR2L);
                     aiProcs    = sif(iDir > 0, 1:oBranch.iFlowProcs, oBranch.iFlowProcs:-1:1);
-                    aiFlows    = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
+                    %aiFlows    = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
                     
                     % Set initial stuff like Cp etc, DON'T set pressures!
                     %%REORG%%oBranch.aoFlows(aiFlows).setSolverInit(iDir * fFlowRate, oExmeL, oExmeR, true);
@@ -582,7 +580,7 @@ classdef branch < solver.matter.base.branch
                 % Now redo the solverDeltas
                 for iP = aiProcs
                     % Gather the information from each processor
-                    [ mfData(iP, 1), mfData(iP, 2) ] = this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
+                    mfData(iP, 1) = this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
                 end
                 
                 % As always - check Inf!
@@ -601,7 +599,7 @@ classdef branch < solver.matter.base.branch
                     % Reverted stuff and set Cp/molar/... but not pressures
                     %fPressDiff = sif(iDir > 0, fPressDiffL2R, fPressDiffR2L);
                     aiProcs    = sif(iDir > 0, 1:oBranch.iFlowProcs, oBranch.iFlowProcs:-1:1);
-                    aiFlows    = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
+                    %aiFlows    = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
 
                     %%REORG%%oBranch.aoFlows(aiFlows).setSolverInit(iDir * fFlowRate, oExmeL, oExmeR, true);
                     
@@ -664,15 +662,12 @@ classdef branch < solver.matter.base.branch
             if fFlowRate < this.oBranch.oContainer.oTimer.fTimeStep
                 mfData = zeros(oBranch.iFlowProcs, 2);
                 afDeltaP = iDir * mfData(:, 1);
-                afDeltaT = iDir * mfData(:, 2);
                 fFlowRate = 0;
             elseif ~isempty(mfData)
                 afDeltaP  = iDir * mfData(:, 1);
-                afDeltaT  = iDir * mfData(:, 2);
                 fFlowRate = iDir * fFlowRate;
             else
                 afDeltaP = [];
-                afDeltaT = [];
             end
             
             
