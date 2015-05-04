@@ -135,7 +135,7 @@ classdef branch < solver.matter.base.branch
             this.calculateTimeStep(fFlowRate);
             
             % Sets new flow rate
-            update@solver.matter.base.branch(this, fFlowRate, afDeltaP, afDeltaT);
+            update@solver.matter.base.branch(this, fFlowRate, afDeltaP);
             
         end
         

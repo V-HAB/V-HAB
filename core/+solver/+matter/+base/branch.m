@@ -168,9 +168,9 @@ classdef branch < base & event.source
             % Jonas will enter the code for temperature calculation here. %
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
+            afTemperatures = zeros(1, this.oBranch.iFlowProcs);
             
-            
-            this.setBranchFR(this.fFlowRate, afPressures, afTemps);
+            this.setBranchFR(this.fFlowRate, afPressures, afTemperatures);
             
             this.bUpdateTrigger = true;
             this.trigger('update');

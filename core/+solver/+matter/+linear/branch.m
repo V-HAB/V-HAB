@@ -2,7 +2,7 @@ classdef branch < solver.matter.base.branch
      %BRANCH Linear hydraulic solver branch for matter flows
      %  TODO Insert nice description here   
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %-- Properties -------------------------------------------------------%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -29,11 +29,12 @@ classdef branch < solver.matter.base.branch
         
     end
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %-- Methods ----------------------------------------------------------%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     methods
+        %% Constructor
         function this = branch(oBranch, rMaxChange, iRemChange)
             this@solver.matter.base.branch(oBranch, [], 'hydraulic');
             
@@ -44,6 +45,7 @@ classdef branch < solver.matter.base.branch
     end
     
     methods (Access = protected)
+        %% Branch update method
         function update(this)
             if this.oBranch.oContainer.oTimer.fTime < this.fLastUpdate
                 return;
