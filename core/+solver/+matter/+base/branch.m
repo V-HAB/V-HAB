@@ -1,14 +1,16 @@
 classdef branch < base & event.source
-%
-%
-%TODO
-%   - fFlowRate protected, not prive, and add setter?
-%   - check - setTimeStep means solver .update() method is executed by the
-%     timer during the 'normal' update call for e.g. phases etc.
-%     If a phase triggers an solver .update, that happens in the post tick
-%     loop.
-%     Any problems with that? Possible that solver called multiple times at
-%     a tick - shouldn't be a problem right?
+    %BRANCH Basic solver branch class
+    %   This is the base class for all matter flow solvers in V-HAB, all
+    %   other solver branch classes inherit from this class. 
+    %
+    %TODO
+    %   - fFlowRate protected, not prive, and add setter?
+    %   - check - setTimeStep means solver .update() method is executed by the
+    %     timer during the 'normal' update call for e.g. phases etc.
+    %     If a phase triggers an solver .update, that happens in the post tick
+    %     loop.
+    %     Any problems with that? Possible that solver called multiple times at
+    %     a tick - shouldn't be a problem right?
 
     properties (SetAccess = private, GetAccess = private)
         %TODO how to serialize function handles? Do differently in the
@@ -44,7 +46,7 @@ classdef branch < base & event.source
         % Solving mechanism supported by the solver
         sSolverType;
         
-        % Cached solving objs (from [procs].toSolver.hydr)
+        % Cached solving objects (from [procs].toSolver.hydraulic)
         aoSolverProps;
     end
     
@@ -60,10 +62,10 @@ classdef branch < base & event.source
                 % Cache the solver objects for quick access later
                 %TODO re-cache if e.g. branch re-connected to another IF!
                 this.aoSolverProps = solver.matter.base.type.(this.sSolverType).empty(0, size(this.oBranch.aoFlowProcs, 2));
-
+                
                 for iP = 1:length(this.oBranch.aoFlowProcs)
                     if ~isfield(this.oBranch.aoFlowProcs(iP).toSolve, this.sSolverType)
-                        this.throw('ctor', 'Flow Proc %i does not support the %s solving method!', iP, this.sSolverType);
+                        this.throw('branch:constructor', 'F2F processor ''%s'' does not support the %s solving method!', this.oBranch.aoFlowProcs(iP).sName, this.sSolverType);
                     end
 
                     this.aoSolverProps(iP) = this.oBranch.aoFlowProcs(iP).toSolve.(this.sSolverType);
@@ -107,16 +109,8 @@ classdef branch < base & event.source
     
     methods (Access = protected)
         function this = registerUpdate(this, ~)
-            %keyboard();
-            %disp(['Branch - set Update at ' num2str(this.oBranch.oContainer.oTimer.iTick) ]);
-            
-            %CHECK1 deactivated - check done by branch itself!
-            %if this.bRegisteredOutdated, this.warn('registerUpdate', 'see solver.matter.base.branch method registerUpdated, deactviated check for bRegisteredOutdated, is that ok?'); end;
-            
-            %if ~this.bRegisteredOutdated
-                this.oBranch.oContainer.oTimer.bindPostTick(@this.update);
-                this.bRegisteredOutdated = true;
-            %end
+            this.oBranch.oContainer.oTimer.bindPostTick(@this.update);
+            this.bRegisteredOutdated = true;
         end
         
         
@@ -167,8 +161,11 @@ classdef branch < base & event.source
                 afTemps = zeros(1, this.oBranch.iFlowProcs);
             end
             
-            % No pressure? Distribute equally.
-            if nargin < 3 % || isempty(afPressures)
+            % No pressure given? Just make sure we have the variable
+            % 'afPressures' set, the parent class knows what to do. In this
+            % case it will distribute the pressure drops equally onto all 
+            % flows.
+            if nargin < 3
                 afPressures = [];
             end
             

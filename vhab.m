@@ -1,6 +1,8 @@
 classdef vhab
-    %VHAB Summary of this class goes here
-    %   Detailed explanation goes here
+    %VHAB V-HAB Launch Class
+    %   This class provides methods to initialize the MATLAB environment,
+    %   methods to construct and run V-HAB simulations and to configure the
+    %   logging scheme. 
     
     properties (GetAccess = public, Constant = true)
         poSims   = containers.Map();

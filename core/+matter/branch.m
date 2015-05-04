@@ -1,8 +1,29 @@
 classdef branch < base & event.source
-    %BRANCH Summary of this class goes here
-    %   Detailed explanation goes here
+    %BRANCH Describes flow path between two exme processors
+    %   The positive flow direction is defined as 'from left to right', the
+    %   left side being the exme that is given as the second input 
+    %   parameter and the right side being the exme that is given as the 
+    %   fourth input parameter. 
+    %   In between the exmes there can be any number of flow to flow 
+    %   processors that influence the behaviour of the flow between the two 
+    %   exams, either through pressure or temperature changes.
     %
+    %   Inputs are the parent store (oContainer), the left exme (sLeft), a 
+    %   cell array of f2f processors (csProcs) and the right exme (sRight). 
+    %   The exams are given as a string in the following format: 
+    %   <store name>.<exme Name>
+    %   If one of the ends of the branch is an interface to other system 
+    %   levels, the string can be anything as long as it doesn?t contain a 
+    %   period character('.'). If the interface is to a higher system
+    %   level, it has to be given instead of the right exme. If the
+    %   interface is to a lower system level, it has to be given instead of
+    %   the left exme.
     %
+    %   The constructor recognises if this is an interface branch or not 
+    %   and accordingly creates the branch object and the matter.flow 
+    %   objects between the f2f processors and exme processors. 
+    %
+    %   TODO
     %   - set flow rate and also partial ratios? Or do via normal .update
     %     command in solver, which is executed properly in direction of the
     %     flow rate? Call .update on FLOWS, with partial mass (or they get
@@ -107,7 +128,7 @@ classdef branch < base & event.source
         hSetDisconnected;
         
         % Callback from the interface flow seal method, can be used to
-        % disconnect the if flow and the according f2f proc in the supsys
+        % disconnect the i/f flow and the according f2f proc in the supsys
         hRemoveIfProc;
         
         % Flow rate handler - only one can be set!
@@ -121,7 +142,7 @@ classdef branch < base & event.source
             % subsystem to system.
             %
             %TODO
-            %   - check if if flows already exist, error!
+            %   - check if i/f flows already exist, error!
             %   - does store.getPort have a throw if port not found? Else
             %     throw here.
             

@@ -1,6 +1,7 @@
 function xRtn = sif(bCond, xOne, xTwo)
-    %IF Summary of this function goes here
-    %   Detailed explanation goes here
+    %SIF Short if-conditon
+    %   Allows for an if condition to be written in a single line of code.
+    %   This can be used to make code more compact and easier to read. 
     
     if bCond, xRtn = xOne;
     else      xRtn = xTwo;
