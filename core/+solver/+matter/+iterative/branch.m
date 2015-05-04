@@ -221,7 +221,7 @@ classdef branch < solver.matter.base.branch
                     
                     % Gather the information from each processor
                     %[ mfData(iP, 1), mfData(iP, 2) ] = oBranch.aoFlowProcs(iP).solverDeltas(iDir * fFlowRate);
-                    [ mfData(iP, 1), mfData(iP, 2) ] = this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
+                    mfData(iP, 1)= this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
                     
                     fPressDrop = fPressDrop + mfData(iP, 1);
                     
