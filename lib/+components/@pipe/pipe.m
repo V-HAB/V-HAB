@@ -107,7 +107,7 @@ classdef pipe < matter.procs.f2f
             % No pressure at all ... normally just return, drop zero
             if fAveragePressure == 0
 
-                fDeltaPress = 1; % 0 not good for solver ... :)
+                fDeltaPress = 0; % no pressure? -> no pressure drop!
                                  % FR (kg/s) should be small compared to
                                  % drop, so send that?
                 return;

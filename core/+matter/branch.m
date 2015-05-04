@@ -504,37 +504,22 @@ classdef branch < base & event.source
             this.bOutdated = false;
             
             
-            % The following checks used to be in the base solver, moved
-            % here because ... hmm, that seems to make more sense?
-            
-            %TODO use fHeatFlows to calculate temp changes!
-%             for iF = 1:this.iFlowProcs
-%                 if this.aoFlowProcs(iF).fHeatFlow ~= 0
-%                     this.warn('setFlowRate', 'Branch %s: Heat flow for flow comp %i not zero, but not implemented yet in branch!', this.sName, iF);
-%                 end
-%             end
-            
             % No pressure? Distribute equally.
             if nargin < 3 || isempty(afPressure)
                 fPressureDiff = (this.coExmes{1}.getPortProperties() - this.coExmes{2}.getPortProperties());
                 
                 % Each flow proc produces the same pressure drop, the sum
                 % being the actual pressure difference.
-                %NOTE if e.g. 'right' pressure higher then left, pressure
-                %     diffs here become negative, as if each component
-                %     would be a fan producing a pressure rise. But this is
-                %     only to cope with initial states until solver
-                %     realizes that matter would actually flow the other
-                %     direction.
                 afPressure = ones(1, this.iFlowProcs) * fPressureDiff / this.iFlowProcs;
                 
-                if this.fFlowRate < 0, afPressure = -1 * afPressure; end;
+                % Note: no matter the flow direction, positive values on
+                % afPRessure always denote a pressure DROP
             end
             
             
             
             % Update data in flows
-            this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure, afTemperature);
+            this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure);
             
         end
     

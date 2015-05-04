@@ -32,6 +32,8 @@ classdef branch < solver.matter.base.branch
             % We can't set the flow rate directly on this.fFlowRate or on
             % the branch, but have to provide that value to the parent
             % update method.
+
+            %TODO distribute pressure drops equally over flows?
             
             update@solver.matter.base.branch(this, this.fRequestedFlowRate);
             

@@ -660,11 +660,18 @@ classdef branch < solver.matter.base.branch
 %             keyboard(); 
 
             if fFlowRate < this.oBranch.oContainer.oTimer.fTimeStep
-                mfData = zeros(oBranch.iFlowProcs, 2);
-                afDeltaP = iDir * mfData(:, 1);
+                mfData = zeros(oBranch.iFlowProcs, 1);
+                afDeltaP = mfData(:, 1);
                 fFlowRate = 0;
+
             elseif ~isempty(mfData)
-                afDeltaP  = iDir * mfData(:, 1);
+                % Change of behaviour - now, the values are set on the flow
+                % objects in the order according to the flow rate (i.e. for
+                % a negative flow rate, the last flow in the branch is set
+                % first). Therefore no need for iDir.
+                %afDeltaP  = iDir * mfData(:, 1);
+                afDeltaP  = mfData(:, 1);
+
                 fFlowRate = iDir * fFlowRate;
             else
                 afDeltaP = [];
