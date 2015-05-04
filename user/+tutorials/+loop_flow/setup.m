@@ -31,8 +31,8 @@ classdef setup < simulation
             % tick each phase and both branches are solved.
             % Decrease if flow rates unstable, increase if too slow. If un-
             % stable AND too slow, buy a new computer.
-            aoPhases = this.oRoot.toChildren.Example.toStores.Tank_1.aoPhases;
-            aoPhases(1).fFixedTS = 0.5;
+%             aoPhases = this.oRoot.toChildren.Example.toStores.Tank_1.aoPhases;
+%             aoPhases(1).fFixedTS = 0.5;
             
             %% Logging
             % Creating a cell setting the log items

@@ -18,7 +18,7 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName, 30);
+            this@vsys(oParent, sName);
             
             % Creating a store, volume 1 m^3
             this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1));
@@ -31,7 +31,7 @@ classdef Example < vsys
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
             
             % Adding a fan to move the gas
-            this.addProcF2F(components.fan(this.oData.oMT, 'Fan', 'setSpeed', 40000, 'Left2Right'));
+            this.addProcF2F(components.fan(this.oData.oMT, 'Fan', 'setSpeed', 55000, 'Left2Right'));
              
             % Adding a pipe to connect the tanks
             this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 1, 0.1));

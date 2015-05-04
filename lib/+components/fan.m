@@ -224,7 +224,7 @@ classdef fan < matter.procs.f2f
                     
                     % This won't work!
                     
-                    oHydr = this.toSolve.hydr;
+                    oHydr = this.toSolve.hydraulic;
                     
                     if oFlowIn.fFlowRate > 0
                         
@@ -275,12 +275,7 @@ classdef fan < matter.procs.f2f
                         this.fPowerConsumtionFan = 0;
                     end
             end
-            
-            %Return of the final values
-            
-            %this.fDeltaPressure = fDeltaPressure;
-            %this.fDeltaPress    = fDeltaPressure; 
-            %this.fDeltaTemp = fDeltaTemp;
+
         end
         
         function [ fDeltaPressure, fDeltaTemperature ] = solverDeltas(this, fFlowRate)
@@ -299,11 +294,7 @@ classdef fan < matter.procs.f2f
                 [ oFlowIn, ~ ] = this.getFlows(fFlowRate);
                 
                 %Calculating the density of the incoming flowing matter:
-                fDensity = (oFlowIn.fPressure * (oFlowIn.fMolMass / 1000)) / (matter.table.Const.fUniversalGas * oFlowIn.fTemp);
-                %keyboard(); 
-                if (isnan(fDensity) || isinf(fDensity)) 
-                    fDensity = this.oBranch.coExmes{1}.oPhase.fDensity;
-                end
+                fDensity = this.oMT.calculateDensity(oFlowIn);
                 
                 if fFlowRate < 0
                     iFlowDir = -1;
@@ -324,7 +315,8 @@ classdef fan < matter.procs.f2f
                 [ oFlowIn, ~ ] = this.getFlows(this.iDir);
                 iFlowDir = 0;
                 %keyboard();
-                fDensity = this.oBranch.coExmes{1}.oPhase.fDensity;
+                %fDensity = this.oBranch.coExmes{1}.oPhase.fDensity;
+                fDensity = this.oMT.calculateDensity(this.oBranch.coExmes{1}.oPhase);
             end
             %keyboard();
             % To be able to use the functions of the characteristics, as a
@@ -383,10 +375,11 @@ classdef fan < matter.procs.f2f
                     % the two are not aligned (fan is blowing against a
                     % flow but is not powerful enough, so there is
                     % backflow), the fan produces a pressure drop.
-                    % 
                     fDeltaPressure = fDeltaPressure * this.iDir * iFlowDir * (-1);
+                    
                     %keyboard();
                     
+                    %disp(num2str(fDeltaPressure))
                     if (isnan(fDeltaTemperature) || isinf(fDeltaTemperature))
                         fDeltaTemperature = 0;
                     end
@@ -438,6 +431,7 @@ classdef fan < matter.procs.f2f
                         this.fPowerConsumtionFan = 0;
                     end
             end
+            %keyboard();
         end
         
         function fDeltaTemperature = updateManualSolver(this)
