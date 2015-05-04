@@ -197,6 +197,10 @@ classdef HX < vsys
         %initialies for infinite because in this case there is no thermal
         %resistance from conductance
         
+        % Stores the time at which the update() method was last called
+        fLastUpdate;
+        
+        
     end
     
     methods
@@ -291,8 +295,8 @@ classdef HX < vsys
             
             %adds the flow to flow processores used to set the outlet
             %values of the heat exchanger
-            this.oF2F_1 = support_classes.HX.hx_flow(this, this.oData.oMT, [sName,'_1'], fHydrDiam_1, fHydrLength_1);
-            this.oF2F_2 = support_classes.HX.hx_flow(this, this.oData.oMT, [sName,'_2'], fHydrDiam_2, fHydrLength_2);
+            this.oF2F_1 = support_classes.HX.hx_flow(this, this.oData.oMT, [sName,'_1']);
+            this.oF2F_2 = support_classes.HX.hx_flow(this, this.oData.oMT, [sName,'_2']);
             
             this.seal();
         end
@@ -309,7 +313,14 @@ classdef HX < vsys
             if ~this.oTimer.fTime
                 return;
             end
-
+            
+            % We also don't need to do all of the calculations multiple
+            % times per timestep, so we do the following check. 
+            if this.oTimer.fTime == this.fLastUpdate
+                return;
+            end
+            
+            
             %gets the two flow objects from the heat exchanger, flow 1 
             %always has to be the one inside the pipes if there are pipes
 %             oFlows_1 = this.oF2F_1.aoFlows(1);
@@ -404,6 +415,8 @@ classdef HX < vsys
                 this.fMassFlow_Old_1     = fMassFlow_1;
                 this.fMassFlow_Old_2     = fMassFlow_2;
             end
+            
+            this.fLastUpdate = this.oTimer.fTime; 
             
         end
     end

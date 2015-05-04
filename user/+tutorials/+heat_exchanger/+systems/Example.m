@@ -24,20 +24,20 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName, -1);
+            this@vsys(oParent, sName);
             
             %% Gas System
             % Creating a store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1));
+            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1000));
             
             % Adding a phase to the store 'Tank_1', 1 m^3 air
-            oGasPhase = this.toStores.Tank_1.createPhase('air', 2);
+            oGasPhase = this.toStores.Tank_1.createPhase('air', 2000);
             
             % Creating a second store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 1));
+            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 1000));
             
             % Adding a phase to the store 'Tank_2', 2 m^3 air
-            oAirPhase = this.toStores.Tank_2.createPhase('air', 1);
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 1000);
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
@@ -52,18 +52,18 @@ classdef Example < vsys
                 'Liquid_Phase', ...        Phase name
                 struct('H2O', 1000), ...   Phase contents
                 1, ...                     Phase volume
-                293.15, ...                Phase temperature
+                303.15, ...                Phase temperature
                 101325);                 % Phase pressure
             
             % Creating a fourth store, volume 1 m^3
             this.addStore(matter.store(this.oData.oMT, 'Tank_4', 1));
-            
+            %keyboard(); 
             % Adding a phase to the store 'Tank_4', 1 kg water
             oWaterPhase = matter.phases.liquid(this.toStores.Tank_4, ...  Store in which the phase is located
                 'Water_Phase', ...         Phase name
                 struct('H2O', 1), ...      Phase contents
                 1, ...                     Phase volume
-                293.15, ...                Phase temperature
+                303.15, ...                Phase temperature
                 101325);                 % Phase pressure
             
             matter.procs.exmes.liquid(oLiquidPhase, 'Port_3');
@@ -71,8 +71,8 @@ classdef Example < vsys
             
             %% Heat Exchanger
             % Some configurating variables
-            sHX_type = 'counter annular passage';       % Heat exchanger type
-            Geometry = [0.2, 0.3, (0.19/2), 0.25];      % Geometry [value1, value2, value3, value4]
+            sHX_type = 'counter plate';       % Heat exchanger type
+            Geometry = [0.2, 0.3, (0.19/2), 0.25, 1];   % Geometry [value1, value2, value3, value4]
             Conductivity = 15;                          % Conductivity of...?
             
             oHX = components.HX(this, 'HeatExchanger', Geometry, sHX_type, Conductivity);
@@ -94,11 +94,11 @@ classdef Example < vsys
             % exchanger
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            this.createBranch('Tank_1.Port_1', {'Pipe1', 'HeatExchanger_1', 'Pipe2'}, 'Tank_2.Port_2');
+            this.createBranch('Tank_1.Port_1', {'Pipe1', 'HeatExchanger_2', 'Pipe2'}, 'Tank_2.Port_2');
             
             % Creating the flow path between the two water tanks via the 
             % heat exchanger
-            this.createBranch('Tank_3.Port_3', {'Pipe3', 'HeatExchanger_2', 'Pipe4'}, 'Tank_4.Port_4');
+            this.createBranch('Tank_3.Port_3', {'Pipe3', 'HeatExchanger_1', 'Pipe4'}, 'Tank_4.Port_4');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
@@ -108,7 +108,7 @@ classdef Example < vsys
             % iterative solver and, for simplicity, the manual solver for
             % the water flow. That saves us the trouble to implement a
             % pump.
-            oB1 = solver.matter.linear.branch(this.aoBranches(1));
+            oB1 = solver.matter.iterative.branch(this.aoBranches(1));
             oB2 = solver.matter.manual.branch(this.aoBranches(2));
             
             % Now we set the flow rate in the manual solver branch to a

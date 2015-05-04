@@ -34,10 +34,10 @@ classdef setup < simulation
                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
                 'toChildren.Example.toStores.Tank_3.aoPhases(1).fMass';                 % 8
                 'toChildren.Example.toStores.Tank_4.aoPhases(1).fMass';
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemperature';          % 10
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemperature';
-                'toChildren.Example.toStores.Tank_3.aoPhases(1).fTemperature';          % 12
-                'toChildren.Example.toStores.Tank_4.aoPhases(1).fTemperature';
+                'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemp';          % 10
+                'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemp';
+                'toChildren.Example.toStores.Tank_3.aoPhases(1).fTemp';          % 12
+                'toChildren.Example.toStores.Tank_4.aoPhases(1).fTemp';
                 'toChildren.Example.toProcsF2F.HeatExchanger_1.fDeltaTemp';             % 14
                 'toChildren.Example.toProcsF2F.HeatExchanger_2.fDeltaTemp';
                 'toChildren.Example.aoBranches(1).fFlowRate';                           % 16
@@ -49,7 +49,7 @@ classdef setup < simulation
             %% Simulation length
             % Stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 400 * 1; % In seconds
+            this.fSimTime = 3600 * 1; % In seconds
             this.iSimTicks = 600;
             this.bUseTime = true;
 
@@ -65,27 +65,43 @@ classdef setup < simulation
             hold on;
             grid minor;
             plot(this.mfLog(:,1), this.mfLog(:, 2:5));
-            legend('Tank 1', 'Tank 2', 'Tank 3', 'Tank_4');
+            legend('Tank 1', 'Tank 2', 'Tank 3', 'Tank 4');
             ylabel('Pressure in Pa');
             xlabel('Time in s');
             
-            figure('name', 'Tank Masses');
+            figure('name', 'Tank Masses (1)');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 6:9 ));
-            legend('Tank 1', 'Tank 2', 'Tank 3', 'Tank_4');
+            plot(this.mfLog(:,1), this.mfLog(:, 6:7 ));
+            legend('Tank 1', 'Tank 2');
             ylabel('Mass in kg');
             xlabel('Time in s');
             
-            figure('name', 'Tank Temperatures');
+            figure('name', 'Tank Masses (2)');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 10:13 ));
-            legend('Tank 1', 'Tank 2', 'Tank 3', 'Tank_4');
+            plot(this.mfLog(:,1), this.mfLog(:, 8:9 ));
+            legend('Tank 3', 'Tank 4');
+            ylabel('Mass in kg');
+            xlabel('Time in s');
+            
+            figure('name', 'Tank Temperatures (1)');
+            hold on;
+            grid minor;
+            plot(this.mfLog(:,1), this.mfLog(:, 10:11 ));
+            legend('Tank 1', 'Tank 2');
             ylabel('Temperature in K');
             xlabel('Time in s');
             
-            figure('name', 'Tank Temperatures');
+            figure('name', 'Tank Temperatures (2)');
+            hold on;
+            grid minor;
+            plot(this.mfLog(:,1), this.mfLog(:, 12:13 ));
+            legend('Tank 3', 'Tank 4');
+            ylabel('Temperature in K');
+            xlabel('Time in s');
+            
+            figure('name', 'HX Delta Temperatures');
             hold on;
             grid minor;
             plot(this.mfLog(:,1), this.mfLog(:, 14:15 ));
