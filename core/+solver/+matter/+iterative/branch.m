@@ -295,13 +295,16 @@ classdef branch < solver.matter.base.branch
                 
                 % Create array with indices of flows in flow direction for 
                 % update method
-                aiFlows = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
+                %aiFlows = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
                 
                 % Update mol mass, partials etc
                 %%REORG%%oBranch.aoFlows(aiFlows).setSolverData(sif(iDir > 0, oExmeL, oExmeR));
                 
+                % Old comment?
                 % Get pressure drop with old flow rate
                 %TODO that should be logged and not recalculated!
+                
+                % Initializing pressure drop variable
                 fPressDrop = 0;
                 
                 hX = tic();
@@ -612,7 +615,7 @@ classdef branch < solver.matter.base.branch
                     % Inf counter - see above
                     iInfCounter = iInfCounter + (-1 * iDir);
                     
-                    % Too much tries!
+                    % Too many tries!
                     if iInfCounter > 5
                         
                         % No flow, don't want the mfData to be set in solve
@@ -632,8 +635,8 @@ classdef branch < solver.matter.base.branch
                 
                 
                 % Check error - should ALWAYS be positive, if pressure
-                % difference is lt zero, the pressure "drop" should be as
-                % well (and therefore be a pressure rise).
+                % difference is lower than zero, the pressure "drop" should 
+                % be as well (and therefore be a pressure rise).
                 fPressDrop = sum(mfData(:, 1));
                 rError = fPressDiff / fPressDrop; %TODO this is not rError but rAccuracy ...
                                                   %  rError = rAccuracy - 1
@@ -685,8 +688,7 @@ classdef branch < solver.matter.base.branch
             
             
             %%% Only update if flow rate changed ...
-            if oBranch.fFlowRate ~= fFlowRate
-                
+            %if oBranch.fFlowRate ~= fFlowRate
                 % Ok, we have a new flow rate, yay. Also we have all the
                 % intermediate values to set for temperature and pressure.
                 % Also sets Cp, M, rPPs etc from the inflow EXME
@@ -706,15 +708,12 @@ classdef branch < solver.matter.base.branch
                 
                 
             % No FR change, but still update Cp, Mol, Partials etc
-            else
-                
+            %else
                 %%REORG%%oBranch.aoFlows(aiFlows).setSolverData(sif(iDir > 0, oExmeL, oExmeR));
                 
                 % Create NaNs - not written to log by solve()
 %                 afDrops = nan(oBranch.iFlowProcs, 1);
-
-            end
-            
+            %end
         end
         
         %% Calculate new time step
