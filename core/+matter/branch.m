@@ -484,7 +484,7 @@ classdef branch < base & event.source
     % Methods provided to a connected subsystem branch
     methods (Access = protected)
         
-        function setFlowRate(this, fFlowRate, afPressure, afTemperature)
+        function setFlowRate(this, fFlowRate, afPressure)
             % Set flowrate for all flow objects
             
             if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
