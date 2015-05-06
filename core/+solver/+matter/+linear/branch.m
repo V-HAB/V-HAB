@@ -169,7 +169,7 @@ classdef branch < solver.matter.base.branch
             %     diameter or length including active stuff -> e.g. in a
             %     fan loop from Atmos back to Atmos, all flows get the same
             %     pressure ...
-            update@solver.matter.base.branch(this, fFlowRate, [], []);
+            update@solver.matter.base.branch(this, fFlowRate, []);
         end
     end
 end
