@@ -1,8 +1,29 @@
 classdef branch < base & event.source
-    %BRANCH Summary of this class goes here
-    %   Detailed explanation goes here
+    %BRANCH Describes flow path between two exme processors
+    %   The positive flow direction is defined as 'from left to right', the
+    %   left side being the exme that is given as the second input 
+    %   parameter and the right side being the exme that is given as the 
+    %   fourth input parameter. 
+    %   In between the exmes there can be any number of flow to flow 
+    %   processors that influence the behaviour of the flow between the two 
+    %   exams, either through pressure or temperature changes.
     %
+    %   Inputs are the parent store (oContainer), the left exme (sLeft), a 
+    %   cell array of f2f processors (csProcs) and the right exme (sRight). 
+    %   The exams are given as a string in the following format: 
+    %   <store name>.<exme Name>
+    %   If one of the ends of the branch is an interface to other system 
+    %   levels, the string can be anything as long as it doesn?t contain a 
+    %   period character('.'). If the interface is to a higher system
+    %   level, it has to be given instead of the right exme. If the
+    %   interface is to a lower system level, it has to be given instead of
+    %   the left exme.
     %
+    %   The constructor recognises if this is an interface branch or not 
+    %   and accordingly creates the branch object and the matter.flow 
+    %   objects between the f2f processors and exme processors. 
+    %
+    %   TODO
     %   - set flow rate and also partial ratios? Or do via normal .update
     %     command in solver, which is executed properly in direction of the
     %     flow rate? Call .update on FLOWS, with partial mass (or they get
@@ -107,7 +128,7 @@ classdef branch < base & event.source
         hSetDisconnected;
         
         % Callback from the interface flow seal method, can be used to
-        % disconnect the if flow and the according f2f proc in the supsys
+        % disconnect the i/f flow and the according f2f proc in the supsys
         hRemoveIfProc;
         
         % Flow rate handler - only one can be set!
@@ -121,7 +142,7 @@ classdef branch < base & event.source
             % subsystem to system.
             %
             %TODO
-            %   - check if if flows already exist, error!
+            %   - check if i/f flows already exist, error!
             %   - does store.getPort have a throw if port not found? Else
             %     throw here.
             
@@ -463,7 +484,7 @@ classdef branch < base & event.source
     % Methods provided to a connected subsystem branch
     methods (Access = protected)
         
-        function setFlowRate(this, fFlowRate, afPressure, afTemp)
+        function setFlowRate(this, fFlowRate, afPressure)
             % Set flowrate for all flow objects
             
             if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
@@ -483,36 +504,22 @@ classdef branch < base & event.source
             this.bOutdated = false;
             
             
-            % The following checks used to be in the base solver, moved
-            % here because ... hmm, that seems to make more sense?
-            
-            % No temperature vector given? Create zeros - no temp change
-            if nargin < 4 || isempty(afTemp)
-                afTemp = zeros(1, this.iFlowProcs);
-            end
-            
-            
             % No pressure? Distribute equally.
             if nargin < 3 || isempty(afPressure)
                 fPressureDiff = (this.coExmes{1}.getPortProperties() - this.coExmes{2}.getPortProperties());
                 
                 % Each flow proc produces the same pressure drop, the sum
                 % being the actual pressure difference.
-                %NOTE if e.g. 'right' pressure higher then left, pressure
-                %     diffs here become negative, as if each component
-                %     would be a fan producing a pressure rise. But this is
-                %     only to cope with initial states until solver
-                %     realizes that matter would actually flow the other
-                %     direction.
                 afPressure = ones(1, this.iFlowProcs) * fPressureDiff / this.iFlowProcs;
                 
-                if this.fFlowRate < 0, afPressure = -1 * afPressure; end;
+                % Note: no matter the flow direction, positive values on
+                % afPRessure always denote a pressure DROP
             end
             
             
             
             % Update data in flows
-            this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure, afTemp);
+            this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure);
             
         end
     

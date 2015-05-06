@@ -61,9 +61,6 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         % Sealed?
         bSealed = false;
         
-        
-        
-        
         % Supported sovling mechanisms.
         %TODO should access be protected, and obj passed to solver another
         %     way (instead of solver directly accessing it)?
@@ -170,9 +167,9 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     
     methods (Access = protected)
         function supportSolver(this, sType, varargin)
-            handleClassCtor = str2func([ 'solver.matter.base.type.' sType ]);
+            handleClassConstructor = str2func([ 'solver.matter.base.type.' sType ]);
             
-            this.toSolve.(sType) = handleClassCtor(varargin{:});
+            this.toSolve.(sType) = handleClassConstructor(varargin{:});
         end
     end
     

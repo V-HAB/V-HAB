@@ -1,4 +1,10 @@
 classdef branch < solver.matter.base.branch
+     %BRANCH Linear hydraulic solver branch for matter flows
+     %  TODO Insert nice description here   
+
+    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %-- Properties -------------------------------------------------------%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     properties (SetAccess = public, GetAccess = public)
         rMaxChange = 0.030;
@@ -23,25 +29,23 @@ classdef branch < solver.matter.base.branch
         
     end
     
-    properties (SetAccess = private, GetAccess = public)
-        
-    end
-    
-    
+    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %-- Methods ----------------------------------------------------------%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     methods
+        %% Constructor
         function this = branch(oBranch, rMaxChange, iRemChange)
             this@solver.matter.base.branch(oBranch, [], 'hydraulic');
             
             if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end;
             if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end;
             
-            
-            
         end
     end
     
     methods (Access = protected)
+        %% Branch update method
         function update(this)
             if this.oBranch.oContainer.oTimer.fTime < this.fLastUpdate
                 return;
@@ -156,10 +160,6 @@ classdef branch < solver.matter.base.branch
                 if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end;
 
                 this.setTimeStep(fNewStep);
-                %this.setTimeStep(10);
-    %             disp(this.rFlowRateChange);
-    %             disp(fNewStep);
-    %             disp('---------');
                 this.fTimeStep = fNewStep;
             end
             
@@ -169,7 +169,7 @@ classdef branch < solver.matter.base.branch
             %     diameter or length including active stuff -> e.g. in a
             %     fan loop from Atmos back to Atmos, all flows get the same
             %     pressure ...
-            update@solver.matter.base.branch(this, fFlowRate, [], []);
+            update@solver.matter.base.branch(this, fFlowRate, []);
         end
     end
 end

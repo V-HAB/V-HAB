@@ -32,23 +32,10 @@ classdef branch < solver.matter.base.branch
             % We can't set the flow rate directly on this.fFlowRate or on
             % the branch, but have to provide that value to the parent
             % update method.
-%             if this.oBranch.oContainer.oTimer.fTime > 99
-%                 keyboard(); 
-%             end
-            % Getting the temperature differences for each processor in the
-            % branch
-            if ~isempty(this.oBranch.aoFlowProcs)
-                
-                afTemperatures = zeros(1, length(this.oBranch.aoFlowProcs));
-                for iI=1:length(this.oBranch.aoFlowProcs)
-                    afTemperatures(iI) = this.aoSolverProps(iI).fDeltaTemperature;
-                end
-                
-            else
-                afTemperatures = [];
-            end
+
+            %TODO distribute pressure drops equally over flows?
             
-            update@solver.matter.base.branch(this, this.fRequestedFlowRate, [], afTemperatures);
+            update@solver.matter.base.branch(this, this.fRequestedFlowRate);
             
             % Checking if there are any active processors in the branch,
             % if yes, update them.
@@ -67,7 +54,7 @@ classdef branch < solver.matter.base.branch
     
                 for iI = 1:length(abActiveProcs)
                     if abActiveProcs(iI)
-                        this.oBranch.aoFlowProcs(iI).toSolve.manual.updateDeltaTemperature();
+                        this.oBranch.aoFlowProcs(iI).toSolve.manual.update();
                     end
                 end
                 
