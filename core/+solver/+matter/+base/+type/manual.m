@@ -4,7 +4,7 @@ classdef manual < handle
     
     properties
         bActive = false;
-        updateProperties;
+        update;
     end
     
     methods
@@ -13,15 +13,8 @@ classdef manual < handle
             % temperature
             if nargin > 0 && bActive
                 this.bActive          = bActive;
-                this.updateProperties = updateMethod;
+                this.update = updateMethod;
             end
-        end
-        
-        
-        function update(this)
-            %TODO Insert something here that can update the fHeatFlow
-            %property of the f2f-processors.
-            
         end
     end
 end
