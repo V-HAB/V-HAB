@@ -38,8 +38,8 @@ classdef setup < simulation
                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemp';
                 'toChildren.Example.toStores.Tank_3.aoPhases(1).fTemp';          % 12
                 'toChildren.Example.toStores.Tank_4.aoPhases(1).fTemp';
-                'toChildren.Example.toProcsF2F.HeatExchanger_1.fDeltaTemp';             % 14
-                'toChildren.Example.toProcsF2F.HeatExchanger_2.fDeltaTemp';
+                'toChildren.Example.toProcsF2F.HeatExchanger_1.fHeatFlow';             % 14
+                'toChildren.Example.toProcsF2F.HeatExchanger_2.fHeatFlow';
                 'toChildren.Example.aoBranches(1).fFlowRate';                           % 16
                 'toChildren.Example.aoBranches(2).fFlowRate'; 
                 
@@ -101,12 +101,12 @@ classdef setup < simulation
             ylabel('Temperature in K');
             xlabel('Time in s');
             
-            figure('name', 'HX Delta Temperatures');
+            figure('name', 'HX Heat Flows');
             hold on;
             grid minor;
             plot(this.mfLog(:,1), this.mfLog(:, 14:15 ));
             legend('HX Flow 1', 'HX Flow 2');
-            ylabel('Temperature in K');
+            ylabel('Heat Flow in W');
             xlabel('Time in s');
             
             figure('name', 'Flow Rates');

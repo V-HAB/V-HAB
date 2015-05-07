@@ -52,7 +52,7 @@ classdef Example < vsys
                 'Liquid_Phase', ...        Phase name
                 struct('H2O', 1000), ...   Phase contents
                 1, ...                     Phase volume
-                303.15, ...                Phase temperature
+                333.15, ...                Phase temperature
                 101325);                 % Phase pressure
             
             % Creating a fourth store, volume 1 m^3
@@ -63,7 +63,7 @@ classdef Example < vsys
                 'Water_Phase', ...         Phase name
                 struct('H2O', 1), ...      Phase contents
                 1, ...                     Phase volume
-                303.15, ...                Phase temperature
+                333.15, ...                Phase temperature
                 101325);                 % Phase pressure
             
             matter.procs.exmes.liquid(oLiquidPhase, 'Port_3');
