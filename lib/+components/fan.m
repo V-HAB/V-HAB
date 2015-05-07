@@ -434,8 +434,9 @@ classdef fan < matter.procs.f2f
             %keyboard();
         end
         
-        function fDeltaTemperature = updateManualSolver(this)
-            fDeltaTemperature = this.fDeltaTemperature;
+        function updateManualSolver(this)
+            
+            % Maybe someday well have to do something here...
             
         end
     end
