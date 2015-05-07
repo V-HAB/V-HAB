@@ -13,48 +13,36 @@ classdef setup < simulation
     
     methods
         function this = setup() % Constructor function
+            
+            % First we call the parent constructor and tell it the name of
+            % this simulation we are creating.
             this@simulation('Tutorial_Manual_Solver');
             
-            % Creating the root object
-            oExample = tutorials.manual_solver.systems.Example(this.oRoot, 'Example');
-            
-            %% Ignore the contents of this section
-            % Set a veeery high fixed time step - the solver will still be
-            % called by the phase update methods!
-            %oB1.fFixedTS = 10000;
-            
-            % Set fixed time steps for all phases, synced. Means that every
-            % tick each phase and both branches are solved.
-            % Decrease if flow rates unstable, increase if too slow. If un-
-            % stable AND too slow, buy a new computer.
-            aoPhases = this.oRoot.toChildren.Example.toStores.Tank_1.aoPhases;
-            aoPhases(1).fFixedTS = 0.5;
-            aoPhases = this.oRoot.toChildren.Example.toStores.Tank_2.aoPhases;
-            aoPhases(1).fFixedTS = 0.5;
-            
+            % Creating the 'Example' system as a child of the root system
+            % of this simulation.
+            tutorials.manual_solver.systems.Example(this.oRoot, 'Example');
+                       
             %% Logging
-            % Creating a cell setting the log items
+            % Creating a cell setting the log items. You need to know the
+            % exact structure of your model to set log items, so do this
+            % when you are done modelling and ready to run a simulation.
             this.csLog = {
                 % System timer
                 'oData.oTimer.fTime';                                        % 1
                 
                 % Add other parameters here
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fPressure';  % 2
+                'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';  % 2
                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fPressure';  % 4
+                'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';  % 4
                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
                 'toChildren.Example.aoBranches(1).fFlowRate';                % 6
-                'toChildren.Example.aoBranches(1).aoFlows(2).fTemp';
-                'toChildren.Example.aoBranches(1).aoFlows(3).fTemp';         % 8
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemp';
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemp';
                 
                 };
             
             %% Simulation length
             % Stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 400 * 1; % In seconds
+            this.fSimTime = 2000 * 1; % In seconds
             this.iSimTicks = 600;
             this.bUseTime = true;
 
@@ -69,7 +57,7 @@ classdef setup < simulation
             figure('name', 'Tank Pressures');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [2 4]));
+            plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
             legend('Tank 1', 'Tank 2');
             ylabel('Pressure in Pa');
             xlabel('Time in s');
@@ -89,14 +77,6 @@ classdef setup < simulation
             legend('Branch');
             ylabel('flow rate [kg/s]');
             ylim([0, 1.1]);
-            xlabel('Time in s');
-            
-            figure('name', 'Temperatures');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 7:10));
-            legend('Pre Heater', 'Post Heater', 'Tank 1', 'Tank 2');
-            ylabel('Temperature [K]');
             xlabel('Time in s');
             
             figure('name', 'Time Steps');

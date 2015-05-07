@@ -70,11 +70,16 @@ classdef Example < vsys
             this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 1, 0.1));
             
             % Creating the flowpath between the components
-            this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Pump', 'Pipe_2'}, 'Tank_2.Port_2');
+            oBranch = this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Pump', 'Pipe_2'}, 'Tank_2.Port_2');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
             this.seal();
+            
+            % Now that the system is sealed, we can add the branch to a
+            % specific solver. In this case we will use the linear
+            % solver. 
+            solver.matter.linear.branch(oBranch);
                         
         end
     end

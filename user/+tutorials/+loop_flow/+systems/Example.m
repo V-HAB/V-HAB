@@ -40,11 +40,16 @@ classdef Example < vsys
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2'}, 'Tank_1.Port_2');
+            oBranch = this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2'}, 'Tank_1.Port_2');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
             this.seal();
+            
+            % Now that the system is sealed, we can add the branch to a
+            % specific solver. In this case we will use the linear
+            % solver. 
+            solver.matter.linear.branch(oBranch);
         end
     end
     

@@ -13,24 +13,30 @@ classdef setup < simulation
     
     methods
         function this = setup() % Constructor function
+            
+            % First we call the parent constructor and tell it the name of
+            % this simulation we are creating.
             this@simulation('Tutorial_Simple_Flow');
             
             
             % Decreases the default rMaxChange set by phases in .seal() by
             % a factor of 10. A manual rMaxChange set after. seal() 
             % overrides the default value.
+            % This is done to make sure, the simulation steps are small
+            % enough. Sometimes they can become to large causing the plots
+            % to look like staircases instead of smooth curves. 
+            % Only use this when necessary. 
             this.oData.set('rUpdateFrequency', 0.1);
             
-            % Creating the root object
-            oExample = tutorials.constant_pressure_exme.systems.Example(this.oRoot, 'Example');
-            
-            
-            % Add branch to solver
-            oB1 = solver.matter.iterative.branch(oExample.aoBranches(1));
+            % Creating the 'Example' system as a child of the root system
+            % of this simulation. 
+            tutorials.constant_pressure_exme.systems.Example(this.oRoot, 'Example');
             
             
             %% Logging
-            % Creating a cell setting the log items
+            % Creating a cell setting the log items. You need to know the
+            % exact structure of your model to set log items, so do this
+            % when you are done modelling and ready to run a simulation. 
             this.csLog = {
                 % System timer
                 'oData.oTimer.fTime';                                        % 1
@@ -47,7 +53,7 @@ classdef setup < simulation
             %% Simulation length
             % Stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 1000 * 3.6; % In seconds
+            this.fSimTime = 1000; % In seconds
             this.iSimTicks = 600;
             this.bUseTime = true;
 
