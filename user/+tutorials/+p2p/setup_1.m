@@ -13,29 +13,26 @@ classdef setup_1 < simulation
     
     methods
         function this = setup_1()
+            
+            % First we call the parent constructor and tell it the name of
+            % this simulation we are creating.
             this@simulation('Tutorial_p2p');
             
-            % Creating the root object
-            oExample = tutorials.p2p.systems.Example1(this.oRoot, 'Example');
-            
-            % Create the solver
-            oB1 = solver.matter.linear.branch(oExample.aoBranches(1));
-            oB2 = solver.matter.linear.branch(oExample.aoBranches(2));
-            
-            %% Ignore the contents of this section
-            
-            aoPhases = this.oRoot.toChildren.Example.toStores.Filter.aoPhases;
-            aoPhases(1).bSynced = true;
+            % Creating the 'Example' system as a child of the root system
+            % of this simulation.
+            tutorials.p2p.systems.Example1(this.oRoot, 'Example');
             
             %% Logging
-            % Creating a cell setting the log items
+            % Creating a cell setting the log items. You need to know the
+            % exact structure of your model to set log items, so do this
+            % when you are done modelling and ready to run a simulation. 
             this.csLog = {
                 % System timer
                 'oData.oTimer.fTime';                                           %1
 
                 % Add other parameters here
-                'toChildren.Example.toStores.Atmos.aoPhases(1).fPressure';      %2
-                'toChildren.Example.toStores.Filter.aoPhases(1).fPressure';     
+                'toChildren.Example.toStores.Atmos.aoPhases(1).fMassToPressure';      %2
+                'toChildren.Example.toStores.Filter.aoPhases(1).fMassToPressure';     
 
                 'toChildren.Example.aoBranches(1).fFlowRate';                   %4
                 'toChildren.Example.aoBranches(2).fFlowRate';                   
@@ -68,7 +65,7 @@ classdef setup_1 < simulation
             figure('name', 'Tank Pressures');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 2:3));
+            plot(this.mfLog(:,1), this.mfLog(:, 2:3) .* this.mfLog(:, [9 11]));
             legend('Atmos', 'Filter Flow');
             ylabel('Pressure in Pa');
             xlabel('Time in s');

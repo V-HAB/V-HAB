@@ -37,12 +37,19 @@ classdef Example1 < vsys
             % Creating the flowpath (=branch) between the components
             % Since we are using default exme-processors here, the input
             % format can be 'store.phase' instead of 'store.exme'
-            this.createBranch('Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
-            this.createBranch('Filter.Out', {'Pipe_3' }, 'Atmos.In');
+            oBranch_1 = this.createBranch('Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
+            oBranch_2 = this.createBranch('Filter.Out', {'Pipe_3' }, 'Atmos.In');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
             this.seal();
+            
+            % Now that the system is sealed, we can add the branches to a
+            % specific solver. In this case we will use the iterative
+            % solver. 
+            solver.matter.iterative.branch(oBranch_1);
+            solver.matter.iterative.branch(oBranch_2);
+            
         end
     end
     
