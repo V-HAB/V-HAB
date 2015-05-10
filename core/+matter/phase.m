@@ -283,7 +283,20 @@ classdef phase < base & matlab.mixin.Heterogeneous
         end
 
         function this = massupdate(this)
-
+            % This method updates the mass and temperature related
+            % properties of the phase. It takes into account all in- and
+            % outflowing matter streams via the exme processors connected
+            % to the phase, including the ones associated with p2p
+            % processors. It also gets the mass changes from substance
+            % manipulators. The new temperature is based on the thermal
+            % energy of the in- and outflow. After completing the update of
+            % fMass, afMass and fTemp this method sets the phase's timestep
+            % outdated, so it will be recalculated during the post-tick.
+            % Additionally, if this phase is set as 'sycned', this method
+            % will set all branches connected to exmes connected to this
+            % phase to outdated, also causing a recalculation in the
+            % post-tick. 
+            
             fTime     = this.oStore.oTimer.fTime;
             fLastStep = fTime - this.fLastMassUpdate;
 
@@ -327,20 +340,17 @@ classdef phase < base & matlab.mixin.Heterogeneous
             %this.afMass =  tools.round.prec(this.afMass + afTotalInOuts, 10);
             this.afMass =  this.afMass + afTotalInOuts;
 
-            %disp([ 'massupdate ' this.oStore.sName ' at ' num2str(fTime) ' TS ' num2str(fTimeStep) ' T ' num2str(this.oStore.oTimer.iTick) ' m ' num2str(sum(afTotalInOuts)) '  from phase ' sif((nargin >= 2) && ~bSetOutdatedTS, 'y', 'n')]);
-
-
-            % Check if that is a problem, i.e. negative masses.
-            %abNegative = (this.afMass + afTotalInOuts) < 0;
+            % Now we check if any of the masses has become negative. This
+            % can happen for two reasons, the first is just MATLAB rounding
+            % errors causing barely negative numbers (e-14 etc.) The other
+            % is an error in the programming of one of the processors.
+            % In any case, we don't interrupt the simulation for this, we
+            % just log the negative masses and set them to zero in the
+            % afMass array. The sum of all mass lost is shown in the
+            % command window in the post simulation summary. 
             abNegative = this.afMass < 0;
 
             if any(abNegative)
-                %disp(this.afMass + afTotalInOuts);
-                %this.throw('massupdate', 'Extracted more mass then available in phase %s (store %s)', this.sName, this.oStore.sName);
-
-                % Subtract - negative - added
-                %NOTE uncomment this, comment out the two lines above if
-                %     negative masses should just be logged
                 this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
                 this.afMass(abNegative) = 0;
             end
@@ -423,9 +433,6 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 return;
             end
 
-            %keyboard();
-            %disp([ num2str(this.oStore.oTimer.iTick) ': Phase ' this.oStore.sName '-' this.sName ' (@' num2str(this.oStore.oTimer.fTime) 's, last ' num2str(this.fLastUpdate) 's)' ]);
-            
             % Store update time
             this.fLastUpdate = this.oStore.oTimer.fTime;
 
@@ -497,8 +504,8 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
         % Moved to public methods, sometimes external access required
         function [ afTotalInOuts, mfInflowDetails ] = getTotalMassChange(this)
-            % Get vector with total mass change through all EXME flows
-            % witin one second, i.e. [kg/s].
+            % Get vector with total mass change through all EXME flows in
+            % [kg/s].
             %
             % The second output parameter is a matrix containing all inflow
             % rates, temperatures and heat capacities for calculating the
@@ -550,10 +557,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 end
             end
 
-
-            % Now sum up in-/outflows over all EXMEs and multiply with the
-            % time step!
+            % Now sum up in-/outflows over all EXMEs
             afTotalInOuts = sum(mfTotalFlows, 1);
+            
         end
 
 
@@ -621,6 +627,14 @@ classdef phase < base & matlab.mixin.Heterogeneous
             
             %TODO move this to another function or class or whatever. Why
             %is this executed here anyway?
+            %ANSWER: Because we need to make sure these guys are updated
+            %every time massupdate is called. Than cannot only be done by
+            %the phase.update(), which is called from store.update(), but
+            %also from branch.update(). Then the update methods from the
+            %p2ps and manips would not be called, if they weren't in here.
+            %Still, they seem out of place here and might be put into a
+            %separate method? Or should we bind them to the post-tick of
+            %the timer as well?
             % Check manipulator
             %TODO allow user to set a this.bManipBeforeP2P or so, and if
             %     true execute the [manip].update() before the P2Ps update!
