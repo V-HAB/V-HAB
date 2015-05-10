@@ -36,7 +36,8 @@ classdef Example < vsys
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oAirPhase, 'Port_2');
              
-            % Adding a pipe to connect the tanks
+            % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
+            % diameter.
             this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe', 1.5, 0.005));
             
             % Creating the flowpath (=branch) between the components
