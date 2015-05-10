@@ -758,15 +758,11 @@ classdef phase < base & matlab.mixin.Heterogeneous
             end
 
 
-            % Set new time step (on store, only sets that if smaller then
-            % the currently set time step, btw).
-            %CHECK     don't really need the whole store to update, p2p
-            %          procs are always updated if one of the connected
-            %          phases is updated, massupd also always done.
-            %          Just register own .update() method!
-            %          Still, logic required to update e.g. store's
-            %          volume distribution if liquid phase changes etc.
-            this.oStore.setNextExec(this.fLastMassUpdate + fNewStep);
+            % Set the time at which the containing store will be updated
+            % again. Need to pass on an absolute time, not a time step.
+            % Value in store is only updated, if the new update time is
+            % earlier than the currently set next update time. 
+            this.oStore.setNextUpdateTime(this.fLastMassUpdate + fNewStep);
             
             % Cache - e.g. for logging purposes
             this.fTimeStep = fNewStep;
