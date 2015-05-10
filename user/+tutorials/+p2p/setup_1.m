@@ -9,23 +9,73 @@ classdef setup_1 < simulation
     %   - provide methods for plotting the results
     
     properties
+        oB1;
+        oB2;
+        
+        aoFilterPhases;
+        oAtmosPhase;
     end
     
     methods
         function this = setup_1()
             this@simulation('Tutorial_p2p');
             
+            
+            % To increase the frequency of phase updates, uncomment this
+            % line. This doesn't mean that the phases update ten times as
+            % often, but that they increase their sensitivity towards mass
+            % changes within them when calculating the next time step.
+            % This can lead to more stable flow rates and with that,
+            % possibly to longer instead of shorter time steps.
+            % As shown below, the default values set by the phase seal
+            % methods can be manually overwritten for specific phases.
+            this.oData.set('rUpdateFrequency', 15);
+            
+            
+            
             % Creating the root object
             oExample = tutorials.p2p.systems.Example1(this.oRoot, 'Example');
             
-            % Create the solver
-            oB1 = solver.matter.linear.branch(oExample.aoBranches(1));
-            oB2 = solver.matter.linear.branch(oExample.aoBranches(2));
+            % Create the solver instances. Generally, this can be done here
+            % or directly within the vsys (after the .seal() command).
+            this.oB1 = solver.matter.iterative.branch(oExample.aoBranches(1));
+            this.oB2 = solver.matter.iterative.branch(oExample.aoBranches(2));
             
-            %% Ignore the contents of this section
             
-            aoPhases = this.oRoot.toChildren.Example.toStores.Filter.aoPhases;
-            aoPhases(1).bSynced = true;
+            %% Solver Tuning
+            
+            % The flow rate is driven by the fan within branch 1, and flows
+            % through a rather small filter volume. This combination leads
+            % to instabilities in the flow rate. Using this parameter, the
+            % solvers reduce the changes in flow rates:
+            % fFlowRate = (fNewFR + iDampFR * fOldFR) / (iDampFR + 1)
+            this.oB1.iDampFR = 15;
+            this.oB2.iDampFR = 15;
+            
+            
+            % Phases
+            
+            this.aoFilterPhases = this.oRoot.toChildren.Example.toStores.Filter.aoPhases;
+            this.oAtmosPhase    = this.oRoot.toChildren.Example.toStores.Atmos.aoPhases(1);
+            
+            % As the input flow rate can change quickly due to the fan, and
+            % the filter flow phase is rather small, it can help to 'sync'
+            % the flow rate solvers connected to this phase. This means
+            % that as soon as the flow rate of one of the solvers changes,
+            % the other solvers will also immediately calculate a new FR.
+            this.aoFilterPhases(1).bSynced = true;
+            
+            
+            % The phase for the adsorbed matter in the filter store has a
+            % small rMaxChange (small volume) but is not really important
+            % for the solving process, so increase rMaxChange manually.
+            this.aoFilterPhases(2).rMaxChange = 0.1;
+            
+            
+            
+            
+            
+            
             
             %% Logging
             % Creating a cell setting the log items
@@ -34,8 +84,8 @@ classdef setup_1 < simulation
                 'oData.oTimer.fTime';                                           %1
 
                 % Add other parameters here
-                'toChildren.Example.toStores.Atmos.aoPhases(1).fPressure';      %2
-                'toChildren.Example.toStores.Filter.aoPhases(1).fPressure';     
+                'toChildren.Example.toStores.Atmos.aoPhases(1).fMassToPressure';      %2
+                'toChildren.Example.toStores.Filter.aoPhases(1).fMassToPressure';     
 
                 'toChildren.Example.aoBranches(1).fFlowRate';                   %4
                 'toChildren.Example.aoBranches(2).fFlowRate';                   
@@ -63,12 +113,13 @@ classdef setup_1 < simulation
         
         function plot(this)
             
-            close all 
+%             close all 
             
             figure('name', 'Tank Pressures');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 2:3));
+            %plot(this.mfLog(:,1), this.mfLog(:, 2:3));
+            plot(this.mfLog(:,1), this.mfLog(:, [ 2 3 ]) .* this.mfLog(:, [ 9 11 ]));
             legend('Atmos', 'Filter Flow');
             ylabel('Pressure in Pa');
             xlabel('Time in s');

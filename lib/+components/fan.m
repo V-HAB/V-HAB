@@ -224,7 +224,7 @@ classdef fan < matter.procs.f2f
                     
                     % This won't work!
                     
-                    oHydr = this.toSolve.hydr;
+                    oHydr = this.toSolve.hydraulic;
                     
                     if oFlowIn.fFlowRate > 0
                         
