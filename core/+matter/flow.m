@@ -315,15 +315,14 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         
         
-        function setMatterProperties(this, fFlowRate, arPartialMass, fTemp, fPressure)%, fHeatCapacity, fMolMass)
+        function setMatterProperties(this, fFlowRate, arPartialMass, fTemp, fPressure)
             % For derived classes of flow, can set the matter properties 
-            % through this method manually. Other than setData, this method
-            % does not get information automatically from the inflowing
-            % exme but just uses the provided values.
-            % This allows derived, but still generic classes (namely 
-            % matter.p2ps.flow and matter.p2ps.stationary) to ensure
-            % control over the actual processor implementatins when they
-            % set the flow properties.
+            % through this method manually. In contrast to setData, this 
+            % method does not get information automatically from the 
+            % inflowing exme but just uses the provided values. This allows
+            % derived, but still generic classes (namely matter.p2ps.flow 
+            % and matter.p2ps.stationary) to ensure control over the actual
+            % processor implementatins when they set the flow properties.
             %
             % Is only called by p2p (?), only ONE flow
             
