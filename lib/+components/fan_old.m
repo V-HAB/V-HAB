@@ -83,7 +83,9 @@ classdef fan_old < matter.procs.f2f
             % Calculating the maximum mass flow rate from the maximum
             % volumetric flow rate as given in the datasheet
             %TODO document that - where do the 7, 0.00047 come from?
-            fMaxFR = 7 * 0.00047 * sum(oFlowIn.arPartialMass .* this.oMT.tafDensity.gas);
+            %fMaxFR = 7 * 0.00047 * sum(oFlowIn.arPartialMass .* this.oMT.tafDensity.gas);
+            fVolumetricFlowRate = oFlowIn.calculateVolumetricFlowRate();
+            fMaxFR = 7 * 0.00047 * oFlowIn.fFlowRate * fVolumetricFlowRate;
             %keyboard();
             
             % Flow rate lower than zero - 'counter flow', i.e. the flow is

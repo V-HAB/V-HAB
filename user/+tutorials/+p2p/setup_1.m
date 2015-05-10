@@ -21,6 +21,45 @@ classdef setup_1 < simulation
             this@simulation('Tutorial_p2p');
             
             
+            %%%% Tuning of the solving process %%%%
+            %
+            % Generally, the phases/stores and branches separately schedule
+            % their own update method calls. If a phase updates, its
+            % internal properties as the heat capacity, density, molecular
+            % mass etc. are updated. Additionally, all connected branches
+            % are notified so they can re-calculate their flow rate in the
+            % 'post tick' phase (i.e. after all regularly scheduled call-
+            % backs were executed by the timer object). After the branches
+            % update their flow rates, the phase triggers p2p and substance
+            % manipulators to update, and finally calculates a new time
+            % step for its own, next update call - based on rMaxChange.
+            % A solver calculates its time step based on rSetChange and
+            % rMaxChange, however, this behaviour will change soon.
+            % Additionally, the change in the flow rate set by the solvers
+            % can be dampened with iDampFR (see below).
+            % If a solver calculates a new flow rate, the connected phases
+            % are notified so they can do a 'massupdate', i.e. acutally
+            % 'move' the mass, according to the OLD flow rate, from the one
+            % connected phase to the other (depending of the sign of the
+            % flow rate). If for one of the connected phases, the attribute
+            % bSynced is true, all other branches connected to this phase
+            % are triggered to re-calculate their flow rate as well.
+            %
+            % As a general rule of thumb:
+            % - if the instabilities in phase masses / pressures are too
+            %   high, reduce rMaxChange locally for those phases, or
+            %   globally using rUpdateFrequency
+            % - if a phase is failry small, activate bSynced which MIGHT
+            %   help, as all connected branches calculate new flow rates as
+            %   soon as one branch calculates a new one
+            % - instabilities can be smoothed out using iDampFR for all
+            %   connected branch solvers. However, a high value of iDampFR
+            %   might lead to more inaccurate results or even to a hang up
+            %   of the solver.
+            % - the rSetChange/rMaxChange behaviour in the iterative solver
+            %   will be changed soon, so not described here.
+            
+            
             % To increase the frequency of phase updates, uncomment this
             % line. This doesn't mean that the phases update ten times as
             % often, but that they increase their sensitivity towards mass

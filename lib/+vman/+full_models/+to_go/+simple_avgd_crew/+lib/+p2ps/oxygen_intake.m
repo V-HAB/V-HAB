@@ -21,7 +21,7 @@ classdef oxygen_intake < matter.procs.p2ps.flow
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
             
             % Preparation, see tutorials
-            this.arExtractPartials = zeros(1, this.oMT.iSpecies);
+            this.arExtractPartials = zeros(1, this.oMT.iSubstances);
             this.arExtractPartials(this.oMT.tiN2I.O2) = 1;
         end
         
