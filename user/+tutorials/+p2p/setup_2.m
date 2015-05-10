@@ -19,8 +19,10 @@ classdef setup_2 < simulation
             oExample = tutorials.p2p.systems.Example2(this.oRoot, 'Example');
             
             % Create the solver
-            oB1 = solver.matter.linear.branch(oExample.aoBranches(1));
-            oB2 = solver.matter.linear.branch(oExample.aoBranches(2));
+            oB1 = solver.matter.iterative.branch(oExample.aoBranches(1));
+            oB2 = solver.matter.iterative.branch(oExample.aoBranches(2));
+            
+            iDampFR = 10;
             
             %% Ignore the contents of this section
             

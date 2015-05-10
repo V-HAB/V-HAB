@@ -32,13 +32,10 @@ classdef hx_flow < matter.procs.f2f
            fDeltaTemp  = this.fDeltaTemp;
         end
         
-        %function to set the outlet temperature and pressure of the heat
-        %exchanger
-        function setOutFlow(this, fDeltaTemp, fDeltaPress)
-            
-            this.fDeltaTemp = fDeltaTemp;
+        % Function to set the heat flow and pressure of the heat exchanger
+        function setOutFlow(this, fHeatFlow, fDeltaPress)
+            this.fHeatFlow   = fHeatFlow;
             this.fDeltaPress = fDeltaPress;
-            %this.fDeltaPressure = this.fDeltaPress;
         end
         
         function oInFlow = getInFlow(this)

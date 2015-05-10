@@ -18,7 +18,7 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName, 30);
+            this@vsys(oParent, sName);
             
             % Creating a store, volume 1 m^3
             this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1));
@@ -31,7 +31,7 @@ classdef Example < vsys
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
             
             % Adding a fan to move the gas
-            this.addProcF2F(components.fan(this.oData.oMT, 'Fan', 'setSpeed', 40000, 'Left2Right'));
+            this.addProcF2F(components.fan(this.oData.oMT, 'Fan', 'setSpeed', 55000, 'Left2Right'));
              
             % Adding a pipe to connect the tanks
             this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 1, 0.1));
@@ -40,11 +40,16 @@ classdef Example < vsys
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2'}, 'Tank_1.Port_2');
+            oBranch = this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2'}, 'Tank_1.Port_2');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
             this.seal();
+            
+            % Now that the system is sealed, we can add the branch to a
+            % specific solver. In this case we will use the linear
+            % solver. 
+            solver.matter.linear.branch(oBranch);
         end
     end
     

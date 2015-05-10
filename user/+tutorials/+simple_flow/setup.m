@@ -13,48 +13,37 @@ classdef setup < simulation
     
     methods
         function this = setup() % Constructor function
+            
+            % First we call the parent constructor and tell it the name of
+            % this simulation we are creating.
             this@simulation('Tutorial_Simple_Flow');
             
-            % Creating the root object
-            oExample = tutorials.simple_flow.systems.Example(this.oRoot, 'Example');
-            
-            
-            % Add branch to solver
-            oB1 = solver.matter.iterative.branch(oExample.aoBranches(1));
-            %oB1.iDampFR = 3;
-            %% Ignore the contents of this section
-            % Set a veeery high fixed time step - the solver will still be
-            % called by the phase update methods!
-            %oB1.fFixedTS = 10000;
-            
-            % Set fixed time steps for all phases, synced. Means that every
-            % tick each phase and both branches are solved.
-            % Decrease if flow rates unstable, increase if too slow. If un-
-            % stable AND too slow, buy a new computer.
-            aoPhases = this.oRoot.toChildren.Example.toStores.Tank_1.aoPhases;
-            aoPhases(1).rMaxChange = 0.001;
-            aoPhases = this.oRoot.toChildren.Example.toStores.Tank_2.aoPhases;
-            aoPhases(1).rMaxChange = 0.001;
+            % Creating the 'Example' system as a child of the root system
+            % of this simulation. 
+            tutorials.simple_flow.systems.Example(this.oRoot, 'Example');
             
             %% Logging
-            % Creating a cell setting the log items
+            % Creating a cell setting the log items. You need to know the
+            % exact structure of your model to set log items, so do this
+            % when you are done modelling and ready to run a simulation. 
             this.csLog = {
                 % System timer
                 'oData.oTimer.fTime';                                        % 1
                 
-                % Add other parameters here
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fPressure';  % 2
+                % Logging pressures, masses and the flow rate
+                'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';  % 2
                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fPressure';  % 4
+                'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';  % 4
                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
                 'toChildren.Example.aoBranches(1).fFlowRate';                % 6
                 
+                % You can add other parameters here
                 };
             
             %% Simulation length
-            % Stop when specific time in sim is reached
-            % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 1000 * 1; % In seconds
+            % Stop when specific time in simulation is reached or after 
+            % specific amount of ticks (bUseTime true/false).
+            this.fSimTime = 3600 * 1; % In seconds
             this.iSimTicks = 600;
             this.bUseTime = true;
 
@@ -69,7 +58,7 @@ classdef setup < simulation
             figure('name', 'Tank Pressures');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [2 4]));
+            plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
             legend('Tank 1', 'Tank 2');
             ylabel('Pressure in Pa');
             xlabel('Time in s');

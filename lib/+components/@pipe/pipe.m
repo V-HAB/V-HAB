@@ -10,7 +10,7 @@ classdef pipe < matter.procs.f2f
 
         % For reynolds number calculation
         Const = struct(...
-            'fReynoldsCritical', 2300 ...
+            'fReynoldsCritical', 2320 ...
         );
 
     end
@@ -22,18 +22,8 @@ classdef pipe < matter.procs.f2f
     end
 
     properties (SetAccess = protected, GetAccess = public)
-
-        fHydrDiam;
-        fHydrLength;
-        bActive         = false;
-
-        fDeltaTemp      = 0;
-        fDeltaPressure  = 0;
-        fDeltaPress     = 0;
+        % Surface roughness of the pipe in [?]
         fRoughness      = 0;
-
-
-        fLastLambda     = 0.08;
 
     end
     
@@ -147,8 +137,9 @@ classdef pipe < matter.procs.f2f
             pInterp = 0.1;
 
 
-            % TEST - calculate Colebrook and use for transient /
-            this.fRoughness  = 0; %Equivalent sand roughness
+            % Calculating the Darcy-Weisbach friction factor using the
+            % Colebrook equation for use in transient and turbulent flow
+            % regimes.
             fLambdaColebrook = 0;
 
             if (this.Const.fReynoldsCritical * (1 - pInterp) < fReynolds)
@@ -159,7 +150,9 @@ classdef pipe < matter.procs.f2f
             % (PDF) Laminar: Hagen-Poiseuille
             if fReynolds <= this.Const.fReynoldsCritical * (1 - pInterp)
 
-                %CHECK Where does the number 64 come from?
+                % Darcy friction factor for laminar flow in a circular pipe
+                % (Reynolds number less than 2320) is given by the 
+                % following formula:
                 fLambda = 64 / fReynolds;
 
             % Interpolation between laminar and turbulent

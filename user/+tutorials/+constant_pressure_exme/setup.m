@@ -16,11 +16,22 @@ classdef setup < simulation
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation('Tutorial_Loop_Flow');
+            this@simulation('Tutorial_Simple_Flow');
+            
+            
+            % Decreases the default rMaxChange set by phases in .seal() by
+            % a factor of 10. A manual rMaxChange set after. seal() 
+            % overrides the default value.
+            % This is done to make sure, the simulation steps are small
+            % enough. Sometimes they can become to large causing the plots
+            % to look like staircases instead of smooth curves. 
+            % Only use this when necessary. 
+            this.oData.set('rUpdateFrequency', 0.1);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            tutorials.loop_flow.systems.Example(this.oRoot, 'Example');
+            tutorials.constant_pressure_exme.systems.Example(this.oRoot, 'Example');
+            
             
             %% Logging
             % Creating a cell setting the log items. You need to know the
@@ -31,16 +42,18 @@ classdef setup < simulation
                 'oData.oTimer.fTime';                                        % 1
                 
                 % Add other parameters here
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fPressure';  % 2
+                'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';  % 2
                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
-                'toChildren.Example.aoBranches(1).fFlowRate';                % 4
+                'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';  % 4
+                'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
+                'toChildren.Example.aoBranches(1).fFlowRate';                % 6
                 
                 };
             
             %% Simulation length
             % Stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 100 * 1; % In seconds
+            this.fSimTime = 1000; % In seconds
             this.iSimTicks = 600;
             this.bUseTime = true;
 
@@ -52,26 +65,26 @@ classdef setup < simulation
             
             close all
             
-            figure('name', 'Tank Pressure');
+            figure('name', 'Tank Pressures');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 2));
-            legend('Tank 1');
+            plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
+            legend('Tank 1', 'Tank 2');
             ylabel('Pressure in Pa');
             xlabel('Time in s');
             
-            figure('name', 'Tank Mass');
+            figure('name', 'Tank Masses');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 3));
-            legend('Tank 1');
+            plot(this.mfLog(:,1), this.mfLog(:, [3 5]));
+            legend('Tank 1', 'Tank 2');
             ylabel('Mass in kg');
             xlabel('Time in s');
             
             figure('name', 'Flow Rate');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 4));
+            plot(this.mfLog(:,1), this.mfLog(:, 6));
             legend('Branch');
             ylabel('flow rate [kg/s]');
             xlabel('Time in s');
@@ -83,7 +96,7 @@ classdef setup < simulation
             legend('Solver');
             ylabel('Time in [s]');
             xlabel('Ticks');
-                        
+            
             tools.arrangeWindows();
         end
         

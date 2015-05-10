@@ -1,15 +1,19 @@
 classdef Example < vsys
-    %EXAMPLE Example simulation for the manual solver in V-HAB 2.0
+    %EXAMPLE Example simulation for the heat flow functionaliy in V-HAB 2.0 F2F processors
     %   Two tanks filled with gas and a pipe in between. The flow rate is 
-    %   manually changed every 100 seconds in the exec function of this 
-    %   system. 
+    %   set to a constant value via a manual solver branch. A dummy heater 
+    %   element is included in the branch. In the exec() method of this
+    %   class we change the heater's heat flow property every 100 s.
     
     properties
         oBranch;        % A branch object that we can manipulate while the system is running
         
-        bHighFlowRate;  % A Boolean variable to indicate if the flow rate is currently high or low
+        oHeater;        % A F2F processor object that injects thermal 
+                        % energy into the flow, causing a temperature
+                        % change. Can also be negative!
         
-        fFlowRate;      % A float variable indicating the current flow rate in kg/s
+        bHeaterOn;      % A Boolean variable indicating if the heater is 
+                        % currently switched on. 
         
         fSwitchTime;    % A float variable that is used to set the next 
                         % point in the simulated time, when the heater and
@@ -29,13 +33,13 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName, 1);
+            this@vsys(oParent, sName, 20);
             
             % Creating a store, volume 1000 m^3
             this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1000));
             
             % Adding a phase to the store 'Tank_1', 1000 m^3 air
-            oGasPhase = this.toStores.Tank_1.createPhase('air', 1000);
+            oGasPhase = this.toStores.Tank_1.createPhase('air', 2000);
             
             % Creating a second store, volume 1000 m^3
             this.addStore(matter.store(this.oData.oMT, 'Tank_2', 1000));
@@ -48,27 +52,30 @@ classdef Example < vsys
             matter.procs.exmes.gas(oAirPhase, 'Port_2');
              
             % Adding a pipe to connect the tanks, length 1 m, diameter 0.1 m
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe', 1, 0.1));
+            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe', 10, 0.01));
+            
+            this.oHeater = components.heater(this.oData.oMT, 'Heater');
+            this.addProcF2F(this.oHeater);
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            oBranch = this.createBranch('Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
+            oBranch = this.createBranch('Tank_1.Port_1', {'Pipe','Heater'}, 'Tank_2.Port_2');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
             this.seal();
             
-            % Add branch to manual solver
+            % Add branch to manual solver and set the flow rate
             this.oBranch = solver.matter.manual.branch(oBranch);
+            this.oBranch.setFlowRate(0.2);
             
-            % Setting the initial switching time for the flow rate to 100 s. 
+            % Setting the initial switching time for the heater to 100 s. 
             this.fSwitchTime   = 100;
             
-            % Initialy the flow rate is low
-            this.bHighFlowRate = false;
-            this.fFlowRate     = 0.1;
-            
+            % Initially, the heater is off. 
+            this.oHeater.setPower(0);
+            this.bHeaterOn = false;
             
         end
     end
@@ -79,25 +86,26 @@ classdef Example < vsys
             % exec(ute) function for this system
             % Here it calls its parent's exec function
             exec@vsys(this);
-            % Since we've added the branch between the two tanks to the manual solver inside of this
-            % vsys-object, we can access its setFlowRate method to manually set and change the flow
-            % rate of the branch. Here we change between two flow rate every 100 seconds.
+            
+            % Now we check if the simulation time has passed the switch 
+            % time, if yes we toggle the heater and increase the switch
+            % time by another 100 s. This way we change the heater status
+            % every 100 s. 
              
             if this.oData.oTimer.fTime > this.fSwitchTime   % Have 100s passed?
-                if this.bHighFlowRate                       % Is the flow rate currently high? 
-                    this.fFlowRate = 0.1;                   % Set flow rate to low value
-                    this.bHighFlowRate = false;             % Change flow rate indicator to false
+                if this.bHeaterOn                           % Is the heater currently on? 
+                    this.bHeaterOn = false;                 % Turining the heater off
+                    this.oHeater.setPower(0);
                     
                 else
-                    this.fFlowRate = 1;                     % Set flow rate to high value
-                    this.bHighFlowRate = true;              % Change flow rate indicator to true
+                    this.bHeaterOn = true;                  % Turining the heater on
+                    this.oHeater.setPower(2000);
                     
                 end
                 
-                this.fSwitchTime = this.fSwitchTime + 100;
+                this.fSwitchTime = this.fSwitchTime + 100;  % Incrementing the switch time
+                
             end
-            
-            this.oBranch.setFlowRate(this.fFlowRate);       % Setting the flow rate
             
         end
         

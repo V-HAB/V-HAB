@@ -197,11 +197,15 @@ classdef HX < vsys
         %initialies for infinite because in this case there is no thermal
         %resistance from conductance
         
+        % Stores the time at which the update() method was last called
+        fLastUpdate;
+        
+        
     end
     
     methods
         function this = HX(oParent, sName, mHX, sHX_type, fHX_TC)
-            this@vsys(oParent, sName, 1);
+            this@vsys(oParent, sName);
             
             %if a thermal conductivity for the heat exchanger is provided
             %it overrides the infinte value with which it is initialised
@@ -291,8 +295,8 @@ classdef HX < vsys
             
             %adds the flow to flow processores used to set the outlet
             %values of the heat exchanger
-            this.oF2F_1 = support_classes.HX.hx_flow(this, this.oData.oMT, [sName,'_1'], fHydrDiam_1, fHydrLength_1);
-            this.oF2F_2 = support_classes.HX.hx_flow(this, this.oData.oMT, [sName,'_2'], fHydrDiam_2, fHydrLength_2);
+            this.oF2F_1 = support_classes.HX.hx_flow(this, this.oData.oMT, [sName,'_1']);
+            this.oF2F_2 = support_classes.HX.hx_flow(this, this.oData.oMT, [sName,'_2']);
             
             this.seal();
         end
@@ -309,11 +313,16 @@ classdef HX < vsys
             if ~this.oTimer.fTime
                 return;
             end
-
-            %gets the two flow objects from the heat exchanger, flow 1 
-            %always has to be the one inside the pipes if there are pipes
-%             oFlows_1 = this.oF2F_1.aoFlows(1);
-%             oFlows_2 = this.oF2F_2.aoFlows(1);
+            
+            % We also don't need to do all of the calculations multiple
+            % times per timestep, so we do the following check. 
+            if this.oTimer.fTime == this.fLastUpdate
+                return;
+            end
+            
+            
+            % Get the two flow objects from the heat exchanger, flow 1 
+            % always has to be the one inside the pipes if there are pipes
             
             % getInFlow() will produce an error if the flow rate is zero.
             % To avoid this, we try to do it "right", if it doesn't work,
@@ -327,41 +336,39 @@ classdef HX < vsys
             try
                 oFlows_2 = this.oF2F_2.getInFlow(); 
             catch
-                oFlows_2 = this.oF2F_1.aoFlows(1);
+                oFlows_2 = this.oF2F_2.aoFlows(1);
             end
             
-            %gets the values from the flows required for the HX
-            %TO DO: get all material values from flows as soon as matter
-            %table supports them
-            fMassFlow_1 = abs(oFlows_1.fFlowRate);      % Get absolute values, hope that's okay...
-            fMassFlow_2 = abs(oFlows_2.fFlowRate);      % Get absolute values, hope that's okay...
+            % gets the values from the flows required for the HX
+            fMassFlow_1  = abs(oFlows_1.fFlowRate);      % Get absolute values, hope that's okay...
+            fMassFlow_2  = abs(oFlows_2.fFlowRate);      % Get absolute values, hope that's okay...
             fEntryTemp_1 = oFlows_1.fTemp;
             fEntryTemp_2 = oFlows_2.fTemp;
-            fCp_1 = oFlows_1.fHeatCapacity;
-            fCp_2 = oFlows_2.fHeatCapacity;
+            fCp_1        = oFlows_1.fHeatCapacity;
+            fCp_2        = oFlows_2.fHeatCapacity;
 
-            %For changes in entry temperature that are larger than 0.1 K or
-            %changes in massflow which are larger than 1 g/sec the heat
-            %exchanger is calculated anew
-            %alternativly in the first iteration step the value first is 1
-            %and the programm has to calculate the heat exchanger
-            if  this.iFirst_Iteration == 1 ||...
-                (abs(fEntryTemp_1-this.fEntryTemp_Old_1) > 0.1) ||...
-                (abs(fMassFlow_1-this.fMassFlow_Old_1) > 0.001) ||...
-                (abs(fEntryTemp_2-this.fEntryTemp_Old_2) > 0.1)||...
+            % For changes in entry temperature that are larger than 0.1 K or
+            % changes in massflow which are larger than 1 g/sec the heat
+            % exchanger is calculated anew
+            % alternativly in the first iteration step the value first is 1
+            % and the programm has to calculate the heat exchanger
+            if  this.iFirst_Iteration == 1 || ...
+                (abs(fEntryTemp_1-this.fEntryTemp_Old_1) > 0.1) || ...
+                (abs(fMassFlow_1-this.fMassFlow_Old_1) > 0.001) || ...
+                (abs(fEntryTemp_2-this.fEntryTemp_Old_2) > 0.1)|| ...
                 (abs(fMassFlow_2-this.fMassFlow_Old_2) > 0.001)
                 
-                fDensity_1 = this.oData.oMT.calculateDensity(oFlows_1);
-                fDensity_2 = this.oData.oMT.calculateDensity(oFlows_2);
+                fDensity_1      = this.oData.oMT.calculateDensity(oFlows_1);
+                fDensity_2      = this.oData.oMT.calculateDensity(oFlows_2);
                 
-                fDynVisc_1 = oFlows_1.oMT.calculateDynamicViscosity(oFlows_1);
+                fDynVisc_1      = oFlows_1.oMT.calculateDynamicViscosity(oFlows_1);
                 fConductivity_1 = oFlows_1.oMT.calculateThermalConductivity(oFlows_1);
                 
-                fDynVisc_2 = oFlows_2.oMT.calculateDynamicViscosity(oFlows_2);
+                fDynVisc_2      = oFlows_2.oMT.calculateDynamicViscosity(oFlows_2);
                 fConductivity_2 = oFlows_1.oMT.calculateThermalConductivity(oFlows_2);
                 
-                %sets the structs for the two fluids according to the
-                %definition from HX_main
+                % sets the structs for the two fluids according to the
+                % definition from HX_main
                 Fluid_1.Massflow                = fMassFlow_1;
                 Fluid_1.Entry_Temperature       = fEntryTemp_1;
                 Fluid_1.Dynamic_Viscosity       = fDynVisc_1;
@@ -376,34 +383,41 @@ classdef HX < vsys
                 Fluid_2.Thermal_Conductivity    = fConductivity_2;
                 Fluid_2.Heat_Capacity           = fCp_2;      
 
-                %function call for HX_main to get outlet values
-                % as first value the this struct from object HX is given to
-                % the function HX_main
-                [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] =...
+                % function call for HX_main to get outlet values as first 
+                % value the this struct from object HX is given to the 
+                % function HX_main
+                [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] = ...
                     this.HX_main(Fluid_1,Fluid_2,this.fHX_TC);        
 
-                %sets the outlet temperatures into the respective variable
-                %inside the heat exchanger object for plotting purposes
+                % sets the outlet temperatures into the respective variable
+                % inside the heat exchanger object for plotting purposes
                 this.fTempOut_Fluid1 = fTempOut_1;
                 this.fTempOut_Fluid2 = fTempOut_2;
+                
+                % Calculating the heat flows for both hx_flow objects
+                fHeatFlow_1 = fMassFlow_1 * fCp_1 * (fTempOut_1 - fEntryTemp_1);
+                fHeatFlow_2 = fMassFlow_2 * fCp_2 * (fTempOut_2 - fEntryTemp_2);
+                
+                % uses the function defined in flowcomps.hx_flow to set the
+                % outlet values
+                this.oF2F_1.setOutFlow(fHeatFlow_1, fDeltaPress_1);
+                this.oF2F_2.setOutFlow(fHeatFlow_2, fDeltaPress_2);
 
-                %uses the function defined in flowcomps.hx_flow to set the
-                %outlet values
-                this.oF2F_1.setOutFlow(fTempOut_1 - fEntryTemp_1, fDeltaPress_1);
-                this.oF2F_2.setOutFlow(fTempOut_2 - fEntryTemp_2, fDeltaPress_2);
-
-                %sets the variable to decide wether it is the first
-                %iteration step to zero
+                % sets the variable to decide wether it is the first
+                % iteration step to zero
                 if this.iFirst_Iteration == 1
                     this.iFirst_Iteration = int8(0);
                 end
-                %Assignes the values of this iteration step as the old values
-                %for the next step
+                
+                % Assignes the values of this iteration step as the old values
+                % for the next step
                 this.fEntryTemp_Old_1    = fEntryTemp_1;
                 this.fEntryTemp_Old_2    = fEntryTemp_2;
                 this.fMassFlow_Old_1     = fMassFlow_1;
                 this.fMassFlow_Old_2     = fMassFlow_2;
             end
+            
+            this.fLastUpdate = this.oTimer.fTime; 
             
         end
     end

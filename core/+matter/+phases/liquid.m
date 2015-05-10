@@ -32,12 +32,8 @@ classdef liquid < matter.phase
         % tfMasses  : Struct containing mass value for each species
         % fVolume   : Volume of the phase
         % fTemp     : Temperature of matter in phase
+        % fPress    : Pressure of matter in phase
         
-        %TO DO: The parent class requires that the liquid phase definition
-        %has fPressure as input but since density, temperature and pressure
-        %are not independent it is not allowed to set all three. Therefore
-        %the unused parameter fPressure exists here but the pressure is
-        %actually calculated through the correlation.
         function this = liquid(oStore, sName, tfMasses, fVolume, fTemp, fPressure)
             this@matter.phase(oStore, sName, tfMasses, fTemp);
             
@@ -45,12 +41,8 @@ classdef liquid < matter.phase
             this.fTemp = fTemp;
             this.fPressure = fPressure;
              
-            this.fDensity = this.oMT.findProperty('H2O','Density','Pressure',fPressure,'Temperature',(fTemp-273.15),'liquid');
+            this.fDensity = this.oMT.findProperty('H2O','Density','Pressure',fPressure,'Temperature',fTemp,'liquid');
             
-            this.fMass = this.fDensity*this.fVolume;
-                        
-            %TODO see .update(), also called from matter.phase constructor!
-            %this.update();
         end
         
         function bSuccess = setVolume(this, fVolume)

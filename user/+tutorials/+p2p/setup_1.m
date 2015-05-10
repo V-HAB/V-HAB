@@ -18,6 +18,9 @@ classdef setup_1 < simulation
     
     methods
         function this = setup_1()
+            
+            % First we call the parent constructor and tell it the name of
+            % this simulation we are creating.
             this@simulation('Tutorial_p2p');
             
             
@@ -71,8 +74,8 @@ classdef setup_1 < simulation
             this.oData.set('rUpdateFrequency', 15);
             
             
-            
-            % Creating the root object
+            % Creating the 'Example' system as a child of the root system
+            % of this simulation.
             oExample = tutorials.p2p.systems.Example1(this.oRoot, 'Example');
             
             % Create the solver instances. Generally, this can be done here
@@ -109,15 +112,12 @@ classdef setup_1 < simulation
             % small rMaxChange (small volume) but is not really important
             % for the solving process, so increase rMaxChange manually.
             this.aoFilterPhases(2).rMaxChange = 0.1;
-            
-            
-            
-            
-            
-            
+
             
             %% Logging
-            % Creating a cell setting the log items
+            % Creating a cell setting the log items. You need to know the
+            % exact structure of your model to set log items, so do this
+            % when you are done modelling and ready to run a simulation. 
             this.csLog = {
                 % System timer
                 'oData.oTimer.fTime';                                           %1
@@ -152,12 +152,11 @@ classdef setup_1 < simulation
         
         function plot(this)
             
-%             close all 
+            close all 
             
             figure('name', 'Tank Pressures');
             hold on;
             grid minor;
-            %plot(this.mfLog(:,1), this.mfLog(:, 2:3));
             plot(this.mfLog(:,1), this.mfLog(:, [ 2 3 ]) .* this.mfLog(:, [ 9 11 ]));
             legend('Atmos', 'Filter Flow');
             ylabel('Pressure in Pa');
