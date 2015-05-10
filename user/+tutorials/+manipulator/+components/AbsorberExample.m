@@ -29,7 +29,7 @@ classdef AbsorberExample < matter.procs.p2ps.flow
             
             % Species to absorp, max absorption
             this.sSubstance  = sSubstance;
-            this.fCapacity = fCapacity;
+            this.fCapacity   = fCapacity;
             
             % The p2p processor can specify which species it wants to
             % extract from the phase. A vector with relative values has to

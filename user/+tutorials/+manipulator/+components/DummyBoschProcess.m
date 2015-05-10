@@ -1,4 +1,4 @@
-classdef DummyBoschProcess < matter.manips.substances
+classdef DummyBoschProcess < matter.manips.substance.flow
     %DUMMYBOSCHPROCESS A dummy model of the Bosch Process
     %   This manipulator converts all of the CO2 in the connected phase to
     %   the according amount of pure carbon and oxygen.
@@ -10,23 +10,23 @@ classdef DummyBoschProcess < matter.manips.substances
     
     methods
         function this = DummyBoschProcess(sName, oPhase)
-            this@matter.manips.substances(sName, oPhase);
+            this@matter.manips.substance.flow(sName, oPhase);
         end
         
         function update(this)
             % Get the content of the phase
-            afMass      = this.getTotalMasses();
+            afMassFlows = this.getTotalFlowRates();
             
             % Initialize the array we pass back to the phase once we're
             % done
-            afPartials = zeros(1, this.oPhase.oMT.iSubstances);
+            afPartialFlows = zeros(1, this.oPhase.oMT.iSubstances);
             
             % Abbreviating some of the variables to make code more legible
             afMolMass  = this.oPhase.oMT.afMolMass;
             tiN2I      = this.oPhase.oMT.tiN2I;
             
             % Getting the total CO2 mass in the phase
-            fMassCO2 = afMass(tiN2I.CO2);
+            fMassCO2 = afMassFlows(tiN2I.CO2);
             
             % Setting the carbon mass to the percentage of carbon in the 
             % CO2 of the phase
@@ -40,15 +40,15 @@ classdef DummyBoschProcess < matter.manips.substances
             % is negative, the carbon and oxygen masses are positive. This
             % means that effectively all CO2 is converted to oxygen and
             % carbon.
-            afPartials(tiN2I.CO2) = -1 * fMassCO2;
-            afPartials(tiN2I.C)   = fMassC;
-            afPartials(tiN2I.O2)  = fMassO2;
+            afPartialFlows(tiN2I.CO2) = -1 * fMassCO2;
+            afPartialFlows(tiN2I.C)   = fMassC;
+            afPartialFlows(tiN2I.O2)  = fMassO2;
             
             % Now we can call the parent update method and pass on the
             % afPartials variable. The last parameter indicates that the
             % values in afPartials are absolute masses, so within the
             % update method they are converted to flow rates. 
-            update@matter.manips.substances(this, afPartials, true);
+            update@matter.manips.substance.flow(this, afPartialFlows);
         end
     end
     

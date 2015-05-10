@@ -152,9 +152,9 @@ classdef setup < simulation
             grid minor;
             plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
             legend('Solver');
-            ylabel('Ticks [-]');
-            xlabel('Time in s');
-
+            ylabel('Time in s');
+            xlabel('Ticks [-]');
+            
             tools.arrangeWindows();
                 
         end
