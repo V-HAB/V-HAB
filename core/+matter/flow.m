@@ -419,7 +419,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 if ~isempty(oExme)
                     this(iI).arPartialMass = arPhasePartialMass;
                     this(iI).fMolMass      = fPhaseMolMass;
+                    
                     this(iI).fHeatCapacity = fPhaseHeatCapacity;
+                    %this(iI).fHeatCapacity = this.oMT.calculateHeatCapacity(this(iI));
                 end
                 
                 
@@ -432,7 +434,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % according to IN exme
                 if iL == 1
                     this.fPressure = fPortPress;
-                    this.fTemp     = fPortTemp;
+                    this.fTemp     = fCurrTemp;
                 end
                 
                 

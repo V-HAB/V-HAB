@@ -184,7 +184,7 @@ classdef branch < solver.matter.base.branch
             %disp([ this.oBranch.sName ' eq @' num2str(this.oBranch.oContainer.oTimer.fTime) ]);
             %this.afExec(end + 1) = this.oBranch.oContainer.oTimer.fTime;
             
-            update@solver.matter.base.branch(this, fFlowRate, [], []);
+            update@solver.matter.base.branch(this, fFlowRate);
         end
     end
 end

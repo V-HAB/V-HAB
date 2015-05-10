@@ -56,7 +56,7 @@ classdef main < vsys
             %        so for now, two gas phases and therefore just LungVol
             this.addStore(matter.store(this.oData.oMT, 'Lung', this.fLungVolume));% + 0.001));
             
-            this.toStores.Lung.createPhase('air', this.fLungVolume);
+            this.toStores.Lung.createPhase('air', 'air', this.fLungVolume);
             
             % 'Inner' Solid phase with some C, 0.001m^3 volume.
             %CHECK-S solid phases probably not yet sufficiently implemented

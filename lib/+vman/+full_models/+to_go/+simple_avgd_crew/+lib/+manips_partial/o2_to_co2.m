@@ -1,4 +1,4 @@
-classdef o2_to_co2 < matter.manips.partial
+classdef o2_to_co2 < matter.manips.substances
     %SOMEABSORBEREXAMPLE Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -9,7 +9,7 @@ classdef o2_to_co2 < matter.manips.partial
     
     methods
         function this = o2_to_co2(sName, oPhase)
-            this@matter.manips.partial(sName, oPhase);
+            this@matter.manips.substances(sName, oPhase);
         end
         
         function update(this)
@@ -17,7 +17,7 @@ classdef o2_to_co2 < matter.manips.partial
             afFlowRate  = this.getTotalFlowRates();
             tiN2I       = this.oPhase.oMT.tiN2I;
             afMolMass   = this.oPhase.oMT.afMolMass;
-            afFlowRates = zeros(1, this.oPhase.oMT.iSpecies);
+            afFlowRates = zeros(1, this.oPhase.oMT.iSubstances);
             
             
             % Getting the total O2 mass in the phase (inflowing plus
@@ -41,7 +41,7 @@ classdef o2_to_co2 < matter.manips.partial
             afFlowRates(tiN2I.C)   = -1 * fC;
             afFlowRates(tiN2I.CO2) = fCO2;
             
-            update@matter.manips.partial(this, afFlowRates);
+            update@matter.manips.substances(this, afFlowRates);
         end
     end
     

@@ -42,7 +42,7 @@ classdef p2p < matter.flow
             iPhaseOut = find(strcmp({ oStore.aoPhases.sName }, sPhaseOut), 1);
             
             if isempty(iPhaseIn) || isempty(iPhaseOut)
-                this.throw('p2p', 'Phase could not be found: in phase %s has index %i, %s has index %i', sPhaseIn, iPhaseIn, sPhaseOut, iPhaseOut);
+                this.throw('p2p', 'Phase could not be found: in phase "%s" has index "%i", out phase "%s" has index "%i"', sPhaseIn, iPhaseIn, sPhaseOut, iPhaseOut);
             end
             
             % Set name and a fake oBranch ref - back to ourself
