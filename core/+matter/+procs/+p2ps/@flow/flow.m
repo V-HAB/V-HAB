@@ -45,9 +45,14 @@ classdef flow < matter.procs.p2p
             mrInPartials  = zeros(0, this.oMT.iSubstances);
             afInFlowrates = [];
             
-            % See phase.getTotalMassChange
+            % Get flow rates and partials from EXMEs
             for iI = 1:oPhase.iProcsEXME
-                [ afFlowRates, mrFlowPartials, mfProperties ] = oPhase.coProcsEXME{iI}.getFlowData();
+                [ afFlowRates, mrFlowPartials, ~ ] = oPhase.coProcsEXME{iI}.getFlowData();
+                
+                % The afFlowRates is a row vector containing the flow rate
+                % at each flow, negative being an extraction!
+                % mrFlowPartials is matrix, each row has partial ratios for
+                % a flow, cols are the different substances.
                 
                 abInf = (afFlowRates > 0);
                 
@@ -57,24 +62,16 @@ classdef flow < matter.procs.p2p
                 end
             end
             
-            
-            % Add inner mass - mass, but assume timestep of 1s for process.
-            %mrInPartials  = [ mrInPartials;  oPhase.arPartialMass ];
-            %afInFlowrates = [ afInFlowrates; oPhase.fMass / 1 ];
-            
-            
             % Check manipulator for partial
-            if ~isempty(oPhase.toManips.substances) && ~isempty(oPhase.toManips.substances.afPartial)
+            if ~isempty(oPhase.toManips.substance) && ~isempty(oPhase.toManips.substance.afPartialFlows)
                 % Was updated just this tick - partial changes in kg/s
                 % Only get positive values, i.e. produced species
-                afTmpPartials    = oPhase.toManips.substances.afPartial;
+                afTmpPartials    = oPhase.toManips.substance.afPartialFlows;
                 aiTmpPartialsPos = afTmpPartials > 0;
                 afManipPartials  = zeros(1, length(afTmpPartials));
                 
                 afManipPartials(aiTmpPartialsPos) = afTmpPartials(aiTmpPartialsPos);
-                %afManipPartials = oPhase.toManips.substances.afPartial(oPhase.toManips.substances.afPartial > 0);
                 fManipFlowRate  = sum(afManipPartials);
-                %keyboard();
                 
                 if fManipFlowRate > 0
                     mrInPartials  = [ mrInPartials;  afManipPartials / fManipFlowRate ];
@@ -86,9 +83,8 @@ classdef flow < matter.procs.p2p
         
         
         function setMatterProperties(this, fFlowRate, arPartials)
-            % Overwrites the basic setData, does some other stuff. If p2p
-            % is updated, needs to set new flow rate through this method,
-            % and also new partials.
+            % If p2p is updated, needs to set new flow rate through this 
+            % method, and also new partials.
             %TODO possible to also change the temperature? Just set fTemp,
             %     not used by oIn (if fFR > 0) anyway.
             

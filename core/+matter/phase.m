@@ -117,7 +117,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
 
         % Manipulators
-        toManips = struct('volume', [], 'temperature', [], 'substances', []);
+        toManips = struct('volume', [], 'temperature', [], 'substance', []);
      end
 
     % Derived values
@@ -265,9 +265,10 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
             sManipType = [];
 
-            if     isa(oManip, 'matter.manips.volume'),      sManipType = 'volume';
-            elseif isa(oManip, 'matter.manips.temperature'), sManipType = 'temperature';
-            elseif isa(oManip, 'matter.manips.substances'),  sManipType = 'substances';
+            if     isa(oManip, 'matter.manips.volume'),               sManipType = 'volume';
+            elseif isa(oManip, 'matter.manips.temperature'),          sManipType = 'temperature';
+            elseif isa(oManip, 'matter.manips.substance.flow'),       sManipType = 'substance';
+            elseif isa(oManip, 'matter.manips.substance.stationary'), sManipType = 'substance';
             end
 
             if ~isempty(this.toManips.(sManipType))
@@ -313,15 +314,12 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % All in-/outflows in [kg/s] and multiply with curernt time
             % step, also get the inflow rates / temperature / heat capacity
             [ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
-
+            
             % Check manipulator
-            if ~isempty(this.toManips.substances) && ~isempty(this.toManips.substances.afPartial)
-                %TODO should the update be called in calcNewTS as well,
-                %     just like the update methods for flow p2ps?
-                this.toManips.substances.update();
-                
+            if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)                
                 % Add the changes from the manipulator to the total inouts
-                afTotalInOuts = afTotalInOuts + this.toManips.substances.afPartial;
+                afTotalInOuts = afTotalInOuts + this.toManips.substance.afPartialFlows;
+                
             end
             
             % Cache total mass in/out so the EXMEs can use that
@@ -638,9 +636,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % Check manipulator
             %TODO allow user to set a this.bManipBeforeP2P or so, and if
             %     true execute the [manip].update() before the P2Ps update!
-            if ~isempty(this.toManips.substances)
+            if ~isempty(this.toManips.substance)
                 %keyboard();
-                this.toManips.substances.update();
+                this.toManips.substance.update();
 
                 % Add the changes from the manipulator to the total inouts
                 %afTotalInOuts = afTotalInOuts + this.toManips.substances.afPartial;
