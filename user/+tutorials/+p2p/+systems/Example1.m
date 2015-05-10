@@ -44,12 +44,6 @@ classdef Example1 < vsys
             % this system.
             this.seal();
             
-            % Now that the system is sealed, we can add the branches to a
-            % specific solver. In this case we will use the iterative
-            % solver. 
-            solver.matter.iterative.branch(oBranch_1);
-            solver.matter.iterative.branch(oBranch_2);
-            
         end
     end
     

@@ -113,17 +113,12 @@ classdef setup_1 < simulation
         
         function plot(this)
             
-%             close all 
+            close all 
             
             figure('name', 'Tank Pressures');
             hold on;
             grid minor;
-<<<<<<< HEAD
-            plot(this.mfLog(:,1), this.mfLog(:, 2:3) .* this.mfLog(:, [9 11]));
-=======
-            %plot(this.mfLog(:,1), this.mfLog(:, 2:3));
             plot(this.mfLog(:,1), this.mfLog(:, [ 2 3 ]) .* this.mfLog(:, [ 9 11 ]));
->>>>>>> heat_flow_implementation
             legend('Atmos', 'Filter Flow');
             ylabel('Pressure in Pa');
             xlabel('Time in s');

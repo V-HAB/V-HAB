@@ -87,7 +87,6 @@ classdef fan_simple < matter.procs.f2f
             % volumetric flow rate as given in the datasheet
             % Fixed values taken from AIAA-2012-3460 for a fan running at 
             % 4630 RMP
-            keyboard();
             fVolumetricFlowRate = oFlowIn.calculateVolumetricFlowRate();
             fMaxFR = 7 * 0.00047 * sum(oFlowIn.arPartialMass .* this.oMT.calculateDensity(oFlowIn));
 
