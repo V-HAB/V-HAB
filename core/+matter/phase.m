@@ -682,12 +682,15 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 
                 % Changes of substance masses - get max. change, add the change
                 % that happend already since last update
-                arPreviousChange = abs(afChange(abChange) ./ tools.round.prec(this.afMass(abChange), this.oStore.oTimer.iPrecision)) + arPreviousChange(abChange);
+                %arPreviousChange = abs(afChange(abChange) ./ tools.round.prec(this.afMass(abChange), this.oStore.oTimer.iPrecision)) + arPreviousChange(abChange);
+                arPartialsChange = abs(afChange(abChange) ./ tools.round.prec(this.fMass, this.oStore.oTimer.iPrecision));% + arPreviousChange(abChange);
 
                 % Only use non-inf --> inf if current mass of according
                 % substance is zero. If new substance enters phase, still
                 % covered through the overall mass check.
-                rChangePerSecond = max(arPreviousChange(~isinf(arPreviousChange)));
+                rPartialsPerSecond = max(arPartialsChange(~isinf(arPartialsChange)));
+                
+                if isempty(rPartialsPerSecond), rPartialsPerSecond = 0; end;
 
                 % Change per second of TOTAL mass
                 fChange = sum(afChange);
@@ -703,8 +706,12 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % Derive timestep, use the max change (total mass or one of
                 % the substances change)
                 %fNewStep = this.rMaxChange / max([ rChangePerSecond rTotalPerSecond ]);
-                fNewStep = (this.rMaxChange - rPreviousChange) / max([ rChangePerSecond rTotalPerSecond ]);
+                %fNewStep = (this.rMaxChange - rPreviousChange) / max([ rPartialsPerSecond rTotalPerSecond ]);
                 
+                fNewStepTotal    = (this.rMaxChange - rPreviousChange) / rTotalPerSecond;
+                fNewStepPartials = (this.rMaxChange - max(arPreviousChange)) / rPartialsPerSecond;
+                
+                fNewStep = min([ fNewStepTotal fNewStepPartials ]);
                 
                 %{
                 %CHECK can calulateTimeStep be called multiple times in one
