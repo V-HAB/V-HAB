@@ -416,11 +416,11 @@ classdef store < base
             
         end
         
-        function setNextExec(this, fTime)
+        function setNextUpdateTime(this, fTime)
             % Set a time step for updating the store and all phases. Only
             % sets shorter times for updating!
-            % IMPORTANT - parameter does NOT define next time step but next
-            %             EXECUTION time (absolute).
+            % IMPORTANT - parameter does NOT define next time step but the 
+            %             next ABSOLUTE time this store is updated.
             
             % Check if last update time (same as the one stored within the
             % timer) plus current time step larger then new exec time - if

@@ -1,5 +1,5 @@
-classdef fan_old < matter.procs.f2f
-    %FAN_OLD Linar, static, RPM independent fan model
+classdef fan_simple < matter.procs.f2f
+    %FAN_SIMPLE Linar, static, RPM independent fan model
     %   Interpolates between max flow rate and max pressure rise, values
     %   taken from AIAA-2012-3460 for a fan running at 4630 RMP
     
@@ -10,7 +10,7 @@ classdef fan_old < matter.procs.f2f
     end
         
     methods
-        function this = fan_old(oMT, sName, fMaxDeltaP, bReverse)
+        function this = fan_simple(oMT, sName, fMaxDeltaP, bReverse)
             this@matter.procs.f2f(oMT, sName);
                         
             this.fMaxDeltaP   = fMaxDeltaP;
@@ -39,7 +39,10 @@ classdef fan_old < matter.procs.f2f
             
             % Calculating the maximum mass flow rate from the maximum
             % volumetric flow rate as given in the datasheet
-            fMaxFR = 7 * 0.00047 * sum(oFlowIn.arPartialMass .* this.oMT.tafDensity.gas);
+            % Fixed values taken from AIAA-2012-3460 for a fan running at 
+            % 4630 RMP
+            fVolumetricFlowRate = oFlowIn.calculateVolumetricFlowRate();
+            fMaxFR = 7 * 0.00047 * fVolumetricFlowRate;
             
             if oFlowIn.fFlowRate > fMaxFR
                 % If the flow rate is greater than the max flow rate for the
@@ -60,7 +63,7 @@ classdef fan_old < matter.procs.f2f
         
         function [ fDeltaPress, fDeltaTemp ] = solverDeltas(this, fFlowRate)
             fDeltaTemp = 0;
-            
+             
             if fFlowRate == 0
                 % If the current flow rate is zero, the pressure rise is at
                 % maximum. Negative - pressure rise!
@@ -82,9 +85,13 @@ classdef fan_old < matter.procs.f2f
             
             % Calculating the maximum mass flow rate from the maximum
             % volumetric flow rate as given in the datasheet
-            %TODO document that - where do the 7, 0.00047 come from?
-            fMaxFR = 7 * 0.00047 * sum(oFlowIn.arPartialMass .* this.oMT.tafDensity.gas);
-            %keyboard();
+            % Fixed values taken from AIAA-2012-3460 for a fan running at 
+            % 4630 RMP
+            keyboard();
+            fVolumetricFlowRate = oFlowIn.calculateVolumetricFlowRate();
+            fMaxFR = 7 * 0.00047 * sum(oFlowIn.arPartialMass .* this.oMT.calculateDensity(oFlowIn));
+
+            fMaxFR = 7 * 0.00047 * fVolumetricFlowRate;
             
             % Flow rate lower than zero - 'counter flow', i.e. the flow is
             % in the other direction than the fan blows.

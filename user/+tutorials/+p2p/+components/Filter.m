@@ -47,6 +47,8 @@ classdef Filter < matter.store
             % Creating the phase representing the absorber volume manually.
             % The phase is empty and uses the other half of the filter
             % volume.
+            %TODO create solid phase instead of a gas phase to represent a
+            %     solid adsorption medium as zeolite.
             oFiltered = matter.phases.gas(this, ...
                           'FilteredPhase', ... Phase name
                           struct(), ... Phase contents

@@ -117,7 +117,7 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
 
         % Manipulators
-        toManips = struct('volume', [], 'temperature', [], 'substances', []);
+        toManips = struct('volume', [], 'temperature', [], 'substance', []);
      end
 
     % Derived values
@@ -265,9 +265,10 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
             sManipType = [];
 
-            if     isa(oManip, 'matter.manips.volume'),      sManipType = 'volume';
-            elseif isa(oManip, 'matter.manips.temperature'), sManipType = 'temperature';
-            elseif isa(oManip, 'matter.manips.substances'),  sManipType = 'substances';
+            if     isa(oManip, 'matter.manips.volume'),               sManipType = 'volume';
+            elseif isa(oManip, 'matter.manips.temperature'),          sManipType = 'temperature';
+            elseif isa(oManip, 'matter.manips.substance.flow'),       sManipType = 'substance';
+            elseif isa(oManip, 'matter.manips.substance.stationary'), sManipType = 'substance';
             end
 
             if ~isempty(this.toManips.(sManipType))
@@ -283,7 +284,20 @@ classdef phase < base & matlab.mixin.Heterogeneous
         end
 
         function this = massupdate(this)
-
+            % This method updates the mass and temperature related
+            % properties of the phase. It takes into account all in- and
+            % outflowing matter streams via the exme processors connected
+            % to the phase, including the ones associated with p2p
+            % processors. It also gets the mass changes from substance
+            % manipulators. The new temperature is based on the thermal
+            % energy of the in- and outflow. After completing the update of
+            % fMass, afMass and fTemp this method sets the phase's timestep
+            % outdated, so it will be recalculated during the post-tick.
+            % Additionally, if this phase is set as 'sycned', this method
+            % will set all branches connected to exmes connected to this
+            % phase to outdated, also causing a recalculation in the
+            % post-tick. 
+            
             fTime     = this.oStore.oTimer.fTime;
             fLastStep = fTime - this.fLastMassUpdate;
 
@@ -300,15 +314,12 @@ classdef phase < base & matlab.mixin.Heterogeneous
             % All in-/outflows in [kg/s] and multiply with curernt time
             % step, also get the inflow rates / temperature / heat capacity
             [ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
-
+            
             % Check manipulator
-            if ~isempty(this.toManips.substances) && ~isempty(this.toManips.substances.afPartial)
-                %TODO should the update be called in calcNewTS as well,
-                %     just like the update methods for flow p2ps?
-                this.toManips.substances.update();
-                
+            if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)                
                 % Add the changes from the manipulator to the total inouts
-                afTotalInOuts = afTotalInOuts + this.toManips.substances.afPartial;
+                afTotalInOuts = afTotalInOuts + this.toManips.substance.afPartialFlows;
+                
             end
             
             % Cache total mass in/out so the EXMEs can use that
@@ -327,20 +338,17 @@ classdef phase < base & matlab.mixin.Heterogeneous
             %this.afMass =  tools.round.prec(this.afMass + afTotalInOuts, 10);
             this.afMass =  this.afMass + afTotalInOuts;
 
-            %disp([ 'massupdate ' this.oStore.sName ' at ' num2str(fTime) ' TS ' num2str(fTimeStep) ' T ' num2str(this.oStore.oTimer.iTick) ' m ' num2str(sum(afTotalInOuts)) '  from phase ' sif((nargin >= 2) && ~bSetOutdatedTS, 'y', 'n')]);
-
-
-            % Check if that is a problem, i.e. negative masses.
-            %abNegative = (this.afMass + afTotalInOuts) < 0;
+            % Now we check if any of the masses has become negative. This
+            % can happen for two reasons, the first is just MATLAB rounding
+            % errors causing barely negative numbers (e-14 etc.) The other
+            % is an error in the programming of one of the processors.
+            % In any case, we don't interrupt the simulation for this, we
+            % just log the negative masses and set them to zero in the
+            % afMass array. The sum of all mass lost is shown in the
+            % command window in the post simulation summary. 
             abNegative = this.afMass < 0;
 
             if any(abNegative)
-                %disp(this.afMass + afTotalInOuts);
-                %this.throw('massupdate', 'Extracted more mass then available in phase %s (store %s)', this.sName, this.oStore.sName);
-
-                % Subtract - negative - added
-                %NOTE uncomment this, comment out the two lines above if
-                %     negative masses should just be logged
                 this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
                 this.afMass(abNegative) = 0;
             end
@@ -423,9 +431,6 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 return;
             end
 
-            %keyboard();
-            %disp([ num2str(this.oStore.oTimer.iTick) ': Phase ' this.oStore.sName '-' this.sName ' (@' num2str(this.oStore.oTimer.fTime) 's, last ' num2str(this.fLastUpdate) 's)' ]);
-            
             % Store update time
             this.fLastUpdate = this.oStore.oTimer.fTime;
 
@@ -497,8 +502,8 @@ classdef phase < base & matlab.mixin.Heterogeneous
 
         % Moved to public methods, sometimes external access required
         function [ afTotalInOuts, mfInflowDetails ] = getTotalMassChange(this)
-            % Get vector with total mass change through all EXME flows
-            % witin one second, i.e. [kg/s].
+            % Get vector with total mass change through all EXME flows in
+            % [kg/s].
             %
             % The second output parameter is a matrix containing all inflow
             % rates, temperatures and heat capacities for calculating the
@@ -550,10 +555,9 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 end
             end
 
-
-            % Now sum up in-/outflows over all EXMEs and multiply with the
-            % time step!
+            % Now sum up in-/outflows over all EXMEs
             afTotalInOuts = sum(mfTotalFlows, 1);
+            
         end
 
 
@@ -621,12 +625,20 @@ classdef phase < base & matlab.mixin.Heterogeneous
             
             %TODO move this to another function or class or whatever. Why
             %is this executed here anyway?
+            %ANSWER: Because we need to make sure these guys are updated
+            %every time massupdate is called. Than cannot only be done by
+            %the phase.update(), which is called from store.update(), but
+            %also from branch.update(). Then the update methods from the
+            %p2ps and manips would not be called, if they weren't in here.
+            %Still, they seem out of place here and might be put into a
+            %separate method? Or should we bind them to the post-tick of
+            %the timer as well?
             % Check manipulator
             %TODO allow user to set a this.bManipBeforeP2P or so, and if
             %     true execute the [manip].update() before the P2Ps update!
-            if ~isempty(this.toManips.substances)
+            if ~isempty(this.toManips.substance)
                 %keyboard();
-                this.toManips.substances.update();
+                this.toManips.substance.update();
 
                 % Add the changes from the manipulator to the total inouts
                 %afTotalInOuts = afTotalInOuts + this.toManips.substances.afPartial;
@@ -682,12 +694,15 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 
                 % Changes of substance masses - get max. change, add the change
                 % that happend already since last update
-                arPreviousChange = abs(afChange(abChange) ./ tools.round.prec(this.afMass(abChange), this.oStore.oTimer.iPrecision)) + arPreviousChange(abChange);
+                %arPreviousChange = abs(afChange(abChange) ./ tools.round.prec(this.afMass(abChange), this.oStore.oTimer.iPrecision)) + arPreviousChange(abChange);
+                arPartialsChange = abs(afChange(abChange) ./ tools.round.prec(this.fMass, this.oStore.oTimer.iPrecision));% + arPreviousChange(abChange);
 
                 % Only use non-inf --> inf if current mass of according
                 % substance is zero. If new substance enters phase, still
                 % covered through the overall mass check.
-                rChangePerSecond = max(arPreviousChange(~isinf(arPreviousChange)));
+                rPartialsPerSecond = max(arPartialsChange(~isinf(arPartialsChange)));
+                
+                if isempty(rPartialsPerSecond), rPartialsPerSecond = 0; end;
 
                 % Change per second of TOTAL mass
                 fChange = sum(afChange);
@@ -703,8 +718,12 @@ classdef phase < base & matlab.mixin.Heterogeneous
                 % Derive timestep, use the max change (total mass or one of
                 % the substances change)
                 %fNewStep = this.rMaxChange / max([ rChangePerSecond rTotalPerSecond ]);
-                fNewStep = (this.rMaxChange - rPreviousChange) / max([ rChangePerSecond rTotalPerSecond ]);
+                %fNewStep = (this.rMaxChange - rPreviousChange) / max([ rPartialsPerSecond rTotalPerSecond ]);
                 
+                fNewStepTotal    = (this.rMaxChange - rPreviousChange) / rTotalPerSecond;
+                fNewStepPartials = (this.rMaxChange - max(arPreviousChange)) / rPartialsPerSecond;
+                
+                fNewStep = min([ fNewStepTotal fNewStepPartials ]);
                 
                 %{
                 %CHECK can calulateTimeStep be called multiple times in one
@@ -744,15 +763,11 @@ classdef phase < base & matlab.mixin.Heterogeneous
             end
 
 
-            % Set new time step (on store, only sets that if smaller then
-            % the currently set time step, btw).
-            %CHECK     don't really need the whole store to update, p2p
-            %          procs are always updated if one of the connected
-            %          phases is updated, massupd also always done.
-            %          Just register own .update() method!
-            %          Still, logic required to update e.g. store's
-            %          volume distribution if liquid phase changes etc.
-            this.oStore.setNextExec(this.fLastMassUpdate + fNewStep);
+            % Set the time at which the containing store will be updated
+            % again. Need to pass on an absolute time, not a time step.
+            % Value in store is only updated, if the new update time is
+            % earlier than the currently set next update time. 
+            this.oStore.setNextUpdateTime(this.fLastMassUpdate + fNewStep);
             
             % Cache - e.g. for logging purposes
             this.fTimeStep = fNewStep;
@@ -770,28 +785,12 @@ classdef phase < base & matlab.mixin.Heterogeneous
             end
         end
 
-
-
-
         function this = updateMatterTable(this)
-            % Update matter table from parent oStore. The afMass vector is
-            % automatically rearranged to fit the new matter table.
-            %
-            %TODO
-            %   - first set this.oMT to [], then removePhase - and
-            %     removePhase/addPhase both check if phase oMT empty?
-            %   - also update exme procs MT!!
-
-            if ~isempty(this.oMT)
-                oOldMT = this.oMT.removePhase(this);
-            else
-                oOldMT = [];
-            end
-
+            % Adds the phase to the matter table index and sets property
             this.oMT = this.oStore.oMT;
 
             % addPhase returns the old afMass mappend to the new MT
-            this.afMass = this.oMT.addPhase(this, oOldMT);
+            this.afMass = this.oMT.addPhase(this);
         end
 
         function setAttribute(this, sAttribute, xValue)
