@@ -784,28 +784,12 @@ classdef phase < base & matlab.mixin.Heterogeneous
             end
         end
 
-
-
-
         function this = updateMatterTable(this)
-            % Update matter table from parent oStore. The afMass vector is
-            % automatically rearranged to fit the new matter table.
-            %
-            %TODO
-            %   - first set this.oMT to [], then removePhase - and
-            %     removePhase/addPhase both check if phase oMT empty?
-            %   - also update exme procs MT!!
-
-            if ~isempty(this.oMT)
-                oOldMT = this.oMT.removePhase(this);
-            else
-                oOldMT = [];
-            end
-
+            % Adds the phase to the matter table index and sets property
             this.oMT = this.oStore.oMT;
 
             % addPhase returns the old afMass mappend to the new MT
-            this.afMass = this.oMT.addPhase(this, oOldMT);
+            this.afMass = this.oMT.addPhase(this);
         end
 
         function setAttribute(this, sAttribute, xValue)
