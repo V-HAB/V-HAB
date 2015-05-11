@@ -1,64 +1,105 @@
-classdef pump < solver.matter.linear.procs.f2f
-    %PUMP Linar, static, RPM independent fan model
-    %   Interpolates between max flow rate and max pressure rise, values
-    %   taken from datasheet for a pump running at 1750 RMP
+classdef pump < matter.procs.f2f
+    %PUMP Linar, static, RPM independent dummy pump model
+    %   Just multiplies the current delta pressure with a factor which is
+    %   calculated from the difference between the actual flow rate and the
+    %   setpoint flow rate.
+    %
+    %TODO Currently only supports hydraulic solver type, make compatible
+    %   callback solver as well. 
     
     properties
-        fMaxFlowRate = 0.027;   % Maximum flow rate in kg/s
-        fMinFlowRate = 0.02;    % Maximum flow rate in kg/s
+        fMaxFlowRate = 1;       % Maximum flow rate in kg/s
+        fMinDeltaP = 1;         % Maximum delta pressure the pump must produce
         fMaxDeltaP = 8700000;   % Maximum delta pressure the pump can produce
+        fDampeningFactor = 4;   % This factor controls how fast or slow the 
+                                % pump model reacts to changes in setpoint
         
         fFlowRateSP;            % Flow rate setpoint in kg/s
         iDir;                   % Direction of flow [ 1 -1 ]
         fDeltaPressure = 0;     % Pressure difference created by the pump in Pa
         
+        fPreviousSetpoint;      
+        
     end
-    
-    properties (SetAccess = protected, GetAccess = public)
-        fHydrDiam   = -1;       % Needs to be smaller than 0 for the solver
-                                % to recognize it as pump
-        fHydrLength = 0.1;      % Irrelevant
-        fDeltaTemp  = 0;
-        bActive     = true;     % Needs to be true if delta pressure not constant
-    end
-    
-    
+        
     methods
         function this = pump(oMT, sName, fFlowRateSP)
-            this@solver.matter.linear.procs.f2f(oMT, sName);
+            this@matter.procs.f2f(oMT, sName);
             
-            this.fFlowRateSP = abs(fFlowRateSP);
+            this.fFlowRateSP = fFlowRateSP;
+            this.fPreviousSetpoint = fFlowRateSP;
             this.iDir = sif(fFlowRateSP > 0, 1, -1);
             
-            this.fHydrDiam = -5;
-            this.fHydrLength = 0.1;
+            this.supportSolver('hydraulic', -5, 0.1, true, @this.update);
+
+            %TODO support that!
+            %this.supportSolver('callback',  @this.solverDeltas);
         end
         
-        function update(this)
-            % Getting the flow object unless the flow is smaller than the
-            % minimum flow
-            %keyboard();
-            if ~(abs(this.aoFlows(1).fFlowRate) <= this.fMinFlowRate)
+        function fDeltaPressure = update(this)
+            % Getting the flow object unless the current flow rate is zero
+            if ~(abs(this.aoFlows(1).fFlowRate) == 0)
                 [ oFlowIn, ~ ] = this.getFlows();
+                fFlowRate = oFlowIn.fFlowRate;
             else
-                % If the flow rate is smaller than the minimum flow rate,
+                % If the flow rate is zero, then we just set the delta
+                % pressure to maximum
                 % the pressure delta is maximum
-                %this.fDeltaPressure = this.iDir * this.fMaxDeltaP;
-                this.fDeltaPressure = this.fDeltaPressure + 1000;
-                return;
+                if this.fFlowRateSP ~= 0
+                    fFlowRate = 0;
+                    this.fDeltaPressure = 1;
+                else
+                    fDeltaPressure = 0;
+                    return;
+                end
+                
             end
             
-            if oFlowIn.fFlowRate > this.fMaxFlowRate
-                this.fDeltaPressure = this.fDeltaPressure - 100;
-            else
-                % Changeing the delta pressure of the fan according to the
+            if abs(fFlowRate) > this.fMaxFlowRate
+                % If the flow rate is larger than the maximum flow rate, so
+                % water is being forced through the pump, then it acts as a
+                % resistance and produces a negativ pressure rise; a
+                % pressure drop.
+                fDeltaPressure = this.fDeltaPressure - 100;
+                
+            % Check if we need to increase or decrease the flow rate
+            else 
+                if this.fFlowRateSP * this.iDir > fFlowRate * this.iDir
+                    iChangeDir = 1;
+                else
+                    iChangeDir = -1;
+                end
+                
+                % Changeing the delta pressure of the pump according to the
                 % current flow rate and the flow rate setpoint. 
-                % This is not very accurate...
-                rFactor = abs((this.fFlowRateSP - oFlowIn.fFlowRate) / this.fFlowRateSP);
-                this.fDeltaPressure = this.fDeltaPressure * (1 + rFactor);
+                % This is of course not very accurate...
+                rFactor = (this.fFlowRateSP - fFlowRate) / this.fFlowRateSP;
+                
+                % If the flow rate setpoint is set to zero from a value
+                % different than zero, this factor would become 'Inf'. 
+                if abs(rFactor) > 2
+                    rFactor = 2;
+                end
+                
+                fDeltaPressure = this.fDeltaPressure * (1 + rFactor * iChangeDir / this.fDampeningFactor);
+            
             end
+            
+            % Need to set at least a minimum delta pressure, otherwise it
+            % will take the rFactor too long to get to meaningful values.
+            % It would start at extremely low numbers (e-55).
+            if abs(fDeltaPressure) < this.fMinDeltaP
+                fDeltaPressure = this.fMinDeltaP;
+            end
+                
+            % Saving the current delta pressure for use in the next call of
+            % this method.
+            this.fDeltaPressure = fDeltaPressure;
         end
         
+        function changeSetpoint(this, fNewSetpoint)
+            this.fFlowRateSP = fNewSetpoint;
+        end
     end
 end
 

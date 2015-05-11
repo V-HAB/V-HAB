@@ -38,6 +38,15 @@ classdef main < vsys
             import vman.full_models.to_go.simple_avgd_crew.*;
             
             
+            % For now - just multiply rates with crew size. Therefore, also
+            % crew size of 0 possible --> no flows at all! In that case, eq
+            % solver not even initialized.
+            if nargin < 3 || isempty(fCrewSize), fCrewSize = 1; end;
+            
+            this.fOxygenRequired = fCrewSize * this.fOxygenRequired;
+            this.fVentilation    = fCrewSize * this.fVentilation;
+            
+            
             %% Create matter flow 'infrastructure'
             
             % Create store representing the Lung, add 0.001m3 to the lung
@@ -47,7 +56,7 @@ classdef main < vsys
             %        so for now, two gas phases and therefore just LungVol
             this.addStore(matter.store(this.oData.oMT, 'Lung', this.fLungVolume));% + 0.001));
             
-            this.toStores.Lung.createPhase('air', this.fLungVolume);
+            this.toStores.Lung.createPhase('air', 'air', this.fLungVolume);
             
             % 'Inner' Solid phase with some C, 0.001m^3 volume.
             %CHECK-S solid phases probably not yet sufficiently implemented
@@ -68,10 +77,12 @@ classdef main < vsys
             
             
             %% Processors
-            lib.p2ps.oxygen_intake(this.toStores.Lung, 'intake_o2',  'air.o2_out',    'inner.o2_in');
-            lib.p2ps.co2_outlet   (this.toStores.Lung, 'output_co2', 'inner.co2_out', 'air.co2_in');
-            
-            lib.manips_partial.o2_to_co2('o2_co2_conv', this.toStores.Lung.aoPhases(2));
+            if fCrewSize > 0
+                lib.p2ps.oxygen_intake(this.toStores.Lung, 'intake_o2',  'air.o2_out',    'inner.o2_in');
+                lib.p2ps.co2_outlet   (this.toStores.Lung, 'output_co2', 'inner.co2_out', 'air.co2_in');
+
+                lib.manips_partial.o2_to_co2('o2_co2_conv', this.toStores.Lung.aoPhases(2));
+            end
             
             
             %% Branches
@@ -82,22 +93,28 @@ classdef main < vsys
             %% Add solvers, initialize flow rates and finish
             this.oLungFlowrate = solver.matter.manual.branch(this.aoBranches(1));
             
-            % Max. flow rate 100L (SLM, 0.02) for 0.1bar diff ... whyever.
-            oSolverEq = solver.matter.equalizer.branch(this.aoBranches(2), this.fVentilation * 2.5, 10000);
-            oSolverEq.iDampFR = 5;
-            %oBranchOut = solver.matter.manual.branch(this.aoBranches(2));
-            %oBranchOut.setFlowRate(this.fVentilation - this.fOxygenRequired);
             
-            % Set the requested oxygen for the p2p ...
-            this.toStores.Lung.toProcsP2P.intake_o2.setRequestedOxygen(this.fOxygenRequired);
+            if fCrewSize > 0
+                % Max. flow rate 100L (SLM, 0.02) for 0.1bar diff ... whyever.
+                oSolverEq = solver.matter.equalizer.branch(this.aoBranches(2), this.fVentilation * 2.5, 10000);
+                oSolverEq.iDampFR = 5;
+                %oBranchOut = solver.matter.manual.branch(this.aoBranches(2));
+                %oBranchOut.setFlowRate(this.fVentilation - this.fOxygenRequired);
+                
+                
+                
+                % Set the requested oxygen for the p2p ...
+                this.toStores.Lung.toProcsP2P.intake_o2.setRequestedOxygen(this.fOxygenRequired);
+
+                % ... and the manual solver flow rate to the ventilation rate
+                this.oLungFlowrate.setFlowRate(-1 * this.fVentilation);
+                %TODO check - could also use reqO2 -> times 4, 5? -> times 
+                %     five with 20% oxygen in air, if human would extract 
+                %     ALL oxygen, we would need five times the o2 require-
+                %     ment as a flow rate. As the human extracts much less,
+                %     maybe need another factor of four, five (21% -> 17%?)
+            end
             
-            % ... and the manual solver flow rate to the ventilation rate
-            this.oLungFlowrate.setFlowRate(-1 * this.fVentilation);
-            %TODO check - could also use reqO2 -> times 4, 5? -> times five
-            %     with 20% oxygen in air, if human would extract ALL
-            %     oxygen, we would need five times the o2 requirement as a
-            %     flow rate. As the human extracts much less, maybe need
-            %     another factor of four, five (21% down to 17%?)
             
             this.seal();
         end
@@ -117,6 +134,21 @@ classdef main < vsys
             % - adjust manual solver IN flowrate -> o2 partial FR must be
             %   probably four times the absorption rate (normally exhaled
             %   air has probably 16% oxygen = 5% less -> ~1/4th used (??)
+            %
+            % -> take fCrewSize into account!
+        end
+        
+        
+        function setCrewSize(this, fSize)
+            % See class definition
+            fDefOxygenRequired = 0.9 / 3600 / 24;
+            fDefVentilation = 12 * 0.001 * 1.2 / 60;
+            
+            this.fOxygenRequired = fSize * fDefOxygenRequired;
+            this.fVentilation    = fSize * fDefVentilation;
+            
+            this.toStores.Lung.toProcsP2P.intake_o2.setRequestedOxygen(this.fOxygenRequired);
+            this.oLungFlowrate.setFlowRate(-1 * this.fVentilation);
         end
     end
     

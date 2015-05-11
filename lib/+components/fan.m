@@ -1,4 +1,4 @@
-classdef fan < solver.matter.iterative.procs.f2f
+classdef fan < matter.procs.f2f
     %FAN Generic fan model with an optional characterisic
     % This is a generic, dynamic model of a fan. There are two different
     % mode of operation: 1. constant fan speed and 2. speed regulation/control
@@ -18,24 +18,13 @@ classdef fan < solver.matter.iterative.procs.f2f
     % method.
     
     properties
-        fDeltaPressure = 0;      % Pressure difference created by the fan [Pa]
-        fDeltaPress = 0;         % Pressure difference created by the fan [Pa]
         iDir = 1;                % Direction of the flow (default left to right)
         fPowerConsumtionFan = 0; % Power Consumtion of the FAN in [W]
         fDeltaPressureNew = 0;   % Needed for the second operation mode:
         % equals the new pressure after adjusting
         % the speed
         fSpeed;                  % The current speed of the fan
-    end
-    
-    % Properties required by the linear solver
-    properties (SetAccess = protected, GetAccess = public)
-        fHydrDiam   =   -1;      % Hydraulic diameter negative to indicate pressure rise
-        fHydrLength =    1;      % This just has to be there because of parent class and solver, value is irrelevant
-        fDeltaTemp  =    0;      % This fan model does include temperature changes
-        bActive     = true;      % Must be true so the update function is called from the branch solver
-    end
-    
+    end    
     
     properties (SetAccess = public, GetAccess = public)
         % 2 modes of operation:
@@ -95,7 +84,7 @@ classdef fan < solver.matter.iterative.procs.f2f
             %               for a specific fan, see properties
             
             
-            this@solver.matter.iterative.procs.f2f(varargin{1}, varargin{2});
+            this@matter.procs.f2f(varargin{1}, varargin{2});
             
             % Setting the operational mode
             this.sMode = varargin{3};
@@ -106,9 +95,13 @@ classdef fan < solver.matter.iterative.procs.f2f
                 this.fSpeed         = varargin{4};
             elseif strcmp(varargin{3}, 'setFlowRate')
                 this.fVolumetricFlowRateSetpoint = varargin{4};
+            elseif strcmp(varargin{3}, 'manual')
+                 if nargin > 3
+                     this.fDeltaPressure = varargin{4};
+                 end
             else
                 % Looks like someone didn't read the documentation...
-                this.throw('fan', 'The mode input for a fan must be either ''setSpeed'' or ''setFlowRate''.');
+                this.throw('fan', 'The mode input for a fan must be either ''setSpeed'', ''setFlowRate'' or ''manual''.');
             end
             
             % Setting the direction in which the fan blows relative to the
@@ -129,14 +122,22 @@ classdef fan < solver.matter.iterative.procs.f2f
                 this.tCharacteristic = varargin{6};
             end
             
+            
+            % Support these two solver architectures - hydr used by the
+            % linear solver, fct by the iterative.
+            this.supportSolver('hydraulic', -1, 1, true, @this.update);
+            this.supportSolver('callback',  @this.solverDeltas);
+            this.supportSolver('manual', true, @this.updateManualSolver);
         end
         
         
-        function update(this)
+        function fDeltaPressure = update(this)
             % If this is the very first execution, the method will produce
             % many errors, so we just skip this time and wait until
             % everything else is ready.
             if ~this.oBranch.oContainer.oData.oTimer.fTime
+                fDeltaPressure = 0;
+                
                 return;
             end
             %keyboard();
@@ -199,6 +200,10 @@ classdef fan < solver.matter.iterative.procs.f2f
                     fDeltaPressure = fDeltaPressure *  (fDensity /this.tCharacteristic.fTestDensity);
                     
                     %Calculating the DeltaTemps of the flowing matter :
+                    %TODO changed - fHeatFlow used now. Change that,
+                    %     calculate heat flow in separate method. Call that
+                    %     method whenever e.g. a fan setting and with that
+                    %     the produced heat change.
                     if oFlowIn.fFlowRate >= 0
                         fDeltaTemp = (((fDeltaPressure / 1000))/ (fDensity * oFlowIn.fHeatCapacity * 0.85)) * 0.95; %[K] --> Teperature rise
                     else
@@ -219,15 +224,17 @@ classdef fan < solver.matter.iterative.procs.f2f
                     
                     % This won't work!
                     
+                    oHydr = this.toSolve.hydraulic;
+                    
                     if oFlowIn.fFlowRate > 0
                         
-                        this.fHydrDiam = -1;
+                        oHydr.fHydrDiam = -1;
                         
                     elseif oFlowIn.fFlowRate == 0
                         
-                        this.fHydrDiam =  -1;
+                        oHydr.fHydrDiam =  -1;
                     else
-                        this.fHydrDiam =  1;
+                        oHydr.fHydrDiam =  1;
                     end
                     
                 case 'setFlowRate'
@@ -268,35 +275,26 @@ classdef fan < solver.matter.iterative.procs.f2f
                         this.fPowerConsumtionFan = 0;
                     end
             end
-            
-            %Return of the final values
-            
-            this.fDeltaPressure = fDeltaPressure;
-            this.fDeltaPress    = fDeltaPressure; 
-            this.fDeltaTemp = fDeltaTemp;
+
         end
         
-        function [ fDeltaPress, fDeltaTemp ] = solverDeltas(this, fFlowRate)
+        function [ fDeltaPressure, fDeltaTemperature ] = solverDeltas(this, fFlowRate)
             % If this is the very first execution, the method will produce
             % many errors, so we just skip this time and wait until
             % everything else is ready.
-%             keyboard();
+
             if ~(this.oBranch.oContainer.oData.oTimer.fTime >= 0)
-                fDeltaPress = 0;
-                fDeltaTemp  = 0;
+                fDeltaPressure     = 0;
+                fDeltaTemperature  = 0;
                 return;
             end
-            %keyboard();
+            
             % Getting the incoming flow if the current flowrate is not zero!
             if fFlowRate
                 [ oFlowIn, ~ ] = this.getFlows(fFlowRate);
                 
                 %Calculating the density of the incoming flowing matter:
-                fDensity = (oFlowIn.fPressure * (oFlowIn.fMolMass / 1000)) / (matter.table.Const.fUniversalGas * oFlowIn.fTemp);
-                %keyboard(); 
-                if (isnan(fDensity) || isinf(fDensity)) 
-                    fDensity = this.oBranch.coExmes{1}.oPhase.fDensity;
-                end
+                fDensity = this.oMT.calculateDensity(oFlowIn);
                 
                 if fFlowRate < 0
                     iFlowDir = -1;
@@ -317,7 +315,8 @@ classdef fan < solver.matter.iterative.procs.f2f
                 [ oFlowIn, ~ ] = this.getFlows(this.iDir);
                 iFlowDir = 0;
                 %keyboard();
-                fDensity = this.oBranch.coExmes{1}.oPhase.fDensity;
+                %fDensity = this.oBranch.coExmes{1}.oPhase.fDensity;
+                fDensity = this.oMT.calculateDensity(this.oBranch.coExmes{1}.oPhase);
             end
             %keyboard();
             % To be able to use the functions of the characteristics, as a
@@ -333,14 +332,14 @@ classdef fan < solver.matter.iterative.procs.f2f
             fDeltaPressureHigher = this.tCharacteristic.calculateUpperDeltaP(fVolumetricFlowRate);
             
             % Now we can interpolate between the two
-            fDeltaPress = fDeltaPressureLower + ((this.fSpeedSetpoint - this.tCharacteristic.fSpeedLower )/(this.tCharacteristic.fSpeedUpper-this.tCharacteristic.fSpeedLower)) * (fDeltaPressureHigher - fDeltaPressureLower);
+            fDeltaPressure = fDeltaPressureLower + ((this.fSpeedSetpoint - this.tCharacteristic.fSpeedLower )/(this.tCharacteristic.fSpeedUpper-this.tCharacteristic.fSpeedLower)) * (fDeltaPressureHigher - fDeltaPressureLower);
             
             
             %If the FlowRate is > Maximum FlowRate of the Fan,
             %fDeltaPressure needs to be limited to zero:
-            if (fDeltaPress < 0)
+            if (fDeltaPressure < 0)
                 
-                fDeltaPress = 0;
+                fDeltaPressure = 0;
                 
             end
             
@@ -355,13 +354,15 @@ classdef fan < solver.matter.iterative.procs.f2f
                     %% Constant speed mode
                     
                     %Considering the influence of the density:
-                    fDeltaPress = fDeltaPress *  (fDensity / this.tCharacteristic.fTestDensity);
+                    fDeltaPressure = fDeltaPressure *  (fDensity / this.tCharacteristic.fTestDensity);
                     
-                    % Calculating the DeltaTemps of the flowing matter:
+                    % Calculating the delta temperatures of the flowing matter:
+                    %TODO see above, move to separate method, calculate the
+                    %     heat flow, not the temperature difference
                     if oFlowIn.fFlowRate >= 0
-                        fDeltaTemp = (((fDeltaPress / 1000))/ (fDensity * oFlowIn.fHeatCapacity * 0.85)) * 0.95; %[K] --> Teperature rise
+                        fDeltaTemperature = (((fDeltaPressure / 1000))/ (fDensity * oFlowIn.fHeatCapacity * 0.85)) * 0.95; %[K] --> Teperature rise
                     else
-                        fDeltaTemp = ((( -1*fDeltaPress ) / 1000)/ (fDensity * oFlowIn.fHeatCapacity * 0.85) ) * 0.95 ; %[K] --> Temperature loss
+                        fDeltaTemperature = ((( -1*fDeltaPressure ) / 1000)/ (fDensity * oFlowIn.fHeatCapacity * 0.85) ) * 0.95 ; %[K] --> Temperature loss
                     end
                     
                     % And finally setting the correct sign to respect the
@@ -374,18 +375,19 @@ classdef fan < solver.matter.iterative.procs.f2f
                     % the two are not aligned (fan is blowing against a
                     % flow but is not powerful enough, so there is
                     % backflow), the fan produces a pressure drop.
-                    % 
-                    fDeltaPress = fDeltaPress * this.iDir * iFlowDir * (-1);
+                    fDeltaPressure = fDeltaPressure * this.iDir * iFlowDir * (-1);
+                    
                     %keyboard();
                     
-                    if (isnan(fDeltaTemp) || isinf(fDeltaTemp))
-                        fDeltaTemp = 0;
+                    %disp(num2str(fDeltaPressure))
+                    if (isnan(fDeltaTemperature) || isinf(fDeltaTemperature))
+                        fDeltaTemperature = 0;
                     end
                     
                     %disp(num2str(fDeltaTemp))
                     %Calculating Power consumed by the FAN
                     if oFlowIn.fFlowRate > 0
-                        this.fPowerConsumtionFan = (fDeltaPress * fVolumetricFlowRate) / (0.80); %[W] for  VolumetricFlowrate in [m?/s] and a DeltaPress in [Pa]
+                        this.fPowerConsumtionFan = (fDeltaPressure * fVolumetricFlowRate) / (0.80); %[W] for  VolumetricFlowrate in [m?/s] and a DeltaPress in [Pa]
                     else
                         this.fPowerConsumtionFan = 0;
                     end
@@ -403,7 +405,7 @@ classdef fan < solver.matter.iterative.procs.f2f
                     %This Pressure is constant if no changes in the
                     %setup of the simulation happen.
                     
-                    fDeltaPressureNew = (this.fVolumetricFlowRateRequired / fVolumetricFlowRate).^2 * fDeltaPress;
+                    fDeltaPressureNew = (this.fVolumetricFlowRateRequired / fVolumetricFlowRate).^2 * fDeltaPressure;
                     
                     
                     %Calculating of the "test" density:
@@ -416,24 +418,26 @@ classdef fan < solver.matter.iterative.procs.f2f
                     
                     %Calculating the TDeltaTemps:
                     if oFlowIn.fFlowRate >= 0
-                        fDeltaTemp = ((( fDeltaPress )/1000)/ (fDensity * oFlowIn.fHeatCapacity * 0.85) ) * 1 ; %[K]
+                        fDeltaTemperature = ((( fDeltaPressure )/1000)/ (fDensity * oFlowIn.fHeatCapacity * 0.85) ) * 1 ; %[K]
                     else
-                        fDeltaTemp = ((( -1 * fDeltaPress )/1000)/ (fDensity * oFlowIn.fHeatCapacity * 0.85) ) * 1 ; %[K]
+                        fDeltaTemperature = ((( -1 * fDeltaPressure )/1000)/ (fDensity * oFlowIn.fHeatCapacity * 0.85) ) * 1 ; %[K]
                     end
                     
                     %PowerConsumtion:
                     if oFlowIn.fFlowRate > 0
-                        this.fPowerConsumtionFan = (fDeltaPress * fVolumetricFlowRate) / (0.80); %[ in Watt for a VolumetricFlowrate in m?/s and a DeltaPress in Pa
+                        this.fPowerConsumtionFan = (fDeltaPressure * fVolumetricFlowRate) / (0.80); %[ in Watt for a VolumetricFlowrate in m?/s and a DeltaPress in Pa
                         
                     else
                         this.fPowerConsumtionFan = 0;
                     end
             end
+            %keyboard();
+        end
+        
+        function updateManualSolver(this)
             
-            %Return of the final values
+            % Maybe someday well have to do something here...
             
-            this.fDeltaPressure =  fDeltaPress;
-            this.fDeltaTemp = fDeltaTemp;
         end
     end
     

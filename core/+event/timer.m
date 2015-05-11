@@ -62,7 +62,8 @@ classdef timer < base
     
     methods
         function this = timer(fTimeStep, fStart)
-            % Global time step?
+            % Global time step? Default value passed on by simulation.m is
+            % 1e-8 seconds
             if nargin >= 1 && ~isempty(fTimeStep)
                 this.fTimeStep = fTimeStep;
             end
@@ -115,7 +116,7 @@ classdef timer < base
         end
         
         
-        function [ setTimeStep unbind ] = bind(this, callBack, fTimeStep)
+        function [ setTimeStep, unbind ] = bind(this, callBack, fTimeStep)
             % Bind a callback
             
             % Get index for new callback
@@ -208,7 +209,11 @@ classdef timer < base
             
             % Post-tick stack
             while ~isempty(this.chPostTick)
+                % Executing the first item in the stack, represented by the
+                % first item in the cell array
                 this.chPostTick{1}();
+                
+                % Removing the item we just executed
                 this.chPostTick(1) = [];
             end
             
@@ -222,6 +227,13 @@ classdef timer < base
             % Set time step for a specific call back. Protected method, is
             % returned upon .bind!
             
+            
+            
+            % Find dependent timed callbacks (when timer executes)
+            %this.abDependent = this.afTimeStep == -1;
+            this.abDependent(iCB) = (fTimeStep == -1);
+            
+            
             if ~isempty(fTimeStep) % && fTimeStep ~= 0
                 if fTimeStep < 0, fTimeStep = 0; end;
                 
@@ -231,10 +243,6 @@ classdef timer < base
                 this.afTimeStep(iCB) = 0;%this.fTimeStep;
             end
             
-            
-            % Find dependent timed callbacks (when timer executes)
-            %this.abDependent = this.afTimeStep == -1;
-            this.abDependent(iCB) = (fTimeStep == -1);
         end
     end
 end

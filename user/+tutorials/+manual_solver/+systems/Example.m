@@ -1,12 +1,19 @@
 classdef Example < vsys
     %EXAMPLE Example simulation for the manual solver in V-HAB 2.0
-    %   Two tanks filled with gas and a pipe in between. The flow rate is manually changed every 100
-    %   seconds in the exec function of this system.
+    %   Two tanks filled with gas and a pipe in between. The flow rate is 
+    %   manually changed every 100 seconds in the exec function of this 
+    %   system. 
     
     properties
         oBranch;        % A branch object that we can manipulate while the system is running
+        
         bHighFlowRate;  % A Boolean variable to indicate if the flow rate is currently high or low
+        
         fFlowRate;      % A float variable indicating the current flow rate in kg/s
+        
+        fSwitchTime;    % A float variable that is used to set the next 
+                        % point in the simulated time, when the heater and
+                        % flow rate states are changed
     end
     
     methods
@@ -55,8 +62,12 @@ classdef Example < vsys
             % Add branch to manual solver
             this.oBranch = solver.matter.manual.branch(oBranch);
             
+            % Setting the initial switching time for the flow rate to 100 s. 
+            this.fSwitchTime   = 100;
+            
+            % Initialy the flow rate is low
             this.bHighFlowRate = false;
-            this.fFlowRate     = 0.5;
+            this.fFlowRate     = 0.1;
             
             
         end
@@ -71,15 +82,19 @@ classdef Example < vsys
             % Since we've added the branch between the two tanks to the manual solver inside of this
             % vsys-object, we can access its setFlowRate method to manually set and change the flow
             % rate of the branch. Here we change between two flow rate every 100 seconds.
-            
-            if ~(mod(this.oData.oTimer.fTime, 100))         % Have 100s passed?
+             
+            if this.oData.oTimer.fTime > this.fSwitchTime   % Have 100s passed?
                 if this.bHighFlowRate                       % Is the flow rate currently high? 
-                    this.fFlowRate = 0.5;                   % Set flow rate to low value
+                    this.fFlowRate = 0.1;                   % Set flow rate to low value
                     this.bHighFlowRate = false;             % Change flow rate indicator to false
+                    
                 else
                     this.fFlowRate = 1;                     % Set flow rate to high value
                     this.bHighFlowRate = true;              % Change flow rate indicator to true
+                    
                 end
+                
+                this.fSwitchTime = this.fSwitchTime + 100;
             end
             
             this.oBranch.setFlowRate(this.fFlowRate);       % Setting the flow rate

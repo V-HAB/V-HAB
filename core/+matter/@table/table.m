@@ -17,14 +17,13 @@ classdef table < base
     % doesn't belong in the matter table.
     
     properties (Constant = true, GetAccess = public)
-        % Some constants
+        % Struct containing global constants
         %
         %   - universal gas constant (fUniversalGas) in J/(K Mol)
         %   - gravitational constant (fGravitation) in m^3/(kg s^2)
         %   - Avogadro constant (fAvogadro) in 1/Mol
         %   - Boltzmann constant (fBoltzmann) J/K
         %   - Stefan-Boltzmann constant (fStefanBoltzmann) in W/(m^2 K^4)
-        
         Const = struct( ...
             'fUniversalGas',     8.314472,      ...
             'fGravitation',      6.67384e-11,   ...
@@ -33,11 +32,10 @@ classdef table < base
             'fStefanBoltzmann',  5.670373e-8    ...
             );
         
-        % Some standard values for use in any place where an actual value
-        % is not given or needed.
-        
+        % Struct containing standard values for use in any place where an 
+        % actual value is not given or needed.
         Standard = struct( ...
-            'Temperature', 288.15, ...   % K (25 deg C)
+            'Temperature', 288.15, ...    % K  (25 deg C)
             'Pressure',    101325  ...    % Pa (sea-level pressure)
             );
     end
@@ -811,7 +809,7 @@ classdef table < base
         %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Methods for handling of related phases and flows %%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function afMass = addPhase(this, oPhase, oOldMT)
+        function afMass = addPhase(this, oPhase)
             % Add phase
             %disp('Add phase')
             if ~isa(oPhase, 'matter.phase')
@@ -829,13 +827,6 @@ classdef table < base
                 else                       this.aoPhases(end + 1) = oPhase;
                 end
                 
-                if (nargin > 2) && ~isempty(oOldMT)
-                    if ~isa(oOldMT, 'matter.table')
-                        this.throw('addPhase', 'The provided object for the old matter table is not a and doesn''t derive from matter.table');
-                    end
-                    
-                    afMass = this.mapMassesToNewMT(oOldMT, afMass);
-                end
             end
         end
         
@@ -850,7 +841,7 @@ classdef table < base
             end
         end
         
-        function afMass = addFlow(this, oFlow, oOldMT)
+        function afMass = addFlow(this, oFlow)
             % Add flow
             %disp('Add flow')
             if ~isa(oFlow, 'matter.flow')
@@ -863,14 +854,6 @@ classdef table < base
             if ~any(this.aoFlows == oFlow)
                 this.aoFlows(length(this.aoFlows) + 1) = oFlow;
                 
-                % Remap matter substance?
-                if (nargin > 2) && ~isempty(oOldMT)
-                    if ~isa(oOldMT, 'matter.table')
-                        this.throw('addFlow', 'The provided object for the old matter table is not a and doesn''t derive from matter.table');
-                    end
-                    
-                    afMass = this.mapMassesToNewMT(oOldMT, afMass);
-                end
             end
         end
         

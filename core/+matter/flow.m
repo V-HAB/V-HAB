@@ -315,15 +315,14 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         
         
-        function setMatterProperties(this, fFlowRate, arPartialMass, fTemp, fPressure)%, fHeatCapacity, fMolMass)
+        function setMatterProperties(this, fFlowRate, arPartialMass, fTemp, fPressure)
             % For derived classes of flow, can set the matter properties 
-            % through this method manually. Other than setData, this method
-            % does not get information automatically from the inflowing
-            % exme but just uses the provided values.
-            % This allows derived, but still generic classes (namely 
-            % matter.p2ps.flow and matter.p2ps.stationary) to ensure
-            % control over the actual processor implementatins when they
-            % set the flow properties.
+            % through this method manually. In contrast to setData, this 
+            % method does not get information automatically from the 
+            % inflowing exme but just uses the provided values. This allows
+            % derived, but still generic classes (namely matter.p2ps.flow 
+            % and matter.p2ps.stationary) to ensure control over the actual
+            % processor implementatins when they set the flow properties.
             %
             % Is only called by p2p (?), only ONE flow
             
@@ -345,7 +344,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         
         
-        function setData(this, oExme, fFlowRate, afPressures, afTemps)
+        function setData(this, oExme, fFlowRate, afPressures)
             % Sets flow data on an array of flow objects. If flow rate not
             % provided, just mol masses, cp, arPartials etc are set.
             % Function handle to this method is provided on seal(), so the
@@ -368,10 +367,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % So get pressure/temperature of in exme (if FR provided)
             if nargin >= 3
                 %TODO get exme from this.oBranch, depending on fFlowRate?
-                [ fPortPress, fPortTemp ] = oExme.getPortProperties();
+                [ fPortPress, fCurrTemp ] = oExme.getPortProperties();
             else
                 fPortPress = 0;
-                fPortTemp  = 0;
+                fCurrTemp  = 0;
             end
             
             % Get matter properties of the phase
@@ -395,7 +394,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             %     out? Check for isnan() or something?
             bSkipFRandPT = (nargin < 3) || isempty(fFlowRate);   % skip flow rate, pressure, temp?
             bSkipPT      = (nargin < 4) || (isempty(afPressures) && (iL > 1)); % skip pressure, temp?
-            bSkipT       = (nargin < 5) || (isempty(afTemps) && (iL > 1));     % skip temp?
+            %bSkipT       = (nargin < 5) || (isempty(afTemps) && (iL > 1));     % skip temp?
             
             %TODO find out correct behaviour here ... don't set pressures
             %     or temps (from solver init?) if those params are empty or
@@ -406,14 +405,23 @@ classdef flow < base & matlab.mixin.Heterogeneous
             %     directly connected to the EXMEs?
             %     ALSO: if no afPress/afTemps, just distribute equally!?
             %if bSkipT || bSkipPT, this.warn('setData', 'setData on flows w/o press/temp (or just empty) --> difference: no delta temp/press (cause no f2f) or really don''t set??'); end;
-            if (bSkipT || bSkipPT) && (iL > 1), this.warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end;
+            %if (bSkipT || bSkipPT) && (iL > 1), this.warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end;
+            if bSkipPT && (iL > 1), this.warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end;
             
-            for iI = 1:iL
+            % Rounding precision
+            iPrec = this(1).oBranch.oContainer.oTimer.iPrecision;
+            
+            % Negative flow rate? Need to do everything in reverse
+            bNeg = fFlowRate < 0;
+            
+            for iI = sif(bNeg, iL:-1:1, 1:iL)
                 % Only set those params if oExme was provided
                 if ~isempty(oExme)
                     this(iI).arPartialMass = arPhasePartialMass;
                     this(iI).fMolMass      = fPhaseMolMass;
+                    
                     this(iI).fHeatCapacity = fPhaseHeatCapacity;
+                    %this(iI).fHeatCapacity = this.oMT.calculateHeatCapacity(this(iI));
                 end
                 
                 
@@ -426,8 +434,42 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % according to IN exme
                 if iL == 1
                     this.fPressure = fPortPress;
-                    this.fTemp     = fPortTemp;
+                    this.fTemp     = fCurrTemp;
                 end
+                
+                
+                % Set temperature based on fHeatFlow in f2fs
+                % First and last Flows directly use the EXMEs value, so
+                % no f2f in between - just set port temperatures directly
+                %TODO if flow rate is zero, what to do? Something HAS to
+                %     heat up ... heating up in the branch should basically
+                %     lead to a flow rate, right?
+                if fFlowRate > 0
+                    if ~bNeg && (iI > 1)
+                        fHeatFlow = this(iI).oIn.fHeatFlow;
+
+                        %NOTE at the moment, one heat capacity throughout all
+                        %     flows in the branch. However, at some point, 
+                        %     might be replaced with e.g. pressure dep. value?
+                        fOtherCp  = this(iI - 1).fHeatCapacity;
+
+                    elseif bNeg && (iL < iI)
+                        fHeatFlow = this(iI).oOut.fHeatFlow;
+                        fOtherCp  = this(iI + 1).fHeatCapacity;
+
+                    else
+                        fHeatFlow = 0;
+                        fOtherCp  = this(iI).fHeatCapacity;
+                    end
+
+                    % So following this equation:
+                    % Q' = m' * c_p * deltaT
+                    fCurrTemp = fCurrTemp + fHeatFlow / fFlowRate / ((this(iI).fHeatCapacity + fOtherCp) / 2);
+                end
+                
+                this(iI).fTemp = fCurrTemp;
+                
+                
                 
                 
                 % Skip pressure, temperature?
@@ -435,26 +477,45 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
                 this(iI).fPressure = fPortPress;
                 
+                if tools.round.prec(fPortPress, iPrec) < 0
+                    this(iI).fPressure = 0;
+                    
+                    % Only warn for > 1Pa ... because ...
+                    if fPortPress < -10
+                        this(1).warn('setData', 'Setting a negative pressure lt -1Pa (%f) for the LAST flow in branch "%s"!', fPortPress, this(1).oBranch.sName);
+                    elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
+                        this(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, this(1).oBranch.sName);
+                    end
+                end
+                
                 % Calculates the pressure for the NEXT flow, so make sure
                 % this is not the last one!
                 % The 'natural' thing to happen (passive components) is a
                 % pressure drop, therefore positive values represent
                 % pressure drops, negative ones a rise in pressure.
                 % I.e. afPressures = afPressureDROPS
-                if iI < iL, fPortPress = fPortPress - afPressures(iI); end;
+                if (bNeg && iI > 1) || (~bNeg && iI < iL)
+                    % afPressures contains one element less than the flows
+                    % themselves, as afPressure(Drops) is generated by f2fs
+                    % which are one less than the flows, e.g.
+                    % EXME|FLOW(1)|F2F(1)|FLOW(2)|F2F(2)|FLOW(3)|EXME
+                    % Therefore, if we're starting with FLOW(3), we need to
+                    % subtract one from the FLOW index to get the last F2F
+                    fPortPress = fPortPress - afPressures(iI - sif(bNeg, 1, 0));
+                end
                 
                 
                 % Skip temperature?
-                if bSkipT, continue; end;
-                
-                this(iI).fTemp = fPortTemp;
-                
-                % Due to friction etc, the 'natural' thing is that the
-                % temperature increases, therefore: positive values
-                % represent a temperature INCREASE.
-                %TODO right now afTemps represents temperature DROPS,
-                %     change that?
-                if iI < iL, fPortTemp = fPortTemp - afTemps(iI); end;
+%                 if bSkipT, continue; end;
+%                 
+%                 this(iI).fTemp = fCurrTemp;
+%                 
+%                 % Due to friction etc, the 'natural' thing is that the
+%                 % temperature increases, therefore: positive values
+%                 % represent a temperature INCREASE.
+%                 %TODO right now afTemps represents temperature DROPS,
+%                 %     change that?
+%                 if iI < iL, fCurrTemp = fCurrTemp - afTemps(iI); end;
             end
             
 

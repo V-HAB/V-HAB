@@ -99,7 +99,7 @@ classdef container < sys
             for iI = 1:length(this.csStores)
                 % Stores need a timer object, to be accessed by the phases
                 % to e.g. register updates, find out elapsed time
-                this.toStores.(this.csStores{iI}).seal(this.oTimer);
+                this.toStores.(this.csStores{iI}).seal(this.oTimer, this.oData);
             end
             
             

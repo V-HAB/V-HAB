@@ -1,11 +1,21 @@
 classdef simulation < base & event.source
-    %SIM Summary of this class goes here
-    %   Detailed explanation goes here
+    %SIM V-HAB Simulation Class
+    %   Objects instatiated from this class contain all necessary
+    %   information to run a V-HAB simulation. They include the root vsys
+    %   object, the timer and data objects and logged simulation data.
+    %   It also contains the tick() method which advances the timer one
+    %   time step (or tick) ahead until the total simulated time has
+    %   reached the user-defined value.
     %
-    % The constructor of the derived class needs to or should set csLog,
-    % and either iSimTicks of fSimTime.
+    %TODO The constructor of the derived class needs to or should set 
+    %   csLog, and either iSimTicks of fSimTime.
     %
     
+    
+    properties (SetAccess = public, GetAccess = public)
+        sStorageName;
+        sDescription;
+    end
     
     properties (SetAccess = public, GetAccess = public)
         % Amount of ticks
@@ -78,6 +88,9 @@ classdef simulation < base & event.source
         % @type string
         sCreated = '';
         
+        % String for disk storage
+        sStorageDir;
+        
         % Variables holding the sum of lost mass / total mass, species-wise
         mfTotalMass = [];
         mfLostMass  = [];
@@ -111,7 +124,10 @@ classdef simulation < base & event.source
             end
             
             if (nargin < 2) || isempty(fMinStep), fMinStep = 1e-8; end;
-            
+
+
+            %%% Global objects and settings for constructors
+
             if ~isfield(tData, 'oTimer')
                 tData.oTimer = event.timer(fMinStep);
             end
@@ -121,6 +137,30 @@ classdef simulation < base & event.source
                 tData.oMT = matter.table();
                 disp(['Matter Table created in ', num2str(toc(hTimer)), ' seconds.'])
             end
+            
+            % Basic parameters can be stored here. Reference systems by
+            % their constructor names.
+            if ~isfield(tData, 'oParams'), tData.oParams = containers.Map(); end;
+            
+            
+            %%% Global parameters to tune solving process.
+            
+            % Used to adjust the rMaxChange parameter in (gas) phases. Can
+            % still be set manually (after .seal() was called). Sets the
+            % rMaxChange value according to the volume multiplied by this
+            % parameter here.
+            tData.rUpdateFrequency = 1;
+            
+            %  For each (iterative) solver, a dampening value can be set in
+            %  the constructor which is multiplied with this value
+            tData.rSolverDampening = 1;
+            
+            %TODO increase accuracy/fidelity of solvers (i.e. shorter time
+            %     steps, lower solving error allowed, etc).
+            tData.rSolverFidelity  = 1;
+            
+            
+            %%% Initialize root system, simulation parameters
             
             % Create data object
             this.oData = data(tData);
@@ -135,7 +175,8 @@ classdef simulation < base & event.source
             % Remember the time of object creation
             this.fCreated = now();
             this.sCreated = datestr(this.fCreated);
-            
+            %this.sStorageDir = [ datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') '_' this.sUUID ];
+            this.sStorageDir = [ datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') '_' this.sName ];
             
             % Init the mass log matrices - don't log yet, system's not
             % initialized yet! Just create with one row, for the initial
@@ -161,7 +202,7 @@ classdef simulation < base & event.source
                 
                 % Stopped?
                 if this.bDumpToMat && (this.oTimer.iTick > 0) && (mod(this.oTimer.iTick, this.iPrealloc) == 0)
-                    sFile = [ 'data/runs/' this.sUUID '/STOP' ];
+                    sFile = [ 'data/runs/' this.sStorageDir '/STOP' ];
                     
                     % Always do that!
                     disp('#############################################');
@@ -271,9 +312,10 @@ classdef simulation < base & event.source
         function finish(this)
             %TODO put in vhab class -> just trigger 'finish' here!
             disp('--------------------------------------');
-            disp([ 'Sim Time:     ' num2str(this.oTimer.fTime) 's' ]);
+            disp([ 'Sim Time:     ' num2str(this.oTimer.fTime) 's in ' num2str(this.oTimer.iTick) ' ticks' ]);
             disp([ 'Sim Runtime:  ' num2str(this.fRuntimeTick + this.fRuntimeLog) 's, from that for dumping: ' num2str(this.fRuntimeLog) 's' ]);
             disp([ 'Sim factor:   ' num2str(this.fSimFactor) ' [-] (ratio)' ]);
+            disp([ 'Avg Time/Tick:' num2str(this.oTimer.fTime / this.oTimer.iTick) ' [s]' ]);
             disp([ 'Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
             disp([ 'Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :))) 'kg' ]);
             disp([ 'Minimum Time Step * Total Sim Time: ' num2str(this.oTimer.fTimeStep * this.oTimer.fTime) ]);
@@ -282,7 +324,11 @@ classdef simulation < base & event.source
 
             %TODO if bDump, write .mat!
             if this.bDumpToMat
-                sMat = [ 'data/runs/' this.sUUID '/_simObj.mat' ];
+                if ~isdir([ 'data/runs/' this.sStorageDir ])
+                    mkdir([ 'data/runs/' this.sStorageDir ]);
+                end
+                
+                sMat = [ 'data/runs/' this.sStorageDir '/_simObj.mat' ];
                 disp(['DUMPING - write to .mat: ' sMat]);
    
                 oLastSimObj = this;
@@ -310,12 +356,12 @@ classdef simulation < base & event.source
             %if this.oTimer.iTick > iTmpSize
             if this.iLogIdx > this.iAllocated
                 if this.bDumpToMat
-                    if ~isdir([ 'data/runs/' this.sUUID ])
-                        mkdir([ 'data/runs/' this.sUUID ]);
+                    if ~isdir([ 'data/runs/' this.sStorageDir ])
+                        mkdir([ 'data/runs/' this.sStorageDir ]);
                     end
                     
                     
-                    sMat = [ 'data/runs/' this.sUUID '/dump_' num2str(this.oTimer.iTick) '.mat' ];
+                    sMat = [ 'data/runs/' this.sStorageDir '/dump_' num2str(this.oTimer.iTick) '.mat' ];
                     
                     disp('#############################################');
                     disp(['DUMPING - write to .mat: ' sMat]);
@@ -341,6 +387,7 @@ classdef simulation < base & event.source
                 
                 for iL = this.aiLog
                     sCmd = [ sCmd 'this.oRoot.' this.csLog{iL} ',' ];
+                    %sCmd = [ sCmd sprintf('this.oRoot.%s,\n', this.csLog{iL}) ];
                 end
 
                 sCmd = [ sCmd(1:(end - 1)) ']' ];
@@ -353,7 +400,16 @@ classdef simulation < base & event.source
             try
                 this.mfLog(this.iLogIdx, :) = this.logData();
             catch
-                this.throw('simulation','Error trying to log this.oRoot.%s. \nPlease check your logging configuration in setup.m!', this.csLog{iL});
+                % Don't know where in anonymous log function the error
+                % happend, so go through logs one by one - one of them
+                % should throw an error!
+                for iL = this.aiLog
+                    try
+                        eval([ 'this.oRoot.' this.csLog{iL} ';' ]);
+                    catch oErr
+                        this.throw('simulation','Error trying to log this.oRoot.%s.\nError Message: %s\nPlease check your logging configuration in setup.m!', this.csLog{iL}, oErr.message);
+                    end
+                end
             end
             %for iL = this.aiLog
             %    this.mfLog(this.oTimer.iTick + 1, iL) = eval([ 'this.oRoot.' this.csLog{iL} ]);
@@ -379,7 +435,7 @@ classdef simulation < base & event.source
         
         function readData(this)
             if this.bDumpToMat
-                sDir    = [ 'data/runs/' this.sUUID '/' ];
+                sDir    = [ 'data/runs/' this.sStorageDir '/' ];
                 tDir    = dir(sDir);
                 aiDumps = [];
                 
@@ -399,6 +455,18 @@ classdef simulation < base & event.source
                 end
             end
         end
+
+        function saveFullObj(this, sDir)
+
+            this.readData();
+
+            oSimObj = this;
+            sMat    = sif(isempty(this.sStorageName), this.sStorageDir, this.sStorageName);
+
+            save([ 'data/full/' sDir '/' sMat '.mat' ], 'oSimObj');
+
+        end
+
     end
     
     

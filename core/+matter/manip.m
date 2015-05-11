@@ -18,8 +18,10 @@ classdef manip < base
     %     => just always use masses?
     
     properties (SetAccess = private, GetAccess = public)
+        % Handle of the phase object this manipulator is attached to
         oPhase;
         
+        % Name of the manipulators
         sName;
         
         % Required sType of oPhase, empty if no restriction
@@ -35,18 +37,26 @@ classdef manip < base
         function this = manip(sName, oPhase, sRequiredType)
             if nargin >= 3, this.sRequiredType = sRequiredType; end;
             
+            % If a certain type of phase type is required for this
+            % manipulator, we check for it here and throw an error if there
+            % is a mismatch.
             if ~isempty(this.sRequiredType)
                 if isa(oPhase, [ 'matter.phases.' this.sRequiredType ])
                     this.throw('manip', 'Provided phase (name %s, store %s) is not a "matter.phases.%s"!', oPhase.sName, oPhase.oStore.sName, this.sRequiredType);
                 end
             end
             
+            % Setting the properties
             this.sName   = sName;
             this.oPhase  = oPhase;
+            
+            % Adding the manipulator to the phase, returns a handle to the
+            % detachManipulator() method.
             this.hDetach = this.oPhase.addManipulator(this);
         end
         
         function delete(this)
+            % Function to remove the manipulator from its phase
             if isvalid(this.oPhase)
                 this.hDetach();
                 this.hDetach = [];
@@ -96,10 +106,11 @@ classdef manip < base
             fTimeStep = this.getTimeStep();
             
             if fTimeStep > 0
-                %CHECK deactivated for now .... e.g. weird for partials
-                %manip.
+                %CHECK *contents of phase also included in FR, with 1s TS*
+                %      deactivate that? change? right now, mass to flow
+                %      rate with fixed 1s time step ... make configurable?
+                %      exclude for stationary manips?
                 mrInPartials  = [ mrInPartials;  this.oPhase.arPartialMass ];
-                %CHECK does that make sense? Treat the stored mass as a flow?
                 afInFlowrates = [ afInFlowrates; this.oPhase.fMass / 1 ]; %fTimeStep ];
             end
         end

@@ -1,8 +1,15 @@
 classdef Example < vsys
     %EXAMPLE Example liquid flow simulation for V-HAB 2.0
-    %   This class creates blubb
+    %   Two tanks, connected by two pipes with a pump in between. The flow
+    %   rate setpoint for the pump is changed every 100 seconds. 
     
     properties
+        oPump;       % Object reference to the f2f processor representing the 
+                     % water pump. We need this so we can change the setpoint
+                     % during the simulation.
+                
+        bPumpActive; % Boolean variable indicating if the pump flow rate is
+                     % set to a value or zero.
     end
     
     methods
@@ -31,19 +38,17 @@ classdef Example < vsys
                                                 'Liquid_Phase', ...        Phase name
                                                 struct('H2O', 1000), ...   Phase contents
                                                 1, ...                     Phase volume
-                                                293.15);                 % Phase temperature
+                                                293.15, ...                Phase temperature
+                                                101325);                 % Phase pressure
             
-            % Adding an empty phase to the second store, 
-            % this represents an empty tank
-            
-            % PROBLEM If the phase contents are set to zero kg of H2O the
-            % solver takes forever to increase the step size. If set to 1
-            % kg of H2O, it works...
+            % Adding an empty phase to the second store, this represents an
+            % empty tank
             oWaterPhase = matter.phases.liquid(this.toStores.Tank_2, ...   Store in which the phase is located
                                                 'Water_Phase', ...         Phase name
-                                                struct('H2O', 1), ...      Phase contents
+                                                struct('H2O', 0), ...      Phase contents
                                                 0.001, ...                 Phase volume
-                                                293.15);                 % Phase temperature
+                                                293.15, ...                Phase temperature
+                                                101325);                 % Phase pressure
                                             
             
             
@@ -56,21 +61,26 @@ classdef Example < vsys
             % making in conjuction with a better liquid solver. 
             this.addProcF2F(components.pump(this.oData.oMT, 'Pump', 0.267));
             
+            % Setting the oPump property so we can access the pump settings
+            % later.
+            this.oPump = this.toProcsF2F.Pump;
+            
             % Adding pipes to connect the components
             this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 1, 0.1));
             this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 1, 0.1));
             
             % Creating the flowpath between the components
-            this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Pump', 'Pipe_2'}, 'Tank_2.Port_2');
+            oBranch = this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Pump', 'Pipe_2'}, 'Tank_2.Port_2');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
             this.seal();
             
-            % Have to set the phase pressures manually... forgot why...
-            oLiquidPhase.setPressure(101325);
-            oWaterPhase.setPressure(101325);
-            
+            % Now that the system is sealed, we can add the branch to a
+            % specific solver. In this case we will use the linear
+            % solver. 
+            solver.matter.linear.branch(oBranch);
+                        
         end
     end
     
@@ -78,6 +88,18 @@ classdef Example < vsys
         
         function exec(this, ~)
             exec@vsys(this);
+            
+            % Switching between flow rate setpoints for the pump every 100
+            % seconds
+            if ~(mod(this.oData.oTimer.fTime, 100))   % Have 100s passed? 
+                if this.bPumpActive                   % Is the flow rate currently high? 
+                    this.oPump.changeSetpoint(0);     % Set flow rate setpoint to zero
+                    this.bPumpActive = false;         % Change pump indicator to false
+                else
+                    this.oPump.changeSetpoint(0.267); % Set flow rate setpoint to a value
+                    this.bPumpActive = true;          % Change pump indicator to false
+                end
+            end
         end
         
      end

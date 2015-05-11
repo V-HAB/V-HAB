@@ -10,7 +10,7 @@ classdef Example1 < vsys
     
     methods
         function this = Example1(oParent, sName)
-            this@vsys(oParent, sName, 60);
+            this@vsys(oParent, sName, 10);
            
             % Creating a store, volume 10m^3
             this.addStore(matter.store(this.oData.oMT, 'Atmos', 10));
@@ -37,12 +37,13 @@ classdef Example1 < vsys
             % Creating the flowpath (=branch) between the components
             % Since we are using default exme-processors here, the input
             % format can be 'store.phase' instead of 'store.exme'
-            this.createBranch('Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
-            this.createBranch('Filter.Out', {'Pipe_3' }, 'Atmos.In');
+            oBranch_1 = this.createBranch('Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
+            oBranch_2 = this.createBranch('Filter.Out', {'Pipe_3' }, 'Atmos.In');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
             this.seal();
+            
         end
     end
     
@@ -51,6 +52,22 @@ classdef Example1 < vsys
         function exec(this, ~)
             exec@vsys(this);
             
+            
+            
+            fTime = this.oTimer.fTime;
+            oFan  = this.toProcsF2F.Fan;
+            
+            %if fTime >= 100, keyboard(); end;
+            
+            if fTime >= 500 && fTime < 1000 && oFan.fSpeedSetpoint ~= 0
+                fprintf('Fan OFF at second %f and tick %i\n', fTime, this.oTimer.iTick);
+                oFan.fSpeedSetpoint = 0;
+                
+            elseif fTime >= 1000 && oFan.fSpeedSetpoint ~= 40000
+                fprintf('Fan ON at second %f and tick %i\n', fTime, this.oTimer.iTick);
+                
+                oFan.fSpeedSetpoint = 40000;
+            end
         end
         
      end

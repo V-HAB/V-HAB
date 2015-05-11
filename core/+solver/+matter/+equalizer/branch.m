@@ -7,6 +7,8 @@ classdef branch < solver.matter.base.branch
 %
 %TODO
 %   - check mass flows into both phases -> take into account?
+%   - check oPhases --> bSynced could probably be deactivated if the only
+%     other connected branch is the one we're aligned with?
 %   - own time step?
     
     properties (SetAccess = protected, GetAccess = public)
@@ -182,7 +184,7 @@ classdef branch < solver.matter.base.branch
             %disp([ this.oBranch.sName ' eq @' num2str(this.oBranch.oContainer.oTimer.fTime) ]);
             %this.afExec(end + 1) = this.oBranch.oContainer.oTimer.fTime;
             
-            update@solver.matter.base.branch(this, fFlowRate, [], []);
+            update@solver.matter.base.branch(this, fFlowRate);
         end
     end
 end

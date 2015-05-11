@@ -416,11 +416,11 @@ classdef store < base
             
         end
         
-        function setNextExec(this, fTime)
+        function setNextUpdateTime(this, fTime)
             % Set a time step for updating the store and all phases. Only
             % sets shorter times for updating!
-            % IMPORTANT - parameter does NOT define next time step but next
-            %             EXECUTION time (absolute).
+            % IMPORTANT - parameter does NOT define next time step but the 
+            %             next ABSOLUTE time this store is updated.
             
             % Check if last update time (same as the one stored within the
             % timer) plus current time step larger then new exec time - if
@@ -503,7 +503,7 @@ classdef store < base
             if ~isempty(this.aoPhases) && any(strcmp({ this.aoPhases.sName }, oPhase.sName))
                 this.throw('addPhase', 'Phase with such a name already exists!');
                 
-            elseif ~isempty(oPhase.oStore)
+            elseif ~isempty(oPhase.oStore) && (oPhase.oStore ~= this)
                 this.throw('addPhase', 'Can only add phases that do not have a parent oStore set (i.e. just while constructing)!');
             
             else
@@ -537,7 +537,7 @@ classdef store < base
         
         
         
-        function seal(this, oTimer)
+        function seal(this, oTimer, oData)
             % See doc for bSealed attr.
             %
             %TODO create indices of phases, their ports etc! Trigger event?
@@ -580,7 +580,7 @@ classdef store < base
             
             
             % Seal phases
-            for iI = 1:length(this.aoPhases), this.aoPhases(iI).seal(); end;
+            for iI = 1:length(this.aoPhases), this.aoPhases(iI).seal(oData); end;
             
             this.bSealed = true;
         end

@@ -1,4 +1,10 @@
 classdef branch < solver.matter.base.branch
+     %BRANCH Linear hydraulic solver branch for matter flows
+     %  TODO Insert nice description here   
+
+    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %-- Properties -------------------------------------------------------%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     properties (SetAccess = public, GetAccess = public)
         rMaxChange = 0.030;
@@ -20,26 +26,26 @@ classdef branch < solver.matter.base.branch
         iSignChangeFRCnt = 0;
         
         fTimeStep = 0;
-    end
-    
-    properties (SetAccess = private, GetAccess = public)
         
     end
     
-    
+    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %-- Methods ----------------------------------------------------------%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     methods
+        %% Constructor
         function this = branch(oBranch, rMaxChange, iRemChange)
-            this@solver.matter.base.branch(oBranch);
+            this@solver.matter.base.branch(oBranch, [], 'hydraulic');
             
             if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end;
             if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end;
+            
         end
-        
-        
     end
     
     methods (Access = protected)
+        %% Branch update method
         function update(this)
             if this.oBranch.oContainer.oTimer.fTime < this.fLastUpdate
                 return;
@@ -47,25 +53,27 @@ classdef branch < solver.matter.base.branch
             
             % Checking if there are any active processors in the branch,
             % if yes, update them.
-            abActiveProcs = [ this.oBranch.aoFlowProcs.bActive ];
+            abActiveProcs = [ this.aoSolverProps.bActive ];
             for iI = 1:length(abActiveProcs)
                 if abActiveProcs(iI)
-                    this.oBranch.aoFlowProcs(iI).update();
+                    this.aoSolverProps(iI).updateDeltaPressure();
                 end
             end
             
             % Getting the temperature differences for each processor in the
             % branch
-            afTemps = [ this.oBranch.aoFlowProcs.fDeltaTemp ];
-            
-            % Check if all the temperature deltas are assigned
-            if ~(length(afTemps) == this.oBranch.iFlowProcs)
-                this.throw('solver', 'Solver error, make sure all of your flow 2 flow procs have their delta temps and pressures assigned!');
-            end
+            %TODO-REARRSOLV get fHeatFlows, use FR/c_p to calc delta Temps!
+%             afTemps = [ this.aoSolverProps.fDeltaTemperature ];
+%             
+%             % Check if all the temperature deltas are assigned
+%             if ~(length(afTemps) == this.oBranch.iFlowProcs)
+%                 this.throw('solver', 'Solver error, make sure all of your flow 2 flow procs have their delta temperatures assigned!');
+%             end
+           
             
             % Getting all hydraulic diameters and lengths
-            afHydrDiam   = [ this.oBranch.aoFlowProcs.fHydrDiam ];
-            afHydrLength = [ this.oBranch.aoFlowProcs.fHydrLength ];
+            afHydrDiam   = [ this.aoSolverProps.fHydrDiam ];
+            afHydrLength = [ this.aoSolverProps.fHydrLength ];
             
             % Find all components with negative hydraulic diameters
             afNegHydrDiam = find(afHydrDiam < 0);
@@ -73,7 +81,7 @@ classdef branch < solver.matter.base.branch
                 % If there are any components that produce a pressure rise
                 % sum them up and create new arrays with just the
                 % components producing pressure drops
-                fPressureRises = sum(this.oBranch.aoFlowProcs(afNegHydrDiam).fDeltaPressure);
+                fPressureRises = sum(this.aoSolverProps(afNegHydrDiam).fDeltaPressure);
                 afPosHydrDiam = afHydrDiam(afHydrDiam>0);
                 afHydrLength  = afHydrLength(afHydrDiam>0);
             else
@@ -152,10 +160,6 @@ classdef branch < solver.matter.base.branch
                 if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end;
 
                 this.setTimeStep(fNewStep);
-                %this.setTimeStep(10);
-    %             disp(this.rFlowRateChange);
-    %             disp(fNewStep);
-    %             disp('---------');
                 this.fTimeStep = fNewStep;
             end
             
@@ -165,7 +169,7 @@ classdef branch < solver.matter.base.branch
             %     diameter or length including active stuff -> e.g. in a
             %     fan loop from Atmos back to Atmos, all flows get the same
             %     pressure ...
-            update@solver.matter.base.branch(this, fFlowRate, [], afTemps);
+            update@solver.matter.base.branch(this, fFlowRate, []);
         end
     end
 end

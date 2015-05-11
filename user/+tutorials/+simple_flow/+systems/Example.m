@@ -36,17 +36,24 @@ classdef Example < vsys
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oAirPhase, 'Port_2');
              
-            % Adding a pipe to connect the tanks
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe', 0.5, 0.005));
+            % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
+            % diameter.
+            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe', 1.5, 0.005));
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            this.createBranch('Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
+            oBranch = this.createBranch('Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
             this.seal();
+            
+            % Now that the system is sealed, we can add the branch to a
+            % specific solver. In this case we will use the iterative
+            % solver. 
+            solver.matter.iterative.branch(oBranch);
+       
         end
     end
     

@@ -1,13 +1,10 @@
-classdef hx_flow < solver.matter.iterative.procs.f2f
+classdef hx_flow < matter.procs.f2f
     %HX_FLOW: flow to flow processor to set the values for the outflows of 
     %         a heat exchanger 
 
     properties (SetAccess = protected, GetAccess = public)
         fDeltaTemp = 0;
-        fDeltaPressure = 0;
         fDeltaPress = 0;
-        fHydrDiam = 0;
-        fHydrLength = 0;
         bActive = true;
     end
     
@@ -16,12 +13,13 @@ classdef hx_flow < solver.matter.iterative.procs.f2f
     end
     
     methods
-        function this = hx_flow(oParent, oMT, sName, fHydrDiam, fHydrLength)
-            this@solver.matter.iterative.procs.f2f(oMT, sName);
+        function this = hx_flow(oParent, oMT, sName)
+            this@matter.procs.f2f(oMT, sName);
             
-            this.fHydrDiam   = fHydrDiam;
-            this.fHydrLength = fHydrLength;
             this.oParent     = oParent;
+            
+            this.supportSolver('callback',  @this.solverDeltas);
+            this.supportSolver('manual', true, @this.updateManualSolver);
         end
         
         function update(this)
@@ -30,24 +28,25 @@ classdef hx_flow < solver.matter.iterative.procs.f2f
         
         function [ fDeltaPress, fDeltaTemp ] = solverDeltas(this, ~)
            this.oParent.update(); 
-           fDeltaPress = 0;
-           fDeltaTemp = 0;
+           fDeltaPress = this.fDeltaPress;
+           fDeltaTemp  = this.fDeltaTemp;
         end
         
-        %function to set the outlet temperature and pressure of the heat
-        %exchanger
-        function setOutFlow(this, fDeltaTemp, fDeltaPress)
-            
-            this.fDeltaTemp = fDeltaTemp;
+        % Function to set the heat flow and pressure of the heat exchanger
+        function setOutFlow(this, fHeatFlow, fDeltaPress)
+            this.fHeatFlow   = fHeatFlow;
             this.fDeltaPress = fDeltaPress;
-            this.fDeltaPressure = this.fDeltaPress;
         end
         
         function oInFlow = getInFlow(this)
             [ oInFlow, ~ ] = this.getFlows(); 
         end
             
-        
+        function fDeltaTemperature = updateManualSolver(this)
+            this.oParent.update();
+            fDeltaTemperature = this.fDeltaTemp;
+            
+        end
     end
 end
 

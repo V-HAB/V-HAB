@@ -20,14 +20,12 @@ if length(varargin) == 1
     % initialize attributes from input object
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type, also setting the afMass array. 
-    %TODO check if it is really okay, to assign the realtive masses to the 
-    % absolute mass array (afMass = varargin{1}.arPartialMass;).    
     if isa(varargin{1}, 'matter.phase')
         sPhase = varargin{1}.sType;
         afMass = varargin{1}.afMass;
     elseif isa(varargin{1}, 'matter.flow')
         sPhase = varargin{1}.oBranch.getInEXME().oPhase.sType;
-        afMass = varargin{1}.arPartialMass;
+        afMass = varargin{1}.arPartialMass * varargin{1}.fFlowRate;
     end
     
     fTemperature = varargin{1}.fTemp;

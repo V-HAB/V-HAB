@@ -13,29 +13,29 @@ classdef setup < simulation
     
     methods
         function this = setup() % Constructor function
+            
+            % First we call the parent constructor and tell it the name of
+            % this simulation we are creating.
             this@simulation('Tutorial_Liquid_Flow');
             
-            % Creating the root object
-            oExample = tutorials.liquid_flow.systems.Example(this.oRoot, 'Example');
-            
-            
-            % Add branch to solver
-            oB1 = solver.matter.linear.branch(oExample.aoBranches(1));
+            % Creating the 'Example' system as a child of the root system
+            % of this simulation. 
+            tutorials.liquid_flow.systems.Example(this.oRoot, 'Example');
             
             %% Ignore the contents of this section
             % Set a veeery high fixed time step - the solver will still be
             % called by the phase update methods!
-            oB1.fFixedTS = 10000;
-            
-            % Set fixed time steps for all phases, synced. Means that every
-            % tick each phase and both branches are solved.
-            % Decrease if flow rates unstable, increase if too slow. If un-
-            % stable AND too slow, buy a new computer.
-            aoPhases = this.oRoot.toChildren.Example.toStores.Tank_1.aoPhases;
-            aoPhases(1).fFixedTS = 0.5;
-            aoPhases = this.oRoot.toChildren.Example.toStores.Tank_2.aoPhases;
-            aoPhases(1).fFixedTS = 0.5;
-            
+%             oB1.fFixedTS = 10000;
+%             
+%             % Set fixed time steps for all phases, synced. Means that every
+%             % tick each phase and both branches are solved.
+%             % Decrease if flow rates unstable, increase if too slow. If un-
+%             % stable AND too slow, buy a new computer.
+%             aoPhases = this.oRoot.toChildren.Example.toStores.Tank_1.aoPhases;
+%             aoPhases(1).fFixedTS = 0.5;
+%             aoPhases = this.oRoot.toChildren.Example.toStores.Tank_2.aoPhases;
+%             aoPhases(1).fFixedTS = 0.5;
+%             
             %% Logging
             % Creating a cell setting the log items
             this.csLog = {
@@ -54,7 +54,7 @@ classdef setup < simulation
             %% Simulation length
             % Stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 600 * 1; % In seconds
+            this.fSimTime = 500 * 1; % In seconds
             this.iSimTicks = 600;
             this.bUseTime = true;
 

@@ -23,7 +23,7 @@ classdef p2p < matter.flow
     
     
     methods
-        function this = p2p(oStore, sName, sPhaseIn, sPhaseOut)
+        function this = p2p(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
             % p2p constructor.
             %
             % Parameters:
@@ -34,15 +34,15 @@ classdef p2p < matter.flow
             
             
             % Phases / ports
-            [ sPhaseIn,  sPortIn ]  = strtok(sPhaseIn, '.');
-            [ sPhaseOut, sPortOut ] = strtok(sPhaseOut, '.');
+            [ sPhaseAndPortIn,  sPortIn ]  = strtok(sPhaseAndPortIn, '.');
+            [ sPhaseAndPortOut, sPortOut ] = strtok(sPhaseAndPortOut, '.');
             
             % Find the phases
-            iPhaseIn  = find(strcmp({ oStore.aoPhases.sName }, sPhaseIn ), 1);
-            iPhaseOut = find(strcmp({ oStore.aoPhases.sName }, sPhaseOut), 1);
+            iPhaseIn  = find(strcmp({ oStore.aoPhases.sName }, sPhaseAndPortIn ), 1);
+            iPhaseOut = find(strcmp({ oStore.aoPhases.sName }, sPhaseAndPortOut), 1);
             
             if isempty(iPhaseIn) || isempty(iPhaseOut)
-                this.throw('p2p', 'Phase could not be found: in phase %s has index %i, %s has index %i', sPhaseIn, iPhaseIn, sPhaseOut, iPhaseOut);
+                this.throw('p2p', 'Phase could not be found: in phase "%s" has index "%i", out phase "%s" has index "%i"', sPhaseIn, iPhaseIn, sPhaseOut, iPhaseOut);
             end
             
             % Set name and a fake oBranch ref - back to ourself
@@ -121,7 +121,6 @@ classdef p2p < matter.flow
         
         function setMatterProperties(this, fFlowRate, arPartialMass, fTemp, fPressure)
             % Get missing values from exmes
-            %, fTemp, fPressure
             
             if (nargin < 2) || isempty(fFlowRate), fFlowRate = this.fFlowRate; end;
             

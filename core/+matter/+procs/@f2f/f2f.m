@@ -60,6 +60,23 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         
         % Sealed?
         bSealed = false;
+        
+        % Supported sovling mechanisms.
+        %TODO should access be protected, and obj passed to solver another
+        %     way (instead of solver directly accessing it)?
+        toSolve = struct();
+    end
+    
+    properties (SetAccess = protected, GetAccess = public)
+        
+        % Heat flow into/from the component. Together with FR, c_p used to
+        % calculate a temperature change for the flowing matter through
+        % this component.
+        % No specific mechanism exists where this property can be updated
+        % (e.g. regular call to an .update() method) - instead, the vsys to
+        % which this f2f belongs needs to call a method in this processor
+        % manually, e.g. in .exec().
+        fHeatFlow = 0;
     end
     
     
@@ -118,7 +135,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             end
             
             % All ports in use (iIdx empty)?
-            if isempty(iIdx), this.throw('addFlow', 'No free port!'); end;
+            if isempty(iIdx), this.throw('addFlow', 'Flow has no free port, seems like its already connected ... used again in createBranch, by mistake?'); end;
             
             % Set the flow obj - when we call the addProc of the flow
             % object, it checks if it exists on aoFlows!
@@ -147,18 +164,12 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         end
     end
     
-    %% Methods required for the matter handling
-    methods
-        function exec(this, fTime)
-            % Called from subsystem to update the internal state of the
-            % processor, e.g. change efficiencies etc
-        end
-        
-        function update(this, ~)
-            % Possibly needed for manual solver, e.g. .update called on
-            % phase/exme, which in turn call the .update on the next flow,
-            % which call it on their next f2f processor which call it on
-            % the next flows etc?
+    
+    methods (Access = protected)
+        function supportSolver(this, sType, varargin)
+            handleClassConstructor = str2func([ 'solver.matter.base.type.' sType ]);
+            
+            this.toSolve.(sType) = handleClassConstructor(varargin{:});
         end
     end
     
