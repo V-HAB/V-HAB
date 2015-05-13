@@ -1,4 +1,4 @@
-classdef o2_to_co2 < matter.manips.substances
+classdef o2_to_co2 < matter.manips.substance.flow
     %SOMEABSORBEREXAMPLE Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -9,7 +9,7 @@ classdef o2_to_co2 < matter.manips.substances
     
     methods
         function this = o2_to_co2(sName, oPhase)
-            this@matter.manips.substances(sName, oPhase);
+            this@matter.manips.substance.flow(sName, oPhase);
         end
         
         function update(this)
@@ -41,7 +41,7 @@ classdef o2_to_co2 < matter.manips.substances
             afFlowRates(tiN2I.C)   = -1 * fC;
             afFlowRates(tiN2I.CO2) = fCO2;
             
-            update@matter.manips.substances(this, afFlowRates);
+            update@matter.manips.substance.flow(this, afFlowRates);
         end
     end
     
