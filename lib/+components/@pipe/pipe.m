@@ -112,7 +112,12 @@ classdef pipe < matter.procs.f2f
 
             % Calculate density and flow speed
             try
-                fDensity = this.oMT.calculateDensity(oFlowIn);
+                % As for the pressure above, we are using the average
+                % density between in- and outflow.
+                fDensityIn = this.oMT.calculateDensity(oFlowIn);
+                fDensityOut = this.oMT.calculateDensity(oFlowOut);
+                
+                fDensity = (fDensityIn + fDensityOut) / 2;
             catch
                 %TODO solver should handle that, could also be an issue if
                 %     temperature is zero
