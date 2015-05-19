@@ -125,6 +125,13 @@ classdef branch < solver.matter.base.branch
                 %TODO use this.fLastUpdate and this.oBranch.oCont.oTimer.fTime
                 %     and set the rChange in relation to elapsed time!
                 rChange = abs(fFlowRate / this.fFlowRate - 1);
+                
+                % In the first execution, fFlowRate and this.fFlowRate can
+                % both be zero. This causes rChange to be NaN, in turn
+                % causing the new time step to be NaN. If that happens, the
+                % branch will never be updated again. So we set rChange to
+                % zero if this happens. 
+                rChange = sif(isnan(rChange), 0, rChange);
 
                 % Old time step
                 fOldStep = this.fTimeStep;
