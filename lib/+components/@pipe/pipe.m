@@ -130,6 +130,14 @@ classdef pipe < matter.procs.f2f
                 fEta = 17.2 / 10^6;
             end
 
+            % If the dynamic viscosity, density, or characteristical length
+            % (diameter) is empty, return zero as the pressure drop. Otherwise,
+            % the pressure drop may become NaN.
+            if (this.fDiameter == 0) || (fDensity == 0) || (fEta == 0)
+                fDeltaPress = 0;
+                return;
+            end
+
             % Reynolds Number
             fReynolds = fFlowSpeed * this.fDiameter * fDensity / fEta;
             % Interpolate transition between turbulent and laminar
