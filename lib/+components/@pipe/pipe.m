@@ -102,12 +102,6 @@ classdef pipe < matter.procs.f2f
                                  % drop, so send that?
                 return;
 
-            % No pressure on 'in' side? Just use 'out' side ...?
-            elseif oFlowIn.fPressure == 0
-
-                %CHECK1
-                %oFlowIn = oFlowOut;
-
             end
 
             % Calculate density and flow speed
