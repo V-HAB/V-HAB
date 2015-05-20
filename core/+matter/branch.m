@@ -468,7 +468,20 @@ classdef branch < base & event.source
         
     
         function oExme = getInEXME(this)
-            oExme = this.coExmes{sif(this.aoFlows(1).fFlowRate < 0, 2, 1)};
+
+            if this.fFlowRate == 0
+                % We have no flow rate, so we use the properties of the
+                % phase that contains more mass than the other! This 
+                % ensures that the matter properties don't become zero if
+                % the coExmes{1} phase is empty.
+                aoPhases   = [ this.coExmes{1}.oPhase, this.coExmes{2}.oPhase ];
+                iWhichExme = sif(aoPhases(1).fMass >= aoPhases(2).fMass, 1, 2);
+            else
+                iWhichExme = sif(this.fFlowRate < 0, 2, 1);
+            end
+
+            oExme = this.coExmes{iWhichExme};
+
         end
         
         
