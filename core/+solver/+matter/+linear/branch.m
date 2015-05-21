@@ -56,7 +56,19 @@ classdef branch < solver.matter.base.branch
             abActiveProcs = [ this.aoSolverProps.bActive ];
             for iI = 1:length(abActiveProcs)
                 if abActiveProcs(iI)
-                    this.aoSolverProps(iI).updateDeltaPressure();
+                    % There are two kinds of processors: Ones that create a
+                    % pressure rise and ones that just change their
+                    % hydraulic parameters. The latter just needs to be
+                    % updated, but the former needs to write a new value
+                    % for fDeltaPressure to the solver type object. This is
+                    % only done, if the updateDeltaPressure() method is
+                    % called with one or more return values. This is the
+                    % reason for the following if-condition. 
+                    if this.aoSolverProps(iI).fHydrDiam < 0
+                        [~] = this.aoSolverProps(iI).updateDeltaPressure();
+                    else
+                        this.aoSolverProps(iI).updateDeltaPressure();
+                    end
                 end
             end
             
