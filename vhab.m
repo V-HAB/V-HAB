@@ -80,8 +80,16 @@ classdef vhab
             % default max. time/tick conditions on the sim object)
             disp('Clearing MATLAB classes...')
             hTimer = tic();
+            % Save all breakpoints so we can restore them after the clear
+            % command.
+            tBreakpoints = dbstatus('-completenames');
             vhab.clear();
             disp(['Classes cleared in ', num2str(toc(hTimer)), ' seconds!'])
+            
+            % Restore breakpoints if there were any.
+            if numel(tBreakpoints) > 0
+                dbstop(tBreakpoints);
+            end
             
             sSimulation = vhab.sim(sSimulation, varargin{:});
             

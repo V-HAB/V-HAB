@@ -102,17 +102,16 @@ classdef pipe < matter.procs.f2f
                                  % drop, so send that?
                 return;
 
-            % No pressure on 'in' side? Just use 'out' side ...?
-            elseif oFlowIn.fPressure == 0
-
-                %CHECK1
-                %oFlowIn = oFlowOut;
-
             end
 
             % Calculate density and flow speed
             try
-                fDensity = this.oMT.calculateDensity(oFlowIn);
+                % As for the pressure above, we are using the average
+                % density between in- and outflow.
+                fDensityIn = this.oMT.calculateDensity(oFlowIn);
+                fDensityOut = this.oMT.calculateDensity(oFlowOut);
+                
+                fDensity = (fDensityIn + fDensityOut) / 2;
             catch
                 %TODO solver should handle that, could also be an issue if
                 %     temperature is zero
@@ -128,6 +127,14 @@ classdef pipe < matter.procs.f2f
                 fEta = this.oMT.calculateDynamicViscosity(oFlowIn);
             catch
                 fEta = 17.2 / 10^6;
+            end
+
+            % If the dynamic viscosity, density, or characteristical length
+            % (diameter) is empty, return zero as the pressure drop. Otherwise,
+            % the pressure drop may become NaN.
+            if (this.fDiameter == 0) || (fDensity == 0) || (fEta == 0)
+                fDeltaPress = 0;
+                return;
             end
 
             % Reynolds Number
@@ -167,39 +174,19 @@ classdef pipe < matter.procs.f2f
                 fLambda = fLambdaColebrook;
             end
 
-            %CHECK EQUATIONS friction factor! DROP at blas>prandtl
+            %CHECK EQUATIONS friction factor! Colebrook valid for all Re numbers?D
             %   http://www.brighthubengineering.com/hydraulics-civil-engineering/55227-pipe-flow-calculations-3-the-friction-factor-and-frictional-head-loss/
             %   http://www.efunda.com/formulae/fluids/calc_pipe_friction.cfm#friction
             %   http://eprints.iisc.ernet.in/9587/1/Friction_Factor_for_Turbulent_Pipe_Flow.pdf
             %   http://www.engineeringtoolbox.com/colebrook-equation-d_1031.html
-            % HERE: all smooth, just blasius?
-
-%             %(PDF) Turbulent: Blasius
-%             elseif (this.Const.fReynoldsCritical * (1 + pInterp) < fReynolds) && (fReynolds <= 10^5)
-%                 fLambda = 0.3164 / fReynolds^(1/4);
-%                 %lambda = 1 / (1.8 * log(Re / 7))^2;
-%
-%             % (PPT) Turbulent: Prantl
-%             elseif (10^5 < fReynolds) && (fReynolds < 10^8)
-%                 %ISSUE using the Blasius (smooth) flow equation - Prandtl
-%                 %      actually produced LOWER lambdas --> WAAAY to high
-%                 %      flow rates!!
-%                 fLambda = 0.3164 / fReynolds^(1/4);
-%                 %lambda = 1 / (1.8 * log(Re / 7))^2;
-%
-%             else
-%                 this.warn('solverDeltas', [ 'Reynolds ' num2str(fReynolds) ' not covered!' ]);
-%
-%                 % Just assume prantl * 2
-%                 fLambda = 1 / (1.8 * log(fReynolds / 7))^2 * 10;
-%
-%             end
+            % all smooth - blasius: fLambda = 0.3164 / fReynolds^(1/4)
+            % Prantl: fLambda = 1 / (1.8 * log(Re / 7))^2
 
             fDeltaPress = fDensity / 2 * fFlowSpeed^2 * (fLambda * this.fLength / this.fDiameter);
 
-            %TODO check V2 (output speed -> pressure at output + FR) ==> if
-            %     CHOKED (>= speed of sound) -> increase deltaP accordingly
-
+            %CHECK include test for choked flow, i.e. speed at outlet > speed of sound?
+            %      should that be done by the f2f comp or the solver? Include attribute
+            %      fFlowArea in f2fs so solver can use flow rate, density and area to calculate speed?
         end
 
     end

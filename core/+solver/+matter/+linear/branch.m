@@ -56,20 +56,21 @@ classdef branch < solver.matter.base.branch
             abActiveProcs = [ this.aoSolverProps.bActive ];
             for iI = 1:length(abActiveProcs)
                 if abActiveProcs(iI)
-                    this.aoSolverProps(iI).updateDeltaPressure();
+                    % There are two kinds of processors: Ones that create a
+                    % pressure rise and ones that just change their
+                    % hydraulic parameters. The latter just needs to be
+                    % updated, but the former needs to write a new value
+                    % for fDeltaPressure to the solver type object. This is
+                    % only done, if the updateDeltaPressure() method is
+                    % called with one or more return values. This is the
+                    % reason for the following if-condition. 
+                    if this.aoSolverProps(iI).fHydrDiam < 0
+                        [~] = this.aoSolverProps(iI).updateDeltaPressure();
+                    else
+                        this.aoSolverProps(iI).updateDeltaPressure();
+                    end
                 end
             end
-            
-            % Getting the temperature differences for each processor in the
-            % branch
-            %TODO-REARRSOLV get fHeatFlows, use FR/c_p to calc delta Temps!
-%             afTemps = [ this.aoSolverProps.fDeltaTemperature ];
-%             
-%             % Check if all the temperature deltas are assigned
-%             if ~(length(afTemps) == this.oBranch.iFlowProcs)
-%                 this.throw('solver', 'Solver error, make sure all of your flow 2 flow procs have their delta temperatures assigned!');
-%             end
-           
             
             % Getting all hydraulic diameters and lengths
             afHydrDiam   = [ this.aoSolverProps.fHydrDiam ];
@@ -125,6 +126,13 @@ classdef branch < solver.matter.base.branch
                 %TODO use this.fLastUpdate and this.oBranch.oCont.oTimer.fTime
                 %     and set the rChange in relation to elapsed time!
                 rChange = abs(fFlowRate / this.fFlowRate - 1);
+                
+                % In the first execution, fFlowRate and this.fFlowRate can
+                % both be zero. This causes rChange to be NaN, in turn
+                % causing the new time step to be NaN. If that happens, the
+                % branch will never be updated again. So we set rChange to
+                % zero if this happens. 
+                rChange = sif(isnan(rChange), 0, rChange);
 
                 % Old time step
                 fOldStep = this.fTimeStep;

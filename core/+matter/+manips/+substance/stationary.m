@@ -15,8 +15,9 @@ classdef stationary < matter.manips.substance
     
     methods (Access = protected)
         function afMass = getTotalMasses(this)
-            % Get all inwards and the stored partial masses as total kg/s
-            % values.
+            % Get all inward mass flows multiplied with the time step and 
+            % add them the stored partial masses to get an absolute value 
+            % in kg. 
             
             [ afMasses, mrInPartials ] = this.getMasses();
             
