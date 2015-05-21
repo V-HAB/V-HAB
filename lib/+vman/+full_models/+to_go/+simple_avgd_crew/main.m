@@ -34,7 +34,7 @@ classdef main < vsys
         function this = main(oParent, sName, fCrewSize)
             this@vsys(oParent, sName, 60);
             
-            % Import - NEVER more than once per scope!!1!
+            % Import - NEVER more than once per scope!!!
             import vman.full_models.to_go.simple_avgd_crew.*;
             
             
@@ -120,8 +120,8 @@ classdef main < vsys
         end
         
         
-        function connectIfs(this, sIntake, sOutlet)
-            this.connectIF('Intake',  sIntake);
+        function setInterfaces(this, sIntake, sOutlet)
+            this.connectIF('Intake', sIntake);
             this.connectIF('Outlet', sOutlet);
         end
         

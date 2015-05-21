@@ -104,7 +104,7 @@ classdef container < sys
             
             
             for iI = 1:length(this.aoBranches)
-                %this.cSetFRs{iI} = 
+                % Sealing off all of the branches
                 this.aoBranches(iI).seal();
             end
             

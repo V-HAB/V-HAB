@@ -38,7 +38,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         %     arPartialMass and Temperature
         fHeatCapacity = 0;      % [J/K/kg]
         fMolMass      = 0;      % [g/mol] NOT KG!
-        fMolarMass    = 0;      % [kg/mol]
+        %fMolarMass    = 0;      % [kg/mol]
         
         % Partial masses in percent (ratio) in indexed vector (use oMT to
         % translate, e.g. this.oMT.tiN2I)
@@ -147,6 +147,30 @@ classdef flow < base & matlab.mixin.Heterogeneous
             if nargin > 2
                 this.oBranch = oBranch; 
             end
+
+            % If this is not an interface flow, we initialize the matter
+            % properties. 
+            if (nargin < 2) || ~bIf
+
+                % Initialize the matter property attributes, get them from
+                % the phase with the higher mass.
+                %TODO This workaround is just to make sure that some
+                %     reasonable values are set. More properly, the data
+                %     should be fetched from the EXMEs with
+                %     |getPortProperties()| and use pressure or equivalent
+                %     for solids.
+                aoPhases = [ this.oBranch.coExmes{1}.oPhase, this.oBranch.coExmes{2}.oPhase ];
+                oPhase   = sif(aoPhases(1).fMass >= aoPhases(2).fMass, aoPhases(1), aoPhases(2));
+
+                % This is likely to be overwritten by the assigned solver
+                % in the first, initializion step (time < 0)
+                if oPhase.fMass ~= 0
+                    this.arPartialMass = oPhase.arPartialMass;
+                    this.fMolMass      = oPhase.fMolMass;
+                    this.fHeatCapacity = oPhase.fHeatCapacity;
+                end
+
+            end % if not an interface flow
         end
         
         

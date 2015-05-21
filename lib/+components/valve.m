@@ -63,7 +63,7 @@ classdef valve < matter.procs.f2f
         end
         
         function fDeltaPressure = update(this)
-            oHydr = this.toSolve.hydr;
+            oHydr = this.toSolve.hydraulic;
             
             %if valve closes, assign delta pressure to erase the pressure
             %difference within the branch

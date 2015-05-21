@@ -121,6 +121,9 @@ classdef table < base
                 end
             end
             
+            % Notify user that generating the matter data will take some time.
+            disp('Regenerating matter table from XSLX. This will take a moment ...');
+            
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Introduction %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
