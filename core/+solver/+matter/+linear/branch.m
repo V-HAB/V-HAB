@@ -60,17 +60,6 @@ classdef branch < solver.matter.base.branch
                 end
             end
             
-            % Getting the temperature differences for each processor in the
-            % branch
-            %TODO-REARRSOLV get fHeatFlows, use FR/c_p to calc delta Temps!
-%             afTemps = [ this.aoSolverProps.fDeltaTemperature ];
-%             
-%             % Check if all the temperature deltas are assigned
-%             if ~(length(afTemps) == this.oBranch.iFlowProcs)
-%                 this.throw('solver', 'Solver error, make sure all of your flow 2 flow procs have their delta temperatures assigned!');
-%             end
-           
-            
             % Getting all hydraulic diameters and lengths
             afHydrDiam   = [ this.aoSolverProps.fHydrDiam ];
             afHydrLength = [ this.aoSolverProps.fHydrLength ];
