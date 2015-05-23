@@ -345,6 +345,19 @@ classdef branch < base & event.source
             % interface, gather all the data from connected branches; if it
             % is an interface and is connected, call update method there
             this.updateConnectedBranches();
+            
+            % To help with debugging, we now change this branch's sName
+            % property to reflect the actual flow path between two exmes
+            % that it models. First we remove the names of the interfaces
+            % from both branch names.
+            sLeftBranchName  = strrep(this.sName, this.csNames{2}, '');
+            sRightBranchName = strrep(this.coBranches{2}.sName, sInterface, '');
+            
+            % Now we set the new name for this branch, inserting the word
+            % 'Interface' in the middle, so when looking at the name, we
+            % know that this is a subsystem to supersystem branch.
+            this.sName = [ sLeftBranchName, 'Interface', sRightBranchName ];
+            
         end
         
         function [ hGetBranchData, hSetDisconnected ] = setConnected(this, oSubSysBranch, hUpdateConnectedBranches)
