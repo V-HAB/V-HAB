@@ -129,12 +129,19 @@ classdef pipe < matter.procs.f2f
                 fEta = 17.2 / 10^6;
             end
 
-            % If the dynamic viscosity, density, or characteristical length
-            % (diameter) is empty, return zero as the pressure drop. Otherwise,
-            % the pressure drop may become NaN.
-            if (this.fDiameter == 0) || (fDensity == 0) || (fEta == 0)
+            % If the pipe diameter is zero, no matter can flow through that
+            % pipe. Return an infinite pressure drop which should let the
+            % solver know to set the flow rate to zero.
+            if (this.fDiameter == 0)
+                fDeltaPress = Inf;
+                return; % Return early.
+            end
+
+            % If the dynamic viscosity or the density is empty, return zero
+            % as the pressure drop. Else, the pressure drop may become NaN.
+            if (fDensity == 0) || (fEta == 0)
                 fDeltaPress = 0;
-                return;
+                return; % Return early.
             end
 
             % Reynolds Number
