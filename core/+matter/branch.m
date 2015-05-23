@@ -591,8 +591,10 @@ classdef branch < base & event.source
                 
                 
                 % Only do if we got a right phase, i.e. the (maybe several)
-                % connected branches connect two stores
-                if ~isempty(this.coExmes{2})
+                % connected branches connect two stores, OR if the branch
+                % connected on the right is a pass-through branch that has
+                % interfaces on both sides -> abIf = [ 1 1 ]
+                if ~isempty(this.coExmes{2}) || this.coBranches{2}.abIf(2)
                     % Just select to this.iIfFlow, maytbe chSetFrs was
                     % already extended previously
                     this.aoFlows  = [ this.aoFlows(1:this.iIfFlow) aoFlows ];
@@ -602,6 +604,7 @@ classdef branch < base & event.source
                     
                     this.iFlows     = length(this.aoFlows);
                     this.iFlowProcs = length(this.aoFlowProcs);
+
                 end
                 
                 % Since the subsystem branch is already sealed, we have to
@@ -659,14 +662,17 @@ classdef branch < base & event.source
                 
             % No branch set on the right side, but got an interface on that
             % side, so return empty for the right phase!
-            elseif this.abIf(2)
-                oRightPhase = [];
-                
             else
-                oRightPhase = this.coExmes{2};
+                if this.abIf(2)
+                    oRightPhase = [];
+                
+                else
+                    oRightPhase = this.coExmes{2};
+                end
                 
                 aoFlows     = this.aoFlows;
                 aoFlowProcs = this.aoFlowProcs;
+                
             end
         end
     end
@@ -679,14 +685,6 @@ classdef branch < base & event.source
             
             if this.bSealed
                 this.throw('seal', 'Already sealed');
-            end
-            
-            if this.abIf(1)
-                % If this branch has an interface on the left side, it is a
-                % supersystem branch with an interface to a subsystem. The
-                % subsystem will already have sealed all of the flows and
-                % procs, so we can just skip it here. 
-                return;
             end
             
             for iI = 1:length(this.aoFlows)

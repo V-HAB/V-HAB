@@ -103,10 +103,31 @@ classdef container < sys
                 this.toStores.(this.csStores{iI}).seal(this.oTimer, this.oData);
             end
             
+            % Now we seal off all of the branches. Some of them may be
+            % interface branches to subsystems. These leftover stubs of
+            % branches are no longer needed and can be deleted. These stubs
+            % will have an abIf property that looks like this: [1; 0]
+            % meaning their left side is an interface while their right
+            % side is connected to an exme processor. If the branch is a
+            % subsystem interface branch to a supersystem, abIf = [0; 1].
+            % If the branch is a pass-through branch from a subsystem to a
+            % supersystem via an intermediate system, abIf = [1; 1]. So we
+            % only want to delete if abIf = [1; 0].
             
+            % First we get the 2xN matrix for all the branches in the
+            % container.
+            mbIf = subsref([this.aoBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
+            % Using the element-wise AND operator '&' we delete only the
+            % branches with abIf = [1; 0].
+            this.aoBranches(mbIf(1,:) & ~mbIf(2,:)) = [];
+          
             for iI = 1:length(this.aoBranches)
-                % Sealing off all of the branches
-                this.aoBranches(iI).seal();
+                % So now the stubs are deleted and the pass-through are
+                % already sealed, so we only have to seal the non-interface
+                % branches and the 
+                if sum(this.aoBranches(iI).abIf) <= 1
+                    this.aoBranches(iI).seal();
+                end
             end
             
             this.bSealed = true;
