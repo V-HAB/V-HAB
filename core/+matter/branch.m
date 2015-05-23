@@ -148,7 +148,6 @@ classdef branch < base & event.source
             % subsystem to system.
             %
             %TODO
-            %   - check if i/f flows already exist, error!
             %   - does store.getPort have a throw if port not found? Else
             %     throw here.
             
@@ -167,6 +166,12 @@ classdef branch < base & event.source
             if isempty(strfind(sLeft, '.'))
                 this.abIf(1) = true;
                 
+                % Checking if the interface name is already present in this
+                % system. Only do this if there any branches at all, of course. 
+                if ~isempty(this.oContainer.aoBranches) && strcmp(subsref([ this.oContainer.aoBranches.csNames ], struct('type', '()', 'subs', {{ 1, ':' }})), sLeft)
+                    this.throw('branch', 'An interface called ''%s'' already exists in ''%s''! Please choose a different name.', sLeft, this.oContainer.sName);
+                end
+  
             else
                 % Create first flow, get matter table from oData (see @sys)
                 oFlow = matter.flow(this);
@@ -240,6 +245,12 @@ classdef branch < base & event.source
                 
                 this.abIf(2) = true;
                 this.iIfFlow = length(this.aoFlows);
+                
+                % Checking if the interface name is already present in this
+                % system. Only do this if there any branches at all, of course. 
+                if ~isempty(this.oContainer.aoBranches) && strcmp(subsref([ this.oContainer.aoBranches.csNames ], struct('type', '()', 'subs', {{ 2, ':' }})), sRight)
+                    this.throw('branch', 'An interface called ''%s'' already exists in ''%s''! Please choose a different name.', sRight, this.oContainer.sName);
+                end
                 
             else
                 % Split to store name / port name
