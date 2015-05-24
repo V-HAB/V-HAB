@@ -6,7 +6,7 @@ classdef vhab
     
     properties (GetAccess = public, Constant = true)
         poSims   = containers.Map();
-        pOptions = containers.Map({ 'iTickRepIntv', 'iTimeRepIntv', 'bDump', 'sHost' }, { 100, 60, false, '' });
+        pOptions = containers.Map({ 'iTickRepIntv', 'iTickRepIntvMinor', 'iTimeRepIntv', 'bDump', 'sHost' }, { 100, 10, 60, false, '' });
 
         fLastDispTime = 0;      % So we can calulate the delta t between the 100*X ticks display
     end
@@ -105,7 +105,7 @@ classdef vhab
         end
         
         
-        function setReportInterval(iTicks, fTime)
+        function setReportInterval(iTicks, iMinorTicks)
             % Set the interval in which the tick and the sim time are
             % reported to the console.
             
@@ -115,8 +115,8 @@ classdef vhab
                 pOptions('iTickRepIntv') = iTicks;
             end
             
-            if nargin >= 2
-                pOptions('iTimeRepIntv') = fTime;
+            if (nargin >= 2) && ~isempty(iMinorTicks)
+                pOptions('iTickRepIntvMinor') = iMinorTicks;
             end
         end
         
@@ -171,6 +171,21 @@ classdef vhab
             
             
             
+            
+            % Minor tick?
+            if (mod(oSim.oTimer.iTick, vhab.pOptions('iTickRepIntvMinor')) == 0) && (oSim.oTimer.fTime > 0)
+                % Major tick -> remove printed minor tick characters
+                if (mod(oSim.oTimer.iTick, vhab.pOptions('iTickRepIntv')) == 0)
+                    %fprintf('\n');
+                    
+                    iDeleteChars = 1 * vhab.pOptions('iTickRepIntv') / vhab.pOptions('iTickRepIntvMinor') - 1;
+                    fprintf(repmat('\b', 1, iDeleteChars));
+                else
+                    %fprintf('%f\t', oSim.oTimer.fTime);
+                    
+                    fprintf('.');
+                end
+            end
             
             if mod(oSim.oTimer.iTick, vhab.pOptions('iTickRepIntv')) == 0
                 %TODO store last tick disp fTime on some containers.Map!
