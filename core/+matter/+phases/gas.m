@@ -110,7 +110,7 @@ classdef gas < matter.phase
                 
                 %this.fPressure = sum(this.afMass) * this.fMassToPressure;
                 this.fPressure = this.fMass * this.fMassToPressure;
-                this.afPP      = this.getPartialPressures();
+                this.afPP      = this.oMT.calculatePartialPressures(this);
                 this.fDensity  = this.fMass / this.fVolume;
             else
                 this.fPressure = 0;
@@ -118,25 +118,9 @@ classdef gas < matter.phase
         end
         
         function [ afPartialPressures ] = getPartialPressures(this)
-            %TODO see @matter.flow.getPartialPressures
-            %     PROTECTED! automatically called in .update() -> afPPs!
-            
-            % No mass? 
-            if this.fMass == 0
-                % Partials have to be zero, as fMass is zero which is the
-                % sum() of afMass. arPartials derived from afMass.
-                afPartialPressures = this.arPartialMass;
-            else
-                % Calculating the number of mols for each species
-                afMols = this.arPartialMass ./ this.oStore.oMT.afMolMass;
-                % Calculating the total number of mols
-                fGasAmount = sum(afMols);
-                % Calculating the partial amount of each species by mols
-                arFractions = afMols ./ fGasAmount;
-                % Calculating the partial pressures by multiplying with the
-                % total pressure in the phase
-                afPartialPressures = arFractions .* this.fPressure;
-            end
+            %TODO should we still provide this proxy method? Or throw a
+            %     deprecation warning/error?
+            afPartialPressures = this.oMT.calculatePartialPressures(this);
         end
         
         
