@@ -112,10 +112,20 @@ classdef vhab
             pOptions = vhab.pOptions;
             
             if ~isempty(iTicks)
+                
+                if mod(iTicks, 1) ~= 0, error('Ticks needs to be integer.'); end;
+                
                 pOptions('iTickRepIntv') = iTicks;
             end
             
             if (nargin >= 2) && ~isempty(iMinorTicks)
+                
+                if mod(iMinorTicks, 1) ~= 0, error('Minor ticks needs to be integer.'); end;
+                
+                if mod(iTicks / iMinorTicks, 1) ~= 0
+                    error('Minor tick needs to be a whole-number divisor of major tick (e.g. 25 vs. 100, 10 vs. 100)');
+                end
+                
                 pOptions('iTickRepIntvMinor') = iMinorTicks;
             end
         end
@@ -178,7 +188,7 @@ classdef vhab
                 if (mod(oSim.oTimer.iTick, vhab.pOptions('iTickRepIntv')) == 0)
                     %fprintf('\n');
                     
-                    iDeleteChars = 1 * vhab.pOptions('iTickRepIntv') / vhab.pOptions('iTickRepIntvMinor') - 1;
+                    iDeleteChars = 1 * ceil(vhab.pOptions('iTickRepIntv') / vhab.pOptions('iTickRepIntvMinor')) - 1;
                     fprintf(repmat('\b', 1, iDeleteChars));
                 else
                     %fprintf('%f\t', oSim.oTimer.fTime);
