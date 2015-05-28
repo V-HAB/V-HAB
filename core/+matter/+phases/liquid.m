@@ -4,10 +4,17 @@ classdef liquid < matter.phase
     %
     %TODO
     %   - support empty / zero volume (different meanings?)
-    
-    properties (SetAccess = protected, GetAccess = public)
-        % Phase type (for matter table etc)
+
+    properties (Constant)
+
+        % State of matter in phase (e.g. gas, liquid, ?)
+        % @type string
+        %TODO: rename to |sMatterState|
         sType = 'liquid';
+
+    end
+
+    properties (SetAccess = protected, GetAccess = public)
         
         fVolume;                % Volume in m^3
         

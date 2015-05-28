@@ -1,12 +1,19 @@
 classdef solid < matter.phase
     %SOLID Summary of this class goes here
     %   Detailed explanation goes here
-    
+
+    properties (Constant)
+
+        % State of matter in phase (e.g. gas, liquid, ?)
+        % @type string
+        %TODO: rename to |sMatterState|
+        sType = 'solid';
+
+    end
+
     properties (SetAccess = protected, GetAccess = public)
         afVolume;       % Array containing the volume of the individual species in m^3
         fVolume = 0;    % Volume of all solid species in m^3
-        
-        sType = 'solid';
     end
     
     methods
