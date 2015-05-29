@@ -36,7 +36,7 @@ classdef table < base
             'fPlanck',           6.626*10^-34   ...
             );
         
-        % Struct containing standard values for use in any place where an 
+        % Struct containing standard values for use in any place where an
         % actual value is not given or needed.
         Standard = struct( ...
             'Temperature', 288.15, ...    % K  (25 deg C)
@@ -173,6 +173,7 @@ classdef table < base
             % Now we go through all substances in the 'MatterData'
             % worksheet and fill the ttxMatter struct
             for iI = 1:this.iSubstances
+                
                 % Creating a temporary variable to make the code more
                 % readable.
                 tSubstance = this.ttxMatter.(this.csSubstances{iI});
@@ -182,15 +183,15 @@ classdef table < base
                 % the boolean variable indicating this to false.
                 this.ttxMatter.(this.csSubstances{iI}).bIndividualWorksheet = false;
                 
-                % Adding an entry to the name to index struct
+                % Adding an entry to the name to index struct.
                 this.tiN2I.(this.csSubstances{iI}) = iI;
-                
                 
                 % If the molar mass of the substance is not directly
                 % provided by the 'MatterData' worksheet, we try to
                 % calculate it. This is only possible if the substance name
                 % is given as a chemical formula, e.g. 'H2O' for water.
                 if ~isfield(tSubstance, 'fMolarMass')
+                    
                     % Extract the atomic elements from matter name
                     tElements  = matter.table.extractAtomicTypes(this.csSubstances{iI});
                     % Saving the different elements of the substance into a
@@ -237,10 +238,12 @@ classdef table < base
                     % If the molar mass is directly given, then we can
                     % just use the given value.
                     fMolarMass = tSubstance.fMolarMass;
+                    
                 end
                 
                 % And finally we create an entry in the molar mass array.
                 this.afMolarMass(iI) = fMolarMass;
+                
             end
             
             
@@ -632,7 +635,7 @@ classdef table < base
                             % function.
                             
                             try
-                                % If there is data, we use it. 
+                                % If there is data, we use it.
                                 fProperty = this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue, fSecondDepValue);
 
                             catch
@@ -664,7 +667,7 @@ classdef table < base
                                 % table.
                                 
                                 this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = F;
-                                this.ttxMatter.(sSubstance).bInterpolations = true; 
+                                this.ttxMatter.(sSubstance).bInterpolations = true;
                                 
                                 % This addition to the matter table will be
                                 % overwritten, when the next simulation
@@ -683,7 +686,7 @@ classdef table < base
                         %-------------------------------------------------%
                         
                         % look if data is in MatterData
-                        try 
+                        try
                             iRowsFirstMatterData = find(strcmpi(this.ttxMatter.(sSubstance).MatterData.text(:,3), sPhaseType), 1, 'first');
                         catch
                             iRowsFirstMatterData = [];
@@ -750,7 +753,7 @@ classdef table < base
                                 % table.
                                 
                                 this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = F;
-                                this.ttxMatter.(sSubstance).bInterpolations = true; 
+                                this.ttxMatter.(sSubstance).bInterpolations = true;
                                 
                                 % This addition to the matter table will be
                                 % overwritten, when the next simulation

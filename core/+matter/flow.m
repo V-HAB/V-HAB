@@ -18,6 +18,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
     %     merge the kinetic energy in exmes?
     %   - some geometry/diamter stuff that allows to define the connection
     %     type for f2f's and prevents connecting incompatible (e.g. diam)?
+    %   - Rename to |MassFlow|
     
     properties (SetAccess = private, GetAccess = public)
         

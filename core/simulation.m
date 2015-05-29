@@ -45,6 +45,7 @@ classdef simulation < base & event.source
     % Properties to be set by classes deriving from this one
     properties (SetAccess = protected, GetAccess = public)
         % Attributes to log
+        %TODO: add |Recorder| class that handles logging
         csLog = {};
     end
     

@@ -4,6 +4,7 @@ classdef branch < solver.matter.base.branch
     %TODO
     % - if e.g. constant pressure EXME and connected phase becomes empty,
     %   and iDampFR active --> problems with NaN for fTemperature etc!
+    % - store debug values like iIterations etc?
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %-- Properties -------------------------------------------------------%
