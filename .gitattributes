@@ -1,0 +1,13 @@
+# Settings for how git treats certain files
+
+# Register MATLAB files according to recommendation.
+# @see 
+# @see http://git-scm.com/docs/gitattributes#_marking_files_as_binary
+# @see http://git-scm.com/docs/gitattributes#_performing_a_three_way_merge
+# @see http://git-scm.com/docs/gitattributes#_packing_objects
+*.mat binary merge=binary delta=false
+*.p   binary merge=binary delta=false
+
+# Register MATLAB diff
+# @see http://git-scm.com/docs/gitattributes#_defining_a_custom_hunk_header
+*.m   diff=matlab
