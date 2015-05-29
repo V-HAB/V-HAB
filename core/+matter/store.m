@@ -51,10 +51,10 @@ classdef store < base
         %insignifcant.
         %Geometry struct of the store with the possible inputs: (atm only
         %Box shape)
-        % sGeometry = struct('Shape', 'Box', 'Area', 0.5, 'HeightExMe', 0.5)
+        % tGeometryParameters = struct('Shape', 'Box', 'Area', 0.5, 'HeightExMe', 0.5)
         %   "Box"       : Could be a rectangular shaped store or a zylinder
         %                 with its axis congruent to the acceleration
-        sGeometry = struct('Shape','Box', 'Area', 1, 'HeightExMe', 0);        
+        tGeometryParameters = struct('Shape','Box', 'Area', 1, 'HeightExMe', 0);        
 
         
         %%
@@ -83,7 +83,7 @@ classdef store < base
         
         %Parameter to check wether liquids should be calculated as
         %compressible or incompressible compared to gas phases in the store
-        iIncompressible = 1;
+        bIsIncompressible = 1;
     end
     
     properties (SetAccess = protected, GetAccess = protected)
@@ -98,26 +98,33 @@ classdef store < base
     
     
     methods
-        function this = store(oMT, sName, fVolume, iIncompressible, sGeometry)
-            this.sName = sName;
+        function this = store(oMT, sName, fVolume, bIsIncompressible, tGeometryParams)
+            % Create a new matter store object. Expects the matter table
+            % object and a name as parameters. Optionally, you can pass a
+            % store volume and whether the contents of the store are
+            % compressible. For compressible fluids in a non-zero-G
+            % environment, a fifth parameter with geometric parameters can
+            % be passed.
             
+            this.sName = sName;
             this.setMatterTable(oMT);
             
-            if nargin == 3
-                this.fVolume = fVolume; 
-            elseif nargin == 4
+            if nargin >= 3
                 this.fVolume = fVolume;
-                this.iIncompressible = iIncompressible;
-            elseif nargin >= 5
-                this.fVolume = fVolume;
-                this.iIncompressible = iIncompressible;
-                this.sGeometry = sGeometry;
             end
+            if nargin >= 4
+                this.bIsIncompressible = bIsIncompressible;
+            end
+            if nargin >= 5
+                this.tGeometryParameters = tGeometryParams;
+            end
+            
         end
         
         
         function exec(this)
             %TODO-NOW this.toProcsP2P exec, flow and stationary.
+            %this.throw('exec', 'Not implemented!');
         end
         
         function update(this)
@@ -152,7 +159,7 @@ classdef store < base
                 end
             end
             
-            if this.iIncompressible == 0 && iGasPhaseExists == 1 && this.oTimer.fTime-this.fLastUpdate > 0
+            if this.bIsIncompressible == 0 && iGasPhaseExists == 1 && this.oTimer.fTime-this.fLastUpdate > 0
                 %ideal gas constant
                 fR = matter.table.Const.fUniversalGas;
 
