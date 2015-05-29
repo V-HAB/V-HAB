@@ -1,5 +1,10 @@
 # Settings for how git treats certain files
 
+# Normalize line endings.
+# @see http://git-scm.com/docs/gitattributes#_end_of_line_conversion
+# NOTE: Check migration path in doc before enabling this!
+*     text=auto
+
 # Register MATLAB files according to recommendation.
 # @see 
 # @see http://git-scm.com/docs/gitattributes#_marking_files_as_binary
