@@ -9,22 +9,28 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
     %TODO: refactor some of this code out to a new |Mass| class and inherit
     %      from it??
     %
-    %TODO need a clean separation between processors (move stuff from one
-    %     phase to another, change flows, phase to flow processors) and
-    %     manipulators (change volume/temperature/..., split up molecules,
-    %     and other stuff that happens within a phase).
-    %     Best way to introduce those manipulators? Just callbacks/events,
-    %     or manipulator classes? One object instance per manipulator, and
-    %     relate all phases that are using this manipulator, or one object
-    %     per class?
-    %     Package manip.change.vol -> manipulators .isobaric, .isochoric
-    %     etc - one class/function each. Then, as for meta model in VHP,
-    %     registered as callbacks for e.g. set.fVolume in phase, and return
-    %     values of callbacks determine what happens?
+    %TODO (further ideas)
+    %   * conduct (mass)update calculations for all phases scheduled for
+    %     current tick in a single post-tick (before solvers/timesteps)
+    %     callback simultaneously
+    %   * manipulators for volume - package matter.manips.volume, different
+    %     base classes for isobaric, isochoric etc. volume changes
+    %     -> how to handle the store (which distributes the volume equally
+    %        throughout gas phases)? How to treat volume changes due to
+    %        inflowing matter?
+    %   * method .setHeatSource(oHeatSource), see thermal solver
+    %   * post-tick priorities / execution groups: separate update of flow
+    %     p2ps and manips - first post-tick callback - from the time step
+    %     calculation - second post-tick callback. In post tick, first
+    %     exec phase properties update methods (mass, mol mass etc), then
+    %     the solver flow rates. Then the phase manips/p2ps can update and
+    %     finally the phases can calculate their time steps. Each p2p/manip
+    %     should add itself to post-tick - if already done, not done again.
 
     properties (Abstract, Constant)
 
-        % State of matter in phase (e.g. gas, liquid, ?)
+        % State of matter in phase (e.g. gas, liquid, solid), used for
+        % example by the EXMEs to check compatibility.
         %TODO: rename to |sMatterState|
         %TODO: drop this and let the code check for |isa(oObj, 'matter.phase.gas')| ?
         % @type string
@@ -57,6 +63,19 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % @type float
         fDensity = -1; % [kg/m^3]
 
+        % Total negative masses per substance encountered during mass
+        % update. This data is only kept for debugging/logging purposes.
+        % If a branch requests more mass of a substance than stored in the
+        % phase, there is currently no way to tell the branch about this
+        % issue. Instead of throwing an error or setting a negative value
+        % for the substance mass, the mass is set to zero and the absolute
+        % 'lost' (negative) mass is added to this vector.
+        %TODO implement check in matter.branch setFlowRate for this issue?
+        %     What if several branches request too much mass?
+        % @type array
+        % @types float
+        afMassLost;
+
         % Mass fraction of every substance in phase
         %TODO: rename to |arMassFractions|
         % @type array
@@ -81,8 +100,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         %      warns and instead returns |fSpecificHeatCapacity| or
         %      |this.getTotalHeatCapacity| (?)
         % @type float
-        %TODO: heat capacity with 0 initialized because needed on first
-        %      |this.update()| call (from |this.seal()|) --> still needed?
         fHeatCapacity = 0; % [J/(K*kg)]
 
     end
@@ -91,13 +108,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % Internal properties, part 1:
         %TODO: investigate if this block can be merged with other ones
 
-        % Total negative masses per substance encountered during mass
-        % update. This data is only kept for debugging/logging purposes.
-        % @type array
-        % @types float
-        afMassLost;
-
-        % ???
+        % Length of the last time step (??)
         fTimeStep;
 
     end
@@ -122,11 +133,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % List of Extract/Merge processors added to the phase: Key of
         % struct is set to the processor's name and can be used to retrieve
         % that object.
+        %NOTE: A port with the name 'default' is not allowed (was previously
+        %      used to define ports that can have several flows).
         %TODO: rename to |toExMePorts|, |toExMeProcessors|, etc.; or ?
         %TODO: use map and rename to |poExMeProcessors|?
+        % @type struct
+        % @types object
         toProcsEXME = struct();
 
         % List of manipulators added to the phase
+        % @type struct
+        % @types object
         toManips = struct('volume', [], 'temperature', [], 'substance', []);
 
     end
@@ -255,8 +272,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.arPartialMass = zeros(1, this.oMT.iSubstances);
 
             % Mass provided?
-            %TODO do all that in a protected addMass method? Especially the
-            %     partial masses calculation -> has to be done on .update()
             if (nargin >= 3) && ~isempty(tfMass) && ~isempty(fieldnames(tfMass))
                 % If tfMass is provided, fTemp also has to be there
                 if nargin < 4 || isempty(fTemp) || ~isnumeric(fTemp) || (fTemp <= 0)
@@ -379,18 +394,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             %afTotalInOuts = this.getTotalMassChange() * fTimeStep;
 
             % Do the actual adding/removing of mass.
-            %TODO-NOW check if p2p stuff works, and manipulator stuff!
-            %         the outflowing EXMEs need to get the right partial
-            %         masses, e.g. if a p2p in between extracs a substance!
-            %CHECK    ok to round? default uses 1e8 ... should be coupled
-            %         to the min. time step!
-            %this.afMass =  tools.round.prec(this.afMass + afTotalInOuts, 10);
+            %CHECK round the whole, resulting mass?
+            %  tools.round.prec(this.afMass, this.oStore.oTimer.iPrecision)
             this.afMass =  this.afMass + afTotalInOuts;
 
             % Now we check if any of the masses has become negative. This
             % can happen for two reasons, the first is just MATLAB rounding
             % errors causing barely negative numbers (e-14 etc.) The other
-            % is an error in the programming of one of the processors.
+            % is an error in the programming of one of the procs/solvers.
             % In any case, we don't interrupt the simulation for this, we
             % just log the negative masses and set them to zero in the
             % afMass array. The sum of all mass lost is shown in the
@@ -424,6 +435,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 fOldTemp   = this.fTemp;
                 this.fTemp = sum(afEnergy) / sum(afMassTimesCP);
 
+                %TODO instead of using the old temperature, analyze what
+                %     actually happens here (phase empty? some problems
+                %     with the flow properties? where is the NaN coming
+                %     from?)
+                %     -> fix source of error, prevent NaN from happening
                 if isnan(this.fTemp)
                     this.warn('massupdate', 'TEMPERATURE IS NAN!!! Store: %s, Phase: %s - old temp used. Maybe phase was empty?', this.oStore.sName, this.sName);
                     this.fTemp = fOldTemp;
@@ -553,9 +569,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % rates, temperatures and heat capacities for calculating the
             % inflowing enthalpy/inner energy
             %
-            %TODO on .seal() and when branches are (re)connected, write all
+            %TODO
+            %   * on .seal() and when branches are (re)connected, write all
             %     flow objects connected to the EXMEs to this.aoFlowsEXMEs
             %     or something, in order to access them more quickly here!
+            %   * Simplify - all EXMEs can only have one flow now!
 
             % Total flows - one row (see below) for each EXME, number of
             % columns is the number of substances (partial masses)
