@@ -73,18 +73,19 @@ classdef container < sys
     % References to the store, f2f etc are stored one-way, i.e. store
     % does not point to container.
     methods (Access = protected)
-        function exec(this, fTimeStep)
-            
-            
-            % Stores call phases call exme .update(). Phases/Exme do the
-            % actual mass moving, so if just update of internal parameters
-            % desired, call oPhase.update(0).
-            %TODO Call EXEC, not update!
-            for iI = 1:length(this.csStores), this.toStores.(this.csStores{iI}).exec(fTimeStep); end;
-            
-            %TODO .exec, not .update (see above)
-            for iI = 1:length(this.csProcsF2F), this.toProcsF2F.(this.csProcsF2F{iI}).exec(fTimeStep); end;
-        end
+%DELETE? Is never called...
+%         function exec(this, fTimeStep)
+%             
+%             
+%             % Stores call phases call exme .update(). Phases/Exme do the
+%             % actual mass moving, so if just update of internal parameters
+%             % desired, call oPhase.update(0).
+%             %TODO Call EXEC, not update!
+%             for iI = 1:length(this.csStores), this.toStores.(this.csStores{iI}).exec(fTimeStep); end;
+%             
+%             %TODO .exec, not .update (see above)
+%             for iI = 1:length(this.csProcsF2F), this.toProcsF2F.(this.csProcsF2F{iI}).exec(fTimeStep); end;
+%         end
         
         
         
@@ -117,12 +118,14 @@ classdef container < sys
             % classes to e.g. implement some dynamic handling of store
             % volumes or other stuff.
             %
-            %TODO No helper to create stores, therefore not ensured that 
-            %     all those stores have the same matter table. Create
-            %     helper? Check store for matter table? See the phase
-            %     helpers, kind of 'currying': provide store class name and
-            %     specific params to helper, helper adds all default params
-            %     (as parent and matter table).
+            %DONE? Is there still the possibilty of two stores having a
+            %different matter table? Why would we want that anyway?
+%             %TODO No helper to create stores, therefore not ensured that 
+%             %     all those stores have the same matter table. Create
+%             %     helper? Check store for matter table? See the phase
+%             %     helpers, kind of 'currying': provide store class name and
+%             %     specific params to helper, helper adds all default params
+%             %     (as parent and matter table).
             
             if this.bSealed
                 this.throw('addStore', 'The container is sealed, so no stores can be added any more.');
@@ -171,19 +174,20 @@ classdef container < sys
     
     
     methods (Access = protected, Sealed = true)
-        function createPort(this, sStore)
-            % Creates a branch-like thing, basically directly connecting an
-            % EXME processor as an interface for branches from SUBsystems
-            % to connect to. If the EXME name is 'default', as for normal
-            % exmes several branches can be connected, representing e.g.
-            % several people in a room that all 'connect' to the atmospere
-            % for breathing.
-            %
-            % Name of I/F will be the store/port name (. replaced by _).
-            %
-            %TODO implement!
-            
-        end
+%DELETE? Isn't this covered by the whole createBranch method?
+%         function createPort(this, sStore)
+%             % Creates a branch-like thing, basically directly connecting an
+%             % EXME processor as an interface for branches from SUBsystems
+%             % to connect to. If the EXME name is 'default', as for normal
+%             % exmes several branches can be connected, representing e.g.
+%             % several people in a room that all 'connect' to the atmospere
+%             % for breathing.
+%             %
+%             % Name of I/F will be the store/port name (. replaced by _).
+%             %
+%             %TODO implement!
+%             
+%         end
         
         function [oBranch] = createBranch(this, sLeft, csProcs, sRight)
             
@@ -220,7 +224,6 @@ classdef container < sys
             % csNames is two rows, one col with left/right name --> get
             % from several branches, col vectors appended to 2xN matrix)
             csLocalIfs   = [ this.aoBranches.csNames ];
-            % subsref([ this.aoBranches.csNames ], struct('type', '()', 'subs', {{ ':', 2 }}))
             iLocalBranch = find(strcmp(csLocalIfs(2, :), sLocalInterface), 1);
             
             if isempty(iLocalBranch)
@@ -240,10 +243,13 @@ classdef container < sys
             % the right phase is set (which means that the newly connected
             % branch on the suPsystem or one of the following branches is
             % connected to a store!) ...
-            %TODO bind/trigger events to make sure reconnecting of branches
-            %     is possible during simulation, see disconnectIF etc!
-            %     -> register on oBranch branch.connected if that one
-            %        get's reconnected!
+            
+            %DONE In following method?
+%             %TODO bind/trigger events to make sure reconnecting of branches
+%             %     is possible during simulation, see disconnectIF etc!
+%             %     -> register on oBranch branch.connected if that one
+%             %        get's reconnected!
+            
             if ~oBranch.abIf(1) && ~isempty(oBranch.coExmes{2})
                 % ... trigger event if anyone wants to know
                 this.trigger('branch.connected', iLocalBranch);

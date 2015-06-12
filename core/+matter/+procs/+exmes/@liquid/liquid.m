@@ -29,13 +29,13 @@ classdef liquid < matter.procs.exme
                 this.fAcceleration = 0;
             end
             
-            sGeometryTank = this.oPhase.oStore.sGeometry;
+            tTankGeomParams = this.oPhase.oStore.tGeometryParameters;
             fVolumeTank = this.oPhase.oStore.fVolume;
             fVolumeLiquid = this.oPhase.fVolume;
             
-            if strcmp(sGeometryTank.Shape, 'box') || strcmp(sGeometryTank.Shape,'Box')
-                fAreaTank = sGeometryTank.Area;
-                fHeightExMe = sGeometryTank.HeightExMe;
+            if strcmpi(tTankGeomParams.Shape, 'box')
+                fAreaTank = tTankGeomParams.Area;
+                fHeightExMe = tTankGeomParams.HeightExMe;
                 
                 fHeightTank = fVolumeTank/fAreaTank;
                 if fHeightTank < fHeightExMe
@@ -76,7 +76,7 @@ classdef liquid < matter.procs.exme
         
         function this = update(this)
            
-            sGeometryTank = this.oPhase.oStore.sGeometry;
+            tTankGeomParams = this.oPhase.oStore.tGeometryParameters;
             fVolumeTank = this.oPhase.oStore.fVolume;
             fVolumeLiquid = this.oPhase.fVolume;
             fPressureTank = this.oPhase.fPressure;
@@ -85,9 +85,9 @@ classdef liquid < matter.procs.exme
             this.fTemperature = this.oPhase.fTemp;
             fDensityLiquid = fMassTank/fVolumeLiquid;
             
-            if strcmp(sGeometryTank.Shape, 'box') || strcmp(sGeometryTank.Shape,'Box')
-                fAreaTank = sGeometryTank.Area;
-                fHeightExMe = sGeometryTank.HeightExMe;
+            if strcmp(tTankGeomParams.Shape, 'box') || strcmp(tTankGeomParams.Shape,'Box')
+                fAreaTank = tTankGeomParams.Area;
+                fHeightExMe = tTankGeomParams.HeightExMe;
                 
                 fHeightTank = fVolumeTank/fAreaTank;
                 if fHeightTank < fHeightExMe
