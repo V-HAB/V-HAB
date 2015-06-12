@@ -210,7 +210,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % change before an update of the matter properties (of the whole
         % store) is triggered?
         rMaxChange = 0.25;
-        fMaxStep   = 3600;
+        fMaxStep   = 20;
         fFixedTS;
 
         % If true, massupdate triggers all branches to re-calculate their
