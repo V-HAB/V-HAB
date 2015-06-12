@@ -691,9 +691,9 @@ classdef table < base
                         %-------------------------------------------------%
                         
                         % look if data is in MatterData
-                        if isfield(this.ttxMatter.(sSubstance), 'MatterData')
+                        try 
                             iRowsFirstMatterData = find(strcmpi(this.ttxMatter.(sSubstance).MatterData.text(:,3), sPhaseType), 1, 'first');
-                        else
+                        catch
                             iRowsFirstMatterData = [];
                         end
                         
