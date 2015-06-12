@@ -12,11 +12,11 @@ classdef branch < solver.matter.base.branch
     properties (SetAccess = public, GetAccess = public)
         
         %TODO Add descriptions
-        rMaxChange = 0.1;
-        rSetChange = 0.025;
+        rMaxChange = 0.05;
+        rSetChange = 0.02;
         iRemChange = 10;
         % Default maximum time step for the branch
-        fMaxStep   = 60;
+        fMaxStep   = 10;
         
         % An integer that defines across how many multiples of the 
         % previously calculated flow rate the new flow rate will be 
@@ -38,6 +38,8 @@ classdef branch < solver.matter.base.branch
         iRememberDeltaSign = 10;
         abDeltaPositive    = [ true, false, true, false, true, false, true, false, true, false, true ];
         
+        
+        fFlowRateUnrounded = 0;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -104,7 +106,7 @@ classdef branch < solver.matter.base.branch
             end
             
             
-            if this.oBranch.oContainer.oTimer.fTime < this.fLastUpdate
+            if this.oBranch.oContainer.oTimer.fTime <= this.fLastUpdate
                 % If branch update has been called before during this time
                 % step, do nothing. 
                 return;
@@ -113,6 +115,8 @@ classdef branch < solver.matter.base.branch
             % Actually compute the new flow rate and the associated delta
             % pressures as well as delta temperatures.
             [ fFlowRate, afDeltaP ] = this.solveFlowRate();
+            
+            fFlowRateUnrounded = fFlowRate;
             
             % See base branch, same check here - if input phase nearly
             % empty, just set flow rate to zero
@@ -133,6 +137,8 @@ classdef branch < solver.matter.base.branch
             
             % Calculating the new timestep for this branch
             this.calculateTimeStep(fFlowRate);
+            
+            this.fFlowRateUnrounded = fFlowRateUnrounded;
             
             % Sets new flow rate
             update@solver.matter.base.branch(this, fFlowRate, afDeltaP);
@@ -815,8 +821,8 @@ classdef branch < solver.matter.base.branch
                     % Change in flow rate
                     %TODO use this.fLastUpdate and this.oBranch.oCont.oBranch.oContainer.oTimer.fTime
                     %     and set the rChange in relation to elapsed time!
-                    rChange = abs(fFlowRate / this.fFlowRate - 1);
-
+                    rChange = abs(fFlowRate / this.fFlowRateUnrounded - 1);
+                    
                     % Old time step
                     fOldStep = this.fTimeStep;
 
@@ -825,12 +831,21 @@ classdef branch < solver.matter.base.branch
                     end
 
                     % Change in flow rate direction? Min. time step!
-                    if (rChange < 0) || isinf(rChange) || (this.iSignChangeFRCnt > 1)
+                    
+                    if (fFlowRate == 0) && (this.fFlowRate ~= 0)
+                        fNewStep = fOldStep;
                         
+                    elseif (rChange < 0) || isinf(rChange) || (this.iSignChangeFRCnt > 1)
                         fNewStep = 0;
 
                         this.iSignChangeFRCnt = this.iSignChangeFRCnt + 1;
 
+                    elseif (fFlowRate == 0) && (this.fFlowRate == 0)
+                        % If both the current and the previous flow rate
+                        % are zero, then nothing is happening in the system
+                        % at the moment so we can set the new time step to
+                        % maximum. 
+                        fNewStep = this.fMaxStep;
                     else
                         
                         if this.iSignChangeFRCnt > 1
