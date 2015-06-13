@@ -153,15 +153,22 @@ classdef flow < base & matlab.mixin.Heterogeneous
             if (nargin < 2) || ~bIf
 
                 % Initialize the matter property attributes, get them from
-                % the phase with the higher mass.
+                % the phase with the higher mass. If this flow is part of
+                % an interface branch, one of the phases might not exist.
+                % So we take a look at the branch and decide which phase we
+                % want to use for initialization.
                 %TODO This workaround is just to make sure that some
                 %     reasonable values are set. More properly, the data
                 %     should be fetched from the EXMEs with
                 %     |getPortProperties()| and use pressure or equivalent
                 %     for solids.
-                aoPhases = [ this.oBranch.coExmes{1}.oPhase, this.oBranch.coExmes{2}.oPhase ];
-                oPhase   = sif(aoPhases(1).fMass >= aoPhases(2).fMass, aoPhases(1), aoPhases(2));
-
+                if any(this.oBranch.abIf)
+                    oPhase = this.oBranch.coExmes{~this.oBranch.abIf}.oPhase;
+                else
+                    aoPhases = [ this.oBranch.coExmes{1}.oPhase, this.oBranch.coExmes{2}.oPhase ];
+                    oPhase   = sif(aoPhases(1).fMass >= aoPhases(2).fMass, aoPhases(1), aoPhases(2));
+                end
+                
                 % This is likely to be overwritten by the assigned solver
                 % in the first, initializion step (time < 0)
                 if oPhase.fMass ~= 0

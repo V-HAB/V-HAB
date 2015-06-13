@@ -280,7 +280,6 @@ classdef branch < base & event.source
             % See container -> connectIF, need to get all left names of
             % branches of parent system, since they depict the interfaces
             % to subsystems
-            %subsref([ this.oContainer.oParent.aoBranches.csNames ], struct('type', '()', 'subs', {{ 1, ':' }}))
             iBranch = find(strcmp(...
                 subsref([ this.oContainer.oParent.aoBranches.csNames ], struct('type', '()', 'subs', {{ 1, ':' }})), ...
                 sInterface ...
@@ -343,7 +342,7 @@ classdef branch < base & event.source
                 this.throw('setConnected', 'Connecting branch does not belong to a subsystem of this system!');
                 
             elseif ~isa(oSubSysBranch, 'matter.branch')
-                this.throw('setConnected', 'Branch ~isa matter.branch!');
+                this.throw('setConnected', 'Input object is not a matter.branch!');
                 
             elseif oSubSysBranch.coBranches{1} ~= this
                 this.throw('setConnected', 'Branch coBranches{1} (left branch) not pointing to this branch!');
@@ -539,7 +538,6 @@ classdef branch < base & event.source
         
         
         function updateConnectedBranches(this)
-            % Get func handles fr / phase from 
             
             if ~this.abIf(2)
                 this.throw('updateConnectedBranches', 'Right side not an interface, can''t get data from no branches.');
@@ -555,7 +553,6 @@ classdef branch < base & event.source
             else
                 % Get set fr func callbacks and phase on the right side of
                 % the overall branch, write right phase to cell
-                %[ chSetFRs, this.coPhases{2} ] = this.getBranchData(this);
                 [ this.coExmes{2}, aoFlows, aoFlowProcs ] = this.hGetBranchData();
                 
                 
@@ -564,7 +561,6 @@ classdef branch < base & event.source
                 if ~isempty(this.coExmes{2})
                     % Just select to this.iIfFlow, maytbe chSetFrs was
                     % already extended previously
-                    %this.chSetFRs = [ this.chSetFRs(1:this.iIfFlow) chSetFRs ];
                     this.aoFlows  = [ this.aoFlows(1:this.iIfFlow) aoFlows ];
                     
                     % One flow proc less than flows
@@ -576,13 +572,14 @@ classdef branch < base & event.source
                 
                 % Since the subsystem branch is already sealed, we have to
                 % do it manually here for the new members of this sealed
-                % branch. This seal stuff doesn't make sense...
+                % branch. First the flows...
                 for iI = 1:this.iFlows
                     if ~this.aoFlows(iI).bSealed
                         this.aoFlows(iI).seal(false, this);
                     end
                 end
                 
+                % And finally we seal the new flow processors.
                 for iI = 1:this.iFlowProcs
                     if ~this.aoFlowProcs(iI).bSealed
                         this.aoFlowProcs(iI).seal(this);
@@ -610,7 +607,6 @@ classdef branch < base & event.source
             this.hUpdateConnectedBranches = [];
         end
         
-        %function [ chSetFRs oRightPhase aoFlows aoFlowProcs ] = getBranchData(this)
         function [ oRightPhase, aoFlows, aoFlowProcs ] = getBranchData(this)
             % if coBranch{2} set, pass through. add own callbacks to cell,
             % leave phase untouched
@@ -623,7 +619,6 @@ classdef branch < base & event.source
             if ~isempty(this.coBranches{2})
                 [ oRightPhase, aoFlows, aoFlowProcs ] = this.hGetBranchData();
                 
-                %chSetFRs = [ this.chSetFRs chSetFRs ];
                 aoFlows  = [ this.aoFlows aoFlows ];
                 
                 aoFlowProcs = [ this.aoFlowProcs aoFlowProcs ];
@@ -631,12 +626,9 @@ classdef branch < base & event.source
             % No branch set on the right side, but got an interface on that
             % side, so return empty for the right phase!
             elseif this.abIf(2)
-                %chSetFRs    = this.chSetFRs;
                 oRightPhase = [];
                 
             else
-                %chSetFRs = this.chSetFRs;
-                %oRightPhase = this.coPhases{2};
                 oRightPhase = this.coExmes{2};
                 
                 aoFlows     = this.aoFlows;
@@ -669,14 +661,12 @@ classdef branch < base & event.source
                 % which allows us to deconnect the flow from the f2f proc
                 % in the "outer" system (supsystem).
                 if this.abIf(2) && (this.iIfFlow == iI)
-                    %[ this.chSetFRs{iI}, this.hRemoveIfProc ] = this.aoFlows(iI).seal(true);
                     [ this.hSetFlowData, this.hRemoveIfProc ] = this.aoFlows(iI).seal(true);
                 
                 % Only need the callback reference once ...
                 elseif iI == 1
                     this.hSetFlowData = this.aoFlows(iI).seal();
                 else
-                    %this.chSetFRs{iI} = 
                     this.aoFlows(iI).seal();
                 end
             end

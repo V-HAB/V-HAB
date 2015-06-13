@@ -76,8 +76,11 @@ classdef timer < base
                 this.fTime = -1 * this.fTimeStep;
             end
             
-            % Precision of simulation
-            this.iPrecision = floor(log10(1 / this.fTimeStep));
+            % Precision of simulation. We derive this from the time step
+            % and make it 2 orders of magnitude smaller than the timestep
+            % in seconds. 
+            this.iPrecision = floor(log10(1 / this.fTimeStep)) - 1;
+            
         end
         
         

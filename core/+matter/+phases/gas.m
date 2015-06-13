@@ -9,11 +9,17 @@ classdef gas < matter.phase
     %     fluid phase, or also do through store (so own store that supports
     %     that ...). Then a p2p proc to move gas out of the solvent into
     %     the outer gas phase depending on partial pressures ...
-    
-    properties (SetAccess = protected, GetAccess = public)
-        % Phase type (for matter table etc)
+
+    properties (Constant)
+
+        % State of matter in phase (e.g. gas, liquid, ?)
         % @type string
+        %TODO: rename to |sMatterState|
         sType = 'gas';
+
+    end
+
+    properties (SetAccess = protected, GetAccess = public)
         
         fVolume;                % Volume in m^3
         fPressure;              % Pressure in Pa
