@@ -4,33 +4,57 @@ function fAmount = calculateMols(this, varargin) % afMasses)
     %   matter. Therfore input arguments have to be either a |matter.phase|
     %   object, a |matter.flow| object or matter data formatted and in the
     %   order shown below. If the input argument is a flow, then the output
-    %   will be a flow rate in [mol/s]. 
+    %   will be a flow rate in [mol/s].
+    %   
     %   The function calculates the amount of each substance by dividing
     %   the masses of each individual substance by their respective molar
     %   mass and then adding all molar masses.
+    %
     %
     % calculateMols returns
     %  fAmount - A float number depicting either the amount of matter in
     %     [mol] or the matter flow in [mol/s] if the input argument is a
     %     |matter.flow| object.
+    %
+    %
+    %TODO: simplify this method by only handling absolute input values,
+    %      i.e. move the matter object-specific code to the corresponding
+    %      classes
 
+    % Handle two variants of calling this method: With an object where the
+    % necessary data can be retrieved from, or the data itself.
     if isa(varargin{1}, 'matter.phase')
-        % initialize attributes from input object - get afMass from phase obj
+        %TODO: Delete this part and put it into the corresponding classes
+        %      instead (the matter table should not know about other
+        %      objects).
+
+        % Get data from object: |afMasses| array from |matter.phase| object
         afMass = varargin{1}.afMass;
 
     elseif isa(varargin{1}, 'matter.flow')
-        % Flow object - return will be mol/s. Not an absolute mass given as for
-        % phase, but the partial/substance mass flows in kg/s.
+        %TODO: Delete this part and put it into the corresponding classes
+        %      instead (the matter table should not know about other
+        %      objects). Also, it is confusing that this method may return
+        %      different units depending on input (see below).
+
+        % Get data from object: |afMasses| array from |matter.flow| object
+        % Return value will be in [mol/s]. Here, the fraction of mass flow
+        % rates for each substance multiplied by the total mass flow rate
+        % is used (instead of using an absolute mass).
         afMass = varargin{1}.arPartialMass * varargin{1}.fFlowRate;
 
-    % Make sure its numeric and a row vector and has the right number of masses
-    elseif isnumeric(varargin{1}) && (size(varargin{1}, 1) == 1) && (size(varargin{1}, 2) == this.iSubstances)
-        % Case two - matter data given. Needs to be in the following format and order:
-        % substance masses (array of floats)
+    elseif isnumeric(varargin{1})
+        % If the input is numeric, ...
+
+        % ... make sure it has the expected size.
+        assert(isequal(size(varargin{1}), [1, this.iSubstances]), ...
+            'Input must be a row vector and the number of rows equal to the number of recognized substances.');
+
+        % The given parameter is the masses array.
         afMass  = varargin{1};
 
     else
-        this.throw('calculateMols', 'If only one param provided, has to be a matter.phase or matter.flow (derivative) or a row vector with partial masses');
+        this.throw('calculateMols', 'Parameter must be of type |double|, |matter.phase| or |matter.flow|.');
     end
 
     % Calculating the number of mols for each species
