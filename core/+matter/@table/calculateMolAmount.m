@@ -1,5 +1,5 @@
-function fAmount = calculateMols(this, varargin) % afMasses)
-    %CALCULATEMOLS Calculates the amount of matter in mols
+function fMolAmount = calculateMolAmount(this, varargin) % afMasses)
+    %CALCULATEMOLAMOUNT Calculates the amount of matter in mol
     %   Calculates the amount of matter in a phase, flow or a body of
     %   matter. Therfore input arguments have to be either a |matter.phase|
     %   object, a |matter.flow| object or matter data formatted and in the
@@ -29,7 +29,7 @@ function fAmount = calculateMols(this, varargin) % afMasses)
         %      objects).
 
         % Get data from object: |afMasses| array from |matter.phase| object
-        afMass = varargin{1}.afMass;
+        afMasses = varargin{1}.afMass;
 
     elseif isa(varargin{1}, 'matter.flow')
         %TODO: Delete this part and put it into the corresponding classes
@@ -41,7 +41,7 @@ function fAmount = calculateMols(this, varargin) % afMasses)
         % Return value will be in [mol/s]. Here, the fraction of mass flow
         % rates for each substance multiplied by the total mass flow rate
         % is used (instead of using an absolute mass).
-        afMass = varargin{1}.arPartialMass * varargin{1}.fFlowRate;
+        afMasses = varargin{1}.arPartialMass * varargin{1}.fFlowRate;
 
     elseif isnumeric(varargin{1})
         % If the input is numeric, ...
@@ -51,16 +51,15 @@ function fAmount = calculateMols(this, varargin) % afMasses)
             'Input must be a row vector and the number of rows equal to the number of recognized substances.');
 
         % The given parameter is the masses array.
-        afMass  = varargin{1};
+        afMasses = varargin{1};
 
     else
         this.throw('calculateMols', 'Parameter must be of type |double|, |matter.phase| or |matter.flow|.');
     end
 
-    % Calculating the number of mols for each species
-    afMols = afMass ./ this.afMolarMass;
-
-    % Calculating the total number of mols
-    fAmount = sum(afMols);
+    % Calculating the (mole) amount of each substance, then taking the sum
+    % to get the total amount of substance in [mol] (or in [mol/s] if input
+    % object is a |matter.flow|).
+    fMolAmount = sum(afMasses ./ this.afMolarMass);
 
 end
