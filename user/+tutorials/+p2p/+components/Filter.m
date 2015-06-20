@@ -20,7 +20,11 @@ classdef Filter < matter.store
     end
     
     methods
-        function this = Filter(oMT, sName, fCapacity)
+        function this = Filter(oMT, sName, fCapacity, fSubstance)
+            
+            if nargin < 4 || isempty(fSubstance), fSubstance = 'O2'; end;
+            
+            
             % Creating a geometry object using the geometry framework and
             % the cylinder function. First input parameter is the diameter,
             % second is height. 
@@ -67,7 +71,7 @@ classdef Filter < matter.store
             % Creating the p2p processor
             % Input parameters: name, flow phase name, absorber phase name, 
             % species to be filtered, filter capacity
-            this.oProc = tutorials.p2p.components.AbsorberExample(this, 'filterproc', 'FlowPhase.filterport', 'FilteredPhase.filterport', 'O2', fCapacity);
+            this.oProc = tutorials.p2p.components.AbsorberExample(this, 'filterproc', 'FlowPhase.filterport', 'FilteredPhase.filterport', fSubstance, fCapacity);
             
         end
     end
