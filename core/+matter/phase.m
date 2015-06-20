@@ -176,7 +176,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
         % Last time the phase was updated (??)
         % @type float
-        fLastMassUpdate = 0;
+        fLastMassUpdate = -1;
 
         % Time step in last massupdate (???)
         % @type float
