@@ -511,6 +511,10 @@ classdef branch < base & event.source
             end
             
             
+            if tools.round.prec(fFlowRate, this.oContainer.oTimer.iPrecision) == 0
+                fFlowRate = 0;
+            end
+            
             
             this.fFlowRate = fFlowRate;
             this.bOutdated = false;
