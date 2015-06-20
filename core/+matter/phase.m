@@ -347,7 +347,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
         end
 
-        function this = massupdate(this)
+        function this = massupdate(this, bSetBranchesOutdated)
             % This method updates the mass and temperature related
             % properties of the phase. It takes into account all in- and
             % outflowing matter streams via the exme processors connected
@@ -361,6 +361,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % will set all branches connected to exmes connected to this
             % phase to outdated, also causing a recalculation in the
             % post-tick.
+            
+            if nargin < 2, bSetBranchesOutdated = false; end;
 
             fTime     = this.oStore.oTimer.fTime;
             fLastStep = fTime - this.fLastMassUpdate;
@@ -476,9 +478,19 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.fMass = sum(this.afMass);
 
 
-            % If synced, trigger 'fr recalc' in all branches
-            if this.bSynced
-                this.setBranchesOutdated();
+            % Trigger branch solver updates in post tick for all branches
+            % whose matter is currently flowing INTO the phase
+            if this.bSynced || bSetBranchesOutdated
+                this.setBranchesOutdated('in');
+            end
+            
+            % Execute updateProcessorsAndManipulators between branch solver
+            % updates for inflowing and outflowing flows
+            this.oStore.oTimer.bindPostTick(@this.updateProcessorsAndManipulators);
+            
+            % Flowrate update binding for OUTFLOWING matter flows.
+            if this.bSynced || bSetBranchesOutdated
+                this.setBranchesOutdated('out');
             end
 
             % Phase sets new time step (registered with parent store, used
@@ -496,14 +508,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.fLastUpdate = this.oStore.oTimer.fTime;
 
 
-            % Massupdate triggers setBranchesOutdated for this.bSynced
-            % automatically, so only trigger if this phase is not synced.
-            if ~this.bSynced
-                this.setBranchesOutdated();
-            end
-
             % Actually move the mass into/out of the phase.
-            this.massupdate();
+            % Pass true as a parameter so massupd calls setBranchesOutdated
+            % even if the bSynced attribute is not true
+            this.massupdate(true);
 
             % Cache current fMass / afMass so they represent the values at
             % the last phase update. Needed in phase time step calculation.
@@ -656,16 +664,39 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.toManips.(sManip) = [];
         end
 
-        function setBranchesOutdated(this)
+        function setBranchesOutdated(this, sFlowDirection)
+            if nargin < 2, sFlowDirection = 'both'; end;
+            
+            %fprintf('%s-%s: setBranchesOutdated "%s"\n', this.oStore.sName, this.sName, sFlowDirection);
+            
             % Loop through exmes / flows and set outdated, i.e. request re-
             % calculation of flow rate.
             for iE = 1:this.iProcsEXME
-                for iF = 1:length(this.coProcsEXME{iE}.aoFlows)
-                    oBranch = this.coProcsEXME{iE}.aoFlows(iF).oBranch;
+                %CHECK no 'default' exmes allowed any more, only one flow!
+                %TODO remove aoFlows, aiSign, add oFlow, iSign
+                for iF = 1:1 %length(this.coProcsEXME{iE}.aoFlows)
+                    oExme   = this.coProcsEXME{iE};
+                    oBranch = oExme.aoFlows(iF).oBranch;
 
                     % Make sure it's not a p2ps.flow - their update method
-                    % is called in time step calculation method
+                    % is called in updateProcessorsAndManipulators method
                     if isa(oBranch, 'matter.branch')
+                        % If flow direction set, only setOutdated if the
+                        % flow direction is either inwards or outwards
+                        if strcmp(sFlowDirection, 'in')
+                            if oExme.aiSign(1) * oExme.aoFlows(1).fFlowRate > 0
+                                % ok
+                            else
+                                continue;
+                            end
+                        elseif strcmp(sFlowDirection, 'out')
+                            if oExme.aiSign(1) * oExme.aoFlows(1).fFlowRate <= 0
+                                % ok
+                            else
+                                continue;
+                            end
+                        end
+                        
                         % We can't directly set this oBranch as outdated if
                         % it is just connected to an interface, because the
                         % solver is assigned to the 'leftest' branch.
@@ -673,6 +704,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                             oBranch = oBranch.coBranches{1};
                         end
 
+                        %fprintf('%s-%s: setOutdated "%s"\n', this.oStore.sName, this.sName, oBranch.sName);
+                        
                         % Tell branch to recalculate flow rate (done after
                         % the current tick, in timer post tick).
                         oBranch.setOutdated();
@@ -681,7 +714,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             end
         end
 
-        function calculateTimeStep(this)
+        function updateProcessorsAndManipulators(this)
+            % Update the p2p flow and manip processors
 
             %TODO move this to another function or class or whatever. Why
             %is this executed here anyway?
@@ -722,9 +756,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                     this.coProcsP2Pflow{iP}.update();
                 end
             end
-
-
-
+        end
+        
+        
+        
+        function calculateTimeStep(this)
             if ~isempty(this.fFixedTS)
                 fNewStep = this.fFixedTS;
             else
