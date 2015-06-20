@@ -840,12 +840,6 @@ classdef branch < solver.matter.base.branch
 
                         this.iSignChangeFRCnt = this.iSignChangeFRCnt + 1;
 
-                    elseif (fFlowRate == 0) && (this.fFlowRate == 0)
-                        % If both the current and the previous flow rate
-                        % are zero, then nothing is happening in the system
-                        % at the moment so we can set the new time step to
-                        % maximum. 
-                        fNewStep = this.fMaxStep;
                     else
                         
                         if this.iSignChangeFRCnt > 1
