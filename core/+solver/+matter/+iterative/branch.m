@@ -16,7 +16,7 @@ classdef branch < solver.matter.base.branch
         rSetChange = 0.02;
         iRemChange = 10;
         % Default maximum time step for the branch
-        fMaxStep   = 10;
+        fMaxStep   = 20;
         
         % An integer that defines across how many multiples of the 
         % previously calculated flow rate the new flow rate will be 
