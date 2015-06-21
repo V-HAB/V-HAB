@@ -197,7 +197,7 @@ classdef timer < base
             % Dependent systems have -1 as time step - therefore this
             % should always be true!
             %abExec = this.afLastExec + this.afTimeStep <= this.fTime;
-            abExec = this.afLastExec + this.afTimeStep <= (this.fTime + fThisStep / 2);
+            abExec = this.afLastExec + this.afTimeStep <= (this.fTime + fThisStep  - this.fTimeStep);
             
             
             % Execute found cbs
