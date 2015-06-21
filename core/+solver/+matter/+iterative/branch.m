@@ -116,17 +116,11 @@ classdef branch < solver.matter.base.branch
             % pressures as well as delta temperatures.
             [ fFlowRate, afDeltaP ] = this.solveFlowRate();
             
-            fFlowRateUnrounded = fFlowRate;
-            
             % See base branch, same check here - if input phase nearly
             % empty, just set flow rate to zero
             oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
             
             if tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
-                fFlowRate = 0;
-            % If we don't round at some point, flow rates will eventually
-            % become something like 1e-13 etc -> don't want that.
-            elseif tools.round.prec(fFlowRate, this.oBranch.oContainer.oTimer.iPrecision) == 0
                 fFlowRate = 0;
             end
             
@@ -135,8 +129,17 @@ classdef branch < solver.matter.base.branch
                 fFlowRate = (this.fFlowRate * this.iDampFR + fFlowRate) / (this.iDampFR + 1);
             end
             
+            
+            fFlowRateUnrounded = fFlowRate;
+            
+            % If we don't round at some point, flow rates will eventually
+            % become something like 1e-13 etc -> don't want that.
+            if tools.round.prec(fFlowRate, this.oBranch.oContainer.oTimer.iPrecision) == 0
+                fFlowRate = 0;
+            end
+            
             % Calculating the new timestep for this branch
-            this.calculateTimeStep(fFlowRate);
+            this.calculateTimeStep(fFlowRateUnrounded, fFlowRate);
             
             this.fFlowRateUnrounded = fFlowRateUnrounded;
             
@@ -725,7 +728,7 @@ classdef branch < solver.matter.base.branch
         end
         
         %% Calculate new time step
-        function calculateTimeStep(this, fFlowRate)
+        function calculateTimeStep(this, fFlowRateUnrounded, fFlowRate)
             %TODO should probably depend in flow speed vs. length of
             %     branch or something? Maybe flowrate vs. mass in phases,
             %     and flow speed?
@@ -821,7 +824,11 @@ classdef branch < solver.matter.base.branch
                     % Change in flow rate
                     %TODO use this.fLastUpdate and this.oBranch.oCont.oBranch.oContainer.oTimer.fTime
                     %     and set the rChange in relation to elapsed time!
-                    rChange = abs(fFlowRate / this.fFlowRateUnrounded - 1);
+                    %rChange = abs(fFlowRate / this.fFlowRate - 1);
+                    
+                    fChange = tools.round.prec(fFlowRateUnrounded - this.fFlowRateUnrounded, this.oBranch.oContainer.oTimer.iPrecision);
+                    rChange = abs(fChange / this.fFlowRateUnrounded);
+                    
                     
                     % Old time step
                     fOldStep = this.fTimeStep;
