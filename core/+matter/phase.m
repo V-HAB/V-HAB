@@ -212,6 +212,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         rMaxChange = 0.25;
         fMaxStep   = 20;
         fFixedTS;
+        
+        % Maximum factor with which rMaxChange is decreased
+        rHighestMaxChangeDecrease = 0;
 
         % If true, massupdate triggers all branches to re-calculate their
         % flow rates. Use when volumes of phase compared to flow rates are
@@ -225,7 +228,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % Masses in phase at last update.
         fMassLastUpdate;
         afMassLastUpdate;
-
+        
+        
+        % Log mass and time steps which are used to influence rMaxChange
+        afMassLog;
+        afLastUpd;
     end
 
     methods
@@ -631,6 +638,18 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         end
 
         function seal(this, oData)
+            
+            % Preset mass and time step logging attributes
+            % iPrecision ^ 2 is more or less arbitrary
+            iStore = this.oStore.oTimer.iPrecision ^ 2;
+            
+            this.afMassLog = ones(1, iStore) * this.fMass;
+            this.afLastUpd = 0:(1/(iStore-1)):1;%ones(1, iStore) * 0.00001;
+            
+            
+            this.rHighestMaxChangeDecrease = oData.rHighestMaxChangeDecrease;
+            
+            
             if ~this.oStore.bSealed
                 this.coProcsEXME = struct2cell(this.toProcsEXME)';
                 this.iProcsEXME  = length(this.coProcsEXME);
@@ -764,12 +783,56 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             if ~isempty(this.fFixedTS)
                 fNewStep = this.fFixedTS;
             else
+                rMaxChangeFactor = 1;
+                
+                % Log the current mass and time to the history arrays
+                this.afMassLog = [ this.afMassLog(2:end) this.fMass ];
+                this.afLastUpd = [ this.afLastUpd(2:end) this.oStore.oTimer.fTime ];
+                
+                
+                %%%% Mass change in percent/second over logged time steps
+                % Convert mass change to kg/s, take mean value and divide 
+                % by mean tank mass -> mean mass change in %/s (...?)
+                % If the mass is constant but unstable (jumping around a mean
+                % value), the according mass in- and decreases should cancle
+                % each other out.
+                
+                if this.rHighestMaxChangeDecrease > 0
+
+                    % max or mean?
+                    fDev = mean(diff(this.afMassLog) ./ diff(this.afLastUpd)) / mean(this.afMassLog);
+                    %fDev = max(abs(diff(this.afMassLog) ./ diff(this.afLastUpd))) / mean(this.afMassLog);
+
+                    % Order of magnitude of fDev
+                    fDevMagnitude = abs(log(abs(fDev))./log(10));
+
+                    % Inf? -> zero change.
+                    if fDevMagnitude > this.oStore.oTimer.iPrecision, fDevMagnitude = this.oStore.oTimer.iPrecision;
+                    elseif isnan(fDevMagnitude),                      fDevMagnitude = 0;
+                    end;
+
+                    % Min deviation (order of magnitude of mass change) 
+                    iMaxDev = this.oStore.oTimer.iPrecision;
+                    
+                    
+                    % Other try - exp
+                    afBase = (0:0.01:1) .* iMaxDev;
+                    afRes  = (0:0.01:1).^3 .* (this.rHighestMaxChangeDecrease - 1);
+
+                    rFactor = interp1(afBase, afRes, fDevMagnitude, 'linear');
+
+                    %fprintf('%i\t%i\tDECREASE rMaxChange from %f by %f to %f\n', iDev, iThreshold, rMaxChangeTmp, rFactor, rMaxChangeTmp / rFactor);
+
+                    rMaxChangeFactor = 1 / (1 + rFactor);
+                end
+                
+                
+                %%%% Calculate changes of mass in phase since last mass upd
 
                 % Calculate the change in total and partial mass since the
                 % phase was last updated
-                rPreviousChange  = this.fMass / this.fMassLastUpdate - 1;
-
-                arPreviousChange = abs(this.afMassLastUpdate ./ this.afMass - 1);
+                rPreviousChange  = abs(this.fMass / this.fMassLastUpdate - 1);
+                arPreviousChange = abs(this.afMass ./ this.afMassLastUpdate - 1);
 
                 % Should only happen if fMass (therefore afMass) is zero!
                 if isnan(rPreviousChange)
@@ -809,15 +872,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 else
                     rTotalPerSecond = abs(fChange / this.fMass);
                 end
-
+                
+                
+                %%%% Calculate new time step
 
                 % Derive timestep, use the max change (total mass or one of
                 % the substances change)
                 %fNewStep = this.rMaxChange / max([ rChangePerSecond rTotalPerSecond ]);
                 %fNewStep = (this.rMaxChange - rPreviousChange) / max([ rPartialsPerSecond rTotalPerSecond ]);
 
-                fNewStepTotal    = (this.rMaxChange - rPreviousChange) / rTotalPerSecond;
-                fNewStepPartials = (this.rMaxChange - max(arPreviousChange)) / rPartialsPerSecond;
+                fNewStepTotal    = (this.rMaxChange * rMaxChangeFactor - rPreviousChange) / rTotalPerSecond;
+                fNewStepPartials = (this.rMaxChange * rMaxChangeFactor - max(arPreviousChange)) / rPartialsPerSecond;
 
                 fNewStep = min([ fNewStepTotal fNewStepPartials ]);
 

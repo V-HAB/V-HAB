@@ -151,6 +151,10 @@ classdef simulation < base & event.source
             % parameter here.
             tData.rUpdateFrequency = 1;
             
+            % Adaptive rMaxChange- if phase mass does not change, value is
+            % decreased accordingly
+            tData.rHighestMaxChangeDecrease = 0;
+            
             %  For each (iterative) solver, a dampening value can be set in
             %  the constructor which is multiplied with this value
             tData.rSolverDampening = 1;
