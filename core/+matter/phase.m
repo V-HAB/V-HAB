@@ -650,6 +650,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.rHighestMaxChangeDecrease = oData.rHighestMaxChangeDecrease;
             
             
+            % Auto-Set rMaxChange.
+            this.rMaxChange = sif(this.fVolume <= 0.25, this.fVolume, 0.25) / oData.rUpdateFrequency;
+            
+            
             if ~this.oStore.bSealed
                 this.coProcsEXME = struct2cell(this.toProcsEXME)';
                 this.iProcsEXME  = length(this.coProcsEXME);

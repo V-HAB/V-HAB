@@ -155,9 +155,6 @@ classdef gas < matter.phase
 
             seal@matter.phase(this, oData);
 
-            % Auto-Set rMaxChange.
-            this.rMaxChange = sif(this.fVolume <= 0.25, this.fVolume, 0.25) / oData.rUpdateFrequency;
-
         end
 
     end
