@@ -69,6 +69,9 @@ classdef table < base
         % individual substances can be extracted when needed.
         tiN2I;
         
+        % Reverse of tiN2I
+        asI2N;
+        
         % A cell array with the names of all substances contained in the
         % matter table
         csSubstances;
@@ -294,6 +297,9 @@ classdef table < base
                 end
             end
             
+            % Get list of substance indices.
+            this.asI2N = fieldnames(this.tiN2I);
+            
             % Now we save the data into a .mat file, so if the matter table
             % doesn't change, we don't have to run through the entire
             % constructor again. To do this, we just place the entire table
@@ -323,6 +329,28 @@ classdef table < base
             
         end
     end
+    
+    
+    methods % Helper methods
+        
+        function csSubstanceList = getSubstancesFromVector(this, mfSubstances)
+            csSubstanceList = this.asI2N(mfSubstances ~= 0);
+        end
+        
+        function mbAreInside = areSubstancesInVector(this, csSubstances, mfSubstances)
+            csSubstanceList = this.getSubstancesFromVector(mfSubstances);
+            if ~iscell(csSubstances)
+                csSubstances = {csSubstances};
+            end
+            iNumSubstances = numel(csSubstances);
+            mbAreInside = false(iNumSubstances, 1);
+            for i = 1:iNumSubstances
+                mbAreInside(i) = any(strcmp(csSubstances{i}, csSubstanceList));
+            end
+        end
+        
+    end
+    
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Method for calculating matter properties %%%%%%%%%%%%%%%%%%%%%%%%%%%%
