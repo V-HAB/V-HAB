@@ -1,14 +1,12 @@
-classdef AbsorberPlantCultivationAirCO2 < matter.procs.p2ps.flow
-    %ABSORBEREXAMPLE An example for a p2p processor implementation
-    %   The actual logic behind the absorbtion behavior is not based on any
-    %   specific physical system. It is just implemented in a way to
-    %   demonstrate the use of p2p processors
+classdef Set_Plants_O2GasExchange < matter.procs.p2ps.flow
+    % Short description:
+    %  This p2p-processor conducts the O2 gas exchange between the
+    %  plants-phase and the air-phase insides the PlantCultivationStore.
     
     properties 
-        % Species to absorb
+        % Substance to absorb
         sSubstance;
-        sSpecies2;
-        sSpecies3;
+        
         % Maximum absorb capacity in kg
         fCapacity;
         fCO2_exchange;
@@ -30,28 +28,29 @@ classdef AbsorberPlantCultivationAirCO2 < matter.procs.p2ps.flow
     
     
     methods
-        function this = AbsorberPlantCultivationAirCO2(oStore, sName, sPhaseIn, sPhaseOut, sSubstance)
+        function this = Set_Plants_O2GasExchange(oStore, sName, sPhaseIn, sPhaseOut, sSubstance)
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
             
-            % Substance to absorb, max absorption
+            % Species to absorb, max absorption
             this.sSubstance  = sSubstance;
             
             
            
-            % The p2p processor can specify which substance it wants to
+            % The p2p processor can specify which species it wants to
             % extract from the phase. A vector with relative values has to
             % be provided, with the sum of all ratios being 1 (see the
             % matter.phase.arPartialMass vector) ...
             this.arExtractPartials = zeros(1, this.oMT.iSubstances);
             
             % ... in this case using a vector with zeros at all indices
-            % except the one holding the partial mass for the substance we
-            % want to extract - which is set to 1, i.e. only this substance
+            % except the one holding the partial mass for the species we
+            % want to extract - which is set to 1, i.e. only this species
             % is extracted.
            
         end
         
         function update(this)
+
             % Called whenever a flow rate changes. The two EXMES (oIn/oOut)
             % have an oPhase attribute that allows us to get the phases on
             % the left/right side.
@@ -78,7 +77,7 @@ classdef AbsorberPlantCultivationAirCO2 < matter.procs.p2ps.flow
             % Get all positive (i.e. inflowing) flow rates and the
             % according partial masses. Flow rates are a row vector,
             % partials are a matrix - each row represents one flow, the
-            % columns represent the different substances.
+            % columns represent the different species.
             [ afFlowRate, mrPartials ] = this.getInFlows();
             
             % Nothing flows in, so nothing absorbed ...
@@ -89,22 +88,22 @@ classdef AbsorberPlantCultivationAirCO2 < matter.procs.p2ps.flow
             end
             
             % Now multiply the flow rates with the according partial mass
-            % of the substance extracted. Then we have several flow rates,
+            % of the species extracted. Then we have several flow rates,
             % representing exactly the amount of the mass of the according
-            % substance flowing into the filter.
+            % species flowing into the filter.
             afFlowRate = afFlowRate .* mrPartials(:, iSubstance);
             
             %keyboard();
             % Sum up flow rates and use the load of the filter to reduce 
             % the flow rate accordingly
-            fFlowRate =  this.fCO2_exchange;
+            fFlowRate =  (this.fO2_exchange);
             
             % Test ...
             %fFlowRate = 0;
             
             % Set the new flow rate. If the second parameter (partial
             % masses to extract) is not provided, the partial masses from
-            % the phase itself are used (i.e. extracting all substances
+            % the phase itself are used (i.e. extracting all species
             % equally).
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
         end
