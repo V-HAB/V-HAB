@@ -298,7 +298,18 @@ classdef source < base % < hobj
                             catch oErr
                                 % If error is not 'Too many output 
                                 % arguments' or 'undefined func', throw!
-                                if ~strcmp(oErr.identifier, 'MATLAB:maxlhs') && ~strcmp(oErr.identifier, 'MATLAB:UndefinedFunction')
+                                
+                                % Starting with MATLAB Prerelease 2015b the
+                                % error identifier for 'Too many output
+                                % arguments changed from 'MATLAB:maxlhs' to
+                                % 'MATLAB:TooManyOutputs'
+                                if strcmp(version('-release'),'2015b')
+                                    sErrorIdentifier = 'MATLAB:TooManyOutputs';
+                                else
+                                    sErrorIdentifier = 'MATLAB:maxlhs';
+                                end
+                                
+                                if ~strcmp(oErr.identifier, sErrorIdentifier) && ~strcmp(oErr.identifier, 'MATLAB:UndefinedFunction')
                                     rethrow(oErr);
                                 else
                                     callBack(oEvent);

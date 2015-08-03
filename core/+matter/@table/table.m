@@ -612,7 +612,7 @@ classdef table < base
                         %-------------------------------------------------%
                         % Both dependencies are in range
                         %-------------------------------------------------%
-                        if ~isempty(iRowsFirst) && ~isempty(iRowsSecond) && intersect(iRowsFirst,iRowsSecond)
+                        if ~isempty(iRowsFirst) && ~isempty(iRowsSecond) && ~isempty(intersect(iRowsFirst,iRowsSecond))
                             % If the desired property for the given
                             % dependencies is directly given in the matter
                             % table, we just get it.
