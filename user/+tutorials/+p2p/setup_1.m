@@ -71,7 +71,7 @@ classdef setup_1 < simulation
             % possibly to longer instead of shorter time steps.
             % As shown below, the default values set by the phase seal
             % methods can be manually overwritten for specific phases.
-            this.oData.set('rUpdateFrequency', 15);
+            this.oData.set('rUpdateFrequency', 20);
             
             
             % Creating the 'Example' system as a child of the root system
@@ -91,8 +91,8 @@ classdef setup_1 < simulation
             % to instabilities in the flow rate. Using this parameter, the
             % solvers reduce the changes in flow rates:
             % fFlowRate = (fNewFR + iDampFR * fOldFR) / (iDampFR + 1)
-            this.oB1.iDampFR = 15;
-            this.oB2.iDampFR = 15;
+            this.oB1.iDampFR = 1;
+            this.oB2.iDampFR = 1;
             
             
             % Phases
@@ -111,7 +111,7 @@ classdef setup_1 < simulation
             % The phase for the adsorbed matter in the filter store has a
             % small rMaxChange (small volume) but is not really important
             % for the solving process, so increase rMaxChange manually.
-            this.aoFilterPhases(2).rMaxChange = 0.1;
+            this.aoFilterPhases(2).rMaxChange = 0.5;
 
             
             %% Logging

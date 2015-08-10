@@ -11,6 +11,10 @@ classdef stationary < matter.manips.substance
             this@matter.manips.substance(sName, oPhase);
             
         end
+        
+        function update(this, afPartialFlows)
+            this.afPartialFlows = afPartialFlows;
+        end
     end
     
     methods (Access = protected)

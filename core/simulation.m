@@ -421,11 +421,11 @@ classdef simulation < base & event.source
             
             % Total mass: sum over all mass stored in all phases, for each
             % species separately.
-            this.mfTotalMass(iIdx, :) = sum(reshape([ this.oData.oMT.aoPhases.afMass ], [], this.oData.oMT.iSubstances));
+            this.mfTotalMass(iIdx, :) = sum(reshape([ this.oData.oMT.aoPhases.afMass ], this.oData.oMT.iSubstances, []), 2)';
             
             % Lost mass: logged by phases if more mass is extracted then
             % available (for each substance separately).
-            this.mfLostMass(iIdx, :)  = sum(reshape([ this.oData.oMT.aoPhases.afMassLost ], [], this.oData.oMT.iSubstances));
+            this.mfLostMass(iIdx, :) = sum(reshape([ this.oData.oMT.aoPhases.afMassLost ], this.oData.oMT.iSubstances, []), 2)';
             
             %TODO implement methods for that ... break down everything down
             %     to the moles and compare these?! So really count every
