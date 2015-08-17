@@ -135,7 +135,12 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             end
             
             % All ports in use (iIdx empty)?
-            if isempty(iIdx), this.throw('addFlow', 'Flow has no free port, seems like its already connected ... used again in createBranch, by mistake?'); end;
+            if isempty(iIdx)
+                this.throw('addFlow', ['The f2f-processor ''',this.sName,...
+                           ''' is already in use by another branch.\n', ...
+                           'Please check the definition of the following branch: ',...
+                           oFlow.oBranch.sName]); 
+            end
             
             % Set the flow obj - when we call the addProc of the flow
             % object, it checks if it exists on aoFlows!
