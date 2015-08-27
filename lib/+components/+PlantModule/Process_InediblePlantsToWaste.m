@@ -35,10 +35,9 @@ classdef Process_InediblePlantsToWaste < matter.manips.substance.flow
                 %form the matter table.
                     arPartials2 = zeros(18, this.oPhase.oMT.iSubstances);
                     
-                % Reference for molecular mass of requested matter    
-                    afMolMass  = this.oPhase.oMT.afMolMass;
-                % Reference of position number inside matter table for requested matter
-                    tiN2I      = this.oPhase.oMT.tiN2I;
+            % Reference of position number inside matter table for
+            % requested matter
+            tiN2I = this.oPhase.oMT.tiN2I;
                     
             % Array with considered matter - all inedible parts, dry and fluid, of available plants    
             aiSubstanceArray=[tiN2I.DrybeanInedibleFluid, ...

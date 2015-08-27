@@ -159,14 +159,17 @@ classdef store < base
                 end
             end
             
-            if this.bIsIncompressible == 0 && iGasPhaseExists == 1 && this.oTimer.fTime-this.fLastUpdate > 0
+            if this.bIsIncompressible == 0 && iGasPhaseExists == 1 && (this.oTimer.fTime-this.fLastUpdate) > 0
+                %TODO: clean this up and make it more accessible, also
+                %      check for molar mass compatibility (g/mol vs kg/mol)
+                
                 %ideal gas constant
                 fR = matter.table.Const.fUniversalGas;
 
                 for k = 1:length(this.aoPhases)
                     if strcmp(this.aoPhases(k).sType, 'gas')
                         fVolumeGasOld = this.aoPhases(k).fVolume;
-                        fMolMassGas = this.aoPhases(k).fMolMass;
+                        fMolarMassGas = this.aoPhases(k).fMolarMass;
                         fMassGasOld = this.aoPhases(k).fMass;
                         fMassGasTimeStep = this.oTimer.fTime-this.aoPhases(k).fLastMassUpdate;
                         fTemperatureGasOld = this.aoPhases(k).fTemperature;
@@ -180,8 +183,8 @@ classdef store < base
                                 mFlowRateGas(n) = this.aoPhases(k).coProcsEXME{n}.aiSign*this.aoPhases(k).coProcsEXME{n}.aoFlows.fFlowRate;
                                 mPressureGasFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fPressure;
                                 mTemperatureGasFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fTemperature;
-                                mMolMassGasFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fMolMass;
-                                mDensityGasFlow(n) = (fR*mTemperatureGasFlow(n))/(mMolMassGasFlow(n)*10^-3*mPressureGasFlow(n));
+                                mMolMassGasFlow(n) = this.aoPhases(k).coProcsEXME{n}.aoFlows.fMolarMass;
+                                mDensityGasFlow(n) = (fR*mTemperatureGasFlow(n))/(mMolMassGasFlow(n)*mPressureGasFlow(n));
                             end
                         else
                             mFlowRateGas = 0;
@@ -252,7 +255,7 @@ classdef store < base
                         fVolumeGas_Y = fVolumeGasOld  + abs(sum((fTimeStepVolume*mFlowRateGas)./mDensityGasFlow));
                         
                     elseif sum(mFlowRateGas) < 0 && sum(mFlowRateLiquid) == 0
-                        mDensityGasFlow = (fR*mTemperatureGasFlow)/(fMolMassGas*10^-3*mPressureGasFlow);
+                        mDensityGasFlow = (fR*mTemperatureGasFlow)/(fMolarMassGas*mPressureGasFlow);
                         %for no liquid flow and a negativ gas flow the
                         %lower volume boundary can be defined by
                         %subtracting the volume of gas that flowed into the
@@ -326,12 +329,12 @@ classdef store < base
                     %necessary to shift the borders until they contain it
                     while sign(fErrorStore_X) == sign(fErrorStore_Y) && counter1 <= 500
                         fDensityLiquid_X = fMassLiquid/(this.fVolume-fVolumeGas_X);
-                        fPressureGas_X = (fMassGas*fR*fTemperatureGasOld)/(fMolMassGas*10^-3*fVolumeGas_X);
+                        fPressureGas_X = (fMassGas*fR*fTemperatureGasOld)/(fMolarMassGas*fVolumeGas_X);
                         fPressureLiquid_X = this.oMT.findProperty('H2O','Pressure','fDensity',fDensityLiquid_X,'Temperature',(fTemperatureLiquidOld-273.15),'liquid');
                         fErrorStore_X = fPressureGas_X-fPressureLiquid_X;      
 
                         fDensityLiquid_Y = fMassLiquid/(this.fVolume-fVolumeGas_Y);
-                        fPressureGas_Y = (fMassGas*fR*fTemperatureGasOld)/(fMolMassGas*10^-3*fVolumeGas_Y);
+                        fPressureGas_Y = (fMassGas*fR*fTemperatureGasOld)/(fMolarMassGas*fVolumeGas_Y);
                         fPressureLiquid_Y = this.oMT.findProperty('H2O','Pressure','fDensity',fDensityLiquid_Y,'Temperature',(fTemperatureLiquidOld-273.15),'liquid');
                         fErrorStore_Y = fPressureGas_Y-fPressureLiquid_Y;  
 
@@ -369,8 +372,8 @@ classdef store < base
                         fDensityLiquid_X = fMassLiquid/(this.fVolume-fVolumeGas_X);
                         fDensityLiquid_Z = fMassLiquid/(this.fVolume-fVolumeGas1_Z);
 
-                        fPressureGas_X = (fMassGas*fR*fTemperatureGasOld)/(fMolMassGas*10^-3*fVolumeGas_X);
-                        fPressureGas1_Z = (fMassGas*fR*fTemperatureGasOld)/(fMolMassGas*10^-3*fVolumeGas1_Z);
+                        fPressureGas_X  = (fMassGas*fR*fTemperatureGasOld)/(fMolarMassGas*fVolumeGas_X);
+                        fPressureGas1_Z = (fMassGas*fR*fTemperatureGasOld)/(fMolarMassGas*fVolumeGas1_Z);
 
                         fPressureLiquid_X = this.oMT.findProperty('H2O','Pressure','fDensity',fDensityLiquid_X,'Temperature',(fTemperatureLiquidOld-273.15),'liquid');
                         

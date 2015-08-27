@@ -1,6 +1,6 @@
 function fLiterPerMin = SLM(oFlow, bSTP)
 %SLM Convert fFlowRate on matter.flow to Standard Liters per Minute
-%   Uses the molecular mass (etc?) to convert to SLM. See
+%   Uses the molar mass (etc?) to convert to SLM. See
 %   http://en.wikipedia.org/wiki/Standard_Liter_Per_Minute
 %   http://www.wolframalpha.com/input/?i=SLPM
 %
@@ -9,6 +9,9 @@ function fLiterPerMin = SLM(oFlow, bSTP)
 %   http://www.wolframalpha.com/input/?i=STP
 %   There are several definitions (0C, 1bar; 15C, 1.01325bar; ...)
 %   Wolfram Alpha / Wikipedia both mention 293.15K/101325Pa -> use that
+%   TODO: differentiate the various standard conditions, see 
+%           - https://de.wikipedia.org/wiki/Standardbedingungen
+%           - https://en.wikipedia.org/wiki/Standard_conditions_for_temperature_and_pressure
 %
 %SLM parameters:
 %   - oFlow     Flow object
@@ -24,9 +27,9 @@ if ~isa(oFlow, 'matter.flow')
         error('First param either has to be a matter.flow, or a struct!');
     end
     
-    % Flow rate, molecular mass have to be there!
-    if ~isfield(oFlow, 'fFlowRate') || ~isfield(oFlow, 'fMolMass')
-        error('Provided struct doesn''t contain fFlowRate || fMolMass');
+    % Flow rate, molar mass have to be there!
+    if ~isfield(oFlow, 'fFlowRate') || ~isfield(oFlow, 'fMolarMass')
+        error('Provided struct doesn''t contain fFlowRate || fMolarMass');
     end
     
     % If NOT standard temp, pressure, need those values as well!
@@ -59,10 +62,8 @@ end
 %TODO if > 5 - 10bar, other equation?
 % From p * V = n * R * T = m / M * R * T
 %          V = m / M * R * T / p
-% Note: the molecular mass on oFlow is in [g/mol], therefore / 1000
-%       result of eq above is m^3, so * 1000 for liters!
 
-fLiterPerMin = (fFlowRate / (oFlow.fMolMass / 1000) * ...
+fLiterPerMin = (fFlowRate / oFlow.fMolarMass * ...
                matter.table.C.R_m * fTemperature / fPressure) * 1000;
 
 end

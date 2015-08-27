@@ -217,8 +217,10 @@ classdef branch < solver.matter.base.branch
                 fFlowRate = this.oBranch.oContainer.oTimer.fTimeStep * 1;
                 
                 % Depending on flow direction, initialize values
-                % Sets Cp, MolMass, rPPs; Temp from IN Exme, Pressure to
+                % Sets Cp, Molar Mass, rPPs; Temp from IN Exme, Pressure to
                 % steps of (P_in - P_out) / Number_flows
+                %TODO: figure out what is supposed to happen here and why,
+                %      e.g. what's this?: 
                 %%REORG%%oBranch.aoFlows(aiFlows).setSolverInit(fFlowRate, oExmeL, oExmeR);
                 
                 % Preset pressure drop / temperature change matrix
@@ -304,7 +306,7 @@ classdef branch < solver.matter.base.branch
                 % update method
                 %aiFlows = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
                 
-                % Update mol mass, partials etc
+                % Update molar mass, partials etc
                 %%REORG%%oBranch.aoFlows(aiFlows).setSolverData(sif(iDir > 0, oExmeL, oExmeR));
                 
                 % Old comment?
@@ -351,7 +353,7 @@ classdef branch < solver.matter.base.branch
                     
                     for iP = 1:oBranch.iFlowProcs
                         
-                        %TODO Should probably reset the molmass etc
+                        %TODO Should probably reset the molar mass etc
                         mfData(iP, 1) = this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
                         
                         fPressDrop = fPressDrop + mfData(iP, 1);

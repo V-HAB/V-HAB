@@ -1,4 +1,4 @@
-function [ cParams, sDefaultPhase ] = air(~, fVolume, fTemperature, rRH, fPressure)
+function [ cParams, sDefaultPhase ] = air(oStore, fVolume, fTemperature, rRH, fPressure)
 %AIR helper to create an air matter phase.
 %   If just volume given, created to suit the ICAO International Standard
 %   Atmosphere of 101325 Pa, 15degC and 0% relative humidity, see:
@@ -10,13 +10,13 @@ function [ cParams, sDefaultPhase ] = air(~, fVolume, fTemperature, rRH, fPressu
 %   rRH             - Relative humidity - ratio (default 0, max 1)
 %   fPressure       - Pressure in Pa - default 101325 Pa
 
-% Molecular mass of dry air
-fMolMassAir = 28.9586;     % [g/mol]
+% Molar mass (air, constant, using value calculated by the matter class):
+fMolarMassAir = 0.029088; % [kg/mol]
 
 % Values from @matter.table
-fRm         = 8.314472;  % ideal gas constant [J/K]
-fMolMassH2O = 18.015275; % molar mass of water [g/mol]
-fRw         = 461.9151;  % specific gas constant of water [J/(kg*K)]
+fRm           = oStore.oMT.Const.fUniversalGas;                 % ideal gas constant [J/K]
+fMolarMassH2O = oStore.oMT.afMolarMass(oStore.oMT.tiN2I.H2O);   % molar mass of water [kg/mol]
+%fRw           = oStore.oMT.ttxMatter.H2O.fSpecificGasConstant;  % specific gas constant of water [J/(kg*K)]
 
 % Check input arguments, set default
 %TODO for fTemperature, rRH, fPress -> key/value pairs?
@@ -35,40 +35,41 @@ if rRH
     % Pressure Formulations based on ITS-90, and Psychrometer Formulae. In: Z. Meteorol.
     % 40, 5, S. 340-344, (1990)
     
-    fSaturationVapourPressure = 6.11213 * exp(17.62 * (fTemperature-273.15) / (243.12 + (fTemperature-273.15))) * 100;
+    fSaturationVapourPressure = 6.11213 * exp(17.62 * (fTemperature - 273.15) / (243.12 + (fTemperature - 273.15))) * 100;
     
     % calculate vapour pressure [Pa]
-    fVapourPressure=rRH*fSaturationVapourPressure; 
+    fVapourPressure = rRH * fSaturationVapourPressure; 
     
     % calculate mass fraction of H2O in air
-    fMassFractionH2O=fMolMassH2O/fMolMassAir*fVapourPressure/(fPressure-fVapourPressure);
+    fMassFractionH2O = fMolarMassH2O / fMolarMassAir * fVapourPressure / (fPressure - fVapourPressure);
     
     % calculate molar fraction of H2O in air
-    fMolarFractionH2O=fMassFractionH2O/fMolMassH2O*fMolMassAir; 
+    fMolarFractionH2O = fMassFractionH2O / fMolarMassH2O * fMolarMassAir; 
     
-    % p V = m / M * R_m * T -> mol mass in g/mol so divide p*V=n*R*T;
-    
-    %calculate total mass
-    fMassGes = (fPressure) * fVolume * ((fMolarFractionH2O*fMolMassH2O+(1-fMolarFractionH2O)*fMolMassAir) / 1000) / fRm / fTemperature; 
+    % calculate total mass
+    % p V = m / M * R_m * T  <=>  m = p * V * M / (R_m * T)
+    fTotalMass = fPressure * fVolume * (fMolarFractionH2O * fMolarMassH2O + (1 - fMolarFractionH2O) * fMolarMassAir) / (fRm * fTemperature); 
     
     % calculate dry air mass
-    fMass=fMassGes*(1-fMassFractionH2O); 
+    fDryAirMass = fTotalMass * (1 - fMassFractionH2O); 
     
 else
-    fMass = fPressure * fVolume * (fMolMassAir / 1000) / fRm / fTemperature;
+    fDryAirMass = fPressure * fVolume * fMolarMassAir / fRm / fTemperature;
     
     % Need to set this to zero in case of dry air
-    fMassGes = 0;
+    fTotalMass = 0;
     fMassFractionH2O = 0;
 end
 % Matter composition
 tfMass = struct(...
-    'N2',  0.75518 * fMass, ...
-    'O2',  0.23135 * fMass, ...
-    'Ar',  0.01288 * fMass, ...
-    'CO2', 0.00058 * fMass ...
+    'N2',  0.75518 * fDryAirMass, ...
+    'O2',  0.23135 * fDryAirMass, ...
+    'Ar',  0.01288 * fDryAirMass, ...
+    'CO2', 0.00058 * fDryAirMass ...
     );
-tfMass.H2O=fMassGes*fMassFractionH2O; %calculate H2O mass if present
+
+%calculate H2O mass if present
+tfMass.H2O = fTotalMass * fMassFractionH2O; 
 
 % Create cParams for a whole matter.phases.gas standard phase. If user does
 % not want to use all of them, can just use

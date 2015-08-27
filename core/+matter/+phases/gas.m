@@ -133,13 +133,10 @@ classdef gas < matter.phase
         function fMassToPressure = calculatePressureCoefficient(this)
             % p = m * (R_m * T / M / V)
             %
-            %TODO matter table -> store mol mass this.fMolMass as kg/mol!
-            %     move this calc to matter.table.calcGasPressure, or do
-            %     some matter.helper.table.gas.pressure or so?
             
-            fMassToPressure = matter.table.Const.fUniversalGas * this.fTemperature / ((this.fMolMass / 1000) * this.fVolume);
+            fMassToPressure = matter.table.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
             
-            %TODO mol mass zero if no mass - NaN, or Inf if mass zero
+            %TODO molar mass zero if no mass - NaN, or Inf if mass zero
             if isnan(fMassToPressure) || isinf(fMassToPressure)
                 fMassToPressure = 0;
             end

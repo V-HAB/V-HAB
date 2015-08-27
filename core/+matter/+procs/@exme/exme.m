@@ -209,7 +209,7 @@ classdef exme < base
         end
         
         
-        function [ arPartialMass, fMolMass, fHeatCapacity ] = getMatterProperties(this)
+        function [ arPartialMass, fMolarMass, fHeatCapacity ] = getMatterProperties(this)
             %CHECK If a p2p processor asks for the port properties, makes
             %      sense to return the phase partials. The p2p itself can
             %      set another arPartialMass, for extracting selectively,
@@ -218,7 +218,7 @@ classdef exme < base
             %      to the p2p). Does that make sense?
             arPartialMass = this.oPhase.arPartialMass;
             
-            fMolMass      = this.oPhase.fMolMass;
+            fMolarMass    = this.oPhase.fMolarMass;
             fHeatCapacity = this.oPhase.fHeatCapacity;
         end
     end

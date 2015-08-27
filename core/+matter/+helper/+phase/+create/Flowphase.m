@@ -1,35 +1,25 @@
-function [ cParams sDefaultPhase ] = Flowphase(~, fVolume, fTemperature, rRH, fPressure)
-%AIR helper to create an air matter phase.
-%   If just volume given, created to suit the ICAO International Standard
-%   Atmosphere of 101325 Pa, 15°C and 0% relative humidity, see:
-%   http://en.wikipedia.org/wiki/International_Standard_Atmosphere
+function [ cParams, sDefaultPhase ] = Flowphase(oStore, fVolume, fTemperature, rRH, fPressure)
+%FLOWPHASE
+%   TODO: figure out what this does and why we need this
 %
-% air Parameters:
+% Parameters:
 %   fVolume         - Volume in SI m3
 %   fTemperature    - Temperature in K - default 273.15 K
 %   rRH             - Relative humidity - ratio (default 0, max 1)
 %   fPressure       - Pressure in Pa - default 101325 Pa
 
-% Molecular mass (air, constant, from:
-% http://www.engineeringtoolbox.com/molecular-mass-air-d_679.html)
-fMolMassAir = 28.97;    % [g/mol]
-% Not exactly true since some trace gases are missing here. Updated from 
-% the mol mass calculated by the matter class - fits better
-fMolMassAir = 29.088;
-
 % Values from @matter.table
-fRm         = 8.314472;
-fMolMassH2O = 18;
-fMolMassCO2 = 44;
-fMolMassO2 = 32;
+fRm           = oStore.oMT.Const.fUniversalGas;                 % ideal gas constant [J/K]
+fMolarMassH2O = oStore.oMT.afMolarMass(oStore.oMT.tiN2I.H2O);   % molar mass of water [kg/mol]
+
 % Check input arguments, set default
 %TODO for fTemperature, rRH, fPress -> key/value pairs?
 if nargin < 3, fTemperature = 273.15; end;
 if nargin < 4, rRH          = 0;      end;
 if nargin < 5, fPressure    = 101325; end;
 
-% p V = m / M * R_m * T -> mol mass in g/mol so divide
-fMass = fPressure * fVolume * (fMolMassH2O / 1000) / fRm / fTemperature;
+% p V = m / M * R_m * T  <=>  m = p * V * M / (R_m * T)
+fMass = fPressure * fVolume * fMolarMassH2O / (fRm * fTemperature);
 
 % Matter composition
 tfMass = struct(...
@@ -44,7 +34,7 @@ if rRH > 0
     fSatPressure = 6.11213 * exp(17.62 * fTemperature / (243.12 + fTemperature)) * 100;
     
     % Pressure to absolute mass - pV = nRT -> p is saturation pressure
-    tfMass.H2O = fSatPressure * (fMolMassH2O / 1000) / fRm / fTemperature * fVolume;
+    tfMass.H2O = fSatPressure * fMolarMassH2O / fRm / fTemperature * fVolume;
 end
 
 

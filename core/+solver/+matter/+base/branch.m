@@ -131,7 +131,7 @@ classdef branch < base & event.source
             %   - names of solver packates? matter/basic/...?
             %   - also afPressures, afTemperatures for setBranchFR?
             %   - some solvers need possibility to preset flows with the
-            %       mol mass, ..
+            %       molar mass, ..
             %       => NOT NOW! Solver just uses old values, and has to
             %       make sure that a short time step (0!!) is set when the
             %       flow rate direction changed!!

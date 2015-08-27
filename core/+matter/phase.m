@@ -22,7 +22,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
     %   * post-tick priorities / execution groups: separate update of flow
     %     p2ps and manips - first post-tick callback - from the time step
     %     calculation - second post-tick callback. In post tick, first
-    %     exec phase properties update methods (mass, mol mass etc), then
+    %     exec phase properties update methods (mass, molar mass etc), then
     %     the solver flow rates. Then the phase manips/p2ps can update and
     %     finally the phases can calculate their time steps. Each p2p/manip
     %     should add itself to post-tick - if already done, not done again.
@@ -87,9 +87,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         fMass;         % [kg]
 
         % Molar mass of mixture in phase
-        %TODO: rename to |fMolarMass| and return [kg/mol]
         % @type float
-        fMolMass;      % [g/mol]
+        fMolarMass;    % [kg/mol]
 
         % Specific heat capacity of mixture in phase (NOT total heat cap.!)
         %TODO: rename to |fSpecificHeatCapacity|, implement
@@ -319,7 +318,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             end
 
             % Now update the matter properties
-            this.fMolMass      = this.oMT.calculateMolecularMass(this.afMass);
+            this.fMolarMass    = this.oMT.calculateMolecularMass(this.afMass);
             this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
 
             % Mass
@@ -532,7 +531,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             end
 
             % Now update the matter properties
-            this.fMolMass      = this.oMT.calculateMolecularMass(this.afMass);
+            this.fMolarMass    = this.oMT.calculateMolecularMass(this.afMass);
             this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
         end
     end

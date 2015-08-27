@@ -60,6 +60,7 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     %temperature for the fixed datapoint
     fFixTemperature = 293.15;           %K
     %Molar Mass of the compound
+    %TODO: fixup to use [kg/mol]
     fMolMassH2O = 18.01528;       %g/mol
     %critical temperature
     fCriticalTemperature = 647.096;         %K

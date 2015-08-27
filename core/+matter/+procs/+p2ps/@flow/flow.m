@@ -96,7 +96,8 @@ classdef flow < matter.procs.p2p
             this.oOut.oPhase.massupdate();
             
             
-            % Set matter properties. Calculates mol mass, heat capacity etc
+            % Set matter properties. Calculates molar mass, heat capacity,
+            % etc.
             setMatterProperties@matter.procs.p2p(this, fFlowRate, arPartials);
             
         end

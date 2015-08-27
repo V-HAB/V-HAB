@@ -1,5 +1,6 @@
 function [fDensity] = LiquidDensity(fTemperature, fPressure, fFixDensity, fFixTemperature, fMolMass, ...
     fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature)
+    %TODO: fixup to use [kg/mol], |fMolarMass|
 
     %reduced temperature
     fFixReducedTemperature = fFixTemperature/fCriticalTemperature;

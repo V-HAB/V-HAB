@@ -17,7 +17,7 @@ classdef base < handle
     %   contains another struct (or several?), with mixed values (the x
     %   specifically says mixed values, could be omitted since in this
     %   example (from @matter.table), the values are containing the prefix,
-    %   e.g. fMolMass).
+    %   e.g. fMolarMass).
     %
     %TODO (branch/feature logging, nevermind)
     %   - inf (done at the moment in vhab - replaced with 'null')
