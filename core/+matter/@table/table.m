@@ -105,6 +105,9 @@ classdef table < base
             % then we can just use the existing data without having to go
             % through the entire import process again.
             
+            % Initializing the info struct
+            tMatterDataInfo = struct(); 
+            
             % Loading the previously saved information about the current
             % matter data, if it exists.
             tOldFileInfo = dir(strrep('data\MatterDataInfo.mat', '\', filesep));
@@ -308,6 +311,11 @@ classdef table < base
             filename = strrep('data\MatterDataInfo.mat', '\', filesep);
             save(filename, 'tMatterDataInfo', '-v7');
             
+            % Stupid MATLAB doesn't realize, that we are using
+            % tMatterDataInfo in the save command. So we have to do
+            % something with this variable so MATLAB doesn't throw the
+            % warning.
+            tMatterDataInfo.isdir = false;
             
             % Now we are done. All of the data has been written into the
             % matter table and the data has been saved for future use.
@@ -540,7 +548,7 @@ classdef table < base
                         % dependencyvalue in table and in range of table
                         % direct usage
                         fProperty = this.ttxMatter.(sSubstance).import.num((this.ttxMatter.(sSubstance).import.num(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
-                        sReportString = 'One dependency in range. Got value directly from matter table.';
+                        sReportString = 'One dependency in range. Tried to get value directly from matter table.';
                     elseif ~abOutOfRange(1)
                         % only in range of table
                         % interpolation needed
@@ -550,7 +558,7 @@ classdef table < base
                         [~,rows] = unique(afTemporary(:,2),'rows');
                         afTemporary = afTemporary(rows,:);
                         fProperty = interp1(afTemporary(:,2),afTemporary(:,1),fFirstDepValue);
-                        sReportString = 'One dependency in range. Got value by interpolation.';
+                        sReportString = 'One dependency in range. Tried to get value by interpolation.';
                     else
                         % dependencyvalue is out of range
                         % look if phase of substance is in MatterData
@@ -559,14 +567,14 @@ classdef table < base
                             % not in MatterData
                             % get 'best' value in Range of substancetable
                             fProperty = this.ttxMatter.(sSubstance).import.num((this.ttxMatter.(sSubstance).import.num(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
-                            sReportString = 'One dependency out of range. Got best value in range.';
+                            sReportString = 'One dependency out of range. Tried to get best value in range.';
                         else
                             % get the data from the MatterData-worksheet
                             % first get column of property
                             iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sProperty)); % row 1 is std propertyname in MatterData
                             % get the propertyvalue
                             fProperty = this.ttxMatter.(sSubstance).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
-                            sReportString = 'One dependency out of range. Got best value from MatterData.';
+                            sReportString = 'One dependency out of range. Tried to get best value from MatterData.';
                         end
                     end
                 else
@@ -613,7 +621,7 @@ classdef table < base
                             % table, we just get it.
                             fProperty = this.ttxMatter.(sSubstance).import.num(intersect(iRowsFirst,iRowsSecond), iColumn);
                             
-                            sReportString = 'Both dependencies in range. Got value directly from matter table.';
+                            sReportString = 'Both dependencies in range. Tried to get value directly from matter table.';
                             
                         else
                             % If the property is not directly given an
@@ -678,7 +686,7 @@ classdef table < base
                                 save(filename, 'this', '-v7');
                             end
                             
-                            sReportString = 'Both dependencies in range. Got value by interpolation.';
+                            sReportString = 'Both dependencies in range. Tried to get value by interpolation.';
                         end
                     else
                         %-------------------------------------------------%
@@ -699,7 +707,7 @@ classdef table < base
                             % get the propertyvalue
                             fProperty = this.ttxMatter.(sSubstance).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
                             
-                            sReportString = 'One or more out of range. Got value from MatterData.';
+                            sReportString = 'One or more out of range. Tried to get value from MatterData.';
                         else
                             
                             % If the property is not directly given an
@@ -764,7 +772,7 @@ classdef table < base
                                 save(filename, 'this', '-v7');
                             end
                             
-                            sReportString = 'One or more out of range. Got the best possible in range value through interpolation.';
+                            sReportString = 'One or more out of range. Tried to get the best possible in range value through interpolation.';
                         end
                     end
                     
@@ -798,9 +806,9 @@ classdef table < base
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             if isnan(fProperty) || isempty(fProperty)
                 keyboard();
-                this.throw('findProperty', 'Error using findProperty. No valid value for %s of %s found in matter table.', sProperty, sSubstance);
+                this.throw('findProperty', 'Error using findProperty. %s \n No valid value for %s of %s found in matter table.', sReportString, sProperty, sSubstance);
             end
-            %disp(sReportString)
+            
         end
         
         

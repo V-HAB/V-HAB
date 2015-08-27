@@ -92,20 +92,27 @@ if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData
         % substances can have more than one phase
         iRows = find(strcmp(import.text(3:end,1),csSubstances{iI}));
         if ~isempty(iRows)
-            % rownumbers of .num and .text/.raw are 2 rows different because of headers
+            % rownumbers of .num and .text/.raw are 2 rows different 
+            % because of the headers
             iRows = iRows +2;
-            % store all data of current substance
+            
+            % store all data of current substance in the sub-struct of
+            % ttxImportMatter. While we are doing this, we are also getting
+            % rid of the whitespace to the right of the table
             ttxImportMatter.(csSubstances{iI}).import.num = import.num(iRows-2,:);
-            ttxImportMatter.(csSubstances{iI}).import.num(:,iTableLength+1:end) = []; % overhead not needed
+            ttxImportMatter.(csSubstances{iI}).import.num(:,iTableLength+1:end) = [];
+            
             ttxImportMatter.(csSubstances{iI}).import.text = import.text(1:2,:);
             ttxImportMatter.(csSubstances{iI}).import.text = [ttxImportMatter.(csSubstances{iI}).import.text; import.text(iRows,:)];
-            ttxImportMatter.(csSubstances{iI}).import.text(:,iTableLength+1:end) = []; % overhead not needed
+            ttxImportMatter.(csSubstances{iI}).import.text(:,iTableLength+1:end) = [];
+            
             ttxImportMatter.(csSubstances{iI}).import.raw = import.raw(1:2,:);
             ttxImportMatter.(csSubstances{iI}).import.raw = [ttxImportMatter.(csSubstances{iI}).import.raw; import.raw(iRows,:)];
-            ttxImportMatter.(csSubstances{iI}).import.raw(:,iTableLength+1:end) = []; % overhead not needed
+            ttxImportMatter.(csSubstances{iI}).import.raw(:,iTableLength+1:end) = [];
             
-            % go through all properties before density
-            % these properties are constant and are only needed one time
+            % go through all constant properties before density
+            % these properties do not change if the phase is different, so
+            % we only need to import them once.
             for j = 4:iColumn-1
                 
                 % Get the value of the property and save it to a variable.
@@ -285,18 +292,7 @@ else
     tInterpolations = struct();
     ttxImportMatter.tInterpolations = tInterpolations;
     ttxImportMatter.bInterpolations = false; 
-    
-% We shouldn't need this because all of the values in the matter table MUST
-% be in Joule
-%     % look if some values saved as kJ -> has to convert do J (*1000)
-%     iTableLength = size(ttxImportMatter.import.text,2);
-%     for iI = 1:iTableLength
-%         if strncmp(ttxImportMatter.import.text{6,iI}, 'kJ', 2)
-%             ttxImportMatter.import.text{6,iI} = strrep(ttxImportMatter.import.text{6,iI}, 'kJ', 'J');
-%             ttxImportMatter.import.num(:,iI)  = ttxImportMatter.import.num(:,iI)*1000;
-%         end
-%     end
-    
+        
 end
 
 end

@@ -74,7 +74,7 @@ classdef Process_InediblePlantsToWaste < matter.manips.substance.flow
             end;
             
             %All H2O will be summated from the single plants contribution
-                afPartials(tiN2I.H2O)=sum(arPartials2(:,tiN2I.H2O));
+            afPartials(tiN2I.H2O)=sum(arPartials2(:,tiN2I.H2O));
                 
             fTimeStep = this.oPhase.oStore.oTimer.fTime - this.fLastUpdate;
             

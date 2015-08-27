@@ -237,7 +237,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
     %% Sealed to ensure flow/f2f proc behaviour
     methods (Sealed = true)
         
-        function [ iSign thFuncs ] = addProc(this, oProc, removeCallBack)
+        function [ iSign, thFuncs ] = addProc(this, oProc, removeCallBack)
             % Adds the provided processor (has to be or derive from either
             % matter.procs.f2f or matter.procs.exme). If *oIn* is empty,
             % the proc is written on that attribute, and -1 is returned
@@ -471,7 +471,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     this(iI).fMolarMass    = fPhaseMolarMass;
                     
                     this(iI).fHeatCapacity = fPhaseHeatCapacity;
-                    %this(iI).fHeatCapacity = this.oMT.calculateHeatCapacity(this(iI));
                 end
                 
                 
