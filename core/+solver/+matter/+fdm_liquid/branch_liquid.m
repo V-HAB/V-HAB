@@ -256,7 +256,7 @@ classdef branch_liquid < solver.matter.base.branch
 
             %TO DO:Make heat capacity Calculations temperature and pressure
             %dependant
-            fHeatCapacity = this.oBranch.oContainer.oData.oMT.FindProperty('H2O','Heat Capacity','Pressure',1*10^5,'Temperature',(293),'liquid');
+            fHeatCapacity = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Heat Capacity','Pressure',1*10^5,'Temperature',(293),'liquid');
             
             %gets the total number of processors used in the branch
             iNumberOfProcs = length(this.oBranch.aoFlowProcs);
@@ -462,9 +462,9 @@ classdef branch_liquid < solver.matter.base.branch
                 %density is calculated from mass/volume it is possible that
                 %from an initialization that did not use the correlation
                 %the solver crashes.
-                fDensityBoundary1 = this.oBranch.oContainer.oData.oMT.FindProperty('H2O','fDensity','Pressure',fPressureBoundary1,'Temperature',(fTemperatureBoundary1),'liquid');
+                fDensityBoundary1 = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Density','Pressure',fPressureBoundary1,'Temperature',(fTemperatureBoundary1),'liquid');
                 
-             	fDensityBoundary2 = this.oBranch.oContainer.oData.oMT.FindProperty('H2O','fDensity','Pressure',fPressureBoundary2,'Temperature',(fTemperatureBoundary2),'liquid');
+             	fDensityBoundary2 = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Density','Pressure',fPressureBoundary2,'Temperature',(fTemperatureBoundary2),'liquid');
                 
                 %%
                 %sets the initial values for pressure, density, internal 
@@ -578,7 +578,7 @@ classdef branch_liquid < solver.matter.base.branch
                     %Density and internal energy are then calculate from
                     %the actual pressure and temperature
                     if mPressure(k) ~= mVirtualPressure(k) || mTemperature(k) ~= mVirtualTemperature(k)
-                        mDensity(k) = this.oBranch.oContainer.oData.oMT.FindProperty('H2O','fDensity','Pressure',mPressure(k),'Temperature',(mTemperature(k)),'liquid');
+                        mDensity(k) = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Density','Pressure',mPressure(k),'Temperature',(mTemperature(k)),'liquid');
                     else
                         mDensity(k) = mVirtualDensity(k);
                     end
@@ -1043,7 +1043,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %Pressure is calculated using the liquid pressure
                 %correlation. For more information view the function file
                 for k=1:1:this.inCells
-                    mPressureNew(k) = this.oBranch.oContainer.oData.oMT.FindProperty('H2O','Pressure','fDensity',mDensityNew(k),'Temperature',(mTemperatureNew(k)),'liquid');
+                    mPressureNew(k) = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Pressure','Density',mDensityNew(k),'Temperature',(mTemperatureNew(k)),'liquid');
                 end
                 %%
                 %calculation of the virtual cell values
@@ -1058,7 +1058,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %pressure.
                 for k = 1:this.inCells
                     mVirtualInternalEnergyNew(k) = mVirtualDensityNew(k)*(0.5*mFlowSpeed(k)^2+fHeatCapacity*(mVirtualTemperatureNew(k)-fTempRef));
-                    mVirtualPressureNew(k) = this.oBranch.oContainer.oData.oMT.FindProperty('H2O','Pressure','fDensity',mVirtualDensityNew(k),'Temperature',(mVirtualTemperatureNew(k)),'liquid');
+                    mVirtualPressureNew(k) = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Pressure','Density',mVirtualDensityNew(k),'Temperature',(mVirtualTemperatureNew(k)),'liquid');
                 end
                 
                 %%
@@ -1288,12 +1288,12 @@ classdef branch_liquid < solver.matter.base.branch
                 this.setTimeStep(fTimeStep);
                 
                 %tells the stores when to update
-                this.oBranch.coExmes{1, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
-                this.oBranch.coExmes{2, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
+%                 this.oBranch.coExmes{1, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
+%                 this.oBranch.coExmes{2, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
                 %calls the update for the base branch using the newly
                 %calculated mass flow
                 %branch(this, fFlowRate, afPressures, afTemperatures)
-                update@solver.matter.base.branch(this, fMassFlow, afPressure, afTemperatures);
+                update@solver.matter.base.branch(this, fMassFlow, afPressure);
                 
                 for k = 1: length(this.oBranch.aoFlowProcs)
                     this.oBranch.aoFlowProcs(1,k).update();

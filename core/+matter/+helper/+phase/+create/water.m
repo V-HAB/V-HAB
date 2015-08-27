@@ -14,7 +14,11 @@ if nargin < 4, fPressure    = 28300; end;
 
 %%Density calculation for water
 
-fDensity = oStore.oMT.findProperty('H2O','fDensity','Pressure',fPressure,'Temperature',(fTemperature-273.15),'liquid');
+fDensity = oStore.oMT.findProperty('H2O', 'fDensity', ...
+    'Pressure', fPressure, 'Temperature', fTemperature, ...
+    'liquid');
+
+%%
 
 fMass = fDensity * fVolume;
 
