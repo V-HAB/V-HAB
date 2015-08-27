@@ -212,6 +212,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         rMaxChange = 0.25;
         fMaxStep   = 20;
         fFixedTS;
+        
+        % Maximum factor with which rMaxChange is decreased
+        rHighestMaxChangeDecrease = 0;
 
         % If true, massupdate triggers all branches to re-calculate their
         % flow rates. Use when volumes of phase compared to flow rates are
@@ -225,7 +228,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % Masses in phase at last update.
         fMassLastUpdate;
         afMassLastUpdate;
-
+        
+        
+        % Log mass and time steps which are used to influence rMaxChange
+        afMassLog;
+        afLastUpd;
     end
 
     methods
@@ -347,7 +354,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
         end
 
-        function this = massupdate(this)
+        function this = massupdate(this, bSetBranchesOutdated)
             % This method updates the mass and temperature related
             % properties of the phase. It takes into account all in- and
             % outflowing matter streams via the exme processors connected
@@ -361,6 +368,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % will set all branches connected to exmes connected to this
             % phase to outdated, also causing a recalculation in the
             % post-tick.
+            
+            if nargin < 2, bSetBranchesOutdated = false; end;
 
             fTime     = this.oStore.oTimer.fTime;
             fLastStep = fTime - this.fLastMassUpdate;
@@ -476,9 +485,19 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.fMass = sum(this.afMass);
 
 
-            % If synced, trigger 'fr recalc' in all branches
-            if this.bSynced
-                this.setBranchesOutdated();
+            % Trigger branch solver updates in post tick for all branches
+            % whose matter is currently flowing INTO the phase
+            if this.bSynced || bSetBranchesOutdated
+                this.setBranchesOutdated('in');
+            end
+            
+            % Execute updateProcessorsAndManipulators between branch solver
+            % updates for inflowing and outflowing flows
+            this.oStore.oTimer.bindPostTick(@this.updateProcessorsAndManipulators);
+            
+            % Flowrate update binding for OUTFLOWING matter flows.
+            if this.bSynced || bSetBranchesOutdated
+                this.setBranchesOutdated('out');
             end
 
             % Phase sets new time step (registered with parent store, used
@@ -496,14 +515,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.fLastUpdate = this.oStore.oTimer.fTime;
 
 
-            % Massupdate triggers setBranchesOutdated for this.bSynced
-            % automatically, so only trigger if this phase is not synced.
-            if ~this.bSynced
-                this.setBranchesOutdated();
-            end
-
             % Actually move the mass into/out of the phase.
-            this.massupdate();
+            % Pass true as a parameter so massupd calls setBranchesOutdated
+            % even if the bSynced attribute is not true
+            this.massupdate(true);
 
             % Cache current fMass / afMass so they represent the values at
             % the last phase update. Needed in phase time step calculation.
@@ -623,6 +638,22 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         end
 
         function seal(this, oData)
+            
+            % Preset mass and time step logging attributes
+            % iPrecision ^ 2 is more or less arbitrary
+            iStore = this.oStore.oTimer.iPrecision ^ 2;
+            
+            this.afMassLog = ones(1, iStore) * this.fMass;
+            this.afLastUpd = 0:(1/(iStore-1)):1;%ones(1, iStore) * 0.00001;
+            
+            
+            this.rHighestMaxChangeDecrease = oData.rHighestMaxChangeDecrease;
+            
+            
+            % Auto-Set rMaxChange.
+            this.rMaxChange = sif(this.fVolume <= 0.25, this.fVolume, 0.25) / oData.rUpdateFrequency;
+            
+            
             if ~this.oStore.bSealed
                 this.coProcsEXME = struct2cell(this.toProcsEXME)';
                 this.iProcsEXME  = length(this.coProcsEXME);
@@ -656,16 +687,39 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.toManips.(sManip) = [];
         end
 
-        function setBranchesOutdated(this)
+        function setBranchesOutdated(this, sFlowDirection)
+            if nargin < 2, sFlowDirection = 'both'; end;
+            
+            %fprintf('%s-%s: setBranchesOutdated "%s"\n', this.oStore.sName, this.sName, sFlowDirection);
+            
             % Loop through exmes / flows and set outdated, i.e. request re-
             % calculation of flow rate.
             for iE = 1:this.iProcsEXME
-                for iF = 1:length(this.coProcsEXME{iE}.aoFlows)
-                    oBranch = this.coProcsEXME{iE}.aoFlows(iF).oBranch;
+                %CHECK no 'default' exmes allowed any more, only one flow!
+                %TODO remove aoFlows, aiSign, add oFlow, iSign
+                for iF = 1:1 %length(this.coProcsEXME{iE}.aoFlows)
+                    oExme   = this.coProcsEXME{iE};
+                    oBranch = oExme.aoFlows(iF).oBranch;
 
                     % Make sure it's not a p2ps.flow - their update method
-                    % is called in time step calculation method
+                    % is called in updateProcessorsAndManipulators method
                     if isa(oBranch, 'matter.branch')
+                        % If flow direction set, only setOutdated if the
+                        % flow direction is either inwards or outwards
+                        if strcmp(sFlowDirection, 'in')
+                            if oExme.aiSign(1) * oExme.aoFlows(1).fFlowRate > 0
+                                % ok
+                            else
+                                continue;
+                            end
+                        elseif strcmp(sFlowDirection, 'out')
+                            if oExme.aiSign(1) * oExme.aoFlows(1).fFlowRate <= 0
+                                % ok
+                            else
+                                continue;
+                            end
+                        end
+                        
                         % We can't directly set this oBranch as outdated if
                         % it is just connected to an interface, because the
                         % solver is assigned to the 'leftest' branch.
@@ -673,6 +727,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                             oBranch = oBranch.coBranches{1};
                         end
 
+                        %fprintf('%s-%s: setOutdated "%s"\n', this.oStore.sName, this.sName, oBranch.sName);
+                        
                         % Tell branch to recalculate flow rate (done after
                         % the current tick, in timer post tick).
                         oBranch.setOutdated();
@@ -681,7 +737,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             end
         end
 
-        function calculateTimeStep(this)
+        function updateProcessorsAndManipulators(this)
+            % Update the p2p flow and manip processors
 
             %TODO move this to another function or class or whatever. Why
             %is this executed here anyway?
@@ -722,18 +779,64 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                     this.coProcsP2Pflow{iP}.update();
                 end
             end
-
-
-
+        end
+        
+        
+        
+        function calculateTimeStep(this)
             if ~isempty(this.fFixedTS)
                 fNewStep = this.fFixedTS;
             else
+                rMaxChangeFactor = 1;
+                
+                % Log the current mass and time to the history arrays
+                this.afMassLog = [ this.afMassLog(2:end) this.fMass ];
+                this.afLastUpd = [ this.afLastUpd(2:end) this.oStore.oTimer.fTime ];
+                
+                
+                %%%% Mass change in percent/second over logged time steps
+                % Convert mass change to kg/s, take mean value and divide 
+                % by mean tank mass -> mean mass change in %/s (...?)
+                % If the mass is constant but unstable (jumping around a mean
+                % value), the according mass in- and decreases should cancle
+                % each other out.
+                
+                if this.rHighestMaxChangeDecrease > 0
+
+                    % max or mean?
+                    fDev = mean(diff(this.afMassLog) ./ diff(this.afLastUpd)) / mean(this.afMassLog);
+                    %fDev = max(abs(diff(this.afMassLog) ./ diff(this.afLastUpd))) / mean(this.afMassLog);
+
+                    % Order of magnitude of fDev
+                    fDevMagnitude = abs(log(abs(fDev))./log(10));
+
+                    % Inf? -> zero change.
+                    if fDevMagnitude > this.oStore.oTimer.iPrecision, fDevMagnitude = this.oStore.oTimer.iPrecision;
+                    elseif isnan(fDevMagnitude),                      fDevMagnitude = 0;
+                    end;
+
+                    % Min deviation (order of magnitude of mass change) 
+                    iMaxDev = this.oStore.oTimer.iPrecision;
+                    
+                    
+                    % Other try - exp
+                    afBase = (0:0.01:1) .* iMaxDev;
+                    afRes  = (0:0.01:1).^3 .* (this.rHighestMaxChangeDecrease - 1);
+
+                    rFactor = interp1(afBase, afRes, fDevMagnitude, 'linear');
+
+                    %fprintf('%i\t%i\tDECREASE rMaxChange from %f by %f to %f\n', iDev, iThreshold, rMaxChangeTmp, rFactor, rMaxChangeTmp / rFactor);
+
+                    rMaxChangeFactor = 1 / (1 + rFactor);
+                end
+                
+                
+                %%%% Calculate changes of mass in phase since last mass upd
 
                 % Calculate the change in total and partial mass since the
                 % phase was last updated
-                rPreviousChange  = this.fMass / this.fMassLastUpdate - 1;
-
-                arPreviousChange = abs(this.afMassLastUpdate ./ this.afMass - 1);
+                rPreviousChange  = abs(this.fMass / this.fMassLastUpdate - 1);
+                arPreviousChange = abs(this.afMass ./ this.afMassLastUpdate - 1);
 
                 % Should only happen if fMass (therefore afMass) is zero!
                 if isnan(rPreviousChange)
@@ -773,15 +876,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 else
                     rTotalPerSecond = abs(fChange / this.fMass);
                 end
-
+                
+                
+                %%%% Calculate new time step
 
                 % Derive timestep, use the max change (total mass or one of
                 % the substances change)
                 %fNewStep = this.rMaxChange / max([ rChangePerSecond rTotalPerSecond ]);
                 %fNewStep = (this.rMaxChange - rPreviousChange) / max([ rPartialsPerSecond rTotalPerSecond ]);
 
-                fNewStepTotal    = (this.rMaxChange - rPreviousChange) / rTotalPerSecond;
-                fNewStepPartials = (this.rMaxChange - max(arPreviousChange)) / rPartialsPerSecond;
+                fNewStepTotal    = (this.rMaxChange * rMaxChangeFactor - rPreviousChange) / rTotalPerSecond;
+                fNewStepPartials = (this.rMaxChange * rMaxChangeFactor - max(arPreviousChange)) / rPartialsPerSecond;
 
                 fNewStep = min([ fNewStepTotal fNewStepPartials ]);
 

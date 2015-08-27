@@ -17,7 +17,9 @@ classdef setup_1 < simulation
     end
     
     methods
-        function this = setup_1()
+        function this = setup_1(tOpt)
+            
+            if nargin < 1 || isempty(tOpt), tOpt = struct(); end;
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
@@ -71,7 +73,18 @@ classdef setup_1 < simulation
             % possibly to longer instead of shorter time steps.
             % As shown below, the default values set by the phase seal
             % methods can be manually overwritten for specific phases.
-            this.oData.set('rUpdateFrequency', 20);
+            
+            % FASTEST set: rUF = 2, rMD = 25 (~2.5k ticks)
+            % Slower, but nicer: 15/5, 5/25, 1/125 (>3k ticks)
+            % NICE: rUF = 1, rMD = 150; 1/250, 2.5/100, 10/20 (~4.5k ticks)
+            
+            if isfield(tOpt, 'rUF'), this.oData.set('rUpdateFrequency', tOpt.rUF);
+            else                     this.oData.set('rUpdateFrequency', 2);
+            end
+            
+            if isfield(tOpt, 'rMD'), this.oData.set('rHighestMaxChangeDecrease', tOpt.rMD);
+            else                     this.oData.set('rHighestMaxChangeDecrease', 25);
+            end
             
             
             % Creating the 'Example' system as a child of the root system
@@ -91,8 +104,8 @@ classdef setup_1 < simulation
             % to instabilities in the flow rate. Using this parameter, the
             % solvers reduce the changes in flow rates:
             % fFlowRate = (fNewFR + iDampFR * fOldFR) / (iDampFR + 1)
-            this.oB1.iDampFR = 1;
-            this.oB2.iDampFR = 1;
+            this.oB1.iDampFR = 5;
+            this.oB2.iDampFR = 5;
             
             
             % Phases
@@ -111,7 +124,7 @@ classdef setup_1 < simulation
             % The phase for the adsorbed matter in the filter store has a
             % small rMaxChange (small volume) but is not really important
             % for the solving process, so increase rMaxChange manually.
-            this.aoFilterPhases(2).rMaxChange = 0.5;
+            this.aoFilterPhases(2).rMaxChange = 5;
 
             
             %% Logging
