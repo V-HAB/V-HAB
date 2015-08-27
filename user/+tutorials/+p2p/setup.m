@@ -155,7 +155,7 @@ classdef setup < simulation
             %% Simulation length
             % Simulation length - stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 1;
+            this.fSimTime = 1500 * 1;
             %this.fSimTime = 1700;
             this.iSimTicks = 600;
             this.bUseTime = true;
