@@ -4,12 +4,19 @@ classdef Example < vsys
     %   rate setpoint for the pump is changed every 100 seconds. 
     
     properties
-        oPump;       % Object reference to the f2f processor representing the 
-                     % water pump. We need this so we can change the setpoint
-                     % during the simulation.
-                
-        bPumpActive; % Boolean variable indicating if the pump flow rate is
-                     % set to a value or zero.
+        % Object reference to the f2f processor representing the water 
+        % pump. We need this so we can change the setpoint during the 
+        % simulation.
+        oPump;       
+        
+        % Boolean variable indicating if the pump flow rate is set to a 
+        % value or zero. At the beginning of the simulation it is active.
+        bPumpActive = true; 
+        
+        % This property is used to store the time step during which the 
+        % pump switching was last performed.
+        fLastPumpUpdate = 0; 
+                    
     end
     
     methods
@@ -91,7 +98,7 @@ classdef Example < vsys
             
             % Switching between flow rate setpoints for the pump every 100
             % seconds
-            if ~(mod(this.oData.oTimer.fTime, 100))   % Have 100s passed? 
+            if this.oData.oTimer.fTime - this.fLastPumpUpdate > 100   % Have 100s passed? 
                 if this.bPumpActive                   % Is the flow rate currently high? 
                     this.oPump.changeSetpoint(0);     % Set flow rate setpoint to zero
                     this.bPumpActive = false;         % Change pump indicator to false
@@ -99,6 +106,10 @@ classdef Example < vsys
                     this.oPump.changeSetpoint(0.267); % Set flow rate setpoint to a value
                     this.bPumpActive = true;          % Change pump indicator to false
                 end
+                
+                % Remember this time step as the one we last updated the
+                % pump.
+                this.fLastPumpUpdate = this.oData.oTimer.fTime;
             end
         end
         
