@@ -256,7 +256,11 @@ classdef branch_liquid < solver.matter.base.branch
 
             %TO DO:Make heat capacity Calculations temperature and pressure
             %dependant
-            fHeatCapacity = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Heat Capacity','Pressure',1*10^5,'Temperature',(293),'liquid');
+            if this.oBranch.fFlowRate >= 0
+                fHeatCapacity = this.oBranch.oContainer.oData.oMT.calculateHeatCapacity(this.oBranch.aoFlows(1,1));
+            else
+                fHeatCapacity = this.oBranch.oContainer.oData.oMT.calculateHeatCapacity(this.oBranch.aoFlows(1,end));
+            end
             
             %gets the total number of processors used in the branch
             iNumberOfProcs = length(this.oBranch.aoFlowProcs);
@@ -457,14 +461,10 @@ classdef branch_liquid < solver.matter.base.branch
                     end
                 end
                 
-                %calculates the densities of the boundaries using the
-                %liquid density correlation. If this is not done and the
-                %density is calculated from mass/volume it is possible that
-                %from an initialization that did not use the correlation
-                %the solver crashes.
-                fDensityBoundary1 = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Density','Pressure',fPressureBoundary1,'Temperature',(fTemperatureBoundary1),'liquid');
+                %gets the boundary densities
+                fDensityBoundary1 = this.coExmes{1,1}.oPhase.fDensity;
                 
-             	fDensityBoundary2 = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Density','Pressure',fPressureBoundary2,'Temperature',(fTemperatureBoundary2),'liquid');
+             	fDensityBoundary2 = this.coExmes{2,1}.oPhase.fDensity;
                 
                 %%
                 %sets the initial values for pressure, density, internal 
@@ -578,7 +578,9 @@ classdef branch_liquid < solver.matter.base.branch
                     %Density and internal energy are then calculate from
                     %the actual pressure and temperature
                     if mPressure(k) ~= mVirtualPressure(k) || mTemperature(k) ~= mVirtualTemperature(k)
-                        mDensity(k) = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Density','Pressure',mPressure(k),'Temperature',(mTemperature(k)),'liquid');
+                        %afMass cannot change within a branch so using the
+                        %first flow for all is sufficient
+                        mDensity(k) = this.oBranch.oContainer.oData.oMT.calculateDensity('liquid', this.oBranch.aoFlows(1,1).afMass, mTemperature(k), mPressure(k));
                     else
                         mDensity(k) = mVirtualDensity(k);
                     end
@@ -1040,9 +1042,10 @@ classdef branch_liquid < solver.matter.base.branch
                 end
                 
                 %%
-                %Pressure is calculated using the liquid pressure
-                %correlation. For more information view the function file
+                %Pressure is calculated using the matter table
                 for k=1:1:this.inCells
+                    %TO DO: Replace with a function call to
+                    %calculatePressure once such a function exists
                     mPressureNew(k) = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Pressure','Density',mDensityNew(k),'Temperature',(mTemperatureNew(k)),'liquid');
                 end
                 %%
@@ -1058,6 +1061,8 @@ classdef branch_liquid < solver.matter.base.branch
                 %pressure.
                 for k = 1:this.inCells
                     mVirtualInternalEnergyNew(k) = mVirtualDensityNew(k)*(0.5*mFlowSpeed(k)^2+fHeatCapacity*(mVirtualTemperatureNew(k)-fTempRef));
+                    %TO DO: Replace with a function call to
+                    %calculatePressure once such a function exists
                     mVirtualPressureNew(k) = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Pressure','Density',mVirtualDensityNew(k),'Temperature',(mVirtualTemperatureNew(k)),'liquid');
                 end
                 

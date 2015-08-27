@@ -56,7 +56,8 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
 
     %the Density at very low Pressure is calculated as one required
     %Datapoint for the Bulk Modulus
-    fDensity_0 = system.oBranch.oContainer.oData.oMT.findProperty('H2O','Density','Pressure',1,'Temperature',(max(fTemperatureLeft,fTemperatureRight)),'liquid');
+    fDensity_0 = system.oBranch.oContainer.oData.oMT.calculateDensity('liquid', system.oBranch.aoFlows(1,1).afMass, (max(fTemperatureLeft,fTemperatureRight)), 1);
+
     
     %ensures that the reference Density at low pressure is lower than the
     %other densities
