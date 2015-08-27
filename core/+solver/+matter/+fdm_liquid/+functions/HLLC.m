@@ -1,5 +1,5 @@
 function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
-            HLLC(fPressureLeft, fDensityLeft, fFlowSpeedLeft, fInternalEnergyLeft,...
+            HLLC(system, fPressureLeft, fDensityLeft, fFlowSpeedLeft, fInternalEnergyLeft,...
             fPressureRight, fDensityRight, fFlowSpeedRight, fInternalEnergyRight, fTemperatureLeft, fTemperatureRight)
 % approximate HLLC Riemann Solver
 % This code contains a HLLC Riemann Solver used to solve shock and normal
@@ -54,29 +54,10 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
                'error might be wrong temperature in the system']);
     end
 
-    %TO DO make dependant on matter table or better take the density_0 from table
-    %density at one fixed datapoint
-    fFixDensity = 998.21;        %g/dm³
-    %temperature for the fixed datapoint
-    fFixTemperature = 293.15;           %K
-    %Molar Mass of the compound
-    %TODO: fixup to use [kg/mol]
-    fMolMassH2O = 18.01528;       %g/mol
-    %critical temperature
-    fCriticalTemperature = 647.096;         %K
-    %critical pressure
-    fCriticalPressure = 220.64*10^5;      %N/m² = Pa
-
-    %boiling point normal pressure
-    fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
-    %normal boiling point temperature
-    fBoilingTemperature = 373.124;      %K
-
     %the Density at very low Pressure is calculated as one required
     %Datapoint for the Bulk Modulus
-    fDensity_0 = solver.matter.fdm_liquid.functions.LiquidDensity(max(fTemperatureLeft,fTemperatureRight), 1, fFixDensity, fFixTemperature, fMolMassH2O, ...
-        fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-
+    fDensity_0 = system.oBranch.oContainer.oData.oMT.FindProperty('H2O','fDensity','Pressure',1,'Temperature',(max(fTemperatureLeft,fTemperatureRight)),'liquid');
+    
     %ensures that the reference Density at low pressure is lower than the
     %other densities
     if fDensity_0 >= fDensityLeft
@@ -89,6 +70,7 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
         fDensity_0 = fDensity_0 - 0.01;
     end
     
+    %TO DO: replace Bulk Modulus Calculation with matter table values
     %The Bulk Modulus is calculated according to [8] page 967
     %equation (5)
     fBulkModulusLeft = ((1/fDensity_0)*fPressureLeft)/((1/fDensity_0)-...
@@ -96,7 +78,7 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     fBulkModulusRight = ((1/fDensity_0)*fPressureRight)/((1/fDensity_0)-...
                         (1/fDensityRight));
 
-    %The speed of sound for the two initial states is calculated                
+    %The speed of sound for the two initial states is calculated  
     fSonicSpeedLeft = sqrt(fBulkModulusLeft/fDensityLeft);
     fSonicSpeedRight = sqrt(fBulkModulusRight/fDensityRight);
 
@@ -136,7 +118,13 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
   	while fDensity_0 >= fDensityLeftStarPVRS || fDensity_0 >= fDensityRightStarPVRS
         fDensity_0 = fDensity_0 - 0.01;
     end
-                    
+                
+    %negative Pressures are physically impossible therefore if an
+    %unfortunate combination of values results in negative pressure the
+    %pressure is considered to be very low (1 Pa) instead
+    if fPressureStarPVRS < 0
+        fPressureStarPVRS = 1;
+    end
     %from these values the bulk modulus for the two star regions can be 
     %calculated                
     fBulkModulusLeftStarPVRS = ((1/fDensity_0)*fPressureStarPVRS)/((1/fDensity_0)-...
@@ -145,7 +133,7 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
                         (1/fDensityRightStarPVRS));
 
     %using the bulk moduli the speed of sound in the star region can be 
-    %calculated                
+    %calculated       
     fSonicSpeedLeftStarPVRS = sqrt(fBulkModulusLeftStarPVRS/fDensityLeftStarPVRS);
     fSonicSpeedRightStarPVRS = sqrt(fBulkModulusRightStarPVRS/fDensityRightStarPVRS);  
 
@@ -186,6 +174,9 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
 	fPressureStarTemp = fPressureLeft+fDensityLeft*(fWaveSpeedLeftPVRS-...
                             fFlowSpeedLeft)*(fWaveSpeedStarPVRS-fFlowSpeedLeft);   
 
+  	%negative Pressures are physically impossible therefore if an
+    %unfortunate combination of values results in negative pressure the
+    %pressure is considered to be very low (1 Pa) instead
     if fPressureStarTemp < 0
         fPressureStarTemp = 1;
     end
@@ -260,6 +251,9 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     fPressureStar = fPressureLeft+fDensityLeft*(fWaveSpeedLeftTemp-...
                             fFlowSpeedLeft)*(fWaveSpeedStarTemp-fFlowSpeedLeft);   
 
+   	%negative Pressures are physically impossible therefore if an
+    %unfortunate combination of values results in negative pressure the
+    %pressure is considered to be very low (1 Pa) instead
     if fPressureStar < 0
         fPressureStar = 1;
     end
