@@ -129,7 +129,7 @@ classdef branch < base & event.source
             
             %TODO 13
             %   - names of solver packates? matter/basic/...?
-            %   - also afPressures, afTemps for setBranchFR?
+            %   - also afPressures, afTemperatures for setBranchFR?
             %   - some solvers need possibility to preset flows with the
             %       mol mass, ..
             %       => NOT NOW! Solver just uses old values, and has to

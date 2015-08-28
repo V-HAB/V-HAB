@@ -34,21 +34,23 @@ classdef liquid < matter.phase
     end
     
     methods
-        % oStore    : Name of parent store
-        % sName     : Name of phase
-        % tfMasses  : Struct containing mass value for each species
-        % fVolume   : Volume of the phase
-        % fTemp     : Temperature of matter in phase
-        % fPress    : Pressure of matter in phase
+        % oStore        : Name of parent store
+        % sName         : Name of phase
+        % tfMasses      : Struct containing mass value for each species
+        % fVolume       : Volume of the phase
+        % fTemperature  : Temperature of matter in phase
+        % fPress        : Pressure of matter in phase
         
-        function this = liquid(oStore, sName, tfMasses, fVolume, fTemp, fPressure)
-            this@matter.phase(oStore, sName, tfMasses, fTemp);
+        function this = liquid(oStore, sName, tfMasses, fVolume, fTemperature, fPressure)
+            this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
-            this.fVolume  = fVolume;
-            this.fTemp = fTemp;
-            this.fPressure = fPressure;
+            this.fVolume      = fVolume;
+            this.fTemperature = fTemperature;
+            this.fPressure    = fPressure;
              
-            this.fDensity = this.oMT.findProperty('H2O','Density','Pressure',fPressure,'Temperature',fTemp,'liquid');
+            this.fDensity = this.oMT.findProperty('H2O', 'Density', ...
+                'Pressure', fPressure, 'Temperature', fTemperature, ...
+                'liquid');
             
         end
         
@@ -59,7 +61,9 @@ classdef liquid < matter.phase
             bSuccess = this.setParameter('fVolume', fVolume);
             this.fDensity = this.fMass / this.fVolume;
             
-            this.fPressure = this.oMT.findProperty('H2O','Pressure','Density',this.fDensity,'Temperature',this.fTemp,'liquid');
+            this.fPressure = this.oMT.findProperty('H2O', 'Pressure', ...
+                'Density', this.fDensity, 'Temperature', this.fTemperature, ...
+                'liquid');
             
             return;
             %TODO with events:
@@ -83,9 +87,11 @@ classdef liquid < matter.phase
             % phase change to gas takes place
             
             bSuccess = this.setParameter('fPressure', fPressure);
-            %Get new Density for new pressure
             
-            this.fDensity = this.oMT.findProperty('H2O','Density','Pressure',fPressure,'Temperature',this.fTemp,'liquid');
+            % Calculate density for newly set pressure
+            this.fDensity = this.oMT.findProperty('H2O', 'Density', ...
+                'Pressure', fPressure, 'Temperature', this.fTemperature, ...
+                'liquid');
             
             this.fMass = this.fDensity*this.fVolume;
                         
@@ -109,9 +115,9 @@ classdef liquid < matter.phase
             return;
         end
         
-        function bSuccess = setTemp(this, fTemp)
+        function bSuccess = setTemp(this, fTemperature)
 
-            bSuccess = this.setParameter('fTemp', fTemp);
+            bSuccess = this.setParameter('fTemperature', fTemperature);
             this.fDensity = this.fMass / this.fVolume;
             
             return;
@@ -130,7 +136,9 @@ classdef liquid < matter.phase
             if ~isempty(this.fVolume) && this.fLastUpdateLiquid ~= this.oStore.oTimer.fTime && this.oStore.bIsIncompressible == 0
                 
                 fDensity = this.fMass/this.fVolume;
-                this.fPressure = this.oMT.findProperty('H2O','Pressure','Density',fDensity,'Temperature',this.fTemp,'liquid');
+                this.fPressure = this.oMT.findProperty('H2O', 'Pressure', ...
+                    'Density', fDensity, 'Temperature', this.fTemperature, ...
+                    'liquid');
                 this.fLastUpdateLiquid = this.oStore.oTimer.fTime;            
             end
             for k = 1:length(this.coProcsEXME)

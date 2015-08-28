@@ -406,7 +406,7 @@ classdef branch_liquid < solver.matter.base.branch
 
                     %calls the update for the base branch using the newly
                     %calculated mass flow
-                    %branch(this, fFlowRate, afPressures, afTemps)
+                    %branch(this, fFlowRate, afPressures, afTemperatures)
                     update@solver.matter.base.branch(this, 0);
                     return
                 end
@@ -1131,7 +1131,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %branch are derived.
                 
                 afPressure = zeros(iNumberOfProcs,1);
-                afTemps = zeros(iNumberOfProcs,1);
+                afTemperatures = zeros(iNumberOfProcs,1);
                 mFlowTemp = zeros(length(this.oBranch.aoFlows),1);
                 mFlowPressure = zeros(length(this.oBranch.aoFlows),1);
           
@@ -1209,7 +1209,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %Positive Deltas for Pressure and Temperature mean a
                 %decrease, negative an increase!
                 for k = 1:iNumberOfProcs
-                    afTemps(k) = mFlowTemp(k)-mFlowTemp(k+1);
+                    afTemperatures(k) = mFlowTemp(k)-mFlowTemp(k+1);
                     afPressure(k) = mFlowPressure(k)-mFlowPressure(k+1);
                 end
 
@@ -1325,8 +1325,8 @@ classdef branch_liquid < solver.matter.base.branch
                 this.oBranch.coExmes{2, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
                 %calls the update for the base branch using the newly
                 %calculated mass flow
-                %branch(this, fFlowRate, afPressures, afTemps)
-                update@solver.matter.base.branch(this, fMassFlow, afPressure, afTemps);
+                %branch(this, fFlowRate, afPressures, afTemperatures)
+                update@solver.matter.base.branch(this, fMassFlow, afPressure, afTemperatures);
                 
                 for k = 1: length(this.oBranch.aoFlowProcs)
                     this.oBranch.aoFlowProcs(1,k).update();

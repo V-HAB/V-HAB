@@ -60,10 +60,10 @@ classdef valve_closable < matter.procs.f2f
             end
             
             % Calculate density in kg/m^3 and flow rate in SLM
-            fRoh = (fP * oFlowIn.fMolMass / 1000) / (matter.table.Const.fUniversalGas * oFlowIn.fTemp);
+            fRoh = (fP * oFlowIn.fMolMass / 1000) / (matter.table.Const.fUniversalGas * oFlowIn.fTemperature);
             fFlowRate = fFlowRate * 60; % Convert to kg/min
             fSLM = (fFlowRate / (oFlowIn.fMolMass / 1000) * ...
-                   matter.table.Const.fUniversalGas * oFlowIn.fTemp / oFlowIn.fPressure) * 1000;
+                   matter.table.Const.fUniversalGas * oFlowIn.fTemperature / oFlowIn.fPressure) * 1000;
 
                
             % Calculate Pressure Difference in   

@@ -15,7 +15,7 @@ classdef temperature < matter.manip
         oHeatFlow;
         
         % Actual temp difference in K/s
-        fDeltaTemp;
+        fDeltaTemperature;
     end
     
     methods
@@ -29,7 +29,7 @@ classdef temperature < matter.manip
     methods (Access = protected)
         function calcChange(this)
             % Use this.getMasses() to get total mass.
-            % this.oPhase.fTemp is temperature, this.oPhase.fMolMass
+            % this.oPhase.fTemperature is temperature, this.oPhase.fMolMass
             % Then use this.oHeatFlow."fFlowRate" to calc change per sec
             
             % Return change per second!

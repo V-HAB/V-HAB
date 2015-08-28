@@ -22,7 +22,7 @@ fRm         = 8.314472;
 fMolMassH2O = 18;
 fRw = 461.9151; %sezifische Gaskonstante Wasser [J/(kg*K)]
 % Check input arguments, set default
-%TODO for fTemp, rRH, fPress -> key/value pairs?
+%TODO for fTemperature, rRH, fPress -> key/value pairs?
 if nargin < 4 || isempty(fTemperature), fTemperature = 273.15; end;
 if nargin < 5 || isempty(rRH),          rRH          = 0;      end;
 if nargin < 6 || isempty(fPressure),    fPressure    = 101325; end;

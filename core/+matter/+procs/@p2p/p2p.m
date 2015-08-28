@@ -119,7 +119,7 @@ classdef p2p < matter.flow
         end
         
         
-        function setMatterProperties(this, fFlowRate, arPartialMass, fTemp, fPressure)
+        function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
             % Get missing values from exmes
             
             if (nargin < 2) || isempty(fFlowRate), fFlowRate = this.fFlowRate; end;
@@ -139,11 +139,11 @@ classdef p2p < matter.flow
             
             % Check temp and pressure. First temp ... cause that might
             % change in a p2p ... pressure not really.
-            if (nargin < 4) || isempty(fTemp),     fTemp     = fPortTemperature; end;
+            if (nargin < 4) || isempty(fTemperature), fTemperature = fPortTemperature; end;
             if (nargin < 5) || isempty(fPressure), fPressure = fPortPressure; end;
                 
             
-            setMatterProperties@matter.flow(this, fFlowRate, arPartialMass, fTemp, fPressure);
+            setMatterProperties@matter.flow(this, fFlowRate, arPartialMass, fTemperature, fPressure);
         end
     end
 end

@@ -17,8 +17,8 @@ classdef solid < matter.phase
     end
     
     methods
-        function this = solid(oStore, sName, tfMasses, fTemp)
-            this@matter.phase(oStore, sName, tfMasses, fTemp);
+        function this = solid(oStore, sName, tfMasses, fTemperature)
+            this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             csKeys = fieldnames(tfMasses);
             for iI = 1:length(csKeys)

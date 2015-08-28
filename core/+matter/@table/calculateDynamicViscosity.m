@@ -24,8 +24,8 @@ if length(varargin) == 1
         sPhase = varargin{1}.oBranch.getInEXME().oPhase.sType;
     end
     
-    fTemperature = varargin{1}.fTemp;
-    fPressure    = varargin{1}.fPressure;
+    fTemperature  = varargin{1}.fTemperature;
+    fPressure     = varargin{1}.fPressure;
     arPartialMass = varargin{1}.arPartialMass;
     
     % in no mass given also no viscosity possible

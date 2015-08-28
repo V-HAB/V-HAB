@@ -90,7 +90,7 @@ classdef setup < simulation
                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.state.internaltime';        %34     Elapsed time since planting, culture 2
              
                  'toChildren.Greenhouse.oB5.fFlowRate';                                                                                 %35     CO2 supply flowrate
-                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).fTemp';                                                            %36     Temperature Greenhouse air-phase
+                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).fTemperature';                                                            %36     Temperature Greenhouse air-phase
              %Mostly biomass composition 
                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.TCB';                 %37     Total crop biomass - 1. Culture - Lettuce
                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.state.TCB';                 %38     Total crop biomass - 2. Culture - Sweetpotato

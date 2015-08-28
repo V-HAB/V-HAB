@@ -34,11 +34,11 @@ classdef setup < simulation
                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
                 'toChildren.Example.toStores.Tank_3.aoPhases(1).fMass';                 % 8
                 'toChildren.Example.toStores.Tank_4.aoPhases(1).fMass';
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemp';          % 10
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemp';
-                'toChildren.Example.toStores.Tank_3.aoPhases(1).fTemp';          % 12
-                'toChildren.Example.toStores.Tank_4.aoPhases(1).fTemp';
-                'toChildren.Example.toProcsF2F.HeatExchanger_1.fHeatFlow';             % 14
+                'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemperature';          % 10
+                'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemperature';
+                'toChildren.Example.toStores.Tank_3.aoPhases(1).fTemperature';          % 12
+                'toChildren.Example.toStores.Tank_4.aoPhases(1).fTemperature';
+                'toChildren.Example.toProcsF2F.HeatExchanger_1.fHeatFlow';              % 14
                 'toChildren.Example.toProcsF2F.HeatExchanger_2.fHeatFlow';
                 'toChildren.Example.aoBranches(1).fFlowRate';                           % 16
                 'toChildren.Example.aoBranches(2).fFlowRate'; 

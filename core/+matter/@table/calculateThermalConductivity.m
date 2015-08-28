@@ -24,7 +24,7 @@ if length(varargin) == 1
         sPhase = varargin{1}.oBranch.getInEXME().oPhase.sType;
     end
     
-    fTemperature = varargin{1}.fTemp;
+    fTemperature = varargin{1}.fTemperature;
     fPressure    = varargin{1}.fPressure;
     arPartialMass = varargin{1}.arPartialMass;
     

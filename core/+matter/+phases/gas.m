@@ -34,19 +34,19 @@ classdef gas < matter.phase
     end
     
     methods
-        % oStore    : Name of parent store
-        % sName     : Name of phase
-        % tfMasses  : Struct containing mass value for each species
-        % fVolume   : Volume of the phase
-        % fTemp     : Temperature of matter in phase
+        % oStore        : Name of parent store
+        % sName         : Name of phase
+        % tfMasses      : Struct containing mass value for each species
+        % fVolume       : Volume of the phase
+        % fTemperature  : Temperature of matter in phase
         %
         %TODO fVolume is stupid - needs to be set by store!
-        function this = gas(oStore, sName, tfMasses, fVolume, fTemp)
+        function this = gas(oStore, sName, tfMasses, fVolume, fTemperature)
             %TODO
             %   - not all params required, use defaults?
             %   - volume from store ...?
             
-            this@matter.phase(oStore, sName, tfMasses, fTemp);
+            this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             % Get volume from 
             if nargin < 4 || isempty(fVolume), fVolume = oStore.fVolume; end;
@@ -68,7 +68,7 @@ classdef gas < matter.phase
         %     in .update() method and stored on this.rRelHumidity!
         function rRelHumidity = get.rRelHumidity(this)
             if this.afMass(this.oMT.tiN2I.H2O)
-                fSaturationVapourPressure=6.11213 * exp(17.62 * (this.fTemp-273.15) / (243.12 + (this.fTemp-273.15))) * 100; % calculate saturation vapour pressure [Pa]; MAGNUS Formula; validity: -45???C <= T <= 60???C, for water
+                fSaturationVapourPressure=6.11213 * exp(17.62 * this.fTemperature / (243.12 + this.fTemperature)) * 100; % calculate saturation vapour pressure [Pa]; MAGNUS Formula; validity: -45???C <= T <= 60???C, for water
                 rRelHumidity = this.afPP(this.oMT.tiN2I.H2O)/fSaturationVapourPressure; %calculate relative humidity
             else
                 rRelHumidity = 0;
@@ -137,7 +137,7 @@ classdef gas < matter.phase
             %     move this calc to matter.table.calcGasPressure, or do
             %     some matter.helper.table.gas.pressure or so?
             
-            fMassToPressure = matter.table.Const.fUniversalGas * this.fTemp / ((this.fMolMass / 1000) * this.fVolume);
+            fMassToPressure = matter.table.Const.fUniversalGas * this.fTemperature / ((this.fMolMass / 1000) * this.fVolume);
             
             %TODO mol mass zero if no mass - NaN, or Inf if mass zero
             if isnan(fMassToPressure) || isinf(fMassToPressure)

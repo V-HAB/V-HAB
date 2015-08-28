@@ -3,7 +3,7 @@ classdef manip < base
     %   All manips in manips.[x].[y] use this as a base class. The type in
     %   the manip package path (x) defines the attribute of the phase that
     %   is changed:
-    %       matter.manips.temperature.xyz can manipulate fTemp in .update()
+    %       matter.manips.temperature.xyz can manipulate fTemperature in .update()
     %       matter.manips.volume.gas.xyz can for example calcualte the work
     %                           that was required for the vol change and 
     %                           the change in temperature within the gas,

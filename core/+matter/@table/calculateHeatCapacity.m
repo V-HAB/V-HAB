@@ -37,7 +37,7 @@ function fSpecificHeatCapacity = calculateHeatCapacity(this, varargin) %sMatterS
         end
 
         % Get data from object: Temperature and pressure.
-        fTemperature = oMatterRef.fTemp;
+        fTemperature = oMatterRef.fTemperature;
         fPressure    = oMatterRef.fPressure;
 
         if isempty(fPressure) || isnan(fPressure)

@@ -7,7 +7,7 @@ classdef solid < matter.procs.exme
         
         function [ fPortTemperature ] = getPortProperties(this)
             
-            fPortTemperature = this.oPhase.fTemp;
+            fPortTemperature = this.oPhase.fTemperature;
         end
     end
 end

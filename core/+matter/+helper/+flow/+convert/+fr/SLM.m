@@ -31,8 +31,8 @@ if ~isa(oFlow, 'matter.flow')
     
     % If NOT standard temp, pressure, need those values as well!
     if ~bSTP
-        if ~isfield(oFlow, 'fTemp') || ~isfield(oFlow, 'fPressure')
-            error('Standard temperature and pressure was false, but provided struct doesn''t contain fTemp || fPressure');
+        if ~isfield(oFlow, 'fTemperature') || ~isfield(oFlow, 'fPressure')
+            error('Standard temperature and pressure was false, but provided struct doesn''t contain fTemperature || fPressure');
         end
     end
 end
@@ -46,12 +46,12 @@ fFlowRate = fFlowRate * 60;
 % Temperature and pressure ...
 if bSTP
     % ... from standard conditions
-    fTemp     = 273.15 + 20; % 20 deg C
-    fPressure = 101325;
+    fTemperature  = 273.15 + 20; % 20 deg C
+    fPressure     = 101325;
 else
     % ... from flow
-    fTemp     = oFlow.fTemp;
-    fPressure = oFlow.fPressure;
+    fTemperature  = oFlow.fTemperature;
+    fPressure     = oFlow.fPressure;
 end
 
 % Flow rate is now kg/min, need to convert kg to Liters --> use ideal gas
@@ -63,7 +63,7 @@ end
 %       result of eq above is m^3, so * 1000 for liters!
 
 fLiterPerMin = (fFlowRate / (oFlow.fMolMass / 1000) * ...
-               matter.table.C.R_m * fTemp / fPressure) * 1000;
+               matter.table.C.R_m * fTemperature / fPressure) * 1000;
 
 end
 

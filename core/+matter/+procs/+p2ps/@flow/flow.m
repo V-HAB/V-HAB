@@ -85,7 +85,7 @@ classdef flow < matter.procs.p2p
         function setMatterProperties(this, fFlowRate, arPartials)
             % If p2p is updated, needs to set new flow rate through this 
             % method, and also new partials.
-            %TODO possible to also change the temperature? Just set fTemp,
+            %TODO possible to also change the temperature? Just set fTemperature,
             %     not used by oIn (if fFR > 0) anyway.
             
             this.fLastUpdate = this.oStore.oTimer.fTime;

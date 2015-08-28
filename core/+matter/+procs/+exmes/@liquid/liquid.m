@@ -57,7 +57,7 @@ classdef liquid < matter.procs.exme
             this.fPressure = this.oPhase.fPressure + this.fLiquidLevel*...
                 this.fAcceleration*this.oPhase.fDensity;
             
-            this.fTemperature = this.oPhase.fTemp;
+            this.fTemperature = this.oPhase.fTemperature;
         
         end
         
@@ -77,12 +77,12 @@ classdef liquid < matter.procs.exme
         function this = update(this)
            
             tTankGeomParams = this.oPhase.oStore.tGeometryParameters;
-            fVolumeTank = this.oPhase.oStore.fVolume;
-            fVolumeLiquid = this.oPhase.fVolume;
-            fPressureTank = this.oPhase.fPressure;
-            fMassTank = this.oPhase.fMass;
+            fVolumeTank     = this.oPhase.oStore.fVolume;
+            fVolumeLiquid   = this.oPhase.fVolume;
+            fPressureTank   = this.oPhase.fPressure;
+            fMassTank       = this.oPhase.fMass;
             
-            this.fTemperature = this.oPhase.fTemp;
+            this.fTemperature = this.oPhase.fTemperature;
             fDensityLiquid = fMassTank/fVolumeLiquid;
             
             if strcmp(tTankGeomParams.Shape, 'box') || strcmp(tTankGeomParams.Shape,'Box')

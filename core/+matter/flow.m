@@ -30,7 +30,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         fPressure    = 0;  % [Pa]
         
         % @type float
-        fTemp        = 0;   % [K]
+        fTemperature = 0;   % [K]
         
         
         
@@ -315,7 +315,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             if this.fFlowRate
                 fVolumetricFlowRate = this.fFlowRate / ...
                                     ( this.fPressure * this.fMolMass / ...
-                                    ( this.oMT.Const.fUniversalGas * this.fTemp  ) );
+                                    ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
             else
                 fVolumetricFlowRate = 0;
             end
@@ -346,7 +346,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         
         
-        function setMatterProperties(this, fFlowRate, arPartialMass, fTemp, fPressure)
+        function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
             % For derived classes of flow, can set the matter properties 
             % through this method manually. In contrast to setData, this 
             % method does not get information automatically from the 
@@ -359,7 +359,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             this.fFlowRate     = fFlowRate;
             this.arPartialMass = arPartialMass;
-            this.fTemp         = fTemp;
+            this.fTemperature  = fTemperature;
             this.fPressure     = fPressure;
             
             % Calculate molecular mass. Normally, the phase uses this 
@@ -394,14 +394,14 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % changes.
             % If e.g. a valve is shut in the branch, this method is however
             % called without those params, so we need to check that and in
-            % that case make no changes to fPressure / fTemp in the flows.
+            % that case make no changes to fPressure / fTemperature in the flows.
             % So get pressure/temperature of in exme (if FR provided)
             if nargin >= 3
                 %TODO get exme from this.oBranch, depending on fFlowRate?
-                [ fPortPress, fCurrTemp ] = oExme.getPortProperties();
+                [ fPortPress, fCurrentTemperature ] = oExme.getPortProperties();
             else
                 fPortPress = 0;
-                fCurrTemp  = 0;
+                fCurrentTemperature  = 0;
             end
             
             % Get matter properties of the phase
@@ -464,8 +464,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % If only one flow, no f2f exists --> set pressure, temp
                 % according to IN exme
                 if iL == 1
-                    this.fPressure = fPortPress;
-                    this.fTemp     = fCurrTemp;
+                    this.fPressure    = fPortPress;
+                    this.fTemperature = fCurrentTemperature;
                 end
                 
                 
@@ -495,10 +495,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
 
                     % So following this equation:
                     % Q' = m' * c_p * deltaT
-                    fCurrTemp = fCurrTemp + fHeatFlow / fFlowRate / ((this(iI).fHeatCapacity + fOtherCp) / 2);
+                    fCurrentTemperature = fCurrentTemperature + fHeatFlow / fFlowRate / ((this(iI).fHeatCapacity + fOtherCp) / 2);
                 end
                 
-                this(iI).fTemp = fCurrTemp;
+                this(iI).fTemperature = fCurrentTemperature;
                 
                 
                 
@@ -539,7 +539,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % Skip temperature?
 %                 if bSkipT, continue; end;
 %                 
-%                 this(iI).fTemp = fCurrTemp;
+%                 this(iI).fTemperature= fCurrTemp;
 %                 
 %                 % Due to friction etc, the 'natural' thing is that the
 %                 % temperature increases, therefore: positive values
@@ -553,7 +553,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
 %             disp('---');
 %             disp([ this.fFlowRate ]);
 %             disp([ this.fPressure ]);
-%             disp([ this.fTemp ]);
+%             disp([ this.fTemperature]);
         end
     end
     

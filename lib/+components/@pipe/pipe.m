@@ -118,7 +118,7 @@ classdef pipe < matter.procs.f2f
                 fMolMass = sif(oFlowIn.fMolMass > 0, oFlowIn.fMolMass, 1);
                 %CHECK e.g. fRoh - used for fV and Re - so doesn't really make
                 %      sense to include. Need another way to calculate Re/V?
-                fDensity = (fAveragePressure * fMolMass / 1000) / (matter.table.Const.fUniversalGas * oFlowIn.fTemp);
+                fDensity = (fAveragePressure * fMolMass / 1000) / (matter.table.Const.fUniversalGas * oFlowIn.fTemperature);
             end
             fFlowSpeed   = abs(fFlowRate) / ((pi / 4) * this.fDiameter^2 * fDensity);
 

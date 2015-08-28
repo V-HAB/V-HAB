@@ -165,7 +165,7 @@ classdef exme < base
                 % Can only be one flow, if p2p!
                 %mrPartials = repmat(this.aoFlows(1).arPartials, length(afFlowRates), 1);
                 mrPartials   = this.aoFlows(1).arPartialMass;
-                mfProperties = [ this.aoFlows(1).fTemp this.aoFlows(1).fHeatCapacity ];
+                mfProperties = [ this.aoFlows(1).fTemperature this.aoFlows(1).fHeatCapacity ];
             else
                 %TODO cache length!
                 for iF = 1:length(afFlowRates)
@@ -178,7 +178,7 @@ classdef exme < base
                         %      on all branches which would set the new
                         %      arPartials on all flows ... right?
                         mrPartials(iF, :)   = this.aoFlows(iF).arPartialMass;
-                        mfProperties(iF, :) = [ this.aoFlows(iF).fTemp this.aoFlows(iF).fHeatCapacity ];
+                        mfProperties(iF, :) = [ this.aoFlows(iF).fTemperature this.aoFlows(iF).fHeatCapacity ];
                         
                     else % extract or zero - phase partials
                         %NOTE possibility to implement special EXME that
@@ -192,7 +192,7 @@ classdef exme < base
                         %     at that position and adjust the partial mass
                         %     here accordingly.
                         mrPartials(iF, :)   = this.oPhase.arPartialMass;
-                        mfProperties(iF, :) = [ this.oPhase.fTemp this.oPhase.fHeatCapacity ];
+                        mfProperties(iF, :) = [ this.oPhase.fTemperature this.oPhase.fHeatCapacity ];
                     end
                 end
             end

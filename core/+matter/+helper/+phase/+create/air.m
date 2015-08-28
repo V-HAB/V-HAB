@@ -19,7 +19,7 @@ fMolMassH2O = 18.015275; % molar mass of water [g/mol]
 fRw         = 461.9151;  % specific gas constant of water [J/(kg*K)]
 
 % Check input arguments, set default
-%TODO for fTemp, rRH, fPress -> key/value pairs?
+%TODO for fTemperature, rRH, fPress -> key/value pairs?
 if nargin < 3 || isempty(fTemperature), fTemperature = matter.table.Standard.Temperature; end;
 if nargin < 4 || isempty(rRH),          rRH          = 0;      end;
 if nargin < 5 || isempty(fPressure),    fPressure    = matter.table.Standard.Pressure; end;

@@ -12,7 +12,7 @@ classdef gas < matter.procs.exme
             fMassSinceUpdate = this.oPhase.fCurrentTotalMassInOut * (this.oPhase.oStore.oTimer.fTime - this.oPhase.fLastMassUpdate);
 
             fPortPressure    = this.oPhase.fMassToPressure * (this.oPhase.fMass + fMassSinceUpdate);
-            fPortTemperature = this.oPhase.fTemp;
+            fPortTemperature = this.oPhase.fTemperature;
 
         end
 

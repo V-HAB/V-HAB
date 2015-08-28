@@ -104,8 +104,8 @@ classdef TemperatureControl_and_Illumination < vsys
             
             % start temperatures
             
-            T(1) = this.toStores.FilterAlgaeReactor.aoPhases(1).fTemp; % this.oParent.toStores.Freshwater_Store.aoPhases.fTemp;%K  temperature of water in fresh water tank --> Boundary Condition
-            T(2) = this.toStores.FilterAlgaeReactor.aoPhases(1).fTemp;%K  temperature of water/biomass in bioreactor
+            T(1) = this.toStores.FilterAlgaeReactor.aoPhases(1).fTemperature; % this.oParent.toStores.Freshwater_Store.aoPhases.fTemperature;%K  temperature of water in fresh water tank --> Boundary Condition
+            T(2) = this.toStores.FilterAlgaeReactor.aoPhases(1).fTemperature; %K  temperature of water/biomass in bioreactor
             T(3) = 273+20;%K  Environment Temperature --> Boundary Condition
             T(4) = 273+20;%K  Lamp Temperature
      

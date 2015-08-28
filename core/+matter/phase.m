@@ -48,9 +48,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         afMass;       % [kg]
 
         % Temperature of phase
-        %TODO: rename to |fTemperature|
         % @type float
-        fTemp;        % [K]
+        fTemperature; % [K]
 
     end
 
@@ -237,23 +236,23 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
     methods
 
-        function this = phase(oStore, sName, tfMass, fTemp)
+        function this = phase(oStore, sName, tfMass, fTemperature)
             % Constructor for the |matter.phase| class. Input parameters
             % can be provided to define the contained masses and
             % temperature, additionally the internal, merge and extract
             % processors.
             %
             % phase parameters:
-            %   oStore  - object reference to the store, matter table also
-            %             received from there
-            %   sName   - name of the phase
-            %   aoPorts - ports (exme procs instances); can be empty or not
-            %             provided, but then no mass can be extracted or
-            %             merged.
-            %   tfMass  - optional. Struct containing the initial masses.
-            %             Keys refer to the name of the according substance
-            %   fTemp 	- temperature of the initial mass, has to be given
-            %             if  tfMass is provided
+            %   oStore        - object reference to the store, matter table also
+            %                   received from there
+            %   sName         - name of the phase
+            %   aoPorts       - ports (exme procs instances); can be empty or not
+            %                   provided, but then no mass can be extracted or
+            %                   merged.
+            %   tfMass        - optional. Struct containing the initial masses.
+            %                   Keys refer to the name of the according substance
+            %   fTemperature  - temperature of the initial mass, has to be given
+            %                   if  tfMass is provided
 
             % Parent has to be a or derive from matter.store
             if ~isa(oStore, 'matter.store'), this.throw('phase', 'Provided oStore parameter has to be a matter.store'); end;
@@ -280,9 +279,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
             % Mass provided?
             if (nargin >= 3) && ~isempty(tfMass) && ~isempty(fieldnames(tfMass))
-                % If tfMass is provided, fTemp also has to be there
-                if nargin < 4 || isempty(fTemp) || ~isnumeric(fTemp) || (fTemp <= 0)
-                    this.throw('phase', 'If tfMass is provided, the fTemp parameter also has to be provided (Kelvin, non-empty number, greater than zero).');
+                % If tfMass is provided, fTemperature also has to be there
+                if nargin < 4 || isempty(fTemperature) || ~isnumeric(fTemperature) || (fTemperature <= 0)
+                    this.throw('phase', 'If tfMass is provided, the fTemperature parameter also has to be provided (Kelvin, non-empty number, greater than zero).');
                 end
 
                 % Extract initial masses from tfMass and set to afMass
@@ -308,12 +307,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 end
 
                 % Handle temperature
-                this.fTemp = fTemp;
+                this.fTemperature = fTemperature;
             else
                 % Set this to zero to handle empty phases
                 this.fMass = 0;
                 % No mass - no temp
-                this.fTemp = 0;
+                this.fTemperature = 0;
 
                 % Partials also to zeros
                 this.arPartialMass = this.afMass;
@@ -362,7 +361,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % processors. It also gets the mass changes from substance
             % manipulators. The new temperature is based on the thermal
             % energy of the in- and outflow. After completing the update of
-            % fMass, afMass and fTemp this method sets the phase's timestep
+            % fMass, afMass and fTemperature this method sets the phase's timestep
             % outdated, so it will be recalculated during the post-tick.
             % Additionally, if this phase is set as 'sycned', this method
             % will set all branches connected to exmes connected to this
@@ -431,8 +430,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
             % Add the phase mass and stuff
             if ~isempty(mfInflowDetails) % no inflows?
-                %mfInflowDetails = [ this.fMass, this.fTemp, this.fHeatCapacity ];
-                mfInflowDetails(end + 1, 1:3) = [ this.fMass, this.fTemp, this.fHeatCapacity ];
+                %mfInflowDetails = [ this.fMass, this.fTemperature, this.fHeatCapacity ];
+                mfInflowDetails(end + 1, 1:3) = [ this.fMass, this.fTemperature, this.fHeatCapacity ];
 
                 % Calculate inner energy (m * c_p * T) for all masses
                 afEnergy = mfInflowDetails(:, 1) .* mfInflowDetails(:, 3) .* mfInflowDetails(:, 2);
@@ -441,17 +440,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 afMassTimesCP = mfInflowDetails(:, 1) .* mfInflowDetails(:, 3);
 
                 % New temperature
-                fOldTemp   = this.fTemp;
-                this.fTemp = sum(afEnergy) / sum(afMassTimesCP);
+                fOldTemp   = this.fTemperature;
+                this.fTemperature = sum(afEnergy) / sum(afMassTimesCP);
 
                 %TODO instead of using the old temperature, analyze what
                 %     actually happens here (phase empty? some problems
                 %     with the flow properties? where is the NaN coming
                 %     from?)
                 %     -> fix source of error, prevent NaN from happening
-                if isnan(this.fTemp)
+                if isnan(this.fTemperature)
                     this.warn('massupdate', 'TEMPERATURE IS NAN!!! Store: %s, Phase: %s - old temp used. Maybe phase was empty?', this.oStore.sName, this.sName);
-                    this.fTemp = fOldTemp;
+                    this.fTemperature = fOldTemp;
                 end
 
             end
@@ -986,7 +985,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             %       the volume change stuff.
             %       -> how to define which manipulators to use? This class
             %          here should handle the manipulators for its own
-            %          properties (fTemp, fVol) etc - but depending on
+            %          properties (fTemperature, fVol) etc - but depending on
             %          phase type. Specific phase type class should handle
             %          manips for their properties (gas -> fPressure).
             %          SEE setAttribute -> provide generic functionality to

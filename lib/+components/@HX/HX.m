@@ -342,8 +342,8 @@ classdef HX < vsys
             % gets the values from the flows required for the HX
             fMassFlow_1  = abs(oFlows_1.fFlowRate);      % Get absolute values, hope that's okay...
             fMassFlow_2  = abs(oFlows_2.fFlowRate);      % Get absolute values, hope that's okay...
-            fEntryTemp_1 = oFlows_1.fTemp;
-            fEntryTemp_2 = oFlows_2.fTemp;
+            fEntryTemp_1 = oFlows_1.fTemperature;
+            fEntryTemp_2 = oFlows_2.fTemperature;
             fCp_1        = oFlows_1.fHeatCapacity;
             fCp_2        = oFlows_2.fHeatCapacity;
 

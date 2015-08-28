@@ -23,7 +23,7 @@ fMolMassH2O = 18;
 fMolMassCO2 = 44;
 fMolMassO2 = 32;
 % Check input arguments, set default
-%TODO for fTemp, rRH, fPress -> key/value pairs?
+%TODO for fTemperature, rRH, fPress -> key/value pairs?
 if nargin < 3, fTemperature = 273.15; end;
 if nargin < 4, rRH          = 0;      end;
 if nargin < 5, fPressure    = 101325; end;

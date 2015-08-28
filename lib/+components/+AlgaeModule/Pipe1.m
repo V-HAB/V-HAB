@@ -62,7 +62,7 @@ classdef Pipe1 < matter.procs.f2f
             
             % Calculate density and flow speed
             %TODO do with matter.table
-            fRoh = (fP * oFlowIn.fMolMass / 1000) / (matter.table.C.R_m * oFlowIn.fTemp);
+            fRoh = (fP * oFlowIn.fMolMass / 1000) / (matter.table.C.R_m * oFlowIn.fTemperature);
             fV   = abs(fFlowRate) / ((pi / 4) * this.fDiameter^2 * fRoh);
 
             % Reynolds
