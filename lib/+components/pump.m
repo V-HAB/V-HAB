@@ -23,8 +23,8 @@ classdef pump < matter.procs.f2f
     end
         
     methods
-        function this = pump(oMT, sName, fFlowRateSP)
-            this@matter.procs.f2f(oMT, sName);
+        function this = pump(sName, fFlowRateSP)
+            this@matter.procs.f2f(sName);
             
             this.fFlowRateSP = fFlowRateSP;
             this.fPreviousSetpoint = fFlowRateSP;

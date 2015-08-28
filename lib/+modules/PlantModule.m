@@ -163,7 +163,7 @@ classdef PlantModule < vsys
         %% -PlantModule Structure-
         
             % Creating the filter, last parameter is the filter capacity in kg.
-                this.addStore(matter.store(this.oData.oMT, 'PlantCultivationStore', 32));
+                this.addStore(matter.store(this, 'PlantCultivationStore', 32));
             
             %Adding Air Phase:   -> aoPhases(1); Cultivation Store
                 oAerationPhase = matter.phases.gas(this.toStores.PlantCultivationStore, ...                     %Store in which the phase is located
@@ -318,11 +318,11 @@ classdef PlantModule < vsys
         %% -Connections- 
         
             % Adding pipes to connect the components
-                this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 0.5, 0.01));
-                this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 0.5, 0.01));
-                this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_3', 0.5, 0.01));
-                this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_4', 0.5, 0.01));
-                this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_5', 0.5, 0.01));
+                this.addProcF2F(components.pipe('Pipe_1', 0.5, 0.01));
+                this.addProcF2F(components.pipe('Pipe_2', 0.5, 0.01));
+                this.addProcF2F(components.pipe('Pipe_3', 0.5, 0.01));
+                this.addProcF2F(components.pipe('Pipe_4', 0.5, 0.01));
+                this.addProcF2F(components.pipe('Pipe_5', 0.5, 0.01));
             
             
             % Creating the flowpath (=branch) between the components

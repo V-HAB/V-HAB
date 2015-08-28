@@ -23,8 +23,8 @@ classdef valve_closable < matter.procs.f2f
 %         fDeltaTemp = 0;
 %     end    
     methods
-        function  this = valve_closable(oMT, sName, fFlowCoefficient)
-            this@matter.procs.f2f(oMT, sName);
+        function  this = valve_closable(sName, fFlowCoefficient)
+            this@matter.procs.f2f(sName);
             
             this.fFlowCoefficient   = fFlowCoefficient;
             

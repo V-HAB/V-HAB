@@ -20,7 +20,7 @@ classdef Filter < matter.store
     end
     
     methods
-        function this = Filter(oMT, sName, fCapacity, fSubstance)
+        function this = Filter(oContainer, sName, fCapacity, fSubstance)
             
             if nargin < 4 || isempty(fSubstance), fSubstance = 'O2'; end;
             
@@ -33,7 +33,7 @@ classdef Filter < matter.store
             oGeo = geom.volumes.cylinder(0.25, 0.3);
             
             % Creating a store based on the cylinder's volume
-            this@matter.store(oMT, sName, oGeo.fVolume);
+            this@matter.store(oContainer, sName, oGeo.fVolume);
             
             % Assigning the filter's property
             % Set for later reference - see below, setVolume

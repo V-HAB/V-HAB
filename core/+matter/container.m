@@ -117,15 +117,6 @@ classdef container < sys
             % Adds the store to toStores. Might be overloaded by derived
             % classes to e.g. implement some dynamic handling of store
             % volumes or other stuff.
-            %
-            %DONE? Is there still the possibilty of two stores having a
-            %different matter table? Why would we want that anyway?
-%             %TODO No helper to create stores, therefore not ensured that 
-%             %     all those stores have the same matter table. Create
-%             %     helper? Check store for matter table? See the phase
-%             %     helpers, kind of 'currying': provide store class name and
-%             %     specific params to helper, helper adds all default params
-%             %     (as parent and matter table).
             
             if this.bSealed
                 this.throw('addStore', 'The container is sealed, so no stores can be added any more.');

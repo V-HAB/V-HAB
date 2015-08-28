@@ -8,8 +8,8 @@ classdef SeparatorStore < matter.store
     end
     
     methods
-        function this = SeparatorStore(oParent, oMT, sName)
-            this@matter.store(oMT, sName, 1);
+        function this = SeparatorStore(oParent, sName)
+            this@matter.store(oParent, sName, 1);
             
               %Forwarding parameters
                 this.fVol = 1;

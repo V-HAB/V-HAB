@@ -56,6 +56,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % Branch the flow belongs to
         oBranch;
         
+        % The store the flow belongs to if it is used as the parent class
+        % of a p2p processor.
+        oStore;
+        
         % Diameter
         %TODO maybe several phases somehow (linked flows or something?). So
         %     same as in stores: available diameter has to be distributed
@@ -97,19 +101,32 @@ classdef flow < base & matlab.mixin.Heterogeneous
     
     %% Public methods
     methods
-        function this = flow(oMT, oBranch)
-            this.oMT     = oMT;
+        function this = flow(oCreator)
             
-            if nargin >= 2, this.oBranch = oBranch; end;
+            %TODO: get matter table from somewhere if no param is given?
             
-            % Register flow object with the matter table
-            this.oMT.addFlow(this);
+            if nargin == 1
+                % Setting the matter table
+                this.oMT = oCreator.oMT;
+                
+                % The flow class can either be used on its own, or as a parent
+                % class for a p2p processor. In the latter case, the flow
+                % belongs to a store instead of a branch.
+                
+                if isa(oCreator,'matter.branch')
+                    this.oBranch = oCreator;
+                elseif isa(oCreator,'matter.store')
+                    this.oStore  = oCreator;
+                end
+                
+                % Register flow object with the matter table
+                this.oMT.addFlow(this);
+                
+                % Initialize the mass fractions array with zeros.
+                this.arPartialMass = zeros(1, this.oMT.iSubstances);
+            end
             
-            
-            % Preset ...
-            this.arPartialMass = zeros(1, this.oMT.iSubstances);
-            
-            % See thFuncs definition above and addProc below.
+%             % See thFuncs definition above and addProc below.
 %             this.thFuncs = struct(...
 %                 ... %TODO check, but FR needs to be set by solver etc, so has public access
 %                 ... 'setFlowRate',    @this.setFlowRate,    ...
@@ -117,7 +134,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
 %                 'setTemperature', @this.setTemperature, ...
 %                 'setHeatCapacity',@this.setHeatCapacity,...
 %                 'setPartialMass', @this.setPartialMass  ...
-%             );
+%                 );
         end
         
         

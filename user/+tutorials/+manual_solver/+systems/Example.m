@@ -32,13 +32,13 @@ classdef Example < vsys
             this@vsys(oParent, sName, 1);
             
             % Creating a store, volume 1000 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1000));
+            this.addStore(matter.store(this, 'Tank_1', 1000));
             
             % Adding a phase to the store 'Tank_1', 1000 m^3 air
             oGasPhase = this.toStores.Tank_1.createPhase('air', 1000);
             
             % Creating a second store, volume 1000 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 1000));
+            this.addStore(matter.store(this, 'Tank_2', 1000));
             
             % Adding a phase to the store 'Tank_2', 1000 m^3 air
             oAirPhase = this.toStores.Tank_2.createPhase('air', 1000);
@@ -48,7 +48,7 @@ classdef Example < vsys
             matter.procs.exmes.gas(oAirPhase, 'Port_2');
              
             % Adding a pipe to connect the tanks, length 1 m, diameter 0.1 m
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe', 1, 0.1));
+            this.addProcF2F(components.pipe('Pipe', 1, 0.1));
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 

@@ -30,13 +30,13 @@ classdef Example < vsys
             this@vsys(oParent, sName);
             
             % Creating a store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1));
+            this.addStore(matter.store(this, 'Tank_1', 1));
             
             % Adding a phase to the store 'Tank_1', 2 m^3 air
             oGasPhase = this.toStores.Tank_1.createPhase('air', 2);
             
             % Creating a second store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 1));
+            this.addStore(matter.store(this, 'Tank_2', 1));
             
             % Adding a phase to the store 'Tank_2', 1 m^3 air
             oAirPhase = this.toStores.Tank_2.createPhase('air', 1);
@@ -50,8 +50,8 @@ classdef Example < vsys
             
                         
             %% Adding some pipes
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe1', 1, 0.005));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe2', 1, 0.005));
+            this.addProcF2F(components.pipe('Pipe1', 1, 0.005));
+            this.addProcF2F(components.pipe('Pipe2', 1, 0.005));
             
             % Creating the flowpath (=branch) into a subsystem
             % Input parameter format is always: 

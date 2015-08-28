@@ -85,7 +85,7 @@ classdef exme < base
             % .extract or .merge method.
             
             this.sName  = sName;
-            this.oMT    = oPhase.oMT; % put in updateMT, has to be called by phase if MT changes
+            this.oMT    = oPhase.oMT;
             
             %this.setAttribute = 
             oPhase.addProcEXME(this);

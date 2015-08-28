@@ -295,8 +295,8 @@ classdef HX < vsys
             
             %adds the flow to flow processores used to set the outlet
             %values of the heat exchanger
-            this.oF2F_1 = support_classes.HX.hx_flow(this, this.oData.oMT, [sName,'_1']);
-            this.oF2F_2 = support_classes.HX.hx_flow(this, this.oData.oMT, [sName,'_2']);
+            this.oF2F_1 = support_classes.HX.hx_flow(this, [sName,'_1']);
+            this.oF2F_2 = support_classes.HX.hx_flow(this, [sName,'_2']);
             
             this.seal();
         end

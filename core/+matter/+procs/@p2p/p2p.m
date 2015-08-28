@@ -14,10 +14,6 @@ classdef p2p < matter.flow
         % @type string
         % @default p2proc
         sName;
-        
-        % Parent store
-        % @type object
-        oStore;
     end
     
     
@@ -30,7 +26,7 @@ classdef p2p < matter.flow
             %   - sName         Name of the processor
             
             % Parent constructor
-            this@matter.flow(oStore.oMT);
+            this@matter.flow(oStore);
             
             
             % Phases / ports
@@ -45,15 +41,11 @@ classdef p2p < matter.flow
                 this.throw('p2p', 'Phase could not be found: in phase "%s" has index "%i", out phase "%s" has index "%i"', sPhaseIn, iPhaseIn, sPhaseOut, iPhaseOut);
             end
             
-            % Set name and a fake oBranch ref - back to ourself
+            % Set name of P2P
             this.sName   = sName;
-            this.oBranch = this;
-            this.oStore  = oStore;
             
             % Can only be done after this.oStore is set, store checks that!
             this.oStore.addP2P(this);
-            
-            %this.fFlowRate = 0;
             
             % Add ourselves to phase ports (default name!)
             %TODO do the phases need some .getPort or stuff?
@@ -73,6 +65,7 @@ classdef p2p < matter.flow
             % the inflowing phase properties through the according EXME.
             % This is needed to e.g. get the phase type for heat capacity
             % calculations.
+            %TODO: reword
             oExme = this.(sif(this.fFlowRate < 0, 'oOut', 'oIn'));
         end
         

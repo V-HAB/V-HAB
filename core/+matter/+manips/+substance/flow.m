@@ -30,7 +30,7 @@ classdef flow < matter.manips.substance
             if ~isempty(afFlowRates)
                 afFlowRates = sum(bsxfun(@times, afFlowRates, mrInPartials), 1);
             else
-                afFlowRates = zeros(1, this.oPhase.oMT.iSubstances);
+                afFlowRates = zeros(1, this.oMT.iSubstances);
             end
         end
     end

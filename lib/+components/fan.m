@@ -73,31 +73,30 @@ classdef fan < matter.procs.f2f
         function this = fan(varargin)
             % Constructor
             % Required inputs:
-            % varargin{1} = oMT
-            % varargin{2} = sName
-            % varargin{3} = sMode
-            % varargin{4} = setpoint (either speed or flow rate)
+            % varargin{1} = sName
+            % varargin{2} = sMode
+            % varargin{3} = setpoint (either speed or flow rate)
             %
             % Optional inputs:
-            % varargin{5} = sDirection
-            % varargin{6} = struct containing characteristic information
+            % varargin{4} = sDirection
+            % varargin{5} = struct containing characteristic information
             %               for a specific fan, see properties
             
             
-            this@matter.procs.f2f(varargin{1}, varargin{2});
+            this@matter.procs.f2f(varargin{1});
             
             % Setting the operational mode
-            this.sMode = varargin{3};
+            this.sMode = varargin{2};
             
             % See which setpoint we are using depending on the mode
-            if strcmp(varargin{3}, 'setSpeed')
-                this.fSpeedSetpoint = varargin{4};
-                this.fSpeed         = varargin{4};
-            elseif strcmp(varargin{3}, 'setFlowRate')
-                this.fVolumetricFlowRateSetpoint = varargin{4};
-            elseif strcmp(varargin{3}, 'manual')
-                 if nargin > 3
-                     this.fDeltaPressure = varargin{4};
+            if strcmp(varargin{2}, 'setSpeed')
+                this.fSpeedSetpoint = varargin{3};
+                this.fSpeed         = varargin{3};
+            elseif strcmp(varargin{4}, 'setFlowRate')
+                this.fVolumetricFlowRateSetpoint = varargin{3};
+            elseif strcmp(varargin{2}, 'manual')
+                 if nargin > 2
+                     this.fDeltaPressure = varargin{3};
                  end
             else
                 % Looks like someone didn't read the documentation...
@@ -108,18 +107,18 @@ classdef fan < matter.procs.f2f
             % positive direction of the branch in which the fan is placed.
             % Branch flow rates are positive (1) from left to right and
             % negative from right to left (-1).
-            if nargin > 4 && ~isempty(varargin{5})
-                if strcmp(varargin{5}, 'Left2Right')
+            if nargin > 3 && ~isempty(varargin{4})
+                if strcmp(varargin{4}, 'Left2Right')
                     this.iDir = 1;
-                elseif strcmp(varargin{5}, 'Right2Left')
+                elseif strcmp(varargin{4}, 'Right2Left')
                     this.iDir = -1;
                 end
             end
             
             % If a specific characteristic is used, read in the data and
             % override the defaults
-            if nargin > 5 && ~isempty(varargin{6})
-                this.tCharacteristic = varargin{6};
+            if nargin > 4 && ~isempty(varargin{5})
+                this.tCharacteristic = varargin{5};
             end
             
             

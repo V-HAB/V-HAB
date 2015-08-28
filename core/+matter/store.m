@@ -32,6 +32,10 @@ classdef store < base
         % @type object
         oMT;
         
+        % Reference to the vsys (matter.container) in which this store is 
+        % contained
+        oContainer;
+        
         % Name of store
         % @type string
         sName;
@@ -98,7 +102,7 @@ classdef store < base
     
     
     methods
-        function this = store(oMT, sName, fVolume, bIsIncompressible, tGeometryParams)
+        function this = store(oContainer, sName, fVolume, bIsIncompressible, tGeometryParams)
             % Create a new matter store object. Expects the matter table
             % object and a name as parameters. Optionally, you can pass a
             % store volume and whether the contents of the store are
@@ -106,8 +110,9 @@ classdef store < base
             % environment, a fifth parameter with geometric parameters can
             % be passed.
             
-            this.sName = sName;
-            this.setMatterTable(oMT);
+            this.sName      = sName;
+            this.oContainer = oContainer;
+            this.setMatterTable(oContainer.oMT);
             
             if nargin >= 3
                 this.fVolume = fVolume;

@@ -48,13 +48,18 @@ classdef branch < base & event.source
         
         % Cached solving objects (from [procs].toSolver.hydraulic)
         aoSolverProps;
+        
+        % Reference to the matter table
+        % @type object
+        oMT;
     end
     
     
     methods
         function this = branch(oBranch, fInitialFlowRate, sSolverType)
-            this.oBranch = oBranch;
             
+            this.oBranch = oBranch;
+            this.oMT     = oBranch.oMT;
             
             if nargin >= 3 && ~isempty(sSolverType)
                 this.sSolverType = sSolverType;
