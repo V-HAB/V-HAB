@@ -23,14 +23,14 @@ classdef Example < vsys
             % Creating a store, volume 1 m^3
             this.addStore(matter.store(this, 'Tank_1', 1));
             
-            % Adding a phase to the store 'Tank_1', 1 m^3 air
-            oGasPhase = this.toStores.Tank_1.createPhase('air', 1);
+            % Adding a phase to the store 'Tank_1', 1 m^3 air at 20 deg C
+            oGasPhase = this.toStores.Tank_1.createPhase('air', 1, 293.15);
             
             % Creating a second store, volume 1 m^3
             this.addStore(matter.store(this, 'Tank_2', 1));
             
-            % Adding a phase to the store 'Tank_2', 2 m^3 air
-            oAirPhase = this.toStores.Tank_2.createPhase('air', 2);
+            % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 2, 323.15);
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oGasPhase, 'Port_1');

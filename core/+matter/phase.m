@@ -422,38 +422,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
 
             %%%% Now calculate the new temperature of the phase using the
-            % inflowing enthalpies / inner energies / ... whatever.
-
-            % Convert flow rates to masses
-            mfInflowDetails(:, 1) = mfInflowDetails(:, 1) * fLastStep;
-
-            % Add the phase mass and stuff
-            if ~isempty(mfInflowDetails) % no inflows?
-                %mfInflowDetails = [ this.fMass, this.fTemperature, this.fHeatCapacity ];
-                mfInflowDetails(end + 1, 1:3) = [ this.fMass, this.fTemperature, this.fHeatCapacity ];
-
-                % Calculate inner energy (m * c_p * T) for all masses
-                afEnergy = mfInflowDetails(:, 1) .* mfInflowDetails(:, 3) .* mfInflowDetails(:, 2);
-
-                % For all masses - mass * heat capacity - helper
-                afMassTimesCP = mfInflowDetails(:, 1) .* mfInflowDetails(:, 3);
-
-                % New temperature
-                fOldTemp   = this.fTemperature;
-                this.fTemperature = sum(afEnergy) / sum(afMassTimesCP);
-
-                %TODO instead of using the old temperature, analyze what
-                %     actually happens here (phase empty? some problems
-                %     with the flow properties? where is the NaN coming
-                %     from?)
-                %     -> fix source of error, prevent NaN from happening
-                if isnan(this.fTemperature)
-                    this.warn('massupdate', 'TEMPERATURE IS NAN!!! Store: %s, Phase: %s - old temp used. Maybe phase was empty?', this.oStore.sName, this.sName);
-                    this.fTemperature = fOldTemp;
-                end
-
-            end
-
+            % inflowing enthalpies / inner energies
+            % Calculations from here: https://en.wikipedia.org/wiki/Internal_energy
+            %
             % Logic for deriving new temperature:
             % Inner Energy
             %   Q = m * c_p * T
@@ -472,11 +443,54 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             %         ((m_1 + m_2 + ...) * (c_p,1*m_1 + ...) / (m_1 + ...))
             %       = (m_1 * c_p,1 * T_1 + m_2 * c_p,2 * T_2 + ...) /
             %               (c_p,1*m_1 + c_p,2*m_2 + ...)
-            %
-            %
-            %TODO see http://de.wikipedia.org/wiki/Innere_Energie
-            %     also see EXME, old .merge
-            %     -> handle further things?
+
+            % First we split out the mfInflowDetails matrix to make the
+            % code more readable.
+            afInflowMasses         = mfInflowDetails(:,1);
+            afInflowTemperatures   = mfInflowDetails(:,2);
+            afInflowHeatCapacities = mfInflowDetails(:,3);
+
+            % Convert the incoming flow rates to absolute masses that are
+            % added in this timestep.
+            afAbsoluteMassesIn = afInflowMasses * fLastStep;
+
+            % We only need to change things if there are any inflows.
+            if ~isempty(mfInflowDetails)
+
+                % This phase may currently be empty, so |this.fMass| could
+                % be zero. In this case we'll only use the values of the
+                % incoming flows.
+                if this.fMass > 0
+                    mfAbsoluteMasses = [afAbsoluteMassesIn; this.fMass];
+                    mfTemperatures   = [afInflowTemperatures; this.fTemperature];
+                    mfHeatCapacities = [afInflowHeatCapacities; this.fHeatCapacity];
+                else
+                    mfAbsoluteMasses = afInflowMasses;
+                    mfTemperatures   = afInflowTemperatures;
+                    mfHeatCapacities = afInflowHeatCapacities;
+                end
+
+                % Calculate inner energy (m * c_p * T) for all masses.
+                mfEnergy = mfAbsoluteMasses .* mfHeatCapacities .* mfTemperatures;
+
+                % As can be seen from the explanation given above, we need
+                % the products of all masses and heat capacities in the
+                % denominator of the fraction that calulates the new
+                % temperature.
+                mfEnergyPerKelvin = mfAbsoluteMasses .* mfHeatCapacities;
+
+                % New temperature
+                %TODO: Investigate if this does what it's supposed to do,
+                %      especially in the case of non-zero mass where the
+                %      matrices are Nx2 (N: number of substances). Is the
+                %      temperature calculated correctly? Isn't it better
+                %      (at least for readability), to calculcate the
+                %      current temperature and the one of the incoming
+                %      flows separately and then calculate the new
+                %      weighted temperature from those values?
+                this.fTemperature = sum(mfEnergy) / sum(mfEnergyPerKelvin);
+
+            end
 
 
             % Update total mass

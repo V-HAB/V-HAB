@@ -28,15 +28,17 @@ classdef setup < simulation
             % when you are done modelling and ready to run a simulation. 
             this.csLog = {
                 % System timer
-                'oData.oTimer.fTime';                                        % 1
+                'oData.oTimer.fTime';                                              % 1
                 
                 % Logging pressures, masses and the flow rate
                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';  % 2
                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';  % 4
                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
-                'toChildren.Example.aoBranches(1).fFlowRate';                % 6
-                
+                'toChildren.Example.aoBranches(1).fFlowRate';                      % 6
+                'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemp';
+                'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemp';     % 8
+
                 % You can add other parameters here
                 };
             
@@ -69,6 +71,14 @@ classdef setup < simulation
             plot(this.mfLog(:,1), this.mfLog(:, [3 5]));
             legend('Tank 1', 'Tank 2');
             ylabel('Mass in kg');
+            xlabel('Time in s');
+            
+            figure('name', 'Tank Temperatures');
+            hold on;
+            grid minor;
+            plot(this.mfLog(:,1), this.mfLog(:, 7:8));
+            legend('Tank 1', 'Tank 2');
+            ylabel('Temperature in K');
             xlabel('Time in s');
             
             figure('name', 'Flow Rate');
