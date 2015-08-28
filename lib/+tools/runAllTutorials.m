@@ -81,7 +81,7 @@ for iI = 1:length(tTutorials)
             % the user and keep going. The counter for aborted
             % tutorials is incremented and the string property for the
             % final output is set accordingly.
-            disp('Encountered an error in the simulation. Aborting.');
+            fprintf('\nEncountered an error in the simulation. Aborting.\n');
             iAbortedTutorials = iAbortedTutorials + 1;
             tTutorials(iI).sStatus = 'Aborted';
             tTutorials(iI).sErrorReport = getReport(oException);
@@ -119,8 +119,8 @@ end
 iColumnWidth = max(aiNameLengths);
 
 % Printing...
-disp('--------------------------------------');
-disp('======================================');
+fprintf('\n\n--------------------------------------\n');
+fprintf('======================================\n');
 fprintf('Total Tutorials:       %i\n\n', length(tTutorials));
 fprintf('Successfully executed: %i\n',   iSuccessfulTutorials);
 fprintf('Aborted:               %i\n',   iAbortedTutorials);
