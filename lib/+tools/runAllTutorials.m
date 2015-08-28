@@ -28,16 +28,33 @@ for iI = 1:length(tTutorials)
         abIllegals(iI) = 1;
     end
 end
-% Now we can delete the entries from the struct
+% Delete the entries from the struct
 tTutorials(abIllegals > 0) = [];
 
 % Generating a dynamic folder path so all of our saved data is nice and
 % organized.
 sFolderPath = createFolderPath();
 
-% Now we go through each item in the struct and see if we can execute a
+%TODO
+% Check if there are changed files in the core or library folders since the
+% last execution of this script. If yes, then all tutorials have to be
+% executed again. If no, then we only have to run the tutorials that have
+% changed. 
+bCoreChanged = checkForChangedFiles('core');
+bLibChange   = checkForChangedFiles('lib');
+
+% Go through each item in the struct and see if we can execute a
 % V-HAB simulation. 
 for iI = 1:length(tTutorials)
+    % Some nice printing for the console output
+    
+    fprintf('\n\n======================================\n');
+    fprintf('Running %s Tutorial\n',strrep(tTutorials(iI).name,'+',''));
+    fprintf('======================================\n\n');
+    
+    % Check if the tutorial's files have changed since the last execution 
+    % of this script, if no, we can just skip this one, because we already
+    % know it works. 
     
     % If the folder has a correctly named 'setup.m' file, we can go
     % ahead and try to execute it.
@@ -46,12 +63,6 @@ for iI = 1:length(tTutorials)
         % First we construct the string that is the argument for the
         % vhab.exec() method.
         sExecString = ['tutorials.',strrep(tTutorials(iI).name,'+',''),'.setup'];
-        
-        % Some nice printing for the console output
-        
-        fprintf('\n\n======================================\n');
-        fprintf('Running %s Tutorial\n',strrep(tTutorials(iI).name,'+',''));
-        fprintf('======================================\n\n');
         
         % Now we can finally run the simulation, but we need to catch
         % any errors inside the simulation itself
@@ -136,7 +147,7 @@ for iI = 1:length(tTutorials)
     % that we can insert into the output in the following line. 
     sBlanks = blanks(iWhiteSpaceLength);
     % Tada!
-    fprintf('%s:%s%s\n',tTutorials(iI).name,sBlanks,tTutorials(iI).sStatus);
+    fprintf('%s:%s%s\n',strrep(tTutorials(iI).name,'+',''),sBlanks,tTutorials(iI).sStatus);
 end
 disp('--------------------------------------');
 fprintf('Error messages:\n\n');
@@ -173,4 +184,97 @@ function sFolderPath = createFolderPath()
             bSuccess = true;
         end
     end
+end
+
+function tOutputStruct = removeIllegalFoldersAndFiles(tInputStruct)
+    % Initializing a helper array
+    abIllegals = zeros(1,length(tInputStruct));
+    
+    for iI = 1:length(tInputStruct)
+        % There are some files from the operating system and git that contain a
+        % '.' (period) character.
+        if strfind(tInputStruct(iI).name,'.')
+            % First we need to find them
+            abIllegals(iI) = 1;
+        end
+    end
+    tOutputStruct = tInputStruct;
+    % Delete the entries from the struct
+    tOutputStruct(abIllegals > 0) = [];
+end
+
+
+function bChanged = checkForChangedFiles(sFolder)
+    % This function will check a given folder for changed files. The 
+    % information when you last ran this function will be saved in a .mat 
+    % file, so the function will only search for newer files until it has 
+    % found one and then return a true or false.
+    
+    clc
+    fprintf('Checking %s\n',sFolder);
+    tSavedInfo = struct();
+    % Load the information from when we last executed this check or create
+    % a new variable that we can later save.
+    if exist(strrep('data/FolderStatus.mat','/',filesep), 'file')
+        load(strrep('data/FolderStatus.mat','/',filesep));
+        tInfo = dir(sFolder);
+        sFieldName = strrep(sFolder,[filesep,'+'],'_plus_');
+        sFieldName = strrep(sFieldName,[filesep,'@'],'_at_');
+        sFieldName = strrep(sFieldName,filesep,'_');
+        if ~isfield(tSavedInfo, sFieldName)
+            tSavedInfo.(sFieldName) = datenum(datetime('now'));
+            save(strrep('data/FolderStatus.mat','/',filesep),'tSavedInfo');
+            tInfo = removeIllegalFoldersAndFiles(tInfo);
+            for iI = 1:length(tInfo)
+                checkForChangedFiles([sFolder,filesep,tInfo(iI).name]);
+            end
+            bChanged = true;
+            return;
+        end
+        
+    else
+        % Need to do initial scan of all folders
+        sFieldName = strrep(sFolder,[filesep,'+'],'__');
+        sFieldName = strrep(sFieldName,[filesep,'@'],'__');
+        tSavedInfo = struct(sFieldName,datenum(datetime('now')));
+        save(strrep('data/FolderStatus.mat','/',filesep),'tSavedInfo');
+        tInfo = dir(sFolder);
+        tInfo = removeIllegalFoldersAndFiles(tInfo);
+        for iI = 1:length(tInfo)
+            checkForChangedFiles([sFolder,filesep,tInfo(iI).name]);
+        end
+        bChanged = true;
+        return;
+    end
+    
+    
+    
+    for iI = 1:length(tSavedInfo)
+        
+        if tInfo(iI).isdir
+            bChanged = checkForChangedFiles([sFolder,filesep,tSavedInfo(iI).name]);
+            if bChanged
+                sFieldName = strrep(sFolder,[filesep,'+'],'__');
+                sFieldName = strrep(sFieldName,[filesep,'@'],'__');
+                tSavedInfo.([sFieldName,filesep,tSavedInfo(iI).name]) = datenum(datetime('now'));
+                save(strrep('data/FolderStatus.mat','/',filesep),'tSavedInfo');
+                return;
+            end
+        else
+            if tSavedInfo(iI).datenum > tSavedInfo.(strrep(sFolder,{[filesep,'+'], [filesep,'@']},'__'))
+                bChanged = true;
+                sFieldName = strrep(sFolder,[filesep,'+'],'__');
+                sFieldName = strrep(sFieldName,[filesep,'@'],'__');
+                tSavedInfo.(sFieldName) = datenum(datetime('now'));
+                save(strrep('data/FolderStatus.mat','/',filesep),'tSavedInfo');
+                return;
+            end
+        
+        end
+    end
+    
+%     function tOutputStruct = setFolderDateToNow(tInputStruct)
+%         
+%     end
+    
 end
