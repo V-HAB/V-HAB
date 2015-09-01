@@ -67,7 +67,7 @@ classdef Incompressible_System_Definition < simulation
             };
             
             % Sim time [s]
-            this.fSimTime = 300;
+            this.fSimTime = 30;
         end
         
         function plot(this)

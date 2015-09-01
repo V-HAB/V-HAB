@@ -923,7 +923,8 @@ classdef system_incompressible_liquid
                 cLoopFlowRates = cell(iNumberOfLoops,1);
                 for l = 1:iNumberOfLoops
                     %TO DO: Get this to work for negative flow rates, and
-                    %for the case if the loop has no single branch
+                    %for the case if the loop has no single branch through
+                    %which the whole loop flow rate has to pass
                     mMaxLoopFlow(l) = max(this.mMassFlowOld(this.mLoopBranches(:,l),end));
                     cLoopFlowRates{l} = this.mMassFlowOld(this.mLoopBranches(:,l),end);
                     Helper = find(cLoopFlowRates{l} == mMaxLoopFlow(l));
@@ -932,19 +933,68 @@ classdef system_incompressible_liquid
                     %for each loop
                     iMaxLoopFlowBranch = Helper(1);
                     
-                    iOverallIndexMax = this.mLoopBranches(mMaxLoopFlowBranch(l),l);
-                    
+                    iOverallIndexMax = this.mLoopBranches(iMaxLoopFlowBranch,l);
+                    %The maximum loop flow can now be set as first value
+                    %into the mMassFlowNew variable as starting point for
+                    %this loop
                     mMassFlowNew(iOverallIndexMax) = mMaxLoopFlow(l);
                     
-                    for m = 1:length(cLoopFlowRates{l})
-                        [LeftPhase, ~] = this.cPhaseNameMatrix{this.mLoopBranches(m,l),:};
+                    iCounterForLoop = 0;
+                    %TO DO: Find a better solution than a while loop and
+                    %make it work for negative flow rates as well
+                    if mMaxLoopFlow(l) >= 0
+                        %until all flowrates within the loop are unequal to
+                        %zero the calculation is redone
+                        while (max(mMassFlowNew(this.mLoopBranches(:,l))==0) == 1)
+                            for m = 1:length(cLoopFlowRates{l})
+                                [LeftPhase, ~] = this.cPhaseNameMatrix{this.mLoopBranches(m,l),:};
 
-                        fP2PFlow = tP2PFlowRate.(LeftPhase);
-                        iOutFlows = tNumberOfOutFlows.(LeftPhase);
-                        
-                        this.oSystem.toStores.(this.tStoreNames.(LeftPhase)).iPhases;
-                        this.oSystem.toStores.(this.tStoreNames.(LeftPhase)).aoPhases;
-                        
+                                %Vector that contains 1 for each branch that comes
+                                %after this one in the overall notation
+                                bmFollowingBranches = this.sConectivityMatrix.(LeftPhase)(:,1);
+                                %Vector that contains the indices of the
+                                %following branches
+                                miIndexFollowingBranches = find(bmFollowingBranches);
+
+                                %Vector that contains 1 for each branch that comes
+                                %before this one in the overall notation
+                                bmPreviousBranches = this.sConectivityMatrix.(LeftPhase)(:,2);
+                                %Vector that contains the indices of the
+                                %branches before this one
+                                miIndexPreviousBranches = find(bmPreviousBranches);
+                                
+                                if length(miIndexFollowingBranches) > 1
+                                    %For more than one followup branches a split
+                                    %ratio between these followup branches based on
+                                    %their current flowrates has to be calculated
+                                    for k = 1:length(miIndexFollowingBranches)
+                                        fSplitRatio = this.mMassFlowOld(miIndexFollowingBranches(k),end)/sum(this.mMassFlowOld(miIndexFollowingBranches,end));
+
+                                        %In order to set the new mass flow
+                                        %for the follow up branches the
+                                        %inlet mass flows to the phase have
+                                        %to be known. If that is not the
+                                        %case they are not set
+                                        if max(mMassFlowNew(miIndexPreviousBranches) == 0) == 0
+                                            mMassFlowNew(miIndexFollowingBranches(k)) = sum(mMassFlowNew(miIndexPreviousBranches))*fSplitRatio;
+                                        end
+                                    end
+                                else
+                                    %In order to set the new mass flow
+                                    %for the follow up branches the
+                                    %inlet mass flows to the phase have
+                                    %to be known. If that is not the
+                                    %case they are not set
+                                    if max(mMassFlowNew(miIndexPreviousBranches) == 0) == 0
+                                        mMassFlowNew(miIndexFollowingBranches) = sum(mMassFlowNew(miIndexPreviousBranches));
+                                    end
+                                end
+                            end
+                            iCounterForLoop = iCounterForLoop + 1;
+                            if iCounterForLoop == 100
+                                keyboard()
+                            end
+                        end
                     end
                 end
                 
