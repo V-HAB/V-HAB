@@ -78,7 +78,14 @@ classdef Process_InediblePlantsToWaste < matter.manips.substance.flow
                 
             fTimeStep = this.oPhase.oStore.oTimer.fTime - this.fLastUpdate;
             
-            afPartialFlows = afPartials ./ fTimeStep;
+            % If no time has passed, we can just set the flow rates to
+            % zero. Otherwise we divide the partial masses by the timestep
+            % to get the flows.
+            if fTimeStep <= 0
+                afPartialFlows = zeros(1, this.oPhase.oMT.iSubstances);
+            else
+                afPartialFlows = afPartials ./ fTimeStep;
+            end
             
             %Setting control variable for call frequency check
             this.fLastUpdate = this.oPhase.oStore.oTimer.fTime;

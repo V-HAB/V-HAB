@@ -24,10 +24,15 @@ classdef setup < simulation
                     
         %% -Simulation Settings-
         
-            %Setting simulation duration
-             this.fSimTime  = 12000000;   % [s]
-             this.iSimTicks = 400;      % ticks
-             this.bUseTime  = true;      % true -> use this.fSimTime as Duration of Simulation
+            % Setting simulation duration
+            % 50 000 seconds is fairly short for the plant model, however to
+            % enable testing and playing around with parameters, this time
+            % was chosen. To produce more significant results, the
+            % simulation should be run for 12 000 000 seconds. This will
+            % however take several hours on a modern computer.
+            this.fSimTime  = 50000;     % [s]
+            this.iSimTicks = 400;       % ticks
+            this.bUseTime  = true;      % true -> use this.fSimTime as Duration of Simulation
 
 
              

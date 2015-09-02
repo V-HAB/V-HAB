@@ -192,8 +192,6 @@ classdef PlantModule < vsys
             % Adding a default extract/merge processor to the phase
                 matter.procs.exmes.liquid(oPlants, 'p4'); %Plants phase
                 matter.procs.exmes.liquid(oPlants, 'p5');
-                matter.procs.exmes.liquid(oPlants, 'p6');
-                matter.procs.exmes.liquid(oPlants, 'p7');
                 matter.procs.exmes.liquid(oPlants, 'p8'); %Plants phase
                 matter.procs.exmes.liquid(oPlants, 'p10'); %Plants phase
 
