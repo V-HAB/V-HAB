@@ -7,35 +7,33 @@ function runAllTutorials()
 %   the top level of the tutorial folder and is called 'setup.m'. If this
 %   is not the case, the function will throw an error. 
 
-% First we get the struct that shows us the current contents of the
-% tutorials directory.
-sTutorialDirectory = strrep('user/+tutorials/','/',filesep);
-tTutorials = dir(sTutorialDirectory);
-
 % Initializing some counters
 iSuccessfulTutorials = 0;
 iSkippedTutorials    = 0;
 iAbortedTutorials    = 0;
 
-% We need to delete the README file, since this is obviously not a tutorial
-% we have to execute.
+% First we get the struct that shows us the current contents of the
+% tutorials directory. We also check which entries are directories.
+sTutorialDirectory = fullfile('user', '+tutorials');
+tTutorials   = dir(sTutorialDirectory);
+mbIsTutorial = [tTutorials.isdir];
+
+% Ignore all directories that do not start with a plus, i.e. mark all
+% entries that are not packages.
 for iI = 1:length(tTutorials)
-    if strcmp(tTutorials(iI).name,'README_TUTORIALS.md')
-        iReadMeIndex = iI;
+    if ~isequal(strfind(tTutorials(iI).name, '+'), 1)
+        mbIsTutorial(iI) = false;
     end
 end
-tTutorials(iReadMeIndex) = [];
-
-% Now we remove the hidden folders and files created by the operating
-% system
-tTutorials = removeIllegalFilesAndFolders(tTutorials);
+% Now remove the non-package directories from the list.
+tTutorials = tTutorials(mbIsTutorial);
 
 % Generating a dynamic folder path so all of our saved data is nice and
 % organized. The folder path will have the following format: 
 % Tutorials_Test/YYYYMMDD_Test_Run_X 
 % The number at the end ('X') will be automatically incremented so you
 % don't have to worry about anything.
-sFolderPath = createFolderPath();
+sFolderPath = createDataFolderPath();
 
 % Check if there are changed files in the core or library folders since the
 % last execution of this script. If yes, then all tutorials have to be
@@ -43,6 +41,7 @@ sFolderPath = createFolderPath();
 % changed. I've also included the files in the base directory with core.
 bCoreChanged = checkForChanges('core');
 bLibChanged  = checkForChanges('lib');
+%TODO: only |vhab.m| should ever be of interest, so handle it separately
 bVHABChanged = checkVHABFiles();
 
 % Being a UI nerd, I needed to produce a nice dynamic user message here. 
@@ -80,7 +79,7 @@ for iI = 1:length(tTutorials)
     % of this script. If not, we can just skip this one, because we already
     % know it works. Unless of course the core or the library has changed.
     % In this case, all tutorials will be executed.
-    if checkForChanges([sTutorialDirectory,tTutorials(iI).name]) || bLibChanged || bCoreChanged;
+    if checkForChanges(fullfile(sTutorialDirectory, tTutorials(iI).name)) || bLibChanged || bCoreChanged;
         
         % Some nice printing for the console output
         fprintf('\n\n======================================\n');
@@ -91,7 +90,7 @@ for iI = 1:length(tTutorials)
         
         % If the folder has a correctly named 'setup.m' file, we can go
         % ahead and try to execute it.
-        if exist([sTutorialDirectory,tTutorials(iI).name,filesep,'setup.m'],'file')
+        if exist(fullfile(sTutorialDirectory, tTutorials(iI).name, 'setup.m'), 'file')
             
             % First we construct the string that is the argument for the
             % vhab.exec() method.
@@ -197,33 +196,36 @@ iErrorCounter = 0;
 for iI = 1:length(tTutorials)
     if strcmp(tTutorials(iI).sStatus,'Aborted')
         fprintf('%s Tutorial Error Message:\n',strrep(tTutorials(iI).name,'+',''));
-        fprintf('%s\n\n',tTutorials(iI).sErrorReport);
+        fprintf(2, '%s\n\n',tTutorials(iI).sErrorReport);
         iErrorCounter = iErrorCounter + 1;
     end
 end
 if ~iErrorCounter; fprintf('None.\n\n'); end
 
 disp('======================================');
+disp('===== Finished running tutorials =====');
 disp('======================================');
 
 end
 
-function sFolderPath = createFolderPath()
+function sFolderPath = createDataFolderPath()
+    %createDataFolderPath  Generate a name for a folder in 'data/'
+    
     % Initializing the variables
     bSuccess      = false;
     iFolderNumber = 1;
     
     % Getting the current date for use in the folder name
-    sTimeStamp  = datestr(datetime('now'), 'yyyymmdd');
+    sTimeStamp  = datestr(now(), 'yyyymmdd');
     
     % Generating the base folder path for all figures
-    sBaseFolderPath = strrep('data/figures/','/',filesep);
+    sBaseFolderPath = fullfile('data', 'figures', 'Tutorials_Test');
     
     % We want to give the folder a number that doesn't exist yet. So we
     % start at 1 and work our way up until we find one that's not there
     % yet. 
     while ~bSuccess
-        sFolderPath = ['Tutorials_Test',filesep,sTimeStamp,'_Test_Run_',num2str(iFolderNumber)];
+        sFolderPath = fullfile(sBaseFolderPath, sprintf('%s_Test_Run_%i', sTimeStamp, iFolderNumber));
         if exist([sBaseFolderPath, sFolderPath],'dir')
             iFolderNumber = iFolderNumber + 1;
         else
@@ -254,37 +256,66 @@ function tOutputStruct = removeIllegalFilesAndFolders(tInputStruct)
     tOutputStruct(abIllegals > 0) = [];
 end
 
-function sOutput = cleanFieldName(sInput)
+function [sOutputName, varargout] = normalizePath(sInputPath, bUseNewSeparators)
+    %normalizePath  Convert a path to a form without special characters
     % Other than underscores, not much except letters is allowed in struct
     % field names. So this function cleans any input string and replaces
     % the illegal characters with legal ones. 
-    % For the @-folders it had to be something long and wierd, that would
-    % still be recognizable by the strsplit() method used to split the
-    % string into different struct and substruct names. 
-    sOutput = strrep(sInput,[filesep,'+'],'__');
-    sOutput = strrep(sOutput,[filesep,'@'],'_aaat_');
-    sOutput = strrep(sOutput,filesep,'_p_');
     
-    % Period ('.') characters are also not allowed, but the only ones that
-    % (should) be left, are the ones at the beginning of the file
-    % extensions. So we just replace the period and everything that
-    % follows afterwars with '_file'.
-    aiExtensionStartIndexes = strfind(sOutput,'.');
-    if ~isempty(aiExtensionStartIndexes)
-        csFileName = strsplit(sOutput,'.');
-        sOutput = [ csFileName{1},'_file'];
+    % Define magic separators.
+    %TODO: update callsites and drop second parameter
+    if nargin > 1 && bUseNewSeparators
+        tSeparators = struct('package', '__pkd_', 'class', '__clsd_', 'filesep', '__ds__');
+    else
+        tSeparators = struct('package', '__', 'class', '_aaat_', 'filesep', '_p_');
+    end
+    
+    % Make sure path starts with a file separator so we can identify
+    % package and class folders more easily (see below).
+    if ~strcmp(sInputPath(1), filesep)
+        sOutputName = [filesep, sInputPath];
+    else
+        sOutputName = sInputPath;
+    end
+    
+    % Replace package and class folder designators with special keywords.
+    % Preserve a prefix for @-folders so those folder names do not clash
+    % with files or packages that are named similarly.
+    sOutputName = strrep(sOutputName, [filesep,'+'], tSeparators.package);
+    sOutputName = strrep(sOutputName, [filesep,'@'], [tSeparators.class, 'at_']);
+    
+    % Drop any leading non-alphanumeric characters (e.g. UNC server paths),
+    % then replace all path separators.
+    sOutputName = regexprep(sOutputName, '^[^a-z0-9]*', '', 'ignorecase');
+    sOutputName = strrep(sOutputName, filesep, tSeparators.filesep);
+    
+    % Replace the file extension including its leading dot with something
+    % meaningful. Then replace all other invalid characters with an
+    % underscore.
+    sOutputName = regexprep(sOutputName, '\.(\w+)$', '_$1_file');
+    sOutputName = regexprep(sOutputName, '[^a-z0-9_]', '_', 'ignorecase');
+    
+    % Make sure field name starts with a character, so just add a prefix if
+    % it does not.
+    sOutputName = regexprep(sOutputName, '^([^a-z])', 'p_$1', 'ignorecase');
+    
+    % Output the separator struct (optionally).
+    if nargout > 1
+        varargout = {tSeparators};
     end
     
 end
 
 
 function bChanged = checkForChanges(sFileOrFolderPath)
+    %checkForChanges  Check whether folder contains changed files
     % This function will check a given folder for changed files. The 
     % information when you last ran this function will be saved in a .mat 
     % file, so the function will only search for newer files until it has 
     % found one and then return a true or false.
     % This function will be called recursively and during the recursions
     % the input parameter may be a file name. 
+    %TODO: skip uninteresting files like images (PNG, JPG, ...)
     
     % Initializing an empty struct. This will contain all of the file
     % information. 
@@ -293,19 +324,20 @@ function bChanged = checkForChanges(sFileOrFolderPath)
     % This is mainly just to save some space in the following code, but it
     % also defines the file name we will use to store the tSavedInfo
     % struct. 
-    sSavePath  = strrep('data/FolderStatus.mat','/',filesep);
+    sSavePath  = fullfile('data', 'FolderStatus.mat');
     
     % Load the information from when we last executed this check or create
     % a new variable that we can later save.
-    if exist(sSavePath, 'file')
+    if exist(sSavePath, 'file') ~= 0
         % The file already exists so we can load it
         load(sSavePath);
         
-        % Make sure, the string is cleaned up and doesn't contain any
+        % Make sure the string is cleaned up and doesn't contain any
         % illegal characters that can't be used as field names
-        sFileOrFolderString = cleanFieldName(sFileOrFolderPath);
+        sFileOrFolderString = normalizePath(sFileOrFolderPath);
         
         % Splitting the string into a cell array
+        %TODO: |normalizePath| preserves a prefix so no hack required here
         csFieldNames = strsplit(sFileOrFolderString, {'__', '_aa', '_p_'});
         
         % If there is only one element in the array, this means that either
@@ -342,7 +374,7 @@ function bChanged = checkForChanges(sFileOrFolderPath)
                         % This is only executed if a new folder is added to
                         % the existing file that has files on the top
                         % level.
-                        sFileName = cleanFieldName(tInfo(iI).name);
+                        sFileName = normalizePath(tInfo(iI).name);
                         load(sSavePath);
                         tSavedInfo.(csFieldNames{1}).(sFileName) = tInfo(iI).datenum;
                         save(sSavePath,'tSavedInfo');
@@ -393,7 +425,7 @@ function bChanged = checkForChanges(sFileOrFolderPath)
         sStructString = ['tSavedInfo','.',sFieldNames];
         
         % Make sure that the field name is clean
-        sFieldName = cleanFieldName(csFieldNames{end});
+        sFieldName = normalizePath(csFieldNames{end});
         
         % Now we can check if the field already exists.
         if ~isfield(eval(sStructString),sFieldName)
@@ -476,7 +508,7 @@ function bChanged = checkForChanges(sFileOrFolderPath)
         % is no .mat file present.
         % First we need to clean up the folder name to make sure, it is
         % suitable for use as a struct field name.
-        sFieldName = cleanFieldName(sFileOrFolderPath);
+        sFieldName = normalizePath(sFileOrFolderPath);
         % Creating the struct in our main tSavedInfo struct.
         tSavedInfo = struct(sFieldName,struct());
         % Since this is all about running the tutorials, we create the
@@ -504,7 +536,7 @@ function bChanged = checkForChanges(sFileOrFolderPath)
                 % The item we're looking at is a file, so we'll cleanup the
                 % file name and create a new item in the struct in which we
                 % can save the changed date for this file. 
-                sFileName = cleanFieldName(tInfo(iI).name);
+                sFileName = normalizePath(tInfo(iI).name);
                 load(sSavePath);
                 tSavedInfo.(sFieldName).(sFileName) = tInfo(iI).datenum;
                 save(sSavePath,'tSavedInfo');
@@ -517,6 +549,7 @@ function bChanged = checkForChanges(sFileOrFolderPath)
 end
 
 function bChanged = checkVHABFiles()
+    %TODO: |vhab.m| should be the only file in root, so only check this one
     % Since we can't call this function from outside the V-HAB base
     % folder and this function would then catalog the entire directory,
     % we'll add a virtual folder here so we can still check the few files
@@ -535,7 +568,7 @@ function bChanged = checkVHABFiles()
     
     for iI = 1:length(tInfo)
         if ~tInfo(iI).isdir
-            sFileName = cleanFieldName(tInfo(iI).name);
+            sFileName = normalizePath(tInfo(iI).name);
             if isfield(tSavedInfo,sFileName)
                 if tSavedInfo.(sFileName) < tInfo(iI).datenum
                     tSavedInfo.(sFileName) = tInfo(iI).datenum;
