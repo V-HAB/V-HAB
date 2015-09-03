@@ -78,19 +78,8 @@ classdef pipe < matter.procs.f2f
         end
         
         %% Update function for callback solver
-        function fDeltaPress = solverDeltas(this, fFlowRate)
+        function fDeltaPress = solverDeltas(this, fFlowRate, fDensity, fDynamicViscosity)
             
-
-            try
-                [oFlowIn, ~ ]=this.getFlows();
-                fDynamicViscosity = this.oMT.calculateDynamicViscosity(oFlowIn);
-                fDensity = this.oMT.calculateDensity(oFlowIn);
-            catch
-                fDynamicViscosity = 1e-6;
-                fDensity = 1;
-            end
-
-
             fFlowSpeed = abs(fFlowRate/(fDensity*pi*0.25*this.fDiameter^2));
 
             fDeltaPress = pressure_loss_pipe(this.fDiameter, this.fLength,...

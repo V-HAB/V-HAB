@@ -646,8 +646,8 @@ classdef system_incompressible_liquid
                 for Step = 1:this.iPartSteps
                     for m = 1:length(this.cPhaseNames)
                         mNewStoreMass(this.sConectivityMatrix.(this.cPhaseNames{m})) = mPhaseMass(this.sConectivityMatrix.(this.cPhaseNames{m}))...
-                            + (sum(this.sConectivityMatrix.(this.cPhaseNames{m})(:,2) .* sum(mMassFlowStep(:,1:Step).*mTimePerStep(1:Step)) + ...
-                            this.sConectivityMatrix.(this.cPhaseNames{m})(:,1) .* -sum(mMassFlowStep(:,1:Step).*mTimePerStep(1:Step))));
+                            + (sum(this.sConectivityMatrix.(this.cPhaseNames{m})(:,2) .* (mMassFlowStep(:,1:Step)*mTimePerStep(1:Step)') + ...
+                            this.sConectivityMatrix.(this.cPhaseNames{m})(:,1) .* -(mMassFlowStep(:,1:Step)*mTimePerStep(1:Step)')));
 
                         mNewStoreMass(this.sConectivityMatrix.(this.cPhaseNames{m})) = mNewStoreMass(this.sConectivityMatrix.(this.cPhaseNames{m}))+...
                             (tP2PFlowRate.(this.cPhaseNames{m})*sum(mTimePerStep(1:Step)));
@@ -688,7 +688,7 @@ classdef system_incompressible_liquid
                     for k = 1:this.iNumberOfBranches
                         try 
                             for n = 1:length(this.oSystem.aoBranches(k).aoFlowProcs)
-                                mPressureLossPredictor(k) = mPressureLossPredictor(k)+this.oSystem.aoBranches(k).aoFlowProcs(n).solverDeltas(mMassFlowStep(k,Step));
+                                mPressureLossPredictor(k) = mPressureLossPredictor(k)+this.oSystem.aoBranches(k).aoFlowProcs(n).solverDeltas(mMassFlowStep(k,Step), mNewBranchDensities(k), mBranchViscosities(k));
                             end
                         catch
                             mPressureLossNew(k) = pressure_loss_pipe(sqrt(this.mBranchArea(k)/(0.25*pi)), 1/this.mInverseBranchLength(k),...
