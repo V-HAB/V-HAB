@@ -67,12 +67,8 @@ classdef system_incompressible_liquid
         %require more computations.
         fMaxProcentualFlowSpeedChange = 1e-3;
         
-        %the maximum number of loops used in the iterative predictor 
-        %corrector scheme. With a higher number of loops the solver will be
-        %closer to the actual mass flow values for each time step and
-        %therefore prevent oscillations and other instabilities in the
-        %solver.
-        iMaxLoops = 100;
+        %number of internal partial time steps within the solver
+        iPartSteps = 10;
         
         %contains the values for the last calculated mass flows for each
         %branch of the system solver. They are in the same order as the
@@ -214,7 +210,7 @@ classdef system_incompressible_liquid
         %%
         %definition of the branch and the possible input values.
         %For explanation about the values see initial comment section.
-        function this = system_incompressible_liquid(oSystem, fMinTimeStep, fMaxTimeStep, fMaxProcentualFlowSpeedChange, iMaxLoops, iLastSystemBranch, fSteadyStateTimeStep, mLoopBranches)  
+        function this = system_incompressible_liquid(oSystem, fMinTimeStep, fMaxTimeStep, fMaxProcentualFlowSpeedChange, iPartialSteps, iLastSystemBranch, fSteadyStateTimeStep, mLoopBranches)  
             
             %sets the parent system for which the system solver provides
             %mass flow calculations
@@ -290,7 +286,7 @@ classdef system_incompressible_liquid
             this.fMaxTimeStep = fMaxTimeStep;
             
             this.fMaxProcentualFlowSpeedChange = fMaxProcentualFlowSpeedChange;
-            this.iMaxLoops = iMaxLoops;
+            this.iPartSteps = iPartialSteps;
             %Each entry of the mInverseBranchLength vector contains the inverse
             %value of the overall length of all components of the
             %respective branch
@@ -528,24 +524,22 @@ classdef system_incompressible_liquid
                 %% Time Step calculation 
                 %the assumed ranged in which the flow speed is allowed to
                 %move
-                mFlowSpeedHigh = this.mFlowSpeedOld.*(1+this.fMaxProcentualFlowSpeedChange);
+                mFlowSpeedHigh = abs(this.mFlowSpeedOld).*(1+this.fMaxProcentualFlowSpeedChange);
 
                 %if the old flow rate is 0 the assumption is that new
-                %highest flow rate is 1g/s and the lowest -1g/s.
-                mFlowSpeedHigh(mFlowSpeedHigh==0) = 1e-3;
+                %highest flow speed is 1 m/s. Also the minimum allowed
+                %absolute flow speed change is 1 m/s
+                mFlowSpeedHigh(mFlowSpeedHigh <= 1) = mFlowSpeedHigh(mFlowSpeedHigh <= 1) + 1;
 
                 mStep = zeros(length(this.mFlowSpeedOld(this.mBranchArea ~= 0)),1);
-                mStep(:,1) = abs((mFlowSpeedHigh(this.mBranchArea ~= 0) - this.mFlowSpeedOld(this.mBranchArea ~= 0))./mAccelerationNew(this.mBranchArea ~= 0));
+                mStep(:,1) = abs((mFlowSpeedHigh(this.mBranchArea ~= 0) - abs(this.mFlowSpeedOld(this.mBranchArea ~= 0)))./mAccelerationNew(this.mBranchArea ~= 0));
                 
                 fTimeStepOld = this.fTimeStepSystem;
-                %limits the maximum increase of the timestep within one
-                    %tick
-                    if min(mStep(mStep > 0)) > (1.01*fTimeStepOld)
-                        this.fTimeStepSystem = 1.01*fTimeStepOld;
-                    else
-                        %gets the smallest positiv non NaN step
-                        this.fTimeStepSystem = min(mStep(mStep > 0));
-                    end
+                %gets the smallest positiv non NaN step
+                this.fTimeStepSystem = min(mStep(mStep > 0));
+                if this.fTimeStepSystem > 1.1*fTimeStepOld
+                    this.fTimeStepSystem = 1.1*fTimeStepOld;
+                end
                 %in case the time step is outside of the user specified
                 %boundaries it gets reset to the boundary
                 if this.fTimeStepSystem > this.fMaxTimeStep
@@ -561,10 +555,11 @@ classdef system_incompressible_liquid
                         this.mMassFlowOld(k,end) = 0;
                     end
                 end
+                
 
                 %% calculates the new mass flow
                 mMassFlowNew = (mDeltaPressureBranchesWithLoss.*this.mInverseBranchLength)...
-                            .*this.mBranchArea*this.fTimeStepSystem+this.mMassFlowOld(:,end);
+                            .*this.mBranchArea*(this.fTimeStepSystem/this.iPartSteps)+this.mMassFlowOld(:,end);
                    
                 %The pressure loss is not allowed to act as a driving
                 %force, which means that if the flow speed is small the
@@ -623,7 +618,6 @@ classdef system_incompressible_liquid
                         end
                     end
                 end
-
                 %% predictor corrector calculation
                 %calculates the predicted new store masses and from those
                 %the new pressures. Also predicts the pressure loss in the
@@ -635,27 +629,34 @@ classdef system_incompressible_liquid
                 %mass flow. Then the process is repeated until the mass
                 %flow has converged or the maximum number of steps has been
                 %reached.
-                this.iCounter = 0;
-                mMassFlowLoopOld = this.mMassFlowOld(:,end);
-                mAccelerationNewIteration = mAccelerationNew;
-                mMassFlowConvergence = zeros(this.iNumberOfBranches,this.iMaxLoops);
-                while (this.iCounter < 5) || ((max(abs(mMassFlowLoopOld - mMassFlowNew)) > 1e-10) && (this.iCounter < this.iMaxLoops))
-                    mNewStoreMass = zeros(this.iNumberOfBranches,2);
-                    %calculates the new store masses using the current mass
-                    %flow calculated for this time step
+                
+                mNewStoreMass = zeros(this.iNumberOfBranches,2);
+                %calculates the new store masses using the current mass
+                %flow calculated for this time step
+                mAccelerationPredictor = zeros(this.iNumberOfBranches, this.iPartSteps);
+                mMassFlowStep = zeros(this.iNumberOfBranches, this.iPartSteps);
+                mTimePerStep = zeros(1, this.iPartSteps);
+                mTimePerStep(1,1) = this.fTimeStepSystem/this.iPartSteps;
+                mMassFlowStep(:,1) = mMassFlowNew;
+                mFlowSpeedStep = zeros(this.iNumberOfBranches, this.iPartSteps);
+                %TO DO: Improve this part steps calculation to become
+                %more efficient. There are quite a few steps within
+                %this that do not have to be executed for each part
+                %step
+                for Step = 1:this.iPartSteps
                     for m = 1:length(this.cPhaseNames)
                         mNewStoreMass(this.sConectivityMatrix.(this.cPhaseNames{m})) = mPhaseMass(this.sConectivityMatrix.(this.cPhaseNames{m}))...
-                            + (sum(this.sConectivityMatrix.(this.cPhaseNames{m})(:,2) .* (mMassFlowNew) + ...
-                            this.sConectivityMatrix.(this.cPhaseNames{m})(:,1) .* -(mMassFlowNew))*this.fTimeStepSystem);
-                        
+                            + (sum(this.sConectivityMatrix.(this.cPhaseNames{m})(:,2) .* sum(mMassFlowStep(:,1:Step).*mTimePerStep(1:Step)) + ...
+                            this.sConectivityMatrix.(this.cPhaseNames{m})(:,1) .* -sum(mMassFlowStep(:,1:Step).*mTimePerStep(1:Step))));
+
                         mNewStoreMass(this.sConectivityMatrix.(this.cPhaseNames{m})) = mNewStoreMass(this.sConectivityMatrix.(this.cPhaseNames{m}))+...
-                            (tP2PFlowRate.(this.cPhaseNames{m})*this.fTimeStepSystem);
+                            (tP2PFlowRate.(this.cPhaseNames{m})*sum(mTimePerStep(1:Step)));
                     end 
 
                     %the pressure change in the stores is assumed to be
                     %proportional to the mass change in the stores
-                    mPressureChangeRatio(:,1) = mPhaseMass(:,1)./mNewStoreMass(:,1);
-                    mPressureChangeRatio(:,2) = mPhaseMass(:,1)./mNewStoreMass(:,1);
+                    mPressureChangeRatio(:,1) = mNewStoreMass(:,1)./mPhaseMass(:,1);
+                    mPressureChangeRatio(:,2) = mNewStoreMass(:,2)./mPhaseMass(:,2);
 
                     %calculates the new store densities and from those the
                     %new branch densities
@@ -667,11 +668,11 @@ classdef system_incompressible_liquid
                     %calculates the current and the new flow speed in the
                     %branches
                     mFlowSpeed = this.mMassFlowOld(:,end) ./ (this.mBranchDensities.*this.mBranchArea);
-                    mFlowSpeedNew = mMassFlowNew ./ (mNewBranchDensities.*this.mBranchArea);
-                    
+                    mFlowSpeedStep(:,Step) = mMassFlowStep(:,Step) ./ (mNewBranchDensities.*this.mBranchArea);
+
                     mBranchViscosities = zeros(this.iNumberOfBranches,1);
-                    mBranchViscosities(mAccelerationNewIteration >= 0) = mDynamicViscosity((mAccelerationNewIteration >= 0),1);
-                    mBranchViscosities(mAccelerationNewIteration < 0) = mDynamicViscosity((mAccelerationNewIteration < 0),2);
+                    mBranchViscosities(this.mFlowSpeedOld >= 0) = mDynamicViscosity((this.mFlowSpeedOld >= 0),1);
+                    mBranchViscosities(this.mFlowSpeedOld < 0) = mDynamicViscosity((this.mFlowSpeedOld < 0),2);
 
                     %predicts the pressure loss by assuming that the
                     %branches are simple pipes and calculating the pressure
@@ -683,36 +684,42 @@ classdef system_incompressible_liquid
                     %in the branches.
                     mPressureLossNew = zeros(this.iNumberOfBranches,1);
                     mPressureLossPipeOld = zeros(this.iNumberOfBranches,1);
+                    mPressureLossPredictor = zeros(this.iNumberOfBranches,1);
                     for k = 1:this.iNumberOfBranches
-                        mPressureLossNew(k) = pressure_loss_pipe(sqrt(this.mBranchArea(k)/(0.25*pi)), 1/this.mInverseBranchLength(k),...
-                                    mFlowSpeedNew(k), mBranchViscosities(k), mNewBranchDensities(k), 0.0002, 0);
-                        mPressureLossPipeOld(k) = pressure_loss_pipe(sqrt(this.mBranchArea(k)/(0.25*pi)), 1/this.mInverseBranchLength(k),...
-                                    mFlowSpeed(k), mBranchViscosities(k), mNewBranchDensities(k), 0.0002, 0);
+                        try 
+                            for n = 1:length(this.oSystem.aoBranches(k).aoFlowProcs)
+                                mPressureLossPredictor(k) = mPressureLossPredictor(k)+this.oSystem.aoBranches(k).aoFlowProcs(n).solverDeltas(mMassFlowStep(k,Step));
+                            end
+                        catch
+                            mPressureLossNew(k) = pressure_loss_pipe(sqrt(this.mBranchArea(k)/(0.25*pi)), 1/this.mInverseBranchLength(k),...
+                                        mFlowSpeedStep(k,Step), mBranchViscosities(k), mNewBranchDensities(k), 0.0002, 0);
+                            mPressureLossPipeOld(k) = pressure_loss_pipe(sqrt(this.mBranchArea(k)/(0.25*pi)), 1/this.mInverseBranchLength(k),...
+                                        mFlowSpeed(k), mBranchViscosities(k), mNewBranchDensities(k), 0.0002, 0);
+                            if mPressureLossPipeOld < 1e-3 
+                                %if the old pressure loss is close to zero the
+                                %calculation for the pressure loss predictor would
+                                %contain something that comes close to a division
+                                %through 0, therefore in this case the predicted
+                                %pressure is assumed to be the acutal old pressure
+                                %loss
+                                mPressureLossPredictor(k) = this.mPressureLoss(k);
+                            else
+                                mPressureLossPredictor(k) = (this.mPressureLoss(k)*(mPressureLossNew(k)/mPressureLossPipeOld(k)));
+                            end
+                        end
                     end
-                    if mPressureLossPipeOld < 1e-3 
-                        %if the old pressure loss is close to zero the
-                        %calculation for the pressure loss predictor would
-                        %contain something that comes close to a division
-                        %through 0, therefore in this case the predicted
-                        %pressure is assumed to be the acutal old pressure
-                        %loss
-                        mPressureLossPredictor = this.mPressureLoss;
-                    else
-                        mPressureLossChangeRatio = mPressureLossNew./mPressureLossPipeOld;
-                        mPressureLossChangeRatio(isnan(mPressureLossChangeRatio)) = 0;
-                        mPressureLossChangeRatio(isinf(mPressureLossChangeRatio)) = 0;
+                    mPressureLossPredictor(isnan(mPressureLossPredictor)) = 0;
+                    mPressureLossPredictor(isinf(mPressureLossPredictor)) = 0;
 
-                        mPressureLossPredictor = (this.mPressureLoss.*mPressureLossChangeRatio);
-                    end
-                    
+
                     mPhasePressuresPredictor = (this.mPhasePressures.*mPressureChangeRatio);
 
 
                     %calculates the PREDICTED delta pressure over the
                     %branches
                     mDeltaPressureBranchesPredictor = ((mPhasePressuresPredictor(:,1)-mPhasePressuresPredictor(:,2))+this.mDeltaPressureCompsTotal);
-                    
-                    
+
+
                     %The pressure loss has to act against the current flow
                     %direction. Therefore the sign of the old flow speed is
                     %multiplied with the (always positive) pressure loss and
@@ -720,75 +727,86 @@ classdef system_incompressible_liquid
                     %branches. Therefore for a negative flow speed the pressure
                     %loss acts as a positive pressure and vice versa.
                     mDeltaPressureBranchesWithLoss = mDeltaPressureBranches - (sign(this.mFlowSpeedOld).*this.mPressureLoss);
-                    mDeltaPressureBranchesWithLossPredictor = mDeltaPressureBranchesPredictor - (sign(this.mFlowSpeedOld).*mPressureLossPredictor);
-                    
+                    mDeltaPressureBranchesWithLossPredictor = mDeltaPressureBranchesPredictor - (sign(mFlowSpeedStep(:,Step)).*mPressureLossPredictor);
+
                     %acceleration that is predicted to act on the branches
                     %at the time t+delta t
-                    mAccelerationPredictor = (mDeltaPressureBranchesWithLossPredictor.*this.mInverseBranchLength) ./ mNewBranchDensities;
+                    mAccelerationPredictor(:,Step) = (mDeltaPressureBranchesWithLossPredictor.*this.mInverseBranchLength) ./ mNewBranchDensities;
 
-                    %the actual value for the acceleration that has to be used is
-                    %somewhere in between the two calculated values a(t)
-                    %and a(t+delta t)
-                    mAcceleration = (mAccelerationNew+mAccelerationPredictor)./2;
-                    
-                    %for the actual mass flow calculation the branch
-                    %densities also have to be averaged
-                    mMassFlowCorrected = mAcceleration.*((this.mBranchDensities+mNewBranchDensities)./2).*this.mBranchArea.*this.fTimeStepSystem+this.mMassFlowOld(:,end);
-                    
-                    %The pressure loss is not allowed to act as a driving
-                    %force, which means that if the flow speed is small the
-                    %maximum flow speed change the pressure loss is allowed to
-                    %creat is setting the flowrate down to zero!
-                    %TO DO: this needs a bit more work to ensure that the
-                    %pressure loss is just not acting as driving force
-                    bDirectionChange = (sign(this.mMassFlowOld(:,end)) ~= sign(mMassFlowCorrected));
-                    if max(bDirectionChange) == 1
-                        bPressureLossDriving = (sign(mDeltaPressureBranches) ~= sign(mDeltaPressureBranchesWithLoss));
-                        bSetFlowToZero = bPressureLossDriving+ bDirectionChange;
-                        bSetFlowToZero = bSetFlowToZero == 2;
-                        mMassFlowCorrected(bSetFlowToZero) = 0;
-                    end
-                
-                    mMassFlowLoopOld = mMassFlowNew;
-                    
-                    mMassFlowNew = (mMassFlowNew+mMassFlowCorrected)./2;
-                    
-                    mAccelerationNewIteration = mAcceleration;
-
-                    %% Time Step calculation 
-                    %the assumed range in which the flow speed is allowed to
+                    % Time Step calculation 
+                    %the assumed ranged in which the flow speed is allowed to
                     %move
-                    mFlowSpeedHigh = this.mFlowSpeedOld.*(1+this.fMaxProcentualFlowSpeedChange);
+                    mFlowSpeedHigh = abs(mFlowSpeedStep(:,Step)).*(1+(this.fMaxProcentualFlowSpeedChange/this.iPartSteps));
 
                     %if the old flow rate is 0 the assumption is that new
-                    %highest flow rate is 0.001m/s and the lowest -0.001m/s.
-                    mFlowSpeedHigh(mFlowSpeedHigh==0) = 1e-3;
+                    %highest flow speed is 1 m/s. Also the minimum allowed
+                    %absolute flow speed change is 1 m/s
+                    mFlowSpeedHigh(mFlowSpeedHigh <= 1) = mFlowSpeedHigh(mFlowSpeedHigh <= 1) + 1;
 
                     mStep = zeros(length(this.mFlowSpeedOld(this.mBranchArea ~= 0)),1);
-                    mStep(:,1) = abs((mFlowSpeedHigh(this.mBranchArea ~= 0) - this.mFlowSpeedOld(this.mBranchArea ~= 0))./mAcceleration(this.mBranchArea ~= 0));
-
-                    %limits the maximum increase of the timestep within one
-                    %tick
-                    if min(mStep(mStep > 0)) > (1.01*fTimeStepOld)
-                        this.fTimeStepSystem = 1.01*fTimeStepOld;
+                    if Step == 1
+                        mStep(:,1) = abs((mFlowSpeedHigh(this.mBranchArea ~= 0) - abs(this.mFlowSpeedOld(this.mBranchArea ~= 0)))./mAccelerationPredictor((this.mBranchArea ~= 0),Step));
                     else
-                        %gets the smallest positiv non NaN step
-                        this.fTimeStepSystem = min(mStep(mStep > 0));
+                        mStep(:,1) = abs((mFlowSpeedHigh(this.mBranchArea ~= 0) - abs(mFlowSpeedStep((this.mBranchArea ~= 0),Step-1)))./mAccelerationPredictor((this.mBranchArea ~= 0),Step));
+                    end
+                    %gets the smallest positiv non NaN step
+                    mTimePerStep(Step+1) = min(mStep(mStep > 0));
+                    if mTimePerStep(Step+1) > 2*mTimePerStep(Step)
+                        mTimePerStep(Step+1) = 2*mTimePerStep(Step);
+                    end
+                    if mTimePerStep(Step+1) > this.fMaxTimeStep/this.iPartSteps
+                        mTimePerStep(Step+1) = this.fMaxTimeStep/this.iPartSteps;
+                    elseif mTimePerStep(Step+1) < this.fMinTimeStep/this.iPartSteps
+                        mTimePerStep(Step+1) = this.fMinTimeStep/this.iPartSteps;
                     end
 
-                    %in case the time step is outside of the user specified
-                    %boundaries it gets reset to the boundary
-                    if this.fTimeStepSystem > this.fMaxTimeStep
-                        this.fTimeStepSystem = this.fMaxTimeStep;
-                    elseif this.fTimeStepSystem < this.fMinTimeStep
-                        this.fTimeStepSystem = this.fMinTimeStep;
+                    mMassFlowStep(:,Step+1) = mAccelerationPredictor(:,Step).*mNewBranchDensities.*this.mBranchArea.*(mTimePerStep(Step))+mMassFlowStep(:,(Step));
+
+                    bDirectionChange = (sign(this.mMassFlowOld(:,end)) ~= sign(mMassFlowStep(:,Step+1)));
+                    if max(bDirectionChange) == 1
+                        bPressureLossDriving = (sign(mDeltaPressureBranchesPredictor) ~= sign(mDeltaPressureBranchesWithLossPredictor));
+                        bSetFlowToZero = bPressureLossDriving+ bDirectionChange;
+                        bSetFlowToZero = bSetFlowToZero == 2;
+                        mMassFlowStep(bSetFlowToZero,Step+1) = 0;
                     end
 
-                    %just for debugging purpose
-                    mMassFlowConvergence(:,this.iCounter+1) =  mMassFlowNew;
-
-                    this.iCounter = this.iCounter+1;
                 end
+
+                mMassFlowSum = zeros(this.iNumberOfBranches, 1);
+                mAccelerationSum = zeros(this.iNumberOfBranches, 1);
+                for Step = 1:this.iPartSteps
+                    mMassFlowSum = mMassFlowSum + (mMassFlowStep(:,Step).*mTimePerStep(Step));
+                    mAccelerationSum = mAccelerationSum+(mAccelerationPredictor(:,Step).*mTimePerStep(Step));
+                end
+                mMassFlowSum = mMassFlowSum + (mMassFlowStep(:,this.iPartSteps+1).*mTimePerStep(this.iPartSteps+1));
+
+                mMassFlowNew = ((mMassFlowSum)./sum(mTimePerStep));
+                mAcceleration = ((mAccelerationSum)./sum(mTimePerStep(1:this.iPartSteps)));
+
+                %The pressure loss is not allowed to act as a driving
+                %force, which means that if the flow speed is small the
+                %maximum flow speed change the pressure loss is allowed to
+                %creat is setting the flowrate down to zero!
+                %TO DO: this needs a bit more work to ensure that the
+                %pressure loss is just not acting as driving force
+                bDirectionChange = (sign(this.mMassFlowOld(:,end)) ~= sign(mMassFlowNew));
+                if max(bDirectionChange) == 1
+                    bPressureLossDriving = (sign(mDeltaPressureBranches) ~= sign(mDeltaPressureBranchesWithLoss));
+                    bSetFlowToZero = bPressureLossDriving+ bDirectionChange;
+                    bSetFlowToZero = bSetFlowToZero == 2;
+                    mMassFlowNew(bSetFlowToZero) = 0;
+                end
+
+                this.fTimeStepSystem = sum(mTimePerStep);
+
+                %in case the time step is outside of the user specified
+                %boundaries it gets reset to the boundary
+                if this.fTimeStepSystem > this.fMaxTimeStep
+                    this.fTimeStepSystem = this.fMaxTimeStep;
+                elseif this.fTimeStepSystem < this.fMinTimeStep
+                    this.fTimeStepSystem = this.fMinTimeStep;
+                end
+
                 
                 %TO DO: Delete once finished, this is debugging check used
                 %during development

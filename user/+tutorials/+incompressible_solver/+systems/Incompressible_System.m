@@ -239,32 +239,52 @@ classdef Incompressible_System < vsys
             this.addProcF2F(tutorials.incompressible_solver.components.fan(this.oData.oMT, 'Fan_1', 1e4, 1));
             
             oBranch1 = this.createBranch('Tank_1.Port_Out1', {'Pipe_1', 'Fan_1'}, 'Tank_2.Port_In1');
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch1);
             
             oBranch2 = this.createBranch('Tank_2.Port_Out1', {'Pipe_2'}, 'Tank_3.Port_In1');
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch2);
             
             oBranch3 = this.createBranch('Tank_3.Port_Out1', {'Pipe_3'}, 'Tank_4.Port_In1');
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch3);
             
             oBranch4 = this.createBranch('Tank_4.Port_Out1', {'Pipe_4'}, 'Tank_1.Port_In1');
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch4);
             
             oBranch5 = this.createBranch('Tank_5.Port_Out1', {'Pipe_5'}, 'Tank_6.Port_In1');
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch5);
             
             oBranch6 = this.createBranch('Tank_6.Port_Out1', {'Pipe_6'}, 'Tank_7.Port_In1');
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch6);
             
             oBranch7 = this.createBranch('Tank_3.Port_Out2', {'Pipe_7'}, 'Tank_8.Port_In1');
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch7);
             
             oBranch8 = this.createBranch('Tank_8.Port_Out1', {'Pipe_8'}, 'Tank_1.Port_In2');
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch8);
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
             this.seal();
+            
+            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch1);
+            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch2);
+            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch3);
+            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch4);
+            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch5);
+            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch6);
+            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch7);
+            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch8);
+
+%             solver.matter.linear.branch(oBranch1);
+%             solver.matter.linear.branch(oBranch2);
+%             solver.matter.linear.branch(oBranch3);
+%             solver.matter.linear.branch(oBranch4);
+%             solver.matter.linear.branch(oBranch5);
+%             solver.matter.linear.branch(oBranch6);
+%             solver.matter.linear.branch(oBranch7);
+%             solver.matter.linear.branch(oBranch8);
+
+%             rMaxChange = 1e-3;
+%             solver.matter.iterative.branch(oBranch1, rMaxChange, rMaxChange);
+%             solver.matter.iterative.branch(oBranch2, rMaxChange, rMaxChange);
+%             solver.matter.iterative.branch(oBranch3, rMaxChange, rMaxChange);
+%             solver.matter.iterative.branch(oBranch4, rMaxChange, rMaxChange);
+%             solver.matter.iterative.branch(oBranch5, rMaxChange, rMaxChange);
+%             solver.matter.iterative.branch(oBranch6, rMaxChange, rMaxChange);
+%             solver.matter.iterative.branch(oBranch7, rMaxChange, rMaxChange);
+%             solver.matter.iterative.branch(oBranch8, rMaxChange, rMaxChange);
         end
     end
     

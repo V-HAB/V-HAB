@@ -7,8 +7,8 @@ classdef fan < matter.procs.f2f
     end
     
     properties (SetAccess = protected, GetAccess = public)
-        fDiameter = 0.1;        % diameter
-        fLength = 0;            % Length of the component
+        fDiameter = 1;        % diameter
+        fLength = 0.1;            % Length of the component
         fDeltaTemp = 0;         % This fan model does not include temperature changes
         bActive = true;         % Must be true so the update function is called from the branch solver
     end
@@ -20,13 +20,18 @@ classdef fan < matter.procs.f2f
             this.fDeltaPressure = fMaxDeltaP;
             this.iDir = iDir;
             
-            this.supportSolver('hydraulic', this.fDiameter, this.fLength);
+            this.supportSolver('hydraulic', this.fDiameter, this.fLength, this.fDeltaPressure, @this.solverDeltas);
+            this.supportSolver('callback',  @this.solverDeltas);
 
         end
         
         %% Update function for hydraulic solver
-        function update(this)
+        function update(~)
             %constant pressure rise, so nothing is updated
+        end
+        %% Update function for callback solver
+        function fDeltaPress = solverDeltas(this, ~)
+            fDeltaPress = this.fDeltaPressure;
         end
     end
     

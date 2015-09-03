@@ -89,11 +89,14 @@ classdef Two_Tanks < vsys
             this.addProcF2F(tutorials.incompressible_solver.components.pipe(this.oData.oMT, 'Pipe_1', 1.0, 0.01, 0.0002));
             
             oBranch1 = this.createBranch('Tank_1.Port_Out1', {'Pipe_1'}, 'Tank_2.Port_In1');
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch1);
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
             this.seal();
+            
+            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch1);
+            
+%             solver.matter.iterative.branch(oBranch1);
         end
     end
     
