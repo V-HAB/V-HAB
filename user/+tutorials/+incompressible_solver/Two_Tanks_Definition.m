@@ -16,7 +16,7 @@ classdef Two_Tanks_Definition < simulation
             %to calculate the branches
             
             iIncompBranches = 1;
-            oTwo_Tanks.oSystemSolver = solver.matter.incompressible_liquid.system_incompressible_liquid(oTwo_Tanks, 5, 5, 1e-1, 300, iIncompBranches, 100);
+            oTwo_Tanks.oSystemSolver = solver.matter.incompressible_liquid.system_incompressible_liquid(oTwo_Tanks, 5, 5, 1e-1, 300, iIncompBranches, 100, 10);
            
             
             % What to log?

@@ -21,7 +21,7 @@ classdef Incompressible_System_Definition < simulation
             %required for the steady state calculation to set viable steady
             %state flowrates that allow high time steps.
             mLoopBranches = [1;2;3;4;7;8];
-            oIncompressible_System.oSystemSolver = solver.matter.incompressible_liquid.system_incompressible_liquid(oIncompressible_System, 1e-2, 5, 1e-1, 30, iIncompBranches, 10, mLoopBranches);
+            oIncompressible_System.oSystemSolver = solver.matter.incompressible_liquid.system_incompressible_liquid(oIncompressible_System, 1e-2, 5, 1e-1, 30, iIncompBranches, 10, 10, mLoopBranches);
            
             
             % What to log?

@@ -204,13 +204,18 @@ classdef system_incompressible_liquid
         %loop
         mLoopBranches;
         fSteadyStateTimeStep;
+        
+        %If the acceleration within all branches of this system is lower
+        %than this value for a few steps in a row the solver will switch to
+        %steady state calculations.
+        fSteadyStateAcceleration = 10;
     end
 
     methods 
         %%
         %definition of the branch and the possible input values.
         %For explanation about the values see initial comment section.
-        function this = system_incompressible_liquid(oSystem, fMinTimeStep, fMaxTimeStep, fMaxProcentualFlowSpeedChange, iPartialSteps, iLastSystemBranch, fSteadyStateTimeStep, mLoopBranches)  
+        function this = system_incompressible_liquid(oSystem, fMinTimeStep, fMaxTimeStep, fMaxProcentualFlowSpeedChange, iPartialSteps, iLastSystemBranch, fSteadyStateTimeStep, fSteadyStateAcceleration, mLoopBranches)  
             
             %sets the parent system for which the system solver provides
             %mass flow calculations
@@ -222,6 +227,9 @@ classdef system_incompressible_liquid
             
             this.fSteadyStateTimeStep = fSteadyStateTimeStep;
             if nargin == 8
+                this.fSteadyStateAcceleration = fSteadyStateAcceleration;
+            elseif nargin == 9
+                this.fSteadyStateAcceleration = fSteadyStateAcceleration;
                 this.mLoopBranches = mLoopBranches;
             end
         
@@ -465,10 +473,10 @@ classdef system_incompressible_liquid
             
             %checks if steady state can still be applied
             if this.bSteadyState == 1
-                if (max(abs(this.mPhasePressuresOld(:,1) - this.mPhasePressures(:,1))) > 10) ||...
-                   (max(abs(this.mPhasePressuresOld(:,2) - this.mPhasePressures(:,2))) > 10) ||...
-                   (max(abs(this.mDeltaPressureCompsTotalOld - this.mDeltaPressureCompsTotal)) > 10) ||...
-                   (max(abs(this.mPressureLossOld - this.mPressureLoss)) > 10) ||...
+                if (max(abs(this.mPhasePressuresOld(:,1) - this.mPhasePressures(:,1))) > 500) ||...
+                   (max(abs(this.mPhasePressuresOld(:,2) - this.mPhasePressures(:,2))) > 500) ||...
+                   (max(abs(this.mDeltaPressureCompsTotalOld - this.mDeltaPressureCompsTotal)) > 100) ||...
+                   (max(abs(this.mPressureLossOld - this.mPressureLoss)) > 100) ||...
                    (max(abs(this.mDeltaTempCompsTotalOld - this.mDeltaTempCompsTotal)) > 0.1) ||...
                    (max(abs(this.mMinHydrDiamOld - this.mMinHydrDiam)) > 1e-4)
                
@@ -594,27 +602,37 @@ classdef system_incompressible_liquid
                     end
                 end
                 
-                %gets the flow rates from all p2p procs in the boundary
-                %phases in order to consider their influence when
-                %calculating the predicor corrector calculation
+                %TO DO: Get a more efficient calculation for the flow rates
+                %that are not part of the system solver.
+                tNonSystemFlowRate = struct();
                 for m = 1:length(this.cPhaseNames)
-                    %TO DO: This allocation has to be fixed in case the
-                    %store contains P2P procs that are not connected to the
-                    %phase that is adjacent to any of the solver branches.
-                    csProcsP2P = this.oSystem.toStores.(this.tStoreNames.(this.cPhaseNames{m})).csProcsP2P;
-                    tP2PFlowRate.(this.cPhaseNames{m}) = 0;
-                    for n = 1:length(csProcsP2P)
-                        fFlowRateP2P = this.oSystem.toStores.(this.tStoreNames.(this.cPhaseNames{m})).toProcsP2P.(csProcsP2P{n}).fFlowRate;
-                        sInName = this.oSystem.toStores.(this.tStoreNames.(this.cPhaseNames{m})).toProcsP2P.(csProcsP2P{n}).oIn.oPhase.sName;
-                        %the phase oIn for the P2P proc means in with
-                        %regard to the P2P procs, so for the phase if
-                        %it is labeled as In phase for the proc a
-                        %positive flow rate goes out with respect to
-                        %the phase
-                        if strcmp(sInName,  this.cPhaseNames{m})
-                            tP2PFlowRate.(this.cPhaseNames{m}) = tP2PFlowRate.(this.cPhaseNames{m}) - fFlowRateP2P;
-                        else
-                            tP2PFlowRate.(this.cPhaseNames{m}) = tP2PFlowRate.(this.cPhaseNames{m}) + fFlowRateP2P;
+                    
+                    %gets the index of the branches in the system
+                    %solver that are attached to this phase
+                    iBranches = find(this.sConectivityMatrix.(this.cPhaseNames{m})(:,1)+this.sConectivityMatrix.(this.cPhaseNames{m})(:,2));
+
+                    oBranches = this.oSystem.aoBranches(iBranches);
+                    csSystemEXME_Names = cell(length(iBranches),2);
+                    for k = 1:length(oBranches)
+                        csSystemEXME_Names{k,1} = oBranches(k).coExmes{1,1}.sName;
+                        csSystemEXME_Names{k,2} = oBranches(k).coExmes{2,1}.sName;
+                    end
+                    
+                    for k = 1:length(this.oSystem.toStores.(this.tStoreNames.(this.cPhaseNames{m})).aoPhases)
+                        if strcmp(this.oSystem.toStores.(this.tStoreNames.(this.cPhaseNames{m})).aoPhases(1,k).sName, this.cPhaseNames{m})
+                            oPhase = this.oSystem.toStores.(this.tStoreNames.(this.cPhaseNames{m})).aoPhases(1,k);
+                        end
+                    end
+                    tNonSystemFlowRate.(this.cPhaseNames{m}) = 0;
+                    for k = 1:length(oPhase.coProcsEXME)
+                        %Writes the flowrate for those EXMES that are not
+                        %part of the system solver into the non system flow
+                        %rate struct for this phase
+                        if max(strcmp(oPhase.coProcsEXME{1,k}.sName, csSystemEXME_Names)) == 0
+                            iSign = oPhase.coProcsEXME{1,k}.aiSign;
+                            fFlowRate = iSign * oPhase.coProcsEXME{1,k}.aoFlows.fFlowRate;
+                            
+                            tNonSystemFlowRate.(this.cPhaseNames{m}) = tNonSystemFlowRate.(this.cPhaseNames{m}) + fFlowRate;
                         end
                     end
                 end
@@ -650,7 +668,7 @@ classdef system_incompressible_liquid
                             this.sConectivityMatrix.(this.cPhaseNames{m})(:,1) .* -(mMassFlowStep(:,1:Step)*mTimePerStep(1:Step)')));
 
                         mNewStoreMass(this.sConectivityMatrix.(this.cPhaseNames{m})) = mNewStoreMass(this.sConectivityMatrix.(this.cPhaseNames{m}))+...
-                            (tP2PFlowRate.(this.cPhaseNames{m})*sum(mTimePerStep(1:Step)));
+                            ((tNonSystemFlowRate.(this.cPhaseNames{m}))*sum(mTimePerStep(1:Step)));
                     end 
 
                     %the pressure change in the stores is assumed to be
@@ -822,7 +840,7 @@ classdef system_incompressible_liquid
                 %% steady state check
                 % Steady state is assumed to be reached once the
                 % acceleration in all the branches is small
-                if max(abs(mAcceleration(this.mBranchArea ~= 0))) < 10
+                if max(abs(mAcceleration(this.mBranchArea ~= 0))) < this.fSteadyStateAcceleration
                     this.iSteadyStateCounter = this.iSteadyStateCounter+1;
                 else
                     this.iSteadyStateCounter = 0;
@@ -859,27 +877,35 @@ classdef system_incompressible_liquid
             else
                 this.fTimeStepSystem  = this.fSteadyStateTimeStep;
                 
-                %gets the flow rates from all p2p procs in the boundary
-                %phases in order to consider their influence when
-                %calculating the predicor corrector calculation
+                tNonSystemFlowRate = struct();
                 for m = 1:length(this.cPhaseNames)
-                    %TO DO: This allocation has to be fixed in case the
-                    %store contains P2P procs that are not connected to the
-                    %phase that is adjacent to any of the solver branches.
-                    csProcsP2P = this.oSystem.toStores.(this.tStoreNames.(this.cPhaseNames{m})).csProcsP2P;
-                    tP2PFlowRate.(this.cPhaseNames{m}) = 0;
-                    for n = 1:length(csProcsP2P)
-                        fFlowRateP2P = this.oSystem.toStores.(this.tStoreNames.(this.cPhaseNames{m})).toProcsP2P.(csProcsP2P{n}).fFlowRate;
-                        sInName = this.oSystem.toStores.(this.tStoreNames.(this.cPhaseNames{m})).toProcsP2P.(csProcsP2P{n}).oIn.oPhase.sName;
-                        %the phase oIn for the P2P proc means in with
-                        %regard to the P2P procs, so for the phase if
-                        %it is labeled as In phase for the proc a
-                        %positive flow rate goes out with respect to
-                        %the phase
-                        if strcmp(sInName,  this.cPhaseNames{m})
-                            tP2PFlowRate.(this.cPhaseNames{m}) = tP2PFlowRate.(this.cPhaseNames{m}) - fFlowRateP2P;
-                        else
-                            tP2PFlowRate.(this.cPhaseNames{m}) = tP2PFlowRate.(this.cPhaseNames{m}) + fFlowRateP2P;
+                    
+                    %gets the index of the branches in the system
+                    %solver that are attached to this phase
+                    iBranches = find(this.sConectivityMatrix.(this.cPhaseNames{m})(:,1)+this.sConectivityMatrix.(this.cPhaseNames{m})(:,2));
+
+                    oBranches = this.oSystem.aoBranches(iBranches);
+                    csSystemEXME_Names = cell(length(iBranches),2);
+                    for k = 1:length(oBranches)
+                        csSystemEXME_Names{k,1} = oBranches(k).coExmes{1,1}.sName;
+                        csSystemEXME_Names{k,2} = oBranches(k).coExmes{2,1}.sName;
+                    end
+                    
+                    for k = 1:length(this.oSystem.toStores.(this.tStoreNames.(this.cPhaseNames{m})).aoPhases)
+                        if strcmp(this.oSystem.toStores.(this.tStoreNames.(this.cPhaseNames{m})).aoPhases(1,k).sName, this.cPhaseNames{m})
+                            oPhase = this.oSystem.toStores.(this.tStoreNames.(this.cPhaseNames{m})).aoPhases(1,k);
+                        end
+                    end
+                    tNonSystemFlowRate.(this.cPhaseNames{m}) = 0;
+                    for k = 1:length(oPhase.coProcsEXME)
+                        %Writes the flowrate for those EXMES that are not
+                        %part of the system solver into the non system flow
+                        %rate struct for this phase
+                        if max(strcmp(oPhase.coProcsEXME{1,k}.sName, csSystemEXME_Names)) == 0
+                            iSign = oPhase.coProcsEXME{1,k}.aiSign;
+                            fFlowRate = iSign * oPhase.coProcsEXME{1,k}.aoFlows.fFlowRate;
+                            
+                            tNonSystemFlowRate.(this.cPhaseNames{m}) = tNonSystemFlowRate.(this.cPhaseNames{m}) + fFlowRate;
                         end
                     end
                 end
@@ -961,10 +987,24 @@ classdef system_incompressible_liquid
                     iMaxLoopFlowBranch = Helper(1);
                     
                     iOverallIndexMax = this.mLoopBranches(iMaxLoopFlowBranch,l);
+                    
                     %The maximum loop flow can now be set as first value
                     %into the mMassFlowNew variable as starting point for
                     %this loop
-                    mMassFlowNew(iOverallIndexMax) = mMaxLoopFlow(l);
+                    [LeftPhase, ~] = this.cPhaseNameMatrix{iOverallIndexMax,:};
+
+                    %Vector that contains 1 for each branch that comes
+                    %after this one in the overall notation
+                    bmFollowingBranches = this.sConectivityMatrix.(LeftPhase)(:,1);
+                    %Vector that contains the indices of the
+                    %following branches
+                    miIndexFollowingBranches = bmFollowingBranches;
+                    if length(miIndexFollowingBranches) > 1
+                        fSplitRatio = this.mMassFlowOld(iOverallIndexMax,end)/sum(this.mMassFlowOld(miIndexFollowingBranches,end));
+                    else
+                        fSplitRatio = 1;
+                    end
+                    mMassFlowNew(iOverallIndexMax) = mMaxLoopFlow(l) + tNonSystemFlowRate.(this.cPhaseNameMatrix{iOverallIndexMax,1})*fSplitRatio;
                     
                     iCounterForLoop = 0;
                     %TO DO: Find a better solution than a while loop and
@@ -1003,7 +1043,7 @@ classdef system_incompressible_liquid
                                         %to be known. If that is not the
                                         %case they are not set
                                         if max(mMassFlowNew(miIndexPreviousBranches) == 0) == 0
-                                            mMassFlowNew(miIndexFollowingBranches(k)) = sum(mMassFlowNew(miIndexPreviousBranches))*fSplitRatio;
+                                            mMassFlowNew(miIndexFollowingBranches(k)) = sum(mMassFlowNew(miIndexPreviousBranches))*fSplitRatio + tNonSystemFlowRate.(LeftPhase)*fSplitRatio;
                                         end
                                     end
                                 else
@@ -1013,7 +1053,7 @@ classdef system_incompressible_liquid
                                     %to be known. If that is not the
                                     %case they are not set
                                     if max(mMassFlowNew(miIndexPreviousBranches) == 0) == 0
-                                        mMassFlowNew(miIndexFollowingBranches) = sum(mMassFlowNew(miIndexPreviousBranches));
+                                        mMassFlowNew(miIndexFollowingBranches) = sum(mMassFlowNew(miIndexPreviousBranches)) + tNonSystemFlowRate.(LeftPhase);
                                     end
                                 end
                             end
@@ -1024,9 +1064,6 @@ classdef system_incompressible_liquid
                         end
                     end
                 end
-                
-                
-                
                 
                 % TO DO: Write a calculation that automatically decides how
                 % the branches are connected thus no longer requiring the
