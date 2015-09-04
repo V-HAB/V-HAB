@@ -842,7 +842,11 @@ classdef system_incompressible_liquid
                 %updates the flowprocs
                 for k = 1:this.iNumberOfBranches
                     for m = 1:this.iNumberOfProcs(k)
-                        this.oSystem.aoBranches(k).aoFlowProcs(1,m).update();
+                        try
+                            this.oSystem.aoBranches(k).aoFlowProcs(1,m).update();
+                        catch
+                            %if it cannot be update it cannot be updated
+                        end
                     end
                 end
                 
