@@ -14,11 +14,9 @@ classdef Two_Tanks_Definition < simulation
             warning('off', 'all');
             %for branch liquid the second entry is the number of cells used
             %to calculate the branches
-            %branch_liquid(oBranch, iCells, fPressureResidual, fMassFlowResidual, fCourantNumber, sCourantAdaption)
             
-            %system_incompressible_liquid(oSystem, sStores, fMinTimeStep, fMaxTimeStep, fMaxProcentualFlowSpeedChange, iLastSystemBranch)  
             iIncompBranches = 1;
-            oTwo_Tanks.oSystemSolver = solver.matter.incompressible_liquid.system_incompressible_liquid(oTwo_Tanks, 1e-1, 5, 1e-1, 20, iIncompBranches, 10);
+            oTwo_Tanks.oSystemSolver = solver.matter.incompressible_liquid.system_incompressible_liquid(oTwo_Tanks, 5, 5, 1e-1, 300, iIncompBranches, 100);
            
             
             % What to log?

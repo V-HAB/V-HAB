@@ -750,13 +750,18 @@ classdef system_incompressible_liquid
                         mStep(:,1) = abs((mFlowSpeedHigh(this.mBranchArea ~= 0) - abs(mFlowSpeedStep((this.mBranchArea ~= 0),Step-1)))./mAccelerationPredictor((this.mBranchArea ~= 0),Step));
                     end
                     %gets the smallest positiv non NaN step
-                    mTimePerStep(Step+1) = min(mStep(mStep > 0));
-                    if mTimePerStep(Step+1) > 2*mTimePerStep(Step)
-                        mTimePerStep(Step+1) = 2*mTimePerStep(Step);
-                    end
-                    if mTimePerStep(Step+1) > this.fMaxTimeStep/this.iPartSteps
-                        mTimePerStep(Step+1) = this.fMaxTimeStep/this.iPartSteps;
-                    elseif mTimePerStep(Step+1) < this.fMinTimeStep/this.iPartSteps
+                    try
+                        mTimePerStep(Step+1) = min(mStep(mStep > 0));
+                        if mTimePerStep(Step+1) > 2*mTimePerStep(Step)
+                            mTimePerStep(Step+1) = 2*mTimePerStep(Step);
+                        end
+                        if mTimePerStep(Step+1) > this.fMaxTimeStep/this.iPartSteps
+                            mTimePerStep(Step+1) = this.fMaxTimeStep/this.iPartSteps;
+                        elseif mTimePerStep(Step+1) < this.fMinTimeStep/this.iPartSteps
+                            mTimePerStep(Step+1) = this.fMinTimeStep/this.iPartSteps;
+                        end
+                    catch
+                        %if all steps are zero, it sets the minimum step
                         mTimePerStep(Step+1) = this.fMinTimeStep/this.iPartSteps;
                     end
 
@@ -817,7 +822,7 @@ classdef system_incompressible_liquid
                 %% steady state check
                 % Steady state is assumed to be reached once the
                 % acceleration in all the branches is small
-                if max(abs(mAcceleration(this.mBranchArea ~= 0))) < 5
+                if max(abs(mAcceleration(this.mBranchArea ~= 0))) < 10
                     this.iSteadyStateCounter = this.iSteadyStateCounter+1;
                 else
                     this.iSteadyStateCounter = 0;
