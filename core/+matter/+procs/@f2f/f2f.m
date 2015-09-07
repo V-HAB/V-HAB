@@ -153,7 +153,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
                 % method is protected, it can be called from outside
                 % through that! Wrap in anonymous function so no way to
                 % remove another flow.
-                [ iSign, thFlow ] = oFlow.addProc(this, @() this.removeFlow(oFlow));
+                [ iSign, ~ ] = oFlow.addProc(this, @() this.removeFlow(oFlow));
             
             catch oErr
                 % Reset back to default MF
