@@ -45,20 +45,12 @@ classdef exme < base
         % @type string
         sName;
         
-        % Connected matter flows
-        aoFlows = matter.flow.empty();
+        % Connected matter flow
+        oFlow = matter.flow.empty();
         
         % See @matter.procs.f2f
-        aiSign;
-        
-        
-        % Store in .extract for later use
-        %arPartials;
-        
-        
-        % TESTS - Pressures for merge
-        %fPressureMerge   = 0;
-        %fPressureExtract = 0;
+        iSign;
+
     end
     
     
@@ -96,48 +88,32 @@ classdef exme < base
             if this.oPhase.oStore.bSealed
                 this.throw('addFlow', 'The store to which this processors phase belongs is sealed, so no ports can be added any more.');
             
-            elseif ~isempty(this.aoFlows) && ~strcmp(this.sName, 'default')
-                this.throw('addFlow', 'Only procs with the name ''default'' can handle several MFs ...');
-            
-            % .p2p but not a .p2ps.flow? Can only connect .flow P2P proc!
-            %CHECK nope ... also stationary p2ps have to dock somewhere ...
-            %elseif ~isa(oFlow, 'matter.procs.p2ps.flow') && isa(oFlow, 'matter.procs.p2p')
-            %    this.throw('addFlow', 'A p2p processor connected to an EXME needs to inherit from matter.procs.p2ps.flow!');
-            
-            % Of p2p, only one flow can be connected, i.e. name cannot be
-            % 'default' (which allows several flows)
-            elseif isa(oFlow, 'matter.procs.p2ps.flow') && strcmp(this.sName, 'default')
-                this.throw('addFlow', 'A p2p flow processor can''t be added to the ''default'' port!');
+            elseif ~isempty(this.oFlow)
+                this.throw('addFlow', 'There is already a flow connected to this exme! You have to create another one.');
             
             elseif ~isa(oFlow, 'matter.flow')
                 this.throw('addFlow', 'The provided flow object is not a matter.flow!');
             
-            elseif any(this.aoFlows == oFlow)
-                this.throw('addFlow', 'The provided flow obj is already registered!');
+            elseif any(this.oFlow == oFlow)
+                this.throw('addFlow', 'The provided flow object is already registered!');
             end
             
-            iIdx               = length(this.aoFlows) + 1;
-            this.aoFlows(iIdx) = oFlow;
+            this.oFlow = oFlow;
             
             try
-                [ iSign thFlow ] = oFlow.addProc(this, @() this.removeFlow(oFlow));
+                [ this.iSign, this.pthFlow ] = oFlow.addProc(this, @() this.removeFlow(oFlow));
             catch oErr
                 % Reset back to default MF
-                this.aoFlows(iIdx) = this.oMT.oFlowZero;
+                this.oFlow = this.oMT.oFlowZero;
                 
                 rethrow(oErr);
             end
-            
-            % Set the other stuff
-            this.aiSign(iIdx)  = iSign;
-            this.pthFlow(iIdx) = thFlow;
-            
             
         end
         
         
         
-        function [ afFlowRates, mrPartials, mfProperties ] = getFlowData(this)
+        function [ fFlowRate, arPartials, afProperties ] = getFlowData(this)
             % Return all flow rates, plus the according partial mass
             % ratios. Depends on flow direction and flow type: if a p2p
             % flow processor is connected, getting the arPartials from
@@ -147,20 +123,17 @@ classdef exme < base
             % Also returns matrix with two columns containing temperature 
             % and the heat capacity and for each flow!
             
-            afFlowRates  = this.getFRs()';
-            mrPartials   = zeros(length(afFlowRates), length(this.oPhase.arPartialMass));
-            mfProperties = zeros(length(afFlowRates), 2);
+            fFlowRate  =  this.oFlow.fFlowRate * this.iSign;
             
             %TODO store that on attribute as bP2P = true or something?
-            if ~isempty(this.aoFlows) && isa(this.aoFlows(1), 'matter.procs.p2ps.flow')
+            if ~isempty(this.oFlow) && isa(this.oFlow, 'matter.procs.p2ps.flow')
                 % Can only be one flow, if p2p!
                 %mrPartials = repmat(this.aoFlows(1).arPartials, length(afFlowRates), 1);
-                mrPartials   = this.aoFlows(1).arPartialMass;
-                mfProperties = [ this.aoFlows(1).fTemperature this.aoFlows(1).fHeatCapacity ];
+                arPartials   = this.oFlow.arPartialMass;
+                afProperties = [ this.oFlow.fTemperature this.oFlow.fHeatCapacity ];
             else
-                %TODO cache length!
-                for iF = 1:length(afFlowRates)
-                    if afFlowRates(iF) > 0 % merge
+                
+                    if fFlowRate > 0 % merge
                         %CHECK do we need to get that from other side, in
                         %      case that changed? Shouldn't need that, when
                         %      mass is extracted on the other side, the
@@ -168,8 +141,8 @@ classdef exme < base
                         %      if that get's updated, fr recalc is called 
                         %      on all branches which would set the new
                         %      arPartials on all flows ... right?
-                        mrPartials(iF, :)   = this.aoFlows(iF).arPartialMass;
-                        mfProperties(iF, :) = [ this.aoFlows(iF).fTemperature this.aoFlows(iF).fHeatCapacity ];
+                        arPartials   = this.oFlow.arPartialMass;
+                        afProperties = [ this.oFlow.fTemperature this.oFlow.fHeatCapacity ];
                         
                     else % extract or zero - phase partials
                         %NOTE possibility to implement special EXME that
@@ -182,12 +155,12 @@ classdef exme < base
                         %     the partial pressure of the filtered species
                         %     at that position and adjust the partial mass
                         %     here accordingly.
-                        mrPartials(iF, :)   = this.oPhase.arPartialMass;
-                        mfProperties(iF, :) = [ this.oPhase.fTemperature this.oPhase.fHeatCapacity ];
+                        arPartials   = this.oPhase.arPartialMass;
+                        afProperties = [ this.oPhase.fTemperature this.oPhase.fHeatCapacity ];
                     end
                 end
             end
-        end
+
         
         % Method returns absolute values of pressure and temperature of the
         % extracted matter
@@ -228,27 +201,18 @@ classdef exme < base
     %% Internal methdos for handling the flows/flow rates
     % The removeFlow is private - only accessible through anonymous handle
     methods (Access = private)
-        function removeFlow(this, oFlow)
-            iIdx = find(this.aoFlows == oFlow, 1);
-            
-            if isempty(iIdx), this.throw('removeFlow', 'Flow doesn''t exist'); end;
-            
-            %CHECK not required as in f2f to keep indices, right?
-            this.aoFlows(iIdx) = [];%this.oMT.oFlowZero;
-            this.aiSign(iIdx)  = [];
+        function removeFlow(this, ~ )
+            % Here we need the tilde as an input parameter, because the
+            % removeFlow method for the matter table and the f2f processor
+            % need to specify which flow is to be removed. Since exmes only
+            % have one input parameter, this is not necessary here. 
+            this.oFlow = matter.flow.empty();
+            this.iSign = 0;
         end
     end
     
     % Protected methods - get flow rates, set matter properties
     methods (Access = protected)
-        function afFRs = getFRs(this)
-            if isempty(this.aoFlows), afFRs = [];
-            else
-                afFRs = [ this.aoFlows.fFlowRate ] .* this.aiSign;
-            end
-            
-        end
-        
         function set(this, iFlow, sFunc, varargin)
             % See matter.procs.f2f
             
