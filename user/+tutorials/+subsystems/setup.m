@@ -19,7 +19,7 @@ classdef setup < simulation
             %
             % Generally, the phases/stores and branches separately schedule
             % their own update method calls. If a phase updates, its
-            % internal properties as the heat capacity, density, molecular
+            % internal properties as the heat capacity, density, molar
             % mass etc. are updated. Additionally, all connected branches
             % are notified so they can re-calculate their flow rate in the
             % 'post tick' phase (i.e. after all regularly scheduled call-

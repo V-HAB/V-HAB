@@ -361,10 +361,12 @@ classdef flow < base & matlab.mixin.Heterogeneous
             this.fTemperature  = fTemperature;
             this.fPressure     = fPressure;
             
-            % Calculate molecular mass. Normally, the phase uses this 
-            % method and provides a vector of absolute masses. Here, the
-            % partial mass is used, which should make no difference.
-            this.fMolarMass = this.oMT.calculateMolecularMass(this.arPartialMass);
+            % Calculate molar mass. Normally, the phase uses the method
+            % utilized below and provides a vector of absolute masses.
+            % Here, the mass fractions are used, which should make no
+            % difference.
+            %TODO: Check if this does make a difference!
+            this.fMolarMass = this.oMT.calculateMolarMass(this.arPartialMass);
             
             % Heat capacity. The oBranch references back to the p2p itself
             % which provides the getInEXME method (p2p is always directly

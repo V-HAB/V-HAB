@@ -52,12 +52,12 @@ classdef table < base
         % 'brine' or 'inedibleBiomass'.
         ttxMatter;
         
-        % An array containing the molecular masses of each substance in
-        % kg/mol. We keep this in a separate array to enable fast
-        % calculation of the total molecular mass of a phase or flow. The
-        % order in which the substances are stored is identical to the
-        % order in ttxMatter. Also, using an array makes it easy to loop
-        % through the individual values with simple for-loops.
+        % An array containing the molar masses of each substance in kg/mol.
+        % We keep this in a separate array to enable fast calculation of
+        % the total molar mass of a phase or flow. The order in which the
+        % substances are stored is identical to the order in ttxMatter.
+        % Also, using an array makes it easy to loop through the individual
+        % values with simple for-loops.
         afMolarMass;
         
         % This struct maps all substance names according to an index, hence
@@ -186,7 +186,7 @@ classdef table < base
                 this.tiN2I.(this.csSubstances{iI}) = iI;
                 
                 
-                % If the molecular mass of the substance is not directly
+                % If the molar mass of the substance is not directly
                 % provided by the 'MatterData' worksheet, we try to
                 % calculate it. This is only possible if the substance name
                 % is given as a chemical formula, e.g. 'H2O' for water.
@@ -214,7 +214,7 @@ classdef table < base
                     end
                     
                     % Now we loop through all the elements of the
-                    % substance, check if a molecular mass is given an add
+                    % substance, check if a molar mass is given an add
                     % them up.
                     for iE = 1:length(csElements)
                         if isfield(this.ttxMatter, csElements{iE}) && isfield(this.ttxMatter.(csElements{iE}), 'fMolarMass')
@@ -222,7 +222,7 @@ classdef table < base
                         else
                             % Throwing an error because there is no entry
                             % for this specific element
-                            this.throw('table:constructor', 'No molecular mass provided for element ''%s''', this.csSubstances{iI});
+                            this.throw('table:constructor', 'No molar mass provided for element ''%s''', this.csSubstances{iI});
                         end
                     end
                     
@@ -234,7 +234,7 @@ classdef table < base
                     
                 else
                     
-                    % If the molecular mass is directly given, then we can
+                    % If the molar mass is directly given, then we can
                     % just use the given value.
                     fMolarMass = tSubstance.fMolarMass;
                 end

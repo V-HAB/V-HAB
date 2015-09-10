@@ -1,5 +1,5 @@
-function fMolarMass = calculateMolecularMass(this, afMasses)
-    %CALCULATEMOLECULARMASS Calculate total molar mass from partial masses
+function fMolarMass = calculateMolarMass(this, afMasses)
+    %CALCULATEMOLARMASS Calculate total molar mass from partial masses
     %   This function takes a vector of masses (its elements are the masses
     %   of each substance in the examined mixture; the order of elements
     %   must comply with the order of substances in the matter table) and
@@ -19,12 +19,8 @@ function fMolarMass = calculateMolecularMass(this, afMasses)
     %   elements of the molar mass vector |this.afMolarMass| transformed.
     %   
     %   
-    % calculateMolecularMass returns
-    %   fMolarMass  - molar mass of mix, kg/mol
-    %
-    %TODO:
-    %   - Rename to |calculateMolarMass| since "molecular mass" means
-    %     something different.
+    % calculateMolarMass returns
+    %   fMolarMass  - molar mass of mass/substance mix, kg/mol
 
 fTotalMass = sum(afMasses);
 
