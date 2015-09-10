@@ -28,10 +28,10 @@ classdef Example < vsys
             this@vsys(oParent, sName, 1);
             
             % Creating a store
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1));
+            this.addStore(matter.store(this, 'Tank_1', 1));
             
             % Creating a second store
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 1));
+            this.addStore(matter.store(this, 'Tank_2', 1));
             
             % Adding a phase with liquid water to the store
             oLiquidPhase = matter.phases.liquid(this.toStores.Tank_1, ...  Store in which the phase is located
@@ -59,15 +59,15 @@ classdef Example < vsys
             % Adding a pump
             % Warning! This is a really dumb pump, a better model is in the
             % making in conjuction with a better liquid solver. 
-            this.addProcF2F(components.pump(this.oData.oMT, 'Pump', 0.267));
+            this.addProcF2F(components.pump('Pump', 0.267));
             
             % Setting the oPump property so we can access the pump settings
             % later.
             this.oPump = this.toProcsF2F.Pump;
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 1, 0.1));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 1, 0.1));
+            this.addProcF2F(components.pipe('Pipe_1', 1, 0.1));
+            this.addProcF2F(components.pipe('Pipe_2', 1, 0.1));
             
             % Creating the flowpath between the components
             oBranch = this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Pump', 'Pipe_2'}, 'Tank_2.Port_2');

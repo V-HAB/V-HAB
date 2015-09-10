@@ -29,7 +29,7 @@ classdef stationary < matter.manips.substance
             if ~isempty(afMasses)
                 afMass = sum(bsxfun(@times, afMasses, mrInPartials), 1);
             else
-                afMass = zeros(1, this.oPhase.oMT.iSpecies);
+                afMass = zeros(1, this.oMT.iSpecies);
             end
             
         end

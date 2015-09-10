@@ -13,7 +13,7 @@ classdef Example1 < vsys
             this@vsys(oParent, sName, 10);
            
             % Creating a store, volume 10m^3
-            this.addStore(matter.store(this.oData.oMT, 'Atmos', 10));
+            this.addStore(matter.store(this, 'Atmos', 10));
             
             % Creating a phase using the 'air' helper
             oAir = this.toStores.Atmos.createPhase('air', 10);
@@ -24,15 +24,15 @@ classdef Example1 < vsys
             
             % Creating the filter, last parameter is the filter capacity in
             % kg.
-            this.addStore(tutorials.p2p.components.Filter(this.oData.oMT, 'Filter', 0.5));
+            this.addStore(tutorials.p2p.components.Filter(this, 'Filter', 0.5));
             
             % Adding a fan
-            this.addProcF2F(components.fan(this.oData.oMT, 'Fan', 'setSpeed', 40000, 'Left2Right'));
+            this.addProcF2F(components.fan('Fan', 'setSpeed', 40000, 'Left2Right'));
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 0.5, 0.005));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 0.5, 0.005));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_3', 0.5, 0.005));
+            this.addProcF2F(components.pipe('Pipe_1', 0.5, 0.005));
+            this.addProcF2F(components.pipe('Pipe_2', 0.5, 0.005));
+            this.addProcF2F(components.pipe('Pipe_3', 0.5, 0.005));
             
             % Creating the flowpath (=branch) between the components
             % Since we are using default exme-processors here, the input

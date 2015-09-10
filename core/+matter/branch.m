@@ -103,6 +103,12 @@ classdef branch < base & event.source
         bOutdated = false;
     end
     
+    properties (SetAccess = private, GetAccess = public)
+        % Reference to the matter table
+        % @type object
+        oMT;
+    end
+    
     properties (SetAccess = private, GetAccess = private)
         % Function handle to the protected flow method setData, used to
         % update values within the flow objects array
@@ -147,6 +153,7 @@ classdef branch < base & event.source
             %     throw here.
             
             this.oContainer = oContainer;
+            this.oMT        = oContainer.oMT;
             this.csNames    = strrep({ sLeft; sRight }, '.', '__');
             this.sName      = [ this.csNames{1} '___' this.csNames{2} ];
             
@@ -162,7 +169,7 @@ classdef branch < base & event.source
                 
             else
                 % Create first flow, get matter table from oData (see @sys)
-                oFlow = matter.flow(this.oContainer.oData.oMT, this);
+                oFlow = matter.flow(this);
                 
                 % Add flow to index
                 this.aoFlows(end + 1) = oFlow;
@@ -212,7 +219,7 @@ classdef branch < base & event.source
                 end
                 
                 % Create flow
-                oFlow = matter.flow(this.oContainer.oData.oMT, this);
+                oFlow = matter.flow(this);
                 this.aoFlows(end + 1) = oFlow;
                 
                 % Connect the new flow - 'right' of proc to 'in' of flow
@@ -668,9 +675,9 @@ classdef branch < base & event.source
                 
                 % Only need the callback reference once ...
                 elseif iI == 1
-                    this.hSetFlowData = this.aoFlows(iI).seal();
+                    this.hSetFlowData = this.aoFlows(iI).seal(false, this);
                 else
-                    this.aoFlows(iI).seal();
+                    this.aoFlows(iI).seal(false, this);
                 end
             end
             

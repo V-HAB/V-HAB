@@ -16,15 +16,14 @@ classdef valve < matter.procs.f2f
     end
     
     methods
-        function this = valve(oMT, sName, bValveOpen, fLength)
+        function this = valve(sName, bValveOpen, fLength)
             % Input parameters:
-            %   oMT:            matter table reference [object]
             %   sName:          name of the valve [char]
             %   bValveOpen:     inital value of the valve setting [boolean]
             %   fLength:        hydraulic length of the valve, needed for
             %                   the solver [m]
             
-            this@matter.procs.f2f(oMT, sName);
+            this@matter.procs.f2f(sName);
             
             this.bValveOpen = bValveOpen;
             

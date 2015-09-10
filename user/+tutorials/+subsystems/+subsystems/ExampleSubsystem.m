@@ -15,7 +15,7 @@ classdef ExampleSubsystem < vsys
             this@vsys(oParent, sName);
             
             % Creating a filter as shown in the p2p Example
-            this.addStore(tutorials.subsystems.components.Filter(this.oData.oMT, 'Filter', 10));
+            this.addStore(tutorials.subsystems.components.Filter(this, 'Filter', 10));
             
             % Creating the branch from the parent system into this subsystem
             % Input parameter format is always: 

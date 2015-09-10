@@ -75,7 +75,7 @@ classdef Greenhouse < vsys
         %% -Greenhouse System structure-
             %Greenhouse Unit
                 %Creating the greenhouse main unit
-                    this.addStore(matter.store(this.oData.oMT, 'GH_Unit', 22.9));
+                    this.addStore(matter.store(this, 'GH_Unit', 22.9));
 
                 %Greenhouses start atmosphere
                     oAir = matter.phases.gas( this.toStores.GH_Unit , ...                       %Phase name
@@ -96,12 +96,12 @@ classdef Greenhouse < vsys
             
             
             %Setting up water separator
-                this.addStore(tutorials.plant_module.components.WaterSeparator.SeparatorStore(this, this.oData.oMT, 'WaterSeparator'));
+                this.addStore(tutorials.plant_module.components.WaterSeparator.SeparatorStore(this, 'WaterSeparator'));
             
                         
             %Leakage tank - Implementation of leakage loss
                 %Leakage store
-                    this.addStore(matter.store(this.oData.oMT, 'LeakageStore', 10000000));
+                    this.addStore(matter.store(this, 'LeakageStore', 10000000));
                 
                 %Adding leakage phase
                     oLeakagePhase = this.toStores.LeakageStore.createPhase('air', ...  %Phase content
@@ -117,7 +117,7 @@ classdef Greenhouse < vsys
                     
             %CO2 supply tank - Provide CO2 for plant growth
                 %Adding CO2 buffer store
-                    this.addStore(matter.store(this.oData.oMT, 'CO2Buffer', 20000));
+                    this.addStore(matter.store(this, 'CO2Buffer', 20000));
                 
                 %Adding CO2 phase
                     oCO2BufferPhase = matter.phases.gas(this.toStores.CO2Buffer, ...
@@ -133,7 +133,7 @@ classdef Greenhouse < vsys
                 
             %N2 supply tank - Provide N2 for stable air composition
                 %Adding N2 buffer store
-                    this.addStore(matter.store(this.oData.oMT, 'N2Buffer', 8000));
+                    this.addStore(matter.store(this, 'N2Buffer', 8000));
                 
                 %Adding CO2 phase
                     oN2BufferPhase = matter.phases.gas(this.toStores.N2Buffer, ...
@@ -183,7 +183,7 @@ classdef Greenhouse < vsys
             %% -Plant Module-
                 
                 %Adding water store - Water for plant growth
-                    this.addStore(matter.store(this.oData.oMT, 'WaterTank', 5));
+                    this.addStore(matter.store(this, 'WaterTank', 5));
                     %Adding water phase
                         oWaterPhase = matter.phases.liquid(this.toStores.WaterTank, ...   
                             'Water_Phase', ...              %Phase name
@@ -198,7 +198,7 @@ classdef Greenhouse < vsys
                         
 
                  %Edible biomass store - destination of produced biomass after harvesting
-                    this.addStore(matter.store(this.oData.oMT, 'FoodStore', 30));
+                    this.addStore(matter.store(this, 'FoodStore', 30));
                     %Edible biomass phase
                         oEdibleBiomass = matter.phases.liquid(this.toStores.FoodStore, ...
                             'EdibleBiomass', ...            %Phase name
@@ -212,7 +212,7 @@ classdef Greenhouse < vsys
                         
 
                  %Inedible biomass store - destination of arised waste after harvesting
-                    this.addStore(matter.store(this.oData.oMT, 'WasteTank', 30));
+                    this.addStore(matter.store(this, 'WasteTank', 30));
                     %Inedible biomass phase 
                         oInedibleBiomass = matter.phases.liquid(this.toStores.WasteTank, ...
                             'InedibleBiomass', ...          %Phase name
@@ -239,18 +239,18 @@ classdef Greenhouse < vsys
            %Misc
             %Adding Pipes
                %Greenhouse system
-                    this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_01', 0.5, 0.10)); 
-                    this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_02', 0.5, 0.10)); 
-                    this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_03', 0.5, 0.10)); 
-                    this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_04', 0.5, 0.05));     
-                    this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_05', 0.5, 0.05));
+                    this.addProcF2F(components.pipe('Pipe_01', 0.5, 0.10)); 
+                    this.addProcF2F(components.pipe('Pipe_02', 0.5, 0.10)); 
+                    this.addProcF2F(components.pipe('Pipe_03', 0.5, 0.10)); 
+                    this.addProcF2F(components.pipe('Pipe_04', 0.5, 0.05));     
+                    this.addProcF2F(components.pipe('Pipe_05', 0.5, 0.05));
                 
                %To PlantModule subsystem
-                    this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_06',  0.5, 0.005));
-                    this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_07',  0.5, 0.005));
-                    this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_08',  0.5, 0.005));
-                    this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_09',  0.5, 0.005));
-                    this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_10', 0.5, 0.005));
+                    this.addProcF2F(components.pipe('Pipe_06',  0.5, 0.005));
+                    this.addProcF2F(components.pipe('Pipe_07',  0.5, 0.005));
+                    this.addProcF2F(components.pipe('Pipe_08',  0.5, 0.005));
+                    this.addProcF2F(components.pipe('Pipe_09',  0.5, 0.005));
+                    this.addProcF2F(components.pipe('Pipe_10', 0.5, 0.005));
 
                     
                %Branches regarding the Greenhouse

@@ -28,13 +28,13 @@ classdef Example < vsys
             
             %% Gas System
             % Creating a store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1000));
+            this.addStore(matter.store(this, 'Tank_1', 1000));
             
             % Adding a phase to the store 'Tank_1', 1 m^3 air
             oGasPhase = this.toStores.Tank_1.createPhase('air', 2000);
             
             % Creating a second store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 1000));
+            this.addStore(matter.store(this, 'Tank_2', 1000));
             
             % Adding a phase to the store 'Tank_2', 2 m^3 air
             oAirPhase = this.toStores.Tank_2.createPhase('air', 1000);
@@ -45,7 +45,7 @@ classdef Example < vsys
             
             %% Water System
             % Creating a third store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_3', 1));
+            this.addStore(matter.store(this, 'Tank_3', 1));
             
             % Adding a phase to the store 'Tank_3', 1 m^3 water
             oLiquidPhase = matter.phases.liquid(this.toStores.Tank_3, ...  Store in which the phase is located
@@ -56,7 +56,7 @@ classdef Example < vsys
                 101325);                 % Phase pressure
             
             % Creating a fourth store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_4', 1));
+            this.addStore(matter.store(this, 'Tank_4', 1));
             %keyboard(); 
             % Adding a phase to the store 'Tank_4', 1 kg water
             oWaterPhase = matter.phases.liquid(this.toStores.Tank_4, ...  Store in which the phase is located
@@ -85,10 +85,10 @@ classdef Example < vsys
             
             
             %% Adding some pipes
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe1', 1, 0.01));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe2', 1, 0.01));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe3', 1, 0.01));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe4', 1, 0.01));
+            this.addProcF2F(components.pipe('Pipe1', 1, 0.01));
+            this.addProcF2F(components.pipe('Pipe2', 1, 0.01));
+            this.addProcF2F(components.pipe('Pipe3', 1, 0.01));
+            this.addProcF2F(components.pipe('Pipe4', 1, 0.01));
             
             % Creating the flow path between the two gas tanks via the heat
             % exchanger

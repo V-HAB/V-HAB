@@ -28,6 +28,7 @@ classdef sys < base & event.source
         % Data attached to the system - inherited from parent!
         % @XXtype object
         oData;
+
     end
     
     methods

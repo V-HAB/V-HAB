@@ -26,6 +26,10 @@ classdef manip < base
         
         % Required sType of oPhase, empty if no restriction
         sRequiredType;
+        
+        % Reference to the matter table
+        % @type object
+        oMT;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -49,6 +53,7 @@ classdef manip < base
             % Setting the properties
             this.sName   = sName;
             this.oPhase  = oPhase;
+            this.oMT     = oPhase.oMT;
             
             % Adding the manipulator to the phase, returns a handle to the
             % detachManipulator() method.

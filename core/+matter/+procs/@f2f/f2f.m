@@ -82,17 +82,15 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     
     
     methods
-        function this = f2f(oMT, sName)
+        function this = f2f(sName)
             % Constructor for the f2f matter processor class. If no csPorts
             % are provided, two default ones (left, right) are created.
             
-            % Matter table and name
-            this.oMT   = oMT;
             this.sName = sName;
             
             % Preset the flow array with a default, zero FR matter flow
             for iI = 1:this.iPorts
-                this.aoFlows(iI) = matter.flow(this.oMT, []); 
+                this.aoFlows(iI) = matter.flow(); 
             end
             
             % Create map for the func handles
@@ -106,6 +104,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             end
             
             this.oBranch = oBranch;
+            this.oMT     = oBranch.oMT;
             this.bSealed = true;
         end
     end
