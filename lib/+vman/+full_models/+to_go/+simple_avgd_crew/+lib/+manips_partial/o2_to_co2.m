@@ -16,7 +16,7 @@ classdef o2_to_co2 < matter.manips.substance.flow
             % Helper vars
             afFlowRate  = this.getTotalFlowRates();
             tiN2I       = this.oPhase.oMT.tiN2I;
-            afMolMass   = this.oPhase.oMT.afMolMass;
+            afMolarMass = this.oPhase.oMT.afMolarMass;
             afFlowRates = zeros(1, this.oPhase.oMT.iSubstances);
             
             
@@ -30,10 +30,10 @@ classdef o2_to_co2 < matter.manips.substance.flow
             fO2 = afFlowRate(tiN2I.O2);
             
             % Production of CO2
-            fCO2 = fO2 * afMolMass(tiN2I.CO2) / afMolMass(tiN2I.O2);
+            fCO2 = fO2 * afMolarMass(tiN2I.CO2) / afMolarMass(tiN2I.O2);
             
             % Need to add some C
-            fC = fCO2 * afMolMass(tiN2I.C) / afMolMass(tiN2I.CO2);
+            fC = fCO2 * afMolarMass(tiN2I.C) / afMolarMass(tiN2I.CO2);
             
             
             % Set the according flow rates and pass to parent

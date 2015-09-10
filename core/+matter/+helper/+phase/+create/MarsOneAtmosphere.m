@@ -8,7 +8,7 @@ function [ cParams, sDefaultPhase ] = MarsOneAtmosphere(oStore, fVolume, fTemper
     %   rRH             - Relative humidity - ratio (default 0, max 1)
     %   fPressure       - Pressure in Pa - default 101325 Pa
 
-    % Molecular mass of dry air in the Mars One Specification of:
+    % Molar mass of dry air in the Mars One Specification of:
     %   Individual:                                     Totals:
     %
     %   20  kPa O2                                      O2:  28.43 %  
@@ -27,7 +27,7 @@ function [ cParams, sDefaultPhase ] = MarsOneAtmosphere(oStore, fVolume, fTemper
     fVolumeFractionAr  = 0.2834;
     
     
-    fMolarMassAir = 0.0320083;              % [kg/mol]
+    fMolarMassAir = 0.0320083; % [kg/mol]
     
     % Values from @matter.table
     fUniversalGasConstant = matter.table.Const.fUniversalGas;
@@ -60,10 +60,9 @@ function [ cParams, sDefaultPhase ] = MarsOneAtmosphere(oStore, fVolume, fTemper
         % calculate molar fraction of H2O in air
         fMolarFractionH2O = fMassFractionH2O / fMolarMassH2O * fMolarMassAir; 
     
-        % p V = m / M * R_m * T -> mol mass in g/mol so divide p*V=n*R*T;
-    
-        %calculate total mass
-        fTotalMass = (fPressure) * fVolume * (fMolarFractionH2O * fMolarMassH2O + (1 - fMolarFractionH2O) * fMolarMassAir) / fUniversalGasConstant / fTemperature; 
+        % calculate total mass
+        % p V = m / M * R_m * T  <=>  m = p * V * M / (R_m * T)
+        fTotalMass = fPressure * fVolume * (fMolarFractionH2O * fMolarMassH2O + (1 - fMolarFractionH2O) * fMolarMassAir) / (fUniversalGasConstant * fTemperature); 
     
         % calculate dry air mass
         fDryAirMass = fTotalMass * (1 - fMassFractionH2O); 

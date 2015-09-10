@@ -26,14 +26,15 @@ classdef temperature < matter.manip
         end
     end
     
-    methods (Access = protected)
-        function calcChange(this)
-            % Use this.getMasses() to get total mass.
-            % this.oPhase.fTemperature is temperature, this.oPhase.fMolMass
-            % Then use this.oHeatFlow."fFlowRate" to calc change per sec
-            
-            % Return change per second!
-        end
-    end
+%TODO ?
+%     methods (Access = protected)
+%         function calcChange(this)
+%             % Use this.getMasses() to get total mass.
+%             % this.oPhase.fTemperature is temperature, this.oPhase.fMolarMass
+%             % Then use this.oHeatFlow."fFlowRate" to calc change per sec
+%             
+%             % Return change per second!
+%         end
+%     end
 end
 

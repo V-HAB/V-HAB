@@ -53,7 +53,7 @@ if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData
     iColumn = find(strcmp(import.text(2,:),'fMeltPoint'));
     
     % only unique substances are needed
-    scSubstances = unique(import.text(3:end,1));
+    csSubstances = unique(import.text(3:end,1));
     
     % Initialize the struct in which all substances are later stored
     ttxImportMatter = struct;
@@ -84,33 +84,55 @@ if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData
     end
     
     % go through all unique substances
-    for iI = 1:length(scSubstances)
+    for iI = 1:length(csSubstances)
         % set substancename as fieldname
-        ttxImportMatter.(scSubstances{iI}) = [];
-        %ttxImportMatter = setfield(ttxImportMatter, scSubstances{i},'');
+        ttxImportMatter.(csSubstances{iI}) = [];
         
         % select all rows of that substance
         % substances can have more than one phase
-        iRows = find(strcmp(import.text(3:end,1),scSubstances{iI}));
+        iRows = find(strcmp(import.text(3:end,1),csSubstances{iI}));
         if ~isempty(iRows)
             % rownumbers of .num and .text/.raw are 2 rows different because of headers
             iRows = iRows +2;
             % store all data of current substance
-            ttxImportMatter.(scSubstances{iI}).import.num = import.num(iRows-2,:);
-            ttxImportMatter.(scSubstances{iI}).import.num(:,iTableLength+1:end) = []; % overhead not needed
-            ttxImportMatter.(scSubstances{iI}).import.text = import.text(1:2,:);
-            ttxImportMatter.(scSubstances{iI}).import.text = [ttxImportMatter.(scSubstances{iI}).import.text; import.text(iRows,:)];
-            ttxImportMatter.(scSubstances{iI}).import.text(:,iTableLength+1:end) = []; % overhead not needed
-            ttxImportMatter.(scSubstances{iI}).import.raw = import.raw(1:2,:);
-            ttxImportMatter.(scSubstances{iI}).import.raw = [ttxImportMatter.(scSubstances{iI}).import.raw; import.raw(iRows,:)];
-            ttxImportMatter.(scSubstances{iI}).import.raw(:,iTableLength+1:end) = []; % overhead not needed
+            ttxImportMatter.(csSubstances{iI}).import.num = import.num(iRows-2,:);
+            ttxImportMatter.(csSubstances{iI}).import.num(:,iTableLength+1:end) = []; % overhead not needed
+            ttxImportMatter.(csSubstances{iI}).import.text = import.text(1:2,:);
+            ttxImportMatter.(csSubstances{iI}).import.text = [ttxImportMatter.(csSubstances{iI}).import.text; import.text(iRows,:)];
+            ttxImportMatter.(csSubstances{iI}).import.text(:,iTableLength+1:end) = []; % overhead not needed
+            ttxImportMatter.(csSubstances{iI}).import.raw = import.raw(1:2,:);
+            ttxImportMatter.(csSubstances{iI}).import.raw = [ttxImportMatter.(csSubstances{iI}).import.raw; import.raw(iRows,:)];
+            ttxImportMatter.(csSubstances{iI}).import.raw(:,iTableLength+1:end) = []; % overhead not needed
             
             % go through all properties before density
-            % this properties are constant and only needed one time
+            % these properties are constant and are only needed one time
             for j = 4:iColumn-1
-                if ~isnan(import.num(iRows(1)-2,j-3))
-                    ttxImportMatter.(scSubstances{iI}).(import.text{2,j}) = import.num(iRows(1)-2,j-3);
+                
+                % Get the value of the property and save it to a variable.
+                fValue = import.num(iRows(1)-2, j-3);
+                
+                % Only handle numeric fields.
+                if ~isnan(fValue)
+                    
+                    % If this constant value is the molar mass, we need to
+                    % divide the value by 1000. The reason for this is that
+                    % V-HAB exclusively uses kg as the unit of mass. In
+                    % most sources however, the molar mass is given in
+                    % g/mol. To make things easier for editors of the
+                    % matter table and enable better comparison of matter
+                    % table values to literary sources, the value in the
+                    % matter table is still entered in g/mol and then
+                    % converted to kg/mol here. 
+                    if strcmp(import.text{2,j}, 'fMolarMass')
+                        fValue = fValue / 1000;
+                    end
+                    
+                    % Finally we can write the value to the appropriate
+                    % struct item.
+                    ttxImportMatter.(csSubstances{iI}).(import.text{2,j}) = fValue;
+                    
                 end
+                
             end
             
             % go through all phases and save all remaining properties for that specific phase
@@ -118,7 +140,7 @@ if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData
                 for j = iColumn:iTableLength
                     try
                     if ~isnan(import.num(iRows(z)-2,j-3))
-                        ttxImportMatter.(scSubstances{iI}).ttxPhases.(import.text{iRows(z),3}).(import.text{2,j}) = import.num(iRows(z)-2,j-3);
+                        ttxImportMatter.(csSubstances{iI}).ttxPhases.(import.text{iRows(z),3}).(import.text{2,j}) = import.num(iRows(z)-2,j-3);
                     end
                     catch
                         keyboard(); 
@@ -130,10 +152,10 @@ if strcmp(sWorksheetname, 'MatterData') && any(strcmpi(csWorksheets, 'MatterData
             % Since none of the substances in the "Matter Data" worksheet
             % will enable interpolation of their properties, we can just
             % set the variable to false here. 
-            ttxImportMatter.(scSubstances{iI}).bInterpolations = false;
+            ttxImportMatter.(csSubstances{iI}).bInterpolations = false;
             
             % Finally we add the tColumns struct to every substance 
-            ttxImportMatter.(scSubstances{iI}).tColumns = tColumns;
+            ttxImportMatter.(csSubstances{iI}).tColumns = tColumns;
         end
     end
     %% import specific substance worksheet
@@ -164,7 +186,10 @@ else
             
             ttxImportMatter.(import.text{3,iI}) = import.num(1,iI);
             
-            if strcmp(import.text{3,iI}, 'fMolMass')
+            % For the same reasons mentioned above during the import of the
+            % 'MatterData' worksheet, we need to convert the molar mass
+            % from g/mol to kg/mol here. 
+            if strcmp(import.text{3,iI}, 'fMolarMass')
                 ttxImportMatter.fMolarMass = import.num(1,iI) / 1000;
             end
         end

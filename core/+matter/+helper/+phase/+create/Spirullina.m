@@ -1,18 +1,9 @@
-function [ cParams, sDefaultPhase ] = Spirullina(~, fVolume, fTemperature, rRH, fPressure)
-%SUITATMOSPHERE helper to create a matter phase with a standard space suit
-%   atmosphere using 100% oxygen.
-%   If just volume given, created as a 100% oxygen atmosphere at 29647 Pa, 
-%   20°C and 0% relative humidity.
-%
-% SuitVolume Parameters:
-%   fVolume         - Volume in SI m3
-%   fTemperature    - Temperature in K - default 293.15 K
-%   rRH             - Relative humidity - ratio (default 0, max 1)
-%   fPressure       - Pressure in Pa - default 29647 Pa
+function [ cParams, sDefaultPhase ] = Spirullina(oStore, fVolume, fTemperature, rRH, fPressure)
+%SPIRULLINA Detailed explanation here
 
 % Values from @matter.table
-fRm         = 8.314472;
-fMolMassCO2 = 44;
+fRm           = oStore.oMT.Const.fUniversalGas;                 % ideal gas constant [J/K]
+fMolarMassCO2 = oStore.oMT.afMolarMass(oStore.oMT.tiN2I.CO2);   % molar mass of CO2 [kg/mol]
 
 
 % Check input arguments, set default
@@ -21,13 +12,11 @@ if nargin < 3, fTemperature = 273.15; end;
 if nargin < 4, rRH          = 0;      end;
 if nargin < 5, fPressure    = 101325; end;
 
-% p V = m / M * R_m * T -> mol mass in g/mol so divide
-fMass = fPressure * fVolume * (fMolMassCO2 / 1000) / fRm / fTemperature;
+% p V = m / M * R_m * T  <=>  m = p * V * M / (R_m * T)
+fMass = fPressure * fVolume * fMolarMassCO2 / (fRm * fTemperature);
 
 % Matter composition
-tfMass = struct(...
-    ... 'Spirullina', fMass * 1 ...
-);
+tfMass = struct('Spirullina', fMass * 1);
 
 % Check relative humidity - add? For now its just zero.
 % See http://en.wikipedia.org/wiki/Vapor_pressure
@@ -35,7 +24,6 @@ tfMass = struct(...
 if rRH > 0
     tfMass.H2O = 0;
 end
-
 
 % Create cParams for a whole matter.phases.gas standard phase. If user does
 % not want to use all of them, can just use

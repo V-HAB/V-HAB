@@ -128,7 +128,7 @@ classdef p2p < matter.flow
             oExme = this.(sif(fFlowRate >= 0, 'oIn', 'oOut'));
             
             if nargin < 3 || isempty(arPartialMass)
-                % We also get the mol mass and heat capacity ... however, 
+                % We also get the molar mass and heat capacity ... however,
                 % setMatterProps calculates those anyway so ignore  them.
                 [ arPartialMass, ~, ~ ] = oExme.getMatterProperties();
             end

@@ -484,12 +484,11 @@ classdef branch < base & event.source
         end
         
         
-        
-        
-        function update(this)
+        function update(~)
             %TODO just get the matter properties from the inflowing EXME
-            %     and set (arPartialMass, MolMass, Heat Capacity)?
+            %     and set (arPartialMass, Molar Mass, Heat Capacity)?
         end
+        
     end
     
     

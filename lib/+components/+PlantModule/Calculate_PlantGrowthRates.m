@@ -127,13 +127,13 @@ c_p=1005;
     HCG = 0.0036 * CUE_24 * A * CQY * PPF * I;   %[mol_carbon/m^2/h]
     
     
-  % MWC: molecular weight of carbon
+  % MWC: molar weight of carbon
     MWC = 12.011;         %[g/mol]
-  % MWO2: molecular weight of oxygen
+  % MWO2: molar weight of oxygen
     MWO2 = 32;            %[g/mol]
-  % MWCO2: molecular weight of carbon dioxid
+  % MWCO2: molar weight of carbon dioxid
     MWCO2 = 44.011;       %[g/mol]
-  % MWW: molecular weight of water
+  % MWW: molar weight of water
     MWW = 18.015;         %[g/mol]
     
     

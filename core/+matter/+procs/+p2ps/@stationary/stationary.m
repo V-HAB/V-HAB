@@ -51,7 +51,8 @@ classdef stationary < matter.procs.p2p
             this.oIn.oPhase.massupdate();
             this.oOut.oPhase.massupdate();
             
-            % Set matter properties. Calculates mol mass, heat capacity etc
+            % Set matter properties. Calculates molar mass, heat capacity,
+            % etc.
             setMatterProperties@matter.procs.p2p(this, fFlowRate, arPartials);
             
         end

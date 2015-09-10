@@ -36,9 +36,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         %TODO implement .update, get heat capacity depending on
         %     arPartialMass and Temperature
-        fHeatCapacity = 0;      % [J/K/kg]
-        fMolMass      = 0;      % [g/mol] NOT KG!
-        %fMolarMass    = 0;      % [kg/mol]
+        fHeatCapacity = 0;       % [J/K/kg]
+        fMolarMass    = 0;       % [kg/mol]
         
         % Partial masses in percent (ratio) in indexed vector (use oMT to
         % translate, e.g. this.oMT.tiN2I)
@@ -173,7 +172,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % in the first, initializion step (time < 0)
                 if oPhase.fMass ~= 0
                     this.arPartialMass = oPhase.arPartialMass;
-                    this.fMolMass      = oPhase.fMolMass;
+                    this.fMolarMass    = oPhase.fMolarMass;
                     this.fHeatCapacity = oPhase.fHeatCapacity;
                 end
 
@@ -199,7 +198,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             %     flows at each point in branch, one for each phase?
             
             % Calculating the number of mols for each species
-            afMols = this.arPartialMass ./ this.oMT.afMolMass;
+            afMols = this.arPartialMass ./ this.oMT.afMolarMass;
             % Calculating the total number of mols
             fGasAmount = sum(afMols);
             
@@ -314,7 +313,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         function fVolumetricFlowRate = calculateVolumetricFlowRate(this)
             if this.fFlowRate
                 fVolumetricFlowRate = this.fFlowRate / ...
-                                    ( this.fPressure * this.fMolMass / ...
+                                    ( this.fPressure * this.fMolarMass / ...
                                     ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
             else
                 fVolumetricFlowRate = 0;
@@ -362,10 +361,12 @@ classdef flow < base & matlab.mixin.Heterogeneous
             this.fTemperature  = fTemperature;
             this.fPressure     = fPressure;
             
-            % Calculate molecular mass. Normally, the phase uses this 
-            % method and provides a vector of absolute masses. Here, the
-            % partial mass is used, which should make no difference.
-            this.fMolMass = this.oMT.calculateMolecularMass(this.arPartialMass);
+            % Calculate molar mass. Normally, the phase uses the method
+            % utilized below and provides a vector of absolute masses.
+            % Here, the mass fractions are used, which should make no
+            % difference.
+            %TODO: Check if this does make a difference!
+            this.fMolarMass = this.oMT.calculateMolarMass(this.arPartialMass);
             
             % Heat capacity. The oBranch references back to the p2p itself
             % which provides the getInEXME method (p2p is always directly
@@ -377,7 +378,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         function setData(this, oExme, fFlowRate, afPressures)
             % Sets flow data on an array of flow objects. If flow rate not
-            % provided, just mol masses, cp, arPartials etc are set.
+            % provided, just molar masses, cp, arPartials etc are set.
             % Function handle to this method is provided on seal(), so the
             % branch can set stuff.
             %
@@ -406,13 +407,13 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             % Get matter properties of the phase
             if ~isempty(oExme)
-                [ arPhasePartialMass, fPhaseMolMass, fPhaseHeatCapacity ] = oExme.getMatterProperties();
+                [ arPhasePartialMass, fPhaseMolarMass, fPhaseHeatCapacity ] = oExme.getMatterProperties();
             
             % If no exme is provided, those values will not be changed (see
             % above, in case of e.g. a closed valve within the branch).
             else
                 arPhasePartialMass = 0;
-                fPhaseMolMass      = 0;
+                fPhaseMolarMass    = 0;
                 fPhaseHeatCapacity = 0;
             end
             
@@ -449,7 +450,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % Only set those params if oExme was provided
                 if ~isempty(oExme)
                     this(iI).arPartialMass = arPhasePartialMass;
-                    this(iI).fMolMass      = fPhaseMolMass;
+                    this(iI).fMolarMass    = fPhaseMolarMass;
                     
                     this(iI).fHeatCapacity = fPhaseHeatCapacity;
                     %this(iI).fHeatCapacity = this.oMT.calculateHeatCapacity(this(iI));

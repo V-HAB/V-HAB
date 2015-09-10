@@ -115,10 +115,10 @@ classdef pipe < matter.procs.f2f
             catch
                 %TODO solver should handle that, could also be an issue if
                 %     temperature is zero
-                fMolMass = sif(oFlowIn.fMolMass > 0, oFlowIn.fMolMass, 1);
+                fMolarMass = sif(oFlowIn.fMolarMass > 0, oFlowIn.fMolarMass, 1);
                 %CHECK e.g. fRoh - used for fV and Re - so doesn't really make
                 %      sense to include. Need another way to calculate Re/V?
-                fDensity = (fAveragePressure * fMolMass / 1000) / (matter.table.Const.fUniversalGas * oFlowIn.fTemperature);
+                fDensity = (fAveragePressure * fMolarMass) / (matter.table.Const.fUniversalGas * oFlowIn.fTemperature);
             end
             fFlowSpeed   = abs(fFlowRate) / ((pi / 4) * this.fDiameter^2 * fDensity);
 
