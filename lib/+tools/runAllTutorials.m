@@ -189,22 +189,27 @@ for iI = 1:length(tTutorials)
     % Tada!
     fprintf('%s:%s%s\n',strrep(tTutorials(iI).name,'+',''),sBlanks,tTutorials(iI).sStatus);
 end
-disp('--------------------------------------');
-% Now we print out the error messages from the tutorials that were aborted.
-fprintf('Error messages:\n\n');
-iErrorCounter = 0;
-for iI = 1:length(tTutorials)
-    if strcmp(tTutorials(iI).sStatus,'Aborted')
-        fprintf('%s Tutorial Error Message:\n',strrep(tTutorials(iI).name,'+',''));
-        fprintf(2, '%s\n\n',tTutorials(iI).sErrorReport);
+fprintf('--------------------------------------\n\n');
+
+% Now we print out the error messages from the tutorials that were aborted
+% if there were any.
+mbHasAborted = strcmp({tTutorials.sStatus}, 'Aborted');
+if any(mbHasAborted)
+    fprintf('=======================================\n');
+    fprintf('=========== Error messages ============\n');
+    fprintf('=======================================\n\n');
+    iErrorCounter = 0;
+    for tTutorial = tTutorials(mbHasAborted)
+        fprintf('=> %s Tutorial Error Message:\n\n',strrep(tTutorial.name,'+',''));
+        fprintf(2, '%s\n\n',tTutorial.sErrorReport);
         iErrorCounter = iErrorCounter + 1;
+        fprintf('--------------------------------------\n\n\n');
     end
 end
-if ~iErrorCounter; fprintf('None.\n\n'); end
 
-disp('======================================');
-disp('===== Finished running tutorials =====');
-disp('======================================');
+fprintf('======================================\n');
+fprintf('===== Finished running tutorials =====\n');
+fprintf('======================================\n\n');
 
 end
 
