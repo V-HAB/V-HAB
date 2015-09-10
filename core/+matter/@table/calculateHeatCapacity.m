@@ -29,6 +29,9 @@ function fSpecificHeatCapacity = calculateHeatCapacity(this, varargin) %sMatterS
         if isa(oMatterRef, 'matter.phase')
             sMatterState = oMatterRef.sType;
             afMasses     = oMatterRef.afMass;
+        elseif isa(oMatterRef, 'matter.procs.p2p')
+            sMatterState = oMatterRef.getInEXME().oPhase.sType;
+            afMasses     = oMatterRef.arPartialMass * oMatterRef.fFlowRate;
         elseif isa(oMatterRef, 'matter.flow')
             sMatterState = oMatterRef.oBranch.getInEXME().oPhase.sType;
             afMasses     = oMatterRef.arPartialMass * oMatterRef.fFlowRate;

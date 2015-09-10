@@ -1,4 +1,4 @@
-classdef setup_1 < simulation
+classdef setup < simulation
     %SETUP This class is used to setup a simulation
     %   There should always be a setup file present for each project. It is
     %   used for the following:
@@ -17,7 +17,7 @@ classdef setup_1 < simulation
     end
     
     methods
-        function this = setup_1(tOpt)
+        function this = setup(tOpt)
             
             if nargin < 1 || isempty(tOpt), tOpt = struct(); end;
             
