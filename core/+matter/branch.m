@@ -168,7 +168,7 @@ classdef branch < base & event.source
                 
                 % Checking if the interface name is already present in this
                 % system. Only do this if there any branches at all, of course. 
-                if ~isempty(this.oContainer.aoBranches) && strcmp(subsref([ this.oContainer.aoBranches.csNames ], struct('type', '()', 'subs', {{ 1, ':' }})), sLeft)
+                if ~isempty(this.oContainer.aoBranches) && any(strcmp(subsref([ this.oContainer.aoBranches.csNames ], struct('type', '()', 'subs', {{ 1, ':' }})), sLeft))
                     this.throw('branch', 'An interface called ''%s'' already exists in ''%s''! Please choose a different name.', sLeft, this.oContainer.sName);
                 end
   
@@ -248,7 +248,7 @@ classdef branch < base & event.source
                 
                 % Checking if the interface name is already present in this
                 % system. Only do this if there any branches at all, of course. 
-                if ~isempty(this.oContainer.aoBranches) && strcmp(subsref([ this.oContainer.aoBranches.csNames ], struct('type', '()', 'subs', {{ 2, ':' }})), sRight)
+                if ~isempty(this.oContainer.aoBranches) && any(strcmp(subsref([ this.oContainer.aoBranches.csNames ], struct('type', '()', 'subs', {{ 2, ':' }})), sRight))
                     this.throw('branch', 'An interface called ''%s'' already exists in ''%s''! Please choose a different name.', sRight, this.oContainer.sName);
                 end
                 
@@ -315,19 +315,31 @@ classdef branch < base & event.source
                 
             end
             
+            % If this branch is a pass-through branch, then this.abIf = [1;1]
+            % In this case the branch we are trying to connect to on the
+            % super system should actually connect to the branch connected
+            % to us on the left side, because that one is the actual final
+            % branch which will always 'belong' to the lowest system in the
+            % chain of connected interface branches. We (this) are just the
+            % leftover stub. 
+            
             this.coBranches{2} = this.oContainer.oParent.aoBranches(iBranch);
             
             % Maybe other branch doesn't like us, to try/catch
             try
-                [ this.hGetBranchData, this.hSetDisconnected ] = this.coBranches{2}.setConnected(this, @this.updateConnectedBranches);
-            
-            % Error - reset the coBRanches
+                if ~all(this.abIf)
+                    [ this.hGetBranchData, this.hSetDisconnected ] = this.coBranches{2}.setConnected(this, @this.updateConnectedBranches);
+                else
+                    oBranch = this.coBranches{1};
+                    [ this.hGetBranchData, this.hSetDisconnected ] = this.coBranches{2}.setConnected(oBranch, @oBranch.updateConnectedBranches);
+                end
+                
+                % Error - reset the coBRanches
             catch oErr
                 this.coBranches{2} = [];
                 
                 rethrow(oErr);
             end
-            
             
             % Connect the interface flow here to the first f2f proc in the
             % newly connected branch - but first check if it has flow
@@ -341,11 +353,6 @@ classdef branch < base & event.source
             
             oProc.addFlow(this.aoFlows(this.iIfFlow));
             
-            % Now, if the left side of this branch is a store, not an
-            % interface, gather all the data from connected branches; if it
-            % is an interface and is connected, call update method there
-            this.updateConnectedBranches();
-            
             % To help with debugging, we now change this branch's sName
             % property to reflect the actual flow path between two exmes
             % that it models. First we remove the names of the interfaces
@@ -358,6 +365,23 @@ classdef branch < base & event.source
             % know that this is a subsystem to supersystem branch.
             this.sName = [ sLeftBranchName, 'Interface', sRightBranchName ];
             
+            % If this is a pass-through branch, this branch will be deleted
+            % once the full branch is completely assembled. So we also have
+            % to rename the subsystem branch that we connected earlier.
+            % Here we create the name that is then passed on via the
+            % updateConnectedBranches() method.
+            if all(this.abIf)
+                sLeftBranchName = strrep(oBranch.sName, this.csNames{2}, '');
+                sNewSubsystemBranchName = [ sLeftBranchName, 'Interface', sRightBranchName ];
+            else
+                sNewSubsystemBranchName = '';
+            end
+            
+            % Now, if the left side of this branch is a store, not an
+            % interface, gather all the data from connected branches; if it
+            % is an interface and is connected, call update method there
+            this.updateConnectedBranches(sNewSubsystemBranchName);
+            
         end
         
         function [ hGetBranchData, hSetDisconnected ] = setConnected(this, oSubSysBranch, hUpdateConnectedBranches)
@@ -366,11 +390,6 @@ classdef branch < base & event.source
             
             elseif ~isempty(this.coBranches{1})
                 this.throw('setConnected', 'Branch already connected to subsystem branch!');
-                
-            %elseif ~any(this.oContainer.oParent.aoBranches == oSubSysBranch)
-            %elseif ~this.oContainer.isChild(oSubSysBranch.oContainer) || ~any(this.oContainer.getChild(oSubSysBranch.oContainer).aoBranches == oSubSysBranch)
-            elseif oSubSysBranch.oContainer.oParent ~= this.oContainer
-                this.throw('setConnected', 'Connecting branch does not belong to a subsystem of this system!');
                 
             elseif ~isa(oSubSysBranch, 'matter.branch')
                 this.throw('setConnected', 'Input object is not a matter.branch!');
@@ -571,7 +590,7 @@ classdef branch < base & event.source
     
         
         
-        function updateConnectedBranches(this)
+        function updateConnectedBranches(this, sNewBranchName)
             
             if ~this.abIf(2)
                 this.throw('updateConnectedBranches', 'Right side not an interface, can''t get data from no branches.');
@@ -581,7 +600,7 @@ classdef branch < base & event.source
             % just call the left branch update method
             if this.abIf(1)
                 if ~isempty(this.coBranches{1})
-                    this.hUpdateConnectedBranches();
+                    this.hUpdateConnectedBranches(sNewBranchName);
                 end
                 
             else
@@ -591,10 +610,8 @@ classdef branch < base & event.source
                 
                 
                 % Only do if we got a right phase, i.e. the (maybe several)
-                % connected branches connect two stores, OR if the branch
-                % connected on the right is a pass-through branch that has
-                % interfaces on both sides -> abIf = [ 1 1 ]
-                if ~isempty(this.coExmes{2}) || this.coBranches{2}.abIf(2)
+                % connected branches connect two stores.
+                if ~isempty(this.coExmes{2})
                     % Just select to this.iIfFlow, maytbe chSetFrs was
                     % already extended previously
                     this.aoFlows  = [ this.aoFlows(1:this.iIfFlow) aoFlows ];
@@ -616,11 +633,18 @@ classdef branch < base & event.source
                     end
                 end
                 
-                % And finally we seal the new flow processors.
+                % Now we seal the new flow processors.
                 for iI = 1:this.iFlowProcs
                     if ~this.aoFlowProcs(iI).bSealed
                         this.aoFlowProcs(iI).seal(this);
                     end
+                end
+                
+                % If the current method was called from a pass-through
+                % branch, there will be a new Name for this branch. If not,
+                % then the 'sNewBranchName' variable is empty.
+                if ~(strcmp(sNewBranchName,''))
+                    this.sName = sNewBranchName;
                 end
             end
         end
