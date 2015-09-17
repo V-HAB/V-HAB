@@ -29,7 +29,7 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName, 1);
+            this@vsys(oParent, sName, 10);
             
             % Creating a store, volume 1000 m^3
             this.addStore(matter.store(this, 'Tank_1', 1000));
