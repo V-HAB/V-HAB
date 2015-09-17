@@ -975,17 +975,30 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % addPhase returns the old afMass mappend to the new MT
             this.afMass = this.oMT.addPhase(this);
         end
+        
+    end
 
+
+    %% Methods for manipulating properties
+    methods (Abstract, Access = protected)
+
+        % Method to manipulate properties.
+        %TODO: Why do we need this? This just bypasses at setting private
+        %      properties, why not make them protected instead? See also
+        %      |setParameter| method below. Also, see manipulators. 
+        setAttribute(this, sAttribute, xValue);
+        %{
+        % The |setAttribute| method may look for example like this:
         function setAttribute(this, sAttribute, xValue)
-            % Internal method that needs to be copied to every child.
+            %SETATTRIBUTE Set class properties
             % Required to enable the phase class to adapt values on the
             % child through processors.
-            %
-            %TODO see manipulators (not done with procs any more) - new way
-            %     of handling that. Remove?
-
             this.(sAttribute) = xValue;
         end
+        %}
+    end
+
+    methods (Access = protected)
 
         function [ bSuccess, txValues ] = setParameter(this, sParamName, xNewValue)
             % Helper for executing internal processors.
