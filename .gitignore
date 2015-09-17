@@ -20,3 +20,6 @@ main_*.m
 
 # Ignore invisible files like .DS_Store from Macs
 .DS_Store
+
+# Ignore Excel temporary files
+~*

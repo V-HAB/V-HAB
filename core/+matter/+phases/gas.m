@@ -21,17 +21,24 @@ classdef gas < matter.phase
 
     properties (SetAccess = protected, GetAccess = public)
         
-        fVolume;                % Volume in m^3
-        fPressure;              % Pressure in Pa
-        afPP;                   % Partial pressures in Pa
+        % Volume in m^3
+        fVolume;       
         
-        fMassToPressure;        % Coefficient for pressure = COEFF * mass
-                                % depends on current matter properties
+        % Pressure in Pa
+        fPressure;              
+        
+        % Partial pressures in Pa
+        afPP;                   
+        
+        % Coefficient for pressure = COEFF * mass,  depends on current 
+        % matter properties
+        fMassToPressure;  
+        
+        % Relative humidity in the phase, see this.update() for details on
+        % the calculation.
+        rRelHumidity
     end
     
-    properties (Dependent = true)
-        rRelHumidity;           % Relative Humidity in %
-    end
     
     methods
         % oStore        : Name of parent store
@@ -55,40 +62,19 @@ classdef gas < matter.phase
             this.fDensity = this.fMass / this.fVolume;
         end
         
-        % Function rRelHumidity calculates the relative humidity of the gas
-        % by using the MAGNUS Formula(validity: -45[C] <= T <= 60[C], for
-        % water); Formula is only correct for pure steam, not the mixture
-        % of air and water; enhancement factors can be used by a
-        % Poynting-Correction (pressure and temperature dependent); the values of the enhancement factors are in
-        % the range of 1+- 10^-3; thus they are neglected.
-        % Source: Important new Values of the Physical Constants of 1986, Vapour
-        % Pressure Formulations based on ITS-90, and Psychrometer Formulae. In: Z. Meteorol.
-        % 40, 5, S. 340-344, (1990)
-        %TODO don't like the getter method. Slow! RH should be calculated
-        %     in .update() method and stored on this.rRelHumidity!
-        function rRelHumidity = get.rRelHumidity(this)
-            if this.afMass(this.oMT.tiN2I.H2O)
-                fSaturationVapourPressure=6.11213 * exp(17.62 * this.fTemperature / (243.12 + this.fTemperature)) * 100; % calculate saturation vapour pressure [Pa]; MAGNUS Formula; validity: -45???C <= T <= 60???C, for water
-                rRelHumidity = this.afPP(this.oMT.tiN2I.H2O)/fSaturationVapourPressure; %calculate relative humidity
-            else
-                rRelHumidity = 0;
-            end
-        end
         
-        
-        
-        function bSuccess = setVolume(this, fVolume)
+        function bSuccess = setVolume(this, fNewVolume)
             % Changes the volume of the phase. If no processor for volume
             % change registered, do nothing.
             %
             %TODO see above, needs to be redone (processors/manipulator)
             
-            bSuccess = this.setParameter('fVolume', fVolume);
+            bSuccess = this.setParameter('fVolume', fNewVolume);
             
             return;
             
             %TODO with events:
-            this.trigger('set.fVolume', struct('fVolume', fVolume, 'setAttribute', @this.setAttribute));
+            %this.trigger('set.fVolume', struct('fVolume', fNewVolume, 'setAttribute', @this.setAttribute));
             
             % See human, events return data which is processed here??
             % What is several events are registered? Different types of
@@ -118,6 +104,31 @@ classdef gas < matter.phase
                 this.fPressure = this.fMass * this.fMassToPressure;
                 this.afPP      = this.oMT.calculatePartialPressures(this);
                 this.fDensity  = this.fMass / this.fVolume;
+                
+                
+                % Function rRelHumidity calculates the relative humidity of
+                % the gas by using the MAGNUS Formula(validity: 
+                % -45[C] <= T <= 60[C], for water); Formula is only correct 
+                % for pure steam, not the mixture of air and water; 
+                % enhancement factors can be used by a Poynting-Correction 
+                % (pressure and temperature dependent); the values of the 
+                % enhancement factors are in the range of 1+- 10^-3; thus 
+                % they are neglected.
+                % Source: Important new Values of the Physical Constants of 
+                % 1986, Vapour Pressure Formulations based on ITS-90, and 
+                % Psychrometer Formulae. In: Z. Meteorol. 40, 5,
+                % S. 340-344, (1990)
+                
+                if this.afMass(this.oMT.tiN2I.H2O)
+                    % calculate saturation vapour pressure [Pa];
+                    % MAGNUS Formula; validity: -45???C <= T <= 60???C, for water
+                    fSaturationVapourPressure = 6.11213 * exp(17.62 * this.fTemperature / (243.12 + this.fTemperature)) * 100;
+                    % calculate relative humidity
+                    this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
+                else
+                    this.rRelHumidity = 0;
+                end
+        
             else
                 this.fPressure = 0;
             end

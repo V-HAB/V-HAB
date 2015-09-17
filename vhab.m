@@ -78,7 +78,7 @@ classdef vhab
         function oSimRtn = exec(sSimulation, varargin)
             % Clear all existing sims, and run provided sim (uses the
             % default max. time/tick conditions on the sim object)
-            disp('Clearing MATLAB classes...')
+            disp('Clearing MATLAB classes...');
             hTimer = tic();
             % Save all breakpoints so we can restore them after the clear
             % command.
@@ -95,9 +95,10 @@ classdef vhab
             
             oSim = vhab.poSims(sSimulation);
             
-            disp('Initialization complete!')
-            disp('--------------------------------------')
-            disp('Starting simulation run...')
+            disp('Initialization complete!');
+            disp('--------------------------------------');
+            disp('Starting simulation run...');
+            
             oSim.run();
             
             

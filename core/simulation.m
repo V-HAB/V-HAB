@@ -45,6 +45,7 @@ classdef simulation < base & event.source
     % Properties to be set by classes deriving from this one
     properties (SetAccess = protected, GetAccess = public)
         % Attributes to log
+        %TODO: add |Recorder| class that handles logging
         csLog = {};
     end
     
@@ -411,13 +412,14 @@ classdef simulation < base & event.source
                     try
                         eval([ 'this.oRoot.' this.csLog{iL} ';' ]);
                     catch oErr
-                        this.throw('simulation','Error trying to log this.oRoot.%s.\nError Message: %s\nPlease check your logging configuration in setup.m!', this.csLog{iL}, oErr.message);
+                        this.throw('simulation',['Error trying to log this.oRoot.%s.\n',...
+                                                 'Error Message: %s\n', ...
+                                                 'Please check your logging configuration in setup.m\n',...
+                                                 'The log item in question is number %i.'], ...
+                                                 this.csLog{iL}, oErr.message, iL);
                     end
                 end
             end
-            %for iL = this.aiLog
-            %    this.mfLog(this.oTimer.iTick + 1, iL) = eval([ 'this.oRoot.' this.csLog{iL} ]);
-            %end
         end
         
         function masslog(this)

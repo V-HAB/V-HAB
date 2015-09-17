@@ -65,15 +65,6 @@ classdef exme < base
     
     methods
         function this = exme(oPhase, sName)
-            %TODO at some point, remove this. At the same time, make the
-            %     getPortProperties method here an ABSTRACT one!
-            if ~isa(this, [ 'matter.procs.exmes.' oPhase.sType ])
-                tStack = dbstack('-completenames');
-                tStack = tStack(2);
-                
-                this.throw('exme', [ 'SORRY! Changed the EXME logic. This here should be a "matter.procs.exmes.' oPhase.sType '" instead of a "matter.proc.exme". ' sprintf('\n--------------------------------\n') 'TO FIX THIS go to file' sprintf('\n') '<a href="matlab:opentoline(' strrep(tStack.file, '\', '\\') ',' num2str(tStack.line) ')">' strrep(tStack.file, '\', '\\') ':' num2str(tStack.line) '</a> (CLICK ON THAT!)' sprintf('\n') 'and replace' sprintf('\n') '"matter.proc.exme("' sprintf('\n') 'with' sprintf('\n') '"matter.proc.exmes.' oPhase.sType '("' sprintf('\n--------------------------------\nExecute "help_checkEXMEs" to find all old exme calls!\n--------------------------------\n') ]);
-            end
-            
             % Constructor for the exme matter processor class. 
             % oPhase is the phase the exme is attached to
             % sName is the name of the processor
@@ -119,7 +110,7 @@ classdef exme < base
                 this.throw('addFlow', 'A p2p flow processor can''t be added to the ''default'' port!');
             
             elseif ~isa(oFlow, 'matter.flow')
-                this.throw('addFlow', 'The provided flow obj ~isa matter.flow!');
+                this.throw('addFlow', 'The provided flow object is not a matter.flow!');
             
             elseif any(this.aoFlows == oFlow)
                 this.throw('addFlow', 'The provided flow obj is already registered!');
@@ -206,6 +197,11 @@ classdef exme < base
         % matter.procs.exme.[phase type] for that.
         function [ fPortPressure, fPortTemperature ] = getPortProperties(this)
             this.throw('getPortProperties', 'Can''t be called in matter.procs.exme');
+            
+            % These two lines are only here to make MATLAB shut up about
+            % unset return variables.
+            fPortPressure = 0;
+            fPortTemperature = 0;
         end
         
         

@@ -73,7 +73,7 @@ classdef Example < vsys
         end
     end
     
-     methods (Access = protected)
+    methods (Access = protected)
         
         function exec(this, ~)
             % exec(ute) function for this system

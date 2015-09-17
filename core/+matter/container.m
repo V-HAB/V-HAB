@@ -135,6 +135,7 @@ classdef container < sys
             % Stores do not contain a reference to the container, so no
             % method needs to be called there.
             this.toStores.(oStore.sName) = oStore;
+            
         end
         
         
