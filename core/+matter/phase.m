@@ -227,10 +227,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         fMassLastUpdate;
         afMassLastUpdate;
         
-        
         % Log mass and time steps which are used to influence rMaxChange
         afMassLog;
         afLastUpd;
+        
     end
 
     methods
@@ -328,28 +328,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Preset the cached masses (see calculateTimeStep)
             this.fMassLastUpdate  = 0;
             this.afMassLastUpdate = zeros(1, this.oMT.iSubstances);
-        end
-
-        function hRemove = addManipulator(this, oManip)
-
-            sManipType = [];
-
-            if     isa(oManip, 'matter.manips.volume'),               sManipType = 'volume';
-            elseif isa(oManip, 'matter.manips.temperature'),          sManipType = 'temperature';
-            elseif isa(oManip, 'matter.manips.substance.flow'),       sManipType = 'substance';
-            elseif isa(oManip, 'matter.manips.substance.stationary'), sManipType = 'substance';
-            end
-
-            if ~isempty(this.toManips.(sManipType))
-                this.throw('addManipulator', 'A manipulator of type %s is already set for phase %s (store %s)', sManipType, this.sName, this.oStore.sName);
-            end
-
-            % Set manipulator
-            this.toManips.(sManipType) = oManip;
-
-            % Remove fct call to detach manipulator
-            hRemove = @() this.detachManipulator(sManipType);
-
         end
 
         function this = massupdate(this, bSetBranchesOutdated)
@@ -538,7 +516,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.afMassLastUpdate = this.afMass;
 
 
-
             % Partial masses
             if this.fMass > 0, this.arPartialMass = this.afMass / this.fMass;
             else               this.arPartialMass = this.afMass; % afMass is just zeros
@@ -548,6 +525,35 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.fMolarMass    = this.oMT.calculateMolarMass(this.afMass);
             this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
         end
+
+    end
+
+
+    %% Methods for handling manipulators
+    methods
+
+        function hRemove = addManipulator(this, oManip)
+
+            sManipType = [];
+
+            if     isa(oManip, 'matter.manips.volume'),               sManipType = 'volume';
+            elseif isa(oManip, 'matter.manips.temperature'),          sManipType = 'temperature';
+            elseif isa(oManip, 'matter.manips.substance.flow'),       sManipType = 'substance';
+            elseif isa(oManip, 'matter.manips.substance.stationary'), sManipType = 'substance';
+            end
+
+            if ~isempty(this.toManips.(sManipType))
+                this.throw('addManipulator', 'A manipulator of type %s is already set for phase %s (store %s)', sManipType, this.sName, this.oStore.sName);
+            end
+
+            % Set manipulator
+            this.toManips.(sManipType) = oManip;
+
+            % Remove fct call to detach manipulator
+            hRemove = @() this.detachManipulator(sManipType);
+
+        end
+
     end
 
 
@@ -567,24 +573,18 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 this.throw('addProcEXME', 'The store to which this phase belongs is sealed, so no ports can be added any more.');
             end
 
-
             if ~isa(oProcEXME, [ 'matter.procs.exmes.' this.sType ])
                 this.throw('addProcEXME', [ 'Provided object ~isa matter.procs.exmes.' this.sType ]);
-
             elseif ~isempty(oProcEXME.oPhase)
                 this.throw('addProcEXME', 'Processor has already a phase set as parent.');
-
             elseif isfield(this.toProcsEXME, oProcEXME.sName)
                 this.throw('addProcEXME', 'Proc %s already exists.', oProcEXME.sName);
-
             elseif strcmp(oProcEXME.sName, 'default')
                 this.throw('addProcEXME', 'Default EXMEs are not allowed any more!');
-
             end
 
-
-
             this.toProcsEXME.(oProcEXME.sName) = oProcEXME;
+            
         end
 
         % Moved to public methods, sometimes external access required
@@ -648,6 +648,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             afTotalInOuts = sum(mfTotalFlows, 1);
 
         end
+        
+    end
+
+
+    %% Finalize methods
+    methods
 
         function seal(this, oData)
             
@@ -658,13 +664,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.afMassLog = ones(1, iStore) * this.fMass;
             this.afLastUpd = 0:(1/(iStore-1)):1;%ones(1, iStore) * 0.00001;
             
-            
             this.rHighestMaxChangeDecrease = oData.rHighestMaxChangeDecrease;
-            
             
             % Auto-Set rMaxChange.
             this.rMaxChange = sif(this.fVolume <= 0.25, this.fVolume, 0.25) / oData.rUpdateFrequency;
-            
             
             if ~this.oStore.bSealed
                 this.coProcsEXME = struct2cell(this.toProcsEXME)';
@@ -683,9 +686,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
                         this.coProcsP2Pflow{this.iProcsP2Pflow} = this.coProcsEXME{iE}.aoFlows(1);
                     end
-                end
-            end
-        end
+                end % end of: for
+            end % end of: if not sealed
+            
+        end % end of: seal method
 
     end
 
@@ -694,18 +698,20 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
     methods (Access = protected)
 
         function detachManipulator(this, sManip)
+            
             %CHECK several manipulators possible?
-
             this.toManips.(sManip) = [];
+            
         end
 
         function setBranchesOutdated(this, sFlowDirection)
-            if nargin < 2, sFlowDirection = 'both'; end;
             
-            %fprintf('%s-%s: setBranchesOutdated "%s"\n', this.oStore.sName, this.sName, sFlowDirection);
+            if nargin < 2
+                sFlowDirection = 'both'; 
+            end;
             
-            % Loop through exmes / flows and set outdated, i.e. request re-
-            % calculation of flow rate.
+            % Loop through exmes / flows and set outdated, i.e. request
+            % recalculation of flow rate.
             for iE = 1:this.iProcsEXME
                 %CHECK no 'default' exmes allowed any more, only one flow!
                 %TODO remove aoFlows, aiSign, add oFlow, iSign
@@ -746,8 +752,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                         oBranch.setOutdated();
                     end
                 end
-            end
-        end
+            end % end of: for
+            
+        end % end of: setBranchesOutdated method
 
         function updateProcessorsAndManipulators(this)
             % Update the p2p flow and manip processors
@@ -1017,38 +1024,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.setAttribute(sParamName, xNewValue);
             this.update();
 
-            return;
-
-            % Check if processor was registered for that parameter
-            if isfield(this.ttoProcs.internal, sParamName)
-                % Found a processor - true
-                bSuccess = true;
-
-                % Struct returned by callback is written onto the object,
-                % i.e. arbitrary attributes can be changed by processor!
-                %TODO use (int procs, also ex/me procs) a events system?
-                %     So several procs can register? Same mode, they can
-                %     return a struct with the class props to modify ...
-                txValues = this.ttoProcs.internal.(sParamName)(this, xNewValue, sParamName);
-
-                % If returned value not empty ...
-                if ~isempty(txValues)
-                    % ... get the keys (= attribute names) from struct ...
-                    csAttrs = fieldnames(txValues);
-
-                    % ... and write the values on this object
-                    for iI = 1:length(csAttrs)
-                        %setValue(csAttrs{iI}, txValues.(csAttrs{iI}));
-                        %this.(csAttrs{iI}) = txValues.(csAttrs{iI});
-                        this.setAttribute(csAttrs{iI}, txValues.(csAttrs{iI}));
-                    end
-                end
-            end
         end
 
     end
 
-    methods(Sealed)
+
+    %% Implementation-specific methods
+    methods (Sealed)
         % Seems like we need to do that for heterogeneous, if we want to
         % compare the objects in the mixin array with one object ...
         function varargout = eq(varargin)

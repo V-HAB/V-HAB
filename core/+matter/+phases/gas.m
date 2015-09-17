@@ -154,11 +154,6 @@ classdef gas < matter.phase
         end
 
 
-        function setProperty(this, sAttribute, xValue)
-            this.(sAttribute) = xValue;
-        end
-
-
         function seal(this, oData)
 
             seal@matter.phase(this, oData);
