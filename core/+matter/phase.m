@@ -99,6 +99,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         %      |this.getTotalHeatCapacity| (?)
         % @type float
         fHeatCapacity = 0; % [J/(K*kg)]
+        
+        % Overloading the specific heat capacity.
+        %TODO: remove
+        fOverloadedSpecificHeatCapacity = -1; % [J/(K*kg)]
 
     end
 
@@ -524,6 +528,58 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Now update the matter properties
             this.fMolarMass    = this.oMT.calculateMolarMass(this.afMass);
             this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
+        end
+
+    end
+
+
+    %% Methods for interfacing with thermal system
+    methods
+
+        function changeInnerEnergy(this, fEnergyChange)
+            %CHANGEINNERENERGY Change phase temperature via inner energy
+            %   Change the temperature of a phase by adding or removing
+            %   inner energy in |J|.
+            
+            %TODO: use |getTotalHeatCapacity| method instead
+            if this.fOverloadedSpecificHeatCapacity ~= -1
+                % Specific heat capacity has been overloaded.
+                fSpecificHeatCap = this.fOverloadedSpecificHeatCapacity;
+            else
+                % Get *specific* heat capacity set by matter table. 
+                %NOTE: The naming is unexpected and may change in the
+                %      future but for now this works.
+                fSpecificHeatCap = this.fHeatCapacity;
+            end
+            
+            % Calculate temperature change due to change in inner energy.
+            fTempDiff = fEnergyChange / (fSpecificHeatCap * this.fMass);
+            
+            % Update temperature property of phase.
+            this.setParameter('fTemperature', this.fTemperature + fTempDiff);
+            
+        end
+
+        %TODO: remove heat capacity overloading in phase? (overload in
+        %      |Capacity| object instead!)
+        function overloadSpecificHeatCapacity(this, fSpecificHeatCap)
+            % Overload the specific heat capacity of the phase.
+            
+            this.warn('matter:phase:overloadSpecificHeatCapacity', ...
+                'This might not do what you expected!');
+            this.fOverloadedSpecificHeatCapacity = fSpecificHeatCap;
+            
+        end
+
+        function fHeatCapacity = getTotalHeatCapacity(this)
+            % Returns the total heat capacity of the phase. 
+            
+            if this.fOverloadedSpecificHeatCapacity ~= -1
+                fHeatCapacity = this.fOverloadedSpecificHeatCapacity * this.fMass;
+            else
+                fHeatCapacity = this.fHeatCapacity * this.fMass;
+            end
+            
         end
 
     end
