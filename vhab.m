@@ -6,7 +6,7 @@ classdef vhab
     
     properties (GetAccess = public, Constant = true)
         poSims   = containers.Map();
-        pOptions = containers.Map({ 'iTickRepIntv', 'iTimeRepIntv', 'bDump', 'sHost' }, { 100, 60, false, '' });
+        pOptions = containers.Map({ 'iTickRepIntv', 'iTickRepIntvMinor', 'iTimeRepIntv', 'bDump', 'sHost' }, { 100, 10, 60, false, '' });
 
         fLastDispTime = 0;      % So we can calulate the delta t between the 100*X ticks display
     end
@@ -106,18 +106,28 @@ classdef vhab
         end
         
         
-        function setReportInterval(iTicks, fTime)
+        function setReportInterval(iTicks, iMinorTicks)
             % Set the interval in which the tick and the sim time are
             % reported to the console.
             
             pOptions = vhab.pOptions;
             
             if ~isempty(iTicks)
+                
+                if mod(iTicks, 1) ~= 0, error('Ticks needs to be integer.'); end;
+                
                 pOptions('iTickRepIntv') = iTicks;
             end
             
-            if nargin >= 2
-                pOptions('iTimeRepIntv') = fTime;
+            if (nargin >= 2) && ~isempty(iMinorTicks)
+                
+                if mod(iMinorTicks, 1) ~= 0, error('Minor ticks needs to be integer.'); end;
+                
+                if mod(iTicks / iMinorTicks, 1) ~= 0
+                    error('Minor tick needs to be a whole-number divisor of major tick (e.g. 25 vs. 100, 10 vs. 100)');
+                end
+                
+                pOptions('iTickRepIntvMinor') = iMinorTicks;
             end
         end
         
@@ -172,6 +182,21 @@ classdef vhab
             
             
             
+            
+            % Minor tick?
+            if (mod(oSim.oTimer.iTick, vhab.pOptions('iTickRepIntvMinor')) == 0) && (oSim.oTimer.fTime > 0)
+                % Major tick -> remove printed minor tick characters
+                if (mod(oSim.oTimer.iTick, vhab.pOptions('iTickRepIntv')) == 0)
+                    %fprintf('\n');
+                    
+                    iDeleteChars = 1 * ceil(vhab.pOptions('iTickRepIntv') / vhab.pOptions('iTickRepIntvMinor')) - 1;
+                    fprintf(repmat('\b', 1, iDeleteChars));
+                else
+                    %fprintf('%f\t', oSim.oTimer.fTime);
+                    
+                    fprintf('.');
+                end
+            end
             
             if mod(oSim.oTimer.iTick, vhab.pOptions('iTickRepIntv')) == 0
                 %TODO store last tick disp fTime on some containers.Map!
