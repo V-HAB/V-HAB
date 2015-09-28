@@ -58,7 +58,7 @@ classdef dummymatter < matter.store
             this.fMolarMass = this.oMT.calculateMolarMass(afMasses);
             
             % Load density from matter table if not provided. 
-            if nargin < 4
+            if nargin <= 4
                 this.fDensity = this.oMT.calculateDensity(sPhase, afMasses, fTemperature, this.oMT.Standard.Pressure);
             else 
                 this.fDensity = fDensity;
@@ -67,7 +67,7 @@ classdef dummymatter < matter.store
             % Load specific heat capacity from matter table if not
             % provided.
             bOverwriteHeatCapacity = true;
-            if nargin < 5
+            if nargin <= 5
                 bOverwriteHeatCapacity = false;
                 fSpecificHeatCap = this.oMT.calculateHeatCapacity(sPhase, afMasses, fTemperature, this.oMT.Standard.Pressure);
             end
