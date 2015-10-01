@@ -30,5 +30,16 @@ classdef solid < matter.phase
         end
     end
     
+    %% Protected methods, called internally to update matter properties %%%
+    methods (Access = protected)
+        function setAttribute(this, sAttribute, xValue)
+            % Internal helper, see @matter.phase class.
+            %
+            %TODO throw out, all done with events hm?
+            
+            this.(sAttribute) = xValue;
+        end
+    end
+    
 end
 
