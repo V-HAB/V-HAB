@@ -12,12 +12,16 @@ classdef solid < matter.phase
     end
 
     properties (SetAccess = protected, GetAccess = public)
-        afVolume;       % Array containing the volume of the individual species in m^3
-        fVolume = 0;    % Volume of all solid species in m^3
+        afVolume;        % Array containing the volume of the individual substances in m^3
+        fVolume = 0;     % Volume of all solid substances in m^3
+        fPressure = NaN; % Placeholder/compatibility "pressure" since solids do not have an actual pressure.
     end
     
     methods
-        function this = solid(oStore, sName, tfMasses, fTemperature)
+        
+        function this = solid(oStore, sName, tfMasses, fIgnoredVolume, fTemperature)
+            %SOLID Create a new solid phase
+            
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             csKeys = fieldnames(tfMasses);
@@ -27,7 +31,19 @@ classdef solid < matter.phase
             end
             this.fVolume  = sum(this.afVolume);
             this.fDensity = this.fMass / this.fVolume;
+            
+            if ~isempty(fIgnoredVolume) || fIgnoredVolume ~= this.fVolume
+                this.warn('matter:phases:solid', 'Volume %d m^3 set for solid will be ignored. Instead, the value was set to %d m^3.', fIgnoredVolume, this.fVolume);
+            end
+            
         end
+        
+        function bSuccess = setVolume(this, ~)
+            % Prevent volume from being set.
+            bSuccess = false;
+            this.throw('matter:phases:solid', 'Cannot compress a solid, duh!');
+        end
+        
     end
     
     %% Protected methods, called internally to update matter properties %%%
