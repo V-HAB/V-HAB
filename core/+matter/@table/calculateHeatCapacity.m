@@ -70,9 +70,15 @@ function fSpecificHeatCapacity = calculateHeatCapacity(this, varargin) %sMatterS
     end
 
     % If no mass is given, the heat capacity is also zero.
-    if sum(afMasses) == 0;
+    if sum(afMasses) == 0
         fSpecificHeatCapacity = 0;
         return; % Return early.
+    end
+    
+    % If masses are infinite, the heat capacity is also infinite.
+    if sum(afMasses) == Inf
+        fSpecificHeatCapacity = Inf;
+        return;
     end
 
     % Make sure there is no NaN in the mass vector.

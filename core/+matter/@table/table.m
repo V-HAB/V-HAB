@@ -804,7 +804,7 @@ classdef table < base
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Check to see if what we got in the end is an actual value %%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if isnan(fProperty) || isempty(fProperty)
+            if isempty(fProperty) || isnan(fProperty)
                 keyboard();
                 this.throw('findProperty', 'Error using findProperty. %s \n No valid value for %s of %s found in matter table.', sReportString, sProperty, sSubstance);
             end
