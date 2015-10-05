@@ -40,6 +40,10 @@ classdef exme < base
         % @type object
         oMT;
         
+        % Timer
+        % @type object
+        oTimer;
+        
         % Name of processor. If 'default', several MFs can be connected
         %TODO make that configurable?
         % @type string
@@ -77,6 +81,7 @@ classdef exme < base
             
             this.sName  = sName;
             this.oMT    = oPhase.oMT;
+            this.oTimer = oPhase.oTimer;
             
             %this.setAttribute = 
             oPhase.addProcEXME(this);

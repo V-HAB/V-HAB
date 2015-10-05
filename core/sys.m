@@ -13,6 +13,11 @@ classdef sys < base & event.source
         % @type object
         oParent;
         
+        % Root system. Special sys which inherits from systems.root. Does
+        % not have a real oParent (references itself). Generally, special
+        % system that contains additional data about the hierarchy.
+        oRoot;
+        
         % Child systems
         %TODO could also be a mixin aoChildren, "sys" as mutual interface?
         % @type struct
@@ -25,9 +30,9 @@ classdef sys < base & event.source
         csChildren = {};
         iChildren  = 0;
         
-        % Data attached to the system - inherited from parent!
-        % @XXtype object
-        oData;
+% % %         % Data attached to the system - inherited from parent!
+% % %         % @XXtype object
+% % %         oData;
 
     end
     
@@ -71,24 +76,24 @@ classdef sys < base & event.source
     
     %% Methods handling the system relations - parent, child, data
     methods
-        function this = setData(this, oData)
-            if this.oData == oData
-                return;
-            end
-            
-            this.oData = oData;
-            
-            %TODO implement a updateData method which checks the parent
-            %     object for the oData. Only updates the local oData if it
-            %     wasn't manually set through setData (don't inherit the
-            %     data object from the parent).
-            %     Child data object PARENT however should always point to
-            %     the systems parent data object, so it is possible to only
-            %     overwrite certain attributes.
-            for iI = 1:this.iChildren
-               this.getChild(iI).setData(oData);
-            end
-        end
+% % %         function this = setData(this, oData)
+% % %             if this.oData == oData
+% % %                 return;
+% % %             end
+% % %             
+% % %             this.oData = oData;
+% % %             
+% % %             %TODO implement a updateData method which checks the parent
+% % %             %     object for the oData. Only updates the local oData if it
+% % %             %     wasn't manually set through setData (don't inherit the
+% % %             %     data object from the parent).
+% % %             %     Child data object PARENT however should always point to
+% % %             %     the systems parent data object, so it is possible to only
+% % %             %     overwrite certain attributes.
+% % %             for iI = 1:this.iChildren
+% % %                this.getChild(iI).setData(oData);
+% % %             end
+% % %         end
         
         function this = setParent(this, oParent)
             if ~isa(oParent, 'sys')
@@ -113,9 +118,12 @@ classdef sys < base & event.source
             % has the oParent set to itself
             this.oParent.addChild(this);
             
-            % Get data from parent
-            %this.oData = this.oParent.oData;
-            this.setData(this.oParent.oData);
+            % Get root system from parent
+            this.oRoot = this.oParent.oRoot;
+            
+% % %             % Get data from parent
+% % %             %this.oData = this.oParent.oData;
+% % %             this.setData(this.oParent.oData);
         end
         
         function this = removeChild(this, oChild)

@@ -1,4 +1,4 @@
-classdef setup < simulation
+classdef setup < simulation.infrastructure
     %SETUP This class is used to setup a simulation
     %   There should always be a setup file present for each project. It is
     %   used for the following:
@@ -16,31 +16,34 @@ classdef setup < simulation
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation('Tutorial_Simple_Flow');
+            this@simulation.infrastructure('Tutorial_Simple_Flow');
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            tutorials.simple_flow.systems.Example(this.oRoot, 'Example');
+            tutorials.simple_flow.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Logging
             % Creating a cell setting the log items. You need to know the
             % exact structure of your model to set log items, so do this
             % when you are done modelling and ready to run a simulation. 
-            this.csLog = {
-                % System timer
-                'oData.oTimer.fTime';                                              % 1
-                
-                % Logging pressures, masses and the flow rate
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';  % 2
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';  % 4
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
-                'toChildren.Example.aoBranches(1).fFlowRate';                      % 6
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemp';
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemp';     % 8
-
-                % You can add other parameters here
-                };
+            
+            this.toMonitors.oLogger.add('Example', 'flow_props');
+            
+%             this.csLog = {
+%                 % System timer
+%                 'oData.oTimer.fTime';                                              % 1
+%                 
+%                 % Logging pressures, masses and the flow rate
+%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';  % 2
+%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
+%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';  % 4
+%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
+%                 'toChildren.Example.aoBranches(1).fFlowRate';                      % 6
+%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemp';
+%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemp';     % 8
+% 
+%                 % You can add other parameters here
+%                 };
             
             %% Simulation length
             % Stop when specific time in simulation is reached or after 

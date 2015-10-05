@@ -45,7 +45,7 @@ classdef source < base % < hobj
             if nargin < 5, tStorage = struct(); end;
             
             % Replace dots with underscores
-            sPath = strrep(sType, '.', '_');
+            sPath = strrep(sType, '.', '__d__');
             
             % Create struct for callback if it doesn't exist yet
             if ~isfield(this.ttaEvents, sPath), this.ttaEvents.(sPath) = struct(); end;
@@ -93,7 +93,7 @@ classdef source < base % < hobj
             % can accept different types of params, depending on filter, but
             % see e.g. interval/timeout filter - two values!
 
-            sPath = strrep(sPath, '.', '_');
+            sPath = strrep(sPath, '.', '__d__');
 
             if nargin < 3
                 this.tcFilters = rmfield(this.tcFilters, sPath);
@@ -118,7 +118,7 @@ classdef source < base % < hobj
         %    callback itself - might be referenced somewhere else as well
         function unbind(this, sType, iId)
             % Replace dots with underscores
-            sPath = strrep(sType, '.', '_');
+            sPath = strrep(sType, '.', '__d__');
             sId   = [ 'id_' num2str(iId) ];
             
             if isfield(this.ttaEvents, sPath) && isfield(this.ttaEvents.(sPath), sId)
@@ -155,7 +155,7 @@ classdef source < base % < hobj
                 [ sPart sRest ] = strtok(sRest, '.');
                 
                 sPath = [ sPath sSep sPart ];
-                sSep  = '_';
+                sSep  = '__d__';
                 cPathes = {};
                 
                 %CU check if sPart equals *
@@ -196,16 +196,16 @@ classdef source < base % < hobj
                 % Check - even if path is empty, maybe a filter assigned?
                 % If yes, set for that level for the lower levels to use!
                 if size(cPathes, 1) == 0 && ~strcmp(sPart, '*')
-                    sCurrentType = strrep(sPath, '_', '.');
+                    sCurrentType = strrep(sPath, '__d__', '.');
                     
                     % Set new filter
                     if isfield(this.tcFilters, sCurrentType) && ~isempty(this.tcFilters.(sCurrentType){1})
-                        cFilters{size(strfind(sPath, '_'), 2) + 1, 1} = this.tcFilters.(sCurrentType);
+                        cFilters{size(strfind(sPath, '__d__'), 2) + 1, 1} = this.tcFilters.(sCurrentType);
                         
                     % Set the one already set by parent ... maybe cool
                     % stuff ;)
                     else
-                        cFilters{size(strfind(sPath, '_'), 2) + 1, 1} = cFilter;
+                        cFilters{size(strfind(sPath, '__d__'), 2) + 1, 1} = cFilter;
                     end
                 end
                 
@@ -215,10 +215,10 @@ classdef source < base % < hobj
                 for iC = 1:size(cPathes, 1)
                     sPath  = cPathes{iC, 1};
                     csIds  = fieldnames(this.ttaEvents.(sPath));
-                    iDepth = size(strfind(sPath, '_'), 2) + 1;
+                    iDepth = size(strfind(sPath, '__d__'), 2) + 1;
                     
                     % Current type - types are with . instead of _
-                    oEvent.sCurrentType = strrep(sPath, '_', '.');
+                    oEvent.sCurrentType = strrep(sPath, '__d__', '.');
                     
                     % (**cPathes**) ... and then, it is first checked if
                     % a filter for the current path exists, and if not, the

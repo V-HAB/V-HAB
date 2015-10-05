@@ -107,6 +107,10 @@ classdef branch < base & event.source
         % Reference to the matter table
         % @type object
         oMT;
+        
+        % Reference to the timer
+        % @type object
+        oTimer;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -152,10 +156,16 @@ classdef branch < base & event.source
             %   - does store.getPort have a throw if port not found? Else
             %     throw here.
             
+            % Reference to the matter.container and some shorthand refs.
             this.oContainer = oContainer;
-            this.oMT        = oContainer.oMT;
+            this.oMT        = oContainer.oRoot.oMT;
+            this.oTimer     = oContainer.oRoot.oTimer;
+            
             this.csNames    = strrep({ sLeft; sRight }, '.', '__');
             this.sName      = [ this.csNames{1} '___' this.csNames{2} ];
+            
+            
+            this.oContainer.addBranch(this);
             
             
             oFlow = [];

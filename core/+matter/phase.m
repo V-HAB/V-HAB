@@ -122,6 +122,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % Matter table object
         oMT;
 
+        % Timer object
+        oTimer;
+
         % User-defined name of phase
         % @type string
         %TODO: rename to |sIdent|??
@@ -265,12 +268,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             %CHECK changed, see connector_store, need oStore already set
             this.oStore = oStore;
             this.oStore.addPhase(this);
-
-            % DELETE? This is only necessary if the number of substances
-            % changes during runtime...
-            % Set the matter table
-            %this.oMT = oMT;
-            this.updateMatterTable();
+            
+            % Set matter table / timer shorthands, register phase in MT
+            this.oMT    = this.oStore.oMT;
+            this.oTimer = this.oStore.oTimer;
+            
+            this.afMass = this.oMT.addPhase(this);
+            
+            
 
             % Preset masses
             this.afMass = zeros(1, this.oMT.iSubstances);
@@ -649,7 +654,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
         end
 
-        function seal(this, oData)
+        function seal(this)
             
             % Preset mass and time step logging attributes
             % iPrecision ^ 2 is more or less arbitrary
@@ -658,12 +663,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.afMassLog = ones(1, iStore) * this.fMass;
             this.afLastUpd = 0:(1/(iStore-1)):1;%ones(1, iStore) * 0.00001;
             
-            
-            this.rHighestMaxChangeDecrease = oData.rHighestMaxChangeDecrease;
+            %TODO oData.rUF -> this.oStore.oContainer.oRoot.tSolverParams
+            this.rHighestMaxChangeDecrease = this.oStore.oContainer.oRoot.tSolverParams.rHighestMaxChangeDecrease;
             
             
             % Auto-Set rMaxChange.
-            this.rMaxChange = sif(this.fVolume <= 0.25, this.fVolume, 0.25) / oData.rUpdateFrequency;
+            this.rMaxChange = sif(this.fVolume <= 0.25, this.fVolume, 0.25) / this.oStore.oContainer.oRoot.tSolverParams.rUpdateFrequency;
             
             
             if ~this.oStore.bSealed
@@ -959,14 +964,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
                 this.oStore.oTimer.bindPostTick(@this.calculateTimeStep);
             end
-        end
-
-        function this = updateMatterTable(this)
-            % Adds the phase to the matter table index and sets property
-            this.oMT = this.oStore.oMT;
-
-            % addPhase returns the old afMass mappend to the new MT
-            this.afMass = this.oMT.addPhase(this);
         end
 
         function setAttribute(this, sAttribute, xValue)

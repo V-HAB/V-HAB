@@ -25,14 +25,26 @@ classdef container < sys
         csStores;
         csProcsF2F;
         
+        % Reference to the branches, by name
+        toBranches = struct();
+        
         
         % Sealed?
         bSealed = false;
     end
     
+    properties (SetAccess = private, GetAccess = public, Transient)
+        % Make those transient? Would have to be re-referenced in loadobj.
+        oMT;
+    end
+    
     methods
         function this = container(oParent, sName)
             this@sys(oParent, sName);
+            
+            if ~isa(this.oRoot.oMT, 'matter.table'), this.throw('container', 'Provided object ~isa matter.table'); end;
+            
+            this.oMT    = this.oRoot.oMT;
         end
         
         function afMass = getTotalPartialMasses(this)
@@ -73,7 +85,13 @@ classdef container < sys
     % References to the store, f2f etc are stored one-way, i.e. store
     % does not point to container.
     methods (Access = protected)
+%TODO
 %DELETE? Is never called...
+%SCJO: yes and no. Within vsys .exec(), this method COULD be called. The
+%      idea was that matter procs like F2Fs are updated here. Maybe this
+%      does not make sense, and rather proc update methods have to be
+%      called explicitly by the user in vsys.exec?
+%
 %         function exec(this, fTimeStep)
 %             
 %             
@@ -100,7 +118,7 @@ classdef container < sys
             for iI = 1:length(this.csStores)
                 % Stores need a timer object, to be accessed by the phases
                 % to e.g. register updates, find out elapsed time
-                this.toStores.(this.csStores{iI}).seal(this.oTimer, this.oData);
+                this.toStores.(this.csStores{iI}).seal();
             end
             
             
@@ -111,7 +129,9 @@ classdef container < sys
             
             this.bSealed = true;
         end
-        
+    end
+    
+    methods (Access = public)
         
         function addStore(this, oStore)
             % Adds the store to toStores. Might be overloaded by derived
@@ -128,7 +148,7 @@ classdef container < sys
             elseif isfield(this.toStores, oStore.sName)
                 this.throw('addStore', 'Store with name %s already exists!', oStore.sName);
             
-            elseif oStore.oMT ~= this.oData.oMT
+            elseif oStore.oMT ~= this.oMT
                 this.throw('addStore', 'Matter tables don''t match ... should probably not happen? See doc of this method, create stores through container?');
             end
             
@@ -156,43 +176,37 @@ classdef container < sys
             elseif isfield(this.toProcsF2F, oProcF2F.sName)
                 this.throw('addF2F', 'Proc %s already exists.', oProcF2F.sName);
                 
+            elseif this ~= oProcF2F.oContainer
+                this.throw('addP2P', 'F2F proc does not have this vsys set as a container!');
+            
             end
             
             this.toProcsF2F.(oProcF2F.sName) = oProcF2F;
         end
         
         
-    end
-    
-    
-    methods (Access = protected, Sealed = true)
-%DELETE? Isn't this covered by the whole createBranch method?
-%         function createPort(this, sStore)
-%             % Creates a branch-like thing, basically directly connecting an
-%             % EXME processor as an interface for branches from SUBsystems
-%             % to connect to. If the EXME name is 'default', as for normal
-%             % exmes several branches can be connected, representing e.g.
-%             % several people in a room that all 'connect' to the atmospere
-%             % for breathing.
-%             %
-%             % Name of I/F will be the store/port name (. replaced by _).
-%             %
-%             %TODO implement!
-%             
-%         end
         
-        function [oBranch] = createBranch(this, sLeft, csProcs, sRight)
-            
-            
+        function this = addBranch(this, oBranch)
             if this.bSealed
-                this.throw('createBranch', 'Can''t create branches any more, sealed.');
+                this.throw('addBranch', 'Can''t create branches any more, sealed.');
+                
+            elseif ~isa(oBranch, 'matter.branch')
+                this.throw('addBranch', 'Provided branch is not a and does not inherit from matter.branch');
+                
+            elseif isfield(this.toBranches, oBranch.sName)
+                this.throw('addBranch', 'Branch with name "%s" alreay exists!', oBranch.sName);
+                
             end
             
-            oBranch = matter.branch(this, sLeft, csProcs, sRight);
             
-            this.aoBranches(end + 1, 1) = oBranch;
+            
+            this.aoBranches(end + 1, 1)     = oBranch;
+            this.toBranches.(oBranch.sName) = oBranch;
         end
+        
     end
+    
+    
     
     % Changed --> allow external access, e.g. scheduler needs to be able to
     % change the IFs ... or the Sub-System need to implement methods for

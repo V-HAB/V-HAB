@@ -159,9 +159,9 @@ classdef gas < matter.phase
         end
 
 
-        function seal(this, oData)
+        function seal(this)
 
-            seal@matter.phase(this, oData);
+            seal@matter.phase(this);
 
         end
 

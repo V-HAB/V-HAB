@@ -33,9 +33,9 @@ classdef pipe < matter.procs.f2f
 
     methods
         %% Constructor
-        function this = pipe(sName, fLength, fDiameter, fRoughness)
+        function this = pipe(oContainer, sName, fLength, fDiameter, fRoughness)
 
-            this@matter.procs.f2f(sName);
+            this@matter.procs.f2f(oContainer, sName);
 
             this.fLength   = fLength;
             this.fDiameter = fDiameter;
@@ -45,7 +45,7 @@ classdef pipe < matter.procs.f2f
             this.supportSolver('manual', false);
             
 
-            if nargin == 4
+            if nargin >= 5
                this.fRoughness = fRoughness;
             end
 

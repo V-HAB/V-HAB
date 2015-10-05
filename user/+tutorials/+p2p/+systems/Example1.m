@@ -27,18 +27,20 @@ classdef Example1 < vsys
             this.addStore(tutorials.p2p.components.Filter(this, 'Filter', 0.5));
             
             % Adding a fan
-            this.addProcF2F(components.fan('Fan', 'setSpeed', 40000, 'Left2Right'));
+            components.fan(this, 'Fan', 'setSpeed', 40000, 'Left2Right');
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe('Pipe_1', 0.5, 0.005));
-            this.addProcF2F(components.pipe('Pipe_2', 0.5, 0.005));
-            this.addProcF2F(components.pipe('Pipe_3', 0.5, 0.005));
+            components.pipe(this, 'Pipe_1', 0.5, 0.005);
+            components.pipe(this, 'Pipe_2', 0.5, 0.005);
+            components.pipe(this, 'Pipe_3', 0.5, 0.005);
             
             % Creating the flowpath (=branch) between the components
             % Since we are using default exme-processors here, the input
             % format can be 'store.phase' instead of 'store.exme'
-            oBranch_1 = this.createBranch('Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
-            oBranch_2 = this.createBranch('Filter.Out', {'Pipe_3' }, 'Atmos.In');
+            %oBranch_1 = this.createBranch('Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
+            %oBranch_2 = this.createBranch('Filter.Out', {'Pipe_3' }, 'Atmos.In');
+            oBranch_1 = matter.branch(this, 'Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
+            oBranch_2 = matter.branch(this, 'Filter.Out', {'Pipe_3' }, 'Atmos.In');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.

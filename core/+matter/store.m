@@ -15,6 +15,8 @@ classdef store < base
         % @types object
         aoPhases = [];
         
+        toPhases = struct();
+        
         % Amount of phases
         iPhases;
         
@@ -112,7 +114,13 @@ classdef store < base
             
             this.sName      = sName;
             this.oContainer = oContainer;
-            this.setMatterTable(oContainer.oMT);
+            
+            % Add this store object to the matter.container
+            this.oContainer.addStore(this);
+            
+            this.oMT    = this.oContainer.oRoot.oMT;
+            this.oTimer = this.oContainer.oRoot.oTimer;
+            
             
             if nargin >= 3
                 this.fVolume = fVolume;
@@ -525,6 +533,8 @@ classdef store < base
                 if isempty(this.aoPhases), this.aoPhases          = oPhase;
                 else                       this.aoPhases(end + 1) = oPhase;
                 end
+                
+                this.toPhases.(oPhase.sName) = oPhase;
             end
         end
         
@@ -552,7 +562,7 @@ classdef store < base
         
         
         
-        function seal(this, oTimer, oData)
+        function seal(this)
             % See doc for bSealed attr.
             %
             %TODO create indices of phases, their ports etc! Trigger event?
@@ -564,14 +574,6 @@ classdef store < base
             if this.bSealed, return; end;
             
             
-            if ~isa(oTimer, 'event.timer')
-                this.throw('Timer needs to inherit from event.timer');
-            end
-            
-            % Timer - oTimer.fTime is current time, e.g. used by phases to
-            % determine how much mass has to be merged/extracted depending
-            % on flow rate and elapsed time.
-            this.oTimer = oTimer;
             
             % Bind the .update method to the timer, with a time step of 0
             % (i.e. smallest step), will be adapted after each .update
@@ -595,7 +597,7 @@ classdef store < base
             
             
             % Seal phases
-            for iI = 1:length(this.aoPhases), this.aoPhases(iI).seal(oData); end;
+            for iI = 1:length(this.aoPhases), this.aoPhases(iI).seal(); end;
             
             this.bSealed = true;
         end
@@ -618,13 +620,6 @@ classdef store < base
             end
             
             this.toProcsP2P.(oProcP2P.sName) = oProcP2P;
-        end
-        
-        function createP2P(this, varargin)
-            % Helper to create a p2p proc - maybe use a helper method in
-            % matter.helpers.procs.p2p.create.*? Provide oMT etc.
-            %
-            %TODO implement
         end
     end
     

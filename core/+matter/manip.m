@@ -30,6 +30,10 @@ classdef manip < base
         % Reference to the matter table
         % @type object
         oMT;
+        
+        % Reference to the timer
+        % @type object
+        oTimer;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -54,6 +58,7 @@ classdef manip < base
             this.sName   = sName;
             this.oPhase  = oPhase;
             this.oMT     = oPhase.oMT;
+            this.oTimer  = oPhase.oTimer;
             
             % Adding the manipulator to the phase, returns a handle to the
             % detachManipulator() method.

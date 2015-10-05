@@ -51,6 +51,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % Reference to the matter table
         % @type object
         oMT;
+        
+        % Reference to the timer
+        % @type object
+        oTimer;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -108,7 +112,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             if nargin == 1
                 % Setting the matter table
-                this.oMT = oCreator.oMT;
+                this.oMT    = oCreator.oMT;
+                this.oTimer = oCreator.oTimer;
                 
                 % The flow class can either be used on its own, or as a parent
                 % class for a p2p processor. In the latter case, the flow

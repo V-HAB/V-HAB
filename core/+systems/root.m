@@ -8,11 +8,14 @@ classdef root < sys
     end
     
     methods
-        function this = root(sId, oData)
+        function this = root(sId) % % % , oData)
             this@sys([], sId);
             
-            % Manually set data - setParent does nothing!
-            this.setData(oData);
+            % THIS is spar... the root system.
+            this.oRoot = this;
+            
+% % %             % Manually set data - setParent does nothing!
+% % %             this.setData(oData);
         end
         
         function setParent(this, ~)
@@ -22,12 +25,12 @@ classdef root < sys
             this.oParent = this;
         end
         
-        function play(this)
-            % Top system can be directly executed - child systems can
-            % register on this system's exec - usable without timer?
-            
-            this.exec();
-        end
+% % %         function play(this)
+% % %             % Top system can be directly executed - child systems can
+% % %             % register on this system's exec - usable without timer?
+% % %             
+% % %             this.exec();
+% % %         end
     end
     
 end

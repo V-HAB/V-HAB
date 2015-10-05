@@ -6,13 +6,13 @@ classdef timer < base
         % Minimum time step, no individual time steps shorter than this one
         % possible.
         % @type float
-        fTimeStep = 0.1;  % [s]
+        fTimeStep = 1e-8;  % [s]
         
         
         % "Accuracy" of simulation - min time step. Use as
         % precision for rounding.
         % @type int
-        iPrecision = 1;
+        iPrecision = 7;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -81,6 +81,12 @@ classdef timer < base
             % in seconds. 
             this.iPrecision = floor(log10(1 / this.fTimeStep)) - 1;
             
+        end
+
+
+        function setMinStep(this, fMinStep)
+            this.fTimeStep = fMinStep;
+            this.iPrecision = floor(log10(1 / this.fTimeStep)) - 1;
         end
         
         

@@ -47,6 +47,10 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         % @type object
         oMT;
         
+        % Timer
+        % @type object
+        oTimer;
+        
         % Name of processor.
         % @type string
         sName;
@@ -57,6 +61,10 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         
         % Reference to the branch object
         oBranch;
+        
+        % Container (vsys) the f2f belongs to
+        oContainer;
+        
         
         % Sealed?
         bSealed = false;
@@ -82,11 +90,18 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     
     
     methods
-        function this = f2f(sName)
+        function this = f2f(oContainer, sName)
             % Constructor for the f2f matter processor class. If no csPorts
             % are provided, two default ones (left, right) are created.
             
             this.sName = sName;
+            
+            
+            this.oContainer = oContainer;
+            this.oContainer.addProcF2F(this);
+            
+            this.oMT    = this.oContainer.oMT;
+            this.oTimer = this.oContainer.oTimer;
             
             % Preset the flow array with a default, zero FR matter flow
             for iI = 1:this.iPorts
@@ -104,7 +119,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             end
             
             this.oBranch = oBranch;
-            this.oMT     = oBranch.oMT;
+            %this.oMT     = oBranch.oMT;
             this.bSealed = true;
         end
     end

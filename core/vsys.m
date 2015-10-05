@@ -8,10 +8,6 @@ classdef vsys < matter.container & systems.timed
         % Execute container .exec on this exec? Set to false if solver, atm
         %TODO throw out? need solver anyway, and if just a manual one?
         bExecuteContainer = false;
-        
-        % Reference to the matter table
-        % @type object
-        oMT;
     end
     
     methods
@@ -26,7 +22,7 @@ classdef vsys < matter.container & systems.timed
             this@matter.container(oParent, sName);
             
             % Setting the matter table
-            this.oMT = this.oData.oMT;
+% %             this.oMT = this.oData.oMT;
             
 %             if nargin >= 3
 %                 this.setTimeStep(fTimeStep);
