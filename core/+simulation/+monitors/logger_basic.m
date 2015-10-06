@@ -90,7 +90,10 @@ classdef logger_basic < simulation.monitor
             
             % Merge
             for iL = 1:length(tNewLogProps)
-                this.tLogValues(end + 1) = tNewLogProps(iL);
+                % Only add property if not yet logged!
+                if isempty(strcmp({ this.tLogValues.sPath }, tNewLogProps(iL).sPath))
+                    this.tLogValues(end + 1) = tNewLogProps(iL);
+                end
             end
         end
         
@@ -99,7 +102,7 @@ classdef logger_basic < simulation.monitor
             % Get index from tLogValues
             
             sPath = simulation.helper.paths.convertShorthandToFullPath(sPath);
-            iIdx  = find(strcmp(this.csPaths, sPath), 1, 'first');
+            iIdx  = find(strcmp({ this.tLogValues.sPath }, sPath), 1, 'first');
             
             axData  = this.mfLog(:, iIdx);
             tConfig = this.tLogValues(iIdx);
@@ -165,7 +168,7 @@ classdef logger_basic < simulation.monitor
             this.iLogIdx = this.iLogIdx + 1;
             
             
-            
+            this.afTime(this.iLogIdx) = this.oSimulationInfrastructure.oSimulationContainer.oTimer.fTime;
             
             try
                 this.mfLog(this.iLogIdx, :) = this.logDataEvald();

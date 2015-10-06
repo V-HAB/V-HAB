@@ -75,7 +75,7 @@ classdef vhab
             warning('on','all');
         end
         
-        function oSimRtn = exec(sSimulation, varargin)
+        function oSimRtn = exec(sSimulation, ptConfigParams, tSolverParams, varargin)
             % Clear all existing sims, and run provided sim (uses the
             % default max. time/tick conditions on the sim object)
             disp('Clearing MATLAB classes...');
@@ -91,7 +91,10 @@ classdef vhab
                 dbstop(tBreakpoints);
             end
             
-            sSimulation = vhab.sim(sSimulation, varargin{:});
+            if nargin < 2 || isempty(ptConfigParams), ptConfigParams = containers.Map(); end;
+            if nargin < 3 || isempty(tSolverParams),  tSolverParams   = struct(); end;
+            
+            sSimulation = vhab.sim(sSimulation, ptConfigParams, tSolverParams, varargin{:});
             
             oSim = vhab.poSims(sSimulation);
             

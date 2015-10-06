@@ -2,7 +2,12 @@ classdef Example < vsys
     %EXAMPLE Example simulation for a simple flow in V-HAB 2.0
     %   Two tanks filled with gas at different pressures and a pipe in between
     
-    properties
+    properties (SetAccess = protected, GetAccess = public)
+        fPipeLength   = 1.5;
+        fPipeDiameter = 0.005;
+        
+        % Pressure difference in bar
+        fPressureDifference = 1;
     end
     
     methods
@@ -20,6 +25,20 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName, 30);
             
+            % Make the system configurable
+%             disp(this);
+%             disp('------------');
+%             disp(this.oRoot.oCfgParams.configCode(this));
+%             disp('------------');
+%             disp(this.oRoot.oCfgParams.get(this));
+%             disp('------------');
+            eval(this.oRoot.oCfgParams.configCode(this));
+            
+            disp(this);
+            
+            
+            
+            
             % Creating a store, volume 1 m^3
 % %             this.addStore(matter.store(this, 'Tank_1', 1));
             matter.store(this, 'Tank_1', 1);
@@ -33,7 +52,7 @@ classdef Example < vsys
             matter.store(this, 'Tank_2', 1);
             
             % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
-            oAirPhase = this.toStores.Tank_2.createPhase('air', 2, 323.15);
+            oAirPhase = this.toStores.Tank_2.createPhase('air', this.fPressureDifference + 1, 323.15);
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
@@ -42,7 +61,7 @@ classdef Example < vsys
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter.
 % %             this.addProcF2F(components.pipe('Pipe', 1.5, 0.005));
-            components.pipe(this, 'Pipe', 1.5, 0.005);
+            components.pipe(this, 'Pipe', this.fPipeLength, this.fPipeDiameter);
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 

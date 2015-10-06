@@ -12,11 +12,29 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup() % Constructor function
+        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+            
+            % vhab.exec always passes in ptConfigParams, tSolverParams
+            % If not provided, set to empty containers.Map/struct
+            % Can be passed to vhab.exec:
+            %
+            % ptCfgParams = containers.Map();
+            % ptCfgParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
+            % vhab.exec('tutorials.simple_flow.setup', ptCfgParams);
+            
+            
+            % By Path - will overwrite (by definition) CTOR value, even 
+            % though the CTOR value is set afterwards!
+            %ptConfigParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
+            
+            
+            % By CTOR
+            ptConfigParams('tutorials.simple_flow.systems.Example') = struct('fPipeLength', 5, 'fPressureDifference', 2);
+            
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Simple_Flow');
+            this@simulation.infrastructure('Tutorial_Simple_Flow', ptConfigParams, tSolverParams);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
