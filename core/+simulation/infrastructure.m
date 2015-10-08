@@ -111,11 +111,11 @@ classdef infrastructure < base & event.source
         % Default monitors
         ttMonitors = struct(...
             ... % Logs specific simulation values, can be specified throug helpers
-            'oLogger', struct('sClass', 'simulation.monitors.logger_basic') ...
+            'oLogger', struct('sClass', 'simulation.monitors.logger_basic'), ...
             ... % Post-processing - show plots
             ... %%%'oPlotter', struct('sClass', 'simulation.monitors.plotgrid_with_tree'), ...
             ... % Logs the simulation process in the console - params are major, minor tick
-            ... %%%'oConsoleOutput', struct('sClass', 'simulation.monitors.console_output', 'cParams', {{ 100, 10 }}), ...
+            'oConsoleOutput', struct('sClass', 'simulation.monitors.console_output', 'cParams', {{ 100, 10 }}) ...
             ... % Warns if too much mass loss / gain
             ... %%%'oMatterObserver', struct('sClass', 'simulation.monitors.matter_observer'), ...
             ... %TODO implement - observes time step, warns if e.g. low because of just one phase, hints if e.g. mass in that phase doesn't change much / oscillates
@@ -148,9 +148,24 @@ classdef infrastructure < base & event.source
             csMonitors = fieldnames(tMonitors);
 
             for iM = 1:length(csMonitors)
-                % Just add the monitor if it doesn't exist. Overwrite, if provided value is a struct that would contain the sClass and possibly cParams values
-                if ~isfield(this.ttMonitors, csMonitors{iM}) || isstruct(tMonitors.(csMonitors{iM}))
-                     this.ttMonitors.(csMonitors{iM}) = tMonitors.(csMonitors{iM});
+                % Just add the monitor if it doesn't exist.
+                if ~isfield(this.ttMonitors, csMonitors{iM})
+                    % Just a strig? Create struct
+                    if ischar(tMonitors.(csMonitors{iM}))
+                        this.ttMonitors.(csMonitors{iM}) = struct('sClass', tMonitors.(csMonitors{iM}));
+                    else
+                        this.ttMonitors.(csMonitors{iM}) = tMonitors.(csMonitors{iM});
+                    end
+
+                % Overwrite/Merge, provided value is a struct that would contain the sClass and / or cParams values
+                elseif isstruct(tMonitors.(csMonitors{iM}))
+                    
+                    %this.ttMonitors.(csMonitors{iM}) = tMonitors.(csMonitors{iM});
+                    this.ttMonitors.(csMonitors{iM}) = tools.struct.mergeStructs(...
+                        this.ttMonitors.(csMonitors{iM}), ...
+                        tMonitors.(csMonitors{iM}) ...
+                    );
+                    
 
                 % If value is a string, overwrite or insert the monitor and set value as sClass
                 elseif ischar(tMonitors.(csMonitors{iM}))
