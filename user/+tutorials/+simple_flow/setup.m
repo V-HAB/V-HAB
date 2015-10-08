@@ -121,30 +121,29 @@ classdef setup < simulation.infrastructure
                 'Tutorial_Simple_Flow/Example:s:Tank_2:p:Tank_2_Phase_1.fMass';
             };
             
-            
             %%% Default Code START
             
             figure('name', sPlot);
             hold on;
             grid minor;
             
-            mfLog = [];
-            sLbl  = [];
-            sUnit = [];
-            csLeg = {};
+            mfLog    = [];
+            sLabel   = [];
+            sUnit    = [];
+            csLegend = {};
             
             for iV = 1:length(csValues)
-                [ axData, tDef, sLbl ] = oLog.get(csValues{iV});
+                [ axData, tDefinition, sLabel ] = oLog.get(csValues{iV});
                 
                 mfLog = [ mfLog, axData ];
-                csLeg{end + 1} = tDef.sName;
-                sUnit = tDef.sUnit;
+                csLegend{end + 1} = tDefinition.sName;
+                sUnit = tDefinition.sUnit;
             end
             
             plot(oLog.afTime, mfLog);
-            legend(csLeg);
+            legend(csLegend);
             
-            ylabel([ sLbl ' in [' sUnit ']' ]);
+            ylabel([ sLabel ' in [' sUnit ']' ]);
             xlabel('Time in s');
             
             %%% Default Code END
