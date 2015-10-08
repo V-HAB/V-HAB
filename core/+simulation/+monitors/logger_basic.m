@@ -91,11 +91,25 @@ classdef logger_basic < simulation.monitor
             % Merge
             for iL = 1:length(tNewLogProps)
                 % Only add property if not yet logged!
-                if isempty(strcmp({ this.tLogValues.sPath }, tNewLogProps(iL).sPath))
+                if isempty(find(strcmp({ this.tLogValues.sPath }, tNewLogProps(iL).sPath), 1))
                     this.tLogValues(end + 1) = tNewLogProps(iL);
                 end
             end
         end
+        
+        
+        function this = addValue(this, sPath, sName, sUnit)
+            %TODO if no sUnit - try to guess / default units?
+            
+            sPath = simulation.helper.paths.convertShorthandToFullPath(sPath);
+            
+            if nargin < 4, sUnit = '-'; end;
+            
+            if isempty(find(strcmp({ this.tLogValues.sPath }, sPath), 1))
+                this.tLogValues(end + 1) = struct('sPath', sPath, 'sName', sName, 'sUnit', sUnit);
+            end
+        end
+        
         
         function [ axData, tConfig, sLabel ] = get(this, sPath)
             % Convert to full path

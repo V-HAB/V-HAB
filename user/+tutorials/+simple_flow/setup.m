@@ -28,17 +28,31 @@ classdef setup < simulation.infrastructure
             %ptConfigParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
             
             
-            % By CTOR
+            % By constructor
             ptConfigParams('tutorials.simple_flow.systems.Example') = struct('fPipeLength', 5, 'fPressureDifference', 2);
             
             
+            
+            % Possible to change the constructor paths and params for the
+            % monitors
+            ttMonitorConfig = struct();
+            
+            ttMonitorConfig.oConsoleOutput = struct('cParams', {{ 50 5 }});
+            
+            %tSolverParams.rUpdateFrequency = 0.1;
+            %tSolverParams.rHighestMaxChangeDecrease = 100;
+            
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Simple_Flow', ptConfigParams, tSolverParams);
+            this@simulation.infrastructure('Tutorial_Simple_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
             tutorials.simple_flow.systems.Example(this.oSimulationContainer, 'Example');
+            
+            % This is an alternative to providing the ttMonitorConfig above
+            %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
+            
             
             %% Logging
             % Creating a cell setting the log items. You need to know the
@@ -46,6 +60,13 @@ classdef setup < simulation.infrastructure
             % when you are done modelling and ready to run a simulation. 
             
             this.toMonitors.oLogger.add('Example', 'flow_props');
+            
+            
+            % Add single values
+            this.toMonitors.oLogger ...
+                .addValue('Tutorial_Simple_Flow/Example.iChildren', 'Blah') ...
+                .addValue('Tutorial_Simple_Flow/Example.fPipeDiameter', 'Pipe Diameter', 'm');
+            
             
 %             this.csLog = {
 %                 % System timer
@@ -78,21 +99,60 @@ classdef setup < simulation.infrastructure
             
             close all
             
-            figure('name', 'Tank Pressures');
+            oLog = this.toMonitors.oLogger;
+            
+            
+            
+            
+%             figure('name', 'Tank Pressures');
+%             hold on;
+%             grid minor;
+%             %plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
+%             plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
+%             legend('Tank 1', 'Tank 2');
+%             ylabel('Pressure in Pa');
+%             xlabel('Time in s');
+            
+
+
+            sPlot = 'Tank Masses';
+            csValues = {
+                'Tutorial_Simple_Flow/Example:s:Tank_1:p:Tank_1_Phase_1.fMass';
+                'Tutorial_Simple_Flow/Example:s:Tank_2:p:Tank_2_Phase_1.fMass';
+            };
+            
+            
+            %%% Default Code START
+            
+            figure('name', sPlot);
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Pressure in Pa');
+            
+            mfLog = [];
+            sLbl  = [];
+            sUnit = [];
+            csLeg = {};
+            
+            for iV = 1:length(csValues)
+                [ axData, tDef, sLbl ] = oLog.get(csValues{iV});
+                
+                mfLog = [ mfLog, axData ];
+                csLeg{end + 1} = tDef.sName;
+                sUnit = tDef.sUnit;
+            end
+            
+            plot(oLog.afTime, mfLog);
+            legend(csLeg);
+            
+            ylabel([ sLbl ' in [' sUnit ']' ]);
             xlabel('Time in s');
             
-            figure('name', 'Tank Masses');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [3 5]));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
+            %%% Default Code END
+            
+            
+            
+            return;
+            
             
             figure('name', 'Tank Temperatures');
             hold on;
