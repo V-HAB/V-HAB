@@ -1,4 +1,4 @@
-classdef Capacity < base
+classdef capacity < base
     %CAPACITY An object that holds thermal energy
     %   This is a wrapper class for querying properties of matter objects.
     
@@ -41,12 +41,12 @@ classdef Capacity < base
     
     methods
         
-        function this = Capacity(sIdentifier, oMatterObject)
+        function this = capacity(sIdentifier, oMatterObject)
             %CAPACITY Create new thermal capacity object
             %   Create a new capacity with a name and associated matter
             %   instance.
             
-            % Set name of Capacity.
+            % Set name of capacity.
             this.sName = sIdentifier;
             
             % Set associated objects.
@@ -81,8 +81,8 @@ classdef Capacity < base
         function setHeatSource(this, oHeatSource)
             % Set the heat source object of this capacity. 
             
-            % Is oHeatSource an instance of thermal.HeatSource?
-            if ~isa(oHeatSource, 'thermal.HeatSource')
+            % Is oHeatSource an instance of thermal.heatsource?
+            if ~isa(oHeatSource, 'thermal.heatsource')
                 this.throw('capacity:setHeatSource', 'This is no heat source!');
             end
             
@@ -194,7 +194,7 @@ classdef Capacity < base
             
             % TODO: flow processors?
             
-            if isa(oMatterObject, 'thermal.DummyMatter')
+            if isa(oMatterObject, 'thermal.dummymatter')
                 
                 this.sMatterClass = 'dummy';
                 this.loadDummyCapacity(oMatterObject);
@@ -212,7 +212,7 @@ classdef Capacity < base
             else
                 
                 % fall through: fail
-                this.throw('Capacity:setMatterObject', 'Invalid object provided, should be an instance of |matter.phase| or |matter.store|!');
+                this.throw('capacity:setMatterObject', 'Invalid object provided, should be an instance of |matter.phase| or |matter.store|!');
                 
             end
             
@@ -240,7 +240,7 @@ classdef Capacity < base
         
         function loadDummyCapacity(this, oDummyMatter)
             % This method is called from |this.setMatterObject| when the
-            % matter object is an instance of |thermal.DummyMatter|.
+            % matter object is an instance of |thermal.dummymatter|.
             %TODO: do some initialization here?
             
             this.oMatterObject = oDummyMatter;

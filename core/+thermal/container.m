@@ -1,4 +1,4 @@
-classdef Container < sys
+classdef container < sys
     %CONTAINER A collection of thermal capacities
     %   Detailed explanation goes here
         
@@ -14,13 +14,13 @@ classdef Container < sys
         
         % Internal properties
         
-        poCapacities;      % A map of associated |thermal.Capacity| objects
+        poCapacities;      % A map of associated |thermal.capacity| objects
         piCapacityIndices; % Map a capacity to an index.
         
         % Thermal connections
-        poLinearConductors;    % A Map of associated |thermal.conductors.Linear| objects.
-        poFluidicConductors;   % A Map of associated |thermal.conductors.Fluidic| objects.
-        poRadiativeConductors; % A Map of associated |thermal.conductors.Radiative| objects.
+        poLinearConductors;    % A Map of associated |thermal.conductors.linear| objects.
+        poFluidicConductors;   % A Map of associated |thermal.conductors.fluidic| objects.
+        poRadiativeConductors; % A Map of associated |thermal.conductors.radiative| objects.
         
         % Matrices
         mCapacityVector   = [];
@@ -33,7 +33,7 @@ classdef Container < sys
     
     methods
         
-        function this = Container(oParent, sName)
+        function this = container(oParent, sName)
             % Create a new container object and call the |sys| parent
             % constructor. 
             
@@ -132,11 +132,11 @@ classdef Container < sys
         function oCapacity = addCreateCapacity(this, oMatter, oHeatSource)
             % Create a capacity, (optionally) add a heat source, and add
             % the capacity to the container. This is a shortcut method that
-            % fuses |oCapacity = thermal.Capacity|,
+            % fuses |oCapacity = thermal.capacity|,
             % |oCapacity.setHeatSource|, and
-            % |Container.addCapacity(oCapacity)|.
+            % |container.addCapacity(oCapacity)|.
                         
-            oCapacity = thermal.Capacity(oMatter.sName, oMatter);
+            oCapacity = thermal.capacity(oMatter.sName, oMatter);
             
             if nargin > 2
                 oCapacity.setHeatSource(oHeatSource);
@@ -150,10 +150,10 @@ classdef Container < sys
         function addCapacity(this, oCapacity)
             % Add a capacity to the thermal container.
             
-            if ~isa(oCapacity, 'thermal.Capacity')
-                this.throw('thermal:Container:addCapacity', 'This is no thermal capacity!');
+            if ~isa(oCapacity, 'thermal.capacity')
+                this.throw('thermal:container:addCapacity', 'This is no thermal capacity!');
             elseif this.poCapacities.isKey(oCapacity.sName)
-                this.throw('thermal:Container:addCapacity', 'Capacity with name "%s" already exists!', oCapacity.sName);
+                this.throw('thermal:container:addCapacity', 'Capacity with name "%s" already exists!', oCapacity.sName);
             end;
             
             % Mark container as tainted and store capacity.
@@ -190,14 +190,14 @@ classdef Container < sys
             
             % Check if |oConductor| is an instance of a known conductor,
             % and load the appropriate property.
-            if isa(oConductor, 'thermal.conductors.Linear')
+            if isa(oConductor, 'thermal.conductors.linear')
                 sType = 'Linear';
-            elseif isa(oConductor, 'thermal.conductors.Fluidic')
+            elseif isa(oConductor, 'thermal.conductors.fluidic')
                 sType = 'Fluidic';
-            elseif isa(oConductor, 'thermal.conductors.Radiative')
+            elseif isa(oConductor, 'thermal.conductors.radiative')
                 sType = 'Radiative';
             else
-                this.throw('Container:addConductor', 'This is no recognized conductor!');
+                this.throw('container:addConductor', 'This is no recognized conductor!');
             end
             
             % Get the property name.
@@ -207,7 +207,7 @@ classdef Container < sys
             poConductors = this.(sConductorMap);
             
             if poConductors.isKey(oConductor.sName)
-                this.throw('Container:addConductor', '%s conductor with name "%s" already exists!', sType, oConductor.sName);
+                this.throw('container:addConductor', '%s conductor with name "%s" already exists!', sType, oConductor.sName);
             end
             
             %TODO: check if connected capacities are already registered
@@ -247,7 +247,7 @@ classdef Container < sys
             end
             
             % Conductor was not found, so throw here.
-            this.throw('Container:removeConductor', 'Conductor with name "%s" does not exist!', sName);
+            this.throw('container:removeConductor', 'Conductor with name "%s" does not exist!', sName);
             
         end
         
@@ -301,7 +301,7 @@ classdef Container < sys
         
         function setNodeTemperatures(this, mNewTemperatures)
             
-            this.warn('thermal:Container:setNodeTemperatures', 'DEPRECATED method: The node temperature should not be set directly. Use "changeNodesInnerEnergy" instead.');
+            this.warn('thermal:container:setNodeTemperatures', 'DEPRECATED method: The node temperature should not be set directly. Use "changeNodesInnerEnergy" instead.');
             
             % Loop over all node objects and set their new temperatures.
             for sNode = this.piCapacityIndices.keys
@@ -332,7 +332,7 @@ classdef Container < sys
         function mCapacities = getCapacitances(this)
             
             if this.bIsTainted
-                this.warn('thermal:Container:getCapacitances', 'Container was changed, this might not return the expected results.');
+                this.warn('thermal:container:getCapacitances', 'Container was changed, this might not return the expected results.');
             end
             mCapacities = this.mCapacityVector;
             
@@ -341,7 +341,7 @@ classdef Container < sys
         function mHeatSourceVector = getHeatSources(this)
             
             if this.bIsTainted
-                this.warn('thermal:Container:getHeatSources', 'Container was changed, this might not return the expected results.');
+                this.warn('thermal:container:getHeatSources', 'container was changed, this might not return the expected results.');
             end
             mHeatSourceVector = this.mHeatSourceVector;
             
@@ -350,7 +350,7 @@ classdef Container < sys
         function mLinearConductance = getLinearConductors(this)
             
             if this.bIsTainted
-                this.warn('thermal:Container:getLinearConductors', 'Container was changed, this might not return the expected results.');
+                this.warn('thermal:container:getLinearConductors', 'container was changed, this might not return the expected results.');
             end
             mLinearConductance = this.mLinearConductance;
             
@@ -359,7 +359,7 @@ classdef Container < sys
         function mRadiativeConductance = getRadiativeConductors(this)
             
             if this.bIsTainted
-                this.warn('thermal:Container:getRadiativeConductors', 'Container was changed, this might not return the expected results.');
+                this.warn('thermal:container:getRadiativeConductors', 'container was changed, this might not return the expected results.');
             end
             mRadiativeConductance = this.mRadiativeConductance;
             
@@ -368,7 +368,7 @@ classdef Container < sys
         function mFluidicConductance = getFluidicConductors(this)
             
             if this.bIsTainted
-                this.warn('thermal:Container:getFluidicConductors', 'Container was changed, this might not return the expected results.');
+                this.warn('thermal:container:getFluidicConductors', 'container was changed, this might not return the expected results.');
             end
             mFluidicConductance = this.mFluidicConductance;
             
@@ -429,7 +429,7 @@ classdef Container < sys
             %  - run solver
             
             if (this.bIsTainted) 
-                this.warn('thermal:Container:exec', 'Container was changed, this might not do what is expected.');
+                this.warn('thermal:container:exec', 'Container was changed, this might not do what is expected.');
                 %this.generateThermalMatrices();
             end
             

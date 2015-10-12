@@ -1,4 +1,4 @@
-classdef DummyMatter < matter.store
+classdef dummymatter < matter.store
     %DUMMYMATTER A dummy stationary mass object
     %   The dummy matter is a simple matter.store that only holds one
     %   homogenous, single-substance phase. Used to model simple matter
@@ -25,7 +25,7 @@ classdef DummyMatter < matter.store
     
     methods
         
-        function this = DummyMatter(oContainer, sName, fVolume)
+        function this = dummymatter(oContainer, sName, fVolume)
             % Create a new dummy (stationary) matter object with a matter
             % container, a (dummy) store name, and a store volume. 
             
@@ -45,7 +45,7 @@ classdef DummyMatter < matter.store
             
             % Fail if phase object was already set for this instance. 
             if ~isempty(this.oPhase) && isvalid(this.oPhase)
-                this.throw('thermal:DummyMatter:createPhase', 'Phase already defined. You can only add one phase to a dummy matter object!');
+                this.throw('thermal:dummymatter:createPhase', 'Phase already defined. You can only add one phase to a dummy matter object!');
             end
             
             % Create new masses array and fill it with a dummy mass (of the
@@ -92,7 +92,7 @@ classdef DummyMatter < matter.store
             % of "separation of concerns", KISS, and the principle of least
             % surprise, but meh ...
             this.oPhase = hPhaseCtor( ...
-                this, ...   % The store (here: |thermal.DummyMatter| instance).
+                this, ...   % The store (here: |thermal.dummymatter| instance).
                 sPhase, ... % The name of the phase. 
                 struct(sSubstance, this.fMass), ... % "Subphases", here: the total mass of a single material in this phase.
                 this.fVolume, ... % The volume of the phase (== volume of the "store").
@@ -116,7 +116,7 @@ classdef DummyMatter < matter.store
             if isempty(this.oPhase) || ~isvalid(this.oPhase) || ~ismethod(this.oPhase, 'changeInnerEnergy')
                 % Phase is not set, invalid, or does not have the
                 % |changeInnerEnergy| method.
-                this.warn('thermal:DummyMatter:changeInnerEnergy', 'Failed to change inner energy of phase.');
+                this.warn('thermal:dummymatter:changeInnerEnergy', 'Failed to change inner energy of phase.');
             else
                 % Forward call to phase.
                 this.oPhase.changeInnerEnergy(fEnergyChange);
@@ -125,7 +125,7 @@ classdef DummyMatter < matter.store
             end
             
             if this.fTotalHeatCapacity == -1
-                this.throw('thermal:DummyMatter:changeInnerEnergy', 'Failed to change inner energy: Heat capacity is not set.');
+                this.throw('thermal:dummymatter:changeInnerEnergy', 'Failed to change inner energy: Heat capacity is not set.');
             end
             
             % Calculate new temperature. 
@@ -136,7 +136,7 @@ classdef DummyMatter < matter.store
         function setTemperature(this, fTemperature)
             % Overload the temperature of the object.
             
-            this.warn('thermal:DummyMatter:setTemperature', ...
+            this.warn('thermal:dummymatter:setTemperature', ...
                 'The temperature should not be set directly because it cannot change the phases'' temperature. Use "changeInnerEnergy" instead.');
             
             % Set new temperature of matter.
@@ -157,7 +157,7 @@ classdef DummyMatter < matter.store
                 % Cross-check temperature with phase temperature. Warn if
                 % phase temperature differs from matter temperature.
                 if this.oPhase.fTemperature ~= fTemperature
-                    this.warn('thermal:DummyMatter:getTemperature', ...
+                    this.warn('thermal:dummymatter:getTemperature', ...
                         'Temperature %f of phase "%s" differs from temperature %f of (dummy) matter "%s"', ...
                         this.oPhase.fTemperature, this.oPhase.sName, fTemperature, this.sName);
                 end

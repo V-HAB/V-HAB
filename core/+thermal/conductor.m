@@ -1,4 +1,4 @@
-classdef (Abstract) Conductor < base & event.source
+classdef (Abstract) conductor < base & event.source
     %CONDUCTOR A thermal connection between two capacity objects
     %   Detailed explanation goes here
     % 
@@ -27,15 +27,15 @@ classdef (Abstract) Conductor < base & event.source
     
     methods
         
-        function this = Conductor(sName, oLeft, oRight)
+        function this = conductor(sName, oLeft, oRight)
             % Create a conductive conductor instance and store the name, 
             % associated capacities as well as the (intial) conductivity
             % value.
             
             this.sName = sName;
             
-            if ~isa(oLeft, 'thermal.Capacity') || ~isa(oRight, 'thermal.Capacity')
-                this.throw('thermal:Conductor', 'Nodes must be of type |thermal.Capacity|.');
+            if ~isa(oLeft, 'thermal.capacity') || ~isa(oRight, 'thermal.capacity')
+                this.throw('thermal:conductor', 'Nodes must be of type |thermal.capacity|.');
             end
             
             %TODO: check container!?

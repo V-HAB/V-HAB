@@ -1,4 +1,4 @@
-classdef Radiative < thermal.Conductor
+classdef radiative < thermal.conductor
     %RADIATIVE A radiative conductor transferring heat through thermal radiation
     %   Detailed explanation goes here
     
@@ -10,14 +10,14 @@ classdef Radiative < thermal.Conductor
     
     methods
         
-        function this = Radiative(oLeft, oRight, fConductivity, sIdentifier)
+        function this = radiative(oLeft, oRight, fConductivity, sIdentifier)
             % Create a radiative conductor instance, derive a name and
             % store the (initial) conductivity value.
             
             if nargin < 4
                 sIdentifier = ['radiative:', oLeft.sName, '+', oRight.sName];
             end
-            this@thermal.Conductor(sIdentifier, oLeft, oRight);
+            this@thermal.conductor(sIdentifier, oLeft, oRight);
             
             % Store conductivity.
             this.fConductivity = fConductivity;
