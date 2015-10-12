@@ -13,6 +13,10 @@ classdef infrastructure < base & event.source
     
     
     properties (SetAccess = public, GetAccess = public)
+        %TODO-RESTRUCTURING general storage dir, for .mat, info about code,
+        %   system etc? Or just everything in objs, save() to .mat?
+        %   How to implement regular dumping in logger, so mfLog does not
+        %   get too big?
 % %         sStorageName;
 % %         sDescription;
     end
@@ -29,24 +33,8 @@ classdef infrastructure < base & event.source
         % Use time or ticks to check if simulation finished?
         % @type int
         bUseTime = true;
-        
-        
-% %         % Interval in which the mass balance logs are written
-% %         iMassLogInterval = 100;
-% %         
-% %         
-% %         % Preallocation - how much rows should be preallocated for logging?
-% %         iPrealloc = 1000;
-% %         
-% %         % Dump mfLog to .mat file when re-preallocating?
-% %         bDumpToMat = false;
     end
     
-    % Properties to be set by classes deriving from this one
-    properties (SetAccess = protected, GetAccess = public)
-% %         % Attributes to log
-% %         csLog = {};
-    end
     
     
     properties (SetAccess = private, GetAccess = public)
@@ -59,31 +47,10 @@ classdef infrastructure < base & event.source
         % @type object
         oSimulationContainer;
         
-% %         % Logged data
-% %         mfLog;
-% %         aiLog;
-% %         
-% %         % Current index in logging
-% %         iLogIdx = 0;
-% %         
-% %         % How much allocated?
-% %         iAllocated = 0;
-% %         
-% %         % Parsed/evald logginng!
-% %         logData;
-        
-% % %         % Root system
-% % %         % @type object
-% % %         oRoot;
         
         
-        
-% % %         % Data
-% % %         oData;
-        
-        
-        fRuntimeTick = 0;
-        fRuntimeLog  = 0;
+        fRuntimeTick  = 0;
+        fRuntimeOther = 0;
         
         % Matlab date number -> object/sim created
         fCreated = 0;
@@ -91,15 +58,17 @@ classdef infrastructure < base & event.source
         % @type string
         sCreated = '';
         
+        %TODO-RESTRUCTURING see sStorageName
 % %         % String for disk storage
 % %         sStorageDir;
         
+        %TODO-RESTRUCTURING move to monitor
 % %         % Variables holding the sum of lost mass / total mass, species-wise
 % %         %TODO move to monitors.matter_observer
 % %         mfTotalMass = [];
 % %         mfLostMass  = [];
         
-        %TODO CPU, RAM etc
+        %TODO-RESTRUCTURING CPU, RAM etc
         
     end
     
@@ -109,7 +78,7 @@ classdef infrastructure < base & event.source
 
     properties (SetAccess = private, GetAccess = public)
         % Default monitors
-        ttMonitors = struct(...
+        ttMonitorCfg = struct(...
             ... % Logs specific simulation values, can be specified throug helpers
             'oLogger', struct('sClass', 'simulation.monitors.logger_basic'), ...
             ... % Post-processing - show plots
@@ -130,12 +99,8 @@ classdef infrastructure < base & event.source
         function this = infrastructure(sName, ptConfigParams, tSolverParams, tMonitors)
             %CHANGELOG
             % fMinStep --> use oTimer.setMinStep()
-            % tData --> ??? hmm ...  
+            % tData --> simulation.container
             
-            %TODO
-            % * ptCfgParams -> create obj, needs to return config to vsys ctors (oSim.oCfgParams.get(this) -> returns depending on path, cotr name(s, incl parent classes)
-            % * tSolverParams -> rUpdFreq, MaxDecrease, iDamp etc
-            % * CODE BELOW: in parts to sim.container, in parts to mass observer monitor
             
             this.sName = sName;
             
@@ -149,52 +114,36 @@ classdef infrastructure < base & event.source
 
             for iM = 1:length(csMonitors)
                 % Just add the monitor if it doesn't exist.
-                if ~isfield(this.ttMonitors, csMonitors{iM})
+                if ~isfield(this.ttMonitorCfg, csMonitors{iM})
                     % Just a strig? Create struct
                     if ischar(tMonitors.(csMonitors{iM}))
-                        this.ttMonitors.(csMonitors{iM}) = struct('sClass', tMonitors.(csMonitors{iM}));
+                        this.ttMonitorCfg.(csMonitors{iM}) = struct('sClass', tMonitors.(csMonitors{iM}));
                     else
-                        this.ttMonitors.(csMonitors{iM}) = tMonitors.(csMonitors{iM});
+                        this.ttMonitorCfg.(csMonitors{iM}) = tMonitors.(csMonitors{iM});
                     end
 
                 % Overwrite/Merge, provided value is a struct that would contain the sClass and / or cParams values
                 elseif isstruct(tMonitors.(csMonitors{iM}))
                     
-                    %this.ttMonitors.(csMonitors{iM}) = tMonitors.(csMonitors{iM});
-                    this.ttMonitors.(csMonitors{iM}) = tools.struct.mergeStructs(...
-                        this.ttMonitors.(csMonitors{iM}), ...
+                    %this.ttMonitorCfg.(csMonitors{iM}) = tMonitors.(csMonitors{iM});
+                    this.ttMonitorCfg.(csMonitors{iM}) = tools.struct.mergeStructs(...
+                        this.ttMonitorCfg.(csMonitors{iM}), ...
                         tMonitors.(csMonitors{iM}) ...
                     );
                     
 
                 % If value is a string, overwrite or insert the monitor and set value as sClass
                 elseif ischar(tMonitors.(csMonitors{iM}))
-                    if ~isfield(this.ttMonitors, csMonitors{iM})
-                        this.ttMonitors.(csMonitors{iM}) = struct('sClass', tMonitors.(csMonitors{iM}));
+                    if ~isfield(this.ttMonitorCfg, csMonitors{iM})
+                        this.ttMonitorCfg.(csMonitors{iM}) = struct('sClass', tMonitors.(csMonitors{iM}));
                     else
-                        this.ttMonitors.(csMonitors{iM}).sClass = tMonitors.(csMonitors{iM});
+                        this.ttMonitorCfg.(csMonitors{iM}).sClass = tMonitors.(csMonitors{iM});
                     end
                 end
             end
             
             
             
-            
-            % Simulation class constructor.
-            %
-            %simulation parameters
-            %   - sName*    name of the sim
-            %   - fMinStep  Minimum time step (empty - 1e-8)
-            %   - tData     Struct with attributes/keys for data object
-            %               that will be attached to all systems
-            %
-            % If only tData needed, can be passed as first param as well.
-            % Timer and matter table automatically created if not defined
-            % as field in tData (oTimer, oMT, also oRoot).
-            
-            
-            
-
 
             %%% Global objects and settings for constructors
 
@@ -208,55 +157,45 @@ classdef infrastructure < base & event.source
             
             
 
-            %TODO in there, e.g. default solver params. Root stuff unnecessary. Created on etc - leave here, include CPU, MAC / Host, IP, ...
-            %   -> create oCfgParams from poCfgParms (obj provides methods
-            %      to access cfg by vsys class name, full path, ...
-            %   -> if no tSolverParms provided - empty struct(0
+            % Create the root object for the simulation, referencing the
+            % global objects. Also the hierarchy root for the systems.
             this.oSimulationContainer = simulation.container(this.sName, oTimer, oMT, oCfgParams, tSolverParams);
 
             
-            %%% Global parameters to tune solving process.
             
             
-            
-            
-            %%% Initialize root system, simulation parameters
-            
-% % %             % Create data object
-% % %             this.oData = data(tData);
-% % %             
-% % %             % Create root object, set timer object to 'this' as well
-% % %             this.oRoot  = systems.root(this.sName, this.oData);
-% % %             this.oTimer = this.oData.oTimer;
-            
-% % %             % Add the root system to the data object
-% % %             this.oData.set('oRoot', this.oRoot);
             
             % Remember the time of object creation
             this.fCreated = now();
             this.sCreated = datestr(this.fCreated);
+            
+            %TODO-RESTRUCTURING see above - exporter monitor?
 % %             %this.sStorageDir = [ datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') '_' this.sUUID ];
 % %             this.sStorageDir = [ datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') '_' this.sName ];
+            
+
+            
+            %TODO-RESTRUCTURING move to monitor
             
             % Init the mass log matrices - don't log yet, system's not
             % initialized yet! Just create with one row, for the initial
             % mass log. Subsequent logs dynamically allocate new memory -
             % bad for performance, but only happens every Xth tick ...
-            %TODO move to monitor
+            
 % %             this.mfTotalMass = zeros(0, this.oData.oMT.iSubstances);
 % %             this.mfLostMass  = zeros(0, this.oData.oMT.iSubstances);
         
             
 
             % Create monitors
-            csMonitors = fieldnames(this.ttMonitors);
+            csMonitors = fieldnames(this.ttMonitorCfg);
             
             for iM = 1:length(csMonitors)
                 cParams = {};
-                monitorConstructor = str2func(this.ttMonitors.(csMonitors{iM}).sClass);
+                monitorConstructor = str2func(this.ttMonitorCfg.(csMonitors{iM}).sClass);
                 
-                if isfield(this.ttMonitors.(csMonitors{iM}), 'cParams')
-                    cParams = this.ttMonitors.(csMonitors{iM}).cParams;
+                if isfield(this.ttMonitorCfg.(csMonitors{iM}), 'cParams')
+                    cParams = this.ttMonitorCfg.(csMonitors{iM}).cParams;
                 end
                 
                 this.toMonitors.(csMonitors{iM}) = monitorConstructor(this, cParams{:});
@@ -290,7 +229,8 @@ classdef infrastructure < base & event.source
                 this.tick();
                 
                 % Stopped?
-                %TODO to logger!
+                %TODO-RESTRUCTURING dumping to own logger/dumper monitor!
+                %  STOP file check to own monitor? see STOP in vhab.m!
 % %                 if this.bDumpToMat && (this.oTimer.iTick > 0) && (mod(this.oTimer.iTick, this.iPrealloc) == 0)
 % %                     sFile = [ 'data/runs/' this.sStorageDir '/STOP' ];
 % %                     
@@ -313,7 +253,7 @@ classdef infrastructure < base & event.source
         
         
         function pause(this, varargin)
-            this.iSimTicks = this.oTimer.iTick;
+            this.iSimTicks = this.oSimulationContainer.oTimer.iTick;
             this.bUseTime  = false;
             disp('##################### PAUSE ###################');
             
@@ -333,7 +273,7 @@ classdef infrastructure < base & event.source
         function advanceFor(this, fSeconds)
             % Run for specific duraction and set to fSimTime
             
-            this.fSimTime = this.oTimer.fTime + fSeconds;
+            this.fSimTime = this.oSimulationContainer.oTimer.fTime + fSeconds;
             this.bUseTime = true;
             
             this.run();
@@ -353,7 +293,7 @@ classdef infrastructure < base & event.source
         function tickFor(this, iTicks)
             % Run provided amount of ticks and set to iSimTicks
             
-            this.iSimTicks = this.oTimer.iTick + iTicks;
+            this.iSimTicks = this.oSimulationContainer.oTimer.iTick + iTicks;
             this.bUseTime  = false;
             
             this.run();
@@ -362,33 +302,38 @@ classdef infrastructure < base & event.source
         
         
         function tick(this)
+            %TODO-RESTRUCTURING to own monitor, see above
             % Pre-check -> timer tick at -1 --> initial call. So do the
             % mass log, need the initial values.
-% %             if this.oSimulationContainer.oTimer.iTick == -1
+% %             if this.oSimulationContainer.oSimulationContainer.oTimer.iTick == -1
 % %                 this.masslog();
 % %             end
             
             
-            % Advance one tick
             
+            % Pre Tick (e.g. monitors) incl. time tracking
+            hTimer = tic();
             this.trigger('tick_pre');
+            this.fRuntimeOther = this.fRuntimeOther + toc(hTimer);
+            
             
             % Tick and measure time
             hTimer = tic();
             this.oSimulationContainer.oTimer.step();
             this.fRuntimeTick = this.fRuntimeTick + toc(hTimer);
             
-            % Log and measure time
-            %TODO to logger
-% %             hTimer = tic();
-% %             this.log();
-% %             this.fRuntimeLog = this.fRuntimeLog + toc(hTimer);
             
+            % Post tick (monitors e.g. logger) and measure time
+            %TODO-RESTRUCTURING move to base_logger, or generally tic/toc
+            %  e.g. the tick_pre, tick_post trigger calls?
+            hTimer = tic();
             this.trigger('tick_post');
+            this.fRuntimeOther = this.fRuntimeOther + toc(hTimer);
+            
             
             
             % Mass log?
-            %TODO move to matter_observer
+            %TODO-RESTRUCTURING move to matter_observer
             %TODO do by time, not tick? Every 1s, 10s, 100s ...?
             %     see old main script, need a var like fNextLogTime, just
             %     compare this.oData.oTimer.fTIme >= this.fNexLogTime.
@@ -404,24 +349,10 @@ classdef infrastructure < base & event.source
         end
         
         
-% %         function finish(this)
+        %TODO-RESTRUCTURING see console_ouput
+        function finish(this)
             
-            
-            
-            %TODO console_output monitor
-% %             disp('--------------------------------------');
-% %             disp([ 'Sim Time:     ' num2str(this.oTimer.fTime) 's in ' num2str(this.oTimer.iTick) ' ticks' ]);
-% %             disp([ 'Sim Runtime:  ' num2str(this.fRuntimeTick + this.fRuntimeLog) 's, from that for dumping: ' num2str(this.fRuntimeLog) 's' ]);
-% %             disp([ 'Sim factor:   ' num2str(this.fSimFactor) ' [-] (ratio)' ]);
-% %             disp([ 'Avg Time/Tick:' num2str(this.oTimer.fTime / this.oTimer.iTick) ' [s]' ]);
-% %             disp([ 'Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
-% %             disp([ 'Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :))) 'kg' ]);
-% %             disp([ 'Minimum Time Step * Total Sim Time: ' num2str(this.oTimer.fTimeStep * this.oTimer.fTime) ]);
-% %             disp([ 'Minimum Time Step * Total Ticks:    ' num2str(this.oTimer.fTimeStep * this.oTimer.iTick) ]);
-% %             disp('--------------------------------------');
-
-            %TODO if bDump, write .mat!
-            %TODO move to monitors.exporter, monitors.logger or so?
+            %TODO-RESTRUCTURING move to monitors.exporter, monitors.logger or so?
 % %             if this.bDumpToMat
 % %                 if ~isdir([ 'data/runs/' this.sStorageDir ])
 % %                     mkdir([ 'data/runs/' this.sStorageDir ]);
@@ -433,88 +364,11 @@ classdef infrastructure < base & event.source
 % %                 oLastSimObj = this;
 % %                 save(sMat, 'oLastSimObj');
 % %             end
-% %         end
+        end
         
         
         
-% %         function log(this)
-% %             %iTmpSize = size(this.mfLog, 1);
-% %             this.iLogIdx = this.iLogIdx + 1;
-% %             
-% %             %TODO
-% %             %   - instead of hardcoded 1000 - get from this.iPrealloc
-% %             %   - value this.iDump (or make eq iPrealloc?) -> dump mfLog:
-% %             %       - write to [uuid]/[cnt].mat, clean mfLog
-% %             %       - at the end, for plotAll or so, do some .reloadLog()
-% %             %       -> mat files within SimObj uuid Dir --> load all
-% %             %          and re-create mfLog!
-% %             
-% %             % HERE if bDump and > iTmpSize - WRITE (use iCnt?) to MAT!
-% %             %   then just reset vars to NaN on mfLog, do not append!
-% %             
-% %             %if this.oTimer.iTick > iTmpSize
-% %             if this.iLogIdx > this.iAllocated
-% %                 if this.bDumpToMat
-% %                     if ~isdir([ 'data/runs/' this.sStorageDir ])
-% %                         mkdir([ 'data/runs/' this.sStorageDir ]);
-% %                     end
-% %                     
-% %                     
-% %                     sMat = [ 'data/runs/' this.sStorageDir '/dump_' num2str(this.oTimer.iTick) '.mat' ];
-% %                     
-% %                     disp('#############################################');
-% %                     disp(['DUMPING - write to .mat: ' sMat]);
-% %                     
-% %                     mfLog = this.mfLog;
-% %                     save(sMat, 'mfLog');
-% %                     
-% %                     disp('... done!');
-% %                     
-% %                     this.mfLog(:, :) = nan(this.iPrealloc, length(this.csLog));
-% %                     this.iLogIdx     = 1;
-% %                 else
-% %                     this.iAllocated = this.iAllocated + this.iPrealloc;
-% %                     
-% %                     %this.mfLog((iTmpSize + 1):(iTmpSize + this.iPrealloc), :) = nan(this.iPrealloc, length(this.csLog));
-% %                     this.mfLog(this.iLogIdx:(this.iLogIdx + this.iPrealloc - 1), :) = nan(this.iPrealloc, length(this.csLog));
-% %                 end
-% %             end
-% %             
-% %             % Create one loggin function!
-% %             if isempty(this.logData)
-% %                 sCmd = '[';
-% %                 
-% %                 for iL = this.aiLog
-% %                     sCmd = [ sCmd 'this.oRoot.' this.csLog{iL} ',' ];
-% %                     %sCmd = [ sCmd sprintf('this.oRoot.%s,\n', this.csLog{iL}) ];
-% %                 end
-% % 
-% %                 sCmd = [ sCmd(1:(end - 1)) ']' ];
-% %                 
-% %                 this.logData = eval([ '@() ' sCmd ]);
-% %             end
-% %             
-% %             %this.mfLog(this.oTimer.iTick + 1, :) = this.logData();
-% %             
-% %             try
-% %                 this.mfLog(this.iLogIdx, :) = this.logData();
-% %             catch
-% %                 % Don't know where in anonymous log function the error
-% %                 % happend, so go through logs one by one - one of them
-% %                 % should throw an error!
-% %                 for iL = this.aiLog
-% %                     try
-% %                         eval([ 'this.oRoot.' this.csLog{iL} ';' ]);
-% %                     catch oErr
-% %                         this.throw('simulation','Error trying to log this.oRoot.%s.\nError Message: %s\nPlease check your logging configuration in setup.m!', this.csLog{iL}, oErr.message);
-% %                     end
-% %                 end
-% %             end
-% %             %for iL = this.aiLog
-% %             %    this.mfLog(this.oTimer.iTick + 1, iL) = eval([ 'this.oRoot.' this.csLog{iL} ]);
-% %             %end
-% %         end
-        
+        %TODO-RESTRUCTURING move to own monitor
 % %         function masslog(this)
 % %             iIdx = size(this.mfTotalMass, 1) + 1;
 % %             
@@ -532,6 +386,8 @@ classdef infrastructure < base & event.source
 % %         end
         
         
+        %TODO-RESTRUCTURING to .exporter / .importer or so, depends on
+        %  settings if e.g. .mat files were written every Xth tick etc!
 % %         function readData(this)
 % %             if this.bDumpToMat
 % %                 sDir    = [ 'data/runs/' this.sStorageDir '/' ];
@@ -571,20 +427,11 @@ classdef infrastructure < base & event.source
     
     %% Getters / Setters
     methods
-% %         function set.csLog(this, csLog)
-% %             this.csLog = csLog;
-% %             this.aiLog = 1:length(csLog);
-% %             
-% %             %TODO What if sim already runs?
-% %             this.mfLog      = nan(this.iPrealloc, length(csLog));
-% %             this.iAllocated = this.iPrealloc;
-% %         end
-        
         function fSimFactor = get.fSimFactor(this)
-            if isempty(this.oTimer) || (this.oTimer.fTime == -10)
+            if isempty(this.oSimulationContainer.oTimer) || (this.oSimulationContainer.oTimer.fTime == -10)
                 fSimFactor = nan;
             else
-                fSimFactor = this.oTimer.fTime / (this.fRuntimeTick + this.fRuntimeLog);
+                fSimFactor = this.oSimulationContainer.oTimer.fTime / (this.fRuntimeTick + this.fRuntimeOther);
             end
         end
     end

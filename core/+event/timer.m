@@ -55,11 +55,6 @@ classdef timer < base
         chPostTick = {};
     end
     
-    properties (SetAccess = public, GetAccess = public)
-        % We need this to calculate the delta time between command window outputs.
-        fLastTickDisp = 0;
-    end
-    
     methods
         function this = timer(fTimeStep, fStart)
             % Global time step? Default value passed on by simulation.m is

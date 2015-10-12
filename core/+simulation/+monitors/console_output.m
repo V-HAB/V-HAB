@@ -7,6 +7,9 @@ classdef console_output < simulation.monitor
     properties (SetAccess = protected, GetAccess = public)
         iMajorReportingInterval = 100;
         iMinorReportingInterval = 10;
+        
+        % We need this to calculate the delta time between command window outputs.
+        fLastTickDisp = 0;
     end
     
     methods
@@ -52,6 +55,7 @@ classdef console_output < simulation.monitor
     methods (Access = protected)
         
         function this = onPause(this)
+            disp('');
             disp('------------------------------------------------------------------------');
             disp('SIMULATION PAUSED');
             disp('------------------------------------------------------------------------');
@@ -59,9 +63,29 @@ classdef console_output < simulation.monitor
         
         
         function this = onFinish(this)
+            % The '.'s from the minor tick don't end with a newline, so
+            % explicitly display one. Will lead to an extra, unneeded new-
+            % line for cases where the simulation did exactly stop after a
+            % major tick display.
+            disp('');
+            
             disp('------------------------------------------------------------------------');
             disp('SIMULATION FINISHED - STATS!');
             disp('------------------------------------------------------------------------');
+            
+            
+            
+% %             disp('--------------------------------------');
+% %             disp([ 'Sim Time:     ' num2str(this.oTimer.fTime) 's in ' num2str(this.oTimer.iTick) ' ticks' ]);
+% %             disp([ 'Sim Runtime:  ' num2str(this.fRuntimeTick + this.fRuntimeLog) 's, from that for dumping: ' num2str(this.fRuntimeLog) 's' ]);
+% %             disp([ 'Sim factor:   ' num2str(this.fSimFactor) ' [-] (ratio)' ]);
+% %             disp([ 'Avg Time/Tick:' num2str(this.oTimer.fTime / this.oTimer.iTick) ' [s]' ]);
+% %             disp([ 'Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
+% %             disp([ 'Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :))) 'kg' ]);
+% %             disp([ 'Minimum Time Step * Total Sim Time: ' num2str(this.oTimer.fTimeStep * this.oTimer.fTime) ]);
+% %             disp([ 'Minimum Time Step * Total Ticks:    ' num2str(this.oTimer.fTimeStep * this.oTimer.iTick) ]);
+% %             disp('--------------------------------------');
+
         end
         
         
@@ -89,15 +113,12 @@ classdef console_output < simulation.monitor
                 %TODO store last tick disp fTime on some containers.Map!
                 %disp([ num2str(oSim.oTimer.iTick) ' (' num2str(oRoot.oData.oTimer.fTime - fLastTickDisp) 's)' ]);
                 %fLastTickDisp = oRoot.oData.oTimer.fTime;
-                fDeltaTime = oSim.oTimer.fTime - oSim.oTimer.fLastTickDisp;
-                oSim.oTimer.fLastTickDisp = oSim.oTimer.fTime;
+                
+                fDeltaTime = oSim.oTimer.fTime - this.fLastTickDisp;
+                this.fLastTickDisp = oSim.oTimer.fTime;
+                
                 %disp([ num2str(oSim.oTimer.iTick), ' (', num2str(oSim.oTimer.fTime), 's) (Delta Time ', num2str(fDeltaTime), 's)']);
                 fprintf('%i\t(%fs)\t(Tick Delta %fs)\n', oSim.oTimer.iTick, oSim.oTimer.fTime, fDeltaTime);
-                
-% %                 if exist('STOP', 'file') == 2
-% %                     oSim.iSimTicks = oSim.oTimer.iTick + 5;
-% %                     oSim.bUseTime  = false;
-% %                 end
             end
         end
         

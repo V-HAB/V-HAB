@@ -21,6 +21,8 @@ classdef logger_basic < simulation.monitor
         iPrealloc = 1000;
         
         % Dump mfLog to .mat file when re-preallocating?
+        %TODO-RESTRUCTURING implement that! See TODO file -> move to
+        % exporter monitor? Storage directory in sim.infrastructure?
         bDumpToMat = false;
         
         

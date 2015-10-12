@@ -1,6 +1,8 @@
 classdef configuration_parameters < base
     %CONFIGURATION_PARAMETERS Summary of this class goes here
     %   Detailed explanation goes here
+    %
+    %TODO also by system name?
     
     properties
         ptConfigParams;
