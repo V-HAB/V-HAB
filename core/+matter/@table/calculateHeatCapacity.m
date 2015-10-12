@@ -74,12 +74,6 @@ function fSpecificHeatCapacity = calculateHeatCapacity(this, varargin) %sMatterS
         fSpecificHeatCapacity = 0;
         return; % Return early.
     end
-    
-    % If masses are infinite, the heat capacity is also infinite.
-    if sum(afMasses) == Inf
-        fSpecificHeatCapacity = Inf;
-        return;
-    end
 
     % Make sure there is no NaN in the mass vector.
     assert(~any(isnan(afMasses)), 'Invalid entries in mass vector.');
