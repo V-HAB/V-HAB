@@ -1,4 +1,4 @@
-classdef HeatSource < base
+classdef heatsource < base
     %HEATSOURCE A dumb constant heat source
     %   Detailed explanation goes here
     
@@ -12,7 +12,7 @@ classdef HeatSource < base
     
     methods
         
-        function this = HeatSource(sIdentifier, fPower)
+        function this = heatsource(sIdentifier, fPower)
             this.sName  = sIdentifier;
             this.fPower = fPower;
         end

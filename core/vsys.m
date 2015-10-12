@@ -1,4 +1,4 @@
-classdef vsys < matter.container & thermal.Container & systems.timed
+classdef vsys < matter.container & thermal.container & systems.timed
     %VSYS Typical system in VHAB
     %   Derives from matter.container and the systems.timed class, i.e. 
     %   contains matter stores/processors and is executed with the parent 
@@ -24,7 +24,7 @@ classdef vsys < matter.container & thermal.Container & systems.timed
             % since this expected to happen and accordingly caught
             this@systems.timed(oParent, sName, 'oTimer', fTimeStep);
             this@matter.container(oParent, sName);
-            this@thermal.Container(oParent, sName);
+            this@thermal.container(oParent, sName);
             
             % Setting the matter table
             this.oMT = this.oData.oMT;
@@ -42,7 +42,7 @@ classdef vsys < matter.container & thermal.Container & systems.timed
             
             if this.bExecuteContainer
                 exec@matter.container(this, this.fLastTimeStep);
-                exec@thermal.Container(this, this.fLastTimeStep);
+                exec@thermal.container(this, this.fLastTimeStep);
             end
         end
     end

@@ -1,4 +1,4 @@
-classdef Convective < thermal.conductors.Linear
+classdef convective < thermal.conductors.linear
     %CONVECTIVE Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -7,13 +7,13 @@ classdef Convective < thermal.conductors.Linear
     
     methods
         
-        function this = Convective(oLeftCapacity, oRightCapacity, fHeatTransferCoeff, fArea)
+        function this = convective(oLeftCapacity, oRightCapacity, fHeatTransferCoeff, fArea)
             
             calcFunc = str2func([mfilename('class'), '.calculateConductance']);
             conductanceValue = calcFunc(fHeatTransferCoeff, fArea);
             
             sIdentifier = ['convective:', oLeftCapacity.sName, '+', oRightCapacity.sName];
-            this@thermal.conductors.Linear(oLeftCapacity, oRightCapacity, conductanceValue, sIdentifier);
+            this@thermal.conductors.linear(oLeftCapacity, oRightCapacity, conductanceValue, sIdentifier);
             
         end
         

@@ -1,4 +1,4 @@
-classdef Fluidic < thermal.conductors.Fluidic
+classdef fluidic < thermal.conductors.fluidic
     %FLUIDIC Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -7,7 +7,7 @@ classdef Fluidic < thermal.conductors.Fluidic
     
     methods
         
-        function this = Fluidic(oUpstreamCapacity, oDownstreamCapacity, fSpecificHeatCapacity, fMassOrVolumetricFlowRate, fDensity)
+        function this = fluidic(oUpstreamCapacity, oDownstreamCapacity, fSpecificHeatCapacity, fMassOrVolumetricFlowRate, fDensity)
             
             if nargin > 4
                 % We've got a volumetric flow rate, calculate mass flow
@@ -22,7 +22,7 @@ classdef Fluidic < thermal.conductors.Fluidic
             conductanceValue = calcFunc(fSpecificHeatCapacity, fMassFlowRate);
             
             sIdentifier = ['fluidic:', oUpstreamCapacity.sName, '+', oDownstreamCapacity.sName];
-            this@thermal.conductors.Fluidic(oUpstreamCapacity, oDownstreamCapacity, conductanceValue, sIdentifier);
+            this@thermal.conductors.fluidic(oUpstreamCapacity, oDownstreamCapacity, conductanceValue, sIdentifier);
             
         end
         

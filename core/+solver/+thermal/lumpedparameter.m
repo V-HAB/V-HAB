@@ -1,6 +1,6 @@
-classdef LumpedParameter < base
+classdef lumpedparameter < base
     %LUMPEDPARAMETER Lumped parameter solver for thermal analysis.
-    %   Solves a thermal network described within a |thermal.Container|.
+    %   Solves a thermal network described within a |thermal.container|.
     %
     %TODO:
     %    - check naming convetion: "capacity" -> |Capacity| wrapper object,
@@ -45,7 +45,7 @@ classdef LumpedParameter < base
     
     methods
         
-        function this = LumpedParameter(oVSys, fTimestep)
+        function this = lumpedparameter(oVSys, fTimestep)
             % Initialize the lumped parameter solver.
             
             % Set the default options for the ODE solver. 

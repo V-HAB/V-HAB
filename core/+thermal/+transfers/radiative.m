@@ -1,4 +1,4 @@
-classdef Radiative < thermal.conductors.Radiative
+classdef radiative < thermal.conductors.radiative
     %RADIATIVE Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -7,13 +7,13 @@ classdef Radiative < thermal.conductors.Radiative
     
     methods
         
-        function this = Radiative(oLeftCapacity, oRightCapacity, fEmissivity, fAbsorptivity, fArea, fViewFactor)
+        function this = radiative(oLeftCapacity, oRightCapacity, fEmissivity, fAbsorptivity, fArea, fViewFactor)
             
             calcFunc = str2func([mfilename('class'), '.calculateConductance']);
             conductanceValue = calcFunc(fEmissivity, fAbsorptivity, fArea, fViewFactor);
             
             sIdentifier = ['radiative:', oLeftCapacity.sName, '+', oRightCapacity.sName];
-            this@thermal.conductors.Radiative(oLeftCapacity, oRightCapacity, conductanceValue, sIdentifier);
+            this@thermal.conductors.radiative(oLeftCapacity, oRightCapacity, conductanceValue, sIdentifier);
             
         end
         

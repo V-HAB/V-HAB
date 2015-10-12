@@ -1,5 +1,5 @@
-classdef Linear < thermal.Conductor
-    %LINEAR A linear conductor between two capacities
+classdef fluidic < thermal.conductor
+    %FLUIDIC A fluidic conductor transporting heat to downstream node
     %   Detailed explanation goes here
     
     properties (SetAccess = protected)
@@ -10,20 +10,20 @@ classdef Linear < thermal.Conductor
     
     methods
         
-        function this = Linear(oLeft, oRight, fConductivity, sIdentifier)
-            % Create a linear conductor instance, derive a name and store
+        function this = fluidic(oUpstream, oDownstream, fConductivity, sIdentifier)
+            % Create a fluidic conductor instance, derive a name and store
             % the (initial) conductivity value.
             
             if nargin < 4
-                sIdentifier = ['linear:', oLeft.sName, '+', oRight.sName];
+                sIdentifier = ['fluidic:', oUpstream.sName, '+', oDownstream.sName];
             end
-            this@thermal.Conductor(sIdentifier, oLeft, oRight);
+            this@thermal.conductor(sIdentifier, oUpstream, oDownstream);
             
             % Store conductivity.
             this.fConductivity = fConductivity;
             
         end
-        
+                
     end
     
 end
