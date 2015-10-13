@@ -32,7 +32,7 @@ classdef solid < matter.phase
             this.fVolume  = sum(this.afVolume);
             this.fDensity = this.fMass / this.fVolume;
             
-            if ~isempty(fIgnoredVolume) || fIgnoredVolume ~= this.fVolume
+            if ~isempty(fIgnoredVolume) && abs(1 - fIgnoredVolume / this.fVolume) > 1e-3
                 this.warn('matter:phases:solid', 'Volume %d m^3 set for solid will be ignored. Instead, the value was set to %d m^3.', fIgnoredVolume, this.fVolume);
             end
             
