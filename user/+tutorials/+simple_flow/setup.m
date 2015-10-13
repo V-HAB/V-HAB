@@ -25,11 +25,11 @@ classdef setup < simulation.infrastructure
             
             % By Path - will overwrite (by definition) CTOR value, even 
             % though the CTOR value is set afterwards!
-            %ptConfigParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
+            %%%ptConfigParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
             
             
             % By constructor
-            ptConfigParams('tutorials.simple_flow.systems.Example') = struct('fPipeLength', 5, 'fPressureDifference', 2);
+            %%%ptConfigParams('tutorials.simple_flow.systems.Example') = struct('fPipeLength', 5, 'fPressureDifference', 2);
             
             
             
@@ -37,7 +37,7 @@ classdef setup < simulation.infrastructure
             % monitors
             ttMonitorConfig = struct();
             
-            ttMonitorConfig.oConsoleOutput = struct('cParams', {{ 50 5 }});
+            %%%ttMonitorConfig.oConsoleOutput = struct('cParams', {{ 50 5 }});
             
             %tSolverParams.rUpdateFrequency = 0.1;
             %tSolverParams.rHighestMaxChangeDecrease = 100;
