@@ -74,10 +74,12 @@ classdef vhab
         %   vhab.clear(); oSim = vhab.sim(...); oSim.run();
         function oSimRtn = exec(sSimulation, ptConfigParams, tSolverParams, varargin)
             
-            % If an old simualtion obj exists in the base workspace, remove
+            % If an old simulation obj exists in the base workspace, remove
             % that explicitly just to make sure ...
-            oSim = evalin('base', 'oLastSimObj');
-            delete(oSim);
+            try
+                oSim = evalin('base', 'oLastSimObj');
+                delete(oSim);
+            end
             
             % Clear all existing sims, and run provided sim (uses the
             % default max. time/tick conditions on the sim object)
