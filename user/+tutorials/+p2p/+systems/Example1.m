@@ -13,7 +13,7 @@ classdef Example1 < vsys
             this@vsys(oParent, sName, 10);
            
             % Creating a store, volume 10m^3
-            this.addStore(matter.store(this, 'Atmos', 10));
+            matter.store(this, 'Atmos', 10);
             
             % Creating a phase using the 'air' helper
             oAir = this.toStores.Atmos.createPhase('air', 10);
@@ -24,7 +24,7 @@ classdef Example1 < vsys
             
             % Creating the filter, last parameter is the filter capacity in
             % kg.
-            this.addStore(tutorials.p2p.components.Filter(this, 'Filter', 0.5));
+            tutorials.p2p.components.Filter(this, 'Filter', 0.5);
             
             % Adding a fan
             components.fan(this, 'Fan', 'setSpeed', 40000, 'Left2Right');

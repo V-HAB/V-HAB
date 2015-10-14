@@ -1,4 +1,4 @@
-classdef setup < simulation
+classdef setup < simulation.infrastructure
     %SETUP This class is used to setup a simulation
     %   There should always be a setup file present for each project. It is
     %   used for the following:
@@ -14,16 +14,19 @@ classdef setup < simulation
         
         aoFilterPhases;
         oAtmosPhase;
+        
+        
+        tiLog = struct();
     end
     
     methods
-        function this = setup(tOpt)
+        function this = setup(ptConfigParams, tSolverParams)
             
-            if nargin < 1 || isempty(tOpt), tOpt = struct(); end;
+            %if nargin < 1 || isempty(tOpt), tOpt = struct(); end;
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation('Tutorial_p2p');
+            this@simulation.infrastructure('Tutorial_p2p');
             
             
             %%%% Tuning of the solving process %%%%
@@ -78,18 +81,21 @@ classdef setup < simulation
             % Slower, but nicer: 15/5, 5/25, 1/125 (>3k ticks)
             % NICE: rUF = 1, rMD = 150; 1/250, 2.5/100, 10/20 (~4.5k ticks)
             
-            if isfield(tOpt, 'rUF'), this.oData.set('rUpdateFrequency', tOpt.rUF);
-            else                     this.oData.set('rUpdateFrequency', 2);
-            end
+%             if isfield(tOpt, 'rUF'), this.oData.set('rUpdateFrequency', tOpt.rUF);
+%             else                     this.oData.set('rUpdateFrequency', 2);
+%             end
+%             
+%             if isfield(tOpt, 'rMD'), this.oData.set('rHighestMaxChangeDecrease', tOpt.rMD);
+%             else                     this.oData.set('rHighestMaxChangeDecrease', 25);
+%             end
             
-            if isfield(tOpt, 'rMD'), this.oData.set('rHighestMaxChangeDecrease', tOpt.rMD);
-            else                     this.oData.set('rHighestMaxChangeDecrease', 25);
-            end
+            tSolverParams.rUpdateFrequency = 2;
+            tSolverParams.rHighestMaxChangeDecrease = 25;
             
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation.
-            oExample = tutorials.p2p.systems.Example1(this.oRoot, 'Example');
+            oExample = tutorials.p2p.systems.Example1(this.oSimulationContainer, 'Example');
             
             % Create the solver instances. Generally, this can be done here
             % or directly within the vsys (after the .seal() command).
@@ -110,8 +116,8 @@ classdef setup < simulation
             
             % Phases
             
-            this.aoFilterPhases = this.oRoot.toChildren.Example.toStores.Filter.aoPhases;
-            this.oAtmosPhase    = this.oRoot.toChildren.Example.toStores.Atmos.aoPhases(1);
+            this.aoFilterPhases = this.oSimulationContainer.toChildren.Example.toStores.Filter.aoPhases;
+            this.oAtmosPhase    = this.oSimulationContainer.toChildren.Example.toStores.Atmos.aoPhases(1);
             
             % As the input flow rate can change quickly due to the fan, and
             % the filter flow phase is rather small, it can help to 'sync'
@@ -131,31 +137,65 @@ classdef setup < simulation
             % Creating a cell setting the log items. You need to know the
             % exact structure of your model to set log items, so do this
             % when you are done modelling and ready to run a simulation. 
-            this.csLog = {
-                % System timer
-                'oData.oTimer.fTime';                                           %1
+            
+            this.toMonitors.oLogger ...
+                .addValue('Tutorial_p2p/Example:s:Atmos.aoPhases(1).fMassToPressure', 'Atmos mass2press', 'Pa/kg') ...
+                .addValue('Tutorial_p2p/Example:s:Filter.aoPhases(1).fMassToPressure', 'Filter mass2press', 'Pa/kg') ...
+                ...
+                .addValue('Tutorial_p2p/Example:s:Atmos.aoPhases(1).fMass', 'Atmos Mass', 'kg') ...
+                .addValue('Tutorial_p2p/Example:s:Atmos.toPhases.Atmos_Phase_1.fMass', 'Atmos Mass', 'kg') ...
+                ...
+                .addValue('Tutorial_p2p/Example:s:Filter.aoPhases(1).fMass', 'Filter Mass', 'kg') ...
+                .addValue('Tutorial_p2p/Example:s:Filter.aoPhases(2).fMass', 'Filtered Mass', 'kg') ...
+                ...
+                .addValue('Tutorial_p2p/Example:s:Atmos.aoPhases(1).afMass(this.oSimulationInfrastructure.oSimulationContainer.oMT.tiN2I.O2)', 'Atmos O2', 'kg') ...
+                .addValue('Tutorial_p2p/Example:s:Filter.aoPhases(2).afMass(this.oSimulationInfrastructure.oSimulationContainer.oMT.tiN2I.O2)', 'Filtered O2', 'kg') ...
+                ...
+                .addValue('Tutorial_p2p/Example.aoBranches(1).fFlowRate', 'Flow Rate To Filter', 'kg/s') ...
+                .addValue('Tutorial_p2p/Example.aoBranches(2).fFlowRate', 'Flow Rate From Filter', 'kg/s') ...
+                .addValue('Tutorial_p2p/Example:s:Filter.oProc.fFlowRate', 'Proc Flow Rate', 'kg/s');
+            
+            
+            
+            oLog = this.toMonitors.oLogger;
+            
+            this.tiLog.Atmos_Mass = oLog.addValue('Tutorial_p2p/Example:s:Atmos.aoPhases(1).fMass', 'Atmos Mass', 'kg');
+            this.tiLog.Filter_Phase1_Mass = oLog.addValue('Tutorial_p2p/Example:s:Filter.aoPhases(1).fMass', 'Filter Mass', 'kg');
+            this.tiLog.Filter_Phase2_Mass = oLog.addValue('Tutorial_p2p/Example:s:Filter.aoPhases(1).fMass', 'Filtered Mass', 'kg');
 
-                % Add other parameters here
-                'toChildren.Example.toStores.Atmos.aoPhases(1).fMassToPressure';      %2
-                'toChildren.Example.toStores.Filter.aoPhases(1).fMassToPressure';     
-
-                'toChildren.Example.aoBranches(1).fFlowRate';                   %4
-                'toChildren.Example.aoBranches(2).fFlowRate';                   
-
-                'toChildren.Example.toStores.Filter.oProc.fFlowRate';           %6
-
-                'toChildren.Example.toStores.Atmos.aoPhases(1).afMass(this.oData.oMT.tiN2I.O2)';      
-                'toChildren.Example.toStores.Filter.aoPhases(2).afMass(this.oData.oMT.tiN2I.O2)';     %8
-
-                'toChildren.Example.toStores.Atmos.aoPhases(1).fMass';
-                'toChildren.Example.toStores.Filter.aoPhases(2).fMass';         %10
-                'toChildren.Example.toStores.Filter.aoPhases(1).fMass';         
-            };
+            
+            this.tiLog.FR1 = oLog.addValue('Tutorial_p2p/Example.aoBranches(1).fFlowRate', 'Flow Rate To Filter', 'kg/s');
+            this.tiLog.FR2 = oLog.addValue('Tutorial_p2p/Example.aoBranches(2).fFlowRate', 'Flow Rate From Filter', 'kg/s');
+            
+            this.tiLog.FR1 = oLog.addValue('Tutorial_p2p/Example.aoBranches(1)', 'fFlowRate', 'Flow Rate To Filter', 'kg/s');
+            
+            
+            
+%             this.csLog = {
+%                 % System timer
+%                 'oData.oTimer.fTime';                                           %1
+% 
+%                 % Add other parameters here
+%                 'toChildren.Example.toStores.Atmos.aoPhases(1).fMassToPressure';      %2
+%                 'toChildren.Example.toStores.Filter.aoPhases(1).fMassToPressure';     
+% 
+%                 'toChildren.Example.aoBranches(1).fFlowRate';                   %4
+%                 'toChildren.Example.aoBranches(2).fFlowRate';                   
+% 
+%                 'toChildren.Example.toStores.Filter.oProc.fFlowRate';           %6
+% 
+%                 'toChildren.Example.toStores.Atmos.aoPhases(1).afMass(this.oData.oMT.tiN2I.O2)';      
+%                 'toChildren.Example.toStores.Filter.aoPhases(2).afMass(this.oData.oMT.tiN2I.O2)';     %8
+% 
+%                 'toChildren.Example.toStores.Atmos.aoPhases(1).fMass';
+%                 'toChildren.Example.toStores.Filter.aoPhases(2).fMass';         %10
+%                 'toChildren.Example.toStores.Filter.aoPhases(1).fMass';         
+%             };
             
             %% Simulation length
             % Simulation length - stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 1500 * 1;
+            this.fSimTime = 3600 * 1;
             %this.fSimTime = 1700;
             this.iSimTicks = 600;
             this.bUseTime = true;
@@ -175,10 +215,15 @@ classdef setup < simulation
             ylabel('Pressure in Pa');
             xlabel('Time in s');
 
+            
+            
+            oPlotter.addPlot({ 'FR1', 'FR2' }, 'Filter Flow Rates');
+            
+            
             figure('name', 'Flow Rates');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 4:5));
+            plot(this.mfLog(:,1), this.mfLog(:, [ this.tiLog.FR1 this.tiLog.FR2 ]));
             legend('atmos to filter', 'filter to atmos');
             ylabel('flow rate [kg/s]');
             xlabel('Time in s');
