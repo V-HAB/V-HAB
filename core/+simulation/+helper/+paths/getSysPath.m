@@ -1,11 +1,11 @@
 function sPath = getSysPath(oVsys)
-%CONVERTSHORTHANDTOFULLPATH Summary of this function goes here
+%GETSYSPATH System path WITHOUT the root system!
 %   Detailed explanation goes here
 
 
     sPath = '';
     
-    while ~isa(oVsys, 'systems.root')
+    while ~isa(oVsys.oParent, 'systems.root')
         
         sPath = [ '.toChildren.' oVsys.sName sPath ];
         

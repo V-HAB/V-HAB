@@ -59,13 +59,16 @@ classdef setup < simulation.infrastructure
             % exact structure of your model to set log items, so do this
             % when you are done modelling and ready to run a simulation. 
             
-            this.toMonitors.oLogger.add('Example', 'flow_props');
+            oLog = this.toMonitors.oLogger;
             
+            tiFlowProps = oLog.add('Example', 'flow_props');
+            
+            assignin('base', 'tiFlowProps', tiFlowProps);
             
             % Add single values
-            this.toMonitors.oLogger ...
-                .addValue('Tutorial_Simple_Flow/Example.iChildren', 'Blah') ...
-                .addValue('Tutorial_Simple_Flow/Example.fPipeDiameter', 'Pipe Diameter', 'm');
+            iPropLogIndex1 = oLog.addValue('Example', 'iChildren',     [],  'Label of Prop');
+            %keyboard();
+            iPropLogIndex2 = oLog.addValue('Example', 'fPipeDiameter', 'm', 'Pipe Diameter');
             
             
 %             this.csLog = {

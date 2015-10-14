@@ -3,6 +3,13 @@ classdef logger_basic < simulation.monitor
     %   Detailed explanation goes here
     
     properties (GetAccess = public, Constant = true)
+        % Loops through keys, comparison only with length of key
+        % -> 'longer' keys need to be defined first (fMass * fMassToPress)
+        poExpressionToUnit = containers.Map(...
+            { 'this.fMass * this.fMassToPressure', 'fMassToPressure', 'fMass', 'afMass', 'fFlowRate', 'fTemperature', 'fPressure', 'afPP' }, ...
+            { 'Pa',                                'Pa/kg',           'kg',    'kg',     'kg/s',      'K',            'Pa',        'Pa'} ...
+        );
+        
         poUnitsToLabels = containers.Map(...
             { 'kg',   'kg/s',      'K',           'Pa',       '-'}, ...
             { 'Mass', 'Flow Rate', 'Temperature', 'Pressure', '-' } ...
@@ -12,7 +19,15 @@ classdef logger_basic < simulation.monitor
     
     properties (SetAccess = protected, GetAccess = public)
         % Logged values - path, name, ...
-        tLogValues = struct('sPath', {}, 'sName', {}, 'sUnit', {});%, 'iIndex', {});
+        % sObjectPath: path to the object starting first vsys. Shorthands
+        %              will be replaced with real path. Expression will be
+        %              executed on this object.
+        % sExpression: can be attribute or method call. Will be prefixed
+        %              with 'this.' if not present, afterwards all 'this.'
+        %              strings will be replaced with the object path. This
+        %              means that e.g. 'this.oMT.tiN2I.O2' can be used.
+        % sName: if empty, will be generated from sExpression
+        tLogValues = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {}, 'sObjUuid', {}, 'iIndex', {});%, 'iIndex', {});
         
         % Shortcut to the paths of variables to log
         csPaths;
@@ -52,7 +67,7 @@ classdef logger_basic < simulation.monitor
         
         
         
-        function this = add(this, xVsys, xHelper, varargin)
+        function tiLogIndices = add(this, xVsys, xHelper, varargin)
             % xVsys - if string, convert to full path and eval 
             %           (e.g. sys1/subsys1/subsubsys2)
             % xHelper - if string, check s2f('sim.helper.logger_basic.' 
@@ -62,7 +77,7 @@ classdef logger_basic < simulation.monitor
             % varargin -> to helper, besides oVsys!
             
             % RETURN from helper --> should be struct --> add to tLogValues
-            tEmptyLogProps = struct('sPath', {}, 'sName', {}, 'sUnit', {});
+            tEmptyLogProps = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {});
             
             % Vsys object can be provided directly, or a string containing
             % the path to the vsys can be passed.
@@ -89,45 +104,170 @@ classdef logger_basic < simulation.monitor
             
             % Helper needs to return struct array
             tNewLogProps = xHelper(tEmptyLogProps, oVsys, varargin{:});
+            tiLogIndices = struct();
             
             % Merge
             for iL = 1:length(tNewLogProps)
-                % Only add property if not yet logged!
-                if isempty(find(strcmp({ this.tLogValues.sPath }, tNewLogProps(iL).sPath), 1))
-                    this.tLogValues(end + 1) = tNewLogProps(iL);
+                iIndex = this.addValueToLog(tNewLogProps(iL));
+                
+                % Get from this.tLogValues, maybe sName was empty!
+                tiLogIndices.(this.tLogValues(iIndex).sName) = iIndex;
+            end
+        end
+        
+        
+        function iIdx = addValue(this, sObjectPath, sExpression, sUnit, sLabel, sName)
+            % sObjPath and sExp have to be provided.
+            % Unit, label will be guessed, name auto-added.
+            
+            tProp = struct('sObjectPath', [], 'sExpression', [], 'sName', [], 'sUnit', [], 'sLabel', []);
+            
+            tProp.sObjectPath = simulation.helper.paths.convertShorthandToFullPath(sObjectPath);
+            tProp.sExpression = sExpression;
+            
+            if nargin >= 4 && ~isempty(sUnit),  tProp.sUnit  = sUnit;  end;
+            if nargin >= 5 && ~isempty(sLabel), tProp.sLabel = sLabel; end;
+            if nargin >= 6 && ~isempty(sUnit),  tProp.sUnit  = sName;  end;
+            
+            
+            iIdx = this.addValueToLog(tProp);
+        end
+        
+        
+        function [ mxData, tConfig ] = get(this, aiIdx, tFilter)
+            % If aiIdx empty - get all!
+            
+            if nargin < 2 || isempty(aiIdx)
+                aiIdx = 1:length(this.tLogValues);
+            end
+            
+            %sPath = simulation.helper.paths.convertShorthandToFullPath(sPath);
+            %iIdx  = find(strcmp({ this.tLogValues.sPath }, sPath), 1, 'first');
+            
+            if nargin >= 3 && ~isempty(tFilter) && isstruct(tFilter)
+                csFilters = fieldnames(tFilter);
+                
+                for iF = 1:length(csFilters)
+                    sFilter = csFilters{iF};
+                    sValue  = tFilter.(sFilter);
+                    
+                    for iI = length(aiIdx):-1:1
+                        if ~strcmp(this.tLogValues(aiIdx(iI)).(sFilter), sValue)
+                            aiIdx(iI) = [];
+                            
+                            %iI = iI - 1;
+                        end
+                    end
                 end
             end
-        end
-        
-        
-        function this = addValue(this, sPath, sName, sUnit)
-            %TODO if no sUnit - try to guess / default units?
             
-            sPath = simulation.helper.paths.convertShorthandToFullPath(sPath);
-            
-            if nargin < 4, sUnit = '-'; end;
-            
-            if isempty(find(strcmp({ this.tLogValues.sPath }, sPath), 1))
-                this.tLogValues(end + 1) = struct('sPath', sPath, 'sName', sName, 'sUnit', sUnit);
-            end
-        end
-        
-        
-        function [ axData, tConfig, sLabel ] = get(this, sPath)
-            % Convert to full path
-            % Get index from tLogValues
-            
-            sPath = simulation.helper.paths.convertShorthandToFullPath(sPath);
-            iIdx  = find(strcmp({ this.tLogValues.sPath }, sPath), 1, 'first');
-            
-            axData  = this.mfLog(:, iIdx);
-            tConfig = this.tLogValues(iIdx);
-            sLabel  = this.poUnitsToLabels(tConfig.sUnit);
+            mxData  = this.mfLog(:, aiIdx);
+            tConfig = this.tLogValues(aiIdx);
+            %sLabel  = this.poUnitsToLabels(tConfig.sUnit);
         end
     end
     
     
     methods (Access = protected)
+        
+        function iIndex = addValueToLog(this, tLogProp)
+            %IMPORTANT NOTE: tLogProp definition HAS to be as in tLogProps
+            
+            iIndex = [];
+            oObj   = [];
+            
+            % Replace shorthand to full path (e.g. :s: to .toStores.) and
+            % prefix so object is reachable through eval().
+            tLogProp.sObjectPath = simulation.helper.paths.convertShorthandToFullPath(tLogProp.sObjectPath);
+            
+            try
+                oObj = eval([ 'this.oSimulationInfrastructure.oSimulationContainer.toChildren.' tLogProp.sObjectPath ]);
+                
+                tLogProp.sObjUuid = oObj.sUUID;
+            catch oErr
+                assignin('base', 'oLastErr', oErr);
+                this.throw('addValueToLog', 'Object does not seem to exist: %s (message was: %s)', tLogProp.sObjectPath, oErr.message);
+            end
+            
+            
+            % Only add property if not yet logged!
+            aiObjMatches = find(strcmp({ this.tLogValues.sObjUuid }, tLogProp.sObjUuid));
+            
+            if ~isempty(aiObjMatches)
+                aiExpressionMatches = find(strcmp({ this.tLogValues(aiObjMatches).sExpression }, tLogProp.sExpression));
+                
+                if ~isempty(aiExpressionMatches)
+                    iIndex = this.tLogValues(aiExpressionMatches(1)).iIndex;
+                    
+                    return;
+                end
+            end
+            
+            
+            if ~isfield(tLogProp, 'sName') || isempty(tLogProp.sName)
+                % Only accept alphanumeric - can be used for storage e.g.
+                % on a struct using sName as the key!
+                tLogProp.sName = [ oObj.sUUID '__' regexprep(tLogProp.sExpression, '[^a-zA-Z0-9]', '_') ];
+            end
+            
+            
+            
+            if ~isfield(tLogProp, 'sUnit') || isempty(tLogProp.sUnit)
+                tLogProp.sUnit = '-';
+                csKeys         = this.poExpressionToUnit.keys();
+                
+                
+                for iI = 1:length(csKeys)
+                    sKey   = csKeys{iI};
+                    iLen   = length(sKey);
+                    
+                    if iLen > length(tLogProp.sExpression)
+                        iLen = length(tLogProp.sExpression);
+                    end
+                    
+                    if strcmp(sKey, tLogProp.sExpression(1:iLen))
+                        tLogProp.sUnit = this.poExpressionToUnit(sKey);
+                        
+                        break;
+                    end
+                end
+                
+                %if .isKey(tLogProp.sExpression)
+                %    this.sUnit = this.poExpressionToUnit(tLogProp.sExpression);
+                %end
+            end
+            
+            
+            if ~isfield(tLogProp, 'sLabel') || isempty(tLogProp.sLabel)
+                % Does object have 'sName'? If not, use path!
+                try
+                    tLogProp.sLabel = oObj.sName;
+                    
+                catch oErr
+                    tLogProp.sLabel = tLogProp.sObjectPath;
+                    
+                end
+                
+                % Unit to Label? if not, expression!
+                try
+                    tLogProp.sLabel = [ tLogProp.sLabel ' - ' this.poUnitsToLabels(tLogProp.sUnit) ];
+                    
+                catch oErr
+                    tLogProp.sLabel = tLogProp.sExpression;
+                    
+                end
+            end
+            
+            
+            
+            % Add element to log struct array
+            iIndex          = length(this.tLogValues) + 1;
+            tLogProp.iIndex = iIndex;
+            
+            this.tLogValues(tLogProp.iIndex) = tLogProp;
+        end
+        
+        
         
         function this = onInitPost(this)
             % Indices to tLogValues (?, or on add?)
@@ -137,17 +277,27 @@ classdef logger_basic < simulation.monitor
             
             
             % Collect all paths of values to log
-            this.csPaths = { this.tLogValues.sPath };
+            this.csPaths = { this.tLogValues.sExpression };
             
             % Replace the root/container sys name by the path to get there
-            sLen = length(this.oSimulationInfrastructure.oSimulationContainer.sName) + 1;
+            %sLen = length(this.oSimulationInfrastructure.oSimulationContainer.sName) + 1;
             
             for iL = 1:length(this.csPaths)
                 %this.csPaths{iL} = [ 'this.oSimulationInfrastructure.oSimulationContainer' this.csPaths{iL}(sLen:end) ];
+                
+                
+                % Insert object path into expression
+                if ~strcmp(this.csPaths{iL}(1:5), 'this.')
+                    this.csPaths{iL} = [ 'this.' this.csPaths{iL} ];
+                end
+                
+                
                 this.csPaths{iL} = strrep(this.csPaths{iL}, ...
-                    [ this.oSimulationInfrastructure.oSimulationContainer.sName '.' ], ...
-                    'this.oSimulationInfrastructure.oSimulationContainer.' ...
+                    'this.', ...
+                    [ 'this.oSimulationInfrastructure.oSimulationContainer.toChildren.' this.tLogValues(iL).sObjectPath '.' ] ...
                 );
+                
+                %tLogProp.sExpression = strrep(tLogProp.sExpression, 'this.', [ tLogProp.sObjectPath '.' ]);
             end
             
             
@@ -196,7 +346,7 @@ classdef logger_basic < simulation.monitor
                     try
                         eval([ this.csPaths{iL} ';' ]);
                     catch oErr
-                        this.throw('simulation','Error trying to log this.oRoot.%s.\nError Message: %s\nPlease check your logging configuration in setup.m!', this.csPaths{iL}, oErr.message);
+                        this.throw('simulation','Error trying to log %s.\nError Message: %s\nPlease check your logging configuration in setup.m!', this.csPaths{iL}, oErr.message);
                     end
                 end
             end

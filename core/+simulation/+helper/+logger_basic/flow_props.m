@@ -14,6 +14,8 @@ end
 sPath = simulation.helper.paths.getSysPath(oVsys);
 
 
+iV = 1;
+
 
 for iS = 1:length(csStores)
     oStore     = oVsys.toStores.(csStores{iS});
@@ -25,23 +27,25 @@ for iS = 1:length(csStores)
         
         
         % Mass, Pressure, Temperature
-        tLogProps(end + 1) = struct(...
-            'sPath', [ sPhasePath '.fMass' ], ...
-            'sName', [ 'Phase Mass (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ], ...
-            'sUnit', 'kg' ...
-        );
+        tLogProps(iV).sObjectPath = sPhasePath;
+        tLogProps(iV).sExpression = 'fMass';
+        tLogProps(iV).sLabel = [ 'Phase Mass (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
+        %tLogProps(end).sUnit = 'kg';
+        
+        
+        iV = iV + 1;
+        
+        tLogProps(iV).sObjectPath = sPhasePath;
+        tLogProps(iV).sExpression = 'fTemperature';
+        tLogProps(iV).sLabel = [ 'Phase Temp (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
     
-        tLogProps(end + 1) = struct(...
-            'sPath', [ sPhasePath '.fTemperature' ], ...
-            'sName', [ 'Phase Temp (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ], ...
-            'sUnit', 'K' ...
-        );
-    
-        tLogProps(end + 1) = struct(...
-            'sPath', [ sPhasePath '.fMass * ' sPhasePath '.fMassToPressure' ], ...
-            'sName', [ 'Phase Pressure (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ], ...
-            'sUnit', 'Pa' ...
-        );
+        
+        iV = iV + 1;
+        
+        tLogProps(iV).sObjectPath = sPhasePath;
+        tLogProps(iV).sExpression = 'this.fMass * this.fMassToPressure';
+        tLogProps(iV).sLabel = [ 'Phase Pressure (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
+        %tLogProps(end).sUnit = 'Pa';
     end
 end
 
@@ -50,11 +54,12 @@ end
 for iB = 1:length(oVsys.aoBranches)
     oBranch = oVsys.aoBranches(iB);
     
-    tLogProps(end + 1) = struct(...
-        'sPath', [ sPath '.aoBranches(' num2str(iB) ').fFlowRate' ], ...
-        'sName', [ 'Flow Rate (' oVsys.sName ' - ' oBranch.sName ')' ], ...
-        'sUnit', 'kg/s' ...
-    );
+    iV = iV + 1;
+        
+    tLogProps(iV).sObjectPath = [ sPath ':b:' oBranch.sName ];
+    tLogProps(iV).sExpression = 'fFlowRate';
+    tLogProps(iV).sLabel = [ 'Flow Rate (' oVsys.sName ' - ' oBranch.sName ')' ];
+    %tLogProps(end).sUnit = 'kg/s';
 end
 
 
