@@ -83,7 +83,11 @@ classdef fan < matter.procs.f2f
             %               for a specific fan, see properties
             
             
-            this@matter.procs.f2f(varargin{1});
+            this@matter.procs.f2f(varargin{1}, varargin{2});
+            
+            % CHANGED THE API - for now, just 'shift' the varargin!
+            varargin(1) = [];
+            iNargin = nargin - 1;
             
             % Setting the operational mode
             this.sMode = varargin{2};
@@ -95,7 +99,7 @@ classdef fan < matter.procs.f2f
             elseif strcmp(varargin{4}, 'setFlowRate')
                 this.fVolumetricFlowRateSetpoint = varargin{3};
             elseif strcmp(varargin{2}, 'manual')
-                 if nargin > 2
+                 if iNargin > 2
                      this.fDeltaPressure = varargin{3};
                  end
             else
@@ -107,7 +111,7 @@ classdef fan < matter.procs.f2f
             % positive direction of the branch in which the fan is placed.
             % Branch flow rates are positive (1) from left to right and
             % negative from right to left (-1).
-            if nargin > 3 && ~isempty(varargin{4})
+            if iNargin > 3 && ~isempty(varargin{4})
                 if strcmp(varargin{4}, 'Left2Right')
                     this.iDir = 1;
                 elseif strcmp(varargin{4}, 'Right2Left')
@@ -117,7 +121,7 @@ classdef fan < matter.procs.f2f
             
             % If a specific characteristic is used, read in the data and
             % override the defaults
-            if nargin > 4 && ~isempty(varargin{5})
+            if iNargin > 4 && ~isempty(varargin{5})
                 this.tCharacteristic = varargin{5};
             end
             
@@ -282,7 +286,7 @@ classdef fan < matter.procs.f2f
             % many errors, so we just skip this time and wait until
             % everything else is ready.
 
-            if ~(this.oBranch.oContainer.oData.oTimer.fTime >= 0)
+            if ~(this.oBranch.oTimer.fTime >= 0)
                 fDeltaPressure     = 0;
                 fDeltaTemperature  = 0;
                 return;
