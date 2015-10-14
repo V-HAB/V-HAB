@@ -566,7 +566,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Overload the specific heat capacity of the phase.
             
             this.warn('matter:phase:overloadSpecificHeatCapacity', ...
-                'This might not do what you expected!');
+                'Overloading the specific heat capacity is not recommended. Try to change the matter table instead.');
             this.fOverloadedSpecificHeatCapacity = fSpecificHeatCap;
             
         end

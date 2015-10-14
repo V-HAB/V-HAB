@@ -58,7 +58,7 @@ classdef dummymatter < matter.store
             this.fMolarMass = this.oMT.calculateMolarMass(afMasses);
             
             % Load density from matter table if not provided. 
-            if nargin < 4
+            if nargin <= 4
                 this.fDensity = this.oMT.calculateDensity(sPhase, afMasses, fTemperature, this.oMT.Standard.Pressure);
             else 
                 this.fDensity = fDensity;
@@ -66,7 +66,9 @@ classdef dummymatter < matter.store
             
             % Load specific heat capacity from matter table if not
             % provided.
-            if nargin < 5
+            bOverwriteHeatCapacity = true;
+            if nargin <= 5
+                bOverwriteHeatCapacity = false;
                 fSpecificHeatCap = this.oMT.calculateHeatCapacity(sPhase, afMasses, fTemperature, this.oMT.Standard.Pressure);
             end
             
@@ -100,8 +102,13 @@ classdef dummymatter < matter.store
             );
             
             % Overload specific heat capacity if we can.
-            if ismethod(this.oPhase, 'overloadSpecificHeatCapacity')
-                this.oPhase.overloadSpecificHeatCapacity(fSpecificHeatCap);
+            if bOverwriteHeatCapacity
+                if ismethod(this.oPhase, 'overloadSpecificHeatCapacity')
+                    this.oPhase.overloadSpecificHeatCapacity(fSpecificHeatCap);
+                else
+                    this.warn('thermal:dummymatter:addCreatePhase', ...
+                        'Failed to overload specific heat capacity. Using value from matter table instead.');
+                end
             end
             
             %TODO: remove!
@@ -156,7 +163,7 @@ classdef dummymatter < matter.store
                 
                 % Cross-check temperature with phase temperature. Warn if
                 % phase temperature differs from matter temperature.
-                if this.oPhase.fTemperature ~= fTemperature
+                if (1 - this.oPhase.fTemperature / fTemperature) > 1-e2
                     this.warn('thermal:dummymatter:getTemperature', ...
                         'Temperature %f of phase "%s" differs from temperature %f of (dummy) matter "%s"', ...
                         this.oPhase.fTemperature, this.oPhase.sName, fTemperature, this.sName);
