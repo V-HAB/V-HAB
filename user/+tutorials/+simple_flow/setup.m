@@ -87,6 +87,17 @@ classdef setup < simulation.infrastructure
 %                 % You can add other parameters here
 %                 };
             
+
+            %% Define plots
+            
+            oPlot = this.toMonitors.oPlotter;
+            
+            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
+            oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
+            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
+            
+            
+
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
@@ -97,6 +108,11 @@ classdef setup < simulation.infrastructure
         end
         
         function plot(this) % Plotting the results
+            
+            this.toMonitors.oPlotter.plot();
+            return;
+            
+            
             % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
             % further information
             
