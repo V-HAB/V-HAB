@@ -6,6 +6,8 @@ classdef plotter_basic < simulation.monitor
     properties (SetAccess = protected, GetAccess = public)
         % Name of log monitor
         sLogger = 'oLogger';
+        
+        tPlots = struct('sTitle', {}, 'aiIdx', {});
     end
     
     methods
@@ -20,15 +22,20 @@ classdef plotter_basic < simulation.monitor
         
         
         
-        function definePlot(this, xDataReference)
-            this.definePlotWithFilter(xDataReference);
+        %% Methods to define plots
+        
+        
+        function definePlot(this, xDataReference, sTitle)
+            this.definePlotWithFilter(xDataReference, [], sTitle);
         end
         
-        function definePlotAllWithFilter(this, sFilter)
-            this.definePlotWithFilter([], sFilter);
+        
+        function definePlotAllWithFilter(this, sFilter, sTitle)
+            this.definePlotWithFilter([], sFilter, sTitle);
         end
         
-        function definePlotWithFilter(this, xDataReference, sFilter)
+        
+        function definePlotWithFilter(this, xDataReference, sFilter, sTitle)
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             
             if isstruct(xDataReference)
@@ -44,6 +51,13 @@ classdef plotter_basic < simulation.monitor
             end
             
             
+            aiIdx = oLogger.find(xDataReference, tFilter);
+            
+            this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx);
+            
+            
+            return;
+            
             [ mfLogData, tLogProps ] = oLogger.get(xDataReference, tFilter);
             
             
@@ -57,10 +71,80 @@ classdef plotter_basic < simulation.monitor
             end
         end
         
+        
+        
+        
+        %% Default plot method
+        function plot(this)
+            oInfra  = this.oSimulationInfrastructure;
+            iFig    = figure();
+            iGrid   = ceil(sqrt(length(this.tPlots) + 1));
+            oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
+            
+            
+            for iP = 1:length(this.tPlots)
+                hHandle = subplot(iGrid, iGrid, iP);
+                
+                [ mfData, tLogProps ] = oLogger.get(this.tPlots(iP).aiIdx);
+                
+                %TODO ... well, differently ;)
+                sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                
+                this.generatePlot(hHandle, oLogger.afTime, mfData, tLogProps, sLabelY);
+                
+                title(hHandle, this.tPlots(iP).sTitle);
+            end
+            
+            
+            hHandle = subplot(iGrid, iGrid, iP + 1);
+            this.generatePlot(hHandle, 1:length(oLogger.afTime), oLogger.afTime, struct('sLabel', 'Time', 'sUnit', 's'), 'Time Steps');
+            
+            
+            set(iFig, 'name', [ oInfra.sName ' - (' oInfra.sCreated ')' ]);
+            % Maximize figure ...?
+        end
     end
     
     
     methods (Static)
+        function sLabel = getLabel(poUnitsToLabels, tLogProps)
+            pbLabels = containers.Map();
+            
+            for iP = 1:length(tLogProps)
+                if poUnitsToLabels.isKey(tLogProps(iP).sUnit) && ~isempty(poUnitsToLabels(tLogProps(iP).sUnit))
+                    pbLabels([ poUnitsToLabels(tLogProps(iP).sUnit) ' [' tLogProps(iP).sUnit ']' ]) = true;
+                end
+            end
+            
+            sLabel = strjoin(pbLabels.keys(), ' / ');
+        end
+        
+        
+        function generatePlot(hHandle, afTime, mfData, tLogProps, sLabelY)
+            %TODO
+            % * y-axis - if all units the same, plot unit there, else plot
+            %   in legend!
+            
+            hold(hHandle, 'on');
+            grid(hHandle, 'minor');
+            
+            csLegend = {};
+            
+            for iP = 1:length(tLogProps)
+                csLegend{end + 1} = [ tLogProps(iP).sLabel ' [' tLogProps(iP).sUnit ']' ];
+            end
+            
+            plot(afTime, mfData);
+            legend(csLegend, 'Interpreter', 'none');
+            
+            ylabel(sLabelY);
+            xlabel('Time in s');
+            
+            %%% Default Code END
+        end
+        
+        
+        
         function getIndicesFromStruct(tData)
             csKeys = fieldnames(tData);
             aiIdx  = [];

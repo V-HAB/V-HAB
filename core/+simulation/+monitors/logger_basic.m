@@ -12,7 +12,7 @@ classdef logger_basic < simulation.monitor
         
         poUnitsToLabels = containers.Map(...
             { 'kg',   'kg/s',      'K',           'Pa',       '-'}, ...
-            { 'Mass', 'Flow Rate', 'Temperature', 'Pressure', '-' } ...
+            { 'Mass', 'Flow Rate', 'Temperature', 'Pressure', '' } ...
         );
     end
     
@@ -134,7 +134,10 @@ classdef logger_basic < simulation.monitor
         end
         
         
-        function [ mxData, tConfig ] = get(this, aiIdx, tFilter)
+        
+        
+        
+        function aiIdx = find(this, aiIdx, tFilter)
             % If aiIdx empty - get all!
             
             if nargin < 2 || isempty(aiIdx)
@@ -160,10 +163,17 @@ classdef logger_basic < simulation.monitor
                     end
                 end
             end
+        end
+        
+        
+        
+        
+        function [ mxData, tConfig ] = get(this, aiIdx)
+            % Need to truncate mfLog to iTick - preallocation!
+            iTick = this.oSimulationInfrastructure.oSimulationContainer.oTimer.iTick + 1;
             
-            mxData  = this.mfLog(:, aiIdx);
+            mxData  = this.mfLog(1:iTick, aiIdx);
             tConfig = this.tLogValues(aiIdx);
-            %sLabel  = this.poUnitsToLabels(tConfig.sUnit);
         end
     end
     

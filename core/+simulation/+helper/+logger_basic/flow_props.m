@@ -46,6 +46,8 @@ for iS = 1:length(csStores)
         tLogProps(iV).sExpression = 'this.fMass * this.fMassToPressure';
         tLogProps(iV).sLabel = [ 'Phase Pressure (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
         %tLogProps(end).sUnit = 'Pa';
+        
+        iV = iV + 1;
     end
 end
 
@@ -54,12 +56,12 @@ end
 for iB = 1:length(oVsys.aoBranches)
     oBranch = oVsys.aoBranches(iB);
     
-    iV = iV + 1;
-        
     tLogProps(iV).sObjectPath = [ sPath ':b:' oBranch.sName ];
     tLogProps(iV).sExpression = 'fFlowRate';
     tLogProps(iV).sLabel = [ 'Flow Rate (' oVsys.sName ' - ' oBranch.sName ')' ];
     %tLogProps(end).sUnit = 'kg/s';
+    
+    iV = iV + 1;
 end
 
 
