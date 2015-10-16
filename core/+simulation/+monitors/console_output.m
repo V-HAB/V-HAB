@@ -69,22 +69,26 @@ classdef console_output < simulation.monitor
             % major tick display.
             disp('');
             
+% %             disp('------------------------------------------------------------------------');
+% %             disp('SIMULATION FINISHED - STATS!');
+% %             disp('------------------------------------------------------------------------');
+            
+            
+            
+            oSimInfra = this.oSimulationInfrastructure;
+            oTimer    = oSimInfra.oSimulationContainer.oTimer;
+            
             disp('------------------------------------------------------------------------');
-            disp('SIMULATION FINISHED - STATS!');
-            disp('------------------------------------------------------------------------');
-            
-            
-            
-% %             disp('--------------------------------------');
-% %             disp([ 'Sim Time:     ' num2str(this.oTimer.fTime) 's in ' num2str(this.oTimer.iTick) ' ticks' ]);
-% %             disp([ 'Sim Runtime:  ' num2str(this.fRuntimeTick + this.fRuntimeLog) 's, from that for dumping: ' num2str(this.fRuntimeLog) 's' ]);
-% %             disp([ 'Sim factor:   ' num2str(this.fSimFactor) ' [-] (ratio)' ]);
-% %             disp([ 'Avg Time/Tick:' num2str(this.oTimer.fTime / this.oTimer.iTick) ' [s]' ]);
+            disp([ 'Sim Time:     ' num2str(oTimer.fTime) 's in ' num2str(oTimer.iTick) ' ticks' ]);
+            disp([ 'Sim Runtime:  ' num2str(oSimInfra.fRuntimeTick + oSimInfra.fRuntimeOther) 's, from that for monitors (e.g. logging): ' num2str(oSimInfra.fRuntimeOther) 's' ]);
+            disp([ 'Sim factor:   ' num2str(oSimInfra.fSimFactor) ' [-] (ratio)' ]);
+            disp([ 'Avg Time/Tick:' num2str(oTimer.fTime / oTimer.iTick) ' [s]' ]);
+            disp([ 'Mass lost:    to be re-implemented' ]);
 % %             disp([ 'Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
 % %             disp([ 'Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :))) 'kg' ]);
-% %             disp([ 'Minimum Time Step * Total Sim Time: ' num2str(this.oTimer.fTimeStep * this.oTimer.fTime) ]);
-% %             disp([ 'Minimum Time Step * Total Ticks:    ' num2str(this.oTimer.fTimeStep * this.oTimer.iTick) ]);
-% %             disp('--------------------------------------');
+            disp([ 'Minimum Time Step * Total Sim Time: ' num2str(oTimer.fTimeStep * oTimer.fTime) ]);
+            disp([ 'Minimum Time Step * Total Ticks:    ' num2str(oTimer.fTimeStep * oTimer.iTick) ]);
+            disp('------------------------------------------------------------------------');
 
         end
         
@@ -95,17 +99,21 @@ classdef console_output < simulation.monitor
             
             
             % Minor tick?
-            if (mod(oSim.oTimer.iTick, this.iMinorReportingInterval) == 0) && (oSim.oTimer.fTime > 0)
+            if (this.iMinorReportingInterval > 0) && (mod(oSim.oTimer.iTick, this.iMinorReportingInterval) == 0) && (oSim.oTimer.fTime > 0)
                 % Major tick -> remove printed minor tick characters
                 if (mod(oSim.oTimer.iTick, this.iMajorReportingInterval) == 0)
                     %fprintf('\n');
                     
-                    iDeleteChars = 1 * ceil(this.iMajorReportingInterval / this.iMinorReportingInterval) - 1;
-                    fprintf(repmat('\b', 1, iDeleteChars));
+                    % Removed - not really able to handle e.g. other log
+                    % messages from other code.
+                    %TODO as soon as debug class exists, could be handled 
+                    %     through that (used instead of disp/fprintf)
+                    %iDeleteChars = 1 * ceil(this.iMajorReportingInterval / this.iMinorReportingInterval) - 1;
+                    %fprintf(repmat('\b', 1, iDeleteChars));
                 else
                     %fprintf('%f\t', oSim.oTimer.fTime);
                     
-                    fprintf('.');
+                    fprintf('\b .\n');
                 end
             end
             
