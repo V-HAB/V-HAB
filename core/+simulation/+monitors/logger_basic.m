@@ -170,7 +170,8 @@ classdef logger_basic < simulation.monitor
         
         function [ mxData, tConfig ] = get(this, aiIdx)
             % Need to truncate mfLog to iTick - preallocation!
-            iTick = this.oSimulationInfrastructure.oSimulationContainer.oTimer.iTick + 1;
+            %iTick = this.oSimulationInfrastructure.oSimulationContainer.oTimer.iTick + 1;
+            iTick = length(this.afTime);
             
             mxData  = this.mfLog(1:iTick, aiIdx);
             tConfig = this.tLogValues(aiIdx);

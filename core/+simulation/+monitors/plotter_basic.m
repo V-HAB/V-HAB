@@ -78,12 +78,21 @@ classdef plotter_basic < simulation.monitor
         function plot(this)
             oInfra  = this.oSimulationInfrastructure;
             iFig    = figure();
-            iGrid   = ceil(sqrt(length(this.tPlots) + 1));
+            iPlots  = length(this.tPlots) + 1;
+            iGrid   = ceil(sqrt(iPlots));
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             
             
+            % Rows of grid - can we reduce?
+            iGridRows = iGrid;
+            
+            while iGrid * (iGridRows - 1) >= iPlots
+                iGridRows = iGridRows - 1;
+            end
+            
+            
             for iP = 1:length(this.tPlots)
-                hHandle = subplot(iGrid, iGrid, iP);
+                hHandle = subplot(iGridRows, iGrid, iP);
                 
                 [ mfData, tLogProps ] = oLogger.get(this.tPlots(iP).aiIdx);
                 
@@ -96,7 +105,7 @@ classdef plotter_basic < simulation.monitor
             end
             
             
-            hHandle = subplot(iGrid, iGrid, iP + 1);
+            hHandle = subplot(iGridRows, iGrid, iP + 1);
             this.generatePlot(hHandle, 1:length(oLogger.afTime), oLogger.afTime, struct('sLabel', 'Time', 'sUnit', 's'), 'Time Steps');
             
             
