@@ -24,9 +24,6 @@ classdef setup < simulation.infrastructure
             
             %if nargin < 1 || isempty(tOpt), tOpt = struct(); end;
             
-            % First we call the parent constructor and tell it the name of
-            % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_p2p');
             
             
             %%%% Tuning of the solving process %%%%
@@ -93,6 +90,14 @@ classdef setup < simulation.infrastructure
             tSolverParams.rHighestMaxChangeDecrease = 25;
             
             
+            
+            
+            
+            % First we call the parent constructor and tell it the name of
+            % this simulation we are creating.
+            this@simulation.infrastructure('Tutorial_p2p', ptConfigParams, tSolverParams);
+            
+            
             % Creating the 'Example' system as a child of the root system
             % of this simulation.
             oExample = tutorials.p2p.systems.Example1(this.oSimulationContainer, 'Example');
@@ -138,36 +143,41 @@ classdef setup < simulation.infrastructure
             % exact structure of your model to set log items, so do this
             % when you are done modelling and ready to run a simulation. 
             
-            this.toMonitors.oLogger ...
-                .addValue('Tutorial_p2p/Example:s:Atmos.aoPhases(1).fMassToPressure', 'Atmos mass2press', 'Pa/kg') ...
-                .addValue('Tutorial_p2p/Example:s:Filter.aoPhases(1).fMassToPressure', 'Filter mass2press', 'Pa/kg') ...
-                ...
-                .addValue('Tutorial_p2p/Example:s:Atmos.aoPhases(1).fMass', 'Atmos Mass', 'kg') ...
-                .addValue('Tutorial_p2p/Example:s:Atmos.toPhases.Atmos_Phase_1.fMass', 'Atmos Mass', 'kg') ...
-                ...
-                .addValue('Tutorial_p2p/Example:s:Filter.aoPhases(1).fMass', 'Filter Mass', 'kg') ...
-                .addValue('Tutorial_p2p/Example:s:Filter.aoPhases(2).fMass', 'Filtered Mass', 'kg') ...
-                ...
-                .addValue('Tutorial_p2p/Example:s:Atmos.aoPhases(1).afMass(this.oSimulationInfrastructure.oSimulationContainer.oMT.tiN2I.O2)', 'Atmos O2', 'kg') ...
-                .addValue('Tutorial_p2p/Example:s:Filter.aoPhases(2).afMass(this.oSimulationInfrastructure.oSimulationContainer.oMT.tiN2I.O2)', 'Filtered O2', 'kg') ...
-                ...
-                .addValue('Tutorial_p2p/Example.aoBranches(1).fFlowRate', 'Flow Rate To Filter', 'kg/s') ...
-                .addValue('Tutorial_p2p/Example.aoBranches(2).fFlowRate', 'Flow Rate From Filter', 'kg/s') ...
-                .addValue('Tutorial_p2p/Example:s:Filter.oProc.fFlowRate', 'Proc Flow Rate', 'kg/s');
+            
+            oL = this.toMonitors.oLogger;
+            
+            
+            oL.addValue('Example:s:Atmos.aoPhases(1)', 'fMassToPressure', 'Atmos mass2press', 'Pa/kg');
+            oL.addValue('Example:s:Filter.aoPhases(1)', 'fMassToPressure', 'Filter mass2press', 'Pa/kg');
+            
+            oL.addValue('Example:s:Atmos.aoPhases(1)', 'fMass', 'Atmos Mass', 'kg');
+            oL.addValue('Example:s:Atmos.toPhases.Atmos_Phase_1', 'fMass', 'Atmos Mass', 'kg');
+            
+            oL.addValue('Example:s:Filter.aoPhases(1)', 'fMass', 'Filter Mass', 'kg');
+            oL.addValue('Example:s:Filter.aoPhases(2)', 'fMass', 'Filtered Mass', 'kg');
+            
+            oL.addValue('Example:s:Atmos.aoPhases(1)', 'afMass(this.oMT.tiN2I.O2)', 'Atmos O2', 'kg');
+            oL.addValue('Example:s:Filter.aoPhases(2)', 'afMass(this.oMT.tiN2I.O2)', 'Filtered O2', 'kg');
+            
+            oL.addValue('Example.aoBranches(1)', 'fFlowRate', 'Flow Rate To Filter', 'kg/s');
+            oL.addValue('Example.aoBranches(2)', 'fFlowRate', 'Flow Rate From Filter', 'kg/s');
+            oL.addValue('Example:s:Filter.oProc', 'fFlowRate', 'Proc Flow Rate', 'kg/s');
             
             
             
-            oLog = this.toMonitors.oLogger;
             
-            this.tiLog.Atmos_Mass = oLog.addValue('Tutorial_p2p/Example:s:Atmos.aoPhases(1).fMass', 'Atmos Mass', 'kg');
-            this.tiLog.Filter_Phase1_Mass = oLog.addValue('Tutorial_p2p/Example:s:Filter.aoPhases(1).fMass', 'Filter Mass', 'kg');
-            this.tiLog.Filter_Phase2_Mass = oLog.addValue('Tutorial_p2p/Example:s:Filter.aoPhases(1).fMass', 'Filtered Mass', 'kg');
-
             
-            this.tiLog.FR1 = oLog.addValue('Tutorial_p2p/Example.aoBranches(1).fFlowRate', 'Flow Rate To Filter', 'kg/s');
-            this.tiLog.FR2 = oLog.addValue('Tutorial_p2p/Example.aoBranches(2).fFlowRate', 'Flow Rate From Filter', 'kg/s');
-            
-            this.tiLog.FR1 = oLog.addValue('Tutorial_p2p/Example.aoBranches(1)', 'fFlowRate', 'Flow Rate To Filter', 'kg/s');
+% %             oLog = this.toMonitors.oLogger;
+% %             
+% %             this.tiLog.Atmos_Mass = oLog.addValue('Tutorial_p2p/Example:s:Atmos.aoPhases(1).fMass', 'Atmos Mass', 'kg');
+% %             this.tiLog.Filter_Phase1_Mass = oLog.addValue('Tutorial_p2p/Example:s:Filter.aoPhases(1).fMass', 'Filter Mass', 'kg');
+% %             this.tiLog.Filter_Phase2_Mass = oLog.addValue('Tutorial_p2p/Example:s:Filter.aoPhases(1).fMass', 'Filtered Mass', 'kg');
+% % 
+% %             
+% %             this.tiLog.FR1 = oLog.addValue('Tutorial_p2p/Example.aoBranches(1).fFlowRate', 'Flow Rate To Filter', 'kg/s');
+% %             this.tiLog.FR2 = oLog.addValue('Tutorial_p2p/Example.aoBranches(2).fFlowRate', 'Flow Rate From Filter', 'kg/s');
+% %             
+% %             this.tiLog.FR1 = oLog.addValue('Tutorial_p2p/Example.aoBranches(1)', 'fFlowRate', 'Flow Rate To Filter', 'kg/s');
             
             
             
