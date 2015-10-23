@@ -32,19 +32,19 @@ classdef setup_simpleArm < simulation
                 
                 % Solver & node temperatures
                 %'toChildren.simpleArm.oThermalSolver.getMatrixValueIfExists(''mNodeTemperatures'', 1)'; % 2
-                'toChildren.simpleArm.poCapacities(''Arm1Shoulder'').getTemperature()'; % 2
+%                 'toChildren.simpleArm.poCapacities(''Arm1Shoulder'').getTemperature()'; % 2
                 'toChildren.simpleArm.toStores.Arm.aoPhases(1).fTemperature'; 
                 %'toChildren.simpleArm.oThermalSolver.getMatrixValueIfExists(''mNodeTemperatures'', 2)'; % 4
-                'toChildren.simpleArm.poCapacities(''Arm2Upper'').getTemperature()'; % 4
+%                 'toChildren.simpleArm.poCapacities(''Arm2Upper'').getTemperature()'; % 4
                 'toChildren.simpleArm.toStores.Arm.aoPhases(2).fTemperature'; 
                 %'toChildren.simpleArm.oThermalSolver.getMatrixValueIfExists(''mNodeTemperatures'', 3)'; % 6
-                'toChildren.simpleArm.poCapacities(''Arm3Elbow'').getTemperature()'; % 6
+%                 'toChildren.simpleArm.poCapacities(''Arm3Elbow'').getTemperature()'; % 6
                 'toChildren.simpleArm.toStores.Arm.aoPhases(3).fTemperature'; 
                 %'toChildren.simpleArm.oThermalSolver.getMatrixValueIfExists(''mNodeTemperatures'', 4)'; % 8
-                'toChildren.simpleArm.poCapacities(''Arm4Lower'').getTemperature()'; % 8
+%                 'toChildren.simpleArm.poCapacities(''Arm4Lower'').getTemperature()'; % 8
                 'toChildren.simpleArm.toStores.Arm.aoPhases(4).fTemperature';
                 %'toChildren.simpleArm.oThermalSolver.getMatrixValueIfExists(''mNodeTemperatures'', 5)'; % 10
-                'toChildren.simpleArm.poCapacities(''Arm5Hand'').getTemperature()'; % 10
+%                 'toChildren.simpleArm.poCapacities(''Arm5Hand'').getTemperature()'; % 10
                 'toChildren.simpleArm.toStores.Arm.aoPhases(5).fTemperature';
                 
                 'toChildren.simpleArm.poCapacities(''Env'').getTemperature()'; % 12
@@ -53,17 +53,17 @@ classdef setup_simpleArm < simulation
                 'toChildren.simpleArm.poFluidicConductors(''fluidic:Arm4Lower+Arm5Hand'').fConductivity'; % 14
                 
                 'toChildren.simpleArm.oThermalSolver.getMatrixValueIfExists(''mNodeCapacities'', 1)'; % 15
-                'toChildren.simpleArm.poCapacities(''Arm1Shoulder'').fOverloadedTotalHeatCapacity';
-                'toChildren.simpleArm.toStores.Arm.aoPhases(1).fOverloadedSpecificHeatCapacity'; 
-                'toChildren.simpleArm.toStores.Arm.aoPhases(1).fHeatCapacity'; 
-                'toChildren.simpleArm.oThermalSolver.getMatrixValueIfExists(''mNodeCapacities'', 2)'; % 19
-                'toChildren.simpleArm.poCapacities(''Arm2Upper'').fOverloadedTotalHeatCapacity';
-                'toChildren.simpleArm.toStores.Arm.aoPhases(2).fOverloadedSpecificHeatCapacity'; 
-                'toChildren.simpleArm.toStores.Arm.aoPhases(2).fHeatCapacity'; % 22
+                'toChildren.simpleArm.toStores.Arm.aoPhases(1).fTotalHeatCapacity'; 
+%                 'toChildren.simpleArm.poCapacities(''Arm1Shoulder'').fOverloadedTotalHeatCapacity';
+                'toChildren.simpleArm.toStores.Arm.aoPhases(1).fSpecificHeatCapacity'; 
+                'toChildren.simpleArm.oThermalSolver.getMatrixValueIfExists(''mNodeCapacities'', 2)'; % 18
+                'toChildren.simpleArm.toStores.Arm.aoPhases(1).fTotalHeatCapacity'; 
+%                 'toChildren.simpleArm.poCapacities(''Arm2Upper'').fOverloadedTotalHeatCapacity';
+                'toChildren.simpleArm.toStores.Arm.aoPhases(2).fSpecificHeatCapacity'; % 20
                 % Add other parameters here
             };
             
-            % Simulate 1000s.
+            % Simulate 2000s.
             this.fSimTime = 2000; % [s]
             
         end
@@ -132,42 +132,18 @@ classdef setup_simpleArm < simulation
             
             mTimes = this.mfLog(812:end, 1);
             
-            figure('name', 'Node Temperatures');
-            hold on;
-            grid on;
-            plot(mTimes, this.mfLog(812:end, [2 4 6 8 10]));
-            legend('node 1', 'node 2', 'node 3', 'node 4', 'node 5');
-            ylabel('Temperature in K');
-            xlabel('Time in s');
-            
             figure('name', 'Phase Temperatures');
             hold on;
             grid on;
-            plot(mTimes, this.mfLog(812:end, [3 5 7 9 11]));
+            plot(mTimes, this.mfLog(812:end, 2:6 ));
             legend('node 1', 'node 2', 'node 3', 'node 4', 'node 5');
             ylabel('Temperature in K');
             xlabel('Time in s');
-            
-            figure('name', 'Block 3 temperatures');
-            hold on;
-            grid on;
-            plot(mTimes, this.mfLog(812:end, 6:7));
-            legend('node', 'phase');
-            xlabel('Time in s');
-            ylabel('Temperature in K');
-            
-            figure('name', 'Block 5 temperatures');
-            hold on;
-            grid on;
-            plot(mTimes, this.mfLog(812:end, 10:11));
-            legend('node', 'phase');
-            xlabel('Time in s');
-            ylabel('Temperature in K');
             
             figure('name', 'Node 1+2 & 2+3 conductance');
             hold on;
             grid on;
-            plot(mTimes, this.mfLog(812:end, 13:14));
+            plot(mTimes, this.mfLog(812:end, 8:9));
             legend('Shoulder+UpperArm', 'LowerArm+Hand');
             xlabel('Time in s');
             ylabel('Conductance in W/K');

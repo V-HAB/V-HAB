@@ -35,28 +35,28 @@ classdef example_cooledBar < vsys
             % and a specific heat capacity of |fCpStart| (valid for all
             % following blocks as well).
             oBlock1 = thermal.dummymatter(this, 'Block1', fCSArea*0.025);
-            oBlock1.addCreatePhase('Al', 'solid', fTStart, 2700, fCpStart);
+            oBlock1.addCreatePhase('Al', 'solid', fTStart);
             oCapacity1 = this.addCreateCapacity(oBlock1);
             
             % Create three blocks with an Aluminium phase and
             % |T[start] = 400 K| and create/add the capacities to the
             % system.
             oBlock2 = thermal.dummymatter(this, 'Block2', fCSArea*0.05);
-            oBlock2.addCreatePhase('Al', 'solid', fTStart, 2700, fCpStart);
+            oBlock2.addCreatePhase('Al', 'solid', fTStart);
             oCapacity2 = this.addCreateCapacity(oBlock2);
             
             oBlock3 = thermal.dummymatter(this, 'Block3', fCSArea*0.05);
-            oBlock3.addCreatePhase('Al', 'solid', fTStart, 2700, fCpStart);
+            oBlock3.addCreatePhase('Al', 'solid', fTStart);
             oCapacity3 = this.addCreateCapacity(oBlock3);
             
             oBlock4 = thermal.dummymatter(this, 'Block4', fCSArea*0.05);
-            oBlock4.addCreatePhase('Al', 'solid', fTStart, 2700, fCpStart);
+            oBlock4.addCreatePhase('Al', 'solid', fTStart);
             oCapacity4 = this.addCreateCapacity(oBlock4);
             
             % Create one "half" node with an Aluminium phase and
             % |T[start] = 400 K| and create/add the capacity to the system.
             oBlock5 = thermal.dummymatter(this, 'Block5', fCSArea*0.025);
-            oBlock5.addCreatePhase('Al', 'solid', fTStart, 2700, fCpStart);
+            oBlock5.addCreatePhase('Al', 'solid', fTStart);
             oCapacity5 = this.addCreateCapacity(oBlock5);
             
             % Create the environment node with infinite capacity and
@@ -66,9 +66,10 @@ classdef example_cooledBar < vsys
             %TODO: There should be a standard environment node in the
             % thermal framework so this hack is not needed. 
             oDummyEnv = thermal.dummymatter(this, 'Env', 1000);
-            oDummyEnv.addCreatePhase('Ar', 'gas', 295, 1, 1);
+            oDummyEnv.addCreatePhase('Ar', 'gas', 295);
             oEnv = thermal.capacity(oDummyEnv.sName, oDummyEnv);
-            oEnv.overloadTotalHeatCapacity(Inf);
+            oEnv.makeBoundaryNode();
+%             oEnv.overloadTotalHeatCapacity(Inf);
             this.addCapacity(oEnv);
             
             

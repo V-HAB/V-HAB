@@ -44,7 +44,8 @@ classdef example_simpleArm < vsys
             % Shoulder (boundary node with fixed temperature)
             oShoulder = this.createTissuePhase(this.oMT, oArm, 'Arm1Shoulder', mfVolumeSurface(1, 1), fTStart+1);
             oCapacity1 = thermal.capacity(oShoulder.sName, oShoulder);
-            oCapacity1.overloadTotalHeatCapacity(Inf);
+            oCapacity1.makeBoundaryNode();
+%             oCapacity1.overloadTotalHeatCapacity(Inf);
             this.addCapacity(oCapacity1);
             
             % Upper arm.
@@ -71,7 +72,8 @@ classdef example_simpleArm < vsys
             oDummyEnv = thermal.dummymatter(this, 'Env', 1000);
             oDummyEnv.addCreatePhase('Ar', 'gas', 295);
             oEnv = thermal.capacity(oDummyEnv.sName, oDummyEnv);
-            oEnv.overloadTotalHeatCapacity(Inf);
+            oEnv.makeBoundaryNode();
+%             oEnv.overloadTotalHeatCapacity(Inf);
             this.addCapacity(oEnv);
             
             %%
@@ -153,6 +155,7 @@ classdef example_simpleArm < vsys
         function oPhase = createTissuePhase(oMT, oStore, sName, fVolume, fTemperature)
             % Similar to |thermal.dummymatter.addCreatePhase|.
             
+            
             sSubstance = 'DummyTissue';
             sPhase = 'solid';
             
@@ -173,11 +176,15 @@ classdef example_simpleArm < vsys
             hPhaseCtor = str2func(sPhaseCtor);
             
             % Create and store the single associated phase. 
+            % The solid phase constructor ignores the volume, so we do the
+            % same with the input parameter. It is left intact in the
+            % constructor of this example system, so in the future it may
+            % be changed. 
             oPhase = hPhaseCtor( ...
                 oStore, ... % The store.
                 sName, ...  % The name of the phase. 
                 struct(sSubstance, fMass), ... % "Subphases"
-                fVolume, ...     % The volume of the phase.
+                [], ...     % The volume of the phase
                 fTemperature ... % The temperature of the phase. 
             );
             

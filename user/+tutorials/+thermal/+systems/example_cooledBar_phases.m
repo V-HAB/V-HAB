@@ -64,9 +64,10 @@ classdef example_cooledBar_phases < vsys
             %TODO: There should be a standard environment node in the
             % thermal framework so this hack is not needed. 
             oDummyEnv = thermal.dummymatter(this, 'Env', 1000);
-            oDummyEnv.addCreatePhase('Ar', 'gas', 295, 1, 1);
+            oDummyEnv.addCreatePhase('Ar', 'gas', 295);
             oEnv = thermal.capacity(oDummyEnv.sName, oDummyEnv);
-            oEnv.overloadTotalHeatCapacity(Inf);
+            %oEnv.overloadTotalHeatCapacity(Inf);
+            oEnv.makeBoundaryNode();
             this.addCapacity(oEnv);
             
             
@@ -185,7 +186,7 @@ classdef example_cooledBar_phases < vsys
                 oStore, ... % The store.
                 sName, ...  % The name of the phase. 
                 struct(sSubstance, fMass), ... % "Subphases"
-                fVolume, ...     % The volume of the phase.
+                [], ...     % The volume of the phase.
                 fTemperature ... % The temperature of the phase. 
             );
             

@@ -55,7 +55,8 @@ classdef example_heatedBar < vsys
             oBlock5 = thermal.dummymatter(this, 'Block5', fCSArea*0.025);
             oBlock5.addCreatePhase('DummyAlu', 'solid', 20+273.15);
             oCapacity5 = thermal.capacity(oBlock5.sName, oBlock5);
-            oCapacity5.overloadTotalHeatCapacity(Inf);
+            oCapacity5.makeBoundaryNode();
+%             oCapacity5.overloadTotalHeatCapacity(Inf);
             this.addCapacity(oCapacity5);
             
             %%
