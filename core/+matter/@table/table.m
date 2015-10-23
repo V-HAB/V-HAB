@@ -431,7 +431,7 @@ classdef table < base
                     % Phase type
                     
                     % check if sPhase is given as last parameter
-                    if isa(sSecondDepName, 'char') && strcmpi({'solid','liquid','gas'}, sSecondDepName)
+                    if isa(sSecondDepName, 'char') && any(strcmpi({'solid','liquid','gas'}, sSecondDepName))
                         sPhaseType = sSecondDepName;
                         sSecondDepName = [];
                         % number of dependencies
@@ -547,18 +547,94 @@ classdef table < base
                     if ~isempty(iRowsFirst) && ~abOutOfRange(1)
                         % dependencyvalue in table and in range of table
                         % direct usage
-                        fProperty = this.ttxMatter.(sSubstance).import.num((this.ttxMatter.(sSubstance).import.num(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
+                        fProperty = this.ttxMatter.(sSubstance).import.num(iRowsFirst, iColumn);
                         sReportString = 'One dependency in range. Tried to get value directly from matter table.';
+                        % If more than one values are returned, we cannot
+                        % determine which value is correct. An example for
+                        % this would be the heat capacity of a gas, which
+                        % is dependent on temperature AND pressure, but the
+                        % call only specifies the temperature. Then there
+                        % will be multiple entries in the matter table with
+                        % the same temperature but different heat
+                        % capacities. If this is the case, we abort and
+                        % give the appropriate error message. 
+                        if length(fProperty) > 1
+                            fProperty = NaN;
+                            sReportString = 'The property you are looking for is dependent on more than one value. Please add more dependencies to the call of findProperty().';
+                        end
                     elseif ~abOutOfRange(1)
-                        % only in range of table
-                        % interpolation needed
-                        % create a temporary array because interp1 need stricly monotonic increasing data
-                        afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst]);
-                        afTemporary = sortrows(afTemporary,2);
-                        [~,rows] = unique(afTemporary(:,2),'rows');
-                        afTemporary = afTemporary(rows,:);
-                        fProperty = interp1(afTemporary(:,2),afTemporary(:,1),fFirstDepValue);
+                        % If the property is not directly given an
+                        % interpolation is needed.
+                        
+                        % Check and see, if this interpolation has been
+                        % done before and use those values for better
+                        % performance.
+                        
+                        % First we need to create the unique ID for
+                        % this specific interpolation to see, if it
+                        % already exists.
+                        sID = sprintf('ID%i', iColumnFirst * 100);
+                        
+                        
+                        % Now we check if this interpolation already
+                        % exists. If yes, we just use the saved
+                        % function.
+                        
+                        try
+                            % If there is data, we use it.
+                            fProperty = this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue);
+                            
+                        catch
+                            % The interpolation function does not yet
+                            % exist, so we have to go and run the
+                            % interpolation.
+                            
+                            % create temporary array because scatteredInterpolant doesn't allow NaN values
+                            afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst]);
+                            
+                            % Now we remove all rows that contain NaN values
+                            afTemporary(any(isnan(afTemporary), 2), :) = [];
+                            
+                            % Only unique values are needed (also scatteredInterpolant would give out a warning in that case)
+                            afTemporary = unique(afTemporary,'rows');
+                            % Sometimes there are also multiple values for
+                            % the same combination of dependencies. Here we
+                            % get rid of those too.
+                            [ ~, aIndices ] = unique(afTemporary(:, 2), 'rows');
+                            afTemporary = afTemporary(aIndices, :);
+                            
+                            % interpolate linear with no extrapolation
+                            %CHECK Does it make sense not to extrapolate?
+                            F = griddedInterpolant(afTemporary(:,2),afTemporary(:,1),'linear','none');
+                            fProperty = F(fFirstDepValue);
+                            
+                            % To make this faster the next time around, we
+                            % save the scatteredInterpolant into the matter
+                            % table.
+                            
+                            this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = F;
+                            this.ttxMatter.(sSubstance).bInterpolations = true;
+                            
+                            % This addition to the matter table will be
+                            % overwritten, when the next simulation
+                            % starts, even if Matter.xlsx has not
+                            % changed. To prevent this, we need to save
+                            % the table object again.
+                            filename = strrep('data\MatterData.mat', '\', filesep);
+                            save(filename, 'this', '-v7');
+                        end
+                        
                         sReportString = 'One dependency in range. Tried to get value by interpolation.';
+%                         % only in range of table
+%                         % interpolation needed
+%                         % create a temporary array because interp1 need stricly monotonic increasing data
+%                         afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst]);
+%                         afTemporary(any(isnan(afTemporary), 2), :) = [];
+%                         afTemporary = sortrows(afTemporary,2);
+%                         [~,rows] = unique(afTemporary(:,2),'rows');
+%                         afTemporary = afTemporary(rows,:);
+%                         fProperty = interp1(afTemporary(:,2),afTemporary(:,1),fFirstDepValue);
+%                         sReportString = 'One dependency in range. Tried to get value by interpolation.';
                     else
                         % dependencyvalue is out of range
                         % look if phase of substance is in MatterData

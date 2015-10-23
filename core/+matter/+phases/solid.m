@@ -12,7 +12,7 @@ classdef solid < matter.phase
     end
 
     properties (SetAccess = protected, GetAccess = public)
-        afVolume;        % Array containing the volume of the individual substances in m^3
+        %afVolume;        % Array containing the volume of the individual substances in m^3
         fVolume = 0;     % Volume of all solid substances in m^3
         fPressure = NaN; % Placeholder/compatibility "pressure" since solids do not have an actual pressure.
     end
@@ -25,11 +25,14 @@ classdef solid < matter.phase
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             csKeys = fieldnames(tfMasses);
+            afVolumes = zeros(1,length(csKeys));
             for iI = 1:length(csKeys)
-                sKey = csKeys{iI};
-                this.afVolume(this.oMT.tiN2I.(sKey)) = this.afMass(this.oMT.tiN2I.(sKey)) / this.oMT.ttxMatter.(sKey).ttxPhases.solid.fDensity;
+                sKey     = csKeys{iI};
+                fMass    = this.afMass(this.oMT.tiN2I.(sKey));
+                fDensity = this.oMT.calculateDensity('solid', this.afMass, fTemperature);
+                afVolumes(this.oMT.tiN2I.(sKey)) = fMass / fDensity;
             end
-            this.fVolume  = sum(this.afVolume);
+            this.fVolume  = sum(afVolumes);
             this.fDensity = this.fMass / this.fVolume;
             
             if ~isempty(fIgnoredVolume) && abs(1 - fIgnoredVolume / this.fVolume) > 1e-3

@@ -35,7 +35,7 @@ classdef dummymatter < matter.store
             
         end
         
-        function addCreatePhase(this, sSubstance, sPhase, fTemperature, fDensity, fSpecificHeatCap)
+        function addCreatePhase(this, sSubstance, sPhase, fTemperature)
             % Fast-track method to create and add a single phase to the
             % dummy matter object. |sSubstance| is the type of matter (e.g.
             % Al, O2, N2), |sPhase| the state of the matter. The fourth
@@ -55,21 +55,17 @@ classdef dummymatter < matter.store
             afMasses(this.oMT.tiN2I.(sSubstance)) = 1;
             
             % Load substance properties from the matter table: Molar mass.
-            this.fMolarMass = this.oMT.calculateMolarMass(afMasses);
+            %this.fMolarMass = this.oMT.calculateMolarMass(afMasses);
             
-            % Load density from matter table if not provided. 
-            if nargin <= 4
-                this.fDensity = this.oMT.calculateDensity(sPhase, afMasses, fTemperature, this.oMT.Standard.Pressure);
-            else 
-                this.fDensity = fDensity;
-            end
+            % Calculate density from matter table 
+            fDensity = this.oMT.calculateDensity(sPhase, afMasses, fTemperature);
             
             % Calculate specific heat capacity from matter table
             %fSpecificHeatCap = this.oMT.calculateSpecificHeatCapacity(sPhase, afMasses, fTemperature);
             
             % Calculate the mass of the phase (and thus matter object) in 
             % |kg|.
-            this.fMass = this.fDensity * this.fVolume;
+            fMass = fDensity * this.fVolume;
             
             % Calculate the object's actual heat capacity in |J/K|.
             %fTotalHeatCapacity = this.fMass * fSpecificHeatCap;
@@ -79,6 +75,16 @@ classdef dummymatter < matter.store
             
             % Create a handle to the correct phase constructor.
             hPhaseCtor = str2func(sPhaseCtor);
+            
+            % The solid phase constructor ignores the volume, so if we are
+            % constructing a solid phases, we just pass on an empty
+            % parameter, anything else would cause the solid phase
+            % constructor to throw a warning.
+            if strcmp(sPhase,'solid')
+                fVolume = [];
+            else
+                fVolume = this.fVolume;
+            end
             
             % Create and store the single associated phase. Use |sPhase| as
             % the phase name and |sSubstance| as the "subphase" / substance
@@ -91,8 +97,8 @@ classdef dummymatter < matter.store
             this.oPhase = hPhaseCtor( ...
                 this, ...   % The store (here: |thermal.dummymatter| instance).
                 sPhase, ... % The name of the phase. 
-                struct(sSubstance, this.fMass), ... % "Subphases", here: the total mass of a single material in this phase.
-                this.fVolume, ... % The volume of the phase (== volume of the "store").
+                struct(sSubstance, fMass), ... % "Subphases", here: the total mass of a single material in this phase.
+                fVolume, ... % The volume of the phase (== volume of the "store").
                 fTemperature ...  % The temperature of the phase (== temperature of the "store"). 
             );
             
