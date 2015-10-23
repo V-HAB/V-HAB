@@ -113,7 +113,7 @@ classdef dummymatter < matter.store
 %             end
             
             %TODO: remove!
-            this.fTemperature = fTemperature;
+            %this.fTemperature = fTemperature;
             
         end
         
@@ -132,12 +132,12 @@ classdef dummymatter < matter.store
                 %return; % We're done here.
             end
             
-            if this.fTotalHeatCapacity == -1
-                this.throw('thermal:dummymatter:changeInnerEnergy', 'Failed to change inner energy: Heat capacity is not set.');
-            end
-            
-            % Calculate new temperature. 
-            this.fTemperature = this.fTemperature + fEnergyChange / this.fTotalHeatCapacity;
+%             if this.fTotalHeatCapacity == -1
+%                 this.throw('thermal:dummymatter:changeInnerEnergy', 'Failed to change inner energy: Heat capacity is not set.');
+%             end
+%             
+%             % Calculate new temperature. 
+%             this.fTemperature = this.fTemperature + fEnergyChange / this.fTotalHeatCapacity;
             
         end
         
@@ -157,20 +157,20 @@ classdef dummymatter < matter.store
             % temperature of phase. 
             
             % Get temperature from matter and set as return value. 
-            fTemperature = this.fTemperature;
+            fTemperature = this.oPhase.fTemperature;
             
-            % Check if phase is set and a valid instance. 
-            if ~isempty(this.oPhase) && isvalid(this.oPhase)
-                
-                % Cross-check temperature with phase temperature. Warn if
-                % phase temperature differs from matter temperature.
-                if (1 - this.oPhase.fTemperature / fTemperature) > 1-e2
-                    this.warn('thermal:dummymatter:getTemperature', ...
-                        'Temperature %f of phase "%s" differs from temperature %f of (dummy) matter "%s"', ...
-                        this.oPhase.fTemperature, this.oPhase.sName, fTemperature, this.sName);
-                end
-                
-            end % /if valid
+%             % Check if phase is set and a valid instance. 
+%             if ~isempty(this.oPhase) && isvalid(this.oPhase)
+%                 
+%                 % Cross-check temperature with phase temperature. Warn if
+%                 % phase temperature differs from matter temperature.
+%                 if (1 - this.oPhase.fTemperature / fTemperature) > 1-e2
+%                     this.warn('thermal:dummymatter:getTemperature', ...
+%                         'Temperature %f of phase "%s" differs from temperature %f of (dummy) matter "%s"', ...
+%                         this.oPhase.fTemperature, this.oPhase.sName, fTemperature, this.sName);
+%                 end
+%                 
+%             end % /if valid
             
         end
         
