@@ -346,33 +346,16 @@ classdef table < base
             %  fProperty - (interpolated) value of searched property
             %
             % Input parameters
-            % sSubstance: substance name for structfield
-            % sProperty: property name for column
-            % sFirstDepName: name of dependency 1 (parameter for findColumn), e.g. 'Temperature'
+            % sSubstance:     substance name for structfield
+            % sProperty:      property name for column
+            % sFirstDepName:  name of dependency 1 (parameter for findColumn), e.g. 'Temperature'
             % sFirstDepValue: value of dependency 1
             % sSecondDepName: name of dependency 2 (parameter for findColumn), e.g. 'Pressure', optional
             % sFirstDepValue: value of dependency 2, optional
-            % sPhase: only specific phase searched; selects only rows with that phase in MatterData,
-            %         'gas', 'liquid' or 'solid', optional
+            % sPhaseType:     only specific phase searched; selects only rows with that phase in MatterData,
+            %                 'gas', 'liquid' or 'solid', optional
             %
-            % Example input: this.FindProperty('CO2','c_p','Pressure',120000,'alpha',0.15,'liquid')
-            
-            %TODO See if we actually need the phase and flow object input
-            % possiblity. Might also be better to do this in the externally
-            % defined functions like calculateHeatCapacity etc.
-            % Right now it still just takes parameters, no objects.
-            % varargin
-            % Can either be a phase or flow object (oPhase, oFlow), one or
-            % two dependencies, and the phase of the substance
-            % sFirstDepName: name of dependency 1 (parameter for findColumn), e.g. 'Temperature'
-            % sFirstDepValue: value of dependency 1
-            % sSecondDepName: name of dependency 2 (parameter for findColumn), e.g. 'Pressure', optional
-            % sFirstDepValue: value of dependency 2, optional
-            % sPhase: only specific phase searched; selects only rows with that phase in MatterData,
-            %         'gas', 'liquid' or 'solid', optional
-            %
-            % If phase or flow objects are given, the two dependencies will
-            % be set to temperature and pressure
+            % Example input: this.FindProperty('CO2','Heat Capacity','Pressure',120000,'Temperature',278.15,'gas')
             
             %% Initializing the return variable
             
@@ -403,7 +386,8 @@ classdef table < base
                         % number of dependencies
                         iDependencies = 2;
                     end
-                    %---------------------------------------------------------%
+                    
+                %---------------------------------------------------------%
                 case 7 % Two dependencies without phase type
                     
                     % input parameters must be:
@@ -422,7 +406,7 @@ classdef table < base
                         iDependencies = 2;
                         sPhaseType = [];
                     end
-                    %---------------------------------------------------------%
+                %---------------------------------------------------------%
                 case 6 % One dependency plus phase type
                     
                     % input parameters must be:
@@ -439,7 +423,7 @@ classdef table < base
                     else
                         this.throw('table:FindProperty','Input phase is not correct');
                     end
-                    %---------------------------------------------------------%
+                %---------------------------------------------------------%
                 case 5 % One dependency without phase type
                     
                     % input parameters must be:
@@ -455,11 +439,11 @@ classdef table < base
                     else
                         this.throw('table:FindProperty','Wrong inputtype for first dependency');
                     end
-                    %---------------------------------------------------------%
+                %---------------------------------------------------------%
                 otherwise
                     % at least one dependency has to be given over
                     this.throw('table:FindProperty','Not enough inputs');
-                    %---------------------------------------------------------%
+                %---------------------------------------------------------%
             end
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

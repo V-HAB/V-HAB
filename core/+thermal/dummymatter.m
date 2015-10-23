@@ -12,14 +12,14 @@ classdef dummymatter < matter.store
         % Properties that can be overloaded and used instead of the phase
         % properties.
         
-        fTemperature  = -1; % The temperature of the object in |K|.
+        %fTemperature  = -1; % The temperature of the object in |K|.
         
-        fMolarMass = -1; % The molar mass of the object in |kg/mol|.
-        fDensity   = -1; % The density of the object in |kg/m^3|.
+        %fMolarMass = -1; % The molar mass of the object in |kg/mol|.
+        %fDensity   = -1; % The density of the object in |kg/m^3|.
         % Already defined by superclass: fVolume    = -1; % The volume of the object in |m^3|.
-        fMass      = -1; % The total mass of the object in |kg|.
+        %fMass      = -1; % The total mass of the object in |kg|.
         
-        fTotalHeatCapacity = -1; % The total heat capacity of the object in |J/K|.
+        %fTotalHeatCapacity = -1; % The total heat capacity of the object in |J/K|.
         
     end
     
