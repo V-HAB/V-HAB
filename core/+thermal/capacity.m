@@ -28,8 +28,10 @@ classdef capacity < base
         % Overloaded properties of associated objects
         
         % Overloading oMatterObject properties.
-        fTemperature = -1;
-        fOverloadedTotalHeatCapacity = -1;
+        %fTemperature = -1;
+        %fOverloadedTotalHeatCapacity = -1;
+        
+        bBoundary = false;
         
     end
     
@@ -58,18 +60,19 @@ classdef capacity < base
             
             this.fEnergyDiff = fEnergyChange;
             
-            if isnan(fEnergyChange)
-                if this.fOverloadedTotalHeatCapacity ~= Inf
+            if isnan(fEnergyChange) && ~this.bBoundary
+%                 if this.fOverloadedTotalHeatCapacity ~= Inf
                     this.warn('thermal:capacity:changeInnerEnergy', 'Received NaN energy change but node "%s" has a finite capacity.', this.sName);
-                end
+%                 end
                 return; % Skip the rest.
             end
             
             % If heat capacity is overloaded, do not pass the heat change
             % along to the matter object but overload the temperature.
-            if this.fOverloadedTotalHeatCapacity ~= -1
-                fNewTemp = this.getTemperature() + fEnergyChange / this.getTotalHeatCapacity();
-                this.setTemperature(fNewTemp, true); % Overload temperature.
+            %if this.fOverloadedTotalHeatCapacity ~= -1
+            if this.bBoundary
+%                 fNewTemp = this.getTemperature() + fEnergyChange / this.getTotalHeatCapacity();
+%                 this.setTemperature(fNewTemp, true); % Overload temperature.
                 return; % We're done here.
             end
             
@@ -91,33 +94,38 @@ classdef capacity < base
             
         end
         
-        function overloadTotalHeatCapacity(this, fTotalHeatCapacity, ~) %bOverload)
-            % Overload the heat capacity of the associated matter object.
-            % (Always overload if this function is called.)
-            
-            this.fOverloadedTotalHeatCapacity = fTotalHeatCapacity;
-            
-        end
+%         function overloadTotalHeatCapacity(this, fTotalHeatCapacity, ~) %bOverload)
+%             % Overload the heat capacity of the associated matter object.
+%             % (Always overload if this function is called.)
+%             
+%             this.fOverloadedTotalHeatCapacity = fTotalHeatCapacity;
+%             
+%         end
         
-        function fHeatCapacity = getTotalHeatCapacity(this, bForceMatterRead)
+        function fTotalHeatCapacity = getTotalHeatCapacity(this)%, bForceMatterRead)
             % Get the heat capacity of the associated matter object OR the
             % overloaded property set by the capacity if |bForceMatterRead|
             % is not set or false. 
             
-            % Set the default value of the second parameter to |false|.
-            if nargin < 2
-                bForceMatterRead = false;
-            end
+%             % Set the default value of the second parameter to |false|.
+%             if nargin < 2
+%                 bForceMatterRead = false;
+%             end
             
             % Was the heat capacity overloaded and is it ok to return the
             % overloaded capacity? ...
-            if this.fOverloadedTotalHeatCapacity ~= -1 && ~bForceMatterRead
-                % ... then return the overloaded capacity.
-                fHeatCapacity = this.fOverloadedTotalHeatCapacity;
-            else
+%             if this.fOverloadedTotalHeatCapacity ~= -1 && ~bForceMatterRead
+%                 % ... then return the overloaded capacity.
+%                 fHeatCapacity = this.fOverloadedTotalHeatCapacity;
+%             else
                 % Otherwise load the capacity from the associated matter
                 % object.
-                fHeatCapacity = this.oMatterObject.getTotalHeatCapacity();
+%                 fHeatCapacity = this.oMatterObject.getTotalHeatCapacity();
+%             end
+            if this.bBoundary
+                fTotalHeatCapacity = Inf;
+            else
+                fTotalHeatCapacity = this.oMatterObject.getTotalHeatCapacity();
             end
             
         end
@@ -135,40 +143,40 @@ classdef capacity < base
             
         end
         
-        function setTemperature(this, fTemperature, bOverload)
-            
-            if nargin > 2 && bOverload
-                this.fTemperature = fTemperature;
-                return; % We're done here.
-            end
-            
-            this.warn('capacity:setTemperature', 'You may not want to do this. Use "changeInnerEnergy" instead.');
-            
-            %TODO: remove
-            try
-                this.oMatterObject.setTemperature(fTemperature);
-            catch
-                this.oMatterObject.fTemperature = fTemperature;
-            end
-            
-        end
+%         function setTemperature(this, fTemperature, bOverload)
+%             
+%             if nargin > 2 && bOverload
+%                 this.fTemperature = fTemperature;
+%                 return; % We're done here.
+%             end
+%             
+%             this.warn('capacity:setTemperature', 'You may not want to do this. Use "changeInnerEnergy" instead.');
+%             
+%             %TODO: remove
+%             try
+%                 this.oMatterObject.setTemperature(fTemperature);
+%             catch
+%                 this.oMatterObject.fTemperature = fTemperature;
+%             end
+%             
+%         end
         
-        function fTemperature = getTemperature(this, bForceMatterRead)
+        function fTemperature = getTemperature(this)%, bForceMatterRead)
             % Get the current temperature of the associated matter object
             % OR the overloaded property set by the capacity if
             % |bForceMatterRead| is not set or false. 
             
             % Set the default value of the second parameter to |false|.
-            if nargin < 2
-                bForceMatterRead = false;
-            end
+%             if nargin < 2
+%                 bForceMatterRead = false;
+%             end
             
             % Was the heat capacity overloaded and is it ok to return the
             % overloaded capacity? ...
-            if this.fTemperature ~= -1 && ~bForceMatterRead
-                % ... then return the overloaded capacity.
-                fTemperature = this.fTemperature;
-            else
+%             if this.fTemperature ~= -1 && ~bForceMatterRead
+%                 % ... then return the overloaded capacity.
+%                 fTemperature = this.fTemperature;
+%             else
                 % Otherwise load the capacity from the associated matter
                 % object.
                 %TODO: fix bottleneck
@@ -177,8 +185,12 @@ classdef capacity < base
                 catch
                     fTemperature = this.oMatterObject.fTemperature;
                 end
-            end
+%             end
             
+        end
+        
+        function makeBoundaryNode(this)
+            this.bBoundary = true;
         end
         
     end

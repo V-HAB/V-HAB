@@ -64,20 +64,15 @@ classdef dummymatter < matter.store
                 this.fDensity = fDensity;
             end
             
-            % Load specific heat capacity from matter table if not
-            % provided.
-            bOverwriteHeatCapacity = true;
-            if nargin <= 5
-                bOverwriteHeatCapacity = false;
-                fSpecificHeatCap = this.oMT.calculateHeatCapacity(sPhase, afMasses, fTemperature, this.oMT.Standard.Pressure);
-            end
+            % Calculate specific heat capacity from matter table
+            %fSpecificHeatCap = this.oMT.calculateSpecificHeatCapacity(sPhase, afMasses, fTemperature);
             
             % Calculate the mass of the phase (and thus matter object) in 
             % |kg|.
             this.fMass = this.fDensity * this.fVolume;
             
             % Calculate the object's actual heat capacity in |J/K|.
-            this.fTotalHeatCapacity = this.fMass * fSpecificHeatCap;
+            %fTotalHeatCapacity = this.fMass * fSpecificHeatCap;
             
             % Create path to the correct phase constructor.
             sPhaseCtor = ['matter.phases.', sPhase];
@@ -102,14 +97,14 @@ classdef dummymatter < matter.store
             );
             
             % Overload specific heat capacity if we can.
-            if bOverwriteHeatCapacity
-                if ismethod(this.oPhase, 'overloadSpecificHeatCapacity')
-                    this.oPhase.overloadSpecificHeatCapacity(fSpecificHeatCap);
-                else
-                    this.warn('thermal:dummymatter:addCreatePhase', ...
-                        'Failed to overload specific heat capacity. Using value from matter table instead.');
-                end
-            end
+%             if bOverwriteHeatCapacity
+%                 if ismethod(this.oPhase, 'overloadSpecificHeatCapacity')
+%                     this.oPhase.overloadSpecificHeatCapacity(fSpecificHeatCap);
+%                 else
+%                     this.warn('thermal:dummymatter:addCreatePhase', ...
+%                         'Failed to overload specific heat capacity. Using value from matter table instead.');
+%                 end
+%             end
             
             %TODO: remove!
             this.fTemperature = fTemperature;
@@ -177,11 +172,11 @@ classdef dummymatter < matter.store
             % Get total heat capacity of store, if it was overloaded, or of
             % the phase.
             
-            if this.fTotalHeatCapacity ~= -1
-                fHeatCapacity = this.fTotalHeatCapacity;
-            else
+%             if this.fTotalHeatCapacity ~= -1
+%                fHeatCapacity = this.fTotalHeatCapacity;
+%             else
                 fHeatCapacity = this.oPhase.getTotalHeatCapacity();
-            end
+%             end
             
         end
         

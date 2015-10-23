@@ -37,8 +37,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         %TODO implement .update, get heat capacity depending on
         %     arPartialMass and Temperature
-        fHeatCapacity = 0;       % [J/K/kg]
-        fMolarMass    = 0;       % [kg/mol]
+        fSpecificHeatCapacity = 0;       % [J/K/kg]
+        fMolarMass            = 0;       % [kg/mol]
         
         % Partial masses in percent (ratio) in indexed vector (use oMT to
         % translate, e.g. this.oMT.tiN2I)
@@ -130,10 +130,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
 %             % See thFuncs definition above and addProc below.
 %             this.thFuncs = struct(...
 %                 ... %TODO check, but FR needs to be set by solver etc, so has public access
-%                 ... 'setFlowRate',    @this.setFlowRate,    ...
-%                 'setPressure',    @this.setPressure,    ...
+%                 ... 'setFlowRate', @this.setFlowRate,    ...
+%                 'setPressure', @this.setPressure,    ...
 %                 'setTemperature', @this.setTemperature, ...
-%                 'setHeatCapacity',@this.setHeatCapacity,...
+%                 'setSpecificHeatCapacity',@this.setSpecificHeatCapacity,...
 %                 'setPartialMass', @this.setPartialMass  ...
 %                 );
         end
@@ -191,7 +191,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 if oPhase.fMass ~= 0
                     this.arPartialMass = oPhase.arPartialMass;
                     this.fMolarMass    = oPhase.fMolarMass;
-                    this.fHeatCapacity = oPhase.fHeatCapacity;
+                    this.fSpecificHeatCapacity = oPhase.fSpecificHeatCapacity;
                 end
 
             end % if not an interface flow
@@ -389,7 +389,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % Heat capacity. The oBranch references back to the p2p itself
             % which provides the getInEXME method (p2p is always directly
             % connected to EXMEs).
-            this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
+            this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
         end
         
         
@@ -425,14 +425,14 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             % Get matter properties of the phase
             if ~isempty(oExme)
-                [ arPhasePartialMass, fPhaseMolarMass, fPhaseHeatCapacity ] = oExme.getMatterProperties();
+                [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
             
             % If no exme is provided, those values will not be changed (see
             % above, in case of e.g. a closed valve within the branch).
             else
-                arPhasePartialMass = 0;
-                fPhaseMolarMass    = 0;
-                fPhaseHeatCapacity = 0;
+                arPhasePartialMass         = 0;
+                fPhaseMolarMass            = 0;
+                fPhaseSpecificHeatCapacity = 0;
             end
             
             iL = length(this);
@@ -467,10 +467,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
             for iI = sif(bNeg, iL:-1:1, 1:iL)
                 % Only set those params if oExme was provided
                 if ~isempty(oExme)
-                    this(iI).arPartialMass = arPhasePartialMass;
-                    this(iI).fMolarMass    = fPhaseMolarMass;
+                    this(iI).arPartialMass         = arPhasePartialMass;
+                    this(iI).fMolarMass            = fPhaseMolarMass;
                     
-                    this(iI).fHeatCapacity = fPhaseHeatCapacity;
+                    this(iI).fSpecificHeatCapacity = fPhaseSpecificHeatCapacity;
                 end
                 
                 
@@ -500,20 +500,20 @@ classdef flow < base & matlab.mixin.Heterogeneous
                         %NOTE at the moment, one heat capacity throughout all
                         %     flows in the branch. However, at some point, 
                         %     might be replaced with e.g. pressure dep. value?
-                        fOtherCp  = this(iI - 1).fHeatCapacity;
+                        fOtherCp  = this(iI - 1).fSpecificHeatCapacity;
 
                     elseif bNeg && (iL < iI)
                         fHeatFlow = this(iI).oOut.fHeatFlow;
-                        fOtherCp  = this(iI + 1).fHeatCapacity;
+                        fOtherCp  = this(iI + 1).fSpecificHeatCapacity;
 
                     else
                         fHeatFlow = 0;
-                        fOtherCp  = this(iI).fHeatCapacity;
+                        fOtherCp  = this(iI).fSpecificHeatCapacity;
                     end
 
                     % So following this equation:
                     % Q' = m' * c_p * deltaT
-                    fCurrentTemperature = fCurrentTemperature + fHeatFlow / fFlowRate / ((this(iI).fHeatCapacity + fOtherCp) / 2);
+                    fCurrentTemperature = fCurrentTemperature + fHeatFlow / fFlowRate / ((this(iI).fSpecificHeatCapacity + fOtherCp) / 2);
                 end
                 
                 this(iI).fTemperature = fCurrentTemperature;

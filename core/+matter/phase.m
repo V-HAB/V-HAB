@@ -90,20 +90,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % @type float
         fMolarMass;    % [kg/mol]
 
-        % Specific heat capacity of mixture in phase (NOT total heat cap.!)
-        %TODO: rename to |fSpecificHeatCapacity|, implement
-        %      |this.getTotalHeatCapacity()| that returns
-        %      |this.fSpecificHeatCapacity * this.fMass|
-        %TODO: Keep |fHeatCapacity|, implement |get.fHeatCapacity| that
-        %      warns and instead returns |fSpecificHeatCapacity| or
-        %      |this.getTotalHeatCapacity| (?)
+        % Specific heat capacity of mixture in phase
         % @type float
-        fHeatCapacity = 0; % [J/(K*kg)]
+        fSpecificHeatCapacity = 0; % [J/(K*kg)]
         
-        % Overloading the specific heat capacity.
-        %TODO: remove
-        fOverloadedSpecificHeatCapacity = -1; % [J/(K*kg)]
-
+        % Total heat capacity of mixture in phase
+        % @type float
+        fTotalHeatCapacity = 0; % [J/(K*kg)]
+        
     end
 
     properties (SetAccess = protected, GetAccess = public)
@@ -193,6 +187,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % ???
         fLastUpdate = -10;
         fLastTimeStepCalculation = -10;
+        
+        % Time when the total heat capacity was last updated. Need to save
+        % this information in order to prevent the heat capacity
+        % calculation to be performed multiple times per timestep.
+        fLastTotalHeatCapacityUpdate; 
 
 %         % ???
 %         fTimeStep;
@@ -322,8 +321,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             end
 
             % Now update the matter properties
-            this.fMolarMass    = this.oMT.calculateMolarMass(this.afMass);
-            this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
+            this.fMolarMass            = this.oMT.calculateMolarMass(this.afMass);
+            this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
 
             % Mass
             this.fMass = sum(this.afMass);
@@ -428,9 +427,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
             % First we split out the mfInflowDetails matrix to make the
             % code more readable.
-            afInflowMasses         = mfInflowDetails(:,1);
-            afInflowTemperatures   = mfInflowDetails(:,2);
-            afInflowHeatCapacities = mfInflowDetails(:,3);
+            afInflowMasses                 = mfInflowDetails(:,1);
+            afInflowTemperatures           = mfInflowDetails(:,2);
+            afSpecificInflowHeatCapacities = mfInflowDetails(:,3);
 
             % Convert the incoming flow rates to absolute masses that are
             % added in this timestep.
@@ -443,23 +442,23 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 % be zero. In this case we'll only use the values of the
                 % incoming flows.
                 if this.fMass > 0
-                    mfAbsoluteMasses = [afAbsoluteMassesIn; this.fMass];
-                    mfTemperatures   = [afInflowTemperatures; this.fTemperature];
-                    mfHeatCapacities = [afInflowHeatCapacities; this.fHeatCapacity];
+                    mfAbsoluteMasses         = [afAbsoluteMassesIn; this.fMass];
+                    mfTemperatures           = [afInflowTemperatures; this.fTemperature];
+                    mfSpecificHeatCapacities = [afSpecificInflowHeatCapacities; this.fSpecificHeatCapacity];
                 else
-                    mfAbsoluteMasses = afInflowMasses;
-                    mfTemperatures   = afInflowTemperatures;
-                    mfHeatCapacities = afInflowHeatCapacities;
+                    mfAbsoluteMasses         = afInflowMasses;
+                    mfTemperatures           = afInflowTemperatures;
+                    mfSpecificHeatCapacities = afSpecificInflowHeatCapacities;
                 end
 
                 % Calculate inner energy (m * c_p * T) for all masses.
-                mfEnergy = mfAbsoluteMasses .* mfHeatCapacities .* mfTemperatures;
+                mfEnergy = mfAbsoluteMasses .* mfSpecificHeatCapacities .* mfTemperatures;
 
                 % As can be seen from the explanation given above, we need
                 % the products of all masses and heat capacities in the
                 % denominator of the fraction that calulates the new
                 % temperature.
-                mfEnergyPerKelvin = mfAbsoluteMasses .* mfHeatCapacities;
+                mfEnergyPerKelvin = mfAbsoluteMasses .* mfSpecificHeatCapacities;
 
                 % New temperature
                 %TODO: Investigate if this does what it's supposed to do,
@@ -521,13 +520,23 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
 
             % Partial masses
-            if this.fMass > 0, this.arPartialMass = this.afMass / this.fMass;
-            else               this.arPartialMass = this.afMass; % afMass is just zeros
+            if this.fMass > 0
+                this.arPartialMass = this.afMass / this.fMass;
+            else
+                this.arPartialMass = this.afMass; % afMass is just zeros
             end
 
             % Now update the matter properties
-            this.fMolarMass    = this.oMT.calculateMolarMass(this.afMass);
-            this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
+            this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
+            
+            % If this update was triggered by the changeInnerEnergy()
+            % method, then we already have calculated the current specific
+            % heat capacity of this phase. So we don't have to do the
+            % calculation again, we check against the timestep and only do
+            % the calculation if it hasn't been done before.
+            if ~(this.oStore.oTimer.fTime == this.fLastTotalHeatCapacityUpdate)
+                this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
+            end
         end
 
     end
@@ -541,43 +550,31 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             %   Change the temperature of a phase by adding or removing
             %   inner energy in |J|.
             
-            %TODO: use |getTotalHeatCapacity| method instead
-            if this.fOverloadedSpecificHeatCapacity ~= -1
-                % Specific heat capacity has been overloaded.
-                fSpecificHeatCap = this.fOverloadedSpecificHeatCapacity;
-            else
-                % Get *specific* heat capacity set by matter table. 
-                %NOTE: The naming is unexpected and may change in the
-                %      future but for now this works.
-                fSpecificHeatCap = this.fHeatCapacity;
-            end
+            fCurrentTotalHeatCapacity = this.getTotalHeatCapacity();
             
             % Calculate temperature change due to change in inner energy.
-            fTempDiff = fEnergyChange / (fSpecificHeatCap * this.fMass);
+            fTempDiff = fEnergyChange / fCurrentTotalHeatCapacity;
             
             % Update temperature property of phase.
             this.setParameter('fTemperature', this.fTemperature + fTempDiff);
             
         end
 
-        %TODO: remove heat capacity overloading in phase? (overload in
-        %      |Capacity| object instead!)
-        function overloadSpecificHeatCapacity(this, fSpecificHeatCap)
-            % Overload the specific heat capacity of the phase.
-            
-            this.warn('matter:phase:overloadSpecificHeatCapacity', ...
-                'Overloading the specific heat capacity is not recommended. Try to change the matter table instead.');
-            this.fOverloadedSpecificHeatCapacity = fSpecificHeatCap;
-            
-        end
 
-        function fHeatCapacity = getTotalHeatCapacity(this)
+        function fTotalHeatCapacity = getTotalHeatCapacity(this)
             % Returns the total heat capacity of the phase. 
             
-            if this.fOverloadedSpecificHeatCapacity ~= -1
-                fHeatCapacity = this.fOverloadedSpecificHeatCapacity * this.fMass;
+            if this.oStore.oTimer.fTime - this.fLastTotalHeatCapacityUpdate < 1
+                fTotalHeatCapacity = this.fTotalHeatCapacity;
             else
-                fHeatCapacity = this.fHeatCapacity * this.fMass;
+                this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
+                
+                fTotalHeatCapacity = this.fSpecificHeatCapacity * this.fMass;
+            
+                % Save total heat capacity as a property for faster logging.
+                this.fTotalHeatCapacity = fTotalHeatCapacity;
+                
+                this.fLastTotalHeatCapacityUpdate = this.oStore.oTimer.fTime;
             end
             
         end
