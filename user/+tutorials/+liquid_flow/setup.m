@@ -1,4 +1,4 @@
-classdef setup < simulation
+classdef setup < simulation.infrastructure
     %SETUP This class is used to setup a simulation
     %   There should always be a setup file present for each project. It is
     %   used for the following:
@@ -12,15 +12,18 @@ classdef setup < simulation
     end
     
     methods
-        function this = setup() % Constructor function
+        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+            % Possible to change the constructor paths and params for the
+            % monitors
+            ttMonitorConfig = struct();
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation('Tutorial_Liquid_Flow');
+            this@simulation.infrastructure('Tutorial_Liquid_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            tutorials.liquid_flow.systems.Example(this.oRoot, 'Example');
+            tutorials.liquid_flow.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Ignore the contents of this section
             % Set a veeery high fixed time step - the solver will still be
@@ -37,19 +40,32 @@ classdef setup < simulation
 %             aoPhases(1).fFixedTS = 0.5;
 %             
             %% Logging
-            % Creating a cell setting the log items
-            this.csLog = {
-                % System timer
-                'oData.oTimer.fTime';                                        % 1
-                
-                % Add other parameters here
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fPressure';  % 2
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fPressure';  % 4
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
-                'toChildren.Example.aoBranches(1).fFlowRate';                % 6
-                
-                };
+            
+            oLog = this.toMonitors.oLogger;
+            
+            oLog.add('Example', 'flow_props');
+            
+%             % Creating a cell setting the log items
+%             this.csLog = {
+%                 % System timer
+%                 'oData.oTimer.fTime';                                        % 1
+%                 
+%                 % Add other parameters here
+%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fPressure';  % 2
+%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
+%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fPressure';  % 4
+%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
+%                 'toChildren.Example.aoBranches(1).fFlowRate';                % 6
+%                 
+%                 };
+%             
+            %% Define plots
+            
+            oPlot = this.toMonitors.oPlotter;
+            
+            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
+            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
+            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
             
             %% Simulation length
             % Stop when specific time in sim is reached
@@ -63,42 +79,43 @@ classdef setup < simulation
         function plot(this) % Plotting the results
             % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
             % further information
-            
-            close all
-            
-            figure('name', 'Tank Pressures');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [2 4]));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Pressure in Pa');
-            xlabel('Time in s');
-            
-            figure('name', 'Tank Masses');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [3 5]));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
-            
-            figure('name', 'Flow Rate');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 6));
-            legend('Branch');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
-            
-            figure('name', 'Time Steps');
-            hold on;
-            grid minor;
-            plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-            legend('Solver');
-            ylabel('Time in [s]');
-            xlabel('Ticks');
-                        
-            tools.arrangeWindows();
+            this.toMonitors.oPlotter.plot();
+            return;
+%             close all
+%             
+%             figure('name', 'Tank Pressures');
+%             hold on;
+%             grid minor;
+%             plot(this.mfLog(:,1), this.mfLog(:, [2 4]));
+%             legend('Tank 1', 'Tank 2');
+%             ylabel('Pressure in Pa');
+%             xlabel('Time in s');
+%             
+%             figure('name', 'Tank Masses');
+%             hold on;
+%             grid minor;
+%             plot(this.mfLog(:,1), this.mfLog(:, [3 5]));
+%             legend('Tank 1', 'Tank 2');
+%             ylabel('Mass in kg');
+%             xlabel('Time in s');
+%             
+%             figure('name', 'Flow Rate');
+%             hold on;
+%             grid minor;
+%             plot(this.mfLog(:,1), this.mfLog(:, 6));
+%             legend('Branch');
+%             ylabel('flow rate [kg/s]');
+%             xlabel('Time in s');
+%             
+%             figure('name', 'Time Steps');
+%             hold on;
+%             grid minor;
+%             plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
+%             legend('Solver');
+%             ylabel('Time in [s]');
+%             xlabel('Ticks');
+%                         
+%             tools.arrangeWindows();
         end
         
     end

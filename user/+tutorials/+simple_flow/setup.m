@@ -93,7 +93,7 @@ classdef setup < simulation.infrastructure
             oPlot = this.toMonitors.oPlotter;
             
             oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
-            oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
+            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
             oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
             
             
@@ -115,11 +115,6 @@ classdef setup < simulation.infrastructure
             
             % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
             % further information
-            
-            close all
-            
-            oLog = this.toMonitors.oLogger;
-            
             
             
             

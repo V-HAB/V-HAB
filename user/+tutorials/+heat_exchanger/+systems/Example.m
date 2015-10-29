@@ -28,13 +28,13 @@ classdef Example < vsys
             
             %% Gas System
             % Creating a store, volume 1 m^3
-            this.addStore(matter.store(this, 'Tank_1', 1000));
+            matter.store(this, 'Tank_1', 1000);
             
             % Adding a phase to the store 'Tank_1', 1 m^3 air
             oGasPhase = this.toStores.Tank_1.createPhase('air', 2000);
             
             % Creating a second store, volume 1 m^3
-            this.addStore(matter.store(this, 'Tank_2', 1000));
+            matter.store(this, 'Tank_2', 1000);
             
             % Adding a phase to the store 'Tank_2', 2 m^3 air
             oAirPhase = this.toStores.Tank_2.createPhase('air', 1000);
@@ -45,7 +45,7 @@ classdef Example < vsys
             
             %% Water System
             % Creating a third store, volume 1 m^3
-            this.addStore(matter.store(this, 'Tank_3', 1));
+            matter.store(this, 'Tank_3', 1);
             
             % Adding a phase to the store 'Tank_3', 1 m^3 water
             oLiquidPhase = matter.phases.liquid(this.toStores.Tank_3, ...  Store in which the phase is located
@@ -56,7 +56,7 @@ classdef Example < vsys
                 101325);                 % Phase pressure
             
             % Creating a fourth store, volume 1 m^3
-            this.addStore(matter.store(this, 'Tank_4', 1));
+            matter.store(this, 'Tank_4', 1);
             %keyboard(); 
             % Adding a phase to the store 'Tank_4', 1 kg water
             oWaterPhase = matter.phases.liquid(this.toStores.Tank_4, ...  Store in which the phase is located
@@ -77,28 +77,28 @@ classdef Example < vsys
             
             oHX = components.HX(this, 'HeatExchanger', Geometry, sHX_type, Conductivity);
             
-            % Adding the processors from the heat exchanger to the system.
-            % Their 'sName' properties will be [oHX.sName, '_1'] and ...'_2'
-            % So in this case 'HeatExchanger_1' and 'HeatExchanger_2'.
-            this.addProcF2F(oHX.oF2F_1);
-            this.addProcF2F(oHX.oF2F_2);
+%             % Adding the processors from the heat exchanger to the system.
+%             % Their 'sName' properties will be [oHX.sName, '_1'] and ...'_2'
+%             % So in this case 'HeatExchanger_1' and 'HeatExchanger_2'.
+%             this.addProcF2F(oHX.oF2F_1);
+%             this.addProcF2F(oHX.oF2F_2);
             
             
             %% Adding some pipes
-            this.addProcF2F(components.pipe('Pipe1', 1, 0.01));
-            this.addProcF2F(components.pipe('Pipe2', 1, 0.01));
-            this.addProcF2F(components.pipe('Pipe3', 1, 0.01));
-            this.addProcF2F(components.pipe('Pipe4', 1, 0.01));
+            components.pipe(this, 'Pipe1', 1, 0.01);
+            components.pipe(this, 'Pipe2', 1, 0.01);
+            components.pipe(this, 'Pipe3', 1, 0.01);
+            components.pipe(this, 'Pipe4', 1, 0.01);
             
             % Creating the flow path between the two gas tanks via the heat
             % exchanger
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            this.createBranch('Tank_1.Port_1', {'Pipe1', 'HeatExchanger_2', 'Pipe2'}, 'Tank_2.Port_2');
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe1', 'HeatExchanger_2', 'Pipe2'}, 'Tank_2.Port_2');
             
             % Creating the flow path between the two water tanks via the 
             % heat exchanger
-            this.createBranch('Tank_3.Port_3', {'Pipe3', 'HeatExchanger_1', 'Pipe4'}, 'Tank_4.Port_4');
+            matter.branch(this, 'Tank_3.Port_3', {'Pipe3', 'HeatExchanger_1', 'Pipe4'}, 'Tank_4.Port_4');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
@@ -108,12 +108,12 @@ classdef Example < vsys
             % iterative solver and, for simplicity, the manual solver for
             % the water flow. That saves us the trouble to implement a
             % pump.
-            oB1 = solver.matter.iterative.branch(this.aoBranches(1));
-            oB2 = solver.matter.manual.branch(this.aoBranches(2));
+            solver.matter.iterative.branch(this.aoBranches(1));
+            oB1 = solver.matter.manual.branch(this.aoBranches(2));
             
             % Now we set the flow rate in the manual solver branch to a
             % slow 10 grams per second.
-            oB2.setFlowRate(0.01);
+            oB1.setFlowRate(0.01);
             
         end
     end

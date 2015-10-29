@@ -70,16 +70,6 @@ classdef example_cooledBar_phases < vsys
             oEnv.makeBoundaryNode();
             this.addCapacity(oEnv);
             
-            
-            %%
-            %START of workaround
-            %TODO: Fix V-HAB?
-            
-            % Looks like we need to register matter objects otherwise the
-            % logger (|simulation.masslog|) crashes.
-            this.addStore(oBar);
-            this.addStore(oDummyEnv);
-            
             % Looks like we need to seal the container otherwise a phase
             % update crashes since it does not have a timer. 
             this.seal();

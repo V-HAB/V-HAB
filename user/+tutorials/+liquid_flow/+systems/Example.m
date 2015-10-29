@@ -35,10 +35,10 @@ classdef Example < vsys
             this@vsys(oParent, sName, 1);
             
             % Creating a store
-            this.addStore(matter.store(this, 'Tank_1', 1));
+            matter.store(this, 'Tank_1', 1);
             
             % Creating a second store
-            this.addStore(matter.store(this, 'Tank_2', 1));
+            matter.store(this, 'Tank_2', 1);
             
             % Adding a phase with liquid water to the store
             oLiquidPhase = matter.phases.liquid(this.toStores.Tank_1, ...  Store in which the phase is located
@@ -66,18 +66,18 @@ classdef Example < vsys
             % Adding a pump
             % Warning! This is a really dumb pump, a better model is in the
             % making in conjuction with a better liquid solver. 
-            this.addProcF2F(components.pump('Pump', 0.267));
+            components.pump(this, 'Pump', 0.267);
             
             % Setting the oPump property so we can access the pump settings
             % later.
             this.oPump = this.toProcsF2F.Pump;
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe('Pipe_1', 1, 0.1));
-            this.addProcF2F(components.pipe('Pipe_2', 1, 0.1));
+            components.pipe(this, 'Pipe_1', 1, 0.1);
+            components.pipe(this, 'Pipe_2', 1, 0.1);
             
             % Creating the flowpath between the components
-            oBranch = this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Pump', 'Pipe_2'}, 'Tank_2.Port_2');
+            oBranch = matter.branch(this, 'Tank_1.Port_1', {'Pipe_1', 'Pump', 'Pipe_2'}, 'Tank_2.Port_2');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
@@ -98,7 +98,7 @@ classdef Example < vsys
             
             % Switching between flow rate setpoints for the pump every 100
             % seconds
-            if this.oData.oTimer.fTime - this.fLastPumpUpdate > 100   % Have 100s passed? 
+            if this.oTimer.fTime - this.fLastPumpUpdate > 100   % Have 100s passed? 
                 if this.bPumpActive                   % Is the flow rate currently high? 
                     this.oPump.changeSetpoint(0);     % Set flow rate setpoint to zero
                     this.bPumpActive = false;         % Change pump indicator to false
@@ -109,7 +109,7 @@ classdef Example < vsys
                 
                 % Remember this time step as the one we last updated the
                 % pump.
-                this.fLastPumpUpdate = this.oData.oTimer.fTime;
+                this.fLastPumpUpdate = this.oTimer.fTime;
             end
         end
         

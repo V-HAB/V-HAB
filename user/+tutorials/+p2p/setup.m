@@ -144,24 +144,24 @@ classdef setup < simulation.infrastructure
             % when you are done modelling and ready to run a simulation. 
             
             
-            oL = this.toMonitors.oLogger;
+            oLogger = this.toMonitors.oLogger;
             
             
-            oL.addValue('Example:s:Atmos.aoPhases(1)', 'fMassToPressure', 'Atmos mass2press', 'Pa/kg');
-            oL.addValue('Example:s:Filter.aoPhases(1)', 'fMassToPressure', 'Filter mass2press', 'Pa/kg');
+            oLogger.addValue('Example:s:Atmos.aoPhases(1)', 'fMassToPressure', 'Atmos mass2press', 'Pa/kg');
+            oLogger.addValue('Example:s:Filter.aoPhases(1)', 'fMassToPressure', 'Filter mass2press', 'Pa/kg');
             
-            oL.addValue('Example:s:Atmos.aoPhases(1)', 'fMass', 'Atmos Mass', 'kg');
-            oL.addValue('Example:s:Atmos.toPhases.Atmos_Phase_1', 'fMass', 'Atmos Mass', 'kg');
+            oLogger.addValue('Example:s:Atmos.aoPhases(1)', 'fMass', 'Atmos Mass', 'kg');
+            oLogger.addValue('Example:s:Atmos.toPhases.Atmos_Phase_1', 'fMass', 'Atmos Mass', 'kg');
             
-            oL.addValue('Example:s:Filter.aoPhases(1)', 'fMass', 'Filter Mass', 'kg');
-            oL.addValue('Example:s:Filter.aoPhases(2)', 'fMass', 'Filtered Mass', 'kg');
+            oLogger.addValue('Example:s:Filter.aoPhases(1)', 'fMass', 'Filter Mass', 'kg');
+            oLogger.addValue('Example:s:Filter.aoPhases(2)', 'fMass', 'Filtered Mass', 'kg');
             
-            oL.addValue('Example:s:Atmos.aoPhases(1)', 'afMass(this.oMT.tiN2I.O2)', 'Atmos O2', 'kg');
-            oL.addValue('Example:s:Filter.aoPhases(2)', 'afMass(this.oMT.tiN2I.O2)', 'Filtered O2', 'kg');
+            oLogger.addValue('Example:s:Atmos.aoPhases(1)', 'afMass(this.oMT.tiN2I.O2)', 'Atmos O2', 'kg');
+            oLogger.addValue('Example:s:Filter.aoPhases(2)', 'afMass(this.oMT.tiN2I.O2)', 'Filtered O2', 'kg');
             
-            oL.addValue('Example.aoBranches(1)', 'fFlowRate', 'Flow Rate To Filter', 'kg/s');
-            oL.addValue('Example.aoBranches(2)', 'fFlowRate', 'Flow Rate From Filter', 'kg/s');
-            oL.addValue('Example:s:Filter.oProc', 'fFlowRate', 'Proc Flow Rate', 'kg/s');
+            oLogger.addValue('Example.aoBranches(1)', 'fFlowRate', 'Flow Rate To Filter', 'kg/s');
+            oLogger.addValue('Example.aoBranches(2)', 'fFlowRate', 'Flow Rate From Filter', 'kg/s');
+            oLogger.addValue('Example:s:Filter.oProc', 'fFlowRate', 'Proc Flow Rate', 'kg/s');
             
             
             

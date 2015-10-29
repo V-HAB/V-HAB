@@ -25,6 +25,8 @@ classdef example_simpleArm < vsys
             % analysis). 
             this@vsys(oParent, sName, 60);
             
+            eval(this.oRoot.oCfgParams.configCode(this));
+            
             %fDensity = 1000; % [kg/m^3]
             
             fTStart = 308; % [K]
@@ -82,8 +84,8 @@ classdef example_simpleArm < vsys
             
             % Looks like we need to register matter objects otherwise the
             % logger (|simulation.masslog|) crashes.
-            this.addStore(oArm);
-            this.addStore(oDummyEnv);
+%             this.addStore(oArm);
+%             this.addStore(oDummyEnv);
             
             % Looks like we need to seal the container otherwise a phase
             % update crashes since it does not have a timer. 

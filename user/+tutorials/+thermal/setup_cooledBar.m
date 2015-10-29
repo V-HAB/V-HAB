@@ -1,4 +1,4 @@
-classdef setup_cooledBar < simulation
+classdef setup_cooledBar < simulation.infrastructure
     %SETUP_COOLEDBAR Runner script/class for example simulation.
     %   Detailed explanation goes here
     
@@ -10,72 +10,89 @@ classdef setup_cooledBar < simulation
     
     methods
         
-        function this = setup_cooledBar()
+        function this = setup_cooledBar(ptConfigParams, tSolverParams)
             % Create a new simulation with the system described in
             % Example_cooledBar. 
             
+            % Possible to change the constructor paths and params for the
+            % monitors
+            ttMonitorConfig = struct();
+            
             % Initialize simulation with name. 
-            this@simulation('TestCase_cooledBar');
+            this@simulation.infrastructure('TestCase_cooledBar', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Create system Example_cooledBar. 
-            oThermalSystem = tutorials.thermal.systems.example_cooledBar(this.oRoot, 'cooledBar');
+            oThermalSystem = tutorials.thermal.systems.example_cooledBar(this.oSimulationContainer, 'cooledBar');
                         
             % Create a new solver.
             this.oThermalSolver = solver.thermal.lumpedparameter(oThermalSystem);
             
             % Register timer callback to update capacities of nodes and
             % thermal conductivities of conductive conductors. 
-            this.oTimer.bind(@(~) this.updateThermalProperties(), 1);
+            this.oSimulationContainer.oTimer.bind(@(~) this.updateThermalProperties(), 1);
             
             % Set what data should be logged.
+            oLog = this.toMonitors.oLogger;
+            
+            oLog.add('cooledBar', 'thermal_properties');
+            oLog.add('cooledBar', 'temperatures');
+            
+            %% Define plots
+            
+            oPlot = this.toMonitors.oPlotter;
+            
+            oPlot.definePlotAllWithFilter('K', 'Temperatures');
+            oPlot.definePlotAllWithFilter('J/K', 'Capacities');
+            oPlot.definePlotAllWithFilter('W/K','Conductances');
+            
             %TODO/vhab: This should be done with a method like setLogData?
-            this.csLog = {
-                % System timer
-                'oData.oTimer.fTime';
-                
-                % Solver & node temperatures
-%                 'toChildren.cooledBar.poCapacities(''Block1'').getTemperature()'; % 2
-                'toChildren.cooledBar.toStores.Block1.oPhase.fTemperature'; 
-%                 'toChildren.cooledBar.poCapacities(''Block2'').getTemperature()'; % 4
-                'toChildren.cooledBar.toStores.Block2.oPhase.fTemperature'; 
-%                 'toChildren.cooledBar.poCapacities(''Block3'').getTemperature()'; % 6
-                'toChildren.cooledBar.toStores.Block3.oPhase.fTemperature'; 
-%                 'toChildren.cooledBar.poCapacities(''Block4'').getTemperature()'; % 8
-                'toChildren.cooledBar.toStores.Block4.oPhase.fTemperature';
-%                 'toChildren.cooledBar.poCapacities(''Block5'').getTemperature()'; % 10
-                'toChildren.cooledBar.toStores.Block5.oPhase.fTemperature';
-                
-                'toChildren.cooledBar.poCapacities(''Env'').getTemperature()'; % 12
-                
-                'toChildren.cooledBar.toStores.Block1.oPhase.fTotalHeatCapacity';
-                'toChildren.cooledBar.toStores.Block2.oPhase.fTotalHeatCapacity';
-                'toChildren.cooledBar.toStores.Block3.oPhase.fTotalHeatCapacity';
-                'toChildren.cooledBar.toStores.Block4.oPhase.fTotalHeatCapacity';
-                'toChildren.cooledBar.toStores.Block5.oPhase.fTotalHeatCapacity';
-                
-%                 'toChildren.cooledBar.poCapacities(''Block1'').getTotalHeatCapacity()'; % 13
-%                 'toChildren.cooledBar.poCapacities(''Block2'').getTotalHeatCapacity()'; 
-%                 'toChildren.cooledBar.poCapacities(''Block3'').getTotalHeatCapacity()'; 
-%                 'toChildren.cooledBar.poCapacities(''Block4'').getTotalHeatCapacity()'; 
-%                 'toChildren.cooledBar.poCapacities(''Block5'').getTotalHeatCapacity()'; % 17
-                
-                'toChildren.cooledBar.poLinearConductors(''linear:Block1+Block2'').fConductivity'; % 18
-                'toChildren.cooledBar.poLinearConductors(''linear:Block2+Block3'').fConductivity';
-                'toChildren.cooledBar.poLinearConductors(''linear:Block3+Block4'').fConductivity';
-                'toChildren.cooledBar.poLinearConductors(''linear:Block4+Block5'').fConductivity'; % 21
-                
-                % Add other parameters here
-                
-            };
-        
+%             this.csLog = {
+%                 % System timer
+%                 'oData.oTimer.fTime';
+%                 
+%                 % Solver & node temperatures
+% %                 'toChildren.cooledBar.poCapacities(''Block1'').getTemperature()'; % 2
+%                 'toChildren.cooledBar.toStores.Block1.oPhase.fTemperature'; 
+% %                 'toChildren.cooledBar.poCapacities(''Block2'').getTemperature()'; % 4
+%                 'toChildren.cooledBar.toStores.Block2.oPhase.fTemperature'; 
+% %                 'toChildren.cooledBar.poCapacities(''Block3'').getTemperature()'; % 6
+%                 'toChildren.cooledBar.toStores.Block3.oPhase.fTemperature'; 
+% %                 'toChildren.cooledBar.poCapacities(''Block4'').getTemperature()'; % 8
+%                 'toChildren.cooledBar.toStores.Block4.oPhase.fTemperature';
+% %                 'toChildren.cooledBar.poCapacities(''Block5'').getTemperature()'; % 10
+%                 'toChildren.cooledBar.toStores.Block5.oPhase.fTemperature';
+%                 
+%                 'toChildren.cooledBar.poCapacities(''Env'').getTemperature()'; % 12
+%                 
+%                 'toChildren.cooledBar.toStores.Block1.oPhase.fTotalHeatCapacity';
+%                 'toChildren.cooledBar.toStores.Block2.oPhase.fTotalHeatCapacity';
+%                 'toChildren.cooledBar.toStores.Block3.oPhase.fTotalHeatCapacity';
+%                 'toChildren.cooledBar.toStores.Block4.oPhase.fTotalHeatCapacity';
+%                 'toChildren.cooledBar.toStores.Block5.oPhase.fTotalHeatCapacity';
+%                 
+% %                 'toChildren.cooledBar.poCapacities(''Block1'').getTotalHeatCapacity()'; % 13
+% %                 'toChildren.cooledBar.poCapacities(''Block2'').getTotalHeatCapacity()'; 
+% %                 'toChildren.cooledBar.poCapacities(''Block3'').getTotalHeatCapacity()'; 
+% %                 'toChildren.cooledBar.poCapacities(''Block4'').getTotalHeatCapacity()'; 
+% %                 'toChildren.cooledBar.poCapacities(''Block5'').getTotalHeatCapacity()'; % 17
+%                 
+%                 'toChildren.cooledBar.poLinearConductors(''linear:Block1+Block2'').fConductivity'; % 18
+%                 'toChildren.cooledBar.poLinearConductors(''linear:Block2+Block3'').fConductivity';
+%                 'toChildren.cooledBar.poLinearConductors(''linear:Block3+Block4'').fConductivity';
+%                 'toChildren.cooledBar.poLinearConductors(''linear:Block4+Block5'').fConductivity'; % 21
+%                 
+%                 % Add other parameters here
+%                 
+%             };
+%         
             % Simulate 3600s.
-            %this.fSimTime = 3600; % [s]
+            this.fSimTime = 3600; % [s]
             
         end
         
         function updateThermalProperties(this)
             
-            oTSys = this.oRoot.toChildren.cooledBar;
+            oTSys = this.oSimulationContainer.toChildren.cooledBar;
             
             mNodeTemperatures = oTSys.getNodeTemperatures();
             cNodes = oTSys.piCapacityIndices.keys();
@@ -145,11 +162,15 @@ classdef setup_cooledBar < simulation
         end
         
         function plot(this)
+            % Define plots
             
-            close all;
+            this.toMonitors.oPlotter.plot();
             
-            mTimes = this.mfLog(:, 1);
             
+%             close all;
+%             
+%             mTimes = this.mfLog(:, 1);
+%             
 %             figure('name', 'Block 1 temperatures');
 %             hold on;
 %             grid on;
@@ -157,32 +178,32 @@ classdef setup_cooledBar < simulation
 %             legend('Capacity', 'Phase');
 %             ylabel('Temperature in K');
 %             xlabel('Time in s');
-            
-            figure('name', 'Temperatures');
-            hold on;
-            grid on;
-            plot(mTimes, this.mfLog(:, 2:6));
-            legend('Capacity 1', 'Capacity 2', 'Capacity 3', 'Capacity 4', 'Capacity 5');
-            ylabel('Temperature in K');
-            xlabel('Time in s');
-            
-            figure('name', 'Total heat capacities');
-            hold on;
-            grid minor;
-            plot(mTimes, this.mfLog(:, 8:12));
-            legend('node 1', 'node 2', 'node 3', 'node 4', 'node 5');
-            ylabel('Heat Capacity in J/K');
-            xlabel('Time in s');
-            
-            figure('name', 'Block 1+2 conductance');
-            hold on;
-            grid minor;
-            plot(mTimes, this.mfLog(:, 13:16));
-            legend('conductor 1 <-> 2', 'conductor 2 <-> 3', 'conductor 3 <-> 4', 'conductor 4 <-> 5');
-            ylabel('Thermal Conductivity in W/K');
-            xlabel('Time in s');
-            
-            tools.arrangeWindows();
+%             
+%             figure('name', 'Temperatures');
+%             hold on;
+%             grid on;
+%             plot(mTimes, this.mfLog(:, 2:6));
+%             legend('Capacity 1', 'Capacity 2', 'Capacity 3', 'Capacity 4', 'Capacity 5');
+%             ylabel('Temperature in K');
+%             xlabel('Time in s');
+%             
+%             figure('name', 'Total heat capacities');
+%             hold on;
+%             grid minor;
+%             plot(mTimes, this.mfLog(:, 8:12));
+%             legend('node 1', 'node 2', 'node 3', 'node 4', 'node 5');
+%             ylabel('Heat Capacity in J/K');
+%             xlabel('Time in s');
+%             
+%             figure('name', 'Block 1+2 conductance');
+%             hold on;
+%             grid minor;
+%             plot(mTimes, this.mfLog(:, 13:16));
+%             legend('conductor 1 <-> 2', 'conductor 2 <-> 3', 'conductor 3 <-> 4', 'conductor 4 <-> 5');
+%             ylabel('Thermal Conductivity in W/K');
+%             xlabel('Time in s');
+%             
+%             tools.arrangeWindows();
             
         end
         

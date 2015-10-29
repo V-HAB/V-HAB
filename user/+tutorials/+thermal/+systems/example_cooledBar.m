@@ -72,20 +72,7 @@ classdef example_cooledBar < vsys
 %             oEnv.overloadTotalHeatCapacity(Inf);
             this.addCapacity(oEnv);
             
-            
-            %%
-            %START of workaround
-            %TODO: Fix V-HAB?
-            
-            % Looks like we need to register matter objects otherwise the
-            % logger (|simulation.masslog| method) crashes.
-            this.addStore(oBlock1);
-            this.addStore(oBlock2);
-            this.addStore(oBlock3);
-            this.addStore(oBlock4);
-            this.addStore(oBlock5);
-            this.addStore(oDummyEnv);
-            
+                        
             % Looks like we need to seal the container otherwise a phase
             % update crashes since it does not have a timer. 
             this.seal();
