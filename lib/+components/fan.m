@@ -363,9 +363,9 @@ classdef fan < matter.procs.f2f
                     %TODO see above, move to separate method, calculate the
                     %     heat flow, not the temperature difference
                     if oFlowIn.fFlowRate >= 0
-                        fDeltaTemperature = (((fDeltaPressure / 1000))/ (fDensity * oFlowIn.fHeatCapacity * 0.85)) * 0.95; %[K] --> Teperature rise
+                        fDeltaTemperature = (((fDeltaPressure / 1000))/ (fDensity * oFlowIn.fSpecificHeatCapacity * 0.85)) * 0.95; %[K] --> Teperature rise
                     else
-                        fDeltaTemperature = ((( -1*fDeltaPressure ) / 1000)/ (fDensity * oFlowIn.fHeatCapacity * 0.85) ) * 0.95 ; %[K] --> Temperature loss
+                        fDeltaTemperature = ((( -1*fDeltaPressure ) / 1000)/ (fDensity * oFlowIn.fSpecificHeatCapacity * 0.85) ) * 0.95 ; %[K] --> Temperature loss
                     end
                     
                     % And finally setting the correct sign to respect the

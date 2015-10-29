@@ -56,13 +56,18 @@ else
     end
     
     % if additional temperature and pressure given
-    if nargin > 2
+    if nargin > 3
         fTemperature = varargin{3};
-        fPressure = varargin{4};
     else
         fTemperature = this.Standard.Temperature; % std temperature (K)
+    end
+    
+    if nargin > 4
+        fPressure = varargin{4};
+    else
         fPressure = this.Standard.Pressure;    % std pressure (Pa)
     end
+    
 end
 
 % Find the indices of all substances that are in the flow
