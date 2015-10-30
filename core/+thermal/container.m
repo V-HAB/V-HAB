@@ -43,8 +43,8 @@ classdef container < sys
             this@sys(oParent, sName);
             
             % Re-initialize some properties because MATLAB may not do it.
-            this.poCapacities      = containers.Map();
-            this.piCapacityIndices = containers.Map();
+            this.poCapacities          = containers.Map();
+            this.piCapacityIndices     = containers.Map();
             this.poLinearConductors    = containers.Map();
             this.poFluidicConductors   = containers.Map();
             this.poRadiativeConductors = containers.Map();

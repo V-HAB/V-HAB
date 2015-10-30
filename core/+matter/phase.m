@@ -328,6 +328,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Now update the matter properties
             this.fMolarMass            = this.oMT.calculateMolarMass(this.afMass);
             this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
+            this.fTotalHeatCapacity    = this.fSpecificHeatCapacity * this.fMass;
 
             % Mass
             this.fMass = sum(this.afMass);
