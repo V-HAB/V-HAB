@@ -295,8 +295,8 @@ classdef HX < vsys
             
             %adds the flow to flow processores used to set the outlet
             %values of the heat exchanger
-            this.oF2F_1 = support_classes.HX.hx_flow(this, [sName,'_1']);
-            this.oF2F_2 = support_classes.HX.hx_flow(this, [sName,'_2']);
+            this.oF2F_1 = support_classes.HX.hx_flow(this, oParent, [sName,'_1']);
+            this.oF2F_2 = support_classes.HX.hx_flow(this, oParent, [sName,'_2']);
             
             this.seal();
         end
@@ -358,14 +358,14 @@ classdef HX < vsys
                 (abs(fEntryTemp_2-this.fEntryTemp_Old_2) > 0.1)|| ...
                 (abs(fMassFlow_2-this.fMassFlow_Old_2) > 0.001)
                 
-                fDensity_1      = this.oData.oMT.calculateDensity(oFlows_1);
-                fDensity_2      = this.oData.oMT.calculateDensity(oFlows_2);
+                fDensity_1      = this.oMT.calculateDensity(oFlows_1);
+                fDensity_2      = this.oMT.calculateDensity(oFlows_2);
                 
-                fDynVisc_1      = oFlows_1.oMT.calculateDynamicViscosity(oFlows_1);
-                fConductivity_1 = oFlows_1.oMT.calculateThermalConductivity(oFlows_1);
+                fDynVisc_1      = this.oMT.calculateDynamicViscosity(oFlows_1);
+                fConductivity_1 = this.oMT.calculateThermalConductivity(oFlows_1);
                 
-                fDynVisc_2      = oFlows_2.oMT.calculateDynamicViscosity(oFlows_2);
-                fConductivity_2 = oFlows_1.oMT.calculateThermalConductivity(oFlows_2);
+                fDynVisc_2      = this.oMT.calculateDynamicViscosity(oFlows_2);
+                fConductivity_2 = this.oMT.calculateThermalConductivity(oFlows_2);
                 
                 % sets the structs for the two fluids according to the
                 % definition from HX_main
