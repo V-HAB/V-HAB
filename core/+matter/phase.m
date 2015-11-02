@@ -665,7 +665,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSubstances);
 
             % Each row: flow rate, temperature, heat capacity
-            mfInflowDetails = zeros(0, 3);
+            mfInflowDetails = zeros(this.iProcsEXME, 3);
+            
+            % Creating an array to log which of the flows are not in-flows
+            aiOutFlows = ones(this.iProcsEXME, 1);
 
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
@@ -693,13 +696,24 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 % second!
 
 
-                % Calculate inner energy of INflows, per sec
-                abInf    = (afFlowRates > 0);
-                %TODO store as attribute for 'automatic' preallocation,
-                %     replace rows instead of append.
+                % Which EXMEs have mass flows into the phase?
+                abInf = (afFlowRates > 0);
+                
                 if any(abInf)
-                    mfInflowDetails = [ mfInflowDetails; afFlowRates(abInf), mfProperties(abInf, 1), mfProperties(abInf, 2) ];
+                    % Saving the details of the incoming flows into a
+                    % matrix.
+                    mfInflowDetails(iI,:) = [ afFlowRates(abInf), mfProperties(abInf, 1), mfProperties(abInf, 2) ];
+                    
+                    % This flow is an in-flow, so we set the field in the
+                    % array to zero.
+                    aiOutFlows(iI) = 0;
                 end
+            end
+            
+            % Now we delete all of the rows in the mfInflowDetails matrix
+            % that belong to out-flows.
+            if any(aiOutFlows)
+                mfInflowDetails(logical(aiOutFlows),:) = [];
             end
 
             % Now sum up in-/outflows over all EXMEs
