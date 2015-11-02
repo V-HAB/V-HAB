@@ -475,7 +475,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 %TODO if flow rate is zero, what to do? Something HAS to
                 %     heat up ... heating up in the branch should basically
                 %     lead to a flow rate, right?
-                if fFlowRate > 0
+                if abs(fFlowRate) > 0
                     if ~bNeg && (iI > 1)
                         fHeatFlow = this(iI).oIn.fHeatFlow;
 
@@ -484,7 +484,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                         %     might be replaced with e.g. pressure dep. value?
                         fOtherCp  = this(iI - 1).fHeatCapacity;
 
-                    elseif bNeg && (iL < iI)
+                    elseif bNeg && (iI < iL)
                         fHeatFlow = this(iI).oOut.fHeatFlow;
                         fOtherCp  = this(iI + 1).fHeatCapacity;
 
