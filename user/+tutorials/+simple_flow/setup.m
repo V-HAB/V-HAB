@@ -36,8 +36,8 @@ classdef setup < simulation
                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';  % 4
                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
                 'toChildren.Example.aoBranches(1).fFlowRate';                      % 6
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemp';
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemp';     % 8
+                'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemperature';
+                'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemperature';     % 8
 
                 % You can add other parameters here
                 };

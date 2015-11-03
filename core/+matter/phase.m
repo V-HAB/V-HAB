@@ -607,7 +607,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSubstances);
 
             % Each row: flow rate, temperature, heat capacity
-            mfInflowDetails = zeros(0, 3);
+            mfInflowDetails = zeros(this.iProcsEXME, 3);
 
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
@@ -640,7 +640,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 %TODO store as attribute for 'automatic' preallocation,
                 %     replace rows instead of append.
                 if any(abInf)
-                    mfInflowDetails = [ mfInflowDetails; afFlowRates(abInf), mfProperties(abInf, 1), mfProperties(abInf, 2) ];
+                    mfInflowDetails(iI,:) = [ afFlowRates(abInf), mfProperties(abInf, 1), mfProperties(abInf, 2) ];
                 end
             end
 
@@ -676,12 +676,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 this.iProcsP2Pflow  = 0;
 
                 for iE = 1:this.iProcsEXME
-                    % If p2p flow, cannot be port 'default', i.e. just one
-                    % flow possible!
-                    if ~isempty(this.coProcsEXME{iE}.aoFlows) && isa(this.coProcsEXME{iE}.aoFlows(1), 'matter.procs.p2ps.flow')
+                    % Get number and references for connected P2Ps
+                    if ~isempty(this.coProcsEXME{iE}.oFlow) && isa(this.coProcsEXME{iE}.oFlow, 'matter.procs.p2ps.flow')
                         this.iProcsP2Pflow = this.iProcsP2Pflow + 1;
 
-                        this.coProcsP2Pflow{this.iProcsP2Pflow} = this.coProcsEXME{iE}.aoFlows(1);
+                        this.coProcsP2Pflow{this.iProcsP2Pflow} = this.coProcsEXME{iE}.oFlow;
                     end
                 end
             end
@@ -707,11 +706,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Loop through exmes / flows and set outdated, i.e. request re-
             % calculation of flow rate.
             for iE = 1:this.iProcsEXME
-                %CHECK no 'default' exmes allowed any more, only one flow!
-                %TODO remove aoFlows, aiSign, add oFlow, iSign
-                for iF = 1:1 %length(this.coProcsEXME{iE}.aoFlows)
                     oExme   = this.coProcsEXME{iE};
-                    oBranch = oExme.aoFlows(iF).oBranch;
+                    oBranch = oExme.oFlow.oBranch;
 
                     % Make sure it's not a p2ps.flow - their update method
                     % is called in updateProcessorsAndManipulators method
@@ -719,13 +715,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                         % If flow direction set, only setOutdated if the
                         % flow direction is either inwards or outwards
                         if strcmp(sFlowDirection, 'in')
-                            if oExme.aiSign(1) * oExme.aoFlows(1).fFlowRate > 0
+                            if oExme.iSign * oExme.oFlow.fFlowRate > 0
                                 % ok
                             else
                                 continue;
                             end
                         elseif strcmp(sFlowDirection, 'out')
-                            if oExme.aiSign(1) * oExme.aoFlows(1).fFlowRate <= 0
+                            if oExme.iSign * oExme.oFlow.fFlowRate <= 0
                                 % ok
                             else
                                 continue;
@@ -745,7 +741,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                         % the current tick, in timer post tick).
                         oBranch.setOutdated();
                     end
-                end
             end
         end
 
