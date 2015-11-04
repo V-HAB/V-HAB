@@ -114,29 +114,36 @@ classdef container < sys
             % supersystem via an intermediate system, abIf = [1; 1]. So we
             % only want to delete if abIf = [1; 0].
             
-            % First we get the 2xN matrix for all the branches in the
-            % container.
-            mbIf = subsref([this.aoBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
-            % Using the element-wise AND operator '&' we delete only the
-            % branches with abIf = [1; 0].
-            this.aoBranches(mbIf(1,:) & ~mbIf(2,:)) = [];
-          
-            for iI = 1:length(this.aoBranches)
-                % So now the stubs are deleted and the pass-through are
-                % already sealed, so we only have to seal the non-interface
-                % branches and the 
-                if sum(this.aoBranches(iI).abIf) <= 1
-                    this.aoBranches(iI).seal();
+            % Of course, we only have to do this, if there are any branches
+            % in the container at all. In some cases, there can be 
+            % subsystems with no branches. The heat exchanger component is 
+            % an example. It only provides two processors. So we check for 
+            % existin branches first. 
+            if ~isempty(this.aoBranches)
+                % Now we can get the 2xN matrix for all the branches in the
+                % container.
+                mbIf = subsref([this.aoBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
+                % Using the element-wise AND operator '&' we delete only the
+                % branches with abIf = [1; 0].
+                this.aoBranches(mbIf(1,:) & ~mbIf(2,:)) = [];
+                
+                for iI = 1:length(this.aoBranches)
+                    % So now the stubs are deleted and the pass-through are
+                    % already sealed, so we only have to seal the non-interface
+                    % branches and the
+                    if sum(this.aoBranches(iI).abIf) <= 1
+                        this.aoBranches(iI).seal();
+                    end
                 end
-            end
-            
-            % Now that we've taken care of all the branches in this
-            % container, we also no longer need the pass-through branches
-            % on the subsystems beneath us. So we go through all of them
-            % and call a removal method.
-            if this.iChildren > 0
-                for iI = 1:this.iChildren
-                    this.toChildren.(this.csChildren{iI}).removePassThroughBranches();
+                
+                % Now that we've taken care of all the branches in this
+                % container, we also no longer need the pass-through branches
+                % on the subsystems beneath us. So we go through all of them
+                % and call a removal method.
+                if this.iChildren > 0
+                    for iI = 1:this.iChildren
+                        this.toChildren.(this.csChildren{iI}).removePassThroughBranches();
+                    end
                 end
             end
             
@@ -326,13 +333,20 @@ classdef container < sys
                 return;
             end
             
-            % First we get the 2xN matrix for all the branches in the
-            % container.
-            mbIf = subsref([this.aoBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
-            
-            % Using the element-wise AND operator '&' we delete only the
-            % branches with abIf = [1; 1].
-            this.aoBranches(mbIf(1,:) & mbIf(2,:)) = [];
+            % Of course, we only have to do this, if there are any branches
+            % in the container at all. In some cases, there can be 
+            % subsystems with no branches. The heat exchanger component is 
+            % an example. It only provides two processors. So we check for 
+            % existin branches first. 
+            if ~isempty(this.aoBranches)
+                % First we get the 2xN matrix for all the branches in the
+                % container.
+                mbIf = subsref([this.aoBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
+                
+                % Using the element-wise AND operator '&' we delete only the
+                % branches with abIf = [1; 1].
+                this.aoBranches(mbIf(1,:) & mbIf(2,:)) = [];
+            end
         end
     end
 end
