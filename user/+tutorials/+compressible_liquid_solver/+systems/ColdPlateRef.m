@@ -24,19 +24,19 @@ classdef ColdPlateRef < vsys
             this@vsys(oParent, sName, 60);
             
             % Creating a store
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 0.01));
+            this.addStore(matter.store(this, 'Tank_1', 0.01));
             
             % Creating a second store
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 0.01));
+            this.addStore(matter.store(this, 'Tank_2', 0.01));
             
 %             this.addStore(matter.store(this.oData.oMT, 'Tank_3', 10));
 
             oWaterPhase1 = this.toStores.Tank_1.createPhase('water', 0.005, 293, 5*10^5);
-            oAirPhase1 = this.toStores.Tank_1.createPhase('air', 0.005, 293, 5*10^5);
+            oAirPhase1   = this.toStores.Tank_1.createPhase('air', 0.005, 293, 5*10^5);
             
             % Adding a phase to the store 'Tank_2'
             oWaterPhase2 = this.toStores.Tank_2.createPhase('water', 0.005, 293, 1*10^5);
-            oAirPhase2 = this.toStores.Tank_2.createPhase('air', 0.005, 293, 1*10^5);
+            oAirPhase2   = this.toStores.Tank_2.createPhase('air', 0.005, 293, 1*10^5);
             
             % Adding extract/merge processors to the phases
             matter.procs.exmes.liquid(oWaterPhase1, 'Port_1' );
@@ -44,11 +44,11 @@ classdef ColdPlateRef < vsys
             
             % Adding a heater
             %heater(oMT, sName, fTemp, fHydrDiam, fHydrLength, fRoughness)
-            this.addProcF2F(tutorials.compressible_liquid_solver.components.heater(this.oData.oMT, 'Heater', 292.85, 0.01, 0, 0));
+            this.addProcF2F(tutorials.compressible_liquid_solver.components.heater('Heater', 292.85, 0.01, 0, 0));
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 1, 0.01, 0.2*10^-3));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 1, 0.01, 0.2*10^-3));
+            this.addProcF2F(components.pipe('Pipe_1', 1, 0.01, 0.2*10^-3));
+            this.addProcF2F(components.pipe('Pipe_2', 1, 0.01, 0.2*10^-3));
                       
             this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Heater', 'Pipe_2',}, 'Tank_2.Port_2');
                         

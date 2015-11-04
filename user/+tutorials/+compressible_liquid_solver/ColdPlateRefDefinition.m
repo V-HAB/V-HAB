@@ -33,8 +33,8 @@ classdef ColdPlateRefDefinition < simulation
                 'toChildren.ColdPlateRef.toStores.Tank_1.aoPhases(1).fMass';
                 'toChildren.ColdPlateRef.toStores.Tank_2.aoPhases(1).fMass';
                 
-                'toChildren.ColdPlateRef.toStores.Tank_1.aoPhases(1).fTemp';
-                'toChildren.ColdPlateRef.toStores.Tank_2.aoPhases(1).fTemp';
+                'toChildren.ColdPlateRef.toStores.Tank_1.aoPhases(1).fTemperature';
+                'toChildren.ColdPlateRef.toStores.Tank_2.aoPhases(1).fTemperature';
                 
                 'toChildren.ColdPlateRef.aoLiquidBranch{1,1}.mPressureOld(1)';
                 'toChildren.ColdPlateRef.aoLiquidBranch{1,1}.mPressureOld(2)';

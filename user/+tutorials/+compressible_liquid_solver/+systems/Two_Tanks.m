@@ -23,10 +23,10 @@ classdef Two_Tanks < vsys
             this@vsys(oParent, sName, 60);
             
             % Creating a store
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1, 0));
+            this.addStore(matter.store(this, 'Tank_1', 1, 0));
             
             % Creating a second store
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 1, 0));
+            this.addStore(matter.store(this, 'Tank_2', 1, 0));
             
             oWaterPhase1 = this.toStores.Tank_1.createPhase('water', 1, 293, 2*10^5);
             %oAirPhase1 = this.toStores.Tank_1.createPhase('air', 0.5, 293, 0, 2*10^5);
@@ -40,7 +40,7 @@ classdef Two_Tanks < vsys
             matter.procs.exmes.liquid(oWaterPhase2, 'Port_2');
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 1.0, 0.1, 0.0002));
+            this.addProcF2F(components.pipe('Pipe_1', 1.0, 0.1, 0.0002));
             
             this.createBranch('Tank_1.Port_1', {'Pipe_1'}, 'Tank_2.Port_2');
 

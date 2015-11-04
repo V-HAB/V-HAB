@@ -71,9 +71,9 @@ classdef pipe < matter.procs.f2f
 
                 fDynamicViscosity = this.oMT.calculateDynamicViscosity(oFlowIn);
 
-                fFlowSpeed = oFlowIn.fFlowRate/(fDensity*pi*0.25*this.fHydrDiam^2);
+                fFlowSpeed = oFlowIn.fFlowRate/(fDensity*pi*0.25*this.fDiameter^2);
 
-                this.fDeltaPressure = pressure_loss_pipe(this.fHydrDiam, this.fHydrLength,...
+                this.fDeltaPressure = pressure_loss_pipe(this.fDiameter, this.fLength,...
                                 fFlowSpeed, fDynamicViscosity, fDensity, this.fRoughness, 0);
             end
 

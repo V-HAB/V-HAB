@@ -36,8 +36,8 @@ classdef Two_Tanks_Definition < simulation
                 'toChildren.Two_Tanks.toStores.Tank_1.aoPhases(1).fVolume'; %9
                 'toChildren.Two_Tanks.toStores.Tank_2.aoPhases(1).fVolume'; %10
                 
-                'toChildren.Two_Tanks.toStores.Tank_1.aoPhases(1).fTemp'; %11
-                'toChildren.Two_Tanks.toStores.Tank_2.aoPhases(1).fTemp'; %12
+                'toChildren.Two_Tanks.toStores.Tank_1.aoPhases(1).fTemperature'; %11
+                'toChildren.Two_Tanks.toStores.Tank_2.aoPhases(1).fTemperature'; %12
                 
                 'toChildren.Two_Tanks.toStores.Tank_1.fTotalPressureErrorStore'; %13
                 'toChildren.Two_Tanks.toStores.Tank_2.fTotalPressureErrorStore'; %14
@@ -107,7 +107,7 @@ classdef Two_Tanks_Definition < simulation
             };
             
             % Sim time [s]
-            this.fSimTime = 0.0005;
+            this.fSimTime = 0.005;
         end
         
         function plot(this)

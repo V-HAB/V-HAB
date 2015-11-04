@@ -46,11 +46,11 @@ classdef Splitter_Definition < simulation
                 'toChildren.Splitter.toStores.Tank_4.aoPhases(1).fVolume';
                 'toChildren.Splitter.toStores.Splitter.aoPhases(1).fVolume';
                 
-                'toChildren.Splitter.toStores.Tank_1.aoPhases(1).fTemp';
-                'toChildren.Splitter.toStores.Tank_2.aoPhases(1).fTemp';
-                'toChildren.Splitter.toStores.Tank_3.aoPhases(1).fTemp';
-                'toChildren.Splitter.toStores.Tank_4.aoPhases(1).fTemp';
-                'toChildren.Splitter.toStores.Splitter.aoPhases(1).fTemp';
+                'toChildren.Splitter.toStores.Tank_1.aoPhases(1).fTemperature';
+                'toChildren.Splitter.toStores.Tank_2.aoPhases(1).fTemperature';
+                'toChildren.Splitter.toStores.Tank_3.aoPhases(1).fTemperature';
+                'toChildren.Splitter.toStores.Tank_4.aoPhases(1).fTemperature';
+                'toChildren.Splitter.toStores.Splitter.aoPhases(1).fTemperature';
                 
              	'toChildren.Splitter.aoBranches(1).fFlowRate';
                 'toChildren.Splitter.aoBranches(1).fFlowRate';

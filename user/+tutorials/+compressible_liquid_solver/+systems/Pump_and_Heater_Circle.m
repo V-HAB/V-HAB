@@ -24,19 +24,18 @@ classdef Pump_and_Heater_Circle < vsys
             this@vsys(oParent, sName, 60);
             
             % Creating a store
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 0.01));
+            this.addStore(matter.store(this, 'Tank_1', 0.01));
             
             % Creating a second store
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 0.01));
+            this.addStore(matter.store(this, 'Tank_2', 0.01));
             
-%             this.addStore(matter.store(this.oData.oMT, 'Tank_3', 10));
-
+            % Adding phases to the store 'Tank_1'
             oWaterPhase1 = this.toStores.Tank_1.createPhase('water', 0.005, 293, 55*10^5);
-            oAirPhase1 = this.toStores.Tank_1.createPhase('air', 0.005, 293, 55*10^5);
+            oAirPhase1   = this.toStores.Tank_1.createPhase('air', 0.005, 293, 55*10^5);
             
-            % Adding a phase to the store 'Tank_2'
+            % Adding phases to the store 'Tank_2'
             oWaterPhase2 = this.toStores.Tank_2.createPhase('water', 0.005, 293, 55*10^5);
-            oAirPhase2 = this.toStores.Tank_2.createPhase('air', 0.005, 293, 55*10^5);
+            oAirPhase2   = this.toStores.Tank_2.createPhase('air', 0.005, 293, 55*10^5);
             
             % Adding extract/merge processors to the phases
             matter.procs.exmes.liquid(oWaterPhase1, 'Port_1' );
@@ -45,25 +44,18 @@ classdef Pump_and_Heater_Circle < vsys
             matter.procs.exmes.liquid(oWaterPhase1, 'Port_4');
             
             % Adding a pump
-            this.addProcF2F(tutorials.compressible_liquid_solver.components.fan(this.oData.oMT, 'Fan', 2*10^5));
-            %this.addProcF2F(components.fan(this.oData.oMT, 'Fan', 2*10^5));
-
-%             % Adding valves
-%             this.addProcF2F(tutorial.flow.components.valve(this.oData.oMT, 'Valve_1', 0));
-%             this.addProcF2F(tutorial.flow.components.valve(this.oData.oMT, 'Valve_2', 0.01));
+            this.addProcF2F(tutorials.compressible_liquid_solver.components.fan('Fan', 2*10^5));
+            
             % Adding a heater
-            %heater(oMT, sName, fTemp, fHydrDiam, fHydrLength, fRoughness)
-            this.addProcF2F(tutorials.compressible_liquid_solver.components.heater(this.oData.oMT, 'Heater', 313, 0.1, 0.25, 0.2*10^-3));
+            this.addProcF2F(tutorials.compressible_liquid_solver.components.heater('Heater', 313, 0.1, 0.25, 0.2*10^-3));
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_3', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_4',   1, 0.1, 0.2*10^-3));
+            this.addProcF2F(components.pipe('Pipe_1', 0.5, 0.1, 0.2*10^-3));
+            this.addProcF2F(components.pipe('Pipe_2', 0.5, 0.1, 0.2*10^-3));
+            this.addProcF2F(components.pipe('Pipe_3', 0.5, 0.1, 0.2*10^-3));
+            this.addProcF2F(components.pipe('Pipe_4',   1, 0.1, 0.2*10^-3));
             
-%             this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2', 'Heater', 'Valve_1', 'Pipe_3',}, 'Tank_2.Port_2');
-%             this.createBranch('Tank_2.Port_3', {'Pipe_4', 'Valve_2'}, 'Tank_1.Port_4');
-            
+            % Creating the flow branches
             this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2', 'Heater', 'Pipe_3',}, 'Tank_2.Port_2');
             this.createBranch('Tank_2.Port_3', {'Pipe_4'}, 'Tank_1.Port_4');
 

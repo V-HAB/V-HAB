@@ -45,10 +45,10 @@ classdef HeatExchanger_Definition < simulation
                 'toChildren.HeatExchangerSystem.toStores.Tank_3.aoPhases(1).fMass'; %17
                 'toChildren.HeatExchangerSystem.toStores.Tank_4.aoPhases(1).fMass'; %18
                                 
-                'toChildren.HeatExchangerSystem.toStores.Tank_1.aoPhases(1).fTemp'; %19
-                'toChildren.HeatExchangerSystem.toStores.Tank_2.aoPhases(1).fTemp'; %20
-                'toChildren.HeatExchangerSystem.toStores.Tank_3.aoPhases(1).fTemp'; %21
-                'toChildren.HeatExchangerSystem.toStores.Tank_4.aoPhases(1).fTemp'; %22
+                'toChildren.HeatExchangerSystem.toStores.Tank_1.aoPhases(1).fTemperature'; %19
+                'toChildren.HeatExchangerSystem.toStores.Tank_2.aoPhases(1).fTemperature'; %20
+                'toChildren.HeatExchangerSystem.toStores.Tank_3.aoPhases(1).fTemperature'; %21
+                'toChildren.HeatExchangerSystem.toStores.Tank_4.aoPhases(1).fTemperature'; %22
                 
                 'toChildren.HeatExchangerSystem.aoLiquidBranch{1,1}.mPressureOld(1)'; %23
                 'toChildren.HeatExchangerSystem.aoLiquidBranch{1,1}.mPressureOld(2)'; %24

@@ -35,8 +35,8 @@ classdef Pump_and_Heater_Circle_Definition < simulation
                 'toChildren.Pump_and_Heater_Circle.toStores.Tank_1.aoPhases(1).fMass';
                 'toChildren.Pump_and_Heater_Circle.toStores.Tank_2.aoPhases(1).fMass';
                 
-                'toChildren.Pump_and_Heater_Circle.toStores.Tank_1.aoPhases(1).fTemp';
-                'toChildren.Pump_and_Heater_Circle.toStores.Tank_2.aoPhases(1).fTemp';
+                'toChildren.Pump_and_Heater_Circle.toStores.Tank_1.aoPhases(1).fTemperature';
+                'toChildren.Pump_and_Heater_Circle.toStores.Tank_2.aoPhases(1).fTemperature';
                 
                 'toChildren.Pump_and_Heater_Circle.aoLiquidBranch{1,1}.mPressureOld(1)';
                 'toChildren.Pump_and_Heater_Circle.aoLiquidBranch{1,1}.mPressureOld(2)';

@@ -21,17 +21,17 @@ classdef GravityDrivenFlow < vsys
             this@vsys(oParent, sName, 60);
             
             % Creating a store
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 0.1, 0, struct('Shape','Box', 'Area', 0.1, 'HeightExMe', 0)));  
+            this.addStore(matter.store(this, 'Tank_1', 0.1, 0, struct('Shape','Box', 'Area', 0.1, 'HeightExMe', 0)));  
             
             % Creating a second store
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 0.1, 0));
+            this.addStore(matter.store(this, 'Tank_2', 0.1, 0));
 
             oWaterPhase1 = this.toStores.Tank_1.createPhase('water', 0.09, 293, 1*10^5);
-          	oAirPhase1 = this.toStores.Tank_1.createPhase('air', 0.01, 293, 0, 1*10^5);
+          	oAirPhase1   = this.toStores.Tank_1.createPhase('air', 0.01, 293, 0, 1*10^5);
             
             % Adding a phase to the store 'Tank_2'
             oWaterPhase2 = this.toStores.Tank_2.createPhase('water', 0.01, 293, 1*10^5);
-            oAirPhase2 = this.toStores.Tank_2.createPhase('air', 0.09, 293, 0, 1*10^5);
+            oAirPhase2   = this.toStores.Tank_2.createPhase('air', 0.09, 293, 0, 1*10^5);
             
             % Adding extract/merge processors to the phases
             % liquid(oPhase, sName, fFlowSpeed, fAcceleration)
@@ -39,7 +39,7 @@ classdef GravityDrivenFlow < vsys
             matter.procs.exmes.liquid(oWaterPhase2, 'Port_2', 0);
 
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 1, 0.2, 0.2));  
+            this.addProcF2F(components.pipe('Pipe_1', 1, 0.2, 0.2));  
             
             this.createBranch('Tank_1.Port_1', {'Pipe_1'}, 'Tank_2.Port_2');
             

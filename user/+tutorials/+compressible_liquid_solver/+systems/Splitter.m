@@ -22,11 +22,11 @@ classdef Splitter < vsys
             this@vsys(oParent, sName, 60);
             
             % Creating stores
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 0.1));
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 0.05));
-            this.addStore(matter.store(this.oData.oMT, 'Tank_3', 0.02));
-            this.addStore(matter.store(this.oData.oMT, 'Tank_4', 0.01));
-            this.addStore(matter.store(this.oData.oMT, 'Splitter', 2.6*10^-3));
+            this.addStore(matter.store(this, 'Tank_1', 0.1));
+            this.addStore(matter.store(this, 'Tank_2', 0.05));
+            this.addStore(matter.store(this, 'Tank_3', 0.02));
+            this.addStore(matter.store(this, 'Tank_4', 0.01));
+            this.addStore(matter.store(this, 'Splitter', 2.6*10^-3));
             
             %adding phases
             oWaterPhase1 = this.toStores.Tank_1.createPhase('water', 0.075, 313, 10*10^5);
@@ -54,10 +54,10 @@ classdef Splitter < vsys
             matter.procs.exmes.liquid(oWaterPhase5, 'Splitter_Port_4');
 
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 1.0, 0.1, 0.02));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 1.0, 0.1, 0.02));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_3', 1.0, 0.1, 0.02));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_4', 1.0, 0.1, 0.02));
+            this.addProcF2F(components.pipe('Pipe_1', 1.0, 0.1, 0.02));
+            this.addProcF2F(components.pipe('Pipe_2', 1.0, 0.1, 0.02));
+            this.addProcF2F(components.pipe('Pipe_3', 1.0, 0.1, 0.02));
+            this.addProcF2F(components.pipe('Pipe_4', 1.0, 0.1, 0.02));
             
             
             this.createBranch('Tank_1.Port_1', {'Pipe_1'}, 'Splitter.Splitter_Port_1');

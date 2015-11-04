@@ -16,25 +16,25 @@ classdef heater < matter.procs.f2f
     end
     
     properties (SetAccess = protected, GetAccess = public)
-        fHydrDiam = 0.5;        % Hydraulic diameter
-        fHydrLength = 1;        % Hydraulic Length
+        fDiameter = 0.5;        % Hydraulic diameter
+        fLength = 1;            % Hydraulic Length
         fDeltaTemp = 0;         % temperature difference created by the heater in K
         bActive = true;         % Must be true so the update function is called from the branch solver
     end
     
     methods
-        function this = heater(oMT, sName, fTemp, fHydrDiam, fHydrLength, fRoughness)
-            this@matter.procs.f2f(oMT, sName);
+        function this = heater(sName, fTemperature, fDiameter, fLength, fRoughness)
+            this@matter.procs.f2f(sName);
                         
-            this.fTempMax = fTemp;
+            this.fTempMax = fTemperature;
             if nargin == 4
-                this.fHydrDiam = fHydrDiam;
+                this.fDiameter = fDiameter;
             elseif nargin == 5
-                this.fHydrLength = fHydrLength;
-                this.fHydrDiam = fHydrDiam;
+                this.fLength = fLength;
+                this.fDiameter = fDiameter;
             elseif nargin == 6
-                this.fHydrLength = fHydrLength;
-                this.fHydrDiam = fHydrDiam;
+                this.fLength = fLength;
+                this.fDiameter = fDiameter;
                 this.fRoughness = fRoughness;
             end
 
@@ -51,38 +51,15 @@ classdef heater < matter.procs.f2f
             if bZeroFlows == 1
                 this.fDeltaTemp = 0;
             else
-                [InFlow, OutFlow]=this.getFlows();
-                %this.fDeltaPressure;
-                this.fDeltaTemp = this.fTempMax-InFlow.fTemp;
+                [ oInFlow, ~ ] = this.getFlows();
                 
-                %fix matter values required to use the correlations for
-                %density and pressure. 
+                this.fDeltaTemp = this.fTempMax - oInFlow.fTemperature;
+                
+                fDensity = this.oMT.calculateDensity(oInFlow);
 
-                %TO DO make dependant on matter table
-                %values for water
-                %density at one fixed datapoint
-                fFixDensity = 998.21;        %g/dm³
-                %temperature for the fixed datapoint
-                fFixTemperature = 293.15;           %K
-                %Molar Mass of the compound
-                fMolMassH2O = 18.01528;       %g/mol
-                %critical temperature
-                fCriticalTemperature = 647.096;         %K
-                %critical pressure
-                fCriticalPressure = 220.64*10^5;      %N/m² = Pa
+                fFlowSpeed = oInFlow.fFlowRate/(fDensity*pi*0.25*this.fDiameter^2);
 
-                %boiling point normal pressure
-                fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
-                %normal boiling point temperature
-                fBoilingTemperature = 373.124;      %K
-
-                fDensity = solver.matter.fdm_liquid.functions.LiquidDensity(InFlow.fTemp,...
-                                    InFlow.fPressure, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                                    fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-
-                fFlowSpeed = InFlow.fFlowRate/(fDensity*pi*0.25*this.fHydrDiam^2);
-
-                this.fDeltaPressure = pressure_loss_pipe (this.fHydrDiam, this.fHydrLength,...
+                this.fDeltaPressure = pressure_loss_pipe (this.fDiameter, this.fLength,...
                                 fFlowSpeed, 1200.4*10^-6, fDensity, this.fRoughness, 0);
             end
             
