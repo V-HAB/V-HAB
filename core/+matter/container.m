@@ -103,10 +103,41 @@ classdef container < sys
                 this.toStores.(this.csStores{iI}).seal(this.oTimer, this.oData);
             end
             
+            % Now we seal off all of the branches. Some of them may be
+            % interface branches to subsystems. These leftover stubs of
+            % branches are no longer needed and can be deleted. These stubs
+            % will have an abIf property that looks like this: [1; 0]
+            % meaning their left side is an interface while their right
+            % side is connected to an exme processor. If the branch is a
+            % subsystem interface branch to a supersystem, abIf = [0; 1].
+            % If the branch is a pass-through branch from a subsystem to a
+            % supersystem via an intermediate system, abIf = [1; 1]. So we
+            % only want to delete if abIf = [1; 0].
             
+            % First we get the 2xN matrix for all the branches in the
+            % container.
+            mbIf = subsref([this.aoBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
+            % Using the element-wise AND operator '&' we delete only the
+            % branches with abIf = [1; 0].
+            this.aoBranches(mbIf(1,:) & ~mbIf(2,:)) = [];
+          
             for iI = 1:length(this.aoBranches)
-                % Sealing off all of the branches
-                this.aoBranches(iI).seal();
+                % So now the stubs are deleted and the pass-through are
+                % already sealed, so we only have to seal the non-interface
+                % branches and the 
+                if sum(this.aoBranches(iI).abIf) <= 1
+                    this.aoBranches(iI).seal();
+                end
+            end
+            
+            % Now that we've taken care of all the branches in this
+            % container, we also no longer need the pass-through branches
+            % on the subsystems beneath us. So we go through all of them
+            % and call a removal method.
+            if this.iChildren > 0
+                for iI = 1:this.iChildren
+                    this.toChildren.(this.csChildren{iI}).removePassThroughBranches();
+                end
             end
             
             this.bSealed = true;
@@ -271,6 +302,37 @@ classdef container < sys
             if bTrigger
                 this.trigger('branch.disconnected', iLocalBranch);
             end
+        end
+        
+        function removePassThroughBranches(this)
+            % If a branch is a pass-through branch from a subsystem to a
+            % supersystem via an intermediate system, abIf = [1; 1]. So we
+            % just find all branches with an abIf like that and delete
+            % them.
+            
+            % We should, however, only do this, if this method is called by
+            % the supersystem. So before we do anything, we'll check if
+            % this system is already sealed. If yes, we'll just return
+            % without doing anything.
+            
+            %TODO insert a low level warning here, once the debug output
+            %system is implemented. It might be usefull to alert the user
+            %that someone is trying to delete the pass-through branches
+            %here, although that should happen later. Template for the
+            %warning message inserted below.
+            
+            if ~this.bSealed
+                %this.throw('container.seal','The pass-through branches on %s cannot be deleted yet. First the container must be sealed.',this.sName);
+                return;
+            end
+            
+            % First we get the 2xN matrix for all the branches in the
+            % container.
+            mbIf = subsref([this.aoBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
+            
+            % Using the element-wise AND operator '&' we delete only the
+            % branches with abIf = [1; 1].
+            this.aoBranches(mbIf(1,:) & mbIf(2,:)) = [];
         end
     end
 end
