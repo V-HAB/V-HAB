@@ -44,8 +44,8 @@ classdef Two_Tanks < vsys
             %the chamber pressure with the ratio between the mol mass for
             %water and the mol mass for air
             fH2OMassFraction = (fPartialPressureH2O/101325)*...
-                ((this.oData.oMT.afMolMass(this.oData.oMT.tiN2I.('H2O')))/...
-                (this.oData.oMT.afMolMass(this.oData.oMT.tiN2I.('air'))));
+                ((this.oData.oMT.afMolarMass(this.oData.oMT.tiN2I.('H2O')))/...
+                (this.oData.oMT.afMolarMass(this.oData.oMT.tiN2I.('air'))));
             %These are MASS percent, so don't confuse them with volume
             %percent (like 21% oxygen in the air THATS VOLUME PERCENT!)
             fO2Percent = 0.23135;
@@ -53,7 +53,7 @@ classdef Two_Tanks < vsys
             
             % Creating a store
             fTank1_Volume = 0.5;
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 0.5));
+            this.addStore(matter.store(this, 'Tank_1', 0.5));
             oPhaseTank(1) = matter.phases.gas(this.toStores.Tank_1, ...
                           'Tank1_Phase', ...   % Phase name
                           struct(...
@@ -69,7 +69,7 @@ classdef Two_Tanks < vsys
             
             % Creating a second store
             fTank2_Volume = 0.5;
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 0.5));
+            this.addStore(matter.store(this, 'Tank_2', 0.5));
             oPhaseTank(2) = matter.phases.gas(this.toStores.Tank_2, ...
                           'Tank2_Phase', ...   % Phase name
                           struct(...
@@ -86,7 +86,7 @@ classdef Two_Tanks < vsys
             this.aoPhases = oPhaseTank;
             
             % Adding pipes to connect the components
-            this.addProcF2F(tutorials.incompressible_solver.components.pipe(this.oData.oMT, 'Pipe_1', 1.0, 0.01, 0.0002));
+            this.addProcF2F(components.pipe('Pipe_1', 1.0, 0.01, 0.0002));
             
             oBranch1 = this.createBranch('Tank_1.Port_Out1', {'Pipe_1'}, 'Tank_2.Port_In1');
             

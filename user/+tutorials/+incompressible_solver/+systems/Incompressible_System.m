@@ -44,8 +44,8 @@ classdef Incompressible_System < vsys
             %the chamber pressure with the ratio between the mol mass for
             %water and the mol mass for air
             fH2OMassFraction = (fPartialPressureH2O/101325)*...
-                ((this.oData.oMT.afMolMass(this.oData.oMT.tiN2I.('H2O')))/...
-                (this.oData.oMT.afMolMass(this.oData.oMT.tiN2I.('air'))));
+                ((this.oData.oMT.afMolarMass(this.oData.oMT.tiN2I.('H2O')))/...
+                (this.oData.oMT.afMolarMass(this.oData.oMT.tiN2I.('air'))));
             %These are MASS percent, so don't confuse them with volume
             %percent (like 21% oxygen in the air THATS VOLUME PERCENT!)
             fO2Percent = 0.23135;
@@ -67,7 +67,7 @@ classdef Incompressible_System < vsys
                           'H2O', fTank_Volume * 2*fDensityAir * fH2OMassFraction );
                       
                 % Creating a store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_1', 0.5));
+                this.addStore(matter.store(this, 'Tank_1', 0.5));
                 oPhaseTank(1) = matter.phases.(sPhase)(this.toStores.Tank_1, ...
                               'Tank1_Phase', tPhase, fTank_Volume, fTemperature);
 
@@ -77,7 +77,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.gas(oPhaseTank(1), 'Port_In2' );
 
                 % Creating a second store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_2', 0.5));
+                this.addStore(matter.store(this, 'Tank_2', 0.5));
                 oPhaseTank(2) = matter.phases.(sPhase)(this.toStores.Tank_2, ...
                               'Tank2_Phase', tPhase, fTank_Volume, fTemperature);
 
@@ -86,7 +86,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(2), 'Port_Out1');
 
                 % Creating a third store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_3', 0.5));
+                this.addStore(matter.store(this, 'Tank_3', 0.5));
                 oPhaseTank(3) = matter.phases.(sPhase)(this.toStores.Tank_3, ...
                               'Tank3_Phase', tPhase, fTank_Volume, fTemperature);
 
@@ -96,7 +96,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(3), 'Port_Out2');
 
                 % Creating a fourth store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_4', 0.5));
+                this.addStore(matter.store(this, 'Tank_4', 0.5));
                 oPhaseTank(4) = matter.phases.(sPhase)(this.toStores.Tank_4, ...
                               'Tank4_Phase', tPhase, fTank_Volume, fTemperature);
 
@@ -105,7 +105,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(4), 'Port_Out1');
 
                 % Creating a fifth store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_5', 0.5));
+                this.addStore(matter.store(this, 'Tank_5', 0.5));
                 oPhaseTank(5) = matter.phases.(sPhase)(this.toStores.Tank_5, ...
                               'Tank5_Phase', tPhase, fTank_Volume, fTemperature);
 
@@ -113,7 +113,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(5), 'Port_Out1');
 
                 % Creating a sixth store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_6', 0.5));
+                this.addStore(matter.store(this, 'Tank_6', 0.5));
                 oPhaseTank(6) = matter.phases.(sPhase)(this.toStores.Tank_6, ...
                               'Tank6_Phase', tPhase2, fTank_Volume, fTemperature);
 
@@ -122,7 +122,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(6), 'Port_Out1');
 
                 % Creating a seventh store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_7', 0.5));
+                this.addStore(matter.store(this, 'Tank_7', 0.5));
                 oPhaseTank(7) = matter.phases.(sPhase)(this.toStores.Tank_7, ...
                               'Tank7_Phase', tPhase, fTank_Volume, fTemperature);
 
@@ -130,7 +130,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(7), 'Port_In1');
 
                 % Creating an eigth store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_8', 0.5));
+                this.addStore(matter.store(this, 'Tank_8', 0.5));
                 oPhaseTank(8) = matter.phases.(sPhase)(this.toStores.Tank_8, ...
                               'Tank8_Phase', tPhase, fTank_Volume, fTemperature);
 
@@ -150,7 +150,7 @@ classdef Incompressible_System < vsys
                 tPhase2 = struct('H2O', fTank_Volume * fDensityWater2);
                 
                 % Creating a store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_1', 0.5));
+                this.addStore(matter.store(this, 'Tank_1', 0.5));
                 oPhaseTank(1) = matter.phases.(sPhase)(this.toStores.Tank_1, ...
                               'Tank1_Phase', tPhase, fTank_Volume, fTemperature, fPressure);
 
@@ -160,7 +160,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(1), 'Port_In2' );
 
                 % Creating a second store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_2', 0.5));
+                this.addStore(matter.store(this, 'Tank_2', 0.5));
                 oPhaseTank(2) = matter.phases.(sPhase)(this.toStores.Tank_2, ...
                               'Tank2_Phase', tPhase, fTank_Volume, fTemperature, fPressure);
 
@@ -169,7 +169,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(2), 'Port_Out1');
 
                 % Creating a third store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_3', 0.5));
+                this.addStore(matter.store(this, 'Tank_3', 0.5));
                 oPhaseTank(3) = matter.phases.(sPhase)(this.toStores.Tank_3, ...
                               'Tank3_Phase', tPhase, fTank_Volume, fTemperature, fPressure);
 
@@ -179,7 +179,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(3), 'Port_Out2');
 
                 % Creating a fourth store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_4', 0.5));
+                this.addStore(matter.store(this, 'Tank_4', 0.5));
                 oPhaseTank(4) = matter.phases.(sPhase)(this.toStores.Tank_4, ...
                               'Tank4_Phase', tPhase, fTank_Volume, fTemperature, fPressure);
 
@@ -188,7 +188,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(4), 'Port_Out1');
 
                 % Creating a fifth store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_5', 0.5));
+                this.addStore(matter.store(this, 'Tank_5', 0.5));
                 oPhaseTank(5) = matter.phases.(sPhase)(this.toStores.Tank_5, ...
                               'Tank5_Phase', tPhase, fTank_Volume, fTemperature, fPressure);
 
@@ -196,7 +196,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(5), 'Port_Out1');
 
                 % Creating a sixth store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_6', 0.5));
+                this.addStore(matter.store(this, 'Tank_6', 0.5));
                 oPhaseTank(6) = matter.phases.(sPhase)(this.toStores.Tank_6, ...
                               'Tank6_Phase', tPhase2, fTank_Volume, fTemperature, 2*fPressure);
 
@@ -205,7 +205,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(6), 'Port_Out1');
 
                 % Creating a seventh store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_7', 0.5));
+                this.addStore(matter.store(this, 'Tank_7', 0.5));
                 oPhaseTank(7) = matter.phases.(sPhase)(this.toStores.Tank_7, ...
                               'Tank7_Phase', tPhase, fTank_Volume, fTemperature, fPressure);
 
@@ -213,7 +213,7 @@ classdef Incompressible_System < vsys
                 matter.procs.exmes.(sPhase)(oPhaseTank(7), 'Port_In1');
 
                 % Creating an eigth store
-                this.addStore(matter.store(this.oData.oMT, 'Tank_8', 0.5));
+                this.addStore(matter.store(this, 'Tank_8', 0.5));
                 oPhaseTank(8) = matter.phases.(sPhase)(this.toStores.Tank_8, ...
                               'Tank8_Phase', tPhase, fTank_Volume, fTemperature, fPressure);
 
@@ -227,16 +227,16 @@ classdef Incompressible_System < vsys
             this.aoPhases = oPhaseTank;
             
             % Adding pipes to connect the components
-            this.addProcF2F(tutorials.incompressible_solver.components.pipe(this.oData.oMT, 'Pipe_1', 1.0, 0.01, 0.0002));
-            this.addProcF2F(tutorials.incompressible_solver.components.pipe(this.oData.oMT, 'Pipe_2', 1.0, 0.01, 0.0002));
-            this.addProcF2F(tutorials.incompressible_solver.components.pipe(this.oData.oMT, 'Pipe_3', 1.0, 0.01, 0.0002));
-            this.addProcF2F(tutorials.incompressible_solver.components.pipe(this.oData.oMT, 'Pipe_4', 1.0, 0.01, 0.0002));
-            this.addProcF2F(tutorials.incompressible_solver.components.pipe(this.oData.oMT, 'Pipe_5', 1.0, 0.01, 0.0002));
-            this.addProcF2F(tutorials.incompressible_solver.components.pipe(this.oData.oMT, 'Pipe_6', 1.0, 0.01, 0.0002));
-            this.addProcF2F(tutorials.incompressible_solver.components.pipe(this.oData.oMT, 'Pipe_7', 1.0, 0.01, 0.0002));
-            this.addProcF2F(tutorials.incompressible_solver.components.pipe(this.oData.oMT, 'Pipe_8', 1.0, 0.01, 0.0002));
+            this.addProcF2F(components.pipe('Pipe_1', 1.0, 0.01, 0.0002));
+            this.addProcF2F(components.pipe('Pipe_2', 1.0, 0.01, 0.0002));
+            this.addProcF2F(components.pipe('Pipe_3', 1.0, 0.01, 0.0002));
+            this.addProcF2F(components.pipe('Pipe_4', 1.0, 0.01, 0.0002));
+            this.addProcF2F(components.pipe('Pipe_5', 1.0, 0.01, 0.0002));
+            this.addProcF2F(components.pipe('Pipe_6', 1.0, 0.01, 0.0002));
+            this.addProcF2F(components.pipe('Pipe_7', 1.0, 0.01, 0.0002));
+            this.addProcF2F(components.pipe('Pipe_8', 1.0, 0.01, 0.0002));
             
-            this.addProcF2F(tutorials.incompressible_solver.components.fan(this.oData.oMT, 'Fan_1', 1e4, 1));
+            this.addProcF2F(tutorials.incompressible_solver.components.fan('Fan_1', 1e4, 1));
             
             oBranch1 = this.createBranch('Tank_1.Port_Out1', {'Pipe_1', 'Fan_1'}, 'Tank_2.Port_In1');
             

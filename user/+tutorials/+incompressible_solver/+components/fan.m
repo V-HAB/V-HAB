@@ -14,8 +14,8 @@ classdef fan < matter.procs.f2f
     end
     
     methods
-        function this = fan(oMT, sName, fMaxDeltaP, iDir)
-            this@matter.procs.f2f(oMT, sName);
+        function this = fan(sName, fMaxDeltaP, iDir)
+            this@matter.procs.f2f(sName);
                         
             this.fDeltaPressure = fMaxDeltaP;
             this.iDir = iDir;

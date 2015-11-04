@@ -380,14 +380,14 @@ classdef system_incompressible_liquid
             %aoBranches(2) and so on.
 
             this.mDeltaPressureCompsTotal = zeros(this.iNumberOfBranches,1);
-            this.mDeltaTempCompsTotal = zeros(this.iNumberOfBranches,1);
-            this.mPressureLoss = zeros(this.iNumberOfBranches,1);
-            this.mBranchArea = zeros(this.iNumberOfBranches,1);
-            this.mInverseBranchLength = zeros(this.iNumberOfBranches,1);
+            this.mDeltaTempCompsTotal     = zeros(this.iNumberOfBranches,1);
+            this.mPressureLoss            = zeros(this.iNumberOfBranches,1);
+            this.mBranchArea              = zeros(this.iNumberOfBranches,1);
+            this.mInverseBranchLength     = zeros(this.iNumberOfBranches,1);
 
-            this.cDeltaPressureComp = cell(this.iNumberOfBranches,1);
-            this.cDeltaTempComp = cell(this.iNumberOfBranches,1);
-            this.cPressureLossComp = cell(this.iNumberOfBranches,1);
+            this.cDeltaPressureComp       = cell(this.iNumberOfBranches,1);
+            this.cDeltaTempComp           = cell(this.iNumberOfBranches,1);
+            this.cPressureLossComp        = cell(this.iNumberOfBranches,1);
             
             for k = 1:this.iNumberOfBranches
 

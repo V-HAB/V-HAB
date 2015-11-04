@@ -24,6 +24,9 @@ classdef pipe < matter.procs.f2f
     properties (SetAccess = protected, GetAccess = public)
         % Surface roughness of the pipe in [?]
         fRoughness      = 0;
+        
+        % Pressure differential caused by the pipe in [Pa]
+        fDeltaPressure  = 0;
 
     end
     
@@ -72,19 +75,17 @@ classdef pipe < matter.procs.f2f
 
                 this.fDeltaPressure = pressure_loss_pipe(this.fHydrDiam, this.fHydrLength,...
                                 fFlowSpeed, fDynamicViscosity, fDensity, this.fRoughness, 0);
-
-                this.fDeltaPress = this.fDeltaPressure;
             end
 
         end
         
         %% Update function for callback solver
-        function fDeltaPress = solverDeltas(this, fFlowRate)
+        function fDeltaPressure = solverDeltas(this, fFlowRate)
             
             % No flow rate, no  pressure drop, no work. Just return that
             % and quit. 
             if (fFlowRate == 0)
-                fDeltaPress = 0;
+                fDeltaPressure = 0;
                 return;
             end
 
@@ -97,7 +98,7 @@ classdef pipe < matter.procs.f2f
             % No pressure at all ... normally just return, drop zero
             if fAveragePressure == 0
 
-                fDeltaPress = 0; % no pressure? -> no pressure drop!
+                fDeltaPressure = 0; % no pressure? -> no pressure drop!
                                  % FR (kg/s) should be small compared to
                                  % drop, so send that?
                 return;
@@ -133,14 +134,14 @@ classdef pipe < matter.procs.f2f
             % pipe. Return an infinite pressure drop which should let the
             % solver know to set the flow rate to zero.
             if (this.fDiameter == 0)
-                fDeltaPress = Inf;
+                fDeltaPressure = Inf;
                 return; % Return early.
             end
 
             % If the dynamic viscosity or the density is empty, return zero
             % as the pressure drop. Else, the pressure drop may become NaN.
             if (fDensity == 0) || (fEta == 0)
-                fDeltaPress = 0;
+                fDeltaPressure = 0;
                 return; % Return early.
             end
 
@@ -189,7 +190,9 @@ classdef pipe < matter.procs.f2f
             % all smooth - blasius: fLambda = 0.3164 / fReynolds^(1/4)
             % Prantl: fLambda = 1 / (1.8 * log(Re / 7))^2
 
-            fDeltaPress = fDensity / 2 * fFlowSpeed^2 * (fLambda * this.fLength / this.fDiameter);
+            fDeltaPressure = fDensity / 2 * fFlowSpeed^2 * (fLambda * this.fLength / this.fDiameter);
+            
+            this.fDeltaPressure = fDeltaPressure;
 
             %CHECK include test for choked flow, i.e. speed at outlet > speed of sound?
             %      should that be done by the f2f comp or the solver? Include attribute
