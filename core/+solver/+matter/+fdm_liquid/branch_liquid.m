@@ -158,22 +158,22 @@ classdef branch_liquid < solver.matter.base.branch
         iSteadyState = 0;
         
         %values inside the branch cells for the previous time step
-        mVirtualPressureOld = 'empty';
+        mVirtualPressureOld       = 'empty';
         mVirtualInternalEnergyOld = 'empty';
-        mVirtualDensityOld = 'empty';
-        mFlowSpeedOld = 'empty';
-        mVirtualTemperatureOld = 'empty';
+        mVirtualDensityOld        = 'empty';
+        mFlowSpeedOld             = 'empty';
+        mVirtualTemperatureOld    = 'empty';
         
-        mPressureOld3 = 'empty';
-        mPressureOld2 = 'empty';
-        mPressureOld1 = 'empty';
-        mPressureOld = 'empty';
-        mInternalEnergyOld = 'empty';
-        mDensityOld = 'empty';
-        mTemperatureOld = 'empty';
+        mPressureOld3             = 'empty';
+        mPressureOld2             = 'empty';
+        mPressureOld1             = 'empty';
+        mPressureOld              = 'empty';
+        mInternalEnergyOld        = 'empty';
+        mDensityOld               = 'empty';
+        mTemperatureOld           = 'empty';
         
-        fFlowSpeedBoundary1Old = 0;
-        fFlowSpeedBoundary2Old = 0;
+        fFlowSpeedBoundary1Old    = 0;
+        fFlowSpeedBoundary2Old    = 0;
         
         sCourantAdaption = struct( 'bAdaption', false, 'fIncreaseFactor', 1.001, 'iTicksBetweenIncrease', 100, 'iInitialTicks', 10000, 'iTimeStepAdaption', 0, 'fMaxCourantNumber', 1);
         
@@ -199,23 +199,23 @@ classdef branch_liquid < solver.matter.base.branch
             if nargin == 2
                 this.inCells = iCells;
             elseif nargin == 3
-                this.inCells = iCells;
+                this.inCells                 = iCells;
                 this.fPressureResidualFactor = fPressureResidualFactor;
             elseif nargin == 4
-                this.inCells = iCells;
+                this.inCells                 = iCells;
                 this.fPressureResidualFactor = fPressureResidualFactor;
                 this.fMassFlowResidualFactor = fMassFlowResidualFactor;
             elseif nargin == 5
-                this.inCells = iCells;
+                this.inCells                 = iCells;
                 this.fPressureResidualFactor = fPressureResidualFactor;
                 this.fMassFlowResidualFactor = fMassFlowResidualFactor;
-                this.fCourantNumber = fCourantNumber;
+                this.fCourantNumber          = fCourantNumber;
             elseif nargin == 6    
-                this.inCells = iCells;
+                this.inCells                 = iCells;
                 this.fPressureResidualFactor = fPressureResidualFactor;
                 this.fMassFlowResidualFactor = fMassFlowResidualFactor;
-                this.fCourantNumber    = fCourantNumber;
-                this.sCourantAdaption  = sCourantAdaption;
+                this.fCourantNumber          = fCourantNumber;
+                this.sCourantAdaption        = sCourantAdaption;
                 this.sCourantAdaption.iTimeStepAdaption = 0;
             end
                         
@@ -254,8 +254,13 @@ classdef branch_liquid < solver.matter.base.branch
             %calculate the internal Energy
             fTempRef = 293;
 
-          	%TO DO: Get from Matter Table
-            fHeatCapacity = 4185; %J/(kg K)
+            %TO DO:Make heat capacity Calculations temperature and pressure
+            %dependant
+            if this.oBranch.fFlowRate >= 0
+                fHeatCapacity = this.oBranch.oContainer.oData.oMT.calculateHeatCapacity(this.oBranch.aoFlows(1,1));
+            else
+                fHeatCapacity = this.oBranch.oContainer.oData.oMT.calculateHeatCapacity(this.oBranch.aoFlows(1,end));
+            end
             
             %gets the total number of processors used in the branch
             iNumberOfProcs = length(this.oBranch.aoFlowProcs);
@@ -263,33 +268,33 @@ classdef branch_liquid < solver.matter.base.branch
             %the meta values are used to decide whether a component even
             %has the respective attribute because not necessarily all
             %components have alle the attributes
-            mHydrDiam = zeros(iNumberOfProcs,1);
-            mHydrDiamValve = zeros(iNumberOfProcs,1);
-            mHydrLength = zeros(iNumberOfProcs,1);
-            mDeltaPressureComp = zeros(iNumberOfProcs,1);
+            mHydrDiam                   = zeros(iNumberOfProcs,1);
+            mHydrDiamValve              = zeros(iNumberOfProcs,1);
+            mHydrLength                 = zeros(iNumberOfProcs,1);
+            mDeltaPressureComp          = zeros(iNumberOfProcs,1);
             mDirectionDeltaPressureComp = zeros(iNumberOfProcs,1); 
-            mDeltaTempComp = zeros(iNumberOfProcs,1);
+            mDeltaTempComp              = zeros(iNumberOfProcs,1);
             
             for k = 1:iNumberOfProcs
                 %checks wether the flow procs contain the properties of
                 %hydraulic diameter, length or delta pressure
-                metaHydrDiam = findprop(this.oBranch.aoFlowProcs(1,k), 'fHydrDiam');
-                metaHydrLength = findprop(this.oBranch.aoFlowProcs(1,k), 'fHydrLength');
-                metaDeltaPressure = findprop(this.oBranch.aoFlowProcs(1,k), 'fDeltaPressure');
+                metaHydrDiam               = findprop(this.oBranch.aoFlowProcs(1,k), 'fDiameter');
+                metaHydrLength             = findprop(this.oBranch.aoFlowProcs(1,k), 'fLength');
+                metaDeltaPressure          = findprop(this.oBranch.aoFlowProcs(1,k), 'fDeltaPressure');
                 metaDirectionDeltaPressure = findprop(this.oBranch.aoFlowProcs(1,k), 'iDir');
-                metaDeltaTempComp = findprop(this.oBranch.aoFlowProcs(1,k), 'fDeltaTemp');
+                metaDeltaTempComp          = findprop(this.oBranch.aoFlowProcs(1,k), 'fDeltaTemp');
                 
                 %if the processor with index k has the respective property
                 %its value is written into the respective vector. If not
                 %the vector entry remains zero or for the diameter -1.
                 if ~isempty(metaHydrDiam)
-                    mHydrDiam(k) = [ this.oBranch.aoFlowProcs(1,k).fHydrDiam ];
+                    mHydrDiam(k) = [ this.oBranch.aoFlowProcs(1,k).fDiameter ];
                 end
                 if ~isempty(metaHydrLength)
-                    mHydrLength(k) = [ this.oBranch.aoFlowProcs(1,k).fHydrLength ];
+                    mHydrLength(k) = [ this.oBranch.aoFlowProcs(1,k).fLength ];
                 end
                 if ~isempty(metaHydrDiam) && mHydrLength(k) == 0
-                    mHydrDiamValve(k) = [ this.oBranch.aoFlowProcs(1,k).fHydrDiam ];
+                    mHydrDiamValve(k) = [ this.oBranch.aoFlowProcs(1,k).fDiameter ];
                 else
                     %this is necessary in order to discern between procs
                     %that simply dont have a diameter definition and one
@@ -318,8 +323,8 @@ classdef branch_liquid < solver.matter.base.branch
             
             fVolumeBoundary1 = this.oBranch.coExmes{1}.oPhase.fVolume;  
             fVolumeBoundary2 = this.oBranch.coExmes{2}.oPhase.fVolume; 
-            fMassBoundary1 = this.oBranch.coExmes{1}.oPhase.fMass; 
-            fMassBoundary2 = this.oBranch.coExmes{2}.oPhase.fMass;
+            fMassBoundary1   = this.oBranch.coExmes{1}.oPhase.fMass; 
+            fMassBoundary2   = this.oBranch.coExmes{2}.oPhase.fMass;
             
             %either takes the values from the previous time step for the
             %boundary flow speeds between the first/last cell and the
@@ -423,28 +428,6 @@ classdef branch_liquid < solver.matter.base.branch
                 end
                 
                 %%
-                %fix matter values required to use the correlations for
-                %density and pressure. 
-                
-                %TO DO make dependant on matter table
-                %density at one fixed datapoint
-                fFixDensity = 998.21;        %g/dm³
-                %temperature for the fixed datapoint
-                fFixTemperature = 293.15;           %K
-                %Molar Mass of the compound
-                %TODO: fixup to use [kg/mol]
-                fMolMassH2O = 18.01528;       %g/mol
-                %critical temperature
-                fCriticalTemperature = 647.096;         %K
-                %critical pressure
-                fCriticalPressure = 220.64*10^5;      %N/m² = Pa
-
-                %boiling point normal pressure
-                fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
-                %normal boiling point temperature
-                fBoilingTemperature = 373.124;      %K
-                
-                %%
                 %calculates the initial boundary values for the internal
                 %energy
                 
@@ -464,6 +447,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %make some decision (like when to abort etc) in the programm
                 fPressureBoundary1WithProcs = fPressureBoundary1;
                 fPressureBoundary2WithProcs = fPressureBoundary2;
+                
                 for k = 1:iNumberOfProcs
                     if mDirectionDeltaPressureComp(k) > 0
                         fPressureBoundary1WithProcs = fPressureBoundary1WithProcs + mDeltaPressureComp(k);
@@ -478,17 +462,10 @@ classdef branch_liquid < solver.matter.base.branch
                     end
                 end
                 
-                %calculates the densities of the boundaries using the
-                %liquid density correlation. If this is not done and the
-                %density is calculated from mass/volume it is possible that
-                %from an initialization that did not use the correlation
-                %the solver crashes.
-                fDensityBoundary1 = solver.matter.fdm_liquid.functions.LiquidDensity(fTemperatureBoundary1,...
-                       fPressureBoundary1, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                       fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-             	fDensityBoundary2 = solver.matter.fdm_liquid.functions.LiquidDensity(fTemperatureBoundary2,...
-                       fPressureBoundary2, fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                       fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                %gets the boundary densities
+                fDensityBoundary1 = this.oBranch.coExmes{1,1}.oPhase.fDensity;
+                
+             	fDensityBoundary2 = this.oBranch.coExmes{2,1}.oPhase.fDensity;
                 
                 %%
                 %sets the initial values for pressure, density, internal 
@@ -515,30 +492,30 @@ classdef branch_liquid < solver.matter.base.branch
                     
                     for k = 1:1:(this.inCells)
                         if fTemperatureBoundary1 < fTemperatureBoundary2
-                            mVirtualPressure(k,1) = fPressureBoundary1;
+                            mVirtualPressure(k,1)       = fPressureBoundary1;
                             mVirtualInternalEnergy(k,1) = fInternalEnergyBoundary1;
-                            mVirtualDensity(k,1) = fDensityBoundary1;
-                            mVirtualTemperature(k,1) = fTemperatureBoundary1;
+                            mVirtualDensity(k,1)        = fDensityBoundary1;
+                            mVirtualTemperature(k,1)    = fTemperatureBoundary1;
                         elseif (fTemperatureBoundary1 == fTemperatureBoundary2) &&(fPressureBoundary1WithProcs <= fPressureBoundary2WithProcs)
-                            mVirtualPressure(k,1) = fPressureBoundary1;
+                            mVirtualPressure(k,1)       = fPressureBoundary1;
                             mVirtualInternalEnergy(k,1) = fInternalEnergyBoundary1;
-                            mVirtualDensity(k,1) = fDensityBoundary1;
-                            mVirtualTemperature(k,1) = fTemperatureBoundary1;
+                            mVirtualDensity(k,1)        = fDensityBoundary1;
+                            mVirtualTemperature(k,1)    = fTemperatureBoundary1;
                         else
-                            mVirtualPressure(k,1) = fPressureBoundary2;
+                            mVirtualPressure(k,1)       = fPressureBoundary2;
                             mVirtualInternalEnergy(k,1) = fInternalEnergyBoundary2;
-                            mVirtualDensity(k,1) = fDensityBoundary2;
-                            mVirtualTemperature(k,1) = fTemperatureBoundary2;
+                            mVirtualDensity(k,1)        = fDensityBoundary2;
+                            mVirtualTemperature(k,1)    = fTemperatureBoundary2;
                         end
                     end
                 else
                     %variables from the flow processors (these are vectors
                     %containing the values for each cell)
-                    mVirtualPressure = this.mVirtualPressureOld; %[kg/(m*s^2)]
+                    mVirtualPressure       = this.mVirtualPressureOld; %[kg/(m*s^2)]
                     mVirtualInternalEnergy = this.mVirtualInternalEnergyOld; %internal energy [J]       
-                    mVirtualDensity = this.mVirtualDensityOld; %density [kg/m³]
-                    mFlowSpeed = this.mFlowSpeedOld;  %velocity [m/s]
-                    mVirtualTemperature = this.mVirtualTemperatureOld; %temperature [K]
+                    mVirtualDensity        = this.mVirtualDensityOld; %density [kg/m³]
+                    mFlowSpeed             = this.mFlowSpeedOld;  %velocity [m/s]
+                    mVirtualTemperature    = this.mVirtualTemperatureOld; %temperature [K]
                 end
                 
 
@@ -553,6 +530,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %For a pipe having a length of 0.3m with a cell length
                 %of 0.16 m the entry of mCompCellPosition would be 2
                 mCompCellPosition = zeros(this.inCells, 1);
+                
                 if (~strcmp(this.mMassFlowOld(1), 'empty') && this.mMassFlowOld(1) >= 0) || (fPressureBoundary1WithProcs >= fPressureBoundary2WithProcs)
                     for k = 1:length(mHydrLength)
                         mCompCellPosition(k)=ceil(sum(mHydrLength(1:k))/fCellLength);
@@ -572,12 +550,13 @@ classdef branch_liquid < solver.matter.base.branch
                 
                 %mPressure contains the actual cell values including the
                 %proc pressure
-                mPressureWithoutLoss = mVirtualPressure;
-                mPressure = mVirtualPressure;
-                mTemperature = mVirtualTemperature;
-                mInternalEnergy = mVirtualInternalEnergy;
-                mDensity = mVirtualDensity;
+                mPressureWithoutLoss   = mVirtualPressure;
+                mPressure              = mVirtualPressure;
+                mTemperature           = mVirtualTemperature;
+                mInternalEnergy        = mVirtualInternalEnergy;
+                mDensity               = mVirtualDensity;
                 mTotalPressureLossCell = zeros(this.inCells,1);
+                
                 for k = 1:this.inCells
                     %the actual pressure is the sum of the virtual pressure
                     %and all pressure influences from components.
@@ -591,7 +570,7 @@ classdef branch_liquid < solver.matter.base.branch
                         mTotalPressureLossCell(k) = sum(mDeltaPressureCompCell(mDirectionDeltaPressureComp(mCompCellPosition == k) == 0));
                     end
                     mPressure(k) = mPressureWithoutLoss(k) - mTotalPressureLossCell(k);
-                   	%the actual temperatue is calculate from the sum of the
+                   	%the actual temperatue is calculated from the sum of the
                     %virtual temperature and all temperature differences
                     %from procs
                     if sum(mDeltaTempComp(mCompCellPosition == k)) ~= 0
@@ -602,9 +581,9 @@ classdef branch_liquid < solver.matter.base.branch
                     %Density and internal energy are then calculate from
                     %the actual pressure and temperature
                     if mPressure(k) ~= mVirtualPressure(k) || mTemperature(k) ~= mVirtualTemperature(k)
-                        mDensity(k) = solver.matter.fdm_liquid.functions.LiquidDensity(mTemperature(k),...
-                            mPressure(k), fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                            fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                        %afMass cannot change within a branch so using the
+                        %first flow for all is sufficient
+                        mDensity(k) = this.oBranch.oContainer.oData.oMT.calculateDensity('liquid', this.oBranch.aoFlows(1,1).arPartialMass, mTemperature(k), mPressure(k));
                     else
                         mDensity(k) = mVirtualDensity(k);
                     end
@@ -657,42 +636,42 @@ classdef branch_liquid < solver.matter.base.branch
                 %the pipes etc.
                 
                 if mCompCellPosition(1) == 1 &&  sum(mDeltaPressureComp(mCompCellPosition == 1).*mDirectionDeltaPressureComp(mCompCellPosition == 1)) < 0 
-                    [mGodunovFlux(1,:), mMaxWaveSpeed(1,1), mPressureStar(1,1)] = solver.matter.fdm_liquid.functions.HLLC(fPressureBoundary1, fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
+                    [mGodunovFlux(1,:), mMaxWaveSpeed(1,1), mPressureStar(1,1)] = solver.matter.fdm_liquid.functions.HLLC(this, fPressureBoundary1, fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
                         mPressureWithoutLoss(1), mDensity(1), mFlowSpeed(1), mInternalEnergy(1), fTemperatureBoundary1, mTemperature(1));
 
                 else
-                    [mGodunovFlux(1,:), mMaxWaveSpeed(1,1), mPressureStar(1,1)] = solver.matter.fdm_liquid.functions.HLLC(fPressureBoundary1, fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
+                    [mGodunovFlux(1,:), mMaxWaveSpeed(1,1), mPressureStar(1,1)] = solver.matter.fdm_liquid.functions.HLLC(this, fPressureBoundary1, fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
                         mVirtualPressure(1), mVirtualDensity(1), mFlowSpeed(1), mVirtualInternalEnergy(1), fTemperatureBoundary1, mVirtualTemperature(1));
 
                 end
 
                 if mCompCellPosition(end) == this.inCells && sum(mDeltaPressureComp(mCompCellPosition == this.inCells).*mDirectionDeltaPressureComp(mCompCellPosition == this.inCells)) < 0
                     [mGodunovFlux((this.inCells)+1,:), mMaxWaveSpeed((this.inCells)+1, 1), mPressureStar((this.inCells)+1,1)] = ...
-                    solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(this.inCells), mVirtualDensity(this.inCells), mFlowSpeed(this.inCells), mVirtualInternalEnergy(this.inCells),...
+                    solver.matter.fdm_liquid.functions.HLLC(this, mVirtualPressure(this.inCells), mVirtualDensity(this.inCells), mFlowSpeed(this.inCells), mVirtualInternalEnergy(this.inCells),...
                     fPressureBoundary2, fDensityBoundary2, fFlowSpeedBoundary2, fInternalEnergyBoundary2, mVirtualTemperature(end), fTemperatureBoundary2);
 
                 else
                     [mGodunovFlux((this.inCells)+1,:), mMaxWaveSpeed((this.inCells)+1, 1), mPressureStar((this.inCells)+1,1)] = ...
-                    solver.matter.fdm_liquid.functions.HLLC(mPressureWithoutLoss(this.inCells), mDensity(this.inCells), mFlowSpeed(this.inCells), mInternalEnergy(this.inCells),...
+                    solver.matter.fdm_liquid.functions.HLLC(this, mPressureWithoutLoss(this.inCells), mDensity(this.inCells), mFlowSpeed(this.inCells), mInternalEnergy(this.inCells),...
                     fPressureBoundary2, fDensityBoundary2, fFlowSpeedBoundary2, fInternalEnergyBoundary2, mTemperature(end), fTemperatureBoundary2);
 
                 end
                 
                 for kGod = 1:1:(this.inCells)-1
                     if (sum(mDeltaPressureComp(mCompCellPosition == kGod).*mDirectionDeltaPressureComp(mCompCellPosition == kGod)) <= 0) && (sum(mDeltaPressureComp(mCompCellPosition == (kGod+1)).*mDirectionDeltaPressureComp(mCompCellPosition == (kGod+1))) >= 0)
-                        [mGodunovFlux(kGod+1,:), mMaxWaveSpeed(kGod+1), mPressureStar(kGod+1)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(kGod), mDensity(kGod), mFlowSpeed(kGod), mInternalEnergy(kGod),...
+                        [mGodunovFlux(kGod+1,:), mMaxWaveSpeed(kGod+1), mPressureStar(kGod+1)] = solver.matter.fdm_liquid.functions.HLLC(this, mVirtualPressure(kGod), mDensity(kGod), mFlowSpeed(kGod), mInternalEnergy(kGod),...
                         mVirtualPressure(kGod+1), mVirtualDensity(kGod+1), mFlowSpeed(kGod+1), mVirtualInternalEnergy(kGod+1), mTemperature(kGod), mVirtualTemperature(kGod+1));
 
                     elseif (sum(mDeltaPressureComp(mCompCellPosition == kGod).*mDirectionDeltaPressureComp(mCompCellPosition == kGod)) > 0) && (sum(mDeltaPressureComp(mCompCellPosition == (kGod+1)).*mDirectionDeltaPressureComp(mCompCellPosition == (kGod+1))) >= 0)
-                        [mGodunovFlux(kGod+1,:), mMaxWaveSpeed(kGod+1), mPressureStar(kGod+1)] = solver.matter.fdm_liquid.functions.HLLC(mPressureWithoutLoss(kGod), mDensity(kGod), mFlowSpeed(kGod), mInternalEnergy(kGod),...
+                        [mGodunovFlux(kGod+1,:), mMaxWaveSpeed(kGod+1), mPressureStar(kGod+1)] = solver.matter.fdm_liquid.functions.HLLC(this, mPressureWithoutLoss(kGod), mDensity(kGod), mFlowSpeed(kGod), mInternalEnergy(kGod),...
                         mVirtualPressure(kGod+1), mVirtualDensity(kGod+1), mFlowSpeed(kGod+1), mVirtualInternalEnergy(kGod+1), mTemperature(kGod), mVirtualTemperature(kGod+1));
 
                     elseif (sum(mDeltaPressureComp(mCompCellPosition == kGod).*mDirectionDeltaPressureComp(mCompCellPosition == kGod)) <= 0) && (sum(mDeltaPressureComp(mCompCellPosition == (kGod+1)).*mDirectionDeltaPressureComp(mCompCellPosition == (kGod+1))) < 0)
-                        [mGodunovFlux(kGod+1,:), mMaxWaveSpeed(kGod+1), mPressureStar(kGod+1)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(kGod), mVirtualDensity(kGod), mFlowSpeed(kGod), mVirtualInternalEnergy(kGod),...
+                        [mGodunovFlux(kGod+1,:), mMaxWaveSpeed(kGod+1), mPressureStar(kGod+1)] = solver.matter.fdm_liquid.functions.HLLC(this, mVirtualPressure(kGod), mVirtualDensity(kGod), mFlowSpeed(kGod), mVirtualInternalEnergy(kGod),...
                         mPressureWithoutLoss(kGod+1), mDensity(kGod+1), mFlowSpeed(kGod+1), mInternalEnergy(kGod+1), mVirtualTemperature(kGod), mTemperature(kGod+1));
 
                     elseif (sum(mDeltaPressureComp(mCompCellPosition == kGod).*mDirectionDeltaPressureComp(mCompCellPosition == kGod)) > 0) && (sum(mDeltaPressureComp(mCompCellPosition == (kGod+1)).*mDirectionDeltaPressureComp(mCompCellPosition == (kGod+1))) < 0)
-                        [mGodunovFlux(kGod+1,:), mMaxWaveSpeed(kGod+1), mPressureStar(kGod+1)] = solver.matter.fdm_liquid.functions.HLLC(mPressureWithoutLoss(kGod), mDensity(kGod), mFlowSpeed(kGod), mInternalEnergy(kGod),...
+                        [mGodunovFlux(kGod+1,:), mMaxWaveSpeed(kGod+1), mPressureStar(kGod+1)] = solver.matter.fdm_liquid.functions.HLLC(this, mPressureWithoutLoss(kGod), mDensity(kGod), mFlowSpeed(kGod), mInternalEnergy(kGod),...
                         mPressureWithoutLoss(kGod+1), mDensity(kGod+1), mFlowSpeed(kGod+1), mInternalEnergy(kGod+1), mTemperature(kGod), mTemperature(kGod+1));
                     else
                         error('seems like one case was forgotten here')
@@ -758,32 +737,32 @@ classdef branch_liquid < solver.matter.base.branch
                 
                 for k = 1:this.inCells+1
                     if k == 1 && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) == 0)
-                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(fPressureBoundary1, fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(this, fPressureBoundary1, fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
                             mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), fTemperatureBoundary1, mVirtualTemperature(k));
                         mMomentumGodunovFlux_k_1(k,:) = mMomentumGodunovFlux_k(k,:);
                         
                     elseif k == 1 && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) > 0)
-                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(fPressureBoundary1+2*sum(abs(mDeltaPressureComp(mCompCellPosition == k))), fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(this, fPressureBoundary1+2*sum(abs(mDeltaPressureComp(mCompCellPosition == k))), fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
                             mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), fTemperatureBoundary1, mVirtualTemperature(k));
                         mMomentumGodunovFlux_k_1(k,:) = mMomentumGodunovFlux_k(k,:);
                         
                     elseif k == 1 && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) < 0)
-                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(fPressureBoundary1, fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(this, fPressureBoundary1, fDensityBoundary1, fFlowSpeedBoundary1, fInternalEnergyBoundary1,...
                             mPressureWithoutLoss(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), fTemperatureBoundary1, mVirtualTemperature(k));
                         mMomentumGodunovFlux_k_1(k,:) = mMomentumGodunovFlux_k(k,:);
                         
                     elseif k == this.inCells+1 && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) == 0)
-                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(this, mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
                             fPressureBoundary2, fDensityBoundary2, fFlowSpeedBoundary2, fInternalEnergyBoundary2, mVirtualTemperature(k-1), fTemperatureBoundary2);
                         mMomentumGodunovFlux_k_1(k,:) = mMomentumGodunovFlux_k(k,:);
                         
                   	elseif k == this.inCells+1 && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) > 0)
-                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mPressureWithoutLoss(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(this, mPressureWithoutLoss(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
                             fPressureBoundary2, fDensityBoundary2, fFlowSpeedBoundary2, fInternalEnergyBoundary2, mVirtualTemperature(k-1), fTemperatureBoundary2);
                         mMomentumGodunovFlux_k_1(k,:) = mMomentumGodunovFlux_k(k,:);
                         
                     elseif k == this.inCells+1 && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) < 0)
-                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(this, mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
                             fPressureBoundary2+2*sum(abs(mDeltaPressureComp(mCompCellPosition == k))), fDensityBoundary2, fFlowSpeedBoundary2, fInternalEnergyBoundary2, mVirtualTemperature(k-1), fTemperatureBoundary2);
                         mMomentumGodunovFlux_k_1(k,:) = mMomentumGodunovFlux_k(k,:);
                         
@@ -793,28 +772,28 @@ classdef branch_liquid < solver.matter.base.branch
                         mMomentumGodunovFlux_k_1(k,2) = mGodunovFlux(k,2);
                         
                     elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) == 0) && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) > 0)
-                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1)+2*sum(abs(mDeltaPressureComp(mCompCellPosition == k))), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(this, mVirtualPressure(k-1)+2*sum(abs(mDeltaPressureComp(mCompCellPosition == k))), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
                             mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
-                        [mMomentumGodunovFlux_k_1(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
+                        [mMomentumGodunovFlux_k_1(k,:)] = solver.matter.fdm_liquid.functions.HLLC(this, mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
                             mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
                         
                     elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) > 0) && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) == 0)
-                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mPressureWithoutLoss(k-1), mDensity(k-1), mFlowSpeed(k-1), mInternalEnergy(k-1),...
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(this, mPressureWithoutLoss(k-1), mDensity(k-1), mFlowSpeed(k-1), mInternalEnergy(k-1),...
                             mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mTemperature(k-1), mVirtualTemperature(k));
                         
                         [mMomentumGodunovFlux_k_1(k,:)] = mMomentumGodunovFlux_k(k,:);
                         
                     elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) == 0) && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) < 0)
-                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mPressureWithoutLoss(k-1), mDensity(k-1), mFlowSpeed(k-1), mInternalEnergy(k-1),...
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(this, mPressureWithoutLoss(k-1), mDensity(k-1), mFlowSpeed(k-1), mInternalEnergy(k-1),...
                             mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mTemperature(k-1), mVirtualTemperature(k));
                         
                         [mMomentumGodunovFlux_k_1(k,:)] = mMomentumGodunovFlux_k(k,:);
                         
                     elseif (sum(mDeltaPressureComp(mCompCellPosition == k-1).*mDirectionDeltaPressureComp(mCompCellPosition == k-1)) < 0) && (sum(mDeltaPressureComp(mCompCellPosition == k).*mDirectionDeltaPressureComp(mCompCellPosition == k)) == 0)
-                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
+                        [mMomentumGodunovFlux_k(k,:)] = solver.matter.fdm_liquid.functions.HLLC(this, mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
                             mVirtualPressure(k), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
                         
-                        [mMomentumGodunovFlux_k_1(k,:)] = solver.matter.fdm_liquid.functions.HLLC(mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
+                        [mMomentumGodunovFlux_k_1(k,:)] = solver.matter.fdm_liquid.functions.HLLC(this, mVirtualPressure(k-1), mVirtualDensity(k-1), mFlowSpeed(k-1), mVirtualInternalEnergy(k-1),...
                             mVirtualPressure(k)+2*sum(abs(mDeltaPressureComp(mCompCellPosition == k-1))), mVirtualDensity(k), mFlowSpeed(k), mVirtualInternalEnergy(k), mVirtualTemperature(k-1), mVirtualTemperature(k));
                         
                     else
@@ -1066,12 +1045,11 @@ classdef branch_liquid < solver.matter.base.branch
                 end
                 
                 %%
-                %Pressure is calculated using the liquid pressure
-                %correlation. For more information view the function file
+                %Pressure is calculated using the matter table
                 for k=1:1:this.inCells
-                    mPressureNew(k) = solver.matter.fdm_liquid.functions.LiquidPressure(mTemperatureNew(k),...
-                       mDensityNew(k), fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                       fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                    %TO DO: Replace with a function call to
+                    %calculatePressure once such a function exists
+                    mPressureNew(k) = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Pressure','Density',mDensityNew(k),'Temperature',(mTemperatureNew(k)),'liquid');
                 end
                 %%
                 %calculation of the virtual cell values
@@ -1086,9 +1064,9 @@ classdef branch_liquid < solver.matter.base.branch
                 %pressure.
                 for k = 1:this.inCells
                     mVirtualInternalEnergyNew(k) = mVirtualDensityNew(k)*(0.5*mFlowSpeed(k)^2+fHeatCapacity*(mVirtualTemperatureNew(k)-fTempRef));
-                    mVirtualPressureNew(k) = solver.matter.fdm_liquid.functions.LiquidPressure(mVirtualTemperatureNew(k),...
-                       mVirtualDensityNew(k), fFixDensity, fFixTemperature, fMolMassH2O, fCriticalTemperature,...
-                       fCriticalPressure, fBoilingPressure, fBoilingTemperature);
+                    %TO DO: Replace with a function call to
+                    %calculatePressure once such a function exists
+                    mVirtualPressureNew(k) = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Pressure','Density',mVirtualDensityNew(k),'Temperature',(mVirtualTemperatureNew(k)),'liquid');
                 end
                 
                 %%
@@ -1317,17 +1295,13 @@ classdef branch_liquid < solver.matter.base.branch
                 %sets the timestep from this branch for the base branch
                 this.setTimeStep(fTimeStep);
                 
-                if this.oBranch.oContainer.oTimer.iTick > 100
-                    stop = 1;
-                end
-                
                 %tells the stores when to update
-                this.oBranch.coExmes{1, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
-                this.oBranch.coExmes{2, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
+%                 this.oBranch.coExmes{1, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
+%                 this.oBranch.coExmes{2, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
                 %calls the update for the base branch using the newly
                 %calculated mass flow
                 %branch(this, fFlowRate, afPressures, afTemperatures)
-                update@solver.matter.base.branch(this, fMassFlow, afPressure, afTemperatures);
+                update@solver.matter.base.branch(this, fMassFlow, afPressure);
                 
                 for k = 1: length(this.oBranch.aoFlowProcs)
                     this.oBranch.aoFlowProcs(1,k).update();
