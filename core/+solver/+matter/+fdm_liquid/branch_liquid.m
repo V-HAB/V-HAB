@@ -158,22 +158,22 @@ classdef branch_liquid < solver.matter.base.branch
         iSteadyState = 0;
         
         %values inside the branch cells for the previous time step
-        mVirtualPressureOld = 'empty';
+        mVirtualPressureOld       = 'empty';
         mVirtualInternalEnergyOld = 'empty';
-        mVirtualDensityOld = 'empty';
-        mFlowSpeedOld = 'empty';
-        mVirtualTemperatureOld = 'empty';
+        mVirtualDensityOld        = 'empty';
+        mFlowSpeedOld             = 'empty';
+        mVirtualTemperatureOld    = 'empty';
         
-        mPressureOld3 = 'empty';
-        mPressureOld2 = 'empty';
-        mPressureOld1 = 'empty';
-        mPressureOld = 'empty';
-        mInternalEnergyOld = 'empty';
-        mDensityOld = 'empty';
-        mTemperatureOld = 'empty';
+        mPressureOld3             = 'empty';
+        mPressureOld2             = 'empty';
+        mPressureOld1             = 'empty';
+        mPressureOld              = 'empty';
+        mInternalEnergyOld        = 'empty';
+        mDensityOld               = 'empty';
+        mTemperatureOld           = 'empty';
         
-        fFlowSpeedBoundary1Old = 0;
-        fFlowSpeedBoundary2Old = 0;
+        fFlowSpeedBoundary1Old    = 0;
+        fFlowSpeedBoundary2Old    = 0;
         
         sCourantAdaption = struct( 'bAdaption', false, 'fIncreaseFactor', 1.001, 'iTicksBetweenIncrease', 100, 'iInitialTicks', 10000, 'iTimeStepAdaption', 0, 'fMaxCourantNumber', 1);
         
@@ -199,23 +199,23 @@ classdef branch_liquid < solver.matter.base.branch
             if nargin == 2
                 this.inCells = iCells;
             elseif nargin == 3
-                this.inCells = iCells;
+                this.inCells                 = iCells;
                 this.fPressureResidualFactor = fPressureResidualFactor;
             elseif nargin == 4
-                this.inCells = iCells;
+                this.inCells                 = iCells;
                 this.fPressureResidualFactor = fPressureResidualFactor;
                 this.fMassFlowResidualFactor = fMassFlowResidualFactor;
             elseif nargin == 5
-                this.inCells = iCells;
+                this.inCells                 = iCells;
                 this.fPressureResidualFactor = fPressureResidualFactor;
                 this.fMassFlowResidualFactor = fMassFlowResidualFactor;
-                this.fCourantNumber = fCourantNumber;
+                this.fCourantNumber          = fCourantNumber;
             elseif nargin == 6    
-                this.inCells = iCells;
+                this.inCells                 = iCells;
                 this.fPressureResidualFactor = fPressureResidualFactor;
                 this.fMassFlowResidualFactor = fMassFlowResidualFactor;
-                this.fCourantNumber    = fCourantNumber;
-                this.sCourantAdaption  = sCourantAdaption;
+                this.fCourantNumber          = fCourantNumber;
+                this.sCourantAdaption        = sCourantAdaption;
                 this.sCourantAdaption.iTimeStepAdaption = 0;
             end
                         
@@ -268,33 +268,33 @@ classdef branch_liquid < solver.matter.base.branch
             %the meta values are used to decide whether a component even
             %has the respective attribute because not necessarily all
             %components have alle the attributes
-            mHydrDiam = zeros(iNumberOfProcs,1);
-            mHydrDiamValve = zeros(iNumberOfProcs,1);
-            mHydrLength = zeros(iNumberOfProcs,1);
-            mDeltaPressureComp = zeros(iNumberOfProcs,1);
+            mHydrDiam                   = zeros(iNumberOfProcs,1);
+            mHydrDiamValve              = zeros(iNumberOfProcs,1);
+            mHydrLength                 = zeros(iNumberOfProcs,1);
+            mDeltaPressureComp          = zeros(iNumberOfProcs,1);
             mDirectionDeltaPressureComp = zeros(iNumberOfProcs,1); 
-            mDeltaTempComp = zeros(iNumberOfProcs,1);
+            mDeltaTempComp              = zeros(iNumberOfProcs,1);
             
             for k = 1:iNumberOfProcs
                 %checks wether the flow procs contain the properties of
                 %hydraulic diameter, length or delta pressure
-                metaHydrDiam = findprop(this.oBranch.aoFlowProcs(1,k), 'fHydrDiam');
-                metaHydrLength = findprop(this.oBranch.aoFlowProcs(1,k), 'fHydrLength');
-                metaDeltaPressure = findprop(this.oBranch.aoFlowProcs(1,k), 'fDeltaPressure');
+                metaHydrDiam               = findprop(this.oBranch.aoFlowProcs(1,k), 'fDiameter');
+                metaHydrLength             = findprop(this.oBranch.aoFlowProcs(1,k), 'fLength');
+                metaDeltaPressure          = findprop(this.oBranch.aoFlowProcs(1,k), 'fDeltaPressure');
                 metaDirectionDeltaPressure = findprop(this.oBranch.aoFlowProcs(1,k), 'iDir');
-                metaDeltaTempComp = findprop(this.oBranch.aoFlowProcs(1,k), 'fDeltaTemp');
+                metaDeltaTempComp          = findprop(this.oBranch.aoFlowProcs(1,k), 'fDeltaTemp');
                 
                 %if the processor with index k has the respective property
                 %its value is written into the respective vector. If not
                 %the vector entry remains zero or for the diameter -1.
                 if ~isempty(metaHydrDiam)
-                    mHydrDiam(k) = [ this.oBranch.aoFlowProcs(1,k).fHydrDiam ];
+                    mHydrDiam(k) = [ this.oBranch.aoFlowProcs(1,k).fDiameter ];
                 end
                 if ~isempty(metaHydrLength)
-                    mHydrLength(k) = [ this.oBranch.aoFlowProcs(1,k).fHydrLength ];
+                    mHydrLength(k) = [ this.oBranch.aoFlowProcs(1,k).fLength ];
                 end
                 if ~isempty(metaHydrDiam) && mHydrLength(k) == 0
-                    mHydrDiamValve(k) = [ this.oBranch.aoFlowProcs(1,k).fHydrDiam ];
+                    mHydrDiamValve(k) = [ this.oBranch.aoFlowProcs(1,k).fDiameter ];
                 else
                     %this is necessary in order to discern between procs
                     %that simply dont have a diameter definition and one
@@ -323,8 +323,8 @@ classdef branch_liquid < solver.matter.base.branch
             
             fVolumeBoundary1 = this.oBranch.coExmes{1}.oPhase.fVolume;  
             fVolumeBoundary2 = this.oBranch.coExmes{2}.oPhase.fVolume; 
-            fMassBoundary1 = this.oBranch.coExmes{1}.oPhase.fMass; 
-            fMassBoundary2 = this.oBranch.coExmes{2}.oPhase.fMass;
+            fMassBoundary1   = this.oBranch.coExmes{1}.oPhase.fMass; 
+            fMassBoundary2   = this.oBranch.coExmes{2}.oPhase.fMass;
             
             %either takes the values from the previous time step for the
             %boundary flow speeds between the first/last cell and the
@@ -447,6 +447,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %make some decision (like when to abort etc) in the programm
                 fPressureBoundary1WithProcs = fPressureBoundary1;
                 fPressureBoundary2WithProcs = fPressureBoundary2;
+                
                 for k = 1:iNumberOfProcs
                     if mDirectionDeltaPressureComp(k) > 0
                         fPressureBoundary1WithProcs = fPressureBoundary1WithProcs + mDeltaPressureComp(k);
@@ -462,9 +463,9 @@ classdef branch_liquid < solver.matter.base.branch
                 end
                 
                 %gets the boundary densities
-                fDensityBoundary1 = this.coExmes{1,1}.oPhase.fDensity;
+                fDensityBoundary1 = this.oBranch.coExmes{1,1}.oPhase.fDensity;
                 
-             	fDensityBoundary2 = this.coExmes{2,1}.oPhase.fDensity;
+             	fDensityBoundary2 = this.oBranch.coExmes{2,1}.oPhase.fDensity;
                 
                 %%
                 %sets the initial values for pressure, density, internal 
@@ -491,30 +492,30 @@ classdef branch_liquid < solver.matter.base.branch
                     
                     for k = 1:1:(this.inCells)
                         if fTemperatureBoundary1 < fTemperatureBoundary2
-                            mVirtualPressure(k,1) = fPressureBoundary1;
+                            mVirtualPressure(k,1)       = fPressureBoundary1;
                             mVirtualInternalEnergy(k,1) = fInternalEnergyBoundary1;
-                            mVirtualDensity(k,1) = fDensityBoundary1;
-                            mVirtualTemperature(k,1) = fTemperatureBoundary1;
+                            mVirtualDensity(k,1)        = fDensityBoundary1;
+                            mVirtualTemperature(k,1)    = fTemperatureBoundary1;
                         elseif (fTemperatureBoundary1 == fTemperatureBoundary2) &&(fPressureBoundary1WithProcs <= fPressureBoundary2WithProcs)
-                            mVirtualPressure(k,1) = fPressureBoundary1;
+                            mVirtualPressure(k,1)       = fPressureBoundary1;
                             mVirtualInternalEnergy(k,1) = fInternalEnergyBoundary1;
-                            mVirtualDensity(k,1) = fDensityBoundary1;
-                            mVirtualTemperature(k,1) = fTemperatureBoundary1;
+                            mVirtualDensity(k,1)        = fDensityBoundary1;
+                            mVirtualTemperature(k,1)    = fTemperatureBoundary1;
                         else
-                            mVirtualPressure(k,1) = fPressureBoundary2;
+                            mVirtualPressure(k,1)       = fPressureBoundary2;
                             mVirtualInternalEnergy(k,1) = fInternalEnergyBoundary2;
-                            mVirtualDensity(k,1) = fDensityBoundary2;
-                            mVirtualTemperature(k,1) = fTemperatureBoundary2;
+                            mVirtualDensity(k,1)        = fDensityBoundary2;
+                            mVirtualTemperature(k,1)    = fTemperatureBoundary2;
                         end
                     end
                 else
                     %variables from the flow processors (these are vectors
                     %containing the values for each cell)
-                    mVirtualPressure = this.mVirtualPressureOld; %[kg/(m*s^2)]
+                    mVirtualPressure       = this.mVirtualPressureOld; %[kg/(m*s^2)]
                     mVirtualInternalEnergy = this.mVirtualInternalEnergyOld; %internal energy [J]       
-                    mVirtualDensity = this.mVirtualDensityOld; %density [kg/m³]
-                    mFlowSpeed = this.mFlowSpeedOld;  %velocity [m/s]
-                    mVirtualTemperature = this.mVirtualTemperatureOld; %temperature [K]
+                    mVirtualDensity        = this.mVirtualDensityOld; %density [kg/m³]
+                    mFlowSpeed             = this.mFlowSpeedOld;  %velocity [m/s]
+                    mVirtualTemperature    = this.mVirtualTemperatureOld; %temperature [K]
                 end
                 
 
@@ -529,6 +530,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %For a pipe having a length of 0.3m with a cell length
                 %of 0.16 m the entry of mCompCellPosition would be 2
                 mCompCellPosition = zeros(this.inCells, 1);
+                
                 if (~strcmp(this.mMassFlowOld(1), 'empty') && this.mMassFlowOld(1) >= 0) || (fPressureBoundary1WithProcs >= fPressureBoundary2WithProcs)
                     for k = 1:length(mHydrLength)
                         mCompCellPosition(k)=ceil(sum(mHydrLength(1:k))/fCellLength);
@@ -548,12 +550,13 @@ classdef branch_liquid < solver.matter.base.branch
                 
                 %mPressure contains the actual cell values including the
                 %proc pressure
-                mPressureWithoutLoss = mVirtualPressure;
-                mPressure = mVirtualPressure;
-                mTemperature = mVirtualTemperature;
-                mInternalEnergy = mVirtualInternalEnergy;
-                mDensity = mVirtualDensity;
+                mPressureWithoutLoss   = mVirtualPressure;
+                mPressure              = mVirtualPressure;
+                mTemperature           = mVirtualTemperature;
+                mInternalEnergy        = mVirtualInternalEnergy;
+                mDensity               = mVirtualDensity;
                 mTotalPressureLossCell = zeros(this.inCells,1);
+                
                 for k = 1:this.inCells
                     %the actual pressure is the sum of the virtual pressure
                     %and all pressure influences from components.
@@ -567,7 +570,7 @@ classdef branch_liquid < solver.matter.base.branch
                         mTotalPressureLossCell(k) = sum(mDeltaPressureCompCell(mDirectionDeltaPressureComp(mCompCellPosition == k) == 0));
                     end
                     mPressure(k) = mPressureWithoutLoss(k) - mTotalPressureLossCell(k);
-                   	%the actual temperatue is calculate from the sum of the
+                   	%the actual temperatue is calculated from the sum of the
                     %virtual temperature and all temperature differences
                     %from procs
                     if sum(mDeltaTempComp(mCompCellPosition == k)) ~= 0
@@ -580,7 +583,7 @@ classdef branch_liquid < solver.matter.base.branch
                     if mPressure(k) ~= mVirtualPressure(k) || mTemperature(k) ~= mVirtualTemperature(k)
                         %afMass cannot change within a branch so using the
                         %first flow for all is sufficient
-                        mDensity(k) = this.oBranch.oContainer.oData.oMT.calculateDensity('liquid', this.oBranch.aoFlows(1,1).afMass, mTemperature(k), mPressure(k));
+                        mDensity(k) = this.oBranch.oContainer.oData.oMT.calculateDensity('liquid', this.oBranch.aoFlows(1,1).arPartialMass, mTemperature(k), mPressure(k));
                     else
                         mDensity(k) = mVirtualDensity(k);
                     end
