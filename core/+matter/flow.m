@@ -495,7 +495,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
 
                     % So following this equation:
                     % Q' = m' * c_p * deltaT
-                    fCurrTemp = fCurrTemp + fHeatFlow / fFlowRate / ((this(iI).fHeatCapacity + fOtherCp) / 2);
+                    fCurrTemp = fCurrTemp + fHeatFlow / abs(fFlowRate) / ((this(iI).fHeatCapacity + fOtherCp) / 2);
                 end
                 
                 this(iI).fTemp = fCurrTemp;
