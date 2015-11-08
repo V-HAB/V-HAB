@@ -22,15 +22,16 @@ classdef infrastructure < base & event.source
     end
     
     properties (SetAccess = public, GetAccess = public)
-        % Amount of ticks
+        % Default number of ticks
         % @type int
         iSimTicks = 100;
         
-        % Simulation time [s]
+        % Default simulation time [s]
         % @type int
         fSimTime  = 3600 * 1;
         
-        % Use time or ticks to check if simulation finished?
+        % Use time or ticks to check if simulation finished? Default is
+        % time in seconds.
         % @type int
         bUseTime = true;
     end

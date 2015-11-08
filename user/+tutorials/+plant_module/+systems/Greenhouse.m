@@ -75,7 +75,7 @@ classdef Greenhouse < vsys
         %% -Greenhouse System structure-
             %Greenhouse Unit
                 %Creating the greenhouse main unit
-                    this.addStore(matter.store(this, 'GH_Unit', 22.9));
+                    matter.store(this, 'GH_Unit', 22.9);
 
                 %Greenhouses start atmosphere
                     oAir = matter.phases.gas( this.toStores.GH_Unit , ...                       %Phase name
@@ -96,12 +96,12 @@ classdef Greenhouse < vsys
             
             
             %Setting up water separator
-                this.addStore(tutorials.plant_module.components.WaterSeparator.SeparatorStore(this, 'WaterSeparator'));
+                tutorials.plant_module.components.WaterSeparator.SeparatorStore(this, 'WaterSeparator');
             
                         
             %Leakage tank - Implementation of leakage loss
                 %Leakage store
-                    this.addStore(matter.store(this, 'LeakageStore', 10000000));
+                    matter.store(this, 'LeakageStore', 10000000);
                 
                 %Adding leakage phase
                     oLeakagePhase = this.toStores.LeakageStore.createPhase('air', ...  %Phase content
@@ -117,7 +117,7 @@ classdef Greenhouse < vsys
                     
             %CO2 supply tank - Provide CO2 for plant growth
                 %Adding CO2 buffer store
-                    this.addStore(matter.store(this, 'CO2Buffer', 20000));
+                    matter.store(this, 'CO2Buffer', 20000);
                 
                 %Adding CO2 phase
                     oCO2BufferPhase = matter.phases.gas(this.toStores.CO2Buffer, ...
@@ -133,7 +133,7 @@ classdef Greenhouse < vsys
                 
             %N2 supply tank - Provide N2 for stable air composition
                 %Adding N2 buffer store
-                    this.addStore(matter.store(this, 'N2Buffer', 8000));
+                    matter.store(this, 'N2Buffer', 8000);
                 
                 %Adding CO2 phase
                     oN2BufferPhase = matter.phases.gas(this.toStores.N2Buffer, ...
@@ -183,7 +183,7 @@ classdef Greenhouse < vsys
             %% -Plant Module-
                 
                 %Adding water store - Water for plant growth
-                    this.addStore(matter.store(this, 'WaterTank', 5));
+                    matter.store(this, 'WaterTank', 5);
                     %Adding water phase
                         oWaterPhase = matter.phases.liquid(this.toStores.WaterTank, ...   
                             'Water_Phase', ...              %Phase name
@@ -198,7 +198,7 @@ classdef Greenhouse < vsys
                         
 
                  %Edible biomass store - destination of produced biomass after harvesting
-                    this.addStore(matter.store(this, 'FoodStore', 30));
+                    matter.store(this, 'FoodStore', 30);
                     %Edible biomass phase
                         oEdibleBiomass = matter.phases.liquid(this.toStores.FoodStore, ...
                             'EdibleBiomass', ...            %Phase name
@@ -212,7 +212,7 @@ classdef Greenhouse < vsys
                         
 
                  %Inedible biomass store - destination of arised waste after harvesting
-                    this.addStore(matter.store(this, 'WasteTank', 30));
+                    matter.store(this, 'WasteTank', 30);
                     %Inedible biomass phase 
                         oInedibleBiomass = matter.phases.liquid(this.toStores.WasteTank, ...
                             'InedibleBiomass', ...          %Phase name
@@ -239,33 +239,33 @@ classdef Greenhouse < vsys
            %Misc
             %Adding Pipes
                %Greenhouse system
-                    this.addProcF2F(components.pipe('Pipe_01', 0.5, 0.10)); 
-                    this.addProcF2F(components.pipe('Pipe_02', 0.5, 0.10)); 
-                    this.addProcF2F(components.pipe('Pipe_03', 0.5, 0.10)); 
-                    this.addProcF2F(components.pipe('Pipe_04', 0.5, 0.05));     
-                    this.addProcF2F(components.pipe('Pipe_05', 0.5, 0.05));
+                    components.pipe(this, 'Pipe_01', 0.5, 0.10); 
+                    components.pipe(this, 'Pipe_02', 0.5, 0.10); 
+                    components.pipe(this, 'Pipe_03', 0.5, 0.10); 
+                    components.pipe(this, 'Pipe_04', 0.5, 0.05);     
+                    components.pipe(this, 'Pipe_05', 0.5, 0.05);
                 
                %To PlantModule subsystem
-                    this.addProcF2F(components.pipe('Pipe_06',  0.5, 0.005));
-                    this.addProcF2F(components.pipe('Pipe_07',  0.5, 0.005));
-                    this.addProcF2F(components.pipe('Pipe_08',  0.5, 0.005));
-                    this.addProcF2F(components.pipe('Pipe_09',  0.5, 0.005));
-                    this.addProcF2F(components.pipe('Pipe_10', 0.5, 0.005));
+                    components.pipe(this, 'Pipe_06',  0.5, 0.005);
+                    components.pipe(this, 'Pipe_07',  0.5, 0.005);
+                    components.pipe(this, 'Pipe_08',  0.5, 0.005);
+                    components.pipe(this, 'Pipe_09',  0.5, 0.005);
+                    components.pipe(this, 'Pipe_10', 0.5, 0.005);
 
                     
                %Branches regarding the Greenhouse
-                    oBranch1 = this.createBranch('GH_Unit.CirculationOut',      {'Pipe_01'}, 'WaterSeparator.FromGreenhouse');
-                    oBranch2 = this.createBranch('WaterSeparator.ToGreenhouse', {'Pipe_02'}, 'GH_Unit.CirculationIn');
-                    oBranch3 = this.createBranch('N2Buffer.N2BufferOut',        {'Pipe_03'}, 'GH_Unit.N2BufferIn');
-                    oBranch4 = this.createBranch('GH_Unit.ToLeakageStore',      {'Pipe_04'}, 'LeakageStore.From_GH_Unit');
-                    oBranch5 = this.createBranch('CO2Buffer.CO2BufferOut',      {'Pipe_05'}, 'GH_Unit.CO2BufferIn');
+                    oBranch1 = matter.branch(this, 'GH_Unit.CirculationOut',      {'Pipe_01'}, 'WaterSeparator.FromGreenhouse');
+                    oBranch2 = matter.branch(this, 'WaterSeparator.ToGreenhouse', {'Pipe_02'}, 'GH_Unit.CirculationIn');
+                    oBranch3 = matter.branch(this, 'N2Buffer.N2BufferOut',        {'Pipe_03'}, 'GH_Unit.N2BufferIn');
+                    oBranch4 = matter.branch(this, 'GH_Unit.ToLeakageStore',      {'Pipe_04'}, 'LeakageStore.From_GH_Unit');
+                    oBranch5 = matter.branch(this, 'CO2Buffer.CO2BufferOut',      {'Pipe_05'}, 'GH_Unit.CO2BufferIn');
 
                %Branches regarding the PlantModule interface
-                    this.createBranch('sFromLSS_AirIN', { 'Pipe_06' }, 'GH_Unit.ToPlantModuleIn');
-                    this.createBranch('sToLSS_AirOUT',  { 'Pipe_07' }, 'GH_Unit.FromPlantModuleOut');
-                    this.createBranch('sWaterSupply',   { 'Pipe_08' }, 'WaterTank.WaterOut');
-                    this.createBranch('sFoodOUT',       { 'Pipe_09' }, 'FoodStore.EdibBioIn');
-                    this.createBranch('sWasteOUT',      { 'Pipe_10' }, 'WasteTank.InedibBioIn');
+                    matter.branch(this, 'sFromLSS_AirIN', { 'Pipe_06' }, 'GH_Unit.ToPlantModuleIn');
+                    matter.branch(this, 'sToLSS_AirOUT',  { 'Pipe_07' }, 'GH_Unit.FromPlantModuleOut');
+                    matter.branch(this, 'sWaterSupply',   { 'Pipe_08' }, 'WaterTank.WaterOut');
+                    matter.branch(this, 'sFoodOUT',       { 'Pipe_09' }, 'FoodStore.EdibBioIn');
+                    matter.branch(this, 'sWasteOUT',      { 'Pipe_10' }, 'WasteTank.InedibBioIn');
                 
                     
                     
@@ -303,7 +303,8 @@ classdef Greenhouse < vsys
                 
 
              %Setting timesteps of phases to a global timestep ...
-                
+                %TODO Change this to utilize the new toPhases struct for
+                %better readability
                 %CO2 supply phase
                     aoPhases = this.toStores.CO2Buffer.aoPhases;
                         aoPhases(1).fFixedTS = this.fglobTS;
@@ -365,7 +366,7 @@ classdef Greenhouse < vsys
             
             
            %Controlling Frequency
-           if ~(mod(this.oData.oTimer.fTime, 30))
+           if ~(mod(this.oTimer.fTime, 30))
                                       %Air cirulation for reducing the humidity of greenhouse's atmosphere
                        %Allocating relative humidity
                         this.fRH = this.toStores.GH_Unit.aoPhases(1).rRelHumidity;
@@ -408,7 +409,7 @@ classdef Greenhouse < vsys
            
            
            %Controlling Frequency
-           if ~(mod(this.oData.oTimer.fTime, 50))
+           if ~(mod(this.oTimer.fTime, 50))
                      
 
                         
@@ -439,7 +440,7 @@ classdef Greenhouse < vsys
                             %Under a level of 995 ppm CO2, the supply flow is activated
                             if this.fCO2ppm_Measured < 995  % ppm
                                 %At
-                                if this.oData.oTimer.fTime < 10000 % [s]
+                                if this.oTimer.fTime < 10000 % [s]
                                     this.oB5.setFlowRate(0.000002);  % [kg/s]
                                 else
                                     this.oB5.setFlowRate(0.0000000001+2*this.fCO2flowrate);  % [kg/s]
@@ -452,11 +453,11 @@ classdef Greenhouse < vsys
                    
                     
                    
-           if ~(mod(this.oData.oTimer.fTime, 250))
+           if ~(mod(this.oTimer.fTime, 250))
                     
                    %O2 controller
                        %Partial mass of O2
-                        this.fparMassO2Greenhouse = this.toStores.GH_Unit.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2);   % [-]
+                        this.fparMassO2Greenhouse = this.toStores.GH_Unit.aoPhases(1).arPartialMass(this.oMT.tiN2I.O2);   % [-]
                        %Reference flowrate for O2 absorption
                         this.fO2flowrate =  abs(this.toChildren.PlantModule.oProc_Plants_O2GasExchange.fFlowRate);            % [kg/s]
 
@@ -471,7 +472,7 @@ classdef Greenhouse < vsys
                         
                     %N2 controller
                        %Partial mass of N2 
-                        this.fparMassN2Greenhouse = this.toStores.GH_Unit.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.N2);   % [-]
+                        this.fparMassN2Greenhouse = this.toStores.GH_Unit.aoPhases(1).arPartialMass(this.oMT.tiN2I.N2);   % [-]
                         %If N2 partial mass lower than  75%    --> start supply
                         %If N2 partial mass higher than 76%    --> stopp supply
                        

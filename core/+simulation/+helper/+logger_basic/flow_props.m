@@ -41,9 +41,12 @@ for iS = 1:length(csStores)
     
         
         iV = iV + 1;
-        
+        if isa(oPhase, 'matter.phases.liquid')
+            tLogProps(iV).sExpression = 'fPressure';
+        else
+            tLogProps(iV).sExpression = 'this.fMass * this.fMassToPressure';
+        end
         tLogProps(iV).sObjectPath = sPhasePath;
-        tLogProps(iV).sExpression = 'this.fMass * this.fMassToPressure';
         tLogProps(iV).sLabel = [ 'Phase Pressure (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
         %tLogProps(end).sUnit = 'Pa';
         

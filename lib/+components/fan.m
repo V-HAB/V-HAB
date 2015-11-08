@@ -73,34 +73,32 @@ classdef fan < matter.procs.f2f
         function this = fan(varargin)
             % Constructor
             % Required inputs:
-            % varargin{1} = sName
-            % varargin{2} = sMode
-            % varargin{3} = setpoint (either speed or flow rate)
+            % varargin{1} = oContainer
+            % varargin{2} = sName
+            % varargin{3} = sMode
+            % varargin{4} = setpoint (either speed or flow rate or manual 
+            %                         delta pressure)
             %
             % Optional inputs:
-            % varargin{4} = sDirection
-            % varargin{5} = struct containing characteristic information
+            % varargin{5} = sDirection
+            % varargin{6} = struct containing characteristic information
             %               for a specific fan, see properties
             
             
             this@matter.procs.f2f(varargin{1}, varargin{2});
             
-            % CHANGED THE API - for now, just 'shift' the varargin!
-            varargin(1) = [];
-            iNargin = nargin - 1;
-            
             % Setting the operational mode
-            this.sMode = varargin{2};
+            this.sMode = varargin{3};
             
             % See which setpoint we are using depending on the mode
-            if strcmp(varargin{2}, 'setSpeed')
-                this.fSpeedSetpoint = varargin{3};
-                this.fSpeed         = varargin{3};
-            elseif strcmp(varargin{4}, 'setFlowRate')
-                this.fVolumetricFlowRateSetpoint = varargin{3};
-            elseif strcmp(varargin{2}, 'manual')
-                 if iNargin > 2
-                     this.fDeltaPressure = varargin{3};
+            if strcmp(varargin{3}, 'setSpeed')
+                this.fSpeedSetpoint = varargin{4};
+                this.fSpeed         = varargin{4};
+            elseif strcmp(varargin{3}, 'setFlowRate')
+                this.fVolumetricFlowRateSetpoint = varargin{4};
+            elseif strcmp(varargin{3}, 'manual')
+                 if iNargin > 3
+                     this.fDeltaPressure = varargin{4};
                  end
             else
                 % Looks like someone didn't read the documentation...
@@ -111,18 +109,18 @@ classdef fan < matter.procs.f2f
             % positive direction of the branch in which the fan is placed.
             % Branch flow rates are positive (1) from left to right and
             % negative from right to left (-1).
-            if iNargin > 3 && ~isempty(varargin{4})
-                if strcmp(varargin{4}, 'Left2Right')
+            if iNargin > 4 && ~isempty(varargin{5})
+                if strcmp(varargin{5}, 'Left2Right')
                     this.iDir = 1;
-                elseif strcmp(varargin{4}, 'Right2Left')
+                elseif strcmp(varargin{5}, 'Right2Left')
                     this.iDir = -1;
                 end
             end
             
             % If a specific characteristic is used, read in the data and
             % override the defaults
-            if iNargin > 4 && ~isempty(varargin{5})
-                this.tCharacteristic = varargin{5};
+            if iNargin > 5 && ~isempty(varargin{6})
+                this.tCharacteristic = varargin{6};
             end
             
             
@@ -138,7 +136,7 @@ classdef fan < matter.procs.f2f
             % If this is the very first execution, the method will produce
             % many errors, so we just skip this time and wait until
             % everything else is ready.
-            if ~this.oBranch.oContainer.oData.oTimer.fTime
+            if ~this.oBranch.oContainer.oTimer.fTime
                 fDeltaPressure = 0;
                 
                 return;
@@ -363,9 +361,9 @@ classdef fan < matter.procs.f2f
                     %TODO see above, move to separate method, calculate the
                     %     heat flow, not the temperature difference
                     if oFlowIn.fFlowRate >= 0
-                        fDeltaTemperature = (((fDeltaPressure / 1000))/ (fDensity * oFlowIn.fHeatCapacity * 0.85)) * 0.95; %[K] --> Teperature rise
+                        fDeltaTemperature = (((fDeltaPressure / 1000))/ (fDensity * oFlowIn.fSpecificHeatCapacity * 0.85)) * 0.95; %[K] --> Teperature rise
                     else
-                        fDeltaTemperature = ((( -1*fDeltaPressure ) / 1000)/ (fDensity * oFlowIn.fHeatCapacity * 0.85) ) * 0.95 ; %[K] --> Temperature loss
+                        fDeltaTemperature = ((( -1*fDeltaPressure ) / 1000)/ (fDensity * oFlowIn.fSpecificHeatCapacity * 0.85) ) * 0.95 ; %[K] --> Temperature loss
                     end
                     
                     % And finally setting the correct sign to respect the

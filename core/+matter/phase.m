@@ -90,16 +90,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % @type float
         fMolarMass;    % [kg/mol]
 
-        % Specific heat capacity of mixture in phase (NOT total heat cap.!)
-        %TODO: rename to |fSpecificHeatCapacity|, implement
-        %      |this.getTotalHeatCapacity()| that returns
-        %      |this.fSpecificHeatCapacity * this.fMass|
-        %TODO: Keep |fHeatCapacity|, implement |get.fHeatCapacity| that
-        %      warns and instead returns |fSpecificHeatCapacity| or
-        %      |this.getTotalHeatCapacity| (?)
+        % Specific heat capacity of mixture in phase
         % @type float
-        fHeatCapacity = 0; % [J/(K*kg)]
-
+        fSpecificHeatCapacity = 0; % [J/(K*kg)]
+        
+        % Total heat capacity of mixture in phase
+        % @type float
+        fTotalHeatCapacity = 0; % [J/(K*kg)]
+        
     end
 
     properties (SetAccess = protected, GetAccess = public)
@@ -192,6 +190,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % ???
         fLastUpdate = -10;
         fLastTimeStepCalculation = -10;
+        
+        % Time when the total heat capacity was last updated. Need to save
+        % this information in order to prevent the heat capacity
+        % calculation to be performed multiple times per timestep.
+        fLastTotalHeatCapacityUpdate; 
 
 %         % ???
 %         fTimeStep;
@@ -230,10 +233,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         fMassLastUpdate;
         afMassLastUpdate;
         
-        
         % Log mass and time steps which are used to influence rMaxChange
         afMassLog;
         afLastUpd;
+        
     end
 
     methods
@@ -323,8 +326,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             end
 
             % Now update the matter properties
-            this.fMolarMass    = this.oMT.calculateMolarMass(this.afMass);
-            this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
+            this.fMolarMass            = this.oMT.calculateMolarMass(this.afMass);
+            this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
+            this.fTotalHeatCapacity    = this.fSpecificHeatCapacity * this.fMass;
 
             % Mass
             this.fMass = sum(this.afMass);
@@ -333,28 +337,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Preset the cached masses (see calculateTimeStep)
             this.fMassLastUpdate  = 0;
             this.afMassLastUpdate = zeros(1, this.oMT.iSubstances);
-        end
-
-        function hRemove = addManipulator(this, oManip)
-
-            sManipType = [];
-
-            if     isa(oManip, 'matter.manips.volume'),               sManipType = 'volume';
-            elseif isa(oManip, 'matter.manips.temperature'),          sManipType = 'temperature';
-            elseif isa(oManip, 'matter.manips.substance.flow'),       sManipType = 'substance';
-            elseif isa(oManip, 'matter.manips.substance.stationary'), sManipType = 'substance';
-            end
-
-            if ~isempty(this.toManips.(sManipType))
-                this.throw('addManipulator', 'A manipulator of type %s is already set for phase %s (store %s)', sManipType, this.sName, this.oStore.sName);
-            end
-
-            % Set manipulator
-            this.toManips.(sManipType) = oManip;
-
-            % Remove fct call to detach manipulator
-            hRemove = @() this.detachManipulator(sManipType);
-
         end
 
         function this = massupdate(this, bSetBranchesOutdated)
@@ -451,9 +433,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
             % First we split out the mfInflowDetails matrix to make the
             % code more readable.
-            afInflowMasses         = mfInflowDetails(:,1);
-            afInflowTemperatures   = mfInflowDetails(:,2);
-            afInflowHeatCapacities = mfInflowDetails(:,3);
+            afInflowMasses                 = mfInflowDetails(:,1);
+            afInflowTemperatures           = mfInflowDetails(:,2);
+            afSpecificInflowHeatCapacities = mfInflowDetails(:,3);
 
             % Convert the incoming flow rates to absolute masses that are
             % added in this timestep.
@@ -466,23 +448,23 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 % be zero. In this case we'll only use the values of the
                 % incoming flows.
                 if this.fMass > 0
-                    mfAbsoluteMasses = [afAbsoluteMassesIn; this.fMass];
-                    mfTemperatures   = [afInflowTemperatures; this.fTemperature];
-                    mfHeatCapacities = [afInflowHeatCapacities; this.fHeatCapacity];
+                    mfAbsoluteMasses         = [afAbsoluteMassesIn; this.fMass];
+                    mfTemperatures           = [afInflowTemperatures; this.fTemperature];
+                    mfSpecificHeatCapacities = [afSpecificInflowHeatCapacities; this.fSpecificHeatCapacity];
                 else
-                    mfAbsoluteMasses = afInflowMasses;
-                    mfTemperatures   = afInflowTemperatures;
-                    mfHeatCapacities = afInflowHeatCapacities;
+                    mfAbsoluteMasses         = afInflowMasses;
+                    mfTemperatures           = afInflowTemperatures;
+                    mfSpecificHeatCapacities = afSpecificInflowHeatCapacities;
                 end
 
                 % Calculate inner energy (m * c_p * T) for all masses.
-                mfEnergy = mfAbsoluteMasses .* mfHeatCapacities .* mfTemperatures;
+                mfEnergy = mfAbsoluteMasses .* mfSpecificHeatCapacities .* mfTemperatures;
 
                 % As can be seen from the explanation given above, we need
                 % the products of all masses and heat capacities in the
                 % denominator of the fraction that calulates the new
                 % temperature.
-                mfEnergyPerKelvin = mfAbsoluteMasses .* mfHeatCapacities;
+                mfEnergyPerKelvin = mfAbsoluteMasses .* mfSpecificHeatCapacities;
 
                 % New temperature
                 %TODO: Investigate if this does what it's supposed to do,
@@ -544,16 +526,94 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.afMassLastUpdate = this.afMass;
 
 
-
             % Partial masses
-            if this.fMass > 0, this.arPartialMass = this.afMass / this.fMass;
-            else               this.arPartialMass = this.afMass; % afMass is just zeros
+            if this.fMass > 0
+                this.arPartialMass = this.afMass / this.fMass;
+            else
+                this.arPartialMass = this.afMass; % afMass is just zeros
             end
 
             % Now update the matter properties
-            this.fMolarMass    = this.oMT.calculateMolarMass(this.afMass);
-            this.fHeatCapacity = this.oMT.calculateHeatCapacity(this);
+            this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
+            
+            % If this update was triggered by the changeInnerEnergy()
+            % method, then we already have calculated the current specific
+            % heat capacity of this phase. So we don't have to do the
+            % calculation again, we check against the timestep and only do
+            % the calculation if it hasn't been done before.
+            if ~(this.oStore.oTimer.fTime == this.fLastTotalHeatCapacityUpdate)
+                this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
+            end
         end
+
+    end
+
+
+    %% Methods for interfacing with thermal system
+    methods
+
+        function changeInnerEnergy(this, fEnergyChange)
+            %CHANGEINNERENERGY Change phase temperature via inner energy
+            %   Change the temperature of a phase by adding or removing
+            %   inner energy in |J|.
+            
+            fCurrentTotalHeatCapacity = this.getTotalHeatCapacity();
+            
+            % Calculate temperature change due to change in inner energy.
+            fTempDiff = fEnergyChange / fCurrentTotalHeatCapacity;
+            
+            % Update temperature property of phase.
+            this.setParameter('fTemperature', this.fTemperature + fTempDiff);
+            
+        end
+
+
+        function fTotalHeatCapacity = getTotalHeatCapacity(this)
+            % Returns the total heat capacity of the phase. 
+            
+            if this.oStore.oTimer.fTime - this.fLastTotalHeatCapacityUpdate < 1
+                fTotalHeatCapacity = this.fTotalHeatCapacity;
+            else
+                this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
+                
+                fTotalHeatCapacity = this.fSpecificHeatCapacity * this.fMass;
+            
+                % Save total heat capacity as a property for faster logging.
+                this.fTotalHeatCapacity = fTotalHeatCapacity;
+                
+                this.fLastTotalHeatCapacityUpdate = this.oStore.oTimer.fTime;
+            end
+            
+        end
+
+    end
+
+
+    %% Methods for handling manipulators
+    methods
+
+        function hRemove = addManipulator(this, oManip)
+
+            sManipType = [];
+
+            if     isa(oManip, 'matter.manips.volume'),               sManipType = 'volume';
+            elseif isa(oManip, 'matter.manips.temperature'),          sManipType = 'temperature';
+            elseif isa(oManip, 'matter.manips.substance.flow'),       sManipType = 'substance';
+            elseif isa(oManip, 'matter.manips.substance.stationary'), sManipType = 'substance';
+            end
+
+            if ~isempty(this.toManips.(sManipType))
+                this.throw('addManipulator', 'A manipulator of type %s is already set for phase %s (store %s)', sManipType, this.sName, this.oStore.sName);
+            end
+
+            % Set manipulator
+            this.toManips.(sManipType) = oManip;
+
+            % Remove fct call to detach manipulator
+            hRemove = @() this.detachManipulator(sManipType);
+
+        end
+
     end
 
 
@@ -573,24 +633,18 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 this.throw('addProcEXME', 'The store to which this phase belongs is sealed, so no ports can be added any more.');
             end
 
-
             if ~isa(oProcEXME, [ 'matter.procs.exmes.' this.sType ])
                 this.throw('addProcEXME', [ 'Provided object ~isa matter.procs.exmes.' this.sType ]);
-
             elseif ~isempty(oProcEXME.oPhase)
                 this.throw('addProcEXME', 'Processor has already a phase set as parent.');
-
             elseif isfield(this.toProcsEXME, oProcEXME.sName)
                 this.throw('addProcEXME', 'Proc %s already exists.', oProcEXME.sName);
-
             elseif strcmp(oProcEXME.sName, 'default')
                 this.throw('addProcEXME', 'Default EXMEs are not allowed any more!');
-
             end
 
-
-
             this.toProcsEXME.(oProcEXME.sName) = oProcEXME;
+            
         end
 
         % Moved to public methods, sometimes external access required
@@ -613,7 +667,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSubstances);
 
             % Each row: flow rate, temperature, heat capacity
-            mfInflowDetails = zeros(0, 3);
+            mfInflowDetails = zeros(this.iProcsEXME, 3);
+            
+            % Creating an array to log which of the flows are not in-flows
+            aiOutFlows = ones(this.iProcsEXME, 1);
 
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
@@ -641,19 +698,36 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 % second!
 
 
-                % Calculate inner energy of INflows, per sec
-                abInf    = (afFlowRates > 0);
-                %TODO store as attribute for 'automatic' preallocation,
-                %     replace rows instead of append.
+                % Which EXMEs have mass flows into the phase?
+                abInf = (afFlowRates > 0);
+                
                 if any(abInf)
-                    mfInflowDetails = [ mfInflowDetails; afFlowRates(abInf), mfProperties(abInf, 1), mfProperties(abInf, 2) ];
+                    % Saving the details of the incoming flows into a
+                    % matrix.
+                    mfInflowDetails(iI,:) = [ afFlowRates(abInf), mfProperties(abInf, 1), mfProperties(abInf, 2) ];
+                    
+                    % This flow is an in-flow, so we set the field in the
+                    % array to zero.
+                    aiOutFlows(iI) = 0;
                 end
+            end
+            
+            % Now we delete all of the rows in the mfInflowDetails matrix
+            % that belong to out-flows.
+            if any(aiOutFlows)
+                mfInflowDetails(logical(aiOutFlows),:) = [];
             end
 
             % Now sum up in-/outflows over all EXMEs
             afTotalInOuts = sum(mfTotalFlows, 1);
 
         end
+        
+    end
+
+
+    %% Finalize methods
+    methods
 
         function seal(this)
             
@@ -678,7 +752,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             %TODO if rMaxChange < e.g. 0.0001 --> do not decrease further
             %     but instead increase highestMaxChangeDec?
             
-            
             if ~this.oStore.bSealed
                 this.coProcsEXME = struct2cell(this.toProcsEXME)';
                 this.iProcsEXME  = length(this.coProcsEXME);
@@ -696,9 +769,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
                         this.coProcsP2Pflow{this.iProcsP2Pflow} = this.coProcsEXME{iE}.aoFlows(1);
                     end
-                end
-            end
-        end
+                end % end of: for
+            end % end of: if not sealed
+            
+        end % end of: seal method
 
     end
 
@@ -707,18 +781,20 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
     methods (Access = protected)
 
         function detachManipulator(this, sManip)
+            
             %CHECK several manipulators possible?
-
             this.toManips.(sManip) = [];
+            
         end
 
         function setBranchesOutdated(this, sFlowDirection)
-            if nargin < 2, sFlowDirection = 'both'; end;
             
-            %fprintf('%s-%s: setBranchesOutdated "%s"\n', this.oStore.sName, this.sName, sFlowDirection);
+            if nargin < 2
+                sFlowDirection = 'both'; 
+            end;
             
-            % Loop through exmes / flows and set outdated, i.e. request re-
-            % calculation of flow rate.
+            % Loop through exmes / flows and set outdated, i.e. request
+            % recalculation of flow rate.
             for iE = 1:this.iProcsEXME
                 %CHECK no 'default' exmes allowed any more, only one flow!
                 %TODO remove aoFlows, aiSign, add oFlow, iSign
@@ -759,8 +835,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                         oBranch.setOutdated();
                     end
                 end
-            end
-        end
+            end % end of: for
+            
+        end % end of: setBranchesOutdated method
 
         function updateProcessorsAndManipulators(this)
             % Update the p2p flow and manip processors
@@ -1022,38 +1099,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.setAttribute(sParamName, xNewValue);
             this.update();
 
-            return;
-
-            % Check if processor was registered for that parameter
-            if isfield(this.ttoProcs.internal, sParamName)
-                % Found a processor - true
-                bSuccess = true;
-
-                % Struct returned by callback is written onto the object,
-                % i.e. arbitrary attributes can be changed by processor!
-                %TODO use (int procs, also ex/me procs) a events system?
-                %     So several procs can register? Same mode, they can
-                %     return a struct with the class props to modify ...
-                txValues = this.ttoProcs.internal.(sParamName)(this, xNewValue, sParamName);
-
-                % If returned value not empty ...
-                if ~isempty(txValues)
-                    % ... get the keys (= attribute names) from struct ...
-                    csAttrs = fieldnames(txValues);
-
-                    % ... and write the values on this object
-                    for iI = 1:length(csAttrs)
-                        %setValue(csAttrs{iI}, txValues.(csAttrs{iI}));
-                        %this.(csAttrs{iI}) = txValues.(csAttrs{iI});
-                        this.setAttribute(csAttrs{iI}, txValues.(csAttrs{iI}));
-                    end
-                end
-            end
         end
 
     end
 
-    methods(Sealed)
+
+    %% Implementation-specific methods
+    methods (Sealed)
         % Seems like we need to do that for heterogeneous, if we want to
         % compare the objects in the mixin array with one object ...
         function varargout = eq(varargin)

@@ -13,8 +13,8 @@ classdef hx_flow < matter.procs.f2f
     end
     
     methods
-        function this = hx_flow(oParent, sName)
-            this@matter.procs.f2f(sName);
+        function this = hx_flow(oParent, oContainer, sName)
+            this@matter.procs.f2f(oContainer, sName);
             
             this.oParent     = oParent;
             

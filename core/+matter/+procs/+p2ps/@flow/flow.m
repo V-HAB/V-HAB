@@ -40,10 +40,13 @@ classdef flow < matter.procs.p2p
             
             oPhase = sif(strcmp(sPhase, 'in'), this.oIn.oPhase, this.oOut.oPhase);
             
-            %CHECK store on obj var, as long as the amount of inflows
-            %      doesn't change -> kind of preallocated?
-            mrInPartials  = zeros(0, this.oMT.iSubstances);
-            afInFlowrates = [];
+            % Initializing temporary matrix and array to save the per-exme
+            % data. 
+            mrInPartials  = zeros(oPhase.iProcsEXME, this.oMT.iSubstances);
+            afInFlowrates = zeros(oPhase.iProcsEXME, 1);
+            
+            % Creating an array to log which of the flows are not in-flows
+            aiOutFlows = ones(oPhase.iProcsEXME, 1);
             
             % Get flow rates and partials from EXMEs
             for iI = 1:oPhase.iProcsEXME
@@ -57,9 +60,17 @@ classdef flow < matter.procs.p2p
                 abInf = (afFlowRates > 0);
                 
                 if any(abInf)
-                    mrInPartials  = [ mrInPartials;  mrFlowPartials(abInf, :) ];
-                    afInFlowrates = [ afInFlowrates; afFlowRates(abInf) ];
+                    mrInPartials(iI,:) = mrFlowPartials(abInf, :);
+                    afInFlowrates(iI)  = afFlowRates(abInf);
+                    aiOutFlows(iI)     = 0;
                 end
+            end
+            
+            % Now we delete all of the rows in the mfInflowDetails matrix
+            % that belong to out-flows.
+            if any(aiOutFlows)
+                mrInPartials(logical(aiOutFlows),:)  = [];
+                afInFlowrates(logical(aiOutFlows),:) = [];
             end
             
             % Check manipulator for partial

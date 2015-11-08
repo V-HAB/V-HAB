@@ -155,25 +155,24 @@ classdef setup < simulation.infrastructure
             % when you are done modelling and ready to run a simulation. 
             
             
-            oL = this.toMonitors.oLogger;
+            oLogger = this.toMonitors.oLogger;
             
             
-            this.tiLog.M2P_Atmos  = oL.addValue('Example:s:Atmos.aoPhases(1)', 'fMassToPressure', 'Atmos mass2press', 'Pa/kg');
-            this.tiLog.M2P_Filter = oL.addValue('Example:s:Filter.aoPhases(1)', 'fMassToPressure', 'Filter mass2press', 'Pa/kg');
+            this.tiLog.M2P_Atmos  = oLogger.addValue('Example:s:Atmos.aoPhases(1)', 'fMassToPressure', 'Atmos mass2press', 'Pa/kg');
+            this.tiLog.M2P_Filter = oLogger.addValue('Example:s:Filter.aoPhases(1)', 'fMassToPressure', 'Filter mass2press', 'Pa/kg');
             
             this.tiLog.M_Atmos = oL.addValue('Example:s:Atmos.aoPhases(1)', 'fMass', 'Atmos Mass', 'kg');
             %oL.addValue('Example:s:Atmos.toPhases.Atmos_Phase_1', 'fMass', 'Atmos Mass', 'kg');
             
-            this.tiLog.M_Filter   = oL.addValue('Example:s:Filter.aoPhases(1)', 'fMass', 'Filter Mass', 'kg');
-            this.tiLog.M_Filtered = oL.addValue('Example:s:Filter.aoPhases(2)', 'fMass', 'Filtered Mass', 'kg');
+            this.tiLog.M_Filter   = oLogger.addValue('Example:s:Filter.aoPhases(1)', 'fMass', 'Filter Mass', 'kg');
+            this.tiLog.M_Filtered = oLogger.addValue('Example:s:Filter.aoPhases(2)', 'fMass', 'Filtered Mass', 'kg');
             
-            this.tiLog.PM_O2_Atmos    = oL.addValue('Example:s:Atmos.aoPhases(1)', 'afMass(this.oMT.tiN2I.O2)', 'Atmos O2', 'kg');
-            this.tiLog.PM_O2_Filtered = oL.addValue('Example:s:Filter.aoPhases(2)', 'afMass(this.oMT.tiN2I.O2)', 'Filtered O2', 'kg');
+            this.tiLog.PM_O2_Atmos    = oLogger.addValue('Example:s:Atmos.aoPhases(1)', 'afMass(this.oMT.tiN2I.O2)', 'Atmos O2', 'kg');
+            this.tiLog.PM_O2_Filtered = oLogger.addValue('Example:s:Filter.aoPhases(2)', 'afMass(this.oMT.tiN2I.O2)', 'Filtered O2', 'kg');
             
-            this.tiLog.FR_AtmFlt  = oL.addValue('Example.aoBranches(1)', 'fFlowRate', 'Flow Rate To Filter', 'kg/s');
-            this.tiLog.FR_FltAtm  = oL.addValue('Example.aoBranches(2)', 'fFlowRate', 'Flow Rate From Filter', 'kg/s');
-            this.tiLog.FR_FltProc = oL.addValue('Example:s:Filter.oProc', 'fFlowRate', 'Proc Flow Rate', 'kg/s');
-            
+            this.tiLog.FR_AtmFlt  = oLogger.addValue('Example.aoBranches(1)', 'fFlowRate', 'Flow Rate To Filter', 'kg/s');
+            this.tiLog.FR_FltAtm  = oLogger.addValue('Example.aoBranches(2)', 'fFlowRate', 'Flow Rate From Filter', 'kg/s');
+            this.tiLog.FR_FltProc = oLogger.addValue('Example:s:Filter.oProc', 'fFlowRate', 'Proc Flow Rate', 'kg/s');
             
             
             

@@ -1,26 +1,34 @@
-classdef setup < simulation
+classdef setup < simulation.infrastructure
    %Setup of the lunar greenhouse (LGH) system simulation.
     properties
         
     end
    %% -Setup-  
     methods
-        function this = setup()
-            this@simulation('plant_module_tutorial');
+        function this = setup(ptConfigParams, tSolverParams)
+            % Possible to change the constructor paths and params for the
+            % monitors
+            ttMonitorConfig = struct();
+            
+            this@simulation.infrastructure('plant_module_tutorial', ptConfigParams, tSolverParams, ttMonitorConfig);
           
         %% -General Settings-
             %Setting of time parameters:
-            
+            % TODO this should probably be done in the constructor and the
+            % provision of the ptConfigParams map
 
 
             
         %% -Root Object - Greenhouse System-     
             
-                %Assigning Root Object - Initializing system 'Greenhouse'
-                tutorials.plant_module.systems.Greenhouse(this.oRoot, 'Greenhouse');
+            %Assigning Root Object - Initializing system 'Greenhouse'
+            tutorials.plant_module.systems.Greenhouse(this.oSimulationContainer, 'Greenhouse');
            
-                   
-        
+
+        %% -Logging Setup-
+            oLogger = this.toMonitors.oLogger;
+            
+            oLogger.addValue('Greenhouse:s:CO2Buffer.toPhases.CO2BufferPhase', 'fMass', 'CO2 Mass', 'kg');
                     
         %% -Simulation Settings-
         
@@ -41,101 +49,101 @@ classdef setup < simulation
              
              
         %% -Simulation Log-
-           %Log - Stated are paths to all values that are logged for plotting
-            this.csLog = {
-             'oData.oTimer.fTime';                                                  %1 Time in seconds
-             
-             %Greenhouse parameters
-                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).fPressure';        %2 Greenhouse's 'air'-phase total pressure
-                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).fMass';            %3 Greenhouse's 'air'-phase total mass
-             
-             %CO2Compensation
-                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(2).fMass';        %4 CO2 excess phase - mass 
-             %O2Compensation
-                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(3).fMass'         %5 O2 excess phase - mass
-             %Water separated - in and out flows
-                 'toChildren.Greenhouse.aoBranches(1).fFlowRate';                   %6  Water separator Inflow - greenhouse -> water separator
-                 'toChildren.Greenhouse.aoBranches(2).fFlowRate';                   %7  Water separator Outflow - water separator -> greenhouse
-             %Further Greenhouse parameters
-                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)';           %8      Greenhouse's air-phase O2 partial mass
-                 'toChildren.Greenhouse.toChildren.PlantModule.toStores.PlantCultivationStore.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)'; %9 PlantModule's air-phase O2 partial mass
-                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).rRelHumidity';                                     %10     Greenhouse's relative humidity
-                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.N2)'            %11     N2 partial Mass Greenhouse Air-Phase
-                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.H2O)';          %12     Greenhouse's air-phase H2O partial mass
-                 'toChildren.Greenhouse.toChildren.PlantModule.toStores.PlantCultivationStore.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.N2)'; %13 N2 partial Mass PlantModule Air-Phase
-
-                 'toChildren.Greenhouse.toStores.WaterSeparator.aoPhases(1).fMass';                                     %14     Water Separator's air-phase total mass
-                 'toChildren.Greenhouse.toStores.WaterSeparator.aoPhases(2).fMass';                                     %15     Water Separator's separated water-phase total mass
-                 'toChildren.Greenhouse.aoBranches(3).fFlowRate';                                                       %16     Not in use
-                 'toChildren.Greenhouse.toStores.WaterSeparator.aoPhases(1).fPressure';                                 %17     Water Separator's air-phase pressure
-
-                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).afPP(this.oData.oMT.tiN2I.CO2)';                   %18     Greenhouse's air-phase partial pressure of CO2
-                 'toChildren.Greenhouse.fCO2ppm_Measured';                                                              %19     'Greenhouse's ppm level of CO2 in air-phase
-
-                 'toChildren.Greenhouse.toStores.WaterTank.aoPhases(1).fMass';                                          %20     Water mass in supply tank
-                 'toChildren.Greenhouse.toStores.FoodStore.aoPhases(1).fMass';                                          %21     Food store mass
-                 'toChildren.Greenhouse.toStores.WasteTank.aoPhases(1).fMass';                                          %22     Waste tank mass
-
-                 'toChildren.Greenhouse.toChildren.PlantModule.aoBranches(1).fFlowRate';                                %23     Circulation Greenhouse -> Plant Cultivation
-                 'toChildren.Greenhouse.toChildren.PlantModule.aoBranches(2).fFlowRate';                                %24     Circulation Plant Cultivation -> Greenhouse
-
-                 
-                 'toChildren.Greenhouse.toChildren.PlantModule.toStores.PlantCultivationStore.aoPhases(2).fMass';       %25     Mass Plants-phase
-             %Gas exchanges
-                 'toChildren.Greenhouse.toChildren.PlantModule.oProc_Plants_H2OGasExchange.fFlowRate';                  %26     Exchange rate H2O (transpiration); positive: Plants-phase -> air-phase
-                 'toChildren.Greenhouse.toChildren.PlantModule.oProc_Plants_O2GasExchange.fFlowRate';                   %27     Exchange rate O2; positive: Plants-phase -> air-phase
-                 'toChildren.Greenhouse.toChildren.PlantModule.oProc_Plants_CO2GasExchange.fFlowRate';                  %28     Exchange rate CO2; positive: air-phase -> plants-phase
-             
-             %Time parameters
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.emerge_time';         %29     Planting  time offset, culture 1
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.state.emerge_time';         %30     Planting  time offset, culture 2
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.internalGeneration';  %31     Culture's internal generation, culture 1
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.state.internalGeneration';  %32     Culture's internal generation, culture 2
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.internaltime';        %33     Elapsed time since planting, culture 1
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.state.internaltime';        %34     Elapsed time since planting, culture 2
-             
-                 'toChildren.Greenhouse.oB5.fFlowRate';                                                                                 %35     CO2 supply flowrate
-                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).fTemperature';                                                            %36     Temperature Greenhouse air-phase
-             %Mostly biomass composition 
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.TCB';                 %37     Total crop biomass - 1. Culture - Lettuce
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.state.TCB';                 %38     Total crop biomass - 2. Culture - Sweetpotato
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.TEB';                 %39     Total edible biomass - 1. Culture - Lettuce
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.state.TEB';                 %40     Total edible biomass - 2. Culture - Sweetpotato
-
-                 'toChildren.Greenhouse.toChildren.PlantModule.toStores.PlantCultivationStore.aoPhases(3).fMass';                       %41     Inedible biomass phase
-                 'toChildren.Greenhouse.toChildren.PlantModule.toStores.PlantCultivationStore.aoPhases(4).fMass';                       %42     Edible biomass phase
-                 'toChildren.Greenhouse.toChildren.PlantModule.toStores.PlantCultivationStore.aoPhases(2).afMass(this.oData.oMT.tiN2I.H2O)'; %43    Partial mass H2O in plants-phase
-                 'toChildren.Greenhouse.toChildren.PlantModule.aoBranches(4).fFlowRate';                                                %44     Food output PlantModule
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.TCB_CGR_test';        %45     Evaluation of total crop biomass 
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.INEDIBLE_CGR_d';            %46     Biomass composition: inedible dry - Lettuce(culture 1)
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.INEDIBLE_CGR_f';            %47     Biomass composition: inedible fluid - Lettuce(culture 1)
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.ED_CGR_d';                  %48     Biomass composition: edible dry - Lettuce(culture 1)
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.ED_CGR_f'                   %49     Biomass composition: edible fluid - Lettuce(culture 1)
-             
-             %O2 log
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afO2_sum_out(1)'           %50     O2 production; culture 1
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afO2_sum_out(2)'           %51     O2 production; culture 2
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fO2_sum_total'             %52     O2 production; total
-             %CO2 log
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afCO2_sum_out(1)'          %53     CO2 consumption; culture 1
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afCO2_sum_out(2)'          %54     CO2 consumption; culture 2
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCO2_sum_total'            %55     CO2 consumption; total
-             %H2O Transpiration log
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afH2O_trans_sum_out(1)'    %56     H2O transpiration; culture 1
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afH2O_trans_sum_out(2)'    %57     H2O transpiration; culture 2
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fH2O_trans_sum_total'      %58     H2O transpiration; total
-             %H2O Consumption log
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afH2O_consum_sum_out(1)'   %59     H2O consumption; culture 1
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afH2O_consum_sum_out(2)'   %60     H2O consumption; culture 2
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fH2O_consum_sum_total'     %61     H2O consumption; total
-             %Biomass composition
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.INEDIBLE_CGR_d';    %62 Biomass composition: inedible dry - Sweetpotato(culture 2)
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.INEDIBLE_CGR_f';    %63 Biomass composition: inedible fluid - Sweetpotato(culture 2)
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.ED_CGR_d';          %64 Biomass composition: edible dry - Sweetpotato(culture 2)
-                 'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.ED_CGR_f'           %65 Biomass composition: edible fluid - Sweetpotato(culture 2)
-             
-                 'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.CO2)'                   %66 N2 partial Mass Greenhouse air-phase
-                    };
+%            %Log - Stated are paths to all values that are logged for plotting
+%             this.csLog = {
+%              'oData.oTimer.fTime';                                                  %1 Time in seconds
+%              
+%              %Greenhouse parameters
+%                  'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).fPressure';        %2 Greenhouse's 'air'-phase total pressure
+%                  'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).fMass';            %3 Greenhouse's 'air'-phase total mass
+%              
+%              %CO2Compensation
+%                  'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(2).fMass';        %4 CO2 excess phase - mass 
+%              %O2Compensation
+%                  'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(3).fMass'         %5 O2 excess phase - mass
+%              %Water separated - in and out flows
+%                  'toChildren.Greenhouse.aoBranches(1).fFlowRate';                   %6  Water separator Inflow - greenhouse -> water separator
+%                  'toChildren.Greenhouse.aoBranches(2).fFlowRate';                   %7  Water separator Outflow - water separator -> greenhouse
+%              %Further Greenhouse parameters
+%                  'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)';           %8      Greenhouse's air-phase O2 partial mass
+%                  'toChildren.Greenhouse.toChildren.PlantModule.toStores.PlantCultivationStore.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)'; %9 PlantModule's air-phase O2 partial mass
+%                  'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).rRelHumidity';                                     %10     Greenhouse's relative humidity
+%                  'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.N2)'            %11     N2 partial Mass Greenhouse Air-Phase
+%                  'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.H2O)';          %12     Greenhouse's air-phase H2O partial mass
+%                  'toChildren.Greenhouse.toChildren.PlantModule.toStores.PlantCultivationStore.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.N2)'; %13 N2 partial Mass PlantModule Air-Phase
+% 
+%                  'toChildren.Greenhouse.toStores.WaterSeparator.aoPhases(1).fMass';                                     %14     Water Separator's air-phase total mass
+%                  'toChildren.Greenhouse.toStores.WaterSeparator.aoPhases(2).fMass';                                     %15     Water Separator's separated water-phase total mass
+%                  'toChildren.Greenhouse.aoBranches(3).fFlowRate';                                                       %16     Not in use
+%                  'toChildren.Greenhouse.toStores.WaterSeparator.aoPhases(1).fPressure';                                 %17     Water Separator's air-phase pressure
+% 
+%                  'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).afPP(this.oData.oMT.tiN2I.CO2)';                   %18     Greenhouse's air-phase partial pressure of CO2
+%                  'toChildren.Greenhouse.fCO2ppm_Measured';                                                              %19     'Greenhouse's ppm level of CO2 in air-phase
+% 
+%                  'toChildren.Greenhouse.toStores.WaterTank.aoPhases(1).fMass';                                          %20     Water mass in supply tank
+%                  'toChildren.Greenhouse.toStores.FoodStore.aoPhases(1).fMass';                                          %21     Food store mass
+%                  'toChildren.Greenhouse.toStores.WasteTank.aoPhases(1).fMass';                                          %22     Waste tank mass
+% 
+%                  'toChildren.Greenhouse.toChildren.PlantModule.aoBranches(1).fFlowRate';                                %23     Circulation Greenhouse -> Plant Cultivation
+%                  'toChildren.Greenhouse.toChildren.PlantModule.aoBranches(2).fFlowRate';                                %24     Circulation Plant Cultivation -> Greenhouse
+% 
+%                  
+%                  'toChildren.Greenhouse.toChildren.PlantModule.toStores.PlantCultivationStore.aoPhases(2).fMass';       %25     Mass Plants-phase
+%              %Gas exchanges
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oProc_Plants_H2OGasExchange.fFlowRate';                  %26     Exchange rate H2O (transpiration); positive: Plants-phase -> air-phase
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oProc_Plants_O2GasExchange.fFlowRate';                   %27     Exchange rate O2; positive: Plants-phase -> air-phase
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oProc_Plants_CO2GasExchange.fFlowRate';                  %28     Exchange rate CO2; positive: air-phase -> plants-phase
+%              
+%              %Time parameters
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.emerge_time';         %29     Planting  time offset, culture 1
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.state.emerge_time';         %30     Planting  time offset, culture 2
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.internalGeneration';  %31     Culture's internal generation, culture 1
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.state.internalGeneration';  %32     Culture's internal generation, culture 2
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.internaltime';        %33     Elapsed time since planting, culture 1
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.state.internaltime';        %34     Elapsed time since planting, culture 2
+%              
+%                  'toChildren.Greenhouse.oB5.fFlowRate';                                                                                 %35     CO2 supply flowrate
+%                  'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).fTemperature';                                                            %36     Temperature Greenhouse air-phase
+%              %Mostly biomass composition 
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.TCB';                 %37     Total crop biomass - 1. Culture - Lettuce
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.state.TCB';                 %38     Total crop biomass - 2. Culture - Sweetpotato
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.TEB';                 %39     Total edible biomass - 1. Culture - Lettuce
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.state.TEB';                 %40     Total edible biomass - 2. Culture - Sweetpotato
+% 
+%                  'toChildren.Greenhouse.toChildren.PlantModule.toStores.PlantCultivationStore.aoPhases(3).fMass';                       %41     Inedible biomass phase
+%                  'toChildren.Greenhouse.toChildren.PlantModule.toStores.PlantCultivationStore.aoPhases(4).fMass';                       %42     Edible biomass phase
+%                  'toChildren.Greenhouse.toChildren.PlantModule.toStores.PlantCultivationStore.aoPhases(2).afMass(this.oData.oMT.tiN2I.H2O)'; %43    Partial mass H2O in plants-phase
+%                  'toChildren.Greenhouse.toChildren.PlantModule.aoBranches(4).fFlowRate';                                                %44     Food output PlantModule
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.state.TCB_CGR_test';        %45     Evaluation of total crop biomass 
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.INEDIBLE_CGR_d';            %46     Biomass composition: inedible dry - Lettuce(culture 1)
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.INEDIBLE_CGR_f';            %47     Biomass composition: inedible fluid - Lettuce(culture 1)
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.ED_CGR_d';                  %48     Biomass composition: edible dry - Lettuce(culture 1)
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{1, 1}.ED_CGR_f'                   %49     Biomass composition: edible fluid - Lettuce(culture 1)
+%              
+%              %O2 log
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afO2_sum_out(1)'           %50     O2 production; culture 1
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afO2_sum_out(2)'           %51     O2 production; culture 2
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fO2_sum_total'             %52     O2 production; total
+%              %CO2 log
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afCO2_sum_out(1)'          %53     CO2 consumption; culture 1
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afCO2_sum_out(2)'          %54     CO2 consumption; culture 2
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCO2_sum_total'            %55     CO2 consumption; total
+%              %H2O Transpiration log
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afH2O_trans_sum_out(1)'    %56     H2O transpiration; culture 1
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afH2O_trans_sum_out(2)'    %57     H2O transpiration; culture 2
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fH2O_trans_sum_total'      %58     H2O transpiration; total
+%              %H2O Consumption log
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afH2O_consum_sum_out(1)'   %59     H2O consumption; culture 1
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.afH2O_consum_sum_out(2)'   %60     H2O consumption; culture 2
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fH2O_consum_sum_total'     %61     H2O consumption; total
+%              %Biomass composition
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.INEDIBLE_CGR_d';    %62 Biomass composition: inedible dry - Sweetpotato(culture 2)
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.INEDIBLE_CGR_f';    %63 Biomass composition: inedible fluid - Sweetpotato(culture 2)
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.ED_CGR_d';          %64 Biomass composition: edible dry - Sweetpotato(culture 2)
+%                  'toChildren.Greenhouse.toChildren.PlantModule.oManip_Create_Biomass.fCCulture.plants{2, 1}.ED_CGR_f'           %65 Biomass composition: edible fluid - Sweetpotato(culture 2)
+%              
+%                  'toChildren.Greenhouse.toStores.GH_Unit.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.CO2)'                   %66 N2 partial Mass Greenhouse air-phase
+%                     };
             
          
 

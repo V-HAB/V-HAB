@@ -32,13 +32,13 @@ classdef Example < vsys
             this@vsys(oParent, sName, 10);
             
             % Creating a store, volume 1000 m^3
-            this.addStore(matter.store(this, 'Tank_1', 1000));
+            matter.store(this, 'Tank_1', 1000);
             
             % Adding a phase to the store 'Tank_1', 1000 m^3 air
             oGasPhase = this.toStores.Tank_1.createPhase('air', 1000);
             
             % Creating a second store, volume 1000 m^3
-            this.addStore(matter.store(this, 'Tank_2', 1000));
+            matter.store(this, 'Tank_2', 1000);
             
             % Adding a phase to the store 'Tank_2', 1000 m^3 air
             oAirPhase = this.toStores.Tank_2.createPhase('air', 1000);
@@ -48,12 +48,12 @@ classdef Example < vsys
             matter.procs.exmes.gas(oAirPhase, 'Port_2');
              
             % Adding a pipe to connect the tanks, length 1 m, diameter 0.1 m
-            this.addProcF2F(components.pipe('Pipe', 1, 0.1));
+            components.pipe(this, 'Pipe', 1, 0.1);
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            oBranch = this.createBranch('Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
+            oBranch = matter.branch(this, 'Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
@@ -83,7 +83,7 @@ classdef Example < vsys
             % vsys-object, we can access its setFlowRate method to manually set and change the flow
             % rate of the branch. Here we change between two flow rate every 100 seconds.
              
-            if this.oData.oTimer.fTime > this.fSwitchTime   % Have 100s passed?
+            if this.oTimer.fTime > this.fSwitchTime   % Have 100s passed?
                 if this.bHighFlowRate                       % Is the flow rate currently high? 
                     this.fFlowRate = 0.1;                   % Set flow rate to low value
                     this.bHighFlowRate = false;             % Change flow rate indicator to false

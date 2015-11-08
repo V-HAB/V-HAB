@@ -163,7 +163,7 @@ classdef PlantModule < vsys
         %% -PlantModule Structure-
         
             % Creating the filter, last parameter is the filter capacity in kg.
-                this.addStore(matter.store(this, 'PlantCultivationStore', 32));
+                matter.store(this, 'PlantCultivationStore', 32);
             
             %Adding Air Phase:   -> aoPhases(1); Cultivation Store
                 oAerationPhase = matter.phases.gas(this.toStores.PlantCultivationStore, ...                     %Store in which the phase is located
@@ -318,19 +318,19 @@ classdef PlantModule < vsys
         %% -Connections- 
         
             % Adding pipes to connect the components
-                this.addProcF2F(components.pipe('Pipe_1', 0.5, 0.01));
-                this.addProcF2F(components.pipe('Pipe_2', 0.5, 0.01));
-                this.addProcF2F(components.pipe('Pipe_3', 0.5, 0.01));
-                this.addProcF2F(components.pipe('Pipe_4', 0.5, 0.01));
-                this.addProcF2F(components.pipe('Pipe_5', 0.5, 0.01));
+                components.pipe(this, 'Pipe_1', 0.5, 0.01);
+                components.pipe(this, 'Pipe_2', 0.5, 0.01);
+                components.pipe(this, 'Pipe_3', 0.5, 0.01);
+                components.pipe(this, 'Pipe_4', 0.5, 0.01);
+                components.pipe(this, 'Pipe_5', 0.5, 0.01);
             
             
             % Creating the flowpath (=branch) between the components
-                oInput_Air_Branch       = this.createBranch('PlantCultivationStore.p1',     { 'Pipe_1' }, 'FromLSSAirIN');
-                oOutput_Air_Branch      = this.createBranch('PlantCultivationStore.p2',     { 'Pipe_2' }, 'ToLSSAirOUT');
-                oInput_Water_Branch     = this.createBranch('PlantCultivationStore.p5',     { 'Pipe_3' }, 'WaterSupply');
-                oOutput_Food_Branch     = this.createBranch('PlantCultivationStore.p17',    { 'Pipe_4' }, 'FoodOUT');
-                oOutput_Waste_Branch    = this.createBranch('PlantCultivationStore.p15',    { 'Pipe_5' }, 'WasteOUT');
+                oInput_Air_Branch       = matter.branch(this, 'PlantCultivationStore.p1',     { 'Pipe_1' }, 'FromLSSAirIN');
+                oOutput_Air_Branch      = matter.branch(this, 'PlantCultivationStore.p2',     { 'Pipe_2' }, 'ToLSSAirOUT');
+                oInput_Water_Branch     = matter.branch(this, 'PlantCultivationStore.p5',     { 'Pipe_3' }, 'WaterSupply');
+                oOutput_Food_Branch     = matter.branch(this, 'PlantCultivationStore.p17',    { 'Pipe_4' }, 'FoodOUT');
+                oOutput_Waste_Branch    = matter.branch(this, 'PlantCultivationStore.p15',    { 'Pipe_5' }, 'WasteOUT');
             
             
             
@@ -351,6 +351,8 @@ classdef PlantModule < vsys
             
 
             %Setting fixed timestep for phases of PlantCultivationStore
+            %TODO Change this to utilize the new toPhases struct for better
+            %code readability
                 aoPhases = this.toStores.PlantCultivationStore.aoPhases;
                     %air-phase
                         aoPhases(1).fFixedTS = 15;
@@ -399,7 +401,7 @@ classdef PlantModule < vsys
 
             if bUseLSSConditions == 1 
                 
-                        if this.oParent.oParent.oData.oTimer.fTime > 1 % condition necessary for initialization
+                        if this.oParent.oParent.oTimer.fTime > 1 % condition necessary for initialization
    
     %     THIS SECTION NEEDS TO BE ADAPTED WHEN APPLYING A NEW SYSTEM     %         
     %                       (ADAPTIONS 2 of 3)                            %
@@ -457,7 +459,7 @@ classdef PlantModule < vsys
     %  The object paths to the "measured" LSS growth conditions should be %
     %  stated here - They are specific for your system                    %
             
-            if this.oParent.oParent.oData.oTimer.fTime > 1 
+            if this.oParent.oParent.oTimer.fTime > 1 
         % CO2 level air-phase, parts per million
             this.fCO2ppm_Measured   ...                     % [µmol/mol]
                 = this.oParent.fCO2ppm_Measured;

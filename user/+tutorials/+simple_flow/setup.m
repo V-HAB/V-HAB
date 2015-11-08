@@ -117,11 +117,6 @@ classdef setup < simulation.infrastructure
             % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
             % further information
             
-            close all
-            
-            oLog = this.toMonitors.oLogger;
-            
-            
             
             
 %             figure('name', 'Tank Pressures');
