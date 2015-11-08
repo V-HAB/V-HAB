@@ -11,7 +11,10 @@ classdef gas < matter.procs.exme
             % Updated - uses the mass change rate as well. Faster ...?
             fMassSinceUpdate = this.oPhase.fCurrentTotalMassInOut * (this.oPhase.oStore.oTimer.fTime - this.oPhase.fLastMassUpdate);
 
+            
             fPortPressure    = this.oPhase.fMassToPressure * (this.oPhase.fMass + fMassSinceUpdate);
+            %fPortPressure    = this.oPhase.fMassToPressure * (this.oPhase.fMass);
+            
             fPortTemperature = this.oPhase.fTemperature;
 
         end

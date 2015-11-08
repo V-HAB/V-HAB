@@ -505,7 +505,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Trigger branch solver updates in post tick for all branches
             % whose matter is currently flowing INTO the phase
             if this.bSynced || bSetBranchesOutdated
-                this.setBranchesOutdated('in');
+                %%%this.setBranchesOutdated('in');
+                this.setBranchesOutdated();
             end
             
             % Execute updateProcessorsAndManipulators between branch solver
@@ -514,7 +515,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             
             % Flowrate update binding for OUTFLOWING matter flows.
             if this.bSynced || bSetBranchesOutdated
-                this.setBranchesOutdated('out');
+                %%%this.setBranchesOutdated('out');
             end
 
             % Phase sets new time step (registered with parent store, used
@@ -667,8 +668,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.rHighestMaxChangeDecrease = this.oStore.oContainer.oRoot.tSolverParams.rHighestMaxChangeDecrease;
             
             
-            % Auto-Set rMaxChange.
-            this.rMaxChange = sif(this.fVolume <= 0.25, this.fVolume, 0.25) / this.oStore.oContainer.oRoot.tSolverParams.rUpdateFrequency;
+            % Auto-Set rMaxChange - max. 0.25, min. 1e-5!
+            rMaxChangeTmp = sif(this.fVolume <= 0.25, this.fVolume, 0.25);
+            rMaxChangeTmp = sif(rMaxChangeTmp <= 1e-5, 1e-5, rMaxChangeTmp);
+            
+            this.rMaxChange = rMaxChangeTmp / this.oStore.oContainer.oRoot.tSolverParams.rUpdateFrequency;
+            
+            
+            %TODO if rMaxChange < e.g. 0.0001 --> do not decrease further
+            %     but instead increase highestMaxChangeDec?
             
             
             if ~this.oStore.bSealed

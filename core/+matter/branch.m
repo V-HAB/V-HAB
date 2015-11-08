@@ -96,6 +96,9 @@ classdef branch < base & event.source
         % @type float
         fFlowRate = 0;
         
+        % Last couple of flow rates - used to test if below rounding prec
+        afFlowRates = ones(1, 10);
+        
         bSealed = false;
         
         % Does the branch need an update of e.g. a flow rate solver? Can be
@@ -445,6 +448,10 @@ classdef branch < base & event.source
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
+            for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
+                this.coExmes{iE}.oPhase.massupdate();
+            end
+            
             
             % Only trigger if not yet set
             %CHECK inactivated here --> solvers and otehr "clients" should
@@ -527,7 +534,9 @@ classdef branch < base & event.source
             end
             
             
-            if tools.round.prec(fFlowRate, this.oContainer.oTimer.iPrecision) == 0
+            this.afFlowRates = [ this.afFlowRates(2:10) fFlowRate ];
+            
+            if tools.round.prec(sum(this.afFlowRates), this.oContainer.oTimer.iPrecision) == 0
                 fFlowRate = 0;
             end
             

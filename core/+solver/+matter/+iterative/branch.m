@@ -41,6 +41,8 @@ classdef branch < solver.matter.base.branch
         
         
         fFlowRateUnrounded = 0;
+        bFlowRateChangePos = 0;
+        iFlowRateCompDamp  = 0;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -77,7 +79,7 @@ classdef branch < solver.matter.base.branch
         end
         
         %% Method for alternative time step calculation
-        function setAlternativeTimeStepMethod(this, iDampening, iMaxStep)
+        function XXXsetAlternativeTimeStepMethod(this, iDampening, iMaxStep)
             
             this.bUseAltTimeStepLogic = true;
             
@@ -117,6 +119,8 @@ classdef branch < solver.matter.base.branch
             % pressures as well as delta temperatures.
             [ fFlowRate, afDeltaP ] = this.solveFlowRate();
             
+            
+            
             % See base branch, same check here - if input phase nearly
             % empty, just set flow rate to zero
             oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
@@ -130,18 +134,57 @@ classdef branch < solver.matter.base.branch
                 fFlowRate = (this.fFlowRate * this.iDampFR + fFlowRate) / (this.iDampFR + 1);
             end
             
-            
+            %TODO remove all this!
             fFlowRateUnrounded = fFlowRate;
             
             % If we don't round at some point, flow rates will eventually
             % become something like 1e-13 etc -> don't want that.
             if tools.round.prec(fFlowRate, this.oBranch.oContainer.oTimer.iPrecision) == 0
-                fFlowRate = 0;
+                %fFlowRate = 0;
             end
+            
+            
+            
+            oP1 = this.oBranch.coExmes{1}.oPhase;
+            oP2 = this.oBranch.coExmes{2}.oPhase;
+            coE = this.oBranch.coExmes;
+            
+            %fprintf('FR %.12f, PRESS LEFT %f, PRESS RIGHT %f, PRESS REL %f, MASS REL %f\n', fFlowRate, oP1.fPressure, oP2.fPressure, oP1.fPressure / oP2.fPressure, oP1.fMass / oP2.fMass);
+            %fprintf('FR %.12f, FR UNROUNDED %.12f, PRESS REL %.26f, MASS REL %.12f\n', fFlowRate, fFlowRateUnrounded, oP1.fPressure / oP2.fPressure - 1, oP1.fMass / oP2.fMass - 1);
+            
+            %fprintf('FR %.15f, FR UNROUNDED %.15f, PRESS REL %.25f, MASS REL %.25f\n', fFlowRate, fFlowRateUnrounded, coE{1}.getPortProperties() / coE{2}.getPortProperties() - 1, oP1.fMass / oP2.fMass - 1);
+            %fprintf('%.10f  FR %.15f, dP %.15f, dM %.15f, dP_m %.15f (%.15f %.15f)\n', oP1.oTimer.fTime, fFlowRate, coE{1}.getPortProperties() - coE{2}.getPortProperties(), oP1.fMass - oP2.fMass, oP1.fMassToPressure * oP1.fMass - oP2.fMassToPressure * oP2.fMass, oP1.fCurrentTotalMassInOut, oP2.fCurrentTotalMassInOut);
+            
+            %%fprintf('%.10f  FR %.25f, dP %.25f, dM %.25f, dP_m %.25f     %.25f\n', oP1.oTimer.fTime, fFlowRate, coE{1}.getPortProperties() - coE{2}.getPortProperties(), oP1.fMass - oP2.fMass, oP1.fMassToPressure * oP1.fMass - oP2.fMassToPressure * oP2.fMass, afDeltaP);
+            %%fprintf('avg:  %.25f (dyn %.25f)\n', (oP1.fPressure + oP2.fPressure) / 2, (coE{1}.getPortProperties() + coE{2}.getPortProperties()) / 2);
             
             % Calculating the new timestep for this branch
             this.calculateTimeStep(fFlowRateUnrounded, fFlowRate);
             
+            
+            %
+            if fFlowRateUnrounded ~= this.fFlowRateUnrounded
+                bFlowRateChangeIsPositive = fFlowRateUnrounded > this.fFlowRateUnrounded;
+                
+                if this.bFlowRateChangePos ~= bFlowRateChangeIsPositive
+                    
+                    if this.iFlowRateCompDamp < 5
+                        this.iFlowRateCompDamp = this.iFlowRateCompDamp + 1;
+                    end
+                    
+                    
+                elseif this.iFlowRateCompDamp > 0
+                    this.iFlowRateCompDamp = this.iFlowRateCompDamp - 1;
+                end
+                
+                this.bFlowRateChangePos = bFlowRateChangeIsPositive;
+            end
+            
+            %fprintf('%i, ', this.iFlowRateCompDamp);
+            
+            iDampUnrounded = 5;
+            %this.fFlowRateUnrounded = (this.fFlowRateUnrounded * this.iFlowRateCompDamp + fFlowRateUnrounded) / (this.iFlowRateCompDamp + 1);
+            %this.fFlowRateUnrounded = (this.fFlowRateUnrounded * iDampUnrounded + fFlowRateUnrounded) / (iDampUnrounded + 1);
             this.fFlowRateUnrounded = fFlowRateUnrounded;
             
             % Sets new flow rate
@@ -186,6 +229,9 @@ classdef branch < solver.matter.base.branch
             
             %QUESTION What is this for?
             fPressDiffOrg = fPressDiff;
+            
+            %fprintf('PRESS DIFF %.16f\n', fPressDiff);
+            %fprintf('%.16f\n', fPressDiff);
             
             
             %TODO threat the EXMEs as F2F procs, so just included in the
@@ -392,13 +438,19 @@ classdef branch < solver.matter.base.branch
             %	procs and  the counter for iteration break.
             %fPressDiff = (sif(iDir > 0, fPressDiffL2R, fPressDiffR2L));
             aiProcs    = sif(iDir > 0, 1:oBranch.iFlowProcs, oBranch.iFlowProcs:-1:1);
-            rError     = fPressDiff / fPressDrop;
+            rError     = fPressDiff / (fPressDrop);
+            
+            
+            %%fprintf('\nDIFF %.15f, DIFFORG %.15f, DROP %.15f, ERR %.15f\n', fPressDiff, fPressDiffOrg, fPressDrop, rError);
+            
             
             % Loop counter and max. error acceptable (increases)
             iCount = -1;
             %fErrorMax = 0.001; % Increased if too many iterations %prm2
             %fErrorMax = 0.025;
-            fErrorMax = this.oBranch.oContainer.oTimer.fTimeStep * 100;
+            
+            %TODO-OKT15 BETTER INTERP - REDUCE MAX ERR?
+            fErrorMax = this.oBranch.oContainer.oTimer.fTimeStep * 0.1;%00;% / 1000;
             
 %             if oBranch.oContainer.oTimer.fTime > 48.5 %71.1 %811.5
 %                 keyboard();
@@ -417,7 +469,8 @@ classdef branch < solver.matter.base.branch
             while (abs(rError - 1) > fErrorMax) || isnan(rError) % || (iCount == 0)
                 
                 % Increase error tolerance if too many iterations
-                if mod(iCount, 10) == 0
+                if iCount > 0 && mod(iCount, 25) == 0
+                    %disp('INC');
                     fErrorMax = fErrorMax * 10;%2;
                 end
                 
@@ -617,7 +670,7 @@ classdef branch < solver.matter.base.branch
                     
                     
                     % New error value
-                    rError    = fPressDiff / fNewDrop;
+                    rError    = fPressDiff / (fNewDrop);
                     
                     % Diff 0, drop 0 -> oook!
                     if isnan(rError) && (fPressDiff == 0), rError = 1; end;
@@ -648,7 +701,7 @@ classdef branch < solver.matter.base.branch
                 % difference is lower than zero, the pressure "drop" should 
                 % be as well (and therefore be a pressure rise).
                 fPressDrop = sum(mfData(:, 1));
-                rError = fPressDiff / fPressDrop; %TODO this is not rError but rAccuracy ...
+                rError = fPressDiff / (fPressDrop); %TODO this is not rError but rAccuracy ...
                                                   %  rError = rAccuracy - 1
                 
                 
@@ -663,7 +716,7 @@ classdef branch < solver.matter.base.branch
                 % If flowrate gets too small, continue - accept small error
                 %elseif (fFlowRate < 1e-5 * fTimeStep)
                 elseif (fFlowRate < this.oBranch.oContainer.oTimer.fTimeStep)
-                    rError = 1;
+                    %rError = 1;
                 end
                 
             end
@@ -671,7 +724,7 @@ classdef branch < solver.matter.base.branch
 %             disp(['Flow rate: ', num2str(fFlowRate)])
 %             keyboard(); 
 
-            if fFlowRate < this.oBranch.oContainer.oTimer.fTimeStep
+            if false && fFlowRate < this.oBranch.oContainer.oTimer.fTimeStep
                 mfData = zeros(oBranch.iFlowProcs, 1);
                 afDeltaP = mfData(:, 1);
                 fFlowRate = 0;
@@ -745,7 +798,7 @@ classdef branch < solver.matter.base.branch
                 
             else
                 
-                if this.bUseAltTimeStepLogic
+                if this.bUseAltTimeStepLogic && bXXXXXX
                     %%%%%%%% Alternative Time Step %%%%%%%%
                     % Just checks for alternating flowrate increase and
                     % decrease from step to step, and reduces flow rate in
@@ -832,34 +885,50 @@ classdef branch < solver.matter.base.branch
                     %fChange = tools.round.prec(fFlowRateUnrounded - this.fFlowRateUnrounded, this.oBranch.oContainer.oTimer.iPrecision);
                     %rChange = abs(fChange / this.fFlowRateUnrounded);
                     
-                    rChange = abs(fFlowRate / this.fFlowRateUnrounded - 1);
+                    rChange = abs(fFlowRateUnrounded / this.fFlowRateUnrounded - 1);
+                    %fprintf('%.12f\n', rChange);
+                    
+                    
+                    
+                    fMass = min([ this.oBranch.coExmes{1}.oPhase.fMass, this.oBranch.coExmes{1}.oPhase.fMass ]);
+                    
+                    if this.oBranch.oContainer.oTimer.iTick > 400
+                        %fprintf('rC %.12f, rC_rnd %.12f, rC_new %.12f\n', rChange, tools.round.prec(rChange, this.oBranch.oContainer.oTimer.iPrecision), rChange / fMass);
+                    end
+                    
+                    
+                    
                     rChange = tools.round.prec(rChange, this.oBranch.oContainer.oTimer.iPrecision);
                     
                     
-                    
                     % Old time step
-                    fOldStep = this.fTimeStep;
-
-                    if fOldStep < this.oBranch.oContainer.oTimer.fTimeStep
-                        fOldStep = this.oBranch.oContainer.oTimer.fTimeStep;
-                    end
+%                     fOldStep = this.fTimeStep;
+% 
+%                     if fOldStep < this.oBranch.oContainer.oTimer.fTimeStep
+%                         fOldStep = this.oBranch.oContainer.oTimer.fTimeStep;
+%                     end
 
                     % Change in flow rate direction? Min. time step!
                     
-                    if (fFlowRate == 0) && (this.fFlowRate ~= 0)
+                    if false && (fFlowRate == 0) && (this.fFlowRate ~= 0)
                         fNewStep = fOldStep;
+                        %disp('FR 0, OLD FR NOT 0');
                         
-                    elseif (rChange < 0) || isinf(rChange) || (this.iSignChangeFRCnt > 1)
+                    elseif false && (rChange < 0) || isinf(rChange) || (this.iSignChangeFRCnt > 1)
                         fNewStep = 0;
+                        
+                        %disp('SIGN CHANGE, INF OR NEG CHANGE');
 
                         this.iSignChangeFRCnt = this.iSignChangeFRCnt + 1;
 
-                    elseif (fFlowRate == 0) && (this.fFlowRate == 0)
+                    elseif false && (fFlowRate == 0) && (this.fFlowRate == 0)
                         % If both the current and the previous flow rate
                         % are zero, then nothing is happening in the system
                         % at the moment so we can set the new time step to
                         % maximum. 
                         fNewStep = this.fMaxStep;
+                        
+                        %disp('FR 0, OLD FR 0');
                     else
                         
                         if this.iSignChangeFRCnt > 1
@@ -869,11 +938,11 @@ classdef branch < solver.matter.base.branch
                         end
 
                         % Remember/damp flow rate changes
-                        if rChange >= this.rFlowRateChange
-                            this.rFlowRateChange = rChange;
-                        else
+%                         if rChange >= this.rFlowRateChange
+%                            this.rFlowRateChange = rChange;
+%                         else
                             this.rFlowRateChange = (rChange + this.iRemChange * this.rFlowRateChange) / (1 + this.iRemChange);
-                        end
+%                         end
                         %disp(this.rFlowRateChange);
                         
                         % Change larger than limit? Minimum time step.
@@ -881,11 +950,22 @@ classdef branch < solver.matter.base.branch
                             fNewStep = 0;
                         else
                             % Interpolate
-                            fNewStep = interp1([ 0 this.rSetChange this.rMaxChange ], [ 2 * fOldStep fOldStep 0 ], this.rFlowRateChange, 'linear', 'extrap');
+                            %fNewStep = interp1([ 0 this.rSetChange this.rMaxChange ], [ 2 * fOldStep fOldStep 0 ], this.rFlowRateChange, 'linear', 'extrap');
+                            
+                            %fNewStep = interp1([ 0 this.rSetChange this.rMaxChange ], [ this.fMaxStep fOldStep 0 ], this.rFlowRateChange, 'pchip', 'extrap');
+                            %fNewStep = interp1([ 0 this.rSetChange this.rMaxChange ], [ this.fMaxStep fOldStep 0 ], this.rFlowRateChange, 'linear', 'extrap');
+                            
+                            
+                            fInt = interp1([ 0 this.rMaxChange ], [ 1 0 ], this.rFlowRateChange, 'linear', 'extrap');
+                            iI = 5;
+                            fNewStep = fInt.^iI * this.fMaxStep + this.oBranch.oContainer.oTimer.fTimeStep;
                         end
                         %disp(fNewStep);
                         
+                        %fprintf('TS %.12f   FRCHANGE %f    CHANGE %f\n', fNewStep, this.rFlowRateChange, rChange);
                     end
+                    
+                    %%fprintf('%.10f - %.12fs\n', this.rFlowRateChange, fNewStep);
 
                     if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end;
 
