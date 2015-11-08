@@ -80,8 +80,9 @@ classdef timer < base
 
 
         function setMinStep(this, fMinStep)
-            this.fTimeStep = fMinStep;
+            this.fTimeStep  = fMinStep;
             this.iPrecision = floor(log10(1 / this.fTimeStep)) - 1;
+            this.fTime      = -1 * this.fTimeStep;
         end
         
         

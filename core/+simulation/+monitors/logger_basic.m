@@ -218,7 +218,14 @@ classdef logger_basic < simulation.monitor
             if ~isfield(tLogProp, 'sName') || isempty(tLogProp.sName)
                 % Only accept alphanumeric - can be used for storage e.g.
                 % on a struct using sName as the key!
-                tLogProp.sName = [ oObj.sUUID '__' regexprep(tLogProp.sExpression, '[^a-zA-Z0-9]', '_') ];
+                %tLogProp.sName = [ oObj.sUUID '__' regexprep(tLogProp.sExpression, '[^a-zA-Z0-9]', '_') ];
+                
+                tLogProp.sName = [ regexprep(tLogProp.sExpression, '[^a-zA-Z0-9]', '_') '__' oObj.sUUID '_' ];
+                tLogProp.sName = strrep(tLogProp.sName, 'this_', '');
+                
+                if length(tLogProp.sName) > 63
+                    tLogProp.sName = tLogProp.sName(1:63);
+                end
             end
             
             

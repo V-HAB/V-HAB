@@ -38,7 +38,7 @@ classdef console_output < simulation.monitor
                 this.iMajorReportingInterval = iTicks;
             end
             
-            if (nargin >= 2) && ~isempty(iMinorTicks)
+            if (nargin >= 3) && ~isempty(iMinorTicks)
                 
                 if mod(iMinorTicks, 1) ~= 0, error('Minor ticks needs to be integer.'); end;
                 
@@ -47,6 +47,8 @@ classdef console_output < simulation.monitor
                 end
                 
                 this.iMinorReportingInterval = iMinorTicks;
+            else
+                this.iMinorReportingInterval = 0;
             end
         end
     end
@@ -86,8 +88,8 @@ classdef console_output < simulation.monitor
             disp([ 'Mass lost:    to be re-implemented' ]);
 % %             disp([ 'Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
 % %             disp([ 'Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :))) 'kg' ]);
-            disp([ 'Minimum Time Step * Total Sim Time: ' num2str(oTimer.fTimeStep * oTimer.fTime) ]);
-            disp([ 'Minimum Time Step * Total Ticks:    ' num2str(oTimer.fTimeStep * oTimer.iTick) ]);
+%             disp([ 'Minimum Time Step * Total Sim Time: ' num2str(oTimer.fTimeStep * oTimer.fTime) ]);
+%             disp([ 'Minimum Time Step * Total Ticks:    ' num2str(oTimer.fTimeStep * oTimer.iTick) ]);
             disp('------------------------------------------------------------------------');
 
         end
@@ -126,7 +128,10 @@ classdef console_output < simulation.monitor
                 this.fLastTickDisp = oSim.oTimer.fTime;
                 
                 %disp([ num2str(oSim.oTimer.iTick), ' (', num2str(oSim.oTimer.fTime), 's) (Delta Time ', num2str(fDeltaTime), 's)']);
-                fprintf('%i\t(%fs)\t(Tick Delta %fs)\n', oSim.oTimer.iTick, oSim.oTimer.fTime, fDeltaTime);
+                
+                sFloat = [ '%.' num2str(oSim.oTimer.iPrecision) 'f' ];
+                
+                fprintf([ '%i\t(' sFloat 's)\t(Tick Delta ' sFloat 's)\n' ], oSim.oTimer.iTick, oSim.oTimer.fTime, fDeltaTime);
             end
         end
         

@@ -64,7 +64,7 @@ end
 %          V = m / M * R * T / p
 
 fLiterPerMin = (fFlowRate / oFlow.fMolarMass * ...
-               matter.table.C.R_m * fTemperature / fPressure) * 1000;
+               matter.table.Const.fUniversalGas * fTemperature / fPressure) * 1000;
 
 end
 

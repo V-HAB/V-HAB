@@ -36,10 +36,13 @@ classdef plotter_basic < simulation.monitor
         
         
         function definePlotWithFilter(this, xDataReference, sFilter, sTitle)
+            % xDataReference can be either integer array or (recursive)
+            % struct with integers.
+            
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             
             if isstruct(xDataReference)
-                xDataReference = simulation.monitors.logger_basic.getIndicesFromStruct(xDataReference);
+                xDataReference = simulation.monitors.plotter_basic.getIndicesFromStruct(xDataReference);
             end
             
             
@@ -85,14 +88,18 @@ classdef plotter_basic < simulation.monitor
             
             % Rows of grid - can we reduce?
             iGridRows = iGrid;
+            iGridCols = iGrid;
             
-            while iGrid * (iGridRows - 1) >= iPlots
-                iGridRows = iGridRows - 1;
+            %while iGridCols * (iGridRows - 1) >= iPlots
+            %    iGridRows = iGridRows - 1;
+            %end
+            while (iGridCols - 1) * iGridRows >= iPlots
+                iGridCols = iGridCols - 1;
             end
             
             
             for iP = 1:length(this.tPlots)
-                hHandle = subplot(iGridRows, iGrid, iP);
+                hHandle = subplot(iGridRows, iGridCols, iP);
                 
                 [ mfData, tLogProps ] = oLogger.get(this.tPlots(iP).aiIdx);
                 
@@ -105,8 +112,9 @@ classdef plotter_basic < simulation.monitor
             end
             
             
-            hHandle = subplot(iGridRows, iGrid, iP + 1);
-            this.generatePlot(hHandle, 1:length(oLogger.afTime), oLogger.afTime, struct('sLabel', 'Time', 'sUnit', 's'), 'Time Steps');
+            hHandle = subplot(iGridRows, iGridCols, iP + 1);
+            this.generatePlot(hHandle, 1:length(oLogger.afTime), oLogger.afTime, struct('sLabel', 'Time', 'sUnit', 's'), 'Tick');
+            title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
             
             
             set(iFig, 'name', [ oInfra.sName ' - (' oInfra.sCreated ')' ]);
@@ -154,7 +162,7 @@ classdef plotter_basic < simulation.monitor
         
         
         
-        function getIndicesFromStruct(tData)
+        function aiIdx = getIndicesFromStruct(tData)
             csKeys = fieldnames(tData);
             aiIdx  = [];
             
@@ -162,7 +170,7 @@ classdef plotter_basic < simulation.monitor
                 sKey = csKeys{iK};
                 
                 if isstruct(tData.(sKey))
-                    aiIdx = [ aiIdx simulation.monitors.logger_basic.getIndicesFromStruct(tData.(sKey)) ];
+                    aiIdx = [ aiIdx simulation.monitors.plotter_basic.getIndicesFromStruct(tData.(sKey)) ];
                 else
                     aiIdx(end + 1) = tData.(sKey);
                 end
