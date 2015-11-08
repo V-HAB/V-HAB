@@ -61,11 +61,11 @@ classdef Example1 < vsys
             
             %if fTime >= 100, keyboard(); end;
             
-            if fTime >= 500 && fTime < 1000 && oFan.fSpeedSetpoint ~= 0
+            if fTime >= 750 && fTime < 1250 && oFan.fSpeedSetpoint ~= 0
                 fprintf('Fan OFF at second %f and tick %i\n', fTime, this.oTimer.iTick);
                 oFan.fSpeedSetpoint = 0;
                 
-            elseif fTime >= 1000 && oFan.fSpeedSetpoint ~= 40000
+            elseif fTime >= 1250 && oFan.fSpeedSetpoint ~= 40000
                 fprintf('Fan ON at second %f and tick %i\n', fTime, this.oTimer.iTick);
                 
                 oFan.fSpeedSetpoint = 40000;

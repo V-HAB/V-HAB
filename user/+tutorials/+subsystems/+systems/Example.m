@@ -29,14 +29,18 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName);
             
+            eval(this.oRoot.oCfgParams.configCode(this));
+            
+            
+            
             % Creating a store, volume 1 m^3
-            this.addStore(matter.store(this, 'Tank_1', 1));
+            matter.store(this, 'Tank_1', 1);
             
             % Adding a phase to the store 'Tank_1', 2 m^3 air
             oGasPhase = this.toStores.Tank_1.createPhase('air', 2);
             
             % Creating a second store, volume 1 m^3
-            this.addStore(matter.store(this, 'Tank_2', 1));
+            matter.store(this, 'Tank_2', 1);
             
             % Adding a phase to the store 'Tank_2', 1 m^3 air
             oAirPhase = this.toStores.Tank_2.createPhase('air', 1);
@@ -50,18 +54,18 @@ classdef Example < vsys
             
                         
             %% Adding some pipes
-            this.addProcF2F(components.pipe('Pipe1', 1, 0.005));
-            this.addProcF2F(components.pipe('Pipe2', 1, 0.005));
+            components.pipe(this, 'Pipe1', 1, 0.005);
+            components.pipe(this, 'Pipe2', 1, 0.005);
             
             % Creating the flowpath (=branch) into a subsystem
             % Input parameter format is always: 
             % 'Interface port name', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            this.createBranch('SubsystemInput', {'Pipe1'}, 'Tank_1.Port_1');
+            matter.branch(this, 'SubsystemInput', {'Pipe1'}, 'Tank_1.Port_1');
             
             % Creating the flowpath (=branch) out of a subsystem
             % Input parameter format is always: 
             % 'Interface port name', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            this.createBranch('SubsystemOutput', {'Pipe2'}, 'Tank_2.Port_2');
+            matter.branch(this, 'SubsystemOutput', {'Pipe2'}, 'Tank_2.Port_2');
             
             % Now we need to connect the subsystem with the top level system (this one). This is
             % done by a method provided by the subsystem.

@@ -1,4 +1,4 @@
-classdef setup < simulation
+classdef setup < simulation.infrastructure
     %SETUP This class is used to setup a simulation
     %   There should always be a setup file present for each project. It is
     %   used for the following:
@@ -12,8 +12,8 @@ classdef setup < simulation
     end
     
     methods
-        function this = setup() % Constructor function
-            this@simulation('Tutorial_Subsystems');
+        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+            
             
             %%%% Tuning of the solving process %%%%
             %
@@ -62,10 +62,23 @@ classdef setup < simulation
             % possibly to longer instead of shorter time steps.
             % As shown below, the default values set by the phase seal
             % methods can be manually overwritten for specific phases.
-            this.oData.set('rUpdateFrequency', 100);
+            %this.oData.set('rUpdateFrequency', 100);
+            
+            
+            
+            if ~isfield('tSolverParams', 'rHighestMaxChangeDecrease')
+                tSolverParams.rHighestMaxChangeDecrease = 250;
+            end
+            
+            
+            
+            this@simulation.infrastructure('Tutorial_Subsystems', ptConfigParams, tSolverParams);
+            
+            
+            
             
             % Creating the root object
-            oExample = tutorials.subsystems.systems.Example(this.oRoot, 'Example');
+            oExample = tutorials.subsystems.systems.Example(this.oSimulationContainer, 'Example');
             
             % For ease of typing, getting a reference to the subsystem object.
             oSubSystem = oExample.toChildren.SubSystem;
@@ -97,39 +110,87 @@ classdef setup < simulation
 
             
             %% Logging
+            
+            oLog = this.toMonitors.oLogger;
+            
+            tiLog.ALL_EMP = oLog.add('Example', 'flow_props');
+            tiLog.ALL_SUB = oLog.add('Example/SubSystem', 'flow_props');
+            
+            
+            tiLog.PM_O2_Tank_1 = oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'arPartialMass(this.oMT.tiN2I.O2)', 'Tank1 O2', 'kg');
+            tiLog.PM_O2_Tank_2 = oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'arPartialMass(this.oMT.tiN2I.O2)', 'Tank2 O2', 'kg');
+            
+            
+            
+            %% Define Plots
+            
+            
+            oPlot = this.toMonitors.oPlotter;
+            
+            
+            % 
+            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
+            %oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
+            
+            
+            oPlot.definePlotWithFilter(tiLog.ALL_EMP, 'kg', 'Tank Masses - System Example');
+            oPlot.definePlotWithFilter(tiLog.ALL_SUB, 'kg', 'Tank Masses - System Subsystem');
+            
+            
+            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
+            
+            
+            
+            % Just specific indices - O2
+            oPlot.definePlot([ tiLog.PM_O2_Tank_1 tiLog.PM_O2_Tank_2 ], 'Tank 1/2 O2 Partials in Percent (1 = 100%)');
+            
+            
+            
+            
             % Creating a cell setting the log items
-            this.csLog = {
-                % System timer
-                'oData.oTimer.fTime';                                                                   % 1
-                
-                % Add other parameters here
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';                       % 2
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';                                 % 3
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';                       % 4
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';                                 % 5
-                'toChildren.Example.toChildren.SubSystem.aoBranches(1).fFlowRate';                      % 6
-                'toChildren.Example.toChildren.SubSystem.aoBranches(2).fFlowRate';                      % 7
-                'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(1).fMassToPressure';  % 8
-                'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(1).fMass';            % 9
-                'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(2).fMassToPressure';  % 10
-                'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(2).fMass';            % 11
-                'toChildren.Example.toChildren.SubSystem.toStores.Filter.oProc.fFlowRate';              % 12
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)';% 13
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)';% 14
-                
-                
-                };
+%             this.csLog = {
+%                 % System timer
+%                 'oData.oTimer.fTime';                                                                   % 1
+%                 
+%                 % Add other parameters here
+%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';                       % 2
+%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';                                 % 3
+%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';                       % 4
+%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';                                 % 5
+%                 'toChildren.Example.toChildren.SubSystem.aoBranches(1).fFlowRate';                      % 6
+%                 'toChildren.Example.toChildren.SubSystem.aoBranches(2).fFlowRate';                      % 7
+%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(1).fMassToPressure';  % 8
+%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(1).fMass';            % 9
+%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(2).fMassToPressure';  % 10
+%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(2).fMass';            % 11
+%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.oProc.fFlowRate';              % 12
+%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)';% 13
+%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)';% 14
+%                 
+%                 
+%             };
+            
+            
+            
+            
             
             %% Simulation length
             % Stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 500 * 1; % In seconds
+            this.fSimTime = 900 * 1; % In seconds
             this.iSimTicks = 600;
             this.bUseTime = true;
 
         end
         
         function plot(this) % Plotting the results
+            
+            this.toMonitors.oPlotter.plot();
+            
+            return;
+            
+            
+            
             % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
             % further information
             

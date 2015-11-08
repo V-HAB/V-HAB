@@ -14,18 +14,22 @@ classdef ExampleSubsystem < vsys
             
             this@vsys(oParent, sName);
             
+            eval(this.oRoot.oCfgParams.configCode(this));
+            
+            
+            
             % Creating a filter as shown in the p2p Example
-            this.addStore(tutorials.subsystems.components.Filter(this, 'Filter', 10));
+            tutorials.subsystems.components.Filter(this, 'Filter', 10);
             
             % Creating the branch from the parent system into this subsystem
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'Interface port name'
-            this.createBranch('Filter.FilterIn', {}, 'Inlet');
+            matter.branch(this, 'Filter.FilterIn', {}, 'Inlet');
             
             % Creating the branch out of this subsystem into the parent system 
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'Interface port name'
-            this.createBranch('Filter.FilterOut', {}, 'Outlet');
+            matter.branch(this, 'Filter.FilterOut', {}, 'Outlet');
                                       
             % Seal - systems always have to do that!
             this.seal();

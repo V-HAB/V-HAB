@@ -14,44 +14,64 @@ classdef setup < simulation.infrastructure
     methods
         function this = setup(ptConfigParams, tSolverParams) % Constructor function
             
-            % vhab.exec always passes in ptConfigParams, tSolverParams
-            % If not provided, set to empty containers.Map/struct
-            % Can be passed to vhab.exec:
-            %
-            % ptCfgParams = containers.Map();
-            % ptCfgParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
-            % vhab.exec('tutorials.simple_flow.setup', ptCfgParams);
+%             tSolverParams.rUpdateFrequency = 10;
+%             tSolverParams.rHighestMaxChangeDecrease = 1000;
+%             
+%             tSolverParams.rUpdateFrequency = 1;
+%             tSolverParams.rHighestMaxChangeDecrease = 1000;
+%             
+%             tSolverParams.rUpdateFrequency = 5;
+%             tSolverParams.rHighestMaxChangeDecrease = 500;
+%             
+%             
+%             tSolverParams.rUpdateFrequency = 1;
+%             tSolverParams.rHighestMaxChangeDecrease = 100;
+%             
+%             
+%             tSolverParams.rUpdateFrequency = 2.5;
+%             tSolverParams.rHighestMaxChangeDecrease = 50;
+%             
+%             
+%             tSolverParams.rUpdateFrequency = 0.5;
+%             tSolverParams.rHighestMaxChangeDecrease = 100;
             
-            
-            % By Path - will overwrite (by definition) CTOR value, even 
-            % though the CTOR value is set afterwards!
-            %%%ptConfigParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
-            
-            
-            % By constructor
-            %%%ptConfigParams('tutorials.simple_flow.systems.Example') = struct('fPipeLength', 5, 'fPressureDifference', 2);
-            
-            
-            
-            % Possible to change the constructor paths and params for the
-            % monitors
-            ttMonitorConfig = struct();
-            
-            %%%ttMonitorConfig.oConsoleOutput = struct('cParams', {{ 50 5 }});
-            
-            %tSolverParams.rUpdateFrequency = 0.1;
-            %tSolverParams.rHighestMaxChangeDecrease = 100;
+
+            tSolverParams.rUpdateFrequency = 0.2;
+            tSolverParams.rHighestMaxChangeDecrease = 25;
+
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Simple_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('T_Piece', ptConfigParams, tSolverParams);
+            
+%             this.oSimulationContainer.oTimer.setMinStep(1e-12);
+            
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            tutorials.simple_flow.systems.Example(this.oSimulationContainer, 'Example');
+            tutorials.t_piece.systems.Example(this.oSimulationContainer, 'Example');
+            
             
             % This is an alternative to providing the ttMonitorConfig above
             %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
+            
+            oP = this.oSimulationContainer.toChildren.Example.toStores.T_Piece.aoPhases(1);
+            
+%             oP.rMaxChange = 0.01;% oP.rMaxChange * 100000;
+            %oP.rMaxChange = oP.rMaxChange * 100;
+%             oP.rMaxChange = 0.01;
+%             oP.rHighestMaxChangeDecrease = 1000;
+            oP.bSynced = true;
+            
+            
+            
+            oSolver1 = this.oSimulationContainer.toChildren.Example.coSolvers{1};
+            oSolver2 = this.oSimulationContainer.toChildren.Example.coSolvers{2};
+            oSolver3 = this.oSimulationContainer.toChildren.Example.coSolvers{3};
+            
+            oSolver1.iDampFR = 5;
+            oSolver2.iDampFR = 5;
+            oSolver3.iDampFR = 5;
             
             
             %% Logging
@@ -63,29 +83,6 @@ classdef setup < simulation.infrastructure
             
             tiFlowProps = oLog.add('Example', 'flow_props');
             
-            assignin('base', 'tiFlowProps', tiFlowProps);
-            
-            % Add single values
-            iPropLogIndex1 = oLog.addValue('Example', 'iChildren',     [],  'Label of Prop');
-            %keyboard();
-            iPropLogIndex2 = oLog.addValue('Example', 'fPipeDiameter', 'm', 'Pipe Diameter');
-            
-            
-%             this.csLog = {
-%                 % System timer
-%                 'oData.oTimer.fTime';                                              % 1
-%                 
-%                 % Logging pressures, masses and the flow rate
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';  % 2
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';  % 4
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
-%                 'toChildren.Example.aoBranches(1).fFlowRate';                      % 6
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemp';
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemp';     % 8
-% 
-%                 % You can add other parameters here
-%                 };
             
 
             %% Define plots
@@ -96,6 +93,8 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
             oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
             oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
+            
+            oPlot.definePlot(12, 'ASD')
             
             
 

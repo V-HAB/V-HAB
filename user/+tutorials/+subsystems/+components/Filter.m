@@ -50,6 +50,7 @@ classdef Filter < matter.store
             % Input parameters: name, flow phase name, absorber phase name, 
             % species to be filtered, filter capacity
             this.oProc = tutorials.subsystems.components.AbsorberExample(this, 'filterproc', 'FlowPhase.filterport', 'FilteredPhase.filterport', 'O2', fCapacity);
+            %this.oProc = tutorials.subsystems.components.AbsorberExample(this, 'filterproc', 'FlowPhase', 'FilteredPhase', 'O2', fCapacity);
             
         end
     end

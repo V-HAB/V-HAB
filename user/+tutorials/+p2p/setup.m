@@ -86,10 +86,20 @@ classdef setup < simulation.infrastructure
 %             else                     this.oData.set('rHighestMaxChangeDecrease', 25);
 %             end
             
-            tSolverParams.rUpdateFrequency = 2;
-            tSolverParams.rHighestMaxChangeDecrease = 25;
+%             tSolverParams.rUpdateFrequency = 2;
+%             tSolverParams.rHighestMaxChangeDecrease = 25;
             
+            % 2 / 25 - 3.3k ticks, ok
+            % 1 / 100 - ok - faster (~3.5k ticks?)
             
+            tSolverParams.rUpdateFrequency = 0.1;
+            tSolverParams.rHighestMaxChangeDecrease = 1000;
+            
+%             tSolverParams.rUpdateFrequency = 0.5;
+%             tSolverParams.rHighestMaxChangeDecrease = 100;
+            
+            %tSolverParams.rUpdateFrequency = 1;
+            %tSolverParams.rHighestMaxChangeDecrease = 50;
             
             
             
@@ -130,6 +140,7 @@ classdef setup < simulation.infrastructure
             % that as soon as the flow rate of one of the solvers changes,
             % the other solvers will also immediately calculate a new FR.
             this.aoFilterPhases(1).bSynced = true;
+            this.aoFilterPhases(1).bSynced = false;
             
             
             % The phase for the adsorbed matter in the filter store has a
@@ -147,21 +158,21 @@ classdef setup < simulation.infrastructure
             oL = this.toMonitors.oLogger;
             
             
-            oL.addValue('Example:s:Atmos.aoPhases(1)', 'fMassToPressure', 'Atmos mass2press', 'Pa/kg');
-            oL.addValue('Example:s:Filter.aoPhases(1)', 'fMassToPressure', 'Filter mass2press', 'Pa/kg');
+            this.tiLog.M2P_Atmos  = oL.addValue('Example:s:Atmos.aoPhases(1)', 'fMassToPressure', 'Atmos mass2press', 'Pa/kg');
+            this.tiLog.M2P_Filter = oL.addValue('Example:s:Filter.aoPhases(1)', 'fMassToPressure', 'Filter mass2press', 'Pa/kg');
             
-            oL.addValue('Example:s:Atmos.aoPhases(1)', 'fMass', 'Atmos Mass', 'kg');
-            oL.addValue('Example:s:Atmos.toPhases.Atmos_Phase_1', 'fMass', 'Atmos Mass', 'kg');
+            this.tiLog.M_Atmos = oL.addValue('Example:s:Atmos.aoPhases(1)', 'fMass', 'Atmos Mass', 'kg');
+            %oL.addValue('Example:s:Atmos.toPhases.Atmos_Phase_1', 'fMass', 'Atmos Mass', 'kg');
             
-            oL.addValue('Example:s:Filter.aoPhases(1)', 'fMass', 'Filter Mass', 'kg');
-            oL.addValue('Example:s:Filter.aoPhases(2)', 'fMass', 'Filtered Mass', 'kg');
+            this.tiLog.M_Filter   = oL.addValue('Example:s:Filter.aoPhases(1)', 'fMass', 'Filter Mass', 'kg');
+            this.tiLog.M_Filtered = oL.addValue('Example:s:Filter.aoPhases(2)', 'fMass', 'Filtered Mass', 'kg');
             
-            oL.addValue('Example:s:Atmos.aoPhases(1)', 'afMass(this.oMT.tiN2I.O2)', 'Atmos O2', 'kg');
-            oL.addValue('Example:s:Filter.aoPhases(2)', 'afMass(this.oMT.tiN2I.O2)', 'Filtered O2', 'kg');
+            this.tiLog.PM_O2_Atmos    = oL.addValue('Example:s:Atmos.aoPhases(1)', 'afMass(this.oMT.tiN2I.O2)', 'Atmos O2', 'kg');
+            this.tiLog.PM_O2_Filtered = oL.addValue('Example:s:Filter.aoPhases(2)', 'afMass(this.oMT.tiN2I.O2)', 'Filtered O2', 'kg');
             
-            oL.addValue('Example.aoBranches(1)', 'fFlowRate', 'Flow Rate To Filter', 'kg/s');
-            oL.addValue('Example.aoBranches(2)', 'fFlowRate', 'Flow Rate From Filter', 'kg/s');
-            oL.addValue('Example:s:Filter.oProc', 'fFlowRate', 'Proc Flow Rate', 'kg/s');
+            this.tiLog.FR_AtmFlt  = oL.addValue('Example.aoBranches(1)', 'fFlowRate', 'Flow Rate To Filter', 'kg/s');
+            this.tiLog.FR_FltAtm  = oL.addValue('Example.aoBranches(2)', 'fFlowRate', 'Flow Rate From Filter', 'kg/s');
+            this.tiLog.FR_FltProc = oL.addValue('Example:s:Filter.oProc', 'fFlowRate', 'Proc Flow Rate', 'kg/s');
             
             
             
@@ -205,7 +216,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Simulation length - stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 1;
+            this.fSimTime = 2000 * 1;
             %this.fSimTime = 1700;
             this.iSimTicks = 600;
             this.bUseTime = true;
@@ -215,25 +226,34 @@ classdef setup < simulation.infrastructure
         
         function plot(this)
             
-            close all 
+            %close all 
+            
+            oLogger = this.toMonitors.oLogger;
+            
+            [ mfLog, tConfig ] = oLogger.get(1:length(oLogger.tLogValues));
+            
+            
             
             figure('name', 'Tank Pressures');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [ 2 3 ]) .* this.mfLog(:, [ 9 11 ]));
+            %plot(this.mfLog(:,1), this.mfLog(:, [ 2 3 ]) .* this.mfLog(:, [ 9 11 ]));
+            plot(oLogger.afTime, mfLog(:, [ 1 2 ]) .* mfLog(:, [ 3 4 ]));
+            %plot(oLogger.afTime, mfLog(:, [ this.tiLog.M2P_Atmos this.tiLog.M2P_Filter ]) .* mfLog(:, [ this.tiLog.M_Atmos this.tiLog.M_Filter ]));
             legend('Atmos', 'Filter Flow');
             ylabel('Pressure in Pa');
             xlabel('Time in s');
 
             
             
-            oPlotter.addPlot({ 'FR1', 'FR2' }, 'Filter Flow Rates');
+            %oPlotter.addPlot({ 'FR1', 'FR2' }, 'Filter Flow Rates');
             
             
             figure('name', 'Flow Rates');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [ this.tiLog.FR1 this.tiLog.FR2 ]));
+            %plot(this.mfLog(:,1), this.mfLog(:, [ this.tiLog.FR1 this.tiLog.FR2 ]));
+            plot(oLogger.afTime, mfLog(:, [ 8 9 ]));
             legend('atmos to filter', 'filter to atmos');
             ylabel('flow rate [kg/s]');
             xlabel('Time in s');
@@ -241,7 +261,8 @@ classdef setup < simulation.infrastructure
             figure('name', 'Filter Rate');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 6));
+            %plot(this.mfLog(:,1), this.mfLog(:, 6));
+            plot(oLogger.afTime, mfLog(:, 10));
             legend('filter filter');
             ylabel('flow rate [kg/s]');
             xlabel('Time in s');
@@ -250,7 +271,8 @@ classdef setup < simulation.infrastructure
             figure('name', 'Tank O2 Masses');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 7:8));
+            %plot(this.mfLog(:,1), this.mfLog(:, 7:8));
+            plot(oLogger.afTime, mfLog(:, [ 6 7 ]));
             legend('Atmos', 'Filtered');
             ylabel('Mass in kg');
             xlabel('Time in s');
@@ -258,8 +280,9 @@ classdef setup < simulation.infrastructure
             figure('name', 'Tank Masses');
             hold on;
             grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 9:11));
-            legend('Atmos', 'Filter Stored', 'Filter Flow');
+            %plot(this.mfLog(:,1), this.mfLog(:, 9:11));
+            plot(oLogger.afTime, mfLog(:, [ 3 4 5 ]));
+            legend('Atmos', 'Filter Flow', 'Filter Stored');
             ylabel('Mass in kg');
             xlabel('Time in s');
             
@@ -267,7 +290,8 @@ classdef setup < simulation.infrastructure
             figure('name', 'Time Step');
             hold on;
             grid minor;
-            plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
+            %plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
+            plot(1:length(oLogger.afTime), oLogger.afTime, '-*');
             legend('Solver');
             ylabel('Time Step [kg/s]');
             xlabel('Time in s');
