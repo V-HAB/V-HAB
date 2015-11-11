@@ -89,6 +89,7 @@ classdef fan < matter.procs.f2f
             
             % Setting the operational mode
             this.sMode = varargin{3};
+            iNargin    = nargin;
             
             % See which setpoint we are using depending on the mode
             if strcmp(varargin{3}, 'setSpeed')

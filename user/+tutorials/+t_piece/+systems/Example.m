@@ -66,7 +66,10 @@ classdef Example < vsys
             
             matter.store(this, 'T_Piece', fVolume);
             %this.toStores.T_Piece.createPhase('air', 'air', fVolume * (this.fPressureDifference / 2 + 1));
-            this.toStores.T_Piece.createPhase('air', 'air', fVolume, [], [], 1.0411e5);
+            %this.toStores.T_Piece.createPhase('air', 'air', fVolume, [], [], 1.0411e5);
+            matter.phases.gas_virtual(this.toStores.T_Piece, 'air', struct('N2', 0.8, 'O2', 0.2), fVolume, 293.15);
+            
+            
             
             matter.procs.exmes.gas(this.toStores.T_Piece.toPhases.air, 'Port_1');
             matter.procs.exmes.gas(this.toStores.T_Piece.toPhases.air, 'Port_2');

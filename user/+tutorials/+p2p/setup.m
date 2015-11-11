@@ -161,7 +161,7 @@ classdef setup < simulation.infrastructure
             this.tiLog.M2P_Atmos  = oLogger.addValue('Example:s:Atmos.aoPhases(1)', 'fMassToPressure', 'Atmos mass2press', 'Pa/kg');
             this.tiLog.M2P_Filter = oLogger.addValue('Example:s:Filter.aoPhases(1)', 'fMassToPressure', 'Filter mass2press', 'Pa/kg');
             
-            this.tiLog.M_Atmos = oL.addValue('Example:s:Atmos.aoPhases(1)', 'fMass', 'Atmos Mass', 'kg');
+            this.tiLog.M_Atmos = oLogger.addValue('Example:s:Atmos.aoPhases(1)', 'fMass', 'Atmos Mass', 'kg');
             %oL.addValue('Example:s:Atmos.toPhases.Atmos_Phase_1', 'fMass', 'Atmos Mass', 'kg');
             
             this.tiLog.M_Filter   = oLogger.addValue('Example:s:Filter.aoPhases(1)', 'fMass', 'Filter Mass', 'kg');

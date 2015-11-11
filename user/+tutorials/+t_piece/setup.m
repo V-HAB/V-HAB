@@ -38,6 +38,10 @@ classdef setup < simulation.infrastructure
 
             tSolverParams.rUpdateFrequency = 0.2;
             tSolverParams.rHighestMaxChangeDecrease = 25;
+            
+            
+            tSolverParams.rUpdateFrequency = 1;
+            tSolverParams.rHighestMaxChangeDecrease = 0;
 
             
             % First we call the parent constructor and tell it the name of

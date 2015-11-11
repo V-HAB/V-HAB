@@ -67,7 +67,7 @@ classdef setup < simulation.infrastructure
             
             
             if ~isfield('tSolverParams', 'rHighestMaxChangeDecrease')
-                tSolverParams.rHighestMaxChangeDecrease = 250;
+                tSolverParams.rHighestMaxChangeDecrease = 500;
             end
             
             
