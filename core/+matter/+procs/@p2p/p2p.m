@@ -30,12 +30,12 @@ classdef p2p < matter.flow
             
             
             % Phases / ports
-            [ sPhaseAndPortIn,  sPortIn ]  = strtok(sPhaseAndPortIn, '.');
-            [ sPhaseAndPortOut, sPortOut ] = strtok(sPhaseAndPortOut, '.');
+            [ sPhaseIn,  sPortIn ]  = strtok(sPhaseAndPortIn, '.');
+            [ sPhaseOut, sPortOut ] = strtok(sPhaseAndPortOut, '.');
             
             % Find the phases
-            iPhaseIn  = find(strcmp({ oStore.aoPhases.sName }, sPhaseAndPortIn ), 1);
-            iPhaseOut = find(strcmp({ oStore.aoPhases.sName }, sPhaseAndPortOut), 1);
+            iPhaseIn  = find(strcmp({ oStore.aoPhases.sName }, sPhaseIn ), 1);
+            iPhaseOut = find(strcmp({ oStore.aoPhases.sName }, sPhaseOut), 1);
             
             if isempty(iPhaseIn) || isempty(iPhaseOut)
                 this.throw('p2p', 'Phase could not be found: in phase "%s" has index "%i", out phase "%s" has index "%i"', sPhaseIn, iPhaseIn, sPhaseOut, iPhaseOut);
@@ -47,10 +47,26 @@ classdef p2p < matter.flow
             % Can only be done after this.oStore is set, store checks that!
             this.oStore.addP2P(this);
             
-            % Add ourselves to phase ports (default name!)
-            %TODO do the phases need some .getPort or stuff?
+            
+            % If no port is given in sPaseAndPortIn or -Out, auto-create
+            % EXMEs, else add the flow to the given (by name) EXME
+            if isempty(sPortIn)
+                sPortIn = sprintf('.p2p_%s_in', this.sName);
+                
+                matter.procs.exmes.gas(oStore.aoPhases(iPhaseIn), sPortIn(2:end));
+            end
+            
+            if isempty(sPortOut)
+                sPortOut = sprintf('.p2p_%s_out', this.sName);
+                
+                matter.procs.exmes.gas(oStore.aoPhases(iPhaseOut), sPortOut(2:end));
+            end
+            
+            
+            %TODO add .getPort method to phase?
             oStore.aoPhases(iPhaseIn ).toProcsEXME.(sPortIn(2:end) ).addFlow(this);
             oStore.aoPhases(iPhaseOut).toProcsEXME.(sPortOut(2:end)).addFlow(this);
+            
         end
     end
     

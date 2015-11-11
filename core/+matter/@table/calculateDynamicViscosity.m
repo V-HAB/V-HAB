@@ -19,9 +19,9 @@ if length(varargin) == 1
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type
     if isa(varargin{1}, 'matter.phase')
-        sPhase = varargin{1}.sType;
+        sMatterState = varargin{1}.sType;
     elseif isa(varargin{1}, 'matter.flow')
-        sPhase = varargin{1}.oBranch.getInEXME().oPhase.sType;
+        sMatterState = varargin{1}.oBranch.getInEXME().oPhase.sType;
     end
     
     fTemperature  = varargin{1}.fTemperature;
@@ -34,8 +34,8 @@ if length(varargin) == 1
         return;
     end
 else
-    sPhase = varargin{1};
-    afMass = varargin{2};
+    sMatterState = varargin{1};
+    afMass       = varargin{2};
     
     arPartialMass = afMass ./ sum(afMass);
     
@@ -60,7 +60,17 @@ aiIndices = find(arPartialMass > 0);
 afEta = zeros(1, length(aiIndices));
 
 for iI = 1:length(aiIndices)
-    afEta(iI) = this.findProperty(this.csSubstances{aiIndices(iI)}, 'Dynamic Viscosity', 'Temperature', fTemperature, 'Pressure', fPressure, sPhase);
+    tParameters = struct();
+    tParameters.sSubstance = this.csSubstances{aiIndices(iI)};
+    tParameters.sProperty = 'Dynamic Viscosity';
+    tParameters.sFirstDepName = 'Temperature';
+    tParameters.fFirstDepValue = fTemperature;
+    tParameters.sPhaseType = sMatterState;
+    tParameters.sSecondDepName = 'Pressure';
+    tParameters.fSecondDepValue = fPressure;
+    tParameters.bUseIsobaricData = false;
+    
+    afEta(iI) = this.findProperty(tParameters);
 end
 
 fEta = sum(afEta .* arPartialMass(aiIndices));

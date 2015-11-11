@@ -42,15 +42,11 @@ classdef Filter < matter.store
             % filterports are internal ones for the p2p processor to use.
             matter.procs.exmes.gas(oFlow,     'FilterIn');
             matter.procs.exmes.gas(oFlow,     'FilterOut');
-            matter.procs.exmes.gas(oFlow,     'filterport');
-            matter.procs.exmes.gas(oFiltered, 'filterport');
-            
             
             % Creating the p2p processor
             % Input parameters: name, flow phase name, absorber phase name, 
             % species to be filtered, filter capacity
-            this.oProc = tutorials.subsystems.components.AbsorberExample(this, 'filterproc', 'FlowPhase.filterport', 'FilteredPhase.filterport', 'O2', fCapacity);
-            %this.oProc = tutorials.subsystems.components.AbsorberExample(this, 'filterproc', 'FlowPhase', 'FilteredPhase', 'O2', fCapacity);
+            this.oProc = tutorials.subsystems.components.AbsorberExample(this, 'filterproc', 'FlowPhase', 'FilteredPhase', 'O2', fCapacity);
             
         end
     end

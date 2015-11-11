@@ -69,6 +69,9 @@ classdef table < base
         % individual substances can be extracted when needed.
         tiN2I;
         
+        % Reverse of tiN2I
+        asI2N;
+        
         % A cell array with the names of all substances contained in the
         % matter table
         csSubstances;
@@ -100,26 +103,15 @@ classdef table < base
             % Check for pre-existing data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            % First we'll check if the Excel source file for all the matter
-            % data has changed since this constructor was last run. If not,
+            % First we'll check if the source files for all the matter data
+            % have changed since this constructor was last run. If not,
             % then we can just use the existing data without having to go
             % through the entire import process again.
             
-            % Initializing the info struct
-            tMatterDataInfo = struct(); 
-            
-            % Loading the previously saved information about the current
-            % matter data, if it exists.
-            tOldFileInfo = dir(strrep('data\MatterDataInfo.mat', '\', filesep));
-            
-            if ~isempty(tOldFileInfo) && ~isempty(dir(strrep('data\MatterData.mat', '\', filesep)))
-                % If there is existing data, we get the file information on
-                % the current Matter.xlsx file so we can compare the two.
-                load(strrep('data\MatterDataInfo.mat', '\', filesep));
-                tNewFileInfo = dir(strrep('core\+matter\Matter.xlsx', '\', filesep));
-                if tNewFileInfo.datenum <= tMatterDataInfo.datenum
-                    % If the current Excel file is not newer than the one
-                    % used to create the stored data, we can just use that.
+            if ~tools.checkForChanges(fullfile('lib','+matterdata'))
+                % If the files have not changed, we can load the
+                % MatterData.mat file, if it exists.
+                if exist(strrep('data\MatterData.mat', '\', filesep),'file')
                     load(strrep('data\MatterData.mat', '\', filesep));
                     % The return command ends the constructor method
                     return;
@@ -127,7 +119,7 @@ classdef table < base
             end
             
             % Notify user that generating the matter data will take some time.
-            disp('Regenerating matter table from XSLX. This will take a moment ...');
+            disp('Regenerating matter table from stored data. This will take a moment ...');
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Introduction %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -135,31 +127,33 @@ classdef table < base
             
             % Now that we have determined, that there is no pre-existing
             % data we have to call importMatterData() a few times to fill
-            % the ttxMatter struct with data from the given Excel file.
-            % The Excel file has one general worksheet which contains basic
+            % the ttxMatter struct with data from the .csv files in the
+            % library.
+            % There is one general matter data file which contains basic
             % information about every element in the periodic table and
             % some compounds. It also contains basic information about
             % substances which cannot be clealy defined (e.g. 'inedible
             % biomass' or 'brine'), but still need to be used in more
             % top-level simulations.
-            % The Excel file also contains worksheets for individual
-            % substances. These substance-specific worksheets contain many
-            % datapoints for several key properties at different
-            % temperatures, pressures etc. The findProperty() method uses
-            % these datapoints to interpolate between them if called.
+            % There are also files for individual substances. These 
+            % substance-specific worksheets contain many datapoints for 
+            % several key properties at different temperatures, pressures 
+            % etc. both for isochoric and isobaric state changes. 
+            % The findProperty() method uses these datapoints to 
+            % interpolate between them if called.
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Importing data from 'MatterData' worksheet %%%%%%%%%%%%%%%%%%
+            % Importing data from 'MatterData.csv' file %%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             % First we import all of the data contained in the general
-            % 'MatterData' worksheet.
+            % 'MatterData.csv' file.
             
             % Calling the importMatterData method (strrep with filesep is
             % used for compatibility of MS and Mac OS, it replaces the
             % backslash with the current system fileseparator, on Macs and
             % Linux, this is the forward slash.)
-            [ this.ttxMatter, csWorksheets ] = importMatterData(this, strrep('core\+matter\Matter.xlsx','\',filesep), 'MatterData');
+            this.ttxMatter = importMatterData('MatterData');
              
             % get all substances
             this.csSubstances = fieldnames(this.ttxMatter);
@@ -184,7 +178,7 @@ classdef table < base
                 % Since we are importing the data from the 'MatterData'
                 % worksheet, rather than the individual worksheet, we set
                 % the boolean variable indicating this to false.
-                this.ttxMatter.(this.csSubstances{iI}).bIndividualWorksheet = false;
+                this.ttxMatter.(this.csSubstances{iI}).bIndividualFile = false;
                 
                 % Adding an entry to the name to index struct.
                 this.tiN2I.(this.csSubstances{iI}) = iI;
@@ -193,7 +187,7 @@ classdef table < base
                 % provided by the 'MatterData' worksheet, we try to
                 % calculate it. This is only possible if the substance name
                 % is given as a chemical formula, e.g. 'H2O' for water.
-                if ~isfield(tSubstance, 'fMolarMass')
+                if isempty(tSubstance.fMolarMass)
                     
                     % Extract the atomic elements from matter name
                     tElements  = matter.table.extractAtomicTypes(this.csSubstances{iI});
@@ -217,24 +211,10 @@ classdef table < base
                         end
                     end
                     
-                    % Now we loop through all the elements of the
-                    % substance, check if a molar mass is given an add
-                    % them up.
-                    for iE = 1:length(csElements)
-                        if isfield(this.ttxMatter, csElements{iE}) && isfield(this.ttxMatter.(csElements{iE}), 'fMolarMass')
-                            fMolarMass = fMolarMass + tElements.(csElements{iE}) * this.ttxMatter.(csElements{iE}).fMolarMass;
-                        else
-                            % Throwing an error because there is no entry
-                            % for this specific element
-                            this.throw('table:constructor', 'No molar mass provided for element ''%s''', this.csSubstances{iI});
-                        end
-                    end
-                    
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    
                     % Now we add a struct with all the elements of the
                     % substance to its entry in the ttxMatter struct.
-                    this.ttxMatter.(this.csSubstances{iI}).tElements = tElements;
+                    this.ttxMatter.(this.csSubstances{iI}).tElements  = tElements;
+                    this.ttxMatter.(this.csSubstances{iI}).fMolarMass = fMolarMass;
                     
                 else
                     
@@ -251,48 +231,56 @@ classdef table < base
             
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Importing from individual worksheets %%%%%%%%%%%%%%%%%%%%%%%%
+            % Importing from individual substance files %%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             % Now we import all of the data contained in the individual
-            % worksheets of the Excel file.
+            % substance files. The NIST Scraper tool creates a data file
+            % that contains the information on how many and which
+            % substances have individual files. So the first thing to do is 
+            % to read this file.
             
-            % Looping through all of the worksheets. The first worksheet
-            % ('Info') just contains information on how to add data to the
-            % Exel file. We just imported the second worksheet,
-            % 'MatterData', so now we start at number 3.
-            for iI = 3:length(csWorksheets)
+            iFileID = fopen(strrep('lib/+matterdata/NIST_Scraper_Data.csv', '/', filesep));
+            csInput = textscan(iFileID, '%s', 'Delimiter','\n');
+            csInput = csInput{1};
+            sInput_1  = csInput{1};
+            csSubstances = textscan(sInput_1,'%s','Delimiter',',');
+            csSubstances = csSubstances{1};
+            
+            fclose(iFileID);
+            
+            
+            
+            
+            for iI = 1:length(csSubstances)
                 
-                % Getting the substance name from the worksheet name.
-                sSubstancename = csWorksheets{iI};
+                % Getting the substance name
+                sSubstanceName = csSubstances{iI};
                 
-                % Calling the importMatterData method (strrep with filesep is
-                % used for compatibility of MS and Mac OS, it replaces the
-                % backslash with the current system fileseparator, on Macs and
-                % Linux, this is the forward slash.)
-                this.ttxMatter.(sSubstancename) = importMatterData(this, strrep('core\+matter\Matter.xlsx','\',filesep), sSubstancename);
-                
-                % Since we are importing the data from an individual
-                % worksheet, we set the boolean variable indicating this to
-                % true.
-                this.ttxMatter.(sSubstancename).bIndividualWorksheet = true;
+                % Calling the importMatterData method with the substance
+                % name as the single parameter. It will be used by the
+                % method to identify the individual files. 
+                this.ttxMatter.(sSubstanceName) = importMatterData(sSubstanceName);
                 
                 % Now we need to update some of the global information
-                if ~any(strcmp(this.csSubstances, sSubstancename))
+                if ~any(strcmp(this.csSubstances, sSubstanceName))
                     
                     % First we increment the total number of substances
                     this.iSubstances = this.iSubstances+1;
                     
                     % Write new substancename into the cellarray
-                    this.csSubstances{this.iSubstances} = sSubstancename;
+                    this.csSubstances{this.iSubstances} = sSubstanceName;
                     
                     % Add index of new substance to name to index struct
-                    this.tiN2I.(sSubstancename) = this.iSubstances;
+                    this.tiN2I.(sSubstanceName) = this.iSubstances;
                     
                     % Write molar mass of substance into molar mass array
-                    this.afMolarMass(this.iSubstances) = this.ttxMatter.(sSubstancename).fMolarMass;
+                    this.afMolarMass(this.iSubstances) = this.ttxMatter.(sSubstanceName).fMolarMass;
                 end
             end
+            
+            % Get list of substance indices.
+            this.asI2N = fieldnames(this.tiN2I);
             
             % Now we save the data into a .mat file, so if the matter table
             % doesn't change, we don't have to run through the entire
@@ -303,20 +291,6 @@ classdef table < base
             filename = strrep('data\MatterData.mat', '\', filesep);
             save(filename, 'this', '-v7');
             
-            % To make it a little easier and faster to handle, we'll save
-            % the Excel file information into a separate file. That way we
-            % only have to load a small file rather than the entire matter
-            % table at the beginning of this constructor.
-            tMatterDataInfo = dir(strrep('core\+matter\Matter.xlsx','\',filesep));
-            filename = strrep('data\MatterDataInfo.mat', '\', filesep);
-            save(filename, 'tMatterDataInfo', '-v7');
-            
-            % Stupid MATLAB doesn't realize, that we are using
-            % tMatterDataInfo in the save command. So we have to do
-            % something with this variable so MATLAB doesn't throw the
-            % warning.
-            tMatterDataInfo.isdir = false;
-            
             % Now we are done. All of the data has been written into the
             % matter table and the data has been saved for future use.
             % Let the simulations begin!
@@ -325,556 +299,31 @@ classdef table < base
     end
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Method for calculating matter properties %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     methods
         
-        function fProperty = findProperty(this, sSubstance, sProperty, sFirstDepName, fFirstDepValue, sSecondDepName, fSecondDepValue, sPhaseType)
-            % This function searches for property values that are dependent
-            % on one or two other values. One dependency is mandatory, the
-            % second one is optional.
-            % If the desired value is not given directly in the ttxMatter
-            % struct, the function will perform a linear interpolation to
-            % find the value.
-            % The function does NOT perform extrapolation. If the
-            % dependencies are out of the bounds of the data in ttxMatter,
-            % the value neares to the given dependency values will be
-            % returned. A message will be displayed when this happens.
-            %
-            % FindProperty returns
-            %  fProperty - (interpolated) value of searched property
-            %
-            % Input parameters
-            % sSubstance:     substance name for structfield
-            % sProperty:      property name for column
-            % sFirstDepName:  name of dependency 1 (parameter for findColumn), e.g. 'Temperature'
-            % sFirstDepValue: value of dependency 1
-            % sSecondDepName: name of dependency 2 (parameter for findColumn), e.g. 'Pressure', optional
-            % sFirstDepValue: value of dependency 2, optional
-            % sPhaseType:     only specific phase searched; selects only rows with that phase in MatterData,
-            %                 'gas', 'liquid' or 'solid', optional
-            %
-            % Example input: this.FindProperty('CO2','Heat Capacity','Pressure',120000,'Temperature',278.15,'gas')
-            
-            %% Initializing the return variable
-            
-            fProperty = [];
-            
-            
-            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Checking inputs for correctness %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-            switch nargin
-                %---------------------------------------------------------%
-                case 8 % Two dependencies plus phase type
-                    
-                    % input parameters must be:
-                    % this, Substancename, Property,
-                    % FirstDependency, FirstDependencyValue,
-                    % SecondDependency, SecondDependenyValue,
-                    % Phase type
-                    
-                    % check if all inputs have correct type
-                    if ~ischar(sSubstance) || ~ischar(sProperty) || ~(ischar(sFirstDepName) || ...
-                            isempty(sFirstDepName)) || ~isnumeric(fFirstDepValue) ||...
-                            ~(ischar(sSecondDepName) || isempty(sSecondDepName)) ||...
-                            ~isnumeric(fSecondDepValue) || ~ischar(sPhaseType) || ~ischar(sSubstance)
-                        this.throw('table:FindProperty','Some inputs have wrong type');
-                    else
-                        % number of dependencies
-                        iDependencies = 2;
-                    end
-                    
-                %---------------------------------------------------------%
-                case 7 % Two dependencies without phase type
-                    
-                    % input parameters must be:
-                    % this, Substancename, Property,
-                    % FirstDependency, FirstDependencyValue,
-                    % SecondDependency, SecondDependenyValue,
-                    
-                    % check if all inputs have correct type
-                    if ~ischar(sSubstance) || ~ischar(sProperty) || ~(ischar(sFirstDepName) ||...
-                            isempty(sFirstDepName)) || ~isnumeric(fFirstDepValue) ||...
-                            ~(ischar(sSecondDepName) || isempty(sSecondDepName)) ||...
-                            ~isnumeric(fSecondDepValue) || ~ischar(sSubstance)
-                        this.throw('table:FindProperty','Some inputs have wrong type');
-                    else
-                        % number of dependencies
-                        iDependencies = 2;
-                        sPhaseType = [];
-                    end
-                %---------------------------------------------------------%
-                case 6 % One dependency plus phase type
-                    
-                    % input parameters must be:
-                    % this, Substancename, Property,
-                    % FirstDependency, FirstDependencyValue,
-                    % Phase type
-                    
-                    % check if sPhase is given as last parameter
-                    if isa(sSecondDepName, 'char') && any(strcmpi({'solid','liquid','gas'}, sSecondDepName))
-                        sPhaseType = sSecondDepName;
-                        sSecondDepName = [];
-                        % number of dependencies
-                        iDependencies = 1;
-                    else
-                        this.throw('table:FindProperty','Input phase is not correct');
-                    end
-                %---------------------------------------------------------%
-                case 5 % One dependency without phase type
-                    
-                    % input parameters must be:
-                    % this, Substancename, Property,
-                    % FirstDependency, FirstDependencyValue,
-                    
-                    % check if value of first dependency is numeric
-                    if isnumeric(fFirstDepValue)
-                        sSecondDepName = [];
-                        sPhaseType = [];
-                        % number of dependencies
-                        iDependencies = 1;
-                    else
-                        this.throw('table:FindProperty','Wrong inputtype for first dependency');
-                    end
-                %---------------------------------------------------------%
-                otherwise
-                    % at least one dependency has to be given over
-                    this.throw('table:FindProperty','Not enough inputs');
-                %---------------------------------------------------------%
-            end
-            
-            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Determining the number of dependencies %%%%%%%%%%%%%%%%%%%%%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-            % check if dependencies are valid
-            % if only second dependency is valid -> make it the first
-            if (isempty(sFirstDepName) || ~ischar(sFirstDepName)) && ~(isempty(sSecondDepName) || ischar(sSecondDepName))
-                sFirstDepName = sSecondDepName;
-                sSecondDepName = [];
-                fFirstDepValue = fSecondDepValue;
-                fSecondDepValue = [];
-                % number of dependencies
-                iDependencies = 1;
-            end
-            
-            % last check of parameters
-            if isempty(sFirstDepName) || ~ischar(sFirstDepName) || isempty(fFirstDepValue)
-                this.throw('table:FindProperty',sprintf('no valid dependency was transmitted for property %s',sProperty));
-            end
-            
-            % get column of searched property
-            %iColumn = this.findColumn(sProperty, sSubstance);
-            iColumn = this.ttxMatter.(sSubstance).tColumns.(strrep(sProperty,' ',''));
-            
-            % if no column found, property is not in worksheet
-            if isempty(iColumn)
-                this.throw('table:FindProperty',sprintf('Cannot find property %s in worksheet %s', sProperty, sSubstance));
-            end
-            
-            sReportString = 'Nothing to report.';
-            
-            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Finding properties in dedicated data worksheet %%%%%%%%%%%%%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-            % See if this substance has an individual worksheet
-            if this.ttxMatter.(sSubstance).bIndividualWorksheet
-                
-                % Initialize array for checking if dependencies are out of
-                % table value range
-                abOutOfRange = [false; false];
-                
-                %---------------------------------------------------------%
-                % Getting the first dependency and check for out of range
-                %---------------------------------------------------------%
-                
-                % get column of first dependency
-                iColumnFirst = this.ttxMatter.(sSubstance).tColumns.(strrep(sFirstDepName,' ',''));
-                % if properties are given 2 times (e.g. Temperature has C and K columns), second column is used
-                if length(iColumnFirst) > 1
-                    iColumnFirst = iColumnFirst(2);
-                end
-                % if no column found, property is not in worksheet
-                if isempty(iColumnFirst)
-                    this.throw('table:FindProperty',sprintf('Cannot find property %s in worksheet %s', sFirstDepName, sSubstance));
-                end
-                
-                % look if data for first dependency is in range of table
-                % if not in range, first look if data is given in worksheet MatterData before interpolate
-                fMin = this.ttxMatter.(sSubstance).ttExtremes.(['t',strrep(sFirstDepName,' ','')]).Min;
-                fMax = this.ttxMatter.(sSubstance).ttExtremes.(['t',strrep(sFirstDepName,' ','')]).Max;
-                
-                if fFirstDepValue > fMax
-                    % First dependency is greater than max value in table
-                    % set dependency equal max table value
-                    fFirstDepValue = fMax;
-                    abOutOfRange(1) = true;
-                elseif fFirstDepValue < fMin
-                    % First dependency is less than min value in table
-                    % set dependency equal min table value
-                    fFirstDepValue = fMin;
-                    abOutOfRange(1) = true;
-                end
-                
-                iRowsFirst = find(this.ttxMatter.(sSubstance).import.num(:,iColumnFirst) == fFirstDepValue);
-                
-                %---------------------------------------------------------%
-                % Only one dependency is given
-                %---------------------------------------------------------%
-                
-                if iDependencies == 1
-                    
-                    if ~isempty(iRowsFirst) && ~abOutOfRange(1)
-                        % dependencyvalue in table and in range of table
-                        % direct usage
-                        fProperty = this.ttxMatter.(sSubstance).import.num(iRowsFirst, iColumn);
-                        sReportString = 'One dependency in range. Tried to get value directly from matter table.';
-                        % If more than one values are returned, we cannot
-                        % determine which value is correct. An example for
-                        % this would be the heat capacity of a gas, which
-                        % is dependent on temperature AND pressure, but the
-                        % call only specifies the temperature. Then there
-                        % will be multiple entries in the matter table with
-                        % the same temperature but different heat
-                        % capacities. If this is the case, we abort and
-                        % give the appropriate error message. 
-                        if length(fProperty) > 1
-                            fProperty = NaN;
-                            sReportString = 'The property you are looking for is dependent on more than one value. Please add more dependencies to the call of findProperty().';
-                        end
-                    elseif ~abOutOfRange(1)
-                        % If the property is not directly given an
-                        % interpolation is needed.
-                        
-                        % Check and see, if this interpolation has been
-                        % done before and use those values for better
-                        % performance.
-                        
-                        % First we need to create the unique ID for
-                        % this specific interpolation to see, if it
-                        % already exists.
-                        sID = sprintf('ID%i', iColumnFirst * 100);
-                        
-                        
-                        % Now we check if this interpolation already
-                        % exists. If yes, we just use the saved
-                        % function.
-                        
-                        try
-                            % If there is data, we use it.
-                            fProperty = this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue);
-                            
-                        catch
-                            % The interpolation function does not yet
-                            % exist, so we have to go and run the
-                            % interpolation.
-                            
-                            % create temporary array because scatteredInterpolant doesn't allow NaN values
-                            afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst]);
-                            
-                            % Now we remove all rows that contain NaN values
-                            afTemporary(any(isnan(afTemporary), 2), :) = [];
-                            
-                            % Only unique values are needed (also scatteredInterpolant would give out a warning in that case)
-                            afTemporary = unique(afTemporary,'rows');
-                            % Sometimes there are also multiple values for
-                            % the same combination of dependencies. Here we
-                            % get rid of those too.
-                            [ ~, aIndices ] = unique(afTemporary(:, 2), 'rows');
-                            afTemporary = afTemporary(aIndices, :);
-                            
-                            % interpolate linear with no extrapolation
-                            %CHECK Does it make sense not to extrapolate?
-                            F = griddedInterpolant(afTemporary(:,2),afTemporary(:,1),'linear','none');
-                            fProperty = F(fFirstDepValue);
-                            
-                            % To make this faster the next time around, we
-                            % save the scatteredInterpolant into the matter
-                            % table.
-                            
-                            this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = F;
-                            this.ttxMatter.(sSubstance).bInterpolations = true;
-                            
-                            % This addition to the matter table will be
-                            % overwritten, when the next simulation
-                            % starts, even if Matter.xlsx has not
-                            % changed. To prevent this, we need to save
-                            % the table object again.
-                            filename = strrep('data\MatterData.mat', '\', filesep);
-                            save(filename, 'this', '-v7');
-                        end
-                        
-                        sReportString = 'One dependency in range. Tried to get value by interpolation.';
-%                         % only in range of table
-%                         % interpolation needed
-%                         % create a temporary array because interp1 need stricly monotonic increasing data
-%                         afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst]);
-%                         afTemporary(any(isnan(afTemporary), 2), :) = [];
-%                         afTemporary = sortrows(afTemporary,2);
-%                         [~,rows] = unique(afTemporary(:,2),'rows');
-%                         afTemporary = afTemporary(rows,:);
-%                         fProperty = interp1(afTemporary(:,2),afTemporary(:,1),fFirstDepValue);
-%                         sReportString = 'One dependency in range. Tried to get value by interpolation.';
-                    else
-                        % dependencyvalue is out of range
-                        % look if phase of substance is in MatterData
-                        iRowsFirstMatterData = find(strcmpi(this.ttxMatter.(sSubstance).MatterData.text(:,3), sPhaseType), 1, 'first');
-                        if isempty(iRowsFirstMatterData)
-                            % not in MatterData
-                            % get 'best' value in Range of substancetable
-                            fProperty = this.ttxMatter.(sSubstance).import.num((this.ttxMatter.(sSubstance).import.num(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
-                            sReportString = 'One dependency out of range. Tried to get best value in range.';
-                        else
-                            % get the data from the MatterData-worksheet
-                            % first get column of property
-                            iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sProperty)); % row 1 is std propertyname in MatterData
-                            % get the propertyvalue
-                            fProperty = this.ttxMatter.(sSubstance).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
-                            sReportString = 'One dependency out of range. Tried to get best value from MatterData.';
-                        end
-                    end
-                else
-                    
-                    %---------------------------------------------------------%
-                    % Two dependencies are given.
-                    % Getting the second dependency and check for out of range
-                    %---------------------------------------------------------%
-                    % get column of second dependency
-                    iColumnSecond = this.ttxMatter.(sSubstance).tColumns.(strrep(sSecondDepName,' ',''));
-                
-                    % if no column found, property is not in worksheet
-                    if isempty(iColumnSecond)
-                        this.throw('table:FindProperty',sprintf('Cannot find property %s in worksheet %s', sSecondDepName, sSubstance));
-                    end
-                    
-                    % look if data for second dependency is in range of table
-                    % if not in range, first look if data is given in worksheet MatterData before interpolate
-                    fMin = this.ttxMatter.(sSubstance).ttExtremes.(['t',strrep(sSecondDepName,' ','')]).Min;
-                    fMax = this.ttxMatter.(sSubstance).ttExtremes.(['t',strrep(sSecondDepName,' ','')]).Max;
-                    if fSecondDepValue > fMax
-                        % Second dependency is greater than max value in table
-                        % set dependency equal max table value
-                        fSecondDepValue = fMax;
-                        abOutOfRange(2) = true;
-                    elseif fSecondDepValue < fMin
-                        % Second dependency is less than min value in table
-                        % set dependency equal min table value
-                        fSecondDepValue = fMin;
-                        abOutOfRange(2) = true;
-                    end
-                    
-                    % get columns with already given values of searched second dependency
-                    iRowsSecond = find(this.ttxMatter.(sSubstance).import.num(:,iColumnSecond) == fSecondDepValue);
-                    
-                    if ~(abOutOfRange(1) || abOutOfRange(2))
-                        
-                        %-------------------------------------------------%
-                        % Both dependencies are in range
-                        %-------------------------------------------------%
-                        if ~isempty(iRowsFirst) && ~isempty(iRowsSecond) && ~isempty(intersect(iRowsFirst,iRowsSecond))
-                            % If the desired property for the given
-                            % dependencies is directly given in the matter
-                            % table, we just get it.
-                            fProperty = this.ttxMatter.(sSubstance).import.num(intersect(iRowsFirst,iRowsSecond), iColumn);
-                            
-                            sReportString = 'Both dependencies in range. Tried to get value directly from matter table.';
-                            
-                        else
-                            % If the property is not directly given an
-                            % interpolation over both dependencies is
-                            % needed.
-                            
-                            % Check and see, if this interpolation has been
-                            % done before and use those values for better
-                            % performance.
-                            
-                            % First we need to create the unique ID for
-                            % this specific interpolation to see, if it
-                            % already exists.
-                            sID = sprintf('ID%i', iColumnFirst * 100 + iColumnSecond);
-
-
-                            % Now we check if this interpolation already
-                            % exists. If yes, we just use the saved
-                            % function.
-                            
-                            try
-                                % If there is data, we use it.
-                                fProperty = this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue, fSecondDepValue);
-
-                            catch
-                                % The interpolation function does not yet
-                                % exist, so we have to go and run the
-                                % interpolation.
-                                
-                                % create temporary array because scatteredInterpolant doesn't allow NaN values
-                                afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
-                                
-                                % Now we remove all rows that contain NaN values
-                                afTemporary(any(isnan(afTemporary), 2), :) = [];
-                                
-                                % Only unique values are needed (also scatteredInterpolant would give out a warning in that case)
-                                afTemporary = unique(afTemporary,'rows');
-                                % Sometimes there are also multiple values for
-                                % the same combination of dependencies. Here we
-                                % get rid of those too.
-                                [ ~, aIndices ] = unique(afTemporary(:, [2 3]), 'rows');
-                                afTemporary = afTemporary(aIndices, :);
-                                
-                                % interpolate linear with no extrapolation
-                                %CHECK Does it make sense not to extrapolate?
-                                F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
-                                fProperty = F(fFirstDepValue, fSecondDepValue);
-                                
-                                % To make this faster the next time around, we
-                                % save the scatteredInterpolant into the matter
-                                % table.
-                                
-                                this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = F;
-                                this.ttxMatter.(sSubstance).bInterpolations = true;
-                                
-                                % This addition to the matter table will be
-                                % overwritten, when the next simulation
-                                % starts, even if Matter.xlsx has not
-                                % changed. To prevent this, we need to save
-                                % the table object again.
-                                filename = strrep('data\MatterData.mat', '\', filesep);
-                                save(filename, 'this', '-v7');
-                            end
-                            
-                            sReportString = 'Both dependencies in range. Tried to get value by interpolation.';
-                        end
-                    else
-                        %-------------------------------------------------%
-                        % one or more dependencies are out of range
-                        %-------------------------------------------------%
-                        
-                        % look if data is in MatterData
-                        try
-                            iRowsFirstMatterData = find(strcmpi(this.ttxMatter.(sSubstance).MatterData.text(:,3), sPhaseType), 1, 'first');
-                        catch
-                            iRowsFirstMatterData = [];
-                        end
-                        
-                        if ~isempty(iRowsFirstMatterData)
-                            % data found in MatterData
-                            % first get column of property
-                            iColumn = find(strcmp(this.ttxMatter.(sSubstance).MatterData.text(1,:), sProperty)); % row 1 is std propertyname in MatterData
-                            % get the propertyvalue
-                            fProperty = this.ttxMatter.(sSubstance).MatterData.num(iRowsFirstMatterData-2,iColumn-3);
-                            
-                            sReportString = 'One or more out of range. Tried to get value from MatterData.';
-                        else
-                            
-                            % If the property is not directly given an
-                            % interpolation over both dependencies is
-                            % needed.
-                            
-                            % Check and see, if this interpolation has been
-                            % done before and use those values for better
-                            % performance.
-                            
-                            % First we need to create the unique ID for
-                            % this specific interpolation to see, if it
-                            % already exists.
-                            sID = sprintf('ID%i', iColumnFirst * 100 + iColumnSecond);
-
-
-                            % Now we check if this interpolation already
-                            % exists. If yes, we just use the saved
-                            % function.
-                            
-                            try
-                                % If there is data, we use it.
-                                fProperty = this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue, fSecondDepValue);
-                            catch
-                            
-                                % The interpolation function does not yet
-                                % exist, so we have to go and run the
-                                % interpolation.
-                                
-                                % create temporary array because scatteredInterpolant doesn't allow NaN values
-                                afTemporary = this.ttxMatter.(sSubstance).import.num(:,[iColumn, iColumnFirst, iColumnSecond]);
-                                
-                                % Now we remove all rows that contain NaN values
-                                afTemporary(any(isnan(afTemporary), 2), :) = [];
-                                
-                                % Only unique values are needed (also scatteredInterpolant would give out a warning in that case)
-                                afTemporary = unique(afTemporary,'rows');
-                                % Sometimes there are also multiple values for
-                                % the same combination of dependencies. Here we
-                                % get rid of those too.
-                                [ ~, aIndices ] = unique(afTemporary(:, [2 3]), 'rows');
-                                afTemporary = afTemporary(aIndices, :);
-                                
-                                % interpolate linear with no extrapolation
-                                %CHECK Does it make sense not to extrapolate?
-                                F = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
-                                fProperty = F(fFirstDepValue, fSecondDepValue);
-                                
-                                % To make this faster the next time around, we
-                                % save the scatteredInterpolant into the matter
-                                % table.
-                                
-                                this.ttxMatter.(sSubstance).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = F;
-                                this.ttxMatter.(sSubstance).bInterpolations = true;
-                                
-                                % This addition to the matter table will be
-                                % overwritten, when the next simulation
-                                % starts, even if Matter.xlsx has not
-                                % changed. To prevent this, we need to save
-                                % the table object again.
-                                filename = strrep('data\MatterData.mat', '\', filesep);
-                                save(filename, 'this', '-v7');
-                            end
-                            
-                            sReportString = 'One or more out of range. Tried to get the best possible in range value through interpolation.';
-                        end
-                    end
-                    
-                end
-                
-                
-            else
-                %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % Finding properties in generic MatterData worksheet %%%%%%
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                
-                % get the rows of the phase of the substance
-                % dynamic search of column phase?
-                rowPhase = find(strcmp(this.ttxMatter.(sSubstance).import.text(:,3), sPhaseType), 1, 'first');
-                if rowPhase
-                    % get the propertyvalue
-                    fProperty = this.ttxMatter.(sSubstance).import.raw{rowPhase,iColumn};
-                    if isnan(fProperty) || isempty(fProperty)
-                        this.throw('findProperty', 'Error using find Property. The matter data for %s does not include a value for %s.', sSubstance, sProperty);
-                    end
-                    
-                    sReportString = 'Just took the value from the ''Matter Data'' worksheet.';
-                else
-                    this.throw('findProperty', 'Error using find Property. The matter data for %s does not include %s phase.', sSubstance, sPhaseType);
-                end
-                
-            end
-            
-            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Check to see if what we got in the end is an actual value %%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if isempty(fProperty) || isnan(fProperty)
-                keyboard();
-                this.throw('findProperty', 'Error using findProperty. %s \n No valid value for %s of %s found in matter table.', sReportString, sProperty, sSubstance);
-            end
-            
+        function csSubstanceList = getSubstancesFromVector(this, mfSubstances)
+            csSubstanceList = this.asI2N(mfSubstances ~= 0);
         end
         
+        function mbAreInside = areSubstancesInVector(this, csSubstances, mfSubstances)
+            csSubstanceList = this.getSubstancesFromVector(mfSubstances);
+            if ~iscell(csSubstances)
+                csSubstances = {csSubstances};
+            end
+            iNumSubstances = numel(csSubstances);
+            mbAreInside = false(iNumSubstances, 1);
+            for i = 1:iNumSubstances
+                mbAreInside(i) = any(strcmp(csSubstances{i}, csSubstanceList));
+            end
+        end
         
-        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Methods for handling of related phases and flows %%%%%%%%%%%%%%%%%%%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Methods for handling of related phases and flows %%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function afMass = addPhase(this, oPhase)
             % Add phase
             %disp('Add phase')

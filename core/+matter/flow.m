@@ -261,8 +261,14 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
             % Ensures that flow can only be added through proc addFlow
             % methods, since aoFlows attribute has SetAccess private!
-            elseif ~any(oProc.aoFlows == this) %oProc.aoFlows(iIdxThisFlow) ~= this
-                this.throw('addProc', 'Object on proc aoFlows not the same as this one - use proc addFlow method!');
+            elseif isa(oProc, 'matter.procs.f2f')
+                if ~any(oProc.aoFlows == this)
+                    this.throw('addProc', 'Object processor aoFlows property is not the same as this one - use processor''s addFlow method!');
+                end
+            elseif isa(oProc, 'matter.procs.exme')
+                if ~any(oProc.oFlow == this)
+                    this.throw('addProc', 'Object in exme oFlow property is not the same as this one - use exme''s addFlow method!');
+                end
             
             % If sealed, can only do if also an interface. Additional check
             % for oIn just to make sure only oOut can be reconnected.

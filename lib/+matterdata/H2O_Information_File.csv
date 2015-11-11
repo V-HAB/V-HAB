@@ -1,0 +1,4 @@
+Substance Name,Molar Mass,Specific Gas Constant,Average Molecular Diameter
+sName,fMolarMass,fSpecificGasConstant,fAverageMolecularDiameter
+-,kg/mol,J/(kg*K),m
+Water,0.018015275,461.526,2.72E-10

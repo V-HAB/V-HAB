@@ -13,8 +13,19 @@ if nargin < 4, fPressure    = 28300; end;
 
 
 %%Density calculation for water
+tParameters = struct();
+        tParameters.sSubstance = 'H2O';
+        tParameters.sProperty = 'Density';
+        tParameters.sFirstDepName = 'Pressure';
+        tParameters.fFirstDepValue = fPressure;
+        tParameters.sPhaseType = 'liquid';
+        tParameters.sSecondDepName = 'Temperature';
+        tParameters.fSecondDepValue = fTemperature;
+        tParameters.bUseIsobaricData = true;
+        
+fDensity = oStore.oMT.findProperty(tParameters);
 
-fDensity = oStore.oMT.findProperty('H2O','fDensity','Pressure',fPressure,'Temperature',(fTemperature-273.15),'liquid');
+%%
 
 fMass = fDensity * fVolume;
 
