@@ -362,7 +362,7 @@ classdef PlantModule < vsys
                         aoPhases(4).fFixedTS = 15;
             
             %Setting the pressure of PlantCultivationStore's Plants-phase
-                this.toStores.PlantCultivationStore.aoPhases(2).setPressure(101325);
+%                 this.toStores.PlantCultivationStore.aoPhases(2).setPressure(101325);
 
             %Default setting of the interface flowrates
                 this.oInputAirBranch.setFlowRate(0);

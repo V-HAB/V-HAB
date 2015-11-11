@@ -209,7 +209,7 @@ classdef store < base
                                 mFlowRateLiquid(n) =  this.aoPhases(k).coProcsEXME{n}.iSign*this.aoPhases(k).coProcsEXME{n}.oFlow.fFlowRate;
                                 mPressureLiquidFlow(n) = this.aoPhases(k).coProcsEXME{n}.oFlow.fPressure;
                                 mTemperatureLiquidFlow(n) = this.aoPhases(k).coProcsEXME{n}.oFlow.fTemperature;
-                                mDensityLiquidFlow(n) = this.oMT.findProperty('H2O','Density','Pressure',mPressureLiquidFlow(n),'Temperature',(mTemperatureLiquidFlow(n)),'liquid');
+                                mDensityLiquidFlow(n) = this.oMT.calculateDensity(this.aoPhases(k).coProcsEXME{n}.oFlow);
                             end
                         else
                             mFlowRateLiquid = 0; 
@@ -335,12 +335,40 @@ classdef store < base
                     while sign(fErrorStore_X) == sign(fErrorStore_Y) && counter1 <= 500
                         fDensityLiquid_X = fMassLiquid/(this.fVolume-fVolumeGas_X);
                         fPressureGas_X = (fMassGas*fR*fTemperatureGasOld)/(fMolarMassGas*fVolumeGas_X);
-                        fPressureLiquid_X = this.oMT.findProperty('H2O','Pressure','Density',fDensityLiquid_X,'Temperature',(fTemperatureLiquidOld),'liquid');
+                        
+                        %TODO Replace this with a calculatePressure() method in the
+                        %matter table that takes all contained substances into account,
+                        %not just water.
+                        tParameters = struct();
+                        tParameters.sSubstance = 'H2O';
+                        tParameters.sProperty = 'Pressure';
+                        tParameters.sFirstDepName = 'Density';
+                        tParameters.fFirstDepValue = fDensityLiquid_X;
+                        tParameters.sPhaseType = 'liquid';
+                        tParameters.sSecondDepName = 'Temperature';
+                        tParameters.fSecondDepValue = fTemperatureLiquidOld;
+                        tParameters.bUseIsobaricData = false;
+                        
+                        fPressureLiquid_X = this.oMT.findProperty(tParameters);
                         fErrorStore_X = fPressureGas_X-fPressureLiquid_X;      
 
                         fDensityLiquid_Y = fMassLiquid/(this.fVolume-fVolumeGas_Y);
                         fPressureGas_Y = (fMassGas*fR*fTemperatureGasOld)/(fMolarMassGas*fVolumeGas_Y);
-                        fPressureLiquid_Y = this.oMT.findProperty('H2O','Pressure','Density',fDensityLiquid_Y,'Temperature',(fTemperatureLiquidOld),'liquid');
+                        
+                        %TODO Replace this with a calculatePressure() method in the
+                        %matter table that takes all contained substances into account,
+                        %not just water.
+                        tParameters = struct();
+                        tParameters.sSubstance = 'H2O';
+                        tParameters.sProperty = 'Pressure';
+                        tParameters.sFirstDepName = 'Density';
+                        tParameters.fFirstDepValue = fDensityLiquid_Y;
+                        tParameters.sPhaseType = 'liquid';
+                        tParameters.sSecondDepName = 'Temperature';
+                        tParameters.fSecondDepValue = fTemperatureLiquidOld;
+                        tParameters.bUseIsobaricData = false;
+                        
+                        fPressureLiquid_Y = this.oMT.findProperty(tParameters);
                         fErrorStore_Y = fPressureGas_Y-fPressureLiquid_Y;  
 
                         %if the signs are identical the search intervall is
@@ -380,10 +408,36 @@ classdef store < base
                         fPressureGas_X  = (fMassGas*fR*fTemperatureGasOld)/(fMolarMassGas*fVolumeGas_X);
                         fPressureGas1_Z = (fMassGas*fR*fTemperatureGasOld)/(fMolarMassGas*fVolumeGas1_Z);
 
-                        fPressureLiquid_X = this.oMT.findProperty('H2O','Pressure','Density',fDensityLiquid_X,'Temperature',(fTemperatureLiquidOld),'liquid');
+                        %TODO Replace this with a calculatePressure() method in the
+                        %matter table that takes all contained substances into account,
+                        %not just water.
+                        tParameters = struct();
+                        tParameters.sSubstance = 'H2O';
+                        tParameters.sProperty = 'Pressure';
+                        tParameters.sFirstDepName = 'Density';
+                        tParameters.fFirstDepValue = fDensityLiquid_X;
+                        tParameters.sPhaseType = 'liquid';
+                        tParameters.sSecondDepName = 'Temperature';
+                        tParameters.fSecondDepValue = fTemperatureLiquidOld;
+                        tParameters.bUseIsobaricData = false;
                         
-                        fPressureLiquid1_Z = this.oMT.findProperty('H2O','Pressure','Density',fDensityLiquid_Z,'Temperature',(fTemperatureLiquidOld),'liquid');
-
+                        fPressureLiquid_X = this.oMT.findProperty(tParameters);
+                        
+                        %TODO Replace this with a calculatePressure() method in the
+                        %matter table that takes all contained substances into account,
+                        %not just water.
+                        tParameters = struct();
+                        tParameters.sSubstance = 'H2O';
+                        tParameters.sProperty = 'Pressure';
+                        tParameters.sFirstDepName = 'Density';
+                        tParameters.fFirstDepValue = fDensityLiquid_Z;
+                        tParameters.sPhaseType = 'liquid';
+                        tParameters.sSecondDepName = 'Temperature';
+                        tParameters.fSecondDepValue = fTemperatureLiquidOld;
+                        tParameters.bUseIsobaricData = false;
+                        
+                        fPressureLiquid1_Z = this.oMT.findProperty(tParameters);
+                        
                         fErrorStore_X = fPressureGas_X-fPressureLiquid_X;
                         fErrorTank1_Z = fPressureGas1_Z-fPressureLiquid1_Z;
                         fErrorStore = fErrorTank1_Z;

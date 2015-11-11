@@ -60,7 +60,17 @@ aiIndices = find(arPartialMass > 0);
 afLambda = zeros(1, length(aiIndices));
 
 for iI = 1:length(aiIndices)
-    afLambda(iI) = this.findProperty(this.csSubstances{aiIndices(iI)}, 'Thermal Conductivity', 'Temperature', fTemperature, 'Pressure', fPressure, sPhase);
+    tParameters = struct();
+    tParameters.sSubstance = this.csSubstances{aiIndices(iI)};
+    tParameters.sProperty = 'Thermal Conductivity';
+    tParameters.sFirstDepName = 'Temperature';
+    tParameters.fFirstDepValue = fTemperature;
+    tParameters.sPhaseType = sPhase;
+    tParameters.sSecondDepName = 'Pressure';
+    tParameters.fSecondDepValue = fPressure;
+    tParameters.bUseIsobaricData = false;
+    
+    afLambda(iI) = this.findProperty(tParameters);
 end
 
 fLambda = sum(afLambda .* arPartialMass(aiIndices));

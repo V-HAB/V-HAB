@@ -87,8 +87,18 @@ function fSpecificHeatCapacity = calculateHeatCapacity(this, varargin) %sMatterS
     % indexed substances and get their specific heat capacity.
     afCp = zeros(iNumIndices, 1);
     for iI = 1:iNumIndices
-        afCp(iI) = this.findProperty(this.csSubstances{aiIndices(iI)}, 'Heat Capacity', ...
-            'Temperature', fTemperature, 'Pressure', fPressure, sMatterState);
+        % Creating the input struct for the findProperty() method
+        tParameters = struct();
+        tParameters.sSubstance = this.csSubstances{aiIndices(iI)};
+        tParameters.sProperty = 'Heat Capacity';
+        tParameters.sFirstDepName = 'Temperature';
+        tParameters.fFirstDepValue = fTemperature;
+        tParameters.sPhaseType = sMatterState;
+        tParameters.sSecondDepName = 'Pressure';
+        tParameters.fSecondDepValue = fPressure;
+        tParameters.bUseIsobaricData = false;
+        
+        afCp(iI) = this.findProperty(tParameters);
     end
 
     % Make sure there is no NaN in the specific heat capacity vector.

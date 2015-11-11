@@ -45,7 +45,7 @@ classdef Example < vsys
             % Adding the constant pressure exmes to the phase. The last
             % parameter is the constant port pressure.
             special.matter.const_press_exme(oGasPhase, 'Port_1', 101325);
-            special.matter.const_press_exme(oAirPhase, 'Port_2',  50662);
+            special.matter.const_press_exme(oAirPhase, 'Port_2',  91325);
              
             % Adding a pipe to connect the tanks
             this.addProcF2F(components.pipe('Pipe', 1.5, 0.005));

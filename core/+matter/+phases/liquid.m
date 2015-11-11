@@ -47,10 +47,8 @@ classdef liquid < matter.phase
             this.fVolume      = fVolume;
             this.fTemperature = fTemperature;
             this.fPressure    = fPressure;
-             
-            this.fDensity = this.oMT.findProperty('H2O', 'Density', ...
-                'Pressure', fPressure, 'Temperature', fTemperature, ...
-                'liquid');
+            
+            this.fDensity = this.fMass / this.fVolume;
             
         end
         
@@ -61,9 +59,20 @@ classdef liquid < matter.phase
             bSuccess = this.setParameter('fVolume', fVolume);
             this.fDensity = this.fMass / this.fVolume;
             
-            this.fPressure = this.oMT.findProperty('H2O', 'Pressure', ...
-                'Density', this.fDensity, 'Temperature', this.fTemperature, ...
-                'liquid');
+            %TODO Replace this with a calculatePressure() method in the
+            %matter table that takes all contained substances into account,
+            %not just water. 
+            tParameters = struct();
+            tParameters.sSubstance = 'H2O';
+            tParameters.sProperty = 'Pressure';
+            tParameters.sFirstDepName = 'Density';
+            tParameters.fFirstDepValue = this.fDensity;
+            tParameters.sPhaseType = 'liquid';
+            tParameters.sSecondDepName = 'Temperature';
+            tParameters.fSecondDepValue = this.fTemperature;
+            tParameters.bUseIsobaricData = false;
+            
+            this.fPressure = this.oMT.findProperty(tParameters);
             
             return;
             %TODO with events:
@@ -89,9 +98,7 @@ classdef liquid < matter.phase
             bSuccess = this.setParameter('fPressure', fPressure);
             
             % Calculate density for newly set pressure
-            this.fDensity = this.oMT.findProperty('H2O', 'Density', ...
-                'Pressure', fPressure, 'Temperature', this.fTemperature, ...
-                'liquid');
+            this.fDensity = this.oStore.oMT.calculateDensity(this);
             
             this.fMass = this.fDensity*this.fVolume;
                         
@@ -134,11 +141,22 @@ classdef liquid < matter.phase
             %     Or makes sense to always check for an empty fVolume? Does
             %     it happen that fVol is empty, e.g. gas solved in fluid?
             if ~isempty(this.fVolume) && this.fLastUpdateLiquid ~= this.oStore.oTimer.fTime && this.oStore.bIsIncompressible == 0
-                
+                %TODO Replace this with a calculatePressure() method in the
+                %matter table that takes all contained substances into account,
+                %not just water.
                 fDensity = this.fMass/this.fVolume;
-                this.fPressure = this.oMT.findProperty('H2O', 'Pressure', ...
-                    'Density', fDensity, 'Temperature', this.fTemperature, ...
-                    'liquid');
+                tParameters = struct();
+                tParameters.sSubstance = 'H2O';
+                tParameters.sProperty = 'Pressure';
+                tParameters.sFirstDepName = 'Density';
+                tParameters.fFirstDepValue = fDensity;
+                tParameters.sPhaseType = 'liquid';
+                tParameters.sSecondDepName = 'Temperature';
+                tParameters.fSecondDepValue = this.fTemperature;
+                tParameters.bUseIsobaricData = false;
+                
+                this.fPressure = this.oMT.findProperty(tParameters);
+                
                 this.fLastUpdateLiquid = this.oStore.oTimer.fTime;            
             end
             for k = 1:length(this.coProcsEXME)

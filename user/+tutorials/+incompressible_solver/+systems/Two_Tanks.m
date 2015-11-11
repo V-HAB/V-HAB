@@ -29,6 +29,10 @@ classdef Two_Tanks < vsys
             fRelHumidity = 0.4;
             fTemperature = 293;
             
+            %TODO: This will fail. Don't know why this is done here anyway,
+            % maybe just create a phase with the air helper? That has all
+            % of the functionality included, with relative humidity and
+            % all...
             fDensityAir = this.oData.oMT.findProperty('air',...
                    'Density','Pressure',101325,'Temperature',fTemperature,'gas');
                

@@ -1047,9 +1047,20 @@ classdef branch_liquid < solver.matter.base.branch
                 %%
                 %Pressure is calculated using the matter table
                 for k=1:1:this.inCells
-                    %TO DO: Replace with a function call to
-                    %calculatePressure once such a function exists
-                    mPressureNew(k) = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Pressure','Density',mDensityNew(k),'Temperature',(mTemperatureNew(k)),'liquid');
+                    %TODO Replace this with a calculatePressure() method in the
+                    %matter table that takes all contained substances into account,
+                    %not just water.
+                    tParameters = struct();
+                    tParameters.sSubstance = 'H2O';
+                    tParameters.sProperty = 'Pressure';
+                    tParameters.sFirstDepName = 'Density';
+                    tParameters.fFirstDepValue = mDensityNew(k);
+                    tParameters.sPhaseType = 'liquid';
+                    tParameters.sSecondDepName = 'Temperature';
+                    tParameters.fSecondDepValue = mTemperatureNew(k);
+                    tParameters.bUseIsobaricData = true;
+                    
+                    mPressureNew(k) = this.oBranch.oContainer.oData.oMT.findProperty(tParameters);
                 end
                 %%
                 %calculation of the virtual cell values
@@ -1064,9 +1075,20 @@ classdef branch_liquid < solver.matter.base.branch
                 %pressure.
                 for k = 1:this.inCells
                     mVirtualInternalEnergyNew(k) = mVirtualDensityNew(k)*(0.5*mFlowSpeed(k)^2+fHeatCapacity*(mVirtualTemperatureNew(k)-fTempRef));
-                    %TO DO: Replace with a function call to
-                    %calculatePressure once such a function exists
-                    mVirtualPressureNew(k) = this.oBranch.oContainer.oData.oMT.findProperty('H2O','Pressure','Density',mVirtualDensityNew(k),'Temperature',(mVirtualTemperatureNew(k)),'liquid');
+                    %TODO Replace this with a calculatePressure() method in the
+                    %matter table that takes all contained substances into account,
+                    %not just water.
+                    tParameters = struct();
+                    tParameters.sSubstance = 'H2O';
+                    tParameters.sProperty = 'Pressure';
+                    tParameters.sFirstDepName = 'Density';
+                    tParameters.fFirstDepValue = mVirtualDensityNew(k);
+                    tParameters.sPhaseType = 'liquid';
+                    tParameters.sSecondDepName = 'Temperature';
+                    tParameters.fSecondDepValue = mVirtualTemperatureNew(k);
+                    tParameters.bUseIsobaricData = true;
+                    
+                    mVirtualPressureNew(k) = this.oBranch.oContainer.oData.oMT.findProperty(tParameters);
                 end
                 
                 %%

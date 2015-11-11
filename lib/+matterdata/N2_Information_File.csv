@@ -1,0 +1,4 @@
+Substance Name,Molar Mass,Specific Gas Constant
+sName,fMolarMass,fSpecificGasConstant
+-,kg/mol,J/(kg*K)
+Nitrogen,0.02801348,296.8039
