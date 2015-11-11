@@ -197,7 +197,9 @@ else
     % Need to do initial scan of all folders, this block is only
     % executed at the very first time the function is called and there
     % is no .mat file present.
-
+    
+    % Tell the user
+    disp('V-HAB First Run. Doing initial scan of current folder. This will take a moment ...');
     % Creating our main tSavedInfo struct.
     tSavedInfo = struct();
     % Saving the struct to a file from where it can be loaded by the
@@ -238,6 +240,7 @@ else
     end
     
     bChanged = true;
+    disp('Initial folder scan completed.');
     return;
 end
 end

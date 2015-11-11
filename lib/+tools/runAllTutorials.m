@@ -51,7 +51,7 @@ if any([bCoreChanged bLibChanged])
     else
         sCore = '';
         sConjunction = '';
-        sVerb = 'has';
+        sVerb = 'has ';
     end
     
     if bLibChanged
@@ -79,7 +79,7 @@ for iI = 1:length(tTutorials)
     % of this script. If not, we can just skip this one, because we already
     % know it works. Unless of course the core or the library has changed.
     % In this case, all tutorials will be executed.
-    if checkForChanges(fullfile(sTutorialDirectory, tTutorials(iI).name)) || bLibChanged || bCoreChanged;
+    if tools.checkForChanges(fullfile(sTutorialDirectory, tTutorials(iI).name)) || bLibChanged || bCoreChanged;
         
         % Some nice printing for the console output
         fprintf('\n\n======================================\n');
