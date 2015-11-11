@@ -370,10 +370,18 @@ classdef branch < base & event.source
             sLeftBranchName  = strrep(this.sName, this.csNames{2}, '');
             sRightBranchName = strrep(this.coBranches{2}.sName, sInterface, '');
             
+            % Before we delete it, we'll save the old branch name
+            % temporarily, because we'll need it one more time.
+            sOldName = this.sName;
+            
             % Now we set the new name for this branch, inserting the word
             % 'Interface' in the middle, so when looking at the name, we
             % know that this is a subsystem to supersystem branch.
             this.sName = [ sLeftBranchName, 'Interface', sRightBranchName ];
+            
+            % Now we call the updateBranchNames() method on our container,
+            % so the updated branch names are also visible there. 
+            this.oContainer.updateBranchNames(this, sOldName);
             
             % If this is a pass-through branch, this branch will be deleted
             % once the full branch is completely assembled. So we also have

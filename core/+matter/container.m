@@ -143,7 +143,15 @@ classdef container < sys
                 mbIf = subsref([this.aoBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
                 % Using the element-wise AND operator '&' we delete only the
                 % branches with abIf = [1; 0].
+                % First we create a helper array.
+                aoBranchStubs = this.aoBranches(mbIf(1,:) & ~mbIf(2,:));
+                % Now we delete the branches from the aoBranches property.
                 this.aoBranches(mbIf(1,:) & ~mbIf(2,:)) = [];
+                % Now, using the helper array, we delete the fields from
+                % the toBranches struct.
+                for iI = 1:length(aoBranchStubs)
+                    this.toBranches = rmfield(this.toBranches, aoBranchStubs(iI).sName);
+                end
                 
                 for iI = 1:length(this.aoBranches)
                     % So now the stubs are deleted and the pass-through are
@@ -359,7 +367,50 @@ classdef container < sys
                 
                 % Using the element-wise AND operator '&' we delete only the
                 % branches with abIf = [1; 1].
+                % First we create a helper array.
+                aoBranchStubs = this.aoBranches(mbIf(1,:) & mbIf(2,:));
+                % Now we delete the branches from the aoBranches property.
                 this.aoBranches(mbIf(1,:) & mbIf(2,:)) = [];
+                % Now, using the helper array, we delete the fields from
+                % the toBranches struct.
+                for iI = 1:length(aoBranchStubs)
+                    % We need to jump through some hoops because the
+                    % maximum field name length of MATLAB is only 63
+                    % characters, so we delete the rest of the actual
+                    % branch name... 
+                    % namelengthmax is the MATLAB variable that stores the
+                    % maximum name length, so in case it changes in the
+                    % future, we don't have to change this code!
+                    sName = aoBranchStubs(iI).sName;
+                    if length(sName) > namelengthmax
+                        sName = sName(1:namelengthmax);
+                    end
+                    this.toBranches = rmfield(this.toBranches, sName);
+                end
+            end
+        end
+        
+        function updateBranchNames(this, oBranch, sOldName)
+            % First we make sure, that the calling branch is actually a
+            % branch in this container. 
+            if any(this.aoBranches == oBranch)
+                % We need to jump through some hoops because the maximum
+                % field name length of MATLAB is only 63 characters, so we 
+                % delete the rest of the actual branch name...
+                % namelengthmax is the MATLAB variable that stores the 
+                % maximum name length, so in case it changes in the future, 
+                % we don't have to change this code!
+                if length(sOldName) > namelengthmax
+                    sOldName = sOldName(1:namelengthmax);
+                end
+                this.toBranches = rmfield(this.toBranches, sOldName);
+                % Now we'll add the branch to the struct again, but with
+                % its new name. 
+                this.toBranches.(oBranch.sName) = oBranch;
+            else
+                % In case the calling branch is not in this container, we
+                % throw an error message.
+                this.throw('container:updateBranchNames','The provided branch does not exist in this matter container.');
             end
         end
     end
