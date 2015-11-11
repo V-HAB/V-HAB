@@ -340,7 +340,11 @@ classdef logger_basic < simulation.monitor
 
             sCmd = [ sCmd(1:(end - 1)) ']' ];
 
-            this.logDataEvald = eval([ '@() ' sCmd ]);
+            try
+                this.logDataEvald = eval([ '@() ' sCmd ]);
+            catch
+                this.throw('logger_basic','Something went wrong during logging. Please check your setup file.');
+            end
         end
         
         
