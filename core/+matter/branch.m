@@ -166,10 +166,6 @@ classdef branch < base & event.source
             this.csNames    = strrep({ sLeft; sRight }, '.', '__');
             this.sName      = [ this.csNames{1} '___' this.csNames{2} ];
             
-            
-            this.oContainer.addBranch(this);
-            
-            
             oFlow = [];
             
             %%%% HANDLE LEFT SIDE
@@ -289,7 +285,8 @@ classdef branch < base & event.source
                 this.coExmes{2} = oPort;
             end
             
-            
+            % Adding the branch to our matter.container
+            this.oContainer.addBranch(this);
             
             this.iFlows     = length(this.aoFlows);
             this.iFlowProcs = length(this.aoFlowProcs);
