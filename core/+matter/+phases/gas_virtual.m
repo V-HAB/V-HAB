@@ -50,6 +50,9 @@ classdef gas_virtual < matter.phases.gas
             this.fMaxInOut = this.oTimer.fTimeStep * 100;
             
             this.fInitialMass = this.fMass;
+            
+            % Make dependent on rUpdateFrequency in .seal()?
+            %this.rMaxChangeRate = 0.1;
         end
         
         function setInitialVirtualPressure(this, fVirtualPressure)
@@ -157,6 +160,10 @@ classdef gas_virtual < matter.phases.gas
             %   value in while loop? If bReqPos && > threshold, reduce M2P
             %   etc - continue to adapt FR vs PA value; if bReqPos && < 0,
             %   increase M2P! (and vice versa)
+            %
+            % => try to keep fMass around fInitialMass, so for a large diff
+            %    a large chagne rate is actually not a problem - i.e.
+            %    increase possible error as long as in right direction?
             
             
             if isempty(this.fActualMassToPressure)
@@ -183,9 +190,9 @@ classdef gas_virtual < matter.phases.gas
             fMaxFlowRate = 0;
             
             for iS = 1:length(this.coProcsEXME)
-                if isempty(this.coProcsEXME{iS}.aoFlows), continue; end
+                if isempty(this.coProcsEXME{iS}.oFlow), continue; end
                 
-                fFlowRate = abs(this.coProcsEXME{iS}.aoFlows(1).oBranch.fFlowRate);
+                fFlowRate = abs(this.coProcsEXME{iS}.oFlow.oBranch.fFlowRate);
                 
                 if fFlowRate > fMaxFlowRate
                     fMaxFlowRate = fFlowRate;
@@ -381,15 +388,15 @@ classdef gas_virtual < matter.phases.gas
 %                 
 %                 %LOOP
 %                 for iS = 1:length(afFlowRates)
-%                     if isempty(this.coProcsEXME{iS}.aoFlows)
+%                     if isempty(this.coProcsEXME{iS}.oFlow)
 %                         afFlowRates(iS) = 0;
 %                         continue;
 %                     end
 %                     
 %                     
-%                     oSolver = this.coProcsEXME{iS}.aoFlows(1).oBranch.oHandler;
+%                     oSolver = this.coProcsEXME{iS}.oFlow.oBranch.oHandler;
 %                     
-%                     afFlowRates(iS) = oSolver.solveFlowRate() * this.coProcsEXME{iS}.aiSign(1);
+%                     afFlowRates(iS) = oSolver.solveFlowRate() * this.coProcsEXME{iS}.iSign;
 %                     
 %                     if oSolver.iDampFR > 0
 %                         this.throw('update', 'Connected solvers must not have iDampFR set!');
@@ -431,17 +438,33 @@ classdef gas_virtual < matter.phases.gas
             bReqPos = this.fInitialMass > this.fMass;
             bIsPos  = fCurrInOut > 0;
             
+            %disp(num2str(this.oTimer.iTick));
+            
             if bReqPos ~= bIsPos
                 fMassToPressDiff = 1.1 * abs(fCurrInOut / this.fLastFlowRateChangePerPressureChange);
                 iSign            = sif(bIsPos, 1, -1);
                 
-                fOldMassToPressure   = this.fMassToPressure;
+                %fOldMassToPressure   = this.fMassToPressure;
                 this.fMassToPressure = this.fMassToPressure + iSign * fMassToPressDiff;
                 
-                %%%fprintf('\n\nADJUSTED FR because of wrong sign!! ReqPos: %i    FR_tot: %.13f    OldM2P: %.5f    NewM2P: %.5f\n', bReqPos, fCurrInOut, fOldMassToPressure, this.fMassToPressure);
+                %fprintf('\n\nADJUSTED FR because of wrong sign!! ReqPos: %i    FR_tot: %.13f    OldM2P: %.5f    NewM2P: %.5f\n', bReqPos, fCurrInOut, fOldMassToPressure, this.fMassToPressure);
                 
-                fFlowRateTot = this.calcualteFlowRateForVirtMassToPressure(this.fMassToPressure);
-                %%%fprintf('CHECK NEW FR: %.13f\n\n', fFlowRateTot);
+                %fFlowRateTot = this.calcualteFlowRateForVirtMassToPressure(this.fMassToPressure);
+                %fprintf('CHECK NEW FR: %.13f\n\n', fFlowRateTot);
+            else
+                %disp('NO')
+                
+                
+                %fMassToPressDiff = 0.9 * abs(fCurrInOut / this.fLastFlowRateChangePerPressureChange);
+                %iSign            = sif(bIsPos, -1, 1);
+                
+                
+%                 fMassToPressDiff = 0.9 * abs(fCurrInOut / this.fLastFlowRateChangePerPressureChange);
+%                 iSign            = sif(bIsPos, 1, -1);
+                
+                %fOldMassToPressure   = this.fMassToPressure;
+                %this.fMassToPressure = this.fMassToPressure + iSign * fMassToPressDiff;
+                
             end
             
             
@@ -562,15 +585,15 @@ classdef gas_virtual < matter.phases.gas
 
             %LOOP
             for iS = 1:length(afFlowRates)
-                if isempty(this.coProcsEXME{iS}.aoFlows)
+                if isempty(this.coProcsEXME{iS}.oFlow)
                     afFlowRates(iS) = 0;
                     continue;
                 end
 
 
-                oSolver = this.coProcsEXME{iS}.aoFlows(1).oBranch.oHandler;
+                oSolver = this.coProcsEXME{iS}.oFlow.oBranch.oHandler;
 
-                afFlowRates(iS) = oSolver.solveFlowRate() * this.coProcsEXME{iS}.aiSign(1);
+                afFlowRates(iS) = oSolver.solveFlowRate() * this.coProcsEXME{iS}.iSign;
 
                 if oSolver.iDampFR > 0
                     this.throw('update', 'Connected solvers must not have iDampFR set!');
@@ -611,9 +634,9 @@ classdef gas_virtual < matter.phases.gas
             fMaxFlowRate = 0;
             
             for iS = 1:length(this.coProcsEXME)
-                if isempty(this.coProcsEXME{iS}.aoFlows), continue; end
+                if isempty(this.coProcsEXME{iS}.oFlow), continue; end
                 
-                fFlowRate = abs(this.coProcsEXME{iS}.aoFlows(1).oBranch.fFlowRate);
+                fFlowRate = abs(this.coProcsEXME{iS}.oFlow.oBranch.fFlowRate);
                 
                 if fFlowRate > fMaxFlowRate
                     fMaxFlowRate = fFlowRate;
