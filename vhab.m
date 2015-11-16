@@ -38,6 +38,15 @@ classdef vhab
             
             
             
+            % If an old simulation obj exists in the base workspace, remove
+            % that explicitly just to make sure ...
+            try
+                oSim = evalin('base', 'oLastSimObj');
+                delete(oSim);
+            end
+            
+            
+            
             disp('Clearing MATLAB classes...');
             hTimer = tic();
             % Save all breakpoints so we can restore them after the clear
@@ -73,13 +82,6 @@ classdef vhab
         % The .exec method is basically just a shorthand for doing that:
         %   vhab.clear(); oSim = vhab.sim(...); oSim.run();
         function oSimRtn = exec(sSimulation, ptConfigParams, tSolverParams, varargin)
-            
-            % If an old simulation obj exists in the base workspace, remove
-            % that explicitly just to make sure ...
-            try
-                oSim = evalin('base', 'oLastSimObj');
-                delete(oSim);
-            end
             
             % Clear all existing sims, and run provided sim (uses the
             % default max. time/tick conditions on the sim object)

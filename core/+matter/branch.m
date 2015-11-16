@@ -114,6 +114,9 @@ classdef branch < base & event.source
         % Reference to the timer
         % @type object
         oTimer;
+        
+        % Flow rate handler - only one can be set!
+        oHandler;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -143,9 +146,6 @@ classdef branch < base & event.source
         % Callback from the interface flow seal method, can be used to
         % disconnect the i/f flow and the according f2f proc in the supsys
         hRemoveIfProc;
-        
-        % Flow rate handler - only one can be set!
-        oHandler;
     end
     
     methods
@@ -582,10 +582,19 @@ classdef branch < base & event.source
             end
             
             
-            this.afFlowRates = [ this.afFlowRates(2:10) fFlowRate ];
+            this.afFlowRates = [ this.afFlowRates(2:end) fFlowRate ];
             
+            % If sum of the last ten flow rates is < precision, set flow
+            % rate to zero
             if tools.round.prec(sum(this.afFlowRates), this.oContainer.oTimer.iPrecision) == 0
                 fFlowRate = 0;
+                
+            elseif this.fFlowRate == 0 && false
+                % If flow rate is already zero, more strict rounding! Don't
+                % re-set a flow rate until its larger then the precision!
+                if tools.round.prec(fFlowRate, this.oContainer.oTimer.iPrecision) == 0
+                    fFlowRate = 0;
+                end
             end
             
             

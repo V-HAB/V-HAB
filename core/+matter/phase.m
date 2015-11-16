@@ -201,7 +201,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
     end
 
-    properties (Access = private)
+    properties (Access = protected)
 
         % ???
         bOutdatedTS = false;
@@ -487,8 +487,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Trigger branch solver updates in post tick for all branches
             % whose matter is currently flowing INTO the phase
             if this.bSynced || bSetBranchesOutdated
-                %%%this.setBranchesOutdated('in');
-                this.setBranchesOutdated();
+                this.setBranchesOutdated('in');
+                %%%this.setBranchesOutdated();
             end
             
             % Execute updateProcessorsAndManipulators between branch solver
@@ -497,7 +497,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             
             % Flowrate update binding for OUTFLOWING matter flows.
             if this.bSynced || bSetBranchesOutdated
-                %%%this.setBranchesOutdated('out');
+                this.setBranchesOutdated('out');
             end
 
             % Phase sets new time step (registered with parent store, used
