@@ -48,7 +48,8 @@ classdef setup < simulation.infrastructure
             % this simulation we are creating.
             this@simulation.infrastructure('T_Piece', ptConfigParams, tSolverParams);
             
-%             this.oSimulationContainer.oTimer.setMinStep(1e-12);
+            %this.oSimulationContainer.oTimer.setMinStep(1e-12);
+            this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
             
             
             % Creating the 'Example' system as a child of the root system
@@ -65,7 +66,7 @@ classdef setup < simulation.infrastructure
             %oP.rMaxChange = oP.rMaxChange * 100;
 %             oP.rMaxChange = 0.01;
 %             oP.rHighestMaxChangeDecrease = 1000;
-            oP.bSynced = true;
+%             oP.bSynced = true;
             
             
             
@@ -73,9 +74,9 @@ classdef setup < simulation.infrastructure
             oSolver2 = this.oSimulationContainer.toChildren.Example.coSolvers{2};
             oSolver3 = this.oSimulationContainer.toChildren.Example.coSolvers{3};
             
-            oSolver1.iDampFR = 5;
-            oSolver2.iDampFR = 5;
-            oSolver3.iDampFR = 5;
+%             oSolver1.iDampFR = 5;
+%             oSolver2.iDampFR = 5;
+%             oSolver3.iDampFR = 5;
             
             
             %% Logging
@@ -106,8 +107,8 @@ classdef setup < simulation.infrastructure
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
             this.fSimTime = 3600 * 1; % In seconds
-            this.iSimTicks = 1500;
-            this.bUseTime = true;
+            this.iSimTicks = 1000;
+            this.bUseTime = false;
 
         end
         

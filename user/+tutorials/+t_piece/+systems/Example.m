@@ -9,7 +9,10 @@ classdef Example < vsys
         % Pressure difference in bar
         fPressureDifference = 1;
         
-        fTpieceLen = 0.01;
+        % Empty by default - pipes used
+        fTpieceLen;
+        
+        fStoreVols = 100;
         
         coSolvers = {};
     end
@@ -43,31 +46,37 @@ classdef Example < vsys
             
             
             % Create stores with one phase and one exme each!
-            matter.store(this, 'Tank_1', 100);
-            this.toStores.Tank_1.createPhase('air', 'air', (this.fPressureDifference + 1) * 100);
-            %matter.procs.exmes.gas(this.toStores.Tank_1.toPhases.air, 'Port');
-            special.matter.const_press_exme(this.toStores.Tank_1.toPhases.air, 'Port', (this.fPressureDifference + 1) * 101325);
+            matter.store(this, 'Tank_1', this.fStoreVols);
+            this.toStores.Tank_1.createPhase('air', 'air', (this.fPressureDifference + 1) * this.fStoreVols);
+            matter.procs.exmes.gas(this.toStores.Tank_1.toPhases.air, 'Port');
+            %special.matter.const_press_exme(this.toStores.Tank_1.toPhases.air, 'Port', (this.fPressureDifference + 1) * 101325);
             
-            matter.store(this, 'Tank_2', 100);
-            this.toStores.Tank_2.createPhase('air', 'air', 100);
-            %matter.procs.exmes.gas(this.toStores.Tank_2.toPhases.air, 'Port');
-            special.matter.const_press_exme(this.toStores.Tank_2.toPhases.air, 'Port', 101325);
+            matter.store(this, 'Tank_2', this.fStoreVols);
+            this.toStores.Tank_2.createPhase('air', 'air', this.fStoreVols);
+            matter.procs.exmes.gas(this.toStores.Tank_2.toPhases.air, 'Port');
+            %special.matter.const_press_exme(this.toStores.Tank_2.toPhases.air, 'Port', 101325);
             
-            matter.store(this, 'Tank_3', 100);
-            this.toStores.Tank_3.createPhase('air', 'air', 100);
-            %matter.procs.exmes.gas(this.toStores.Tank_3.toPhases.air, 'Port');
-            special.matter.const_press_exme(this.toStores.Tank_3.toPhases.air, 'Port', 101325);
+            matter.store(this, 'Tank_3', this.fStoreVols);
+            this.toStores.Tank_3.createPhase('air', 'air', this.fStoreVols);
+            matter.procs.exmes.gas(this.toStores.Tank_3.toPhases.air, 'Port');
+            %special.matter.const_press_exme(this.toStores.Tank_3.toPhases.air, 'Port', 101325);
             
             
             % Create T-Piece with three ports!
-            %fVolume = geom.volumes.cube(this.fPipeDiameter).fVolume;
-            %fVolume = 0.001;
-            fVolume = geom.volumes.cube(this.fTpieceLen).fVolume;
+            fVolume = geom.volumes.cube(sif(isempty(this.fTpieceLen), this.fPipeDiameter, this.fTpieceLen)).fVolume;
             
             matter.store(this, 'T_Piece', fVolume);
             %this.toStores.T_Piece.createPhase('air', 'air', fVolume * (this.fPressureDifference / 2 + 1));
             %this.toStores.T_Piece.createPhase('air', 'air', fVolume, [], [], 1.0411e5);
-            matter.phases.gas_virtual(this.toStores.T_Piece, 'air', struct('N2', 0.8, 'O2', 0.2), fVolume, 293.15);
+            
+            % Use helper directly
+            %cParams       = matter.helper.phase.create.air(this, fVolume * (this.fPressureDifference / 2 + 1));
+            cParams = matter.helper.phase.create.air(this, fVolume * 1e0);
+            oPhase  = matter.phases.gas_virtual(this.toStores.T_Piece, 'air', cParams{:});
+            %disp(cParams{1});
+            
+            oPhase.setInitialVirtualPressure(1e5);
+            %matter.phases.gas_virtual(this.toStores.T_Piece, 'air', struct('N2', 0.8, 'O2', 0.2), fVolume, 288.15);
             
             
             
