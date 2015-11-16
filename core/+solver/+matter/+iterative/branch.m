@@ -121,6 +121,7 @@ classdef branch < solver.matter.base.branch
             
             
             
+            
             % See base branch, same check here - if input phase nearly
             % empty, just set flow rate to zero
             oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
@@ -162,6 +163,12 @@ classdef branch < solver.matter.base.branch
             this.calculateTimeStep(fFlowRateUnrounded, fFlowRate);
             
             
+            %%%fprintf('%.16f [rChangeRate: %.7f]\n', this.fTimeStep, this.rFlowRateChange);
+            
+            %%%fprintf('[%i] %s  -- %f [%.5f]  --  new step: %f, new FR %.13f\n', ...
+            %%%    this.oBranch.oTimer.iTick, this.oBranch.sName, ...
+            %%%    this.fFlowRate / fFlowRate, this.rFlowRateChange, this.fTimeStep, fFlowRate);
+            
             %
             if fFlowRateUnrounded ~= this.fFlowRateUnrounded
                 bFlowRateChangeIsPositive = fFlowRateUnrounded > this.fFlowRateUnrounded;
@@ -191,7 +198,10 @@ classdef branch < solver.matter.base.branch
             update@solver.matter.base.branch(this, fFlowRate, afDeltaP);
             
         end
-        
+    end
+    
+    
+    methods (Access = public)
         
         %% Solve branch
         function [ fFlowRate, afDeltaP ] = solveFlowRate(this)
@@ -720,7 +730,7 @@ classdef branch < solver.matter.base.branch
                 end
                 
             end
-%             disp('Leaving iteration')
+            %%%fprintf('[%i] %s: Leaving iteration after %i loops\n', this.oBranch.oTimer.iTick, this.oBranch.sName, iCount);
 %             disp(['Flow rate: ', num2str(fFlowRate)])
 %             keyboard(); 
 
@@ -782,7 +792,10 @@ classdef branch < solver.matter.base.branch
 %                 afDrops = nan(oBranch.iFlowProcs, 1);
             %end
         end
-        
+    end
+    
+    
+    methods (Access = protected)
         %% Calculate new time step
         function calculateTimeStep(this, fFlowRateUnrounded, fFlowRate)
             %TODO should probably depend in flow speed vs. length of

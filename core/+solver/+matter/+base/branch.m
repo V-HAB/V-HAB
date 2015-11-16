@@ -84,7 +84,9 @@ classdef branch < base & event.source
             
             % Use branches container timer reference to bind for time step
             %CHECK nope, Infinity, right?
-            this.setTimeStep = this.oBranch.oContainer.oTimer.bind(@(~) this.update(), inf);
+            %this.setTimeStep = this.oBranch.oContainer.oTimer.bind(@(~) this.update(), inf);
+            %this.setTimeStep = this.oBranch.oContainer.oTimer.bind(@(~) this.registerUpdate(), inf);
+            this.setTimeStep = this.oBranch.oContainer.oTimer.bind(@(~) this.executeUpdate(), inf);
             
             % Initial flow rate?
             if (nargin >= 2) && ~isempty(fInitialFlowRate)
@@ -112,8 +114,20 @@ classdef branch < base & event.source
         end
     end
     
+    methods (Access = private)
+        function executeUpdate(this)
+            for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
+                this.oBranch.coExmes{iE}.oPhase.massupdate();
+            end
+            
+            this.update();
+        end
+    end
+    
     methods (Access = protected)
-        function this = registerUpdate(this, ~)
+        function registerUpdate(this, ~)
+            %if this.bRegisteredOutdated, return; end;
+            
             this.oBranch.oContainer.oTimer.bindPostTick(@this.update);
             this.bRegisteredOutdated = true;
         end
