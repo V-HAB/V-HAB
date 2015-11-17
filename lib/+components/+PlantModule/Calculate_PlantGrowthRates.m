@@ -1,5 +1,5 @@
 function [aoPlants ,HOP_net ,HCC_net ,HCGR ,HTR ,HWC ] = ...
-    Calculate_PlantGrowthRates(aoPlants, t, tA, tQ, tM, PPF, CO2, RH_day, RH_night, p_atm, H, Temp_light, Temp_dark)
+    Calculate_PlantGrowthRates(aoPlants, t, tA, tQ, tM, PPF, CO2, RH_day, RH_night, p_atm, H, Temp_light, Temp_dark, fDensityH2O)
 
 % Short description:
 %  Basic plant growth rates are calculated within this function.
@@ -236,8 +236,10 @@ end
 %%%Final Water volume evapotranspiration ET_c in [Lm^-2s^-1]
 ET_c = K_c*ET_0;
 
+
+
 % Conversion to hourly transpiration rate
-HTR = ET_c * 3600; % [L/m^2/h]
+HTR = ET_c * 3600 * fDensityH2O; % [g/m^2/h]
 
 
  %Hourly CO2 consumption rate

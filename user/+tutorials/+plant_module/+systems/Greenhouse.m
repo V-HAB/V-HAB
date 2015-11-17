@@ -363,7 +363,7 @@ classdef Greenhouse < vsys
                %Calculating the current CO2 ppm level in the greenhouse's atmosphere
                    this.fCO2ppm_Measured = tutorials.plant_module.functions.Calc_CO2_ppm(this.toStores.GH_Unit.aoPhases(1));
             
-            
+           if this.oTimer.fTime ~=0 
            %Controlling Frequency
            if ~(mod(this.oData.oTimer.fTime, 30))
                                       %Air cirulation for reducing the humidity of greenhouse's atmosphere
@@ -404,7 +404,7 @@ classdef Greenhouse < vsys
                             
                         end
            end %End of Frequency If statement 
-           
+           end
            
            
            %Controlling Frequency

@@ -272,7 +272,9 @@ classdef Create_Biomass < matter.manips.substance.flow
             
             global bUseGlobalPlantConditions
             
-            
+            % Density of liquid water
+            fDensityH2O = this.oParent.oData.oMT.findProperty('H2O',...
+                'Density', 'Pressure', this.fP_atm, 'Temperature', this.fTemp_light + 273.15, 'liquid');
             
             for iI = 1:size(this.fCCulture.plants, 1)
                 
@@ -320,7 +322,8 @@ classdef Create_Biomass < matter.manips.substance.flow
                     this.fCO2ppm_Measured,          ...     % CO2 level in LSS                      [µmol/mol]
                     this.fH,                        ...     % Photoperiod per day                   [h/d]
                     this.fTemp_light,               ...     % Mean air temperature                  [°C]
-                    this.fTemp_dark);                       % Mean air temperature                  [°C]
+                    this.fTemp_dark, ...                    % Mean air temperature                  [°C]
+                    fDensityH2O);                           % liquid water density (for transpiration) [kg/m^3]
                 %%%%%%%%%%%%%%
                 
                 
