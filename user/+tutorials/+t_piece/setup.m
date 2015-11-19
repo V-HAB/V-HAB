@@ -49,7 +49,7 @@ classdef setup < simulation.infrastructure
             this@simulation.infrastructure('T_Piece', ptConfigParams, tSolverParams);
             
             %this.oSimulationContainer.oTimer.setMinStep(1e-12);
-            this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
+%             this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
             
             
             % Creating the 'Example' system as a child of the root system
@@ -107,7 +107,7 @@ classdef setup < simulation.infrastructure
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
             this.fSimTime = 3600 * 1; % In seconds
-            this.iSimTicks = 1000;
+            this.iSimTicks = 500;
             this.bUseTime = false;
 
         end

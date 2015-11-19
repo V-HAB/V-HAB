@@ -29,9 +29,25 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName);
             
+            
+            %TODO -> DOCUMENT!
+            %   -> here, just process Ctor params and set e.g. defualt
+            %      properties
+            
+            % THEN do this:
             eval(this.oRoot.oCfgParams.configCode(this));
+            % -> COnfig params
             
             
+            % MAtter stuff in createMatterStructure, solvers in
+            % createSovlerStructure. Stuff like connectIfs has to be done
+            % in createMatterStructure!
+            
+        end
+        
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
             
             % Creating a store, volume 1 m^3
             matter.store(this, 'Tank_1', 1);
@@ -67,13 +83,31 @@ classdef Example < vsys
             % 'Interface port name', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
             matter.branch(this, 'SubsystemOutput', {'Pipe2'}, 'Tank_2.Port_2');
             
+            
+            %%% NOTE!!! setIfFlows has to be done in createMatterStructure!
+            
             % Now we need to connect the subsystem with the top level system (this one). This is
             % done by a method provided by the subsystem.
             oSubSys.setIfFlows('SubsystemInput', 'SubsystemOutput');
             
+            
+            
             % Seal - means no more additions of stores etc can be done to
             % this system.
-            this.seal();
+            %this.seal();
+            % NOT ANY MORE!
+        end
+        
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            
+            
+            % SOLVERS ETC!
+            
+            % specific properties for rMaxChange etc, possibly depending on
+            % this.tSolverProperties.XXX
+            % OR this.oRoot.tSolverProperties !!!
         end
     end
     
