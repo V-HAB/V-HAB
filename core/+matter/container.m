@@ -38,9 +38,18 @@ classdef container < sys
         oMT;
     end
     
+    properties (SetAccess = protected, GetAccess = public)
+        tSolverParams;
+    end
+    
+    
     methods
         function this = container(oParent, sName)
             this@sys(oParent, sName);
+            
+            % Copy solver params so they can be adapted locally!
+            this.tSolverParams = this.oParent.tSolverParams;
+            
             
             if ~isa(this.oRoot.oMT, 'matter.table'), this.throw('container', 'Provided object ~isa matter.table'); end;
             
@@ -107,10 +116,27 @@ classdef container < sys
         
         
         
+    end
+    
+    methods (Access = public)
+        
         function seal(this)
             if this.bSealed
                 this.throw('seal', 'Already sealed');
             end
+            
+            
+            csChildren = fieldnames(this.toChildren);
+            
+            for iC = 1:length(csChildren)
+                sChild = csChildren{iC};
+                
+                this.toChildren.(sChild).seal();
+            end
+            
+            
+            
+            
             
             this.csStores = fieldnames(this.toStores);
             this.csProcsF2F = fieldnames(this.toProcsF2F);
@@ -175,9 +201,36 @@ classdef container < sys
             
             this.bSealed = true;
         end
-    end
-    
-    methods (Access = public)
+        
+        
+        
+        
+        
+        function createMatterStructure(this)
+            % Call in child elems
+            csChildren = fieldnames(this.toChildren);
+            
+            for iC = 1:length(csChildren)
+                sChild = csChildren{iC};
+                
+                this.toChildren.(sChild).createMatterStructure();
+            end
+        end
+        
+        
+        
+        function createSolverStructure(this)
+            % Call in child elems
+            csChildren = fieldnames(this.toChildren);
+            
+            for iC = 1:length(csChildren)
+                sChild = csChildren{iC};
+                
+                this.toChildren.(sChild).createSolverStructure();
+            end
+        end
+        
+        
         
         function addStore(this, oStore)
             % Adds the store to toStores. Might be overloaded by derived
@@ -250,6 +303,100 @@ classdef container < sys
             this.toBranches.(oBranch.sName) = oBranch;
         end
         
+        
+        
+        
+        function connectSubsystemInterfaces(this, sLeftSysAndIf, sRightSysAndIf, csProcsLeft, csProcsRight, fVolume)
+            %TODO error check if sys, if etc doesn't exist
+            
+            if nargin < 4 || isempty(csProcsLeft),  csProcsLeft  = {}; end;
+            if nargin < 5 || isempty(csProcsRight), csProcsRight = {}; end;
+            if nargin < 6, fVolume = []; end;
+            
+            % Get left, right child sysmtes
+            [ sLeftSys, sLeftSysIf ] = strtok(sLeftSysAndIf, '.');
+            sLeftSysIf = sLeftSysIf(2:end);
+            
+            [ sRightSys, sRightSysIf ] = strtok(sRightSysAndIf, '.');
+            sRightSysIf = sRightSysIf(2:end);
+            
+            
+            oLeftSys = this.toChildren.(sLeftSys);
+            oRightSys = this.toChildren.(sRightSys);
+            
+            
+            % Get branches
+            csBranchIfs   = [ oLeftSys.aoBranches.csNames ];
+            oLeftBranch = this.aoBranches(find(strcmp(csBranchIfs(2, :), sLeftSysIf), 1));
+            
+            csBranchIfs   = [ oRightSys.aoBranches.csNames ];
+            oRightBranch = this.aoBranches(find(strcmp(csBranchIfs(2, :), sRightSysIf), 1));
+            
+            % Phases
+            oLeftPhase  = oLeftBranch.coExmes{1}.oPhase;
+            oRightPhase = oRightBranch.coExmes{1}.oPhase;
+            
+            
+            % Smaller phase -> use for matter properties
+            oRefPhase = sif(oLeftPhase.fVolume > oRightPhase.fVolume, oRightPhase, oLeftPhase);
+            
+            
+            if isa(oLeftPhase, 'matter.phases.gas') && isa(oRightPhase, 'matter.phases.gas')
+                sPhaseType = 'gas_virtual';
+                
+                if isempty(fVolume)
+                    % Set to 10% percent of smaller phase
+                    fVolume = 0.1 * oRefPhase.fVolume;
+                end
+                
+                
+            elseif isa(oLeftPhase, 'matter.phases.liquid') && isa(oRightPhase, 'matter.phases.liquid')
+                sPhaseType = 'liquid';
+                
+                if isempty(fVolume)
+                    % Throw?
+                end
+                
+            else
+                this.throw('connectIfBranches', 'Cannot handle phase types (either not equal, or not gas/liquid!');
+            end
+            
+            % Create phases
+            tfMass = struct();
+            
+            for iS = 1:length(oRefPhase.afMass)
+                tfMass.(this.oMT.csSubstances{iS}) = oRefPhase.afMass(iS);
+            end
+            
+            
+            % Create store and phase
+            sStoreName = sprintf('conn_%s_%s_and_%s_%s', sLeftSys, sLeftSysIf, sRightSys, sRightSysIf);
+            sPhaseName = 'conn';
+            
+            
+            matter.store(this, sStoreName, fVolume);
+            
+            oPhase = matter.phases.(sPhaseType)(this, sPhaseName, tfMass, fVolume, oRefPhase.fTemperature);
+            
+            
+            matter.procs.exmes.gas(oPhase, 'left');
+            matter.procs.exmes.gas(oPhase, 'right');
+            
+            
+            % Create branches (left if -> phase, right if -> phase)
+            sLeftIf  = sprintf('from_subs_%s_if_%s', sLeftSys, sLeftSysIf);
+            sRightIf = sprintf('from_subs_%s_if_%s', sRightSys, sRightSysIf);
+            
+            
+            matter.branch(this, sLeftIf,  csProcsLeft,  [ sPhaseName '.left' ]);
+            matter.branch(this, sRightIf, csProcsRight, [ sPhaseName '.right' ]);
+            
+            
+            % Connect
+            oLeftSys.connectIF(sLeftSysIf, sLeftIf);
+            oRightSys.connectIF(sRightSysIf, sRightIf);
+            
+        end
     end
     
     

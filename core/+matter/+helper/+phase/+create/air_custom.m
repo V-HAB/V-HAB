@@ -54,9 +54,9 @@ fMass    = fMassGes * (1 - fMassFractionH2O);
 % Defaults, if not set
 if ~isstruct(trMasses), trMasses = struct(); end;
 
-if ~isfield(trMasses, 'O2'), trMasses.O2  = 0.23135; end;
-if ~isfield(trMasses, 'Ar'), trMasses.Ar  = 0.01288; end;
-if ~isfield(trMasses, 'Ar'), trMasses.CO2 = 0.00058; end;
+if ~isfield(trMasses, 'O2'),  trMasses.O2  = 0.23135; end;
+if ~isfield(trMasses, 'Ar'),  trMasses.Ar  = 0.01288; end;
+if ~isfield(trMasses, 'CO2'), trMasses.CO2 = 0.00058; end;
 
 % N2 takes remaining fraction
 trMasses.N2 = 1 - trMasses.O2 - trMasses.Ar - trMasses.CO2;

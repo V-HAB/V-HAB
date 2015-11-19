@@ -106,6 +106,17 @@ classdef vhab
         end
         
         
+        
+        
+        function runner(this, tCfg)
+            % FROM runner_*
+            % Allow different configs (solver props and / or ptCfgs)
+            % Create all combinations before running
+            % ONE parfor loop, not nested!
+        end
+        
+        
+        
         %TODO-RESTRUCTURING move to a monitor, e.g. json_dumper. Store
         %   bDump in dumpers per-simulation.
         %   Figure out a way to activate serializers in base class, has to

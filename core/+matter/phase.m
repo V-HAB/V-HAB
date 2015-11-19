@@ -739,14 +739,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.afLastUpd = 0:(1/(iStore-1)):1;%ones(1, iStore) * 0.00001;
             
             %TODO oData.rUF -> this.oStore.oContainer.oRoot.tSolverParams
-            this.rHighestMaxChangeDecrease = this.oStore.oContainer.oRoot.tSolverParams.rHighestMaxChangeDecrease;
+            this.rHighestMaxChangeDecrease = this.oStore.oContainer.tSolverParams.rHighestMaxChangeDecrease;
             
             
             % Auto-Set rMaxChange - max. 0.25, min. 1e-5!
             rMaxChangeTmp = sif(this.fVolume <= 0.25, this.fVolume, 0.25);
             rMaxChangeTmp = sif(rMaxChangeTmp <= 1e-5, 1e-5, rMaxChangeTmp);
             
-            this.rMaxChange = rMaxChangeTmp / this.oStore.oContainer.oRoot.tSolverParams.rUpdateFrequency;
+            this.rMaxChange = rMaxChangeTmp / this.oStore.oContainer.tSolverParams.rUpdateFrequency;
             
             
             %TODO if rMaxChange < e.g. 0.0001 --> do not decrease further

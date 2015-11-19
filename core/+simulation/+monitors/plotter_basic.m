@@ -50,7 +50,11 @@ classdef plotter_basic < simulation.monitor
             tFilter = struct();
             
             if nargin >= 3 && ~isempty(sFilter)
-                tFilter.sUnit = sFilter;
+                if isstruct(sFilter)
+                    tFilter = sFilter;
+                else
+                    tFilter.sUnit = sFilter;
+                end
             end
             
             
