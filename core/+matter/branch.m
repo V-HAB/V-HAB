@@ -657,21 +657,22 @@ classdef branch < base & event.source
 
                 end
                 
-                % Since the subsystem branch is already sealed, we have to
-                % do it manually here for the new members of this sealed
-                % branch. First the flows...
-                for iI = 1:this.iFlows
-                    if ~this.aoFlows(iI).bSealed
-                        this.aoFlows(iI).seal(false, this);
-                    end
-                end
-                
-                % Now we seal the new flow processors.
-                for iI = 1:this.iFlowProcs
-                    if ~this.aoFlowProcs(iI).bSealed
-                        this.aoFlowProcs(iI).seal(this);
-                    end
-                end
+                %TODO check ... do 'reseal' or something??
+%                 % Since the subsystem branch is already sealed, we have to
+%                 % do it manually here for the new members of this sealed
+%                 % branch. First the flows...
+%                 for iI = 1:this.iFlows
+%                     if ~this.aoFlows(iI).bSealed
+%                         this.aoFlows(iI).seal(false, this);
+%                     end
+%                 end
+%                 
+%                 % Now we seal the new flow processors.
+%                 for iI = 1:this.iFlowProcs
+%                     if ~this.aoFlowProcs(iI).bSealed
+%                         this.aoFlowProcs(iI).seal(this);
+%                     end
+%                 end
                 
                 % If the current method was called from a pass-through
                 % branch, there will be a new Name for this branch. If not,

@@ -210,6 +210,10 @@ classdef infrastructure < base & event.source
         end
         
         
+        function configureMonitors(this)
+            % Do stuff like: add log propertis, define plots, ...
+        end
+        
         function run(this)
             % Run until tick/time (depending on bUseTime)
             % iSimTicks/fSimTime reached - directly set attributes to
@@ -217,6 +221,23 @@ classdef infrastructure < base & event.source
             
             
             if this.oSimulationContainer.oTimer.iTick == -1
+                % Construct matter, solvers, ...
+                oRoot = this.oSimulationContainer;
+                
+                for iC = 1:length(oRoot.csChildren)
+                    sChild = oRoot.csChildren{iC};
+                    oChild = oRoot.toChildren.(sChild);
+                    
+                    oChild.createMatterStructure();
+                    oChild.seal();
+                    oChild.createSolverStructure();
+                end
+                
+                
+                % Setup monitors
+                this.configureMonitors();
+                
+                % Trigger event so e.g. monitors can react
                 this.trigger('init_post');
             end
             

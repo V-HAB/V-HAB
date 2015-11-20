@@ -56,9 +56,9 @@ classdef container < systems.root
         function this = addChild(this, oChild)
             addChild@systems.root(this, oChild);
             
-            oChild.createMatterStructure();
-            oChild.seal();
-            oChild.createSolverStructure();
+            %oChild.createMatterStructure();
+            %oChild.seal();
+            %oChild.createSolverStructure();
         end
     end
     

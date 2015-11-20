@@ -33,10 +33,21 @@ classdef Example < vsys
             %TODO -> DOCUMENT!
             %   -> here, just process Ctor params and set e.g. defualt
             %      properties
+            %   -> ALSO, add subsystems
+            
+            
+            % Adding the subsystem
+            tutorials.subsystems.subsystems.ExampleSubsystem(this, 'SubSystem');
+            
+            
+            
             
             % THEN do this:
             eval(this.oRoot.oCfgParams.configCode(this));
             % -> COnfig params
+            
+            
+            
             
             
             % MAtter stuff in createMatterStructure, solvers in
@@ -65,8 +76,6 @@ classdef Example < vsys
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oAirPhase, 'Port_2');
             
-            %% Adding the subsystem
-            oSubSys = tutorials.subsystems.subsystems.ExampleSubsystem(this, 'SubSystem');
             
                         
             %% Adding some pipes
@@ -84,11 +93,13 @@ classdef Example < vsys
             matter.branch(this, 'SubsystemOutput', {'Pipe2'}, 'Tank_2.Port_2');
             
             
+            
+            
             %%% NOTE!!! setIfFlows has to be done in createMatterStructure!
             
             % Now we need to connect the subsystem with the top level system (this one). This is
             % done by a method provided by the subsystem.
-            oSubSys.setIfFlows('SubsystemInput', 'SubsystemOutput');
+            this.toChildren.SubSystem.setIfFlows('SubsystemInput', 'SubsystemOutput');
             
             
             
