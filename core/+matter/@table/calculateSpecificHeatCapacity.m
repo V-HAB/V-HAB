@@ -1,5 +1,5 @@
-function fSpecificHeatCapacity = calculateHeatCapacity(this, varargin) %sMatterState, afMasses, fTemperature, fPressure)
-    %CALCULATEHEATCAPACITY Calculate the specific heat capacity of a mixture
+function fSpecificHeatCapacity = calculateSpecificHeatCapacity(this, varargin) %sMatterState, afMasses, fTemperature, fPressure)
+    %CALCULATESPECIFICHEATCAPACITY Calculate the specific heat capacity of a mixture
     %    Calculates the specific heat capacity by adding the single
     %    substance capacities weighted with their mass fraction. Can use
     %    either a phase object as input parameter, or the phase type
@@ -61,16 +61,20 @@ function fSpecificHeatCapacity = calculateHeatCapacity(this, varargin) %sMatterS
         % standard data.
         if iNumArgs > 2
             fTemperature = varargin{3};
-            fPressure    = varargin{4};
         else
             fTemperature = this.Standard.Temperature; % std temperature (K)
+        end
+        
+        if iNumArgs > 3
+            fPressure    = varargin{4};
+        else
             fPressure    = this.Standard.Pressure;    % std pressure (Pa)
         end
-
+        
     end
 
     % If no mass is given, the heat capacity is also zero.
-    if sum(afMasses) == 0;
+    if sum(afMasses) == 0
         fSpecificHeatCapacity = 0;
         return; % Return early.
     end
