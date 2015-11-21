@@ -20,14 +20,10 @@ classdef vhab
         function oSim = sim(sSimulation, varargin)
             vhab.init();
             
-            disp('Assembling Simulation Model...')
-            hTimer = tic();
-            
             % Construct the simulation object
             simConstructor = str2func(sSimulation);
             oSim           = simConstructor(varargin{:});
             
-            disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
         end
         
         
@@ -95,10 +91,6 @@ classdef vhab
             oSim = vhab.sim(sSimulation, ptConfigParams, tSolverParams, varargin{:});
             
             assignin('base', 'oLastSimObj', oSim);
-            
-            disp('Initialization complete!');
-            disp('--------------------------------------');
-            disp('Starting simulation run...');
             
             oSim.run();
             

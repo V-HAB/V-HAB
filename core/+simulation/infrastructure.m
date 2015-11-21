@@ -223,6 +223,9 @@ classdef infrastructure < base & event.source
             if this.oSimulationContainer.oTimer.iTick == -1
                 % Construct matter, solvers, ...
                 oRoot = this.oSimulationContainer;
+            
+                disp('Assembling Simulation Model...')
+                hTimer = tic();
                 
                 for iC = 1:length(oRoot.csChildren)
                     sChild = oRoot.csChildren{iC};
@@ -233,6 +236,7 @@ classdef infrastructure < base & event.source
                     oChild.createSolverStructure();
                 end
                 
+                disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
                 
                 % Setup monitors
                 this.configureMonitors();
@@ -241,6 +245,9 @@ classdef infrastructure < base & event.source
                 this.trigger('init_post');
             end
             
+            disp('Initialization complete!');
+            disp('--------------------------------------');
+            disp('Starting simulation run...');
             
             this.trigger('run');
             
