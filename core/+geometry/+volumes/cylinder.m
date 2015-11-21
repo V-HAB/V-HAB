@@ -1,4 +1,4 @@
-classdef cylinder < geom.volume
+classdef cylinder < geometry.volume
     %Cylinder Represents a cylinder
     
     properties (SetAccess = protected, GetAccess = public)
@@ -21,7 +21,7 @@ classdef cylinder < geom.volume
             
             fVol = pi * (fDiameter / 2)^2 * fHeight;
             
-            setVolume@geom.volume(this, fVol);
+            setVolume@geometry.volume(this, fVol);
         end
     end
 end

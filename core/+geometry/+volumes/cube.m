@@ -1,4 +1,4 @@
-classdef cube < geom.volume
+classdef cube < geometry.volume
     %CUBRE Represents a cube
     
     properties (SetAccess = protected, GetAccess = public)
@@ -7,7 +7,7 @@ classdef cube < geom.volume
     
     methods
         function this = cube(fLength)
-            this@geom.volume(@geom.volumes.cube.calcVolume, fLength);
+            this@geometry.volume(@geometry.volumes.cube.calcVolume, fLength);
         end
     end
     

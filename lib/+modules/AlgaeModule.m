@@ -34,7 +34,7 @@ classdef AlgaeModule < vsys
             this.fHarvest=0;
             this.fAerationPower=200;
             
-            oGeo = geom.volumes.cuboid(3, 3, 0.026);
+            oGeo = geometry.volumes.cuboid(3, 3, 0.026);
             
             % Controls the Power and the initial power can be set
             components.AlgaeModule.PowerControl(this, 'PowerControl');

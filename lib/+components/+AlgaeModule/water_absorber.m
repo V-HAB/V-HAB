@@ -26,7 +26,7 @@ classdef water_absorber < matter.store
             % second is height. 
             %TODO fCapacity would normally probably depend on the type of
             %     the absorber material and the volume of the filter ...?
-            oGeo = geom.volumes.cylinder(0.25, 0.3);
+            oGeo = geometry.volumes.cylinder(0.25, 0.3);
             
             % Creating a store based on the cylinder's volume
             this@matter.store(oMT, sName, 5.1);
