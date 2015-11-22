@@ -133,11 +133,13 @@ if this.ttxMatter.(sSubstance).bIndividualFile
         if strcmp(sProperty,'Heat Capacity')
             sProperty = 'Isobaric Heat Capacity';
         end
+        sTypeString = 'isobaric';
     else
         sTypeStruct = 'tIsochoricData';
         if strcmp(sProperty,'Heat Capacity')
             sProperty = 'Isochoric Heat Capacity';
         end
+        sTypeString = 'isochoric';
     end
 end
 
@@ -490,7 +492,7 @@ end
 
 if isnan(fProperty) || isempty(fProperty)
     keyboard();
-    this.throw('findProperty', 'Error using findProperty. No valid value for %s of %s (%s) found in matter table. %s', sProperty, sSubstance, sPhaseType, sReportString);
+    this.throw('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table. %s', sTypeString, sProperty, sSubstance, sPhaseType, sReportString);
 end
 
 end

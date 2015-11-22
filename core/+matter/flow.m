@@ -546,7 +546,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     
                     % Only warn for > 1Pa ... because ...
                     if fPortPress < -10
-                        this(1).warn('setData', 'Setting a negative pressure lt -1Pa (%f) for the LAST flow in branch "%s"!', fPortPress, this(1).oBranch.sName);
+                        this(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fPortPress, this(1).oBranch.sName);
                     elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
                         this(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, this(1).oBranch.sName);
                     end
