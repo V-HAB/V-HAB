@@ -1,18 +1,14 @@
-function arrangeWindows(aWindows)
+function arrangeWindows(aoWindows)
 %ARRANGEWINDOWS Arranges figure windows for better user experience
 %   This function arranges any number of windows between 1 and 15 in a 
 %   regular pattern for any screen size.
 %   All additional windows will be stacked in the default location.
 
-% Increase the screen resolution from 72 ppi (new MATLAB default) to 96 ppi
-% This works well on most modern, high resolution screens
-set(groot, 'ScreenPixelsPerInch', 96);
-
 % Getting the number of windows
-if nargin < 1 || isempty(aWindows)
-    aWindows = flipud(get(0,'Children'));
+if nargin < 1 || isempty(aoWindows)
+    aoWindows = flipud(get(0,'Children'));
 end
-iNumberOfWindows = length(aWindows);
+iNumberOfWindows = length(aoWindows);
 
 % if there are 3 windows or less, do nothing.
 if iNumberOfWindows < 4
@@ -68,8 +64,22 @@ for iJ = 1:iNumberOfRows
         if iWindow > iNumberOfWindows
             return;
         else
-            set(aWindows(iWindow), 'OuterPosition', aPosition);
+            set(aoWindows(iWindow), 'OuterPosition', aPosition);
             iLeft = iLeft + iWidth;
+            
+            % On Macs, the default screen resolution is 72 ppi. Since 
+            % MATLAB 2015b, this can no longer be changed by the user. On 
+            % Windows this number is 96 ppi. The reason this is done in the 
+            % first place is to make the fonts larger for better screen 
+            % viewing. So now we have to do the workaround of setting the 
+            % figure's font size higher. Default is 8 (or 10?), we want it
+            % to be at 12.
+            if ismac
+                oAxes = aoWindows(iWindow).CurrentAxes;
+                set(oAxes,'FontSize',12);
+            end
+            
+            % Finally we have to increment the window counter
             iWindow = iWindow + 1;
         end
     end
