@@ -20,14 +20,10 @@ classdef vhab
         function oSim = sim(sSimulation, varargin)
             vhab.init();
             
-            disp('Assembling Simulation Model...')
-            hTimer = tic();
-            
             % Construct the simulation object
             simConstructor = str2func(sSimulation);
             oSim           = simConstructor(varargin{:});
             
-            disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
         end
         
         
@@ -96,14 +92,21 @@ classdef vhab
             
             assignin('base', 'oLastSimObj', oSim);
             
-            disp('Initialization complete!');
-            disp('--------------------------------------');
-            disp('Starting simulation run...');
-            
             oSim.run();
             
             if nargout >= 1, oSimRtn = oSim; end;
         end
+        
+        
+        
+        
+        function runner(this, tCfg)
+            % FROM runner_*
+            % Allow different configs (solver props and / or ptCfgs)
+            % Create all combinations before running
+            % ONE parfor loop, not nested!
+        end
+        
         
         
         %TODO-RESTRUCTURING move to a monitor, e.g. json_dumper. Store

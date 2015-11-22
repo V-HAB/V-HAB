@@ -80,34 +80,13 @@ classdef setup < simulation.infrastructure
             % Creating the root object
             oExample = tutorials.subsystems.systems.Example(this.oSimulationContainer, 'Example');
             
-            % For ease of typing, getting a reference to the subsystem object.
-            oSubSystem = oExample.toChildren.SubSystem;
             
-            % Create the solver instances. Generally, this can be done here
-            % or directly within the vsys (after the .seal() command).
-            solver.matter.iterative.branch(oSubSystem.aoBranches(1));
-            solver.matter.iterative.branch(oSubSystem.aoBranches(2));
-
+        end
+        
+        
+        
+        function configureMonitors(this)
             
-            %% Solver Tuning
-            
-            % Phases
-            
-            oFilterFlowPhase = oSubSystem.toStores.Filter.aoPhases(1);
-            oFilterBedPhase  = oSubSystem.toStores.Filter.aoPhases(2);
-            
-            % To ensure that both branches are always re-calculated at the
-            % same time, we set the flow phase of the filter, in the center
-            % of the system, between the two branches, to synced. This
-            % causes both branches to be re-calculated after every phase
-            % update.
-            oFilterFlowPhase.bSynced   = true;
-            
-            % We are not really interested in the pressure, heat capacity
-            % etc. of the filtered phase, so we don't need to re-calculate
-            % it often. So we set a large maximum change. 
-            oFilterBedPhase.rMaxChange = 0.5;
-
             
             %% Logging
             

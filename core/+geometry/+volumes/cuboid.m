@@ -1,4 +1,4 @@
-classdef cuboid < geom.volume
+classdef cuboid < geometry.volume
     %Calculates volume of a cuboid
     
     
@@ -11,7 +11,7 @@ classdef cuboid < geom.volume
     
     methods
         function this = cuboid(fLength , fWidth , fHeight)
-            this@geom.volume(@geom.volumes.cuboid.calcVolume, fLength , fWidth , fHeight);
+            this@geometry.volume(@geometry.volumes.cuboid.calcVolume, fLength , fWidth , fHeight);
         end
     end
     

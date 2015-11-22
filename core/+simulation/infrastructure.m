@@ -85,9 +85,11 @@ classdef infrastructure < base & event.source
             ... % Post-processing - show plots
             'oPlotter', struct('sClass', 'simulation.monitors.plotter_basic'), ...   'simulation.monitors.plotgrid_with_tree'), ...
             ... % Logs the simulation process in the console - params are major, minor tick
-            'oConsoleOutput', struct('sClass', 'simulation.monitors.console_output', 'cParams', {{ 100, 10 }}) ...
-            ... % Warns if too much mass loss / gain
-            ... %%%'oMatterObserver', struct('sClass', 'simulation.monitors.matter_observer'), ...
+            'oConsoleOutput', struct('sClass', 'simulation.monitors.console_output', 'cParams', {{ 100, 10 }}), ...
+            ... % Allows to e.g. pause the simulation
+            'oExecutionControl', struct('sClass', 'simulation.monitors.execution_control'), ...
+            ... % Logs mass loss/gain, TODO warn if too much mass loss / gain
+            'oMatterObserver', struct('sClass', 'simulation.monitors.matter_observer') ...
             ... %TODO implement - observes time step, warns if e.g. low because of just one phase, hints if e.g. mass in that phase doesn't change much / oscillates
             ... %%%'oTimestepObserver', struct('sClass', 'simulation.monitors.timestep_observer') ...
         );
@@ -208,6 +210,10 @@ classdef infrastructure < base & event.source
         end
         
         
+        function configureMonitors(this)
+            % Do stuff like: add log propertis, define plots, ...
+        end
+        
         function run(this)
             % Run until tick/time (depending on bUseTime)
             % iSimTicks/fSimTime reached - directly set attributes to
@@ -215,9 +221,33 @@ classdef infrastructure < base & event.source
             
             
             if this.oSimulationContainer.oTimer.iTick == -1
+                % Construct matter, solvers, ...
+                oRoot = this.oSimulationContainer;
+            
+                disp('Assembling Simulation Model...')
+                hTimer = tic();
+                
+                for iC = 1:length(oRoot.csChildren)
+                    sChild = oRoot.csChildren{iC};
+                    oChild = oRoot.toChildren.(sChild);
+                    
+                    oChild.createMatterStructure();
+                    oChild.seal();
+                    oChild.createSolverStructure();
+                end
+                
+                disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
+                
+                % Setup monitors
+                this.configureMonitors();
+                
+                % Trigger event so e.g. monitors can react
                 this.trigger('init_post');
             end
             
+            disp('Initialization complete!');
+            disp('--------------------------------------');
+            disp('Starting simulation run...');
             
             this.trigger('run');
             

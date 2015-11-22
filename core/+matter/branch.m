@@ -588,12 +588,14 @@ classdef branch < base & event.source
             % rate to zero
             if tools.round.prec(sum(this.afFlowRates), this.oContainer.oTimer.iPrecision) == 0
                 fFlowRate = 0;
+                afPressure = zeros(1,this.iFlowProcs);
                 
             elseif this.fFlowRate == 0 && false
                 % If flow rate is already zero, more strict rounding! Don't
                 % re-set a flow rate until its larger then the precision!
                 if tools.round.prec(fFlowRate, this.oContainer.oTimer.iPrecision) == 0
                     fFlowRate = 0;
+                    afPressure = zeros(1,this.iFlowProcs);
                 end
             end
             
@@ -657,21 +659,22 @@ classdef branch < base & event.source
 
                 end
                 
-                % Since the subsystem branch is already sealed, we have to
-                % do it manually here for the new members of this sealed
-                % branch. First the flows...
-                for iI = 1:this.iFlows
-                    if ~this.aoFlows(iI).bSealed
-                        this.aoFlows(iI).seal(false, this);
-                    end
-                end
-                
-                % Now we seal the new flow processors.
-                for iI = 1:this.iFlowProcs
-                    if ~this.aoFlowProcs(iI).bSealed
-                        this.aoFlowProcs(iI).seal(this);
-                    end
-                end
+                %TODO check ... do 'reseal' or something??
+%                 % Since the subsystem branch is already sealed, we have to
+%                 % do it manually here for the new members of this sealed
+%                 % branch. First the flows...
+%                 for iI = 1:this.iFlows
+%                     if ~this.aoFlows(iI).bSealed
+%                         this.aoFlows(iI).seal(false, this);
+%                     end
+%                 end
+%                 
+%                 % Now we seal the new flow processors.
+%                 for iI = 1:this.iFlowProcs
+%                     if ~this.aoFlowProcs(iI).bSealed
+%                         this.aoFlowProcs(iI).seal(this);
+%                     end
+%                 end
                 
                 % If the current method was called from a pass-through
                 % branch, there will be a new Name for this branch. If not,

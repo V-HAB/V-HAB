@@ -651,7 +651,9 @@ classdef store < base
             
             
             % Seal phases
-            for iI = 1:length(this.aoPhases), this.aoPhases(iI).seal(); end;
+            for iI = 1:length(this.aoPhases)
+                this.aoPhases(iI).seal(); 
+            end
             
             this.bSealed = true;
         end

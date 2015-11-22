@@ -292,13 +292,16 @@ classdef HX < vsys
                 fHydrLength_2 = 3*mHX{7}+mHX{2};
                 
             end
+        end
+        
+        function createMatterStructure(this)
             
+            createMatterStructure@vsys(this);
             %adds the flow to flow processores used to set the outlet
             %values of the heat exchanger
-            this.oF2F_1 = support_classes.HX.hx_flow(this, oParent, [sName,'_1']);
-            this.oF2F_2 = support_classes.HX.hx_flow(this, oParent, [sName,'_2']);
+            this.oF2F_1 = components.HX.hx_flow(this, this.oParent, [this.sName,'_1']);
+            this.oF2F_2 = components.HX.hx_flow(this, this.oParent, [this.sName,'_2']);
             
-            this.seal();
         end
         
 

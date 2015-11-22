@@ -50,7 +50,11 @@ classdef plotter_basic < simulation.monitor
             tFilter = struct();
             
             if nargin >= 3 && ~isempty(sFilter)
-                tFilter.sUnit = sFilter;
+                if isstruct(sFilter)
+                    tFilter = sFilter;
+                else
+                    tFilter.sUnit = sFilter;
+                end
             end
             
             
@@ -80,7 +84,7 @@ classdef plotter_basic < simulation.monitor
         %% Default plot method
         function plot(this)
             oInfra  = this.oSimulationInfrastructure;
-            iFig    = figure();
+            oFigure = figure();
             iPlots  = length(this.tPlots) + 1;
             iGrid   = ceil(sqrt(iPlots));
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
@@ -117,8 +121,26 @@ classdef plotter_basic < simulation.monitor
             title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
             
             
-            set(iFig, 'name', [ oInfra.sName ' - (' oInfra.sCreated ')' ]);
-            % Maximize figure ...?
+            set(oFigure, 'name', [ oInfra.sName ' - (' oInfra.sCreated ')' ]);
+                        
+            % On Macs, the default screen resolution is 72 ppi. Since 
+            % MATLAB 2015b, this can no longer be changed by the user. On 
+            % Windows this number is 96 ppi. The reason this is done in the 
+            % first place is to make the fonts larger for better screen 
+            % viewing. So now we have to do the workaround of setting the 
+            % figure's font size higher. Default is 8 (or 10?), we want it
+            % to be at 12.
+            if ismac
+                aoAxes  = findall(oFigure, 'Type', 'axes');
+                for iI = 1:length(aoAxes)
+                    set(aoAxes(iI),'FontSize',12);
+                end
+            end
+
+            drawnow;
+            
+            % Maximize figure
+            set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
         end
     end
     

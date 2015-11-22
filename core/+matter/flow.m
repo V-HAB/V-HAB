@@ -151,6 +151,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         
         function [ setData, hRemoveIfProc ] = seal(this, bIf, oBranch)
+            %if strcmp(this.oBranch.sName, 'Filter__FilterIn___Interface___Tank_1__Port_1')
+            %    keyboard();
+            %end
+            
             if this.bSealed
                 this.throw('seal', 'Already sealed!');
             end
@@ -504,7 +508,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 %TODO if flow rate is zero, what to do? Something HAS to
                 %     heat up ... heating up in the branch should basically
                 %     lead to a flow rate, right?
-                if fFlowRate > 0
+                if abs(fFlowRate) > 0
                     if ~bNeg && (iI > 1)
                         fHeatFlow = this(iI).oIn.fHeatFlow;
 
@@ -513,7 +517,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                         %     might be replaced with e.g. pressure dep. value?
                         fOtherCp  = this(iI - 1).fSpecificHeatCapacity;
 
-                    elseif bNeg && (iL < iI)
+                    elseif bNeg && (iI < iL)
                         fHeatFlow = this(iI).oOut.fHeatFlow;
                         fOtherCp  = this(iI + 1).fSpecificHeatCapacity;
 
@@ -524,7 +528,16 @@ classdef flow < base & matlab.mixin.Heterogeneous
 
                     % So following this equation:
                     % Q' = m' * c_p * deltaT
-                    fCurrentTemperature = fCurrentTemperature + fHeatFlow / fFlowRate / ((this(iI).fSpecificHeatCapacity + fOtherCp) / 2);
+                    fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / ((this(iI).fSpecificHeatCapacity + fOtherCp) / 2);
+                end
+                
+                if isnan(fCurrentTemperature)
+                    warning(['On branch: %s\n',...
+                             '         Temperature of connected phase (%s_%s) is NaN.\n',...
+                             '         Using standard temperature instead.\n',...
+                             '         Reason could be empty phase.'],...
+                             this(iI).oBranch.sName, oExme.oPhase.oStore.sName, oExme.oPhase.sName);
+                    fCurrentTemperature = this(iI).oMT.Standard.Temperature;
                 end
                 
                 this(iI).fTemperature = fCurrentTemperature;
@@ -542,7 +555,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     
                     % Only warn for > 1Pa ... because ...
                     if fPortPress < -10
-                        this(1).warn('setData', 'Setting a negative pressure lt -1Pa (%f) for the LAST flow in branch "%s"!', fPortPress, this(1).oBranch.sName);
+                        this(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fPortPress, this(1).oBranch.sName);
                     elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
                         this(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, this(1).oBranch.sName);
                     end

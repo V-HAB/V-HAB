@@ -128,6 +128,15 @@ classdef exme < base
             % Also returns matrix with two columns containing temperature 
             % and the heat capacity and for each flow!
             
+            if isempty(this.oFlow)
+                fFlowRate    = 0;
+                arPartials   = [];
+                afProperties = [];
+                
+                return;
+            end
+            
+            
             fFlowRate  =  this.oFlow.fFlowRate * this.iSign;
             
             %TODO store that on attribute as bP2P = true or something?

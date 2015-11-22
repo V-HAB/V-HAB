@@ -51,6 +51,15 @@ classdef container < systems.root
                 this.tSolverParams = tools.struct.mergeStructs(this.tSolverParams, tSolverParams);
             end
         end
+        
+        
+        function this = addChild(this, oChild)
+            addChild@systems.root(this, oChild);
+            
+            %oChild.createMatterStructure();
+            %oChild.seal();
+            %oChild.createSolverStructure();
+        end
     end
     
 end

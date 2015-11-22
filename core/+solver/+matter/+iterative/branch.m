@@ -334,6 +334,15 @@ classdef branch < solver.matter.base.branch
                         %     with the Inf flag set.
                         %%REORG%%oBranch.aoFlows.setSolverData([], 0);
                         fFlowRate = 0;
+                        
+                        
+                        % Probably this is the wrong workaround and I
+                        % don't really understand what the TODO comment
+                        % above means, but I can't use valves that produce
+                        % an inf pressure drop in the current version,
+                        % unless I set the afDeltaP return variable to
+                        % zeros.
+                        afDeltaP = zeros(1, oBranch.iFlowProcs);
 %                         iCount  = -1;
 %                         rError  = 1;
 %                         afDrops = zeros(oBranch.iFlowProcs, 1);

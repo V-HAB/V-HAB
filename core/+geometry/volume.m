@@ -1,4 +1,4 @@
-classdef volume < geom.node
+classdef volume < geometry.node
     %VOLUME Represents a volume
     % Volume geometric node - has fVolume/setVolume and sends event!
     % Calculating volumes can either be done trough overloading the

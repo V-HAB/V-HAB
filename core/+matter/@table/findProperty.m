@@ -45,8 +45,8 @@ function fProperty = findProperty(this, tParameters)
 %                                   used.
 
 %% Initializing the return variable
-
-fProperty = [];
+%CHECK: Do we really not need this, ever? Then delete. 
+%fProperty = [];
 
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,11 +133,13 @@ if this.ttxMatter.(sSubstance).bIndividualFile
         if strcmp(sProperty,'Heat Capacity')
             sProperty = 'Isobaric Heat Capacity';
         end
+        sTypeString = 'isobaric';
     else
         sTypeStruct = 'tIsochoricData';
         if strcmp(sProperty,'Heat Capacity')
             sProperty = 'Isochoric Heat Capacity';
         end
+        sTypeString = 'isochoric';
     end
 end
 
@@ -471,12 +473,12 @@ else
     
     % if no column found, property is not in worksheet
     if isempty(iColumn)
-        this.throw('table:FindProperty',sprintf('Cannot find %s for %s', sProperty, sSubstance));
+        this.throw('table:FindProperty',sprintf('Cannot find %s for %s (%s)', sProperty, sSubstance, sPhaseType));
     end
 
         fProperty = this.ttxMatter.(sSubstance).ttxPhases.(sPhaseStructName).(strrep(sProperty,' ',''));
         if isnan(fProperty) || isempty(fProperty)
-            this.throw('findProperty', 'Error using findProperty. The matter data for %s does not include a value for %s.', sSubstance, sProperty);
+            this.throw('findProperty', 'Error using findProperty. The matter data for %s (%s) does not include a value for %s.', sSubstance, sPhaseType, sProperty);
         else
             sReportString = 'Just took the value from the ''Matter Data'' worksheet.';
         end
@@ -490,7 +492,7 @@ end
 
 if isnan(fProperty) || isempty(fProperty)
     keyboard();
-    this.throw('findProperty', 'Error using findProperty. No valid value for %s of %s found in matter table. %s', sProperty, sSubstance, sReportString);
+    this.throw('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table. %s', sTypeString, sProperty, sSubstance, sPhaseType, sReportString);
 end
 
 end

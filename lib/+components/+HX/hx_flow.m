@@ -6,28 +6,29 @@ classdef hx_flow < matter.procs.f2f
         fDeltaTemp = 0;
         fDeltaPress = 0;
         bActive = true;
+        
     end
     
     properties (SetAccess = protected, GetAccess = protected)
-        oParent;    % An object to reference the parent heat exchanger object
+        oHXParent;    % An object to reference the parent heat exchanger object
     end
     
     methods
-        function this = hx_flow(oParent, oContainer, sName)
+        function this = hx_flow(oHXParent, oContainer, sName)
             this@matter.procs.f2f(oContainer, sName);
             
-            this.oParent     = oParent;
+            this.oHXParent = oHXParent;
             
             this.supportSolver('callback',  @this.solverDeltas);
             this.supportSolver('manual', true, @this.updateManualSolver);
         end
         
         function update(this)
-           this.oParent.update(); 
+           this.oHXParent.update(); 
         end
         
         function [ fDeltaPress, fDeltaTemp ] = solverDeltas(this, ~)
-           this.oParent.update(); 
+           this.oContainer.update(); 
            fDeltaPress = this.fDeltaPress;
            fDeltaTemp  = this.fDeltaTemp;
         end
@@ -43,7 +44,7 @@ classdef hx_flow < matter.procs.f2f
         end
             
         function fDeltaTemperature = updateManualSolver(this)
-            this.oParent.update();
+            this.oHXParent.update();
             fDeltaTemperature = this.fDeltaTemp;
             
         end
