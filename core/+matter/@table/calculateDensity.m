@@ -85,7 +85,7 @@ for iI = 1:length(aiIndices)
     tParameters.sPhaseType = sMatterState;
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = fPressure;
-    tParameters.bUseIsobaricData = true;
+    tParameters.bUseIsobaricData = false;
     
     afRho(iI) = this.findProperty(tParameters);
 end
