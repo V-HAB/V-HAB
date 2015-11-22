@@ -531,6 +531,15 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / ((this(iI).fSpecificHeatCapacity + fOtherCp) / 2);
                 end
                 
+                if isnan(fCurrentTemperature)
+                    warning(['On branch: %s\n',...
+                             '         Temperature of connected phase (%s_%s) is NaN.\n',...
+                             '         Using standard temperature instead.\n',...
+                             '         Reason could be empty phase.'],...
+                             this(iI).oBranch.sName, oExme.oPhase.oStore.sName, oExme.oPhase.sName);
+                    fCurrentTemperature = this(iI).oMT.Standard.Temperature;
+                end
+                
                 this(iI).fTemperature = fCurrentTemperature;
                 
                 
