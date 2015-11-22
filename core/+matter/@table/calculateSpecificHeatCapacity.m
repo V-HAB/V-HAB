@@ -32,9 +32,18 @@ function fSpecificHeatCapacity = calculateSpecificHeatCapacity(this, varargin) %
         elseif isa(oMatterRef, 'matter.procs.p2p')
             sMatterState = oMatterRef.getInEXME().oPhase.sType;
             afMasses     = oMatterRef.arPartialMass * oMatterRef.fFlowRate;
+            % Because the flow rate can be negative, we transform the
+            % afMasses array into absolutes here. Otherwise the calculated
+            % heat capacity will be zero.
+            afMasses = abs(afMasses);
         elseif isa(oMatterRef, 'matter.flow')
             sMatterState = oMatterRef.oBranch.getInEXME().oPhase.sType;
             afMasses     = oMatterRef.arPartialMass * oMatterRef.fFlowRate;
+            % Because the flow rate can be negative, we transform the
+            % afMasses array into absolutes here. Otherwise the calculated
+            % heat capacity will be zero.
+            afMasses = abs(afMasses);
+
         else
             this.throw('calculateHeatCapacity', 'Single parameter must be of type |matter.phase| or |matter.flow|.');
         end
