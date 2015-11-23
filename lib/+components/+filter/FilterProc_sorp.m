@@ -176,6 +176,14 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             fFlowRateIn      = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fFlowRate;
             this.fPressure_p = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fPressure;
             
+            % In some cases (manual solver in combination with an empty
+            % phase at one end to which this p2p processor is connected)
+            % the pressure here can be zero. It should only be zero for one
+            % timestep, so we'll just skip this one.
+            if this.fPressure_p <= 0 
+                return;
+            end
+            
             this.fInflowTemperature = this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.fTemperature;
 
             % Inlet mass fractions
