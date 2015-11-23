@@ -559,6 +559,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
                         this(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, this(1).oBranch.sName);
                     end
+                elseif tools.round.prec(fPortPress, iPrec) == 0
+                    % If the pressure is extremely small, we also set the
+                    % flow pressure to zero.
+                    this(iI).fPressure = 0;
                 end
                 
                 % Calculates the pressure for the NEXT flow, so make sure
