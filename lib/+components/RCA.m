@@ -340,7 +340,7 @@ classdef RCA < vsys
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
                 % as a low level selectable output
-                fprintf('\nRCA switching from bed A to bed B.\n');
+                fprintf('RCA switching from bed A to bed B.\n');
             else
                 % Setting the indicator and changing the active bed
                 bIndicator = true;
@@ -353,7 +353,7 @@ classdef RCA < vsys
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
                 % as a low level selectable output
-                fprintf('\nRCA switching from bed B to bed A.\n');
+                fprintf('RCA switching from bed B to bed A.\n');
             end
             
             % Changing the valves

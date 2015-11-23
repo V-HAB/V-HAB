@@ -194,7 +194,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % Time when the total heat capacity was last updated. Need to save
         % this information in order to prevent the heat capacity
         % calculation to be performed multiple times per timestep.
-        fLastTotalHeatCapacityUpdate; 
+        fLastTotalHeatCapacityUpdate = 0; 
 
 %         % ???
 %         fTimeStep;
@@ -571,6 +571,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         function fTotalHeatCapacity = getTotalHeatCapacity(this)
             % Returns the total heat capacity of the phase. 
             
+            % We'll only calculate this again, if it has been at least one
+            % second since the last update. This is to reduce the
+            % computational load and may be removed in the future,
+            % especially if the calculateSpecificHeatCapactiy() method and
+            % the findProperty() method of the matter table have been
+            % substantially accelerated.
+            % One second is also the fixed timestep of the thermal solver. 
             if this.oStore.oTimer.fTime - this.fLastTotalHeatCapacityUpdate < 1
                 fTotalHeatCapacity = this.fTotalHeatCapacity;
             else

@@ -149,12 +149,12 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             % Get the filter volumes that are defined in the filter class
             % Must be done here because doing it in the constructor doesn't work
             if this.fVolSolid == 0
-                this.fVolSolid = this.oStore.aoPhases(2).fVolume;          
-                this.fVolFlow = this.oStore.aoPhases(1).fVolume;
+                this.fVolSolid = this.oStore.toPhases.FilteredPhase.fVolume;          
+                this.fVolFlow  = this.oStore.toPhases.FlowPhase.fVolume;
             end            
             
             % Position of relevant sorptives in the matter table
-            this.aiPositions = (find(this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.arPartialMass > 0));
+            this.aiPositions = (find(this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.arPartialMass > 0));
             % With their according names
             this.csNames = this.oMT.csSubstances(this.aiPositions);
             
@@ -173,9 +173,9 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             this.fTimeStep = this.oStore.oTimer.fTime - this.fLastExec + this.fTimeDifference;        %[s]
             
             % Get inflow properties
-            fFlowRateIn = this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.fFlowRate;
-            this.fPressure_p = this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.fPressure;
-
+            fFlowRateIn      = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fFlowRate;
+            this.fPressure_p = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fPressure;
+            
             this.fInflowTemperature = this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.fTemperature;
 
             % Inlet mass fractions
@@ -198,7 +198,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             this.fFluidVelocity = this.fVolumetricFlowRate/(this.fVolFlow/this.fFilterLength);      % [m/s]
 
             % Call calculation function
-            this.calculation;
+            this.calculation();
             
         end
         
