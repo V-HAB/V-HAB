@@ -907,7 +907,21 @@ classdef branch < solver.matter.base.branch
                     %fChange = tools.round.prec(fFlowRateUnrounded - this.fFlowRateUnrounded, this.oBranch.oContainer.oTimer.iPrecision);
                     %rChange = abs(fChange / this.fFlowRateUnrounded);
                     
-                    rChange = abs(fFlowRateUnrounded / this.fFlowRateUnrounded - 1);
+                    
+                    % In case both were zero!
+                    if fFlowRateUnrounded == this.fFlowRateUnrounded
+                        rChange = 0;
+                        
+                    else
+                        rChange = abs(abs(fFlowRateUnrounded / this.fFlowRateUnrounded) - 1);
+                    end
+                    
+                    
+                    if isinf(rChange) || isnan(rChange)
+                        rChange = 1;
+                    end
+                    
+                    
                     %fprintf('%.12f\n', rChange);
                     
                     
@@ -919,7 +933,7 @@ classdef branch < solver.matter.base.branch
                     end
                     
                     
-                    
+                    %keyboard();
                     rChange = tools.round.prec(rChange, this.oBranch.oContainer.oTimer.iPrecision);
                     
                     
@@ -966,6 +980,9 @@ classdef branch < solver.matter.base.branch
                             this.rFlowRateChange = (rChange + this.iRemChange * this.rFlowRateChange) / (1 + this.iRemChange);
 %                         end
                         %disp(this.rFlowRateChange);
+                        
+                        
+                        %fprintf('[%i] Damped %f, Curr %f [%.12f vs old %.12f]\n', this.oBranch.oTimer.iTick, this.rFlowRateChange, rChange, fFlowRateUnrounded, this.fFlowRateUnrounded);
                         
                         % Change larger than limit? Minimum time step.
                         if this.rFlowRateChange > this.rMaxChange

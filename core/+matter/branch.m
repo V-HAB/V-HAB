@@ -545,8 +545,15 @@ classdef branch < base & event.source
                 % phase that contains more mass than the other! This 
                 % ensures that the matter properties don't become zero if
                 % the coExmes{1} phase is empty.
-                aoPhases   = [ this.coExmes{1}.oPhase, this.coExmes{2}.oPhase ];
-                iWhichExme = sif(aoPhases(1).fMass >= aoPhases(2).fMass, 1, 2);
+                
+                %CHECK: we use getPortProperties() to get the pressure (gas
+                %       and liquid) or some equivalent (soldids ...?)
+                %       instead of mass - see e.g. const_press_exme!
+                %aoPhases   = [ this.coExmes{1}.oPhase, this.coExmes{2}.oPhase ];
+                %iWhichExme = sif(aoPhases(1).fMass >= aoPhases(2).fMass, 1, 2);
+                
+                afPressure = [ this.coExmes{1}.getPortProperties(), this.coExmes{2}.getPortProperties() ];
+                iWhichExme = sif(afPressure(1) >= afPressure(2), 1, 2);
             else
                 iWhichExme = sif(this.fFlowRate < 0, 2, 1);
             end
@@ -569,6 +576,8 @@ classdef branch < base & event.source
         
         function setFlowRate(this, fFlowRate, afPressure)
             % Set flowrate for all flow objects
+            %
+            %NOTE/CHECK: afPressure is pressure DROPS, not total pressures!
             
             if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
             
@@ -588,16 +597,20 @@ classdef branch < base & event.source
             % rate to zero
             if tools.round.prec(sum(this.afFlowRates), this.oContainer.oTimer.iPrecision) == 0
                 fFlowRate = 0;
+                
                 afPressure = zeros(1,this.iFlowProcs);
                 
-            elseif this.fFlowRate == 0 && false
+            elseif this.fFlowRate == 0 %&& false
                 % If flow rate is already zero, more strict rounding! Don't
                 % re-set a flow rate until its larger then the precision!
                 if tools.round.prec(fFlowRate, this.oContainer.oTimer.iPrecision) == 0
                     fFlowRate = 0;
+                    
                     afPressure = zeros(1,this.iFlowProcs);
                 end
             end
+            
+            
             
             
             this.fFlowRate = fFlowRate;
