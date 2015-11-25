@@ -101,7 +101,7 @@ classdef RCA < vsys
             oPhase = this.toStores.Merger.createPhase(this.sAtmosphereHelper,  0.004, 298.65);
             % For all of the solver branches to update correctly and
             % simultaneously, this phase has to be 'synced'
-            oPhase.bSynced = true;
+%             oPhase.bSynced = true;
             
             % Creating the ports on the merger
             matter.procs.exmes.gas(oPhase, 'Merger_Inlet1');
