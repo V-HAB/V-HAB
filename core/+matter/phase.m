@@ -598,6 +598,18 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             end
             
         end
+        
+        function updateSpecificHeatCapacity(this)
+            % When a phase was empty and is being filled with matter again,
+            % it may be a couple of ticks until the phase.update() method
+            % is called, which updates the phase's specific heat capacity.
+            % Other objects, for instance matter.flow, may require the
+            % correct value for the heat capacity as soon as there is
+            % matter in the phase. In this case, these objects can call
+            % this function, that will update the fSpecificHeatCapacity
+            % property of the phase. 
+            this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
+        end
 
     end
 

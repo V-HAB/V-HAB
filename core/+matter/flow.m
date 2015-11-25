@@ -441,6 +441,14 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % Get matter properties of the phase
             if ~isempty(oExme)
                 [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
+                
+                if fPhaseSpecificHeatCapacity == 0 && oExme.oPhase.fMass ~= 0
+                    fprintf('Updating specific heat capacity for phase %s %s.\nTick: %i \n',oExme.oPhase.oStore.sName, oExme.oPhase.sName,this(1).oTimer.iTick);
+                    oExme.oPhase.updateSpecificHeatCapacity();
+%                     fPhaseSpecificHeatCapacity = this(1).oMT.calculateSpecificHeatCapacity(oExme.oPhase);
+                    fPhaseSpecificHeatCapacity = oExme.oPhase.fSpecificHeatCapacity;
+                end
+
             
             % If no exme is provided, those values will not be changed (see
             % above, in case of e.g. a closed valve within the branch).
