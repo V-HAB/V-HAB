@@ -146,6 +146,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
                 return;
             end
             
+            if this.oStore.oTimer.fTime == this.fLastExec
+                return;
+            end
+            
             % Get the filter volumes that are defined in the filter class
             % Must be done here because doing it in the constructor doesn't work
             if this.fVolSolid == 0
