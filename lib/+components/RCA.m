@@ -49,6 +49,9 @@ classdef RCA < vsys
         % of the RCA filters. 
         sAtmosphereHelper; 
         
+        % Initial temperature of the filter beds in [K].
+        fInitialTemperature = 298.65; 
+        
     end
     
     methods
@@ -72,7 +75,7 @@ classdef RCA < vsys
             % Creating the input splitter
             matter.store(this, 'Splitter', 0.004);  % Volume in in^3 = 0.0568 ?? 
             % Adding a phase to the splitter
-            oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  0.004, 298.65);
+            oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature);
             % Creating the ports on the splitter
             matter.procs.exmes.gas(oPhase, 'Splitter_Inlet'); 
             matter.procs.exmes.gas(oPhase, 'Splitter_Outlet1');
@@ -82,7 +85,7 @@ classdef RCA < vsys
             
             %% Adsorber Beds
             % Creating the two filter beds
-            tFilterParameters = struct('fFilterTemperature', 298.65,...
+            tFilterParameters = struct('fFilterTemperature', this.fInitialTemperature,...
                                        'sAtmospherHelper',   this.sAtmosphereHelper,...
                                        'fTimeStep',          1);
                                    
@@ -98,7 +101,7 @@ classdef RCA < vsys
             % Creating the output merger
             matter.store(this, 'Merger',  0.004);  % Volume in in^3 = 0.0568 ??
             % Adding a phase to the merger
-            oPhase = this.toStores.Merger.createPhase(this.sAtmosphereHelper,  0.004, 298.65);
+            oPhase = this.toStores.Merger.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature);
             % For all of the solver branches to update correctly and
             % simultaneously, this phase has to be 'synced'
 %             oPhase.bSynced = true;
@@ -112,7 +115,7 @@ classdef RCA < vsys
             % Creating vacuum store
             matter.store(this, 'Vacuum', 1000);
             % Creating empty gas phase
-            oVacuum = this.toStores.Vacuum.createPhase('air', 0, 298.65, 0, 0);
+            oVacuum = this.toStores.Vacuum.createPhase('air', 0, this.fInitialTemperature, 0, 0);
             % Constant pressure exmes for the linear solver, for both the
             % flow volume and amine phases.
             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_FlowVolume', 0);
