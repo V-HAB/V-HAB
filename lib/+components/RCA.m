@@ -230,9 +230,6 @@ classdef RCA < vsys
         function exec(this, ~)
             exec@vsys(this);
             
-            % Set flow rates
-            this.setFlowRates;
-            
             % Getting the current partial pressure of CO2 at the bed inlet
             % and the bed outlet in [Pa]
             if this.sActiveBed == 'A'
@@ -254,8 +251,11 @@ classdef RCA < vsys
             % Switching beds and setting flow rates if conditions are met
             if  (this.fPP_CO2Out >= this.fCO2Limit) && (this.fDeltaTime > this.fDeadband)
                 this.switchRCABeds;
-                this.setFlowRates;
             end
+            
+            % Set flow rates
+            this.setFlowRates;
+            
         end
         
     end
