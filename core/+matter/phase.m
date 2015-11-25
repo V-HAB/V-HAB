@@ -360,9 +360,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             fLastStep = fTime - this.fLastMassUpdate;
 
             % Return if no time has passed
-            if fLastStep == 0,
+            if fLastStep == 0
+                %NOTE need that in case .exec sets flow rate in manual branch triggering massupdate,
+                %     and later in that tick phase does .update -> branches won't be set outdated!
+                if bSetBranchesOutdated
+                    this.setBranchesOutdated();
+                end
+                
                 return;
-            end;
+            end
 
             % Immediately set fLastMassUpdate, so if there's a recursive call
             % to massupdate, e.g. by a p2ps.flow, nothing happens!
