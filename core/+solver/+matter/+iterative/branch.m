@@ -16,6 +16,13 @@ classdef branch < solver.matter.base.branch
         rMaxChange = 0.05;
         rSetChange = 0.02;
         iRemChange = 10;
+        
+        
+        % Sensitivity of the solver towards changes, higher number leading
+        % to lower time steps
+        fSensitivity = 5;
+        
+        
         % Default maximum time step for the branch
         fMaxStep   = 20;
         
@@ -66,12 +73,12 @@ classdef branch < solver.matter.base.branch
     methods
         
         %% Constructor
-        function this = branch(oBranch, rMaxChange, iRemChange)
+        function this = branch(oBranch)
             
             this@solver.matter.base.branch(oBranch, [], 'callback');
             
-            if nargin >= 2, this.rMaxChange = rMaxChange; end;
-            if nargin >= 3, this.iRemChange = iRemChange; end;
+            this.fSensitivity = this.oBranch.oContainer.tSolverParams.fSolverSensitivity;
+            this.fMaxStep     = this.oBranch.oContainer.tSolverParams.fMaxTimeStep;
             
             % Sets the flow rate to 0 which sets matter properties
             this.update();
@@ -996,7 +1003,7 @@ classdef branch < solver.matter.base.branch
                             
                             
                             fInt = interp1([ 0 this.rMaxChange ], [ 1 0 ], this.rFlowRateChange, 'linear', 'extrap');
-                            iI = 5;
+                            iI = this.fSensitivity;
                             fNewStep = fInt.^iI * this.fMaxStep + this.oBranch.oContainer.oTimer.fTimeStep;
                         end
                         %disp(fNewStep);

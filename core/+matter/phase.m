@@ -762,6 +762,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.rMaxChange = rMaxChangeTmp / this.oStore.oContainer.tSolverParams.rUpdateFrequency;
             
             
+            % Max time step
+            this.fMaxStep = this.oStore.oContainer.tSolverParams.fMaxTimeStep;
+            
+            
+            
+            
             %TODO if rMaxChange < e.g. 0.0001 --> do not decrease further
             %     but instead increase highestMaxChangeDec?
             
