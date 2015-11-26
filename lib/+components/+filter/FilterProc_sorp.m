@@ -103,21 +103,21 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
                     % Set bed length
                     this.fFilterLength = this.oStore.oGeometry.fHeight;     % [m]
                     % Load corresponding helper table
-                    this.ofilter_table = hoth.RCADevelopment.Filter.helper.FBA_Table;  
+                    this.ofilter_table = components.filter.FBA_Table;  
                     
                 case 'RCA'
                     this.fRhoSorbent = 636.7;    % SA9-T density [kg/m^3]
                     % Set bed length
                     this.fFilterLength = this.oStore.fx;    % [m]
                     % Load corresponding helper table
-                    this.ofilter_table = hoth.RCADevelopment.Filter.helper.RCA_Table; 
+                    this.ofilter_table = components.filter.RCA_Table; 
                     
                 case 'MetOx'
                     this.fRhoSorbent = 636.7;    % TODO: Add right value [kg/m^3]
                     % Set bed length
                     this.fFilterLength = this.oStore.fx;    % [m]
                     % Load corresponding helper table
-                    this.ofilter_table = hoth.RCADevelopment.Filter.helper.MetOx_Table;
+                    this.ofilter_table = components.filter.MetOx_Table;
                     
                 otherwise
                     disp('Choose available filter model');
