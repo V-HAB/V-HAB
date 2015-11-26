@@ -85,7 +85,9 @@ for iI = 1:length(aiIndices)
     tParameters.sPhaseType = sMatterState;
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = fPressure;
-    tParameters.bUseIsobaricData = false;
+    
+    %TODO should that just be true for e.g. pipe flows?
+    tParameters.bUseIsobaricData = true;
     
     afRho(iI) = this.findProperty(tParameters);
 end
