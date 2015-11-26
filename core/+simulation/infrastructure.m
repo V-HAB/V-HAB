@@ -442,16 +442,23 @@ classdef infrastructure < base & event.source
 % %             end
 % %         end
 % % 
-% %         function saveFullObj(this, sDir)
-% % 
-% %             this.readData();
-% % 
-% %             oSimObj = this;
-% %             sMat    = sif(isempty(this.sStorageName), this.sStorageDir, this.sStorageName);
-% % 
-% %             save([ 'data/full/' sDir '/' sMat '.mat' ], 'oSimObj');
-% % 
-% %         end
+        function saveSim(this, sFile)
+            %TODO move to own monitor, e.g. 'exporter'? Allow setting a
+            %     custom name?
+            %     If logger did dump data to .mat file, do not need to read
+            %     that data before saving, can be done after user re-loaded
+            %     the sim .mat in the workspace.
+            
+
+            if nargin < 2 || isempty(sFile)
+                sFile   = [  this.sName '_' datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') ];
+            end
+            
+            oSimObj = this;
+            
+            save([ 'data/' sFile '.mat' ], 'oSimObj');
+
+        end
 
     end
     

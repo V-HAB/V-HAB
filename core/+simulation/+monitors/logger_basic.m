@@ -1,6 +1,10 @@
 classdef logger_basic < simulation.monitor
     %LOGGER_BASIC Summary of this class goes here
     %   Detailed explanation goes here
+    %
+    %TODO see old master -> simulation.m ==> bDumpToMat!
+    %       1) in regular intervals, dump mfLog data to .mat file
+    %       2) provide readData method -> re-read data from .mat files
     
     properties (GetAccess = public, Constant = true)
         % Loops through keys, comparison only with length of key
@@ -291,7 +295,7 @@ classdef logger_basic < simulation.monitor
             % Indices to tLogValues (?, or on add?)
             % Eval Code!
             % Names / Paths to Cell for fast comp!
-            disp('LOG onInitPost');
+            %disp('LOG onInitPost');
             
             
             % Collect all paths of values to log
