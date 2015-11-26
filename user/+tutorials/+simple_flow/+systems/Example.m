@@ -37,6 +37,11 @@ classdef Example < vsys
             %disp(this);
             
             
+        end
+        
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
             
             
             % Creating a store, volume 1 m^3
@@ -70,14 +75,17 @@ classdef Example < vsys
             oBranch = matter.branch(this, 'Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
             
             
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
+            
+        end
+        
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
             
             % Now that the system is sealed, we can add the branch to a
             % specific solver. In this case we will use the iterative
             % solver. 
-            oIt1 = solver.matter.iterative.branch(oBranch);
+            oIt1 = solver.matter.iterative.branch(this.aoBranches(1));
             
             %oIt1.iDampFR = 5;
         end

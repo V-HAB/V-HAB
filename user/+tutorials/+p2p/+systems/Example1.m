@@ -12,6 +12,13 @@ classdef Example1 < vsys
         function this = Example1(oParent, sName)
             this@vsys(oParent, sName, 10);
            
+            eval(this.oRoot.oCfgParams.configCode(this));
+            
+        end
+        
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
             % Creating a store, volume 10m^3
             matter.store(this, 'Atmos', 10);
             
@@ -42,10 +49,51 @@ classdef Example1 < vsys
             oBranch_1 = matter.branch(this, 'Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
             oBranch_2 = matter.branch(this, 'Filter.Out', {'Pipe_3' }, 'Atmos.In');
             
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
             
+        end
+        
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            
+            
+            
+            oB1 = solver.matter.iterative.branch(this.aoBranches(1));
+            oB2 = solver.matter.iterative.branch(this.aoBranches(2));
+            
+            
+            
+            %% Solver Tuning
+            
+            % The flow rate is driven by the fan within branch 1, and flows
+            % through a rather small filter volume. This combination leads
+            % to instabilities in the flow rate. Using this parameter, the
+            % solvers reduce the changes in flow rates:
+            % fFlowRate = (fNewFR + iDampFR * fOldFR) / (iDampFR + 1)
+            oB1.iDampFR = 5;
+            oB2.iDampFR = 5;
+            
+            
+            
+            
+            % Phases
+            
+            this.aoFilterPhases = this.toStores.Filter.aoPhases;
+            this.oAtmosPhase    = this.toStores.Atmos.aoPhases(1);
+            
+            % As the input flow rate can change quickly due to the fan, and
+            % the filter flow phase is rather small, it can help to 'sync'
+            % the flow rate solvers connected to this phase. This means
+            % that as soon as the flow rate of one of the solvers changes,
+            % the other solvers will also immediately calculate a new FR.
+            this.aoFilterPhases(1).bSynced = true;
+            this.aoFilterPhases(1).bSynced = false;
+            
+            
+            % The phase for the adsorbed matter in the filter store has a
+            % small rMaxChange (small volume) but is not really important
+            % for the solving process, so increase rMaxChange manually.
+            this.aoFilterPhases(2).rMaxChange = 5;
         end
     end
     

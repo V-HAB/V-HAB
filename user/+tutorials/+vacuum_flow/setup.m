@@ -72,7 +72,7 @@ classdef setup < simulation.infrastructure
             % specific amount of ticks (bUseTime true/false).
             this.fSimTime = 2.5e5;%3600 * 14*4.9; % In seconds
             this.iSimTicks = 1000;
-            this.bUseTime = true;
+            this.bUseTime = false;
 
         end
         

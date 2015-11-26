@@ -112,42 +112,30 @@ classdef setup < simulation.infrastructure
             % of this simulation.
             oExample = tutorials.p2p.systems.Example1(this.oSimulationContainer, 'Example');
             
-            % Create the solver instances. Generally, this can be done here
-            % or directly within the vsys (after the .seal() command).
-            this.oB1 = solver.matter.iterative.branch(oExample.aoBranches(1));
-            this.oB2 = solver.matter.iterative.branch(oExample.aoBranches(2));
             
             
-            %% Solver Tuning
-            
-            % The flow rate is driven by the fan within branch 1, and flows
-            % through a rather small filter volume. This combination leads
-            % to instabilities in the flow rate. Using this parameter, the
-            % solvers reduce the changes in flow rates:
-            % fFlowRate = (fNewFR + iDampFR * fOldFR) / (iDampFR + 1)
-            this.oB1.iDampFR = 5;
-            this.oB2.iDampFR = 5;
+            %% Simulation length
+            % Simulation length - stop when specific time in sim is reached
+            % or after specific amount of ticks (bUseTime true/false).
+            this.fSimTime = 2000 * 1;
+            %this.fSimTime = 1700;
+            this.iSimTicks = 600;
+            this.bUseTime = true;
             
             
-            % Phases
-            
-            this.aoFilterPhases = this.oSimulationContainer.toChildren.Example.toStores.Filter.aoPhases;
-            this.oAtmosPhase    = this.oSimulationContainer.toChildren.Example.toStores.Atmos.aoPhases(1);
-            
-            % As the input flow rate can change quickly due to the fan, and
-            % the filter flow phase is rather small, it can help to 'sync'
-            % the flow rate solvers connected to this phase. This means
-            % that as soon as the flow rate of one of the solvers changes,
-            % the other solvers will also immediately calculate a new FR.
-            this.aoFilterPhases(1).bSynced = true;
-            this.aoFilterPhases(1).bSynced = false;
             
             
-            % The phase for the adsorbed matter in the filter store has a
-            % small rMaxChange (small volume) but is not really important
-            % for the solving process, so increase rMaxChange manually.
-            this.aoFilterPhases(2).rMaxChange = 5;
-
+            % Solver Tuning see Example -> createSolverStructure
+            
+            
+            
+            
+        end
+        
+        
+        
+        function configureMonitors(this)
+            
             
             %% Logging
             % Creating a cell setting the log items. You need to know the
@@ -212,13 +200,6 @@ classdef setup < simulation.infrastructure
 %                 'toChildren.Example.toStores.Filter.aoPhases(1).fMass';         
 %             };
             
-            %% Simulation length
-            % Simulation length - stop when specific time in sim is reached
-            % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 2000 * 1;
-            %this.fSimTime = 1700;
-            this.iSimTicks = 600;
-            this.bUseTime = true;
         end
         
         

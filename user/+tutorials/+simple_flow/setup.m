@@ -54,6 +54,22 @@ classdef setup < simulation.infrastructure
             %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
             
             
+            
+            
+            
+
+            %% Simulation length
+            % Stop when specific time in simulation is reached or after 
+            % specific amount of ticks (bUseTime true/false).
+            this.fSimTime = 3600 * 1; % In seconds
+            this.iSimTicks = 1500;
+            this.bUseTime = true;
+        end
+        
+        
+        
+        function configureMonitors(this)
+            
             %% Logging
             % Creating a cell setting the log items. You need to know the
             % exact structure of your model to set log items, so do this
@@ -98,13 +114,6 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
             
             
-
-            %% Simulation length
-            % Stop when specific time in simulation is reached or after 
-            % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 1; % In seconds
-            this.iSimTicks = 1500;
-            this.bUseTime = true;
 
         end
         
