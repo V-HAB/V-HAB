@@ -153,28 +153,28 @@ classdef RCA < vsys
             % I calculate the outgoing partial pressure with the flow
             % rate, so the changes in diameter or length do not
             % influence this setup
-            components.pipe(this, 'Pipe_1', 0.8, 0.0254);
-            components.pipe(this, 'Pipe_2', 0.8, 0.0254);
-            components.pipe(this, 'Pipe_3', 0.8, 0.0254);
-            components.pipe(this, 'Pipe_4', 0.8, 0.0254);
-            components.pipe(this, 'Pipe_5', 0.8, 0.0254);
-            components.pipe(this, 'Pipe_6', 0.8, 0.0254);
-            components.pipe(this, 'Pipe_7', 0.8, 0.0254);
-            components.pipe(this, 'Pipe_8', 0.8, 0.0254);
+            components.pipe(this, 'Pipe_1', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_2', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_3', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_4', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_5', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_6', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_7', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_8', 0.05, 0.0254);
             
             % The following pipes form the connection between filter and
             % Vacuum. Through adjusting the diameter and length we can
             % decide how fast the gas flows into Vacuum. So we can adjust
             % the time needed for the desorption process. Unfortunately the
             % pipe properties could reach unrealistic values
-            components.pipe(this, 'Pipe_9',  0.8, 0.00254);
-            components.pipe(this, 'Pipe_10', 0.8, 0.00254);
-            components.pipe(this, 'Pipe_11', 0.8, 0.00254);
-            components.pipe(this, 'Pipe_12', 0.8, 0.00254);
-            components.pipe(this, 'Pipe_13', 0.8, 0.00254);
-            components.pipe(this, 'Pipe_14', 0.8, 0.00254);
-            components.pipe(this, 'Pipe_15', 0.8, 0.00254);
-            components.pipe(this, 'Pipe_16', 0.8, 0.00254);
+            components.pipe(this, 'Pipe_9',  0.05, 0.0254);
+            components.pipe(this, 'Pipe_10', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_11', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_12', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_13', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_14', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_15', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_16', 0.05, 0.0254);
             
             %% Creating the flowpath between the components
             % BED A - INLET
