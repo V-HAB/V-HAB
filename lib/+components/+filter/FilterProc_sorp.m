@@ -176,8 +176,14 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             % Calculating the timestep
             this.fTimeStep = this.oStore.oTimer.fTime - this.fLastExec + this.fTimeDifference;        %[s]
             
-            % Get inflow properties
+            % Get inflow flow rate
             fFlowRateIn      = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fFlowRate;
+            
+            if fFlowRateIn < 0
+                return;
+            end
+            
+            % Get inflow pressure
             this.fPressure_p = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fPressure;
             
             % In some cases (manual solver in combination with an empty

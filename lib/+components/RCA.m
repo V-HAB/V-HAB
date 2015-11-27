@@ -10,8 +10,9 @@ classdef RCA < vsys
     %   respective state.
     
     properties
-        % A struct containing all the necessary manual solver branches
-        toManualBranches = struct();
+        % A struct containing the interface branches. We need this because
+        % the branch names will be changed when the container is sealed. 
+        toInterfaceBranches = struct();
         
         % Input flow rate, has to be set externally
         fFlowRate = 0;
@@ -52,11 +53,14 @@ classdef RCA < vsys
         % Initial temperature of the filter beds in [K].
         fInitialTemperature = 298.65; 
         
+        fPipeLength   = 0.5;
+        fPipeDiameter = 0.0254/4; 
+        
     end
     
     methods
         function this = RCA(oParent, sName, sAtmosphereHelper)
-               this@vsys(oParent, sName, -1);
+               this@vsys(oParent, sName, 25);
                
                this.sAtmosphereHelper = sAtmosphereHelper;
         end
@@ -74,8 +78,16 @@ classdef RCA < vsys
             %
             % Creating the input splitter
             matter.store(this, 'Splitter', 0.004);  % Volume in in^3 = 0.0568 ?? 
-            % Adding a phase to the splitter
-            oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature);
+            
+            % Use helper directly
+%             cParams = matter.helper.phase.create.(this.sAtmosphereHelper)(this, 0.004, this.fInitialTemperature);
+%             oPhase  = matter.phases.gas_virtual(this.toStores.Splitter, 'Splitter_Phase', cParams{:});
+            
+%             oPhase.setInitialVirtualPressure(28400);
+            
+%            % Adding a phase to the splitter
+           oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature);
+            
             % Creating the ports on the splitter
             matter.procs.exmes.gas(oPhase, 'Splitter_Inlet'); 
             matter.procs.exmes.gas(oPhase, 'Splitter_Outlet1');
@@ -88,9 +100,26 @@ classdef RCA < vsys
             tFilterParameters = struct('fFilterTemperature', this.fInitialTemperature,...
                                        'sAtmospherHelper',   this.sAtmosphereHelper,...
                                        'fTimeStep',          1);
-                                   
-            components.RCA.RCA_Filter(this, 'Bed_A', 'RCA', tFilterParameters);
-            components.RCA.RCA_Filter(this, 'Bed_B', 'RCA', tFilterParameters);
+            
+            
+            matter.store(this, 'Bed_A', 0.0011);
+            oPhase = this.toStores.Bed_A.createPhase(this.sAtmosphereHelper,  0.0011, this.fInitialTemperature);
+            
+            matter.procs.exmes.gas(oPhase,     'Inlet');
+            matter.procs.exmes.gas(oPhase,     'Outlet');
+            matter.procs.exmes.gas(oPhase,     'FlowVolume_Vacuum_Port');
+            
+            
+            
+            matter.store(this, 'Bed_B', 0.0011);
+            oPhase = this.toStores.Bed_B.createPhase(this.sAtmosphereHelper,  0.0011, this.fInitialTemperature);
+            
+            matter.procs.exmes.gas(oPhase,     'Inlet');
+            matter.procs.exmes.gas(oPhase,     'Outlet');
+            matter.procs.exmes.gas(oPhase,     'FlowVolume_Vacuum_Port');
+            
+            %components.RCA.RCA_Filter(this, 'Bed_A', 'RCA', tFilterParameters);
+%             components.RCA.RCA_Filter(this, 'Bed_B', 'RCA', tFilterParameters);
             
             %% Merger
             %
@@ -120,8 +149,8 @@ classdef RCA < vsys
             % flow volume and amine phases.
             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_FlowVolume', 0);
             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_B_FlowVolume', 0);
-            special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_Amine', 0);
-            special.matter.const_press_exme(oVacuum, 'Inlet_Bed_B_Amine', 0);
+%             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_Amine', 0);
+%             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_B_Amine', 0);
 
             %% Adding valves
             % True/false decides if the valve is open or closed and the
@@ -153,28 +182,28 @@ classdef RCA < vsys
             % I calculate the outgoing partial pressure with the flow
             % rate, so the changes in diameter or length do not
             % influence this setup
-            components.pipe(this, 'Pipe_1', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_2', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_3', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_4', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_5', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_6', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_7', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_8', 0.05, 0.0254);
+            components.pipe(this, 'Pipe_1', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_2', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_3', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_4', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_5', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_6', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_7', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_8', this.fPipeLength, this.fPipeDiameter);
             
             % The following pipes form the connection between filter and
             % Vacuum. Through adjusting the diameter and length we can
             % decide how fast the gas flows into Vacuum. So we can adjust
             % the time needed for the desorption process. Unfortunately the
             % pipe properties could reach unrealistic values
-            components.pipe(this, 'Pipe_9',  0.05, 0.0254);
-            components.pipe(this, 'Pipe_10', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_11', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_12', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_13', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_14', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_15', 0.05, 0.0254);
-            components.pipe(this, 'Pipe_16', 0.05, 0.0254);
+%             components.pipe(this, 'Pipe_9',  this.fPipeLength, this.fPipeDiameter);
+%             components.pipe(this, 'Pipe_10', this.fPipeLength, this.fPipeDiameter);
+%             components.pipe(this, 'Pipe_11', this.fPipeLength, this.fPipeDiameter);
+%             components.pipe(this, 'Pipe_12', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_13', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_14', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_15', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_16', this.fPipeLength, this.fPipeDiameter);
             
             %% Creating the flowpath between the components
             % BED A - INLET
@@ -188,13 +217,13 @@ classdef RCA < vsys
             
             % BED B - OUTLET
             matter.branch(this, 'Bed_B.Outlet',{'Pipe_7','Valve_4','Pipe_8' },'Merger.Merger_Inlet2');
-            
-            % VACUUM <-> BED A (amine)
-            matter.branch(this, 'Bed_A.Amine_Vacuum_Port',{'Pipe_9','Valve_5','Pipe_10'},'Vacuum.Inlet_Bed_A_Amine');
-            
-            % VACUUM <-> BED B (amine)
-            matter.branch(this, 'Bed_B.Amine_Vacuum_Port',{'Pipe_11','Valve_6','Pipe_12'},'Vacuum.Inlet_Bed_B_Amine');
-            
+%             
+%             % VACUUM <-> BED A (amine)
+%             matter.branch(this, 'Bed_A.Amine_Vacuum_Port',{'Pipe_9','Valve_5','Pipe_10'},'Vacuum.Inlet_Bed_A_Amine');
+%             
+%             % VACUUM <-> BED B (amine)
+%             matter.branch(this, 'Bed_B.Amine_Vacuum_Port',{'Pipe_11','Valve_6','Pipe_12'},'Vacuum.Inlet_Bed_B_Amine');
+%             
             % VACUUM <-> BED A (flow volume)
             matter.branch(this, 'Bed_A.FlowVolume_Vacuum_Port',{'Pipe_13','Valve_7','Pipe_14'},'Vacuum.Inlet_Bed_A_FlowVolume');
             
@@ -203,28 +232,32 @@ classdef RCA < vsys
             
             % Creating the flowpath for the connection on the RCATest level
             % RCA INLET
-            this.toManualBranches.Inlet = matter.branch(this, 'Splitter.Splitter_Inlet', {}, 'Inlet');
+            this.toInterfaceBranches.Inlet = matter.branch(this, 'Splitter.Splitter_Inlet', {}, 'Inlet');
             
             % RCA OUTLET
-            this.toManualBranches.Outlet = matter.branch(this, 'Merger.Merger_Outlet',  {}, 'Outlet');
+            this.toInterfaceBranches.Outlet = matter.branch(this, 'Merger.Merger_Outlet',  {}, 'Outlet');
             
         end
         
         function createSolverStructure(this)
+            
+            createSolverStructure@vsys(this);
+            
             % Now we can create all of the solver branches
-            solver.matter.manual.branch(this.toBranches.Splitter__Splitter_Outlet1___Bed_A__Inlet);
-            solver.matter.manual.branch(this.toBranches.Splitter__Splitter_Outlet2___Bed_B__Inlet);
-            solver.matter.iterative.branch(this.toBranches.Bed_A__Amine_Vacuum_Port___Vacuum__Inlet_Bed_A_Amine);
-            solver.matter.iterative.branch(this.toBranches.Bed_B__Amine_Vacuum_Port___Vacuum__Inlet_Bed_B_Amine);          
+            solver.matter.iterative.branch(this.toBranches.Splitter__Splitter_Outlet1___Bed_A__Inlet);
+            solver.matter.iterative.branch(this.toBranches.Splitter__Splitter_Outlet2___Bed_B__Inlet);
+%             solver.matter.iterative.branch(this.toBranches.Bed_A__Amine_Vacuum_Port___Vacuum__Inlet_Bed_A_Amine);
+%             solver.matter.iterative.branch(this.toBranches.Bed_B__Amine_Vacuum_Port___Vacuum__Inlet_Bed_B_Amine);          
             solver.matter.iterative.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
             solver.matter.iterative.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
-%             solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Merger_Inlet1);
-%             solver.matter.iterative.branch(this.toBranches.Bed_B__Outlet___Merger__Merger_Inlet2);
-            solver.matter.manual.branch(this.toBranches.Bed_A__Outlet___Merger__Merger_Inlet1);
-            solver.matter.manual.branch(this.toBranches.Bed_B__Outlet___Merger__Merger_Inlet2);
-            this.toManualBranches.Inlet  = solver.matter.manual.branch(this.toBranches.(this.toManualBranches.Inlet.sName));
-            this.toManualBranches.Outlet = solver.matter.manual.branch(this.toBranches.(this.toManualBranches.Outlet.sName));
-            
+            solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Merger_Inlet1);
+            solver.matter.iterative.branch(this.toBranches.Bed_B__Outlet___Merger__Merger_Inlet2);
+%             solver.matter.manual.branch(this.toBranches.Bed_A__Outlet___Merger__Merger_Inlet1);
+%             solver.matter.manual.branch(this.toBranches.Bed_B__Outlet___Merger__Merger_Inlet2);
+%             this.toManualBranches.Inlet  = solver.matter.manual.branch(this.toBranches.(this.toManualBranches.Inlet.sName));
+%             this.toManualBranches.Outlet = solver.matter.manual.branch(this.toBranches.(this.toManualBranches.Outlet.sName));
+            solver.matter.iterative.branch(this.toInterfaceBranches.Outlet);
+            solver.matter.iterative.branch(this.toInterfaceBranches.Inlet);
         end
     end
     
@@ -232,6 +265,16 @@ classdef RCA < vsys
         
         function exec(this, ~)
             exec@vsys(this);
+            
+            if this.oTimer.fTime == 0
+                
+            else
+                this.switchRCABeds();
+            end
+            
+            
+            return;
+            
             
             % Getting the current partial pressure of CO2 at the bed inlet
             % and the bed outlet in [Pa]
@@ -253,11 +296,11 @@ classdef RCA < vsys
             this.fDeltaTime = this.oTimer.fTime - this.fLastBedSwitch;
             % Switching beds and setting flow rates if conditions are met
             if  (this.fPP_CO2Out >= this.fCO2Limit) && (this.fDeltaTime > this.fDeadband)
-                this.switchRCABeds;
+                this.switchRCABeds();
             end
             
             % Set flow rates
-            this.setFlowRates;
+%             this.setFlowRates();
             
         end
         
@@ -337,8 +380,8 @@ classdef RCA < vsys
                 this.sActiveBed = 'B';
                 
                 % Starting desorption process for Bed A 
-                this.toStores.Bed_A.toProcsP2P.filterproc_sorp.desorption(this.rDesorptionRatio);
-                this.toStores.Bed_B.toProcsP2P.filterproc_sorp.reset_timer(this.oTimer.fTime);
+                %%%this.toStores.Bed_A.toProcsP2P.filterproc_sorp.desorption(this.rDesorptionRatio);
+                %%%this.toStores.Bed_B.toProcsP2P.filterproc_sorp.reset_timer(this.oTimer.fTime);
                 
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
@@ -350,8 +393,8 @@ classdef RCA < vsys
                 this.sActiveBed = 'A';
                 
                 % Starting desorption process for Bed B                
-                this.toStores.Bed_B.toProcsP2P.filterproc_sorp.desorption(this.rDesorptionRatio);
-                this.toStores.Bed_A.toProcsP2P.filterproc_sorp.reset_timer(this.oTimer.fTime);
+                %%%this.toStores.Bed_B.toProcsP2P.filterproc_sorp.desorption(this.rDesorptionRatio);
+                %%%this.toStores.Bed_A.toProcsP2P.filterproc_sorp.reset_timer(this.oTimer.fTime);
                 
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
@@ -367,8 +410,8 @@ classdef RCA < vsys
             this.toProcsF2F.Valve_4.setValvePos(~bIndicator);
             
             % Vacuum flow
-            this.toProcsF2F.Valve_5.setValvePos(~bIndicator);
-            this.toProcsF2F.Valve_6.setValvePos(bIndicator);
+%             this.toProcsF2F.Valve_5.setValvePos(~bIndicator);
+%             this.toProcsF2F.Valve_6.setValvePos(bIndicator);
             this.toProcsF2F.Valve_7.setValvePos(~bIndicator);
             this.toProcsF2F.Valve_8.setValvePos(bIndicator);
             

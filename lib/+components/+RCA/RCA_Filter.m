@@ -20,8 +20,8 @@ classdef RCA_Filter < components.filter
 %             oFlow.bSynced = true; 
             
             % Create the according vacuum exmes 
-            matter.procs.exmes.gas(oFlow,     'FlowVolume_Vacuum_Port');            
-            matter.procs.exmes.gas(oFiltered, 'Amine_Vacuum_Port');
+%             matter.procs.exmes.gas(oFlow,     'FlowVolume_Vacuum_Port');            
+%             matter.procs.exmes.gas(oFiltered, 'Amine_Vacuum_Port');
             
             
 %             this.oProc_sorp = hoth.RCADevelopment.subsystems.RCA.special.RCA_FilterProc_sorp_new(this.oParentSys, this, [this.sName, '_filterproc_sorp'], 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', this.sType);
