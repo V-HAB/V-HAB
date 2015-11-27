@@ -20,13 +20,14 @@ if length(varargin) == 1
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type
     if isa(varargin{1}, 'matter.phase')
-        sMatterState = varargin{1}.sType;
+        sMatterState = varargin{1}.sType;         
     elseif isa(varargin{1}, 'matter.flow')
         sMatterState = varargin{1}.oBranch.getInEXME().oPhase.sType;
     end
     
     fTemperature = varargin{1}.fTemperature;
     fPressure    = varargin{1}.fPressure;
+    afPartialPressures = this.calculatePartialPressures(varargin{1});
     
     if isempty(fPressure) || isnan(fPressure)
         fPressure = this.Standard.Pressure; % std pressure (Pa)
@@ -68,6 +69,8 @@ else
         fPressure = this.Standard.Pressure;    % std pressure (Pa)
     end
     
+    afPartialPressures = this.calculatePartialPressures(sMatterState, afMass, fPressure);
+    
 end
 
 % Find the indices of all substances that are in the flow
@@ -84,7 +87,7 @@ for iI = 1:length(aiIndices)
     tParameters.fFirstDepValue = fTemperature;
     tParameters.sPhaseType = sMatterState;
     tParameters.sSecondDepName = 'Pressure';
-    tParameters.fSecondDepValue = fPressure;
+    tParameters.fSecondDepValue = afPressures(aiIndices(iI));
     
     %TODO should that just be true for e.g. pipe flows?
     tParameters.bUseIsobaricData = true;
