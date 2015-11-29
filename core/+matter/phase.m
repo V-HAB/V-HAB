@@ -794,10 +794,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
                 for iE = 1:this.iProcsEXME
                     % Get number and references for connected P2Ps
-                    if ~isempty(this.coProcsEXME{iE}.oFlow) && isa(this.coProcsEXME{iE}.oFlow, 'matter.procs.p2ps.flow')
-                        this.iProcsP2Pflow = this.iProcsP2Pflow + 1;
+                    if ~isempty(this.coProcsEXME{iE}.oFlow) 
+                        if isa(this.coProcsEXME{iE}.oFlow, 'matter.procs.p2ps.flow')
+                            this.iProcsP2Pflow = this.iProcsP2Pflow + 1;
 
-                        this.coProcsP2Pflow{this.iProcsP2Pflow} = this.coProcsEXME{iE}.oFlow;
+                            this.coProcsP2Pflow{this.iProcsP2Pflow} = this.coProcsEXME{iE}.oFlow;
+                        end
+                    else
+                        this.throw('seal','Phase ''%s'' in store ''%s'' has an unconnected exme processor: ''%s''',this.sName, this.oStore.sName, this.coProcsEXME{iE}.sName);
                     end
                 end % end of: for
             end % end of: if not sealed
