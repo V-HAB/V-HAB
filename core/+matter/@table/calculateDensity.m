@@ -5,8 +5,8 @@ function fDensity = calculateDensity(this, varargin)
 %   substance densities at the current temperature and pressure and
 %   weighing them with their mass fraction. Can use either a phase object
 %   as input parameter or the phase type (sType) and the masses array
-%   (afMass). Optionally temperature and pressure can be passed as third
-%   and fourth parameters, respectively.
+%   (afMass). Optionally temperature and partial pressures can be passed as
+%   third and fourth parameters, respectively.
 %
 % calculateDensity returns
 %  fDensitiy - density of matter in current state in kg/m^3
@@ -26,12 +26,17 @@ if length(varargin) == 1
     end
     
     fTemperature = varargin{1}.fTemperature;
-    fPressure    = varargin{1}.fPressure;
-    afPartialPressures = this.calculatePartialPressures(varargin{1});
     
-    if isempty(fPressure) || isnan(fPressure)
-        fPressure = this.Standard.Pressure; % std pressure (Pa)
-    end          
+    if any(strcmp(sMatterState, {'gas', 'liquid'}))
+        afPartialPressures = this.calculatePartialPressures(varargin{1});
+    else
+        if isa(varargin{1}, 'matter.phase')
+            fDensity = varargin{1}.fMass / varargin{1}.fVolume;
+            return;
+        else
+            this.throw('calculateDensity', 'The calculation of solid flow densities has not yet been implemented.')
+        end
+    end
     
     if isempty(fTemperature) || isnan(fTemperature)
         fTemperature = this.Standard.Temperature; % std temperature (K)
@@ -64,12 +69,14 @@ else
     end
     
     if nargin > 4
-        fPressure = varargin{4};
+        afPartialPressures = varargin{4};
     else
-        fPressure = this.Standard.Pressure;    % std pressure (Pa)
+        if any(strcmp(sMatterState, {'gas', 'liquid'}))
+            afPartialPressures = this.calculatePartialPressures(sMatterState, afMass, fPressure);
+        else
+            afPartialPressures = ones(1, this.iSubstances) * this.Standard.Pressure;
+        end
     end
-    
-    afPartialPressures = this.calculatePartialPressures(sMatterState, afMass, fPressure);
     
 end
 
@@ -87,7 +94,7 @@ for iI = 1:length(aiIndices)
     tParameters.fFirstDepValue = fTemperature;
     tParameters.sPhaseType = sMatterState;
     tParameters.sSecondDepName = 'Pressure';
-    tParameters.fSecondDepValue = afPressures(aiIndices(iI));
+    tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
     
     %TODO should that just be true for e.g. pipe flows?
     tParameters.bUseIsobaricData = true;
