@@ -175,8 +175,10 @@ end
 % Again for debugging purposes, we'll get the unit names for the two
 % dependencies and put them into shorter-named variables for better code
 % readability.
-sFirstDepUnit  = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sFirstDepName);
-sSecondDepUnit = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sSecondDepName);
+if this.ttxMatter.(sSubstance).bIndividualFile
+    sFirstDepUnit  = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sFirstDepName);
+    sSecondDepUnit = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sSecondDepName);
+end
 
 sReportString = 'Nothing to report.';
 
