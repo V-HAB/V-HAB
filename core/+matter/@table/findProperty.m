@@ -152,20 +152,31 @@ end
 % Also, to generate the identification number for the interpolations, we
 % need a numeric value for the phases, so since we're in a switch case here
 % anyway, we'll just set it here as well.
+% And we'll set some strings to provide the user with some nice debugging
+% messages if he or she screws up...
 switch sPhaseType
     case 'solid'
         sPhaseStructName = 'tSolid';
         iPhaseType       = 1;
+        sPhaseAdjective  = 'solid';
     case 'liquid'
         sPhaseStructName = 'tLiquid';
         iPhaseType       = 2;
+        sPhaseAdjective  = 'liquid';
     case 'gas'
         sPhaseStructName = 'tGas';
         iPhaseType       = 3;
     case 'supercritical'
         sPhaseStructName = 'tSupercritical';
         iPhaseType       = 4;
+        sPhaseAdjective  = 'gaseous';
 end
+
+% Again for debugging purposes, we'll get the unit names for the two
+% dependencies and put them into shorter-named variables for better code
+% readability.
+sFirstDepUnit  = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sFirstDepName);
+sSecondDepUnit = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sSecondDepName);
 
 sReportString = 'Nothing to report.';
 
@@ -393,7 +404,10 @@ if this.ttxMatter.(sSubstance).bIndividualFile
                 % If there is data, we use it.
                 fProperty = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue, fSecondDepValue);
                 if isnan(fProperty)
-                    keyboard();
+                    this.throw('findProperty',['The combination of dependencies provided to the findProperty method is impossible.\n',...
+                               'There is no %s %s at a %s of %.2f [%s] and a %s of %.2f [%s].'], sPhaseAdjective, sSubstance, sFirstDepName, ...
+                                                                                             fFirstDepValue, sFirstDepUnit, sSecondDepName, ...
+                                                                                             fSecondDepValue, sSecondDepUnit);
                 end
             catch
                 % The interpolation function does not yet
@@ -442,8 +456,6 @@ if this.ttxMatter.(sSubstance).bIndividualFile
             sUsedFirstDepValue    = sprintf('%f',fFirstDepValue);
             sActualSecondDepValue = sprintf('%f',tParameters.fSecondDepValue);
             sUsedSecondDepValue   = sprintf('%f',fSecondDepValue);
-            sFirstDepUnit         = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sFirstDepName);
-            sSecondDepUnit        = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sSecondDepName);
             
             if ~(abOutOfRange(1) || abOutOfRange(2))
                 sReportString = 'Both dependencies in range. Tried to get value by interpolation.';
