@@ -177,8 +177,12 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             this.fTimeStep = this.oStore.oTimer.fTime - this.fLastExec + this.fTimeDifference;        %[s]
             
             % Get inflow flow rate
-            fFlowRateIn      = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fFlowRate;
+            fFlowRateIn = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fFlowRate;
             
+            % If there is matter flowing out of the inlet, then we are in
+            % some sort of transient phase at the beginning of a simulation
+            % or right after a bed switch. To avoid problems later on,
+            % we'll just skip this execution and try next time. 
             if fFlowRateIn < 0
                 return;
             end
