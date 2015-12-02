@@ -27,13 +27,13 @@ classdef branch < solver.matter.manual.branch
             % Branches and p2p flows - they're also branches!
             for iE = 1:oPhase.iProcsEXME
                 oExme   = oPhase.coProcsEXME{iE};
-                oBranch = oExme.aoFlows(1).oBranch;
+                oBranch = oExme.oFlow.oBranch;
                 
                 if oBranch == this.oBranch
                     continue;
                 end
                 
-                fResidualFlowRate = fResidualFlowRate + oExme.aiSign(1) * oExme.aoFlows(1).fFlowRate;
+                fResidualFlowRate = fResidualFlowRate + oExme.iSign * oExme.oFlow.fFlowRate;
             end
             
             this.fRequestedFlowRate = fResidualFlowRate;
