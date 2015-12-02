@@ -33,7 +33,11 @@ classdef execution_control < simulation.monitor
                 
                 
                 if bPauseGeneral || bPauseSpecific
-                    oInfra.pause();
+                    if oSim.oTimer.iTick == 0
+                        this.throw('onTickPost','You still have your STOP file in the main directory. Please remove it and restart the simulation.');
+                    else
+                        oInfra.pause();
+                    end
                 end
             end
         end
