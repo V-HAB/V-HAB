@@ -127,7 +127,11 @@ classdef plotter_basic < simulation.monitor
             
             
             hHandle = subplot(iGridRows, iGridCols, iP + 1);
-            this.generatePlot(hHandle, oLogger.afTime, 1:length(oLogger.afTime), struct('sLabel', 'Time', 'sUnit', 's'), 'Tick');
+            hold(hHandle, 'on');
+            grid(hHandle, 'minor');
+            plot(1:length(oLogger.afTime), oLogger.afTime);
+            xlabel('Ticks');
+            ylabel('Time in s');
             title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
             
             
