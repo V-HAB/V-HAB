@@ -1,4 +1,4 @@
-classdef Two_Tanks_Definition < simulation
+classdef Two_Tanks_Definition < simulation.infrastructure
     % This simulation shows the equalization of pressure between two gas
     % stores over time assuming the BRANCH to be incompressible, the stores
     % are not incompressible since then the equalization would be
@@ -8,73 +8,49 @@ classdef Two_Tanks_Definition < simulation
     end
     
     methods
-        function this = Two_Tanks_Definition()
-            this@simulation('Two_Tanks_Incomp');
-            oTwo_Tanks = tutorials.incompressible_solver.systems.Two_Tanks(this.oRoot, 'Two_Tanks');
+        function this = Two_Tanks_Definition(ptConfigParams, tSolverParams)
+            
+            % Possible to change the constructor paths and params for the
+            % monitors
+            ttMonitorConfig = struct();
+            
+            % First we call the parent constructor and tell it the name of
+            % this simulation we are creating.
+            this@simulation.infrastructure('Tutorial_Incompressible_System', ptConfigParams, tSolverParams, ttMonitorConfig);
+            
+            oTwo_Tanks = tutorials.incompressible_solver.systems.Two_Tanks(this.oSimulationContainer, 'Two_Tanks');
+            
             warning('off', 'all');
+            
             %for branch liquid the second entry is the number of cells used
             %to calculate the branches
             
             iIncompBranches = 1;
-            oTwo_Tanks.oSystemSolver = solver.matter.incompressible_liquid.system_incompressible_liquid(oTwo_Tanks, 5, 5, 1e-1, 300, iIncompBranches, 100, 10);
+            %System Solver Inputs:
+            %(oSystem, fMinTimeStep, fMaxTimeStep, fMaxProcentualFlowSpeedChange, iPartialSteps, iLastSystemBranch, fSteadyStateTimeStep, fSteadyStateAcceleration, mLoopBranches)  
+            oTwo_Tanks.oSystemSolver = solver.matter.incompressible_liquid.system_incompressible_liquid(oTwo_Tanks, 1, 5, 1e-1, 300, iIncompBranches, 100, 10);
            
+            %Logging
+            oLog = this.toMonitors.oLogger;
             
-            % What to log?
-            this.csLog = {
-                % System timer
-                'oData.oTimer.fTime';
-                'oData.oTimer.iTick';
+            oLog.add('Two_Tanks', 'flow_props');
+            
+            %Define Plots
+            oPlot = this.toMonitors.oPlotter;
+            
+            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
+            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
+            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
                 
-                'toChildren.Two_Tanks.aoBranches(1).fFlowRate'; %3
-                
-                'toChildren.Two_Tanks.toStores.Tank_1.aoPhases(1).fPressure'; %4
-                'toChildren.Two_Tanks.toStores.Tank_2.aoPhases(1).fPressure'; %5
-                
-                'toChildren.Two_Tanks.aoBranches(1).aoFlowProcs(1).fDeltaPressure'; %6
-                
-            };
             
             % Sim time [s]
             this.fSimTime = 30;
         end
         
-        function plot(this)
-            
-            mTimeStep = zeros(length(this.mfLog(:,1))-1,1);
-            for k = 1:(length(this.mfLog(:,1))-1)
-                mTimeStep(k) = (this.mfLog(k+1,1)-(this.mfLog(k,1)));
-            end
-            figure('name', 'Time Step');
-            hold on;
-            grid minor;
-            plot(this.mfLog(2:end,1), mTimeStep);
-            legend('Timestep');
-            ylabel('Timestep in s');
-            xlabel('Time in s');
-            
-            figure('name', 'Flow Rate');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 3));
-            legend('Branch');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
-            
-            figure('name', 'Tank Pressures');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 4:5));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Pressure in Pa');
-            xlabel('Time in s');
-            
-            figure('name', 'Pipe Pressure Loss');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 6));
-            ylabel('Pressure Loss in Pa');
-            xlabel('Time in s');
-            
+        function plot(this) % Plotting the results
+            % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
+            % further information
+            this.toMonitors.oPlotter.plot();
         end
     end
 end
