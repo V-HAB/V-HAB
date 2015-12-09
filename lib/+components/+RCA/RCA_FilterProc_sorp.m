@@ -41,16 +41,9 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             end
             
             % Execute only for the active bed
-            if strcmp(this.oStore.sName, 'Bed_A')
-                sCompare = 'A';
-                if strcmp(this.oParentSys.sActiveBed, sCompare) ~= 1
-                    return;
-                end
-            elseif strcmp(this.oStore.sName, 'Bed_B')
-                sCompare = 'B';
-                if strcmp(this.oParentSys.sActiveBed, sCompare) ~= 1
-                    return;
-                end
+            if (strcmp(this.oStore.sName, 'Bed_A') && ~strcmp(this.oParentSys.sActiveBed, 'A')) || ...
+               (strcmp(this.oStore.sName, 'Bed_B') && ~strcmp(this.oParentSys.sActiveBed, 'B'))
+                return;
             end             
             
             update@components.filter.FilterProc_sorp(this)
@@ -66,7 +59,14 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             this.q_plot_CO2 = this.q_plot(strcmp('CO2',this.csNames), :);
             this.q_plot_O2  = zeros(3,1);
             this.q_plot_O2  = this.q_plot(strcmp('O2',this.csNames), :);
-%             this.q_plot_N2 = this.q_plot(strcmp('N2',this.csNames), :);            
+%             this.q_plot_N2 = this.q_plot(strcmp('N2',this.csNames), :);    
+            
+            % To make the code more readable and reduce the number of
+            % context changes, we initialize some local variables with the
+            % indexes of CO2 and H2O in the matter table.
+            iIndexCO2 = this.oMT.tiN2I.CO2;
+            iIndexH2O = this.oMT.tiN2I.H2O;
+            
             
             % Outlet concentration of CO2
             rMassFraction_CO2 = this.oStore.aoPhases(1).toProcsEXME.Outlet.oFlow.arPartialMass(strcmp(this.oMT.csSubstances, 'CO2')==1);
@@ -78,11 +78,14 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             
             % Calculate relative humitidy
             % Saturated vapor pressure
-            fEw = 611.2*exp((17.62*(this.fTemperature-273.15))/(243.12+this.fTemperature-273.15));  %[Pa] 
+            fEw = 611.2 * exp((17.62 * (this.fTemperature - 273.15)) / (243.12 + this.fTemperature - 273.15));  %[Pa] 
+            
             % gas constant for water
             fRw = 461.52;             %[J/(kg*K)]
+            
             % Maximal humidity
-            delta_sat = fEw / (fRw*this.fTemperature);
+            fDelta_sat = fEw / (fRw*this.fTemperature);
+            
             % H2O concentration
             % Outlet concentration of H2O
             rMassFraction_H2O = this.oStore.aoPhases(1).toProcsEXME.Outlet.oFlow.arPartialMass(strcmp(this.oMT.csSubstances, 'H2O')==1);
@@ -109,14 +112,14 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             desorption@components.filter.FilterProc_sorp(this, rDesorptionRatio)
             
             % Reset plotting values
-            this.q_plot_H2O = zeros(3,1);
-            this.q_plot_O2  = zeros(3,1);
-            this.q_plot_CO2  = zeros(3,1);
-            this.rRH_in = 0;
-            this.fDewPoint_in = 0;
-            this.rRH_out = 0;
+            this.q_plot_H2O    = zeros(3,1);
+            this.q_plot_O2     = zeros(3,1);
+            this.q_plot_CO2    = zeros(3,1);
+            this.rRH_in        = 0;
+            this.fDewPoint_in  = 0;
+            this.rRH_out       = 0;
             this.fDewPoint_out = 0;
-            this.fC_CO2Out = 0;
+            this.fC_CO2Out     = 0;
 
             % Set flow rates in the inactive bed to zero
             this.setMatterProperties(0, this.arPartials_ads);
@@ -127,7 +130,7 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
         function reset_timer(this, fTime)
             % Set the timer for the new bed to the time of the bed switch
             % (as the new filterproc hasn't been called the values remained at the initial value)
-            this.fLastExec = fTime;
+            this.fLastExec            = fTime;
             this.fCurrentSorptionTime = fTime;
         end
         

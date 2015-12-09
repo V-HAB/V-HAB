@@ -45,22 +45,22 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
         afDiscreteLength;                    % numerical bed space grid vector [m]
         fDeltaX;                             % numerical bed space grid spacing [m]
         % IMPORTANT: numerical parameters
-        fTimeFactor_1 = 1;                   % transport sub step increasing factor [-]
-        fTimeFactor_2 = 1;                   % reaction sub step reduction factor [-]
+        fTimeFactor_1  = 1;                  % transport sub step increasing factor [-]
+        fTimeFactor_2  = 1;                  % reaction sub step reduction factor [-]
         iNumGridPoints = 25;                 % number of grid points [-]
         % - increase for a higher precision
         % - decrease for faster computation times 
         
         % Simulation
-        iNumSubstances = 0;            % feed number of adsorptives [-]
-        aiPositions;                   % Positions of the current substances in the matter table
-        csNames;                       % names in right order of the substances in the flow
+        iNumSubstances = 0;                  % feed number of adsorptives [-]
+        aiPositions;                         % Positions of the current substances in the matter table
+        csNames;                             % names in right order of the substances in the flow
         % Time variables
-        fCurrentSorptionTime = 0;      % exact time for the calculation (slightly behind timer due remains of the numerical scheme) [s]
-        fTimeDifference = 0;           % time remains due to the subdivision of the numerical time steps         
-        fTimeStep = 0;                 % (real) time to simulate [s]        
-        fLastExec = 0;                 % saves the time of the last execution of the calculation. 
-                                       %  => Take care to set correctly when using multiple sorption processors
+        fCurrentSorptionTime = 0;            % exact time for the calculation (slightly behind timer due remains of the numerical scheme) [s]
+        fTimeDifference      = 0;            % time remains due to the subdivision of the numerical time steps         
+        fTimeStep            = 0;            % (real) time to simulate [s]        
+        fLastExec            = 0;            % saves the time of the last execution of the calculation. 
+                                             %  => Take care to set correctly when using multiple sorption processors
         
         % For p2p flow rates
         fFlowRate_ads = 0;
@@ -99,21 +99,21 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             % Set constants for different filter materials
             switch sType
                 case 'FBA'
-                    this.fRhoSorbent = 700;      % zeolite density [kg/m^3]
+                    this.fRhoSorbent   = 700;      % zeolite density [kg/m^3]
                     % Set bed length
                     this.fFilterLength = this.oStore.oGeometry.fHeight;     % [m]
                     % Load corresponding helper table
                     this.ofilter_table = components.filter.FBA_Table;  
                     
                 case 'RCA'
-                    this.fRhoSorbent = 636.7;    % SA9-T density [kg/m^3]
+                    this.fRhoSorbent   = 636.7;    % SA9-T density [kg/m^3]
                     % Set bed length
                     this.fFilterLength = this.oStore.fx;    % [m]
                     % Load corresponding helper table
                     this.ofilter_table = components.filter.RCA_Table; 
                     
                 case 'MetOx'
-                    this.fRhoSorbent = 636.7;    % TODO: Add right value [kg/m^3]
+                    this.fRhoSorbent   = 636.7;    % TODO: Add right value [kg/m^3]
                     % Set bed length
                     this.fFilterLength = this.oStore.fx;    % [m]
                     % Load corresponding helper table
@@ -124,18 +124,18 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             end
             
             % Get value for the universal gas constant from vhab
-            this.fUnivGasConst_R = this.oMT.Const.fUniversalGas;
+            this.fUnivGasConst_R  = this.oMT.Const.fUniversalGas;
             
             % Numerical variables   
             % Exact spacing of the nodes allong the filter length
-            afSpacing = linspace(0, this.fFilterLength, this.iNumGridPoints - 1);
+            afSpacing             = linspace(0, this.fFilterLength, this.iNumGridPoints - 1);
             % Add one more 'ghost cell' at the end
-            this.fDeltaX = afSpacing(end)-afSpacing(end-1);
+            this.fDeltaX          = afSpacing(end) - afSpacing(end-1);
             this.afDiscreteLength = [afSpacing, afSpacing(end) + this.fDeltaX];    
             
             % Initialize
-            this.arPartials_ads = zeros(1, this.oMT.iSubstances);
-            this.arPartials_des = zeros(1, this.oMT.iSubstances);
+            this.arPartials_ads   = zeros(1, this.oMT.iSubstances);
+            this.arPartials_des   = zeros(1, this.oMT.iSubstances);
         end
         
         function update(this)
@@ -146,12 +146,15 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
                 return;
             end
             
+            % If this method has already been called during this time step,
+            % we don't have to execute it again. 
             if this.oStore.oTimer.fTime == this.fLastExec
                 return;
             end
             
             % Get the filter volumes that are defined in the filter class
-            % Must be done here because doing it in the constructor doesn't work
+            % Must be done here because doing it in the constructor doesn't
+            % work
             if this.fVolSolid == 0
                 this.fVolSolid = this.oStore.toPhases.FilteredPhase.fVolume;          
                 this.fVolFlow  = this.oStore.toPhases.FlowPhase.fVolume;
@@ -184,6 +187,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             % or right after a bed switch. To avoid problems later on,
             % we'll just skip this execution and try next time. 
             if fFlowRateIn < 0
+                fprintf('Tick: %i, %s: Skipping because of negative flow rate.', this.oTimer.iTick, this.oStore.sName);
                 return;
             end
             
@@ -195,6 +199,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             % the pressure here can be zero. It should only be zero for one
             % timestep, so we'll just skip this one.
             if this.fPressure_p <= 0 
+                fprintf('Tick: %i, %s: Skipping because of negative pressure.', this.oTimer.iTick, this.oStore.sName);
                 return;
             end
             
@@ -240,18 +245,20 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             
             % Initialize time domain
             % Numerical time grid spacing (dispersive transport stability)
-            afInnerTimeStep(1) = this.fDeltaX^2 / (this.fFluidVelocity*this.fDeltaX + 2*fAxialDispersion_D_l);
+            afInnerTimeStep(1) = this.fDeltaX^2 / (this.fFluidVelocity * this.fDeltaX + 2 * fAxialDispersion_D_l);
             % BUT: calculated time step needs to be smaller than current vhab time step
-            if this.fTimeFactor_1*afInnerTimeStep(1) >= this.fTimeStep
+            
+            if this.fTimeFactor_1 * afInnerTimeStep(1) >= this.fTimeStep
                 return;
             end
+            
             % Make reaction time constant a multiple of transport time constant
-            afInnerTimeStep(2) = afInnerTimeStep(1)/this.fTimeFactor_2;
+            afInnerTimeStep(2) = afInnerTimeStep(1) / this.fTimeFactor_2;
             % Discretized time domain
-            afDiscreteTime = (this.fCurrentSorptionTime : (this.fTimeFactor_1*afInnerTimeStep(1)) : this.fCurrentSorptionTime + this.fTimeStep);   
+            afDiscreteTime = (this.fCurrentSorptionTime : (this.fTimeFactor_1 * afInnerTimeStep(1)) : this.fCurrentSorptionTime + this.fTimeStep);   
             % Number of numerical time grid points
             iTimePoints = length(afDiscreteTime);  
-            this.fTimeDifference = this.fTimeStep - (afDiscreteTime(end)-afDiscreteTime(1));        
+            this.fTimeDifference = this.fTimeStep - (afDiscreteTime(end) - afDiscreteTime(1));        
             
             % Initialize matrices for dispersive transport
             mfMatrix_A = zeros(this.iNumGridPoints);
@@ -285,7 +292,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
                     %----------------------------------------------
                     
                     % Solve equation system
-                    mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index)*mfMatrix_Transport_A1 + afVektor_Transport_b1;
+                    mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
                     
                     %---------------------------------------------------------------
                     %-----------------------LDF reaction part-----------------------
@@ -305,22 +312,22 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
                             mfKineticConst_k_l = this.ofilter_table.get_KineticConst_k_l(mfThermodynConst_K, this.fInflowTemperature, this.fPressure_p, this.fDensityFlow, this.afConcentration_in, this.fRhoSorbent, this.fVolumetricFlowRate, this.rVoidFraction, this.csNames, this.afMolarMass);
                             
                             % Calculate local equilibrium value
-                            mfQ_equ = mfThermodynConst_K .* (mfC_save + fHelperConstant_a*mfQ_save)./(1 + mfThermodynConst_K*fHelperConstant_a);
+                            mfQ_equ = mfThermodynConst_K .* (mfC_save + fHelperConstant_a*mfQ_save) ./ (1 + mfThermodynConst_K*fHelperConstant_a);
                             
                             % Result of the time step according to LDF formula
-                            mfQ(:,1:end-1,aiTime_index) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K*fHelperConstant_a) * afInnerTimeStep(2)) .* (mfQ(:,1:end-1,aiTime_index) - mfQ_equ) + mfQ_equ;
-                            mfC(:,1:end-1,aiTime_index) = fHelperConstant_a*(mfQ_save-mfQ(:,1:end-1,aiTime_index)) + mfC_save;
+                            mfQ(:,1:end-1,aiTime_index) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * fHelperConstant_a) * afInnerTimeStep(2)) .* (mfQ(:, 1:end-1, aiTime_index) - mfQ_equ) + mfQ_equ;
+                            mfC(:,1:end-1,aiTime_index) = fHelperConstant_a * (mfQ_save-mfQ(:,1:end-1,aiTime_index)) + mfC_save;
                             
                         % Concentration and loading for MetOx absorption
                         elseif strcmp(this.sType, 'MetOx')
                             mfC(:,1:end-1,aiTime_index) = this.ofilter_table.calculate_C_new(mfC(:,1:end-1,aiTime_index), afInnerTimeStep(2), this.fInflowTemperature, this.csNames, this.fVolSolid, this.iNumGridPoints, this.afMolarMass);
-                            mfQ(:,1:end-1,aiTime_index) = mfQ(:,1:end-1,aiTime_index) + (mfC_save - mfC(:,1:end-1,aiTime_index));
+                            mfQ(:,1:end-1,aiTime_index) = mfQ(:, 1:end-1, aiTime_index) + (mfC_save - mfC(:, 1:end-1, aiTime_index));
                         end
                         
                     end
                     
                     % Apply bed r.b.c.
-                    mfC(:,end,aiTime_index) = mfC(:,end-1,aiTime_index);
+                    mfC(:, end, aiTime_index) = mfC(:, end-1, aiTime_index);
                     
                 end
             end
@@ -329,20 +336,25 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
 
             % Save as transfer variable for plotting
             % Loading of the filter
-            this.q_plot = mfQ(:,[1,ceil(length(mfQ(1,:,end))/2),end-1],end) / this.fRhoSorbent;   % [mol/kg]
-            this.c_plot = mfC(:,[1,ceil(length(mfQ(1,:,end))/2),end-1],end) / this.fRhoSorbent;   % [mol/kg]
+            this.q_plot = mfQ(:, [1,ceil(length(mfQ(1, :, end))/2), end-1],end) / this.fRhoSorbent;   % [mol/kg]
+            this.c_plot = mfC(:, [1,ceil(length(mfQ(1, :, end))/2), end-1],end) / this.fRhoSorbent;   % [mol/kg]
             
             % Initialize array for filtered mass
-            afLoadedMass_ads = zeros(1,this.iNumSubstances);
-            afLoadedMass_des = zeros(1,this.iNumSubstances); 
+            afLoadedMass_ads = zeros(1, this.iNumSubstances);
+            afLoadedMass_des = zeros(1, this.iNumSubstances); 
+            
             % Sum up loading change
-            fQ_change = mfQ(:,:,end) - this.mfQ_current;                                                % in [mol/m^3]
+            fQ_change = mfQ(:, :, end) - this.mfQ_current;                                                % in [mol/m^3]
+            
             for iRunVar = 1:this.iNumSubstances
-                fQ_change(iRunVar,:) = fQ_change(iRunVar,:) * this.afMolarMass(iRunVar);         % in [kg/m^3]
+                fQ_change(iRunVar,:) = fQ_change(iRunVar, :) * this.afMolarMass(iRunVar);         % in [kg/m^3]
             end
+            
             fQ_change(:, 1:end-1) = fQ_change(:, 1:end-1) * this.fVolSolid / (this.iNumGridPoints-2);   % in [kg]       % -1 (ghost cell) -1 (2 boundary points)
+            
             % Sum up filtered mass during the time step
             afLoadedMass = zeros(1, this.iNumSubstances);
+            
             for iRunVariable = 1:this.iNumSubstances
                 afLoadedMass(iRunVariable) = sum(fQ_change(iRunVariable,1:end-1));     % absolut values [kg]
             end
@@ -356,34 +368,34 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             
             % Distinguish sorption and desorption part
             afLoadedMass_ads(afLoadedMass >= 0) = afLoadedMass(afLoadedMass >= 0);     % [kg]
-            afLoadedMass_des(afLoadedMass < 0) = afLoadedMass(afLoadedMass < 0);       % [kg]
+            afLoadedMass_des(afLoadedMass < 0)  = afLoadedMass(afLoadedMass < 0);       % [kg]
+            
             % Sorption
             if sum(afLoadedMass_ads) > 0
-                arExtractPartials_ads = afLoadedMass_ads / sum(afLoadedMass_ads);
-                this.arPartials_ads(this.aiPositions) = arExtractPartials_ads;
+                this.arPartials_ads(this.aiPositions) = afLoadedMass_ads / sum(afLoadedMass_ads);
             end
+            
             % Desorption
             if sum(afLoadedMass_des) < 0
-                arExtractPartials_des = afLoadedMass_des / sum(afLoadedMass_des);
-                this.arPartials_des(this.aiPositions) = arExtractPartials_des;
+                this.arPartials_des(this.aiPositions) = afLoadedMass_des / sum(afLoadedMass_des);
             end
 
                  
             %% Set the matter properties      
             % Update bed status
-            this.mfC_current = mfC(:,:,end);
-            this.mfQ_current = mfQ(:,:,end);
-            this.fCurrentSorptionTime = this.fCurrentSorptionTime + (afDiscreteTime(end)-afDiscreteTime(1));
+            this.mfC_current = mfC(:, :, end);
+            this.mfQ_current = mfQ(:, :, end);
+            this.fCurrentSorptionTime = this.fCurrentSorptionTime + (afDiscreteTime(end) - afDiscreteTime(1));
             % Update the execution time
             this.fLastExec = this.oStore.oTimer.fTime;
             
             % Set flow rates:
             % - Sorption in this p2p processor
-            this.fFlowRate_ads = sum(afLoadedMass_ads) / (afDiscreteTime(end)-afDiscreteTime(1));           % [kg/s]
+            this.fFlowRate_ads = sum(afLoadedMass_ads) / (afDiscreteTime(end) - afDiscreteTime(1));           % [kg/s]
             this.setMatterProperties(this.fFlowRate_ads, this.arPartials_ads);
             
             % - Desorption outsourced in a separate p2p processor     
-            this.fFlowRate_des = sum(afLoadedMass_des) / (afDiscreteTime(end)-afDiscreteTime(1));           % [kg/s]     
+            this.fFlowRate_des = sum(afLoadedMass_des) / (afDiscreteTime(end) - afDiscreteTime(1));           % [kg/s]     
             this.DesorptionProc.setMatterProperties(this.fFlowRate_des, this.arPartials_des);
             
             % Update the outlet branch in the parent system
@@ -413,12 +425,12 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
         function [mfMatrix_Transport_A1, afVektor_Transport_b1] = buildMatrix(this, fAxialDispersion_D_l, afInnerTimeStep, mfMatrix_A,mfMatrix_B, mfMatrix_Transport_A1, afVektor_Transport_b1)
             % Build an advection diffusion massbalance matrix
             % Extended Upwind scheme
-            fNumericDispersion_D_num = this.fFluidVelocity / 2*(this.fDeltaX - this.fFluidVelocity*afInnerTimeStep);
-            fEntry_a = afInnerTimeStep*this.fFluidVelocity / this.fDeltaX;
-            fEntry_b = afInnerTimeStep*(fAxialDispersion_D_l - fNumericDispersion_D_num) / this.fDeltaX^2;
+            fNumericDispersion_D_num = this.fFluidVelocity / 2 * (this.fDeltaX - this.fFluidVelocity * afInnerTimeStep);
+            fEntry_a = afInnerTimeStep * this.fFluidVelocity / this.fDeltaX;
+            fEntry_b = afInnerTimeStep * (fAxialDispersion_D_l - fNumericDispersion_D_num) / this.fDeltaX^2;
             
-            stencilA = [0,1,0];
-            stencilB = [fEntry_a+fEntry_b, 1-fEntry_a-2*fEntry_b, fEntry_b];
+            stencilA = [0, 1, 0];
+            stencilB = [fEntry_a + fEntry_b, 1 - fEntry_a-2 * fEntry_b, fEntry_b];
             
             for i = 2 : (length(this.afDiscreteLength) - 1)
                 mfMatrix_A(i, i-1:i+1) = stencilA;
@@ -426,19 +438,19 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             end
             
             % Left boundary condition
-            mfMatrix_A(1,1:end-2) = 1;
-            mfMatrix_A(1,end-1:end) = 0;
-            mfMatrix_B(1,1:end-3) = 1;
-            mfMatrix_B(1,end-2) = 1 - fEntry_a;
-            mfMatrix_B(1,end-1:end) = 0;
+            mfMatrix_A(1, 1:end-2)     = 1;
+            mfMatrix_A(1, end-1:end)   = 0;
+            mfMatrix_B(1, 1:end-3)     = 1;
+            mfMatrix_B(1, end-2)       = 1 - fEntry_a;
+            mfMatrix_B(1, end-1:end)   = 0;
             afVektor_Transport_b1(:,1) = fEntry_a * this.afConcentration_in';
             
             % Right boundary condition
             mfMatrix_A(end,[end-1,end]) = [1,-1];
             
             % Inverse
-            mfMatrix_Transport_A1(:,:) = (mfMatrix_A \ mfMatrix_B)';
-            afVektor_Transport_b1(:,:) = afVektor_Transport_b1 * inv(mfMatrix_A)';
+            mfMatrix_Transport_A1(:, :) = (mfMatrix_A \ mfMatrix_B)';
+            afVektor_Transport_b1(:, :) = afVektor_Transport_b1 * inv(mfMatrix_A)';
             
         end
         
