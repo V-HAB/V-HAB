@@ -224,19 +224,6 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             % Calculate flow velocity
             this.fFluidVelocity = this.fVolumetricFlowRate/(this.fVolFlow/this.fFilterLength);      % [m/s]
 
-            % Call calculation function
-            this.calculation();
-            
-        end
-        
-        %% -----------------------------------------
-        %  -----------simulation function-----------
-        %  -----------------------------------------
-        
-        % Simulates sorption over fTimeStep seconds
-        
-        function calculation(this)
-            
             % Get dispersion coefficient
             fAxialDispersion_D_l = this.ofilter_table.get_AxialDispersion_D_L(this.fFluidVelocity, this.fInflowTemperature, this.fPressure_p, this.afConcentration_in, this.csNames, this.afMolarMass);
            
