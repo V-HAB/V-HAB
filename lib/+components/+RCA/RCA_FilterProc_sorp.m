@@ -69,12 +69,12 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             
             
             % Outlet concentration of CO2
-            rMassFraction_CO2 = this.oStore.aoPhases(1).toProcsEXME.Outlet.oFlow.arPartialMass(strcmp(this.oMT.csSubstances, 'CO2')==1);
+            rMassFraction_CO2 = this.oStore.toPhases.FlowPhase.toProcsEXME.Outlet.oFlow.arPartialMass(iIndexCO2);
             
             % Calculation of outgoing concentration
-            rMolFraction_CO2 = rMassFraction_CO2 * this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.fMolarMass ./ this.afMolarMass(strcmp('CO2',this.csNames)); % mol fraction [-]
-            this.fC_CO2Out = rMolFraction_CO2 * this.fPressure_p / (matter.table.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
-            this.fC_CO2Out = this.fC_CO2Out * matter.table.Const.fUniversalGas * this.fTemperature * 7.5006e-3;                     % [mmHg]   
+            rMolFraction_CO2 = rMassFraction_CO2 * this.oStore.toPhases.FlowPhase.toProcsEXME.Outlet.oFlow.fMolarMass / this.oMT.afMolarMass(iIndexCO2); % mol fraction [-]
+            this.fC_CO2Out   = rMolFraction_CO2 * this.fPressure_p / (matter.table.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
+            this.fC_CO2Out   = this.fC_CO2Out * matter.table.Const.fUniversalGas * this.fTemperature * 7.5006e-3;                     % [mmHg]   
             
             % Calculate relative humitidy
             % Saturated vapor pressure
@@ -88,23 +88,28 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             
             % H2O concentration
             % Outlet concentration of H2O
-            rMassFraction_H2O = this.oStore.aoPhases(1).toProcsEXME.Outlet.oFlow.arPartialMass(strcmp(this.oMT.csSubstances, 'H2O')==1);
+            rMassFraction_H2O = this.oStore.toPhases.FlowPhase.toProcsEXME.Outlet.oFlow.arPartialMass(iIndexH2O);
+            
             % Calculation of outgoing concentration
-            rMolFraction_H2O = rMassFraction_H2O * this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.fMolarMass ./ this.afMolarMass(strcmp('H2O',this.csNames)); % mol fraction [-]
-            fC_H2O_Out = rMolFraction_H2O * this.fPressure_p / (matter.table.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
-            fC_H2O_In = this.afConcentration_in(strcmp('H2O',this.csNames));
+            rMolFraction_H2O = rMassFraction_H2O * this.oStore.toPhases.FlowPhase.toProcsEXME.Outlet.oFlow.fMolarMass / this.oMT.afMolarMass(iIndexH2O); % mol fraction [-]
+            fC_H2O_Out       = rMolFraction_H2O * this.fPressure_p / (matter.table.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
+            fC_H2O_In        = this.afConcentration_in(strcmp('H2O',this.csNames));
+            
             % Relative Humidity of the gas flow
-            this.rRH_out = fC_H2O_Out * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / (10*delta_sat);
-            this.rRH_in = fC_H2O_In * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / (10*delta_sat); 
+            this.rRH_out = fC_H2O_Out * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / fDelta_sat;
+            this.rRH_in  = fC_H2O_In  * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / fDelta_sat; 
+            
             % Calculate the dew point temperatures 
             % At the inlet
-            this.fDewPoint_in = (241.2 * ( log(this.rRH_in/100) + (17.5043*(this.fTemperature-273.15))/(241.2+(this.fTemperature-273.15))) ) / (17.5043 - log(this.rRH_in/100) - (17.5043*(this.fTemperature-273.15))/(241.2+this.fTemperature-273.15));    % [°C]
+            fFactor_A         = (17.5043 * (this.fTemperature - 273.15)) / (241.2 + this.fTemperature - 273.15);
+            this.fDewPoint_in = (241.2 * ( log(this.rRH_in) + fFactor_A) ) / (17.5043 - log(this.rRH_in) - fFactor_A);    % [°C]
             this.fDewPoint_in = this.fDewPoint_in * 1.8 + 32; % [°F]
+            
             % At the outlet
-            this.fDewPoint_out = (241.2 * ( log(this.rRH_out/100) + (17.5043*(this.fTemperature-273.15))/(241.2+(this.fTemperature-273.15))) ) / (17.5043 - log(this.rRH_out/100) - (17.5043*(this.fTemperature-273.15))/(241.2+this.fTemperature-273.15)); % [°C]
+            this.fDewPoint_out = (241.2 * ( log(this.rRH_out) + fFactor_A) ) / (17.5043 - log(this.rRH_out) - fFactor_A); % [°C]
             this.fDewPoint_out = this.fDewPoint_out * 1.8 + 32; % [°F]
             
-        
+            
         end
         % Desorption function after generic filter
         % Delete also the values for the plotting

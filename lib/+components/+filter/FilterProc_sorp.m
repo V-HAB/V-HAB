@@ -206,17 +206,17 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             this.fInflowTemperature = this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.fTemperature;
 
             % Inlet mass fractions
-            arMassFractions = this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.arPartialMass ...
-                (this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.arPartialMass > 0);
+            arMassFractions = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.arPartialMass ...
+                (this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.arPartialMass > 0);
             
             % Molar mass of relevant sorptives
             this.afMolarMass = this.oMT.afMolarMass(this.aiPositions);
                  
             % Calculation of incoming concentration
-            arMolFractions = arMassFractions * this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.fMolarMass ./ this.afMolarMass;      % mol fraction [-]
+            arMolFractions          = arMassFractions * this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fMolarMass ./ this.afMolarMass;      % mol fraction [-]
             this.afConcentration_in = arMolFractions * this.fPressure_p / (this.fUnivGasConst_R * this.fInflowTemperature);                    % [mol/m^3]
-            this.fDensityFlow = (this.fPressure_p * this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.fMolarMass) / ...                    % [kg/m^3]
-                (this.fUnivGasConst_R * this.fInflowTemperature);  
+            this.fDensityFlow       = (this.fPressure_p * this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fMolarMass) / ...                    % [kg/m^3]
+                                      (this.fUnivGasConst_R * this.fInflowTemperature);  
             
             % Convert flow rate into [m^3/s]
             this.fVolumetricFlowRate = fFlowRateIn / this.fDensityFlow;       % [m^3/s]
