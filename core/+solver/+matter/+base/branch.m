@@ -58,6 +58,11 @@ classdef branch < base & event.source
     methods
         function this = branch(oBranch, fInitialFlowRate, sSolverType)
             
+            if isempty(oBranch.coExmes{1}) || isempty(oBranch.coExmes{2})
+                this.throw('branch:constructor',['The interface branch %s is not properly connected.\n',...
+                                     'Please make sure you call connectIF() on the subsystem.'], oBranch.sName);
+            end
+            
             this.oBranch = oBranch;
             this.oMT     = oBranch.oMT;
             
@@ -186,6 +191,9 @@ classdef branch < base & event.source
             
             this.setBranchFR(this.fFlowRate, afPressures);
             
+            %TODO Add a comment here to tell the user what this is actually
+            %good for. I'm assuming this is only here to call a synced
+            %solver? 
             this.bUpdateTrigger = true;
             this.trigger('update');
             this.bUpdateTrigger = false;
