@@ -132,24 +132,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % List of Extract/Merge processors added to the phase: Key of
         % struct is set to the processor's name and can be used to retrieve
         % that object.
-        %NOTE: A port with the name 'default' is not allowed (was previously
-        %      used to define ports that can have several flows).
         %TODO: rename to |toExMePorts|, |toExMeProcessors|, etc.; or ?
         %TODO: use map and rename to |poExMeProcessors|?
         % @type struct
         % @types object
         toProcsEXME = struct();
-
-        % List of manipulators added to the phase
-        % @type struct
-        % @types object
-        toManips = struct('volume', [], 'temperature', [], 'substance', []);
-
-    end
-
-    properties (SetAccess = private, GetAccess = public) % (Access = private)
-        % Internal properties, part 3:
-        %TODO: investigate if this block can be merged with other ones
 
         % Cache: List and count of ExMe objects, used in |this.update()|
         %NOTE: cf. |toProcsEXME| property
@@ -166,12 +153,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         %TODO make Transient, reload on loadobj
         coProcsP2Pflow;
         iProcsP2Pflow;
-
-    end
-
-    properties (SetAccess = private, GetAccess = public)
-        % Internal properties, part 4:
-        %TODO: investigate if this block can be merged with other ones
+        
+        % List and number of manipulators added to the phase
+        % @type struct
+        % @types object
+        toManips = struct('volume', [], 'temperature', [], 'substance', []);
+        iManipulators = 0;
 
         % Last time the phase was updated (??)
         % @type float
@@ -203,7 +190,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
     properties (Access = protected)
 
-        % ???
+        % Boolean indicator of an outdated time step
+        %TODO rename to bOutdatedTimeStep
         bOutdatedTS = false;
 
     end
@@ -356,7 +344,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             
             if nargin < 2, bSetBranchesOutdated = false; end;
 
-            fTime     = this.oStore.oTimer.fTime;
+            fTime     = this.oTimer.fTime;
             fLastStep = fTime - this.fLastMassUpdate;
 
             % Return if no time has passed
@@ -395,7 +383,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
             % Do the actual adding/removing of mass.
             %CHECK round the whole, resulting mass?
-            %  tools.round.prec(this.afMass, this.oStore.oTimer.iPrecision)
+            %  tools.round.prec(this.afMass, this.oTimer.iPrecision)
             this.afMass =  this.afMass + afTotalInOuts;
 
             % Now we check if any of the masses has become negative. This
@@ -499,7 +487,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             
             % Execute updateProcessorsAndManipulators between branch solver
             % updates for inflowing and outflowing flows
-            this.oStore.oTimer.bindPostTick(@this.updateProcessorsAndManipulators);
+            if this.iProcsP2Pflow > 0 || this.iManipulators > 0
+                this.oTimer.bindPostTick(@this.updateProcessorsAndManipulators);
+            end
             
             % Flowrate update binding for OUTFLOWING matter flows.
             if this.bSynced || bSetBranchesOutdated
@@ -513,12 +503,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
         function this = update(this)
             % Only update if not yet happened at the current time.
-            if (this.oStore.oTimer.fTime <= this.fLastUpdate) || (this.oStore.oTimer.fTime < 0)
+            if (this.oTimer.fTime <= this.fLastUpdate) || (this.oTimer.fTime < 0)
                 return;
             end
 
             % Store update time
-            this.fLastUpdate = this.oStore.oTimer.fTime;
+            this.fLastUpdate = this.oTimer.fTime;
 
 
             % Actually move the mass into/out of the phase.
@@ -547,7 +537,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % heat capacity of this phase. So we don't have to do the
             % calculation again, we check against the timestep and only do
             % the calculation if it hasn't been done before.
-            if ~(this.oStore.oTimer.fTime == this.fLastTotalHeatCapacityUpdate)
+            if ~(this.oTimer.fTime == this.fLastTotalHeatCapacityUpdate)
                 this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
             end
         end
@@ -584,7 +574,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % the findProperty() method of the matter table have been
             % substantially accelerated.
             % One second is also the fixed timestep of the thermal solver. 
-            if this.oStore.oTimer.fTime - this.fLastTotalHeatCapacityUpdate < 1
+            if this.oTimer.fTime - this.fLastTotalHeatCapacityUpdate < 1
                 fTotalHeatCapacity = this.fTotalHeatCapacity;
             else
                 this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
@@ -594,7 +584,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 % Save total heat capacity as a property for faster logging.
                 this.fTotalHeatCapacity = fTotalHeatCapacity;
                 
-                this.fLastTotalHeatCapacityUpdate = this.oStore.oTimer.fTime;
+                this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
             end
             
         end
@@ -633,6 +623,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
             % Set manipulator
             this.toManips.(sManipType) = oManip;
+            
+            % Increment the number of manipulators
+            this.iManipulators = this.iManipulators + 1;
 
             % Remove fct call to detach manipulator
             hRemove = @() this.detachManipulator(sManipType);
@@ -758,7 +751,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             
             % Preset mass and time step logging attributes
             % iPrecision ^ 2 is more or less arbitrary
-            iStore = this.oStore.oTimer.iPrecision ^ 2;
+            iStore = this.oTimer.iPrecision ^ 2;
             
             this.afMassLog = ones(1, iStore) * this.fMass;
             this.afLastUpd = 0:(1/(iStore-1)):1;%ones(1, iStore) * 0.00001;
@@ -923,7 +916,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 
                 % Log the current mass and time to the history arrays
                 this.afMassLog = [ this.afMassLog(2:end) this.fMass ];
-                this.afLastUpd = [ this.afLastUpd(2:end) this.oStore.oTimer.fTime ];
+                this.afLastUpd = [ this.afLastUpd(2:end) this.oTimer.fTime ];
                 
                 
                 %%%% Mass change in percent/second over logged time steps
@@ -943,12 +936,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                     fDevMagnitude = abs(log(abs(fDev))./log(10));
 
                     % Inf? -> zero change.
-                    if fDevMagnitude > this.oStore.oTimer.iPrecision, fDevMagnitude = this.oStore.oTimer.iPrecision;
+                    if fDevMagnitude > this.oTimer.iPrecision, fDevMagnitude = this.oTimer.iPrecision;
                     elseif isnan(fDevMagnitude),                      fDevMagnitude = 0;
                     end;
 
                     % Min deviation (order of magnitude of mass change) 
-                    iMaxDev = this.oStore.oTimer.iPrecision;
+                    iMaxDev = this.oTimer.iPrecision;
                     
                     
                     % Other try - exp
@@ -989,8 +982,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
                 % Changes of substance masses - get max. change, add the change
                 % that happend already since last update
-                %arPreviousChange = abs(afChange(abChange) ./ tools.round.prec(this.afMass(abChange), this.oStore.oTimer.iPrecision)) + arPreviousChange(abChange);
-                arPartialsChange = abs(afChange(abChange) ./ tools.round.prec(this.fMass, this.oStore.oTimer.iPrecision));% + arPreviousChange(abChange);
+                %arPreviousChange = abs(afChange(abChange) ./ tools.round.prec(this.afMass(abChange), this.oTimer.iPrecision)) + arPreviousChange(abChange);
+                arPartialsChange = abs(afChange(abChange) ./ tools.round.prec(this.fMass, this.oTimer.iPrecision));% + arPreviousChange(abChange);
 
                 % Only use non-inf --> inf if current mass of according
                 % substance is zero. If new substance enters phase, still
@@ -1021,17 +1014,31 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 fNewStepPartials = (this.rMaxChange * rMaxChangeFactor - max(arPreviousChange)) / rPartialsPerSecond;
 
                 fNewStep = min([ fNewStepTotal fNewStepPartials ]);
+%                 fNewStep = fNewStepTotal;
+                
+%                 if strcmp(this.sName,'FlowPhase') && strcmp(this.oStore.sName,'Bed_A')
+%                     arPartialMassChangesPerSecond = abs(afChange ./ tools.round.prec(this.fMass, this.oTimer.iPrecision));
+%                     fprintf(['Mass CO2:           %.10f\n',...
+%                              'Previous Mass CO2:  %.10f\n',...
+%                              'Partial Mass CO2:   %.10f\n',...
+%                              'arPreviousChange:   %.10f\n',...
+%                              'rPartialsPerSecond: %.10f\n',...
+%                              '--------------------------------\n'...
+%                              ], this.afMass(179), this.afMassLastUpdate(179), this.arPartialMass(179),...
+%                                 arPreviousChange(1,179), arPartialMassChangesPerSecond(1,179));
+% %                     keyboard();
+%                 end
 
                 %{
                 %CHECK can calulateTimeStep be called multiple times in one
                 %      tick?
                 iRemDeSi = this.iRememberDeltaSign;
-                iPrec    = this.oStore.oTimer.iPrecision;
+                iPrec    = this.oTimer.iPrecision;
                 iExpRem  = 0;
                 iExpDelta= 0; % inactive right now!
 
 
-                if this.fLastTimeStepCalculation < this.oStore.oTimer.fTime
+                if this.fLastTimeStepCalculation < this.oTimer.fTime
                     this.abDeltaPositive(1:iRemDeSi)   = this.abDeltaPositive(2:(iRemDeSi + 1));
                     this.abDeltaPositive(iRemDeSi + 1) = fChange > 0;
 
@@ -1040,7 +1047,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                     end
                 end
 
-                this.fLastTimeStepCalculation = this.oStore.oTimer.fTime;
+                this.fLastTimeStepCalculation = this.oTimer.fTime;
 
 
                 aiChanges = abs(diff(this.abDeltaPositive));
@@ -1048,14 +1055,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 arExp     = afExp ./ sum(afExp);% * 1.5;
                 rChanges  = sum(arExp .* aiChanges);
 
-                fNewStep = interp1([ 0 1 ], [ this.oStore.oTimer.fTimeStep fNewStep ], (1 - rChanges) ^ iExpDelta, 'linear', 'extrap');
+                fNewStep = interp1([ 0 1 ], [ this.oTimer.fTimeStep fNewStep ], (1 - rChanges) ^ iExpDelta, 'linear', 'extrap');
                 %}
 
 
                 if fNewStep > this.fMaxStep
                     fNewStep = this.fMaxStep;
+%                     fprintf('\nTick %i, Time %f: Phase %s setting maximum timestep of %f\n', this.oTimer.iTick, this.oTimer.fTime, this.sName, this.fMaxStep);
                 elseif fNewStep < 0
                     fNewStep = 0;
+%                     fprintf('Tick %i, Time %f: Phase %s.%s setting minimum timestep\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, this.sName);
+%                     keyboard(); 
                 end
             end
 
@@ -1077,7 +1087,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             if ~this.bOutdatedTS
                 this.bOutdatedTS = true;
 
-                this.oStore.oTimer.bindPostTick(@this.calculateTimeStep);
+                this.oTimer.bindPostTick(@this.calculateTimeStep);
             end
         end
 
