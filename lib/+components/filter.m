@@ -164,9 +164,7 @@ classdef filter < matter.store
                 rHumidity = 0;         %[K]
             end
             
-            % Define the type for setVolume function
-            this.sType = sType;
-            % Define parent system
+            % Define parent system as property
             this.oParentSys = oParentSys; 
             
             % Assigning the filter's properties (save for setVolume function)
@@ -178,7 +176,7 @@ classdef filter < matter.store
             % can be set (needed in the p2p processor)
             % -------- or --------
             % TODO: add a property for length and cross section in cuboid file!
-            if strcmp(this.sType,'RCA') == 1 || strcmp(this.sType,'MetOx') == 1
+            if strcmp(sType,'RCA') == 1 || strcmp(sType,'MetOx') == 1
                 this.fx = f_x;
                 this.fy = f_y;
                 this.fz = f_z;
@@ -227,7 +225,7 @@ classdef filter < matter.store
             % Creating the p2p processor
             % Input parameters: oParentSys, oStore, sName, sPhaseIn, sPhaseOut, (sSpecies, sBed_Name)
             this.oProc_deso = components.filter.FilterProc_deso(this, 'filterproc_deso', 'FlowPhase.filterport_deso', 'FilteredPhase.filterport_deso');
-            if strcmp(this.sType, 'RCA')
+            if strcmp(sType, 'RCA')
                 % RCA uses a different sorption processor 
                 this.oProc_sorp = components.RCA.RCA_FilterProc_sorp(oParentSys, this, 'filterproc_sorp', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
             else
