@@ -11,12 +11,6 @@ classdef filter < matter.store
 
     properties (SetAccess = protected, GetAccess = public)
                
-        % Filter temperature
-        fTemperature;
-        
-        % Fixed time step
-        fFixedTimeStep; 
-        
         % Chosen filter type
         sType; 
         
@@ -51,8 +45,10 @@ classdef filter < matter.store
             % sName
             % sType
             %
-            % Optional input arguments
+            % Optional input arguments. If temperature and pressure are not
+            % set, standard values from matter table will be used. 
             % tParameters.fFilterTemperature:   Initial filter temperature
+            % tParameters.fFilterPressure:      Initial filter pressure
             % tParameters.fFixedTimeStep:       Fixed time step for phases
             % tParameters.sAtmosphereHelper:    Filter Atmosphere, 
             % tParameters.tGeometry:            Struct with field 'sShape'
@@ -62,14 +58,6 @@ classdef filter < matter.store
             %                                   specific.
             % TODO: Use geometry class here... have to build it first...
             
-            % Temperature
-            % can be set individually
-            if isfield(tParameters, 'fFilterTemperature')
-                fTemperature = tParameters.fFilterTemperature;
-            else
-                % Default value
-                fTemperature = 293.15;         %[K]
-            end
             
             % Fixed Time Step: 
             % the default value of 1 s provided good results for spacesuits.
@@ -77,9 +65,6 @@ classdef filter < matter.store
             % Decrease to refine results
             if isfield(tParameters, 'fTimeStep')
                 fFixedTimeStep = tParameters.fTimeStep;
-            else
-                % Default value
-                fFixedTimeStep = 1;                %[s]
             end
             
             if isfield(tParameters, 'sAtmosphereHelper')
@@ -151,7 +136,34 @@ classdef filter < matter.store
             
             % Creating a store based on the volume
             this@matter.store(oParentSys, sName, oGeometry.fVolume);
-
+            
+            % Temperature
+            % can be set individually
+            if isfield(tParameters, 'fFilterTemperature')
+                fTemperature = tParameters.fFilterTemperature;
+            else
+                % Default value
+                fTemperature = this.oMT.Standard.Temperature;         %[K]
+            end
+            
+            % Temperature
+            % can be set individually
+            if isfield(tParameters, 'fFilterPressure')
+                fPressure = tParameters.fFilterPressure;
+            else
+                % Default value
+                fPressure = this.oMT.Standard.Pressure;         %[K]
+            end
+            
+            % Relative humidity
+            % can be set individually
+            if isfield(tParameters, 'rHumidity')
+                rHumidity = tParameters.rHumidity;
+            else
+                % Default value
+                rHumidity = 0;         %[K]
+            end
+            
             % Define the type for setVolume function
             this.sType = sType;
             % Define parent system
@@ -161,14 +173,6 @@ classdef filter < matter.store
             this.oGeometry = oGeometry;
             this.rVoidFraction = rVoidFraction;
             
-            % Temperature
-            if exist('fTemperature','var')
-                this.fTemperature = fTemperature;
-            end
-            % Fixed Time Step
-            if exist('fFixedTimeStep','var')
-                this.fFixedTimeStep = fFixedTimeStep;
-            end
             
             % After superclass constructor is executed, fx, fy and fz
             % can be set (needed in the p2p processor)
@@ -186,35 +190,34 @@ classdef filter < matter.store
             % the filter and does that correctly
             if ~isempty(sAtmosphereHelper)
                 try
-                    oFlowPhase = this.createPhase(sAtmosphereHelper, 'FlowPhase', oGeometry.fVolume * rVoidFraction, this.fTemperature);
+                    oFlowPhase = this.createPhase(sAtmosphereHelper, 'FlowPhase', oGeometry.fVolume * rVoidFraction, fTemperature, rHumidity, fPressure);
+%                     oFlowPhase = this.createPhase(sAtmosphereHelper, 'FlowPhase', 0.0011, fTemperature, rHumidity, fPressure);
                 catch 
                     this.throw('Generic Filter', 'The provided atmosphere helper (%s) is invalid!', sAtmosphereHelper);
                 end
             else
                 % Otherwise: use SuitAtmosphere as default value
-                oFlowPhase = this.createPhase('SuitAtmosphere', 'FlowPhase', oGeometry.fVolume * rVoidFraction, this.fTemperature);
+                oFlowPhase = this.createPhase('SuitAtmosphere', 'FlowPhase', oGeometry.fVolume * rVoidFraction, fTemperature, rHumidity, fPressure);
+%                 oFlowPhase = this.createPhase('SuitAtmosphere', 'FlowPhase', 0.0011, fTemperature, rHumidity, fPressure);
             end
             
             % Creating the phase representing the filter volume manually.
             % gas(oStore, sName, tfMasses, fVolume, fTemp)
-            oFilteredPhase = matter.phases.gas(this, 'FilteredPhase', struct(), oGeometry.fVolume * (1-rVoidFraction), this.fTemperature);
+            oFilteredPhase = matter.phases.gas(this, 'FilteredPhase', struct(), oGeometry.fVolume * (1-rVoidFraction), fTemperature);
+%             oFilteredPhase = matter.phases.gas(this, 'FilteredPhase', struct(), 0.0011, fTemperature);
+%             oFilteredPhase = this.createPhase(sAtmosphereHelper, 'FilteredPhase', 0.0011, fTemperature, rHumidity, fPressure);
             
+            % Fixed Time Step
+            if exist('fFixedTimeStep','var')
             % Adding fixed time steps for the filter
-            this.aoPhases(1).fFixedTS = this.fFixedTimeStep;
-            this.aoPhases(2).fFixedTS = this.fFixedTimeStep;
+                this.toPhases.FlowPhase.fFixedTS     = fFixedTimeStep;
+                this.toPhases.FilteredPhase.fFixedTS = fFixedTimeStep;
+            end
             
             % Create the according exmes - default for the external
             % connections, i.e. the air stream that should be filtered. The
             % filterports are internal ones for the p2p processor to use.
-%             if strcmp(this.sType, 'RCA')
-%                 % For the RCA a constant pressure in the filter is needed
-%                 % and genereated with the help of a constant pressure exme,
-%                 % which is defined in the parent class
-%                 special.matter.const_press_exme(oFlowPhase, 'Inlet', this.oParentSys.fTestPressure);
-%             else
-                % simply connect to the flow for the genereic filter
-                matter.procs.exmes.gas(oFlowPhase,     'Inlet');
-%             end
+            matter.procs.exmes.gas(oFlowPhase,     'Inlet');
             matter.procs.exmes.gas(oFlowPhase,     'Outlet');
             matter.procs.exmes.gas(oFlowPhase,     'filterport_sorp');
             matter.procs.exmes.gas(oFilteredPhase, 'filterport_sorp');            
