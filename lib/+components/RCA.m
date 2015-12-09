@@ -17,12 +17,9 @@ classdef RCA < vsys
         % Input flow rate, has to be set externally
         fFlowRate = 0;
         
-        % Pressure at which the testloop runs
-        fTestPressure = 28270;  % [Pa]
-        
         % Partial pressure limit of CO2 in the connected reference phase
         % for triggering bed switches
-        fCO2Limit = 6.5;    % [mmHg]
+        fCO2Limit = 100;    % [Pa]
         
         % Partial pressure of CO2
         fPP_CO2Out = 0;     % at the outlet
@@ -53,6 +50,12 @@ classdef RCA < vsys
         % Initial temperature of the filter beds in [K].
         fInitialTemperature = 298.65; 
         
+        % Initial pressure in [Pa]
+        fTestPressure = 28270;
+        
+        % Initial relative humidity [-]
+        rHumidity = 0.35;
+        
         fPipeLength   = 0.5;
         fPipeDiameter = 0.0254/4; 
         
@@ -60,7 +63,7 @@ classdef RCA < vsys
     
     methods
         function this = RCA(oParent, sName, sAtmosphereHelper)
-               this@vsys(oParent, sName, 25);
+               this@vsys(oParent, sName, 1);
                
                this.sAtmosphereHelper = sAtmosphereHelper;
         end
@@ -68,6 +71,8 @@ classdef RCA < vsys
         function createMatterStructure(this)
             
             createMatterStructure@vsys(this);
+            
+            fFixedTimeStep = 0.1;
             
             %% Distributor
             %
@@ -79,47 +84,73 @@ classdef RCA < vsys
             % Creating the input splitter
             matter.store(this, 'Splitter', 0.004);  % Volume in in^3 = 0.0568 ?? 
             
-            % Use helper directly
-%             cParams = matter.helper.phase.create.(this.sAtmosphereHelper)(this, 0.004, this.fInitialTemperature);
-%             oPhase  = matter.phases.gas_virtual(this.toStores.Splitter, 'Splitter_Phase', cParams{:});
             
-%             oPhase.setInitialVirtualPressure(28400);
             
-%            % Adding a phase to the splitter
-           oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature);
+           % Adding a phase to the splitter
+            oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature, this.rHumidity, this.fTestPressure);
+
             
             % Creating the ports on the splitter
             matter.procs.exmes.gas(oPhase, 'Splitter_Inlet'); 
             matter.procs.exmes.gas(oPhase, 'Splitter_Outlet1');
             matter.procs.exmes.gas(oPhase, 'Splitter_Outlet2');
+
             % Add a fixed time step
-            %oPhase.fFixedTS = 0.7;
-            
+%             oPhase.fFixedTS = fFixedTimeStep;
+%             oPhase.bSynced = true;
+
             %% Adsorber Beds
             % Creating the two filter beds
             tFilterParameters = struct('fFilterTemperature', this.fInitialTemperature,...
-                                       'sAtmospherHelper',   this.sAtmosphereHelper,...
-                                       'fTimeStep',          1);
+                                       'fFilterPressure',    this.fTestPressure,...
+                                       'sAtmosphereHelper',  this.sAtmosphereHelper,...
+                                       'rHumidity',          this.rHumidity);%,...
+%                                        'fTimeStep',          1);
             
             
-            matter.store(this, 'Bed_A', 0.0011);
-            oPhase = this.toStores.Bed_A.createPhase(this.sAtmosphereHelper,  0.0011, this.fInitialTemperature);
+%             matter.store(this, 'Bed_A', 0.0011);
+%             oFlowPhase = this.toStores.Bed_A.createPhase(this.sAtmosphereHelper, 'FlowPhase', 0.0011, this.fInitialTemperature, this.rHumidity, this.fTestPressure);
+%             
+%             matter.procs.exmes.gas(oFlowPhase,     'Inlet');
+%             matter.procs.exmes.gas(oFlowPhase,     'Outlet');
+%             matter.procs.exmes.gas(oFlowPhase,     'filterport_sorb');
+%             matter.procs.exmes.gas(oFlowPhase,     'FlowVolume_Vacuum_Port');
+%             
+% %             oPhase.fFixedTS = fFixedTimeStep;
+% %             oPhase.bSynced = true;
+% 
+%             oPhase = this.toStores.Bed_A.createPhase(this.sAtmosphereHelper, 'FilteredPhase', 0.0011, this.fInitialTemperature, this.rHumidity, this.fTestPressure);
+%             
+%             matter.procs.exmes.gas(oPhase,     'filterport_sorb');
+% %             matter.procs.exmes.gas(oPhase,     'filterport_deso');
+%             matter.procs.exmes.gas(oPhase,     'Amine_Vacuum_Port');
+%             
+% %             oPhase.fFixedTS = fFixedTimeStep;
+% %             oPhase.bSynced = true;
+% 
+%             matter.store(this, 'Bed_B', 0.0011);
+%             oPhase = this.toStores.Bed_B.createPhase(this.sAtmosphereHelper, 'FlowPhase', 0.0011, this.fInitialTemperature, this.rHumidity, this.fTestPressure);
+%             
+%             matter.procs.exmes.gas(oPhase,     'Inlet');
+%             matter.procs.exmes.gas(oPhase,     'Outlet');
+%             matter.procs.exmes.gas(oPhase,     'filterport_sorb');
+%             matter.procs.exmes.gas(oPhase,     'FlowVolume_Vacuum_Port');
+%             
+%             oPhase = this.toStores.Bed_B.createPhase(this.sAtmosphereHelper, 'FilteredPhase', 0.0011, this.fInitialTemperature, this.rHumidity, this.fTestPressure);
+%             
+%             matter.procs.exmes.gas(oPhase,     'filterport_sorb');
+% %             matter.procs.exmes.gas(oPhase,     'filterport_deso');
+%             matter.procs.exmes.gas(oPhase,     'Amine_Vacuum_Port');
+%             
+% %             oPhase.fFixedTS = fFixedTimeStep;
+% %             oPhase.bSynced = true;
+% 
+%             
+%             tutorials.p2p.components.AbsorberExample(this.toStores.Bed_A, 'DumbAbsorberA', 'FlowPhase.filterport_sorb', 'FilteredPhase.filterport_sorb', 'CO2', 2);
+%             tutorials.p2p.components.AbsorberExample(this.toStores.Bed_B, 'DumbAbsorberB', 'FlowPhase.filterport_sorb', 'FilteredPhase.filterport_sorb', 'CO2', 2);
             
-            matter.procs.exmes.gas(oPhase,     'Inlet');
-            matter.procs.exmes.gas(oPhase,     'Outlet');
-            matter.procs.exmes.gas(oPhase,     'FlowVolume_Vacuum_Port');
-            
-            
-            
-            matter.store(this, 'Bed_B', 0.0011);
-            oPhase = this.toStores.Bed_B.createPhase(this.sAtmosphereHelper,  0.0011, this.fInitialTemperature);
-            
-            matter.procs.exmes.gas(oPhase,     'Inlet');
-            matter.procs.exmes.gas(oPhase,     'Outlet');
-            matter.procs.exmes.gas(oPhase,     'FlowVolume_Vacuum_Port');
-            
-            %components.RCA.RCA_Filter(this, 'Bed_A', 'RCA', tFilterParameters);
-%             components.RCA.RCA_Filter(this, 'Bed_B', 'RCA', tFilterParameters);
+            components.RCA.RCA_Filter(this, 'Bed_A', 'RCA', tFilterParameters);
+            components.RCA.RCA_Filter(this, 'Bed_B', 'RCA', tFilterParameters);
             
             %% Merger
             %
@@ -130,10 +161,12 @@ classdef RCA < vsys
             % Creating the output merger
             matter.store(this, 'Merger',  0.004);  % Volume in in^3 = 0.0568 ??
             % Adding a phase to the merger
-            oPhase = this.toStores.Merger.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature);
+            oPhase = this.toStores.Merger.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature, [], this.fTestPressure);
             % For all of the solver branches to update correctly and
             % simultaneously, this phase has to be 'synced'
 %             oPhase.bSynced = true;
+%             oPhase.fFixedTS = fFixedTimeStep;
+                    
             
             % Creating the ports on the merger
             matter.procs.exmes.gas(oPhase, 'Merger_Inlet1');
@@ -149,21 +182,25 @@ classdef RCA < vsys
             % flow volume and amine phases.
             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_FlowVolume', 0);
             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_B_FlowVolume', 0);
-%             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_Amine', 0);
-%             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_B_Amine', 0);
+            special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_Amine', 0);
+            special.matter.const_press_exme(oVacuum, 'Inlet_Bed_B_Amine', 0);
+
+%             oVacuum.bSynced = true;
+%             oVacuum.fFixedTS = fFixedTimeStep;
+
 
             %% Adding valves
             % True/false decides if the valve is open or closed and the
             % value to the right is the length of the valve, but that is not
             % important for the further calculation.
-            components.valve(this, 'Valve_1', true  ,0.05);
-            components.valve(this, 'Valve_2', true  ,0.05);
-            components.valve(this, 'Valve_3', false ,0.05);
-            components.valve(this, 'Valve_4', false ,0.05);
-            components.valve(this, 'Valve_5', false ,0.05);
-            components.valve(this, 'Valve_6', true  ,0.05);
-            components.valve(this, 'Valve_7', false ,0.05);
-            components.valve(this, 'Valve_8', true  ,0.05);
+            components.valve(this, 'Valve_1', true , 0.05);
+            components.valve(this, 'Valve_2', true , 0.05);
+            components.valve(this, 'Valve_3', false, 0.05);
+            components.valve(this, 'Valve_4', false, 0.05);
+            components.valve(this, 'Valve_5', false, 0.05);
+            components.valve(this, 'Valve_6', true , 0.05);
+            components.valve(this, 'Valve_7', false, 0.05);
+            components.valve(this, 'Valve_8', true , 0.05);
             
             %% Adding pipes
             % Adding pipes to connect the components (14,8: 1 inch Al-Tube = 25.4mm)
@@ -196,10 +233,10 @@ classdef RCA < vsys
             % decide how fast the gas flows into Vacuum. So we can adjust
             % the time needed for the desorption process. Unfortunately the
             % pipe properties could reach unrealistic values
-%             components.pipe(this, 'Pipe_9',  this.fPipeLength, this.fPipeDiameter);
-%             components.pipe(this, 'Pipe_10', this.fPipeLength, this.fPipeDiameter);
-%             components.pipe(this, 'Pipe_11', this.fPipeLength, this.fPipeDiameter);
-%             components.pipe(this, 'Pipe_12', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_9',  this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_10', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_11', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_12', this.fPipeLength, this.fPipeDiameter);
             components.pipe(this, 'Pipe_13', this.fPipeLength, this.fPipeDiameter);
             components.pipe(this, 'Pipe_14', this.fPipeLength, this.fPipeDiameter);
             components.pipe(this, 'Pipe_15', this.fPipeLength, this.fPipeDiameter);
@@ -217,13 +254,13 @@ classdef RCA < vsys
             
             % BED B - OUTLET
             matter.branch(this, 'Bed_B.Outlet',{'Pipe_7','Valve_4','Pipe_8' },'Merger.Merger_Inlet2');
-%             
-%             % VACUUM <-> BED A (amine)
-%             matter.branch(this, 'Bed_A.Amine_Vacuum_Port',{'Pipe_9','Valve_5','Pipe_10'},'Vacuum.Inlet_Bed_A_Amine');
-%             
-%             % VACUUM <-> BED B (amine)
-%             matter.branch(this, 'Bed_B.Amine_Vacuum_Port',{'Pipe_11','Valve_6','Pipe_12'},'Vacuum.Inlet_Bed_B_Amine');
-%             
+            
+            % VACUUM <-> BED A (amine)
+            matter.branch(this, 'Bed_A.Amine_Vacuum_Port',{'Pipe_9','Valve_5','Pipe_10'},'Vacuum.Inlet_Bed_A_Amine');
+            
+            % VACUUM <-> BED B (amine)
+            matter.branch(this, 'Bed_B.Amine_Vacuum_Port',{'Pipe_11','Valve_6','Pipe_12'},'Vacuum.Inlet_Bed_B_Amine');
+            
             % VACUUM <-> BED A (flow volume)
             matter.branch(this, 'Bed_A.FlowVolume_Vacuum_Port',{'Pipe_13','Valve_7','Pipe_14'},'Vacuum.Inlet_Bed_A_FlowVolume');
             
@@ -246,18 +283,17 @@ classdef RCA < vsys
             % Now we can create all of the solver branches
             solver.matter.iterative.branch(this.toBranches.Splitter__Splitter_Outlet1___Bed_A__Inlet);
             solver.matter.iterative.branch(this.toBranches.Splitter__Splitter_Outlet2___Bed_B__Inlet);
-%             solver.matter.iterative.branch(this.toBranches.Bed_A__Amine_Vacuum_Port___Vacuum__Inlet_Bed_A_Amine);
-%             solver.matter.iterative.branch(this.toBranches.Bed_B__Amine_Vacuum_Port___Vacuum__Inlet_Bed_B_Amine);          
+            solver.matter.iterative.branch(this.toBranches.Bed_A__Amine_Vacuum_Port___Vacuum__Inlet_Bed_A_Amine);
+            solver.matter.iterative.branch(this.toBranches.Bed_B__Amine_Vacuum_Port___Vacuum__Inlet_Bed_B_Amine);          
             solver.matter.iterative.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
             solver.matter.iterative.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
             solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Merger_Inlet1);
             solver.matter.iterative.branch(this.toBranches.Bed_B__Outlet___Merger__Merger_Inlet2);
-%             solver.matter.manual.branch(this.toBranches.Bed_A__Outlet___Merger__Merger_Inlet1);
-%             solver.matter.manual.branch(this.toBranches.Bed_B__Outlet___Merger__Merger_Inlet2);
-%             this.toManualBranches.Inlet  = solver.matter.manual.branch(this.toBranches.(this.toManualBranches.Inlet.sName));
-%             this.toManualBranches.Outlet = solver.matter.manual.branch(this.toBranches.(this.toManualBranches.Outlet.sName));
             solver.matter.iterative.branch(this.toInterfaceBranches.Outlet);
             solver.matter.iterative.branch(this.toInterfaceBranches.Inlet);
+            
+%             this.toStores.Splitter.toPhases.Splitter_Phase_1.rMaxChange = 0.5;
+%             this.toStores.Merger.toPhases.Merger_Phase_1.rMaxChange     = 0.5;
         end
     end
     
@@ -266,36 +302,39 @@ classdef RCA < vsys
         function exec(this, ~)
             exec@vsys(this);
             
-            if this.oTimer.fTime == 0
-                
-            else
-                this.switchRCABeds();
-            end
+%             if this.oTimer.fTime == 0
+%                 
+%             else
+%                 this.switchRCABeds();
+%             end
+%             
+%             
+%             return;
             
             
-            return;
+%             % Getting the current partial pressure of CO2 at the bed inlet
+%             % and the bed outlet in [Pa]
+%             if this.sActiveBed == 'A'
+%                 afPartialPressures = this.toStores.Bed_A.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.getPartialPressures();
+%                 this.fPP_CO2In     = afPartialPressures(this.oMT.tiN2I.CO2);                      % inlet pressure 
+%                 this.fPP_CO2In     = this.fPP_CO2In * 7.5006e-3; % [mmHg]
+%                 this.fPP_CO2Out    = this.toStores.Bed_A.toProcsP2P.filterproc_sorp.fC_CO2Out;    % outlet pressure
+%             elseif this.sActiveBed == 'B'
+%                 afPartialPressures = this.toStores.Bed_B.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.getPartialPressures();
+%                 this.fPP_CO2In     = afPartialPressures(this.oMT.tiN2I.CO2);                      % inlet pressure  
+%                 this.fPP_CO2In     = this.fPP_CO2In * 7.5006e-3; % [mmHg]
+%                 this.fPP_CO2Out    = this.toStores.Bed_B.toProcsP2P.filterproc_sorp.fC_CO2Out;    % outlet pressure
+%             end
             
-            
-            % Getting the current partial pressure of CO2 at the bed inlet
-            % and the bed outlet in [Pa]
-            if this.sActiveBed == 'A'
-                afPartialPressures = this.toStores.Bed_A.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.getPartialPressures();
-                this.fPP_CO2In     = afPartialPressures(this.oMT.tiN2I.CO2);                      % inlet pressure 
-                this.fPP_CO2In     = this.fPP_CO2In * 7.5006e-3; % [mmHg]
-                this.fPP_CO2Out    = this.toStores.Bed_A.toProcsP2P.filterproc_sorp.fC_CO2Out;    % outlet pressure
-            elseif this.sActiveBed == 'B'
-                afPartialPressures = this.toStores.Bed_B.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.getPartialPressures();
-                this.fPP_CO2In     = afPartialPressures(this.oMT.tiN2I.CO2);                      % inlet pressure  
-                this.fPP_CO2In     = this.fPP_CO2In * 7.5006e-3; % [mmHg]
-                this.fPP_CO2Out    = this.toStores.Bed_B.toProcsP2P.filterproc_sorp.fC_CO2Out;    % outlet pressure
-            end
-            
+
+            afPartialPressures = this.toStores.Merger.toPhases.Merger_Phase_1.toProcsEXME.Merger_Outlet.oFlow.getPartialPressures();
+            fOutletCO2PartialPressure = afPartialPressures(this.oMT.tiN2I.CO2);
             % We need some deadband to prevent the valve from switching too fast at
             % high metabolic rates. This is also done in the actual hardware setup of
             % PLSS 1.0
             this.fDeltaTime = this.oTimer.fTime - this.fLastBedSwitch;
             % Switching beds and setting flow rates if conditions are met
-            if  (this.fPP_CO2Out >= this.fCO2Limit) && (this.fDeltaTime > this.fDeadband)
+            if  (fOutletCO2PartialPressure >= this.fCO2Limit) && (this.fDeltaTime > this.fDeadband)
                 this.switchRCABeds();
             end
             
@@ -386,7 +425,7 @@ classdef RCA < vsys
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
                 % as a low level selectable output
-                fprintf('RCA switching from bed A to bed B.\n');
+                fprintf('Tick: %i, RCA switching from bed A to bed B.\n', this.oTimer.iTick);
             else
                 % Setting the indicator and changing the active bed
                 bIndicator = true;
@@ -399,7 +438,7 @@ classdef RCA < vsys
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
                 % as a low level selectable output
-                fprintf('RCA switching from bed B to bed A.\n');
+                fprintf('Tick: %i, RCA switching from bed B to bed A.\n', this.oTimer.iTick);
             end
             
             % Changing the valves
@@ -410,8 +449,8 @@ classdef RCA < vsys
             this.toProcsF2F.Valve_4.setValvePos(~bIndicator);
             
             % Vacuum flow
-%             this.toProcsF2F.Valve_5.setValvePos(~bIndicator);
-%             this.toProcsF2F.Valve_6.setValvePos(bIndicator);
+            this.toProcsF2F.Valve_5.setValvePos(~bIndicator);
+            this.toProcsF2F.Valve_6.setValvePos(bIndicator);
             this.toProcsF2F.Valve_7.setValvePos(~bIndicator);
             this.toProcsF2F.Valve_8.setValvePos(bIndicator);
             
