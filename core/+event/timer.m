@@ -176,11 +176,11 @@ classdef timer < base
                 % current time step for every system that is not dependent,
                 % i.e. that has a 'real' time step set, not -1 which means that
                 % it is executed every timer tick.
-                fThisStep = min((this.afLastExec(~this.abDependent) + this.afTimeStep(~this.abDependent)));
+                fNextExecutionTime = min((this.afLastExec(~this.abDependent) + this.afTimeStep(~this.abDependent)));
                 
-                % Now fThisStep is actually an absolute time, so subtract
-                % the current time to get the time step
-                fThisStep = fThisStep - this.fTime;
+                % fNextExecutionTime is an absolute time, so subtract the
+                % current time to get the time step for this tick
+                fThisStep = fNextExecutionTime - this.fTime;
             end
             
             % Calculated step smaller than the min. time step?
@@ -201,8 +201,17 @@ classdef timer < base
             % Dependent systems have -1 as time step - therefore this
             % should always be true!
             %abExec = this.afLastExec + this.afTimeStep <= this.fTime;
-            abExec = this.afLastExec + this.afTimeStep <= (this.fTime + fThisStep  - this.fTimeStep);
-            
+            %TODO Add an extensive explanation here on why the expression
+            % that is being compared here is exactly this:
+            % 'this.fTime + fThisStep - this.fMinimumTimeStep'
+            % Explain what this does to the abExec array. 
+            abExec = (this.afLastExec + this.afTimeStep) <= (this.fTime + fThisStep - this.fMinimumTimeStep);
+%             sString = '%i';
+%             for iI=1:length(abExec)-1
+%                 sString = strcat(sString,' %i');
+%             end
+%             sString = strcat(sString,'\n');
+%             fprintf(sString,abExec);
             
             % Execute found cbs
             % The indexing type for the cell only works if the array is of
@@ -228,6 +237,12 @@ classdef timer < base
             if this.bRun
                 this.run();
             end
+            
+%             fNextExecutionTime = min((this.afLastExec(~this.abDependent) + this.afTimeStep(~this.abDependent)));
+%             if fNextExecutionTime == this.fTime
+%                 fprintf('\b, Time: %.10f, Tick: %i\n',this.fTime, this.iTick);
+% %                 keyboard();
+%             end
         end
         
         function setTimeStep(this, iCB, fTimeStep)
