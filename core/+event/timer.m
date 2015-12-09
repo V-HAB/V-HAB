@@ -6,7 +6,7 @@ classdef timer < base
         % Minimum time step, no individual time steps shorter than this one
         % possible.
         % @type float
-        fTimeStep = 1e-8;  % [s]
+        fMinimumTimeStep = 1e-8;  % [s]
         
         
         % "Accuracy" of simulation - min time step. Use as
@@ -60,7 +60,7 @@ classdef timer < base
             % Global time step? Default value passed on by simulation.m is
             % 1e-8 seconds
             if nargin >= 1 && ~isempty(fTimeStep)
-                this.fTimeStep = fTimeStep;
+                this.fMinimumTimeStep = fTimeStep;
             end
             
             if nargin >= 2 && ~isempty(fStart)
@@ -68,21 +68,21 @@ classdef timer < base
                 this.fTime  = fStart;
             else
                 % Set time to -1 * time step -> first step is init!
-                this.fTime = -1 * this.fTimeStep;
+                this.fTime = -1 * this.fMinimumTimeStep;
             end
             
             % Precision of simulation. We derive this from the time step
             % and make it 2 orders of magnitude smaller than the timestep
             % in seconds. 
-            this.iPrecision = floor(log10(1 / this.fTimeStep)) - 1;
+            this.iPrecision = floor(log10(1 / this.fMinimumTimeStep)) - 1;
             
         end
 
 
         function setMinStep(this, fMinStep)
-            this.fTimeStep  = fMinStep;
-            this.iPrecision = floor(log10(1 / this.fTimeStep)) - 1;
-            this.fTime      = -1 * this.fTimeStep;
+            this.fMinimumTimeStep = fMinStep;
+            this.iPrecision       = floor(log10(1 / this.fMinimumTimeStep)) - 1;
+            this.fTime            = -1 * this.fMinimumTimeStep;
         end
         
         
@@ -133,7 +133,7 @@ classdef timer < base
             
             % Time step - provided or use the global
             if nargin >= 3, this.afTimeStep(iIdx) = fTimeStep;
-            else            this.afTimeStep(iIdx) = this.fTimeStep;
+            else            this.afTimeStep(iIdx) = this.fMinimumTimeStep;
             end
             
             % Return the callbacks - protected methods, wrapped so that the
@@ -169,8 +169,8 @@ classdef timer < base
             % If time is -1 the min. time step - first tick, advance to zero
             %if this.fTime == (-1 * this.fTimeStep)
             %TODO throw out here. Include in solvers themselves.
-            if this.fTime <= (10 * this.fTimeStep)
-                fThisStep = this.fTimeStep;
+            if this.fTime <= (10 * this.fMinimumTimeStep)
+                fThisStep = this.fMinimumTimeStep;
             else
                 % Determine next time step. Calculate last execution time plus
                 % current time step for every system that is not dependent,
@@ -187,8 +187,10 @@ classdef timer < base
             %TODO if one system has a time step of 0, the above calculation
             %      with last exec/time step would be unnecessary, in that
             %      case, directly set this.fTimeStep as fThisStep!
-            if fThisStep < this.fTimeStep
-                fThisStep = this.fTimeStep;
+            if fThisStep < this.fMinimumTimeStep
+%                 disp('Setting minimum time step.');
+%                 keyboard();
+                fThisStep = this.fMinimumTimeStep;
             end
             
             % Set new time

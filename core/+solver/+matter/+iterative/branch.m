@@ -278,7 +278,7 @@ classdef branch < solver.matter.base.branch
                 % Preset pressure drop to zero, set initial flow rate
                 fPressDrop = 0;
                 %fFlowRate  = 0.00001 / fTimeStep;
-                fFlowRate = this.oBranch.oContainer.oTimer.fTimeStep * 1;
+                fFlowRate = this.oBranch.oContainer.oTimer.fMinimumTimeStep * 1;
                 
                 % Depending on flow direction, initialize values
                 % Sets Cp, Molar Mass, rPPs; Temp from IN Exme, Pressure to
@@ -418,7 +418,7 @@ classdef branch < solver.matter.base.branch
                     %TODO everywhere for flowrate assumption, does it make
                     %     sense to use the time step / global time step?
                     %fFlowRate = 0.00001 / fTimeStep;
-                    fFlowRate = this.oBranch.oContainer.oTimer.fTimeStep * 1;
+                    fFlowRate = this.oBranch.oContainer.oTimer.fMinimumTimeStep * 1;
                     
                     %%REORG%%oBranch.aoFlows(aiFlows).setSolverData(sif(iDir > 0, oExmeL, oExmeR));
                     
@@ -476,7 +476,7 @@ classdef branch < solver.matter.base.branch
             %fErrorMax = 0.025;
             
             %TODO-OKT15 BETTER INTERP - REDUCE MAX ERR?
-            fErrorMax = this.oBranch.oContainer.oTimer.fTimeStep * 0.1;%00;% / 1000;
+            fErrorMax = this.oBranch.oContainer.oTimer.fMinimumTimeStep * 0.1;%00;% / 1000;
             
 %             if oBranch.oContainer.oTimer.fTime > 48.5 %71.1 %811.5
 %                 keyboard();
@@ -517,15 +517,15 @@ classdef branch < solver.matter.base.branch
                     
                     % Initial FR ...
                     %fTmpFlowRate = 0.0001 / fTimeStep; % * 0.001;
-                    fTmpFlowRate = this.oBranch.oContainer.oTimer.fTimeStep * 2;
+                    fTmpFlowRate = this.oBranch.oContainer.oTimer.fMinimumTimeStep * 2;
                     
                 % Flow rate too small? Use larger one!
                 %elseif (fFlowRate < 1e-5 * fTimeStep)
-                elseif (fFlowRate < this.oBranch.oContainer.oTimer.fTimeStep)
+                elseif (fFlowRate < this.oBranch.oContainer.oTimer.fMinimumTimeStep)
                     
                     %TODO ok for large timesteps, can be a minute or so...?
                     %fTmpFlowRate = 0.00002 * fTimeStep; % * 0.001;
-                    fTmpFlowRate = this.oBranch.oContainer.oTimer.fTimeStep * 2;
+                    fTmpFlowRate = this.oBranch.oContainer.oTimer.fMinimumTimeStep * 2;
                     
                 else
                     
@@ -741,7 +741,7 @@ classdef branch < solver.matter.base.branch
                     rError = 1;
                 % If flowrate gets too small, continue - accept small error
                 %elseif (fFlowRate < 1e-5 * fTimeStep)
-                elseif (fFlowRate < this.oBranch.oContainer.oTimer.fTimeStep)
+                elseif (fFlowRate < this.oBranch.oContainer.oTimer.fMinimumTimeStep)
                     %rError = 1;
                 end
                 
@@ -750,7 +750,7 @@ classdef branch < solver.matter.base.branch
 %             disp(['Flow rate: ', num2str(fFlowRate)])
 %             keyboard(); 
 
-            if false && fFlowRate < this.oBranch.oContainer.oTimer.fTimeStep
+            if false && fFlowRate < this.oBranch.oContainer.oTimer.fMinimumTimeStep
                 mfData = zeros(oBranch.iFlowProcs, 1);
                 afDeltaP = mfData(:, 1);
                 fFlowRate = 0;
@@ -1004,7 +1004,7 @@ classdef branch < solver.matter.base.branch
                             
                             fInt = interp1([ 0 this.rMaxChange ], [ 1 0 ], this.rFlowRateChange, 'linear', 'extrap');
                             iI = this.fSensitivity;
-                            fNewStep = fInt.^iI * this.fMaxStep + this.oBranch.oContainer.oTimer.fTimeStep;
+                            fNewStep = fInt.^iI * this.fMaxStep + this.oBranch.oContainer.oTimer.fMinimumTimeStep;
                         end
                         %disp(fNewStep);
                         
