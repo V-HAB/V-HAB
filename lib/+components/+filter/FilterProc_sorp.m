@@ -85,7 +85,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
             
             % Link sorption processor to desorption processor 
-            this.DesorptionProc = this.oStore.toProcsP2P.filterproc_deso;
+            this.DesorptionProc = this.oStore.toProcsP2P.DesorptionProcessor;
             
             % Define chosen filter type
             this.sType = sType;

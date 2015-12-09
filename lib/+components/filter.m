@@ -60,6 +60,7 @@ classdef filter < matter.store
             
             
             % Fixed Time Step: 
+            %TODO Change this comment... if it works without...
             % the default value of 1 s provided good results for spacesuits.
             % Increase for systems that run longer.
             % Decrease to refine results
@@ -90,6 +91,8 @@ classdef filter < matter.store
                 else
                     error('Filter: The type of filter shape you have entered (%s) is not supported by the Filter. Please use either ''cuboid'' or ''cylinder''.',tParameters.tGeometry.sShape);
                 end
+            else
+                %TODO Create default filter geometry here
             end
             
             % Set the void fraction according to type
@@ -131,6 +134,8 @@ classdef filter < matter.store
                     rVoidFraction = 0.510;
          
                 otherwise
+                    %TODO Remove error message and create a generic filter
+                    % instead. 
                     error('Filter: The filter type you have entered (%s) is not available. Please use either ''RCA'', ''FBA'', or ''MetOx''.',sType);
             end              
             
@@ -221,15 +226,16 @@ classdef filter < matter.store
             matter.procs.exmes.gas(oFilteredPhase, 'filterport_sorp');            
             matter.procs.exmes.gas(oFlowPhase,     'filterport_deso');
             matter.procs.exmes.gas(oFilteredPhase, 'filterport_deso');
-            
+
+%             tutorials.p2p.components.AbsorberExample(this, 'DumbAbsorber', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', 'CO2', 5e-4);            
             % Creating the p2p processor
             % Input parameters: oParentSys, oStore, sName, sPhaseIn, sPhaseOut, (sSpecies, sBed_Name)
-            this.oProc_deso = components.filter.FilterProc_deso(this, 'filterproc_deso', 'FlowPhase.filterport_deso', 'FilteredPhase.filterport_deso');
+            this.oProc_deso = components.filter.FilterProc_deso(this, 'DesorptionProcessor', 'FlowPhase.filterport_deso', 'FilteredPhase.filterport_deso');
             if strcmp(sType, 'RCA')
                 % RCA uses a different sorption processor 
-                this.oProc_sorp = components.RCA.RCA_FilterProc_sorp(oParentSys, this, 'filterproc_sorp', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
+                this.oProc_sorp = components.RCA.RCA_FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
             else
-                this.oProc_sorp = components.filter.FilterProc_sorp(oParentSys, this, 'filterproc_sorp', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
+                this.oProc_sorp = components.filter.FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
             end
             
         end
