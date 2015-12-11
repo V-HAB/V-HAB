@@ -46,7 +46,7 @@ classdef Filter < matter.store
             % We set the bSynced property of the flow phase to true. This
             % makes sure, that all branches that are connected to this
             % phase are updated in the same timestep.
-            oFlow.bSynced = true;
+% % %             oFlow.bSynced = true;
             
             % Creating the phase representing the absorber volume manually.
             % The phase is empty and uses the other half of the filter

@@ -27,6 +27,8 @@ classdef branch < solver.matter.base.branch
         
         fTimeStep = 0;
         
+        
+        oTimer;
     end
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,16 +40,20 @@ classdef branch < solver.matter.base.branch
         function this = branch(oBranch, rMaxChange, iRemChange)
             this@solver.matter.base.branch(oBranch, [], 'hydraulic');
             
+            this.fCoeffFR = 0.00000133 * 20;
+            
             if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end;
             if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end;
             
+            
+            this.oTimer = this.oBranch.oContainer.oTimer;
         end
     end
     
     methods (Access = protected)
         %% Branch update method
         function update(this)
-            if this.oBranch.oContainer.oTimer.fTime < this.fLastUpdate
+            if this.oTimer.fTime < this.fLastUpdate
                 return;
             end
             
@@ -137,8 +143,8 @@ classdef branch < solver.matter.base.branch
                 % Old time step
                 fOldStep = this.fTimeStep;
 
-                if fOldStep < this.oBranch.oContainer.oTimer.fTimeStep
-                    fOldStep = this.oBranch.oContainer.oTimer.fTimeStep;
+                if fOldStep < this.oTimer.fTimeStep
+                    fOldStep = this.oTimer.fTimeStep;
                 end
 
                 % Change in flow rate direction? Min. time step!
@@ -161,13 +167,18 @@ classdef branch < solver.matter.base.branch
                     if this.rFlowRateChange > this.rMaxChange, fNewStep = 0;
                     else
                         % Interpolate
-                        fNewStep = interp1([ 0 this.rSetChange this.rMaxChange ], [ 2 * fOldStep fOldStep 0 ], this.rFlowRateChange, 'linear', 'extrap');
+                        %fNewStep = interp1([ 0 this.rSetChange this.rMaxChange ], [ 2 * fOldStep fOldStep 0 ], this.rFlowRateChange, 'linear', 'extrap');
+                        
+                        %fInt = interp1([ 0 this.rMaxChange ], [ 1 0 ], this.rFlowRateChange, 'linear', 'extrap');
+                        fInt = 1 - this.rFlowRateChange / this.rMaxChange;
+                        iI = 3; %this.fSensitivity;
+                        fNewStep = fInt.^iI * this.fMaxStep + this.oTimer.fTimeStep;
                     end
                 end
 
                 if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end;
 
-                this.setTimeStep(fNewStep);
+                this.setTimeStep(fNewStep, true);
                 this.fTimeStep = fNewStep;
             end
             

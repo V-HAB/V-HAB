@@ -52,6 +52,13 @@ classdef exme < base
         % Connected matter flow
         oFlow = matter.flow.empty();
         
+        % HAs a flow?
+        bHasFlow = false;
+        
+        % Is flow a p2p?
+        bFlowIsAProcP2P = false;
+        
+        
         % See @matter.procs.f2f
         iSign;
 
@@ -105,6 +112,12 @@ classdef exme < base
             
             this.oFlow = oFlow;
             
+            
+            
+            this.bHasFlow = true;
+            this.bFlowIsAProcP2P = isa(this.oFlow, 'matter.procs.p2ps.flow');
+            
+            
             try
                 [ this.iSign, this.pthFlow ] = oFlow.addProc(this, @() this.removeFlow(oFlow));
             catch oErr
@@ -128,7 +141,7 @@ classdef exme < base
             % Also returns matrix with two columns containing temperature 
             % and the heat capacity and for each flow!
             
-            if isempty(this.oFlow)
+            if ~this.bHasFlow
                 fFlowRate    = 0;
                 arPartials   = [];
                 afProperties = [];
@@ -140,7 +153,7 @@ classdef exme < base
             fFlowRate  =  this.oFlow.fFlowRate * this.iSign;
             
             %TODO store that on attribute as bP2P = true or something?
-            if ~isempty(this.oFlow) && isa(this.oFlow, 'matter.procs.p2ps.flow')
+            if this.bFlowIsAProcP2P
                 % Can only be one flow, if p2p!
                 %mrPartials = repmat(this.aoFlows(1).arPartials, length(afFlowRates), 1);
                 arPartials   = this.oFlow.arPartialMass;

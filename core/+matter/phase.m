@@ -173,6 +173,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % in ExMe processors.
         % @type float
         fCurrentTotalMassInOut = 0;
+        
+        % Storage - preserve those props from .calcTS!
+        afCurrentTotalInOuts;
+        mfCurrentInflowDetails;
+        
 
         % ???
         fLastUpdate = -10;
@@ -365,7 +370,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
             % All in-/outflows in [kg/s] and multiply with curernt time
             % step, also get the inflow rates / temperature / heat capacity
-            [ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
+            %SPEED OPT - value saved in last calculateTimeStep, still valid
+            %[ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
+            afTotalInOuts = this.afCurrentTotalInOuts;
+            mfInflowDetails = this.mfCurrentInflowDetails;
 
             % Check manipulator
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
@@ -692,7 +700,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
-                [ afFlowRates, mrFlowPartials, mfProperties ] = this.coProcsEXME{iI}.getFlowData();
+                %FROM EXEC SPEED OPTIMIZATION
+                %[ fFlowRate, arFlowPartials, mfProperties ] = this.coProcsEXME{iI}.getFlowData();
+                oExme = this.coProcsEXME{iI};
+                [ fFlowRate, arFlowPartials, mfProperties ] = oExme.getFlowData();
 
                 % The afFlowRates is a row vector containing the flow rate
                 % at each flow, negative being an extraction!
@@ -700,7 +711,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 % a flow, cols are the different substances.
                 % mfProperties contains temp, heat capacity
 
-                if isempty(afFlowRates), continue; end;
+                if isempty(fFlowRate), continue; end;
 
                 % So bsxfun with switched afFlowRates (to col vector) will
                 % multiply every column value in the flow partials matrix
@@ -709,20 +720,22 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 % each element in second row with 2nd element on fr, ...)
                 % Then we sum() the resulting matrix which sums up column
                 % wise ...
-                mfTotalFlows(iI, :) = sum(bsxfun(@times, afFlowRates, mrFlowPartials), 1);
-
+                %mfTotalFlows(iI, :) = sum(bsxfun(@times, fFlowRate, arFlowPartials), 1);
+                mfTotalFlows(iI, :) = fFlowRate * arFlowPartials;
+                
+                
                 % ... and now we got a vector with the absolute mass in-/
                 % outflow for the current EXME for each substance and for one
                 % second!
 
 
                 % Which EXMEs have mass flows into the phase?
-                abInf = (afFlowRates > 0);
+                abInf = (fFlowRate > 0);
                 
                 if any(abInf)
                     % Saving the details of the incoming flows into a
                     % matrix.
-                    mfInflowDetails(iI,:) = [ afFlowRates(abInf), mfProperties(abInf, 1), mfProperties(abInf, 2) ];
+                    mfInflowDetails(iI,:) = [ fFlowRate(abInf), mfProperties(abInf, 1), mfProperties(abInf, 2) ];
                     
                     % This flow is an in-flow, so we set the field in the
                     % array to zero.
@@ -798,6 +811,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                     end
                 end % end of: for
             end % end of: if not sealed
+            
+            
+            % Preset
+            [ afChange, mfDetails ] = this.getTotalMassChange();
+
+            this.afCurrentTotalInOuts = afChange;
+            this.mfCurrentInflowDetails = mfDetails;
             
         end % end of: seal method
 
@@ -970,7 +990,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 end
 
                 % Change in kg of partial masses per second
-                afChange = this.getTotalMassChange();
+                [ afChange, mfDetails ] = this.getTotalMassChange();
+                
+                this.afCurrentTotalInOuts = afChange;
+                this.mfCurrentInflowDetails = mfDetails;
+                
 
                 % Only use entries where change is not zero
                 % If some substance changed a bit, but less then the thres-
@@ -1074,7 +1098,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % again. Need to pass on an absolute time, not a time step.
             % Value in store is only updated, if the new update time is
             % earlier than the currently set next update time.
-            this.oStore.setNextUpdateTime(this.fLastMassUpdate + fNewStep);
+            %this.oStore.setNextUpdateTime(this.fLastMassUpdate + fNewStep);
+            this.oStore.setNextTimeStep(fNewStep);
 
             % Cache - e.g. for logging purposes
             this.fTimeStep = fNewStep;

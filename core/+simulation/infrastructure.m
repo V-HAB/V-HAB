@@ -442,21 +442,26 @@ classdef infrastructure < base & event.source
 % %             end
 % %         end
 % % 
-        function saveSim(this, sFile)
+        function saveSim(this, sAppendix)
             %TODO move to own monitor, e.g. 'exporter'? Allow setting a
             %     custom name?
             %     If logger did dump data to .mat file, do not need to read
             %     that data before saving, can be done after user re-loaded
             %     the sim .mat in the workspace.
             
-
-            if nargin < 2 || isempty(sFile)
-                sFile   = [  this.sName '_' datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') ];
+            %TODO rename to sAppendix
+            if nargin < 2 || isempty(sAppendix)
+                sAppendix = '';
+            else
+                sAppendix = [ '_' sAppendix ];
             end
+            
+            sPath = [  this.sName '_' datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') sAppendix ];
+            
             
             oSimObj = this;
             
-            save([ 'data/' sFile '.mat' ], 'oSimObj');
+            save([ 'data/' sPath '.mat' ], 'oSimObj');
 
         end
 

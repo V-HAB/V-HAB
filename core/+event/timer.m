@@ -52,7 +52,13 @@ classdef timer < base
         
         % Post-tick stack: after systems are executed, all callbacks on
         % this cell are executed and immediately removed.
-        chPostTick = {};
+        % Preallocating 100 slots, assuming that should be sufficient most
+        % of the time. If more callbacks are added in one tick, that means
+        % that the first time that might be slower because Matlab needs to
+        % extend the cell, the following times - quick again.
+        chPostTick = cell(1, 100);
+        
+        iPostTickMax = 0;
     end
     
     methods
@@ -138,7 +144,10 @@ classdef timer < base
             
             % Return the callbacks - protected methods, wrapped so that the
             % parameter for the callback to adjust is always properly set
-            setTimeStep = @(fTimeStep) this.setTimeStep(iIdx, fTimeStep);
+            %setTimeStep = @(fTimeStep) this.setTimeStep(iIdx, fTimeStep);
+            %setTimeStep = @(varargin) this.setTimeStep(iIdx, varargin{:});
+            setTimeStep = @(fTimeStep, bReset) this.setTimeStep(iIdx, fTimeStep, nargin >= 2 && bReset);
+            
             unbind      = @()          this.unbind(iIdx);
             
             
@@ -148,7 +157,9 @@ classdef timer < base
         
         
         function bindPostTick(this, hCB)
-            this.chPostTick{end + 1} = hCB;
+            %this.chPostTick{end + 1} = hCB;
+            this.iPostTickMax = this.iPostTickMax + 1;
+            this.chPostTick{this.iPostTickMax} = hCB;
         end
     end
     
@@ -224,14 +235,24 @@ classdef timer < base
             
             
             % Post-tick stack
-            while ~isempty(this.chPostTick)
+            iPostTick = 1;
+            
+            % iPostTickMax can change in interation!
+            while iPostTick <= this.iPostTickMax % ~isempty(this.chPostTick)
                 % Executing the first item in the stack, represented by the
                 % first item in the cell array
-                this.chPostTick{1}();
+                this.chPostTick{iPostTick}();
                 
                 % Removing the item we just executed
-                this.chPostTick(1) = [];
+                % Don't really need that any more ...
+                %this.chPostTick{iPostTick} = [];
+                
+                iPostTick = iPostTick + 1;
             end
+            
+            this.iPostTickMax = 0;
+            
+            
             
             % check for bRun -> if true, execute this.step() again!
             if this.bRun
@@ -245,7 +266,7 @@ classdef timer < base
 %             end
         end
         
-        function setTimeStep(this, iCB, fTimeStep)
+        function setTimeStep(this, iCB, fTimeStep, bResetLastExecuted)
             % Set time step for a specific call back. Protected method, is
             % returned upon .bind!
             
@@ -265,6 +286,14 @@ classdef timer < base
                 this.afTimeStep(iCB) = 0;%this.fTimeStep;
             end
             
+            
+            
+            % If bResetLastExecuted is true, the time the registered call-
+            % back was last executed will be updated to the current time.
+            if nargin >= 4 && ~isempty(bResetLastExecuted) && bResetLastExecuted && (this.afLastExec(iCB) ~= this.fTime)
+                
+                this.afLastExec(iCB) = this.fTime;
+            end
         end
     end
 end

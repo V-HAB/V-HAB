@@ -1002,7 +1002,8 @@ classdef branch < solver.matter.base.branch
                             %fNewStep = interp1([ 0 this.rSetChange this.rMaxChange ], [ this.fMaxStep fOldStep 0 ], this.rFlowRateChange, 'linear', 'extrap');
                             
                             
-                            fInt = interp1([ 0 this.rMaxChange ], [ 1 0 ], this.rFlowRateChange, 'linear', 'extrap');
+                            %fInt = interp1([ 0 this.rMaxChange ], [ 1 0 ], this.rFlowRateChange, 'linear', 'extrap');
+                            fInt = 1 - this.rFlowRateChange / this.rMaxChange;
                             iI = this.fSensitivity;
                             fNewStep = fInt.^iI * this.fMaxStep + this.oBranch.oContainer.oTimer.fMinimumTimeStep;
                         end
@@ -1015,7 +1016,7 @@ classdef branch < solver.matter.base.branch
 
                     if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end;
 
-                    this.setTimeStep(fNewStep);
+                    this.setTimeStep(fNewStep, true);
         %             disp(this.rFlowRateChange);
         %             disp(fNewStep);
         %             disp('---------');

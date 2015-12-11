@@ -33,7 +33,7 @@ classdef matter_observer < simulation.monitor
     
     methods (Access = protected)
         
-        function onTickPost(this)
+        function onTickPost(this, ~)
             oInfra = this.oSimulationInfrastructure;
             oSim   = oInfra.oSimulationContainer;
             oMT    = oSim.oMT;
@@ -57,19 +57,19 @@ classdef matter_observer < simulation.monitor
         end
         
         
-        function onInitPost(this)
+        function onInitPost(this, ~)
             oSim = this.oSimulationInfrastructure.oSimulationContainer;
             
             % Initialize arrays etc
         end
         
         
-        function onFinish(this)
+        function onFinish(this, ~)
             this.displayMatterBalance();
         end
         
         
-        function onPause(this)
+        function onPause(this, ~)
             this.displayMatterBalance();
         end
         

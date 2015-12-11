@@ -18,7 +18,7 @@ classdef execution_control < simulation.monitor
     
     methods (Access = protected)
         
-        function onTickPost(this)
+        function onTickPost(this, ~)
             oInfra = this.oSimulationInfrastructure;
             oSim   = oInfra.oSimulationContainer;
             
@@ -43,7 +43,7 @@ classdef execution_control < simulation.monitor
         end
         
         
-        function onInitPost(this)
+        function onInitPost(this, ~)
             oInfra = this.oSimulationInfrastructure;
             
             fprintf('[SimController] Pause the simulation by creating a file called "STOP" or "STOP_%s" in the working directory (checked every %ith tick).\n', oInfra.sUUID, this.iTickInterval);
