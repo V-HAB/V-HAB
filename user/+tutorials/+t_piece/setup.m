@@ -36,12 +36,13 @@ classdef setup < simulation.infrastructure
 %             tSolverParams.rHighestMaxChangeDecrease = 100;
             
 
-            tSolverParams.rUpdateFrequency = 0.2;
-            tSolverParams.rHighestMaxChangeDecrease = 25;
+%             tSolverParams.rUpdateFrequency = 0.2;
+%             tSolverParams.rHighestMaxChangeDecrease = 25;
             
-            
-            tSolverParams.rUpdateFrequency = 1;
-            tSolverParams.rHighestMaxChangeDecrease = 0;
+            if ~isfield(tSolverParams, 'rUpdateFrequency')
+                tSolverParams.rUpdateFrequency = 1;
+                tSolverParams.rHighestMaxChangeDecrease = 0;
+            end
 
             
             % First we call the parent constructor and tell it the name of
@@ -56,37 +57,56 @@ classdef setup < simulation.infrastructure
             % of this simulation. 
             tutorials.t_piece.systems.Example(this.oSimulationContainer, 'Example');
             
+
             
-            % This is an alternative to providing the ttMonitorConfig above
-            %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
             
-            oP = this.oSimulationContainer.toChildren.Example.toStores.T_Piece.aoPhases(1);
-            
-%             oP.rMaxChange = 0.01;% oP.rMaxChange * 100000;
-            %oP.rMaxChange = oP.rMaxChange * 100;
-%             oP.rMaxChange = 0.01;
-%             oP.rHighestMaxChangeDecrease = 1000;
-%             oP.bSynced = true;
+            %% Simulation length
+            % Stop when specific time in simulation is reached or after 
+            % specific amount of ticks (bUseTime true/false).
+            this.fSimTime = 3600 * 1; % In seconds
+            this.iSimTicks = 1500;
+            this.bUseTime = false;
             
             
             
-            oSolver1 = this.oSimulationContainer.toChildren.Example.coSolvers{1};
-            oSolver2 = this.oSimulationContainer.toChildren.Example.coSolvers{2};
-            oSolver3 = this.oSimulationContainer.toChildren.Example.coSolvers{3};
+% % %             % This is an alternative to providing the ttMonitorConfig above
+% % %             %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
+% % %             
+% % %             oP = this.oSimulationContainer.toChildren.Example.toStores.T_Piece.aoPhases(1);
+% % %             
+% % % %             oP.rMaxChange = 0.01;% oP.rMaxChange * 100000;
+% % %             %oP.rMaxChange = oP.rMaxChange * 100;
+% % % %             oP.rMaxChange = 0.01;
+% % % %             oP.rHighestMaxChangeDecrease = 1000;
+% % % %             oP.bSynced = true;
+% % %             
+% % %             
+% % %             
+% % %             oSolver1 = this.oSimulationContainer.toChildren.Example.coSolvers{1};
+% % %             oSolver2 = this.oSimulationContainer.toChildren.Example.coSolvers{2};
+% % %             oSolver3 = this.oSimulationContainer.toChildren.Example.coSolvers{3};
+% % %             
+% % % %             oSolver1.iDampFR = 5;
+% % % %             oSolver2.iDampFR = 5;
+% % % %             oSolver3.iDampFR = 5;
             
-%             oSolver1.iDampFR = 5;
-%             oSolver2.iDampFR = 5;
-%             oSolver3.iDampFR = 5;
             
-            
+        end
+        
+        
+        
+        function configureMonitors(this)
             %% Logging
             % Creating a cell setting the log items. You need to know the
             % exact structure of your model to set log items, so do this
             % when you are done modelling and ready to run a simulation. 
             
+            this.toMonitors.oConsoleOutput.setReportingInterval(500);
+            
             oLog = this.toMonitors.oLogger;
             
             tiFlowProps = oLog.add('Example', 'flow_props');
+            
             
             
 
@@ -102,13 +122,6 @@ classdef setup < simulation.infrastructure
             oPlot.definePlot(12, 'ASD')
             
             
-
-            %% Simulation length
-            % Stop when specific time in simulation is reached or after 
-            % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 1; % In seconds
-            this.iSimTicks = 500;
-            this.bUseTime = false;
 
         end
         

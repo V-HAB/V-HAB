@@ -43,8 +43,11 @@ classdef Example < vsys
             
             %disp(this);
             
-            
-            
+        end
+        
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
             % Create stores with one phase and one exme each!
             matter.store(this, 'Tank_1', this.fStoreVols);
             this.toStores.Tank_1.createPhase('air', 'air', (this.fPressureDifference + 1) * this.fStoreVols);
@@ -67,16 +70,16 @@ classdef Example < vsys
             
             matter.store(this, 'T_Piece', fVolume);
             %this.toStores.T_Piece.createPhase('air', 'air', fVolume * (this.fPressureDifference / 2 + 1));
-            %this.toStores.T_Piece.createPhase('air', 'air', fVolume, [], [], 1.0411e5);
+            this.toStores.T_Piece.createPhase('air', 'air', fVolume, [], [], 1.0411e5);
             
             % Use helper directly
-            %cParams       = matter.helper.phase.create.air(this, fVolume * (this.fPressureDifference / 2 + 1));
-            cParams = matter.helper.phase.create.air(this, fVolume * 1e0);
-            oPhase  = matter.phases.gas_virtual(this.toStores.T_Piece, 'air', cParams{:});
-            %disp(cParams{1});
-            
-            oPhase.setInitialVirtualPressure(1e5);
-            %matter.phases.gas_virtual(this.toStores.T_Piece, 'air', struct('N2', 0.8, 'O2', 0.2), fVolume, 288.15);
+%             %cParams       = matter.helper.phase.create.air(this, fVolume * (this.fPressureDifference / 2 + 1));
+%             cParams = matter.helper.phase.create.air(this, fVolume * 1e0);
+%             oPhase  = matter.phases.gas_virtual(this.toStores.T_Piece, 'air', cParams{:});
+%             %disp(cParams{1});
+%             
+%             oPhase.setInitialVirtualPressure(1e5);
+%             %matter.phases.gas_virtual(this.toStores.T_Piece, 'air', struct('N2', 0.8, 'O2', 0.2), fVolume, 288.15);
             
             
             
@@ -98,14 +101,25 @@ classdef Example < vsys
             matter.branch(this, 'T_Piece.Port_3', { 'Pipe_tp_3' }, 'Tank_3.Port');
             
             
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
             
+        end
+        
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
             
             this.coSolvers{1} = solver.matter.iterative.branch(this.aoBranches(1));
             this.coSolvers{2} = solver.matter.iterative.branch(this.aoBranches(2));
             this.coSolvers{3} = solver.matter.iterative.branch(this.aoBranches(3));
+            
+%             this.coSolvers{1}.iDampFR = 15;
+%             this.coSolvers{2}.iDampFR = 15;
+%             this.coSolvers{3}.iDampFR = 15;
+            
+            
+%             this.coSolvers{1} = solver.matter.linear.branch(this.aoBranches(1));
+%             this.coSolvers{2} = solver.matter.linear.branch(this.aoBranches(2));
+%             this.coSolvers{3} = solver.matter.linear.branch(this.aoBranches(3));
         end
     end
     

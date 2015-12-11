@@ -91,8 +91,8 @@ classdef Example1 < vsys
             % the flow rate solvers connected to this phase. This means
             % that as soon as the flow rate of one of the solvers changes,
             % the other solvers will also immediately calculate a new FR.
-            this.aoFilterPhases(1).bSynced = true;
-            this.aoFilterPhases(1).bSynced = false;
+%             this.aoFilterPhases(1).bSynced = true;
+%             this.aoFilterPhases(1).bSynced = false;
             
             
             % The phase for the adsorbed matter in the filter store has a
