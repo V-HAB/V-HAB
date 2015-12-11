@@ -291,7 +291,7 @@ classdef logger_basic < simulation.monitor
         
         
         
-        function this = onInitPost(this)
+        function this = onInitPost(this, ~)
             % Indices to tLogValues (?, or on add?)
             % Eval Code!
             % Names / Paths to Cell for fast comp!
@@ -332,7 +332,7 @@ classdef logger_basic < simulation.monitor
             
             % Create pre-evald loggin' function!
             
-            sCmd = '[';
+            sCmd = '[ ';
                 
             for iL = this.aiLog
                 %sCmd = [ sCmd 'this.oRoot.' this.csLog{iL} ',' ];
@@ -342,7 +342,7 @@ classdef logger_basic < simulation.monitor
                 sCmd = [ sCmd this.csPaths{iL} ',' ];
             end
 
-            sCmd = [ sCmd(1:(end - 1)) ']' ];
+            sCmd = [ sCmd(1:(end - 1)) ' ]' ];
 
             try
                 this.logDataEvald = eval([ '@() ' sCmd ]);
@@ -352,7 +352,7 @@ classdef logger_basic < simulation.monitor
         end
         
         
-        function onTickPost(this)
+        function onTickPost(this, ~)
 %             disp('LOG onTickPost');
 %             disp(this.oSimulationInfrastructure.oSimulationContainer.oTimer.fTime);
             

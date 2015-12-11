@@ -6,6 +6,11 @@ classdef Example1 < vsys
     %   The filter only filters O2 (oxygen) up to a certain capacity. 
     
     properties
+        oB1;
+        oB2;
+        
+        aoFilterPhases;
+        oAtmosPhase;
     end
     
     methods
@@ -58,8 +63,8 @@ classdef Example1 < vsys
             
             
             
-            oB1 = solver.matter.iterative.branch(this.aoBranches(1));
-            oB2 = solver.matter.iterative.branch(this.aoBranches(2));
+            this.oB1 = solver.matter.iterative.branch(this.aoBranches(1));
+            this.oB2 = solver.matter.iterative.branch(this.aoBranches(2));
             
             
             
@@ -70,8 +75,8 @@ classdef Example1 < vsys
             % to instabilities in the flow rate. Using this parameter, the
             % solvers reduce the changes in flow rates:
             % fFlowRate = (fNewFR + iDampFR * fOldFR) / (iDampFR + 1)
-            oB1.iDampFR = 5;
-            oB2.iDampFR = 5;
+            this.oB1.iDampFR = 5;
+            this.oB2.iDampFR = 5;
             
             
             

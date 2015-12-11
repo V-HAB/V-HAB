@@ -51,44 +51,49 @@ classdef monitor < base & event.source
                 
                 if isempty(sEvent), continue; end;
                 
-                sMethod = this.tsEvents.(sEvent);
+                % Stupid Matlab ... @this.(sMethod) does not work but using
+                % the shorthand saves a lot of exec time! So ... eval!
+                sMethod  = this.tsEvents.(sEvent);
+                %callBack = eval([ '@(~) this.' sMethod '()' ]);
+                callBack = eval([ '@this.' sMethod ]);
                 
-                
-                this.oSimulationInfrastructure.bind(sEvent, @(~) this.(sMethod)());
+                this.oSimulationInfrastructure.bind(sEvent, callBack);
             end
         end
     end
     
     
     methods (Access = protected)
-       % Placeholder methods
-       function onInitPre(this)
-           
-       end
-       
-       function onInitPost(this)
-           
-       end
-       
-       function onTickPre(this)
-           
-       end
-       
-       function onTickPost(this)
-           
-       end
-       
-       function onPause(this)
-           
-       end
-       
-       function onFinish(this)
-           
-       end
-       
-       function onRun(this)
-           
-       end
+        
+        % Placeholder methods
+        function onInitPre(this, ~)
+
+        end
+
+        function onInitPost(this, ~)
+
+        end
+
+        function onTickPre(this, ~)
+
+        end
+
+        function onTickPost(this, ~)
+
+        end
+
+        function onPause(this, ~)
+
+        end
+
+        function onFinish(this, ~)
+
+        end
+
+        function onRun(this, ~)
+
+        end
+        
     end
 end
 

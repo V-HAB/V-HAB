@@ -9,12 +9,6 @@ classdef setup < simulation.infrastructure
     %   - provide methods for plotting the results
     
     properties
-        oB1;
-        oB2;
-        
-        aoFilterPhases;
-        oAtmosPhase;
-        
         
         tiLog = struct();
     end

@@ -56,7 +56,7 @@ classdef console_output < simulation.monitor
     
     methods (Access = protected)
         
-        function this = onPause(this)
+        function this = onPause(this, ~)
             disp('');
             disp('------------------------------------------------------------------------');
             disp('SIMULATION PAUSED');
@@ -64,7 +64,7 @@ classdef console_output < simulation.monitor
         end
         
         
-        function this = onFinish(this)
+        function this = onFinish(this, ~)
             % The '.'s from the minor tick don't end with a newline, so
             % explicitly display one. Will lead to an extra, unneeded new-
             % line for cases where the simulation did exactly stop after a
@@ -95,7 +95,7 @@ classdef console_output < simulation.monitor
         end
         
         
-        function onTickPost(this)
+        function onTickPost(this, ~)
             
             oSim = this.oSimulationInfrastructure.oSimulationContainer;
             

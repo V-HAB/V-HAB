@@ -116,9 +116,9 @@ classdef branch < base & event.source
     
     methods (Access = private)
         function executeUpdate(this)
-            for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.oBranch.coExmes{iE}.oPhase.massupdate();
-            end
+% % %             for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
+% % %                 this.oBranch.coExmes{iE}.oPhase.massupdate();
+% % %             end
             
             this.update();
         end

@@ -515,6 +515,26 @@ classdef store < base
                 %disp([ this.sName '  ' num2str(this.oTimer.iTick) '   SAME   ' num2str(this.fTimeStep) ]);
             end
         end
+        
+        
+        
+        
+        function setNextTimeStep(this, fTimeStep)
+            
+            % First make sure that currently set time step wouldn't lead to
+            % an earlier execution
+            fCurrentNextExec = this.fLastUpdate + this.fTimeStep;
+            fNewNextExec     = this.oTimer.fTime + fTimeStep;
+            
+            
+            if fCurrentNextExec < fNewNextExec
+                return;
+            end
+            
+            
+            this.setTimeStep(fTimeStep, true);
+            this.fTimeStep = fTimeStep;
+        end
     end
     
     

@@ -480,19 +480,21 @@ classdef flow < base & matlab.mixin.Heterogeneous
             bNeg = fFlowRate < 0;
             
             for iI = sif(bNeg, iL:-1:1, 1:iL)
+                oThis = this(iI);
+                
                 % Only set those params if oExme was provided
                 if ~isempty(oExme)
-                    this(iI).arPartialMass         = arPhasePartialMass;
-                    this(iI).fMolarMass            = fPhaseMolarMass;
+                    oThis.arPartialMass         = arPhasePartialMass;
+                    oThis.fMolarMass            = fPhaseMolarMass;
                     
-                    this(iI).fSpecificHeatCapacity = fPhaseSpecificHeatCapacity;
+                    oThis.fSpecificHeatCapacity = fPhaseSpecificHeatCapacity;
                 end
                 
                 
                 % Skip flowrate, pressure, temperature?
                 if bSkipFRandPT, continue; end;
                 
-                this(iI).fFlowRate = fFlowRate;
+                oThis.fFlowRate = fFlowRate;
                 
                 % If only one flow, no f2f exists --> set pressure, temp
                 % according to IN exme
@@ -510,7 +512,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 %     lead to a flow rate, right?
                 if abs(fFlowRate) > 0
                     if ~bNeg && (iI > 1)
-                        fHeatFlow = this(iI).oIn.fHeatFlow;
+                        fHeatFlow = oThis.oIn.fHeatFlow;
 
                         %NOTE at the moment, one heat capacity throughout all
                         %     flows in the branch. However, at some point, 
@@ -518,17 +520,17 @@ classdef flow < base & matlab.mixin.Heterogeneous
                         fOtherCp  = this(iI - 1).fSpecificHeatCapacity;
 
                     elseif bNeg && (iI < iL)
-                        fHeatFlow = this(iI).oOut.fHeatFlow;
+                        fHeatFlow = oThis.oOut.fHeatFlow;
                         fOtherCp  = this(iI + 1).fSpecificHeatCapacity;
 
                     else
                         fHeatFlow = 0;
-                        fOtherCp  = this(iI).fSpecificHeatCapacity;
+                        fOtherCp  = oThis.fSpecificHeatCapacity;
                     end
 
                     % So following this equation:
                     % Q' = m' * c_p * deltaT
-                    fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / ((this(iI).fSpecificHeatCapacity + fOtherCp) / 2);
+                    fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / ((oThis.fSpecificHeatCapacity + fOtherCp) / 2);
                 end
                 
                 if isnan(fCurrentTemperature)
@@ -536,11 +538,11 @@ classdef flow < base & matlab.mixin.Heterogeneous
                              '         Temperature of connected phase (%s_%s) is NaN.\n',...
                              '         Using standard temperature instead.\n',...
                              '         Reason could be empty phase.'],...
-                             this(iI).oBranch.sName, oExme.oPhase.oStore.sName, oExme.oPhase.sName);
-                    fCurrentTemperature = this(iI).oMT.Standard.Temperature;
+                             oThis.oBranch.sName, oExme.oPhase.oStore.sName, oExme.oPhase.sName);
+                    fCurrentTemperature = oThis.oMT.Standard.Temperature;
                 end
                 
-                this(iI).fTemperature = fCurrentTemperature;
+                oThis.fTemperature = fCurrentTemperature;
                 
                 
                 
@@ -548,10 +550,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % Skip pressure, temperature?
                 if bSkipPT, continue; end;
                 
-                this(iI).fPressure = fPortPress;
+                oThis.fPressure = fPortPress;
                 
                 if tools.round.prec(fPortPress, iPrec) < 0
-                    this(iI).fPressure = 0;
+                    oThis.fPressure = 0;
                     
                     % Only warn for > 1Pa ... because ...
                     if fPortPress < -10
@@ -562,7 +564,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 elseif tools.round.prec(fPortPress, iPrec) == 0
                     % If the pressure is extremely small, we also set the
                     % flow pressure to zero.
-                    this(iI).fPressure = 0;
+                    oThis.fPressure = 0;
                 end
                 
                 % Calculates the pressure for the NEXT flow, so make sure

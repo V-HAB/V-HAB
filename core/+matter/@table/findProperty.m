@@ -120,6 +120,10 @@ catch
     bUseIsobaricData = false;
 end
 
+
+% Shortcut to matter data - should save some execution time
+txMatterForSubstance = this.ttxMatter.(sSubstance);
+
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Deriving and setting search parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -127,7 +131,7 @@ end
 % Depending on which type of data we will be using, isochoric or isobaric,
 % we need to set some variables accordingly, so we do have a giant
 % if-condition with nearly the same code.
-if this.ttxMatter.(sSubstance).bIndividualFile
+if txMatterForSubstance.bIndividualFile
     if bUseIsobaricData
         sTypeStruct = 'tIsobaricData';
         if strcmp(sProperty,'Heat Capacity')
@@ -169,14 +173,22 @@ end
 
 sReportString = 'Nothing to report.';
 
+
+
+% Shorthand to save execution time!
+txMatterForSubstanceAndType             = this.ttxMatter.(sSubstance).(sTypeStruct);
+txMatterForSubstanceAndTypeAndAggregate = txMatterForSubstanceAndType.(sPhaseStructName);
+%TODO-SPEED maybe additional possibilities to save execution time, e.g. 
+%     store everything in containers.Map and generate string keys or so?
+
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Finding properties in dedicated data file %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % See if this substance has an individual file
-if this.ttxMatter.(sSubstance).bIndividualFile
+if txMatterForSubstance.bIndividualFile
     % Geting the column of the desired property
-    iColumn = this.ttxMatter.(sSubstance).(sTypeStruct).tColumns.(strrep(sProperty,' ',''));
+    iColumn = txMatterForSubstanceAndType.tColumns.(strrep(sProperty,' ',''));
     
     % if no column found, property is not in worksheet
     if isempty(iColumn)
@@ -192,7 +204,7 @@ if this.ttxMatter.(sSubstance).bIndividualFile
     %---------------------------------------------------------------------%
     
     % get column of first dependency
-    iColumnFirst = this.ttxMatter.(sSubstance).(sTypeStruct).tColumns.(strrep(sFirstDepName,' ',''));
+    iColumnFirst = txMatterForSubstanceAndType.tColumns.(strrep(sFirstDepName,' ',''));
     % if properties are given 2 times (e.g. Temperature has C and K columns), second column is used
     if length(iColumnFirst) > 1
         iColumnFirst = iColumnFirst(2);
@@ -204,8 +216,8 @@ if this.ttxMatter.(sSubstance).bIndividualFile
     
     % look if data for first dependency is in range of table
     % if not in range, first look if data is given in worksheet MatterData before interpolate
-    fMin = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).ttExtremes.(['t',strrep(sFirstDepName,' ','')]).Min;
-    fMax = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).ttExtremes.(['t',strrep(sFirstDepName,' ','')]).Max;
+    fMin = txMatterForSubstanceAndTypeAndAggregate.ttExtremes.(['t',strrep(sFirstDepName,' ','')]).Min;
+    fMax = txMatterForSubstanceAndTypeAndAggregate.ttExtremes.(['t',strrep(sFirstDepName,' ','')]).Max;
     
     if fFirstDepValue > fMax
         % First dependency is greater than max value in table
@@ -219,7 +231,7 @@ if this.ttxMatter.(sSubstance).bIndividualFile
         abOutOfRange(1) = true;
     end
     
-    iRowsFirst = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).mfData(:,iColumnFirst) == fFirstDepValue;
+    iRowsFirst = txMatterForSubstanceAndTypeAndAggregate.mfData(:,iColumnFirst) == fFirstDepValue;
     
     %-----------------------------------------------------------------%
     % Only one dependency is given
@@ -230,7 +242,7 @@ if this.ttxMatter.(sSubstance).bIndividualFile
         if any(iRowsFirst) && ~abOutOfRange(1)
             % dependencyvalue in table and in range of table
             % direct usage
-            fProperty = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).mfData(iRowsFirst, iColumn);
+            fProperty = txMatterForSubstanceAndTypeAndAggregate.mfData(iRowsFirst, iColumn);
             sReportString = 'One dependency in range. Tried to get value directly from matter table.';
             % If more than one value is returned, we cannot determine
             % which value is correct. An example for this would be the heat
@@ -260,7 +272,7 @@ if this.ttxMatter.(sSubstance).bIndividualFile
             
             try
                 % If there is data, we use it.
-                fProperty = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue);
+                fProperty = txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue);
                 
             catch
                 % The interpolation function does not yet exist, so we have
@@ -268,7 +280,7 @@ if this.ttxMatter.(sSubstance).bIndividualFile
                 
                 % create temporary array because scatteredInterpolant
                 % doesn't allow NaN values
-                afTemporary = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).mfData(:,[iColumn, iColumnFirst]);
+                afTemporary = txMatterForSubstanceAndTypeAndAggregate.mfData(:,[iColumn, iColumnFirst]);
                 
                 % Now we remove all rows that contain NaN values
                 afTemporary(any(isnan(afTemporary), 2), :) = [];
@@ -290,8 +302,8 @@ if this.ttxMatter.(sSubstance).bIndividualFile
                 % To make this faster the next time around, we save the
                 % scatteredInterpolant into the matter table.
                 
-                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = hInterpolation;
-                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).bInterpolations = true;
+                txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(strrep(sProperty, ' ', '')).(sID) = hInterpolation;
+                txMatterForSubstanceAndTypeAndAggregate.bInterpolations = true;
                 
                 % This addition to the matter table will be overwritten,
                 % when the next simulation starts, even if the matter data
@@ -307,7 +319,7 @@ if this.ttxMatter.(sSubstance).bIndividualFile
             % in the matter table. We already set fFirstDepValue to a
             % minimum or maximum value, so we'll just take that.
             
-            fProperty = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).mfData((this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).mfData(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
+            fProperty = txMatterForSubstanceAndTypeAndAggregate.mfData((txMatterForSubstanceAndTypeAndAggregate.mfData(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
             sReportString = ['The value given for ',sFirstDepName,' (',num2str(tParameters.fFirstDepValue),') is out of range. Tried to get best value in range.'];
             
             % If more than one value is returned, we cannot determine
@@ -330,7 +342,7 @@ if this.ttxMatter.(sSubstance).bIndividualFile
         % Getting the second dependency and check for out of range
         %-----------------------------------------------------------------%
         % get column of second dependency
-        iColumnSecond = this.ttxMatter.(sSubstance).(sTypeStruct).tColumns.(strrep(sSecondDepName,' ',''));
+        iColumnSecond = txMatterForSubstanceAndType.tColumns.(strrep(sSecondDepName,' ',''));
         
         % if no column found, property is not in worksheet
         if isempty(iColumnSecond)
@@ -339,8 +351,8 @@ if this.ttxMatter.(sSubstance).bIndividualFile
         
         % look if data for second dependency is in range of table
         % if not in range, first look if data is given in worksheet MatterData before interpolate
-        fMin = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).ttExtremes.(['t',strrep(sSecondDepName,' ','')]).Min;
-        fMax = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).ttExtremes.(['t',strrep(sSecondDepName,' ','')]).Max;
+        fMin = txMatterForSubstanceAndTypeAndAggregate.ttExtremes.(['t',strrep(sSecondDepName,' ','')]).Min;
+        fMax = txMatterForSubstanceAndTypeAndAggregate.ttExtremes.(['t',strrep(sSecondDepName,' ','')]).Max;
         if fSecondDepValue > fMax
             % Second dependency is greater than max value in table
             % set dependency equal max table value
@@ -354,7 +366,7 @@ if this.ttxMatter.(sSubstance).bIndividualFile
         end
         
         % get columns with already given values of searched second dependency
-        iRowsSecond = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).mfData(:,iColumnSecond) == fSecondDepValue;
+        iRowsSecond = txMatterForSubstanceAndTypeAndAggregate.mfData(:,iColumnSecond) == fSecondDepValue;
         
         % Check if values are directly given in the matter table
         if any(iRowsFirst) && any(iRowsSecond) && any((iRowsFirst + iRowsSecond) == 2)
@@ -364,9 +376,9 @@ if this.ttxMatter.(sSubstance).bIndividualFile
             % find() is really inefficient, so we'll do it in here, only
             % when we are sure, that the desired values are actually in the
             % table.
-            iRowsFirst  = find(this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).mfData(:,iColumnFirst) == fFirstDepValue);
-            iRowsSecond = find(this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).mfData(:,iColumnSecond) == fSecondDepValue);
-            fProperty   = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).mfData(intersect(iRowsFirst,iRowsSecond), iColumn);
+            iRowsFirst  = find(txMatterForSubstanceAndTypeAndAggregate.mfData(:,iColumnFirst) == fFirstDepValue);
+            iRowsSecond = find(txMatterForSubstanceAndTypeAndAggregate.mfData(:,iColumnSecond) == fSecondDepValue);
+            fProperty   = txMatterForSubstanceAndTypeAndAggregate.mfData(intersect(iRowsFirst,iRowsSecond), iColumn);
             
             sReportString = 'Both dependencies in range. Tried to get value directly from matter table.';
             
@@ -391,7 +403,7 @@ if this.ttxMatter.(sSubstance).bIndividualFile
             
             try
                 % If there is data, we use it.
-                fProperty = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue, fSecondDepValue);
+                fProperty = txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue, fSecondDepValue);
                 if isnan(fProperty)
                     keyboard();
                 end
@@ -401,7 +413,7 @@ if this.ttxMatter.(sSubstance).bIndividualFile
                 % interpolation.
                 
                 % create temporary array because scatteredInterpolant doesn't allow NaN values
-                afTemporary = this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).mfData(:,[iColumn, iColumnFirst, iColumnSecond]);
+                afTemporary = txMatterForSubstanceAndTypeAndAggregate.mfData(:,[iColumn, iColumnFirst, iColumnSecond]);
                 
                 % Now we remove all rows that contain NaN values
                 afTemporary(any(isnan(afTemporary), 2), :) = [];
@@ -423,8 +435,8 @@ if this.ttxMatter.(sSubstance).bIndividualFile
                 % save the scatteredInterpolant into the matter
                 % table.
                 
-                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = hInterpolation;
-                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).bInterpolations = true;
+                txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(strrep(sProperty, ' ', '')).(sID) = hInterpolation;
+                txMatterForSubstanceAndTypeAndAggregate.bInterpolations = true;
                 
                 % This addition to the matter table will be
                 % overwritten, when the next simulation
@@ -442,8 +454,8 @@ if this.ttxMatter.(sSubstance).bIndividualFile
             sUsedFirstDepValue    = sprintf('%f',fFirstDepValue);
             sActualSecondDepValue = sprintf('%f',tParameters.fSecondDepValue);
             sUsedSecondDepValue   = sprintf('%f',fSecondDepValue);
-            sFirstDepUnit         = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sFirstDepName);
-            sSecondDepUnit        = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sSecondDepName);
+            sFirstDepUnit         = txMatterForSubstanceAndType.tUnits.(sFirstDepName);
+            sSecondDepUnit        = txMatterForSubstanceAndType.tUnits.(sSecondDepName);
             
             if ~(abOutOfRange(1) || abOutOfRange(2))
                 sReportString = 'Both dependencies in range. Tried to get value by interpolation.';
@@ -469,14 +481,14 @@ else
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % Geting the column of the desired property
-    iColumn = this.ttxMatter.(sSubstance).tColumns.(strrep(sProperty,' ',''));
+    iColumn = txMatterForSubstance.tColumns.(strrep(sProperty,' ',''));
     
     % if no column found, property is not in worksheet
     if isempty(iColumn)
         this.throw('table:FindProperty',sprintf('Cannot find %s for %s (%s)', sProperty, sSubstance, sPhaseType));
     end
 
-        fProperty = this.ttxMatter.(sSubstance).ttxPhases.(sPhaseStructName).(strrep(sProperty,' ',''));
+        fProperty = txMatterForSubstance.ttxPhases.(sPhaseStructName).(strrep(sProperty,' ',''));
         if isnan(fProperty) || isempty(fProperty)
             this.throw('findProperty', 'Error using findProperty. The matter data for %s (%s) does not include a value for %s.', sSubstance, sPhaseType, sProperty);
         else
