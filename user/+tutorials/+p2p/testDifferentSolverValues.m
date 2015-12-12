@@ -117,9 +117,24 @@ end
 %%
 
 
-if nargout == 0
+%if nargout == 0
     assignin('base', 'coSims', coSims);
+%end
+
+
+
+
+
+%%
+
+for iS = 1:length(coSims)
+    fprintf('======== %i ========\n', iS);
+    fprintf('rUF: %f, rMD: %f\n', coSims{iS}.oSimulationContainer.tSolverParams.rUpdateFrequency, coSims{iS}.oSimulationContainer.tSolverParams.rHighestMaxChangeDecrease);
+    fprintf('Runtime: %fs\n', coSims{iS}.fRuntimeTick);
+    fprintf('Ticks: %i\n', coSims{iS}.oSimulationContainer.oTimer.iTick);
 end
+
+
 
 end
 
