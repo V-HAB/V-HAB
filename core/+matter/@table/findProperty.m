@@ -302,8 +302,8 @@ if txMatterForSubstance.bIndividualFile
                 % To make this faster the next time around, we save the
                 % scatteredInterpolant into the matter table.
                 
-                txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(strrep(sProperty, ' ', '')).(sID) = hInterpolation;
-                txMatterForSubstanceAndTypeAndAggregate.bInterpolations = true;
+                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = hInterpolation;
+                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).bInterpolations = true;
                 
                 % This addition to the matter table will be overwritten,
                 % when the next simulation starts, even if the matter data
@@ -435,8 +435,8 @@ if txMatterForSubstance.bIndividualFile
                 % save the scatteredInterpolant into the matter
                 % table.
                 
-                txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(strrep(sProperty, ' ', '')).(sID) = hInterpolation;
-                txMatterForSubstanceAndTypeAndAggregate.bInterpolations = true;
+                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = hInterpolation;
+                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).bInterpolations = true;
                 
                 % This addition to the matter table will be
                 % overwritten, when the next simulation

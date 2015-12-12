@@ -496,10 +496,9 @@ classdef branch < base & event.source
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
-% % %             for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
-% % %                 this.coExmes{iE}.oPhase.massupdate();
-% % %             end
-            
+%             for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
+%                 this.coExmes{iE}.oPhase.massupdate();
+%             end
             
             % Only trigger if not yet set
             %CHECK inactivated here --> solvers and otehr "clients" should

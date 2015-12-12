@@ -175,7 +175,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
         % Last time the phase was updated (??)
         % @type float
-        fLastMassUpdate = -1;
+        fLastMassUpdate = -10;
 
         % Time step in last massupdate (???)
         % @type float
@@ -199,7 +199,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % Time when the total heat capacity was last updated. Need to save
         % this information in order to prevent the heat capacity
         % calculation to be performed multiple times per timestep.
-        fLastTotalHeatCapacityUpdate = 0; 
+        fLastTotalHeatCapacityUpdate = 0;
+        
+        
+        % Last time branches were set oudated
+        fLastSetOutdated = -10;
 
 %         % ???
 %         fTimeStep;
@@ -359,11 +363,20 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % phase to outdated, also causing a recalculation in the
             % post-tick.
             
+            
+            
             if nargin < 2, bSetBranchesOutdated = false; end;
 
             fTime     = this.oStore.oTimer.fTime;
             fLastStep = fTime - this.fLastMassUpdate;
-
+            
+            
+%             fprintf('[%i] massupd %s-%s with bSynced = %i --- execute: %i\n', this.oTimer.iTick, this.oStore.sName, this.sName, this.bSynced, fLastStep > 0);
+%             
+%             if strcmp(this.sName, 'FlowPhase')
+%                 dbstack();
+%             end
+            
             % Return if no time has passed
             if fLastStep == 0
                 %NOTE need that in case .exec sets flow rate in manual branch triggering massupdate,
@@ -501,8 +514,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Trigger branch solver updates in post tick for all branches
             % whose matter is currently flowing INTO the phase
             if this.bSynced || bSetBranchesOutdated
-                this.setBranchesOutdated('in');
-                %%%this.setBranchesOutdated();
+                %%%this.setBranchesOutdated('in');
+                this.setBranchesOutdated();
             end
             
             % Execute updateProcessorsAndManipulators between branch solver
@@ -511,7 +524,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             
             % Flowrate update binding for OUTFLOWING matter flows.
             if this.bSynced || bSetBranchesOutdated
-                this.setBranchesOutdated('out');
+                %%%this.setBranchesOutdated('out');
             end
 
             % Phase sets new time step (registered with parent store, used
@@ -827,9 +840,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
         function setBranchesOutdated(this, sFlowDirection)
             
-            if nargin < 2
+%             if nargin < 2
                 sFlowDirection = 'both'; 
-            end;
+%             end
+            
+            if this.fLastSetOutdated >= this.oTimer.fTime
+                %return;
+            end
+            
+            this.fLastSetOutdated = this.oTimer.fTime;
+            
             
             % Loop through exmes / flows and set outdated, i.e. request
             % recalculation of flow rate.
