@@ -86,8 +86,13 @@ classdef setup < simulation.infrastructure
             % 2 / 25 - 3.3k ticks, ok
             % 1 / 100 - ok - faster (~3.5k ticks?)
             
-            tSolverParams.rUpdateFrequency = 0.1;
-            tSolverParams.rHighestMaxChangeDecrease = 1000;
+            if ~isfield(tSolverParams, 'rUpdateFrequency')
+                tSolverParams.rUpdateFrequency = 0.1;
+            end
+            
+            if ~isfield(tSolverParams, 'rHighestMaxChangeDecrease')
+                tSolverParams.rHighestMaxChangeDecrease = 1000;
+            end
             
 %             tSolverParams.rUpdateFrequency = 0.5;
 %             tSolverParams.rHighestMaxChangeDecrease = 100;
