@@ -17,7 +17,7 @@ classdef RCA_Filter < components.filter
             
             % In order for the solver branches to update correctly and
             % simultaneously, the flow phases has to be 'synced'.
-            oFlow.bSynced = true; 
+%             oFlow.bSynced = true; 
             
             % Create the according vacuum exmes 
             matter.procs.exmes.gas(oFlow,     'FlowVolume_Vacuum_Port');            
