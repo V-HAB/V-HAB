@@ -187,7 +187,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             % or right after a bed switch. To avoid problems later on,
             % we'll just skip this execution and try next time. 
             if fFlowRateIn < 0
-                fprintf('Tick: %i, %s: Skipping because of negative flow rate.', this.oTimer.iTick, this.oStore.sName);
+%                 fprintf('%i\t(%f)\t%s: Skipping because of negative flow rate.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
             
@@ -199,7 +199,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             % the pressure here can be zero. It should only be zero for one
             % timestep, so we'll just skip this one.
             if this.fPressure_p <= 0 
-                fprintf('Tick: %i, %s: Skipping because of negative pressure.', this.oTimer.iTick, this.oStore.sName);
+%                 fprintf('%i\t(%f)\t%s: Skipping because of negative pressure.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
             
