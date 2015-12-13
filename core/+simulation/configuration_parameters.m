@@ -19,12 +19,12 @@ classdef configuration_parameters < base
             
             sCtor    = oVsys.oMeta.Name;
             sSysPath = simulation.helper.paths.getSysPath(oVsys);
-            %TODO -> also check parent class Ctors!
+            %TODO -> also check parent class constructors!
             
             csKeys  = this.ptConfigParams.keys();
             tParams = struct();
             
-            % Check by CTOR
+            % Check by constructor
             for iP = 1:length(csKeys)
                 if strcmp(csKeys{iP}, sCtor)
                     tParams = tools.struct.mergeStructs(tParams, this.ptConfigParams(csKeys{iP}));
