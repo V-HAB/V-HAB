@@ -281,19 +281,35 @@ classdef RCA < vsys
             createSolverStructure@vsys(this);
             
             % Now we can create all of the solver branches
-            solver.matter.iterative.branch(this.toBranches.Splitter__Splitter_Outlet1___Bed_A__Inlet);
-            solver.matter.iterative.branch(this.toBranches.Splitter__Splitter_Outlet2___Bed_B__Inlet);
-            solver.matter.iterative.branch(this.toBranches.Bed_A__Amine_Vacuum_Port___Vacuum__Inlet_Bed_A_Amine);
-            solver.matter.iterative.branch(this.toBranches.Bed_B__Amine_Vacuum_Port___Vacuum__Inlet_Bed_B_Amine);          
-            solver.matter.iterative.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
-            solver.matter.iterative.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
-            solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Merger_Inlet1);
-            solver.matter.iterative.branch(this.toBranches.Bed_B__Outlet___Merger__Merger_Inlet2);
-            solver.matter.iterative.branch(this.toInterfaceBranches.Outlet);
-            solver.matter.iterative.branch(this.toInterfaceBranches.Inlet);
+            oB1  = solver.matter.iterative.branch(this.toBranches.Splitter__Splitter_Outlet1___Bed_A__Inlet);
+            oB2  = solver.matter.iterative.branch(this.toBranches.Splitter__Splitter_Outlet2___Bed_B__Inlet);
+            oB3  = solver.matter.iterative.branch(this.toBranches.Bed_A__Amine_Vacuum_Port___Vacuum__Inlet_Bed_A_Amine);
+            oB4  = solver.matter.iterative.branch(this.toBranches.Bed_B__Amine_Vacuum_Port___Vacuum__Inlet_Bed_B_Amine);          
+            oB5  = solver.matter.iterative.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
+            oB6  = solver.matter.iterative.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
+            oB7  = solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Merger_Inlet1);
+            oB8  = solver.matter.iterative.branch(this.toBranches.Bed_B__Outlet___Merger__Merger_Inlet2);
+            oB9  = solver.matter.iterative.branch(this.toInterfaceBranches.Outlet);
+            oB10 = solver.matter.iterative.branch(this.toInterfaceBranches.Inlet);
             
-%             this.toStores.Splitter.toPhases.Splitter_Phase_1.rMaxChange = 0.5;
-%             this.toStores.Merger.toPhases.Merger_Phase_1.rMaxChange     = 0.5;
+            iDampingFactor = 5;
+            
+            oB1.iDampFR  = iDampingFactor;
+            oB2.iDampFR  = iDampingFactor;
+            oB3.iDampFR  = iDampingFactor;
+            oB4.iDampFR  = iDampingFactor;
+            oB5.iDampFR  = iDampingFactor;
+            oB6.iDampFR  = iDampingFactor;
+            oB7.iDampFR  = iDampingFactor;
+            oB8.iDampFR  = iDampingFactor;
+            oB9.iDampFR  = iDampingFactor;
+            oB10.iDampFR = iDampingFactor;
+            
+            this.toStores.Bed_A.toPhases.FlowPhase.rMaxChange = 0.005;
+            this.toStores.Bed_B.toPhases.FlowPhase.rMaxChange = 0.005;
+            this.toStores.Bed_A.toPhases.FilteredPhase.rMaxChange = 0.5;
+            this.toStores.Bed_B.toPhases.FilteredPhase.rMaxChange = 0.5;
+
         end
     end
     
@@ -419,8 +435,8 @@ classdef RCA < vsys
                 this.sActiveBed = 'B';
                 
                 % Starting desorption process for Bed A 
-                %%%this.toStores.Bed_A.toProcsP2P.filterproc_sorp.desorption(this.rDesorptionRatio);
-                %%%this.toStores.Bed_B.toProcsP2P.filterproc_sorp.reset_timer(this.oTimer.fTime);
+                this.toStores.Bed_A.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
+                this.toStores.Bed_B.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
                 
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
@@ -432,8 +448,8 @@ classdef RCA < vsys
                 this.sActiveBed = 'A';
                 
                 % Starting desorption process for Bed B                
-                %%%this.toStores.Bed_B.toProcsP2P.filterproc_sorp.desorption(this.rDesorptionRatio);
-                %%%this.toStores.Bed_A.toProcsP2P.filterproc_sorp.reset_timer(this.oTimer.fTime);
+                this.toStores.Bed_B.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
+                this.toStores.Bed_A.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
                 
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
