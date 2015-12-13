@@ -56,9 +56,9 @@ classdef timer < base
         % of the time. If more callbacks are added in one tick, that means
         % that the first time that might be slower because Matlab needs to
         % extend the cell, the following times - quick again.
-        chPostTick = cell(1, 100);
+        chPostTick = cell(5, 100);
         
-        iPostTickMax = 0;
+        aiPostTickMax = [ 0, 0, 0, 0, 0 ];
     end
     
     methods
@@ -156,10 +156,14 @@ classdef timer < base
         end
         
         
-        function bindPostTick(this, hCB)
+        function bindPostTick(this, hCB, iPriority)
+            if nargin < 3 || isempty(iPriority), iPriority = 0; end;
+            
+            iPriority = iPriority + 3;
+            
             %this.chPostTick{end + 1} = hCB;
-            this.iPostTickMax = this.iPostTickMax + 1;
-            this.chPostTick{this.iPostTickMax} = hCB;
+            this.aiPostTickMax(iPriority) = this.aiPostTickMax(iPriority) + 1;
+            this.chPostTick{iPriority, this.aiPostTickMax(iPriority)} = hCB;
         end
     end
     
@@ -234,24 +238,29 @@ classdef timer < base
             this.afLastExec(abExec) = this.fTime;
             
             
-            % Post-tick stack
-            iPostTick = 1;
-            
-            % iPostTickMax can change in interation!
-            while iPostTick <= this.iPostTickMax % ~isempty(this.chPostTick)
-                % Executing the first item in the stack, represented by the
-                % first item in the cell array
-                this.chPostTick{iPostTick}();
-                
-                % Removing the item we just executed
-                % Don't really need that any more ...
-                %this.chPostTick{iPostTick} = [];
-                
-                iPostTick = iPostTick + 1;
+            % Just to make sure - prio 2 could attach postTick to prio -1
+            while any(this.aiPostTickMax ~= 0)
+                % Prios from -2, -1, 0, 1, 2
+                for iP = 1:5
+                    % Post-tick stack
+                    iPostTick = 1;
+
+                    % iPostTickMax can change in interation!
+                    while iPostTick <= this.aiPostTickMax(iP) % ~isempty(this.chPostTick)
+                        % Executing the first item in the stack, represented by the
+                        % first item in the cell array
+                        this.chPostTick{iP, iPostTick}();
+
+                        % Removing the item we just executed
+                        % Don't really need that any more ...
+                        %this.chPostTick{iPostTick} = [];
+
+                        iPostTick = iPostTick + 1;
+                    end
+
+                    this.aiPostTickMax(iP) = 0;
+                end
             end
-            
-            this.iPostTickMax = 0;
-            
             
             
             % check for bRun -> if true, execute this.step() again!

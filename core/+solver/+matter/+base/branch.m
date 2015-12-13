@@ -121,9 +121,9 @@ classdef branch < base & event.source
     
     methods (Access = private)
         function executeUpdate(this)
-% % %             for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
-% % %                 this.oBranch.coExmes{iE}.oPhase.massupdate();
-% % %             end
+            for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
+                this.oBranch.coExmes{iE}.oPhase.massupdate();
+            end
             
             this.update();
         end
@@ -133,7 +133,7 @@ classdef branch < base & event.source
         function registerUpdate(this, ~)
             %if this.bRegisteredOutdated, return; end;
             
-            this.oBranch.oTimer.bindPostTick(@this.update);
+            this.oBranch.oTimer.bindPostTick(@this.update, -2);
             this.bRegisteredOutdated = true;
         end
         
