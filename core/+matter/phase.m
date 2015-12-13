@@ -520,7 +520,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             
             % Execute updateProcessorsAndManipulators between branch solver
             % updates for inflowing and outflowing flows
-            this.oStore.oTimer.bindPostTick(@this.updateProcessorsAndManipulators);
+            this.oStore.oTimer.bindPostTick(@this.updateProcessorsAndManipulators, 1);
             
             % Flowrate update binding for OUTFLOWING matter flows.
             if this.bSynced || bSetBranchesOutdated
@@ -845,7 +845,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 %             end
             
             if this.fLastSetOutdated >= this.oTimer.fTime
-                %return;
+                return;
             end
             
             this.fLastSetOutdated = this.oTimer.fTime;
@@ -1106,7 +1106,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             if ~this.bOutdatedTS
                 this.bOutdatedTS = true;
 
-                this.oStore.oTimer.bindPostTick(@this.calculateTimeStep);
+                this.oStore.oTimer.bindPostTick(@this.calculateTimeStep, 2);
             end
         end
 

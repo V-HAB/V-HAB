@@ -128,7 +128,7 @@ classdef branch < base & event.source
         function registerUpdate(this, ~)
             %if this.bRegisteredOutdated, return; end;
             
-            this.oBranch.oContainer.oTimer.bindPostTick(@this.update);
+            this.oBranch.oContainer.oTimer.bindPostTick(@this.update, -2);
             this.bRegisteredOutdated = true;
         end
         
