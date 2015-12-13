@@ -14,6 +14,11 @@ classdef RCA < vsys
         % the branch names will be changed when the container is sealed. 
         toInterfaceBranches = struct();
         
+        % This exme needs to be set in the supersystem. It is used to
+        % measure the CO2 partial pressure used to determine if a bed
+        % switch is necessary.
+        oReferenceExme;
+        
         % Input flow rate, has to be set externally
         fFlowRate = 0;
         
@@ -342,15 +347,18 @@ classdef RCA < vsys
 %                 this.fPP_CO2Out    = this.toStores.Bed_B.toProcsP2P.filterproc_sorp.fC_CO2Out;    % outlet pressure
 %             end
             
+            % Getting the partial pressure of CO2 at the exme we have
+            % defined to be the reference for this measurement. 
+            afExmePartialPressures = this.oReferenceExme.oFlow.getPartialPressures();
+            fMeasuredCO2PartialPressure = afExmePartialPressures(this.oMT.tiN2I.CO2);
 
-            afPartialPressures = this.toStores.Merger.toPhases.Merger_Phase_1.toProcsEXME.Merger_Outlet.oFlow.getPartialPressures();
-            fOutletCO2PartialPressure = afPartialPressures(this.oMT.tiN2I.CO2);
             % We need some deadband to prevent the valve from switching too fast at
             % high metabolic rates. This is also done in the actual hardware setup of
             % PLSS 1.0
             this.fDeltaTime = this.oTimer.fTime - this.fLastBedSwitch;
+            
             % Switching beds and setting flow rates if conditions are met
-            if  (fOutletCO2PartialPressure >= this.fCO2Limit) && (this.fDeltaTime > this.fDeadband)
+            if  (fMeasuredCO2PartialPressure >= this.fCO2Limit) && (this.fDeltaTime > this.fDeadband)
                 this.switchRCABeds();
             end
             
