@@ -182,15 +182,14 @@ end
 if this.ttxMatter.(sSubstance).bIndividualFile
     sFirstDepUnit  = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sFirstDepName);
     sSecondDepUnit = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sSecondDepName);
+    
+    % Shorthand to save execution time!
+    txMatterForSubstanceAndType             = this.ttxMatter.(sSubstance).(sTypeStruct);
+    txMatterForSubstanceAndTypeAndAggregate = txMatterForSubstanceAndType.(sPhaseStructName);
 end
 
 sReportString = 'Nothing to report.';
 
-
-
-% Shorthand to save execution time!
-txMatterForSubstanceAndType             = this.ttxMatter.(sSubstance).(sTypeStruct);
-txMatterForSubstanceAndTypeAndAggregate = txMatterForSubstanceAndType.(sPhaseStructName);
 %TODO-SPEED maybe additional possibilities to save execution time, e.g. 
 %     store everything in containers.Map and generate string keys or so?
 
