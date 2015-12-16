@@ -34,6 +34,12 @@ classdef infrastructure < base & event.source
         % time in seconds.
         % @type int
         bUseTime = true;
+        
+        % Boolean variable to suppress the console output at the beginning
+        % and end of each simulation. This is mainly for cases when V-HAB
+        % is being called by TherMoS every simulated second and we want to
+        % minimize clutter on the console.
+        bSuppressConsoleOutput = false;
     end
     
     
@@ -245,9 +251,13 @@ classdef infrastructure < base & event.source
                 this.trigger('init_post');
             end
             
-            disp('Initialization complete!');
-            disp('--------------------------------------');
-            disp('Starting simulation run...');
+            % Only output this, if we want to and the first time this is
+            % run.
+            if ~this.bSuppressConsoleOutput || this.oSimulationContainer.oTimer.iTick == -1
+                disp('Initialization complete!');
+                disp('--------------------------------------');
+                disp('Starting simulation run...');
+            end
             
             this.trigger('run');
             
@@ -375,10 +385,21 @@ classdef infrastructure < base & event.source
             % Sim finished?
             if (this.bUseTime && (this.oSimulationContainer.oTimer.fTime >= this.fSimTime)) || (~this.bUseTime && (this.oSimulationContainer.oTimer.iTick >= this.iSimTicks))
                 %this.finish();
-                this.trigger('finish');
+                % Only trigger 'finish' if we actually want the console
+                % output. 
+                if ~this.bSuppressConsoleOutput
+                    this.trigger('finish');
+                end
             end
         end
         
+        
+        function triggerFinish(this)
+            % This is just here so we can trigger the final simulation
+            % console output from TherMoS.
+            this.trigger('finish');
+        end
+            
         
         %TODO-RESTRUCTURING see console_ouput
         function finish(this)
