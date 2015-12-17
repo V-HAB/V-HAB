@@ -49,6 +49,13 @@ if length(varargin) == 1
         fDensity = 0;
         return;
     end
+    
+    
+    % matter.flow - can we use the ideal gas law?
+    if varargin{1}.fPressure < 5e5
+        fDensity = (varargin{1}.fPressure * varargin{1}.fMolarMass) / (matter.table.Const.fUniversalGas * varargin{1}.fTemperature);
+        return;
+    end
 else
     sMatterState = varargin{1};
     afMass       = varargin{2};

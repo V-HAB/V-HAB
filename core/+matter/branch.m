@@ -544,46 +544,15 @@ classdef branch < base & event.source
                 % phase that contains more mass than the other! This 
                 % ensures that the matter properties don't become zero if
                 % the coExmes{1} phase is empty.
-                aoPhases   = [ this.coExmes{1}.oPhase, this.coExmes{2}.oPhase ];
                 
-                % Check if there are any constant pressure exmes present
-                abConstantPressureExme = [isa(this.coExmes{1}, 'special.matter.const_press_exme'); ...
-                                          isa(this.coExmes{2}, 'special.matter.const_press_exme')];
+                %CHECK: we use getPortProperties() to get the pressure (gas
+                %       and liquid) or some equivalent (soldids ...?)
+                %       instead of mass - see e.g. const_press_exme!
+                %aoPhases   = [ this.coExmes{1}.oPhase, this.coExmes{2}.oPhase ];
+                %iWhichExme = sif(aoPhases(1).fMass >= aoPhases(2).fMass, 1, 2);
                 
-                if any(abConstantPressureExme)
-                    aiConstantPressureIndex =  find(abConstantPressureExme);
-                    % Check if both exmes are constant pressure exmes
-                    if length(aiConstantPressureIndex) == 2
-                        % They are, so just take the one with the larger
-                        % pressure as the in-exme
-                        iWhichExme = sif(this.coExmes{1}.fPortPressure > this.coExmes{2}.fPortPressure, 1, 2);
-                    else
-                        % Only one of the two exmes is a constant pressure
-                        % exme. Now we need to check, if the constant
-                        % pressur exme port pressure is larger or smaller
-                        % than the port pressure on the regular exme
-                        if this.coExmes{aiConstantPressureIndex}.fPortPressure < aoPhases(~abConstantPressureExme).fPressure || ...
-                           this.coExmes{aiConstantPressureIndex}.fPortPressure == 0
-                           % Either the pressure on the constant pressure
-                           % exme is smaller than the pressur on the
-                           % regular exme, OR the constant pressure is
-                           % zero. In both cases we use the regular exme as
-                           % the in-flow.
-                            iWhichExme = find(~abConstantPressureExme);
-                        elseif this.coExmes{aiConstantPressureIndex}.fPortPressure > aoPhases(~abConstantPressureExme).fPressure
-                            % The pressure on the constant pressure exme is
-                            % larger, so we use it as the in-flow.
-                            iWhichExme = aiConstantPressureIndex;
-                        else
-                            % In this case the two pressures are equal. Now
-                            % we have to take the masses in the attached
-                            % phases into account.
-                            iWhichExme = sif(aoPhases(1).fMass >= aoPhases(2).fMass, 1, 2);
-                        end
-                    end
-                else
-                    iWhichExme = sif(aoPhases(1).fMass >= aoPhases(2).fMass, 1, 2);
-                end
+                afPressure = [ this.coExmes{1}.getPortProperties(), this.coExmes{2}.getPortProperties() ];
+                iWhichExme = sif(afPressure(1) >= afPressure(2), 1, 2);
             else
                 iWhichExme = sif(this.fFlowRate < 0, 2, 1);
             end
