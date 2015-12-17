@@ -500,8 +500,8 @@ classdef system_incompressible_liquid
                     mPhaseMass(k,1) = this.oSystem.aoBranches(k,1).coExmes{1,1}.oPhase.fMass;
                     mPhaseMass(k,2) = this.oSystem.aoBranches(k,1).coExmes{2,1}.oPhase.fMass;
 
-                    mDynamicViscosity(k,1) = this.oSystem.oData.oMT.calculateDynamicViscosity(this.oSystem.aoBranches(k,1).coExmes{1,1}.oPhase);
-                    mDynamicViscosity(k,2) = this.oSystem.oData.oMT.calculateDynamicViscosity(this.oSystem.aoBranches(k,1).coExmes{2,1}.oPhase);
+                    mDynamicViscosity(k,1) = this.oSystem.oMT.calculateDynamicViscosity(this.oSystem.aoBranches(k,1).coExmes{1,1}.oPhase);
+                    mDynamicViscosity(k,2) = this.oSystem.oMT.calculateDynamicViscosity(this.oSystem.aoBranches(k,1).coExmes{2,1}.oPhase);
                 end
 
                 %% Calculates the acceleration inside the branches

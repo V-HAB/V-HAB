@@ -23,6 +23,20 @@ if exist(sSavePath, 'file') ~= 0
     % The file already exists so we can load it
     load(sSavePath);
     
+    % There is a mechanism in place to prevent a corrupted file from being
+    % used in the event the initial folder scan was aborted. We check if
+    % this field exists at all to force an update for users that created
+    % their folder scan with an older version of this function. If the
+    % field exists, we verify if the initial scan is complete, if not, we
+    % have to redo it, unless THIS is actually the inital scan. In this
+    % case, bInitialScanInProgress will be true and bInitialScan will be
+    % false, causing a normal continuation of the function. 
+    if ~isfield(tSavedInfo, 'bInitialScanInProgress') || ( ~tSavedInfo.bInitialScanComplete  && ~tSavedInfo.bInitialScanInProgress )
+        delete(sSavePath);
+        clear('tSavedInfo');
+        tools.checkForChanges(sFileOrFolderPath);
+    end
+    
     % Make sure the string is cleaned up and doesn't contain any
     % illegal characters that can't be used as field names
     sFileOrFolderString = tools.normalizePath(sFileOrFolderPath);
@@ -202,6 +216,28 @@ else
     disp('V-HAB First Run. Doing initial scan of current folder. This will take a moment ...');
     % Creating our main tSavedInfo struct.
     tSavedInfo = struct();
+    
+    % The following is a safety feature. When this function is run and
+    % aborts somewhere in between, the saved .mat file will not be deleted.
+    % Therfore, when this function is run again, it will NOT redo the
+    % initial scan, but assume that the existing file is valid. This is not
+    % the desired behavior. So to determine, if the initial scan was
+    % succesfully completed, we will add one more field to the struct,
+    % called bInitialScanComplete. This will be set to true at the end of
+    % this 'else' case when the initial scan is complete. If the incomplete
+    % file is used, this variable will be checked at the beginning of an
+    % actual check for changes run.
+    tSavedInfo.bInitialScanComplete = false;
+    % Since this function is called recursively, we also need to know, if
+    % we are currently in the process of doing the initial scan, or if this
+    % is a scan checking for changes. For this, we create another field.
+    % This will be set to false, after the initial scan is complete. 
+    tSavedInfo.bInitialScanInProgress = true;
+    
+    % Just as a fun feature, we'll log the start time here so we can tell
+    % the user how long it took to create the full scan.
+    hTimer = tic();
+    
     % Saving the struct to a file from where it can be loaded by the
     % other instances of this function.
     save(sSavePath,'tSavedInfo');
@@ -239,8 +275,18 @@ else
         end
     end
     
+    % Since this was the inital scan, we set the return variable to true
     bChanged = true;
-    disp('Initial folder scan completed.');
+    % We tell the user, that the initial scan is complete and how long it
+    % took.
+    disp(['Initial folder scan completed in ', num2str(toc(hTimer)), ' seconds.']);
+    
+    % Finally, we can set the boolean variable for the completed initial
+    % scan to true. 
+    load(sSavePath);
+    tSavedInfo.bInitialScanComplete   = true;
+    tSavedInfo.bInitialScanInProgress = false;
+    save(sSavePath,'tSavedInfo');
     return;
 end
 end

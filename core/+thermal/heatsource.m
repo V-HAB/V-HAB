@@ -14,7 +14,10 @@ classdef heatsource < base
         
         function this = heatsource(sIdentifier, fPower)
             this.sName  = sIdentifier;
-            this.fPower = fPower;
+            
+            if nargin > 1
+                this.fPower = fPower;
+            end
         end
         
         function setPower(this, fPower)

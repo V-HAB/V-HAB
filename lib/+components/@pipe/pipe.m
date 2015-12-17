@@ -120,6 +120,9 @@ classdef pipe < matter.procs.f2f
                 %CHECK e.g. fRoh - used for fV and Re - so doesn't really make
                 %      sense to include. Need another way to calculate Re/V?
                 fDensity = (fAveragePressure * fMolarMass) / (matter.table.Const.fUniversalGas * oFlowIn.fTemperature);
+                this.warn('solverDeltas',['Something went wrong in the density calculation for a pipe (%s). \n',...
+                                          'If this happened during initialization, it should be alright. Otherwise\n',...
+                                          'please check if the branch is configured properly.'], this.sName);
             end
             fFlowSpeed   = abs(fFlowRate) / ((pi / 4) * this.fDiameter^2 * fDensity);
 

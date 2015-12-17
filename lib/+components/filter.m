@@ -11,12 +11,6 @@ classdef filter < matter.store
 
     properties (SetAccess = protected, GetAccess = public)
                
-        % Filter temperature
-        fTemperature;
-        
-        % Fixed time step
-        fFixedTimeStep; 
-        
         % Chosen filter type
         sType; 
         
@@ -51,8 +45,10 @@ classdef filter < matter.store
             % sName
             % sType
             %
-            % Optional input arguments
+            % Optional input arguments. If temperature and pressure are not
+            % set, standard values from matter table will be used. 
             % tParameters.fFilterTemperature:   Initial filter temperature
+            % tParameters.fFilterPressure:      Initial filter pressure
             % tParameters.fFixedTimeStep:       Fixed time step for phases
             % tParameters.sAtmosphereHelper:    Filter Atmosphere, 
             % tParameters.tGeometry:            Struct with field 'sShape'
@@ -62,24 +58,14 @@ classdef filter < matter.store
             %                                   specific.
             % TODO: Use geometry class here... have to build it first...
             
-            % Temperature
-            % can be set individually
-            if isfield(tParameters, 'fFilterTemperature')
-                fTemperature = tParameters.fFilterTemperature;
-            else
-                % Default value
-                fTemperature = 293.15;         %[K]
-            end
             
             % Fixed Time Step: 
+            %TODO Change this comment... if it works without...
             % the default value of 1 s provided good results for spacesuits.
             % Increase for systems that run longer.
             % Decrease to refine results
             if isfield(tParameters, 'fTimeStep')
                 fFixedTimeStep = tParameters.fTimeStep;
-            else
-                % Default value
-                fFixedTimeStep = 1;                %[s]
             end
             
             if isfield(tParameters, 'sAtmosphereHelper')
@@ -105,6 +91,8 @@ classdef filter < matter.store
                 else
                     error('Filter: The type of filter shape you have entered (%s) is not supported by the Filter. Please use either ''cuboid'' or ''cylinder''.',tParameters.tGeometry.sShape);
                 end
+            else
+                %TODO Create default filter geometry here
             end
             
             % Set the void fraction according to type
@@ -146,35 +134,54 @@ classdef filter < matter.store
                     rVoidFraction = 0.510;
          
                 otherwise
+                    %TODO Remove error message and create a generic filter
+                    % instead. 
                     error('Filter: The filter type you have entered (%s) is not available. Please use either ''RCA'', ''FBA'', or ''MetOx''.',sType);
             end              
             
             % Creating a store based on the volume
             this@matter.store(oParentSys, sName, oGeometry.fVolume);
-
-            % Define the type for setVolume function
-            this.sType = sType;
-            % Define parent system
+            
+            % Temperature
+            % can be set individually
+            if isfield(tParameters, 'fFilterTemperature')
+                fTemperature = tParameters.fFilterTemperature;
+            else
+                % Default value
+                fTemperature = this.oMT.Standard.Temperature;         %[K]
+            end
+            
+            % Temperature
+            % can be set individually
+            if isfield(tParameters, 'fFilterPressure')
+                fPressure = tParameters.fFilterPressure;
+            else
+                % Default value
+                fPressure = this.oMT.Standard.Pressure;         %[K]
+            end
+            
+            % Relative humidity
+            % can be set individually
+            if isfield(tParameters, 'rHumidity')
+                rHumidity = tParameters.rHumidity;
+            else
+                % Default value
+                rHumidity = 0;         %[K]
+            end
+            
+            % Define parent system as property
             this.oParentSys = oParentSys; 
             
             % Assigning the filter's properties (save for setVolume function)
             this.oGeometry = oGeometry;
             this.rVoidFraction = rVoidFraction;
             
-            % Temperature
-            if exist('fTemperature','var')
-                this.fTemperature = fTemperature;
-            end
-            % Fixed Time Step
-            if exist('fFixedTimeStep','var')
-                this.fFixedTimeStep = fFixedTimeStep;
-            end
             
             % After superclass constructor is executed, fx, fy and fz
             % can be set (needed in the p2p processor)
             % -------- or --------
             % TODO: add a property for length and cross section in cuboid file!
-            if strcmp(this.sType,'RCA') == 1 || strcmp(this.sType,'MetOx') == 1
+            if strcmp(sType,'RCA') == 1 || strcmp(sType,'MetOx') == 1
                 this.fx = f_x;
                 this.fy = f_y;
                 this.fz = f_z;
@@ -186,49 +193,49 @@ classdef filter < matter.store
             % the filter and does that correctly
             if ~isempty(sAtmosphereHelper)
                 try
-                    oFlowPhase = this.createPhase(sAtmosphereHelper, 'FlowPhase', oGeometry.fVolume * rVoidFraction, this.fTemperature);
+                    oFlowPhase = this.createPhase(sAtmosphereHelper, 'FlowPhase', oGeometry.fVolume * rVoidFraction, fTemperature, rHumidity, fPressure);
+%                     oFlowPhase = this.createPhase(sAtmosphereHelper, 'FlowPhase', 0.0011, fTemperature, rHumidity, fPressure);
                 catch 
                     this.throw('Generic Filter', 'The provided atmosphere helper (%s) is invalid!', sAtmosphereHelper);
                 end
             else
                 % Otherwise: use SuitAtmosphere as default value
-                oFlowPhase = this.createPhase('SuitAtmosphere', 'FlowPhase', oGeometry.fVolume * rVoidFraction, this.fTemperature);
+                oFlowPhase = this.createPhase('SuitAtmosphere', 'FlowPhase', oGeometry.fVolume * rVoidFraction, fTemperature, rHumidity, fPressure);
+%                 oFlowPhase = this.createPhase('SuitAtmosphere', 'FlowPhase', 0.0011, fTemperature, rHumidity, fPressure);
             end
             
             % Creating the phase representing the filter volume manually.
             % gas(oStore, sName, tfMasses, fVolume, fTemp)
-            oFilteredPhase = matter.phases.gas(this, 'FilteredPhase', struct(), oGeometry.fVolume * (1-rVoidFraction), this.fTemperature);
+            oFilteredPhase = matter.phases.gas(this, 'FilteredPhase', struct(), oGeometry.fVolume * (1-rVoidFraction), fTemperature);
+%             oFilteredPhase = matter.phases.gas(this, 'FilteredPhase', struct(), 0.0011, fTemperature);
+%             oFilteredPhase = this.createPhase(sAtmosphereHelper, 'FilteredPhase', 0.0011, fTemperature, rHumidity, fPressure);
             
+            % Fixed Time Step
+            if exist('fFixedTimeStep','var')
             % Adding fixed time steps for the filter
-            this.aoPhases(1).fFixedTS = this.fFixedTimeStep;
-            this.aoPhases(2).fFixedTS = this.fFixedTimeStep;
+                this.toPhases.FlowPhase.fFixedTS     = fFixedTimeStep;
+                this.toPhases.FilteredPhase.fFixedTS = fFixedTimeStep;
+            end
             
             % Create the according exmes - default for the external
             % connections, i.e. the air stream that should be filtered. The
             % filterports are internal ones for the p2p processor to use.
-%             if strcmp(this.sType, 'RCA')
-%                 % For the RCA a constant pressure in the filter is needed
-%                 % and genereated with the help of a constant pressure exme,
-%                 % which is defined in the parent class
-%                 special.matter.const_press_exme(oFlowPhase, 'Inlet', this.oParentSys.fTestPressure);
-%             else
-                % simply connect to the flow for the genereic filter
-                matter.procs.exmes.gas(oFlowPhase,     'Inlet');
-%             end
+            matter.procs.exmes.gas(oFlowPhase,     'Inlet');
             matter.procs.exmes.gas(oFlowPhase,     'Outlet');
             matter.procs.exmes.gas(oFlowPhase,     'filterport_sorp');
             matter.procs.exmes.gas(oFilteredPhase, 'filterport_sorp');            
             matter.procs.exmes.gas(oFlowPhase,     'filterport_deso');
             matter.procs.exmes.gas(oFilteredPhase, 'filterport_deso');
-            
+
+%             tutorials.p2p.components.AbsorberExample(this, 'DumbAbsorber', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', 'CO2', 5e-4);            
             % Creating the p2p processor
             % Input parameters: oParentSys, oStore, sName, sPhaseIn, sPhaseOut, (sSpecies, sBed_Name)
-            this.oProc_deso = components.filter.FilterProc_deso(this, 'filterproc_deso', 'FlowPhase.filterport_deso', 'FilteredPhase.filterport_deso');
-            if strcmp(this.sType, 'RCA')
+            this.oProc_deso = components.filter.FilterProc_deso(this, 'DesorptionProcessor', 'FlowPhase.filterport_deso', 'FilteredPhase.filterport_deso');
+            if strcmp(sType, 'RCA')
                 % RCA uses a different sorption processor 
-                this.oProc_sorp = components.RCA.RCA_FilterProc_sorp(oParentSys, this, 'filterproc_sorp', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
+                this.oProc_sorp = components.RCA.RCA_FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
             else
-                this.oProc_sorp = components.filter.FilterProc_sorp(oParentSys, this, 'filterproc_sorp', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
+                this.oProc_sorp = components.filter.FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
             end
             
         end

@@ -28,8 +28,8 @@ if length(varargin) == 1
         sPhase = varargin{1}.sType;
         afMass = varargin{1}.afMass;
     elseif isa(varargin{1}, 'matter.flow')
-        sPhase = varargin{1}.oBranch.getInEXME().oPhase.sType;
-        afMass = varargin{1}.arPartialMass * varargin{1}.fFlowRate;
+        afPartialPressures = varargin{1}.getPartialPressures();
+        return;
     end
     
     fPressure = varargin{1}.fPressure;

@@ -32,8 +32,7 @@ classdef lumpedparameter < base
         fPreviousTimestep = -1; % The time at the previous call to |update|.
         
         % Rate matrices for matrix based solution of a transient heat
-        % transfer problem:
-        
+        % transfer problem.
         mSourceRateVector    = []; % The source rate vector in |K/s|.
         mLinearRateMatrix    = []; % The linear rate matrix in |1/s|.
         mFluidFlowRateMatrix = []; % The fluid flow rate matrix in |1/s|.
@@ -41,11 +40,16 @@ classdef lumpedparameter < base
         
         mNodeCapacities = []; % The capacities of all nodes in |J/K|.
         
+        % If there is an interface to TherMoS in this simulation, we need
+        % to do some extra calculations to add the external energy flows to
+        % our simulated system.
+        bTherMoSInterface;
+        
     end
     
     methods
         
-        function this = lumpedparameter(oVSys, fTimestep)
+        function this = lumpedparameter(oVSys, fTimestep, bTherMoSInterface)
             % Initialize the lumped parameter solver.
             
             % Set the default options for the ODE solver. 
@@ -57,6 +61,12 @@ classdef lumpedparameter < base
             % Set default timestep of |1 s|.
             if nargin < 2
                 fTimestep = 1;
+            end
+            
+            if isempty(bTherMoSInterface) || nargin < 3
+                this.bTherMoSInterface = false; 
+            else
+                this.bTherMoSInterface = bTherMoSInterface;
             end
             
             % Register with timer: Call |this.update| each |fTimestep|.

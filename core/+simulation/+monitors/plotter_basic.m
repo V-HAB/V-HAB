@@ -82,12 +82,18 @@ classdef plotter_basic < simulation.monitor
         
         
         %% Default plot method
-        function plot(this)
+        function plot(this, tParameters)
             oInfra  = this.oSimulationInfrastructure;
             oFigure = figure();
             iPlots  = length(this.tPlots) + 1;
             iGrid   = ceil(sqrt(iPlots));
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
+            
+            bLegendOn = true;
+            
+            if nargin > 1 && isfield(tParameters, 'bLegendOn')
+                bLegendOn = tParameters.bLegendOn;
+            end
             
             
             % Rows of grid - can we reduce?
@@ -113,11 +119,19 @@ classdef plotter_basic < simulation.monitor
                 this.generatePlot(hHandle, oLogger.afTime, mfData, tLogProps, sLabelY);
                 
                 title(hHandle, this.tPlots(iP).sTitle);
+                
+                if ~bLegendOn
+                    legend('hide');
+                end
             end
             
             
             hHandle = subplot(iGridRows, iGridCols, iP + 1);
-            this.generatePlot(hHandle, 1:length(oLogger.afTime), oLogger.afTime, struct('sLabel', 'Time', 'sUnit', 's'), 'Tick');
+            hold(hHandle, 'on');
+            grid(hHandle, 'minor');
+            plot(1:length(oLogger.afTime), oLogger.afTime);
+            xlabel('Ticks');
+            ylabel('Time in s');
             title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
             
             

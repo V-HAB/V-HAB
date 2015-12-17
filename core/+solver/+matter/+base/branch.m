@@ -58,6 +58,11 @@ classdef branch < base & event.source
     methods
         function this = branch(oBranch, fInitialFlowRate, sSolverType)
             
+            if isempty(oBranch.coExmes{1}) || isempty(oBranch.coExmes{2})
+                this.throw('branch:constructor',['The interface branch %s is not properly connected.\n',...
+                                     'Please make sure you call connectIF() on the subsystem.'], oBranch.sName);
+            end
+            
             this.oBranch = oBranch;
             this.oMT     = oBranch.oMT;
             
@@ -84,9 +89,9 @@ classdef branch < base & event.source
             
             % Use branches container timer reference to bind for time step
             %CHECK nope, Infinity, right?
-            %this.setTimeStep = this.oBranch.oContainer.oTimer.bind(@(~) this.update(), inf);
-            %this.setTimeStep = this.oBranch.oContainer.oTimer.bind(@(~) this.registerUpdate(), inf);
-            this.setTimeStep = this.oBranch.oContainer.oTimer.bind(@(~) this.executeUpdate(), inf);
+            %this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.update(), inf);
+            %this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.registerUpdate(), inf);
+            this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.executeUpdate(), inf);
             
             % Initial flow rate?
             if (nargin >= 2) && ~isempty(fInitialFlowRate)
@@ -128,7 +133,7 @@ classdef branch < base & event.source
         function registerUpdate(this, ~)
             %if this.bRegisteredOutdated, return; end;
             
-            this.oBranch.oContainer.oTimer.bindPostTick(@this.update, -2);
+            this.oBranch.oTimer.bindPostTick(@this.update, -2);
             this.bRegisteredOutdated = true;
         end
         
@@ -156,7 +161,7 @@ classdef branch < base & event.source
             %       flow rate direction changed!!
             %       -> setFlowRate automatically updates all!
             
-            this.fLastUpdate = this.oBranch.oContainer.oTimer.fTime;
+            this.fLastUpdate = this.oBranch.oTimer.fTime;
             
             if nargin >= 2
 
@@ -186,6 +191,9 @@ classdef branch < base & event.source
             
             this.setBranchFR(this.fFlowRate, afPressures);
             
+            %TODO Add a comment here to tell the user what this is actually
+            %good for. I'm assuming this is only here to call a synced
+            %solver? 
             this.bUpdateTrigger = true;
             this.trigger('update');
             this.bUpdateTrigger = false;

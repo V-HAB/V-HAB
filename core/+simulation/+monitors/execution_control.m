@@ -33,7 +33,11 @@ classdef execution_control < simulation.monitor
                 
                 
                 if bPauseGeneral || bPauseSpecific
-                    oInfra.pause();
+                    if oSim.oTimer.iTick == 0
+                        this.throw('onTickPost','You still have your STOP file in the main directory. Please remove it and restart the simulation.');
+                    else
+                        oInfra.pause();
+                    end
                 end
             end
         end
@@ -42,7 +46,7 @@ classdef execution_control < simulation.monitor
         function onInitPost(this, ~)
             oInfra = this.oSimulationInfrastructure;
             
-            fprintf('[SimCtr] Pause the simulation by creating a file called "STOP" or "STOP_%s" in the working directory (checked every %ith tick).\n', oInfra.sUUID, this.iTickInterval);
+            fprintf('[SimController] Pause the simulation by creating a file called "STOP" or "STOP_%s" in the working directory (checked every %ith tick).\n', oInfra.sUUID, this.iTickInterval);
         end
         
     end
