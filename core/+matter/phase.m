@@ -509,7 +509,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Execute updateProcessorsAndManipulators between branch solver
             % updates for inflowing and outflowing flows
             if this.iProcsP2Pflow > 0 || this.iManipulators > 0
-                this.oTimer.bindPostTick(@this.updateProcessorsAndManipulators, 1);
+                this.oTimer.bindPostTick(@this.updateProcessorsAndManipulators, -1);
             end
             
             % Flowrate update binding for OUTFLOWING matter flows.
