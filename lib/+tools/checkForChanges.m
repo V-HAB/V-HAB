@@ -29,13 +29,64 @@ if exist(sSavePath, 'file') ~= 0
     % their folder scan with an older version of this function. If the
     % field exists, we verify if the initial scan is complete, if not, we
     % have to redo it, unless THIS is actually the inital scan. In this
-    % case, bInitialScanInProgress will be true and bInitialScan will be
-    % false, causing a normal continuation of the function. 
-    if ~isfield(tSavedInfo, 'bInitialScanInProgress') || ( ~tSavedInfo.bInitialScanComplete  && ~tSavedInfo.bInitialScanInProgress )
-        delete(sSavePath);
-        clear('tSavedInfo');
-        tools.checkForChanges(sFileOrFolderPath);
+    % case, a field called bInitialScanInProgress will exist. We also need
+    % to be sure, that the file we have loaded is NOT from an aborted scan
+    % due to errors. For this, there is another variable added to the
+    % tSavedInfo struct called bLastActionComplete. This is set to false at
+    % the beginning of each step of the scan and set to true once this step
+    % is complete and this function is recursively called again. 
+    bRedoScan = false;
+    
+    if ~isfield(tSavedInfo, 'bInitialScanComplete')
+        % If this field does not exist, the loaded file was created with an
+        % older version of this function and the scan has to be redone. 
+        bRedoScan = true;
+    elseif tSavedInfo.bInitialScanComplete
+        % If the initial scan is complete, then this is a 'regular' search
+        % for changes and we don't hve to rescan.
+        bRedoScan = false;
+    elseif isfield(tSavedInfo, 'bInitialScanInProgress')
+        % If this field exists the initial scan is in progress. It will be
+        % deleted at the end of the initial scan. 
+        if tSavedInfo.bLastActionComplete
+            % If the bLastActionComplete variable is true, then the last
+            % action during the initial scan was completed successfully.
+            % Usually errors occur due to file or folder names that contain
+            % illegal characters.
+            bRedoScan = false;
+        else
+            % In this case the initial scan has been aborted, so we have to
+            % redo the initial scan. 
+            bRedoScan = true;
+        end
     end
+    
+    if bRedoScan
+        % Before we redo the initial scan, we first have to prepare some
+        % things:
+        % Tell the user what's going on.
+        disp('FolderStatus.mat file is outdated or corrupt. Repeating initial folder scan.');
+        % Delete the previously saved data file
+        delete(sSavePath);
+        % Clear the current workspace variable
+        clear('tSavedInfo');
+        % Now we recursively call this function, without the existing data
+        % file this will trigger a re-scan.
+        tools.checkForChanges(sFileOrFolderPath);
+        % We still have to set the return variable to true, since this is
+        % the first called instance of this function.
+        bChanged = true;
+        % Then we abort the function, otherwise it would continue to
+        % execute the following code. 
+        return;
+    end
+    
+    % Now that we have determined that a re-scan is not necessary, we set
+    % the bLastActionComplete variable to false, because now we start a new
+    % action. 
+    tSavedInfo.bLastActionComplete = false;
+    % Saving the change to the data file.
+    save(sSavePath,'tSavedInfo');
     
     % Make sure the string is cleaned up and doesn't contain any
     % illegal characters that can't be used as field names
@@ -73,6 +124,14 @@ if exist(sSavePath, 'file') ~= 0
             % struct.
             for iI = 1:length(tInfo)
                 if tInfo(iI).isdir
+                    % Since we will now be recursively calling this
+                    % function, we need to set the bLastActionComplete
+                    % variable to true and save it to the data file.
+                    % Because we are in a for-loop, we first need to load
+                    % the current version of the data file again.
+                    load(sSavePath);
+                    tSavedInfo.bLastActionComplete = true;
+                    save(sSavePath,'tSavedInfo');
                     % Recursive call of this function
                     tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name]);
                 else
@@ -81,10 +140,14 @@ if exist(sSavePath, 'file') ~= 0
                     % level.
                     sFileName = tools.normalizePath(tInfo(iI).name);
                     load(sSavePath);
+                    % Saving the new file info and setting the
+                    % bLastActionComplete variable to true.
                     tSavedInfo.(csFieldNames{1}).(sFileName) = tInfo(iI).datenum;
+                    tSavedInfo.bLastActionComplete = true;
                     save(sSavePath,'tSavedInfo');
                 end
             end
+            
             % This code block is only executed, when we're adding new
             % files and folders, so we return 'true' and finish the
             % function.
@@ -101,6 +164,13 @@ if exist(sSavePath, 'file') ~= 0
             % We're initializing a boolean array to save the
             % information if there are changed files in the folder.
             abChanged = zeros(1,length(tInfo));
+            % Because we'll now recursively call this function, we have to
+            % set the bLastActionComplete variable to true. We don't have
+            % to reload the file because we are not in a loop. The variable
+            % will still be the same as in the beginning of this execution.
+            tSavedInfo.bLastActionComplete = true;
+            save(sSavePath,'tSavedInfo');
+            
             % Now go through all the items and see if there are
             % changes.
             for iI = 1:length(tInfo)
@@ -150,6 +220,10 @@ if exist(sSavePath, 'file') ~= 0
             tInfo = tools.removeIllegalFilesAndFolders(tInfo);
             % Creating new sub-struct
             eval([sStructString,'.',sFieldName,' = struct();']);
+            % Since we will now be recursively calling this function, we
+            % need to set the bLastActionComplete variable to true and save
+            % it to the data file.
+            tSavedInfo.bLastActionComplete = true;
             % Saving the changed struct to the file
             save(sSavePath,'tSavedInfo');
             % Go into the folder to add its subfolders and files.
@@ -160,14 +234,19 @@ if exist(sSavePath, 'file') ~= 0
             % The item we're looking at is a file that has not yet been
             % added to the struct. So we use the file name as a key to
             % create a new member of the current struct, with the
-            % changed date as a value.
+            % changed date as a value. After completing this else-statement
+            % we will return to the calling instance of this function, so
+            % we have to set the bLastActionComplete variable to true.
             eval([sStructString,'.',sFieldName,' = tInfo.datenum;']);
+            tSavedInfo.bLastActionComplete = true;
             save(sSavePath,'tSavedInfo');
         end
         % Alright, all done in here, since we came into this part of
         % the if-condition because there was a non-existent field, this
         % has to be the initial scan, so we set our return variable to
         % true and finish the function.
+        
+        
         bChanged = true;
         return;
     else
@@ -187,6 +266,7 @@ if exist(sSavePath, 'file') ~= 0
             for iI = 1:length(tInfo)
                 abChanged (iI) = tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name]);
             end
+            
             % If any of the folders have changed, we need to return
             % true. We can also finish the function here, because
             bChanged = any(abChanged);
@@ -203,6 +283,7 @@ if exist(sSavePath, 'file') ~= 0
                 save(sSavePath,'tSavedInfo');
                 bChanged = true;
             else
+                % Seems like nothing has changed, so we can return false.
                 bChanged = false;
             end
         end
@@ -213,7 +294,7 @@ else
     % is no .mat file present.
     
     % Tell the user
-    disp('V-HAB First Run. Doing initial scan of current folder. This will take a moment ...');
+    disp('Doing initial scan of current folder. This will take a moment ...');
     % Creating our main tSavedInfo struct.
     tSavedInfo = struct();
     
@@ -262,6 +343,9 @@ else
             else
                 % Since this is the first run, we also need to create a
                 % struct for this top level folder.
+                load(sSavePath);
+                tSavedInfo.bLastActionComplete = true;
+                save(sSavePath,'tSavedInfo');
                 tools.checkForChanges(tInfo(iI).name);
             end
         else
@@ -284,8 +368,9 @@ else
     % Finally, we can set the boolean variable for the completed initial
     % scan to true. 
     load(sSavePath);
+    tSavedInfo = rmfield(tSavedInfo, 'bInitialScanInProgress');
+    tSavedInfo = rmfield(tSavedInfo, 'bLastActionComplete');
     tSavedInfo.bInitialScanComplete   = true;
-    tSavedInfo.bInitialScanInProgress = false;
     save(sSavePath,'tSavedInfo');
     return;
 end
