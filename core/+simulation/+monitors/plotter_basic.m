@@ -60,7 +60,13 @@ classdef plotter_basic < simulation.monitor
             
             aiIdx = oLogger.find(xDataReference, tFilter);
             
-            this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx);
+            % We only add a plot if there will actually be anything to
+            % plot. If there isn't, we tell the user. 
+            if ~isempty(aiIdx)
+                this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx);
+            else
+                this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
+            end
             
             
             return;
