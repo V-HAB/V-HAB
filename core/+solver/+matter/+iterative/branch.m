@@ -835,8 +835,8 @@ classdef branch < solver.matter.base.branch
                     % enough rMaxChange parameters to deal with the
                     % absolute flow rate change.
                     
-                    if isempty(this.fMinStep) || this.fMinStep < this.oBranch.oContainer.oTimer.fTimeStep
-                        this.fMinStep = this.oBranch.oContainer.oTimer.fTimeStep;
+                    if isempty(this.fMinStep) || this.fMinStep < this.oBranch.oContainer.oTimer.fMinimumTimeStep
+                        this.fMinStep = this.oBranch.oContainer.oTimer.fMinimumTimeStep;
                     end
 
                     fOldStep = this.fTimeStep;
@@ -947,8 +947,8 @@ classdef branch < solver.matter.base.branch
                     % Old time step
 %                     fOldStep = this.fTimeStep;
 % 
-%                     if fOldStep < this.oBranch.oContainer.oTimer.fTimeStep
-%                         fOldStep = this.oBranch.oContainer.oTimer.fTimeStep;
+%                     if fOldStep < this.oBranch.oContainer.oTimer.fMinimumTimeStep
+%                         fOldStep = this.oBranch.oContainer.oTimer.fMinimumTimeStep;
 %                     end
 
                     % Change in flow rate direction? Min. time step!

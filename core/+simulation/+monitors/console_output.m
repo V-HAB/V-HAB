@@ -88,8 +88,8 @@ classdef console_output < simulation.monitor
             %disp([ 'Mass lost:    to be re-implemented' ]);
 % %             disp([ 'Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
 % %             disp([ 'Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :))) 'kg' ]);
-%             disp([ 'Minimum Time Step * Total Sim Time: ' num2str(oTimer.fTimeStep * oTimer.fTime) ]);
-%             disp([ 'Minimum Time Step * Total Ticks:    ' num2str(oTimer.fTimeStep * oTimer.iTick) ]);
+%             disp([ 'Minimum Time Step * Total Sim Time: ' num2str(oTimer.fMinimumTimeStep * oTimer.fTime) ]);
+%             disp([ 'Minimum Time Step * Total Ticks:    ' num2str(oTimer.fMinimumTimeStep * oTimer.iTick) ]);
             disp('------------------------------------------------------------------------');
 
         end

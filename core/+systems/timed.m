@@ -43,7 +43,7 @@ classdef timed < sys
             else
                 % Set execution with each tick!
                 this.setTimeStep();
-                %this.fTimeStep = this.oTimer.fTimeStep;
+                %this.fTimeStep = this.oTimer.fMinimumTimeStep;
             end
         end
     end
@@ -107,7 +107,7 @@ classdef timed < sys
                 
                 % If time step is 0, means we registered on the global time
                 % step -> write to this sys
-                if this.fTimeStep == 0, this.fTimeStep = this.oTimer.fTimeStep; end;
+                if this.fTimeStep == 0, this.fTimeStep = this.oTimer.fMinimumTimeStep; end;
             end
         end
     end

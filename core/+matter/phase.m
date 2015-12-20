@@ -1085,7 +1085,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 arExp     = afExp ./ sum(afExp);% * 1.5;
                 rChanges  = sum(arExp .* aiChanges);
 
-                fNewStep = interp1([ 0 1 ], [ this.oTimer.fTimeStep fNewStep ], (1 - rChanges) ^ iExpDelta, 'linear', 'extrap');
+                fNewStep = interp1([ 0 1 ], [ this.oTimer.fMinimumTimeStep fNewStep ], (1 - rChanges) ^ iExpDelta, 'linear', 'extrap');
                 %}
 
 

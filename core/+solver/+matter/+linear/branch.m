@@ -143,8 +143,8 @@ classdef branch < solver.matter.base.branch
                 % Old time step
                 fOldStep = this.fTimeStep;
 
-                if fOldStep < this.oTimer.fTimeStep
-                    fOldStep = this.oTimer.fTimeStep;
+                if fOldStep < this.oTimer.fMinimumTimeStep
+                    fOldStep = this.oTimer.fMinimumTimeStep;
                 end
 
                 % Change in flow rate direction? Min. time step!
@@ -172,7 +172,7 @@ classdef branch < solver.matter.base.branch
                         %fInt = interp1([ 0 this.rMaxChange ], [ 1 0 ], this.rFlowRateChange, 'linear', 'extrap');
                         fInt = 1 - this.rFlowRateChange / this.rMaxChange;
                         iI = 3; %this.fSensitivity;
-                        fNewStep = fInt.^iI * this.fMaxStep + this.oTimer.fTimeStep;
+                        fNewStep = fInt.^iI * this.fMaxStep + this.oTimer.fMinimumTimeStep;
                     end
                 end
 

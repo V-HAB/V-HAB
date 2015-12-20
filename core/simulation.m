@@ -329,8 +329,8 @@ classdef simulation < base & event.source
                 disp([ 'Avg Time/Tick:' num2str(this.oTimer.fTime / this.oTimer.iTick) ' [s]' ]);
                 disp([ 'Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
                 disp([ 'Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :))) 'kg' ]);
-                disp([ 'Minimum Time Step * Total Sim Time: ' num2str(this.oTimer.fTimeStep * this.oTimer.fTime) ]);
-                disp([ 'Minimum Time Step * Total Ticks:    ' num2str(this.oTimer.fTimeStep * this.oTimer.iTick) ]);
+                disp([ 'Minimum Time Step * Total Sim Time: ' num2str(this.oTimer.fMinimumTimeStep * this.oTimer.fTime) ]);
+                disp([ 'Minimum Time Step * Total Ticks:    ' num2str(this.oTimer.fMinimumTimeStep * this.oTimer.iTick) ]);
                 disp('--------------------------------------');
             end
             %TODO if bDump, write .mat!

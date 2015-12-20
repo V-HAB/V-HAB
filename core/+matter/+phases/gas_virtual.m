@@ -47,7 +47,7 @@ classdef gas_virtual < matter.phases.gas
             this@matter.phases.gas(varargin{:});
             
             this.bSynced   = true;
-            this.fMaxInOut = this.oTimer.fTimeStep * 100;
+            this.fMaxInOut = this.oTimer.fMinimumTimeStep * 100;
             
             this.fInitialMass = this.fMass;
             
@@ -139,7 +139,7 @@ classdef gas_virtual < matter.phases.gas
             %
             % fMaxInOut
             %   Adjust based on MAX FLOW RATE:
-            %  fMaxInOut = this.oTimer.fTimeStep * max(afFlowRates) * 100;
+            %  fMaxInOut = this.oTimer.fMinimumTimeStep * max(afFlowRates) * 100;
             %  ... * 100? * 1000?
             %
             %
@@ -199,19 +199,19 @@ classdef gas_virtual < matter.phases.gas
                 end
             end
             
-            %%%fprintf('\n\nERR: %.13f vs %.13f [%.5f]\n\n', this.oTimer.fTimeStep, this.oTimer.fTimeStep * 1e4 * fMaxFlowRate, this.oTimer.fTimeStep / (this.oTimer.fTimeStep * 1e4 * fMaxFlowRate));
-            %%%fprintf('\n\nERR: %.13f vs %.13f [%.5f]\n\n', this.oTimer.fTimeStep, fMaxFlowRate / 1000, this.oTimer.fTimeStep / (fMaxFlowRate / 1000));
+            %%%fprintf('\n\nERR: %.13f vs %.13f [%.5f]\n\n', this.oTimer.fMinimumTimeStep, this.oTimer.fMinimumTimeStep * 1e4 * fMaxFlowRate, this.oTimer.fMinimumTimeStep / (this.oTimer.fMinimumTimeStep * 1e4 * fMaxFlowRate));
+            %%%fprintf('\n\nERR: %.13f vs %.13f [%.5f]\n\n', this.oTimer.fMinimumTimeStep, fMaxFlowRate / 1000, this.oTimer.fMinimumTimeStep / (fMaxFlowRate / 1000));
             
             
             
             %TODO see iterative solver, use some interpolation to improve
             %     solving process, i.e. speed that up!
             rPressAdjust = 0.1;
-            %fMaxInOut    = this.fMaxInOut / 10; % this.oTimer.fTimeStep
+            %fMaxInOut    = this.fMaxInOut / 10; % this.oTimer.fMinimumTimeStep
             
-            fMaxInOut    = this.oTimer.fTimeStep;% * 100;
-            fMaxInOut    = this.oTimer.fTimeStep * 1e4 * fMaxFlowRate;% * 100;
-            %fMaxInOut    = max([ this.oTimer.fTimeStep * 100, fMaxFlowRate / 100 ]);% * 100;
+            fMaxInOut    = this.oTimer.fMinimumTimeStep;% * 100;
+            fMaxInOut    = this.oTimer.fMinimumTimeStep * 1e4 * fMaxFlowRate;% * 100;
+            %fMaxInOut    = max([ this.oTimer.fMinimumTimeStep * 100, fMaxFlowRate / 100 ]);% * 100;
             fMaxInOut    = fMaxFlowRate / 1000;
             fMaxInOut    = fMaxFlowRate * (this.rMaxChangeRate / 10);
             
@@ -621,9 +621,9 @@ classdef gas_virtual < matter.phases.gas
             
             % Don't really need ZERO ... min time step ok? Doesn't work out
             % with units, but need some lower bound ...?
-            %fTotalInOut = this.fCurrentTotalMassInOut - this.oTimer.fTimeStep;
+            %fTotalInOut = this.fCurrentTotalMassInOut - this.oTimer.fMinimumTimeStep;
             fTotFlowRate= sum(this.getTotalMassChange());
-            fTotalInOut = max([ 0, abs(fTotFlowRate) - this.oTimer.fTimeStep ]);
+            fTotalInOut = max([ 0, abs(fTotFlowRate) - this.oTimer.fMinimumTimeStep ]);
             fMass       = this.fVirtualPressure / this.fActualMassToPressure;
             %fMass       = this.fVirtualPressure / this.fVirtualMassToPressure;
             rTotalInOut = abs(fTotalInOut / fMass);
@@ -655,12 +655,12 @@ classdef gas_virtual < matter.phases.gas
             elseif rTotalInOut > this.rMaxChangeRate
                 fInt = 0;
             else
-                fInt = interp1([ this.oTimer.fTimeStep this.rMaxChangeRate ], [ 1 0 ], rTotalInOut, 'linear', 'extrap');
+                fInt = interp1([ this.oTimer.fMinimumTimeStep this.rMaxChangeRate ], [ 1 0 ], rTotalInOut, 'linear', 'extrap');
             end
             
             
             iI = 5;
-            fNewStep = fInt.^iI * this.fMaxStep + this.oTimer.fTimeStep;
+            fNewStep = fInt.^iI * this.fMaxStep + this.oTimer.fMinimumTimeStep;
             
             
             % Last Update? Subtract from new time step!
