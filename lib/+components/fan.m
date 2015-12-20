@@ -296,7 +296,8 @@ classdef fan < matter.procs.f2f
                 [ oFlowIn, ~ ] = this.getFlows(fFlowRate);
                 
                 %Calculating the density of the incoming flowing matter:
-                fDensity = this.oMT.calculateDensity(oFlowIn);
+                %fDensity = this.oMT.calculateDensity(oFlowIn);
+                fDensity = oFlowIn.getDensity();
                 
                 if fFlowRate < 0
                     iFlowDir = -1;

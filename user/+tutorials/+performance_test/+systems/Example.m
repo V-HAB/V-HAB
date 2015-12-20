@@ -1,0 +1,80 @@
+classdef Example < vsys
+    %EXAMPLE Example simulation for a simple flow in V-HAB 2.0
+    %   Two tanks filled with gas at different pressures and a pipe in between
+    
+    properties (SetAccess = protected, GetAccess = public)
+        % manual or linear or iterative
+        sSolvers = 'manual';
+        
+        % none, flow, filter. For filter - 2nd branch / manual -> residual!
+        sMode = 'flow';
+        
+        % Main stores - volumes
+        fStoreVolumes = 1000;
+    end
+    
+    methods
+        function this = Example(oParent, sName)
+            % Call parent constructor. Third parameter defined how often
+            % the .exec() method of this subsystem is called. This can be
+            % used to change the system state, e.g. close valves or switch
+            % on/off components.
+            % Values can be: 0-inf for interval in [s] (zero means with
+            % lowest time step set for the timer). -1 means with every TICK
+            % of the timer, which is determined by the smallest time step
+            % of any of the systems. Providing a logical false (def) means
+            % the .exec method is called when the oParent.exec() is
+            % executed (see this .exec() method - always call exec@vsys as
+            % well!).
+            this@vsys(oParent, sName, 30);
+            
+            eval(this.oRoot.oCfgParams.configCode(this));
+        end
+        
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+            
+            if strcmp(this.sMode, 'flow') || strcmp(this.sMode, 'filter')
+                matter.store(this, 'Tank_1', this.fStoreVolumes);
+                this.toStores.Tank_1.createPhase('air', this.toStores.Tank_1.fVolume);
+                matter.procs.exmes.gas(this.toStores.Tank_1.aoPhases(1), 'Port');
+
+
+                matter.store(this, 'Tank_2', this.fStoreVolumes);
+                this.toStores.Tank_2.createPhase('air', this.toStores.Tank_2.fVolume);
+                matter.procs.exmes.gas(this.toStores.Tank_2.aoPhases(1), 'Port');
+            end
+            
+            
+            if strcmp(this.sMode, 'flow')
+                components.pipe(this, 'Pipe', 2.5, 0.005);
+
+                matter.branch(this, 'Tank_1.Port', {'Pipe'}, 'Tank_2.Port');
+            end
+        end
+        
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            
+            
+            if strcmp(this.sSolvers, 'manual')
+                oManual = solver.matter.manual.branch(this.aoBranches(1));
+                oManual.setFlowRate(0.002);
+            end
+        end
+    end
+    
+     methods (Access = protected)
+        
+        function exec(this, ~)
+            % exec(ute) function for this system
+            % Here it only calls its parent's exec function
+            exec@vsys(this);
+        end
+        
+     end
+    
+end
+

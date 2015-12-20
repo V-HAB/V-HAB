@@ -59,7 +59,6 @@ function fSpecificHeatCapacity = calculateSpecificHeatCapacity(this, varargin) %
         if isempty(fTemperature) || isnan(fTemperature)
             fTemperature = this.Standard.Temperature; % std temperature (K)
         end
-
     else
         % Second case: Data is provided directly.
 

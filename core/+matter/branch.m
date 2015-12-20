@@ -554,7 +554,8 @@ classdef branch < base & event.source
                 afPressure = [ this.coExmes{1}.getPortProperties(), this.coExmes{2}.getPortProperties() ];
                 iWhichExme = sif(afPressure(1) >= afPressure(2), 1, 2);
             else
-                iWhichExme = sif(this.fFlowRate < 0, 2, 1);
+                %iWhichExme = sif(this.fFlowRate < 0, 2, 1);
+                iWhichExme = (this.fFlowRate < 0) + 1; % Faster?
             end
 
             oExme = this.coExmes{iWhichExme};
