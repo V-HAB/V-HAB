@@ -179,16 +179,19 @@ end
 % Again for debugging purposes, we'll get the unit names for the two
 % dependencies and put them into shorter-named variables for better code
 % readability.
-if this.ttxMatter.(sSubstance).bIndividualFile
-    sFirstDepUnit  = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sFirstDepName);
-    sSecondDepUnit = this.ttxMatter.(sSubstance).(sTypeStruct).tUnits.(sSecondDepName);
-    
+if txMatterForSubstance.bIndividualFile
     % Shorthand to save execution time!
-    txMatterForSubstanceAndType             = this.ttxMatter.(sSubstance).(sTypeStruct);
+    txMatterForSubstanceAndType             = txMatterForSubstance.(sTypeStruct);
     txMatterForSubstanceAndTypeAndAggregate = txMatterForSubstanceAndType.(sPhaseStructName);
+    
+    
+    sFirstDepUnit  = txMatterForSubstanceAndType.tUnits.(sFirstDepName);
+    sSecondDepUnit = txMatterForSubstanceAndType.tUnits.(sSecondDepName);
 end
 
 sReportString = 'Nothing to report.';
+
+sPropertyNoSpaces = strrep(sProperty,' ','');
 
 %TODO-SPEED maybe additional possibilities to save execution time, e.g. 
 %     store everything in containers.Map and generate string keys or so?
@@ -200,7 +203,7 @@ sReportString = 'Nothing to report.';
 % See if this substance has an individual file
 if txMatterForSubstance.bIndividualFile
     % Geting the column of the desired property
-    iColumn = txMatterForSubstanceAndType.tColumns.(strrep(sProperty,' ',''));
+    iColumn = txMatterForSubstanceAndType.tColumns.(sPropertyNoSpaces);
     
     % if no column found, property is not in worksheet
     if isempty(iColumn)
@@ -214,9 +217,10 @@ if txMatterForSubstance.bIndividualFile
     %---------------------------------------------------------------------%
     % Getting the first dependency and check for out of range
     %---------------------------------------------------------------------%
+    sFirstDepNameNoSpaces = strrep(sFirstDepName,' ','');
     
     % get column of first dependency
-    iColumnFirst = txMatterForSubstanceAndType.tColumns.(strrep(sFirstDepName,' ',''));
+    iColumnFirst = txMatterForSubstanceAndType.tColumns.(sFirstDepNameNoSpaces);
     % if properties are given 2 times (e.g. Temperature has C and K columns), second column is used
     if length(iColumnFirst) > 1
         iColumnFirst = iColumnFirst(2);
@@ -228,8 +232,8 @@ if txMatterForSubstance.bIndividualFile
     
     % look if data for first dependency is in range of table
     % if not in range, first look if data is given in worksheet MatterData before interpolate
-    fMin = txMatterForSubstanceAndTypeAndAggregate.ttExtremes.(['t',strrep(sFirstDepName,' ','')]).Min;
-    fMax = txMatterForSubstanceAndTypeAndAggregate.ttExtremes.(['t',strrep(sFirstDepName,' ','')]).Max;
+    fMin = txMatterForSubstanceAndTypeAndAggregate.ttExtremes.(['t',sFirstDepNameNoSpaces]).Min;
+    fMax = txMatterForSubstanceAndTypeAndAggregate.ttExtremes.(['t',sFirstDepNameNoSpaces]).Max;
     
     if fFirstDepValue > fMax
         % First dependency is greater than max value in table
@@ -284,7 +288,7 @@ if txMatterForSubstance.bIndividualFile
             
             try
                 % If there is data, we use it.
-                fProperty = txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue);
+                fProperty = txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(sPropertyNoSpaces).(sID)(fFirstDepValue);
                 
             catch
                 % The interpolation function does not yet exist, so we have
@@ -314,7 +318,7 @@ if txMatterForSubstance.bIndividualFile
                 % To make this faster the next time around, we save the
                 % scatteredInterpolant into the matter table.
                 
-                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = hInterpolation;
+                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(sPropertyNoSpaces).(sID) = hInterpolation;
                 this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).bInterpolations = true;
                 
                 % This addition to the matter table will be overwritten,
@@ -353,8 +357,11 @@ if txMatterForSubstance.bIndividualFile
         % Two dependencies are given.
         % Getting the second dependency and check for out of range
         %-----------------------------------------------------------------%
+        sSecondDepNameNoSpaces = strrep(sSecondDepName,' ','');
+        
+        
         % get column of second dependency
-        iColumnSecond = txMatterForSubstanceAndType.tColumns.(strrep(sSecondDepName,' ',''));
+        iColumnSecond = txMatterForSubstanceAndType.tColumns.(sSecondDepNameNoSpaces);
         
         % if no column found, property is not in worksheet
         if isempty(iColumnSecond)
@@ -363,8 +370,8 @@ if txMatterForSubstance.bIndividualFile
         
         % look if data for second dependency is in range of table
         % if not in range, first look if data is given in worksheet MatterData before interpolate
-        fMin = txMatterForSubstanceAndTypeAndAggregate.ttExtremes.(['t',strrep(sSecondDepName,' ','')]).Min;
-        fMax = txMatterForSubstanceAndTypeAndAggregate.ttExtremes.(['t',strrep(sSecondDepName,' ','')]).Max;
+        fMin = txMatterForSubstanceAndTypeAndAggregate.ttExtremes.(['t',sSecondDepNameNoSpaces]).Min;
+        fMax = txMatterForSubstanceAndTypeAndAggregate.ttExtremes.(['t',sSecondDepNameNoSpaces]).Max;
         if fSecondDepValue > fMax
             % Second dependency is greater than max value in table
             % set dependency equal max table value
@@ -415,7 +422,7 @@ if txMatterForSubstance.bIndividualFile
             
             try
                 % If there is data, we use it.
-                fProperty = txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(strrep(sProperty, ' ', '')).(sID)(fFirstDepValue, fSecondDepValue);
+                fProperty = txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(sPropertyNoSpaces).(sID)(fFirstDepValue, fSecondDepValue);
                 if isnan(fProperty)
                     this.throw('findProperty',['The combination of dependencies provided to the findProperty method is impossible.\n',...
                                'There is no %s %s at a %s of %.2f [%s] and a %s of %.2f [%s].'], sPhaseAdjective, sSubstance, sFirstDepName, ...
@@ -450,7 +457,7 @@ if txMatterForSubstance.bIndividualFile
                 % save the scatteredInterpolant into the matter
                 % table.
                 
-                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(strrep(sProperty, ' ', '')).(sID) = hInterpolation;
+                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(sPropertyNoSpaces).(sID) = hInterpolation;
                 this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).bInterpolations = true;
                 
                 % This addition to the matter table will be
@@ -462,28 +469,29 @@ if txMatterForSubstance.bIndividualFile
                 save(filename, 'this', '-v7');
             end
             
-            % Doing some nice user interface output messages. To make the
-            % code more readable, we first create some local variables with
-            % short names.
-            sActualFirstDepValue  = sprintf('%f',tParameters.fFirstDepValue);
-            sUsedFirstDepValue    = sprintf('%f',fFirstDepValue);
-            sActualSecondDepValue = sprintf('%f',tParameters.fSecondDepValue);
-            sUsedSecondDepValue   = sprintf('%f',fSecondDepValue);
-            
+            % Doing some nice user interface output messages.
             if ~(abOutOfRange(1) || abOutOfRange(2))
                 sReportString = 'Both dependencies in range. Tried to get value by interpolation.';
-            elseif abOutOfRange(1) && ~abOutOfRange(2)
-                sReportString = ['The value given for ',sFirstDepName,' (',sActualFirstDepValue,' ',sFirstDepUnit,') is out of Range. ',...
-                    'Used ',sUsedFirstDepValue,' ',sFirstDepUnit,' instead and tried to get best possible in-range value by interpolation.'];
-            elseif ~abOutOfRange(1) && abOutOfRange(2)
-                sReportString = ['The value given for ',sSecondDepName,' (',sActualSecondDepValue,' ',sSecondDepUnit,') is out of Range. ',...
-                    'Used ',sUsedSecondDepValue,' ',sSecondDepUnit,' instead and tried to get best possible in-range value by interpolation.'];
             else
-                sReportString = ['The values given for both dependencies (',sFirstDepName,' (',sActualFirstDepValue,'), ',...
-                    sSecondDepName,' (',sActualSecondDepValue,' ',sSecondDepUnit,')) are out of Range. ',...
-                    'Used ',sUsedFirstDepValue,' ',sFirstDepUnit,' and ',sUsedSecondDepValue,' ',sSecondDepUnit,' instead and tried to get best possible in-range value by interpolation.'];
+                % To make the code more readable, we first create some 
+                % local variables with short names.
+                sActualFirstDepValue  = sprintf('%f',tParameters.fFirstDepValue);
+                sUsedFirstDepValue    = sprintf('%f',fFirstDepValue);
+                sActualSecondDepValue = sprintf('%f',tParameters.fSecondDepValue);
+                sUsedSecondDepValue   = sprintf('%f',fSecondDepValue);
+                
+                if abOutOfRange(1) && ~abOutOfRange(2)
+                    sReportString = ['The value given for ',sFirstDepName,' (',sActualFirstDepValue,' ',sFirstDepUnit,') is out of Range. ',...
+                        'Used ',sUsedFirstDepValue,' ',sFirstDepUnit,' instead and tried to get best possible in-range value by interpolation.'];
+                elseif ~abOutOfRange(1) && abOutOfRange(2)
+                    sReportString = ['The value given for ',sSecondDepName,' (',sActualSecondDepValue,' ',sSecondDepUnit,') is out of Range. ',...
+                        'Used ',sUsedSecondDepValue,' ',sSecondDepUnit,' instead and tried to get best possible in-range value by interpolation.'];
+                else
+                    sReportString = ['The values given for both dependencies (',sFirstDepName,' (',sActualFirstDepValue,'), ',...
+                        sSecondDepName,' (',sActualSecondDepValue,' ',sSecondDepUnit,')) are out of Range. ',...
+                        'Used ',sUsedFirstDepValue,' ',sFirstDepUnit,' and ',sUsedSecondDepValue,' ',sSecondDepUnit,' instead and tried to get best possible in-range value by interpolation.'];
+                end
             end
-            
         end
     end
     
@@ -494,14 +502,14 @@ else
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     % Geting the column of the desired property
-    iColumn = txMatterForSubstance.tColumns.(strrep(sProperty,' ',''));
+    iColumn = txMatterForSubstance.tColumns.(sPropertyNoSpaces);
     
     % if no column found, property is not in worksheet
     if isempty(iColumn)
         this.throw('table:FindProperty',sprintf('Cannot find %s for %s (%s)', sProperty, sSubstance, sPhaseType));
     end
 
-        fProperty = txMatterForSubstance.ttxPhases.(sPhaseStructName).(strrep(sProperty,' ',''));
+        fProperty = txMatterForSubstance.ttxPhases.(sPhaseStructName).(sPropertyNoSpaces);
         if isnan(fProperty) || isempty(fProperty)
             this.throw('findProperty', 'Error using findProperty. The matter data for %s (%s) does not include a value for %s.', sSubstance, sPhaseType, sProperty);
         else

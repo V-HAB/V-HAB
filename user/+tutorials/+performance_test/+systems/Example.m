@@ -11,6 +11,9 @@ classdef Example < vsys
         
         % Main stores - volumes
         fStoreVolumes = 1000;
+        
+        
+        fLastUpdate = -1;
     end
     
     methods
@@ -26,7 +29,7 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName, 30);
+            this@vsys(oParent, sName, 5000);
             
             eval(this.oRoot.oCfgParams.configCode(this));
         end
@@ -37,20 +40,33 @@ classdef Example < vsys
             
             if strcmp(this.sMode, 'flow') || strcmp(this.sMode, 'filter')
                 matter.store(this, 'Tank_1', this.fStoreVolumes);
-                this.toStores.Tank_1.createPhase('air', this.toStores.Tank_1.fVolume);
+                this.toStores.Tank_1.createPhase('air', this.toStores.Tank_1.fVolume * 2);
                 matter.procs.exmes.gas(this.toStores.Tank_1.aoPhases(1), 'Port');
 
 
                 matter.store(this, 'Tank_2', this.fStoreVolumes);
-                this.toStores.Tank_2.createPhase('air', this.toStores.Tank_2.fVolume);
+                this.toStores.Tank_2.createPhase('air', 0);
                 matter.procs.exmes.gas(this.toStores.Tank_2.aoPhases(1), 'Port');
+
+
+                
+                matter.store(this, 'Tank_Mid', this.fStoreVolumes);
+                this.toStores.Tank_Mid.createPhase('air', 'flow', this.toStores.Tank_Mid.fVolume);
+                matter.procs.exmes.gas(this.toStores.Tank_Mid.aoPhases(1), 'Port_Left');
+                matter.procs.exmes.gas(this.toStores.Tank_Mid.aoPhases(1), 'Port_Right');
+                
+                
+                this.toStores.Tank_Mid.createPhase('air', 'filtered', 0);
+                tutorials.performance_test.comps.DummyAdsorber(this.toStores.Tank_Mid, 'dummyDing', 'flow', 'filtered', 'O2', inf);
             end
             
             
             if strcmp(this.sMode, 'flow')
-                components.pipe(this, 'Pipe', 2.5, 0.005);
+                components.pipe(this, 'Pipe_1', 2.5, 0.005);
+                components.pipe(this, 'Pipe_2', 2.5, 0.005);
 
-                matter.branch(this, 'Tank_1.Port', {'Pipe'}, 'Tank_2.Port');
+                matter.branch(this, 'Tank_1.Port', {'Pipe_1'}, 'Tank_Mid.Port_Left');
+                matter.branch(this, 'Tank_Mid.Port_Right', {'Pipe_2'}, 'Tank_2.Port');
             end
         end
         
@@ -60,8 +76,15 @@ classdef Example < vsys
             
             
             if strcmp(this.sSolvers, 'manual')
-                oManual = solver.matter.manual.branch(this.aoBranches(1));
-                oManual.setFlowRate(0.002);
+                %oManual = solver.matter.manual.branch(this.aoBranches(1));
+                %oManual.setFlowRate(0.002);
+                
+                %oManual = solver.matter.manual.branch(this.aoBranches(2));
+                %oManual.setFlowRate(0.002);
+                
+                solver.matter.manual.branch(this.aoBranches(1));
+                %solver.matter.manual.branch(this.aoBranches(2));
+                solver.matter.residual.branch(this.aoBranches(2));
             end
         end
     end
@@ -72,6 +95,18 @@ classdef Example < vsys
             % exec(ute) function for this system
             % Here it only calls its parent's exec function
             exec@vsys(this);
+            
+            
+            if this.oTimer.fTime > this.fLastUpdate
+                fFlowRate = this.aoBranches(1).oHandler.fFlowRate + 0.002;
+                
+                if fFlowRate > 0.01 || fFlowRate == 0
+                    fFlowRate = 0.002;
+                end
+                
+                this.aoBranches(1).oHandler.setFlowRate(fFlowRate);
+                %this.aoBranches(2).oHandler.setFlowRate(fFlowRate);
+            end
         end
         
      end

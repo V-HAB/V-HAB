@@ -47,7 +47,7 @@ classdef setup < simulation.infrastructure
             
             oLog = this.toMonitors.oLogger;
             
-%             tiFlowProps = oLog.add('Example', 'flow_props');
+            tiFlowProps = oLog.add('Example', 'flow_props');
 %             
 %             assignin('base', 'tiFlowProps', tiFlowProps);
 %             
