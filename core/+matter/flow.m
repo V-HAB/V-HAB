@@ -341,8 +341,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
     
     %% Public methods that take care of calculations that are needed a lot
     methods (Access = public)
-        % This function calculates the current volumetric flow rate based
-        % on the current state of the matter flowing through the flow.
+        % This function calculates the current volumetric flow rate in m3/s
+        % based on the current state of the matter flowing through the
+        % flow.
         function fVolumetricFlowRate = calculateVolumetricFlowRate(this)
             if this.fFlowRate
                 fVolumetricFlowRate = this.fFlowRate / ...
