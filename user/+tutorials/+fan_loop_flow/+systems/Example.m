@@ -18,7 +18,7 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName);
+            this@vsys(oParent, sName, 100);
         end
         
         function createMatterStructure(this)
@@ -38,8 +38,8 @@ classdef Example < vsys
             components.fan(this, 'Fan', 'setSpeed', 55000, 'Left2Right');
              
             % Adding a pipe to connect the tanks
-            components.pipe(this, 'Pipe_1', 1, 0.1);
-            components.pipe(this, 'Pipe_2', 1, 0.1);
+            components.pipe(this, 'Pipe_1', 1, 0.01);
+            components.pipe(this, 'Pipe_2', 1, 0.01);
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
@@ -65,7 +65,16 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
-            %disp(['Tank Pressure: ',num2str(this.toStores.Tank_1.aoPhases(1).fPressure)])
+            % To change the flow speed of the fan just change the
+            % fSpeedSetpoint property. This is a value in RPM.
+            if this.oTimer.fTime > 600 && this.oTimer.fTime < 1200
+                this.toProcsF2F.Fan.fSpeedSetpoint = 40000;
+            elseif this.oTimer.fTime > 1200 && this.oTimer.fTime < 1800
+                this.toProcsF2F.Fan.fSpeedSetpoint = 75000;
+            else
+                this.toProcsF2F.Fan.fSpeedSetpoint = 55000;
+            end
+            
         end
         
      end
