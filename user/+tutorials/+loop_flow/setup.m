@@ -1,41 +1,30 @@
-classdef setup < simulation
+classdef setup < simulation.infrastructure
     %SETUP This class is used to setup a simulation
     %   There should always be a setup file present for each project. It is
     %   used for the following:
-    %   - instantiate the root object
-    %   - register branches to their appropriate solvers
-    %   - determine which items are logged
+    %   - instantiate the top-level system
     %   - set the simulation duration
+    %   - determine which items are logged
+    %   - determine how results are plotted
     %   - provide methods for plotting the results
     
     properties
     end
     
     methods
-        function this = setup() % Constructor function
+        function this = setup(ptConfigParams, tSolverParams)
+            % Possible to change the constructor paths and params for the
+            % monitors
+            ttMonitorConfig = struct();
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation('Tutorial_Loop_Flow');
+            this@simulation.infrastructure('Tutorial_Loop_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            tutorials.loop_flow.systems.Example(this.oRoot, 'Example');
             
-            %% Logging
-            % Creating a cell setting the log items. You need to know the
-            % exact structure of your model to set log items, so do this
-            % when you are done modelling and ready to run a simulation. 
-            this.csLog = {
-                % System timer
-                'oData.oTimer.fTime';                                        % 1
-                
-                % Add other parameters here
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fPressure';  % 2
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
-                'toChildren.Example.aoBranches(1).fFlowRate';                % 4
-                
-                };
+            tutorials.loop_flow.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length
             % Stop when specific time in sim is reached
@@ -43,48 +32,23 @@ classdef setup < simulation
             this.fSimTime = 100 * 1; % In seconds
             this.iSimTicks = 600;
             this.bUseTime = true;
+        end
+        
+        function configureMonitors(this)
+            %% Logging
+            tiLog = this.toMonitors.oLogger.add('Example', 'flow_props');
+            
+            %% Plot definition
+            this.toMonitors.oPlotter.definePlotWithFilter(tiLog, 'Pa',   'Pressures')
+            this.toMonitors.oPlotter.definePlotWithFilter(tiLog, 'K',    'Temperatures')
+            this.toMonitors.oPlotter.definePlotWithFilter(tiLog, 'kg',   'Masses')
+            this.toMonitors.oPlotter.definePlotWithFilter(tiLog, 'kg/s', 'Flow Rates')
 
         end
         
-        function plot(this) % Plotting the results
-            % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
-            % further information
+        function plot(this, varargin) % Plotting the results
+            this.toMonitors.oPlotter.plot(varargin{:});
             
-            close all
-            
-            figure('name', 'Tank Pressure');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 2));
-            legend('Tank 1');
-            ylabel('Pressure in Pa');
-            xlabel('Time in s');
-            
-            figure('name', 'Tank Mass');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 3));
-            legend('Tank 1');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
-            
-            figure('name', 'Flow Rate');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 4));
-            legend('Branch');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
-            
-            figure('name', 'Time Steps');
-            hold on;
-            grid minor;
-            plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-            legend('Solver');
-            ylabel('Time in [s]');
-            xlabel('Ticks');
-                        
-            tools.arrangeWindows();
         end
         
     end
