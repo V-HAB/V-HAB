@@ -109,8 +109,10 @@ classdef pipe < matter.procs.f2f
             try
                 % As for the pressure above, we are using the average
                 % density between in- and outflow.
-                fDensityIn = this.oMT.calculateDensity(oFlowIn);
-                fDensityOut = this.oMT.calculateDensity(oFlowOut);
+                %fDensityIn = this.oMT.calculateDensity(oFlowIn);
+                %fDensityOut = this.oMT.calculateDensity(oFlowOut);
+                fDensityIn = oFlowIn.getDensity();
+                fDensityOut = oFlowOut.getDensity();
                 
                 fDensity = (fDensityIn + fDensityOut) / 2;
             catch
@@ -128,7 +130,8 @@ classdef pipe < matter.procs.f2f
 
             % Calculate dynamic viscosity
             try
-                fEta = this.oMT.calculateDynamicViscosity(oFlowIn);
+                %fEta = this.oMT.calculateDynamicViscosity(oFlowIn);
+                fEta = oFlowIn.getDynamicViscosity();
             catch
                 fEta = 17.2 / 10^6;
             end

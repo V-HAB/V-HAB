@@ -15,6 +15,9 @@ classdef branch < solver.matter.manual.branch
     methods
         function this = branch(oBranch)
             this@solver.matter.manual.branch(oBranch);
+            
+            
+            this.iPostTickPriority = -1;
         end
     end
     

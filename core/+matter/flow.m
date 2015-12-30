@@ -85,6 +85,18 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % the remove callback can be executed for in methods other then
         % delete
         bInterface = false;
+        
+        
+        
+        
+        
+        % Re-calculated every tick in setData/seal
+        afPartialPressure;
+        
+        
+        % Only recalculated when setData was executed and requested again!
+        fDensity;
+        fDynamicViscosity;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -201,6 +213,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     this.arPartialMass = oPhase.arPartialMass;
                     this.fMolarMass    = oPhase.fMolarMass;
                     this.fSpecificHeatCapacity = oPhase.fSpecificHeatCapacity;
+                    
+                    this.afPartialPressure = this.calculatePartialPressures();
                 end
 
             end % if not an interface flow
@@ -218,25 +232,30 @@ classdef flow < base & matlab.mixin.Heterogeneous
             this.oOut = [];
         end
         
-        function [ afPartialPressures ] = getPartialPressures(this)
-            %TODO put in matter.table, see calcHeatCapacity etc (?)
-            %     only works for gas -> store phase type in branch? Multi
-            %     phase flows through "linked" branches? Or add "parallel"
-            %     flows at each point in branch, one for each phase?
+        function afPartialPressure = getPartialPressures(this)
+            afPartialPressure = [];
             
-            % Calculating the number of mols for each species
-            afMols = this.arPartialMass ./ this.oMT.afMolarMass;
-            % Calculating the total number of mols
-            fGasAmount = sum(afMols);
+            this.throw('getPartialPressures', 'Please access afPartialPressure directly!');
+        end
+        
+        
+        function fDensity = getDensity(this)
+            if isempty(this.fDensity)
+                this.fDensity = this.oMT.calculateDensity(this);
+            end
             
-            %TODO Do this using matter table!
-            %fGasAmount = this.oMT.calculateMols(this);
             
-            % Calculating the partial amount of each species by mols
-            arFractions = afMols ./ fGasAmount;
-            % Calculating the partial pressures by multiplying with the
-            % total pressure in the phase
-            afPartialPressures = arFractions .* this.fPressure;
+            fDensity = this.fDensity;
+        end
+        
+        
+        function fDynamicViscosity = getDynamicViscosity(this)
+            if isempty(this.fDynamicViscosity)
+                this.fDynamicViscosity = this.oMT.calculateDynamicViscosity(this);
+            end
+            
+            
+            fDynamicViscosity = this.fDynamicViscosity;
         end
     end
     
@@ -359,6 +378,33 @@ classdef flow < base & matlab.mixin.Heterogeneous
     %% Methods to set matter properties, accessible through handles
     % See above, handles are returned when adding procs or on .seal()
     methods (Access = protected)
+        
+        function [ afPartialPressure ] = calculatePartialPressures(this)
+            %TODO put in matter.table, see calcHeatCapacity etc (?)
+            %     only works for gas -> store phase type in branch? Multi
+            %     phase flows through "linked" branches? Or add "parallel"
+            %     flows at each point in branch, one for each phase?
+            
+            % Calculating the number of mols for each species
+            afMols = this.arPartialMass ./ this.oMT.afMolarMass;
+            % Calculating the total number of mols
+            fGasAmount = sum(afMols);
+            
+            %TODO Do this using matter table!
+            %fGasAmount = this.oMT.calculateMols(this);
+            
+            % Calculating the partial amount of each species by mols
+            arFractions = afMols ./ fGasAmount;
+            % Calculating the partial pressures by multiplying with the
+            % total pressure in the phase
+            afPartialPressure = arFractions .* this.fPressure;
+        end
+        
+        
+        
+        
+        
+        
         function removeIfProc(this)
             % Decouple from processor - only possible if interface flow!
             if ~this.bInterface
@@ -591,6 +637,19 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     % subtract one from the FLOW index to get the last F2F
                     fPortPress = fPortPress - afPressures(iI - sif(bNeg, 1, 0));
                 end
+                
+                
+                
+                
+                % Re-calculate partial pressures
+                oThis.afPartialPressure = oThis.calculatePartialPressures();
+                
+                % Reset to empty, so if requested again, recalculated!
+                oThis.fDensity          = [];
+                oThis.fDynamicViscosity = [];
+                
+                
+                
                 
                 
                 % Skip temperature?

@@ -16,7 +16,10 @@ function [ afPartialPressures ] = calculatePartialPressures(this, varargin)
 
 % Case one - just a phase or flow object provided
 if length(varargin) == 1
-    if ~isa(varargin{1}, 'matter.phase')  && ~isa(varargin{1}, 'matter.flow')
+    bIsaMatterPhase = isa(varargin{1}, 'matter.phase');
+    bIsaMatterFlow  = isa(varargin{1}, 'matter.flow');
+    
+    if ~bIsaMatterPhase && ~bIsaMatterFlow
         this.throw('calculatePartialPressures', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
     end
     
@@ -24,11 +27,13 @@ if length(varargin) == 1
     % initialize attributes from input object
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type, also setting the afMass array. 
-    if isa(varargin{1}, 'matter.phase')
+    if bIsaMatterPhase
         sPhase = varargin{1}.sType;
         afMass = varargin{1}.afMass;
-    elseif isa(varargin{1}, 'matter.flow')
-        afPartialPressures = varargin{1}.getPartialPressures();
+        
+    elseif bIsaMatterFlow
+        %afPartialPressures = varargin{1}.getPartialPressures();
+        afPartialPressures = varargin{1}.afPartialPressure;
         return;
     end
     

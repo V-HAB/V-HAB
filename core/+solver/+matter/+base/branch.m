@@ -55,6 +55,14 @@ classdef branch < base & event.source
     end
     
     
+    properties (SetAccess = protected, GetAccess = public)
+        % Update method is bound to this post tick priority. Some solvers
+        % might need another priority to e.g. ensure that first, all other
+        % branches update their flow rates.
+        iPostTickPriority = -2;
+    end
+    
+    
     methods
         function this = branch(oBranch, fInitialFlowRate, sSolverType)
             
@@ -133,7 +141,7 @@ classdef branch < base & event.source
         function registerUpdate(this, ~)
             %if this.bRegisteredOutdated, return; end;
             
-            this.oBranch.oTimer.bindPostTick(@this.update, -2);
+            this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
             this.bRegisteredOutdated = true;
         end
         

@@ -86,6 +86,11 @@ classdef setup < simulation.infrastructure
             % 2 / 25 - 3.3k ticks, ok
             % 1 / 100 - ok - faster (~3.5k ticks?)
             
+            
+            
+            % 5/50 SEHR SCHOEN!!
+            % 10/0 SCHNELL!
+            % 0.1/1000 - ok
             if ~isfield(tSolverParams, 'rUpdateFrequency')
                 tSolverParams.rUpdateFrequency = 0.1;
             end

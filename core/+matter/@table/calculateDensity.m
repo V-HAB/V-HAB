@@ -28,6 +28,14 @@ if length(varargin) == 1
     fTemperature = varargin{1}.fTemperature;
     
     if any(strcmp(sMatterState, {'gas', 'liquid'}))
+        % matter.flow - can we use the ideal gas law?
+        %TODO matter.table.setUseSimpleEquationsIfSufficientlyValid()!
+        if varargin{1}.fPressure < 5e5
+            fDensity = (varargin{1}.fPressure * varargin{1}.fMolarMass) / (matter.table.Const.fUniversalGas * varargin{1}.fTemperature);
+            return;
+        end
+        
+        
         afPartialPressures = this.calculatePartialPressures(varargin{1});
     else
         if isa(varargin{1}, 'matter.phase')
@@ -49,6 +57,7 @@ if length(varargin) == 1
         fDensity = 0;
         return;
     end
+    
 else
     sMatterState = varargin{1};
     afMass       = varargin{2};
