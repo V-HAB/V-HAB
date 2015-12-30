@@ -94,6 +94,8 @@ classdef fan < matter.procs.f2f
             'fTestDensity',      0.3510 ...
             );
         
+        % Pressure difference produced by this fan. 
+        fDeltaPressure;
     end
     
     methods
@@ -404,6 +406,8 @@ classdef fan < matter.procs.f2f
                     % backflow), the fan produces a pressure drop.
                     fDeltaPressure = fDensityCorrectedDeltaPressure * this.iBlowDirection * iFlowDir * (-1);
                     
+                    this.fDeltaPressure = fDeltaPressure;
+                    
                     %Calculating Power consumed by the FAN
                     if oFlowIn.fFlowRate > 0
                         this.fPowerConsumtionFan = (fDeltaPressure * fVolumetricFlowRate) / (0.80); %[W] for  VolumetricFlowrate in [m?/s] and a DeltaPress in [Pa]
@@ -412,7 +416,7 @@ classdef fan < matter.procs.f2f
                     end
                     
                     %TODO
-                    this.fHeatFlow = 1;
+%                     this.fHeatFlow = 1;
                     
                     
                     

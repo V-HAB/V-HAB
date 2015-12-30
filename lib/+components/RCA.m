@@ -245,7 +245,8 @@ classdef RCA < vsys
             
             % Getting the partial pressure of CO2 at the exme we have
             % defined to be the reference for this measurement. 
-            afExmePartialPressures = this.oReferenceExme.oFlow.getPartialPressures();
+%             afExmePartialPressures = this.oReferenceExme.oFlow.getPartialPressures();
+            afExmePartialPressures = this.oReferenceExme.oFlow.afPartialPressure;
             fMeasuredCO2PartialPressure = afExmePartialPressures(this.oMT.tiN2I.CO2);
 
             % We need some deadband to prevent the valve from switching too fast at
