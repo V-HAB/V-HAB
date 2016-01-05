@@ -45,10 +45,6 @@ classdef plotter_basic < simulation.monitor
                 xDataReference = simulation.monitors.plotter_basic.getIndicesFromStruct(xDataReference);
             end
             
-            if isempty(xDataReference)
-                this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
-                return;
-            end
             
             % Filter is by unit
             tFilter = struct();
