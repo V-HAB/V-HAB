@@ -949,6 +949,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         
         
         function calculateTimeStep(this)
+            % Change in kg of partial masses per second
+            [ afChange, mfDetails ] = this.getTotalMassChange();
+
+            this.afCurrentTotalInOuts = afChange;
+            this.mfCurrentInflowDetails = mfDetails;
+            
+            
+            
             if ~isempty(this.fFixedTS)
                 fNewStep = this.fFixedTS;
             else
@@ -1009,12 +1017,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                     arPreviousChange = this.afMass; % ... set to zeros!
                 end
 
-                % Change in kg of partial masses per second
-                [ afChange, mfDetails ] = this.getTotalMassChange();
-                
-                this.afCurrentTotalInOuts = afChange;
-                this.mfCurrentInflowDetails = mfDetails;
-                
 
                 % Only use entries where change is not zero
                 % If some substance changed a bit, but less then the thres-
