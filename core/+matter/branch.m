@@ -51,6 +51,8 @@ classdef branch < base & event.source
         % @type string
         sName;
         
+        sCustomName;
+        
         % Names for left/right (cell with 1/2, can be accessed like
         % [ aoBranches.csNames ] --> cell with names, two rows, n cols
         % @type cell
@@ -149,7 +151,7 @@ classdef branch < base & event.source
     end
     
     methods
-        function this = branch(oContainer, sLeft, csProcs, sRight)
+        function this = branch(oContainer, sLeft, csProcs, sRight, sCustomName)
             % Can be called with either stores/ports or interface names
             % (all combinations possible). Connections are always done from
             % subsystem to system.
@@ -164,7 +166,23 @@ classdef branch < base & event.source
             this.oTimer     = oContainer.oRoot.oTimer;
             
             this.csNames    = strrep({ sLeft; sRight }, '.', '__');
-            this.sName      = [ this.csNames{1} '___' this.csNames{2} ];
+            sTempName      = [ this.csNames{1} '___' this.csNames{2} ];
+            
+            % We need to jump through some hoops because the
+            % maximum field name length of MATLAB is only 63
+            % characters, so we delete the rest of the actual
+            % branch name... 
+            % namelengthmax is the MATLAB variable that stores the
+            % maximum name length, so in case it changes in the
+            % future, we don't have to change this code!
+            if length(sTempName) > namelengthmax
+                sTempName = sTempName(1:namelengthmax);
+            end
+            this.sName = sTempName;
+            
+            if nargin == 5
+                this.sCustomName = sCustomName;
+            end
             
             oFlow = [];
             
@@ -372,8 +390,11 @@ classdef branch < base & event.source
             
             % Before we delete it, we'll save the old branch name
             % temporarily, because we'll need it one more time.
-            sOldName = this.sName;
-            
+           	if ~isempty(this.sCustomName)
+                sOldName = this.sCustomName;
+            else
+                sOldName = this.sName;
+            end
             % Now we set the new name for this branch, inserting the word
             % 'Interface' in the middle, so when looking at the name, we
             % know that this is a subsystem to supersystem branch.

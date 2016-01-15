@@ -61,8 +61,11 @@ end
 
 for iB = 1:length(oVsys.aoBranches)
     oBranch = oVsys.aoBranches(iB);
-    
-    tLogProps(iV).sObjectPath = [ sPath ':b:' oBranch.sName ];
+    if ~isempty(oBranch.sCustomName)
+        tLogProps(iV).sObjectPath = [ sPath ':b:' oBranch.sCustomName ];
+    else
+        tLogProps(iV).sObjectPath = [ sPath ':b:' oBranch.sName ];
+    end
     tLogProps(iV).sExpression = 'fFlowRate';
     tLogProps(iV).sLabel = [ 'Flow Rate (' oVsys.sName ' - ' oBranch.sName ')' ];
     %tLogProps(end).sUnit = 'kg/s';

@@ -176,7 +176,11 @@ classdef container < sys
                 % Now, using the helper array, we delete the fields from
                 % the toBranches struct.
                 for iI = 1:length(aoBranchStubs)
-                    this.toBranches = rmfield(this.toBranches, aoBranchStubs(iI).sName);
+                    if ~isempty(aoBranchStubs(iI).sCustomName)
+                        this.toBranches = rmfield(this.toBranches, aoBranchStubs(iI).sCustomName);
+                    else
+                        this.toBranches = rmfield(this.toBranches, aoBranchStubs(iI).sName);
+                    end
                 end
                 
                 for iI = 1:length(this.aoBranches)
@@ -300,7 +304,15 @@ classdef container < sys
             
             
             this.aoBranches(end + 1, 1)     = oBranch;
-            this.toBranches.(oBranch.sName) = oBranch;
+            if ~isempty(oBranch.sCustomName)
+                if isfield(this.toBranches, oBranch.sCustomName)
+                    error('A branch with this custom name already exists')
+                else
+                    this.toBranches.(oBranch.sCustomName) = oBranch;
+                end
+            else
+                this.toBranches.(oBranch.sName) = oBranch;
+            end
         end
         
         
@@ -553,7 +565,11 @@ classdef container < sys
                 this.toBranches = rmfield(this.toBranches, sOldName);
                 % Now we'll add the branch to the struct again, but with
                 % its new name. 
-                this.toBranches.(oBranch.sName) = oBranch;
+                if ~isempty(oBranch.sCustomName)
+                    this.toBranches.(oBranch.sCustomName) = oBranch;
+                else
+                    this.toBranches.(oBranch.sName) = oBranch;
+                end
             else
                 % In case the calling branch is not in this container, we
                 % throw an error message.
