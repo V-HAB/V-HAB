@@ -352,7 +352,7 @@ classdef fan < matter.procs.f2f
             % To be able to use the functions of the characteristics, as a
             % next step, the matter flow needs to be calculated into
             % a volumetric flow. Luckily, every flow has a method for that!
-            fVolumetricFlowRate = oFlowIn.calculateVolumetricFlowRate();
+            fVolumetricFlowRate = oFlowIn.calculateVolumetricFlowRate(fFlowRate);
             
             % Now we use the characteristic functions to calculate the
             % delta pressure at the two different fan speeds depending on
