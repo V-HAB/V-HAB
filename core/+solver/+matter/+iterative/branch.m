@@ -22,7 +22,6 @@ classdef branch < solver.matter.base.branch
         % to lower time steps
         fSensitivity = 5;
         
-        
         % Default maximum time step for the branch
         fMaxStep   = 20;
         

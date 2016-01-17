@@ -339,7 +339,7 @@ classdef logger_basic < simulation.monitor
                 %sCmd = [ sCmd sprintf('this.oRoot.%s,\n', this.csLog{iL}) ];
                 
                 % sS((length(sN) + 1):end)
-                sCmd = [ sCmd this.csPaths{iL} ',' ];
+                sCmd = strcat( sCmd, this.csPaths{iL}, ',' );
             end
 
             sCmd = [ sCmd(1:(end - 1)) ' ]' ];

@@ -312,9 +312,9 @@ classdef branch < base & event.source
         
         
         function connectTo(this, sInterface)
-            % The sBranch parameter has to point to a valid interface name
-            % for subsystems of a branch in the parent system, i.e. on the
-            % 'left' side of the branch.
+            % The sInterface parameter has to be the name of a valid
+            % interface for subsystems of a branch in the parent system,
+            % i.e. on the 'left' side of the branch. 
             % Write the aoFlows from the other branch, and the oPhase/oFlow
             % (end flow) to this branch here, store indices to be able to
             % remove the references later.
