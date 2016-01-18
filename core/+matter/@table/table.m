@@ -114,15 +114,26 @@ classdef table < base
                 if exist(strrep('data\MatterData.mat', '\', filesep),'file')
                     load(strrep('data\MatterData.mat', '\', filesep));
                     
+<<<<<<< HEAD
                     % There are a few properties that will have been saved
                     % by the previous run of V-HAB in the matter.table
                     % object that need to be reset to their initial values,
                     % otherwise there might be errors if the object classes
-                    % were changed between runs. 
+                    % were changed between runs.
+                    %
+                    % Also, objects here are included in e.g. mass balance
+                    % calculations, leading to wrong results.
+                    % 
                     %TODO delete these as soon as aoPhases and aoFlows
                     %properties have been removed from this class. 
-                    this.aoPhases = []; 
+                    warning('off','all');
+                    delete(this.aoPhases);
+                    delete(this.aoFlows);
+                    
+                    this.aoPhases = [];
                     this.aoFlows  = matter.flow.empty();
+                    warning('on','all');
+                    
                     % The return command ends the constructor method
                     return;
                 end

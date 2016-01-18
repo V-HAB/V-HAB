@@ -231,7 +231,18 @@ classdef timer < base
             % Execute found cbs
             % The indexing type for the cell only works if the array is of
             % real logical / boolean type!
-            cellfun(@(cb) cb(this), this.cCallBacks(abExec));
+            
+            %cellfun(@(cb) cb(this), this.cCallBacks(abExec));
+            aiExec  = find(abExec);
+            iExec   = length(aiExec);
+            %cTmpCbs = this.cCallBacks(abExec);
+            %iExec   = length(cTmpCbs);
+            
+            for iE = 1:iExec
+                this.cCallBacks{aiExec(iE)}();
+                %cTmpCbs{iE}();
+            end
+            
             
             % Update last execution time - see above, abExec is logical, so
             % this works, don't need find!

@@ -134,7 +134,15 @@ classdef p2p < matter.flow
             if (nargin < 2) || isempty(fFlowRate), fFlowRate = this.fFlowRate; end;
             
             % We're a p2p, so we're directly connected to EXMEs
-            oExme = this.(sif(fFlowRate >= 0, 'oIn', 'oOut'));
+            %oExme = this.(sif(fFlowRate >= 0, 'oIn', 'oOut'));
+            if fFlowRate >= 0
+                oExme = this.oIn;
+            else
+                oExme = this.oOut;
+            end
+            %oExme = this.(sif(fFlowRate >= 0, 'oIn', 'oOut'));
+            
+            
             
             if nargin < 3 || isempty(arPartialMass)
                 % We also get the molar mass and heat capacity ... however,

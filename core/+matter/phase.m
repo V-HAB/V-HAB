@@ -186,7 +186,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % Time when the total heat capacity was last updated. Need to save
         % this information in order to prevent the heat capacity
         % calculation to be performed multiple times per timestep.
-        fLastTotalHeatCapacityUpdate = 0;
+        fLastTotalHeatCapacityUpdate;
         
         
         % Last time branches were set oudated
@@ -221,7 +221,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % flow rates. Use when volumes of phase compared to flow rates are
         % small!
         bSynced = false;
-
+        
+        
+        % How often should the heat capacity be re-calculated?
+        fMinimalTimeBetweenHeatCapacityUpdates = 1;
     end
 
     properties (Transient, SetAccess = private, GetAccess = public)
@@ -418,6 +421,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             abNegative = this.afMass < 0;
 
             if any(abNegative)
+                %keyboard();
                 this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
                 this.afMass(abNegative) = 0;
             end
@@ -558,8 +562,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % heat capacity of this phase. So we don't have to do the
             % calculation again, we check against the timestep and only do
             % the calculation if it hasn't been done before.
-            if ~(this.oTimer.fTime == this.fLastTotalHeatCapacityUpdate)
+            %
+            % See getTotalHeatCapacity --> only recalculated if at least
+            % one second has passed. So we'll also include that here!
+            %if ~(this.oTimer.fTime == this.fLastTotalHeatCapacityUpdate)
+            if isempty(this.fLastTotalHeatCapacityUpdate) || (this.oTimer.fTime >= (this.fLastTotalHeatCapacityUpdate + this.fMinimalTimeBetweenHeatCapacityUpdates))
                 this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
+                
+                this.fTotalHeatCapacity = this.fSpecificHeatCapacity * this.fMass;
+                this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
             end
         end
 
@@ -595,7 +606,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % the findProperty() method of the matter table have been
             % substantially accelerated.
             % One second is also the fixed timestep of the thermal solver. 
-            if this.oTimer.fTime - this.fLastTotalHeatCapacityUpdate < 1
+            %
+            % Could that not be written as:
+            % this.oTimer.fTime < (this.fLastTotalHeatCapacityUpdate + ...
+            %                  this.fMinimalTimeBetweenHeatCapacityUpdates)
+            % It feels like that is more readable ...
+            if isempty(this.fLastTotalHeatCapacityUpdate) || (this.oTimer.fTime - this.fLastTotalHeatCapacityUpdate < this.fMinimalTimeBetweenHeatCapacityUpdates)
                 fTotalHeatCapacity = this.fTotalHeatCapacity;
             else
                 this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
@@ -1089,13 +1105,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
                 fNewStep = interp1([ 0 1 ], [ this.oTimer.fMinimumTimeStep fNewStep ], (1 - rChanges) ^ iExpDelta, 'linear', 'extrap');
                 %}
-
+                
+                fMinStep = 0;%0.0075; %0;
 
                 if fNewStep > this.fMaxStep
                     fNewStep = this.fMaxStep;
 %                     fprintf('\nTick %i, Time %f: Phase %s setting maximum timestep of %f\n', this.oTimer.iTick, this.oTimer.fTime, this.sName, this.fMaxStep);
-                elseif fNewStep < 0
-                    fNewStep = 0;
+                elseif fNewStep < fMinStep
+                    fNewStep = fMinStep;
 %                     fprintf('Tick %i, Time %f: Phase %s.%s setting minimum timestep\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, this.sName);
 %                     keyboard(); 
                 end

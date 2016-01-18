@@ -447,6 +447,22 @@ classdef flow < base & matlab.mixin.Heterogeneous
             this.fTemperature  = fTemperature;
             this.fPressure     = fPressure;
             
+            
+            
+            %CHECK see setData, using the IN exme props!
+            if this.fFlowRate >= 0
+                oPhase = this.oIn.oPhase;
+            else
+                oPhase = this.oOut.oPhase;
+            end
+            
+            %[ ~, this.fMolarMass, this.fSpecificHeatCapacity ] = oExme.getMatterProperties();
+            this.fSpecificHeatCapacity = oPhase.fSpecificHeatCapacity;
+            this.fMolarMass            = oPhase.fMolarMass;
+            
+            
+            return;
+            
             % Calculate molar mass. Normally, the phase uses the method
             % utilized below and provides a vector of absolute masses.
             % Here, the mass fractions are used, which should make no

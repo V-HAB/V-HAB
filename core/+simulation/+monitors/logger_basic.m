@@ -158,13 +158,22 @@ classdef logger_basic < simulation.monitor
                     sFilter = csFilters{iF};
                     sValue  = tFilter.(sFilter);
                     
+                    %{
+                    abDelete = false(length(aiIdx), 1);
+                    
                     for iI = length(aiIdx):-1:1
                         if ~strcmp(this.tLogValues(aiIdx(iI)).(sFilter), sValue)
-                            aiIdx(iI) = [];
+                            %aiIdx(iI) = [];
+                            abDelete(iI) = true;
                             
                             %iI = iI - 1;
                         end
                     end
+                    %}
+                    
+                    abDelete = ~strcmp({ this.tLogValues(aiIdx).(sFilter) }', sValue);
+                    
+                    aiIdx(abDelete) = [];
                 end
             end
         end
@@ -357,13 +366,10 @@ classdef logger_basic < simulation.monitor
 %             disp(this.oSimulationInfrastructure.oSimulationContainer.oTimer.fTime);
             
             
-            this.iLogIdx = this.iLogIdx + 1;
             
-            
-            this.afTime(this.iLogIdx) = this.oSimulationInfrastructure.oSimulationContainer.oTimer.fTime;
             
             try
-                this.mfLog(this.iLogIdx, :) = this.logDataEvald();
+                this.mfLog(this.iLogIdx + 1, :) = this.logDataEvald();
             catch
                 % One reason for the above statement to fail is an 'empty'
                 % variable. Then the length of the array returned by
@@ -411,6 +417,12 @@ classdef logger_basic < simulation.monitor
                     end
                 end
             end
+            
+            
+            this.afTime(this.iLogIdx + 1) = this.oSimulationInfrastructure.oSimulationContainer.oTimer.fTime;
+            
+            % Increase after actual logging in case of ctrl+c interruption!
+            this.iLogIdx = this.iLogIdx + 1;
         end
         
         

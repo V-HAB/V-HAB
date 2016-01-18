@@ -477,7 +477,8 @@ classdef infrastructure < base & event.source
                 sAppendix = [ '_' sAppendix ];
             end
             
-            sPath = [  this.sName '_' datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') sAppendix ];
+            sTick = [ '_tick' num2str(this.oSimulationContainer.oTimer.iTick) ];
+            sPath = [  this.sName '_' datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') sTick sAppendix ];
             
             
             oSimObj = this;
