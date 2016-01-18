@@ -210,6 +210,9 @@ classdef filter < matter.store
 %             oFilteredPhase = matter.phases.gas(this, 'FilteredPhase', struct(), 0.0011, fTemperature);
 %             oFilteredPhase = this.createPhase(sAtmosphereHelper, 'FilteredPhase', 0.0011, fTemperature, rHumidity, fPressure);
             
+            oFlowPhase.bSynced     = true;
+            oFilteredPhase.bSynced = true;
+            
             % Fixed Time Step
             if exist('fFixedTimeStep','var')
             % Adding fixed time steps for the filter

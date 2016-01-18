@@ -84,6 +84,10 @@ classdef RCA < vsys
             matter.procs.exmes.gas(oPhase, 'Splitter_Inlet'); 
             matter.procs.exmes.gas(oPhase, 'Splitter_Outlet1');
             matter.procs.exmes.gas(oPhase, 'Splitter_Outlet2');
+            
+            % Syncing the phase, this makes solver branch updating smoother
+            % and prevents instabilities.
+            oPhase.bSynced = true;
 
             %% Adsorber Beds
             % Creating the two filter beds
@@ -106,6 +110,10 @@ classdef RCA < vsys
             matter.procs.exmes.gas(oPhase, 'Merger_Inlet1');
             matter.procs.exmes.gas(oPhase, 'Merger_Inlet2');
             matter.procs.exmes.gas(oPhase, 'Merger_Outlet');
+            
+            % Syncing the phase, this makes solver branch updating smoother
+            % and prevents instabilities.
+            oPhase.bSynced = true;
             
             %% Vacuum Store
             % Creating vacuum store
