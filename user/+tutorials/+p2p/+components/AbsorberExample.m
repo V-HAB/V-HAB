@@ -21,16 +21,25 @@ classdef AbsorberExample < matter.procs.p2ps.flow
         
         % Ratio of actual loading and maximum load
         rLoad;
+        
+        
+        % Exponent for characeristics (e.g. 0 -> no reduction through
+        % loaded bed, 1 = linear,2 exponential etc.)
+        fCharacteristics = 1;
     end
     
     
     methods
-        function this = AbsorberExample(oStore, sName, sPhaseIn, sPhaseOut, sSubstance, fCapacity)
+        function this = AbsorberExample(oStore, sName, sPhaseIn, sPhaseOut, sSubstance, fCapacity, fCharacteristics)
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
             
             % Species to absorb, max absorption
             this.sSubstance  = sSubstance;
             this.fCapacity = fCapacity;
+            
+            if nargin >= 7
+                this.fCharacteristics = fCharacteristics;
+            end
             
             % The p2p processor can specify which substance it wants to
             % extract from the phase. A vector with relative values has to
@@ -86,10 +95,19 @@ classdef AbsorberExample < matter.procs.p2ps.flow
             % species flowing into the filter.
             afFlowRate = afFlowRate .* mrPartials(:, iSpecies);
             
+            
+            if this.fCharacteristics > 0
+                rAdsorp = (1 - this.rLoad^this.fCharacteristics);
+            else
+                rAdsorp = 1;
+            end
+            
             %keyboard();
             % Sum up flow rates and use the load of the filter to reduce 
             % the flow rate accordingly
-            fFlowRate = (1 - this.rLoad) * sum(afFlowRate);
+            fFlowRate = rAdsorp * sum(afFlowRate);
+            
+            
             
             % Test ...
             %fFlowRate = 0;
