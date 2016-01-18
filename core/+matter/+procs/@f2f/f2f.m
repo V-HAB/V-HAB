@@ -203,8 +203,11 @@ classdef f2f < base & matlab.mixin.Heterogeneous
                 this.throw('removeFlow', 'Flow doesn''t exist');
             end
             
-            if isvalid(this.oMT), this.aoFlows(iIdx) = this.oMT.oFlowZero;
-            else                  this.aoFlows(iIdx) = []; % Seems like deconstruction of all objs, oMT invalid!
+            if isvalid(this.oMT) 
+                aiIndexes = 1:length(this.aoFlows);
+                this.aoFlows = this.aoFlows(aiIndexes ~= iIdx);
+            else
+                this.aoFlows(iIdx) = []; % Seems like deconstruction of all objs, oMT invalid!
             end
             
             this.aiSign(iIdx)  = 0;

@@ -125,13 +125,8 @@ classdef table < base
                     % 
                     %TODO delete these as soon as aoPhases and aoFlows
                     %properties have been removed from this class. 
-                    warning('off','all');
-                    delete(this.aoPhases);
-                    delete(this.aoFlows);
-                    
                     this.aoPhases = [];
                     this.aoFlows  = matter.flow.empty();
-                    warning('on','all');
                     
                     % The return command ends the constructor method
                     return;
