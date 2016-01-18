@@ -121,7 +121,15 @@ for iI = 1:length(aiIndices)
     tParameters.sProperty = 'Density';
     tParameters.sFirstDepName = 'Temperature';
     tParameters.fFirstDepValue = fTemperature;
-    tParameters.sPhaseType = sMatterState;
+    if this.ttxMatter.(tParameters.sSubstance).bIndividualFile
+        tParameters.sPhaseType = sMatterState;
+    else
+        if length(varargin) == 1 == 1
+            tParameters.sPhaseType = oMatterRef.sType;
+        else
+            tParameters.sPhaseType = varargin{1};
+        end
+    end
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
     tParameters.bUseIsobaricData = true;
