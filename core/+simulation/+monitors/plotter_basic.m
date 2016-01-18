@@ -31,7 +31,8 @@ classdef plotter_basic < simulation.monitor
         
         
         function definePlotAllWithFilter(this, sFilter, sTitle)
-            this.definePlotWithFilter([], sFilter, sTitle);
+            % xDataReference false --> get all values!
+            this.definePlotWithFilter(false, sFilter, sTitle);
         end
         
         
@@ -45,9 +46,15 @@ classdef plotter_basic < simulation.monitor
                 xDataReference = simulation.monitors.plotter_basic.getIndicesFromStruct(xDataReference);
             end
             
+            
             if isempty(xDataReference)
                 this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
                 return;
+            
+            % xDataReference false --> .find() below gets all values!
+            elseif islogical(xDataReference) && (xDataReference == false)
+                xDataReference = [];
+                
             end
             
             % Filter is by unit
