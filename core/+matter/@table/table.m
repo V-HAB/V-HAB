@@ -114,7 +114,6 @@ classdef table < base
                 if exist(strrep('data\MatterData.mat', '\', filesep),'file')
                     load(strrep('data\MatterData.mat', '\', filesep));
                     
-<<<<<<< HEAD
                     % There are a few properties that will have been saved
                     % by the previous run of V-HAB in the matter.table
                     % object that need to be reset to their initial values,
