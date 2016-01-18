@@ -303,10 +303,10 @@ classdef source < base % < hobj
                                 % error identifier for 'Too many output
                                 % arguments changed from 'MATLAB:maxlhs' to
                                 % 'MATLAB:TooManyOutputs'
-                                if strcmp(version('-release'),'2015b')
-                                    sErrorIdentifier = 'MATLAB:TooManyOutputs';
-                                else
+                                if verLessThan('MATLAB', '8.6')
                                     sErrorIdentifier = 'MATLAB:maxlhs';
+                                else
+                                    sErrorIdentifier = 'MATLAB:TooManyOutputs';
                                 end
                                 
                                 if ~strcmp(oErr.identifier, sErrorIdentifier) && ~strcmp(oErr.identifier, 'MATLAB:UndefinedFunction')
