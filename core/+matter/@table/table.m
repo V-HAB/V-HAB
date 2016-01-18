@@ -113,6 +113,18 @@ classdef table < base
                 % MatterData.mat file, if it exists.
                 if exist(strrep('data\MatterData.mat', '\', filesep),'file')
                     load(strrep('data\MatterData.mat', '\', filesep));
+                    
+                    % Need to reset attributes, else e.g. phases from the
+                    % old simulation (that saved the MatterData.mat) can
+                    % 'leak' over!
+                    warning('off','all');
+                    delete(this.aoPhases);
+                    delete(this.aoFlows);
+                    
+                    this.aoPhases = [];
+                    this.aoFlows  = matter.flow.empty();
+                    warning('on','all');
+                    
                     % The return command ends the constructor method
                     return;
                 end

@@ -10,8 +10,34 @@ function [ cParams, sDefaultPhase ] = air_custom(oStore, fVolume, trMasses, fTem
 %   rRH             - Relative humidity - ratio (default 0, max 1)
 %   fPressure       - Pressure in Pa - default 101325 Pa
 
-% Molar mass (air, constant, using value calculated by the matter class):
-fMolarMassAir = 0.029088; % [kg/mol]
+
+
+% Defaults, if not set
+if ~isstruct(trMasses), trMasses = struct(); end;
+
+if ~isfield(trMasses, 'O2'),  trMasses.O2  = 0.23135; end;
+if ~isfield(trMasses, 'Ar'),  trMasses.Ar  = 0.01288; end;
+if ~isfield(trMasses, 'CO2'), trMasses.CO2 = 0.00058; end;
+
+% N2 takes remaining fraction
+trMasses.N2 = 1 - trMasses.O2 - trMasses.Ar - trMasses.CO2;
+
+
+
+% Molar mass - use matter table to calculate using pseudo masses - do not
+% know the absolute values yet, but molar mass just depends on relative
+% weights of the substances!
+afPseudoMasses = zeros(1, oStore.oMT.iSubstances);
+csFields = fieldnames(trMasses);
+
+for iS = 1:length(csFields)
+    afPseudoMasses(oStore.oMT.tiN2I.(csFields{iS})) = trMasses.(csFields{iS});
+end
+
+fMolarMass = oStore.oMT.calculateMolarMass(afPseudoMasses); %0.029088; % [kg/mol]
+
+
+
 
 % Values from @matter.table
 fRm           = oStore.oMT.Const.fUniversalGas;                 % ideal gas constant [J/K]
@@ -39,27 +65,18 @@ fSaturationVapourPressure = 6.11213 * exp(17.62 * (fTemperature-273.15) / (243.1
 fVapourPressure = rRH * fSaturationVapourPressure; 
 
 % calculate mass fraction of H2O in air
-fMassFractionH2O = fMolarMassH2O / fMolarMassAir * fVapourPressure / (fPressure - fVapourPressure);
+fMassFractionH2O = fMolarMassH2O / fMolarMass * fVapourPressure / (fPressure - fVapourPressure);
 
 % calculate molar fraction of H2O in air
-fMolarFractionH2O = fMassFractionH2O / fMolarMassH2O * fMolarMassAir; 
+fMolarFractionH2O = fMassFractionH2O / fMolarMassH2O * fMolarMass; 
 
 % calculate total mass
 % p V = m / M * R_m * T  <=>  m = p * V * M / (R_m * T)
-fMassGes = fPressure * fVolume * (fMolarFractionH2O * fMolarMassH2O + (1 - fMolarFractionH2O) * fMolarMassAir) / (fRm * fTemperature); 
+fMassGes = fPressure * fVolume * (fMolarFractionH2O * fMolarMassH2O + (1 - fMolarFractionH2O) * fMolarMass) / (fRm * fTemperature); 
 % calculate dry air mass
 fMass    = fMassGes * (1 - fMassFractionH2O); 
 
 
-% Defaults, if not set
-if ~isstruct(trMasses), trMasses = struct(); end;
-
-if ~isfield(trMasses, 'O2'),  trMasses.O2  = 0.23135; end;
-if ~isfield(trMasses, 'Ar'),  trMasses.Ar  = 0.01288; end;
-if ~isfield(trMasses, 'CO2'), trMasses.CO2 = 0.00058; end;
-
-% N2 takes remaining fraction
-trMasses.N2 = 1 - trMasses.O2 - trMasses.Ar - trMasses.CO2;
 
 % Matter composition
 tfMass = struct(...
