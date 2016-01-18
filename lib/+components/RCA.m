@@ -24,7 +24,7 @@ classdef RCA < vsys
         
         % Partial pressure limit of CO2 in the connected reference phase
         % for triggering bed switches
-        fCO2Limit = 400;    % [Pa]
+        fCO2Limit = 800;    % [Pa]
         
         % Choose the efficiency of the desorption
         % Are the beds emptied completely => rDesorptionRatio = 1
@@ -52,13 +52,13 @@ classdef RCA < vsys
         fInitialTemperature = 298.65; 
         
         % Initial pressure in [Pa]
-        fTestPressure = 28270;
+        fTestPressure = 28900;
         
         % Initial relative humidity [-]
         rRelativeHumidity = 0.35;
         
         fPipeLength   = 0.5;
-        fPipeDiameter = 0.0254/4; 
+        fPipeDiameter = 0.0254/2; 
         
     end
     
@@ -75,10 +75,10 @@ classdef RCA < vsys
             
             %% Distributor
             % Creating the input splitter
-            matter.store(this, 'Splitter', 0.004);  % Volume in in^3 = 0.0568 ?? 
+            matter.store(this, 'Splitter', 0.001);  % Volume in in^3 = 0.0568 ?? 
             
             % Adding a phase to the splitter
-            oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
+            oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  0.001, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
 
             % Creating the ports on the splitter
             matter.procs.exmes.gas(oPhase, 'Splitter_Inlet'); 
@@ -101,10 +101,10 @@ classdef RCA < vsys
             
             %% Merger
             % Creating the output merger
-            matter.store(this, 'Merger',  0.004);  % Volume in in^3 = 0.0568 ??
+            matter.store(this, 'Merger',  0.001);  % Volume in in^3 = 0.0568 ??
             
             % Adding a phase to the merger
-            oPhase = this.toStores.Merger.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
+            oPhase = this.toStores.Merger.createPhase(this.sAtmosphereHelper,  0.001, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
             
             % Creating the ports on the merger
             matter.procs.exmes.gas(oPhase, 'Merger_Inlet1');

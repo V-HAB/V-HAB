@@ -9,7 +9,7 @@ classdef Example < vsys
         toManualBranches = struct();
         
         fPipeLength   = 0.5;
-        fPipeDiameter = 0.0254/4;
+        fPipeDiameter = 0.0254/2;
     end
     
     methods
@@ -31,8 +31,8 @@ classdef Example < vsys
             % Influence of residence mass can/should be analyzed in a future work
             matter.store(this, 'SpaceSuit', 0.015);
             oAir = this.toStores.SpaceSuit.createPhase('N2Atmosphere', 0.015, fInitialTemperature);
-            special.matter.const_press_exme(oAir, 'Out', 29000);
-            special.matter.const_press_exme(oAir, 'In', 27000);
+            special.matter.const_press_exme(oAir, 'Out', 28900);
+            special.matter.const_press_exme(oAir, 'In', 28600);
             matter.procs.exmes.gas(oAir, 'H2OInlet');
             matter.procs.exmes.gas(oAir, 'CO2Inlet');
             matter.procs.exmes.gas(oAir, 'N2Inlet');
