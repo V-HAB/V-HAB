@@ -511,8 +511,15 @@ classdef flow < base & matlab.mixin.Heterogeneous
             if ~isempty(oExme)
                 [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
                 
+                % If a phase was empty in one of the previous time steps
+                % and has had mass added to it, the specific heat capacity
+                % may not have yet been calculated, because the phase has
+                % not been updated. If the phase does have mass but zero
+                % heat capacity, we force an update of this value here. 
                 if fPhaseSpecificHeatCapacity == 0 && oExme.oPhase.fMass ~= 0
-                    fprintf('Updating specific heat capacity for phase %s %s.\nTick: %i \n',oExme.oPhase.oStore.sName, oExme.oPhase.sName,this(1).oTimer.iTick);
+                    %TODO move the following warning to a lower level debug
+                    %output once this is implemented
+                    this(1).warn('setData', 'Updating specific heat capacity for phase %s %s.', oExme.oPhase.oStore.sName, oExme.oPhase.sName);
                     oExme.oPhase.updateSpecificHeatCapacity();
 %                     fPhaseSpecificHeatCapacity = this(1).oMT.calculateSpecificHeatCapacity(oExme.oPhase);
                     fPhaseSpecificHeatCapacity = oExme.oPhase.fSpecificHeatCapacity;
