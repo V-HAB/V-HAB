@@ -217,91 +217,18 @@ classdef HX < vsys
             this.sHX_type = sHX_type;      
             this.bExecuteContainer = false;
             
-            %TO DO: Finish this allocation            
-            if strcmpi(sHX_type, 'counter annular passage')
-                fHydrDiam_1 = 2*mHX(3);
-                fHydrLength_1 = mHX(4);
-                fHydrDiam_2 = mHX(2);
-                fHydrLength_2 = mHX(4);
-            elseif strcmpi(sHX_type, 'counter plate')
-                fHydrDiam_1 = (4*mHX(1)*mHX(2))/(2*mHX(1)+2*mHX(2));
-                fHydrLength_1 = mHX(4);
-                fHydrDiam_2 = (4*mHX(1)*mHX(3))/(2*mHX(1)+2*mHX(3));
-                fHydrLength_2 = mHX(4);
-            elseif strcmpi(sHX_type, 'counter pipe bundle')
-                fShell_Area         = pi*(mHX(3)/2)^2;
-                fOuter_Bundle_Area  = mHX(5)*pi*(mHX(2)/2)^2;
-                fHydrDiam_1 = mHX(1);
-                fHydrLength_1 = mHX(4);
-                fHydrDiam_2 = 4*(fShell_Area - fOuter_Bundle_Area)/(pi*mHX(3) + mHX(5)*pi*mHX(2));
-                fHydrLength_2 = mHX(4);
-            elseif strcmpi(sHX_type, 'parallel annular passage')
-                fHydrDiam_1 = 2*mHX(3);
-                fHydrLength_1 = mHX(4);
-                fHydrDiam_2 = mHX(2);
-                fHydrLength_2 = mHX(4);
-            elseif strcmpi(sHX_type, 'parallel plate')
-                fHydrDiam_1 = (4*mHX(1)*mHX(2))/(2*mHX(1)+2*mHX(2));
-                fHydrLength_1 = mHX(4);
-                fHydrDiam_2 = (4*mHX(1)*mHX(3))/(2*mHX(1)+2*mHX(3));
-                fHydrLength_2 = mHX(4);
-            elseif strcmpi(sHX_type, 'parallel pipe bundle')
-                fShell_Area         = pi*(mHX(3)/2)^2;
-                fOuter_Bundle_Area  = mHX(5)*pi*(mHX(2)/2)^2;
-                fHydrDiam_1 = mHX(1);
-                fHydrLength_1 = mHX(4);
-                fHydrDiam_2 = 4*(fShell_Area - fOuter_Bundle_Area)/(pi*mHX(3) + mHX(5)*pi*mHX(2));
-                fHydrLength_2 = mHX(4);
-            elseif strcmpi(sHX_type, 'cross')
-                if mHX(1) == 0
-                    fHydrDiam_1 = (4*mHX(2)*mHX(3))/(2*mHX(2)+2*mHX(3));
-                    fHydrLength_1 = mHX(5);
-                    fHydrDiam_2 = (4*mHX(2)*mHX(4))/(2*mHX(2)+2*mHX(4));
-                    fHydrLength_2 = mHX(5);
-                else
-                    fHydrDiam_1 = mHX(3);
-                    fHydrLength_1 = mHX(5);
-                    fHydrDiam_2 = (4*mHX(6)*mHX(5))/(2*mHX(6)+2*mHX(5));
-                    fHydrLength_2 = mHX(5);
-                end
-            elseif strcmpi(sHX_type, '1 n sat')
-                iPasses = size(mHX);
-                iPasses = iPasses(1);
-                fHydrDiam_1 = sum(mHX(:,3))/iPasses;
-                fHydrLength_1 = mHX(1,1)*iPasses;
-                fPipeArea = sum((0.25*pi).*mHX(:,4).^2);
-                fPipeCircumfence = sum(pi.*mHX(:,4));
-                fHydrDiam_2 = (4*(0.25*pi*mHX(1,2)-fPipeArea))/(pi*mHX(1,2)+fPipeCircumfence);
-                fHydrLength_2 = mHX(1,1);
-            elseif strcmpi(sHX_type, '3 2 sat')    
-                %{fD_i, fLength, fD_o, fD_Baffle, fD_Batch, fD_Hole, fD_Shell, 
-%       fD_Int, fLength_Int, fs_1, fs_2, fN_Pipes, fn_pipes_win,
-%       fN_Flow_Resist, fN_Flow_Resist_end, fN_Sealings, fN_Pipes_Diam,
-%       fDist_Baffles, fHeight_Baffles, fConfig, fs_3}
-                fHydrDiam_1 = mHX{1};
-                fHydrLength_1 = mHX{2}*2;
-                %an accurate equation for the hydraulic length and diameter
-                %of the sheath current can not be given for this heat
-                %exchanger. Therefore the values below are approximations
-                fPipeArea = 0.25*pi*mHX{3}^2*mHX{12};
-                fPipeCircumfence = pi*mHX{3}*mHX{12};
-                fHydrDiam_2 = (4*(0.25*pi*mHX{7}-fPipeArea))/(pi*mHX{7}+fPipeCircumfence);
-                %the flow has to cross the shell three times therefore
-                %three times the diameter and also has to flow through the
-                %HX once in length direction
-                fHydrLength_2 = 3*mHX{7}+mHX{2};
-                
-            end
-        end
-        
-        function createMatterStructure(this)
+            %Because the HX f2f proc is actually added to the parent system
+            %of the HX its definition has to take place here instead of the
+            %createMatterStructure function
             
-            createMatterStructure@vsys(this);
             %adds the flow to flow processores used to set the outlet
             %values of the heat exchanger
             this.oF2F_1 = components.HX.hx_flow(this, this.oParent, [this.sName,'_1']);
             this.oF2F_2 = components.HX.hx_flow(this, this.oParent, [this.sName,'_2']);
-            
+        end
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
         end
         
 
@@ -347,8 +274,10 @@ classdef HX < vsys
             fMassFlow_2  = abs(oFlows_2.fFlowRate);      % Get absolute values, hope that's okay...
             fEntryTemp_1 = oFlows_1.fTemperature;
             fEntryTemp_2 = oFlows_2.fTemperature;
-            fCp_1        = oFlows_1.fSpecificHeatCapacity;
-            fCp_2        = oFlows_2.fSpecificHeatCapacity;
+            
+            fCp_1 = oFlows_1.fSpecificHeatCapacity;
+            fCp_2 = oFlows_2.fSpecificHeatCapacity;
+                
 
             % For changes in entry temperature that are larger than 0.1 K or
             % changes in massflow which are larger than 1 g/sec the heat
