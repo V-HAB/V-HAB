@@ -158,13 +158,22 @@ classdef logger_basic < simulation.monitor
                     sFilter = csFilters{iF};
                     sValue  = tFilter.(sFilter);
                     
+                    %{
+                    abDelete = false(length(aiIdx), 1);
+                    
                     for iI = length(aiIdx):-1:1
                         if ~strcmp(this.tLogValues(aiIdx(iI)).(sFilter), sValue)
-                            aiIdx(iI) = [];
+                            %aiIdx(iI) = [];
+                            abDelete(iI) = true;
                             
                             %iI = iI - 1;
                         end
                     end
+                    %}
+                    
+                    abDelete = ~strcmp({ this.tLogValues(aiIdx).(sFilter) }', sValue);
+                    
+                    aiIdx(abDelete) = [];
                 end
             end
         end
@@ -339,7 +348,7 @@ classdef logger_basic < simulation.monitor
                 %sCmd = [ sCmd sprintf('this.oRoot.%s,\n', this.csLog{iL}) ];
                 
                 % sS((length(sN) + 1):end)
-                sCmd = [ sCmd this.csPaths{iL} ',' ];
+                sCmd = strcat( sCmd, this.csPaths{iL}, ',' );
             end
 
             sCmd = [ sCmd(1:(end - 1)) ' ]' ];
@@ -357,25 +366,63 @@ classdef logger_basic < simulation.monitor
 %             disp(this.oSimulationInfrastructure.oSimulationContainer.oTimer.fTime);
             
             
-            this.iLogIdx = this.iLogIdx + 1;
             
-            
-            this.afTime(this.iLogIdx) = this.oSimulationInfrastructure.oSimulationContainer.oTimer.fTime;
             
             try
-                this.mfLog(this.iLogIdx, :) = this.logDataEvald();
+                this.mfLog(this.iLogIdx + 1, :) = this.logDataEvald();
             catch
-                % Don't know where in anonymous log function the error
-                % happend, so go through logs one by one - one of them
-                % should throw an error!
-                for iL = this.aiLog
-                    try
-                        eval([ this.csPaths{iL} ';' ]);
-                    catch oErr
-                        this.throw('simulation','Error trying to log %s.\nError Message: %s\nPlease check your logging configuration in setup.m!', this.csPaths{iL}, oErr.message);
+                % One reason for the above statement to fail is an 'empty'
+                % variable. Then the length of the array returned by
+                % this.logDataEvald() will be shorter than this.mfLog and a
+                % dimension mismatch error will be thrown. 
+                % To prevent this from halting the simulation, we will find
+                % the item that returns 'empty' and insert 'NaN' at its
+                % index in the returned array. 
+                
+                % First we get the return array directly.
+                afValues = this.logDataEvald();
+                
+                % Now we check it it is shorter than the width of mfLog
+                if length(afValues) ~= length(this.mfLog(1,:))
+                    % It is shorter, so one of the items must be returning
+                    % empty. So now we go through the log items
+                    % individually to find out which one it is. 
+                    for iI = this.aiLog
+                        if isempty(eval([ this.csPaths{iI} ';' ]))
+                            % If this is the item that returns empty, we
+                            % break the for loop and iI is the index of the
+                            % item we are looking for. 
+                            break;
+                        end
+                    end
+                    
+                    % Now we extend the results array by one...
+                    afValues(iI+1:end+1) = afValues(iI:end);
+                    % ... and insert NaN at the found index.
+                    afValues(iI) = NaN;
+                    
+                    % Finally we can write the array into the log. 
+                    this.mfLog(this.iLogIdx + 1,:) = afValues;
+                else
+                    % Something else must have gone wrong. Since we don't
+                    % know where in anonymous log function the error
+                    % happend, we go through logs one by one - one of them
+                    % should throw an error!
+                    for iL = this.aiLog
+                        try
+                            eval([ this.csPaths{iL} ';' ]);
+                        catch oErr
+                            this.throw('simulation','Error trying to log %s.\nError Message: %s\nPlease check your logging configuration in setup.m!', this.csPaths{iL}, oErr.message);
+                        end
                     end
                 end
             end
+            
+            
+            this.afTime(this.iLogIdx + 1) = this.oSimulationInfrastructure.oSimulationContainer.oTimer.fTime;
+            
+            % Increase after actual logging in case of ctrl+c interruption!
+            this.iLogIdx = this.iLogIdx + 1;
         end
         
         
