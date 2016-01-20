@@ -205,7 +205,7 @@ classdef filter < matter.store
             
             % Creating the phase representing the filter volume manually.
             % gas(oStore, sName, tfMasses, fVolume, fTemp)
-            oFilteredPhase = matter.phases.gas(this, 'FilteredPhase', struct(), oGeometry.fVolume * (1-rVoidFraction), fTemperature);
+            oFilteredPhase = matter.phases.gas(this, 'FilteredPhase', struct('Ar', 0.0001), oGeometry.fVolume * (1-rVoidFraction), fTemperature);
 %             oFilteredPhase = matter.phases.gas(this, 'FilteredPhase', struct(), 0.0011, fTemperature);
 %             oFilteredPhase = this.createPhase(sAtmosphereHelper, 'FilteredPhase', 0.0011, fTemperature, rHumidity, fPressure);
             
