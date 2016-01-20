@@ -217,19 +217,15 @@ classdef filter < matter.store
             % filterports are internal ones for the p2p processor to use.
             matter.procs.exmes.gas(oFlowPhase,     'Inlet');
             matter.procs.exmes.gas(oFlowPhase,     'Outlet');
-            matter.procs.exmes.gas(oFlowPhase,     'filterport_sorp');
-            matter.procs.exmes.gas(oFilteredPhase, 'filterport_sorp');            
-            matter.procs.exmes.gas(oFlowPhase,     'filterport_deso');
-            matter.procs.exmes.gas(oFilteredPhase, 'filterport_deso');
 
             % Creating the p2p processor
             % Input parameters: oParentSys, oStore, sName, sPhaseIn, sPhaseOut, (sSpecies, sBed_Name)
-            this.oProc_deso = components.filter.FilterProc_deso(this, 'DesorptionProcessor', 'FlowPhase.filterport_deso', 'FilteredPhase.filterport_deso');
+            this.oProc_deso = components.filter.FilterProc_deso(this, 'DesorptionProcessor', 'FlowPhase', 'FilteredPhase');
             if strcmp(sType, 'RCA')
                 % RCA uses a different sorption processor 
-                this.oProc_sorp = components.RCA.RCA_FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
+                this.oProc_sorp = components.RCA.RCA_FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase', 'FilteredPhase', sType);
             else
-                this.oProc_sorp = components.filter.FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
+                this.oProc_sorp = components.filter.FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase', 'FilteredPhase', sType);
             end
             
         end
