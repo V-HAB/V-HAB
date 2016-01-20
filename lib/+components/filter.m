@@ -203,9 +203,6 @@ classdef filter < matter.store
             
             % Creating the phase representing the filter volume manually.
             % gas(oStore, sName, tfMasses, fVolume, fTemp)
-            oFlowPhase.bSynced     = true;
-            oFilteredPhase.bSynced = true;
-            
             matter.phases.gas(this, 'FilteredPhase', struct('Ar', 0.0001), oGeometry.fVolume * (1-rVoidFraction), fTemperature);
                         
             % Fixed Time Step
