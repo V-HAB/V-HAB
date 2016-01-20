@@ -22,10 +22,6 @@ classdef filter < matter.store
         % Void fraction (porosity) to correctly set the volumes
         rVoidFraction;
         
-        % Initial Atmosphere in the filter
-        % can be changed through Atmosphere helper
-        oFilterAtmosphere = {'SuitAtmospere'};
-        
         % Transfer Variables
         % filter size
         fx;fy;fz;       %[m] 
