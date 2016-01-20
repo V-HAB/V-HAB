@@ -119,12 +119,13 @@ classdef pipe < matter.procs.f2f
                 %TODO solver should handle that, could also be an issue if
                 %     temperature is zero
                 fMolarMass = sif(oFlowIn.fMolarMass > 0, oFlowIn.fMolarMass, 1);
+
                 %CHECK e.g. fRoh - used for fV and Re - so doesn't really make
                 %      sense to include. Need another way to calculate Re/V?
                 fDensity = (fAveragePressure * fMolarMass) / (matter.table.Const.fUniversalGas * oFlowIn.fTemperature);
-                this.warn('solverDeltas',['Something went wrong in the density calculation for a pipe (%s). \n',...
+                this.warn('solverDeltas',['Something went wrong in the density calculation for a pipe (%s on branch %s). \n',...
                                           'If this happened during initialization, it should be alright. Otherwise\n',...
-                                          'please check if the branch is configured properly.'], this.sName);
+                                          'please check if the branch is configured properly.'], this.sName, this.oBranch.sName);
             end
             fFlowSpeed   = abs(fFlowRate) / ((pi / 4) * this.fDiameter^2 * fDensity);
 

@@ -106,7 +106,7 @@ classdef branch < solver.matter.base.branch
         %% Update functions, called directly by timer
         function update(this)
 
-            if this.oBranch.oContainer.oTimer.fTime < 0
+            if this.oBranch.oTimer.fTime < 0
                 % If we are still constructing the simulation system (time
                 % is smaller than zero), do nothing except call the parent
                 % class update method.
@@ -115,7 +115,7 @@ classdef branch < solver.matter.base.branch
             end
             
             
-            if this.oBranch.oContainer.oTimer.fTime <= this.fLastUpdate
+            if this.oBranch.oTimer.fTime <= this.fLastUpdate
                 % If branch update has been called before during this time
                 % step, do nothing. 
                 return;
