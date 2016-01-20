@@ -28,9 +28,16 @@ classdef hx_flow < matter.procs.f2f
         end
         
         function [ fDeltaPress, fDeltaTemp ] = solverDeltas(this, ~)
-           this.oContainer.update(); 
-           fDeltaPress = this.fDeltaPress;
-           fDeltaTemp  = this.fDeltaTemp;
+            this.oHXParent.update(); 
+            if this.aoFlows(1).fFlowRate ~= 0
+                fDeltaPress = this.fDeltaPress;
+                oInFlow = this.getInFlow();
+                this.fDeltaTemp = this.fHeatFlow/(oInFlow.fSpecificHeatCapacity*oInFlow.fFlowRate);
+                fDeltaTemp  = this.fDeltaTemp;
+            else
+                fDeltaPress = 0;
+                fDeltaTemp = 0;
+            end
         end
         
         % Function to set the heat flow and pressure of the heat exchanger
@@ -45,7 +52,13 @@ classdef hx_flow < matter.procs.f2f
             
         function fDeltaTemperature = updateManualSolver(this)
             this.oHXParent.update();
-            fDeltaTemperature = this.fDeltaTemp;
+            if this.aoFlows(1).fFlowRate ~= 0
+                oInFlow = this.getInFlow();
+                this.fDeltaTemp = this.fHeatFlow/(oInFlow.fSpecificHeatCapacity*oInFlow.fFlowRate);
+                fDeltaTemperature  = this.fDeltaTemp;
+            else
+                fDeltaTemperature = 0;
+            end
             
         end
     end
