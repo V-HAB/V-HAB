@@ -3,8 +3,14 @@ classdef Incompressible_System < vsys
     %   This class creates blubb
     
     properties
+        %Object for the System solver since the incompressible liquid
+        %solver does not calculate each branch individually but instead
+        %calculates all branches at once with regard to dependencies
+        %between the branches
         oSystemSolver;
+        
         aoPhases;
+        bWater;
     end
     
     methods
@@ -22,7 +28,10 @@ classdef Incompressible_System < vsys
             % well!).
             this@vsys(oParent, sName, 60);
             
-            
+            this.bWater = bWater;
+        end
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
             %initial relative humidity that is going to be used for every
             %air phase in the ACLS is assumed to be ~40% (nominal value
             %according to BVAD table 4.1)
@@ -62,7 +71,7 @@ classdef Incompressible_System < vsys
             fCO2Percent = 0.0038;
             
             fTank_Volume = 0.5;
-            if bWater == 0
+            if this.bWater == 0
                 sPhase = 'gas';
                 tPhase = struct(...
                           'O2',  fTank_Volume * fDensityN2 * fO2Percent,...
@@ -269,50 +278,44 @@ classdef Incompressible_System < vsys
             
             tutorials.incompressible_solver.components.fan(this, 'Fan_1', 1e4, 1);
             
-            oBranch1 = matter.branch(this, 'Tank_1.Port_Out1', {'Pipe_1', 'Fan_1'}, 'Tank_2.Port_In1');
+            matter.branch(this, 'Tank_1.Port_Out1', {'Pipe_1', 'Fan_1'}, 'Tank_2.Port_In1');
+            matter.branch(this, 'Tank_2.Port_Out1', {'Pipe_2'}, 'Tank_3.Port_In1');
+            matter.branch(this, 'Tank_3.Port_Out1', {'Pipe_3'}, 'Tank_4.Port_In1');
+            matter.branch(this, 'Tank_4.Port_Out1', {'Pipe_4'}, 'Tank_1.Port_In1');
+            matter.branch(this, 'Tank_5.Port_Out1', {'Pipe_5'}, 'Tank_6.Port_In1');
+            matter.branch(this, 'Tank_6.Port_Out1', {'Pipe_6'}, 'Tank_7.Port_In1');
+            matter.branch(this, 'Tank_3.Port_Out2', {'Pipe_7'}, 'Tank_8.Port_In1');
+            matter.branch(this, 'Tank_8.Port_Out1', {'Pipe_8'}, 'Tank_1.Port_In2');
             
-            oBranch2 = matter.branch(this, 'Tank_2.Port_Out1', {'Pipe_2'}, 'Tank_3.Port_In1');
+        end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
             
-            oBranch3 = matter.branch(this, 'Tank_3.Port_Out1', {'Pipe_3'}, 'Tank_4.Port_In1');
-            
-            oBranch4 = matter.branch(this, 'Tank_4.Port_Out1', {'Pipe_4'}, 'Tank_1.Port_In1');
-            
-            oBranch5 = matter.branch(this, 'Tank_5.Port_Out1', {'Pipe_5'}, 'Tank_6.Port_In1');
-            
-            oBranch6 = matter.branch(this, 'Tank_6.Port_Out1', {'Pipe_6'}, 'Tank_7.Port_In1');
-            
-            oBranch7 = matter.branch(this, 'Tank_3.Port_Out2', {'Pipe_7'}, 'Tank_8.Port_In1');
-            
-            oBranch8 = matter.branch(this, 'Tank_8.Port_Out1', {'Pipe_8'}, 'Tank_1.Port_In2');
-            
-            
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch1);
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch2);
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch3);
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch4);
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch5);
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch6);
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch7);
-            solver.matter.incompressible_liquid.branch_incompressible_liquid(oBranch8);
+            for iI = 1:length(this.aoBranches)
+                solver.matter.incompressible_liquid.branch_incompressible_liquid(this.aoBranches(iI));
+            end
 
-%             solver.matter.linear.branch(oBranch1);
-%             solver.matter.linear.branch(oBranch2);
-%             solver.matter.linear.branch(oBranch3);
-%             solver.matter.linear.branch(oBranch4);
-%             solver.matter.linear.branch(oBranch5);
-%             solver.matter.linear.branch(oBranch6);
-%             solver.matter.linear.branch(oBranch7);
-%             solver.matter.linear.branch(oBranch8);
+            iIncompBranches = 8;
+            %This matrix defines which branches form an interdependant
+            %loop. For each loop the matrix contains one columns that has
+            %the branch number within this loop as row entries. This is
+            %required for the steady state calculation to set viable steady
+            %state flowrates that allow high time steps.
+            mLoopBranches = [1;2;3;4;7;8];
+            %System Solver Inputs:
+            %(oSystem, fMinTimeStep, fMaxTimeStep, fMaxProcentualFlowSpeedChange, iPartialSteps, iLastSystemBranch, fSteadyStateTimeStep, fSteadyStateAcceleration, mLoopBranches)  
+            this.oSystemSolver = solver.matter.incompressible_liquid.system_incompressible_liquid(this, 1e-2, 5, 1e-1, 30, iIncompBranches, 10, 10, mLoopBranches);
+           
+            
+%             for iI = 1:length(this.aoBranches)
+%                 solver.matter.linear.branch(this.aoBranches(iI));
+%             end
 
 %             rMaxChange = 1e-3;
-%             solver.matter.iterative.branch(oBranch1, rMaxChange, rMaxChange);
-%             solver.matter.iterative.branch(oBranch2, rMaxChange, rMaxChange);
-%             solver.matter.iterative.branch(oBranch3, rMaxChange, rMaxChange);
-%             solver.matter.iterative.branch(oBranch4, rMaxChange, rMaxChange);
-%             solver.matter.iterative.branch(oBranch5, rMaxChange, rMaxChange);
-%             solver.matter.iterative.branch(oBranch6, rMaxChange, rMaxChange);
-%             solver.matter.iterative.branch(oBranch7, rMaxChange, rMaxChange);
-%             solver.matter.iterative.branch(oBranch8, rMaxChange, rMaxChange);
+%             for iI = 1:length(this.aoBranches)
+%                 solver.matter.iterative.branch(this.aoBranches(iI));
+%             end
         end
     end
     
