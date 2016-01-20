@@ -84,7 +84,7 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             fRw = 461.52;             %[J/(kg*K)]
             
             % Maximal humidity
-            fDelta_sat = fEw / (fRw*this.fTemperature);
+            fDelta_sat = fEw / (fRw * this.fTemperature);
             
             % H2O concentration
             % Outlet concentration of H2O
