@@ -345,14 +345,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             for iRunVariable = 1:this.iNumSubstances
                 afLoadedMass(iRunVariable) = sum(fQ_change(iRunVariable,1:end-1));     % absolut values [kg]
             end
-            
-% %             keyboard();
-%             arPartialMass = this.oStore.aoPhases(1).toProcsEXME.Outlet.aoFlows.arPartialMass; 
-%             rPartialMass_CO2 = arPartialMass(this.oMT.tiN2I.CO2);
-%             if this.oStore.oTimer.fTime > 400 % && rPartialMass_CO2 == 0
-%                 keyboard();
-%             end
-            
+                        
             % Distinguish sorption and desorption part
             afLoadedMass_ads(afLoadedMass >= 0) = afLoadedMass(afLoadedMass >= 0);     % [kg]
             afLoadedMass_des(afLoadedMass < 0)  = afLoadedMass(afLoadedMass < 0);       % [kg]
