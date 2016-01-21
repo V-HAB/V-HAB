@@ -79,8 +79,6 @@ classdef setup < simulation.infrastructure
             
             tiFlowProps = oLog.add('Example', 'flow_props');
             
-            assignin('base', 'tiFlowProps', tiFlowProps);
-            
             % Add single values
             iPropLogIndex1 = oLog.addValue('Example', 'iChildren',     [],  'Label of Prop');
             %keyboard();

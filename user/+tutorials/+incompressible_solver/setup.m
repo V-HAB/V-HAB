@@ -29,8 +29,6 @@ classdef setup < simulation.infrastructure
             
             tiFlowProps = oLog.add('Incompressible_System', 'flow_props');
             
-            assignin('base', 'tiFlowProps', tiFlowProps);
-            
             %Define Plots
             oPlot = this.toMonitors.oPlotter;
             

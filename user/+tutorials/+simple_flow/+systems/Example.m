@@ -43,17 +43,13 @@ classdef Example < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            
             % Creating a store, volume 1 m^3
-% %             this.addStore(matter.store(this, 'Tank_1', 1));
             matter.store(this, 'Tank_1', 1);
-            
             
             % Adding a phase to the store 'Tank_1', 1 m^3 air at 20 deg C
             oGasPhase = this.toStores.Tank_1.createPhase('air', 1, 293.15);
             
             % Creating a second store, volume 1 m^3
-% %             this.addStore(matter.store(this, 'Tank_2', 1));
             matter.store(this, 'Tank_2', 1);
             
             % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
@@ -65,16 +61,12 @@ classdef Example < vsys
              
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter.
-% %             this.addProcF2F(components.pipe('Pipe', 1.5, 0.005));
             components.pipe(this, 'Pipe', this.fPipeLength, this.fPipeDiameter);
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-% %             oBranch = this.createBranch('Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
-            oBranch = matter.branch(this, 'Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
-            
-            
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
             
         end
         

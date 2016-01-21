@@ -36,13 +36,19 @@ classdef setup < simulation.infrastructure
             % of this simulation. 
             tutorials.constant_pressure_exme.systems.Example(this.oSimulationContainer, 'Example');
             
+            %% Simulation length
+            % Stop when specific time in sim is reached
+            % or after specific amount of ticks (bUseTime true/false).
+            this.fSimTime = 2000; % In seconds
+            this.iSimTicks = 600;
+            this.bUseTime = true;
+        end
+        function configureMonitors(this)
             
             %% Logging
-            
             oLog = this.toMonitors.oLogger;
             
             oLog.add('Example', 'flow_props');
-            
             
             %% Define plots
             
@@ -52,29 +58,6 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
             oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
             
-%             % Creating a cell setting the log items. You need to know the
-%             % exact structure of your model to set log items, so do this
-%             % when you are done modelling and ready to run a simulation. 
-%             this.csLog = {
-%                 % System timer
-%                 'oData.oTimer.fTime';                                        % 1
-%                 
-%                 % Add other parameters here
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';  % 2
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';  % 4
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
-%                 'toChildren.Example.aoBranches(1).fFlowRate';                % 6
-%                 
-%                 };
-%             
-            %% Simulation length
-            % Stop when specific time in sim is reached
-            % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 2000; % In seconds
-            this.iSimTicks = 600;
-            this.bUseTime = true;
-
         end
         
         function plot(this) % Plotting the results
@@ -84,40 +67,6 @@ classdef setup < simulation.infrastructure
             close all
           
             this.toMonitors.oPlotter.plot();
-              
-%             figure('name', 'Tank Pressures');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
-%             legend('Tank 1', 'Tank 2');
-%             ylabel('Pressure in Pa');
-%             xlabel('Time in s');
-%             
-%             figure('name', 'Tank Masses');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [3 5]));
-%             legend('Tank 1', 'Tank 2');
-%             ylabel('Mass in kg');
-%             xlabel('Time in s');
-%             
-%             figure('name', 'Flow Rate');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, 6));
-%             legend('Branch');
-%             ylabel('flow rate [kg/s]');
-%             xlabel('Time in s');
-%             
-%             figure('name', 'Time Steps');
-%             hold on;
-%             grid minor;
-%             plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-%             legend('Solver');
-%             ylabel('Time in [s]');
-%             xlabel('Ticks');
-%             
-%             tools.arrangeWindows();
         end
         
     end

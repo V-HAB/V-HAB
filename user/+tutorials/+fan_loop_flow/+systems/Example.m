@@ -38,8 +38,8 @@ classdef Example < vsys
             components.fan(this, 'Fan', 'setSpeed', 55000, 'Left2Right');
              
             % Adding a pipe to connect the tanks
-            components.pipe(this, 'Pipe_1', 1, 0.01);
-            components.pipe(this, 'Pipe_2', 1, 0.01);
+            components.pipe(this, 'Pipe_1', 1, 0.02);
+            components.pipe(this, 'Pipe_2', 1, 0.02);
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
@@ -67,14 +67,24 @@ classdef Example < vsys
             
             % To change the flow speed of the fan just change the
             % fSpeedSetpoint property. This is a value in RPM.
-            if this.oTimer.fTime > 600 && this.oTimer.fTime < 1200
-                this.toProcsF2F.Fan.fSpeedSetpoint = 40000;
-            elseif this.oTimer.fTime > 1200 && this.oTimer.fTime < 1800
-                this.toProcsF2F.Fan.fSpeedSetpoint = 75000;
-            else
-                this.toProcsF2F.Fan.fSpeedSetpoint = 55000;
-            end
             
+            % Since toProcsF2F is a read only property the speed setpoint
+            % cannot be set by accessing the fan directly from the this
+            % object. This means that the following call would produce an
+            % error:
+            % this.toProcsF2F.Fan.fSpeedSetpoint = 75000;
+            %
+            % Instead we just take the fan object from the toProcsF2F and
+            % save it to the oFan variable. Now setting the fSpeedSetpoint
+            % property for oFan will produce the required results.
+            oFan = this.toProcsF2F.Fan;
+            if this.oTimer.fTime > 600 && this.oTimer.fTime < 1200
+                oFan.fSpeedSetpoint = 40000;
+            elseif this.oTimer.fTime > 1200 && this.oTimer.fTime < 1800
+                oFan.fSpeedSetpoint = 75000;
+            else
+                oFan.fSpeedSetpoint = 55000;
+            end
         end
         
      end

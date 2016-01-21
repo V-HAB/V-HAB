@@ -30,13 +30,13 @@ classdef hx_flow < matter.procs.f2f
         function [ fDeltaPress, fDeltaTemp ] = solverDeltas(this, ~)
             this.oHXParent.update(); 
             if this.aoFlows(1).fFlowRate ~= 0
-                fDeltaPress = this.fDeltaPress;
-                oInFlow = this.getInFlow();
-                this.fDeltaTemp = this.fHeatFlow/(oInFlow.fSpecificHeatCapacity*oInFlow.fFlowRate);
-                fDeltaTemp  = this.fDeltaTemp;
+                fDeltaPress     = this.fDeltaPress;
+                oInFlow         = this.getInFlow();
+                this.fDeltaTemp = this.fHeatFlow / ( oInFlow.fSpecificHeatCapacity * oInFlow.fFlowRate );
+                fDeltaTemp      = this.fDeltaTemp;
             else
-                fDeltaPress = 0;
-                fDeltaTemp = 0;
+                fDeltaPress     = 0;
+                fDeltaTemp      = 0;
             end
         end
         
@@ -53,11 +53,11 @@ classdef hx_flow < matter.procs.f2f
         function fDeltaTemperature = updateManualSolver(this)
             this.oHXParent.update();
             if this.aoFlows(1).fFlowRate ~= 0
-                oInFlow = this.getInFlow();
-                this.fDeltaTemp = this.fHeatFlow/(oInFlow.fSpecificHeatCapacity*oInFlow.fFlowRate);
-                fDeltaTemperature  = this.fDeltaTemp;
+                oInFlow             = this.getInFlow();
+                this.fDeltaTemp     = this.fHeatFlow / ( oInFlow.fSpecificHeatCapacity * oInFlow.fFlowRate );
+                fDeltaTemperature   = this.fDeltaTemp;
             else
-                fDeltaTemperature = 0;
+                fDeltaTemperature   = 0;
             end
             
         end

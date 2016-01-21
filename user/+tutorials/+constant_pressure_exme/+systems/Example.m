@@ -29,6 +29,12 @@ classdef Example < vsys
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
             this@vsys(oParent, sName, 30);
+        end
+            
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+            % In the create matter structure function all stores, phases,
+            % branches etc are defined
             
             % Creating a store, volume 1 m^3
             matter.store(this, 'Tank_1', 1);
@@ -53,16 +59,15 @@ classdef Example < vsys
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            oBranch = matter.branch(this, 'Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
-            
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
-            
-            % Now that the system is sealed, we can add the branch to a
-            % specific solver. In this case we will use the iterative
-            % solver. 
-            solver.matter.iterative.branch(oBranch);
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
+        end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            % In the create solver structure function the solver for the
+            % different branches can be assigned. In this case we will use
+            % the iterative solver. 
+            solver.matter.iterative.branch(this.aoBranches(1));
             
         end
     end
