@@ -71,11 +71,11 @@ classdef MetOx_Table < handle
             fVol_element = fVolSolid / (x_length-2);
             if find(strcmp('H2O', csNames) == 1)
                 this.mfAbsorbed(1,:) = this.mfAbsorbed(1,:) + ...
-                    (mfC_in(strcmp('H2O', csNames), :) - mfC_new(strcmp('H2O', csNames), :)) * fVol_element * afMolMass(strcmp('H2O', csNames)) / 1000;
+                    (mfC_in(strcmp('H2O', csNames), :) - mfC_new(strcmp('H2O', csNames), :)) * fVol_element * afMolMass(strcmp('H2O', csNames));
             end
             if find(strcmp('CO2', csNames) == 1)
                 this.mfAbsorbed(2,:) = this.mfAbsorbed(2,:) + ...
-                    (mfC_in(strcmp('CO2', csNames), :)-mfC_new(strcmp('CO2', csNames), :)) * fVol_element * afMolMass(strcmp('CO2', csNames)) / 1000;
+                    (mfC_in(strcmp('CO2', csNames), :)-mfC_new(strcmp('CO2', csNames), :)) * fVol_element * afMolMass(strcmp('CO2', csNames));
             end
             this.mrLoad_saved(1,:) = this.mfAbsorbed(1,:) / (this.fH2OCapacity / (x_length-2));
             this.mrLoad_saved(2,:) = this.mfAbsorbed(2,:) / (this.fCO2Capacity / (x_length-2));

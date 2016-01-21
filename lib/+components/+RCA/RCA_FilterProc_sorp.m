@@ -96,8 +96,8 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             fC_H2O_In        = this.afConcentration_in(strcmp('H2O',this.csNames));
             
             % Relative Humidity of the gas flow
-            this.rRH_out = fC_H2O_Out * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / fDelta_sat;
-            this.rRH_in  = fC_H2O_In  * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / fDelta_sat; 
+            this.rRH_out = fC_H2O_Out * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / fDelta_sat * 100;
+            this.rRH_in  = fC_H2O_In  * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / fDelta_sat * 100; 
             
             % Calculate the dew point temperatures 
             % At the inlet

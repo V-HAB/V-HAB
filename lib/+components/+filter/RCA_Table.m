@@ -113,7 +113,7 @@ classdef RCA_Table < handle
                 %QUESTION: Are we sure, the factor 10 at the end of the
                 %following formula is correct? Probably need to double
                 %check the units.
-                fRH = mfConcentration(strcmp('H2O',csNames),:) * afMolMass(strcmp('H2O',csNames)) / (10 * delta_sat);
+                fRH = mfConcentration(strcmp('H2O',csNames),:) * afMolMass(strcmp('H2O',csNames)) / delta_sat * 100;
                 % Calculate equilibrium value for H2O
                 fQ_equ_H2O = this.ralphaH2O * fRH.^2;
             end
