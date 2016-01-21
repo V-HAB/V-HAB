@@ -23,7 +23,8 @@ end
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% This section contains data that needs to be modified if more        %%%
-%%% substances are added for scraping                                   %%%
+%%% substances are added for scraping or other parameters shall be      %%%
+%%% changed.                                                            %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Set the ID to the CAS Registry Number for each substance that shall be
@@ -44,6 +45,9 @@ fID_O2   = 7782447;
 csSubstanceKeys  = {'Ar','CH4','CH4O','CO','CO2','H2','H2O','N2','NH3','O2'};
 csSubstanceNames = {'Argon','Methane','Methanol','Carbon Monoxide','Carbon Dioxide','Hydrogen','Water','Nitrogen','Ammonia','Oxygen'};
 
+% Now we create structs for each substance containing the temperature and
+% densitiy limits as given by the NIST database. These may need to be
+% changed if a specific scrape produces an error.
 tArgon          = struct('ID',fID_Ar,  'THigh', 700,'TLow', 84.00,'DHigh',1416);
 tMethane        = struct('ID',fID_CH4, 'THigh', 625,'TLow', 91.00,'DHigh', 451);
 tMethanol       = struct('ID',fID_CH4O,'THigh', 620,'TLow',176.00,'DHigh', 904);
@@ -55,10 +59,30 @@ tNitrogen       = struct('ID',fID_N2,  'THigh',2000,'TLow', 63.15,'DHigh', 867);
 tAmmonia        = struct('ID',fID_NH3, 'THigh', 700,'TLow',195.50,'DHigh', 732);
 tOxygen         = struct('ID',fID_O2,  'THigh',1000,'TLow', 54.37,'DHigh',1237);
 
-
+% Finally we turn all of the information above into a containers.Map
+% object for ease of programming.
 pData = containers.Map(csSubstanceKeys, {tArgon, tMethane, tMethanol, tCarbonMonoxide, ...
                                          tCarbonDioxide, tHydrogen, tWater, tNitrogen, ...
                                          tAmmonia, tOxygen}, 'UniformValues', false);
+                                     
+% We will get isochoric values from the NIST database for different
+% densities. We'll start low and then increase every iteration.
+fStartingDensity = 0;
+
+% For the increase in density we (parially) use an exponential function.
+% Here are some initial values for this calculation.
+fStartingExponent = -7;
+
+% We will get isobaric values from the NIST database for different
+% pressures. The pressure increment shall be lower for low pressures and
+% higher later on. So we initially set it to 0.01 MPa. ( ! Not Pa as in
+% V-HAB ! ) In the following while-loop we can change the increment
+% according to the current pressure.
+fStartingPressure = 0.001;
+
+% Right now, we're only interested in pressures up to 100 bars, which is 10
+% MPa
+fMaximumPressure = 10;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% End of user modified section                                        %%%
@@ -96,7 +120,8 @@ pConvertedUnits = containers.Map(...
     { 'Pa',  'J/kg', 'J/kg*K',  'K/Pa'});
 
 
-% Calculate how many scrapes we still have to do
+% Calculating how many scrapes we have to do. This has nothing to do with
+% the actual scraping it is just so we have a nice output for the user. 
 
 afIsochoricScrapes = zeros(1,pData.Count);
 
@@ -105,32 +130,32 @@ for iI = 1:pData.Count
     % intervals between densities to be lower for low densities and higher
     % for high densities. 
     iCounter = 0;
-    fValue = 0;
-    fExponent = -7;
+    fValue = fStartingDensity;
+    fExponent = fStartingExponent;
+    
     while fValue < pData(csSubstanceKeys{iI}).DHigh
         iCounter = iCounter + 1;
         
-        if fValue < 0.3
-            fIncrement = exp(fExponent);
-            fExponent  = fExponent + 0.1;
-        %elseif fValue < 5
-        %    fIncrement = 0.1;
+        if fValue < 5
+            fValue = fValue + exp(fExponent);
+            fExponent = fExponent + 0.1;
         elseif fValue < 50
-            fIncrement = 10;
+            fValue = fValue + 10;
         else
-            fIncrement = 100;
+            fValue = fValue + 100;
         end
-        
-        fValue = fValue + fIncrement;
     end
+    
     afIsochoricScrapes(iI) = iCounter;
 end
 
 iNumberOfIsoChors = sum(afIsochoricScrapes);
-iNumberOfIsoBars  = 46;
+
+% The number of isobaric scrapes is constant for each substance
+iNumberOfIsoBarsPerSubstance  = 54;
 
 
-iNumberOfScrapes = length(csSubstanceKeys) * iNumberOfIsoBars + iNumberOfIsoChors;
+iNumberOfScrapes = length(csSubstanceKeys) * iNumberOfIsoBarsPerSubstance + iNumberOfIsoChors;
 iCurrentScrape   = 1;
 iErrorCounter = 0;
 
@@ -163,10 +188,11 @@ for iI = 1:length(csSubstanceKeys)
     
     % We will get isochoric values from the NIST database for different
     % densities. We'll start low and then increase every iteration.
-    fDensity = 0;
-    % For the increase in density we (parially) use an exponential
-    % function. Here are some initial values for this calculation.
-    fExponent = -7;
+    fDensity = fStartingDensity;
+    
+    % For the increase in density we (parially) use an exponential function.
+    % Here are some initial values for this calculation.
+    fExponent = fStartingExponent;
     
     % This might be temporary. I don't know, if the headers actually change
     % within each substance. So I'll create a variable here, so I can
@@ -414,16 +440,12 @@ for iI = 1:length(csSubstanceKeys)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     % We will get isobaric values from the NIST database for different
-    % pressures. The pressure increment shall be lower for low
-    % pressures and higher later on. So we initially set it to 0.01 MPa. 
-    % ( ! Not Pa as in V-HAB ! ) In the following while-loop we can change
-    % the increment according to the current pressure.
-    fPressure = 0.01;
-    
-    % Right now, we're only interested in pressures up to 100 bars, which
-    % is 10 MPa
-    fMaximumPressure = 10;
-    
+    % pressures. The pressure increment shall be lower for low pressures
+    % and higher later on. So we initially set it to 0.01 MPa. ( ! Not Pa
+    % as in V-HAB ! ) In the following while-loop we can change the
+    % increment according to the current pressure.
+    fPressure = fStartingPressure;
+
     % This might be temporary. I don't know, if the headers actually change
     % within each substance. So I'll create a variable here, so I can
     % compare the old and new headers.
@@ -563,22 +585,27 @@ for iI = 1:length(csSubstanceKeys)
         dlmwrite([sPath, sIsobaricFileName], mfProcessedData, '-append');
         
 
-        
-        if fPressure < 0.2
+        if fPressure < 0.01
+            fPressureIncrement = 0.001;
+            iRoundTo = 3;
+        elseif fPressure < 0.2
             fPressureIncrement = 0.01;
+            iRoundTo = 2;
         elseif fPressure < 1
             fPressureIncrement = 0.1;
+            iRoundTo = 1;
         elseif fPressure < fMaximumPressure
             fPressureIncrement = 0.5;
+            iRoundTo = 1;
         end
         
-        fPressure = fPressure + fPressureIncrement;
+        fPressure = round(fPressure + fPressureIncrement, iRoundTo);
         
     end
 end
 
 % Deleting the temporary file
-delete(tmp.tsv);
+delete('tmp.tsv');
     
 % User output
 fEndTime = datetime();
