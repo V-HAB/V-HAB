@@ -28,11 +28,7 @@ if iNumArgs == 1 %nargin < 3
     % Get data from object: The state of matter (gas, liquid, solid)
     % and |afMasses| array, depending on the object type.
     if isa(oMatterRef, 'matter.phase')
-        if oMatterRef.bAdsorber
-            sMatterState = 'all';
-        else
-            sMatterState = oMatterRef.sType;
-        end
+        sMatterState = oMatterRef.sType;
         arPartialMass = oMatterRef.arPartialMass;
 
         % From "Berechnung von Phasengleichgewichten" Ralf Dohrn, page 147:
@@ -80,12 +76,7 @@ if iNumArgs == 1 %nargin < 3
         end
 
     elseif isa(oMatterRef, 'matter.procs.p2p')
-        % Usually within V-HAB the matter state liquid, solid or gas is
-        % fix within V-HAB the only exception from this rule is a p2p
-        % processor that moves mass from one matter state to another.
-        % Since the state cannot be specified for sure in this case the
-        % calculation will use all available matter data
-        sMatterState = 'all';
+        sMatterState = oMatterRef.sType;
         arPartialMass = oMatterRef.arPartialMass;
 
         % From "Berechnung von Phasengleichgewichten" Ralf Dohrn, page 147:
@@ -213,19 +204,7 @@ for iI = 1:length(aiIndices)
     tParameters.sProperty = 'Dynamic Viscosity';
     tParameters.sFirstDepName = 'Temperature';
     tParameters.fFirstDepValue = fTemperature;
-    
-    %TODO Add an explanation of what is being done in this if-condition and
-    %     why it is being done. 
-    if this.ttxMatter.(tParameters.sSubstance).bIndividualFile
-        tParameters.sPhaseType = sMatterState;
-    else
-        if iNumArgs == 1
-            tParameters.sPhaseType = oMatterRef.sType;
-        else
-            tParameters.sPhaseType = varargin{1};
-        end
-    end
-    
+    tParameters.sPhaseType = sMatterState;    
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPP(aiIndices(iI));
     tParameters.bUseIsobaricData = true;

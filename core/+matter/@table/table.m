@@ -272,10 +272,21 @@ classdef table < base
                 % Getting the substance name
                 sSubstanceName = csSubstances{iI};
                 
+                % intermediate save of the matter data imported from the
+                % MatterData.csv file
+                OldttxMatter = this.ttxMatter.(sSubstanceName);
+                
                 % Calling the importMatterData method with the substance
                 % name as the single parameter. It will be used by the
                 % method to identify the individual files. 
                 this.ttxMatter.(sSubstanceName) = importMatterData(sSubstanceName);
+                
+                % now some of the values that were reported from the
+                % MatterData.csv file have to be reused to set standard
+                % values for some properties that are later on used to
+                % calculate adsorber phases.
+                this.ttxMatter.(sSubstanceName).fStandardDensity = OldttxMatter.fStandardDensity;
+                this.ttxMatter.(sSubstanceName).fStandardCp = OldttxMatter.fStandardCp;
                 
                 % Now we need to update some of the global information
                 if ~any(strcmp(this.csSubstances, sSubstanceName))

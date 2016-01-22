@@ -164,11 +164,11 @@ if strcmp(sTarget, 'MatterData')
     % save all properties. The properties to the left of
     % melting point are considered constant and independent of
     % phase, temperature, pressure, etc.
-    % NOTE: Currently there is only one constant property,
-    % which is molar mass. We are leaving this in here though
-    % just in case another constant property is added in the
-    % future.
-    iFirstVariableColumn = find(strcmp(csVariableNames,'fMeltPoint'));
+    % while density and heat capacity are not constant the values will be
+    % saved here to be used as standard values with which e.g. adsorber
+    % that contain solids and gases/liquids can be calculated
+    iFirstVariableColumn = find(strcmp(csVariableNames,'fMolarMass'));
+    iLastStandardVariableColumn = find(strcmp(csVariableNames,'fStandardCp'));
     
     % Initialize the struct in which all substances are later stored
     ttxImportMatter = struct();
@@ -220,7 +220,7 @@ if strcmp(sTarget, 'MatterData')
             % These properties do not change if the phase is different, so
             % we only need to import them once. We start at index 4,
             % because the first three columns are text entries.
-            for iJ = 4:iFirstVariableColumn-1
+            for iJ = 4:iLastStandardVariableColumn
                 
                 % Get the value of the property and save it to a variable.
                 fValue = csRawData{aiRows(1), iJ};
@@ -459,41 +459,6 @@ else
                         ttxImportMatter.(csStructName{iI}).(csPhaseStructNames{iJ}).ttExtremes.(sStructName).Min = fMin;
                         ttxImportMatter.(csStructName{iI}).(csPhaseStructNames{iJ}).ttExtremes.(sStructName).Max = fMax;
                     end
-                end
-            end
-        end
-        
-        % For mixtures or adsorbed material it is also necessary to save
-        % all matter data independent from its phase
-        ttxImportMatter.(csStructName{iI}).tAll  = struct();
-        ttxImportMatter.(csStructName{iI}).tAll.tInterpolations = struct();
-        ttxImportMatter.(csStructName{iI}).tAll.bInterpolations = false;
-            
-        ttxImportMatter.(csStructName{iI}).tAll.mfData = mfRawData;
-        for iK = 1:iNumberOfColumns
-            % We can't find min and max for the 'Phase' column, but for every
-            % other one we can.
-            if ~strcmp(csColumnNames{iK}, 'Phase')
-                % Creating the struct
-                sStructName = ['t',csColumnNames{iK}];
-                ttxImportMatter.(csStructName{iI}).tAll.ttExtremes.(sStructName) = struct();
-
-                try
-                    % Getting the min and max values
-                    fMin = min(ttxImportMatter.(csStructName{iI}).tAll.mfData(:,iK));
-                    fMax = max(ttxImportMatter.(csStructName{iI}).tAll.mfData(:,iK));
-                catch
-                    % There may be only NaNs in the last column, if so we just
-                    % don't add the property struct to tExtremes
-                    break;
-                end
-
-                % Some of the columns may contain only NaNs, in this case we
-                % don't add the property struct to tExtremes
-                if ~(isempty(fMin) || isempty(fMax))
-                    % Writing the values to the struct
-                    ttxImportMatter.(csStructName{iI}).tAll.ttExtremes.(sStructName).Min = fMin;
-                    ttxImportMatter.(csStructName{iI}).tAll.ttExtremes.(sStructName).Max = fMax;
                 end
             end
         end

@@ -25,11 +25,7 @@ if length(varargin) == 1
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type
     if isa(varargin{1}, 'matter.phase')
-        if varargin{1}.bAdsorber
-            sMatterState = 'all';
-        else
-        	sMatterState = varargin{1}.sType;  
-        end
+        sMatterState = varargin{1}.sType; 
     elseif isa(varargin{1}, 'matter.flow')
         sMatterState = varargin{1}.oBranch.getInEXME().oPhase.sType;
     end
@@ -100,19 +96,13 @@ else
         fTemperature = this.Standard.Temperature; % std temperature (K)
     end
     
-    %TODO Add some comments here to explain the use of the matter state
-    %     'all'.
     if nargin > 4
         afPartialPressures = varargin{4};
-        if ~strcmp(sMatterState, 'gas')
-            sMatterState = 'all';
-        end
     else
         if strcmp(sMatterState, 'gas')
             afPartialPressures = this.calculatePartialPressures(sMatterState, afMass, fPressure);
         else
             afPartialPressures = ones(1, this.iSubstances) * this.Standard.Pressure;
-            sMatterState = 'all';
         end
     end
     
@@ -131,19 +121,7 @@ for iI = 1:length(aiIndices)
     tParameters.sProperty = 'Density';
     tParameters.sFirstDepName = 'Temperature';
     tParameters.fFirstDepValue = fTemperature;
-    
-    %TODO Add an explanation of what is being done in this if-condition and
-    %     why it is being done. 
-    if this.ttxMatter.(tParameters.sSubstance).bIndividualFile
-        tParameters.sPhaseType = sMatterState;
-    else
-        if length(varargin) == 1
-            tParameters.sPhaseType = oMatterRef.sType;
-        else
-            tParameters.sPhaseType = varargin{1};
-        end
-    end
-    
+    tParameters.sPhaseType = sMatterState;
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
     tParameters.bUseIsobaricData = true;

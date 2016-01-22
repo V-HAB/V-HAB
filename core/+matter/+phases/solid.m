@@ -33,7 +33,9 @@ classdef solid < matter.phase
             for iI = 1:length(csKeys)
                 sKey     = csKeys{iI};
                 fMass    = this.afMass(this.oMT.tiN2I.(sKey));
-                fDensity = this.oMT.calculateDensity('solid', this.afMass, fTemperature);
+                fVolumeSolid = this.oMT.calculateSolidVolume(tfMasses, fTemperature, bAdsorber);
+                fDensity = fMass/fVolumeSolid;
+                %what is the purpose of this?
                 afVolumes(this.oMT.tiN2I.(sKey)) = fMass / fDensity;
             end
             this.fVolume  = sum(afVolumes);
