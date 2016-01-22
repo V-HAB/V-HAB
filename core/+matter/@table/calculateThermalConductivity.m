@@ -8,6 +8,10 @@ function fLambda = calculateThermalConductivity(this, varargin)
 %   (afMass). Optionally temperature and pressure can be passed as third
 %   and fourth parameters, respectively.
 %
+%   Examples: fLambda = calculateThermalConductivity(oFlow);
+%             fLambda = calculateThermalConductivity(oPhase);
+%             fLambda = calculateThermalConductivity(sType, afMass, fTemperature, afPartialPressures);
+%
 % calculateConductivity returns
 %  fLambda - conductivity of matter in current state in W/mK
 % Case one - just a phase object provided
@@ -207,12 +211,16 @@ end
 aiIndices = find(arPartialMass > 0);
 afLambda = zeros(1, length(aiIndices));
 
+% Go through all substances that have mass and get the conductivity of each. 
 for iI = 1:length(aiIndices)
     tParameters = struct();
     tParameters.sSubstance = this.csSubstances{aiIndices(iI)};
     tParameters.sProperty = 'Thermal Conductivity';
     tParameters.sFirstDepName = 'Temperature';
     tParameters.fFirstDepValue = fTemperature;
+    
+    %TODO Add an explanation of what is being done in this if-condition and
+    %     why it is being done. 
     if this.ttxMatter.(tParameters.sSubstance).bIndividualFile
         tParameters.sPhaseType = sMatterState;
     else
@@ -227,6 +235,7 @@ for iI = 1:length(aiIndices)
     tParameters.fSecondDepValue = afPP(aiIndices(iI));
     tParameters.bUseIsobaricData = true;
     
+    % Now we can call the findProperty() method.
     afLambda(iI) = this.findProperty(tParameters);
 end
 

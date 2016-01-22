@@ -50,7 +50,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % Temperature of phase
         % @type float
         fTemperature; % [K]
-
     end
 
     properties (SetAccess = protected, GetAccess = public) %(Dependent, ?Access???)
@@ -191,9 +190,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         
         % Last time branches were set oudated
         fLastSetOutdated = -10;
-
-%         % ???
-%         fTimeStep;
         
         % Boolean value to decide if this phase is a adsorber material. For
         % example zeolite that adsorbes water or CO2 should have the value
@@ -354,7 +350,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Now update the matter properties
             this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
             this.fTotalHeatCapacity    = this.fSpecificHeatCapacity * this.fMass;
-
+                
             % Mass
             this.fMass = sum(this.afMass);
             this.afMassLost = zeros(1, this.oMT.iSubstances);
@@ -446,7 +442,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             abNegative = this.afMass < 0;
 
             if any(abNegative)
-                %keyboard();
                 this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
                 this.afMass(abNegative) = 0;
             end
@@ -679,7 +674,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % correct value for the heat capacity as soon as there is
             % matter in the phase. In this case, these objects can call
             % this function, that will update the fSpecificHeatCapacity
-            % property of the phase. 
+            % property of the phase.
             this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
         end
 
@@ -1151,15 +1146,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 fNewStep = interp1([ 0 1 ], [ this.oTimer.fMinimumTimeStep fNewStep ], (1 - rChanges) ^ iExpDelta, 'linear', 'extrap');
                 %}
                 
-                fMinStep = 0;%0.0075; %0;
+                fMinStep = 0;
 
                 if fNewStep > this.fMaxStep
                     fNewStep = this.fMaxStep;
-%                     fprintf('\nTick %i, Time %f: Phase %s setting maximum timestep of %f\n', this.oTimer.iTick, this.oTimer.fTime, this.sName, this.fMaxStep);
+                    %TODO Make this output a lower level debug message.
+                    %fprintf('\nTick %i, Time %f: Phase %s setting maximum timestep of %f\n', this.oTimer.iTick, this.oTimer.fTime, this.sName, this.fMaxStep);
                 elseif fNewStep < fMinStep
                     fNewStep = fMinStep;
-%                     fprintf('Tick %i, Time %f: Phase %s.%s setting minimum timestep\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, this.sName);
-%                     keyboard(); 
+                    %TODO Make this output a lower level debug message.
+                    %fprintf('Tick %i, Time %f: Phase %s.%s setting minimum timestep\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, this.sName);
                 end
             end
 

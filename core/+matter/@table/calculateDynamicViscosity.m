@@ -8,6 +8,10 @@ function fEta = calculateDynamicViscosity(this, varargin)
 %   (afMass). Optionally temperature and pressure can be passed as third
 %   and fourth parameters, respectively.
 %
+%   Examples: fEta = calculateDynamicViscosity(oFlow);
+%             fEta = calculateDynamicViscosity(oPhase);
+%             fEta = calculateDynamicViscosity(sType, afMass, fTemperature, afPartialPressures);
+%
 % calculateDynamicViscosity returns
 %  fEta - dynamic viscosity of matter in current state in kg/ms
 % Case one - just a phase object provided
@@ -201,12 +205,17 @@ end
 aiIndices = find(arPartialMass > 0);
 afEta = zeros(1, length(aiIndices));
 
+% Go through all substances that have mass and get the viscosity of each. 
 for iI = 1:length(aiIndices)
+    % Generating the paramter struct that findProperty() requires.
     tParameters = struct();
     tParameters.sSubstance = this.csSubstances{aiIndices(iI)};
     tParameters.sProperty = 'Dynamic Viscosity';
     tParameters.sFirstDepName = 'Temperature';
     tParameters.fFirstDepValue = fTemperature;
+    
+    %TODO Add an explanation of what is being done in this if-condition and
+    %     why it is being done. 
     if this.ttxMatter.(tParameters.sSubstance).bIndividualFile
         tParameters.sPhaseType = sMatterState;
     else
@@ -221,6 +230,7 @@ for iI = 1:length(aiIndices)
     tParameters.fSecondDepValue = afPP(aiIndices(iI));
     tParameters.bUseIsobaricData = true;
     
+    % Now we can call the findProperty() method.
     afEta(iI) = this.findProperty(tParameters);
 end
 

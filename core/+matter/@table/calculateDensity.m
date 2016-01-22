@@ -8,15 +8,20 @@ function fDensity = calculateDensity(this, varargin)
 %   (afMass). Optionally temperature and partial pressures can be passed as
 %   third and fourth parameters, respectively.
 %
+%   Examples: fDensity = calculateDensity(oFlow);
+%             fDensity = calculateDensity(oPhase);
+%             fDensity = calculateDensity(sType, afMass, fTemperature, afPartialPressures);
+%
 % calculateDensity returns
 %  fDensitiy - density of matter in current state in kg/m^3
+
 % Case one - just a phase or flow object provided
 if length(varargin) == 1
     if ~isa(varargin{1}, 'matter.phase') && ~isa(varargin{1}, 'matter.flow')
         this.throw('calculateDensity', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
     end
     
-    % initialize attributes from input object
+    % Initialize attributes from input object
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type
     if isa(varargin{1}, 'matter.phase')
@@ -38,9 +43,10 @@ if length(varargin) == 1
         % this function.
         if varargin{1}.fPressure < 5e5
             fDensity = (varargin{1}.fPressure * varargin{1}.fMolarMass) / (matter.table.Const.fUniversalGas * varargin{1}.fTemperature);
+            % We already have what we want, so no need to execute the rest
+            % of this function.
             return;
         end
-        
         
         afPartialPressures = this.calculatePartialPressures(varargin{1});
         
@@ -51,9 +57,12 @@ if length(varargin) == 1
         
     else
         if isa(varargin{1}, 'matter.phase')
+            % Solid phases are easy again, we can just divide the mass by
+            % the volume and we're done.
             fDensity = varargin{1}.fMass / varargin{1}.fVolume;
             return;
         else
+            %TODO Implement something smart here.
             this.throw('calculateDensity', 'The calculation of solid flow densities has not yet been implemented.')
         end
     end
@@ -71,6 +80,8 @@ if length(varargin) == 1
     end
     
 else
+    % This part is in case values directly passed to this function, rather
+    % than a phase or flow object.
     sMatterState = varargin{1};
     afMass       = varargin{2};
     
@@ -89,6 +100,8 @@ else
         fTemperature = this.Standard.Temperature; % std temperature (K)
     end
     
+    %TODO Add some comments here to explain the use of the matter state
+    %     'all'.
     if nargin > 4
         afPartialPressures = varargin{4};
         if ~strcmp(sMatterState, 'gas')
@@ -112,11 +125,15 @@ aiIndices = find(arPartialMass > 0);
 afRho = zeros(1, length(aiIndices));
 
 for iI = 1:length(aiIndices)
+    % Generating the paramter struct that findProperty() requires.
     tParameters = struct();
     tParameters.sSubstance = this.csSubstances{aiIndices(iI)};
     tParameters.sProperty = 'Density';
     tParameters.sFirstDepName = 'Temperature';
     tParameters.fFirstDepValue = fTemperature;
+    
+    %TODO Add an explanation of what is being done in this if-condition and
+    %     why it is being done. 
     if this.ttxMatter.(tParameters.sSubstance).bIndividualFile
         tParameters.sPhaseType = sMatterState;
     else
@@ -129,10 +146,9 @@ for iI = 1:length(aiIndices)
     
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
-    
-    %TODO should that just be true for e.g. pipe flows?
     tParameters.bUseIsobaricData = true;
     
+    % Now we can call the findProperty() method.
     afRho(iI) = this.findProperty(tParameters);
 end
 

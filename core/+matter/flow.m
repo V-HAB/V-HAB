@@ -539,7 +539,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     %output once this is implemented
                     this(1).warn('setData', 'Updating specific heat capacity for phase %s %s.', oExme.oPhase.oStore.sName, oExme.oPhase.sName);
                     oExme.oPhase.updateSpecificHeatCapacity();
-%                     fPhaseSpecificHeatCapacity = this(1).oMT.calculateSpecificHeatCapacity(oExme.oPhase);
                     fPhaseSpecificHeatCapacity = oExme.oPhase.fSpecificHeatCapacity;
                 end
 

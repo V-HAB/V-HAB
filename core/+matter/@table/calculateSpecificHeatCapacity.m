@@ -1,17 +1,21 @@
 function fSpecificHeatCapacity = calculateSpecificHeatCapacity(this, varargin) %sMatterState, afMasses, fTemperature, fPressure)
-    %CALCULATESPECIFICHEATCAPACITY Calculate the specific heat capacity of a mixture
-    %    Calculates the specific heat capacity by adding the single
-    %    substance capacities weighted with their mass fraction. Can use
-    %    either a phase object as input parameter, or the phase type
-    %    (sType) and the masses array (afMasses). Optionally, temperature
-    %    and pressure can be passed as third and fourth parameters,
-    %    respectively.
-    %
-    % calculateHeatCapacity returns
-    %  fSpecificHeatCapacity  - specific, isobaric heat capacity of mix in J/kgK?
-    %
-    %TODO: deprecate this method in favor of |getSpecificHeatCapacity()|
-    %      and |getTotalHeatCapacity()|, which just handle the second case
+%CALCULATESPECIFICHEATCAPACITY Calculate the specific heat capacity of a mixture
+%    Calculates the specific heat capacity by adding the single substance
+%    capacities weighted with their mass fraction. Can use either a phase
+%    object as input parameter, or the phase type (sType) and the masses
+%    array (afMasses). Optionally, temperature and pressure can be passed
+%    as third and fourth parameters,
+%    respectively.
+%
+%   Examples: fSpecificHeatCapacity = calculateSpecificHeatCapacity(oFlow);
+%             fSpecificHeatCapacity = calculateSpecificHeatCapacity(oPhase);
+%             fSpecificHeatCapacity = calculateSpecificHeatCapacity(sType, afMass, fTemperature, afPartialPressures);
+%
+% calculateHeatCapacity returns
+%  fSpecificHeatCapacity  - specific, isobaric heat capacity of mix in J/kgK?
+%
+%TODO: deprecate this method in favor of |getSpecificHeatCapacity()|
+%      and |getTotalHeatCapacity()|, which just handle the second case
 
 iNumArgs = length(varargin); % |iNumArgs == nargin - 1|!?
 
