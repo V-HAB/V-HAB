@@ -97,6 +97,13 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % Only recalculated when setData was executed and requested again!
         fDensity;
         fDynamicViscosity;
+        
+        % Properties to decide when the matter properties have to be
+        % recalculated
+        fPressureLastMassPropUpdate    = 0;
+        fTemperatureLastMassPropUpdate = 0;
+        arPartialMassLastMassPropUpdate;
+
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -142,6 +149,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
                 % Initialize the mass fractions array with zeros.
                 this.arPartialMass = zeros(1, this.oMT.iSubstances);
+                this.arPartialMassLastMassPropUpdate = this.arPartialMass;
             end
             
 %             % See thFuncs definition above and addProc below.
@@ -473,7 +481,17 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % Heat capacity. The oBranch references back to the p2p itself
             % which provides the getInEXME method (p2p is always directly
             % connected to EXMEs).
-            this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
+            
+            % TO DO: Make limits adaptive
+            if (abs(this.fPressureLastMassPropUpdate - this.fPressure) > 100) ||...
+               (abs(this.fTemperatureLastMassPropUpdate - this.fTemperature) > 1) ||...
+                   (max(abs(this.arPartialMassLastMassPropUpdate - this.arPartialMass)) > 0.01)
+           
+                this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
+                this.fPressureLastMassPropUpdate = this.fPressure;
+                this.fTemperatureLastMassPropUpdate = this.fTemperature;
+                this.arPartialMassLastMassPropUpdate = this.arPartialMass;
+            end
         end
         
         

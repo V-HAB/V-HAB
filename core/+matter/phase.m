@@ -186,7 +186,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % Time when the total heat capacity was last updated. Need to save
         % this information in order to prevent the heat capacity
         % calculation to be performed multiple times per timestep.
-        fLastTotalHeatCapacityUpdate;
+        fLastTotalHeatCapacityUpdate = 0;
         
         
         % Last time branches were set oudated
@@ -194,6 +194,18 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
 %         % ???
 %         fTimeStep;
+        
+        % Boolean value to decide if this phase is a adsorber material. For
+        % example zeolite that adsorbes water or CO2 should have the value
+        % true for this while a normal gas phase should have the value
+        % false.
+        bAdsorber;
+        
+        % Properties to decide when the matter properties have to be
+        % recalculated
+        fPressureLastMassPropUpdate    = 0;
+        fTemperatureLastMassPropUpdate = 0;
+        arPartialMassLastMassPropUpdate;
 
     end
 
@@ -241,7 +253,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
     methods
 
-        function this = phase(oStore, sName, tfMass, fTemperature)
+        function this = phase(oStore, sName, tfMass, fTemperature, bAdsorber)
             % Constructor for the |matter.phase| class. Input parameters
             % can be provided to define the contained masses and
             % temperature, additionally the internal, merge and extract
@@ -258,6 +270,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             %                   Keys refer to the name of the according substance
             %   fTemperature  - temperature of the initial mass, has to be given
             %                   if  tfMass is provided
+            %   bAdsorber     - used to specify if this is an adsorber
+            %                   phase. If the value is true the matter
+            %                   property calculation will be dumbed down to
+            %                   allow solids to adsorb gas/liquids without
+            %                   the matter table crashing
 
             % Parent has to be a or derive from matter.store
             if ~isa(oStore, 'matter.store'), this.throw('phase', 'Provided oStore parameter has to be a matter.store'); end;
@@ -265,6 +282,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Set name
             this.sName = sName;
 
+            %set boolean adsorber property
+            if nargin == 5
+                this.bAdsorber = bAdsorber;
+            else
+                this.bAdsorber = false;
+            end
+                
             % Parent store - FIRST call addPhase on parent, THEN set the
             % store as the parent - matter.store.addPhase only does that if
             % the oStore attribute here is empty!
@@ -283,7 +307,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Preset masses
             this.afMass = zeros(1, this.oMT.iSubstances);
             this.arPartialMass = zeros(1, this.oMT.iSubstances);
-
+            this.arPartialMassLastMassPropUpdate = this.arPartialMass;
             % Mass provided?
             if (nargin >= 3) && ~isempty(tfMass) && ~isempty(fieldnames(tfMass))
                 % If tfMass is provided, fTemperature also has to be there
@@ -325,8 +349,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 this.arPartialMass = this.afMass;
             end
 
-            % Now update the matter properties
             this.fMolarMass            = this.oMT.calculateMolarMass(this.afMass);
+            
+            % Now update the matter properties
             this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
             this.fTotalHeatCapacity    = this.fSpecificHeatCapacity * this.fMass;
 
@@ -564,13 +589,36 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % the calculation if it hasn't been done before.
             %
             % See getTotalHeatCapacity --> only recalculated if at least
-            % one second has passed. So we'll also include that here!
-            %if ~(this.oTimer.fTime == this.fLastTotalHeatCapacityUpdate)
-            if isempty(this.fLastTotalHeatCapacityUpdate) || (this.oTimer.fTime >= (this.fLastTotalHeatCapacityUpdate + this.fMinimalTimeBetweenHeatCapacityUpdates))
-                this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
-                
-                this.fTotalHeatCapacity = this.fSpecificHeatCapacity * this.fMass;
-                this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
+            % the minimal time difference between calculations, as
+            % specified in the fMinimalTimeBetweenHeatCapacityUpdates
+            % property, has passed. So we'll also include that here!
+            if ~isempty(this.fMinimalTimeBetweenHeatCapacityUpdates) && (this.oTimer.fTime >= (this.fLastTotalHeatCapacityUpdate + this.fMinimalTimeBetweenHeatCapacityUpdates))
+                bRecalculate = true;
+            elseif ~(this.oTimer.fTime == this.fLastTotalHeatCapacityUpdate)
+                bRecalculate = true;
+            else
+                bRecalculate = false;
+            end
+
+            if bRecalculate
+                % in order to reduce the amount of times the matter
+                % calculation is executed it is checked here if the pressure
+                % and/or temperature have changed significantly enough to
+                % justify a recalculation
+                % TO DO: Make limits adaptive
+                if (abs(this.fPressureLastMassPropUpdate - this.fPressure) > 100) ||...
+                   (abs(this.fTemperatureLastMassPropUpdate - this.fTemperature) > 1) ||...
+                   (max(abs(this.arPartialMassLastMassPropUpdate - this.arPartialMass)) > 0.01)
+                    
+                    this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
+                    this.fTotalHeatCapacity              = this.fSpecificHeatCapacity * this.fMass;
+                        
+                    this.fPressureLastMassPropUpdate     = this.fPressure;
+                    this.fTemperatureLastMassPropUpdate  = this.fTemperature;
+                    this.arPartialMassLastMassPropUpdate = this.arPartialMass;
+                    
+                    this.fLastTotalHeatCapacityUpdate    = this.oTimer.fTime;
+                end
             end
         end
 
@@ -599,19 +647,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         function fTotalHeatCapacity = getTotalHeatCapacity(this)
             % Returns the total heat capacity of the phase. 
             
-            % We'll only calculate this again, if it has been at least one
-            % second since the last update. This is to reduce the
-            % computational load and may be removed in the future,
-            % especially if the calculateSpecificHeatCapactiy() method and
-            % the findProperty() method of the matter table have been
-            % substantially accelerated.
-            % One second is also the fixed timestep of the thermal solver. 
-            %
-            % Could that not be written as:
-            % this.oTimer.fTime < (this.fLastTotalHeatCapacityUpdate + ...
-            %                  this.fMinimalTimeBetweenHeatCapacityUpdates)
-            % It feels like that is more readable ...
-            if isempty(this.fLastTotalHeatCapacityUpdate) || (this.oTimer.fTime - this.fLastTotalHeatCapacityUpdate < this.fMinimalTimeBetweenHeatCapacityUpdates)
+            % We'll only calculate this again, if a certain amount of time
+            % has passed since the last update. This value is set using the
+            % fMinimalTimeBetweenHeatCapacityUpdates property, which is set
+            % to 1 second by default. This is to reduce the computational
+            % load and may be removed in the future, especially if the
+            % calculateSpecificHeatCapactiy() method and the findProperty()
+            % method of the matter table have been substantially
+            % accelerated. One second is also the fixed timestep of the
+            % thermal solver.
+            if this.oTimer.fTime < this.fLastTotalHeatCapacityUpdate + this.fMinimalTimeBetweenHeatCapacityUpdates
                 fTotalHeatCapacity = this.fTotalHeatCapacity;
             else
                 this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
