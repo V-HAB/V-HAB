@@ -41,12 +41,21 @@ classdef liquid < matter.phase
         % fTemperature  : Temperature of matter in phase
         % fPress        : Pressure of matter in phase
         
-        function this = liquid(oStore, sName, tfMasses, fVolume, fTemperature, fPressure)
-            this@matter.phase(oStore, sName, tfMasses, fTemperature);
+        function this = liquid(oStore, sName, tfMasses, fVolume, fTemperature, fPressure, bAdsorber)
+            if nargin < 7
+                 bAdsorber = false;
+            end
+            this@matter.phase(oStore, sName, tfMasses, fTemperature, bAdsorber);
             
             this.fVolume      = fVolume;
             this.fTemperature = fTemperature;
-            this.fPressure    = fPressure;
+            
+            if nargin > 5
+                this.fPressure    = fPressure;
+            else
+                this.fPressure    = this.oMT.Standard.Pressure;
+            end
+            
             
             this.fDensity = this.fMass / this.fVolume;
             

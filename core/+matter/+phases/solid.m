@@ -19,10 +19,14 @@ classdef solid < matter.phase
     
     methods
         
-        function this = solid(oStore, sName, tfMasses, fIgnoredVolume, fTemperature)
+        function this = solid(oStore, sName, tfMasses, fIgnoredVolume, fTemperature, bAdsorber)
             %SOLID Create a new solid phase
             
-            this@matter.phase(oStore, sName, tfMasses, fTemperature);
+            if nargin < 6
+                bAdsorber = false;
+            end
+            this@matter.phase(oStore, sName, tfMasses, fTemperature, bAdsorber);
+            
             
             csKeys = fieldnames(tfMasses);
             afVolumes = zeros(1,length(csKeys));

@@ -462,6 +462,41 @@ else
                 end
             end
         end
+        
+        % For mixtures or adsorbed material it is also necessary to save
+        % all matter data independent from its phase
+        ttxImportMatter.(csStructName{iI}).tAll  = struct();
+        ttxImportMatter.(csStructName{iI}).tAll.tInterpolations = struct();
+        ttxImportMatter.(csStructName{iI}).tAll.bInterpolations = false;
+            
+        ttxImportMatter.(csStructName{iI}).tAll.mfData = mfRawData;
+        for iK = 1:iNumberOfColumns
+            % We can't find min and max for the 'Phase' column, but for every
+            % other one we can.
+            if ~strcmp(csColumnNames{iK}, 'Phase')
+                % Creating the struct
+                sStructName = ['t',csColumnNames{iK}];
+                ttxImportMatter.(csStructName{iI}).tAll.ttExtremes.(sStructName) = struct();
+
+                try
+                    % Getting the min and max values
+                    fMin = min(ttxImportMatter.(csStructName{iI}).tAll.mfData(:,iK));
+                    fMax = max(ttxImportMatter.(csStructName{iI}).tAll.mfData(:,iK));
+                catch
+                    % There may be only NaNs in the last column, if so we just
+                    % don't add the property struct to tExtremes
+                    break;
+                end
+
+                % Some of the columns may contain only NaNs, in this case we
+                % don't add the property struct to tExtremes
+                if ~(isempty(fMin) || isempty(fMax))
+                    % Writing the values to the struct
+                    ttxImportMatter.(csStructName{iI}).tAll.ttExtremes.(sStructName).Min = fMin;
+                    ttxImportMatter.(csStructName{iI}).tAll.ttExtremes.(sStructName).Max = fMax;
+                end
+            end
+        end
     end
 end
 

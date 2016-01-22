@@ -117,7 +117,7 @@ try
         this.throw('table:FindProperty','Isobaric data selector is not a boolean (logical).');
     end
 catch
-    bUseIsobaricData = false;
+    bUseIsobaricData = true;
 end
 
 
@@ -174,6 +174,10 @@ switch sPhaseType
         sPhaseStructName = 'tSupercritical';
         iPhaseType       = 4;
         sPhaseAdjective  = 'gaseous';
+    case 'all'
+        sPhaseStructName = 'tAll';
+        iPhaseType       = 5;
+        sPhaseAdjective  = 'all';
 end
 
 % Again for debugging purposes, we'll get the unit names for the two
@@ -183,7 +187,6 @@ if txMatterForSubstance.bIndividualFile
     % Shorthand to save execution time!
     txMatterForSubstanceAndType             = txMatterForSubstance.(sTypeStruct);
     txMatterForSubstanceAndTypeAndAggregate = txMatterForSubstanceAndType.(sPhaseStructName);
-    
     
     sFirstDepUnit  = txMatterForSubstanceAndType.tUnits.(sFirstDepName);
     sSecondDepUnit = txMatterForSubstanceAndType.tUnits.(sSecondDepName);

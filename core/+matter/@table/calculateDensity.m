@@ -20,16 +20,22 @@ if length(varargin) == 1
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type
     if isa(varargin{1}, 'matter.phase')
-        sMatterState = varargin{1}.sType;         
+        if varargin{1}.bAdsorber
+            sMatterState = 'all';
+        else
+        	sMatterState = varargin{1}.sType;  
+        end
     elseif isa(varargin{1}, 'matter.flow')
         sMatterState = varargin{1}.oBranch.getInEXME().oPhase.sType;
     end
     
     fTemperature = varargin{1}.fTemperature;
     
-    if any(strcmp(sMatterState, {'gas', 'liquid'}))
-        % matter.flow - can we use the ideal gas law?
-        %TODO matter.table.setUseSimpleEquationsIfSufficientlyValid()!
+    if strcmp(sMatterState, 'gas')
+        % If the matter state is gaseous and the pressure is not too high, 
+        % we can use the idal gas law. This makes the calculation a lot
+        % faster, since we can avoid the multiple findProperty() calls in
+        % this function.
         if varargin{1}.fPressure < 5e5
             fDensity = (varargin{1}.fPressure * varargin{1}.fMolarMass) / (matter.table.Const.fUniversalGas * varargin{1}.fTemperature);
             return;
@@ -37,6 +43,12 @@ if length(varargin) == 1
         
         
         afPartialPressures = this.calculatePartialPressures(varargin{1});
+        
+    elseif strcmp(sMatterState, 'liquid')
+        % For liquids the density has to be calculated from the matter
+        % table.
+        afPartialPressures = ones(1, this.iSubstances) * varargin{1}.fPressure;
+        
     else
         if isa(varargin{1}, 'matter.phase')
             fDensity = varargin{1}.fMass / varargin{1}.fVolume;
@@ -79,11 +91,15 @@ else
     
     if nargin > 4
         afPartialPressures = varargin{4};
+        if ~strcmp(sMatterState, 'gas')
+            sMatterState = 'all';
+        end
     else
-        if any(strcmp(sMatterState, {'gas', 'liquid'}))
+        if strcmp(sMatterState, 'gas')
             afPartialPressures = this.calculatePartialPressures(sMatterState, afMass, fPressure);
         else
             afPartialPressures = ones(1, this.iSubstances) * this.Standard.Pressure;
+            sMatterState = 'all';
         end
     end
     
@@ -101,7 +117,16 @@ for iI = 1:length(aiIndices)
     tParameters.sProperty = 'Density';
     tParameters.sFirstDepName = 'Temperature';
     tParameters.fFirstDepValue = fTemperature;
-    tParameters.sPhaseType = sMatterState;
+    if this.ttxMatter.(tParameters.sSubstance).bIndividualFile
+        tParameters.sPhaseType = sMatterState;
+    else
+        if length(varargin) == 1
+            tParameters.sPhaseType = oMatterRef.sType;
+        else
+            tParameters.sPhaseType = varargin{1};
+        end
+    end
+    
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
     

@@ -48,12 +48,14 @@ classdef gas < matter.phase
         % fTemperature  : Temperature of matter in phase
         %
         %TODO fVolume is stupid - needs to be set by store!
-        function this = gas(oStore, sName, tfMasses, fVolume, fTemperature)
+        function this = gas(oStore, sName, tfMasses, fVolume, fTemperature, bAdsorber)
             %TODO
             %   - not all params required, use defaults?
             %   - volume from store ...?
-            
-            this@matter.phase(oStore, sName, tfMasses, fTemperature);
+            if nargin < 6
+                bAdsorber = false;
+            end
+            this@matter.phase(oStore, sName, tfMasses, fTemperature, bAdsorber);
             
             % Get volume from 
             if nargin < 4 || isempty(fVolume), fVolume = oStore.fVolume; end;
