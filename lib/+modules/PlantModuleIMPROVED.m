@@ -2,17 +2,11 @@ classdef PlantModuleIMPROVED < vsys
     
     properties
         % struct containing all data on grown plant species
-        tPlantData = 0;
+        tPlantData;
         
-        % TODO: probably not needed anymore?
         % struct containing various plant parameters listed in
         % PlantParameters.m in lib/+components/+PlantModule
-        tPlantParameters = 0;
-                
-        % struct to store plant gas exchange rates with the atmosphere,
-        % calculated by CreateBiomass manipulator, used by gas exchange
-        % p2p-procs
-        tPlantGasExchange = 0;
+        tPlantParameters;
         
         % Set temperatures, need to be constant for now.
         % TODO: according to previous comments, some parts of the plant 
@@ -20,9 +14,6 @@ classdef PlantModuleIMPROVED < vsys
         % out which parts and why
         fTemperatureLight =     22.5;   % [°C]
         fTemperatureDark =      22.5;   % [°C]
-        
-        % availbale water for plant growth in the referenced water tank
-        fWaterAvailable;    % [kg]
         
         %% Initialize LSS Atmosphere Values
         
@@ -45,7 +36,7 @@ classdef PlantModuleIMPROVED < vsys
         fPressureAtmosphere =       101325; % [Pa]
         
         % atmospheric CO2 concentration
-        fCO2 =                   1300;   % [µmol/mol]
+        fCO2ppm =                   1300;   % [µmol/mol]
         
         %% Initialize Plant Lighting Conditions
         
@@ -65,16 +56,16 @@ classdef PlantModuleIMPROVED < vsys
         % photoperiod
         fH =    16;     % [hours/day]
         
-        %% Required Objects
+        %%
         
-        % LSS atmosphere phase
+        %
+        oCreateBiomass;
+        
+        %
         oAtmosphereReference;
         
-        % LSS water supply phase
+        %
         oWaterReference;
-        
-        % biomass manipulator object
-        oCreateBiomass;
     end
     
     methods
@@ -85,7 +76,6 @@ classdef PlantModuleIMPROVED < vsys
             % what EXACTLY it does!
             this@vsys(oParent, sName, 60);
 
-            % for configurations 
             eval(this.oRoot.oCfgParams.configCode(this));
             
             %% Load Plant Species Data File
@@ -93,7 +83,7 @@ classdef PlantModuleIMPROVED < vsys
             % Load plant setup from *.mat file
             % TODO: maybe take some other input instead of *.mat
             this.tPlantData = load(strrep(...
-                'components\+PlantModule\+setups\PlantData.mat', ...
+                'hocl\+marsone\+components\+PlantModule\+setups\PlantData_VhabCrops_Macro_80m2_staggered.mat', ...
                 '\', ...   %PlantEng: Setup containing several plant cultures
                 filesep));
             
@@ -148,24 +138,25 @@ classdef PlantModuleIMPROVED < vsys
             % TODO: this phase is all liquid, may conflict with gas
             % exchanges as everything happens at once, maybe split off the
             % exchange part to a separate phase, look into this later
-            oPlants = matter.phases.absorber( ...
+            oPlants = matter.phases.liquid( ...
                 this.toStores.PlantCultivationStore, ...    % store in which the phase is located
                 'Plants', ...                               % phase name
                 struct(...                                  % phase contents
-                    'H2O', 1, ...
+                    'H2O', 0.1, ...
                     'CO2', 0.1, ...
                     'O2', 0.1), ...                            
+                10, ...                                     % phase volume
                 this.oParent.fTemperatureInit, ...          % phase temperature
-                'liquid', ...
-                'H2O');
+                this.oParent.fPressureInit, ...             % phase pressure
+                true);                                      % adsorber true
             
             % add exmes to phase
-            matter.procs.exmes.absorber(oPlants, 'H2O_ExchangePlants');       % plant H2O exchange with atmosphere
-            matter.procs.exmes.absorber(oPlants, 'O2_ExchangePlants');        % plant O2 exchange with atmosphere
-            matter.procs.exmes.absorber(oPlants, 'CO2_ExchangePlants');       % plant CO2 exchange with atmosphere
-            matter.procs.exmes.absorber(oPlants, 'H2O_InputWaterNeed');       % plant water input
-            matter.procs.exmes.absorber(oPlants, 'Biomass_HarvestEdible');    % plant edible biomass to food phase
-            matter.procs.exmes.absorber(oPlants, 'Biomass_HarvestInedible');  % plant inedible biomass to waste phase
+            matter.procs.exmes.liquid(oPlants, 'H2O_ExchangePlants');       % plant H2O exchange with atmosphere
+            matter.procs.exmes.liquid(oPlants, 'O2_ExchangePlants');        % plant O2 exchange with atmosphere
+            matter.procs.exmes.liquid(oPlants, 'CO2_ExchangePlants');       % plant CO2 exchange with atmosphere
+            matter.procs.exmes.liquid(oPlants, 'H2O_InputWaterNeed');       % plant water input
+            matter.procs.exmes.liquid(oPlants, 'Biomass_HarvestEdible');    % plant edible biomass to food phase
+            matter.procs.exmes.liquid(oPlants, 'Biomass_HarvestInedible');  % plant inedible biomass to waste phase
             
             
             % add phase to store; harvested edible biomass is extracted
@@ -204,14 +195,25 @@ classdef PlantModuleIMPROVED < vsys
             % Initializing manipulator for creating biomass and handling 
             % gas exchanges
             this.oCreateBiomass = ...         
-                components.PlantModule.Create_Biomass_IMPROVED(...    
+                components.PlantModule.Create_Biomass(...    
                 this, ...       
                 'CreateBiomass', ...                % manipulator name    
-                oPlants);                           % plants phase reference                  
-                       
+                oPlants, ...                        % plants phase reference
+                this.tPlantData, ...                % culture setups
+                this.tPlantParameters, ...          % plant parameters
+                this.fTemperatureLight, ...         % atmosphere temperature light [°C]
+                this.fTemperatureDark, ...          % atmosphere temperature dark [°C]
+                this.fRelativeHumidityLight, ...    % relative humidity light [-]
+                this.fRelativeHumidityDark, ...     % relative humidity dark [-]
+                this.fPressureAtmosphere, ...       % atmosphere pressure [Pa]
+                this.fCO2ppm, ...                   % CO2 concentration [µmol/mol]
+                this.fPPF, ...                      % photosynthetic photon flux [µmol/m^2s]
+                this.fH);                           % photoperiod [h/d]     
+                
             %% Create Gas Exchange Processors
             
             % create three filter procs for H2O, O2 and CO2
+            % TODO: rewrite similar to human metabolic procs
             
             components.PlantModule.Set_Plants_H2OGasExchange(... 
                 this.toStores.PlantCultivationStore, ...                % store of treated phases
@@ -242,15 +244,15 @@ classdef PlantModuleIMPROVED < vsys
                 this.toStores.PlantCultivationStore, ...        % store of treated phases
                 'Biomass_HarvestEdible', ...                    % processor name
                 'Plants.Biomass_HarvestEdible', ...             % input phase
-                'BiomassEdible.Biomass_HarvestEdible' ...    % output phase
-                );                                          % system reference 
+                'HarvestInedible.Biomass_HarvestEdible', ...    % output phase
+                this);                                          % system reference 
             
             components.PlantModule.Harvest_InedibleBiomass(... 
                 this.toStores.PlantCultivationStore, ...        % store of treated phases
                 'Biomass_HarvestInedible', ...                  % processor name
                 'Plants.Biomass_HarvestInedible', ...           % input phase
-                'BiomassInedible.Biomass_HarvestInedible' ...  % output phase
-                );                                          % system reference  
+                'HarvestInedible.Biomass_HarvestInedible', ...  % output phase
+                this);                                          % system reference  
             
             %% Create Branches
             
@@ -268,19 +270,6 @@ classdef PlantModuleIMPROVED < vsys
             
             % waste output to waste storage
             matter.branch(this, 'PlantCultivationStore.Biomass_OutputInedible', {}, 'Biomass_OutputInedible',   'WasteOutput');
-            
-            % TODO: change, just carried over temporarily. hopefully no
-            % fixed TS needed anymore
-            %Setting fixed timestep for phases of PlantCultivationStore
-                aoPhases = this.toStores.PlantCultivationStore.aoPhases;
-                    %air-phase
-                        aoPhases(1).fFixedTS = 15;
-                    %Plants-phase
-                        aoPhases(2).fFixedTS = 15;
-                    %Inedible-phase
-                        aoPhases(3).fFixedTS = 15;
-                    %Edible-phase
-                        aoPhases(4).fFixedTS = 15;
         end
         
         function createSolverStructure(this)
@@ -319,8 +308,8 @@ classdef PlantModuleIMPROVED < vsys
         % set path for reference phases to enable dynamic calculation, must
         % be called from the parent system with the correct paths
         function setReferencePhase(this, oAtmosphere, oWater)
-            this.oAtmosphereReference   = oAtmosphere;
-            this.oWaterReference        = oWater;
+            this.oAtmosphereReference =  oAtmosphere;
+            this.oWaterReference =       oWater;
         end
     end
     
@@ -330,71 +319,6 @@ classdef PlantModuleIMPROVED < vsys
         function exec(this, ~)
             % call superconstructor
             exec@vsys(this);
-            
-            global bLSSConditions
-            
-            if this.oTimer.iTick > 0
-                if bLSSConditions == 1
-                    % CO2 level in atmosphere phase, parts per million. MEC 
-                    % model is only valid for up to 1300 ppm, so CO2 
-                    % concentration is capped at 1300 for calculation 
-                    % purposes as plants do grow with a higher ppm value.
-                    % Temporary solution only, CO2 should be kept within 
-                    % allowed range by atmosphere regulation to keep 
-                    % validity of model results.
-                    % It is required to add this property fCO2_Measured to
-                    % the parent system and call the function Calc_CO2_ppm
-                    % in its exec() section to keep the CO2 concentration
-                    % in the atmosphere updated. 
-                    if this.oParent.fCO2 > 1300
-                        this.fCO2 = 1300;
-                    else
-                        this.fCO2 = this.oParent.fCO2;  
-                    end
-                end
-                
-                % take humidity and pressure from referenced phase
-                this.fRelativeHumidityLight     = this.oAtmosphereReference.rRelHumidity;
-                this.fRelativeHumidityDark      = this.oAtmosphereReference.rRelHumidity;
-                this.fPressureAtmosphere        = this.oAtmosphereReference.fPressure;
-
-                % available water in referenced water tank
-                this.fWaterAvailable = this.oWaterReference.fMass;
-            
- 
-                % Setting gas/water exchange rates:  LSS <-> PlantModule
-                
-                % atmosphere input from LSS
-                this.toBranches.AtmosphereInput.oHandler.setFlowRate(-0.5);  
-                
-                % atmosphere output to LSS plus plant gas exchange
-                this.toBranches.AtmosphereOutput.oHandler.setFlowRate(0.5 + ...
-                    this.toStores.PlantCultivationStore.toProcsP2P.H2O_ExchangePlants.fFlowRate + ...
-                    this.toStores.PlantCultivationStore.toProcsP2P.O2_ExchangePlants.fFlowRate - ...
-                    this.toStores.PlantCultivationStore.toProcsP2P.CO2_ExchangePlants.fFlowRate);
-                
-                % water input from LSS water tank
-                this.toBranches.WaterInput.oHandler.setFlowRate(-this.oCreateBiomass.fWaterNeed);  
-                
-                
-                % Harvesting - Produced biomass in PlantModule is extracted 
-                % to biomass stores (food/waste) located in the connected 
-                % LSS main system
-                
-                % Edible Biomass to LSS food storage
-                if this.toStores.PlantCultivationStore.aoPhases(1, 3).fMass > 0.1
-                    this.toBranches.FoodOutput.oHandler.setFlowRate(0.01);
-                else
-                    this.toBranches.FoodOutput.oHandler.setFlowRate(0);
-                end
-                   
-                % Inedible Biomass to LSS waste storage
-                if this.toStores.PlantCultivationStore.aoPhases(1, 4).fMass > 0.1
-                    this.toBranches.WasteOutput.oHandler.setFlowRate(0.01);
-                else
-                    this.toBranches.WasteOutput.oHandler.setFlowRate(0);
-                end
-            end
         end
     end
 end
