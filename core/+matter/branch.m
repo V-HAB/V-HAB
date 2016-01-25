@@ -383,22 +383,26 @@ classdef branch < base & event.source
             
             % To help with debugging, we now change this branch's sName
             % property to reflect the actual flow path between two exmes
-            % that it models. First we remove the names of the interfaces
-            % from both branch names.
-            sLeftBranchName  = strrep(this.sName, this.csNames{2}, '');
-            sRightBranchName = strrep(this.coBranches{2}.sName, sInterface, '');
+            % that it models. First we split the branch name at the three
+            % consecutive underscores '___' which delimit the left and
+            % right side of a branch name. 
+            csLeftBranchName  = strsplit(this.sName, '___');
+            csRightBranchName = strsplit(this.coBranches{2}.sName, '___');
             
             % Before we delete it, we'll save the old branch name
-            % temporarily, because we'll need it one more time.
+            % temporarily, because we'll need it one more time. We also
+            % need to check, if this branch had a custom name assigned to
+            % it, because in that case we will have to replace that name.
            	if ~isempty(this.sCustomName)
                 sOldName = this.sCustomName;
             else
                 sOldName = this.sName;
             end
+            
             % Now we set the new name for this branch, inserting the word
             % 'Interface' in the middle, so when looking at the name, we
             % know that this is a subsystem to supersystem branch.
-            this.sName = [ sLeftBranchName, 'Interface', sRightBranchName ];
+            this.sName = [ csLeftBranchName{1}, '___Interface___', csRightBranchName{2} ];
             
             % Now we call the updateBranchNames() method on our container,
             % so the updated branch names are also visible there. 
