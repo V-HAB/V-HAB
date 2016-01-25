@@ -53,13 +53,17 @@ classdef p2p < matter.flow
             if isempty(sPortIn)
                 sPortIn = sprintf('.p2p_%s_in', this.sName);
                 
-                matter.procs.exmes.gas(oStore.aoPhases(iPhaseIn), sPortIn(2:end));
+                sPhaseType = this.oStore.aoPhases(iPhaseIn).sType;
+                
+                matter.procs.exmes.(sPhaseType)(oStore.aoPhases(iPhaseIn), sPortIn(2:end));
             end
             
             if isempty(sPortOut)
                 sPortOut = sprintf('.p2p_%s_out', this.sName);
                 
-                matter.procs.exmes.gas(oStore.aoPhases(iPhaseOut), sPortOut(2:end));
+                sPhaseType = this.oStore.aoPhases(iPhaseOut).sType;
+                
+                matter.procs.exmes.(sPhaseType)(oStore.aoPhases(iPhaseOut), sPortOut(2:end));
             end
             
             
