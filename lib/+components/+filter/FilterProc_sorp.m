@@ -140,12 +140,6 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
         
         function update(this)
             
-            % Too many errors being produced, if the solver hasn't run yet.
-            % So we just skip the first execution.
-            if this.oStore.oTimer.fTime <= 0
-                return;
-            end
-            
             % If this method has already been called during this time step,
             % we don't have to execute it again. 
             if this.oStore.oTimer.fTime == this.fLastExec

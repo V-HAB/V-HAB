@@ -33,13 +33,7 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
         end
         
         function update(this)
-            
-            % Too many errors being produced, if the solver hasn't run yet.
-            % So we just skip the first execution.
-            if this.oStore.oTimer.fTime <= 0
-                return;
-            end
-            
+                        
             % Execute only for the active bed
             if (strcmp(this.oStore.sName, 'Bed_A') && ~strcmp(this.oParentSys.sActiveBed, 'A')) || ...
                (strcmp(this.oStore.sName, 'Bed_B') && ~strcmp(this.oParentSys.sActiveBed, 'B'))
