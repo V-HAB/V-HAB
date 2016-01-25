@@ -81,9 +81,9 @@ classdef RCA < vsys
             oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  0.001, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
 
             % Creating the ports on the splitter
-            matter.procs.exmes.gas(oPhase, 'Splitter_Inlet'); 
-            matter.procs.exmes.gas(oPhase, 'Splitter_Outlet1');
-            matter.procs.exmes.gas(oPhase, 'Splitter_Outlet2');
+            matter.procs.exmes.gas(oPhase, 'Inlet'); 
+            matter.procs.exmes.gas(oPhase, 'Outlet1');
+            matter.procs.exmes.gas(oPhase, 'Outlet2');
             
             % Syncing the phase, this makes solver branch updating smoother
             % and prevents instabilities.
@@ -107,10 +107,10 @@ classdef RCA < vsys
             oPhase = this.toStores.Merger.createPhase(this.sAtmosphereHelper,  0.001, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
             
             % Creating the ports on the merger
-            matter.procs.exmes.gas(oPhase, 'Merger_Inlet1');
-            matter.procs.exmes.gas(oPhase, 'Merger_Inlet2');
-            matter.procs.exmes.gas(oPhase, 'Merger_Outlet');
-            
+            matter.procs.exmes.gas(oPhase, 'Inlet1');
+            matter.procs.exmes.gas(oPhase, 'Inlet2');
+            matter.procs.exmes.gas(oPhase, 'Outlet');
+
             % Syncing the phase, this makes solver branch updating smoother
             % and prevents instabilities.
             oPhase.bSynced = true;
@@ -169,16 +169,16 @@ classdef RCA < vsys
             
             %% Creating the flowpath between the components
             % Splitter to Bed A
-            matter.branch(this, 'Splitter.Splitter_Outlet1',{'Pipe_1','Valve_1','Pipe_2'},'Bed_A.Inlet');
+            matter.branch(this, 'Splitter.Outlet1',{'Pipe_1','Valve_1','Pipe_2'},'Bed_A.Inlet');
                
             % Splitter to Bed B
-            matter.branch(this, 'Splitter.Splitter_Outlet2',{'Pipe_5','Valve_3','Pipe_6'},'Bed_B.Inlet');
+            matter.branch(this, 'Splitter.Outlet2',{'Pipe_5','Valve_3','Pipe_6'},'Bed_B.Inlet');
             
             % Bed A to Merger
-            matter.branch(this, 'Bed_A.Outlet',{'Pipe_3','Valve_2','Pipe_4' },'Merger.Merger_Inlet1');
+            matter.branch(this, 'Bed_A.Outlet',{'Pipe_3','Valve_2','Pipe_4' },'Merger.Inlet1');
             
             % Bed B to Merger
-            matter.branch(this, 'Bed_B.Outlet',{'Pipe_7','Valve_4','Pipe_8' },'Merger.Merger_Inlet2');
+            matter.branch(this, 'Bed_B.Outlet',{'Pipe_7','Valve_4','Pipe_8' },'Merger.Inlet2');
             
             % Bed A Amine to Vacuum
             matter.branch(this, 'Bed_A.Amine_Vacuum_Port',{'Pipe_9','Valve_5','Pipe_10'},'Vacuum.Inlet_Bed_A_Amine');
@@ -193,10 +193,10 @@ classdef RCA < vsys
             matter.branch(this, 'Bed_B.FlowVolume_Vacuum_Port',{'Pipe_15','Valve_8','Pipe_16'},'Vacuum.Inlet_Bed_B_FlowVolume');
             
             % Spliter to Inlet
-            this.toInterfaceBranches.Inlet = matter.branch(this, 'Splitter.Splitter_Inlet', {}, 'Inlet');
+            this.toInterfaceBranches.Inlet = matter.branch(this, 'Splitter.Inlet', {}, 'Inlet');
             
             % Merger to Outlet
-            this.toInterfaceBranches.Outlet = matter.branch(this, 'Merger.Merger_Outlet',  {}, 'Outlet');
+            this.toInterfaceBranches.Outlet = matter.branch(this, 'Merger.Outlet',  {}, 'Outlet');
             
         end
         
@@ -205,14 +205,14 @@ classdef RCA < vsys
             createSolverStructure@vsys(this);
             
             % Now we can create all of the solver branches
-            oB1  = solver.matter.iterative.branch(this.toBranches.Splitter__Splitter_Outlet1___Bed_A__Inlet);
-            oB2  = solver.matter.iterative.branch(this.toBranches.Splitter__Splitter_Outlet2___Bed_B__Inlet);
+            oB1  = solver.matter.iterative.branch(this.toBranches.Splitter__Outlet1___Bed_A__Inlet);
+            oB2  = solver.matter.iterative.branch(this.toBranches.Splitter__Outlet2___Bed_B__Inlet);
             oB3  = solver.matter.iterative.branch(this.toBranches.Bed_A__Amine_Vacuum_Port___Vacuum__Inlet_Bed_A_Amine);
             oB4  = solver.matter.iterative.branch(this.toBranches.Bed_B__Amine_Vacuum_Port___Vacuum__Inlet_Bed_B_Amine);          
             oB5  = solver.matter.iterative.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
             oB6  = solver.matter.iterative.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
-            oB7  = solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Merger_Inlet1);
-            oB8  = solver.matter.iterative.branch(this.toBranches.Bed_B__Outlet___Merger__Merger_Inlet2);
+            oB7  = solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Inlet1);
+            oB8  = solver.matter.iterative.branch(this.toBranches.Bed_B__Outlet___Merger__Inlet2);
             oB9  = solver.matter.iterative.branch(this.toInterfaceBranches.Outlet);
             oB10 = solver.matter.iterative.branch(this.toInterfaceBranches.Inlet);
             

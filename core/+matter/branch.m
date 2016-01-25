@@ -677,9 +677,10 @@ classdef branch < base & event.source
                 end
                 
             else
-                % Get set fr func callbacks and phase on the right side of
-                % the overall branch, write right phase to cell
-                [ this.coExmes{2}, aoFlows, aoFlowProcs ] = this.hGetBranchData();
+                % Get set flow rate function callbacks and phase on the
+                % right side of the overall branch and write the right side
+                % phase to cell.
+                [ this.coExmes{2}, aoRightSideFlows, aoRightSideFlowProcs ] = this.hGetBranchData();
                 
                 
                 % Only do if we got a right phase, i.e. the (maybe several)
@@ -687,10 +688,10 @@ classdef branch < base & event.source
                 if ~isempty(this.coExmes{2})
                     % Just select to this.iIfFlow, maytbe chSetFrs was
                     % already extended previously
-                    this.aoFlows  = [ this.aoFlows(1:this.iIfFlow) aoFlows ];
+                    this.aoFlows  = [ this.aoFlows(1:this.iIfFlow) aoRightSideFlows ];
                     
                     % One flow proc less than flows
-                    this.aoFlowProcs = [ this.aoFlowProcs(1:(this.iIfFlow - 1)) aoFlowProcs ];
+                    this.aoFlowProcs = [ this.aoFlowProcs(1:(this.iIfFlow - 1)) aoRightSideFlowProcs ];
                     
                     this.iFlows     = length(this.aoFlows);
                     this.iFlowProcs = length(this.aoFlowProcs);

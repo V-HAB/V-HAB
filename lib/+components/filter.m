@@ -172,6 +172,9 @@ classdef filter < matter.store
             % Define parent system as property
             this.oParentSys = oParentSys; 
             
+            % Setting the filter type property
+            this.sType = sType;
+            
             % Assigning the filter's properties (save for setVolume function)
             this.oGeometry = oGeometry;
             this.rVoidFraction = rVoidFraction;
