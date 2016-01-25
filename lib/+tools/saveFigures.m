@@ -1,4 +1,4 @@
-function saveFigures(varargin)
+function sFilePath = saveFigures(varargin)
 %SAVEFIGURES Saves all open figures into a folder
 %
 %   Usage:
