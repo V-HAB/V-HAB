@@ -115,7 +115,7 @@ classdef RCA < vsys
             matter.store(this, 'Vacuum', 1000);
 
             % Creating empty gas phase
-            oVacuum = this.toStores.Vacuum.createPhase('air', 0, this.fInitialTemperature, 0, 0);
+            oVacuum = this.toStores.Vacuum.createPhase('air', 0.000001, this.fInitialTemperature);
             
             % Constant pressure exmes for the linear solver, for both the
             % flow volume and amine phases.
