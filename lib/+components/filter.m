@@ -22,10 +22,6 @@ classdef filter < matter.store
         % Void fraction (porosity) to correctly set the volumes
         rVoidFraction;
         
-        % Initial Atmosphere in the filter
-        % can be changed through Atmosphere helper
-        oFilterAtmosphere = {'SuitAtmospere'};
-        
         % Transfer Variables
         % filter size
         fx;fy;fz;       %[m] 
@@ -162,11 +158,11 @@ classdef filter < matter.store
             
             % Relative humidity
             % can be set individually
-            if isfield(tParameters, 'rHumidity')
-                rHumidity = tParameters.rHumidity;
+            if isfield(tParameters, 'rRelativeHumidity')
+                rRelativeHumidity = tParameters.rRelativeHumidity;
             else
                 % Default value
-                rHumidity = 0;         %[K]
+                rRelativeHumidity = 0;         %[K]
             end
             
             % Define parent system as property
@@ -196,26 +192,19 @@ classdef filter < matter.store
             % the filter and does that correctly
             if ~isempty(sAtmosphereHelper)
                 try
-                    oFlowPhase = this.createPhase(sAtmosphereHelper, 'FlowPhase', oGeometry.fVolume * rVoidFraction, fTemperature, rHumidity, fPressure);
-%                     oFlowPhase = this.createPhase(sAtmosphereHelper, 'FlowPhase', 0.0011, fTemperature, rHumidity, fPressure);
+                    oFlowPhase = this.createPhase(sAtmosphereHelper, 'FlowPhase', oGeometry.fVolume * rVoidFraction, fTemperature, rRelativeHumidity, fPressure);
                 catch 
                     this.throw('Generic Filter', 'The provided atmosphere helper (%s) is invalid!', sAtmosphereHelper);
                 end
             else
                 % Otherwise: use SuitAtmosphere as default value
-                oFlowPhase = this.createPhase('SuitAtmosphere', 'FlowPhase', oGeometry.fVolume * rVoidFraction, fTemperature, rHumidity, fPressure);
-%                 oFlowPhase = this.createPhase('SuitAtmosphere', 'FlowPhase', 0.0011, fTemperature, rHumidity, fPressure);
+                oFlowPhase = this.createPhase('SuitAtmosphere', 'FlowPhase', oGeometry.fVolume * rVoidFraction, fTemperature, rRelativeHumidity, fPressure);
             end
             
             % Creating the phase representing the filter volume manually.
             % gas(oStore, sName, tfMasses, fVolume, fTemp)
-            oFilteredPhase = matter.phases.gas(this, 'FilteredPhase', struct(), oGeometry.fVolume * (1-rVoidFraction), fTemperature);
-%             oFilteredPhase = matter.phases.gas(this, 'FilteredPhase', struct(), 0.0011, fTemperature);
-%             oFilteredPhase = this.createPhase(sAtmosphereHelper, 'FilteredPhase', 0.0011, fTemperature, rHumidity, fPressure);
-            
-            oFlowPhase.bSynced     = true;
-            oFilteredPhase.bSynced = true;
-            
+            matter.phases.gas(this, 'FilteredPhase', struct('Ar', 0.0001), oGeometry.fVolume * (1-rVoidFraction), fTemperature);
+                        
             % Fixed Time Step
             if exist('fFixedTimeStep','var')
             % Adding fixed time steps for the filter
@@ -228,20 +217,15 @@ classdef filter < matter.store
             % filterports are internal ones for the p2p processor to use.
             matter.procs.exmes.gas(oFlowPhase,     'Inlet');
             matter.procs.exmes.gas(oFlowPhase,     'Outlet');
-            matter.procs.exmes.gas(oFlowPhase,     'filterport_sorp');
-            matter.procs.exmes.gas(oFilteredPhase, 'filterport_sorp');            
-            matter.procs.exmes.gas(oFlowPhase,     'filterport_deso');
-            matter.procs.exmes.gas(oFilteredPhase, 'filterport_deso');
 
-%             tutorials.p2p.components.AbsorberExample(this, 'DumbAbsorber', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', 'CO2', 5e-4);            
             % Creating the p2p processor
             % Input parameters: oParentSys, oStore, sName, sPhaseIn, sPhaseOut, (sSpecies, sBed_Name)
-            this.oProc_deso = components.filter.FilterProc_deso(this, 'DesorptionProcessor', 'FlowPhase.filterport_deso', 'FilteredPhase.filterport_deso');
+            this.oProc_deso = components.filter.FilterProc_deso(this, 'DesorptionProcessor', 'FlowPhase', 'FilteredPhase');
             if strcmp(sType, 'RCA')
                 % RCA uses a different sorption processor 
-                this.oProc_sorp = components.RCA.RCA_FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
+                this.oProc_sorp = components.RCA.RCA_FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase', 'FilteredPhase', sType);
             else
-                this.oProc_sorp = components.filter.FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', sType);
+                this.oProc_sorp = components.filter.FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase', 'FilteredPhase', sType);
             end
             
         end

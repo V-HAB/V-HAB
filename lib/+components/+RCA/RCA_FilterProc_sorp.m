@@ -33,13 +33,7 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
         end
         
         function update(this)
-            
-            % Too many errors being produced, if the solver hasn't run yet.
-            % So we just skip the first execution.
-            if this.oStore.oTimer.fTime <= 0
-                return;
-            end
-            
+                        
             % Execute only for the active bed
             if (strcmp(this.oStore.sName, 'Bed_A') && ~strcmp(this.oParentSys.sActiveBed, 'A')) || ...
                (strcmp(this.oStore.sName, 'Bed_B') && ~strcmp(this.oParentSys.sActiveBed, 'B'))
@@ -84,7 +78,7 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             fRw = 461.52;             %[J/(kg*K)]
             
             % Maximal humidity
-            fDelta_sat = fEw / (fRw*this.fTemperature);
+            fDelta_sat = fEw / (fRw * this.fTemperature);
             
             % H2O concentration
             % Outlet concentration of H2O
@@ -96,8 +90,8 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             fC_H2O_In        = this.afConcentration_in(strcmp('H2O',this.csNames));
             
             % Relative Humidity of the gas flow
-            this.rRH_out = fC_H2O_Out * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / fDelta_sat;
-            this.rRH_in  = fC_H2O_In  * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / fDelta_sat; 
+            this.rRH_out = fC_H2O_Out * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / fDelta_sat * 100;
+            this.rRH_in  = fC_H2O_In  * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / fDelta_sat * 100; 
             
             % Calculate the dew point temperatures 
             % At the inlet

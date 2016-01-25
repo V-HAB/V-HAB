@@ -67,6 +67,9 @@ classdef RCA < vsys
                this@vsys(oParent, sName, 1);
                
                this.sAtmosphereHelper = sAtmosphereHelper;
+               
+               eval(this.oRoot.oCfgParams.configCode(this));
+
         end
         
         function createMatterStructure(this)
@@ -75,20 +78,16 @@ classdef RCA < vsys
             
             %% Distributor
             % Creating the input splitter
-            matter.store(this, 'Splitter', 0.001);  % Volume in in^3 = 0.0568 ?? 
+            matter.store(this, 'Splitter', 0.004);  % Volume in in^3 = 0.0568 ?? 
             
             % Adding a phase to the splitter
-            oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  0.001, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
+            oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
 
             % Creating the ports on the splitter
             matter.procs.exmes.gas(oPhase, 'Inlet'); 
             matter.procs.exmes.gas(oPhase, 'Outlet1');
             matter.procs.exmes.gas(oPhase, 'Outlet2');
             
-            % Syncing the phase, this makes solver branch updating smoother
-            % and prevents instabilities.
-            oPhase.bSynced = true;
-
             %% Adsorber Beds
             % Creating the two filter beds
             tFilterParameters = struct('fFilterTemperature', this.fInitialTemperature,...
@@ -101,26 +100,22 @@ classdef RCA < vsys
             
             %% Merger
             % Creating the output merger
-            matter.store(this, 'Merger',  0.001);  % Volume in in^3 = 0.0568 ??
+            matter.store(this, 'Merger',  0.004);  % Volume in in^3 = 0.0568 ??
             
             % Adding a phase to the merger
-            oPhase = this.toStores.Merger.createPhase(this.sAtmosphereHelper,  0.001, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
+            oPhase = this.toStores.Merger.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
             
             % Creating the ports on the merger
             matter.procs.exmes.gas(oPhase, 'Inlet1');
             matter.procs.exmes.gas(oPhase, 'Inlet2');
             matter.procs.exmes.gas(oPhase, 'Outlet');
 
-            % Syncing the phase, this makes solver branch updating smoother
-            % and prevents instabilities.
-            oPhase.bSynced = true;
-            
             %% Vacuum Store
             % Creating vacuum store
             matter.store(this, 'Vacuum', 1000);
 
             % Creating empty gas phase
-            oVacuum = this.toStores.Vacuum.createPhase('air', 0, this.fInitialTemperature, 0, 0);
+            oVacuum = this.toStores.Vacuum.createPhase('air', 0.000001, this.fInitialTemperature);
             
             % Constant pressure exmes for the linear solver, for both the
             % flow volume and amine phases.
@@ -158,14 +153,14 @@ classdef RCA < vsys
             % decide how fast the gas flows into Vacuum. So we can adjust
             % the time needed for the desorption process. Unfortunately the
             % pipe properties could reach unrealistic values
-            components.pipe(this, 'Pipe_9',  this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_10', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_11', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_12', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_13', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_14', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_15', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_16', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_9',  this.fPipeLength, this.fPipeDiameter / 10);
+            components.pipe(this, 'Pipe_10', this.fPipeLength, this.fPipeDiameter / 10);
+            components.pipe(this, 'Pipe_11', this.fPipeLength, this.fPipeDiameter / 10);
+            components.pipe(this, 'Pipe_12', this.fPipeLength, this.fPipeDiameter / 10);
+            components.pipe(this, 'Pipe_13', this.fPipeLength, this.fPipeDiameter / 10);
+            components.pipe(this, 'Pipe_14', this.fPipeLength, this.fPipeDiameter / 10);
+            components.pipe(this, 'Pipe_15', this.fPipeLength, this.fPipeDiameter / 10);
+            components.pipe(this, 'Pipe_16', this.fPipeLength, this.fPipeDiameter / 10);
             
             %% Creating the flowpath between the components
             % Splitter to Bed A
@@ -219,15 +214,15 @@ classdef RCA < vsys
             % Through experimentation, the following damping factor has
             % proven the optimal compromise between execution speed and
             % 'niceness' of the resulting plots. 
-            iDampingFactor = 5;
+            iDampingFactor = 10;
             
             % Setting the damping factor on all branches. 
             oB1.iDampFR  = iDampingFactor;
             oB2.iDampFR  = iDampingFactor;
-            oB3.iDampFR  = iDampingFactor;
-            oB4.iDampFR  = iDampingFactor;
-            oB5.iDampFR  = iDampingFactor;
-            oB6.iDampFR  = iDampingFactor;
+%             oB3.iDampFR  = iDampingFactor;
+%             oB4.iDampFR  = iDampingFactor;
+%             oB5.iDampFR  = iDampingFactor;
+%             oB6.iDampFR  = iDampingFactor;
             oB7.iDampFR  = iDampingFactor;
             oB8.iDampFR  = iDampingFactor;
             oB9.iDampFR  = iDampingFactor;
@@ -238,10 +233,15 @@ classdef RCA < vsys
             % in both adsorber beds and a high rMaxChange in the filtered
             % phases, because we don't really care about their properties
             % a lot, so they don't have to be updated that often. 
-            this.toStores.Bed_A.toPhases.FlowPhase.rMaxChange = 0.005;
-            this.toStores.Bed_B.toPhases.FlowPhase.rMaxChange = 0.005;
-            this.toStores.Bed_A.toPhases.FilteredPhase.rMaxChange = 0.5;
-            this.toStores.Bed_B.toPhases.FilteredPhase.rMaxChange = 0.5;
+            this.toStores.Bed_A.toPhases.FilteredPhase.rMaxChange = 0.05;
+            this.toStores.Bed_B.toPhases.FilteredPhase.rMaxChange = 0.05;
+            
+            this.toStores.Vacuum.toPhases.Vacuum_Phase_1.rMaxChange = 0.5;
+
+            this.toStores.Splitter.toPhases.Splitter_Phase_1.bSynced = true;
+            this.toStores.Bed_A.toPhases.FlowPhase.bSynced           = true;
+            this.toStores.Bed_B.toPhases.FlowPhase.bSynced           = true;
+            this.toStores.Merger.toPhases.Merger_Phase_1.bSynced     = true;
 
         end
     end

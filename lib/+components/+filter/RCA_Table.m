@@ -6,23 +6,32 @@ classdef RCA_Table < handle
         % universal gas constant [J/(mol*K)]
         fRe = 8.3145;
         
-        % constants for CO2 adsorption
+        % Constants for CO2 adsorption:
+        
         % ft describes the heterogeneity of the adsorbent surface
         % assumed to be temperature independent
-        ft = 0.22;                 %[]
-        % set saturation capacity of the bed (Paper: AIAA-2011-5243) 
-        fns = 1.10;                 %[mol/kg]
-        % toth isotherm parameter and its corresponding temperature, which was experimentally determined        
-        fb0 = 300e-10;             %[1/Pa]
-        fT0 = 762.25;              %[K]
-        % Reaction enthalpy for CO2
-        fQ_ads = 75000;              %[J/mol]
+        % ft is unitless
+        ft = 0.22;
         
-        % constants for H2O adsorption
-        % Freundlich isotherm parameter
-        ralphaH2O = 0.00135;          %[]
-        % gas constant for water
-        fRw = 461.52;                %[J/(kg*K)
+        % Set saturation capacity of the bed (Paper: AIAA-2011-5243) in
+        % [mol/kg]
+        fns = 1.10;
+        
+        % toth isotherm parameter in [1/Pa] and its corresponding
+        % temperature in [K], which was experimentally determined
+        fb0 = 300e-10;
+        fT0 = 762.25;
+        
+        % Reaction enthalpy for CO2 in [J/mol]
+        fQ_ads = 75000;
+        
+        % Constants for H2O adsorption:
+        
+        % Freundlich isotherm parameter [unitless]
+        ralphaH2O = 0.00135;
+        
+        % Gas constant for water in [J/(kg*K)]
+        fRw = 461.52;
     end
         
     
@@ -41,7 +50,7 @@ classdef RCA_Table < handle
             % Mass transfer coefficient of CO2
             k_lCO2 = 3.80e-03;         %[1/s]
             
-            % Assigne values
+            % Assign values
             k_l(strcmp('H2O',csNames), :) = k_lH2O;
             k_l(strcmp('CO2',csNames), :) = k_lCO2;
             
@@ -56,16 +65,24 @@ classdef RCA_Table < handle
         % Pressure drop across filter bed
         function [fDeltaP] = calculate_dp(~,fLength,fFluidVelocity,e_b,fTemperature,~)
             
-            % Dynamic viscosity according to Sutherland
-            fConst_T_0 = 291.15;                           % Sutherland constant for standard air [K]
-            fSutherlConst = 120;                     % Sutherland constant for standard air [K]
-            fConst_mu_0 = 18.27*10^-6;                % Sutherland constant for standard air [Pa*s]
-            fViscosity_dyn = fConst_mu_0*(fConst_T_0 + fSutherlConst)./(fTemperature + fSutherlConst).*(fTemperature/fConst_T_0).^1.5;
+            % Dynamic viscosity according to Sutherland:
             
-            % Mean particle diameter of sorbent beds
-            fD_p = 2.04e-3;          % [m]
+            % Sutherland constant for standard air [K]
+            fConst_T_0     = 291.15;
+            % Sutherland constant for standard air [K]
+            fSutherlConst  = 120;
+            % Sutherland constant for standard air [Pa*s]
+            fConst_mu_0    = 18.27*10^-6;
+            
+            % Calculating the dynamic viscosity
+            fViscosity_dyn = fConst_mu_0 * (fConst_T_0 + fSutherlConst) ./ (fTemperature + fSutherlConst) .* (fTemperature / fConst_T_0) .^ 1.5;
+            
+            % Mean particle diameter of sorbent beds in [m]
+            fD_p = 2.04e-3;
+            
             % Pressure drop along the filter bed [Pa]
-            fDeltaP = (fLength*150*fViscosity_dyn*fFluidVelocity*(1-e_b)^2)/((e_b^3)*fD_p^2);
+            %QUESTION: What's the 150? Where is this formula from?
+            fDeltaP = (fLength * 150 * fViscosity_dyn * fFluidVelocity  * (1 - e_b)^2) / ((e_b^3) * fD_p^2);
             
         end
         
@@ -78,8 +95,10 @@ classdef RCA_Table < handle
         % Calculating the equilibrium values for the loading along the bed
         function [mfQ_equ] = calculate_q_equ(this, mfConcentration, fTemperature, fRhoSorbent, csNames, afMolMass)
             
-            mfPP_i = mfConcentration * this.fRe * fTemperature;   % partial pressures of substances [Pa]
-            % Initiazlize
+            % partial pressures of substances [Pa]
+            mfPP_i = mfConcentration * this.fRe * fTemperature;
+            
+            % Initializing the result array
             mfQ_equ = zeros(size(mfPP_i));
             
             % H2O adsorption
@@ -87,11 +106,14 @@ classdef RCA_Table < handle
             if find(strcmp('H2O', csNames) == 1)
                 % Calculate relative humitidy
                 % Saturated vapor pressure
-                fEw = 611*exp((17.62*(fTemperature-273.15))/(234.04+fTemperature-273.15));  %[Pa]
+                fEw = 611 * exp((17.62 * (fTemperature - 273.15))/(234.04 + fTemperature - 273.15));  %[Pa]
                 % Maximal humidity
-                delta_sat = fEw / (this.fRw*fTemperature);
+                delta_sat = fEw / (this.fRw * fTemperature);
                 % RH of the gas flow
-                fRH = mfConcentration(strcmp('H2O',csNames),:) * afMolMass(strcmp('H2O',csNames)) / (10*delta_sat);
+                %QUESTION: Are we sure, the factor 10 at the end of the
+                %following formula is correct? Probably need to double
+                %check the units.
+                fRH = mfConcentration(strcmp('H2O',csNames),:) * afMolMass(strcmp('H2O',csNames)) / delta_sat * 100;
                 % Calculate equilibrium value for H2O
                 fQ_equ_H2O = this.ralphaH2O * fRH.^2;
             end
