@@ -2,11 +2,16 @@ classdef PlantModuleIMPROVED < vsys
     
     properties
         % struct containing all data on grown plant species
-        tPlantData;
+        tPlantData = 0;
         
         % struct containing various plant parameters listed in
         % PlantParameters.m in lib/+components/+PlantModule
-        tPlantParameters;
+        tPlantParameters = 0;
+                
+        % struct to store plant gas exchange rates with the atmosphere,
+        % calculated by CreateBiomass manipulator, used by gas exchange
+        % p2p-procs
+        tPlantGasExchange = 0;
         
         % Set temperatures, need to be constant for now.
         % TODO: according to previous comments, some parts of the plant 
@@ -14,6 +19,9 @@ classdef PlantModuleIMPROVED < vsys
         % out which parts and why
         fTemperatureLight =     22.5;   % [°C]
         fTemperatureDark =      22.5;   % [°C]
+        
+        % availbale water for plant growth in the referenced water tank
+        fWaterAvailable;    % [kg]
         
         %% Initialize LSS Atmosphere Values
         
@@ -56,16 +64,16 @@ classdef PlantModuleIMPROVED < vsys
         % photoperiod
         fH =    16;     % [hours/day]
         
-        %%
+        %% Required Objects
         
-        %
-        oCreateBiomass;
-        
-        %
+        % LSS atmosphere phase
         oAtmosphereReference;
         
-        %
+        % LSS water supply phase
         oWaterReference;
+        
+        % biomass manipulator object
+        oCreateBiomass;
     end
     
     methods
@@ -208,12 +216,12 @@ classdef PlantModuleIMPROVED < vsys
                 this.fPressureAtmosphere, ...       % atmosphere pressure [Pa]
                 this.fCO2ppm, ...                   % CO2 concentration [µmol/mol]
                 this.fPPF, ...                      % photosynthetic photon flux [µmol/m^2s]
-                this.fH);                           % photoperiod [h/d]     
+                this.fH, ...                        % photoperiod [h/d]
+                this.fWaterAvailable);              % available water for plant growth [kg]                       
                 
             %% Create Gas Exchange Processors
             
             % create three filter procs for H2O, O2 and CO2
-            % TODO: rewrite similar to human metabolic procs
             
             components.PlantModule.Set_Plants_H2OGasExchange(... 
                 this.toStores.PlantCultivationStore, ...                % store of treated phases
@@ -244,15 +252,15 @@ classdef PlantModuleIMPROVED < vsys
                 this.toStores.PlantCultivationStore, ...        % store of treated phases
                 'Biomass_HarvestEdible', ...                    % processor name
                 'Plants.Biomass_HarvestEdible', ...             % input phase
-                'HarvestInedible.Biomass_HarvestEdible', ...    % output phase
-                this);                                          % system reference 
+                'BiomassEdible.Biomass_HarvestEdible' ...    % output phase
+                );                                          % system reference 
             
             components.PlantModule.Harvest_InedibleBiomass(... 
                 this.toStores.PlantCultivationStore, ...        % store of treated phases
                 'Biomass_HarvestInedible', ...                  % processor name
                 'Plants.Biomass_HarvestInedible', ...           % input phase
-                'HarvestInedible.Biomass_HarvestInedible', ...  % output phase
-                this);                                          % system reference  
+                'BiomassInedible.Biomass_HarvestInedible' ...  % output phase
+                );                                          % system reference  
             
             %% Create Branches
             
@@ -319,6 +327,67 @@ classdef PlantModuleIMPROVED < vsys
         function exec(this, ~)
             % call superconstructor
             exec@vsys(this);
+            
+            global bLSSConditions
+            
+            if this.oTimer.iTick > 0
+                if bLSSConditions == 1
+                    % CO2 level in atmosphere phase, parts per million. MEC 
+                    % model is only valid for up to 1300 ppm, so CO2 
+                    % concentration is capped at 1300 for calculation 
+                    % purposes as plants do grow with a higher ppm value.
+                    % Temporary solution only, CO2 should be kept within 
+                    % allowed range by atmosphere regulation to keep 
+                    % validity of model results.
+                    if this.oParent.fCO2ppm_Measured > 1300
+                        this.fCO2ppm = 1300;
+                    else
+                        this.fCO2ppm = this.oParent.fCO2ppm_Measured;  
+                    end
+                end
+                
+                % take humidity and pressure from referenced phase
+                this.fRelativeHumidityLight     = this.oAtmosphereReference.rRelHumidity;
+                this.fRelativeHumidityDark      = this.oAtmosphereReference.rRelHumidity;
+                this.fPressureAtmosphere        = this.oAtmosphereReference.fPressure;
+
+                % available water in referenced water tank
+                this.fWaterAvailable = this.oWaterReference.fMass;
+            
+ 
+                % Setting gas/water exchange rates:  LSS <-> PlantModule
+                
+                % atmosphere input from LSS
+                this.toBranches.AtmosphereInput.oHandler.setFlowRate(-0.5);  
+                
+                % atmosphere output to LSS plus plant gas exchange
+                this.toBranches.AtmosphereOutput.oHandler.setFlowRate(0.5 + ...
+                    this.toStores.PlantCultivationStore.toProcsP2P.H2O_ExchangePlants.fFlowRate + ...
+                    this.toStores.PlantCultivationStore.toProcsP2P.O2_ExchangePlants.fFlowRate - ...
+                    this.toStores.PlantCultivationStore.toProcsP2P.CO2_ExchangePlants.fFlowRate);
+                
+                % water input from LSS water tank
+                this.toBranches.WaterInput.oHandler.setFlowRate(-this.oCreateBiomass.fWaterNeed);  
+                
+                
+                % Harvesting - Produced biomass in PlantModule is extracted 
+                % to biomass stores (food/waste) located in the connected 
+                % LSS main system
+                
+                % Edible Biomass to LSS food storage
+                if this.toStores.PlantCultivationStore.aoPhases(1, 3).fMass > 0.1
+                    this.toBranches.FoodOutput.oHandler.setFlowRate(0.01);
+                else
+                    this.toBranches.FoodOutput.oHandler.setFlowRate(0);
+                end
+                   
+                % Inedible Biomass to LSS waste storage
+                if this.toStores.PlantCultivationStore.aoPhases(1, 4).fMass > 0.1
+                    this.toBranches.WasteOutput.oHandler.setFlowRate(0.01);
+                else
+                    this.toBranches.WasteOutput.oHandler.setFlowRate(0);
+                end
+            end
         end
     end
 end
