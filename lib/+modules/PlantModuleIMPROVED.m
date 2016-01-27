@@ -316,8 +316,8 @@ classdef PlantModuleIMPROVED < vsys
         % set path for reference phases to enable dynamic calculation, must
         % be called from the parent system with the correct paths
         function setReferencePhase(this, oAtmosphere, oWater)
-            this.oAtmosphereReference =  oAtmosphere;
-            this.oWaterReference =       oWater;
+            this.oAtmosphereReference   = oAtmosphere;
+            this.oWaterReference        = oWater;
         end
     end
     

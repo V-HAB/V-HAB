@@ -7,7 +7,7 @@ classdef Create_Biomass < matter.manips.substance.flow
     
     properties %(SetAccess = protected, GetAccess = public)
         
-        %properties regarding plant growth handling
+        % properties regarding plant growth handling
         tPlantData;
         fCCulture;
         fFields;
@@ -15,16 +15,16 @@ classdef Create_Biomass < matter.manips.substance.flow
         fPlant;
         
         
-        %reference time tranformed to minutes (total simulation time since start)
+        % reference time tranformed to minutes (total simulation time since start)
         fTimeInMinutes;
         
         oParent;
         
-        %array for handling harvest amounts sourcing in different grown cultures
-        afPartials=0;
-        afPartials2=0;
+        % array for handling harvest amounts sourcing in different grown cultures
+        afPartials = 0;
+        afPartials2 = 0;
         
-        %growth conditions
+        % growth conditions
         fWaterAvailable;
         fPressureAtmosphere;
         fRelativeHumidityLight;
@@ -53,24 +53,24 @@ classdef Create_Biomass < matter.manips.substance.flow
         
         
         %properties regarding logging of gas and water exchanges
-        fO2_sum = 0;
-        afO2_sum_out;
-        fO2_sum_total = 0;
+        fO2ExchangedTotal = 0;
+        afO2ExchangedTotal_out;
+        fO2ExchangedTotal_total = 0;
         fO2Exchange_out = 0;
         
-        fCO2_sum = 0;
-        afCO2_sum_out;
-        fCO2_sum_total = 0;
+        fCO2ExchangedTotal = 0;
+        afCO2ExchangedTotal_out;
+        fCO2ExchangedTotal_total = 0;
         fCO2Exchange_out = 0;
         
-        fH2O_trans_sum = 0;
-        afH2O_trans_sum_out;
-        fH2O_trans_sum_total = 0;
+        fH2OTranspiredTotal = 0;
+        afH2OTranspiredTotal_out;
+        fH2OTranspiredTotal_total = 0;
         fH2OExchange_out = 0;
         
-        fH2O_consum_sum = 0;
-        afH2O_consum_sum_out;
-        fH2O_consum_sum_total = 0;
+        fH2OConsumedTotal = 0;
+        afH2OConsumedTotal_out;
+        fH2OConsumedTotal_total = 0;
         fWaterNeed_out = 0;
         
         
@@ -85,7 +85,6 @@ classdef Create_Biomass < matter.manips.substance.flow
             %Referencing sources for plant basic growth parameters
             this.fPlant = tPlantParameters;
             this.tPlantData = tPlantData.PlantEng;
-            this.fCCulture.sName='Plants';
             
             
             %Names of Cultures in loaded growth setup "PlantEng"
@@ -220,10 +219,10 @@ classdef Create_Biomass < matter.manips.substance.flow
             end %End of fCCulture assignment
             
             % Initializing some logging arrays
-            this.afO2_sum_out         = zeros(1, length(this.fCCulture.plants));
-            this.afCO2_sum_out        = zeros(1, length(this.fCCulture.plants));
-            this.afH2O_trans_sum_out  = zeros(1, length(this.fCCulture.plants));
-            this.afH2O_consum_sum_out = zeros(1, length(this.fCCulture.plants));
+            this.afO2ExchangedTotal_out         = zeros(1, length(this.fCCulture.plants));
+            this.afCO2ExchangedTotal_out        = zeros(1, length(this.fCCulture.plants));
+            this.afH2OTranspiredTotal_out  = zeros(1, length(this.fCCulture.plants));
+            this.afH2OConsumedTotal_out = zeros(1, length(this.fCCulture.plants));
             
             
             
@@ -306,10 +305,10 @@ classdef Create_Biomass < matter.manips.substance.flow
                     this.fCO2Exchange ,                ...     % Carbon dioxide exchange rate          [kg/s]
                     this.fH2OExchange,               ...     % Water exchange rate (transpiration)   [kg/s]
                     this.fWaterNeed,                    ...     % Water consumption rate                [kg/s]
-                    this.fO2_sum,                       ...     % Cumulated oxygen production           [kg]
-                    this.fCO2_sum,                      ...     % Cumulated carbon dioxide consumption  [kg]
-                    this.fH2O_trans_sum,                ...     % Cumulated water transpiration         [kg]
-                    this.fH2O_consum_sum]               ...     % Cumulated water consumption           [kg]
+                    this.fO2ExchangedTotal,                       ...     % Cumulated oxygen production           [kg]
+                    this.fCO2ExchangedTotal,                      ...     % Cumulated carbon dioxide consumption  [kg]
+                    this.fH2OTranspiredTotal,                ...     % Cumulated water transpiration         [kg]
+                    this.fH2OConsumedTotal]               ...     % Cumulated water consumption           [kg]
                     = components.PlantModule.Process_PlantGrowthParameters(  ... % Path to function
                     ... % -Input Parameters-
                     this.fCCulture.plants{iI, 1},    ...     % State of cultures
@@ -331,10 +330,10 @@ classdef Create_Biomass < matter.manips.substance.flow
                 this.fCO2Exchange_out(iI)    = this.fCO2Exchange;
                 this.fO2Exchange_out(iI)     = this.fO2Exchange;
                 
-                this.afO2_sum_out(iI)         = this.fO2_sum;
-                this.afCO2_sum_out(iI)        = this.fCO2_sum;
-                this.afH2O_trans_sum_out(iI)  = this.fH2O_trans_sum;
-                this.afH2O_consum_sum_out(iI) = this.fH2O_consum_sum;
+                this.afO2ExchangedTotal_out(iI)         = this.fO2ExchangedTotal;
+                this.afCO2ExchangedTotal_out(iI)        = this.fCO2ExchangedTotal;
+                this.afH2OTranspiredTotal_out(iI)  = this.fH2OTranspiredTotal;
+                this.afH2OConsumedTotal_out(iI) = this.fH2OConsumedTotal;
                 
                 this.fH2OExchange_out(iI)  = this.fH2OExchange;
                 this.fWaterNeed_out(iI)       = this.fWaterNeed;
@@ -455,10 +454,10 @@ classdef Create_Biomass < matter.manips.substance.flow
             %Logged gas exchanges
             %   "Integrated" total values of corresponding exchanges
             %   computed according to specific flowrates
-            this.fO2_sum_total          = sum(this.afO2_sum_out);            %[kg]
-            this.fCO2_sum_total         = sum(this.afCO2_sum_out);           %[kg]
-            this.fH2O_trans_sum_total   = sum(this.afH2O_trans_sum_out);     %[kg]
-            this.fH2O_consum_sum_total  = sum(this.afH2O_consum_sum_out);    %[kg]
+            this.fO2ExchangedTotal_total          = sum(this.afO2ExchangedTotal_out);            %[kg]
+            this.fCO2ExchangedTotal_total         = sum(this.afCO2ExchangedTotal_out);           %[kg]
+            this.fH2OTranspiredTotal_total   = sum(this.afH2OTranspiredTotal_out);     %[kg]
+            this.fH2OConsumedTotal_total  = sum(this.afH2OConsumedTotal_out);    %[kg]
             
             %Total gas exchange
             % Summation over all single contrubitions from
@@ -485,6 +484,7 @@ classdef Create_Biomass < matter.manips.substance.flow
             
             fTimeStep = this.oParent.oTimer.fTime - this.fLastUpdate;
             
+            % this is where mass enters the plants phase??
             afPartialFlows = this.afPartials ./ fTimeStep;
             
             %Setting control variable for call frequency check

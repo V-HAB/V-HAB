@@ -229,15 +229,15 @@ function [ aoPlants, INEDIBLE_CGR_d_out, INEDIBLE_CGR_f_out, ED_CGR_d_out, ED_CG
               %If allowed CO2 ppm range is exceeded
                 else
 
-                    if CO2_Measured > 1400
-                         disp('Warning: CO2ppm > 1400 /n');
+                    if CO2_Measured > 1300
+                         disp('Warning: CO2ppm > 1300 /n');
                         aoPlants.state.O2_exchange      = 0;    % [kg/s]
                         aoPlants.state.CO2_exchange     = 0;    % [kg/s]
                         aoPlants.state.water_exchange   = 0;    % [kg/s]
                     end
 
-                    if CO2_Measured < 350
-                       disp('Warning: CO2ppm < 350 /n');
+                    if CO2_Measured < 330
+                       disp('Warning: CO2ppm < 330 /n');
                         aoPlants.state.O2_exchange      = 0;    % [kg/s]
                         aoPlants.state.CO2_exchange     = 0;    % [kg/s]
                         aoPlants.state.water_exchange   = 0;    % [kg/s]
