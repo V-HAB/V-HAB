@@ -649,6 +649,8 @@ classdef branch < solver.matter.base.branch
                 
                 % Check if the sign of the flowrate changed, so we need to
                 % reset some paramters (Cp, M, rPPs, ...)
+                bDirectionChanged = false;
+                
                 if (fFlowRate < 0)
                     
                     % Revert flow rate - is unsigned! Instead set iDir.
@@ -660,6 +662,8 @@ classdef branch < solver.matter.base.branch
                     %fPressDiff = sif(iDir > 0, fPressDiffL2R, fPressDiffR2L);
                     aiProcs    = sif(iDir > 0, 1:oBranch.iFlowProcs, oBranch.iFlowProcs:-1:1);
                     %aiFlows    = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
+                    
+                    bDirectionChanged = true;
                     
                     % Set initial stuff like Cp etc, DON'T set pressures!
                     %%REORG%%oBranch.aoFlows(aiFlows).setSolverInit(iDir * fFlowRate, oExmeL, oExmeR, true);
@@ -675,6 +679,17 @@ classdef branch < solver.matter.base.branch
                 
                 % As always - check Inf!
                 if any(isinf(mfData(:, 1)))
+                    
+                    % Direction already changed? Set FR to zero!
+                    if bDirectionChanged
+                        % Just set to zero, error to 1 so no further iteration
+                        fFlowRate = 0;
+
+                        rError    = 1;
+                        mfData    = [];
+                        
+                        continue;
+                    end
                     
                     % Reverse flow rate
                     iDir = -1 * iDir;
