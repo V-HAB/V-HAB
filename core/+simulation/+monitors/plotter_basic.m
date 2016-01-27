@@ -3,6 +3,10 @@ classdef plotter_basic < simulation.monitor
     %   Detailed explanation goes here
     
     
+    properties (SetAccess = public, GetAccess = public)
+        rPadding = 0.025;
+    end
+    
     properties (SetAccess = protected, GetAccess = public)
         % Name of log monitor
         sLogger = 'oLogger';
@@ -124,8 +128,11 @@ classdef plotter_basic < simulation.monitor
             end
             
             
+            coHandles = {};
+            
             for iP = 1:length(this.tPlots)
-                hHandle = subplot(iGridRows, iGridCols, iP);
+                %hHandle = subplot(iGridRows, iGridCols, iP);
+                hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP, 'Spacing', 0, 'Padding', this.rPadding, 'Margin', 0);
                 
                 [ mfData, tLogProps ] = oLogger.get(this.tPlots(iP).aiIdx);
                 
@@ -139,16 +146,24 @@ classdef plotter_basic < simulation.monitor
                 if ~bLegendOn
                     legend('hide');
                 end
+                
+                
+                coHandles{end + 1} = hHandle;
             end
             
             
-            hHandle = subplot(iGridRows, iGridCols, iP + 1);
+            %hHandle = subplot(iGridRows, iGridCols, iP + 1);
+            hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP + 1, 'Spacing', 0, 'Padding', this.rPadding, 'Margin', 0);
+            
+            
             hold(hHandle, 'on');
             grid(hHandle, 'minor');
             plot(1:length(oLogger.afTime), oLogger.afTime);
             xlabel('Ticks');
             ylabel('Time in s');
             title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
+            
+            coHandles{end + 1} = hHandle;
             
             
             set(oFigure, 'name', [ oInfra.sName ' - (' oInfra.sCreated ')' ]);
@@ -171,6 +186,9 @@ classdef plotter_basic < simulation.monitor
             
             % Maximize figure
             set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
+            
+            
+            oFigure.UserData = struct('coAxesHandles', { coHandles });
         end
     end
     
