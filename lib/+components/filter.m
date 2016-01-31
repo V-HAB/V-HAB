@@ -203,8 +203,9 @@ classdef filter < matter.store
             
             % Creating the phase representing the filter volume manually.
             % gas(oStore, sName, tfMasses, fVolume, fTemp)
-            matter.phases.gas(this, 'FilteredPhase', struct('Ar', 0.0001), oGeometry.fVolume * (1-rVoidFraction), fTemperature);
-                        
+            tfMass.AmineSA9T = this.oMT.ttxMatter.AmineSA9T.ttxPhases.tSolid.Density * this.oGeometry.fVolume * (1-this.rVoidFraction);
+            matter.phases.absorber(this, 'FilteredPhase', tfMass, fTemperature, 'solid');
+
             % Fixed Time Step
             if exist('fFixedTimeStep','var')
             % Adding fixed time steps for the filter
@@ -239,7 +240,7 @@ classdef filter < matter.store
             % Flow phase
             this.toPhases.FlowPhase.setVolume(this.oGeometry.fVolume * this.rVoidFraction);
             % Sorbent phase
-            this.toPhases.FilteredPhase.setVolume(this.oGeometry.fVolume * (1-this.rVoidFraction));
+%             this.toPhases.FilteredPhase.setVolume(this.oGeometry.fVolume * (1-this.rVoidFraction) * 2);
         end
         
     end

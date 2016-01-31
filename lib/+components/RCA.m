@@ -121,8 +121,8 @@ classdef RCA < vsys
             % flow volume and amine phases.
             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_FlowVolume', 0);
             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_B_FlowVolume', 0);
-            special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_Amine', 0);
-            special.matter.const_press_exme(oVacuum, 'Inlet_Bed_B_Amine', 0);
+%             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_Amine', 0);
+%             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_B_Amine', 0);
 
             %% Adding valves
             % True/false decides if the valve is open or closed and the
@@ -132,8 +132,8 @@ classdef RCA < vsys
             components.valve(this, 'Valve_2', true , 0.05);
             components.valve(this, 'Valve_3', false, 0.05);
             components.valve(this, 'Valve_4', false, 0.05);
-            components.valve(this, 'Valve_5', false, 0.05);
-            components.valve(this, 'Valve_6', true , 0.05);
+%             components.valve(this, 'Valve_5', false, 0.05);
+%             components.valve(this, 'Valve_6', true , 0.05);
             components.valve(this, 'Valve_7', false, 0.05);
             components.valve(this, 'Valve_8', true , 0.05);
             
@@ -153,10 +153,6 @@ classdef RCA < vsys
             % decide how fast the gas flows into Vacuum. So we can adjust
             % the time needed for the desorption process. Unfortunately the
             % pipe properties could reach unrealistic values
-            components.pipe(this, 'Pipe_9',  this.fPipeLength, this.fPipeDiameter / 10);
-            components.pipe(this, 'Pipe_10', this.fPipeLength, this.fPipeDiameter / 10);
-            components.pipe(this, 'Pipe_11', this.fPipeLength, this.fPipeDiameter / 10);
-            components.pipe(this, 'Pipe_12', this.fPipeLength, this.fPipeDiameter / 10);
             components.pipe(this, 'Pipe_13', this.fPipeLength, this.fPipeDiameter / 10);
             components.pipe(this, 'Pipe_14', this.fPipeLength, this.fPipeDiameter / 10);
             components.pipe(this, 'Pipe_15', this.fPipeLength, this.fPipeDiameter / 10);
@@ -175,11 +171,11 @@ classdef RCA < vsys
             % Bed B to Merger
             matter.branch(this, 'Bed_B.Outlet',{'Pipe_7','Valve_4','Pipe_8' },'Merger.Inlet2');
             
-            % Bed A Amine to Vacuum
-            matter.branch(this, 'Bed_A.Amine_Vacuum_Port',{'Pipe_9','Valve_5','Pipe_10'},'Vacuum.Inlet_Bed_A_Amine');
-            
-            % Bed B Amine to Vacuum
-            matter.branch(this, 'Bed_B.Amine_Vacuum_Port',{'Pipe_11','Valve_6','Pipe_12'},'Vacuum.Inlet_Bed_B_Amine');
+%             % Bed A Amine to Vacuum
+%             matter.branch(this, 'Bed_A.Amine_Vacuum_Port',{'Pipe_9','Valve_5','Pipe_10'},'Vacuum.Inlet_Bed_A_Amine');
+%             
+%             % Bed B Amine to Vacuum
+%             matter.branch(this, 'Bed_B.Amine_Vacuum_Port',{'Pipe_11','Valve_6','Pipe_12'},'Vacuum.Inlet_Bed_B_Amine');
             
             % Bed A Flow Phase to Vacuum
             matter.branch(this, 'Bed_A.FlowVolume_Vacuum_Port',{'Pipe_13','Valve_7','Pipe_14'},'Vacuum.Inlet_Bed_A_FlowVolume');
@@ -202,8 +198,8 @@ classdef RCA < vsys
             % Now we can create all of the solver branches
             oB1  = solver.matter.iterative.branch(this.toBranches.Splitter__Outlet1___Bed_A__Inlet);
             oB2  = solver.matter.iterative.branch(this.toBranches.Splitter__Outlet2___Bed_B__Inlet);
-            oB3  = solver.matter.iterative.branch(this.toBranches.Bed_A__Amine_Vacuum_Port___Vacuum__Inlet_Bed_A_Amine);
-            oB4  = solver.matter.iterative.branch(this.toBranches.Bed_B__Amine_Vacuum_Port___Vacuum__Inlet_Bed_B_Amine);          
+%             oB3  = solver.matter.iterative.branch(this.toBranches.Bed_A__Amine_Vacuum_Port___Vacuum__Inlet_Bed_A_Amine);
+%             oB4  = solver.matter.iterative.branch(this.toBranches.Bed_B__Amine_Vacuum_Port___Vacuum__Inlet_Bed_B_Amine);          
             oB5  = solver.matter.iterative.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
             oB6  = solver.matter.iterative.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
             oB7  = solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Inlet1);
@@ -296,8 +292,8 @@ classdef RCA < vsys
                 this.sActiveBed = 'B';
                 
                 % Starting desorption process for Bed A 
-                this.toStores.Bed_A.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
-                this.toStores.Bed_B.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
+%                 this.toStores.Bed_A.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
+%                 this.toStores.Bed_B.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
                 
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
@@ -309,8 +305,8 @@ classdef RCA < vsys
                 this.sActiveBed = 'A';
                 
                 % Starting desorption process for Bed B                
-                this.toStores.Bed_B.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
-                this.toStores.Bed_A.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
+%                 this.toStores.Bed_B.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
+%                 this.toStores.Bed_A.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
                 
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
@@ -326,8 +322,8 @@ classdef RCA < vsys
             this.toProcsF2F.Valve_4.setValvePos(~bIndicator);
             
             % Vacuum flow
-            this.toProcsF2F.Valve_5.setValvePos(~bIndicator);
-            this.toProcsF2F.Valve_6.setValvePos(bIndicator);
+%             this.toProcsF2F.Valve_5.setValvePos(~bIndicator);
+%             this.toProcsF2F.Valve_6.setValvePos(bIndicator);
             this.toProcsF2F.Valve_7.setValvePos(~bIndicator);
             this.toProcsF2F.Valve_8.setValvePos(bIndicator);
             
