@@ -493,6 +493,7 @@ classdef store < base
             
         end
         
+        %CHECK Can this method be deleted?
         function setNextUpdateTime(this, fTime)
             % Set a time step for updating the store and all phases. Only
             % sets shorter times for updating!
@@ -520,19 +521,50 @@ classdef store < base
         
         
         function setNextTimeStep(this, fTimeStep)
+            % This method is called from the phase object during its
+            % calculation of a new timestep. The phase.calculateTimeStep()
+            % method is called in the post-tick of every mass update (NOT
+            % phase update!). Within a tick, the first thing that is done,
+            % is the calling of store.update(). This sets the fTimeStep
+            % property of the store to the default time step (currently 60
+            % seconds). After that the phases are updated, which also calls
+            % calculateTimeStep(). In this function
+            % (store.setNextTimeStep()), the store's time step is only set,
+            % if the phase time step is smaller than the currently set time
+            % step. This ensures, that the slowest phase sets the time step
+            % of the store it is in. 
             
-            % First make sure that currently set time step wouldn't lead to
-            % an earlier execution
+            % So we will first get the next execution time based on the
+            % current time step and the last time this store was updated.
             fCurrentNextExec = this.fLastUpdate + this.fTimeStep;
+            
+            % Since the fTimeStep parameter that is passed on by the phase
+            % that called this method is based on the current time, we
+            % calculate the potential new execution time based on the
+            % timer's current time, rather than the last update time for
+            % this store.
             fNewNextExec     = this.oTimer.fTime + fTimeStep;
             
-            
+            % Now we can compare the current next execution time and the
+            % potential new execution time. If the new execution time would
+            % be AFTER the current execution time, it means that the phase
+            % that is currently calling this method is faster than a
+            % previous caller. In this case we do nothing and just return.
             if fCurrentNextExec < fNewNextExec
                 return;
             end
             
-            
+            % The new time step is smaller than the old one, so we can
+            % actually set then new timestep. The setTimeStep() method
+            % calls a function in the timer object that will update the
+            % timer values accordingly. This is important because otherwise
+            % the time step updates that happen during post-tick operations
+            % would not be taken into account when the timer calculates the
+            % overall time step during the next tick.
             this.setTimeStep(fTimeStep, true);
+            
+            % Finally we set this stores fTimeStep property to the new time
+            % step.
             this.fTimeStep = fTimeStep;
         end
     end
@@ -557,10 +589,6 @@ classdef store < base
             %TODO 
             %   - throw an error if the port was found on several phases?
             %   - create index in seal() of phases and their ports!
-            
-            if strcmp(sPort, 'default')
-                this.throw('getPort', 'To get the default port of a phase, the phases name has to be used!');
-            end
             
             % Find out if default port of a phase should be used
             %TODO check for empty aoPhases ...

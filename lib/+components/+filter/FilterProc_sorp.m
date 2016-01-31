@@ -71,6 +71,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
         q_plot;
         c_plot;
         
+        % Logging variable to see how long the update method takes to
+        % execute.
+        fUpdateDuration;
+        
     end
     
    
@@ -158,6 +162,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             this.arPartials_des   = zeros(1, this.oMT.iSubstances);
         end
         
+        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%% Update Method %%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function update(this)
             
             % If this method has already been called during this time step,
@@ -166,6 +174,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
                 return;
             end
             
+            hTimer = tic();
             
 %             % Position of relevant sorptives in the matter table
 % %             this.aiPositions = (find(this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.arPartialMass > 0));
@@ -195,7 +204,9 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             % or right after a bed switch. To avoid problems later on,
             % we'll just skip this execution and try next time. 
             if fFlowRateIn < 0
-%                 fprintf('%i\t(%f)\t%s: Skipping because of negative flow rate.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                %TODO make this a very low level debugging output once the
+                %debug class is implemented
+                fprintf('%i\t(%f)\t%s: Skipping adsorption calculation because of negative flow rate.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
             
@@ -277,6 +288,9 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             % BUT: calculated time step needs to be smaller than current vhab time step
             
             if this.fTimeFactor_1 * afInnerTimeStep(1) >= this.fTimeStep
+                %TODO Turn this into a very low level debug output once the
+                %debug class is implemented
+                %fprintf('%i\t(%f)\t%s: Skipping because inner time step is larger than external timestep.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
             
@@ -419,6 +433,8 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             this.fFlowRate_des = sum(afLoadedMass_des) / (afDiscreteTime(end) - afDiscreteTime(1));           % [kg/s]     
             this.DesorptionProc.setMatterProperties(this.fFlowRate_des, this.arPartials_des);
             
+            this.fUpdateDuration = toc(hTimer);
+            
 % TODO: DO WE NEED THAT???
 %             % Calculation of the pressure drop through the filter bed
 %             fDeltaP = this.ofilter_table.calculate_dp(this.fFilterLength, this.fFluidVelocity, this.rVoidFraction, this.fSorptionTemperature, this.fSorptionDensity);
@@ -436,9 +452,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
         end
         
         
-        %% -------------------------------------------
-        %  ------- simulation helper functions -------
-        %  -------------------------------------------  
+        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Simulation Helper Functions %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+         
         
         function [mfMatrix_Transport_A1, afVektor_Transport_b1] = buildMatrix(this, fAxialDispersion_D_l, afInnerTimeStep, mfMatrix_A,mfMatrix_B, mfMatrix_Transport_A1, afVektor_Transport_b1)
             % Build an advection diffusion massbalance matrix
