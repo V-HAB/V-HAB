@@ -107,10 +107,11 @@ classdef table < base
             % have changed since this constructor was last run. If not,
             % then we can just use the existing data without having to go
             % through the entire import process again.
-            
-            if ~tools.checkForChanges(fullfile('lib','+matterdata'))
-                % If the files have not changed, we can load the
-                % MatterData.mat file, if it exists.
+            disp('Checking for changes regarding the matter table source data.');
+            if ~tools.checkForChanges(fullfile('lib','+matterdata')) && ~tools.checkForChanges(fullfile('core','+matter','@table'))
+                % If the matter files or the matter table itself have not
+                % changed, we can load the MatterData.mat file, if it
+                % exists.
                 if exist(strrep('data\MatterData.mat', '\', filesep),'file')
                     load(strrep('data\MatterData.mat', '\', filesep));
                     
@@ -127,6 +128,8 @@ classdef table < base
                     %properties have been removed from this class. 
                     this.aoPhases = [];
                     this.aoFlows  = matter.flow.empty();
+                    
+                    disp('Matter table loaded from stored version.');
                     
                     % The return command ends the constructor method
                     return;
