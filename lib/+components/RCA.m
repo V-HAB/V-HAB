@@ -76,12 +76,14 @@ classdef RCA < vsys
             
             createMatterStructure@vsys(this);
             
+            fSplitterVolume = 0.001;
+            
             %% Distributor
             % Creating the input splitter
-            matter.store(this, 'Splitter', 0.004);  % Volume in in^3 = 0.0568 ?? 
+            matter.store(this, 'Splitter', fSplitterVolume);  % Volume in in^3 = 0.0568 ?? 
             
             % Adding a phase to the splitter
-            oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
+            oPhase = this.toStores.Splitter.createPhase(this.sAtmosphereHelper,  fSplitterVolume, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
 
             % Creating the ports on the splitter
             matter.procs.exmes.gas(oPhase, 'Inlet'); 
@@ -98,12 +100,14 @@ classdef RCA < vsys
             components.RCA.RCA_Filter(this, 'Bed_A', 'RCA', tFilterParameters);
             components.RCA.RCA_Filter(this, 'Bed_B', 'RCA', tFilterParameters);
             
+            this.oReferenceExme = this.toStores.Bed_A.toPhases.FlowPhase.toProcsEXME.Outlet;
+            
             %% Merger
             % Creating the output merger
-            matter.store(this, 'Merger',  0.004);  % Volume in in^3 = 0.0568 ??
+            matter.store(this, 'Merger',  fSplitterVolume);  % Volume in in^3 = 0.0568 ??
             
             % Adding a phase to the merger
-            oPhase = this.toStores.Merger.createPhase(this.sAtmosphereHelper,  0.004, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
+            oPhase = this.toStores.Merger.createPhase(this.sAtmosphereHelper,  fSplitterVolume, this.fInitialTemperature, this.rRelativeHumidity, this.fTestPressure);
             
             % Creating the ports on the merger
             matter.procs.exmes.gas(oPhase, 'Inlet1');
@@ -153,10 +157,15 @@ classdef RCA < vsys
             % decide how fast the gas flows into Vacuum. So we can adjust
             % the time needed for the desorption process. Unfortunately the
             % pipe properties could reach unrealistic values
-            components.pipe(this, 'Pipe_13', this.fPipeLength, this.fPipeDiameter / 10);
-            components.pipe(this, 'Pipe_14', this.fPipeLength, this.fPipeDiameter / 10);
-            components.pipe(this, 'Pipe_15', this.fPipeLength, this.fPipeDiameter / 10);
-            components.pipe(this, 'Pipe_16', this.fPipeLength, this.fPipeDiameter / 10);
+            fSmallificationFactor = 0.5;
+%             components.pipe(this, 'Pipe_9',  this.fPipeLength, this.fPipeDiameter / 10);
+%             components.pipe(this, 'Pipe_10', this.fPipeLength, this.fPipeDiameter / 10);
+%             components.pipe(this, 'Pipe_11', this.fPipeLength, this.fPipeDiameter / 10);
+%             components.pipe(this, 'Pipe_12', this.fPipeLength, this.fPipeDiameter / 10);
+            components.pipe(this, 'Pipe_13', this.fPipeLength, this.fPipeDiameter / fSmallificationFactor);
+            components.pipe(this, 'Pipe_14', this.fPipeLength, this.fPipeDiameter / fSmallificationFactor);
+            components.pipe(this, 'Pipe_15', this.fPipeLength, this.fPipeDiameter / fSmallificationFactor);
+            components.pipe(this, 'Pipe_16', this.fPipeLength, this.fPipeDiameter / fSmallificationFactor);
             
             %% Creating the flowpath between the components
             % Splitter to Bed A
@@ -229,8 +238,8 @@ classdef RCA < vsys
             % in both adsorber beds and a high rMaxChange in the filtered
             % phases, because we don't really care about their properties
             % a lot, so they don't have to be updated that often. 
-            this.toStores.Bed_A.toPhases.FilteredPhase.rMaxChange = 0.05;
-            this.toStores.Bed_B.toPhases.FilteredPhase.rMaxChange = 0.05;
+            this.toStores.Bed_A.toPhases.FilteredPhase.rMaxChange = 0.1;
+            this.toStores.Bed_B.toPhases.FilteredPhase.rMaxChange = 0.1;
             
             this.toStores.Vacuum.toPhases.Vacuum_Phase_1.rMaxChange = 0.5;
 
@@ -276,7 +285,7 @@ classdef RCA < vsys
             % used to determine if a bed switch is necessary. 
             this.connectIF('Inlet',  sInlet);
             this.connectIF('Outlet', sOutlet);
-            this.oReferenceExme = oReferenceExme;
+%             this.oReferenceExme = oReferenceExme;
         end
         
 
@@ -295,6 +304,8 @@ classdef RCA < vsys
 %                 this.toStores.Bed_A.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
 %                 this.toStores.Bed_B.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
                 
+                this.oReferenceExme = this.toStores.Bed_B.toPhases.FlowPhase.toProcsEXME.Outlet;
+                
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
                 % as a low level selectable output
@@ -307,6 +318,8 @@ classdef RCA < vsys
                 % Starting desorption process for Bed B                
 %                 this.toStores.Bed_B.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
 %                 this.toStores.Bed_A.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
+                
+                this.oReferenceExme = this.toStores.Bed_A.toPhases.FlowPhase.toProcsEXME.Outlet;
                 
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
