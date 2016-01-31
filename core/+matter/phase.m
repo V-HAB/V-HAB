@@ -569,7 +569,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % property, has passed. So we'll also include that here!
             if ~isempty(this.fMinimalTimeBetweenHeatCapacityUpdates) && (this.oTimer.fTime >= (this.fLastTotalHeatCapacityUpdate + this.fMinimalTimeBetweenHeatCapacityUpdates))
                 bRecalculate = true;
-            elseif ~(this.oTimer.fTime == this.fLastTotalHeatCapacityUpdate)
+            elseif isempty(this.fMinimalTimeBetweenHeatCapacityUpdates) && ~(this.oTimer.fTime == this.fLastTotalHeatCapacityUpdate)
                 bRecalculate = true;
             else
                 bRecalculate = false;
@@ -578,6 +578,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             if bRecalculate
                 this.updateSpecificHeatCapacity()
                 this.fTotalHeatCapacity = this.fSpecificHeatCapacity * this.fMass;
+                
+                % Finally, we update the last update property with the
+                % current time, so we can use it the next time this method
+                % is called.
+                this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
             end
         end
 
