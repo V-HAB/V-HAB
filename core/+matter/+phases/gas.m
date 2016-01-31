@@ -149,7 +149,7 @@ classdef gas < matter.phase
             % p = m * (R_m * T / M / V)
             %
             
-            fMassToPressure = matter.table.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
+            fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
             
             %TODO molar mass zero if no mass - NaN, or Inf if mass zero
             if isnan(fMassToPressure) || isinf(fMassToPressure)

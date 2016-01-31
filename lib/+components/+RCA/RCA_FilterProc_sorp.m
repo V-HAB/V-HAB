@@ -73,8 +73,8 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             
             % Calculation of outgoing concentration
             rMolFraction_CO2 = rMassFraction_CO2 * this.oStore.toPhases.FlowPhase.toProcsEXME.Outlet.oFlow.fMolarMass / this.oMT.afMolarMass(iIndexCO2); % mol fraction [-]
-            this.fC_CO2Out   = rMolFraction_CO2 * this.fSorptionPressure / (matter.table.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
-            this.fC_CO2Out   = this.fC_CO2Out * matter.table.Const.fUniversalGas * this.fTemperature * 7.5006e-3;                     % [mmHg]   
+            this.fC_CO2Out   = rMolFraction_CO2 * this.fSorptionPressure / (this.oMT.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
+            this.fC_CO2Out   = this.fC_CO2Out * this.oMT.Const.fUniversalGas * this.fTemperature * 7.5006e-3;                     % [mmHg]   
             
             % Calculate relative humitidy
             % Saturated vapor pressure
@@ -92,7 +92,7 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             
             % Calculation of outgoing concentration
             rMolFraction_H2O = rMassFraction_H2O * this.oStore.toPhases.FlowPhase.toProcsEXME.Outlet.oFlow.fMolarMass / this.oMT.afMolarMass(iIndexH2O); % mol fraction [-]
-            fC_H2O_Out       = rMolFraction_H2O * this.fSorptionPressure / (matter.table.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
+            fC_H2O_Out       = rMolFraction_H2O * this.fSorptionPressure / (this.oMT.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
             fC_H2O_In        = this.afConcentration(strcmp('H2O',this.csNames));
             
             % Relative Humidity of the gas flow

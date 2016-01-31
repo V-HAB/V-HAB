@@ -177,7 +177,7 @@ classdef store < base
                 %      check for molar mass compatibility (g/mol vs kg/mol)
                 
                 %ideal gas constant
-                fR = matter.table.Const.fUniversalGas;
+                fR = this.oMT.Const.fUniversalGas;
 
                 for k = 1:length(this.aoPhases)
                     if strcmp(this.aoPhases(k).sType, 'gas')

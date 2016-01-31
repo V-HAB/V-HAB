@@ -38,7 +38,7 @@ if length(varargin) == 1
         % faster, since we can avoid the multiple findProperty() calls in
         % this function.
         if varargin{1}.fPressure < 5e5
-            fDensity = (varargin{1}.fPressure * varargin{1}.fMolarMass) / (matter.table.Const.fUniversalGas * varargin{1}.fTemperature);
+            fDensity = (varargin{1}.fPressure * varargin{1}.fMolarMass) / (this.Const.fUniversalGas * varargin{1}.fTemperature);
             % We already have what we want, so no need to execute the rest
             % of this function.
             return;

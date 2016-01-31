@@ -209,7 +209,7 @@ classdef table < base
                 if isempty(tSubstance.fMolarMass)
                     
                     % Extract the atomic elements from matter name
-                    tElements  = matter.table.extractAtomicTypes(this.csSubstances{iI});
+                    tElements  = this.extractAtomicTypes(this.csSubstances{iI});
                     % Saving the different elements of the substance into a
                     % cell array.
                     csElements = fieldnames(tElements);
