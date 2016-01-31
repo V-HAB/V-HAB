@@ -167,8 +167,7 @@ if strcmp(sTarget, 'MatterData')
     % while density and heat capacity are not constant the values will be
     % saved here to be used as standard values with which e.g. adsorber
     % that contain solids and gases/liquids can be calculated
-    iFirstVariableColumn = find(strcmp(csVariableNames,'fMolarMass'));
-    iLastStandardVariableColumn = find(strcmp(csVariableNames,'fStandardCp'));
+    iFirstVariableColumn = find(strcmp(csVariableNames,'fMeltPoint'));
     
     % Initialize the struct in which all substances are later stored
     ttxImportMatter = struct();
@@ -220,7 +219,7 @@ if strcmp(sTarget, 'MatterData')
             % These properties do not change if the phase is different, so
             % we only need to import them once. We start at index 4,
             % because the first three columns are text entries.
-            for iJ = 4:iLastStandardVariableColumn
+            for iJ = 4:(iFirstVariableColumn - 1)
                 
                 % Get the value of the property and save it to a variable.
                 fValue = csRawData{aiRows(1), iJ};

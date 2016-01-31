@@ -1,4 +1,4 @@
-Substance Name,Molar Mass,Specific Gas Constant
-sName,fMolarMass,fSpecificGasConstant
--,kg/mol,J/(kg*K)
-Methanol,0.0320419,259.487177
+Substance Name,Molar Mass,Specific Gas Constant,Standard Density,Standard Specific Heat Capacity
+sName,fMolarMass,fSpecificGasConstant,fStandardDensity,fStandardSpecificHeatCapacity
+-,kg/mol,J/(kg*K),kg/m3,J/(kg*K)
+Methanol,0.0320419,259.487177,795.69,2476.3
