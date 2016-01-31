@@ -14,7 +14,6 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
         
         % General initialization
         sType;                               % type of the chosen filter
-        oParentSys;                          % intiialize the parent system, used to update the outlet flow
         ofilter_table;                       % thermodynamic equilibrium helper class
         DesorptionProc;                      % assigned desorption processor
         
@@ -78,10 +77,11 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
     
     methods
         
-        %% ----------------------------------
-        %  ------------constructor-----------
-        %  ----------------------------------
-        function [this] = FilterProc_sorp(oParentSys, oStore, sName, sPhaseIn, sPhaseOut, sType)
+        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%% Constructor %%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function [this] = FilterProc_sorp(oStore, sName, sPhaseIn, sPhaseOut, sType)
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
             
             % Link sorption processor to desorption processor 
@@ -89,9 +89,6 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             
             % Define chosen filter type
             this.sType = sType;
-            
-            % Set parent system, used to update the outflow
-            this.oParentSys = oParentSys;
             
             % Void fraction of the filter: V_void / V_bulk
             this.rVoidFraction = this.oStore.rVoidFraction;
@@ -422,9 +419,6 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             this.fFlowRate_des = sum(afLoadedMass_des) / (afDiscreteTime(end) - afDiscreteTime(1));           % [kg/s]     
             this.DesorptionProc.setMatterProperties(this.fFlowRate_des, this.arPartials_des);
             
-            % Update the outlet branch in the parent system
-%             this.oParentSys.oBranchOut.oBranch.setOutdated();
-
 % TODO: DO WE NEED THAT???
 %             % Calculation of the pressure drop through the filter bed
 %             fDeltaP = this.ofilter_table.calculate_dp(this.fFilterLength, this.fFluidVelocity, this.rVoidFraction, this.fSorptionTemperature, this.fSorptionDensity);

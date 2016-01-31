@@ -21,6 +21,10 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
         fDewPoint_in = 0;           % dew point temperature at the inlet [°F]
         fDewPoint_out = 0;          % dew point temperature at the outlet [°F]
         
+        % Reference to the parent system, so we can check if our bed is
+        % active.
+        oParentSys;
+        
     end
     
    
@@ -29,7 +33,9 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
         
         % Initialization like in the generic filter processor
         function [this] = RCA_FilterProc_sorp(oParentSys, oStore, sName, sPhaseIn, sPhaseOut, sType)
-            this@components.filter.FilterProc_sorp(oParentSys, oStore, sName, sPhaseIn, sPhaseOut, sType);   
+            this@components.filter.FilterProc_sorp(oStore, sName, sPhaseIn, sPhaseOut, sType);   
+            
+            this.oParentSys = oParentSys;
         end
         
         function update(this)
