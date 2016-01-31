@@ -191,22 +191,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % Last time branches were set oudated
         fLastSetOutdated = -10;
         
-        % Boolean value to decide if this phase is a adsorber material. For
-        % example zeolite that adsorbes water or CO2 should have the value
-        % true for this while a normal gas phase should have the value
-        % false.
-        bAdsorber;
-        
-        % String to save the name for the main adsorber substance. Only
-        % this substance will get dynamic matter property updates!
-        sAdsorberSubstance;
-        
-        % Properties to decide when the matter properties have to be
-        % recalculated
-        fPressureLastMassPropUpdate    = 0;
-        fTemperatureLastMassPropUpdate = 0;
-        arPartialMassLastMassPropUpdate;
-
     end
 
     properties (Access = protected)
@@ -234,9 +218,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % small!
         bSynced = false;
         
-        
         % How often should the heat capacity be re-calculated?
         fMinimalTimeBetweenHeatCapacityUpdates = 1;
+        
+        % Properties to decide when the specific heat capacity has to be
+        % recalculated
+        fPressureLastHeatCapacityUpdate    = 0;
+        fTemperatureLastHeatCapacityUpdate = 0;
+        arPartialMassLastHeatCapacityUpdate;
     end
 
     properties (Transient, SetAccess = private, GetAccess = public)
@@ -253,7 +242,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
     methods
 
-        function this = phase(oStore, sName, tfMass, fTemperature, bAdsorber)
+        function this = phase(oStore, sName, tfMass, fTemperature)
             % Constructor for the |matter.phase| class. Input parameters
             % can be provided to define the contained masses and
             % temperature, additionally the internal, merge and extract
@@ -270,11 +259,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             %                   Keys refer to the name of the according substance
             %   fTemperature  - temperature of the initial mass, has to be given
             %                   if  tfMass is provided
-            %   bAdsorber     - used to specify if this is an adsorber
-            %                   phase. If the value is true the matter
-            %                   property calculation will be dumbed down to
-            %                   allow solids to adsorb gas/liquids without
-            %                   the matter table crashing
 
             % Parent has to be a or derive from matter.store
             if ~isa(oStore, 'matter.store'), this.throw('phase', 'Provided oStore parameter has to be a matter.store'); end;
@@ -298,7 +282,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Preset masses
             this.afMass = zeros(1, this.oMT.iSubstances);
             this.arPartialMass = zeros(1, this.oMT.iSubstances);
-            this.arPartialMassLastMassPropUpdate = this.arPartialMass;
+            this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+            
             % Mass provided?
             if (nargin >= 3) && ~isempty(tfMass) && ~isempty(fieldnames(tfMass))
                 % If tfMass is provided, fTemperature also has to be there
@@ -340,27 +325,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 this.arPartialMass = this.afMass;
             end
 
-            
-            %set boolean adsorber property
-            if nargin == 5
-                this.bAdsorber = bAdsorber;
-                if this.bAdsorber
-                    % if the adsorber property is true for this phase the
-                    % substance with the highest mass at initialitation
-                    % will be set as Adsorber Substance and only for this
-                    % substance dynamic matter property calculations will
-                    % be made
-                    iAdsorber = find(this.afMass == max(this.afMass));
-                    if length(iAdsorber) > 1
-                        error('two substances within the adsorber phase have the exact same mass so it is not possible to determine which should be the main substance')
-                    end
-                    csAdsorber = this.oMT.csSubstances(iAdsorber);
-                    this.sAdsorberSubstance = csAdsorber{1};
-                end
-            else
-                this.bAdsorber = false;
-            end
-            
             this.fMolarMass            = this.oMT.calculateMolarMass(this.afMass);
             
             % Now update the matter properties
@@ -666,86 +630,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             
         end
         
-        function updateSpecificHeatCapacity(this)
-            % When a phase was empty and is being filled with matter again,
-            % it may be a couple of ticks until the phase.update() method
-            % is called, which updates the phase's specific heat capacity.
-            % Other objects, for instance matter.flow, may require the
-            % correct value for the heat capacity as soon as there is
-            % matter in the phase. In this case, these objects can call
-            % this function, that will update the fSpecificHeatCapacity
-            % property of the phase.
-            
-            % in order to reduce the amount of times the matter
-            % calculation is executed it is checked here if the pressure
-            % and/or temperature have changed significantly enough to
-            % justify a recalculation
-            % TO DO: Make limits adaptive
-            if (this.oTimer.iTick <= 0) ||... %necessary to prevent the phase intialization from crashing the remaining checks
-               (abs(this.fPressureLastMassPropUpdate - this.fPressure) > 100) ||...
-               (abs(this.fTemperatureLastMassPropUpdate - this.fTemperature) > 1) ||...
-               (max(abs(this.arPartialMassLastMassPropUpdate - this.arPartialMass)) > 0.01)
-
-                % If the phase is an adsorber phase the heat capacity
-                % calculation uses the standard values for the heat
-                % capacity except for the main adsorber substance
-                if this.bAdsorber
-
-                    % first the standard heat capacity for all
-                    % substances within the adsorber is calculated
-                    aiIndices   = find(this.arPartialMass > 0);
-                    iNumIndices = length(aiIndices);
-                    % Initialize a new array filled with zeros. Then iterate through all
-                    % indexed substances and get their specific heat capacity.
-                    afCp = zeros(this.oMT.iSubstances, 1);
-
-                    for iI = 1:iNumIndices
-                        afCp(aiIndices(iI)) = this.oMT.ttxMatter.(this.oMT.csSubstances{aiIndices(iI)}).fStandardCp;
-                    end
-
-                    % now the dynamic heat capacity for the main
-                    % adsorber material is calculated and the standard
-                    % value for just this substance is overwritten with
-                    % the dynamic value
-                    tParameters = struct();
-                    tParameters.sSubstance = this.sAdsorberSubstance;
-                    tParameters.sProperty = 'Heat Capacity';
-                    tParameters.sFirstDepName = 'Temperature';
-                    if isempty(this.fTemperature)
-                       tParameters.fFirstDepValue = this.oMT.Standard.Temperature;
-                    else
-                        tParameters.fFirstDepValue = this.fTemperature;
-                    end
-                    tParameters.sPhaseType = this.sType;
-                    tParameters.sSecondDepName = 'Pressure';
-                    if isempty(this.fPressure)
-                       tParameters.fSecondDepValue = this.oMT.Standard.Pressure;
-                    else
-                        tParameters.fSecondDepValue = this.fPressure;
-                    end
-                    tParameters.bUseIsobaricData = true;
-
-                    % Now we can call the findProperty() method.
-                    afCp(this.oMT.tiN2I.(this.sAdsorberSubstance)) = this.oMT.findProperty(tParameters);
-
-                    % Multiply the specific heat capacities with the mass fractions. The
-                    % result of the matrix multiplication is the specific heat capacity of
-                    % the mixture.
-                    this.fSpecificHeatCapacity = sum(this.arPartialMass * afCp);
-
-                else
-                    this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
-                end
-
-                this.fPressureLastMassPropUpdate     = this.fPressure;
-                this.fTemperatureLastMassPropUpdate  = this.fTemperature;
-                this.arPartialMassLastMassPropUpdate = this.arPartialMass;
-
-                this.fLastTotalHeatCapacityUpdate    = this.oTimer.fTime;
-            end
-            
-        end
-
+    end
+    
+    methods (Abstract)
+        % This method has to be implemented by all child classes.
+        updateSpecificHeatCapacity(this)
     end
 
 

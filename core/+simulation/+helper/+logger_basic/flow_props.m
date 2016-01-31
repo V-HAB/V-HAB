@@ -48,6 +48,8 @@ for iS = 1:length(csStores)
                 tLogProps(iV).sExpression = 'fPressure';
             case 'gas'
                 tLogProps(iV).sExpression = 'this.fMass * this.fMassToPressure';
+            case 'absorber'
+                continue;
         end
         tLogProps(iV).sObjectPath = sPhasePath;
         tLogProps(iV).sLabel = [ 'Phase Pressure (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];

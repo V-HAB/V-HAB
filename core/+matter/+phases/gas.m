@@ -48,20 +48,21 @@ classdef gas < matter.phase
         % fTemperature  : Temperature of matter in phase
         %
         %TODO fVolume is stupid - needs to be set by store!
-        function this = gas(oStore, sName, tfMasses, fVolume, fTemperature, bAdsorber)
+        function this = gas(oStore, sName, tfMasses, fVolume, fTemperature)
             %TODO
             %   - not all params required, use defaults?
             %   - volume from store ...?
-            if nargin < 6
-                bAdsorber = false;
-            end
-            this@matter.phase(oStore, sName, tfMasses, fTemperature, bAdsorber);
+            this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             % Get volume from 
             if nargin < 4 || isempty(fVolume), fVolume = oStore.fVolume; end;
             
             this.fVolume  = fVolume;
             this.fDensity = this.fMass / this.fVolume;
+            
+            this.fMassToPressure = this.calculatePressureCoefficient();
+            this.fPressure = this.fMass * this.fMassToPressure;
+            this.fPressureLastHeatCapacityUpdate = this.fPressure;
         end
         
         
@@ -165,6 +166,37 @@ classdef gas < matter.phase
 
             seal@matter.phase(this);
 
+        end
+        
+        function updateSpecificHeatCapacity(this)
+            % When a phase was empty and is being filled with matter again,
+            % it may be a couple of ticks until the phase.update() method
+            % is called, which updates the phase's specific heat capacity.
+            % Other objects, for instance matter.flow, may require the
+            % correct value for the heat capacity as soon as there is
+            % matter in the phase. In this case, these objects can call
+            % this function, that will update the fSpecificHeatCapacity
+            % property of the phase.
+            
+            % In order to reduce the amount of times the matter
+            % calculation is executed it is checked here if the pressure
+            % and/or temperature have changed significantly enough to
+            % justify a recalculation
+            % TO DO: Make limits adaptive
+            if (this.oTimer.iTick <= 0) ||... %necessary to prevent the phase intialization from crashing the remaining checks
+               (abs(this.fPressureLastHeatCapacityUpdate - this.fPressure) > 100) ||...
+               (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
+               (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
+
+                % Actually updating the specific heat capacity
+                this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
+                
+                % Setting the properties for the next check
+                this.fPressureLastHeatCapacityUpdate     = this.fPressure;
+                this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
+                this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+                
+            end
         end
 
     end

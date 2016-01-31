@@ -216,6 +216,11 @@ classdef branch < base & event.source
                 % Get EXME port/proc ...
                 oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
                 
+                if isa(oPort, 'matter.procs.exmes.absorber')
+                    this.throw('branch','You cannot connect an absorber exme (%s->%s->%s->%s) to a matter branch (%s). In can only connect to a P2P processor. ',...
+                               oPort.oPhase.oStore.oContainer.sName, oPort.oPhase.oStore.sName, oPort.oPhase.sName, oPort.sName, this.sName);
+                end
+                
                 % ... and add flow
                 oPort.addFlow(oFlow);
                 
