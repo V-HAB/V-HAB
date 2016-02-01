@@ -279,13 +279,12 @@ classdef RCA < vsys
     
     methods
         
-        function setInterfaces(this, sInlet, sOutlet, oReferenceExme)
+        function setInterfaces(this, sInlet, sOutlet)
             % Setting both the interface flows as well as the reference
             % exme that will be used to measure the CO2 partial pressure
             % used to determine if a bed switch is necessary. 
             this.connectIF('Inlet',  sInlet);
             this.connectIF('Outlet', sOutlet);
-%             this.oReferenceExme = oReferenceExme;
         end
         
 
