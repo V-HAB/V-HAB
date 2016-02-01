@@ -1036,7 +1036,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 % relative change between updates is zero.
                 if isnan(rPreviousChange)
                     rPreviousChange  = 0;
-                    arPreviousChange = zeros(this.oMT.iSubstances);
+                    arPreviousChange = zeros(1, this.oMT.iSubstances);
                 end
                 
                 % If rPreviousChange is infinity ('Inf'), that means that
