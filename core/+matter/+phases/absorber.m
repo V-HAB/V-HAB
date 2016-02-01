@@ -130,6 +130,15 @@ classdef absorber < matter.phase
             end
             
         end
+        
+        function [ fMass, arPartialMasses ] = getMassesWithoutAbsorber(this)
+            fAbsorberMass = this.afMass(this.iAbsorbentIndex);
+            fMass = this.fMass - fAbsorberMass;
+            
+            arPartialMasses = this.afMass ./ fMass;
+            arPartialMasses(this.iAbsorbentIndex) = 0;
+            
+        end
     end
     
 end
