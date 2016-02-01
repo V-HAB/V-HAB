@@ -5,7 +5,7 @@ classdef Pump_and_Heater_Circle < vsys
     %the first branch is implemented.
     
     properties
-        aoLiquidBranch;
+        
     end
     
     methods
@@ -22,20 +22,38 @@ classdef Pump_and_Heater_Circle < vsys
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
             this@vsys(oParent, sName, 60);
+            % Make the system configurable
+%             disp(this);
+%             disp('------------');
+%             disp(this.oRoot.oCfgParams.configCode(this));
+%             disp('------------');
+%             disp(this.oRoot.oCfgParams.get(this));
+%             disp('------------');
+            eval(this.oRoot.oCfgParams.configCode(this));
+            
+            %disp(this);
+            
+            
+        end
+        
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
             
             % Creating a store
-            this.addStore(matter.store(this, 'Tank_1', 0.01));
+            matter.store(this, 'Tank_1', 0.01, 0);
             
             % Creating a second store
-            this.addStore(matter.store(this, 'Tank_2', 0.01));
+            matter.store(this, 'Tank_2', 0.01, 0);
             
             % Adding phases to the store 'Tank_1'
-            oWaterPhase1 = this.toStores.Tank_1.createPhase('water', 0.005, 293, 55*10^5);
-            oAirPhase1   = this.toStores.Tank_1.createPhase('air', 0.005, 293, 55*10^5);
-            
+            oWaterPhase1 = this.toStores.Tank_1.createPhase('water', 0.005, 293, 3*10^5);
+%             oAirPhase1   = this.toStores.Tank_1.createPhase('air', 0.005, 293, 3*10^5);
+            oWaterPhase1.rMaxChange = 0.000001;
             % Adding phases to the store 'Tank_2'
-            oWaterPhase2 = this.toStores.Tank_2.createPhase('water', 0.005, 293, 55*10^5);
-            oAirPhase2   = this.toStores.Tank_2.createPhase('air', 0.005, 293, 55*10^5);
+            oWaterPhase2 = this.toStores.Tank_2.createPhase('water', 0.005, 293, 3*10^5);
+%             oAirPhase2   = this.toStores.Tank_2.createPhase('air', 0.005, 293, 3*10^5);
+            oWaterPhase2.rMaxChange = 0.000001;
             
             % Adding extract/merge processors to the phases
             matter.procs.exmes.liquid(oWaterPhase1, 'Port_1' );
@@ -44,25 +62,31 @@ classdef Pump_and_Heater_Circle < vsys
             matter.procs.exmes.liquid(oWaterPhase1, 'Port_4');
             
             % Adding a pump
-            this.addProcF2F(tutorials.compressible_liquid_solver.components.fan('Fan', 2*10^5));
+            tutorials.compressible_liquid_solver.components.fan(this, 'Fan', 0.5*10^5);
             
             % Adding a heater
-            this.addProcF2F(tutorials.compressible_liquid_solver.components.heater('Heater', 313, 0.1, 0.25, 0.2*10^-3));
+         	tutorials.compressible_liquid_solver.components.heater(this, 'Heater', 313, 0.01, 0.25, 0.2*10^-3);
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe('Pipe_1', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe('Pipe_2', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe('Pipe_3', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe('Pipe_4',   1, 0.1, 0.2*10^-3));
+            components.pipe(this, 'Pipe_1', 0.5, 0.01, 0.2*10^-3);
+            components.pipe(this, 'Pipe_2', 0.5, 0.01, 0.2*10^-3);
+            components.pipe(this, 'Pipe_3', 0.5, 0.01, 0.2*10^-3);
+            components.pipe(this, 'Pipe_4',   1, 0.01, 0.2*10^-3);
             
             % Creating the flow branches
-            this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2', 'Heater', 'Pipe_3',}, 'Tank_2.Port_2');
-            this.createBranch('Tank_2.Port_3', {'Pipe_4'}, 'Tank_1.Port_4');
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2', 'Heater', 'Pipe_3',}, 'Tank_2.Port_2');
+            matter.branch(this, 'Tank_2.Port_3', {'Pipe_4'}, 'Tank_1.Port_4');%             %for branch liquid the second entry is the number of cells used
 
+        end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            %to calculate the branches
+            %branch_liquid(oBranch, iCells, fPressureResidual, fMassFlowResidual, fCourantNumber, sCourantAdaption)
+            sCourantAdaption = struct( 'bAdaption', 0,'fIncreaseFactor', 1.005, 'iTicksBetweenIncrease', 50, 'iInitialTicks', 1000, 'fMaxCourantNumber', 1);
+            solver.matter.fdm_liquid.branch_liquid(this.aoBranches(1), 4, 0, 0, 0.1, sCourantAdaption);
+            solver.matter.fdm_liquid.branch_liquid(this.aoBranches(2), 3, 0, 0, 1, sCourantAdaption);
             
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
         end
     end
     

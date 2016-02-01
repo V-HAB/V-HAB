@@ -97,7 +97,7 @@ else
     end
     
     if nargin > 4
-        afPartialPressures = varargin{4};
+        afPartialPressures = ones(1, this.iSubstances) * varargin{4};
     else
         if strcmp(sMatterState, 'gas')
             afPartialPressures = this.calculatePartialPressures(sMatterState, afMass, fPressure);

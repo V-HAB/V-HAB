@@ -23,8 +23,8 @@ classdef heater < matter.procs.f2f
     end
     
     methods
-        function this = heater(sName, fTemperature, fDiameter, fLength, fRoughness)
-            this@matter.procs.f2f(sName);
+        function this = heater(oContainer, sName, fTemperature, fDiameter, fLength, fRoughness)
+            this@matter.procs.f2f(oContainer, sName);
                         
             this.fTempMax = fTemperature;
             if nargin == 4
@@ -37,6 +37,7 @@ classdef heater < matter.procs.f2f
                 this.fDiameter = fDiameter;
                 this.fRoughness = fRoughness;
             end
+            this.supportSolver('hydraulic', fDiameter, fLength);
 
         end
         
@@ -51,16 +52,21 @@ classdef heater < matter.procs.f2f
             if bZeroFlows == 1
                 this.fDeltaTemp = 0;
             else
-                [ oInFlow, ~ ] = this.getFlows();
+                [ oInFlow, ~ ]      = this.getFlows();
                 
-                this.fDeltaTemp = this.fTempMax - oInFlow.fTemperature;
+                this.fDeltaTemp     = this.fTempMax - oInFlow.fTemperature;
                 
-                fDensity = this.oMT.calculateDensity(oInFlow);
+                this.fHeatFlow      = oInFlow.fSpecificHeatCapacity * oInFlow.fFlowRate * this.fDeltaTemp;
+                
+                fDensity            = this.oMT.calculateDensity(oInFlow);
+                fDynamicViscosity   = this.oMT.calculateDynamicViscosity(oInFlow);
 
-                fFlowSpeed = oInFlow.fFlowRate/(fDensity*pi*0.25*this.fDiameter^2);
+                fFlowSpeed          = oInFlow.fFlowRate/(fDensity*pi*0.25*this.fDiameter^2);
 
                 this.fDeltaPressure = pressure_loss_pipe (this.fDiameter, this.fLength,...
-                                fFlowSpeed, 1200.4*10^-6, fDensity, this.fRoughness, 0);
+                                fFlowSpeed, fDynamicViscosity, fDensity, this.fRoughness, 0);
+                            
+                fDeltaPress = this.fDeltaPressure;
             end
             
             
