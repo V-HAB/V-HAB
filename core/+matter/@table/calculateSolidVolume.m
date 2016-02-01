@@ -39,7 +39,23 @@ if bAdsorber
     arPartialMass = afMass./(sum(afMass));
     
     for iI = 1:iNumIndices
-        afRho(aiIndices(iI)) = this.ttxMatter.(this.csSubstances{aiIndices(iI)}).fStandardDensity;
+        try
+            afRho(aiIndices(iI)) = this.ttxMatter.(this.csSubstances{aiIndices(iI)}).fStandardDensity;
+        catch
+            try
+                afRho(aiIndices(iI)) = this.ttxMatter.(this.csSubstances{aiIndices(iI)}).ttxPhases.tSolid.Density;
+            catch
+                try 
+                    afRho(aiIndices(iI)) = this.ttxMatter.(this.csSubstances{aiIndices(iI)}).ttxPhases.tLiquid.Density;
+                catch
+                    try
+                        afRho(aiIndices(iI)) = this.ttxMatter.(this.csSubstances{aiIndices(iI)}).ttxPhases.tGas.Density;
+                    catch
+                        this.throw('absorber', 'No heat capacity given in any state for %s.', this.oMT.csSubstances{aiIndices(iI)});
+                    end
+                end
+            end
+        end
     end
 
     % now the dynamic heat capacity for the main
