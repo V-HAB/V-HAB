@@ -11,11 +11,27 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
         oParent;
         
         % time conversion factors for calculating
+        % TODO: are they REALLY needed?
         fDaysToMinutes = 24 * 60;           % [min/d]
         fHourlyRatesToSeconds = 1 / 3600;   % [s/h]
         
-        % array containing biomass generated ready to be harvested
-        afBiomass;
+        % TODO: finish after first iteration of rework is completed, for
+        % now just using afPartials from old CreateBiomass.m
+        %%%%%%%%%%%%%%%
+%         % array containing biomass generated ready to be harvested,
+%         % inserted into plants phase by the manipulator
+%         afBiomass;
+%         
+%         % array containing plant gas exchange with atmosphere flowrates
+%         % used by the manipulator, kept separated from produced biomass for 
+%         % ease of reading
+%         afGasExchange;
+%         
+%         %
+%         miIndexer;
+        
+        afPartials;
+        %%%%%%%%%%%%%%%
     end
     
     methods
@@ -25,6 +41,18 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
             
             % set parent system reference
             this.oParent = oParent;
+            
+            % TODO: finish after redoing PlantParameters.m, for now using
+            % afPartials from old CreateBiomass.m
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%             % initialize biomass array, wet edible and inedible biomass for
+%             % all species available in PlantParameters.m (currently 9).
+%             for i=1:length(this.oParent.tPlantParameters.name)
+%                 this.miIndexer(i, 1) = x;
+%             end
+            
+            this.afPartials = zeros(1, this.oPhase.oMT.iSubstances);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             % get tPlantParameters from parent system to adjust
             % TODO: find out about the strange 60s factor, WHY??
@@ -41,7 +69,7 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 this.tPlantParametersAdjusted(i).tE             = this.tPlantParametersAdjusted(i).tE * 24 * 60;          % [min]
             end
             
-            % initialize cxCultures cell array, has three sections:
+            % initialize cxCultures cell array, has three main sections:
             % "PlantData", "Growth" and "Harvest"
             for i = 1:length(this.csCultureName)
                 % each grown culture gets an internal index number and its
@@ -53,10 +81,12 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 
                 % create cell array containing specified plant data in its
                 % "PlantData" section
-                this.cxCulture{i, 1}.PlantData = eval(['this.tPlantData.' this.csCultureName{x} '.EngData']);
+                this.cxCulture{i, 1}.PlantData = eval(['this.tPlantData.' this.csCultureName{i} '.EngData']);
                 
-                % transforming harvest time to minutes
-                this.cxCulture{i, 1}.PlantData.harv_time = this.cxCulture{i, 1}.PlantData.harv_time * this.fDaysToMinutes;
+                % TODO: trying to go with seconds for now, no idea if it
+                % works
+%                 % transforming harvest time to minutes
+%                 this.cxCulture{i, 1}.PlantData.harv_time = this.cxCulture{i, 1}.PlantData.harv_time * this.fDaysToMinutes;
                 
                 % if no photoperiod is specified and no global lighting
                 % conditions are set, photoperiod receives its nominal
@@ -83,8 +113,10 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 % internal generation count, increases with each replanting
                 this.cxCultures{i, 1}.Growth.InternalGeneration     = 1;    % [-]
                 
-                % convert emerge time to minutes
-                this.cxCultures{i, 1}.Growth.emerge_time = this.cxCultures{i, 1}.Growth.emerge_time * this.fDaysToMinutes;  % [min]
+                % TODO: trying to go with seconds for now, no idea if it
+                % works
+%                 % convert emerge time to minutes
+%                 this.cxCultures{i, 1}.Growth.emerge_time = this.cxCultures{i, 1}.Growth.emerge_time * this.fDaysToMinutes;  % [min]
                 
                 % total crop biomass (wet)
                 this.cxCultures{i, 1}.Growth.TCB                    = 0;    % [kg]
@@ -134,11 +166,110 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
         end
         
         function update(this)
+            % skip the first tick, V-HAB has some issues there, safety
+            % measure. Can be deleted if no more issues
+            if this.oTimer.iTick == 0
+                return;
+            end
+            
             % The update only will be conducted every minute!
             % Necessary for proper "integration"
             % TODO: FIND OUT WHY!!!!
             if mod(this.oTimer.fTime, 60)~= 0;
                 return;
+            end
+            
+            % get density of liquid water, required for calculating plant 
+            % transpiration
+            tH2O.sSubstance = 'H2O';
+            tH2O.sProperty = 'Density';
+            tH2O.sFirstDepName = 'Pressure';
+            tH2O.fFirstDepValue = this.oParent.fPressureAtmosphere;
+            tH2O.sSecondDepName = 'Temperature';
+            tH2O.fSecondDepValue = this.oParent.fTemperatureLight;
+            tH2O.sPhaseType = 'liquid';
+            
+            fDensityH2O = this.oMT.findProperty(tH2O);
+            
+            % loop over all plant cultures to call the processing function
+            % for each 
+            % TODO: make it a parfor loop, but those things are nasty not
+            % accepting structs etc., need to learn more about parfor,
+            % doing regular for-loop for now, but definitely want to make
+            % it parfor in the future!!! 
+            for iI = 1:length(this.cxCultures.CultureNumber)
+                % calculate plant growth, harvested biomass is returned as
+                % biomass in cxCultures is overwritten to zero after 
+                % harvest by called function
+                [ fHarvestedEdibleWet, ...
+                fHarvestedInedibleWet ] ...
+                    = components.PlantModule.Process_PlantGrowthParameters(...
+                        this.cxCultures{iI}, ...                    % Culture in question
+                        this.oTimer.fTime, ...                      % Passed simulated time                     [s]     (was in minutes)
+                        this.oParent.fTemperatureLight, ...         % Atmosphere temperature light period       [°C]
+                        this.oParent.fTemperatureDark, ...          % Atmosphere temperature dark period        [°C]
+                        this.oParent.fWaterAvailable, ...           % Water mass available                      [kg]
+                        this.oParent.fRelativeHumidityLight, ...    % Relative humidity light period            [-]
+                        this.oParent.fRelativeHumidityDark, ...     % Relative humidity dark period             [-]
+                        this.oParent.fPressureAtmosphere, ...       % Atmosphere Pressure                       [Pa]
+                        this.oParent.fCO2ppm, ...                   % CO2 concentration                         [µmol/mol]
+                        this.oParent.fPPF, ...                      % Photosynthetic photon flux                [µmol/m^2s]
+                        this.oParent.fH, ...                        % Photoperiod                               [h/d]
+                        fDensityH2O);                               % liquid water density (for transpiration)  [kg/m^3] 
+                
+                % if something has been harvested, add to the according
+                % species in the biomass array
+                if afHarvested(iI) ~=0
+                    % TODO: maybe there is a better method than using
+                    % switch?
+                    % TODO: make it possible 
+                    switch this.cxCultures.PlantType(iI)
+                        % Drybean
+                        case 1
+                            this.afPartials(tiN2I.DrybeanEdibleFluid, iI) = this.afPartials(tiN2I.DrybeanEdibleFluid, iI) + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.DrybeanInedibleFluid, iI) = this.afPartials(tiN2I.DrybeanInedibleFluid, iI) + fHarvestedInedibleWet;
+                            
+                        % Lettuce
+                        case 2
+                            this.afPartials(tiN2I.LettuceEdibleFluid, iI) = this.afPartials(tiN2I.LettuceEdibleFluid, iI) + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.LettuceInedibleFluid, iI) = this.afPartials(tiN2I.LettuceInedibleFluid, iI) + fHarvestedInedibleWet;
+                            
+                        % Peanut
+                        case 3
+                            this.afPartials(tiN2I.PeanutEdibleFluid, iI) = this.afPartials(tiN2I.PeanutEdibleFluid, iI) + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.PeanutInedibleFluid, iI) = this.afPartials(tiN2I.PeanutInedibleFluid, iI) + fHarvestedInedibleWet;
+                            
+                        % Rice
+                        case 4
+                            this.afPartials(tiN2I.RiceEdibleFluid, iI) = this.afPartials(tiN2I.RiceEdibleFluid, iI) + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.RiceInedibleFluid, iI) = this.afPartials(tiN2I.RiceInedibleFluid, iI) + fHarvestedInedibleWet;
+                            
+                        % Soybean
+                        case 5
+                            this.afPartials(tiN2I.SoybeanEdibleFluid, iI) = this.afPartials(tiN2I.SoybeanEdibleFluid, iI) + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.SoybeanInedibleFluid, iI) = this.afPartials(tiN2I.SoybeanInedibleFluid, iI) + fHarvestedInedibleWet;
+                            
+                        % Sweet Potato
+                        case 6
+                            this.afPartials(tiN2I.SweetpotatoEdibleFluid, iI) = this.afPartials(tiN2I.SweetpotatoEdibleFluid, iI) + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.SweetpotatotInedibleFluid, iI) = this.afPartials(tiN2I.SweetpotatotInedibleFluid, iI) + fHarvestedInedibleWet;
+                           
+                        % Tomato
+                        case 7
+                            this.afPartials(tiN2I.TomatoEdibleFluid, iI) = this.afPartials(tiN2I.TomatoEdibleFluid, iI) + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.TomatoInedibleFluid, iI) = this.afPartials(tiN2I.TomatoInedibleFluid, iI) + fHarvestedInedibleWet;
+                            
+                        % Wheat
+                        case 8
+                            this.afPartials(tiN2I.WheatEdibleFluid, iI) = this.afPartials(tiN2I.WheatEdibleFluid, iI) + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.WheatInedibleFluid, iI) = this.afPartials(tiN2I.WheatInedibleFluid, iI) + fHarvestedInedibleWet;
+                            
+                        % White Potato
+                        case 9
+                            this.afPartials(tiN2I.WhitepotatoEdibleFluid, iI) = this.afPartials(tiN2I.WhitepotatoEdibleFluid, iI) + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.WhitepotatoInedibleFluid, iI) = this.afPartials(tiN2I.WhitepotatoInedibleFluid, iI) + fHarvestedInedibleWet;
+                    end
+                end
             end
         end
     end

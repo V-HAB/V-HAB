@@ -484,7 +484,7 @@ classdef Create_Biomass < matter.manips.substance.flow
             
             fTimeStep = this.oParent.oTimer.fTime - this.fLastUpdate;
             
-            % this is where mass enters the plants phase??
+            % this is where mass enters the plants phase?? yep
             afPartialFlows = this.afPartials ./ fTimeStep;
             
             %Setting control variable for call frequency check
