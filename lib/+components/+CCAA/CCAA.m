@@ -17,11 +17,6 @@ classdef CCAA < vsys
         bActive = true;
     end
     properties
-        %Struct that contains the manual branches of the subsystem. Each
-        %branch is given a specific name which makes setting the flow rates
-        %easier and also makes the calls to them independent from new
-        %branches that might be added later on.
-        toSolverBranches;
         bKickValveAktivated = 0;            % Variable used to execute the kick valve
         fKickValveAktivatedTime = 0;        % Variable used to execute the kick valve
         
@@ -31,9 +26,6 @@ classdef CCAA < vsys
         %relative humidity in the connected module
         rRelHumidity = 0.45;
         
-        %Variable to decide if the air after the CHX is supplied to a CDRA
-        %or if it is returned internally within the CCAA
-        bInternalReturn;
         
         %Property to save the interpolation for the CHX air flow based on
         %the angle value
@@ -58,33 +50,26 @@ classdef CCAA < vsys
        	oAtmosphere;
         
         fRelHumidity;
-        fAmbientTemperature;
+        tAtmosphere;
         fCoolantTemperature;
         
         fInitialCHXWaterMass;
     end
     
     methods 
-        function this = CCAA (oParent, sName, rTCCV_InitialAngle, bInternalReturn, fFixedTS, fRelHumidity, fAmbientTemperature, fCoolantTemperature, sCDRA, fCDRA_FlowRate, bActive)
-            this@vsys(oParent, sName, fFixedTS);
+        function this = CCAA (oParent, sName, fTimeStep, rTCCV_InitialAngle, fCoolantTemperature, tAtmosphere, sCDRA, fCDRA_FlowRate)
+            this@vsys(oParent, sName, fTimeStep);
             
             this.rTCCV_ratio = rTCCV_InitialAngle;
-            this.bInternalReturn = bInternalReturn;
-            this.sCDRA = sCDRA;
-            
-            this.fRelHumidity = fRelHumidity;
-            this.fAmbientTemperature = fAmbientTemperature;
             this.fCoolantTemperature = fCoolantTemperature;
-        
-            if nargin == 12
+            this.tAtmosphere = tAtmosphere;
+            if ~isempty(sCDRA)
                 this.fCDRA_FlowRate = fCDRA_FlowRate;
-            elseif nargin == 13
-                this.fCDRA_FlowRate = fCDRA_FlowRate;
-                this.bActive = bActive;
+                this.sCDRA = sCDRA;
             end
             
             % Loading the flow rate table for the valves
-            this.mfCHXAirFlow = load(strrep('user\+hima\+ARSProject\+Components\CCAA_CHXAirflowMean.mat', '\', filesep));
+            this.mfCHXAirFlow = load(strrep('lib\+components\+CCAA\CCAA_CHXAirflowMean.mat', '\', filesep));
                 
            	this.Interpolation = griddedInterpolant(this.mfCHXAirFlow.TCCV_Angle, this.mfCHXAirFlow.CHXAirflowMean);
             
@@ -134,39 +119,43 @@ classdef CCAA < vsys
             % Creating the TCCV
             %originally volume of 0.01 but mass of 1kg air...
             matter.store(this, 'TCCV', 1); 
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.TCCV, 1, struct('CO2', fCO2Percent), this.fAmbientTemperature, this.fRelHumidity, fPressure);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.TCCV, 1, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, this.tAtmosphere.fPressure);
             oAir = matter.phases.gas(this.toStores.TCCV, 'TCCV_PhaseGas', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
-            hima.ARSProject.Components.const_press_exme(oAir, 'Port_In', 1e5);
-            hima.ARSProject.Components.const_press_exme(oAir, 'Port_In2', 1e5);
-            hima.ARSProject.Components.const_press_exme(oAir, 'Port_Out_1', 1e5);
-            hima.ARSProject.Components.const_press_exme(oAir, 'Port_Out_2', 1e5);
+            matter.procs.exmes.gas(oAir, 'Port_In');
+            if ~isempty(this.sCDRA)
+                matter.procs.exmes.gas(oAir, 'Port_In2');
+            end
+            matter.procs.exmes.gas(oAir, 'Port_Out_1');
+            matter.procs.exmes.gas(oAir, 'Port_Out_2');
             
             % Creating the CHX
             % The volume is set relativly large to allow a larger time
             % step.
             matter.store(this, 'CHX', 2);
             % Input phase
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CHX, 1, struct('CO2', fCO2Percent), this.fAmbientTemperature, this.fRelHumidity, fPressure);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CHX, 1, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, this.tAtmosphere.fPressure);
             oInput = matter.phases.gas(this.toStores.CHX, 'CHX_PhaseIn',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             % H2O phase
             cWaterHelper = matter.helper.phase.create.water(this.toStores.CHX, 1, this.fCoolantTemperature, fPressure);
             oH2O = matter.phases.liquid(this.toStores.CHX, 'CHX_H2OPhase', cWaterHelper{1}, cWaterHelper{2}, cWaterHelper{3}, cWaterHelper{4});
             this.fInitialCHXWaterMass = oH2O.fMass;
             % Creating the ports
-            hima.ARSProject.Components.const_press_exme(oInput, 'Flow_In', 1e5);
-            hima.ARSProject.Components.const_press_exme(oInput, 'Flow_Out_Gas', 1e5);
-            hima.ARSProject.Components.const_press_exme(oInput, 'Flow_Out_Gas2', 1e5);
+            matter.procs.exmes.gas(oInput, 'Flow_In');
+            matter.procs.exmes.gas(oInput, 'Flow_Out_Gas');
+            if ~isempty(this.sCDRA)
+                matter.procs.exmes.gas(oInput, 'Flow_Out_Gas2');
+            end
             matter.procs.exmes.gas(oInput, 'filterport');
             matter.procs.exmes.liquid(oH2O, 'filterport');
-            hima.ARSProject.Components.const_press_exme_liquid(oH2O, 'Flow_Out_Liquid', 1e5);
+            matter.procs.exmes.liquid(oH2O, 'Flow_Out_Liquid');
             
             % Creating the CHX
-            oCCAA_CHX = puda.HESTIA.components.CHX(this, 'CCAA_CHX', this.interpolateEffectiveness, 'ISS CHX', 0, 15, fTempChange, fPercentChange);
+            oCCAA_CHX = components.CHX(this, 'CCAA_CHX', this.interpolateEffectiveness, 'ISS CHX', 0, 15, fTempChange, fPercentChange);
             
             %adds the P2P proc for the CHX that takes care of the actual
             %phase change
-            oCCAA_CHX.oP2P = puda.HESTIA.components.CHX_p2p(this.toStores.CHX, 'CondensingHX', 'CHX_PhaseIn.filterport', 'CHX_H2OPhase.filterport', oCCAA_CHX);
+            oCCAA_CHX.oP2P =components.HX.CHX_p2p(this.toStores.CHX, 'CondensingHX', 'CHX_PhaseIn.filterport', 'CHX_H2OPhase.filterport', oCCAA_CHX);
 
             matter.store(this, 'CoolantStore', 0.02);
             % H2O phase
@@ -178,18 +167,18 @@ classdef CCAA < vsys
             
             cWaterHelper = matter.helper.phase.create.water(this.toStores.CoolantStore, 0.02, this.fCoolantTemperature, fPressure);
             oH2O = matter.phases.liquid(this.toStores.CoolantStore, 'CoolantPhase', cWaterHelper{1}, cWaterHelper{2}, cWaterHelper{3}, cWaterHelper{4});
-            hima.ARSProject.Components.const_press_exme_liquid(oH2O, 'Flow_In_Coolant', 1e5);
-            hima.ARSProject.Components.const_press_exme_liquid(oH2O, 'Flow_Out_Coolant', 1e5);
+            matter.procs.exmes.liquid(oH2O, 'Flow_In_Coolant');
+            matter.procs.exmes.liquid(oH2O, 'Flow_Out_Coolant');
             
-            % Adding pipes to connect the Components, parameters: length (0.1m) + diameter (0.04m)
-            components.pipe(this, 'Pipe_1', 0.1, 0.04);
-            components.pipe(this, 'Pipe_2', 0.1, 0.04);
-            components.pipe(this, 'Pipe_3', 0, 0.04);
-            components.pipe(this, 'Pipe_4', 0, 0.04);
-            components.pipe(this, 'Pipe_5', 0, 0.04);
-            components.pipe(this, 'Pipe_6', 0, 0.04);
-            components.pipe(this, 'Pipe_7', 0, 0.04);
-            components.pipe(this, 'Pipe_8', 0, 0.04);
+            % Adding pipes to connect the Components
+            components.pipe(this, 'Pipe_1', 1, 0.1);
+            components.pipe(this, 'Pipe_2', 1, 0.1);
+            components.pipe(this, 'Pipe_3', 1, 0.1);
+            components.pipe(this, 'Pipe_4', 1, 0.1);
+            components.pipe(this, 'Pipe_5', 1, 0.1);
+            components.pipe(this, 'Pipe_6', 1, 0.1);
+            components.pipe(this, 'Pipe_7', 1, 0.1);
+            components.pipe(this, 'Pipe_8', 1, 0.1);
             
             %% Creating the flowpath into this subsystem ('store.exme', {'f2f-processor', 'f2f-processor'}, 'system level port name')
             %  Creating the flowpaths between the Components
@@ -203,9 +192,7 @@ classdef CCAA < vsys
             matter.branch(this, 'CoolantStore.Flow_In_Coolant', {'Pipe_7'}, 'CCAA_CoolantIn', 'Coolant_In');
             matter.branch(this, 'CoolantStore.Flow_Out_Coolant', {'CCAA_CHX_2'}, 'CCAA_CoolantOut', 'Coolant_Out');
             
-            if this.bInternalReturn == 1
-                matter.branch(this, 'CHX.Flow_Out_Gas2', {'Pipe_2'}, 'TCCV.Port_In2', 'Internal_Return');
-            else
+            if ~isempty(this.sCDRA)
                 matter.branch(this, 'CHX.Flow_Out_Gas2', {'Pipe_8'}, 'CCAA_Out_4', 'CHX_CDRA');
                 matter.branch(this, 'TCCV.Port_In2', {'Pipe_2'}, 'CCAA_In_2', 'CDRA_TCCV');
             end
@@ -213,41 +200,34 @@ classdef CCAA < vsys
              
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
-                                         % Creating the flowpath into this subsystem
-            this.toSolverBranches.CCAA_In1 = solver.matter.manual.branch(this.aoBranches(1,1));
+            % Creating the flowpath into this subsystem
+            solver.matter.manual.branch(this.toBranches.CCAA_In_FromCabin);
+            solver.matter.manual.branch(this.toBranches.TCCV_CHX);
+            solver.matter.manual.branch(this.toBranches.CHX_Cabin);
+            solver.matter.manual.branch(this.toBranches.TCCV_Cabin);
+            solver.matter.manual.branch(this.toBranches.Condensate_Out);
+            solver.matter.manual.branch(this.toBranches.Coolant_In);
+            solver.matter.manual.branch(this.toBranches.Coolant_Out);
+            
+            if ~isempty(this.sCDRA)
+                solver.matter.manual.branch(this.toBranches.CHX_CDRA);
                 
-            this.toSolverBranches.CCAA_TCCV_CHX = solver.matter.manual.branch(this.aoBranches(2,1));
-            
-            this.toSolverBranches.CCAA_CHX_ARS = solver.matter.manual.branch(this.aoBranches(3,1));
-            
-            this.toSolverBranches.CCAA_TCCV_Out = solver.matter.manual.branch(this.aoBranches(4,1));
-            
-            this.toSolverBranches.CCAA_CHX_H2OOut = solver.matter.manual.branch(this.aoBranches(5,1));
-            
-            this.toSolverBranches.CCAA_CoolantLoopIn = solver.matter.manual.branch(this.aoBranches(6,1));
-            this.toSolverBranches.CCAA_CoolantLoopOut = solver.matter.manual.branch(this.aoBranches(7,1));
-            
-            if this.bInternalReturn == 1
-                this.toSolverBranches.CCAA_ARS_AirReturn = solver.matter.manual.branch(this.aoBranches(8,1));
-            else
-                this.toSolverBranches.CCAA_ARS_AirReturn = solver.matter.manual.branch(this.aoBranches(8,1));
-                
-                this.toSolverBranches.CCAA_In2 = solver.matter.manual.branch(this.aoBranches(9,1));
+                solver.matter.manual.branch(this.toBranches.CDRA_TCCV);
             end
             
             if this.bActive == 1
                 %% Setting of fixed flow rates
-                this.toSolverBranches.CCAA_In1.setFlowRate(-0.2324661667);
-                this.toSolverBranches.CCAA_TCCV_CHX.setFlowRate(0.2317);
-                this.toSolverBranches.CCAA_CHX_ARS.setFlowRate(0.2217);
+                this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-0.2324661667);
+                this.toBranches.TCCV_CHX.oHandler.setFlowRate(0.2317);
+                this.toBranches.CHX_Cabin.oHandler.setFlowRate(0.2317);
                 %allowed coolant flow is between 600 and 1290 lb/hr but the CHX
                 %performance data is given for 600 lb/hr so this flow rate is
                 %assumed here for the coolant
-                this.toSolverBranches.CCAA_CoolantLoopIn.setFlowRate(-0.0755987283); %600 lb/hr
-                this.toSolverBranches.CCAA_CoolantLoopOut.setFlowRate(0.0755987283); %600 lb/hr
+                this.toBranches.Coolant_In.oHandler.setFlowRate(-0.0755987283); %600 lb/hr
+                this.toBranches.Coolant_Out.oHandler.setFlowRate(0.0755987283); %600 lb/hr
 
-                if this.bInternalReturn ~= 1
-                    this.toSolverBranches.CCAA_In2.setFlowRate(-0.01133971667);
+                if ~isempty(this.sCDRA)
+                    this.toBranches.CDRA_TCCV.oHandler.setFlowRate(-0.01133971667);
                 end
             end
         end           
@@ -285,13 +265,13 @@ classdef CCAA < vsys
         function exec(this, ~)
             exec@vsys(this);
             if this.bActive == 0
-                this.toSolverBranches.CCAA_In1.setFlowRate(0);
-                this.toSolverBranches.CCAA_TCCV_CHX.setFlowRate(0.);
-                this.toSolverBranches.CCAA_CHX_ARS.setFlowRate(0);
-                this.toSolverBranches.CCAA_CoolantLoopIn.setFlowRate(0); 
-                this.toSolverBranches.CCAA_CoolantLoopOut.setFlowRate(0);
-                if this.bInternalReturn ~= 1
-                    this.toSolverBranches.CCAA_In2.setFlowRate(0);
+                this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(0);
+                this.toBranches.TCCV_CHX.oHandler.setFlowRate(0.);
+                this.toBranches.CHX_Cabin.oHandler.setFlowRate(0);
+                this.toBranches.Coolant_In.oHandler.setFlowRate(0); 
+                this.toBranches.Coolant_Out.oHandler.setFlowRate(0);
+                if ~isempty(this.sCDRA)
+                    this.toBranches.CDRA_TCCV.oHandler.setFlowRate(0);
                 end
                 return
             end
@@ -324,7 +304,7 @@ classdef CCAA < vsys
             % for 1 minute with a constant flow rate, which empties it completly
             if this.oTimer.fTime >= this.fKickValveAktivatedTime + 60 && this.bKickValveAktivated
                 this.bKickValveAktivated = 0;
-                this.toSolverBranches.CCAA_CHX_H2OOut.setFlowRate(0);
+                this.toBranches.Condensate_Out.oHandler.setFlowRate(0);
             end
             
             if mod(this.oTimer.fTime, 75 * 60) <= 1
@@ -336,7 +316,7 @@ classdef CCAA < vsys
                 if fFlowRateCondOut < 0
                     fFlowRateCondOut = 0;
                 end
-                this.toSolverBranches.CCAA_CHX_H2OOut.setFlowRate(fFlowRateCondOut);
+                this.toBranches.Condensate_Out.oHandler.setFlowRate(fFlowRateCondOut);
                 this.bKickValveAktivated = 1;
                 this.fKickValveAktivatedTime = this.oTimer.fTime;
             end
@@ -350,13 +330,13 @@ classdef CCAA < vsys
                 
                 fInFlow = 0.2124*this.oAtmosphere.fDensity;
                 
-                this.toSolverBranches.CCAA_In1.setFlowRate(-fInFlow);
+                this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fInFlow);
                 
-                if this.bInternalReturn ~= 1
+                if ~isempty(this.sCDRA)
                     fInFlow2 = this.oParent.toChildren.(this.sCDRA).toBranches.CDRA_Air_Out1.oHandler.fRequestedFlowRate + this.oParent.toChildren.(this.sCDRA).toBranches.CDRA_Air_Out2.oHandler.fRequestedFlowRate;
-                    this.toSolverBranches.CCAA_In2.setFlowRate(-fInFlow2);
+                    this.toBranches.CDRA_TCCV.oHandler.setFlowRate(-fInFlow2);
                 else
-                    fInFlow2 = this.toSolverBranches.CCAA_ARS_AirReturn.fFlowRate;
+                    fInFlow2 = 0;
                 end
                 
                 fFlowPercentageCHX = this.Interpolation(fTCCV_Angle);
@@ -364,21 +344,27 @@ classdef CCAA < vsys
                 fTCCVSecondFlowRate = (1-fFlowPercentageCHX)*(fInFlow+fInFlow2);
                 
                 
-                this.toSolverBranches.CCAA_TCCV_CHX.setFlowRate(fTCCVFirstFlowRate);
-                this.toSolverBranches.CCAA_TCCV_Out.setFlowRate(fTCCVSecondFlowRate);
+                this.toBranches.TCCV_CHX.oHandler.setFlowRate(fTCCVFirstFlowRate);
+                this.toBranches.TCCV_Cabin.oHandler.setFlowRate(fTCCVSecondFlowRate);
                 
                 fFlowRateGas = fTCCVFirstFlowRate - this.toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
                 
-                if fFlowRateGas >= this.fCDRA_FlowRate
-                    this.toSolverBranches.CCAA_CHX_ARS.setFlowRate(fFlowRateGas-this.fCDRA_FlowRate);
-                    this.toSolverBranches.CCAA_ARS_AirReturn.setFlowRate(this.fCDRA_FlowRate);
-                elseif fFlowRateGas < this.fCDRA_FlowRate
-                    this.toSolverBranches.CCAA_CHX_ARS.setFlowRate(0);
-                    if fFlowRateGas < 0
-                        this.toSolverBranches.CCAA_ARS_AirReturn.setFlowRate(0);
-                    else
-                        this.toSolverBranches.CCAA_ARS_AirReturn.setFlowRate(fFlowRateGas);
+                if ~isempty(this.sCDRA)
+                    if fFlowRateGas >= this.fCDRA_FlowRate
+                        this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas-this.fCDRA_FlowRate);
+                        this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
+                    elseif fFlowRateGas < this.fCDRA_FlowRate
+                        this.toBranches.CHX_Cabin.oHandler.setFlowRate(0);
+                        if fFlowRateGas < 0
+                            this.toBranches.CHX_CDRA.oHandler.setFlowRate(0);
+                        else
+                            this.toBranches.CHX_CDRA.oHandler.setFlowRate(fFlowRateGas);
+                        end
                     end
+                else
+                    % in case the CCAA does not have an ascociated CDRA the
+                    % full gas flow is put back into the cabin
+                    this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas);
                 end
             end
         end
