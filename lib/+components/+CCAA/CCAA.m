@@ -84,8 +84,10 @@ classdef CCAA < vsys
             % CDRA empty. If it is empty it is assumed that this CCAA does
             % not have a CDRA connected to it.
             if ~isempty(sCDRA)
-                this.fCDRA_FlowRate = fCDRA_FlowRate;
                 this.sCDRA = sCDRA;
+                if nargin > 7
+                    this.fCDRA_FlowRate = fCDRA_FlowRate;
+                end
             end
             
             % Loading the flow rate table for the valves
@@ -378,7 +380,7 @@ classdef CCAA < vsys
                 this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fInFlow);
                 
                 if ~isempty(this.sCDRA)
-                    fInFlow2 = this.oParent.toChildren.(this.sCDRA).toBranches.CDRA_Air_Out1.oHandler.fRequestedFlowRate + this.oParent.toChildren.(this.sCDRA).toBranches.CDRA_Air_Out2.oHandler.fRequestedFlowRate;
+                    fInFlow2 = this.oParent.toChildren.(this.sCDRA).toBranches.Filter13x1_to_CHX.oHandler.fRequestedFlowRate + this.oParent.toChildren.(this.sCDRA).toBranches.Filter13x2_to_CHX.oHandler.fRequestedFlowRate;
                     this.toBranches.CDRA_TCCV.oHandler.setFlowRate(-fInFlow2);
                 else
                     fInFlow2 = 0;

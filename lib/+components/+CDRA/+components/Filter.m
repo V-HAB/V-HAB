@@ -18,10 +18,8 @@ classdef Filter < matter.procs.p2ps.flow
     properties (SetAccess = protected, GetAccess = public)
         sSpecies;                       % Species to absorb
         fCapacity;                      % Max absorb capacity in kg
-        fCapacityReset;                 % Copy of the starting capacity for reset
         arExtractPartials;              % Defines which species are extracted
         mfZeolithCapacity;              % Defines the capacity of the zeolith per mass of zeolith
-        fFilterMass;                    % Mass of the filter material
         sFilterMode;                    % Defines wheter the filter absorbs oder desorbs
         fFlowRateFilter = 0;            % Flow rate of the matter, which gets filtered
         sType;
@@ -42,12 +40,6 @@ classdef Filter < matter.procs.p2ps.flow
         %Effective Area for the heat transfer between zeolite and gas
         fEffectiveZeoliteArea;
         
-        %Zeolite Thermal Properties:
-        fZeoliteHeatCap = (0.32*1000)/4.184; %0.32 cal/(g K) according to 
-        %"COMPARISON OF TWO PRESSURE SWING ADSORPTION PROCESSES FOR 
-        %AIR SEPARATION USING ZEOLITE 5A AND ZEOLITE 13X" Masoud Mofarahi
-        %et al 2013
-        
         %Time this filter remains in either desorb or adsorb mode (assumes
         %that both take the exact same amount of time)
         fCycleTime;
@@ -62,11 +54,9 @@ classdef Filter < matter.procs.p2ps.flow
     end
     
     methods
-        function this = Filter(oStore, sName, sPhaseIn, sPhaseOut, sType, fCapacity, fCycleTime, fAirSafeTime)
+        function this = Filter(oStore, sName, sPhaseIn, sPhaseOut, sType, fCycleTime, fAirSafeTime)
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
             
-            this.fCapacity = fCapacity;
-            this.fCapacityReset = fCapacity;
             this.sType = sType;
             this.fCycleTime = fCycleTime;
             if nargin == 8
@@ -82,12 +72,9 @@ classdef Filter < matter.procs.p2ps.flow
                 %the values are given in g CO2 per 100g Zeolith.
                 %The g value has no effect since the ratio remains
                 %the same for kg
-                this.mfZeolithCapacity = load(strrep('user\+hima\+ARSProject\+Components\ZeolithCapacity.mat', '\', filesep));
+                this.mfZeolithCapacity = load(strrep('lib\+components\CDRA\components\ZeolithCapacity.mat', '\', filesep));
                 this.CapacityInterpolation = griddedInterpolant((this.mfZeolithCapacity.T)', (this.mfZeolithCapacity.P)', (this.mfZeolithCapacity.C)');
                 
-                %Assumes that the capacity specified by the user is intended to
-                %be for 400 Pa of CO2 and 20°C room temperature!
-                this.fFilterMass = this.fCapacity/(this.CapacityInterpolation(293.15, 400) / 100);
                 %TO DO: Check this?
                 fDensityZeolith = 114.7151779 * 1.22; %i didn't check this so far, it is the value used by the previous works
 
@@ -98,7 +85,7 @@ classdef Filter < matter.procs.p2ps.flow
                 %mass of each sphere can be calculated which can then be used
                 %to calculate the number of spheres in the filter
                 fMassPerSphere = fDensityZeolith*(4/3)*pi*((0.0021/2)^3);
-                fNZeoliteSpheres = this.fFilterMass/fMassPerSphere;
+                fNZeoliteSpheres = this.oOut.oPhase.afMass(this.oMT.tiN2I.Zeolite5A)/fMassPerSphere;
 
                 %and with that the area is:
                 this.fEffectiveZeoliteArea = fNZeoliteSpheres*4*pi*0.0025^2;
@@ -176,6 +163,11 @@ classdef Filter < matter.procs.p2ps.flow
                 this.arExtractPartials = zeros(1, this.oMT.iSubstances);
                 this.arExtractPartials(this.oMT.tiN2I.H2O) = 1;
                 this.sSpecies = 'H2O';
+                
+                % For zeolite 13x ~ 180 g of water can be absorbed into 1kg
+                % of zeolite 
+                % TO DO: make better interpolation
+                this.CapacityInterpolation = 0.18;
                 %% Curve Fitting for Adsorption Efficiency of Zeolite 13x
                 % WARNING: REQUIRES CURVE FITTING TOOLBOX!
 
@@ -262,8 +254,6 @@ classdef Filter < matter.procs.p2ps.flow
             switch this.sFilterMode
                 case 'absorb'
 
-                    this.fCapacity = this.fCapacityReset;
-
                     if strcmp(this.sType, 'Filter_5A')
                         fPPCO2 = this.oIn.oPhase.afPP(this.oMT.tiN2I.CO2);
 
@@ -278,10 +268,12 @@ classdef Filter < matter.procs.p2ps.flow
                         %the values are given in g CO2 per 100g Zeolith.
                         %The g value has no effect since the ratio remains
                         %the same for kg
-                        this.fCapacity = this.fFilterMass * (this.CapacityInterpolation(abs(fTempFilter), abs(fPPCO2)) / 100);
+                        this.fCapacity = this.oOut.oPhase.afMass(this.oMT.tiN2I.Zeolite5A) * (this.CapacityInterpolation(abs(fTempFilter), abs(fPPCO2)) / 100);
                         if isnan(this.fCapacity) || this.fCapacity < 0
                             this.fCapacity = 0;
                         end
+                    else
+                        this.fCapacity = this.oOut.oPhase.afMass(this.oMT.tiN2I.Zeolite5A) * this.CapacityInterpolation;
                     end
                     
                     %Now the current fill status of the bed is calculated
@@ -294,7 +286,17 @@ classdef Filter < matter.procs.p2ps.flow
                         % the excess amount of mass. (negative flow rate
                         % means that mass from the filter is moved to the
                         % air stream)
-                        this.fFlowRateFilter = (this.fCapacity-this.oOut.oPhase.afMass(iSpecies))/fTimeStep;
+                        fMassToDesorb = (this.fCapacity-this.oOut.oPhase.afMass(iSpecies)); 
+                        % Assumes that 1% of the exceed mass is desorbed
+                        % per second
+                        fBaseDesorbFlow = fMassToDesorb/100;
+                        % the higher the capacity is exceeded the larger
+                        % the desorption flow rate will be
+                        this.fFlowRateFilter = (abs(fMassToDesorb)/this.fCapacity)*fBaseDesorbFlow;
+                        % if the desorption flow is to large it is limited
+                        if this.fFlowRateFilter < -1e-2
+                            this.fFlowRateFilter = -1e-2;
+                        end
                     elseif fPercentFilled < 0.99
                         %to prevent oscillations it only adsorbs more if it
                         %is below 99% of its maximum capacity
