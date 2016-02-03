@@ -3,13 +3,11 @@ classdef CCAA < vsys
     
     %% Common Cabin Air Assembly (CCAA)
     %
-    % The ISS uses a total of 8 condensing heat exchangers for humidity
-    % control. The distribution can be checked here: http://wsn.spaceflight.esa.int/docs/Factsheets/30%20ECLSS%20LR.pdf
-    % However not all of these are actually CCAAs, for example the CHX in
-    % Columbus is a different one developed by Europe and the russians have
-    % a different one as well. However to simplify the simulation it is
-    % currently assumed that all of the CHX can be modeled as CCAAs.
-    
+    % The CCAA is used onboard the ISS to control the humidity and
+    % temperature within the ISS. For humidity control a condensing heat
+    % exchanger is used to remove excess humidity from the ISS. The
+    % temperature control is achiev through a normal heat exchanger which
+    % is not modelled at the moment.
     
     properties (SetAccess = public, GetAccess = public)
         %Variable to decide wether the CCAA is active or not. Used for the
@@ -23,46 +21,68 @@ classdef CCAA < vsys
         mfCHXAirFlow;                      % Table used to calculate the flow rates of the ARS valve
         rTCCV_ratio;                        % Starting opening angle of the TCCV valve 0.025974
         
-        %relative humidity in the connected module
+        % relative humidity in the connected module
         rRelHumidity = 0.45;
         
-        
-        %Property to save the interpolation for the CHX air flow based on
-        %the angle value
+        % Property to save the interpolation for the CHX air flow based on
+        % the angle value
         Interpolation;
         
-        %Porperty to save the interpolation for the CHX effectiveness
+        % Porperty to save the interpolation for the CHX effectiveness
         interpolateEffectiveness;
         
         % subsystem name for the asccociated CDRA
         sCDRA;
         
-        %According to "International Space Station Carbon Dioxide Removal
-        %Assembly Testing" 00ICES-234 James C. Knox (2000) the minmal flow
-        %rate for CDRA to remove enough CO2 is 41 kg/hr but that figure is
-        %for removal of CO2 for 6 crew members.
+        % According to "International Space Station Carbon Dioxide Removal
+        % Assembly Testing" 00ICES-234 James C. Knox (2000) the minmal flow
+        % rate for CDRA to remove enough CO2 is 41 kg/hr but that figure is
+        % for removal of CO2 for 6 crew members.
         fCDRA_FlowRate = 1.138e-2;
         
-        %Object for the phase of the module where the CCAA is located. Used
-        %to get the current relative humidity and control the valve angles
-        %accordingly and to calculate the current mass flow entering the
-        %CCAA based on the volumetric flow rate
+        % Object for the phase of the module where the CCAA is located. Used
+        % to get the current relative humidity and control the valve angles
+        % accordingly and to calculate the current mass flow entering the
+        % CCAA based on the volumetric flow rate
        	oAtmosphere;
         
-        fRelHumidity;
+        % struct that contains basic atmospheric values for the
+        % initialization of the CCAA phases. Required fields for the struct
+        % are fTemperature, fPressure and fRelHumidity
         tAtmosphere;
+        
+        % Value for the coolant temperature used for the CCAA
         fCoolantTemperature;
         
+        % Property to save the inital water mass within the CHX condensate
+        % phase. This is used to calculate the amount of condensate that
+        % was actually produced between the activation of the kick valve.
         fInitialCHXWaterMass;
     end
     
     methods 
         function this = CCAA (oParent, sName, fTimeStep, rTCCV_InitialAngle, fCoolantTemperature, tAtmosphere, sCDRA, fCDRA_FlowRate)
+            % The time step has to be set since the exec function will not
+            % be called frequently otherwise
             this@vsys(oParent, sName, fTimeStep);
             
+            % saves the current value for the Temperature Check and Control
+            % Valve angle ratio. That ratio determines how much air is
+            % channeled through the CHX and how much just goes back to the
+            % cabin
             this.rTCCV_ratio = rTCCV_InitialAngle;
+            % CCAA coolant temperature
             this.fCoolantTemperature = fCoolantTemperature;
+            % Struct containing basic atmospheric values used in the phase
+            % initialization for the CCAA
             this.tAtmosphere = tAtmosphere;
+            
+            % The Carbon Dioxide Removal Assembly (CDRA) can only be used
+            % together with a CCAA, however a CCAA can also be used without
+            % a CDRA. Therefore it is possible to leave the sCDRA variable,
+            % which normaly contains the subsystem name for the asccoiated
+            % CDRA empty. If it is empty it is assumed that this CCAA does
+            % not have a CDRA connected to it.
             if ~isempty(sCDRA)
                 this.fCDRA_FlowRate = fCDRA_FlowRate;
                 this.sCDRA = sCDRA;
@@ -77,7 +97,7 @@ classdef CCAA < vsys
             % Thermal Performance Data (ICES 2005-01-2801)
             % Coolant Water Conditions
             % - 600 lb/hr coolant flow
-            % - 40?F coolant inlet temperature
+            % - 40°F coolant inlet temperature
             fAirInletTemperatureData = [67 75 82];
             fAirInletFlowData        = [50 100 150 200 250 300 350 400 450];
             fInletDewPointData       = [42 48 54 60];
@@ -106,23 +126,29 @@ classdef CCAA < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            %Temp Change allowed before CHX are recalculated
+            % Temp Change allowed before CHX is recalculated
             fTempChange = 1;
-            %Percental Change allowed to Massflow/Pressure/Composition of
-            %Flow before CHX is recalculated
+            % Percental Change allowed to Massflow/Pressure/Composition of
+            % Flow before CHX is recalculated
             fPercentChange = 0.025;
             
+            % Standard pressure used for the phase definition of water
+            % phases
             fPressure = 101325;
+            % Mass percent of CO2 in the air, used to initialize the phases
             fCO2Percent = 0.0038;
             
             %% Creating the stores
-            % Creating the TCCV
-            %originally volume of 0.01 but mass of 1kg air...
+            % Creating the TCCV (Temperatue Check and Control Valve)
+            % The 1 m³ volume is too large for the actual system but V-HAB
+            % has trouble correctly calculating small volumes
             matter.store(this, 'TCCV', 1); 
+            % Uses the custom air helper to set the air phase
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.TCCV, 1, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, this.tAtmosphere.fPressure);
             oAir = matter.phases.gas(this.toStores.TCCV, 'TCCV_PhaseGas', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             matter.procs.exmes.gas(oAir, 'Port_In');
+            % This proc is only required if the CCAA has a CDRA connected to it
             if ~isempty(this.sCDRA)
                 matter.procs.exmes.gas(oAir, 'Port_In2');
             end
@@ -130,8 +156,12 @@ classdef CCAA < vsys
             matter.procs.exmes.gas(oAir, 'Port_Out_2');
             
             % Creating the CHX
-            % The volume is set relativly large to allow a larger time
-            % step.
+            % Within the CHX store the phase change of the humidity in the
+            % air to liquid water is done. However the calculation how much
+            % water has to condense is done in the CHX!
+            %
+            % The 2 m³ volume is too large for the actual system but V-HAB
+            % has trouble correctly calculating small volumes
             matter.store(this, 'CHX', 2);
             % Input phase
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CHX, 1, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, this.tAtmosphere.fPressure);
@@ -143,6 +173,7 @@ classdef CCAA < vsys
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In');
             matter.procs.exmes.gas(oInput, 'Flow_Out_Gas');
+            % This proc is only required if the CCAA has a CDRA connected to it
             if ~isempty(this.sCDRA)
                 matter.procs.exmes.gas(oInput, 'Flow_Out_Gas2');
             end
@@ -151,12 +182,18 @@ classdef CCAA < vsys
             matter.procs.exmes.liquid(oH2O, 'Flow_Out_Liquid');
             
             % Creating the CHX
+            % The CHX used for CCAA is calculated by using the
+            % interpolation for the effectivnes instead of physically
+            % calculating the CHX.
             oCCAA_CHX = components.CHX(this, 'CCAA_CHX', this.interpolateEffectiveness, 'ISS CHX', 0, 15, fTempChange, fPercentChange);
             
-            %adds the P2P proc for the CHX that takes care of the actual
-            %phase change
+            % adds the P2P proc for the CHX that takes care of the actual
+            % phase change
             oCCAA_CHX.oP2P =components.HX.CHX_p2p(this.toStores.CHX, 'CondensingHX', 'CHX_PhaseIn.filterport', 'CHX_H2OPhase.filterport', oCCAA_CHX);
 
+            % Store that contains the coolant passing through the CHX. This
+            % store is only necessary because it is not possible to have
+            % System Interfaces without a store in between.
             matter.store(this, 'CoolantStore', 0.02);
             % H2O phase
             % Temperature is from ICES-2015-27: Low temperature loop in US lab 
@@ -186,15 +223,17 @@ classdef CCAA < vsys
             
             matter.branch(this, 'TCCV.Port_In', {'Pipe_1'}, 'CCAA_In', 'CCAA_In_FromCabin');                                % Creating the flowpath into this subsystem
             matter.branch(this, 'TCCV.Port_Out_1', {'CCAA_CHX_1'}, 'CHX.Flow_In', 'TCCV_CHX');
-            matter.branch(this, 'CHX.Flow_Out_Gas', {'Pipe_5'}, 'CCAA_Out_1', 'CHX_Cabin');
-            matter.branch(this, 'TCCV.Port_Out_2', {'Pipe_4'}, 'CCAA_Out_2', 'TCCV_Cabin');
-            matter.branch(this, 'CHX.Flow_Out_Liquid', {'Pipe_6'}, 'CCAA_Out_3', 'Condensate_Out');               % Creating the water flowpath out of this subsystem
+            matter.branch(this, 'CHX.Flow_Out_Gas', {'Pipe_5'}, 'CCAA_CHX_Air_Out', 'CHX_Cabin');
+            matter.branch(this, 'TCCV.Port_Out_2', {'Pipe_4'}, 'CCAA_TCCV_Air_Out', 'TCCV_Cabin');
+            matter.branch(this, 'CHX.Flow_Out_Liquid', {'Pipe_6'}, 'CCAA_CHX_Condensate_Out', 'Condensate_Out');               % Creating the water flowpath out of this subsystem
             matter.branch(this, 'CoolantStore.Flow_In_Coolant', {'Pipe_7'}, 'CCAA_CoolantIn', 'Coolant_In');
             matter.branch(this, 'CoolantStore.Flow_Out_Coolant', {'CCAA_CHX_2'}, 'CCAA_CoolantOut', 'Coolant_Out');
             
+            % These branches are only necessary if a CDRA is connected to
+            % the CCAA
             if ~isempty(this.sCDRA)
-                matter.branch(this, 'CHX.Flow_Out_Gas2', {'Pipe_8'}, 'CCAA_Out_4', 'CHX_CDRA');
-                matter.branch(this, 'TCCV.Port_In2', {'Pipe_2'}, 'CCAA_In_2', 'CDRA_TCCV');
+                matter.branch(this, 'CHX.Flow_Out_Gas2', {'Pipe_8'}, 'CCAA_CHX_to_CDRA_Out', 'CHX_CDRA');
+                matter.branch(this, 'TCCV.Port_In2', {'Pipe_2'}, 'CCAA_In_FromCDRA', 'CDRA_TCCV');
             end
         end
              
@@ -216,7 +255,7 @@ classdef CCAA < vsys
             end
             
             if this.bActive == 1
-                %% Setting of fixed flow rates
+                %% Setting of initial flow rates
                 this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-0.2324661667);
                 this.toBranches.TCCV_CHX.oHandler.setFlowRate(0.2317);
                 this.toBranches.CHX_Cabin.oHandler.setFlowRate(0.2317);
@@ -235,19 +274,21 @@ classdef CCAA < vsys
             %% Function to connect the system and subsystem level branches with each other
         function setIfFlows(this, sInterface1, sInterface2, sInterface3, sInterface4, sInterface5, sInterface6, sInterface7, sInterface8)
             if nargin == 7
+                % Case of a standaline CCAA (no CDRA connected)
                 this.connectIF('CCAA_In' , sInterface1);
-                this.connectIF('CCAA_Out_1' , sInterface2);
-                this.connectIF('CCAA_Out_2' , sInterface3);
-                this.connectIF('CCAA_Out_3' , sInterface4);
+                this.connectIF('CCAA_CHX_Air_Out' , sInterface2);
+                this.connectIF('CCAA_TCCV_Air_Out' , sInterface3);
+                this.connectIF('CCAA_CHX_Condensate_Out' , sInterface4);
                 this.connectIF('CCAA_CoolantIn' , sInterface5);
                 this.connectIF('CCAA_CoolantOut' , sInterface6);
             elseif nargin == 9
+                % Case of a CDRA connected to the CCAA
                 this.connectIF('CCAA_In' , sInterface1);
-                this.connectIF('CCAA_In_2' , sInterface2);
-                this.connectIF('CCAA_Out_1' , sInterface3);
-                this.connectIF('CCAA_Out_2' , sInterface4);
-                this.connectIF('CCAA_Out_3' , sInterface5);
-                this.connectIF('CCAA_Out_4' , sInterface6);
+                this.connectIF('CCAA_In_FromCDRA' , sInterface2);
+                this.connectIF('CCAA_CHX_Air_Out' , sInterface3);
+                this.connectIF('CCAA_TCCV_Air_Out' , sInterface4);
+                this.connectIF('CCAA_CHX_Condensate_Out' , sInterface5);
+                this.connectIF('CCAA_CHX_to_CDRA_Out' , sInterface6);
                 this.connectIF('CCAA_CoolantIn' , sInterface7);
                 this.connectIF('CCAA_CoolantOut' , sInterface8);
             else
@@ -255,6 +296,9 @@ classdef CCAA < vsys
             end
         end
         
+        % Function used to set the reference cabin phase. This is necessary
+        % for the CCAA to know the current humidity in the cabin and
+        % correctly control the flow rate through the CHX.
         function setReferencePhase(this, oPhase)
                 this.oAtmosphere = oPhase;
         end
@@ -264,6 +308,8 @@ classdef CCAA < vsys
         
         function exec(this, ~)
             exec@vsys(this);
+            % in case the CCAA was set to be inactive the flowrates are all
+            % set to zero and the calculation is aborted
             if this.bActive == 0
                 this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(0);
                 this.toBranches.TCCV_CHX.oHandler.setFlowRate(0.);
@@ -322,7 +368,6 @@ classdef CCAA < vsys
             end
             
             if this.oTimer.fTime > 5
-                % Setting of fixed flow rates
                 % The CHX data is given for 50 to 450 cfm so the CCAA
                 % should have at least 450 cfm of inlet flow that can enter
                 % the CHX. And 450 cfm are 0.2124 m^3/s
@@ -339,16 +384,21 @@ classdef CCAA < vsys
                     fInFlow2 = 0;
                 end
                 
+                % Uses the interpolation for the TCCV to calculate the
+                % percentage of flow entering the CHX
                 fFlowPercentageCHX = this.Interpolation(fTCCV_Angle);
-                fTCCVFirstFlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
-                fTCCVSecondFlowRate = (1-fFlowPercentageCHX)*(fInFlow+fInFlow2);
+                % Gets the two flow rates exiting the TCCV
+                fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
+                fTCC_To_Cabin_FlowRate = (1-fFlowPercentageCHX)*(fInFlow+fInFlow2);
                 
+                this.toBranches.TCCV_CHX.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
+                this.toBranches.TCCV_Cabin.oHandler.setFlowRate(fTCC_To_Cabin_FlowRate);
                 
-                this.toBranches.TCCV_CHX.oHandler.setFlowRate(fTCCVFirstFlowRate);
-                this.toBranches.TCCV_Cabin.oHandler.setFlowRate(fTCCVSecondFlowRate);
+                % Calculates the flow rate of gas exiting the CHX
+                fFlowRateGas = fTCCV_To_CHX_FlowRate - this.toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
                 
-                fFlowRateGas = fTCCVFirstFlowRate - this.toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
-                
+                % in case a CDRA is connected to this CCAA the flowrate
+                % entering the CDRA has to be calculated
                 if ~isempty(this.sCDRA)
                     if fFlowRateGas >= this.fCDRA_FlowRate
                         this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas-this.fCDRA_FlowRate);
