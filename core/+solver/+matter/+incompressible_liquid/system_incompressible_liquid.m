@@ -629,8 +629,8 @@ classdef system_incompressible_liquid
                         %part of the system solver into the non system flow
                         %rate struct for this phase
                         if max(strcmp(oPhase.coProcsEXME{1,k}.sName, csSystemEXME_Names)) == 0
-                            iSign = oPhase.coProcsEXME{1,k}.aiSign;
-                            fFlowRate = iSign * oPhase.coProcsEXME{1,k}.aoFlows.fFlowRate;
+                            iSign = oPhase.coProcsEXME{1,k}.iSign;
+                            fFlowRate = iSign * oPhase.coProcsEXME{1,k}.oFlow.fFlowRate;
                             
                             tNonSystemFlowRate.(this.cPhaseNames{m}) = tNonSystemFlowRate.(this.cPhaseNames{m}) + fFlowRate;
                         end
@@ -902,8 +902,8 @@ classdef system_incompressible_liquid
                         %part of the system solver into the non system flow
                         %rate struct for this phase
                         if max(strcmp(oPhase.coProcsEXME{1,k}.sName, csSystemEXME_Names)) == 0
-                            iSign = oPhase.coProcsEXME{1,k}.aiSign;
-                            fFlowRate = iSign * oPhase.coProcsEXME{1,k}.aoFlows.fFlowRate;
+                            iSign = oPhase.coProcsEXME{1,k}.iSign;
+                            fFlowRate = iSign * oPhase.coProcsEXME{1,k}.oFlow.fFlowRate;
                             
                             tNonSystemFlowRate.(this.cPhaseNames{m}) = tNonSystemFlowRate.(this.cPhaseNames{m}) + fFlowRate;
                         end
