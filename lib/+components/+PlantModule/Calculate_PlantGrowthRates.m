@@ -72,7 +72,7 @@ PARSOL = 0.45;%
 h=6.626*10^-34; 
 %speed of light in [m/s]
 c=2.998*10^8;
-%Avogrado constant in[Photons*mol^-1]
+%Avogrado constant in[TEILCHEN*mol^-1]
 N_A=matter.table.Const.fAvogadro;%
 
 %Avarege wavelenght in [m]

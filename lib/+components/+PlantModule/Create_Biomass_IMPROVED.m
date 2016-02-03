@@ -73,8 +73,8 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
 %                 this.tPlantParametersAdjusted(i).T_E             = this.tPlantParametersAdjusted(i).T_E * 24 * 60;          % [min]
 %             end
             
-            % initialize cxCultures cell array, has three main sections:
-            % "PlantData", "Growth" and "Harvest"
+            % initialize cxCultures cell array, has four main sections:
+            % "PlantData", "PlantParameters", "Growth" and "Harvest"
             for i = 1:length(this.csCultureName)
                 % each grown culture gets an internal index number and its
                 % name specified in the *.mat file
@@ -104,15 +104,21 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 % conditions are set, photoperiod receives its nominal
                 % reference values listed in PlantParameters.m
                 if isempty(this.cxCulture{i, 1}.PlantData.H) && (bGlobalPlantLighing == 0)
-                    this.cxCulture{i, 1}.PlantData.H    = this.tPlantParametersAdjusted(this.cxCulture{i, 1}.PlantData.plant_type).H_Nominal;
+                    this.cxCulture{i, 1}.PlantData.H    = this.tPlantParametersAdjusted(this.cxCulture{i, 1}.PlantData.PlantSpecies).H_Nominal;
                 end
                 
                 % if no photosynthetic photon flux is specified and no
                 % global lighting conditions are set, PPF receives its
                 % nominal reference values listed in PlantParameters.m
                 if isempty(this.cxCulture{i, 1}.PlantData.PPF) && (bGlobalPlantLighing == 0)
-                    this.cxCulture{i, 1}.PlantData.PPF  = this.tPlantParametersAdjusted(this.cxCulture{i, 1}.PlantData.plant_type).PPF_Nominal;
+                    this.cxCulture{i, 1}.PlantData.PPF  = this.tPlantParametersAdjusted(this.cxCulture{i, 1}.PlantData.PlantSpecies).PPF_Nominal;
                 end
+                
+                %% PlantParameters
+                
+                % write plant parameters from PlantParameters.m into cell
+                % array
+                this.cxCultures{i, 1}.PlantParameters = components.PlantModule.PlantParameters_IMPROVED(this.cxCulture{i, 1}.PlantData.PlantSpecies);
                 
                 %% Growth
                 
@@ -120,7 +126,7 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 % section and initializing them                           
                 
                 % internal culture time, counting from planting
-                this.cxCultures{i, 1}.Growth.InternalTime           = 0;    % [?]
+                this.cxCultures{i, 1}.Growth.InternalTime           = 0;    % [s]
                 
                 % internal generation count, increases with each replanting
                 this.cxCultures{i, 1}.Growth.InternalGeneration     = 1;    % [-]
@@ -128,12 +134,12 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 % TODO: trying to go with seconds for now, no idea if it
                 % works
 %                 % convert emerge time to minutes
-%                 this.cxCultures{i, 1}.Growth.emerge_time = this.cxCultures{i, 1}.Growth.emerge_time * this.fDaysToMinutes;  % [min]
+%                 this.cxCultures{i, 1}.Growth.EmergeTime = this.cxCultures{i, 1}.Growth.EmergeTime * this.fDaysToMinutes;  % [min]
                 
-                % total crop biomass (wet)
+                % Total Crop Biomass (wet)
                 this.cxCultures{i, 1}.Growth.TCB                    = 0;    % [kg]
                 
-                % total edible biomass (wet)
+                % Total Edible Biomass (wet)
                 this.cxCultures{i, 1}.Growth.TEB                    = 0;    % [kg]
                 
                 % O2 gas exchange rate with atmosphere
@@ -145,23 +151,23 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 % H2O gas exchange rate with atmosphere
                 this.cxCultures{i, 1}.Growth.H2OExchange            = 0;    % [kg/s]
                 
-                %
+                % 24-h Carbon Use Efficiency
                 this.cxCultures{i, 1}.Growth.CUE_24                 = 0;
                 
-                %
+                % Fraction of irradiance absorbed by the canopy
                 this.cxCultures{i, 1}.Growth.A                      = 0;
                 
-                %
-                this.cxCultures{i, 1}.Growth.P_net                  = 0;
+                % Canopy Net Photosynthesis
+                this.cxCultures{i, 1}.Growth.P_Net                  = 0;
                 
-                % canopy quantum yield
+                % Canopy Quantum Yield
                 this.cxCultures{i, 1}.Growth.CQY                    = 0;    % [-]
                 
-                %
+                % ????
                 this.cxCultures{i, 1}.Growth.CO2AssimilationFactor  = 1;    % [-]
                 
                 % time without water supply
-                this.cxCultures{i, 1}.Growth.TimeWithoutH2O         = 0;    % [?]
+                this.cxCultures{i, 1}.Growth.TimeWithoutH2O         = 0;    % [s]
                 
                 %% Harvest
                 
@@ -217,17 +223,18 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 fHarvestedInedibleWet ] ...
                     = components.PlantModule.Process_PlantGrowthParameters(...
                         this.cxCultures{iI}, ...                    % Culture in question
-                        this.oTimer.fTime, ...                      % Passed simulated time                     [s]     (was in minutes)
+                        this.oParent.oAtmosphereReference, ...      % Reference to atmosphere phase
+                        this.oTimer.fTime, ...                      % Passed total simulated time               [s]     (was in minutes)
                         this.oParent.fTemperatureLight, ...         % Atmosphere temperature light period       [°C]
                         this.oParent.fTemperatureDark, ...          % Atmosphere temperature dark period        [°C]
                         this.oParent.fWaterAvailable, ...           % Water mass available                      [kg]
                         this.oParent.fRelativeHumidityLight, ...    % Relative humidity light period            [-]
                         this.oParent.fRelativeHumidityDark, ...     % Relative humidity dark period             [-]
-                        this.oParent.fPressureAtmosphere, ...       % Atmosphere Pressure                       [Pa]
-                        this.oParent.fCO2, ...                   % CO2 concentration                         [µmol/mol]
+                        this.oParent.fPressureAtmosphere, ...       % Atmosphere Total Pressure                 [Pa]
+                        this.oParent.fCO2, ...                      % CO2 concentration                         [µmol/mol]
                         this.oParent.fPPF, ...                      % Photosynthetic photon flux                [µmol/m^2s]
                         this.oParent.fH, ...                        % Photoperiod                               [h/d]
-                        fDensityH2O);                               % liquid water density (for transpiration)  [kg/m^3] 
+                        fDensityH2O);                               % Liquid water density (for transpiration)  [kg/m^3] 
                 
                 % if something has been harvested, add to the according
                 % species in the biomass array

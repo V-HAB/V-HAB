@@ -4,6 +4,7 @@ classdef PlantModuleIMPROVED < vsys
         % struct containing all data on grown plant species
         tPlantData = 0;
         
+        % TODO: probably not needed anymore?
         % struct containing various plant parameters listed in
         % PlantParameters.m in lib/+components/+PlantModule
         tPlantParameters = 0;
@@ -206,7 +207,7 @@ classdef PlantModuleIMPROVED < vsys
                 components.PlantModule.Create_Biomass(...    
                 this, ...       
                 'CreateBiomass', ...                % manipulator name    
-                oPlants);                           % plants phase reference
+                oPlants);                           % plants phase reference                  
                        
             %% Create Gas Exchange Processors
             
@@ -328,6 +329,10 @@ classdef PlantModuleIMPROVED < vsys
                     % Temporary solution only, CO2 should be kept within 
                     % allowed range by atmosphere regulation to keep 
                     % validity of model results.
+                    % It is required to add this property fCO2_Measured to
+                    % the parent system and call the function Calc_CO2_ppm
+                    % in its exec() section to keep the CO2 concentration
+                    % in the atmosphere updated. 
                     if this.oParent.fCO2_Measured > 1300
                         this.fCO2 = 1300;
                     else
