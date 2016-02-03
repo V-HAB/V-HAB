@@ -44,7 +44,7 @@ classdef PlantModuleIMPROVED < vsys
         fPressureAtmosphere =       101325; % [Pa]
         
         % atmospheric CO2 concentration
-        fCO2ppm =                   1300;   % [µmol/mol]
+        fCO2 =                   1300;   % [µmol/mol]
         
         %% Initialize Plant Lighting Conditions
         
@@ -206,19 +206,8 @@ classdef PlantModuleIMPROVED < vsys
                 components.PlantModule.Create_Biomass(...    
                 this, ...       
                 'CreateBiomass', ...                % manipulator name    
-                oPlants, ...                        % plants phase reference
-                this.tPlantData, ...                % culture setups
-                this.tPlantParameters, ...          % plant parameters
-                this.fTemperatureLight, ...         % atmosphere temperature light [°C]
-                this.fTemperatureDark, ...          % atmosphere temperature dark [°C]
-                this.fRelativeHumidityLight, ...    % relative humidity light [-]
-                this.fRelativeHumidityDark, ...     % relative humidity dark [-]
-                this.fPressureAtmosphere, ...       % atmosphere pressure [Pa]
-                this.fCO2ppm, ...                   % CO2 concentration [µmol/mol]
-                this.fPPF, ...                      % photosynthetic photon flux [µmol/m^2s]
-                this.fH, ...                        % photoperiod [h/d]
-                this.fWaterAvailable);              % available water for plant growth [kg]                       
-                
+                oPlants);                           % plants phase reference
+                       
             %% Create Gas Exchange Processors
             
             % create three filter procs for H2O, O2 and CO2
@@ -339,10 +328,10 @@ classdef PlantModuleIMPROVED < vsys
                     % Temporary solution only, CO2 should be kept within 
                     % allowed range by atmosphere regulation to keep 
                     % validity of model results.
-                    if this.oParent.fCO2ppm_Measured > 1300
-                        this.fCO2ppm = 1300;
+                    if this.oParent.fCO2_Measured > 1300
+                        this.fCO2 = 1300;
                     else
-                        this.fCO2ppm = this.oParent.fCO2ppm_Measured;  
+                        this.fCO2 = this.oParent.fCO2_Measured;  
                     end
                 end
                 

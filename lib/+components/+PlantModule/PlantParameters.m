@@ -234,18 +234,18 @@ plant(9).tQ=75;
 % fraction of nutrient consumed for gained biomass - used for calculation macronutrients uptake
 % Source: Baseline Values and Assumptions Document 2015 - Table 4.101
 % "Stock Usage per Dry Biomass"
-% [L/g_dry] - only available for Soybean, Wheat, Potato, Lettuce
-    plant(1).NCfr=0.026*1.166;      % assumed by CH
-    plant(2).NCfr=0.034*1.166;  
-    plant(3).NCfr=0.026*1.166;      % assumed by CH
-    plant(4).NCfr=0.026*1.166;      % assumed by CH
-    plant(5).NCfr=0.026*1.166;  
-    plant(6).NCfr=0.022*1.166;  
-    plant(7).NCfr=0.026*1.166;      % assumed by CH
-    plant(8).NCfr=0.021*1.166; 
-    plant(9).NCfr=0.022*1.166;
+% [g_Nutrients/g_BiomassDry] - only available for Soybean, Wheat, Potato, Lettuce
+    plant(1).NCfr=0;
+    plant(2).NCfr=0.034;  
+    plant(3).NCfr=0; 
+    plant(4).NCfr=0; 
+    plant(5).NCfr=0.026; 
+    plant(6).NCfr=0.022;  
+    plant(7).NCfr=0;
+    plant(8).NCfr=0.021; 
+    plant(9).NCfr=0.022;
 
-%Crop  dry over wet  biomass fraction 
+%Crop  dry over wet  biomass fraction (DRYfr)
 % -->  DRYfr = 1-WBF (Water biomass fraction); averaged from edible and
 % inedible biomass
 %Source: Derived from "Baseline Values and Assumptions Document" 2015 - Table 4.98
@@ -261,7 +261,7 @@ plant(9).tQ=75;
     plant(9).DRYfr=0.154;
 
 
-% Water Biomass Fraction (of edible biomass)
+%Water Biomass Fraction (of edible biomass)
 % It is the fraction of water in biomass in edible biomass
 % Source: Derived from "Baseline Values and Assumptions Document" 2015 - Table 4.98
 % In BVAD the respective parameter is called fresh basis water content FBWC
@@ -274,18 +274,6 @@ plant(9).tQ=75;
     plant(7).WBF=0.94;
     plant(8).WBF=0.12;
     plant(9).WBF=0.80;
-
-    % Water Biomass FRACTION (TOTAL MASS, EDIBLE + INEDIBLE, WET BASIS!!!)
-    % ((1-XFRT)*FWBF_Inedible+XFRT*FWBF_Edible)/((1-XFRT)*FWBF_Inedible+XFRT*FWBF_Edible+1)
-    plant(1).WBF_Total=0.2742;
-    plant(2).WBF_Total=0.9492;
-    plant(3).WBF_Total=0.2467;
-    plant(4).WBF_Total=0.2869;
-    plant(5).WBF_Total=0.2742;
-    plant(6).WBF_Total=0.7256;
-    plant(7).WBF_Total=0.9393;
-    plant(8).WBF_Total=0.2869;
-    plant(9).WBF_Total=0.8058;
     
     %%%Kcmid and Kclate - Crop Coefficients for Water Model [-]
     plant(1).Kcmid = 1.15;

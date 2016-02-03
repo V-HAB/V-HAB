@@ -54,20 +54,24 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
             this.afPartials = zeros(1, this.oPhase.oMT.iSubstances);
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            % get tPlantParameters from parent system to adjust
-            % TODO: find out about the strange 60s factor, WHY??
-            this.tPlantParametersAdjusted = oParent.tPlantParameters;
+            % TODO: trying to go with seconds for now, no idea if it
+            % works
+%             % get tPlantParameters from parent system to adjust
+%             % TODO: find out about the strange 60s factor, WHY??
+%             this.tPlantParametersAdjusted = oParent.tPlantParameters;
             
             % buffer variable to get culture names, fieldnames() returns a 
             % full cell array of strings, so needed for proper indexing
             csCultureName = fieldnames(oParent.tPlantData.PlantEng);
             
-            % transforming and assigning reference growth times to minutes
-            for i = 1:size(this.tPlantParametersAdjusted, 2)
-                this.tPlantParametersAdjusted(i).tM_nominal     = this.tPlantParametersAdjusted(i).tM_nominal * 24 * 60;  % [min]
-                this.tPlantParametersAdjusted(i).tQ             = this.tPlantParametersAdjusted(i).tQ * 24 * 60;          % [min]
-                this.tPlantParametersAdjusted(i).tE             = this.tPlantParametersAdjusted(i).tE * 24 * 60;          % [min]
-            end
+            % TODO: trying to go with seconds for now, no idea if it
+            % works
+%             % transforming and assigning reference growth times to minutes
+%             for i = 1:size(this.tPlantParametersAdjusted, 2)
+%                 this.tPlantParametersAdjusted(i).T_M_Nominal     = this.tPlantParametersAdjusted(i).T_M_Nominal * 24 * 60;  % [min]
+%                 this.tPlantParametersAdjusted(i).T_Q             = this.tPlantParametersAdjusted(i).T_Q * 24 * 60;          % [min]
+%                 this.tPlantParametersAdjusted(i).T_E             = this.tPlantParametersAdjusted(i).T_E * 24 * 60;          % [min]
+%             end
             
             % initialize cxCultures cell array, has three main sections:
             % "PlantData", "Growth" and "Harvest"
@@ -79,9 +83,17 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 
                 %% PlantData
                 
-                % create cell array containing specified plant data in its
-                % "PlantData" section
-                this.cxCulture{i, 1}.PlantData = eval(['this.tPlantData.' this.csCultureName{i} '.EngData']);
+                % get plant data from the parent system to apply to the
+                % "PlantData" section in cxCultures. 
+                % Theoretically the whole process of reading the *.mat file
+                % could be done here instead of the plant module but then
+                % it would be necessary to apply changes to this file as
+                % well (namely the path to the *.mat file) so it was
+                % decided to use a not strictly necessary property in the 
+                % parent system so only one file (the plant module itself)
+                % needs to be alterated when implementing the plant module
+                % as a subsystem
+                this.cxCulture{i, 1}.PlantData = eval(['this.oParent.tPlantData.' this.csCultureName{i}]);
                 
                 % TODO: trying to go with seconds for now, no idea if it
                 % works
@@ -92,14 +104,14 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 % conditions are set, photoperiod receives its nominal
                 % reference values listed in PlantParameters.m
                 if isempty(this.cxCulture{i, 1}.PlantData.H) && (bGlobalPlantLighing == 0)
-                    this.cxCulture{i, 1}.PlantData.H    = this.tPlantParametersAdjusted(this.cxCulture{i, 1}.PlantData.plant_type).H0;
+                    this.cxCulture{i, 1}.PlantData.H    = this.tPlantParametersAdjusted(this.cxCulture{i, 1}.PlantData.plant_type).H_Nominal;
                 end
                 
                 % if no photosynthetic photon flux is specified and no
                 % global lighting conditions are set, PPF receives its
                 % nominal reference values listed in PlantParameters.m
                 if isempty(this.cxCulture{i, 1}.PlantData.PPF) && (bGlobalPlantLighing == 0)
-                    this.cxCulture{i, 1}.PlantData.PPF  = this.tPlantParametersAdjusted(this.cxCulture{i, 1}.PlantData.plant_type).PPF_ref(2);
+                    this.cxCulture{i, 1}.PlantData.PPF  = this.tPlantParametersAdjusted(this.cxCulture{i, 1}.PlantData.plant_type).PPF_Nominal;
                 end
                 
                 %% Growth
@@ -212,7 +224,7 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                         this.oParent.fRelativeHumidityLight, ...    % Relative humidity light period            [-]
                         this.oParent.fRelativeHumidityDark, ...     % Relative humidity dark period             [-]
                         this.oParent.fPressureAtmosphere, ...       % Atmosphere Pressure                       [Pa]
-                        this.oParent.fCO2ppm, ...                   % CO2 concentration                         [µmol/mol]
+                        this.oParent.fCO2, ...                   % CO2 concentration                         [µmol/mol]
                         this.oParent.fPPF, ...                      % Photosynthetic photon flux                [µmol/m^2s]
                         this.oParent.fH, ...                        % Photoperiod                               [h/d]
                         fDensityH2O);                               % liquid water density (for transpiration)  [kg/m^3] 
