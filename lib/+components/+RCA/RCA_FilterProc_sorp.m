@@ -77,9 +77,8 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             this.fC_CO2Out   = this.fC_CO2Out * this.oMT.Const.fUniversalGas * this.fTemperature * 7.5006e-3;                     % [mmHg]   
             
             % Calculate relative humitidy
-            % Saturated vapor pressure
-            fEw = 611.2 * exp((17.62 * (this.fTemperature - 273.15)) / (243.12 + this.fTemperature - 273.15));  %[Pa] 
-            
+            % Saturated vapor pressure in [Pa]
+            fEw = 610.94 * exp((17.625 * (this.fTemperature - 273.15)) / (243.04 + this.fTemperature - 273.15));
             % gas constant for water
             fRw = 461.52;             %[J/(kg*K)]
             

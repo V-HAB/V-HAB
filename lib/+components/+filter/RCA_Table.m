@@ -105,15 +105,15 @@ classdef RCA_Table < handle
             fQ_equ_H2O = 0;
             if find(strcmp('H2O', csNames) == 1)
                 % Calculate relative humitidy
-                % Saturated vapor pressure
-                fEw = 611 * exp((17.62 * (fTemperature - 273.15))/(234.04 + fTemperature - 273.15));  %[Pa]
+                % Saturated vapor pressure in [Pa]
+                fEw = 610.94 * exp((17.625 * (fTemperature - 273.15)) / (243.04 + fTemperature - 273.15));
+                
                 % Maximal humidity
                 delta_sat = fEw / (this.fRw * fTemperature);
+
                 % RH of the gas flow
-                %QUESTION: Are we sure, the factor 10 at the end of the
-                %following formula is correct? Probably need to double
-                %check the units.
                 fRH = mfConcentration(strcmp('H2O',csNames),:) * afMolMass(strcmp('H2O',csNames)) / delta_sat * 100;
+                
                 % Calculate equilibrium value for H2O
                 fQ_equ_H2O = this.ralphaH2O * fRH.^2;
             end
