@@ -26,7 +26,7 @@ for iC = 1:length(csSubstances);
     
     tLogProps(iV).sObjectPath = sPhasePath;
     tLogProps(iV).sExpression = [ 'afPP(' num2str(oVsys.oMT.tiN2I.(csSubstances{iC})) ')' ];
-    tLogProps(iV).sLabel = [ 'Phase ' csSubstances{iC} ' Partial Pressure (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
+    tLogProps(iV).sLabel = [ csSubstances{iC} ' Partial Pressure (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
     
     
     iV = iV + 1;
