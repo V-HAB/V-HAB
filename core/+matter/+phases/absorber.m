@@ -23,11 +23,11 @@ classdef absorber < matter.phase
         
         % An integer containing the matter table index of the substance
         % that is the absorbing substance of this absorber
-        iAbsorbentIndex;
+        iAbsorbentIndex;   
         
-        % Boolean to indicate if this phase is currently absorbing or
-        % desorbing. 
-        bAbsorbing;
+        % An array to store the mass that was absorbed so far. Is updated
+        % when the desorb() method is called. 
+        afAbsorbedMass;
 
     end
     
@@ -67,6 +67,8 @@ classdef absorber < matter.phase
             
             % The volume is the mass divided with the density
             this.fVolume = this.fMass / fDensity;
+            
+            this.afAbsorbedMass = zeros(1, this.oMT.iSubstances);
             
         end
         
@@ -132,12 +134,54 @@ classdef absorber < matter.phase
         end
         
         function [ fMass, arPartialMasses ] = getMassesWithoutAbsorber(this)
+            % This method returns the mass of the absorbed substances by
+            % subtracting the absorbent mass from the total mass. It also
+            % returns a partial mass array by  dividing the actual masses
+            % array by the newly calculated mass without the absorber and
+            % then setting the value for the absorbent substance to zero.
+            
+            % Getting the absorbent substance mass
             fAbsorberMass = this.afMass(this.iAbsorbentIndex);
+            % Subtracting the absorbent mass from the total mass
             fMass = this.fMass - fAbsorberMass;
             
+            % Getting a partial mass array 
             arPartialMasses = this.afMass ./ fMass;
+            % Setting the absorbent mass fraction to zero
             arPartialMasses(this.iAbsorbentIndex) = 0;
             
+        end
+        
+        function desorb(this)
+            % This method is a shortcut for desorption. It is intended for
+            % use in absorbers that vent directly to vacuum, with no re-use
+            % of the absorbed substances. 
+            % This method will set all masses in the afMass array to zero
+            % and then update the phase to make sure all other properties
+            % are up to date. 
+            
+            % Getting an index array of all substances currently present in
+            % the phase.
+            abStoredMasses = this.afMass > 0;
+            
+            % Setting the index for the absorbent substance to false.
+            abStoredMasses(this.iAbsorbentIndex) = false;
+            
+            % Using the index array to get all non-absorbent masses in the
+            % phase.
+            afStoredMasses = this.afMass .* abStoredMasses;
+            
+            % Adding the non-absorbent masses to the property that stores
+            % the overall absorbed mass.
+            this.afAbsorbedMass = this.afAbsorbedMass + afStoredMasses;
+            
+            % Perform the actual 'desorption' by setting the afMass entries
+            % for the absorbed masses to zero.
+            this.afMass(abStoredMasses) = 0;
+            
+            % Calling the phase update method to update all other
+            % properties.
+            this.update();
         end
     end
     

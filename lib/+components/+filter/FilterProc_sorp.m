@@ -221,26 +221,26 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             % wanted, then the incoming flow rate will be zero. So we have
             % to set some of our variables differently, if this is the
             % case. 
-            if fFlowRateIn == 0
-                % If the incoming flow rate is zero, we use the properties
-                % of the phase from which we adsorb.
-                % Phase pressure
-                this.fSorptionPressure    = this.oIn.oPhase.fPressure;
-                % Phase temperature
-                this.fSorptionTemperature = this.oIn.oPhase.fTemperature;
-%                 % Phase mass fractions
-%                 arMassFractions           = this.oIn.oPhase.arPartialMass ...
-%                                            (this.oIn.oPhase.arPartialMass > 0);
-                arMassFractions           = this.oIn.oPhase.arPartialMass(this.aiPositions);
-                
-                % Calculating the mol fraction [-]
-                arMolFractions            = arMassFractions * this.oIn.oPhase.fMolarMass ./ this.afMolarMass;      
-                % Calculation of phase concentrations in [mol/m^3]
-                this.afConcentration      = arMolFractions * this.fSorptionPressure / (this.fUnivGasConst_R * this.fSorptionTemperature);                    
-                % Calculating the density of the phase in [kg/m^3]
-                this.fSorptionDensity     = this.fSorptionPressure * this.oIn.oPhase.fMolarMass / ...                    
-                                            this.fUnivGasConst_R / this.fSorptionTemperature;
-            else
+%             if fFlowRateIn == 0
+%                 % If the incoming flow rate is zero, we use the properties
+%                 % of the phase from which we adsorb.
+%                 % Phase pressure
+%                 this.fSorptionPressure    = this.oIn.oPhase.fPressure;
+%                 % Phase temperature
+%                 this.fSorptionTemperature = this.oIn.oPhase.fTemperature;
+% %                 % Phase mass fractions
+% %                 arMassFractions           = this.oIn.oPhase.arPartialMass ...
+% %                                            (this.oIn.oPhase.arPartialMass > 0);
+%                 arMassFractions           = this.oIn.oPhase.arPartialMass(this.aiPositions);
+%                 
+%                 % Calculating the mol fraction [-]
+%                 arMolFractions            = arMassFractions * this.oIn.oPhase.fMolarMass ./ this.afMolarMass;      
+%                 % Calculation of phase concentrations in [mol/m^3]
+%                 this.afConcentration      = arMolFractions * this.fSorptionPressure / (this.fUnivGasConst_R * this.fSorptionTemperature);                    
+%                 % Calculating the density of the phase in [kg/m^3]
+%                 this.fSorptionDensity     = this.fSorptionPressure * this.oIn.oPhase.fMolarMass / ...                    
+%                                             this.fUnivGasConst_R / this.fSorptionTemperature;
+%             else
                 % Inlet pressure
                 this.fSorptionPressure    = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fPressure;
                 % Inlet temperature
@@ -257,13 +257,13 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
                 % Calculating the density of the inflowing matter in [kg/m^3]
                 this.fSorptionDensity     = (this.fSorptionPressure * this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fMolarMass) / ...
                                             (this.fUnivGasConst_R * this.fSorptionTemperature);
-            end
+%             end
             
             % In some cases (manual solver in combination with an empty
             % phase at one end to which this p2p processor is connected)
             % the pressure here can be zero. It should only be zero for one
             % timestep, so we'll just skip this one.
-            if this.fSorptionPressure < 0 
+            if this.fSorptionPressure <= 0 
                 %TODO make this a very low level debugging output once the
                 %debug class is implemented
                 fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of zero or negative pressure.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);

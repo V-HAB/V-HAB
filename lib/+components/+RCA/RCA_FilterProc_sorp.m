@@ -40,11 +40,11 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
         
         function update(this)
                         
-%             % Execute only for the active bed
-%             if (strcmp(this.oStore.sName, 'Bed_A') && ~strcmp(this.oParentSys.sActiveBed, 'A')) || ...
-%                (strcmp(this.oStore.sName, 'Bed_B') && ~strcmp(this.oParentSys.sActiveBed, 'B'))
-%                 return;
-%             end             
+            % Execute only for the active bed
+            if (strcmp(this.oStore.sName, 'Bed_A') && ~strcmp(this.oParentSys.sActiveBed, 'A')) || ...
+               (strcmp(this.oStore.sName, 'Bed_B') && ~strcmp(this.oParentSys.sActiveBed, 'B'))
+                return;
+            end             
             
             update@components.filter.FilterProc_sorp(this)
             
@@ -128,6 +128,8 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             % Set flow rates in the inactive bed to zero
             this.setMatterProperties(0, this.arPartials_ads);
             this.DesorptionProc.setMatterProperties(0, this.arPartials_des);
+            
+            this.oOut.oPhase.desorb();
             
         end
         
