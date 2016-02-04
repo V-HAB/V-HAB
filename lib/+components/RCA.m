@@ -55,7 +55,7 @@ classdef RCA < vsys
         fTestPressure = 28900;
         
         % Initial relative humidity [-]
-        rRelativeHumidity = 0.35;
+        rRelativeHumidity = 0.50;
         
         fPipeLength   = 0.5;
         fPipeDiameter = 0.0254/2; 
@@ -259,6 +259,10 @@ classdef RCA < vsys
         function exec(this, ~)
             exec@vsys(this);
             
+%             if this.oTimer.fTime > 50 && strcmp(this.sActiveBed, 'A')
+%                 this.switchRCABeds();
+%             end
+            
             % Getting the partial pressure of CO2 at the exme we have
             % defined to be the reference for this measurement. 
 %             afExmePartialPressures = this.oReferenceExme.oFlow.getPartialPressures();
@@ -314,7 +318,7 @@ classdef RCA < vsys
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
                 % as a low level selectable output
-                fprintf('%i\t(%f)\tRCA switching from bed A to bed B.\n', this.oTimer.iTick, this.oTimer.fTime);
+                fprintf('%i\t(%.7fs)\tRCA switching from bed A to bed B.\n', this.oTimer.iTick, this.oTimer.fTime);
             else
                 % Setting the indicator and changing the active bed
                 bIndicator = true;
@@ -332,7 +336,7 @@ classdef RCA < vsys
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
                 % as a low level selectable output
-                fprintf('%i\t(%f)\tRCA switching from bed B to bed A.\n', this.oTimer.iTick, this.oTimer.fTime);
+                fprintf('%i\t(%.7fs)\tRCA switching from bed B to bed A.\n', this.oTimer.iTick, this.oTimer.fTime);
             end
             
             % Changing the valves
