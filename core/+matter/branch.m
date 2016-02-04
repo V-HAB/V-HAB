@@ -583,6 +583,13 @@ classdef branch < base & event.source
                 
                 afPressure = [ this.coExmes{1}.getPortProperties(), this.coExmes{2}.getPortProperties() ];
                 iWhichExme = sif(afPressure(1) >= afPressure(2), 1, 2);
+                
+                for iI = 1:this.iFlowProcs
+                    if isa(this.aoFlowProcs(iI), 'components.valve') && ~this.aoFlowProcs(iI).bValveOpen
+                        oExme = [];
+                        return;
+                    end
+                end
             else
                 %iWhichExme = sif(this.fFlowRate < 0, 2, 1);
                 iWhichExme = (this.fFlowRate < 0) + 1; % Faster?

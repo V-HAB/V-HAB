@@ -13,6 +13,11 @@ classdef valve < matter.procs.f2f
         fHydrDiameter_open;
         fHydrDiam;
         fHydrLength;
+        
+        % Delta Pressure, for use with branch, needs to have the same name
+        % as pipe or other f2f procs, 
+        %TODO This should probably be abstract in a f2f.gas subclass.
+        fDeltaPressure;
     end
     
     methods
@@ -27,6 +32,11 @@ classdef valve < matter.procs.f2f
             
             this.bValveOpen = bValveOpen;
             
+            if bValveOpen
+                this.fDeltaPressure = 0;
+            else
+                this.fDeltaPressure = Inf;
+            end
             
             %If the valve closes, we need a negative diameter value which
             %means we need a value which is not zero
@@ -80,7 +90,7 @@ classdef valve < matter.procs.f2f
             
         end
         
-        function [ fDeltaPress, fDeltaTemp ] = solverDeltas(this, ~)
+        function [ fDeltaPressure, fDeltaTemperature ] = solverDeltas(this, ~)
             
             %if valve closes, assign delta pressure to erase the pressure
             %difference within the branch
@@ -89,20 +99,18 @@ classdef valve < matter.procs.f2f
                 
                 %this.fHydrDiam=-this.fHydrDiameter_close;
                 %this.fDeltaPressure=-this.oBranch.coExmes{1}.getPortProperties();
-                fDeltaPress = inf;
+                fDeltaPressure = inf;
             else
                 %this.fHydrDiam=this.fHydrDiameter_open;
                 %this.fDeltaPressure=0;
-                fDeltaPress = 0;
+                fDeltaPressure = 0;
             end
             
-            % Need to do this because one solver wants fDeltaPress, the
-            % other wants fDeltaPressure... Will be changed in the future.
-            % Hopefully...
-            %fDeltaPress = this.fDeltaPressure;
+            % Set the property accordingly
+            this.fDeltaPressure = fDeltaPressure;
             
             % Dummy valve, so we satisfy the iterative solver with a zero
-            fDeltaTemp = 0;
+            fDeltaTemperature = 0;
         end
     end
     

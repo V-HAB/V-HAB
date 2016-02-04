@@ -512,12 +512,12 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             % We need the initial pressure and temperature of the inflowing
             % matter, as the values in afPressure / afTemps are relative
-            % changes.
-            % If e.g. a valve is shut in the branch, this method is however
-            % called without those params, so we need to check that and in
-            % that case make no changes to fPressure / fTemperature in the flows.
-            % So get pressure/temperature of in exme (if FR provided)
-            if nargin >= 3
+            % changes. If e.g. a valve is shut in the branch, this method
+            % is however called with the oExme parameter empty, so we need
+            % to check that and in that case make no changes to fPressure /
+            % fTemperature in the flows. So get pressure/temperature of in
+            % exme (if FR provided)
+            if nargin >= 3 && ~isempty(oExme)
                 %TODO get exme from this.oBranch, depending on fFlowRate?
                 [ fPortPress, fCurrentTemperature ] = oExme.getPortProperties();
             else
