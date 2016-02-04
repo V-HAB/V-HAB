@@ -28,6 +28,8 @@ classdef RCA_Table < handle
         % Constants for H2O adsorption:
         
         % Freundlich isotherm parameter [unitless]
+        % The value for this parameter was determined experimentally, the
+        % value given in AIAA-2011-5243 is 0.00164.
         ralphaH2O = 0.00135;
         
         % Gas constant for water in [J/(kg*K)]
@@ -123,9 +125,9 @@ classdef RCA_Table < handle
             if find(strcmp('CO2', csNames) == 1)
                 % Assume homogeneours temperature throughout bed
                 % Toth parameter
-                fTothParameter_b = this.fb0 * exp((this.fQ_ads / (this.fRe*this.fT0)) * (this.fT0/fTemperature - 1));
+                fTothParameter_b = this.fb0 * exp((this.fQ_ads / (this.fRe * this.fT0)) * (this.fT0 / fTemperature - 1));
                 % Calculate equilibrium value for CO2
-                fQ_equ_CO2 = (fTothParameter_b * mfPP_i(strcmp('CO2',csNames),:) * this.fns) ./ ((1+(fTothParameter_b*mfPP_i(strcmp('CO2',csNames),:)).^this.ft)).^(1/this.ft);
+                fQ_equ_CO2 = (fTothParameter_b * mfPP_i(strcmp('CO2',csNames),:) * this.fns) ./ ((1 + (fTothParameter_b * mfPP_i(strcmp('CO2',csNames),:)).^this.ft)).^(1/this.ft);
             end            
             
             % Assign equilibrium values

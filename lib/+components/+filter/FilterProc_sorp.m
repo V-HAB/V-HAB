@@ -151,7 +151,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             this.fUnivGasConst_R  = this.oMT.Const.fUniversalGas;
             
             % Numerical variables   
-            % Exact spacing of the nodes allong the filter length
+            % Exact spacing of the nodes along the filter length
             afSpacing             = linspace(0, this.fFilterLength, this.iNumGridPoints - 1);
             % Add one more 'ghost cell' at the end
             this.fDeltaX          = afSpacing(end) - afSpacing(end-1);
@@ -206,7 +206,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             if fFlowRateIn < 0
                 %TODO make this a very low level debugging output once the
                 %debug class is implemented
-                fprintf('%i\t(%f)\t%s: Skipping adsorption calculation because of negative flow rate.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of negative flow rate.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
             
@@ -266,7 +266,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             if this.fSorptionPressure < 0 
                 %TODO make this a very low level debugging output once the
                 %debug class is implemented
-                fprintf('%i\t(%f)\t%s: Skipping adsorption calculation because of negative pressure.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of zero or negative pressure.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
 
@@ -327,7 +327,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
                 mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1);
                 mfQ(:,:,aiTime_index) = mfQ(:,:,aiTime_index-1);
                 
-                for j = 1:this.fTimeFactor_1
+                for iI = 1:this.fTimeFactor_1
                     
                     %----------------------------------------------
                     %---------------fluid transport----------------
@@ -344,7 +344,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
                     mfQ_save = mfQ(:,1:end-1,aiTime_index);
                     mfC_save = mfC(:,1:end-1,aiTime_index);
                     
-                    for i = 1:this.fTimeFactor_2
+                    for iJ = 1:this.fTimeFactor_2
                         % Concentration and loading for adsorption
                         if strcmp(this.sType, 'RCA') || strcmp(this.sType, 'FBA')
                             % Update thermodynamic constant
@@ -354,11 +354,11 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
                             mfKineticConst_k_l = this.ofilter_table.get_KineticConst_k_l(mfThermodynConst_K, this.fSorptionTemperature, this.fSorptionPressure, this.fSorptionDensity, this.afConcentration, this.fRhoSorbent, this.fVolumetricFlowRate, this.rVoidFraction, this.csNames, this.afMolarMass);
                             
                             % Calculate local equilibrium value
-                            mfQ_equ = mfThermodynConst_K .* (mfC_save + fHelperConstant_a*mfQ_save) ./ (1 + mfThermodynConst_K*fHelperConstant_a);
+                            mfQ_equ = mfThermodynConst_K .* (mfC_save + fHelperConstant_a * mfQ_save) ./ (1 + mfThermodynConst_K * fHelperConstant_a);
                             
                             % Result of the time step according to LDF formula
                             mfQ(:,1:end-1,aiTime_index) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * fHelperConstant_a) * afInnerTimeStep(2)) .* (mfQ(:, 1:end-1, aiTime_index) - mfQ_equ) + mfQ_equ;
-                            mfC(:,1:end-1,aiTime_index) = fHelperConstant_a * (mfQ_save-mfQ(:,1:end-1,aiTime_index)) + mfC_save;
+                            mfC(:,1:end-1,aiTime_index) = fHelperConstant_a * (mfQ_save - mfQ(:, 1:end-1, aiTime_index)) + mfC_save;
                             
                         % Concentration and loading for MetOx absorption
                         elseif strcmp(this.sType, 'MetOx')
@@ -385,22 +385,18 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             afLoadedMass_ads = zeros(1, this.iNumSubstances);
             afLoadedMass_des = zeros(1, this.iNumSubstances); 
             
-            % Sum up loading change
-            fQ_change = mfQ(:, :, end) - this.mfQ_current;                                                % in [mol/m^3]
+            % Sum up loading change in [mol/m3]
+            mfQ_mol_change = mfQ(:, :, end) - this.mfQ_current;
             
-            for iRunVar = 1:this.iNumSubstances
-                fQ_change(iRunVar,:) = fQ_change(iRunVar, :) * this.afMolarMass(iRunVar);         % in [kg/m^3]
-            end
+            % Convert the change to [kg/m3]
+            mfQ_density_change = mfQ_mol_change .* this.afMolarMass';
             
-            fQ_change(:, 1:end-1) = fQ_change(:, 1:end-1) * this.fVolSolid / (this.iNumGridPoints-2);   % in [kg]       % -1 (ghost cell) -1 (2 boundary points)
+            % Convert the change to mass in [kg]
+            mfQ_mass_change = mfQ_density_change(:, 1:end-1) * this.fVolSolid / (this.iNumGridPoints-2);   % in [kg]       % -1 (ghost cell) -1 (2 boundary points)
             
             % Sum up filtered mass during the time step
-            afLoadedMass = zeros(1, this.iNumSubstances);
+            afLoadedMass = sum(mfQ_mass_change, 2);
             
-            for iRunVariable = 1:this.iNumSubstances
-                afLoadedMass(iRunVariable) = sum(fQ_change(iRunVariable,1:end-1));     % absolut values [kg]
-            end
-                        
             % Distinguish sorption and desorption part
             afLoadedMass_ads(afLoadedMass >= 0) = afLoadedMass(afLoadedMass >= 0);     % [kg]
             afLoadedMass_des(afLoadedMass < 0)  = afLoadedMass(afLoadedMass < 0);       % [kg]
