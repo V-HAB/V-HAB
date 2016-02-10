@@ -37,6 +37,7 @@ classdef gas < matter.phase
         % Relative humidity in the phase, see this.update() for details on
         % the calculation.
         rRelHumidity
+    
     end
     
     
@@ -52,7 +53,6 @@ classdef gas < matter.phase
             %TODO
             %   - not all params required, use defaults?
             %   - volume from store ...?
-            
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             % Get volume from 
@@ -60,6 +60,10 @@ classdef gas < matter.phase
             
             this.fVolume  = fVolume;
             this.fDensity = this.fMass / this.fVolume;
+            
+            this.fMassToPressure = this.calculatePressureCoefficient();
+            this.fPressure = this.fMass * this.fMassToPressure;
+            this.fPressureLastHeatCapacityUpdate = this.fPressure;
         end
         
         
@@ -122,7 +126,7 @@ classdef gas < matter.phase
                 if this.afMass(this.oMT.tiN2I.H2O)
                     % calculate saturation vapour pressure [Pa];
                     % MAGNUS Formula; validity: -45???C <= T <= 60???C, for water
-                    fSaturationVapourPressure = 6.11213 * exp(17.62 * this.fTemperature - 273.15 / (243.12 + this.fTemperature - 273.15)) * 100;
+                    fSaturationVapourPressure = 610.94 * exp((17.625 * (this.fTemperature - 273.15)) / (243.04 + this.fTemperature - 273.15));
                     % calculate relative humidity
                     this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
                 else
@@ -145,7 +149,7 @@ classdef gas < matter.phase
             % p = m * (R_m * T / M / V)
             %
             
-            fMassToPressure = matter.table.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
+            fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
             
             %TODO molar mass zero if no mass - NaN, or Inf if mass zero
             if isnan(fMassToPressure) || isinf(fMassToPressure)
@@ -163,6 +167,37 @@ classdef gas < matter.phase
 
             seal@matter.phase(this);
 
+        end
+        
+        function updateSpecificHeatCapacity(this)
+            % When a phase was empty and is being filled with matter again,
+            % it may be a couple of ticks until the phase.update() method
+            % is called, which updates the phase's specific heat capacity.
+            % Other objects, for instance matter.flow, may require the
+            % correct value for the heat capacity as soon as there is
+            % matter in the phase. In this case, these objects can call
+            % this function, that will update the fSpecificHeatCapacity
+            % property of the phase.
+            
+            % In order to reduce the amount of times the matter
+            % calculation is executed it is checked here if the pressure
+            % and/or temperature have changed significantly enough to
+            % justify a recalculation
+            % TO DO: Make limits adaptive
+            if (this.oTimer.iTick <= 0) ||... %necessary to prevent the phase intialization from crashing the remaining checks
+               (abs(this.fPressureLastHeatCapacityUpdate - this.fPressure) > 100) ||...
+               (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
+               (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
+
+                % Actually updating the specific heat capacity
+                this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
+                
+                % Setting the properties for the next check
+                this.fPressureLastHeatCapacityUpdate     = this.fPressure;
+                this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
+                this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+                
+            end
         end
 
     end

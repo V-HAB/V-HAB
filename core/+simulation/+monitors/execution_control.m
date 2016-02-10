@@ -23,7 +23,7 @@ classdef execution_control < simulation.monitor
             oSim   = oInfra.oSimulationContainer;
             
             if mod(oSim.oTimer.iTick, this.iTickInterval) == 0
-                bPauseGeneral  = (exist('STOP', 'file') == 2);
+                bPauseGeneral  = (exist([ pwd, filesep, 'STOP' ], 'file') == 2);
                 sSpecificFile  = [ 'STOP_' oInfra.sUUID ];
                 bPauseSpecific = exist(sSpecificFile, 'file') == 2;
                 

@@ -8,40 +8,57 @@ function fDensity = calculateDensity(this, varargin)
 %   (afMass). Optionally temperature and partial pressures can be passed as
 %   third and fourth parameters, respectively.
 %
+%   Examples: fDensity = calculateDensity(oFlow);
+%             fDensity = calculateDensity(oPhase);
+%             fDensity = calculateDensity(sType, afMass, fTemperature, afPartialPressures);
+%
 % calculateDensity returns
 %  fDensitiy - density of matter in current state in kg/m^3
+
 % Case one - just a phase or flow object provided
 if length(varargin) == 1
     if ~isa(varargin{1}, 'matter.phase') && ~isa(varargin{1}, 'matter.flow')
         this.throw('calculateDensity', 'If only one param provided, has to be a matter.phase or matter.flow (derivative)');
     end
     
-    % initialize attributes from input object
+    % Initialize attributes from input object
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type
     if isa(varargin{1}, 'matter.phase')
-        sMatterState = varargin{1}.sType;         
+        sMatterState = varargin{1}.sType; 
     elseif isa(varargin{1}, 'matter.flow')
         sMatterState = varargin{1}.oBranch.getInEXME().oPhase.sType;
     end
     
     fTemperature = varargin{1}.fTemperature;
     
-    if any(strcmp(sMatterState, {'gas', 'liquid'}))
-        % matter.flow - can we use the ideal gas law?
-        %TODO matter.table.setUseSimpleEquationsIfSufficientlyValid()!
+    if strcmp(sMatterState, 'gas')
+        % If the matter state is gaseous and the pressure is not too high, 
+        % we can use the idal gas law. This makes the calculation a lot
+        % faster, since we can avoid the multiple findProperty() calls in
+        % this function.
         if varargin{1}.fPressure < 5e5
-            fDensity = (varargin{1}.fPressure * varargin{1}.fMolarMass) / (matter.table.Const.fUniversalGas * varargin{1}.fTemperature);
+            fDensity = (varargin{1}.fPressure * varargin{1}.fMolarMass) / (this.Const.fUniversalGas * varargin{1}.fTemperature);
+            % We already have what we want, so no need to execute the rest
+            % of this function.
             return;
         end
         
-        
         afPartialPressures = this.calculatePartialPressures(varargin{1});
+        
+    elseif strcmp(sMatterState, 'liquid')
+        % For liquids the density has to be calculated from the matter
+        % table.
+        afPartialPressures = ones(1, this.iSubstances) * varargin{1}.fPressure;
+        
     else
         if isa(varargin{1}, 'matter.phase')
+            % Solid phases are easy again, we can just divide the mass by
+            % the volume and we're done.
             fDensity = varargin{1}.fMass / varargin{1}.fVolume;
             return;
         else
+            %TODO Implement something smart here.
             this.throw('calculateDensity', 'The calculation of solid flow densities has not yet been implemented.')
         end
     end
@@ -59,6 +76,8 @@ if length(varargin) == 1
     end
     
 else
+    % This part is in case values directly passed to this function, rather
+    % than a phase or flow object.
     sMatterState = varargin{1};
     afMass       = varargin{2};
     
@@ -80,7 +99,7 @@ else
     if nargin > 4
         afPartialPressures = varargin{4};
     else
-        if any(strcmp(sMatterState, {'gas', 'liquid'}))
+        if strcmp(sMatterState, 'gas')
             afPartialPressures = this.calculatePartialPressures(sMatterState, afMass, fPressure);
         else
             afPartialPressures = ones(1, this.iSubstances) * this.Standard.Pressure;
@@ -96,6 +115,7 @@ aiIndices = find(arPartialMass > 0);
 afRho = zeros(1, length(aiIndices));
 
 for iI = 1:length(aiIndices)
+    % Generating the paramter struct that findProperty() requires.
     tParameters = struct();
     tParameters.sSubstance = this.csSubstances{aiIndices(iI)};
     tParameters.sProperty = 'Density';
@@ -104,10 +124,9 @@ for iI = 1:length(aiIndices)
     tParameters.sPhaseType = sMatterState;
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
-    
-    %TODO should that just be true for e.g. pipe flows?
     tParameters.bUseIsobaricData = true;
     
+    % Now we can call the findProperty() method.
     afRho(iI) = this.findProperty(tParameters);
 end
 

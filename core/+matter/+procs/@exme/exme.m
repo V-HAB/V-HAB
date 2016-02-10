@@ -132,7 +132,7 @@ classdef exme < base
         
         
         function [ fFlowRate, arPartials, afProperties ] = getFlowData(this)
-            % Return all flow rates, plus the according partial mass
+            % Return the flow rate, plus the according partial mass
             % ratios. Depends on flow direction and flow type: if a p2p
             % flow processor is connected, getting the arPartials from
             % there either way. Else, if outflowing, return phase partials,
@@ -141,6 +141,10 @@ classdef exme < base
             % Also returns matrix with two columns containing temperature 
             % and the heat capacity and for each flow!
             
+            % If there is no flow connected to this exme yet, it returns
+            % placeholder values.
+            %CHECK is this even executed, or is there an earlier warning of
+            % 'unused exme'? In that case, this condition can be deleted.
             if ~this.bHasFlow
                 fFlowRate    = 0;
                 arPartials   = [];
@@ -149,18 +153,22 @@ classdef exme < base
                 return;
             end
             
-            
+            % The flow rate property of the flow is unsigned, so we have to
+            % add it again by multiplying with the iSign property of this
+            % exme. 
             fFlowRate  =  this.oFlow.fFlowRate * this.iSign;
             
-            %TODO store that on attribute as bP2P = true or something?
+            
             if this.bFlowIsAProcP2P
-                % Can only be one flow, if p2p!
-                %mrPartials = repmat(this.aoFlows(1).arPartials, length(afFlowRates), 1);
+                % This exme is connected to a P2P processor, so we can get
+                % the properties from the connected flow.
                 arPartials   = this.oFlow.arPartialMass;
                 afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
             else
                 
-                if fFlowRate > 0 % merge
+                if fFlowRate > 0 
+                    % The flow rate is larger than zero, this means we use
+                    % the properties of the incoming flow.
                     %CHECK do we need to get that from other side, in
                     %      case that changed? Shouldn't need that, when
                     %      mass is extracted on the other side, the
@@ -171,7 +179,11 @@ classdef exme < base
                     arPartials   = this.oFlow.arPartialMass;
                     afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
                     
-                else % extract or zero - phase partials
+                else 
+                    % The flow rate is either zero or negative, which means
+                    % matter is flowing out of the phase. In both cases we
+                    % have to use the matter properties of the connected
+                    % phase.
                     %NOTE possibility to implement special EXME that
                     %     provides an adjusted partial masses vector.
                     %     For example a filter with an inflow at one

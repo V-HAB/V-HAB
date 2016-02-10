@@ -106,13 +106,21 @@ classdef filter < matter.store
                     % Use default values if no size has been assinged
                     if ~exist('oGeo', 'var')
                         % Described here is one RCA filter bed, which means
-                        % that the actual filter would be twice the size
+                        % that the actual filter would be twice the size.
+                        % Values are reverse engineered. The overall
+                        % sorbent volume is given in ICES-2015-313 as   
+                        % 715 cm3 per bed. The values below result in a bed
+                        % volume of ~0.0011 m3, multiplied by 
+                        % (1 - rVoidFraction) this equates to 714.61 cm3,
+                        % which is close enough for our purposes.
                         f_x = 0.1692;    %[m]
                         f_y = 0.1097;    %[m]
                         f_z = 0.0586;    %[m]
                         % Cuboid: Input parameters are (x-,y-,z-dimensions)
                         oGeometry = geometry.volumes.cuboid(f_x,f_y,f_z);
                     end
+                    % Setting the void fraction for the SA9T amine sorbent.
+                    % Value taken from AIAA-2011-5243.
                     rVoidFraction = 0.343;
                     
                 case 'MetOx'    
@@ -203,8 +211,9 @@ classdef filter < matter.store
             
             % Creating the phase representing the filter volume manually.
             % gas(oStore, sName, tfMasses, fVolume, fTemp)
-            matter.phases.gas(this, 'FilteredPhase', struct('Ar', 0.0001), oGeometry.fVolume * (1-rVoidFraction), fTemperature);
-                        
+            tfMass.AmineSA9T = this.oMT.ttxMatter.AmineSA9T.ttxPhases.tSolid.Density * this.oGeometry.fVolume * (1-this.rVoidFraction);
+            matter.phases.absorber(this, 'FilteredPhase', tfMass, fTemperature, 'solid');
+
             % Fixed Time Step
             if exist('fFixedTimeStep','var')
             % Adding fixed time steps for the filter
@@ -225,7 +234,7 @@ classdef filter < matter.store
                 % RCA uses a different sorption processor 
                 this.oProc_sorp = components.RCA.RCA_FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase', 'FilteredPhase', sType);
             else
-                this.oProc_sorp = components.filter.FilterProc_sorp(oParentSys, this, 'SorptionProcessor', 'FlowPhase', 'FilteredPhase', sType);
+                this.oProc_sorp = components.filter.FilterProc_sorp(this, 'SorptionProcessor', 'FlowPhase', 'FilteredPhase', sType);
             end
             
         end
@@ -239,7 +248,7 @@ classdef filter < matter.store
             % Flow phase
             this.toPhases.FlowPhase.setVolume(this.oGeometry.fVolume * this.rVoidFraction);
             % Sorbent phase
-            this.toPhases.FilteredPhase.setVolume(this.oGeometry.fVolume * (1-this.rVoidFraction));
+%             this.toPhases.FilteredPhase.setVolume(this.oGeometry.fVolume * (1-this.rVoidFraction) * 2);
         end
         
     end

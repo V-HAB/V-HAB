@@ -21,6 +21,10 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
         fDewPoint_in = 0;           % dew point temperature at the inlet [°F]
         fDewPoint_out = 0;          % dew point temperature at the outlet [°F]
         
+        % Reference to the parent system, so we can check if our bed is
+        % active.
+        oParentSys;
+        
     end
     
    
@@ -29,7 +33,9 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
         
         % Initialization like in the generic filter processor
         function [this] = RCA_FilterProc_sorp(oParentSys, oStore, sName, sPhaseIn, sPhaseOut, sType)
-            this@components.filter.FilterProc_sorp(oParentSys, oStore, sName, sPhaseIn, sPhaseOut, sType);   
+            this@components.filter.FilterProc_sorp(oStore, sName, sPhaseIn, sPhaseOut, sType);   
+            
+            this.oParentSys = oParentSys;
         end
         
         function update(this)
@@ -67,13 +73,12 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             
             % Calculation of outgoing concentration
             rMolFraction_CO2 = rMassFraction_CO2 * this.oStore.toPhases.FlowPhase.toProcsEXME.Outlet.oFlow.fMolarMass / this.oMT.afMolarMass(iIndexCO2); % mol fraction [-]
-            this.fC_CO2Out   = rMolFraction_CO2 * this.fPressure_p / (matter.table.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
-            this.fC_CO2Out   = this.fC_CO2Out * matter.table.Const.fUniversalGas * this.fTemperature * 7.5006e-3;                     % [mmHg]   
+            this.fC_CO2Out   = rMolFraction_CO2 * this.fSorptionPressure / (this.oMT.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
+            this.fC_CO2Out   = this.fC_CO2Out * this.oMT.Const.fUniversalGas * this.fTemperature * 7.5006e-3;                     % [mmHg]   
             
             % Calculate relative humitidy
-            % Saturated vapor pressure
-            fEw = 611.2 * exp((17.62 * (this.fTemperature - 273.15)) / (243.12 + this.fTemperature - 273.15));  %[Pa] 
-            
+            % Saturated vapor pressure in [Pa]
+            fEw = 610.94 * exp((17.625 * (this.fTemperature - 273.15)) / (243.04 + this.fTemperature - 273.15));
             % gas constant for water
             fRw = 461.52;             %[J/(kg*K)]
             
@@ -86,8 +91,8 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             
             % Calculation of outgoing concentration
             rMolFraction_H2O = rMassFraction_H2O * this.oStore.toPhases.FlowPhase.toProcsEXME.Outlet.oFlow.fMolarMass / this.oMT.afMolarMass(iIndexH2O); % mol fraction [-]
-            fC_H2O_Out       = rMolFraction_H2O * this.fPressure_p / (matter.table.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
-            fC_H2O_In        = this.afConcentration_in(strcmp('H2O',this.csNames));
+            fC_H2O_Out       = rMolFraction_H2O * this.fSorptionPressure / (this.oMT.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
+            fC_H2O_In        = this.afConcentration(strcmp('H2O',this.csNames));
             
             % Relative Humidity of the gas flow
             this.rRH_out = fC_H2O_Out * this.oMT.afMolarMass(this.oMT.tiN2I.H2O) / fDelta_sat * 100;
@@ -123,6 +128,8 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
             % Set flow rates in the inactive bed to zero
             this.setMatterProperties(0, this.arPartials_ads);
             this.DesorptionProc.setMatterProperties(0, this.arPartials_des);
+            
+            this.oOut.oPhase.desorb();
             
         end
         

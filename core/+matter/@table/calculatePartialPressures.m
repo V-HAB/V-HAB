@@ -41,7 +41,12 @@ if length(varargin) == 1
     
     if isempty(fPressure) || isnan(fPressure)
         fPressure = this.Standard.Pressure; % std pressure (Pa)
-    end          
+    end       
+    
+    if fPressure == 0
+        afPartialPressures = zeros(1,length(afMass));
+        return;
+    end
     
 else
     % Case two - matter data given. Needs to be in the following format and order:

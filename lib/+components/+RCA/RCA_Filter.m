@@ -13,7 +13,7 @@ classdef RCA_Filter < components.filter
             
             % Get the respective phases from the generic filter
             oFlow     = this.aoPhases(strcmp({this.aoPhases.sName},'FlowPhase'));
-            oFiltered = this.aoPhases(strcmp({this.aoPhases.sName},'FilteredPhase'));
+%             oFiltered = this.aoPhases(strcmp({this.aoPhases.sName},'FilteredPhase'));
             
             % In order for the solver branches to update correctly and
             % simultaneously, the flow phases has to be 'synced'.
@@ -21,7 +21,7 @@ classdef RCA_Filter < components.filter
             
             % Create the according vacuum exmes 
             matter.procs.exmes.gas(oFlow,     'FlowVolume_Vacuum_Port');            
-            matter.procs.exmes.gas(oFiltered, 'Amine_Vacuum_Port');
+%             matter.procs.exmes.absorber(oFiltered, 'Amine_Vacuum_Port');
             
             
 %             this.oProc_sorp = hoth.RCADevelopment.subsystems.RCA.special.RCA_FilterProc_sorp_new(this.oParentSys, this, [this.sName, '_filterproc_sorp'], 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', this.sType);

@@ -69,8 +69,9 @@ classdef table < base
         % individual substances can be extracted when needed.
         tiN2I;
         
-        % Reverse of tiN2I
-        asI2N;
+        % Reverse of tiN2I, a cell containing all the names of the
+        % substances, accessible via their index. 
+        csI2N;
         
         % A cell array with the names of all substances contained in the
         % matter table
@@ -107,10 +108,11 @@ classdef table < base
             % have changed since this constructor was last run. If not,
             % then we can just use the existing data without having to go
             % through the entire import process again.
-            
-            if ~tools.checkForChanges(fullfile('lib','+matterdata'))
-                % If the files have not changed, we can load the
-                % MatterData.mat file, if it exists.
+            disp('Checking for changes regarding the matter table source data.');
+            if ~tools.checkForChanges(fullfile('lib','+matterdata')) && ~tools.checkForChanges(fullfile('core','+matter','@table'))
+                % If the matter files or the matter table itself have not
+                % changed, we can load the MatterData.mat file, if it
+                % exists.
                 if exist(strrep('data\MatterData.mat', '\', filesep),'file')
                     load(strrep('data\MatterData.mat', '\', filesep));
                     
@@ -127,6 +129,8 @@ classdef table < base
                     %properties have been removed from this class. 
                     this.aoPhases = [];
                     this.aoFlows  = matter.flow.empty();
+                    
+                    disp('Matter table loaded from stored version.');
                     
                     % The return command ends the constructor method
                     return;
@@ -205,7 +209,7 @@ classdef table < base
                 if isempty(tSubstance.fMolarMass)
                     
                     % Extract the atomic elements from matter name
-                    tElements  = matter.table.extractAtomicTypes(this.csSubstances{iI});
+                    tElements  = this.extractAtomicTypes(this.csSubstances{iI});
                     % Saving the different elements of the substance into a
                     % cell array.
                     csElements = fieldnames(tElements);
@@ -264,9 +268,6 @@ classdef table < base
             
             fclose(iFileID);
             
-            
-            
-            
             for iI = 1:length(csSubstances)
                 
                 % Getting the substance name
@@ -274,7 +275,7 @@ classdef table < base
                 
                 % Calling the importMatterData method with the substance
                 % name as the single parameter. It will be used by the
-                % method to identify the individual files. 
+                % method to identify the individual files.
                 this.ttxMatter.(sSubstanceName) = importMatterData(sSubstanceName);
                 
                 % Now we need to update some of the global information
@@ -295,7 +296,7 @@ classdef table < base
             end
             
             % Get list of substance indices.
-            this.asI2N = fieldnames(this.tiN2I);
+            this.csI2N = fieldnames(this.tiN2I);
             
             % Now we save the data into a .mat file, so if the matter table
             % doesn't change, we don't have to run through the entire

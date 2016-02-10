@@ -64,6 +64,10 @@ Kclate = aoPlants.plant.Kclate;
 
 %PARSOL-Conversion factor of PAR to solar radiation[-]
 PARSOL = 0.45;%
+
+%TODO Get these values differently, best from matter table constants
+%struct. But not like Avogadro number, that is slow. Just pass the matter
+%table to this function as a parameter.
 %planck constant in [m^2kgs^-1]
 h=6.626*10^-34; 
 %speed of light in [m/s]

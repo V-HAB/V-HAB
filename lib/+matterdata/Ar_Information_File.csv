@@ -1,4 +1,4 @@
-Substance Name,Molar Mass,Specific Gas Constant
-sName,fMolarMass,fSpecificGasConstant
--,kg/mol,J/(kg*K)
-Argon,0.039948,2081.32126
+Substance Name,Molar Mass,Specific Gas Constant,Standard Density,Standard Specific Heat Capacity
+sName,fMolarMass,fSpecificGasConstant,fStandardDensity,fStandardSpecificHeatCapacity
+-,kg/mol,J/(kg*K),kg/m3,J/(kg*K)
+Argon,0.039948,2081.32126,1.6908,521.66
