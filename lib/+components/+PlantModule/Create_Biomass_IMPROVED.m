@@ -10,6 +10,27 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
         % parent system reference
         oParent;
         
+        %
+        fO2Exchange = 0;
+        
+        %
+        fCO2Exchange = 0;
+        
+        %
+        fH2OExchange = 0;
+        
+        %
+        fWaterNeed = 0;
+        
+        % LOG
+        fO2ProducedTotal;
+        % LOG
+        CO2ConsumedTotal;
+        % LOG
+        H2OTranspiredTotal;
+        % LOG
+        WaterConsumedTotal;
+        
         % system time before the current timestep
         fLastUpdate;
         
@@ -78,7 +99,7 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
             
             % initialize cxCultures cell array, has four main sections:
             % "PlantData", "PlantParameters", "Growth" and "Harvest"
-            for i = 1:length(this.csCultureName)
+            for i = 1:length(csCultureName)
                 % each grown culture gets an internal index number and its
                 % name specified in the *.mat file
                 this.cxCultures{i, 1}.CultureNumber = i;
@@ -96,7 +117,7 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 % parent system so only one file (the plant module itself)
                 % needs to be alterated when implementing the plant module
                 % as a subsystem
-                this.cxCulture{i, 1}.PlantData = eval(['this.oParent.tPlantData.' this.csCultureName{i}]);
+                this.cxCultures{i, 1}.PlantData = eval(['this.oParent.tPlantData.PlantData.' csCultureName{i}]);
                 
                 % TODO: trying to go with seconds for now, no idea if it
                 % works
@@ -106,22 +127,22 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 % if no photoperiod is specified and no global lighting
                 % conditions are set, photoperiod receives its nominal
                 % reference values listed in PlantParameters.m
-                if isempty(this.cxCulture{i, 1}.PlantData.H) && (bGlobalPlantLighing == 0)
-                    this.cxCulture{i, 1}.PlantData.H    = this.tPlantParametersAdjusted(this.cxCulture{i, 1}.PlantData.PlantSpecies).H_Nominal;
+                if isempty(this.cxCultures{i, 1}.PlantData.H) && (bGlobalPlantLighing == 0)
+                    this.cxCultures{i, 1}.PlantData.H    = this.tPlantParametersAdjusted(this.cxCulture{i, 1}.PlantData.PlantSpecies).H_Nominal;
                 end
                 
                 % if no photosynthetic photon flux is specified and no
                 % global lighting conditions are set, PPF receives its
                 % nominal reference values listed in PlantParameters.m
-                if isempty(this.cxCulture{i, 1}.PlantData.PPF) && (bGlobalPlantLighing == 0)
-                    this.cxCulture{i, 1}.PlantData.PPF  = this.tPlantParametersAdjusted(this.cxCulture{i, 1}.PlantData.PlantSpecies).PPF_Nominal;
+                if isempty(this.cxCultures{i, 1}.PlantData.PPF) && (bGlobalPlantLighing == 0)
+                    this.cxCultures{i, 1}.PlantData.PPF  = this.tPlantParametersAdjusted(this.cxCultures{i, 1}.PlantData.PlantSpecies).PPF_Nominal;
                 end
                 
                 %% PlantParameters
                 
                 % write plant parameters from PlantParameters.m into cell
                 % array
-                this.cxCultures{i, 1}.PlantParameters = components.PlantModule.PlantParameters_IMPROVED(this.cxCulture{i, 1}.PlantData.PlantSpecies);
+                this.cxCultures{i, 1}.PlantParameters = components.PlantModule.PlantParameters_IMPROVED(this.cxCultures{i, 1}.PlantData.PlantSpecies);
                 
                 %% Growth
                 
@@ -221,7 +242,9 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
             % accepting structs etc., need to learn more about parfor,
             % doing regular for-loop for now, but definitely want to make
             % it parfor in the future!!! 
-            for iI = 1:length(this.cxCultures.CultureNumber)
+            aiIndex = size(this.cxCultures);
+            
+            for iI = 1:aiIndex(1)
                 % calculate plant growth, harvested biomass is returned as
                 % biomass in cxCultures is overwritten to zero after 
                 % harvest by called function
@@ -229,7 +252,7 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 fHarvestedEdibleWet, ...
                 fHarvestedInedibleDry, ...
                 fHarvestedInedibleWet ] ...
-                    = components.PlantModule.Process_PlantGrowthParameters(...
+                    = components.PlantModule.Process_PlantGrowthParameters_IMPROVED(...
                         this.cxCultures{iI}, ...                    % Culture in question
                         this.oParent.oAtmosphereReference, ...      % Reference to atmosphere phase
                         this.oTimer.fTime, ...                      % Passed total simulated time               [s]     (was in minutes)
@@ -326,9 +349,14 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                     % atmosphere (sum over all culture specific flowrates).
                     % CO2 flowrate is negative because it is pulled from
                     % the atmosphere, not inserted. 
-                    this.afPartials(1, tiN2I.O2)    = sum(this.cxCultures.Growth.O2Exchange);
-                    this.afPartials(1, tiN2I.CO2)   = (-1) * sum(this.cxCultures.Growth.CO2Exchange);
-                    this.afPartials(1, tiN2I.H2O)   = sum(this.cxCultures.Growth.H2OExchange) - sum(this.cxCultures.Growth.WaterNeed);
+                    this.fO2Exchange = sum(this.cxCultures.Growth.O2Exchange);
+                    this.fCO2Exchange = (-1) * sum(this.cxCultures.Growth.CO2Exchange);
+                    this.fH2OExchange = sum(this.cxCultures.Growth.H2OExchange);
+                    this.fWaterNeed = sum(this.cxCultures.Growth.WaterNeed);
+                    
+                    this.afPartials(1, tiN2I.O2)    = this.fO2Exchange;
+                    this.afPartials(1, tiN2I.CO2)   = this.fCO2Exchange;
+                    this.afPartials(1, tiN2I.H2O)   = this.fH2OExchange - this.fWaterNeed;
                     
                     % get current timestep
                     fTimeStep = this.oTimer.fTime - this.fLastUpdate;

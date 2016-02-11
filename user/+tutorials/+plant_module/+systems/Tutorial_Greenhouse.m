@@ -136,7 +136,7 @@ classdef Tutorial_Greenhouse < vsys
                         
             % Initializing of CO2 absorber that processes the excess CO2
             this.oProc_ExceedingCO2Absorber = tutorials.plant_module.components.CO2Absorber.AbsorbingCO2(this.toStores.GreenhouseUnit, 'CO2Absorber', 'Greenhouse_Air.ToCO2Excess_Out', 'CO2ExcessPhase.CO2Excess_In', 'CO2');
-            % Initializing of O2 absorber that processes the excess O2
+            % Initializing of CO2 absorber that processes the excess CO2
             this.oProc_ExceedingO2Absorber = tutorials.plant_module.components.O2Absorber.AbsorbingO2(this.toStores.GreenhouseUnit, 'O2Absorber', 'Greenhouse_Air.ToO2Excess_Out', 'O2ExcessPhase.O2Excess_In', 'O2');
             
             %% Water Separator
@@ -309,11 +309,11 @@ classdef Tutorial_Greenhouse < vsys
             % Phases of Greenhouse unit
             aoPhases = this.toStores.GreenhouseUnit.aoPhases;
             % Air phase of Greenhouse unit
-            aoPhases(1,1).fFixedTS = this.fGlobalTS; 
+            aoPhases(1,1).fFixedTS = this.fGlobalTS;% 
             % CO2-excess phase of Greenhouse unit
-            aoPhases(1,2).fFixedTS = this.fGlobalTS;
+            aoPhases(1,2).fFixedTS = this.fGlobalTS;% 
             % O2-excess phase of Greenhouse unit
-            aoPhases(1,3).fFixedTS = this.fGlobalTS; 
+            aoPhases(1,3).fFixedTS = this.fGlobalTS;% 
                         
             % Phases of Water Separator
             aoPhases = this.toStores.WaterSeparator.aoPhases;
@@ -351,7 +351,7 @@ classdef Tutorial_Greenhouse < vsys
             exec@vsys(this);
             
             % get CO2 concentration from atmosphere phase
-            this.fCO2 = components.PlantModule.Calc_CO2_ppm(this.toStores.GreenhouseUnit.aoPhases(1,1));
+            this.fCO2 = components.PlantModule.Clac_CO2_ppm(this.toStores.GreenhouseUnit.aoPhases(1,1));
             
             %% Control relative humidity
             

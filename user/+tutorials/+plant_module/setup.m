@@ -16,13 +16,13 @@ classdef setup < simulation.infrastructure
             %Setting of time parameters:
             % TODO this should probably be done in the constructor and the
             % provision of the ptConfigParams map
-            warning('off', 'all');
+
 
             
         %% -Root Object - Greenhouse System-     
             
             %Assigning Root Object - Initializing system 'Greenhouse'
-            tutorials.plant_module.systems.Greenhouse(this.oSimulationContainer, 'Greenhouse');
+            tutorials.plant_module.systems.Tutorial_Greenhouse(this.oSimulationContainer, 'Greenhouse');
            
 
         
@@ -35,7 +35,7 @@ classdef setup < simulation.infrastructure
             % was chosen. To produce more significant results, the
             % simulation should be run for 12 000 000 seconds. This will
             % however take several hours on a modern computer.
-            this.fSimTime  = 20e6;     % [s]
+            this.fSimTime  = 50000;     % [s]
             this.iSimTicks = 400;       % ticks
             this.bUseTime  = true;      % true -> use this.fSimTime as Duration of Simulation
 
@@ -161,23 +161,6 @@ classdef setup < simulation.infrastructure
             
             oLogger.addValue('Greenhouse:s:CO2Buffer.toPhases.CO2BufferPhase', 'fMass', 'CO2 Mass', 'kg');
             
-            % Lettuce
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{1, 1}.INEDIBLE_CGR_d', 'kg', 'Inedible Dry Biomass');            % 270      Biomass composition: inedible dry
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{1, 1}.INEDIBLE_CGR_f', 'kg',  'Inedible Fluid Biomass');            %    Biomass composition: inedible fluid
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{1, 1}.ED_CGR_d', 'kg', 'Edible Dry Biomass');                  % 272      Biomass composition: edible dry
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{1, 1}.ED_CGR_f', 'kg', 'Edible Fluid Biomass');
-            
-            % Sweet Potato
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.INEDIBLE_CGR_d', 'kg', 'Inedible Dry Biomass');            % 278      Biomass composition: inedible dry
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.INEDIBLE_CGR_f', 'kg', 'Inedible Fluid Biomass');            %    Biomass composition: inedible fluid
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.ED_CGR_d', 'kg', 'Edible Dry Biomass');                  % 280      Biomass composition: edible dry
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.ED_CGR_f', 'kg', 'Edible Fluid Biomass');
-            
-            % Gas exchanges
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oProc_Plants_H2OGasExchange', 'fFlowRate', 'kg/s', 'Transpiration');                  % 200          Exchange rate H2O (transpiration); positive: Plants-phase -> air-phase
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oProc_Plants_O2GasExchange', 'fFlowRate', 'kg/s', 'O2 Exchange');                   %        Exchange rate O2; positive: Plants-phase -> air-phase
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oProc_Plants_CO2GasExchange', 'fFlowRate', 'kg/s', 'CO2 Exchange');
-            
             
             %% Define Plots
             
@@ -185,7 +168,6 @@ classdef setup < simulation.infrastructure
             
             oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
             oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
-            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
         end
         
    %% -Plotting-

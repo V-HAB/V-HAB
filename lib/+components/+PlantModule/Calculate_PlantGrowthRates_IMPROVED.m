@@ -1,4 +1,4 @@
-function [ fHOP_Net, fHCC_Net, fHCGR, fHTR, fHWC ] = ...
+function [ fHOP_Net, fHCC_Net, fHCGR_Dry, fHTR, fHWC ] = ...
     Calculate_PlantGrowthRates_IMPROVED(cxCulture, oAtmosphereReference, fTime, fT_A, fTemperatureLight, fTemperatureDark, fRelativeHumidityLight, fRelativeHumidityDark, fPressureAtmosphere, fCO2, fPPF, fH, fDensityH2O)
 
     % determine if culture is currently in light or dark period
@@ -36,9 +36,9 @@ function [ fHOP_Net, fHCC_Net, fHCGR, fHTR, fHWC ] = ...
     
     % Calculation of fraction of incident irradiance absorbed by the canopy
     if fTime < fT_A
-        fA = fA_max * (fTime/fT_A) ^ components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).N; %[-]
+        fA = fA_Max * (fTime/fT_A) ^ components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).N; %[-]
     else
-        fA = fA_max; 
+        fA = fA_Max; 
     end
     
     % calculate maximum canopy quantum yield [µmol Carbon Fixed/µmol Absorbed PPF]
@@ -156,7 +156,7 @@ function [ fHOP_Net, fHCC_Net, fHCGR, fHTR, fHWC ] = ...
     
     % PENMAN-Monteith equation ET_0 in [Lm^-2s^-1]
     a = d * (fRadiance_Net - fSoilHeatFlux) + fDryAirDensity * oAtmosphereReference.fSpecificIsobaricHeatCapacity * (e_s - e_a) / fAerodynamicResistance;
-    b = (d + gamma * (1 + r_s / r_a)) * fL_v;
+    b = (d + fGamma * (1 + fSurfaceResistance / fAerodynamicResistance)) * fL_v;
 
     fET_0 = a / b; 
 
@@ -181,7 +181,7 @@ function [ fHOP_Net, fHCC_Net, fHCGR, fHTR, fHWC ] = ...
     fHCO2P = fHOC * fMolarMassCO2 / fMolarMassO2;       %[g/m^2/h]
     
     % Daily CO2 net consumption rate
-    fHCC_net = fHCO2C - fHCO2P;    %[g/m^2/h]
+    fHCC_Net = fHCO2C - fHCO2P;    %[g/m^2/h]
         
     % Hourly plant macrontutrients uptake 
     fHNC = fHCGR_Dry * components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).DBF * components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).NC_Fraction;  %[g/m^2/h]

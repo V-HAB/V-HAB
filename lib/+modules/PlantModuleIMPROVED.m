@@ -93,7 +93,7 @@ classdef PlantModuleIMPROVED < vsys
             % Load plant setup from *.mat file
             % TODO: maybe take some other input instead of *.mat
             this.tPlantData = load(strrep(...
-                'hocl\+marsone\+components\+PlantModule\+setups\PlantData_VhabCrops_Macro_80m2_staggered.mat', ...
+                'components\+PlantModule\+setups\PlantData.mat', ...
                 '\', ...   %PlantEng: Setup containing several plant cultures
                 filesep));
             
@@ -205,7 +205,7 @@ classdef PlantModuleIMPROVED < vsys
             % Initializing manipulator for creating biomass and handling 
             % gas exchanges
             this.oCreateBiomass = ...         
-                components.PlantModule.Create_Biomass(...    
+                components.PlantModule.Create_Biomass_IMPROVED(...    
                 this, ...       
                 'CreateBiomass', ...                % manipulator name    
                 oPlants);                           % plants phase reference                  
@@ -334,10 +334,10 @@ classdef PlantModuleIMPROVED < vsys
                     % the parent system and call the function Calc_CO2_ppm
                     % in its exec() section to keep the CO2 concentration
                     % in the atmosphere updated. 
-                    if this.oParent.fCO2_Measured > 1300
+                    if this.oParent.fCO2 > 1300
                         this.fCO2 = 1300;
                     else
-                        this.fCO2 = this.oParent.fCO2_Measured;  
+                        this.fCO2 = this.oParent.fCO2;  
                     end
                 end
                 

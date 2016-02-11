@@ -14,11 +14,11 @@ function [ fHarvestedEdibleDry, fHarvestedEdibleWet, fHarvestedInedibleDry, fHar
     % check if culture is allowed to grow
     if cxCulture.Growth.InternalGeneration <= cxCulture.PlantData.ConsecutiveGenerations
         % check if simulation reached planting time
-        if fTime >= cxCulture.Growth.EmergeTime
+        if fTime >= cxCulture.PlantData.EmergeTime
             % harvest time not yet reached -> plants grow
             if cxCulture.Growth.InternalTime < cxCulture.PlantData.HarvestTime
                 % internal plant time from planting to harvest
-                cxCulture.Growth.InternalTime = fTime - (cxCulture.Growth.InternalGeneration - 1) * cxCulture.PlantData.HarvestTime - cxCulture.Growth.EmergeTime;
+                cxCulture.Growth.InternalTime = fTime - (cxCulture.Growth.InternalGeneration - 1) * cxCulture.PlantData.HarvestTime - cxCulture.PlantData.EmergeTime;
                 
                 % check if CO2 concentration is within the limits for the
                 % MEC model (330 - 1300 ppm)
@@ -29,10 +29,10 @@ function [ fHarvestedEdibleDry, fHarvestedEdibleWet, fHarvestedInedibleDry, fHar
                     
                     [ fHOP_Net, ...     % net hourly oxygen production      % [g/m^2h]
                     fHCC_Net, ...       % net hourly carbon consumption     % [g/m^2h]
-                    fHCGR_Dry, ...          % hourly crop growth rate       % [g/m^2h]
+                    fHCGR_Dry, ...      % hourly crop growth rate           % [g/m^2h]
                     fHTR, ...           % hourly transpiration rate         % [g/m^2h]
                     fHWC ] ...          % hourly water consumption          % [g/m^2h]
-                        = components.PlantModule.Process_PlantGrowthRates(...
+                        = components.PlantModule.Calculate_PlantGrowthRates_IMPROVED(...
                             cxCulture, ...                  % current culture data
                             oAtmosphereReference, ...       % reference to atmosphere phase
                             fTime, ...                      % passed total simulation time                  [s]
@@ -83,7 +83,7 @@ function [ fHarvestedEdibleDry, fHarvestedEdibleWet, fHarvestedInedibleDry, fHar
                     cxCulture.Growth.H2OExchange = fHTR / 1000 * fHourlyRatesToSeconds * cxCulture.PlantData.GrowthArea; % [kg/s]
 
                     % WaterNeed --> HWC [g/m^2/d], factor 1000 to get kg
-                    cxCulture.Growth.fWaterNeed = fHWC / 1000 * fHourlyRatesToSeconds * cxCulture.PlantData.GrowthArea;  % [kg/s]
+                    cxCulture.Growth.WaterNeed = fHWC / 1000 * fHourlyRatesToSeconds * cxCulture.PlantData.GrowthArea;  % [kg/s]
 
                     % TODO: needs to be reworked, maybe can make it use the
                     % current timestep to make timestep independent
@@ -222,6 +222,7 @@ function [ fHarvestedEdibleDry, fHarvestedEdibleWet, fHarvestedInedibleDry, fHar
                 cxCulture.Growth.O2Exchange         = 0;    % [kg/s]
                 cxCulture.Growth.CO2Exchange        = 0;    % [kg/s]
                 cxCulture.Growth.H2OExchange        = 0;    % [kg/s]
+                cxCulture.Growth.WaterNeed          = 0;    % [kg/s]
                 cxCulture.Growth.InternalTime       = 0;    % [min]
                 cxCulture.Growth.P_net              = 0;    % [µmol_carbon/m^2/s]
                 cxCulture.Growth.CQY                = 0;    % [µmol Carbon Fixed/µmol Absorbed PPF]

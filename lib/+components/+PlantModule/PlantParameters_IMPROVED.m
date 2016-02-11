@@ -1,4 +1,4 @@
-function [ cxPlants ] = PlantParameters_IMPROVED()
+function [ cxPlantsRETURNED ] = PlantParameters_IMPROVED(sPlantSpecies)
 
     % TODO: most parameters just carried over for now to apply the new
     % structure, variable names are changed as seemed appropriate but since
@@ -358,4 +358,6 @@ function [ cxPlants ] = PlantParameters_IMPROVED()
     cxPlants.Tomato.PlantingDensity         = 6.3;
     cxPlants.Wheat.PlantingDensity          = 720;
     cxPlants.Whitepotato.PlantingDensity    = 6.4;
+    
+    cxPlantsRETURNED = cxPlants.(sPlantSpecies);
 end
