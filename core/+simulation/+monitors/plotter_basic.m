@@ -4,7 +4,7 @@ classdef plotter_basic < simulation.monitor
     
     
     properties (SetAccess = public, GetAccess = public)
-        rPadding = 0.025;
+        rPadding = 0.03;
     end
     
     properties (SetAccess = protected, GetAccess = public)
