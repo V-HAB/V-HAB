@@ -85,6 +85,7 @@ classdef PlantModuleIMPROVED < vsys
             % what EXACTLY it does!
             this@vsys(oParent, sName, 60);
 
+            % for configurations 
             eval(this.oRoot.oCfgParams.configCode(this));
             
             %% Load Plant Species Data File
