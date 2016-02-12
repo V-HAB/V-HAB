@@ -189,7 +189,10 @@ if txMatterForSubstance.bIndividualFile
     txMatterForSubstanceAndTypeAndAggregate = txMatterForSubstanceAndType.(sPhaseStructName);
     
     sFirstDepUnit  = txMatterForSubstanceAndType.tUnits.(sFirstDepName);
-    sSecondDepUnit = txMatterForSubstanceAndType.tUnits.(sSecondDepName);
+    
+    if iDependencies == 2
+        sSecondDepUnit = txMatterForSubstanceAndType.tUnits.(sSecondDepName);
+    end
 end
 
 sReportString = 'Nothing to report.';
