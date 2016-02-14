@@ -18,7 +18,7 @@ classdef CDRA < vsys
         %to increase the zeolite temperature during the CO2 scrubbing.
         % TO DO: didnt find an actual reference so for now using a values
         % that seems plausible
-        fMaxHeaterPower = 2000;          % [W] 
+        fMaxHeaterPower = 6000;          % [W] 
         
         %Target temperature the zeolite is supposed to reach during the
         %desorption of CO2
@@ -90,7 +90,7 @@ classdef CDRA < vsys
             % "Multi-Dimensional Simulation of Flows Inside Polydisperse Packed Beds"
             % download link https://www.google.de/url?sa=t&rct=j&q=&esrc=s&source=web&cd=6&cad=rja&uact=8&ved=0ahUKEwjwstb2-OfKAhXEoQ4KHdkUAC8QFghGMAU&url=https%3A%2F%2Fwww.comsol.com%2Fconference2015%2Fdownload-presentation%2F29402&usg=AFQjCNERyzJcfMautp6BfFFUERc1FvISNw&bvm=bv.113370389,d.bGg
             % sorry couldn't find a better one.
-            fCrossSection = (16*13E-3)^2; 
+            fCrossSection = (15*13E-3)^2; 
             
             tGeometry5A.fCrossSection       = fCrossSection;
             tGeometrySylobead.fCrossSection = fCrossSection;
@@ -107,9 +107,21 @@ classdef CDRA < vsys
             tGeometry5A.rVoidFraction       = 0.445;
             tGeometrySylobead.rVoidFraction = 0.348;
             
-            fMassZeolite13x         = fCrossSection * tGeometry13x.fLength      *  (1 - tGeometry13x.rVoidFraction)       * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
-            fMassSylobead           = fCrossSection * tGeometrySylobead.fLength *  (1 - tGeometrySylobead.rVoidFraction)  * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
-            fMassZeolite5A          = fCrossSection * tGeometry5A.fLength       *  (1 - tGeometry5A.rVoidFraction)        * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
+            % Assuming a human produces ~ 1kg of CO2 per day and CDRA is
+            % sized for 6 humans at 400 Pascal partial pressure of CO2 then
+            % each CDRA has to absorb (1/(24*60))*144*6 = 600g CO2 per
+            % cycle (144 min cycle time, 6 humans). Also from the airsafe
+            % of CDRA additional CO2 is released into the cabin which also
+            % to be removed as well as the consideration that the maximum
+            % capacity is hard to reach it is save to assume that each bed
+            % requires a capacity of ~700g to 800g of CO2 at 400 Pa partial
+            % pressure. At that partial pressure the zeolite capacity is
+            % ~35g CO2 for each kg of zeolite. Therefore the zeolite mass
+            % has to be around 20 to 23 kg. The calculation currently used
+            % results in 22 kg which should be a good estimate
+            fMassZeolite13x         = fCrossSection * tGeometry13x.fLength       * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
+            fMassSylobead           = fCrossSection * tGeometrySylobead.fLength  * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
+            fMassZeolite5A          = fCrossSection * tGeometry5A.fLength       * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
             
             % These are the correct estimates for the flow volumes of each
             % bed which are used in the filter adsorber proc for

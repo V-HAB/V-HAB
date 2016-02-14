@@ -165,7 +165,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     
                 case '5A'
                     % Density of the sorbend from matter table
-                    this.fRhoSorbent   = this.rVoidFraction * this.oMT.ttxMatter.Zeolite5A.ttxPhases.tSolid.Density;
+                    this.fRhoSorbent   = this.oMT.ttxMatter.Zeolite5A.ttxPhases.tSolid.Density;
                     % Length of the filter from store geometry
                     this.fFilterLength = this.oStore.tGeometryParameters.fLength;     % [m]
                     % Load corresponding helper table
