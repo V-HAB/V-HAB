@@ -69,7 +69,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
         arPartials_ads;
         arPartials_des;
         
+        % TO DO: Explain these variables!
         k_l;
+        bRecalcToth;
+        mfThermodynConst_K_save; 
         
         % Transfer variable for plotting
         q_plot;
@@ -153,7 +156,11 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     this.ofilter_table = components.filter.Zeolite13x_Table; 
                     
                     if ~isnan(this.ofilter_table.k_l)
-                        this.k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        this.k_l = zeros(4,100);
+                        for iK = 1:100
+                            this.k_l(:,iK) = k_l;
+                        end
                     end
                     
                 case '5A'
@@ -165,7 +172,11 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     this.ofilter_table = components.filter.Zeolite5A_Table; 
                     
                     if ~isnan(this.ofilter_table.k_l)
-                        this.k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        this.k_l = zeros(4,100);
+                        for iK = 1:100
+                            this.k_l(:,iK) = k_l;
+                        end
                     end
                     
                 case '5A-RK38'
@@ -176,14 +187,16 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     % RK38 uses the same table as the normal 5A but adapts
                     % the kinematic constant to RK38
                     % LDF model kinetic lumped constant in order (H2O, CO2, N2, O2) [1/s] from ICES-2014-168
-                    % Value for CO2 increased by 0.001 to fit the CDRA test
-                    % data
-                    LDF_KinConst = [0.0007, 0.004, 0, 0]; 
+                    LDF_KinConst = [0.0007, 0.003, 0, 0]; 
                     % Load corresponding helper table
                     this.ofilter_table = components.filter.Zeolite5A_Table(LDF_KinConst); 
                     
                     if ~isnan(this.ofilter_table.k_l)
-                        this.k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        this.k_l = zeros(4,100);
+                        for iK = 1:100
+                            this.k_l(:,iK) = k_l;
+                        end
                     end
                     
                 case 'Sylobead'
@@ -199,7 +212,11 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     this.ofilter_table = components.filter.SilicaGel_Table(LDF_KinConst); 
                     
                     if ~isnan(this.ofilter_table.k_l)
-                        this.k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        this.k_l = zeros(4,100);
+                        for iK = 1:100
+                            this.k_l(:,iK) = k_l;
+                        end
                     end
                     
                 case 'SilicaGel'
@@ -211,7 +228,11 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     this.ofilter_table = components.filter.SilicaGel_Table; 
                     
                     if ~isnan(this.ofilter_table.k_l)
-                        this.k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        this.k_l = zeros(4,100);
+                        for iK = 1:100
+                            this.k_l(:,iK) = k_l;
+                        end
                     end
                     
                 otherwise
@@ -313,12 +334,14 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                 % considered)
             end
             % If none of the relevant values has changed significantly the
-            % filter is not recalculated
+            % filter is recalculated but not the toth equation
 %             if     ((abs(this.fSorptionPressure      - this.oIn.oPhase.fPressure)    / this.fSorptionPressure)       < 0.02) &&...
 %                    ((abs(this.fSorptionTemperature   - this.oIn.oPhase.fTemperature) / this.fSorptionTemperature)    < 0.01) &&...
 %                 (max(abs(this.arMassFractions        - this.oIn.oPhase.arPartialMass(this.aiPositions)))             < 0.01) &&...
 %                    ((abs(this.fFlowRateIn            - fFlowRateInCheck)                  / this.fFlowRateIn)        < 0.01)
-%                return
+%                 this.bRecalcToth = false;
+%             else
+%                 this.bRecalcToth = true;
 %             end
             this.fFlowRateIn = fFlowRateInCheck;
                 
@@ -506,10 +529,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                             % provided in ICES-2014-168 for zeolite 5A, 13x
                             % and Silica Gels. 
                             if ~isempty(this.k_l)
-                                mfKineticConst_k_l = zeros(4,length(mfThermodynConst_K));
-                                for iK = 1:length(mfThermodynConst_K)
-                                    mfKineticConst_k_l(:,iK) = this.k_l;
-                                end
+                                mfKineticConst_k_l = this.k_l(:,(1:length(mfThermodynConst_K)));
                             else
                                 mfKineticConst_k_l = this.ofilter_table.get_KineticConst_k_l(mfThermodynConst_K, this.fSorptionTemperature, this.fSorptionPressure, this.fSorptionDensity, this.afConcentration, this.fRhoSorbent, this.fVolumetricFlowRate, this.rVoidFraction, this.csNames, this.afMolarMass);
                             end

@@ -113,11 +113,26 @@ classdef CDRA < vsys
             
             % These are the correct estimates for the flow volumes of each
             % bed which are used in the filter adsorber proc for
-            % calculations. Factor of 0.1 used to fit the behaviour to CDRA
-            % test data.
-            tGeometry13x.fVolumeFlow          = 0.25 * tGeometry13x.fCrossSection        * tGeometry13x.fLength      * tGeometry13x.rVoidFraction;
-            tGeometrySylobead.fVolumeFlow     = 0.25 * tGeometrySylobead.fCrossSection   * tGeometrySylobead.fLength * tGeometrySylobead.rVoidFraction;
-            tGeometry5A.fVolumeFlow           = 0.25 * tGeometry5A.fCrossSection         * tGeometry5A.fLength       * tGeometry5A.rVoidFraction;
+            % calculations. 
+            tGeometry13x.fVolumeFlow          =         tGeometry13x.fCrossSection        * tGeometry13x.fLength      * tGeometry13x.rVoidFraction;
+            tGeometrySylobead.fVolumeFlow     =         tGeometrySylobead.fCrossSection   * tGeometrySylobead.fLength * tGeometrySylobead.rVoidFraction;
+            tGeometry5A.fVolumeFlow           =         tGeometry5A.fCrossSection         * tGeometry5A.fLength       * tGeometry5A.rVoidFraction;
+            
+            % Now a Factor is used to fit the behaviour to CDRA
+            % test data. The need for this factor can be explained because
+            % the filter proc uses the volume to calculate the flow speed
+            % in the filter. However the assumption of the filter proc is
+            % that the flow passes through the filter in a straight line,
+            % which it does not in reality. In reality the flow has to move
+            % around the zeolite pieces thus increasing the distance each
+            % fluid partical has to cross to pass through the filter.
+            % Therefore the assumed flow volume is decreased to achieve a
+            % higher flow speed in the filter (which is necessary for the
+            % fluid to cross the actually longer distance between the in
+            % and outlet)
+            tGeometry13x.fVolumeFlow         =  0.3 *     tGeometry13x.fVolumeFlow;
+            tGeometrySylobead.fVolumeFlow    =  0.3 *     tGeometrySylobead.fVolumeFlow;
+            tGeometry5A.fVolumeFlow          =  0.3 *     tGeometry5A.fVolumeFlow;
             
             % But the volume used for the V-HAB is larger to allow faster
             % calculation times
