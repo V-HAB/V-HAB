@@ -17,7 +17,7 @@ classdef setup < simulation.infrastructure
             % Possible to change the constructor paths and params for the
             % monitors
             ttMonitorConfig = struct();
-            
+            warning( 'off', 'all')
             this@simulation.infrastructure('Tutorial_CCAA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the root object
@@ -26,7 +26,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 12; % In seconds
+            this.fSimTime = 3600 * 80; % In seconds
             this.bUseTime = true;
         end
         
@@ -40,6 +40,49 @@ classdef setup < simulation.infrastructure
             
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity', '-', 'Relative Humidity Cabin');
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2');
+            
+            oLog.addValue('Example:c:CDRA:s:Filter_13X_1.toProcsP2P.Filter_13X_1_proc', 'fFlowRate', 'P2P 13x kg/s', 'Adsorption Flowrate 13x1');
+            oLog.addValue('Example:c:CDRA:s:Filter_13X_1.toProcsP2P.DesorptionProcessor', 'fFlowRate', 'P2P 13x kg/s', 'Desorption Flowrate 13x1');
+            
+            oLog.addValue('Example:c:CDRA:s:Filter_13X_1.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.H2O)', 'Adsorbed kg 13x', 'Adsorbed H2O 13x1');
+            oLog.addValue('Example:c:CDRA:s:Filter_13X_1.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.CO2)', 'Adsorbed kg 13x ', 'Adsorbed CO2 13x1');
+                        
+            oLog.addValue('Example:c:CDRA:s:Filter_13X_2.toProcsP2P.Filter_13X_2_proc', 'fFlowRate', 'P2P 13x kg/s', 'Adsorption Flowrate 13x2');
+            oLog.addValue('Example:c:CDRA:s:Filter_13X_2.toProcsP2P.DesorptionProcessor', 'fFlowRate', 'P2P 13x kg/s', 'Desorption Flowrate 13x2');
+            
+            oLog.addValue('Example:c:CDRA:s:Filter_13X_2.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.H2O)', 'Adsorbed kg 13x', 'Adsorbed H2O 13x2');
+            oLog.addValue('Example:c:CDRA:s:Filter_13X_2.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.CO2)', 'Adsorbed kg 13x', 'Adsorbed CO2 13x2');
+            
+            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_1.toProcsP2P.Filter_Sylobead_1_proc', 'fFlowRate', 'P2P SG kg/s', 'Adsorption Flowrate Sylobead1');
+            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_1.toProcsP2P.DesorptionProcessor', 'fFlowRate', 'P2P SG kg/s', 'Desorption Flowrate Sylobead1');
+            
+            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_1.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.H2O)', 'Adsorbed kg Sylobead', 'Adsorbed H2O Sylobead 1');
+            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_1.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.CO2)', 'Adsorbed kg Sylobead', 'Adsorbed CO2 Sylobead 1');
+            
+            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_2.toProcsP2P.Filter_Sylobead_2_proc', 'fFlowRate', 'P2P SG kg/s', 'Adsorption Flowrate Sylobead2');
+            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_2.toProcsP2P.DesorptionProcessor', 'fFlowRate', 'P2P SG kg/s', 'Desorption Flowrate Sylobead2');
+            
+            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_2.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.H2O)', 'Adsorbed kg Sylobead', 'Adsorbed H2O Sylobead 2');
+            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_2.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.CO2)', 'Adsorbed kg Sylobead', 'Adsorbed CO2 Sylobead 2');
+            
+            oLog.addValue('Example:c:CDRA:s:Filter5A_1.toProcsP2P.Filter_5A_1_proc', 'fFlowRate', 'P2P 5A kg/s', 'Adsorption Flowrate 5A1');
+            oLog.addValue('Example:c:CDRA:s:Filter5A_1.toProcsP2P.DesorptionProcessor', 'fFlowRate', 'P2P 5A kg/s', 'Desorption Flowrate 5A1');
+            
+            oLog.addValue('Example:c:CDRA:s:Filter5A_1.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.H2O)', 'Adsorbed kg 5A', 'Adsorbed H2O 5A 1');
+            oLog.addValue('Example:c:CDRA:s:Filter5A_1.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.CO2)', 'Adsorbed kg 5A', 'Adsorbed CO2 5A 1');
+            
+            oLog.addValue('Example:c:CDRA:s:Filter5A_2.toProcsP2P.Filter_5A_2_proc', 'fFlowRate', 'P2P 5A kg/s', 'Adsorption Flowrate 5A2');
+            oLog.addValue('Example:c:CDRA:s:Filter5A_2.toProcsP2P.DesorptionProcessor', 'fFlowRate', 'P2P 5A kg/s', 'Desorption Flowrate 5A2');
+            
+            oLog.addValue('Example:c:CDRA:s:Filter5A_2.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.H2O)', 'Adsorbed kg 5A', 'Adsorbed H2O 5A 2');
+            oLog.addValue('Example:c:CDRA:s:Filter5A_2.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.CO2)', 'Adsorbed kg 5A', 'Adsorbed CO2 5A 2');
+            
+            oLog.addValue('Example:c:CCAA:s:CHX.toProcsP2P.CondensingHX', 'fFlowRate', 'Condensed kg/s', 'CHX Condensate Flow');
+            oLog.addValue('Example:s:Cabin.toProcsP2P.CrewHumidityGen', 'fFlowRate', 'Condensed kg/s', 'Crew Humidity Release');
+            
+            oLog.add('Example:c:CDRA', 'flow_props');
+            oLog.add('Example:c:CDRA', 'thermal_properties');
+            
             %% Define plots
             
             oPlot = this.toMonitors.oPlotter;
@@ -48,6 +91,14 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('K',   'Temperatures');
             oPlot.definePlotAllWithFilter('kg',  'Tank Masses');
             oPlot.definePlotAllWithFilter('kg/s','Flow Rates');
+            oPlot.definePlotAllWithFilter('P2P 13x kg/s','Flow Rates');
+            oPlot.definePlotAllWithFilter('Adsorbed kg 13x','Adsorbed Masses 13x');
+            oPlot.definePlotAllWithFilter('P2P SG kg/s','Flow Rates');
+            oPlot.definePlotAllWithFilter('Adsorbed kg Sylobead','Adsorbed Masses Sylobead');
+            oPlot.definePlotAllWithFilter('P2P 5A kg/s','Flow Rates');
+            oPlot.definePlotAllWithFilter('Adsorbed kg 5A','Adsorbed Masses 5A');
+            oPlot.definePlotAllWithFilter('Condensed kg/s','Condensate Mass Flow');
+            
         end
         
         function plot(this) % Plotting the results

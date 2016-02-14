@@ -37,8 +37,9 @@ classdef CCAA < vsys
         % According to "International Space Station Carbon Dioxide Removal
         % Assembly Testing" 00ICES-234 James C. Knox (2000) the minmal flow
         % rate for CDRA to remove enough CO2 is 41 kg/hr but that figure is
-        % for removal of CO2 for 6 crew members.
-        fCDRA_FlowRate = 1.138e-2;
+        % for removal of CO2 for 6 crew members. The nominal flow through
+        % CDRA is supposed to be 42.7 kg/s
+        fCDRA_FlowRate = 1.186e-2;
         
         % Object for the phase of the module where the CCAA is located. Used
         % to get the current relative humidity and control the valve angles
@@ -166,7 +167,7 @@ classdef CCAA < vsys
             % has trouble correctly calculating small volumes
             matter.store(this, 'CHX', 2);
             % Input phase
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CHX, 1, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, this.tAtmosphere.fPressure);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CHX, 1, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, 0, this.tAtmosphere.fPressure);
             oInput = matter.phases.gas(this.toStores.CHX, 'CHX_PhaseIn',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             % H2O phase
             cWaterHelper = matter.helper.phase.create.water(this.toStores.CHX, 1, this.fCoolantTemperature, fPressure);
@@ -244,16 +245,17 @@ classdef CCAA < vsys
             % Creating the flowpath into this subsystem
             solver.matter.manual.branch(this.toBranches.CCAA_In_FromCabin);
             solver.matter.manual.branch(this.toBranches.TCCV_CHX);
-            solver.matter.manual.branch(this.toBranches.CHX_Cabin);
-            solver.matter.manual.branch(this.toBranches.TCCV_Cabin);
-            solver.matter.manual.branch(this.toBranches.Condensate_Out);
+            solver.matter.residual.branch(this.toBranches.CHX_Cabin);
+            solver.matter.residual.branch(this.toBranches.TCCV_Cabin);
+            solver.matter.residual.branch(this.toBranches.Condensate_Out);
             solver.matter.manual.branch(this.toBranches.Coolant_In);
             solver.matter.manual.branch(this.toBranches.Coolant_Out);
             
             if ~isempty(this.sCDRA)
                 solver.matter.manual.branch(this.toBranches.CHX_CDRA);
                 
-                solver.matter.manual.branch(this.toBranches.CDRA_TCCV);
+                solver.matter.residual.branch(this.toBranches.CDRA_TCCV);
+                this.toBranches.CDRA_TCCV.oHandler.setPositiveFlowDirection(false);
             end
             
             if this.bActive == 1
@@ -315,14 +317,28 @@ classdef CCAA < vsys
             if this.bActive == 0
                 this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(0);
                 this.toBranches.TCCV_CHX.oHandler.setFlowRate(0.);
-                this.toBranches.CHX_Cabin.oHandler.setFlowRate(0);
                 this.toBranches.Coolant_In.oHandler.setFlowRate(0); 
                 this.toBranches.Coolant_Out.oHandler.setFlowRate(0);
-                if ~isempty(this.sCDRA)
-                    this.toBranches.CDRA_TCCV.oHandler.setFlowRate(0);
-                end
                 return
             end
+            
+            % The CHX data is given for 50 to 450 cfm so the CCAA
+            % should have at least 450 cfm of inlet flow that can enter
+            % the CHX. And 450 cfm are 0.2124 m^3/s
+            % cfm = cubic feet per minute
+
+            fInFlow = 0.2124*this.oAtmosphere.fDensity;
+            fPercentalFlowChange = abs((this.toBranches.CCAA_In_FromCabin.fFlowRate - fInFlow)/(this.toBranches.CCAA_In_FromCabin.fFlowRate));
+            
+            fHumidityChange = abs(this.rRelHumidity - this.oAtmosphere.rRelHumidity);
+            
+            % If the inlet flow changed by less than 1% and the humidity
+            % changed by less than 1% it is not necessary to recalculate
+            % the CCAA
+            if (fPercentalFlowChange < 0.01) && (fHumidityChange < 0.001)
+                return
+            end
+            
             % Setting of the valve angle of the TCCV split
             if this.oTimer.fTime > 60
                 this.rRelHumidity = this.oAtmosphere.rRelHumidity;
@@ -348,40 +364,12 @@ classdef CCAA < vsys
             end
           	fTCCV_Angle = (this.rTCCV_ratio) * 77 + 3;
             
-            % Calculation of the kick valve, which opens every 75 minutes
-            % for 1 minute with a constant flow rate, which empties it completly
-            if this.oTimer.fTime >= this.fKickValveAktivatedTime + 60 && this.bKickValveAktivated
-                this.bKickValveAktivated = 0;
-                this.toBranches.Condensate_Out.oHandler.setFlowRate(0);
-            end
-            
-            if mod(this.oTimer.fTime, 75 * 60) <= 1
-                %minus this.fInitialCHXWaterMass because that is the inital
-                %mass in the phase and is therefore not the condensate
-                %generated, also serves to prevent numerical errors in the
-                %simulation that occur if a phase is completly emptied.
-                fFlowRateCondOut = (this.toStores.CHX.toProcsP2P.CondensingHX.oStore.aoPhases(2).fMass - this.fInitialCHXWaterMass) / 60;
-                if fFlowRateCondOut < 0
-                    fFlowRateCondOut = 0;
-                end
-                this.toBranches.Condensate_Out.oHandler.setFlowRate(fFlowRateCondOut);
-                this.bKickValveAktivated = 1;
-                this.fKickValveAktivatedTime = this.oTimer.fTime;
-            end
-            
             if this.oTimer.fTime > 5
-                % The CHX data is given for 50 to 450 cfm so the CCAA
-                % should have at least 450 cfm of inlet flow that can enter
-                % the CHX. And 450 cfm are 0.2124 m^3/s
-                % cfm = cubic feet per minute
-                
-                fInFlow = 0.2124*this.oAtmosphere.fDensity;
                 
                 this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fInFlow);
                 
                 if ~isempty(this.sCDRA)
-                    fInFlow2 = this.oParent.toChildren.(this.sCDRA).toBranches.Filter13x1_to_CHX.oHandler.fRequestedFlowRate + this.oParent.toChildren.(this.sCDRA).toBranches.Filter13x2_to_CHX.oHandler.fRequestedFlowRate;
-                    this.toBranches.CDRA_TCCV.oHandler.setFlowRate(-fInFlow2);
+                    fInFlow2 = this.toBranches.CDRA_TCCV.oHandler.fFlowRate;
                 else
                     fInFlow2 = 0;
                 end
@@ -391,10 +379,8 @@ classdef CCAA < vsys
                 fFlowPercentageCHX = this.Interpolation(fTCCV_Angle);
                 % Gets the two flow rates exiting the TCCV
                 fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
-                fTCC_To_Cabin_FlowRate = (1-fFlowPercentageCHX)*(fInFlow+fInFlow2);
                 
                 this.toBranches.TCCV_CHX.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
-                this.toBranches.TCCV_Cabin.oHandler.setFlowRate(fTCC_To_Cabin_FlowRate);
                 
                 % Calculates the flow rate of gas exiting the CHX
                 fFlowRateGas = fTCCV_To_CHX_FlowRate - this.toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
@@ -403,20 +389,15 @@ classdef CCAA < vsys
                 % entering the CDRA has to be calculated
                 if ~isempty(this.sCDRA)
                     if fFlowRateGas >= this.fCDRA_FlowRate
-                        this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas-this.fCDRA_FlowRate);
                         this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
                     elseif fFlowRateGas < this.fCDRA_FlowRate
-                        this.toBranches.CHX_Cabin.oHandler.setFlowRate(0);
-                        if fFlowRateGas < 0
-                            this.toBranches.CHX_CDRA.oHandler.setFlowRate(0);
-                        else
+                        if fFlowRateGas >= 0
                             this.toBranches.CHX_CDRA.oHandler.setFlowRate(fFlowRateGas);
+                        else
+                            this.toBranches.CHX_CDRA.oHandler.setFlowRate(0);
                         end
                     end
-                else
-                    % in case the CCAA does not have an ascociated CDRA the
-                    % full gas flow is put back into the cabin
-                    this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas);
+                    this.oParent.toChildren.(this.sCDRA).update();
                 end
             end
         end
