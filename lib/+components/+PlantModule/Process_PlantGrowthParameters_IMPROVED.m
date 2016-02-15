@@ -4,7 +4,9 @@ function [ fHarvestedEdibleDry, fHarvestedEdibleWet, fHarvestedInedibleDry, fHar
     % Harvested biomass variables are always zero except when harvested,
     % then they are assigned according masses to be returned to the
     % manipulator
+    fHarvestedEdibleDry = 0;
     fHarvestedEdibleWet = 0;
+    fHarvestedInedibleDry = 0;
     fHarvestedInedibleWet = 0;
     
     %
@@ -22,7 +24,7 @@ function [ fHarvestedEdibleDry, fHarvestedEdibleWet, fHarvestedInedibleDry, fHar
                 
                 % check if CO2 concentration is within the limits for the
                 % MEC model (330 - 1300 ppm)
-                if fCO2 > 330 && fCO2 < 1300
+                if (fCO2 > 330) && (fCO2 < 1300)
                     % time after canopy closure, required for 
                     % Calculate_PlantGrowthRates function call
                     fT_A = [1/fCO2 1 fCO2 fCO2^2 fCO2^3] * components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).Matrix_T_A * [1/fPPF; 1; fPPF; fPPF^2; fPPF^3];

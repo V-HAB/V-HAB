@@ -269,6 +269,19 @@ classdef PlantModuleIMPROVED < vsys
             
             % waste output to waste storage
             matter.branch(this, 'PlantCultivationStore.Biomass_OutputInedible', {}, 'Biomass_OutputInedible',   'WasteOutput');
+            
+            % TODO: change, just carried over temporarily. hopefully no
+            % fixed TS needed anymore
+            %Setting fixed timestep for phases of PlantCultivationStore
+                aoPhases = this.toStores.PlantCultivationStore.aoPhases;
+                    %air-phase
+                        aoPhases(1).fFixedTS = 15;
+                    %Plants-phase
+                        aoPhases(2).fFixedTS = 15;
+                    %Inedible-phase
+                        aoPhases(3).fFixedTS = 15;
+                    %Edible-phase
+                        aoPhases(4).fFixedTS = 15;
         end
         
         function createSolverStructure(this)

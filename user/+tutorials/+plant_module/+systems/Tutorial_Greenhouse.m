@@ -309,11 +309,11 @@ classdef Tutorial_Greenhouse < vsys
             % Phases of Greenhouse unit
             aoPhases = this.toStores.GreenhouseUnit.aoPhases;
             % Air phase of Greenhouse unit
-            aoPhases(1,1).fFixedTS = this.fGlobalTS;% 
+            aoPhases(1,1).fFixedTS = this.fGlobalTS; 
             % CO2-excess phase of Greenhouse unit
-            aoPhases(1,2).fFixedTS = this.fGlobalTS;% 
+            aoPhases(1,2).fFixedTS = this.fGlobalTS;
             % O2-excess phase of Greenhouse unit
-            aoPhases(1,3).fFixedTS = this.fGlobalTS;% 
+            aoPhases(1,3).fFixedTS = this.fGlobalTS; 
                         
             % Phases of Water Separator
             aoPhases = this.toStores.WaterSeparator.aoPhases;

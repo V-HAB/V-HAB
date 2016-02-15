@@ -23,16 +23,16 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
         fWaterNeed = 0;
         
         % LOG
-        fO2ProducedTotal;
+        fO2ProducedTotal = 0;
         % LOG
-        CO2ConsumedTotal;
+        CO2ConsumedTotal = 0;
         % LOG
-        H2OTranspiredTotal;
+        H2OTranspiredTotal = 0;
         % LOG
-        WaterConsumedTotal;
+        WaterConsumedTotal = 0;
         
         % system time before the current timestep
-        fLastUpdate;
+        fLastUpdate = 0;
         
         % time conversion factors for calculating
         % TODO: are they REALLY needed?
@@ -248,10 +248,10 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 % calculate plant growth, harvested biomass is returned as
                 % biomass in cxCultures is overwritten to zero after 
                 % harvest by called function
-                [ fHarvestedEdibleDry, ...
-                fHarvestedEdibleWet, ...
-                fHarvestedInedibleDry, ...
-                fHarvestedInedibleWet ] ...
+                [ fHarvestedEdibleDry, ...      % [kg]
+                fHarvestedEdibleWet, ...        % [kg]
+                fHarvestedInedibleDry, ...      % [kg]
+                fHarvestedInedibleWet ] ...     % [kg]
                     = components.PlantModule.Process_PlantGrowthParameters_IMPROVED(...
                         this.cxCultures{iI}, ...                    % Culture in question
                         this.oParent.oAtmosphereReference, ...      % Reference to atmosphere phase
@@ -267,13 +267,12 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                         this.oParent.fH, ...                        % Photoperiod                               [h/d]
                         fDensityH2O);                               % Liquid water density (for transpiration)  [kg/m^3] 
                 
-                % if something has been harvested, add to the according
-                % species in the biomass array
-                if afHarvested(iI) ~=0
+%                 % if something has been harvested, add to the according
+%                 % species in the biomass array
+%                 if afHarvested(iI) ~=0
                     % TODO: maybe there is a better method than using
                     % switch?
-                    % TODO: make it possible 
-                    switch this.cxCultures.PlantType(iI)
+                    switch this.cxCultures{iI}.PlantData.PlantSpecies
                         % Drybean
                         case 1
                             this.afPartials(tiN2I.DrybeanEdibleDry, iI)     = this.afPartials(tiN2I.DrybeanEdibleDry, iI)       + fHarvestedEdibleDry;
@@ -340,38 +339,42 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                     
                     % Log total values for O2, CO2 and H2O gas exchange and
                     % water consumption
-                    this.fO2ProducedTotal       = this.fO2ProducedTotal     + sum(this.cxCultures.Growth.O2Exchange);
-                    this.CO2ConsumedTotal       = this.CO2ConsumedTotal     + sum(this.cxCultures.Growth.CO2Exchange);
-                    this.H2OTranspiredTotal     = this.H2OTranspiredTotal   + sum(this.cxCultures.Growth.H2OExchange);
-                    this.WaterConsumedTotal     = this.WaterConsumedTotal   + sum(this.cxCultures.Growth.WaterNeed);
+                    this.fO2ProducedTotal       = this.fO2ProducedTotal     + this.cxCultures{iI}.Growth.O2Exchange;
+                    this.CO2ConsumedTotal       = this.CO2ConsumedTotal     + this.cxCultures{iI}.Growth.CO2Exchange;
+                    this.H2OTranspiredTotal     = this.H2OTranspiredTotal   + this.cxCultures{iI}.Growth.H2OExchange;
+                    this.WaterConsumedTotal     = this.WaterConsumedTotal   + this.cxCultures{iI}.Growth.WaterNeed;
                     
                     % set flowrates for manipulator to exchange with
                     % atmosphere (sum over all culture specific flowrates).
                     % CO2 flowrate is negative because it is pulled from
                     % the atmosphere, not inserted. 
-                    this.fO2Exchange = sum(this.cxCultures.Growth.O2Exchange);
-                    this.fCO2Exchange = (-1) * sum(this.cxCultures.Growth.CO2Exchange);
-                    this.fH2OExchange = sum(this.cxCultures.Growth.H2OExchange);
-                    this.fWaterNeed = sum(this.cxCultures.Growth.WaterNeed);
-                    
-                    this.afPartials(1, tiN2I.O2)    = this.fO2Exchange;
-                    this.afPartials(1, tiN2I.CO2)   = this.fCO2Exchange;
-                    this.afPartials(1, tiN2I.H2O)   = this.fH2OExchange - this.fWaterNeed;
-                    
-                    % get current timestep
-                    fTimeStep = this.oTimer.fTime - this.fLastUpdate;
-                    
-                    % this is where mass enters the plants phase?? yep
-                    afPartialFlows = this.afPartials ./ fTimeStep;
-                    
-                    % write remember current time for next timestep
-                    % calculation
-                    this.fLastUpdate = this.oTimer.fTime;
-                    
-                    % update the manipulator with the current flowrates
-                    update@matter.manips.substance.flow(this, afPartialFlows);
-                end
+                    this.fO2Exchange = this.fO2Exchange + this.cxCultures{iI}.Growth.O2Exchange;
+                    this.fCO2Exchange = this.fCO2Exchange + (-1) * this.cxCultures{iI}.Growth.CO2Exchange;
+                    this.fH2OExchange = this.fH2OExchange + this.cxCultures{iI}.Growth.H2OExchange;
+                    this.fWaterNeed = this.fWaterNeed + this.cxCultures{iI}.Growth.WaterNeed;
+%                 end
             end
+            
+            % convert flowrates to mass (multiplay with 60 since the
+            % manipulator is called every minute)
+            this.afPartials(1, this.oMT.tiN2I.O2)    = this.fO2Exchange * 60;
+            this.afPartials(1, this.oMT.tiN2I.CO2)   = this.fCO2Exchange * 60;
+            this.afPartials(1, this.oMT.tiN2I.H2O)   = (this.fH2OExchange - this.fWaterNeed) * 60;
+                  
+            % get current timestep
+            fTimeStep = this.oTimer.fTime - this.fLastUpdate;
+                    
+            % this is where mass enters the plants phase?? yep
+            % divide by current timestep to get kg/s flowrates into plants 
+            % phase until next manipulator update
+            afPartialFlows = this.afPartials ./ fTimeStep;
+                    
+            % write remember current time for next timestep
+            % calculation
+            this.fLastUpdate = this.oTimer.fTime;
+                   
+            % update the manipulator with the current flowrates
+            update@matter.manips.substance.flow(this, afPartialFlows);
         end
     end
 end

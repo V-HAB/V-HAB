@@ -35,7 +35,7 @@ classdef setup < simulation.infrastructure
             % was chosen. To produce more significant results, the
             % simulation should be run for 12 000 000 seconds. This will
             % however take several hours on a modern computer.
-            this.fSimTime  = 50000;     % [s]
+            this.fSimTime  = 20e6;     % [s]
             this.iSimTicks = 400;       % ticks
             this.bUseTime  = true;      % true -> use this.fSimTime as Duration of Simulation
 
@@ -162,12 +162,26 @@ classdef setup < simulation.infrastructure
             oLogger.addValue('Greenhouse:s:CO2Buffer.toPhases.CO2BufferPhase', 'fMass', 'CO2 Mass', 'kg');
             
             
+            % log cxCultures Biomass
+            % be careful with wet biomass, here it should mean only fluid
+            % part I believe not "real" wet biomass (which is dry+fluid)
+            % TODO: need to change
+            aiIndex = size(this.cxCultures);
+            
+            for iI = 1:aiIndex(1)
+                oLogger.addValue('toChildren.PlantModule.oCreateBiomass.cxCultures{1, iI}.Harvest.EdibleDryBiomass');           
+                oLogger.addValue('toChildren.PlantModule.oCreateBiomass.cxCultures{1, iI}.Harvest.EdibleWetBiomass');
+                oLogger.addValue('toChildren.PlantModule.oCreateBiomass.cxCultures{1, iI}.Harvest.InedibleDryBiomass');
+                oLogger.addValue('toChildren.PlantModule.oCreateBiomass.cxCultures{1, iI}.Harvest.InedibleWetBiomass');
+            end
+            
             %% Define Plots
             
             oPlot = this.toMonitors.oPlotter;
             
             oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
             oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
+            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
         end
         
    %% -Plotting-
