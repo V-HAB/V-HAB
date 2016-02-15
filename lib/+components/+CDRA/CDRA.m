@@ -65,8 +65,8 @@ classdef CDRA < vsys
     end
     
     methods
-        function this = CDRA(oParent, sName, tAtmosphere, sAsscociatedCCAA)
-            this@vsys(oParent, sName, 5);
+        function this = CDRA(oParent, sName, fTimeStep, tAtmosphere, sAsscociatedCCAA)
+            this@vsys(oParent, sName, fTimeStep);
             
             this.sAsscociatedCCAA = sAsscociatedCCAA;
             
@@ -82,7 +82,7 @@ classdef CDRA < vsys
             createMatterStructure@vsys(this);
             
             fPressure = 101325;
-            fCO2Percent = 0.0054;
+            fCO2Percent = 0.0062;
             
             %% Creating the stores  
             % CDRA Adsorber Bed Cross Section
@@ -90,7 +90,7 @@ classdef CDRA < vsys
             % "Multi-Dimensional Simulation of Flows Inside Polydisperse Packed Beds"
             % download link https://www.google.de/url?sa=t&rct=j&q=&esrc=s&source=web&cd=6&cad=rja&uact=8&ved=0ahUKEwjwstb2-OfKAhXEoQ4KHdkUAC8QFghGMAU&url=https%3A%2F%2Fwww.comsol.com%2Fconference2015%2Fdownload-presentation%2F29402&usg=AFQjCNERyzJcfMautp6BfFFUERc1FvISNw&bvm=bv.113370389,d.bGg
             % sorry couldn't find a better one.
-            fCrossSection = (15*13E-3)^2; 
+            fCrossSection = (16*13E-3)^2; 
             
             tGeometry5A.fCrossSection       = fCrossSection;
             tGeometrySylobead.fCrossSection = fCrossSection;
@@ -110,15 +110,23 @@ classdef CDRA < vsys
             % Assuming a human produces ~ 1kg of CO2 per day and CDRA is
             % sized for 6 humans at 400 Pascal partial pressure of CO2 then
             % each CDRA has to absorb (1/(24*60))*144*6 = 600g CO2 per
-            % cycle (144 min cycle time, 6 humans). Also from the airsafe
-            % of CDRA additional CO2 is released into the cabin which also
-            % to be removed as well as the consideration that the maximum
-            % capacity is hard to reach it is save to assume that each bed
-            % requires a capacity of ~700g to 800g of CO2 at 400 Pa partial
+            % cycle (144 min cycle time, 6 humans). However that does not
+            % yet take into account that CDRA (through the air safe mode
+            % used at the beginning of the desorption) also releases some
+            % of the CO2 back into the cabin. Test data for CDRA
+            % (00ICES-234 'International Space Station Carbon Dioxide
+            % Removal Assembly Testing' James C. Knox) shows that this
+            % release back into the cabin is ~60 Pascal of Partial Pressure
+            % for a Volume of ~100m³. Using the ideal gas law with room
+            % temperature this release of CO2 back into the cabin can be
+            % calculate to about 110g per cycle. This means that the
+            % capacity has to be at least 710g. But the maximum capacity is
+            % hard to reach and it is save to assume that each bed requires
+            % a capacity of ~800g to 900g of CO2 at 400 Pa partial
             % pressure. At that partial pressure the zeolite capacity is
             % ~35g CO2 for each kg of zeolite. Therefore the zeolite mass
-            % has to be around 20 to 23 kg. The calculation currently used
-            % results in 22 kg which should be a good estimate
+            % has to be around 23 to 26 kg. (current calculation results in
+            % ~25kg)
             fMassZeolite13x         = fCrossSection * tGeometry13x.fLength       * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
             fMassSylobead           = fCrossSection * tGeometrySylobead.fLength  * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
             fMassZeolite5A          = fCrossSection * tGeometry5A.fLength       * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
@@ -317,12 +325,8 @@ classdef CDRA < vsys
             % Adding the Precoolers which are used to decrease the air
             % temperature before it enters the CO2 adsorber beds to
             % increase the adsorption efficiency.
-            components.Temp_Dummy(this, 'Precooler_1', 283); 
-            components.Temp_Dummy(this, 'Precooler_2', 283);
-            % previously CDRA used the colder temperature of 276 K for the
-            % pre coolers but at that temperature the humidity that is
-            % reinserted into the air stream after the CO2 adsorption would
-            % condense resulting in matter table errors
+            components.Temp_Dummy(this, 'Precooler_1', 277); 
+            components.Temp_Dummy(this, 'Precooler_2', 277);
             
             % Adding two times eight pipes to connect the components
             % Two sets are necessary to create both cycles

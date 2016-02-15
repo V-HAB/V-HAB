@@ -156,10 +156,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     this.ofilter_table = components.filter.Zeolite13x_Table; 
                     
                     if ~isnan(this.ofilter_table.k_l)
-                        k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        k_l_temp = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
                         this.k_l = zeros(4,100);
                         for iK = 1:100
-                            this.k_l(:,iK) = k_l;
+                            this.k_l(:,iK) = k_l_temp;
                         end
                     end
                     
@@ -172,10 +172,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     this.ofilter_table = components.filter.Zeolite5A_Table; 
                     
                     if ~isnan(this.ofilter_table.k_l)
-                        k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        k_l_temp = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
                         this.k_l = zeros(4,100);
                         for iK = 1:100
-                            this.k_l(:,iK) = k_l;
+                            this.k_l(:,iK) = k_l_temp;
                         end
                     end
                     
@@ -192,10 +192,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     this.ofilter_table = components.filter.Zeolite5A_Table(LDF_KinConst); 
                     
                     if ~isnan(this.ofilter_table.k_l)
-                        k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        k_l_temp = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
                         this.k_l = zeros(4,100);
                         for iK = 1:100
-                            this.k_l(:,iK) = k_l;
+                            this.k_l(:,iK) = k_l_temp;
                         end
                     end
                     
@@ -212,10 +212,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     this.ofilter_table = components.filter.SilicaGel_Table(LDF_KinConst); 
                     
                     if ~isnan(this.ofilter_table.k_l)
-                        k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        k_l_temp = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
                         this.k_l = zeros(4,100);
                         for iK = 1:100
-                            this.k_l(:,iK) = k_l;
+                            this.k_l(:,iK) = k_l_temp;
                         end
                     end
                     
@@ -228,10 +228,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     this.ofilter_table = components.filter.SilicaGel_Table; 
                     
                     if ~isnan(this.ofilter_table.k_l)
-                        k_l = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
+                        k_l_temp = this.ofilter_table.get_KineticConst_k_l([0;0;0;0], 0, 0, 0, 0, 0, 0, 0, {'CO2'; 'H2O'; 'O2'; 'N2'}, 0);
                         this.k_l = zeros(4,100);
                         for iK = 1:100
-                            this.k_l(:,iK) = k_l;
+                            this.k_l(:,iK) = k_l_temp;
                         end
                     end
                     
@@ -263,7 +263,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             
             % current concentration of substances in fluid [mol/m^3]
             this.mfC_current = zeros(this.iNumSubstances, this.iNumGridPoints,1);
-            mfC_current_Flow = (this.oIn.oPhase.afMass(this.aiPositions)./this.afMolarMass) / this.fVolFlow;
+            mfC_current_Flow = (this.oIn.oPhase.afMass(this.aiPositions)./this.afMolarMass) / this.oIn.oPhase.fVolume;
             mfC_current_Flow = mfC_current_Flow';
             for iK = 1:this.iNumGridPoints
                 this.mfC_current(:,iK) = mfC_current_Flow;

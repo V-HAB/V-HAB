@@ -37,8 +37,9 @@ classdef CCAA < vsys
         % According to "International Space Station Carbon Dioxide Removal
         % Assembly Testing" 00ICES-234 James C. Knox (2000) the minmal flow
         % rate for CDRA to remove enough CO2 is 41 kg/hr. The nominal flow
-        % through CDRA is supposed to be 42.7 kg/s.
-        fCDRA_FlowRate = 1.187e-2;
+        % through CDRA is supposed to be 42.7 kg/s. Factor of 1.13 used to
+        % fit CDRA to test data
+        fCDRA_FlowRate = 1.25 * 1.187e-2;
         
         % Object for the phase of the module where the CCAA is located. Used
         % to get the current relative humidity and control the valve angles
@@ -138,7 +139,7 @@ classdef CCAA < vsys
             % phases
             fPressure = 101325;
             % Mass percent of CO2 in the air, used to initialize the phases
-            fCO2Percent = 0.0038;
+            fCO2Percent = 0.0062;
             
             %% Creating the stores
             % Creating the TCCV (Temperatue Check and Control Valve)

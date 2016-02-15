@@ -65,7 +65,7 @@ classdef Example < vsys
             % Struct containg basic atmospheric values for the
             % initialization of the CCAA
             tAtmosphere.fTemperature = 295;
-            tAtmosphere.fRelHumidity = 0.8;
+            tAtmosphere.fRelHumidity = 0.5;
             tAtmosphere.fPressure = 101325;
             % name for the asscociated CDRA subsystem, leave empty if CCAA
             % is used as standalone
@@ -79,7 +79,7 @@ classdef Example < vsys
             sCCAA = 'CCAA';
             
             % Adding the subsystem CDRA
-            components.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA);
+            components.CDRA.CDRA(this, 'CDRA', 5, tAtmosphere, sCCAA);
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -94,7 +94,7 @@ classdef Example < vsys
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
-            fCO2Percent = 0.0054;
+            fCO2Percent = 0.0062;
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 97.71, struct('CO2', fCO2Percent),  295, 0.4, 1e5);
                
             % Adding a phase to the store 'Cabin', 100 m^3 air
