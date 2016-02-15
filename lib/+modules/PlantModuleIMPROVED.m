@@ -148,25 +148,24 @@ classdef PlantModuleIMPROVED < vsys
             % TODO: this phase is all liquid, may conflict with gas
             % exchanges as everything happens at once, maybe split off the
             % exchange part to a separate phase, look into this later
-            oPlants = matter.phases.liquid( ...
+            oPlants = matter.phases.absorber( ...
                 this.toStores.PlantCultivationStore, ...    % store in which the phase is located
                 'Plants', ...                               % phase name
                 struct(...                                  % phase contents
-                    'H2O', 0.1, ...
+                    'H2O', 1, ...
                     'CO2', 0.1, ...
                     'O2', 0.1), ...                            
-                10, ...                                     % phase volume
                 this.oParent.fTemperatureInit, ...          % phase temperature
-                this.oParent.fPressureInit, ...             % phase pressure
-                true);                                      % adsorber true
+                'liquid', ...
+                'H2O');
             
             % add exmes to phase
-            matter.procs.exmes.liquid(oPlants, 'H2O_ExchangePlants');       % plant H2O exchange with atmosphere
-            matter.procs.exmes.liquid(oPlants, 'O2_ExchangePlants');        % plant O2 exchange with atmosphere
-            matter.procs.exmes.liquid(oPlants, 'CO2_ExchangePlants');       % plant CO2 exchange with atmosphere
-            matter.procs.exmes.liquid(oPlants, 'H2O_InputWaterNeed');       % plant water input
-            matter.procs.exmes.liquid(oPlants, 'Biomass_HarvestEdible');    % plant edible biomass to food phase
-            matter.procs.exmes.liquid(oPlants, 'Biomass_HarvestInedible');  % plant inedible biomass to waste phase
+            matter.procs.exmes.absorber(oPlants, 'H2O_ExchangePlants');       % plant H2O exchange with atmosphere
+            matter.procs.exmes.absorber(oPlants, 'O2_ExchangePlants');        % plant O2 exchange with atmosphere
+            matter.procs.exmes.absorber(oPlants, 'CO2_ExchangePlants');       % plant CO2 exchange with atmosphere
+            matter.procs.exmes.absorber(oPlants, 'H2O_InputWaterNeed');       % plant water input
+            matter.procs.exmes.absorber(oPlants, 'Biomass_HarvestEdible');    % plant edible biomass to food phase
+            matter.procs.exmes.absorber(oPlants, 'Biomass_HarvestInedible');  % plant inedible biomass to waste phase
             
             
             % add phase to store; harvested edible biomass is extracted

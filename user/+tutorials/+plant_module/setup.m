@@ -161,19 +161,16 @@ classdef setup < simulation.infrastructure
             
             oLogger.addValue('Greenhouse:s:CO2Buffer.toPhases.CO2BufferPhase', 'fMass', 'CO2 Mass', 'kg');
             
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{1}.Harvest.EdibleDryBiomass', 'kg', 'Edible Dry Biomass');           
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{1}.Harvest.EdibleWetBiomass', 'kg', 'Edible Fluid Biomass');
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{1}.Harvest.InedibleDryBiomass', 'kg', 'Inedible Dry Biomass');
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{1}.Harvest.InedibleWetBiomass', 'kg', 'Inedible Fluid Biomass');
             
-            % log cxCultures Biomass
-            % be careful with wet biomass, here it should mean only fluid
-            % part I believe not "real" wet biomass (which is dry+fluid)
-            % TODO: need to change
-            aiIndex = size(this.cxCultures);
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{2}.Harvest.EdibleDryBiomass', 'kg', 'Edible Dry Biomass');           
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{2}.Harvest.EdibleWetBiomass', 'kg', 'Edible Fluid Biomass');
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{2}.Harvest.InedibleDryBiomass', 'kg', 'Inedible Dry Biomass');
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{2}.Harvest.InedibleWetBiomass', 'kg', 'Inedible Fluid Biomass');
             
-            for iI = 1:aiIndex(1)
-                oLogger.addValue('toChildren.PlantModule.oCreateBiomass.cxCultures{1, iI}.Harvest.EdibleDryBiomass');           
-                oLogger.addValue('toChildren.PlantModule.oCreateBiomass.cxCultures{1, iI}.Harvest.EdibleWetBiomass');
-                oLogger.addValue('toChildren.PlantModule.oCreateBiomass.cxCultures{1, iI}.Harvest.InedibleDryBiomass');
-                oLogger.addValue('toChildren.PlantModule.oCreateBiomass.cxCultures{1, iI}.Harvest.InedibleWetBiomass');
-            end
             
             %% Define Plots
             

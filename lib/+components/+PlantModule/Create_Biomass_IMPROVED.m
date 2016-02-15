@@ -248,10 +248,11 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                 % calculate plant growth, harvested biomass is returned as
                 % biomass in cxCultures is overwritten to zero after 
                 % harvest by called function
-                [ fHarvestedEdibleDry, ...      % [kg]
-                fHarvestedEdibleWet, ...        % [kg]
+                [ this.cxCultures{iI}, ...
+                fHarvestedEdibleDry, ...        % [kg]
+                fHarvestedEdibleFluid, ...      % [kg]
                 fHarvestedInedibleDry, ...      % [kg]
-                fHarvestedInedibleWet ] ...     % [kg]
+                fHarvestedInedibleFluid ] ...   % [kg]
                     = components.PlantModule.Process_PlantGrowthParameters_IMPROVED(...
                         this.cxCultures{iI}, ...                    % Culture in question
                         this.oParent.oAtmosphereReference, ...      % Reference to atmosphere phase
@@ -267,6 +268,9 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                         this.oParent.fH, ...                        % Photoperiod                               [h/d]
                         fDensityH2O);                               % Liquid water density (for transpiration)  [kg/m^3] 
                 
+%                     if (this.cxCultures{iI}.Harvest.EdibleDryBiomass ~= 0) || (this.cxCultures{iI}.Harvest.EdibleWetBiomass ~= 0) || (this.cxCultures{iI}.Harvest.InedibleDryBiomass ~= 0) || (this.cxCultures{iI}.Harvest.InedibleWetBiomass ~= 0)
+%                         keyboard();
+%                     end
 %                 % if something has been harvested, add to the according
 %                 % species in the biomass array
 %                 if afHarvested(iI) ~=0
@@ -276,65 +280,65 @@ classdef Create_Biomass_IMPROVED < matter.manips.substance.flow
                         % Drybean
                         case 1
                             this.afPartials(tiN2I.DrybeanEdibleDry, iI)     = this.afPartials(tiN2I.DrybeanEdibleDry, iI)       + fHarvestedEdibleDry;
-                            this.afPartials(tiN2I.DrybeanEdibleFluid, iI)   = this.afPartials(tiN2I.DrybeanEdibleFluid, iI)     + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.DrybeanEdibleFluid, iI)   = this.afPartials(tiN2I.DrybeanEdibleFluid, iI)     + fHarvestedEdibleFluid;
                             this.afPartials(tiN2I.DrybeanInedibleDry, iI)   = this.afPartials(tiN2I.DrybeanInedibleDry, iI)     + fHarvestedInedibleDry;
-                            this.afPartials(tiN2I.DrybeanInedibleFluid, iI) = this.afPartials(tiN2I.DrybeanInedibleFluid, iI)   + fHarvestedInedibleWet;
+                            this.afPartials(tiN2I.DrybeanInedibleFluid, iI) = this.afPartials(tiN2I.DrybeanInedibleFluid, iI)   + fHarvestedInedibleFluid;
                             
                         % Lettuce
                         case 2
                             this.afPartials(tiN2I.LettuceEdibleDry, iI)     = this.afPartials(tiN2I.LettuceEdibleDry, iI)       + fHarvestedEdibleDry;
-                            this.afPartials(tiN2I.LettuceEdibleFluid, iI)   = this.afPartials(tiN2I.LettuceEdibleFluid, iI)     + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.LettuceEdibleFluid, iI)   = this.afPartials(tiN2I.LettuceEdibleFluid, iI)     + fHarvestedEdibleFluid;
                             this.afPartials(tiN2I.LettuceInedibleDry, iI)   = this.afPartials(tiN2I.LettuceInedibleDry, iI)     + fHarvestedInedibleDry;
-                            this.afPartials(tiN2I.LettuceInedibleFluid, iI) = this.afPartials(tiN2I.LettuceInedibleFluid, iI)   + fHarvestedInedibleWet;
+                            this.afPartials(tiN2I.LettuceInedibleFluid, iI) = this.afPartials(tiN2I.LettuceInedibleFluid, iI)   + fHarvestedInedibleFluid;
                             
                         % Peanut
                         case 3
                             this.afPartials(tiN2I.PeanutEdibleDry, iI)      = this.afPartials(tiN2I.PeanutEdibleDry, iI)        + fHarvestedEdibleDry;
-                            this.afPartials(tiN2I.PeanutEdibleFluid, iI)    = this.afPartials(tiN2I.PeanutEdibleFluid, iI)      + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.PeanutEdibleFluid, iI)    = this.afPartials(tiN2I.PeanutEdibleFluid, iI)      + fHarvestedEdibleFluid;
                             this.afPartials(tiN2I.PeanutInedibleDry, iI)    = this.afPartials(tiN2I.PeanutInedibleDry, iI)      + fHarvestedInedibleDry;
-                            this.afPartials(tiN2I.PeanutInedibleFluid, iI)  = this.afPartials(tiN2I.PeanutInedibleFluid, iI)    + fHarvestedInedibleWet;
+                            this.afPartials(tiN2I.PeanutInedibleFluid, iI)  = this.afPartials(tiN2I.PeanutInedibleFluid, iI)    + fHarvestedInedibleFluid;
                             
                         % Rice
                         case 4
                             this.afPartials(tiN2I.RiceEdibleDry, iI)        = this.afPartials(tiN2I.RiceEdibleDry, iI)          + fHarvestedEdibleDry;
-                            this.afPartials(tiN2I.RiceEdibleFluid, iI)      = this.afPartials(tiN2I.RiceEdibleFluid, iI)        + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.RiceEdibleFluid, iI)      = this.afPartials(tiN2I.RiceEdibleFluid, iI)        + fHarvestedEdibleFluid;
                             this.afPartials(tiN2I.RiceInedibleDry, iI)      = this.afPartials(tiN2I.RiceInedibleDry, iI)        + fHarvestedInedibleDry;
-                            this.afPartials(tiN2I.RiceInedibleFluid, iI)    = this.afPartials(tiN2I.RiceInedibleFluid, iI)      + fHarvestedInedibleWet;
+                            this.afPartials(tiN2I.RiceInedibleFluid, iI)    = this.afPartials(tiN2I.RiceInedibleFluid, iI)      + fHarvestedInedibleFluid;
                             
                         % Soybean
                         case 5
                             this.afPartials(tiN2I.SoybeanEdibleDry, iI)     = this.afPartials(tiN2I.SoybeanEdibleDry, iI)       + fHarvestedEdibleDry;
-                            this.afPartials(tiN2I.SoybeanEdibleFluid, iI)   = this.afPartials(tiN2I.SoybeanEdibleFluid, iI)     + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.SoybeanEdibleFluid, iI)   = this.afPartials(tiN2I.SoybeanEdibleFluid, iI)     + fHarvestedEdibleFluid;
                             this.afPartials(tiN2I.SoybeanInedibleDry, iI)   = this.afPartials(tiN2I.SoybeanInedibleDry, iI)     + fHarvestedInedibleDry;
-                            this.afPartials(tiN2I.SoybeanInedibleFluid, iI) = this.afPartials(tiN2I.SoybeanInedibleFluid, iI)   + fHarvestedInedibleWet;
+                            this.afPartials(tiN2I.SoybeanInedibleFluid, iI) = this.afPartials(tiN2I.SoybeanInedibleFluid, iI)   + fHarvestedInedibleFluid;
                             
                         % Sweet Potato
                         case 6
                             this.afPartials(tiN2I.SweetpotatoEdibleDry, iI)         = this.afPartials(tiN2I.SweetpotatoEdibleDry, iI)       + fHarvestedEdibleDry;
-                            this.afPartials(tiN2I.SweetpotatoEdibleFluid, iI)       = this.afPartials(tiN2I.SweetpotatoEdibleFluid, iI)     + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.SweetpotatoEdibleFluid, iI)       = this.afPartials(tiN2I.SweetpotatoEdibleFluid, iI)     + fHarvestedEdibleFluid;
                             this.afPartials(tiN2I.SweetpotatotInedibleDry, iI)      = this.afPartials(tiN2I.SweetpotatotInedibleDry, iI)    + fHarvestedInedibleDry;
-                            this.afPartials(tiN2I.SweetpotatotInedibleFluid, iI)    = this.afPartials(tiN2I.SweetpotatotInedibleFluid, iI)  + fHarvestedInedibleWet;
+                            this.afPartials(tiN2I.SweetpotatotInedibleFluid, iI)    = this.afPartials(tiN2I.SweetpotatotInedibleFluid, iI)  + fHarvestedInedibleFluid;
                            
                         % Tomato
                         case 7
                             this.afPartials(tiN2I.TomatoEdibleDry, iI)      = this.afPartials(tiN2I.TomatoEdibleDry, iI)        + fHarvestedEdibleDry;
-                            this.afPartials(tiN2I.TomatoEdibleFluid, iI)    = this.afPartials(tiN2I.TomatoEdibleFluid, iI)      + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.TomatoEdibleFluid, iI)    = this.afPartials(tiN2I.TomatoEdibleFluid, iI)      + fHarvestedEdibleFluid;
                             this.afPartials(tiN2I.TomatoInedibleDry, iI)    = this.afPartials(tiN2I.TomatoInedibleDry, iI)      + fHarvestedInedibleDry;
-                            this.afPartials(tiN2I.TomatoInedibleFluid, iI)  = this.afPartials(tiN2I.TomatoInedibleFluid, iI)    + fHarvestedInedibleWet;
+                            this.afPartials(tiN2I.TomatoInedibleFluid, iI)  = this.afPartials(tiN2I.TomatoInedibleFluid, iI)    + fHarvestedInedibleFluid;
                             
                         % Wheat
                         case 8
                             this.afPartials(tiN2I.WheatEdibleDry, iI)       = this.afPartials(tiN2I.WheatEdibleDry, iI)     + fHarvestedEdibleDry;
-                            this.afPartials(tiN2I.WheatEdibleFluid, iI)     = this.afPartials(tiN2I.WheatEdibleFluid, iI)   + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.WheatEdibleFluid, iI)     = this.afPartials(tiN2I.WheatEdibleFluid, iI)   + fHarvestedEdibleFluid;
                             this.afPartials(tiN2I.WheatInedibleDry, iI)     = this.afPartials(tiN2I.WheatInedibleDry, iI)   + fHarvestedInedibleDry;
-                            this.afPartials(tiN2I.WheatInedibleFluid, iI)   = this.afPartials(tiN2I.WheatInedibleFluid, iI) + fHarvestedInedibleWet;
+                            this.afPartials(tiN2I.WheatInedibleFluid, iI)   = this.afPartials(tiN2I.WheatInedibleFluid, iI) + fHarvestedInedibleFluid;
                             
                         % White Potato
                         case 9
                             this.afPartials(tiN2I.WhitepotatoEdibleDry, iI)     = this.afPartials(tiN2I.WhitepotatoEdibleDry, iI)       + fHarvestedEdibleDry;
-                            this.afPartials(tiN2I.WhitepotatoEdibleFluid, iI)   = this.afPartials(tiN2I.WhitepotatoEdibleFluid, iI)     + fHarvestedEdibleWet;
+                            this.afPartials(tiN2I.WhitepotatoEdibleFluid, iI)   = this.afPartials(tiN2I.WhitepotatoEdibleFluid, iI)     + fHarvestedEdibleFluid;
                             this.afPartials(tiN2I.WhitepotatoInedibleDry, iI)   = this.afPartials(tiN2I.WhitepotatoInedibleDry, iI)     + fHarvestedInedibleDry;
-                            this.afPartials(tiN2I.WhitepotatoInedibleFluid, iI) = this.afPartials(tiN2I.WhitepotatoInedibleFluid, iI)   + fHarvestedInedibleWet;
+                            this.afPartials(tiN2I.WhitepotatoInedibleFluid, iI) = this.afPartials(tiN2I.WhitepotatoInedibleFluid, iI)   + fHarvestedInedibleFluid;
                     end
                     
                     % Log total values for O2, CO2 and H2O gas exchange and

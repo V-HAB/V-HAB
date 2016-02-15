@@ -1,4 +1,4 @@
-function [ fHarvestedEdibleDry, fHarvestedEdibleWet, fHarvestedInedibleDry, fHarvestedInedibleWet ] = ...
+function [ cxCulture, fHarvestedEdibleDry, fHarvestedEdibleWet, fHarvestedInedibleDry, fHarvestedInedibleWet ] = ...
     Process_PlantGrowthParameters_IMPROVED(cxCulture, oAtmosphereReference, fTime, fTemperatureLight, fTemperatureDark, fWaterAvailable, fRelativeHumidityLight, fRelativeHumidityDark, fPressureAtmosphere, fCO2, fPPF, fH, fDensityH2O)
 
     % Harvested biomass variables are always zero except when harvested,
@@ -18,18 +18,19 @@ function [ fHarvestedEdibleDry, fHarvestedEdibleWet, fHarvestedInedibleDry, fHar
         % check if simulation reached planting time
         if fTime >= cxCulture.PlantData.EmergeTime
             % harvest time not yet reached -> plants grow
-            if cxCulture.Growth.InternalTime < cxCulture.PlantData.HarvestTime
+            if cxCulture.Growth.InternalTime < (cxCulture.PlantData.HarvestTime * 86400)
                 % internal plant time from planting to harvest
                 cxCulture.Growth.InternalTime = fTime - (cxCulture.Growth.InternalGeneration - 1) * cxCulture.PlantData.HarvestTime - cxCulture.PlantData.EmergeTime;
                 
                 % check if CO2 concentration is within the limits for the
                 % MEC model (330 - 1300 ppm)
-                if (fCO2 > 330) && (fCO2 < 1300)
+                if (fCO2 >= 330) && (fCO2 <= 1300)
                     % time after canopy closure, required for 
                     % Calculate_PlantGrowthRates function call
                     fT_A = [1/fCO2 1 fCO2 fCO2^2 fCO2^3] * components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).Matrix_T_A * [1/fPPF; 1; fPPF; fPPF^2; fPPF^3];
                     
-                    [ fHOP_Net, ...     % net hourly oxygen production      % [g/m^2h]
+                    [ cxCulture, ...
+                    fHOP_Net, ...       % net hourly oxygen production      % [g/m^2h]
                     fHCC_Net, ...       % net hourly carbon consumption     % [g/m^2h]
                     fHCGR_Dry, ...      % hourly crop growth rate           % [g/m^2h]
                     fHTR, ...           % hourly transpiration rate         % [g/m^2h]

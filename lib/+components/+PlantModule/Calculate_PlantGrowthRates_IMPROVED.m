@@ -1,4 +1,4 @@
-function [ fHOP_Net, fHCC_Net, fHCGR_Dry, fHTR, fHWC ] = ...
+function [ cxCulture, fHOP_Net, fHCC_Net, fHCGR_Dry, fHTR, fHWC ] = ...
     Calculate_PlantGrowthRates_IMPROVED(cxCulture, oAtmosphereReference, fTime, fT_A, fTemperatureLight, fTemperatureDark, fRelativeHumidityLight, fRelativeHumidityDark, fPressureAtmosphere, fCO2, fPPF, fH, fDensityH2O)
 
     % determine if culture is currently in light or dark period
@@ -45,10 +45,10 @@ function [ fHOP_Net, fHCC_Net, fHCGR_Dry, fHTR, fHWC ] = ...
     fCQY_Max = [1/fCO2 1 fCO2 fCO2^2 fCO2^3] * components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).Matrix_CQY * [1/fPPF; 1; fPPF; fPPF^2; fPPF^3]; 
     
     % calculate actual canopy quantum yield [µmol Carbon Fixed/µmol Absorbed PPF]
-    if (cxCulture.PlantData.PlantSpecies == 2) || (cxCulture.PlantData.PlantSpecies == 6) || (fTime <= components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q)
+    if (strcmp(cxCulture.PlantData.PlantSpecies, 'Lettuce')) || (strcmp(cxCulture.PlantData.PlantSpecies, 'Sweetpotato')) || (fTime <= components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q)
         fCQY     = fCQY_Max; 
-    elseif (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q <= fTime) && (fTime <= components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_M)
-        fCQY     = fCQY_Max - (fCQY_Max - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).CQY_Min) * (fTime - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q) / (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_M - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q); 
+    elseif (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q <= fTime) && (fTime <= components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_M_Nominal_Nominal)
+        fCQY     = fCQY_Max - (fCQY_Max - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).CQY_Min) * (fTime - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q) / (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_M_Nominal - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q); 
     else
         fCQY     = 0; 
     end
@@ -60,8 +60,8 @@ function [ fHOP_Net, fHCC_Net, fHCGR_Dry, fHTR, fHWC ] = ...
     if components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).Legume == 1
         if fTime <= components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q
             fCUE_24 = components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).CUE_Max; 
-        elseif (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q <= fTime) && (fTime <= components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_M)
-            fCUE_24 = components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).CUE_Max - (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).CUE_Max - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).CUE_Min) * (fTime - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q) / (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_M - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q); 
+        elseif (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q <= fTime) && (fTime <= components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_M_Nominal)
+            fCUE_24 = components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).CUE_Max - (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).CUE_Max - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).CUE_Min) * (fTime - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q) / (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_M_Nominal - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q); 
         end
     else
         fCUE_24 = components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).CUE_Max; 
@@ -74,16 +74,16 @@ function [ fHOP_Net, fHCC_Net, fHCGR_Dry, fHTR, fHWC ] = ...
     fHCG = 0.0036 * fCUE_24 * fA * fCQY * fPPF * bI;  
     
     % get molar masses from matter table
-    fMolarMassC     = matter.table.ttxMatter.C.fMolarMass;
-    fMolarMassO2    = matter.table.ttxMatter.O2.fMolarMass;
-    fMolarMassCO2   = matter.table.ttxMatter.CO2.fMolarMass;
-    fMolarMassH2O   = matter.table.ttxMatter.H2O.fMolarMass;
+    fMolarMassC     = oAtmosphereReference.oMT.ttxMatter.C.fMolarMass;
+    fMolarMassO2    = oAtmosphereReference.oMT.ttxMatter.O2.fMolarMass;
+    fMolarMassCO2   = oAtmosphereReference.oMT.ttxMatter.CO2.fMolarMass;
+    fMolarMassH2O   = oAtmosphereReference.oMT.ttxMatter.H2O.fMolarMass;
     
     % Hourly crop growth rate on a dry basis
     fHCGR_Dry = fHCG * fMolarMassC / components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).BCF;  % [kg/m^2/h]
     
     % Hourly crop growth rate on a wet basis
-    fHCGR_Wet = HCGR_Dry / components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).WBF;   % [kg/m^2/h]
+    fHCGR_Wet = fHCGR_Dry / components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).WBF;   % [kg/m^2/h]
     
     % Hourly Oxygen Production (HOP)
     fHOP = fHCG / fCUE_24 * components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).OPF * fMolarMassO2;   % [kg/m^2/h]
@@ -155,7 +155,7 @@ function [ fHOP_Net, fHCC_Net, fHCGR_Dry, fHTR, fHWC ] = ...
     fDryAirDensity = 1.2922;
     
     % PENMAN-Monteith equation ET_0 in [Lm^-2s^-1]
-    a = d * (fRadiance_Net - fSoilHeatFlux) + fDryAirDensity * oAtmosphereReference.fSpecificIsobaricHeatCapacity * (e_s - e_a) / fAerodynamicResistance;
+    a = d * (fRadiance_Net - fSoilHeatFlux) + fDryAirDensity * oAtmosphereReference.fSpecificHeatCapacity * (e_s - e_a) / fAerodynamicResistance;
     b = (d + fGamma * (1 + fSurfaceResistance / fAerodynamicResistance)) * fL_v;
 
     fET_0 = a / b; 
@@ -163,10 +163,10 @@ function [ fHOP_Net, fHCC_Net, fHCGR_Dry, fHTR, fHWC ] = ...
     % Crop Coefficient development during plant growth
     if fTime < fT_A
         fKC = components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).KC_Mid * (fTime / fT_A) ^ components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).N;
-    elseif (fT_A <= fTime) && (fTime <= fT_Q)
+    elseif (fT_A <= fTime) && (fTime <= components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q)
         fKC = components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).KC_Mid;
     else
-        fKC = components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).KC_Mid + ((fTime - fT_Q) / (fT_M - fT_Q)) * (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).KC_Late - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).KC_Mid);
+        fKC = components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).KC_Mid + ((fTime - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q) / (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_M_Nominal - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).T_Q)) * (components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).KC_Late - components.PlantModule.PlantParameters_IMPROVED(cxCulture.PlantData.PlantSpecies).KC_Mid);
     end
     
     % Final Water volume evapotranspiration ET_c in [liters/m^2s]
