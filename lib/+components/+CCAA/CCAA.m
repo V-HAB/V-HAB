@@ -328,40 +328,38 @@ classdef CCAA < vsys
             % cfm = cubic feet per minute
 
             fInFlow = 0.2124*this.oAtmosphere.fDensity;
-            fPercentalFlowChange = abs((this.toBranches.CCAA_In_FromCabin.fFlowRate - fInFlow)/(this.toBranches.CCAA_In_FromCabin.fFlowRate));
+            fPercentalFlowChange = abs((this.toBranches.CCAA_In_FromCabin.fFlowRate + fInFlow)/(this.toBranches.CCAA_In_FromCabin.fFlowRate));
             
             fHumidityChange = abs(this.rRelHumidity - this.oAtmosphere.rRelHumidity);
             
             % If the inlet flow changed by less than 1% and the humidity
             % changed by less than 1% it is not necessary to recalculate
             % the CCAA
-            if (fPercentalFlowChange < 0.01) && (fHumidityChange < 0.001)
+            if (fPercentalFlowChange < 0.01) && (fHumidityChange < 0.01)
                 return
             end
             
-            % Setting of the valve angle of the TCCV split
-            if this.oTimer.fTime > 60
-                this.rRelHumidity = this.oAtmosphere.rRelHumidity;
-                %since the original step was 1s the angle change is considered
-                %to be given in °/s and therefore is multiplied with the
-                %current timestep to get the actual angle change value.
-                %Otherwise the control logic would depend on the time step used
-                %in the system
-                %Note: A low TCCV angle results in a high flow through the
-                %CHX! Meaning for high humidity the angle has to increase
-                %and vice versa
-                if this.rRelHumidity > 0.45 && this.rTCCV_ratio > 0
-                    this.rTCCV_ratio = this.rTCCV_ratio - 0.0256*min(this.oTimer.afTimeStep); 
-                elseif this.rRelHumidity < 0.35 && this.rTCCV_ratio < 1
-                    this.rTCCV_ratio = this.rTCCV_ratio + 0.0256*min(this.oTimer.afTimeStep);
-                end
-                
-                if this.rTCCV_ratio > 1
-                    this.rTCCV_ratio = 1;
-                elseif this.rTCCV_ratio < 0
-                    this.rTCCV_ratio = 0;
-                end
+            this.rRelHumidity = this.oAtmosphere.rRelHumidity;
+            %since the original step was 1s the angle change is considered
+            %to be given in °/s and therefore is multiplied with the
+            %current timestep to get the actual angle change value.
+            %Otherwise the control logic would depend on the time step used
+            %in the system
+            %Note: A low TCCV angle results in a high flow through the
+            %CHX! Meaning for high humidity the angle has to increase
+            %and vice versa
+            if this.rRelHumidity > 0.45 && this.rTCCV_ratio > 0
+                this.rTCCV_ratio = this.rTCCV_ratio - 0.0256*min(this.oTimer.afTimeStep); 
+            elseif this.rRelHumidity < 0.35 && this.rTCCV_ratio < 1
+                this.rTCCV_ratio = this.rTCCV_ratio + 0.0256*min(this.oTimer.afTimeStep);
             end
+
+            if this.rTCCV_ratio > 1
+                this.rTCCV_ratio = 1;
+            elseif this.rTCCV_ratio < 0
+                this.rTCCV_ratio = 0;
+            end
+                
           	fTCCV_Angle = (this.rTCCV_ratio) * 77 + 3;
             
             if this.oTimer.fTime > 5

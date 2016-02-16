@@ -5,13 +5,14 @@ classdef CDRA < vsys
     % Alternative Name: 4BMS or 4 Bed Molecular Sieve
     %
     % The ISS uses two CDRAs as part of the US life support systems. One is
-    % located in Node 3 and the other in the US Lab. Each CDRA gets air from 
-    % a Common Cabin Air Assembly (CCAA) that has first passed through a
-    % condesing heat exchanger to remove most of the humidity in the air.
-    % This is done because the adsorption of water and CO2 on zeolite would
-    % favor wator instead of CO2. The CDRA itself consists of 4 adsorber 
-    % beds of which 2 are used to remove CO2 while the others are used to 
-    % remove the remaining humidity before the CO2 adsorbing beds.
+    % located in Node 3 and the other in the US Lab (normally only one CDRA
+    % is working at the same time). Each CDRA gets air from a Common Cabin
+    % Air Assembly (CCAA) that has first passed through a condesing heat
+    % exchanger to remove most of the humidity in the air. This is done
+    % because the adsorption of water and CO2 on zeolite would favor wator
+    % instead of CO2. The CDRA itself consists of 4 adsorber beds of which
+    % 2 are used to remove CO2 while the others are used to remove the
+    % remaining humidity before the CO2 adsorbing beds.
     
     properties
         %The maximum power in watt for the electrical heaters that are used
@@ -62,6 +63,8 @@ classdef CDRA < vsys
         oAtmosphere;
         
         tAtmosphere;
+        
+        fOriginalTimeStep;
     end
     
     methods
@@ -71,6 +74,8 @@ classdef CDRA < vsys
             this.sAsscociatedCCAA = sAsscociatedCCAA;
             
             this.tAtmosphere = tAtmosphere;
+            
+            this.fOriginalTimeStep = fTimeStep;
         
             %Setting of the cycle time and air safe time depending on which
             %system is simulated
@@ -170,6 +175,7 @@ classdef CDRA < vsys
             % Input phase
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Filter_Sylobead_1, fVolumeFlow, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, 0, fPressure);
             oInput = matter.phases.gas(this.toStores.Filter_Sylobead_1, 'FlowPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            
             % Filtered phase
             oFiltered = matter.phases.absorber(this.toStores.Filter_Sylobead_1, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Sylobead_B125'); 
             
@@ -193,6 +199,7 @@ classdef CDRA < vsys
             % Input phase
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Filter_13X_1, fVolumeFlow, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, 0, fPressure);
             oInput = matter.phases.gas(this.toStores.Filter_13X_1, 'FlowPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            
             % Filtered phase
             oFiltered = matter.phases.absorber(this.toStores.Filter_13X_1, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite13x'); 
             
@@ -220,6 +227,7 @@ classdef CDRA < vsys
             % Input phase
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Filter_Sylobead_2, fVolumeFlow, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, 0, fPressure);
             oInput = matter.phases.gas(this.toStores.Filter_Sylobead_2, 'FlowPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            
             % Filtered phase
             oFiltered = matter.phases.absorber(this.toStores.Filter_Sylobead_2, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Sylobead_B125'); 
             
@@ -243,6 +251,7 @@ classdef CDRA < vsys
             % Input phase
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Filter_13X_2, fVolumeFlow, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, 0, fPressure);
             oInput = matter.phases.gas(this.toStores.Filter_13X_2, 'FlowPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            
             % Filtered phase
             oFiltered = matter.phases.absorber(this.toStores.Filter_13X_2, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite13x');
             
@@ -325,8 +334,8 @@ classdef CDRA < vsys
             % Adding the Precoolers which are used to decrease the air
             % temperature before it enters the CO2 adsorber beds to
             % increase the adsorption efficiency.
-            components.Temp_Dummy(this, 'Precooler_1', 277); 
-            components.Temp_Dummy(this, 'Precooler_2', 277);
+            components.Temp_Dummy(this, 'Precooler_1', 281); 
+            components.Temp_Dummy(this, 'Precooler_2', 281);
             
             % Adding two times eight pipes to connect the components
             % Two sets are necessary to create both cycles
@@ -393,6 +402,21 @@ classdef CDRA < vsys
             for k = 1:length(this.aoBranches)
                 solver.matter.manual.branch(this.aoBranches(k));
             end
+            
+            oPhase = this.toStores.Filter_Sylobead_1.toPhases.FlowPhase;
+            oPhase.fMaxStep = 1;
+            oPhase = this.toStores.Filter_Sylobead_2.toPhases.FlowPhase;
+            oPhase.fMaxStep = 1;
+            
+            oPhase = this.toStores.Filter_13X_1.toPhases.FlowPhase;
+            oPhase.fMaxStep = 1;
+            oPhase = this.toStores.Filter_13X_2.toPhases.FlowPhase;
+            oPhase.fMaxStep = 1;
+            
+            oPhase = this.toStores.Filter5A_1.toPhases.FlowPhase;
+            oPhase.fMaxStep = 1;
+            oPhase = this.toStores.Filter5A_2.toPhases.FlowPhase;
+            oPhase.fMaxStep = 1;
         end           
         
         %% Function to connect the system and subsystem level branches with each other
@@ -415,6 +439,11 @@ classdef CDRA < vsys
         end
         
         function update(this)
+            % For simulation speed reasons manual solvers are used. The
+            % update function is used to recalculate the manual solver flow
+            % rates if either an absorber p2p proc triggers an update or if
+            % the time step for CDRA itself is reached.
+            
             % Flow rates of the filtered matter (needed to calculate the following flow rates of the branches)
             fFlowRateSylobead_1 = this.toStores.Filter_Sylobead_1.toProcsP2P.Filter_Sylobead_1_proc.fFlowRate + this.toStores.Filter_Sylobead_1.toProcsP2P.DesorptionProcessor.fFlowRate;
             fFlowRateSylobead_2 = this.toStores.Filter_Sylobead_2.toProcsP2P.Filter_Sylobead_2_proc.fFlowRate + this.toStores.Filter_Sylobead_2.toProcsP2P.DesorptionProcessor.fFlowRate;
@@ -470,10 +499,12 @@ classdef CDRA < vsys
                     this.toBranches.Filter5A2_to_Filter13x2.oHandler.setFlowRate(0);
                     this.toBranches.Z13x2_Sylobead2.oHandler.setFlowRate(0);
                     this.toBranches.CDRA_to_CHX_1.oHandler.setFlowRate(0);
+                    this.setTimeStep(1);
                 else
                     this.toBranches.Filter5A2_to_Filter13x2.oHandler.setFlowRate(this.fFlowrateMain - fFlowRate5A_2 - fFlowRate13X_1 - fFlowRateSylobead_1);
                     this.toBranches.Z13x2_Sylobead2.oHandler.setFlowRate(this.fFlowrateMain - fFlowRate13X_2 - fFlowRate5A_2 - fFlowRate13X_1 - fFlowRateSylobead_1);
                     this.toBranches.CDRA_to_CHX_1.oHandler.setFlowRate(this.fFlowrateMain - fFlowRateSylobead_2 - fFlowRate13X_2 - fFlowRate5A_2 - fFlowRate13X_1 - fFlowRateSylobead_1);
+                    this.setTimeStep(this.fOriginalTimeStep);
                 end
                 %Desorbing Filter:
                 %The CO2 filter that is not used in the active cycle is
@@ -490,9 +521,9 @@ classdef CDRA < vsys
                         %phase actually reaches the minimum pressure of 5
                         %Pa during the air safe time
                         if fFlowRate5A_1 < 0
-                            this.toBranches.Filter5A1_AirSafe.oHandler.setFlowRate((this.fInitialFilterMass/(this.fAirSafeTime))-fFlowRate5A_1);
+                            this.toBranches.Filter5A1_AirSafe.oHandler.setFlowRate((0.95*this.fInitialFilterMass/(this.fAirSafeTime))-fFlowRate5A_1);
                         else
-                            this.toBranches.Filter5A1_AirSafe.oHandler.setFlowRate((this.fInitialFilterMass/(this.fAirSafeTime)));
+                            this.toBranches.Filter5A1_AirSafe.oHandler.setFlowRate(0.95*this.fInitialFilterMass/(this.fAirSafeTime));
                         end
                     else
                         this.toBranches.Filter5A1_AirSafe.oHandler.setFlowRate(-fFlowRate5A_1);
@@ -547,10 +578,12 @@ classdef CDRA < vsys
                     this.toBranches.Filter5A1_to_Filter13x1.oHandler.setFlowRate(0);
                     this.toBranches.Z13x1_Sylobead1.oHandler.setFlowRate(0);
                     this.toBranches.CDRA_to_CHX_2.oHandler.setFlowRate(0);
+                    this.setTimeStep(1);
                 else
                     this.toBranches.Filter5A1_to_Filter13x1.oHandler.setFlowRate(this.fFlowrateMain - fFlowRate5A_1 - fFlowRate13X_2 - fFlowRateSylobead_2);
                     this.toBranches.Z13x1_Sylobead1.oHandler.setFlowRate(this.fFlowrateMain - fFlowRate13X_1 - fFlowRate5A_1 - fFlowRate13X_2 - fFlowRateSylobead_2);
                     this.toBranches.CDRA_to_CHX_2.oHandler.setFlowRate(this.fFlowrateMain - fFlowRateSylobead_1 - fFlowRate13X_1 - fFlowRate5A_1 - fFlowRate13X_2 - fFlowRateSylobead_2);
+                    this.setTimeStep(this.fOriginalTimeStep);
                 end
                 %Desorbing Filter:
                 %The CO2 filter that is not used in the active cycle is
@@ -567,9 +600,9 @@ classdef CDRA < vsys
                         %phase actually reaches the minimum pressure of 5
                         %Pa during the air safe time
                         if fFlowRate5A_2 < 0
-                            this.toBranches.Filter5A2_AirSafe.oHandler.setFlowRate((this.fInitialFilterMass/(this.fAirSafeTime))-fFlowRate5A_2);
+                            this.toBranches.Filter5A2_AirSafe.oHandler.setFlowRate((0.95*this.fInitialFilterMass/(this.fAirSafeTime))-fFlowRate5A_2);
                         else
-                            this.toBranches.Filter5A2_AirSafe.oHandler.setFlowRate((this.fInitialFilterMass/(this.fAirSafeTime)));
+                            this.toBranches.Filter5A2_AirSafe.oHandler.setFlowRate(0.95*this.fInitialFilterMass/(this.fAirSafeTime));
                         end
                     else
                         this.toBranches.Filter5A2_AirSafe.oHandler.setFlowRate(-fFlowRate5A_2);
@@ -588,8 +621,14 @@ classdef CDRA < vsys
             if mod(this.oTimer.fTime, this.fCycleTime * 2) < this.fCycleTime
                 if this.toStores.Filter5A_1.toPhases.FilteredPhase.fTemperature > this.TargetTemperature
                     this.toCDRA_Heaters.Filter5A_1.setHeaterPower(0);
+                    if ~(this.fTimeStep < 5)
+                        this.setTimeStep(this.fOriginalTimeStep);
+                    end
                 elseif this.toStores.Filter5A_1.toPhases.FilteredPhase.fTemperature < (this.TargetTemperature * 0.99)
                     this.toCDRA_Heaters.Filter5A_1.setHeaterPower(this.fMaxHeaterPower);
+                    if (this.fTimeStep > 5) && ~(this.fTimeStep < 5)
+                        this.setTimeStep(5);
+                    end
                 end
             else
                 this.toCDRA_Heaters.Filter5A_1.setHeaterPower(0);
@@ -598,16 +637,24 @@ classdef CDRA < vsys
             if mod(this.oTimer.fTime, this.fCycleTime * 2) > this.fCycleTime
                 if this.toStores.Filter5A_2.toPhases.FilteredPhase.fTemperature > this.TargetTemperature
                     this.toCDRA_Heaters.Filter5A_2.setHeaterPower(0);
+                    if ~(this.fTimeStep < 5)
+                        this.setTimeStep(this.fOriginalTimeStep);
+                    end
                 elseif this.toStores.Filter5A_2.toPhases.FilteredPhase.fTemperature  < (this.TargetTemperature * 0.99)
                     this.toCDRA_Heaters.Filter5A_2.setHeaterPower(this.fMaxHeaterPower);
+                    if (this.fTimeStep > 5) && ~(this.fTimeStep < 5)
+                        this.setTimeStep(5);
+                    end
                 end
             else
                 this.toCDRA_Heaters.Filter5A_2.setHeaterPower(0);
             end
-            % updates the filter procs
+            % updates the heaters that are used to model the thermal
+            % coupling between the flow phase and the solid phase for the
+            % 5A filters. They also account for the electrical heating
+            % during the desorption phase
             this.toCDRA_Heaters.Filter5A_1.update();
             this.toCDRA_Heaters.Filter5A_2.update();
-            
         end
     end
     

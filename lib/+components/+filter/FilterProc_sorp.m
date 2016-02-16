@@ -71,8 +71,8 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
         
         % TO DO: Explain these variables!
         k_l;
-        bRecalcToth;
         mfThermodynConst_K_save; 
+        bConst_k_l = false;
         
         % Transfer variable for plotting
         q_plot;
@@ -161,6 +161,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                         for iK = 1:100
                             this.k_l(:,iK) = k_l_temp;
                         end
+                        this.bConst_k_l = true;
                     end
                     
                 case '5A'
@@ -177,6 +178,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                         for iK = 1:100
                             this.k_l(:,iK) = k_l_temp;
                         end
+                        this.bConst_k_l = true;
                     end
                     
                 case '5A-RK38'
@@ -197,6 +199,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                         for iK = 1:100
                             this.k_l(:,iK) = k_l_temp;
                         end
+                        this.bConst_k_l = true;
                     end
                     
                 case 'Sylobead'
@@ -217,6 +220,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                         for iK = 1:100
                             this.k_l(:,iK) = k_l_temp;
                         end
+                        this.bConst_k_l = true;
                     end
                     
                 case 'SilicaGel'
@@ -233,6 +237,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                         for iK = 1:100
                             this.k_l(:,iK) = k_l_temp;
                         end
+                        this.bConst_k_l = true;
                     end
                     
                 otherwise
@@ -323,28 +328,16 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             iInFlowEXME = find(mbInFlows);
             if length(iInFlowEXME) == 1
                 oInFlow = this.oIn.oPhase.coProcsEXME{iInFlowEXME}.oFlow;
-                fFlowRateInCheck = oInFlow.fFlowRate * this.oIn.oPhase.coProcsEXME{iInFlowEXME}.iSign;
+                this.fFlowRateIn = oInFlow.fFlowRate * this.oIn.oPhase.coProcsEXME{iInFlowEXME}.iSign;
             elseif isempty(iInFlowEXME)
 %                 oInFlow = [];
-                fFlowRateInCheck = 0;
+                this.fFlowRateIn = 0;
             else
                 keyboard()
                 % this should not occur, the filter is only allowed to have
                 % one inlet flow from branches (p2p procs are not
                 % considered)
             end
-            % If none of the relevant values has changed significantly the
-            % filter is recalculated but not the toth equation
-%             if     ((abs(this.fSorptionPressure      - this.oIn.oPhase.fPressure)    / this.fSorptionPressure)       < 0.02) &&...
-%                    ((abs(this.fSorptionTemperature   - this.oIn.oPhase.fTemperature) / this.fSorptionTemperature)    < 0.01) &&...
-%                 (max(abs(this.arMassFractions        - this.oIn.oPhase.arPartialMass(this.aiPositions)))             < 0.01) &&...
-%                    ((abs(this.fFlowRateIn            - fFlowRateInCheck)                  / this.fFlowRateIn)        < 0.01)
-%                 this.bRecalcToth = false;
-%             else
-%                 this.bRecalcToth = true;
-%             end
-            this.fFlowRateIn = fFlowRateInCheck;
-                
             
             hTimer = tic();
             
@@ -452,6 +445,9 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             % Calculate helper constant for concentration switch sorbent <-> sorptive
             fHelperConstant_a = (1 - this.rVoidFraction) / this.rVoidFraction;        % [-]
             
+            
+            this.fUpdateDuration = toc(hTimer);
+            
             % Initialize time domain
             % Numerical time grid spacing (dispersive transport stability)
             afInnerTimeStep(1) = this.fDeltaX^2 / (this.fFluidVelocity * this.fDeltaX + 2 * fAxialDispersion_D_l);
@@ -488,74 +484,92 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             mfC(:,1,1) = this.afConcentration;
             mfQ(:,:,1) = this.mfQ_current;
             
-            %----------------------------------------------
-            %------------------SOLVE-----------------------
-            %----------------------------------------------
-            for aiTime_index = 2:iTimePoints
-                
-                % Read values from previous time step
-                mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1);
-                mfQ(:,:,aiTime_index) = mfQ(:,:,aiTime_index-1);
-                
-                for j = 1:this.fTimeFactor_1
-                    
+            % Calculates the capacity of the filter using the toth equation
+            % saved in the filter table file. The caclulation is then
+            % performeed using a linearized thermodynamic konstant k which,
+            % if multiplied with the current concentration, yields the
+            % current capacity of the filter.
+            mfThermodynConst_K = this.ofilter_table.get_ThermodynConst_K(mfC(:,1:end-1,1), this.fSorptionTemperature, this.fRhoSorbent, this.csNames, this.afMolarMass);     %linearized adsorption equilibrium isotherm slope [-]
+          
+            % either gets the saved constant kinematic constant or
+            % calculates it from the equations saved in the filter table
+            if this.bConst_k_l
+                mfKineticConst_k_l = this.k_l(:,(1:length(mfThermodynConst_K)));
+            else
+                mfKineticConst_k_l = this.ofilter_table.get_KineticConst_k_l(mfThermodynConst_K, this.fSorptionTemperature, this.fSorptionPressure, this.fSorptionDensity, this.afConcentration, this.fRhoSorbent, this.fVolumetricFlowRate, this.rVoidFraction, this.csNames, this.afMolarMass);
+            end
+            
+            if ~strcmp(this.sType, 'MetOx')
+                %----------------------------------------------
+                %------------------SOLVE-----------------------
+                %----------------------------------------------
+                for aiTime_index = 2:iTimePoints
+
+                    % Read values from previous time step
+                    mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1);
+                    mfQ(:,:,aiTime_index) = mfQ(:,:,aiTime_index-1);
+
                     %----------------------------------------------
                     %---------------fluid transport----------------
                     %----------------------------------------------
-                    
+
                     % Solve equation system Equation 3.23 from RT BA 13_15
                     mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
-                    
+
                     %---------------------------------------------------------------
                     %-----------------------LDF reaction part-----------------------
                     %---------------------------------------------------------------
-                    
+
                     % Store transportation result values in buffer for later usage
                     mfQ_save = mfQ(:,1:end-1,aiTime_index);
                     mfC_save = mfC(:,1:end-1,aiTime_index);
-                    
-                    for i = 1:this.fTimeFactor_2
-                        % Concentration and loading for adsorption
-                        if ~strcmp(this.sType, 'MetOx')
-                            % Update thermodynamic constant
-                            % Note that this value does not have to be
-                            % constant it can also be the q_equ from the
-                            % toth equation divided with the inlet
-                            % concentration
-                            mfThermodynConst_K = this.ofilter_table.get_ThermodynConst_K(mfC(:,1:end-1,aiTime_index), this.fSorptionTemperature, this.fRhoSorbent, this.csNames, this.afMolarMass);     %linearized adsorption equilibrium isotherm slope [-]
-                            
-                            % Update kinetic lumped constant
-                            % This kinetic constant is the same as the k_m
-                            % provided in ICES-2014-168 for zeolite 5A, 13x
-                            % and Silica Gels. 
-                            if ~isempty(this.k_l)
-                                mfKineticConst_k_l = this.k_l(:,(1:length(mfThermodynConst_K)));
-                            else
-                                mfKineticConst_k_l = this.ofilter_table.get_KineticConst_k_l(mfThermodynConst_K, this.fSorptionTemperature, this.fSorptionPressure, this.fSorptionDensity, this.afConcentration, this.fRhoSorbent, this.fVolumetricFlowRate, this.rVoidFraction, this.csNames, this.afMolarMass);
-                            end
-                            
-                            % Calculate local equilibrium value
-                            % Equation 3.37 from RT BA 13_15
-                            mfQ_equ = mfThermodynConst_K .* (mfC_save + fHelperConstant_a*mfQ_save) ./ (1 + mfThermodynConst_K*fHelperConstant_a);
-                            
-                            % Result of the time step according to LDF formula
-                            % Equation 3.35 from RT BA 13_15
-                            mfQ(:,1:end-1,aiTime_index) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * fHelperConstant_a) * afInnerTimeStep(2)) .*... Equation 3.36 or lambda
-                                (mfQ(:, 1:end-1, aiTime_index) - mfQ_equ) + mfQ_equ; % 3.35
-                            
-                            % Concentration of the substances in the gas
-                            mfC(:,1:end-1,aiTime_index) = fHelperConstant_a * (mfQ_save-mfQ(:,1:end-1,aiTime_index)) + mfC_save;
-                            
-                        % Concentration and loading for MetOx absorption
-                        elseif strcmp(this.sType, 'MetOx')
-                            mfC(:,1:end-1,aiTime_index) = this.ofilter_table.calculate_C_new(mfC(:,1:end-1,aiTime_index), afInnerTimeStep(2), this.fSorptionTemperature, this.csNames, this.fVolSolid, this.iNumGridPoints, this.afMolarMass);
-                            mfQ(:,1:end-1,aiTime_index) = mfQ(:, 1:end-1, aiTime_index) + (mfC_save - mfC(:, 1:end-1, aiTime_index));
-                        end
-                    end
+
+                    % Calculate local equilibrium value
+                    % Equation 3.37 from RT BA 13_15
+                    mfQ_equ = mfThermodynConst_K .* (mfC_save + fHelperConstant_a*mfQ_save) ./ (1 + mfThermodynConst_K*fHelperConstant_a);
+
+                    % Result of the time step according to LDF formula
+                    % Equation 3.35 from RT BA 13_15
+                    mfQ(:,1:end-1,aiTime_index) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * fHelperConstant_a) * afInnerTimeStep(2)) .*... Equation 3.36 or lambda
+                        (mfQ(:, 1:end-1, aiTime_index) - mfQ_equ) + mfQ_equ; % 3.35
+
+                    % Concentration of the substances in the gas
+                    mfC(:,1:end-1,aiTime_index) = fHelperConstant_a * (mfQ_save-mfQ(:,1:end-1,aiTime_index)) + mfC_save;
+
+                    % Apply bed r.b.c.
+                    mfC(:, end, aiTime_index) = mfC(:, end-1, aiTime_index);
+                end
+
+            % Concentration and loading for MetOx absorption
+            elseif strcmp(this.sType, 'MetOx')
+                %----------------------------------------------
+                %------------------SOLVE-----------------------
+                %----------------------------------------------
+                for aiTime_index = 2:iTimePoints
+
+                    % Read values from previous time step
+                    mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1);
+                    mfQ(:,:,aiTime_index) = mfQ(:,:,aiTime_index-1);
+
+                    %----------------------------------------------
+                    %---------------fluid transport----------------
+                    %----------------------------------------------
+
+                    % Solve equation system Equation 3.23 from RT BA 13_15
+                    mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
+
+                    %---------------------------------------------------------------
+                    %-----------------------LDF reaction part-----------------------
+                    %---------------------------------------------------------------
+
+                    % Store transportation result values in buffer for later usage
+                    mfC_save = mfC(:,1:end-1,aiTime_index);
+
+                    mfC(:,1:end-1,aiTime_index) = this.ofilter_table.calculate_C_new(mfC(:,1:end-1,aiTime_index), afInnerTimeStep(2), this.fSorptionTemperature, this.csNames, this.fVolSolid, this.iNumGridPoints, this.afMolarMass);
+                    mfQ(:,1:end-1,aiTime_index) = mfQ(:, 1:end-1, aiTime_index) + (mfC_save - mfC(:, 1:end-1, aiTime_index));
                     
                     % Apply bed r.b.c.
                     mfC(:, end, aiTime_index) = mfC(:, end-1, aiTime_index);
-                    
                 end
             end
             
@@ -617,10 +631,9 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             this.fFlowRate_des = sum(afLoadedMass_des) / (afDiscreteTime(end) - afDiscreteTime(1));           % [kg/s]     
             this.DesorptionProc.setMatterProperties(this.fFlowRate_des, this.arPartials_des);
             
-            this.fUpdateDuration = toc(hTimer);
             
             % Debugging break point
-            if isnan(this.fFlowRate_des) || isnan(this.fFlowRate_ads)
+            if isnan(this.fFlowRate_des) || isnan(this.fFlowRate_ads) || ~isreal(this.fFlowRate_des) || ~isreal(this.fFlowRate_ads)
                 keyboard()
             end
 %             if mod(this.oTimer.fTime, 3600) < 10

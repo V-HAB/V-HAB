@@ -363,12 +363,8 @@ classdef CDRA_simple < vsys
         function setReferencePhase(this, oPhase)
                 this.oAtmosphere = oPhase;
         end
-    end
-    
-    methods (Access = protected)
         
-        function exec(this, ~)
-            exec@vsys(this);
+        function update(this)
             
             % Flow rates of the filtered matter (needed to calculate the following flow rates of the branches)
             fFlowRate13X_1 = this.toStores.Filter_13X_1.toProcsP2P.Filter_13X_1_proc.fFlowRate;
@@ -545,6 +541,14 @@ classdef CDRA_simple < vsys
             else
                 this.toStores.Filter5A_2.toProcsP2P.Filter5A_2_proc.setHeaterPower(0);
             end
+        end
+    end
+    
+    methods (Access = protected)
+        
+        function exec(this, ~)
+            exec@vsys(this);
+            this.update();
         end
 	end
 end
