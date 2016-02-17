@@ -39,7 +39,7 @@ classdef Example1 < vsys
             tutorials.p2p.components.Filter(this, 'Filter', 0.5);
             
             % Adding a fan
-            components.fan(this, 'Fan', 'setSpeed', 40000, 'Left2Right');
+            components.fan(this, 'Fan', 40000, 'Left2Right');
             
             % Adding pipes to connect the components
             components.pipe(this, 'Pipe_1', 0.5, 0.005);
@@ -114,14 +114,16 @@ classdef Example1 < vsys
             
             %if fTime >= 100, keyboard(); end;
             
-            if fTime >= 750 && fTime < 1250 && oFan.fSpeedSetpoint ~= 0
+            if fTime >= 750 && fTime < 1250 && oFan.bActive % fSpeedSetpoint ~= 0
                 fprintf('Fan OFF at second %f and tick %i\n', fTime, this.oTimer.iTick);
-                oFan.fSpeedSetpoint = 0;
+                %oFan.fSpeedSetpoint = 0;
+                oFan.switchOff();
                 
-            elseif fTime >= 1250 && oFan.fSpeedSetpoint ~= 40000
+            elseif fTime >= 1250 && ~oFan.bActive % fSpeedSetpoint ~= 40000
                 fprintf('Fan ON at second %f and tick %i\n', fTime, this.oTimer.iTick);
                 
-                oFan.fSpeedSetpoint = 40000;
+                %oFan.fSpeedSetpoint = 40000;
+                oFan.switchOn();
             end
         end
         
