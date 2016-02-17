@@ -648,7 +648,9 @@ classdef branch < base & event.source
                 
                 % Each flow proc produces the same pressure drop, the sum
                 % being the actual pressure difference.
-                afPressure = ones(1, this.iFlowProcs) * fPressureDiff / this.iFlowProcs;
+                %CHECK need the abs() of the pressure diff because need to
+                %      make sure pressure drops are positive?
+                afPressure = ones(1, this.iFlowProcs) * (fPressureDiff) / this.iFlowProcs;
                 
                 % Note: no matter the flow direction, positive values on
                 % afPRessure always denote a pressure DROP
