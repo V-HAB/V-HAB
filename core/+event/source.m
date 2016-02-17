@@ -12,36 +12,56 @@ classdef source < base % < hobj
     properties (Access = private)
         iCounter = 0;
         
-        xLastReturn;
+        cxLastReturn = {};
+        bNewLastReturn = false;
     end
     
     properties (SetAccess = private, GetAccess = public)
         tcEventCallbacks = struct();
+        pcEventCallbacks;
     end
     
     methods
         function this = source()
+            this.pcEventCallbacks = containers.Map();
         end
         
         % sType refers to event name, possibly hierachical (e.g.
         % schedule.exercise.bicycle); must not contain underscores
         function [ this, unbindCallback ] = bind(this, sType, callBack)
             % Create struct for callback if it doesn't exist yet
-            if ~isfield(this.tcEventCallbacks, sType), this.tcEventCallbacks.(sType) = {}; end;
+            if ~this.pcEventCallbacks.isKey(sType), this.pcEventCallbacks(sType) = {}; end;
             
             
-            this.tcEventCallbacks.(sType){end + 1} = callBack;
+            cCallbacks = this.pcEventCallbacks(sType);
+            cCallbacks{end + 1} = callBack;
+            this.pcEventCallbacks(sType) = cCallbacks;
             
-            unbindCallback = @() this.unbind(sType, length(this.tcEventCallbacks.(sType)));
+            
+            unbindCallback = @() this.unbind(sType, length(this.pcEventCallbacks(sType)));
         end
         
         
         function unbind(this, sType, iId)
-            this.tcEventCallbacks.(sType)(iId) = [];
+            cCallbacks = this.pcEventCallbacks(sType);
+            
+            cCallbacks(iId) = [];
+            
+            this.pcEventCallbacks(sType) = cCallbacks;
         end
     end
     
     methods (Access = protected)
+        
+        
+        function addReturn(this, xVal)
+            %this.xLastReturn = xVal;
+            %TODO cxLastReturn etc just if bRunning, see below!
+            
+            this.cxLastReturn{end + 1} = xVal;
+            this.bNewLastReturn = true;
+        end
+        
         %CU uh! if e.g. tick.eat, and setTimeout, only executed while still
         %   on tick.eat - so at least a detick event, or something? JO!
         %   Then it is setTimeout OR detick!
@@ -50,7 +70,7 @@ classdef source < base % < hobj
             
             %TODO-SPEED why is that so slow? Find a way to speed up
             %           checking for existing events!
-            if ~isfield(this.tcEventCallbacks, sType)
+            if ~this.pcEventCallbacks.isKey(sType)
                 cReturn = {};
                 return;
             end
@@ -73,7 +93,7 @@ classdef source < base % < hobj
                 'sType', sType, ...
                 'oCaller', this, ...
                 'xData', tData, ...
-                'tData', tData ...
+                'tData', tData, ...
                 ...
                 ... %TODO IMPLEMENT - stop further execution of callbacks, 
                 ... e.g. set this.tbStopCurrentEvent.(sType) = true
@@ -82,13 +102,13 @@ classdef source < base % < hobj
                 ... %TODO implement, allow callbacks to add return values
                 ...   -> don't use real func outputs because Matlab stinks!
                 ... 'cxReturn', {}, ...
-                ... 'addReturnValue', @(xVal) this.addReturn(xVal) ...
+                'addReturnValue', @this.addReturn ...
                 ... addReturn would write xVal to this.xLastReturn, then 
                 ... after each callbac execution below, check this.xLastRet
             );
             
             
-            cCallbackCell = this.tcEventCallbacks.(sType);
+            cCallbackCell = this.pcEventCallbacks(sType);
             cReturn = cell(1, length(cCallbackCell));
             
             
@@ -118,9 +138,18 @@ classdef source < base % < hobj
 %                     else
                         callBack(oEvent);
                         
-                        if ~isempty(this.xLastReturn)
-                            cReturn{iC} = this.xLastReturn;
-                            this.xLastReturn = [];
+                        %TODO todo do cxLastReturn stuff only if nested
+                        %     events? cath that -> bRunning, then if event
+                        %     triggered again and bRunning -> nested!
+                        if this.bNewLastReturn % ~isempty(this.xLastReturn)
+                            cReturn{iC} = this.cxLastReturn{end};
+                            
+                            this.cxLastReturn(end) = {};
+                            
+                            if isempty(this.cxLastReturn)
+                                this.bNewLastReturn = false;
+                            end
+                            %this.xLastReturn = [];
                         end
 %                     end
 %                 end
