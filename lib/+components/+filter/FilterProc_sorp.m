@@ -484,20 +484,6 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             mfC(:,1,1) = this.afConcentration;
             mfQ(:,:,1) = this.mfQ_current;
             
-            % Calculates the capacity of the filter using the toth equation
-            % saved in the filter table file. The caclulation is then
-            % performeed using a linearized thermodynamic konstant k which,
-            % if multiplied with the current concentration, yields the
-            % current capacity of the filter.
-            mfThermodynConst_K = this.ofilter_table.get_ThermodynConst_K(mfC(:,1:end-1,1), this.fSorptionTemperature, this.fRhoSorbent, this.csNames, this.afMolarMass);     %linearized adsorption equilibrium isotherm slope [-]
-          
-            % either gets the saved constant kinematic constant or
-            % calculates it from the equations saved in the filter table
-            if this.bConst_k_l
-                mfKineticConst_k_l = this.k_l(:,(1:length(mfThermodynConst_K)));
-            else
-                mfKineticConst_k_l = this.ofilter_table.get_KineticConst_k_l(mfThermodynConst_K, this.fSorptionTemperature, this.fSorptionPressure, this.fSorptionDensity, this.afConcentration, this.fRhoSorbent, this.fVolumetricFlowRate, this.rVoidFraction, this.csNames, this.afMolarMass);
-            end
             
             if ~strcmp(this.sType, 'MetOx')
                 %----------------------------------------------
@@ -516,6 +502,24 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     % Solve equation system Equation 3.23 from RT BA 13_15
                     mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
 
+                    mDiff = abs(mfC(:,:,aiTime_index) - mfC(:,:,aiTime_index - 1)); 
+                    if (max(mDiff(:)) > 1e-1) || aiTime_index == 2
+
+                        % Calculates the capacity of the filter using the toth equation
+                        % saved in the filter table file. The caclulation is then
+                        % performeed using a linearized thermodynamic konstant k which,
+                        % if multiplied with the current concentration, yields the
+                        % current capacity of the filter.
+                        mfThermodynConst_K = this.ofilter_table.get_ThermodynConst_K(mfC(:,1:end-1,aiTime_index), this.fSorptionTemperature, this.fRhoSorbent, this.csNames, this.afMolarMass);     %linearized adsorption equilibrium isotherm slope [-]
+
+                        % either gets the saved constant kinematic constant or
+                        % calculates it from the equations saved in the filter table
+                        if this.bConst_k_l
+                            mfKineticConst_k_l = this.k_l(:,(1:length(mfThermodynConst_K)));
+                        else
+                            mfKineticConst_k_l = this.ofilter_table.get_KineticConst_k_l(mfThermodynConst_K, this.fSorptionTemperature, this.fSorptionPressure, this.fSorptionDensity, this.afConcentration, this.fRhoSorbent, this.fVolumetricFlowRate, this.rVoidFraction, this.csNames, this.afMolarMass);
+                        end
+                    end
                     %---------------------------------------------------------------
                     %-----------------------LDF reaction part-----------------------
                     %---------------------------------------------------------------

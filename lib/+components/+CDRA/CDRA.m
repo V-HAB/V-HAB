@@ -19,7 +19,7 @@ classdef CDRA < vsys
         %to increase the zeolite temperature during the CO2 scrubbing.
         % TO DO: didnt find an actual reference so for now using a values
         % that seems plausible
-        fMaxHeaterPower = 6000;          % [W] 
+        fMaxHeaterPower = 8000;          % [W] 
         
         %Target temperature the zeolite is supposed to reach during the
         %desorption of CO2
@@ -64,7 +64,20 @@ classdef CDRA < vsys
         
         tAtmosphere;
         
+        % Property to save the original time step specified by the user.
+        % CDRA will have to reduce its time step based on its current state
+        % (for example if the heater is activated or during air safe)
         fOriginalTimeStep;
+        
+        % struct that contains three fields to decide if and how the time
+        % step has to be reduced. The fields are Heater, AirSafe and
+        % PressureEq and contain the value true if the respective process
+        % is currently running and the time step has to be reduced because
+        % of it. At the end of the update function this information is then
+        % used to set the correct time step. This is necessary to prevent
+        % one effect from increasing the time step again while another one
+        % still requires a smaller step.
+        tbReduceTimeStep;
     end
     
     methods
@@ -76,7 +89,12 @@ classdef CDRA < vsys
             this.tAtmosphere = tAtmosphere;
             
             this.fOriginalTimeStep = fTimeStep;
-        
+            
+            this.tbReduceTimeStep.Heater = false;
+            this.tbReduceTimeStep.AirSafe = false;
+            this.tbReduceTimeStep.PressureEq = false;
+            this.tbReduceTimeStep.CycleChange = false;
+            
             %Setting of the cycle time and air safe time depending on which
             %system is simulated
             this.fCycleTime = 144*60;
@@ -444,6 +462,11 @@ classdef CDRA < vsys
             % rates if either an absorber p2p proc triggers an update or if
             % the time step for CDRA itself is reached.
             
+            if mod(this.oTimer.fTime, this.fCycleTime) <= (1.5*this.fOriginalTimeStep)
+                this.tbReduceTimeStep.CycleChange = true;
+            else
+                this.tbReduceTimeStep.CycleChange = false;
+            end
             % Flow rates of the filtered matter (needed to calculate the following flow rates of the branches)
             fFlowRateSylobead_1 = this.toStores.Filter_Sylobead_1.toProcsP2P.Filter_Sylobead_1_proc.fFlowRate + this.toStores.Filter_Sylobead_1.toProcsP2P.DesorptionProcessor.fFlowRate;
             fFlowRateSylobead_2 = this.toStores.Filter_Sylobead_2.toProcsP2P.Filter_Sylobead_2_proc.fFlowRate + this.toStores.Filter_Sylobead_2.toProcsP2P.DesorptionProcessor.fFlowRate;
@@ -496,15 +519,15 @@ classdef CDRA < vsys
                     %changed for the initial refill but no data was
                     %available so here it is assumed that just nothing
                     %flows out until the bed reaches 1 bar pressure
-                    this.toBranches.Filter5A2_to_Filter13x2.oHandler.setFlowRate(0);
-                    this.toBranches.Z13x2_Sylobead2.oHandler.setFlowRate(0);
-                    this.toBranches.CDRA_to_CHX_1.oHandler.setFlowRate(0);
-                    this.setTimeStep(1);
+                    this.toBranches.Filter5A2_to_Filter13x2.oHandler.setFlowRate((0.9*this.fFlowrateMain) - fFlowRate5A_2 - fFlowRate13X_1 - fFlowRateSylobead_1);
+                    this.toBranches.Z13x2_Sylobead2.oHandler.setFlowRate((0.9*this.fFlowrateMain) - fFlowRate13X_2 - fFlowRate5A_2 - fFlowRate13X_1 - fFlowRateSylobead_1);
+                    this.toBranches.CDRA_to_CHX_1.oHandler.setFlowRate((0.9*this.fFlowrateMain) - fFlowRateSylobead_2 - fFlowRate13X_2 - fFlowRate5A_2 - fFlowRate13X_1 - fFlowRateSylobead_1);
+                    this.tbReduceTimeStep.PressureEq = true;
                 else
                     this.toBranches.Filter5A2_to_Filter13x2.oHandler.setFlowRate(this.fFlowrateMain - fFlowRate5A_2 - fFlowRate13X_1 - fFlowRateSylobead_1);
                     this.toBranches.Z13x2_Sylobead2.oHandler.setFlowRate(this.fFlowrateMain - fFlowRate13X_2 - fFlowRate5A_2 - fFlowRate13X_1 - fFlowRateSylobead_1);
                     this.toBranches.CDRA_to_CHX_1.oHandler.setFlowRate(this.fFlowrateMain - fFlowRateSylobead_2 - fFlowRate13X_2 - fFlowRate5A_2 - fFlowRate13X_1 - fFlowRateSylobead_1);
-                    this.setTimeStep(this.fOriginalTimeStep);
+                    this.tbReduceTimeStep.PressureEq = false;
                 end
                 %Desorbing Filter:
                 %The CO2 filter that is not used in the active cycle is
@@ -519,11 +542,16 @@ classdef CDRA < vsys
                         %no data on the flow rates could be found. So here
                         %the flow rate was simply set to ensure that the
                         %phase actually reaches the minimum pressure of 5
-                        %Pa during the air safe time
+                        %Pa during the air safe time. In order to achieve a
+                        %more realistic behaviour the flow rate is scaled
+                        %with the e function.
+                        fCurrentAirSafeTime = mod(this.oTimer.fTime, this.fCycleTime * 2);
+                        fMassFlow = 0.026*exp(-(fCurrentAirSafeTime*15)/this.fAirSafeTime)*this.fInitialFilterMass;
+                        this.tbReduceTimeStep.AirSafe = true;
                         if fFlowRate5A_1 < 0
-                            this.toBranches.Filter5A1_AirSafe.oHandler.setFlowRate((0.95*this.fInitialFilterMass/(this.fAirSafeTime))-fFlowRate5A_1);
+                            this.toBranches.Filter5A1_AirSafe.oHandler.setFlowRate(fMassFlow-fFlowRate5A_1);
                         else
-                            this.toBranches.Filter5A1_AirSafe.oHandler.setFlowRate(0.95*this.fInitialFilterMass/(this.fAirSafeTime));
+                            this.toBranches.Filter5A1_AirSafe.oHandler.setFlowRate(fMassFlow);
                         end
                     else
                         this.toBranches.Filter5A1_AirSafe.oHandler.setFlowRate(-fFlowRate5A_1);
@@ -533,6 +561,7 @@ classdef CDRA < vsys
                     %desorption is negative.
                     this.toBranches.Filter5A1_to_Vent.oHandler.setFlowRate(-fFlowRate5A_1);
                 	this.toBranches.Filter5A1_AirSafe.oHandler.setFlowRate(0);
+                    this.tbReduceTimeStep.AirSafe = false;
                 end
             end
             
@@ -575,15 +604,15 @@ classdef CDRA < vsys
                     %changed for the initial refill but no data was
                     %available so here it is assumed that just nothing
                     %flows out until the bed reaches 1 bar pressure
-                    this.toBranches.Filter5A1_to_Filter13x1.oHandler.setFlowRate(0);
-                    this.toBranches.Z13x1_Sylobead1.oHandler.setFlowRate(0);
-                    this.toBranches.CDRA_to_CHX_2.oHandler.setFlowRate(0);
-                    this.setTimeStep(1);
+                    this.toBranches.Filter5A1_to_Filter13x1.oHandler.setFlowRate((0.9*this.fFlowrateMain) - fFlowRate5A_1 - fFlowRate13X_2 - fFlowRateSylobead_2);
+                    this.toBranches.Z13x1_Sylobead1.oHandler.setFlowRate((0.9*this.fFlowrateMain) - fFlowRate13X_1 - fFlowRate5A_1 - fFlowRate13X_2 - fFlowRateSylobead_2);
+                    this.toBranches.CDRA_to_CHX_2.oHandler.setFlowRate((0.9*this.fFlowrateMain) - fFlowRateSylobead_1 - fFlowRate13X_1 - fFlowRate5A_1 - fFlowRate13X_2 - fFlowRateSylobead_2);
+                    this.tbReduceTimeStep.PressureEq = true;
                 else
                     this.toBranches.Filter5A1_to_Filter13x1.oHandler.setFlowRate(this.fFlowrateMain - fFlowRate5A_1 - fFlowRate13X_2 - fFlowRateSylobead_2);
                     this.toBranches.Z13x1_Sylobead1.oHandler.setFlowRate(this.fFlowrateMain - fFlowRate13X_1 - fFlowRate5A_1 - fFlowRate13X_2 - fFlowRateSylobead_2);
                     this.toBranches.CDRA_to_CHX_2.oHandler.setFlowRate(this.fFlowrateMain - fFlowRateSylobead_1 - fFlowRate13X_1 - fFlowRate5A_1 - fFlowRate13X_2 - fFlowRateSylobead_2);
-                    this.setTimeStep(this.fOriginalTimeStep);
+                    this.tbReduceTimeStep.PressureEq = false;
                 end
                 %Desorbing Filter:
                 %The CO2 filter that is not used in the active cycle is
@@ -598,11 +627,16 @@ classdef CDRA < vsys
                         %no data on the flow rates could be found. So here
                         %the flow rate was simply set to ensure that the
                         %phase actually reaches the minimum pressure of 5
-                        %Pa during the air safe time
+                        %Pa during the air safe time In order to achieve a
+                        %more realistic behaviour the flow rate is scaled
+                        %with the e function.
+                        fCurrentAirSafeTime = mod(this.oTimer.fTime, this.fCycleTime * 2) - this.fCycleTime;
+                        fMassFlow = 0.026*exp(-(fCurrentAirSafeTime*15)/this.fAirSafeTime)*this.fInitialFilterMass;
+                        this.tbReduceTimeStep.AirSafe = true;
                         if fFlowRate5A_2 < 0
-                            this.toBranches.Filter5A2_AirSafe.oHandler.setFlowRate((0.95*this.fInitialFilterMass/(this.fAirSafeTime))-fFlowRate5A_2);
+                            this.toBranches.Filter5A2_AirSafe.oHandler.setFlowRate(fMassFlow-fFlowRate5A_2);
                         else
-                            this.toBranches.Filter5A2_AirSafe.oHandler.setFlowRate(0.95*this.fInitialFilterMass/(this.fAirSafeTime));
+                            this.toBranches.Filter5A2_AirSafe.oHandler.setFlowRate(fMassFlow);
                         end
                     else
                         this.toBranches.Filter5A2_AirSafe.oHandler.setFlowRate(-fFlowRate5A_2);
@@ -610,6 +644,7 @@ classdef CDRA < vsys
                 else
                     this.toBranches.Filter5A2_to_Vent.oHandler.setFlowRate(-fFlowRate5A_2);
                 	this.toBranches.Filter5A2_AirSafe.oHandler.setFlowRate(0);
+                    this.tbReduceTimeStep.AirSafe = false;
                 end
             end
             
@@ -621,14 +656,15 @@ classdef CDRA < vsys
             if mod(this.oTimer.fTime, this.fCycleTime * 2) < this.fCycleTime
                 if this.toStores.Filter5A_1.toPhases.FilteredPhase.fTemperature > this.TargetTemperature
                     this.toCDRA_Heaters.Filter5A_1.setHeaterPower(0);
-                    if ~(this.fTimeStep < 5)
-                        this.setTimeStep(this.fOriginalTimeStep);
-                    end
+                    this.tbReduceTimeStep.Heater = false;
                 elseif this.toStores.Filter5A_1.toPhases.FilteredPhase.fTemperature < (this.TargetTemperature * 0.99)
                     this.toCDRA_Heaters.Filter5A_1.setHeaterPower(this.fMaxHeaterPower);
-                    if (this.fTimeStep > 5) && ~(this.fTimeStep < 5)
-                        this.setTimeStep(5);
-                    end
+                    this.tbReduceTimeStep.Heater = true;
+                end
+                if this.toStores.Filter5A_1.toPhases.FlowPhase.fTemperature > 285
+                    this.tbReduceTimeStep.Heater = true;
+                else
+                    this.tbReduceTimeStep.Heater = false;
                 end
             else
                 this.toCDRA_Heaters.Filter5A_1.setHeaterPower(0);
@@ -637,18 +673,27 @@ classdef CDRA < vsys
             if mod(this.oTimer.fTime, this.fCycleTime * 2) > this.fCycleTime
                 if this.toStores.Filter5A_2.toPhases.FilteredPhase.fTemperature > this.TargetTemperature
                     this.toCDRA_Heaters.Filter5A_2.setHeaterPower(0);
-                    if ~(this.fTimeStep < 5)
-                        this.setTimeStep(this.fOriginalTimeStep);
-                    end
+                    this.tbReduceTimeStep.Heater = false;
                 elseif this.toStores.Filter5A_2.toPhases.FilteredPhase.fTemperature  < (this.TargetTemperature * 0.99)
                     this.toCDRA_Heaters.Filter5A_2.setHeaterPower(this.fMaxHeaterPower);
-                    if (this.fTimeStep > 5) && ~(this.fTimeStep < 5)
-                        this.setTimeStep(5);
-                    end
+                    this.tbReduceTimeStep.Heater = true;
+                end
+                if this.toStores.Filter5A_2.toPhases.FlowPhase.fTemperature > 285
+                    this.tbReduceTimeStep.Heater = true;
+                else
+                    this.tbReduceTimeStep.Heater = false;
                 end
             else
                 this.toCDRA_Heaters.Filter5A_2.setHeaterPower(0);
             end
+            
+            % Reduces the time step if needed
+            if this.tbReduceTimeStep.Heater || this.tbReduceTimeStep.AirSafe || this.tbReduceTimeStep.CycleChange || this.tbReduceTimeStep.PressureEq
+                this.setTimeStep(1);
+            else
+                this.setTimeStep(this.fOriginalTimeStep);
+            end
+            
             % updates the heaters that are used to model the thermal
             % coupling between the flow phase and the solid phase for the
             % 5A filters. They also account for the electrical heating
