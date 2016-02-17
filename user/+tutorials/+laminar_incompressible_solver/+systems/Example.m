@@ -1,0 +1,132 @@
+classdef Example < vsys
+    %EXAMPLE Example simulation for a simple flow in V-HAB 2.0
+    %   Two tanks filled with gas at different pressures and a pipe in between
+    
+    properties (SetAccess = protected, GetAccess = public)
+        fPipeLength   = 0.5;
+        fPipeDiameter = 0.0254/3;
+        
+        oManual;
+    end
+    
+    methods
+        function this = Example(oParent, sName)
+            this@vsys(oParent, sName, 100);
+            
+            
+            eval(this.oRoot.oCfgParams.configCode(this));
+        end
+        
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+            
+            
+            
+            matter.store(this, 'Vacuum', 10000);
+            this.toStores.Vacuum.createPhase('N2Atmosphere', 0.001);
+            matter.procs.exmes.gas(this.toStores.Vacuum.aoPhases(1), 'Port_1');
+            
+            
+            
+            
+            matter.store(this, 'Store', 100);
+            this.toStores.Store.createPhase('N2Atmosphere', this.toStores.Store.fVolume);
+            special.matter.const_press_exme(this.toStores.Store.aoPhases(1), 'Port_Out', 600 + this.toStores.Store.aoPhases(1).fPressure);
+            special.matter.const_press_exme(this.toStores.Store.aoPhases(1), 'Port_Rtn', this.toStores.Store.aoPhases(1).fPressure);
+            
+            
+            matter.store(this, 'Valve_1', 1e-6);
+            cParams = matter.helper.phase.create.N2Atmosphere(this, this.toStores.Valve_1.fVolume);
+            matter.phases.gas_pressure_manual(this.toStores.Valve_1, 'flow', cParams{:});
+            matter.procs.exmes.gas(this.toStores.Valve_1.aoPhases(1), 'In'); 
+            matter.procs.exmes.gas(this.toStores.Valve_1.aoPhases(1), 'Out'); 
+            
+            
+            
+            matter.store(this, 'Filter', 1e-3);
+            cParams = matter.helper.phase.create.N2Atmosphere(this, this.toStores.Filter.fVolume);
+            matter.phases.gas_pressure_manual(this.toStores.Filter, 'flow', cParams{:});
+            matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'In');
+            matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'Out');
+            matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'Filtered');
+            
+            this.toStores.Filter.createPhase('N2Atmosphere', 'adsorbed', 0);
+            
+            
+            
+            
+            %P2P!
+            %components.generic.filter(this.toStores.Filter, 'co2_filter', 'flow', 'adsorbed', 'CO2', inf);%0.01);
+            %components.generic.filter(this.toStores.Filter, 'co2_filter', 'flow', 'adsorbed', 'CO2', 0.001, 1);%inf);%0.01);
+            
+            
+            matter.store(this, 'Valve_2', 1e-6);
+            cParams = matter.helper.phase.create.N2Atmosphere(this, this.toStores.Valve_2.fVolume);
+            matter.phases.gas_pressure_manual(this.toStores.Valve_2, 'flow', cParams{:});
+            matter.procs.exmes.gas(this.toStores.Valve_2.aoPhases(1), 'In'); 
+            matter.procs.exmes.gas(this.toStores.Valve_2.aoPhases(1), 'Out'); 
+            
+            
+            
+            components.pipe(this, 'Pipe_Store_Valve1_1',  this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_Store_Valve1_2',  this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_Valve1_Filter_1', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_Valve1_Filter_2', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_Filter_Valve2_1', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_Filter_Valve2_2', this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_Valve2_Store_1',  this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_Valve2_Store_2',  this.fPipeLength, this.fPipeDiameter);
+            
+            
+            matter.branch(this, 'Store.Port_Out', { 'Pipe_Store_Valve1_1',  'Pipe_Store_Valve1_2'  }, 'Valve_1.In');
+            matter.branch(this, 'Valve_1.Out',    { 'Pipe_Valve1_Filter_1', 'Pipe_Valve1_Filter_2' }, 'Filter.In');
+            matter.branch(this, 'Filter.Out',     { 'Pipe_Filter_Valve2_1', 'Pipe_Filter_Valve2_2' }, 'Valve_2.In');
+            matter.branch(this, 'Valve_2.Out',    { 'Pipe_Valve2_Store_1',  'Pipe_Valve2_Store_2'  }, 'Store.Port_Rtn');
+            
+            
+            matter.branch(this, 'Filter.Filtered', {}, 'Vacuum.Port_1');
+            %TODO something like
+            %matter.branch(this, 'Filter.Filtered', {}, oVacuum.createNewPortAndGetName());
+        end
+        
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            
+            % Set CPE pressures from phase
+            fPressure = this.toStores.Store.aoPhases(1).fPressure;
+            
+            this.toStores.Store.aoPhases(1).coProcsEXME{1}.fPortPressure = fPressure + 600;
+            this.toStores.Store.aoPhases(1).coProcsEXME{2}.fPortPressure = fPressure;
+            
+            %this.toStores.Store.aoPhases(1).rMaxChange  = 0.05;
+            %this.toStores.Filter.aoPhases(2).rMaxChange = 0.15;
+            %this.toStores.Filter.aoPhases(2).rMaxChange = 0.01;
+            this.toStores.Filter.aoPhases(2).rMaxChange = 0.05;
+            % Hack
+            %this.toStores.Filter.aoPhases(2).setVolume(10000);
+            
+            
+            solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches(1:4));
+            
+            
+            this.oManual = solver.matter.manual.branch(this.aoBranches(5));
+        end
+    end
+    
+     methods (Access = protected)
+        
+        function exec(this, ~)
+            exec@vsys(this);
+            
+%             if this.oTimer.fTime >= 500 && this.oManual.fFlowRate == 0
+%                 this.oManual.setFlowRate(1e-4);
+%                 %this.oManual.setFlowRate(1e-3);
+%             end
+        end
+        
+     end
+    
+end
+

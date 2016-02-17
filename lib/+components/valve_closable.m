@@ -30,7 +30,15 @@ classdef valve_closable < matter.procs.f2f
             
             this.supportSolver('callback',  @this.solverDeltas);
             this.supportSolver('manual', false);
+            
+            this.supportSolver('coefficient',  @this.calculatePressureDropCoefficient);
         end
+        
+        
+        function fDropCoefficient = calculatePressureDropCoefficient(this, ~)
+            fDropCoefficient = sif(this.bOpen, 0, inf);
+        end
+        
         
         function fDeltaPress = solverDeltas(this, fFlowRate)
             
@@ -77,7 +85,7 @@ classdef valve_closable < matter.procs.f2f
         end
         
         
-        function setOpen(this, bOpen)
+        function this = setOpen(this, bOpen)
             this.bOpen = ~~bOpen;
             
             % Set branch outdated - needs to recalculate flows!

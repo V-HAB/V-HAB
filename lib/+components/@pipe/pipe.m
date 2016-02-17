@@ -46,7 +46,7 @@ classdef pipe < matter.procs.f2f
             this.supportSolver('hydraulic', fDiameter, fLength);
             this.supportSolver('callback',  @this.solverDeltas);
             this.supportSolver('manual', false);
-            
+            this.supportSolver('coefficient',  @this.calculatePressureDropCoefficient);
 
             if nargin >= 5
                this.fRoughness = fRoughness;
@@ -78,6 +78,43 @@ classdef pipe < matter.procs.f2f
             end
 
         end
+        
+        
+        
+        function fDropCoefficient = calculatePressureDropCoefficient(this, ~)
+            % For the laminar, incompressible, multi-branch solver.
+            % https://en.wikipedia.org/wiki/Hagen-Poiseuille_equation
+            % 
+            % The returned coefficient is multiplied with the volumetric
+            % flow rate calculated with: Q = m' / rho
+            % Q = volumetric flow rate, m' = mass flow rate, rho = density
+            % [m^3/s]                   [kg/s]               [kg/m^3]
+            %
+            % With that, the pressure drop can be calculated:
+            % DP = C * Q
+            % DP = pressure drop [Pa], C = flow coefficient [Pa / (m^3/s)]
+            %
+            %TODO calculate reynolds number based on flow rate of LAST tick
+            %     and warn if it is too large?
+            
+            % Calculate dynamic viscosity
+            try
+                fEta = this.aoFlows(1).getDynamicViscosity();
+            catch
+                try
+                    fEta = this.aoFlows(2).getDynamicViscosity();
+                catch
+                    fEta = 17.2 / 10^6;
+                    this.warn('calculateFlowCoefficient', 'Using default dynamic viscosity.');
+                end
+            end
+            
+            
+            fDropCoefficient = (128 * fEta * this.fLength) / (pi * this.fDiameter ^ 4);
+            
+            %fprintf('%s-%s    eta %f   l %f  d %f  =  %f\n', this.oBranch.sName, this.sName, fEta, this.fLength, this.fDiameter, fDropCoefficient);
+        end
+        
         
         %% Update function for callback solver
         function fDeltaPressure = solverDeltas(this, fFlowRate)
@@ -156,7 +193,7 @@ classdef pipe < matter.procs.f2f
             fReynolds = fFlowSpeed * this.fDiameter * fDensity / fEta;
             % Interpolate transition between turbulent and laminar
             %CHECK What does this do?
-            pInterp = 0.1;
+            pInterp = 0.13;
 
 
             % Calculating the Darcy-Weisbach friction factor using the
@@ -200,6 +237,10 @@ classdef pipe < matter.procs.f2f
             fDeltaPressure = fDensity / 2 * fFlowSpeed^2 * (fLambda * this.fLength / this.fDiameter);
             
             this.fDeltaPressure = fDeltaPressure;
+            
+            
+            %fprintf('%s: dP %f, FR %f, RHO %f, RE %f, LAMBDA %f\n', this.sName, fDeltaPressure, fFlowRate, fDensity, fReynolds, fLambda);
+            
 
             %CHECK include test for choked flow, i.e. speed at outlet > speed of sound?
             %      should that be done by the f2f comp or the solver? Include attribute
