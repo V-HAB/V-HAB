@@ -390,6 +390,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             %[ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
             afTotalInOuts = this.afCurrentTotalInOuts;
             mfInflowDetails = this.mfCurrentInflowDetails;
+            
 
             % Check manipulator
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
@@ -780,7 +781,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
             % Now sum up in-/outflows over all EXMEs
             afTotalInOuts = sum(mfTotalFlows, 1);
-
+            
+            
+            
+            
+            afTotalInOuts   = tools.round.prec(afTotalInOuts,   this.oTimer.iPrecision);
+            mfInflowDetails = tools.round.prec(mfInflowDetails, this.oTimer.iPrecision);
         end
         
     end
@@ -967,6 +973,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         function calculateTimeStep(this)
             % Change in kg of partial masses per second
             [ afChange, mfDetails ] = this.getTotalMassChange();
+            
+            
+            
 
             this.afCurrentTotalInOuts = afChange;
             this.mfCurrentInflowDetails = mfDetails;

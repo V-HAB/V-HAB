@@ -243,8 +243,18 @@ classdef branch < solver.matter.base.branch
             
             fPressDiff = fPressureLeft - fPressureRight;
             
+            fPressDiff = tools.round.prec(fPressDiff, this.oBranch.oContainer.oTimer.iPrecision);
+            
+            
             %QUESTION What is this for?
             fPressDiffOrg = fPressDiff;
+            
+            %if tools.round.prec(fPressDiffOrg, this.oBranch.oContainer.oTimer.iPrecision) == 0
+            %    fFlowRate = 0;
+            %    mfData = [];
+            %    return;
+            %end
+            
             
             %fprintf('PRESS DIFF %.16f\n', fPressDiff);
             %fprintf('%.16f\n', fPressDiff);
