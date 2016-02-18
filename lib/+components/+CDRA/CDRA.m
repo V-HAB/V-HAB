@@ -113,7 +113,7 @@ classdef CDRA < vsys
             % "Multi-Dimensional Simulation of Flows Inside Polydisperse Packed Beds"
             % download link https://www.google.de/url?sa=t&rct=j&q=&esrc=s&source=web&cd=6&cad=rja&uact=8&ved=0ahUKEwjwstb2-OfKAhXEoQ4KHdkUAC8QFghGMAU&url=https%3A%2F%2Fwww.comsol.com%2Fconference2015%2Fdownload-presentation%2F29402&usg=AFQjCNERyzJcfMautp6BfFFUERc1FvISNw&bvm=bv.113370389,d.bGg
             % sorry couldn't find a better one.
-            fCrossSection = (16*13E-3)^2; 
+            fCrossSection = (17*13E-3)^2; 
             
             tGeometry5A.fCrossSection       = fCrossSection;
             tGeometrySylobead.fCrossSection = fCrossSection;

@@ -491,16 +491,12 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                 %----------------------------------------------
                 for aiTime_index = 2:iTimePoints
 
-                    % Read values from previous time step
-                    mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1);
-                    mfQ(:,:,aiTime_index) = mfQ(:,:,aiTime_index-1);
-
                     %----------------------------------------------
                     %---------------fluid transport----------------
                     %----------------------------------------------
 
                     % Solve equation system Equation 3.23 from RT BA 13_15
-                    mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
+                    mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
 
                     mDiff = abs(mfC(:,:,aiTime_index) - mfC(:,:,aiTime_index - 1)); 
                     if (max(mDiff(:)) > 1e-1) || aiTime_index == 2
@@ -525,20 +521,19 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     %---------------------------------------------------------------
 
                     % Store transportation result values in buffer for later usage
-                    mfQ_save = mfQ(:,1:end-1,aiTime_index);
-                    mfC_save = mfC(:,1:end-1,aiTime_index);
+                    mfQ_save = mfQ(:,1:end-1,aiTime_index-1);
 
                     % Calculate local equilibrium value
                     % Equation 3.37 from RT BA 13_15
-                    mfQ_equ = mfThermodynConst_K .* (mfC_save + fHelperConstant_a*mfQ_save) ./ (1 + mfThermodynConst_K*fHelperConstant_a);
+                    mfQ_equ = mfThermodynConst_K .* (mfC(:,1:end-1,aiTime_index) + fHelperConstant_a*mfQ_save) ./ (1 + mfThermodynConst_K*fHelperConstant_a);
 
                     % Result of the time step according to LDF formula
                     % Equation 3.35 from RT BA 13_15
                     mfQ(:,1:end-1,aiTime_index) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * fHelperConstant_a) * afInnerTimeStep(2)) .*... Equation 3.36 or lambda
-                        (mfQ(:, 1:end-1, aiTime_index) - mfQ_equ) + mfQ_equ; % 3.35
+                        (mfQ_save - mfQ_equ) + mfQ_equ; % 3.35
 
                     % Concentration of the substances in the gas
-                    mfC(:,1:end-1,aiTime_index) = fHelperConstant_a * (mfQ_save-mfQ(:,1:end-1,aiTime_index)) + mfC_save;
+                    mfC(:,1:end-1,aiTime_index) = fHelperConstant_a * (mfQ_save-mfQ(:,1:end-1,aiTime_index)) + mfC(:,1:end-1,aiTime_index);
 
                     % Apply bed r.b.c.
                     mfC(:, end, aiTime_index) = mfC(:, end-1, aiTime_index);
