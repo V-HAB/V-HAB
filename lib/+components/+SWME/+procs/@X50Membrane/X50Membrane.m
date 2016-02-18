@@ -155,7 +155,7 @@ classdef X50Membrane < matter.procs.p2ps.flow
             % and the resulting liquid water outlet mass flux in [kg/s]
             this.fWaterVaporFlowRate = fMembraneCoefficient * (fSaturationVaporPressure - fVaporPressure) * this.fMembraneArea;
             
-            fSWMEInputFlowRate = this.oIn.oPhase.toProcsEXME.WaterIn.oFlow.fFlowRate;
+            fSWMEInputFlowRate = abs(this.oIn.oPhase.toProcsEXME.WaterIn.oFlow.fFlowRate);
             
             if fSWMEInputFlowRate == 0
                 
@@ -208,12 +208,7 @@ classdef X50Membrane < matter.procs.p2ps.flow
             % the calculated heat rejection with -1 because it is a
             % negative heat flow, out of the matter.
             this.oTemperatureProcessor.setHeatFlow(-1 * fProcessorHeatRejection);
-            
-            % Don't know if we really need this. Took it out, changes
-            % behavior just slightly. I'm keeping it in here so I remember
-            % later, that this is a modification option.
-            %this.oStore.update();
-            
+
         end
         
         function setTemperatureProcessor(this, oProcessor)

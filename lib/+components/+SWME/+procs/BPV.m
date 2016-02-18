@@ -18,10 +18,10 @@ classdef BPV < matter.procs.f2f
         fKappa                  = 1.333;            % [-]        Isentropic exponent of water 
         
         % Variable values, some of which have default values
-        iValveCurrentSteps    = 1000;               % [-]        current step position the valve is in
-        fTimeOfLastAdjustment = -0.001;             % [s]        simulation time where the last valve adjustment ocurred. Default value is negative time constant to get an update at time = 0s.
-        fVaporFlowRate;                             % [kg/s]     vapor flow rate through the valve
-        fTemperatureSetPoint;                       % [K]        desired outlet water temperature of the SWME
+        iValveCurrentSteps      = 1000;             % [-]        current step position the valve is in
+        fTimeOfLastAdjustment   = -0.001;           % [s]        simulation time where the last valve adjustment ocurred. Default value is negative time constant to get an update at time = 0s.
+        fVaporFlowRate          = 0;                % [kg/s]     vapor flow rate through the valve
+        fTemperatureSetPoint    = 283.15;           % [K]        desired outlet water temperature of the SWME
 
         % A reference to the exme the BPV branch is connected to so we can
         % always get the up to date environmental pressure. 
@@ -208,7 +208,7 @@ classdef BPV < matter.procs.f2f
                     % time steps or unstable simulations (high external
                     % pressure) could happen. In this case the frequency
                     % how often the .exec() method is called in the
-                    % SWMELoop class (roth.swme.system.SWMELoop) is called
+                    % SWME class (components.SWME) is called
                     % should be decreased to make the simulation more
                     % stable.
                     rPressure = fEnvironmentalPressure / fPressureInternal;
