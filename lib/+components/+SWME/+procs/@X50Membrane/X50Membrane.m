@@ -28,14 +28,14 @@ classdef X50Membrane < matter.procs.p2ps.flow
         % evaporated across the membrane.
         arExtractPartials;
         
-        fPressureDropCoefficient = 1.021;       %[-]            Correction factor for the vapor pressure directly outside of the membrane
-        fMembraneArea            = 1.5;         %[m^2]          Total surface area of the membrane
-        fMembraneTortuosity      = 2.325;       %[-]            Tortuosity factor of the membrane
-        fMembraneThickness       = 40e-6;       %[m]            Thickness of the membrane wall
-        fMembraneOpenPoreArea    = 0.6;         %[m^2]          Open pore area of the surface of the membrane
-        fMembranePorosity        = 0.4;         %[-]            Porosity of the membrane
-        fPoreDiameter            = 0.04e-6;     %[m]            Diameter of a membrane pore
-        fReferencePressure       = 800;         %[Pa]           Average pressure for the range of application of the membrane
+        fPressureDropCoefficient = 1.021;       % [-]    Correction factor for the vapor pressure directly outside of the membrane
+        fMembraneArea            = 1.5;         % [m^2]  Total surface area of the membrane
+        fMembraneTortuosity      = 2.325;       % [-]    Tortuosity factor of the membrane
+        fMembraneThickness       = 40e-6;       % [m]    Thickness of the membrane wall
+        fMembraneOpenPoreArea    = 0.6;         % [m^2]  Open pore area of the surface of the membrane
+        fMembranePorosity        = 0.4;         % [-]    Porosity of the membrane
+        fPoreDiameter            = 0.04e-6;     % [m]    Diameter of a membrane pore
+        fReferencePressure       = 800;         % [Pa]   Average pressure for the range of application of the membrane
         
     end
     
@@ -92,12 +92,14 @@ classdef X50Membrane < matter.procs.p2ps.flow
             % Now we can call the findProperty() method.
             fLiquidSpecificHeatCapacity = this.oMT.findProperty(tLiquidParameters);
             
+            % Changing the temperature parameter and calling findProperty()
+            % again for the inlet heat capacity.
             tLiquidParameters.fFirstDepValue = fWaterTemperatureInlet;
-            
             fLiquidSpecificHeatCapacityInlet = this.oMT.findProperty(tLiquidParameters);
             
+            % Changing the temperature parameter and calling findProperty()
+            % again for the outlet heat capacity.
             tLiquidParameters.fFirstDepValue = fWaterTemperatureOutlet;
-            
             fLiquidSpecificHeatCapacityOutlet = this.oMT.findProperty(tLiquidParameters);
             
             % Calculating the mean saturation pressure inside the hollow
@@ -111,43 +113,46 @@ classdef X50Membrane < matter.procs.p2ps.flow
             
             fKnudsenNumber = fMeanMolecularFreePath / this.fPoreDiameter;
             
+            % Calculating the average pressure between the saturation
+            % vapor pressure and the actual vapor pressure in [Pa]
+            fPressureAverage = 0.5 * (fSaturationVaporPressure + fVaporPressure);
+            
             % Determining the type of diffuson through the membrane wall
-            if (fKnudsenNumber >= 10) %Knudsen diffusion
+            if (fKnudsenNumber >= 10) 
+                % Knudsen diffusion
                 
                 fMembraneCoefficient = ( (1.064 * (this.fPoreDiameter / 2) * (this.fMembranePorosity)) ...
                                        / (this.fMembraneTortuosity * this.fMembraneThickness)) * ...
                                          sqrt(this.oMT.ttxMatter.H2O.fMolarMass / (this.oMT.Const.fUniversalGas * fMeanTemperature));
                               
-            elseif 0.01 < fKnudsenNumber && fKnudsenNumber < 10 %Transition diffusion
+            elseif 0.01 < fKnudsenNumber && fKnudsenNumber < 10 
+                % Transition diffusion
                 
-                fPressureAverage        = 0.5 * (fSaturationVaporPressure + fVaporPressure);
-                
+                % Mean free path in [m]
                 fMeanFreePathAtUnitPressure = (this.oMT.Const.fBoltzmann * fMeanTemperature) /...
                                           (sqrt(2) * pi * this.fReferencePressure * this.oMT.ttxMatter.H2O.fAverageMolecularDiameter^2);
             
                 fMolecularSpeed = sqrt( (8 * this.oMT.Const.fUniversalGas * fMeanTemperature) / (pi * this.oMT.ttxMatter.H2O.fMolarMass));
                 
+                % Calculating the parameters for the membrane coefficient
+                % equation
                 fA = (this.fPoreDiameter * this.fMembranePorosity) / (3 * this.oMT.Const.fUniversalGas * fMeanTemperature * this.fMembraneTortuosity);
-                
                 fB = (pi * this.fMembranePorosity * (this.fPoreDiameter / 2)^2) / (32 * this.oMT.Const.fUniversalGas * fMeanTemperature * this.fMembraneTortuosity);
-                
                 fa = this.oMT.ttxMatter.H2O.fMolarMass * ( (fMolecularSpeed * (fA + (fB * this.fReferencePressure) / fMeanFreePathAtUnitPressure)) / this.fMembraneThickness);
-                
                 fb = ( (fB * this.fReferencePressure) / fMeanFreePathAtUnitPressure ) / ( fA + ((fB * this.fReferencePressure) / fMeanFreePathAtUnitPressure) );
                 
                 fMembraneCoefficient = fa * this.fMembraneThickness * (1 + fb * ( (fPressureAverage / this.fReferencePressure) - 1 ) );
             
-            else   %fKnudsenNumber <= 0.01 viscous or Poiseuille flow
+            else   
+                % fKnudsenNumber <= 0.01 viscous or Poiseuille flow
                 
+                % Changing the property parameter and calling
+                % findProperty() for the dynamic viscosity of the gas in
+                % the SWME.
                 tGasParameters.sProperty = 'Dynamic Viscosity';
-                
                 fGasDynamicViscosity     = this.oMT.findProperty(tGasParameters);
                 
-                fPoreRadius              = this.fPoreDiameter / 2;
-                
-                fPressureAverage         = 0.5 * (fSaturationVaporPressure + fVaporPressure);
-                
-                fMembraneCoefficient     = (0.125 * fPressureAverage * this.oMT.ttxMatter.H2O.fMolarMass * this.fMembranePorosity * fPoreRadius^2) /  ...
+                fMembraneCoefficient     = (0.125 * fPressureAverage * this.oMT.ttxMatter.H2O.fMolarMass * this.fMembranePorosity * (this.fPoreDiameter / 2)^2) /  ...
                                           (this.fMembraneThickness * this.fMembraneTortuosity * fGasDynamicViscosity * this.oMT.Const.fUniversalGas * fMeanTemperature);
             end
             
@@ -155,12 +160,14 @@ classdef X50Membrane < matter.procs.p2ps.flow
             % and the resulting liquid water outlet mass flux in [kg/s]
             this.fWaterVaporFlowRate = fMembraneCoefficient * (fSaturationVaporPressure - fVaporPressure) * this.fMembraneArea;
             
+            % Getting the input flow rate into the SWME. Need to use the
+            % absolute value because the SWME is a subsystem, so the inflow
+            % is mathematically negative due to the positive flow direction
+            % always being out of the subsystem.
             fSWMEInputFlowRate = abs(this.oIn.oPhase.toProcsEXME.WaterIn.oFlow.fFlowRate);
             
             if fSWMEInputFlowRate == 0
-                
                 fWaterFlowRateOutlet = 0;
-            
             else
                 %TODO Why is the water vapor flow rate an absolute value? can
                 %the flux be negative? Why would it be?
@@ -194,7 +201,6 @@ classdef X50Membrane < matter.procs.p2ps.flow
             % the outlet temperature, neglecting the energy carried away by
             % the vapor, the same will be done here so the results can be
             % compared to published results.
-            
             this.fHeatRejectionSimple = fSWMEInputFlowRate * fLiquidSpecificHeatCapacity * (fWaterTemperatureInlet - fWaterTemperatureOutlet);
             
             % We have to calculate the heat flow for the temperature
@@ -207,11 +213,13 @@ classdef X50Membrane < matter.procs.p2ps.flow
             % Now we're setting the heat flow on the processor, multiplying
             % the calculated heat rejection with -1 because it is a
             % negative heat flow, out of the matter.
-            this.oTemperatureProcessor.setHeatFlow(-1 * fProcessorHeatRejection);
+            this.oTemperatureProcessor.setHeatFlow( -1 * fProcessorHeatRejection );
 
         end
         
         function setTemperatureProcessor(this, oProcessor)
+            % The temperature changing processor is created outside of this
+            % p2p processor, so we need a method to set the property.
             this.oTemperatureProcessor = oProcessor;
         end
             

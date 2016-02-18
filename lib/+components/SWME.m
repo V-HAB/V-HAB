@@ -1,21 +1,8 @@
 classdef SWME < vsys
-    % SWMELOOP is the simulation of the Space Suit Water Membrane Evaporator designed for
+    % SWME Model of the Space Suit Water Membrane Evaporator designed for
     % the AEMU
-    %
-    % The SWMELoop contains:
-    % -an inlet matter store filled with warm water
-    
-    % -an outlet matter store where the cold water flows to
-    
-    % -an empty matter store with a constant pressure exme representing the
-    %  vacuum of space, where the water vapor flows
-    
-    % -two pipes connecting both of the matter stores to the SWME
-    
-    % -the SWME (roth.swme.stores.SWME)
-    
-    % -the backpressure valve (f2f processor) which controls the vapor flow
-    %  from the SWME to space (roth.swme.procs.BPV)
+    % 
+    % Add a nice description here
     
     properties
         % The external pressure in [Pa] is set to zero for a simulation of
@@ -134,41 +121,7 @@ classdef SWME < vsys
     
     methods (Access= protected)
         function exec(this, ~)
-            
             exec@vsys(this);
-            
-            
-            %%%%%%%%%%%%%%%%%%%changing inlet temperature%%%%%%%%%%%%%%%%%%
-            
-            %Sets a new random inlet temperature every x seconds defined in
-            %fTimeForNextIncrease. The new temperature is an integer
-            %between the values [y z] defined in randi. The 1,1 defines the
-            %size of the matrix, in this case just 1x1.
-            
-            %fTimeForNextIncrease = 5;
-            
-            %if (this.oTimer.fTime > (fTimeForNextIncrease + this.fTimeSinceLastIncrease))
-            
-            %    this.toStores.InletTank.aoPhases(1).setTemp(this.tParam.InitialInletTemperature + randi([-2 2],1,1));
-            
-            %    this.fTimeSinceLastIncrease = this.oTimer.fTime;
-            %end
-            
-            
-            
-            %Increases the inlet temperature gradually
-            %this.toStores.InletTank.aoPhases(1).setTemp(this.tParam.InitialInletTemperature + 0.3*this.oTimer.fTime);
-            
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-            
-            %%manually setting the flow rates of each branch
-            
-            %this.toBranches.oVacuumBranch.setFlowRate(this.toProcsF2F.BPV.fVaporFlux);
-            
-            %this.toBranches.oInletBranch.setFlowRate(this.tParam.WaterInletFlux);
-            
-            %this.toBranches.oOutletBranch.setFlowRate((this.tParam.WaterInletFlux - this.toStores.SWMEStore.toProcsP2P.X50Membrane.fWaterVaporFlux));
         end
     end
 end

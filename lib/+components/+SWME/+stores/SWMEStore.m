@@ -1,22 +1,8 @@
 classdef SWMEStore < matter.store
     % SWME is a matter store with a liquid water and a water vapor phase,
     % connected with each other through the X50Membrane P2P processor
-    %
-    % The SWME contains:
-    % -one inlet (warm water flowing from the Thermal Control Loop of the
-    %  AEMU
-    % -two outlets ( vapor escaping through the Backpressure Valve (BPV) to
-    %  space and cold water flowing back to the Thermal Control Loop
-    % -two exmes connecting both phases through the p2p processor (the X50
-    %  membrane in this case, components.SWME.procs.X50Membrane)
     
-    % SWME(oMT, sName, fSWMEVolume, fSWMEVaporVolume, fInitialTemperature)
-    
-    
-    
-    
-    properties (SetAccess = protected, GetAccess = public)
-        oProc;                          % P2P processor
+    properties
         
     end
     
@@ -33,21 +19,21 @@ classdef SWMEStore < matter.store
             % Creating liquid water phase inside the hollow fibers of the
             % X50 membrane
             oLiquidHoFiPhase = matter.phases.liquid(...
-                               this,...                           % Store where the phase is located
-                              'HoFiWater', ...                    % Phase name
-                               struct('H2O', 0.0881439), ...      % Phase contents
-                               fSWMELiquidVolume, ...             % Phase volume
-                               fInitialTemperature,...            % Phase temperature
-                               28300);                            % Phase pressure
+                               this,...                      % Store where the phase is located
+                              'HoFiWater', ...               % Phase name
+                               struct('H2O', 0.0881439), ... % Phase contents
+                               fSWMELiquidVolume, ...        % Phase volume
+                               fInitialTemperature,...       % Phase temperature
+                               28300);                       % Phase pressure
             
             % Creating the vapor phase filling the SWME around the hollow
             % fibers
             oVaporSWME = matter.phases.gas(...
-                         this, ...                          % Store in which the phase is located
-                        'VaporSWME', ...                    % Phase name
-                         struct('H2O', 9.160756e-6), ...    % Phase contents
-                         fSWMEVaporVolume, ...              % Phase volume
-                         fInitialTemperature);              % Phase temperature
+                         this, ...                           % Store in which the phase is located
+                        'VaporSWME', ...                     % Phase name
+                         struct('H2O', 9.160756e-6), ...     % Phase contents
+                         fSWMEVaporVolume, ...               % Phase volume
+                         fInitialTemperature);               % Phase temperature
             
             % Creating exmes for the vapor phase
             matter.procs.exmes.gas(oVaporSWME, 'VaporIn');                % vapor exiting the  X50 membrane
@@ -58,11 +44,10 @@ classdef SWMEStore < matter.store
             matter.procs.exmes.liquid(oLiquidHoFiPhase, 'WaterOut');      % water exiting the SWME to the outlet feed tank
             matter.procs.exmes.liquid(oLiquidHoFiPhase, 'WaterToVapor');  % water evaporating through the membrane wall
             
-            
             % Creating P2P processor which describes the vapor flux from
             % the inside of the hollow fibers, through the hydrophobic
             % membrane wall, to the inside of the SWME housing
-            this.oProc = components.SWME.procs.X50Membrane(this, 'X50Membrane', 'HoFiWater.WaterToVapor', 'VaporSWME.VaporIn');
+            components.SWME.procs.X50Membrane(this, 'X50Membrane', 'HoFiWater.WaterToVapor', 'VaporSWME.VaporIn');
             
         end
         

@@ -29,7 +29,7 @@ classdef BPV < matter.procs.f2f
     end
     
     methods
-        function this= BPV(oContainer, sName, oReferenceExme)
+        function this = BPV(oContainer, sName, oReferenceExme)
             
             this@matter.procs.f2f(oContainer, sName);
             
@@ -37,8 +37,6 @@ classdef BPV < matter.procs.f2f
             
             % BPV class only supports the manual solver
             this.supportSolver('manual', true, @this.update);
-            
-            
         end
         
         function setTemperatureSetPoint(this, fTemperatureSetPoint)
@@ -99,23 +97,16 @@ classdef BPV < matter.procs.f2f
                     % SWME; A Next-Generation Evaporative Cooling
                     % System[...]"
                     if (this.iValveCurrentSteps <= 600)
-                        
                         iRequiredValveSteps = round (fHeatRejectionError);
-                        
                     else
-                        
                         iRequiredValveSteps = 24 * round (fHeatRejectionError);
-                        
                     end
-                    
                     
                     % Overriding the previously implemented controller,
                     % since it makes the simulation too unstable, but i am
                     % still leaving the code there, maybe for future work?
                     if (iRequiredValveSteps > 1)
-                        
                         iRequiredValveSteps= 1;
-                        
                     end
                     
                     % Setting the new current position of the valve and
@@ -125,31 +116,23 @@ classdef BPV < matter.procs.f2f
                     
                     this.fTimeOfLastAdjustment = this.oBranch.oContainer.oTimer.fTime;
                     
-                    
                     % Same as above, but this time if the temperature falls
                     % below the limit, the response of the motor is to
                     % close the valve
                 elseif ( (fCurrentOutletWaterTemperature - 273.15) < 0.993 * (this.fTemperatureSetPoint - 273.15) )
                     
                     if (this.iValveCurrentSteps <= 600)
-                        
                         iRequiredValveSteps = round (fHeatRejectionError);
-                        
                     else
-                        
                         iRequiredValveSteps = 24 * round (fHeatRejectionError);
                     end
-                    
                     
                     % Overriding the previously implemented controller,
                     % since it makes the simulation too unstable, but i am
                     % still leaving the code there, maybe for future work?
                     if (iRequiredValveSteps > 1)
-                        
                         iRequiredValveSteps= 1;
-                        
                     end
-                    
                     
                     % Since the controller above makes the simulation
                     % unstable, a step by step controller was used instead.
@@ -167,22 +150,18 @@ classdef BPV < matter.procs.f2f
             % if rises above the maximum amount of steps sets it to the
             % maximum.
             if (this.iValveCurrentSteps < 0)
-                
                 this.iValveCurrentSteps = 0;
-                
             elseif (this.iValveCurrentSteps > this.iValveMaximumSteps)
-                
                 this.iValveCurrentSteps = this.iValveMaximumSteps;
-                
             end
             
             %% Calculating the water vapor flux through the valve
             
             % Getting the pressure and density of the vapor on the inside
             % of the SWME
-            fPressureInternal  = this.oContainer.toStores.SWMEStore.toPhases.VaporSWME.fMassToPressure * this.oContainer.toStores.SWMEStore.toPhases.VaporSWME.fMass;
+            fPressureInternal = this.oContainer.toStores.SWMEStore.toPhases.VaporSWME.fMassToPressure * this.oContainer.toStores.SWMEStore.toPhases.VaporSWME.fMass;
             
-            fVaporDensity      = this.oContainer.toStores.SWMEStore.toPhases.VaporSWME.fDensity;
+            fVaporDensity = this.oContainer.toStores.SWMEStore.toPhases.VaporSWME.fDensity;
             
             % Calculating the current open area of the valve based on the
             % current position of the stepper motor
@@ -193,7 +172,7 @@ classdef BPV < matter.procs.f2f
             %if the valve is open, calculates the vapor flux
             if (this.iValveCurrentSteps ~=0)
                 
-                fC1               = sqrt((8 * fPressureInternal) / (pi * fVaporDensity));
+                fC1 = sqrt((8 * fPressureInternal) / (pi * fVaporDensity));
                 
                 fCriticalPressure = fPressureInternal * ((2 / (1 + this.fKappa))^(this.fKappa / (this.fKappa - 1)));
                 
@@ -213,12 +192,10 @@ classdef BPV < matter.procs.f2f
                     % stable.
                     rPressure = fEnvironmentalPressure / fPressureInternal;
                     
-                    fPsi      = sqrt( (this.fKappa / (this.fKappa - 1))  *  ((rPressure^(2 / this.fKappa)) - (rPressure^((1 + this.fKappa) / this.fKappa))));
+                    fPsi = sqrt( (this.fKappa / (this.fKappa - 1))  *  ((rPressure^(2 / this.fKappa)) - (rPressure^((1 + this.fKappa) / this.fKappa))));
                     
                 else
-                    
                     fPsi = sqrt(0.5 * this.fKappa * ((2 / (1 + this.fKappa))^((this.fKappa + 1) / (this.fKappa - 1))));
-                    
                 end
                 
                 this.fVaporFlowRate = (0.86 * fValveCurrentArea * 4 * fPressureInternal * fPsi)  /  (fC1 * sqrt(pi));
@@ -226,13 +203,7 @@ classdef BPV < matter.procs.f2f
             else
                 % If the valve is closed, vapor flux is zero.
                 this.fVaporFlowRate = 0;
-                
             end
-            
         end
-        
-        
-        
     end
-    
 end
