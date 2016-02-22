@@ -16,13 +16,13 @@ classdef setup < simulation.infrastructure
             %Setting of time parameters:
             % TODO this should probably be done in the constructor and the
             % provision of the ptConfigParams map
-
+            warning('off', 'all');
 
             
         %% -Root Object - Greenhouse System-     
             
             %Assigning Root Object - Initializing system 'Greenhouse'
-            tutorials.plant_module.systems.Tutorial_Greenhouse(this.oSimulationContainer, 'Greenhouse');
+            tutorials.plant_module.systems.Greenhouse(this.oSimulationContainer, 'Greenhouse');
            
 
         
@@ -161,15 +161,17 @@ classdef setup < simulation.infrastructure
             
             oLogger.addValue('Greenhouse:s:CO2Buffer.toPhases.CO2BufferPhase', 'fMass', 'CO2 Mass', 'kg');
             
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{1}.Harvest.EdibleDryBiomass', 'kg', 'Edible Dry Biomass');           
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{1}.Harvest.EdibleWetBiomass', 'kg', 'Edible Fluid Biomass');
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{1}.Harvest.InedibleDryBiomass', 'kg', 'Inedible Dry Biomass');
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{1}.Harvest.InedibleWetBiomass', 'kg', 'Inedible Fluid Biomass');
+            % Lettuce
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{1, 1}.INEDIBLE_CGR_d', 'kg', 'Edible Dry Biomass');            % 270      Biomass composition: inedible dry
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{1, 1}.INEDIBLE_CGR_f', 'kg', 'Edible Fluid Biomass');            %    Biomass composition: inedible fluid
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{1, 1}.ED_CGR_d', 'kg', 'Inedible Dry Biomass');                  % 272      Biomass composition: edible dry
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{1, 1}.ED_CGR_f', 'kg', 'Inedible Fluid Biomass');
             
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{2}.Harvest.EdibleDryBiomass', 'kg', 'Edible Dry Biomass');           
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{2}.Harvest.EdibleWetBiomass', 'kg', 'Edible Fluid Biomass');
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{2}.Harvest.InedibleDryBiomass', 'kg', 'Inedible Dry Biomass');
-            oLogger.addValue('Greenhouse.toChildren.PlantModule.oCreateBiomass', 'cxCultures{2}.Harvest.InedibleWetBiomass', 'kg', 'Inedible Fluid Biomass');
+            % Sweet Potato
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.INEDIBLE_CGR_d', 'kg', 'Edible Dry Biomass');            % 278      Biomass composition: inedible dry
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.INEDIBLE_CGR_f', 'kg', 'Edible Fluid Biomass');            %    Biomass composition: inedible fluid
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.ED_CGR_d', 'kg', 'Inedible Dry Biomass');                  % 280      Biomass composition: edible dry
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.ED_CGR_f', 'kg', 'Inedible Fluid Biomass');
             
             
             %% Define Plots

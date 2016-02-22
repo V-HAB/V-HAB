@@ -7,34 +7,34 @@ classdef Create_Biomass < matter.manips.substance.flow
     
     properties %(SetAccess = protected, GetAccess = public)
         
-        % properties regarding plant growth handling
-        tPlantData;
+        %properties regarding plant growth handling
+        oPlantEng;
         fCCulture;
         fFields;
         fState;
         fPlant;
         
         
-        % reference time tranformed to minutes (total simulation time since start)
+        %reference time tranformed to minutes (total simulation time since start)
         fTimeInMinutes;
         
         oParent;
         
-        % array for handling harvest amounts sourcing in different grown cultures
-        afPartials = 0;
-        afPartials2 = 0;
+        %array for handling harvest amounts sourcing in different grown cultures
+        afPartials=0;
+        afPartials2=0;
         
-        % growth conditions
+        %growth conditions
         fWaterAvailable;
-        fPressureAtmosphere;
-        fRelativeHumidityLight;
-        fRelativeHumidityDark;
+        fP_atm;
+        fRH_day;
+        fRH_night;
         fPPF;
-        fCO2ppm             = 1300;
-        fCO2ppm_Measured    = 1300;
+        fCO2ppm;
+        fCO2ppm_Measured;
         fH;
-        fTemperatureLight;
-        fTemperatureDark;
+        fTemp_light;
+        fTemp_dark;
         
         %biomass growth shares
         fINEDIBLE_CGR_d;
@@ -43,9 +43,9 @@ classdef Create_Biomass < matter.manips.substance.flow
         fED_CGR_f;
         
         %gas/water exchange rates
-        fO2Exchange = 0;
-        fCO2Exchange = 0;
-        fH2OExchange = 0;
+        fO2_exchange = 0;
+        fCO2_exchange = 0;
+        fwater_exchange = 0;
         fWaterNeed = 0;
         
         %variable for update check
@@ -53,24 +53,24 @@ classdef Create_Biomass < matter.manips.substance.flow
         
         
         %properties regarding logging of gas and water exchanges
-        fO2ExchangedTotal = 0;
-        afO2ExchangedTotal_out;
-        fO2ExchangedTotal_total = 0;
-        fO2Exchange_out = 0;
+        fO2_sum = 0;
+        afO2_sum_out;
+        fO2_sum_total = 0;
+        fO2_exchange_out = 0;
         
-        fCO2ExchangedTotal = 0;
-        afCO2ExchangedTotal_out;
-        fCO2ExchangedTotal_total = 0;
-        fCO2Exchange_out = 0;
+        fCO2_sum = 0;
+        afCO2_sum_out;
+        fCO2_sum_total = 0;
+        fCO2_exchange_out = 0;
         
-        fH2OTranspiredTotal = 0;
-        afH2OTranspiredTotal_out;
-        fH2OTranspiredTotal_total = 0;
-        fH2OExchange_out = 0;
+        fH2O_trans_sum = 0;
+        afH2O_trans_sum_out;
+        fH2O_trans_sum_total = 0;
+        fwater_exchange_out = 0;
         
-        fH2OConsumedTotal = 0;
-        afH2OConsumedTotal_out;
-        fH2OConsumedTotal_total = 0;
+        fH2O_consum_sum = 0;
+        afH2O_consum_sum_out;
+        fH2O_consum_sum_total = 0;
         fWaterNeed_out = 0;
         
         
@@ -79,16 +79,17 @@ classdef Create_Biomass < matter.manips.substance.flow
     
     
     methods
-        function this = Create_Biomass(oParent, sName, oPhase, tPlantData, tPlantParameters, fTemperatureLight, fTemperatureDark, fRelativeHumidityLight, fRelativeHumidityDark, fPressureAtmosphere, fCO2ppm, fPPF, fH, fWaterAvailable)
+        function this = Create_Biomass(oParent, sName, oPhase, oPlantEng, fPlant, fWaterAvailable, fP_atm, fRH_day, fRH_night, fPPF, fCO2ppm, fCO2ppm_Measured, fH, fTemp_light, fTemp_dark)
             this@matter.manips.substance.flow(sName, oPhase);
             
             %Referencing sources for plant basic growth parameters
-            this.fPlant = tPlantParameters;
-            this.tPlantData = tPlantData.PlantEng;
+            this.fPlant = fPlant;
+            this.oPlantEng = oPlantEng.PlantEng;
+            this.fCCulture.sName='Plants';
             
             
             %Names of Cultures in loaded growth setup "PlantEng"
-            this.fFields = fieldnames(this.tPlantData);
+            this.fFields = fieldnames(this.oPlantEng);
             
             
             global bUseGlobalPlantConditions
@@ -98,12 +99,13 @@ classdef Create_Biomass < matter.manips.substance.flow
             
             %assigning growth parameters
             this.fWaterAvailable    = fWaterAvailable;          % [kg]
-            this.fPressureAtmosphere             = fPressureAtmosphere;                   % [Pa]
-            this.fRelativeHumidityLight            = fRelativeHumidityLight;                  % [-]
-            this.fRelativeHumidityDark          = fRelativeHumidityDark;                % [-]
+            this.fP_atm             = fP_atm;                   % [Pa]
+            this.fRH_day            = fRH_day;                  % [-]
+            this.fRH_night          = fRH_night;                % [-]
+            this.fCO2ppm_Measured   = fCO2ppm_Measured;         % [µmol/mol]
             this.fH                 = fH;                       % [hourds/day]
-            this.fTemperatureLight        = fTemperatureLight;              % [°C]
-            this.fTemperatureDark         = fTemperatureDark;               % [°C]
+            this.fTemp_light        = fTemp_light;              % [°C]
+            this.fTemp_dark         = fTemp_dark;               % [°C]
             
             
             
@@ -119,7 +121,7 @@ classdef Create_Biomass < matter.manips.substance.flow
             %For each entry in "PlantEng" (= number of entries in "this.fFields") ...
             % ... assign the following parameters in the fCCulture struct
             for x=1:length(this.fFields)
-                this.fCCulture.plants{x, 1}.state=eval(['this.tPlantData.' this.fFields{x} '.EngData']);
+                this.fCCulture.plants{x, 1}.state=eval(['this.oPlantEng.' this.fFields{x} '.EngData']);
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 
                 % Factor to transform specific day-based values minute-based values
@@ -219,10 +221,10 @@ classdef Create_Biomass < matter.manips.substance.flow
             end %End of fCCulture assignment
             
             % Initializing some logging arrays
-            this.afO2ExchangedTotal_out         = zeros(1, length(this.fCCulture.plants));
-            this.afCO2ExchangedTotal_out        = zeros(1, length(this.fCCulture.plants));
-            this.afH2OTranspiredTotal_out  = zeros(1, length(this.fCCulture.plants));
-            this.afH2OConsumedTotal_out = zeros(1, length(this.fCCulture.plants));
+            this.afO2_sum_out         = zeros(1, length(this.fCCulture.plants));
+            this.afCO2_sum_out        = zeros(1, length(this.fCCulture.plants));
+            this.afH2O_trans_sum_out  = zeros(1, length(this.fCCulture.plants));
+            this.afH2O_consum_sum_out = zeros(1, length(this.fCCulture.plants));
             
             
             
@@ -235,10 +237,6 @@ classdef Create_Biomass < matter.manips.substance.flow
         
         function update(this)
             
-            if this.oTimer.iTick == 0 || this.oTimer.fTime <= 60
-                return;
-            end
-            
             % Leaves update call when Update has already been done for
             % considered time
             if this.fLastUpdate == this.oParent.oTimer.fTime;
@@ -249,7 +247,7 @@ classdef Create_Biomass < matter.manips.substance.flow
             
             % The update only will be conducted every minute!
             % Necessary for proper "integration"
-            if mod(this.oTimer.fTime, 60)~= 0;
+            if mod(this.oParent.oTimer.fTime, 60)~= 0;
                 return;
             end
             
@@ -274,7 +272,17 @@ classdef Create_Biomass < matter.manips.substance.flow
             
             global bUseGlobalPlantConditions
             
+            % get density of liquid water, required for calculating plant 
+            % transpiration
+            tH2O.sSubstance = 'H2O';
+            tH2O.sProperty = 'Density';
+            tH2O.sFirstDepName = 'Pressure';
+            tH2O.fFirstDepValue = this.fP_atm;
+            tH2O.sSecondDepName = 'Temperature';
+            tH2O.fSecondDepValue = this.fTemp_light;
+            tH2O.sPhaseType = 'liquid';
             
+            fDensityH2O = this.oMT.findProperty(tH2O);
             
             for iI = 1:size(this.fCCulture.plants, 1)
                 
@@ -301,41 +309,42 @@ classdef Create_Biomass < matter.manips.substance.flow
                     this.fINEDIBLE_CGR_f,               ...     % Inedible harvest mass fluid           [kg]
                     this.fED_CGR_d,                     ...     % Edible harvest mass dry               [kg]
                     this.fED_CGR_f,                     ...     % Edible harvest mass fluid             [kg]
-                    this.fO2Exchange,                  ...     % Oxygen exchange rate                  [kg/s]
-                    this.fCO2Exchange ,                ...     % Carbon dioxide exchange rate          [kg/s]
-                    this.fH2OExchange,               ...     % Water exchange rate (transpiration)   [kg/s]
+                    this.fO2_exchange,                  ...     % Oxygen exchange rate                  [kg/s]
+                    this.fCO2_exchange ,                ...     % Carbon dioxide exchange rate          [kg/s]
+                    this.fwater_exchange,               ...     % Water exchange rate (transpiration)   [kg/s]
                     this.fWaterNeed,                    ...     % Water consumption rate                [kg/s]
-                    this.fO2ExchangedTotal,                       ...     % Cumulated oxygen production           [kg]
-                    this.fCO2ExchangedTotal,                      ...     % Cumulated carbon dioxide consumption  [kg]
-                    this.fH2OTranspiredTotal,                ...     % Cumulated water transpiration         [kg]
-                    this.fH2OConsumedTotal]               ...     % Cumulated water consumption           [kg]
+                    this.fO2_sum,                       ...     % Cumulated oxygen production           [kg]
+                    this.fCO2_sum,                      ...     % Cumulated carbon dioxide consumption  [kg]
+                    this.fH2O_trans_sum,                ...     % Cumulated water transpiration         [kg]
+                    this.fH2O_consum_sum]               ...     % Cumulated water consumption           [kg]
                     = components.PlantModule.Process_PlantGrowthParameters(  ... % Path to function
                     ... % -Input Parameters-
                     this.fCCulture.plants{iI, 1},    ...     % State of cultures
                     this.fTimeInMinutes,            ...     % Time in minutes                       [min]
                     this.fWaterAvailable,           ...     % Water mass available                  [kg]
-                    this.fPressureAtmosphere,                    ...     % Pressure                              [Pa]
-                    this.fRelativeHumidityLight,                   ...     % Relative humidity day                 [-]
-                    this.fRelativeHumidityDark,                 ...     % Relative humidity night               [-]
+                    this.fP_atm,                    ...     % Pressure                              [Pa]
+                    this.fRH_day,                   ...     % Relative humidity day                 [-]
+                    this.fRH_night,                 ...     % Relative humidity night               [-]
                     this.fPPF,                      ...     % Photosynthetic photon flux            [µmol/m^2/s]
                     this.fCO2ppm,                   ...     % CO2 level                             [µmol/mol]
                     this.fCO2ppm_Measured,          ...     % CO2 level in LSS                      [µmol/mol]
                     this.fH,                        ...     % Photoperiod per day                   [h/d]
-                    this.fTemperatureLight,               ...     % Mean air temperature                  [°C]
-                    this.fTemperatureDark);                       % Mean air temperature                  [°C]
+                    this.fTemp_light,               ...     % Mean air temperature                  [°C]
+                    this.fTemp_dark, ...                    % Mean air temperature                  [°C]
+                    fDensityH2O);                           % liquid water density (for transpiration) [kg/m^3]
                 %%%%%%%%%%%%%%
                 
                 
                 %assinging calculated growth rates to the considered culture (i)
-                this.fCO2Exchange_out(iI)    = this.fCO2Exchange;
-                this.fO2Exchange_out(iI)     = this.fO2Exchange;
+                this.fCO2_exchange_out(iI)    = this.fCO2_exchange;
+                this.fO2_exchange_out(iI)     = this.fO2_exchange;
                 
-                this.afO2ExchangedTotal_out(iI)         = this.fO2ExchangedTotal;
-                this.afCO2ExchangedTotal_out(iI)        = this.fCO2ExchangedTotal;
-                this.afH2OTranspiredTotal_out(iI)  = this.fH2OTranspiredTotal;
-                this.afH2OConsumedTotal_out(iI) = this.fH2OConsumedTotal;
+                this.afO2_sum_out(iI)         = this.fO2_sum;
+                this.afCO2_sum_out(iI)        = this.fCO2_sum;
+                this.afH2O_trans_sum_out(iI)  = this.fH2O_trans_sum;
+                this.afH2O_consum_sum_out(iI) = this.fH2O_consum_sum;
                 
-                this.fH2OExchange_out(iI)  = this.fH2OExchange;
+                this.fwater_exchange_out(iI)  = this.fwater_exchange;
                 this.fWaterNeed_out(iI)       = this.fWaterNeed;
                 
                 
@@ -454,17 +463,17 @@ classdef Create_Biomass < matter.manips.substance.flow
             %Logged gas exchanges
             %   "Integrated" total values of corresponding exchanges
             %   computed according to specific flowrates
-            this.fO2ExchangedTotal_total          = sum(this.afO2ExchangedTotal_out);            %[kg]
-            this.fCO2ExchangedTotal_total         = sum(this.afCO2ExchangedTotal_out);           %[kg]
-            this.fH2OTranspiredTotal_total   = sum(this.afH2OTranspiredTotal_out);     %[kg]
-            this.fH2OConsumedTotal_total  = sum(this.afH2OConsumedTotal_out);    %[kg]
+            this.fO2_sum_total          = sum(this.afO2_sum_out);            %[kg]
+            this.fCO2_sum_total         = sum(this.afCO2_sum_out);           %[kg]
+            this.fH2O_trans_sum_total   = sum(this.afH2O_trans_sum_out);     %[kg]
+            this.fH2O_consum_sum_total  = sum(this.afH2O_consum_sum_out);    %[kg]
             
             %Total gas exchange
             % Summation over all single contrubitions from
             % active plant cultures (PlantEng)
-            this.fCO2Exchange          = sum(this.fCO2Exchange_out);      % [kg/s]
-            this.fO2Exchange           = sum(this.fO2Exchange_out);       % [kg/s]
-            this.fH2OExchange        = sum(this.fH2OExchange_out);    % [kg/s]
+            this.fCO2_exchange          = sum(this.fCO2_exchange_out);      % [kg/s]
+            this.fO2_exchange           = sum(this.fO2_exchange_out);       % [kg/s]
+            this.fwater_exchange        = sum(this.fwater_exchange_out);    % [kg/s]
             this.fWaterNeed             = sum(this.fWaterNeed_out);         % [kg/s]
             
             %Get an array with the all mass available in current phase
@@ -477,14 +486,13 @@ classdef Create_Biomass < matter.manips.substance.flow
             % The manipulator should operate every minute, so the time base
             % is [kg/(min)]
             if ~(afFRs(tiN2I.CO2)==0 || afFRs(tiN2I.H2O)==0)
-                this.afPartials(1, tiN2I.CO2)   = -this.fCO2Exchange * 60 / 4;                        % [kg]
-                this.afPartials(1, tiN2I.O2)    = +this.fO2Exchange  * 60 / 4;                        % [kg]
-                this.afPartials(1, tiN2I.H2O)   = (this.fH2OExchange - this.fWaterNeed) * 60 / 4;   % [kg]
+                this.afPartials(1, tiN2I.CO2)   = -this.fCO2_exchange * 60 / 4;                        % [kg]
+                this.afPartials(1, tiN2I.O2)    = +this.fO2_exchange  * 60 / 4;                        % [kg]
+                this.afPartials(1, tiN2I.H2O)   = (this.fwater_exchange - this.fWaterNeed) * 60 / 4;   % [kg]
             end;
             
             fTimeStep = this.oParent.oTimer.fTime - this.fLastUpdate;
             
-            % this is where mass enters the plants phase?? yep
             afPartialFlows = this.afPartials ./ fTimeStep;
             
             %Setting control variable for call frequency check

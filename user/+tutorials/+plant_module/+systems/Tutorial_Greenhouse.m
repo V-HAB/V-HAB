@@ -351,7 +351,7 @@ classdef Tutorial_Greenhouse < vsys
             exec@vsys(this);
             
             % get CO2 concentration from atmosphere phase
-            this.fCO2 = components.PlantModule.Clac_CO2_ppm(this.toStores.GreenhouseUnit.aoPhases(1,1));
+            this.fCO2 = components.PlantModule.Calc_CO2_ppm(this.toStores.GreenhouseUnit.aoPhases(1,1));
             
             %% Control relative humidity
             

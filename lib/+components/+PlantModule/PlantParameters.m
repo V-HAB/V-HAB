@@ -234,7 +234,7 @@ plant(9).tQ=75;
 % fraction of nutrient consumed for gained biomass - used for calculation macronutrients uptake
 % Source: Baseline Values and Assumptions Document 2015 - Table 4.101
 % "Stock Usage per Dry Biomass"
-% [g_Nutrients/g_BiomassDry] - only available for Soybean, Wheat, Potato, Lettuce
+% [L/g_dry] - only available for Soybean, Wheat, Potato, Lettuce
     plant(1).NCfr=0;
     plant(2).NCfr=0.034;  
     plant(3).NCfr=0; 
@@ -245,7 +245,7 @@ plant(9).tQ=75;
     plant(8).NCfr=0.021; 
     plant(9).NCfr=0.022;
 
-%Crop  dry over wet  biomass fraction (DRYfr)
+%Crop  dry over wet  biomass fraction 
 % -->  DRYfr = 1-WBF (Water biomass fraction); averaged from edible and
 % inedible biomass
 %Source: Derived from "Baseline Values and Assumptions Document" 2015 - Table 4.98

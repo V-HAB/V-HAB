@@ -64,15 +64,11 @@ Kclate = aoPlants.plant.Kclate;
 
 %PARSOL-Conversion factor of PAR to solar radiation[-]
 PARSOL = 0.45;%
-
-%TODO Get these values differently, best from matter table constants
-%struct. But not like Avogadro number, that is slow. Just pass the matter
-%table to this function as a parameter.
 %planck constant in [m^2kgs^-1]
 h=6.626*10^-34; 
 %speed of light in [m/s]
 c=2.998*10^8;
-%Avogrado constant in[TEILCHEN*mol^-1]
+%Avogrado constant in[Photons*mol^-1]
 N_A=matter.table.Const.fAvogadro;%
 
 %Avarege wavelenght in [m]
@@ -131,13 +127,13 @@ c_p=1005;
     HCG = 0.0036 * CUE_24 * A * CQY * PPF * I;   %[mol_carbon/m^2/h]
     
     
-  % MWC: molar weight of carbon
+  % MWC: molecular weight of carbon
     MWC = 12.011;         %[g/mol]
-  % MWO2: molar weight of oxygen
+  % MWO2: molecular weight of oxygen
     MWO2 = 32;            %[g/mol]
-  % MWCO2: molar weight of carbon dioxid
+  % MWCO2: molecular weight of carbon dioxid
     MWCO2 = 44.011;       %[g/mol]
-  % MWW: molar weight of water
+  % MWW: molecular weight of water
     MWW = 18.015;         %[g/mol]
     
     
@@ -239,6 +235,8 @@ end
 
 %%%Final Water volume evapotranspiration ET_c in [Lm^-2s^-1]
 ET_c = K_c*ET_0;
+
+
 
 % Conversion to hourly transpiration rate
 HTR = ET_c * 3600 * fDensityH2O; % [g/m^2/h]

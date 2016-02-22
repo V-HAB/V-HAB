@@ -1,6 +1,6 @@
 
 function [ aoPlants, INEDIBLE_CGR_d_out, INEDIBLE_CGR_f_out, ED_CGR_d_out, ED_CGR_f_out, O2_exchange, CO2_exchange, water_exchange, WaterNeed, O2_sum_out, CO2_sum_out, H2O_trans_sum_out, H2O_consum_sum_out] = ...
-    Process_PlantGrowthParameters(aoPlants, fTime, WaterAvailable, p_atm, RH_day, RH_night, PPF, CO2, CO2_Measured, H, Temp_light, Temp_dark, fDensityH2O)
+    Process_PlantGrowthParameters(aoPlants, fTime, WaterAvailable, p_atm, RH_day, RH_night, PPF, CO2, CO2_Measured, H , Temp_light, Temp_dark, fDensityH2O)
 
 % Short description.
 %  This function processes the gained plant growth rates  (--> "Calculate_PlantGrowthRates").
@@ -42,8 +42,8 @@ function [ aoPlants, INEDIBLE_CGR_d_out, INEDIBLE_CGR_f_out, ED_CGR_d_out, ED_CG
                     aoPlants.state.internaltime = aoPlants.state.time_since_planting;  %[min]
 
             %If CO2 ppm level is in allowed range
-%                 if CO2_Measured > 350 && CO2_Measured < 1400       % [µmol/mol]
-                if CO2 > 330 && CO2 < 1300
+                if CO2_Measured > 350 && CO2_Measured < 1400       % [µmol/mol]
+
 
                     
                 % tA:time after emergence [UOT]
@@ -75,8 +75,8 @@ function [ aoPlants, INEDIBLE_CGR_d_out, INEDIBLE_CGR_f_out, ED_CGR_d_out, ED_CG
                             p_atm,                      ...         % Pressure                              [Pa]
                             H,                          ...         % Photoperiod per day                   [h/d]
                             Temp_light,                 ...         % Mean air temperature                  [°C]
-                            Temp_dark, ...
-                            fDensityH2O);                             % Mean air temperature                  [°C]
+                            Temp_dark, ...                          % Mean air temperature                  [°C]
+                            fDensityH2O);                           % density of liquid water (for transpiration) [kg/m^3]
 
 
 
@@ -230,15 +230,15 @@ function [ aoPlants, INEDIBLE_CGR_d_out, INEDIBLE_CGR_f_out, ED_CGR_d_out, ED_CG
               %If allowed CO2 ppm range is exceeded
                 else
 
-                    if CO2_Measured > 1300
-                         disp('Warning: CO2ppm > 1300 /n');
+                    if CO2_Measured > 1400
+                         disp('Warning: CO2ppm > 1400 /n');
                         aoPlants.state.O2_exchange      = 0;    % [kg/s]
                         aoPlants.state.CO2_exchange     = 0;    % [kg/s]
                         aoPlants.state.water_exchange   = 0;    % [kg/s]
                     end
 
-                    if CO2_Measured < 330
-                       disp('Warning: CO2ppm < 330 /n');
+                    if CO2_Measured < 350
+                       disp('Warning: CO2ppm < 350 /n');
                         aoPlants.state.O2_exchange      = 0;    % [kg/s]
                         aoPlants.state.CO2_exchange     = 0;    % [kg/s]
                         aoPlants.state.water_exchange   = 0;    % [kg/s]
