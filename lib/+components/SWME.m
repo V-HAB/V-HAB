@@ -3,8 +3,8 @@ classdef SWME < vsys
     % the AEMU
     % 
     % Add a nice description here
-    
-    properties
+    %% Overall SWME Properties
+    properties (SetAccess = protected, GetAccess = public)
         % The external pressure in [Pa] is set to zero for a simulation of
         % an EVA in space, but can be changed to the atmospheric pressure
         % of Mars for a Mars EVA simulation.
@@ -16,12 +16,9 @@ classdef SWME < vsys
         % SWME volume - HoFI volume in [m^3]
         fSWMEVaporVolume       = 8.7395e-4;
         
-        % Initial inlet water temperature in [K]
+        % Initial water temperature in [K]
         fInitialTemperature; 
         
-        % Function handle to the temperature set point changing method on
-        % the back pressure valve f2f processor.
-        hSetTemperatureSetPoint;
     end
     
     %% Properties relevant to the back pressure valve
@@ -40,13 +37,18 @@ classdef SWME < vsys
         fTemperatureSetPoint       = 283.15;           % [K]        desired outlet water temperature of the SWME
     end
     
+    
     methods
+        
         function this = SWME(oParent, sName, fInitialTemperature)
             
+            % Calling the parent class constructor
             this@vsys(oParent, sName);
             
-            this.bExecuteContainer = false;
+            % Setting parameters if they were set by a simulation runner
+            eval(this.oRoot.oCfgParams.configCode(this));
             
+            % Setting the initial temperature property
             this.fInitialTemperature = fInitialTemperature;
             
         end
@@ -83,8 +85,6 @@ classdef SWME < vsys
             % Creating the BPV, passing the constant pressure exme as the
             % reference for the environmental pressure.
             components.SWME.procs.BPV(this, 'BPV', oExme);
-            
-            this.hSetTemperatureSetPoint = @(fTemperature) this.toProcsF2F.BPV.setTemperatureSetPoint(fTemperature);
             
             % We need to change the outlet temperature via a f2f processor,
             % which we create here.

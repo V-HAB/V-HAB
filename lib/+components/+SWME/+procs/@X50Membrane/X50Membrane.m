@@ -1,11 +1,14 @@
 classdef X50Membrane < matter.procs.p2ps.flow
-    % X50MEMBRANE is a P2P processor that calculates the water vapor flux from inside the hollow fibers, 
-    % through the membrane wall, to the vapor store outside the hollow
-    % fibers
+    %X50MEMBRANE A model of the water evaporation through a membrane
+    % This is a P2P processor that calculates the water vapor flow from
+    % inside the hollow fibers, through the membrane wall, to the vapor
+    % store outside the hollow fibers. It takes into account the
+    % temperatures and heat capacities of the water and water vapor. The
+    % model does NOT discetize the length of the hollow fibers into smaller
+    % sections and calculates an average temperature across. 
     %
-    %
-    % X50Membrane(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
-    
+    % The input parameters are equal to the parent class. 
+
     properties (SetAccess = protected, GetAccess = public)
         % The water vapor flow rate through the membrane in [kg/s]
         fWaterVaporFlowRate;
@@ -36,7 +39,6 @@ classdef X50Membrane < matter.procs.p2ps.flow
         fMembranePorosity        = 0.4;         % [-]    Porosity of the membrane
         fPoreDiameter            = 0.04e-6;     % [m]    Diameter of a membrane pore
         fReferencePressure       = 800;         % [Pa]   Average pressure for the range of application of the membrane
-        
     end
     
     methods
@@ -44,17 +46,17 @@ classdef X50Membrane < matter.procs.p2ps.flow
             
            this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
            
-           % Since this membrane model is only created for water evaporation,
-           % we can make the extration partials a static value. If the model
-           % is ever expanded to evaporate substances other than water, then
-           % this array has to be dynamically determined based on the input
-           % flows.
+           % Since this membrane model is only created for water
+           % evaporation, we can make the extration partials a static
+           % value. If the model is ever expanded to evaporate substances
+           % other than water, then this array has to be dynamically
+           % determined based on the input flows.
            this.arExtractPartials = zeros(1, this.oMT.iSubstances);
            this.arExtractPartials(this.oMT.tiN2I.('H2O')) = 1;
         end
         
-        function update (this)
-           
+        function update(this)
+            
             % Getting the current water temperatures
             fWaterTemperatureInlet  = this.oIn.oPhase.toProcsEXME.WaterIn.oFlow.fTemperature;
             fWaterTemperatureOutlet = this.oTemperatureProcessor.aoFlows(2).fTemperature;
@@ -64,7 +66,7 @@ classdef X50Membrane < matter.procs.p2ps.flow
             
             % Calculating the vapor pressure inside the SWME in [Pa]
             fVaporPressure = this.fPressureDropCoefficient * this.oOut.oPhase.fMassToPressure * this.oOut.oPhase.fMass;
-            
+
             tGasParameters = struct();
             tGasParameters.sSubstance = 'H2O';
             tGasParameters.sProperty = 'Heat Capacity';

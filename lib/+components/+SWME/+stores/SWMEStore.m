@@ -31,7 +31,7 @@ classdef SWMEStore < matter.store
             oVaporSWME = matter.phases.gas(...
                          this, ...                           % Store in which the phase is located
                         'VaporSWME', ...                     % Phase name
-                         struct('H2O', 9.160756e-6), ...     % Phase contents
+                         struct('H2O', 0), ...               % Phase contents
                          fSWMEVaporVolume, ...               % Phase volume
                          fInitialTemperature);               % Phase temperature
             

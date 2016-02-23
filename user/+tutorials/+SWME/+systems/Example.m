@@ -1,9 +1,14 @@
 classdef Example < vsys
-%EXAMPLE Add a proper description here
+%   EXAMPLE Example system to demonstrate the use of the SWME component
+%   
+%   This system contains two tanks and a subsystem in between. The
+%   subsystem represents the Spacesuit Water Membrane Evaporator (SWME)
+%   component, which is used for spacesuit cooling. The user can set the
+%   water flow rate and inlet temperature for the SWME here, all other 
 
     properties
-        % Initial inlet water flow in [kg/s]
-        fInitialFlowRate = 91/3600;
+        % Inlet water flow in [kg/s]
+        fFlowRate = 91/3600;
         
         % Initial inlet water temperature in [K]
         fInitialTemperature = 289.15;
@@ -11,7 +16,10 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName)
-            this@vsys(oParent, sName);
+            this@vsys(oParent, sName, 1);
+            
+            % Setting parameters if they were set by a simulation runner
+            eval(this.oRoot.oCfgParams.configCode(this));
             
             % Instatiating the SWME
             components.SWME(this, 'SWME', this.fInitialTemperature);
@@ -77,7 +85,7 @@ classdef Example < vsys
             createSolverStructure@vsys(this);
             
             % Manually setting the inlet flow rate.
-            this.toChildren.SWME.toBranches.InletBranch.oHandler.setFlowRate(-1 * this.fInitialFlowRate);
+            this.toChildren.SWME.toBranches.InletBranch.oHandler.setFlowRate(-1 * this.fFlowRate);
             
         end
         
@@ -90,8 +98,6 @@ classdef Example < vsys
         function exec(this, ~)
             exec@vsys(this);
         end
-        
-        
     end
 end
 
