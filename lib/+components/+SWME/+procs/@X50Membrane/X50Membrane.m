@@ -77,9 +77,6 @@ classdef X50Membrane < matter.procs.p2ps.flow
             % Calculating the specific heat capacity of vapor in [J/kgK]
             fVaporSpecificHeatCapacity = this.oMT.findProperty(tGasParameters);
             
-            % calulating the specific heat capacity of liquid water for the
-            % inlet, outlet and mean temperature
-            
             % First we need to create a struct with all the necessary
             % parameters.
             tLiquidParameters = struct();
@@ -91,16 +88,6 @@ classdef X50Membrane < matter.procs.p2ps.flow
             
             % Now we can call the findProperty() method.
             fLiquidSpecificHeatCapacity = this.oMT.findProperty(tLiquidParameters);
-            
-            % Changing the temperature parameter and calling findProperty()
-            % again for the inlet heat capacity.
-            tLiquidParameters.fFirstDepValue = fWaterTemperatureInlet;
-            fLiquidSpecificHeatCapacityInlet = this.oMT.findProperty(tLiquidParameters);
-            
-            % Changing the temperature parameter and calling findProperty()
-            % again for the outlet heat capacity.
-            tLiquidParameters.fFirstDepValue = fWaterTemperatureOutlet;
-            fLiquidSpecificHeatCapacityOutlet = this.oMT.findProperty(tLiquidParameters);
             
             % Calculating the mean saturation pressure inside the hollow
             % fibers in [Pa]
@@ -191,9 +178,9 @@ classdef X50Membrane < matter.procs.p2ps.flow
             if fSWMEInputFlowRate == 0
                 fWaterTemperatureOutlet = this.oIn.oPhase.toProcsEXME.WaterIn.fTemperature;
             else
-                fWaterTemperatureOutlet = (fWaterTemperatureInlet * fLiquidSpecificHeatCapacityInlet * fSWMEInputFlowRate ...
+                fWaterTemperatureOutlet = (fWaterTemperatureInlet * fLiquidSpecificHeatCapacity * fSWMEInputFlowRate ...
                     - this.fWaterVaporFlowRate * fMeanTemperature * fVaporSpecificHeatCapacity - fHeatRejection) /  ...
-                    (fLiquidSpecificHeatCapacityOutlet * fWaterFlowRateOutlet);
+                    (fLiquidSpecificHeatCapacity * fWaterFlowRateOutlet);
             end
             
             % Since all data sources use the simplified version of the
