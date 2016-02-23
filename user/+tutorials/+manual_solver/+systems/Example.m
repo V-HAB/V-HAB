@@ -31,6 +31,11 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName, 10);
             
+        end
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+            
             % Creating a store, volume 1000 m^3
             matter.store(this, 'Tank_1', 1000);
             
@@ -53,14 +58,15 @@ classdef Example < vsys
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            oBranch = matter.branch(this, 'Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
             
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
+        end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
             
             % Add branch to manual solver
-            this.oBranch = solver.matter.manual.branch(oBranch);
+            this.oBranch = solver.matter.manual.branch(this.toBranches.Tank_1__Port_1___Tank_2__Port_2);
             
             % Setting the initial switching time for the flow rate to 100 s. 
             this.fSwitchTime   = 100;
