@@ -300,6 +300,11 @@ classdef SWME < vsys
                 this.fVaporFlowRate = 0;
             end
             
+            % We have to round the calculated flow rate to the global
+            % precision because otherwise extremely small oscilations may
+            % cause instabilities. 
+            this.fVaporFlowRate = tools.round.prec(this.fVaporFlowRate, this.oTimer.iPrecision);
+            
             % Now we can set the new flow rate on the branch connecting the
             % SWME housing with the environment.
             this.toBranches.EnvironmentBranch.oHandler.setFlowRate(this.fVaporFlowRate);

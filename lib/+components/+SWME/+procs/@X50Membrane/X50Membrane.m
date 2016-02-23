@@ -149,6 +149,11 @@ classdef X50Membrane < matter.procs.p2ps.flow
             % and the resulting liquid water outlet mass flux in [kg/s]
             this.fWaterVaporFlowRate = fMembraneCoefficient * (fSaturationVaporPressure - fVaporPressure) * this.fMembraneArea;
             
+            % We have to round the calculated flow rate to the global
+            % precision because otherwise extremely small oscilations may
+            % cause instabilities. 
+            this.fWaterVaporFlowRate = tools.round.prec(this.fWaterVaporFlowRate, this.oTimer.iPrecision);
+            
             % Getting the input flow rate into the SWME. Need to use the
             % absolute value because the SWME is a subsystem, so the inflow
             % is mathematically negative due to the positive flow direction
