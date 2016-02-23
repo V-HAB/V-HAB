@@ -214,6 +214,13 @@ classdef X50Membrane < matter.procs.p2ps.flow
             % the calculated heat rejection with -1 because it is a
             % negative heat flow, out of the matter.
             this.oTemperatureProcessor.setHeatFlow( -1 * fProcessorHeatRejection );
+            
+            % Now that we're done here, we can call the update method for
+            % the back pressure valve in our parent system. This will
+            % calculate the new valve position and the according flow rate
+            % out of the SWME. We want to use the same internal pressure as
+            % we used for the calculation here, so we pass it along.
+            this.oStore.oContainer.updateBPV(fVaporPressure);
 
         end
         

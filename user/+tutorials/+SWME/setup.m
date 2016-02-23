@@ -39,7 +39,7 @@ classdef setup < simulation.infrastructure
             oLogger = this.toMonitors.oLogger;
             
             
-            tiLog.ValvePosition = oLogger.addValue('Test/SWME.toProcsF2F.BPV', 'iValveCurrentSteps', 'steps', 'Valve Position');
+            tiLog.ValvePosition = oLogger.addValue('Test/SWME', 'iBPVCurrentSteps', 'steps', 'Valve Position');
             
             tiLog.Combo_1.ValvePosition = tiLog.ValvePosition;
             tiLog.Combo_1.Backpressure  = oLogger.addValue('Test/SWME:s:SWMEStore:p:VaporSWME', 'this.fMass * this.fMassToPressure', 'Pa', 'Vapor Backpressure');

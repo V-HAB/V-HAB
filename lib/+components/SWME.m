@@ -22,8 +22,22 @@ classdef SWME < vsys
         % Function handle to the temperature set point changing method on
         % the back pressure valve f2f processor.
         hSetTemperatureSetPoint;
+    end
+    
+    %% Properties relevant to the back pressure valve
+    properties (SetAccess = protected, GetAccess = public)
         
+        % Fixed values that define the behavior of the valve
+        fValveMaximumArea          = 0.00129;          % [m^2]      maximum throat area of the valve
+        iValveMaximumSteps         = 4170;             % [-]        maximum amount of steps the valve needs to be fully open
+        fBPVControllerTimeConstant = 0.001;            % [s]        time the controller waits for the temperature to settle before trying to adjust the valve again
+        fKappa                     = 1.333;            % [-]        Isentropic exponent of water 
         
+        % Variable values with their defaults
+        iBPVCurrentSteps           = 0;                % [-]        current step position the valve is in
+        fTimeOfLastBPVAdjustment   = -0.001;           % [s]        simulation time where the last valve adjustment ocurred. Default value is negative time constant to get an update at time = 0s.
+        fVaporFlowRate             = 0;                % [kg/s]     vapor flow rate through the valve
+        fTemperatureSetPoint       = 283.15;           % [K]        desired outlet water temperature of the SWME
     end
     
     methods
@@ -87,7 +101,7 @@ classdef SWME < vsys
             matter.branch(this, 'SWMEStore.WaterOut', {'TemperatureProcessor', 'Pipe_2'}, 'Outlet', 'OutletBranch');
             
             % Creating the branch to the environment with an interface
-            matter.branch(this, 'SWMEStore.VaporOut', {'BPV'}, 'EnvironmentTank.ToEnvironment', 'EnvironmentBranch');
+            matter.branch(this, 'SWMEStore.VaporOut', {}, 'EnvironmentTank.ToEnvironment', 'EnvironmentBranch');
             
         end
         
@@ -100,9 +114,8 @@ classdef SWME < vsys
             solver.matter.manual.branch(this.toBranches.OutletBranch);
             solver.matter.manual.branch(this.toBranches.EnvironmentBranch);
             
-            % Binding the setFlowRate() methods of the outlet and vacuum
-            % solver branches to the inlet branches' 'outdated' event. 
-            this.toBranches.InletBranch.bind('outdated', @(~) this.toBranches.EnvironmentBranch.oHandler.setFlowRate(this.toProcsF2F.BPV.fVaporFlowRate));
+            % Binding the setFlowRate() method of the outlet solver branch
+            % to the inlet branches' 'outdated' event.
             this.toBranches.InletBranch.bind('outdated', @(~) this.toBranches.OutletBranch.oHandler.setFlowRate(-1 * this.toBranches.InletBranch.fFlowRate - this.toStores.SWMEStore.toProcsP2P.X50Membrane.fWaterVaporFlowRate));
             
         end
@@ -114,7 +127,187 @@ classdef SWME < vsys
         end
         
         function setTemperatureSetPoint(this, fTemperatureSetPoint)
-            this.toProcsF2F.setTemperatureSetPoint(fTemperatureSetPoint);
+            % Externally accessible method to change the temperature
+            % setpoint. To be called from supersystem.
+            this.fTemperatureSetPoint = fTemperatureSetPoint;
+        end
+        
+        %% Back pressure valve update method
+        function updateBPV(this, fPressureInternal)
+            % This method consists of two parts: The first calculates the
+            % new valve position based on the temperature difference
+            % between the outlet of the SWME and the temperature set point,
+            % the second calculates the actual water vapor flow through the
+            % valve based on the pressure difference between the inside of
+            % the SWME and the external pressure. 
+            % This method is called by the X50Membrane class and the
+            % internal pressure is calculated there using a modification
+            % factor that accounts for pressure differences within the SWME
+            % housing. To ensure that both classes use the same pressure
+            % for their calculations, the X50Membrane class passes the
+            % calculated internal pressure to this method as a parameter.
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Calculating the valve position in steps %%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             
+            % Determines the required action by the stepper motor (open or
+            % close) and the magnitude of such action (how many steps). If
+            % the temperature is within an acceptable range, nothing
+            % (should) happen.
+            
+            % Getting the current outlet temperature
+            fCurrentOutletWaterTemperature = this.toProcsF2F.TemperatureProcessor.aoFlows(2).fTemperature;
+            
+            % If this is the very first time step, there is no flow through
+            % the processor yet, so the above query will return a
+            % temperature of zero. In this case, we'll just skip this
+            % execution.
+            if fCurrentOutletWaterTemperature == 0
+                return;
+            end
+            
+            % Only go through if the controller gave the system enough time
+            % to settle itself
+            if (this.oTimer.fTime >= (this.fTimeOfLastBPVAdjustment + this.fBPVControllerTimeConstant))
+                
+                tParameters = struct();
+                tParameters.sSubstance = 'H2O';
+                tParameters.sProperty = 'Heat Capacity';
+                tParameters.sFirstDepName = 'Temperature';
+                tParameters.fFirstDepValue = this.fTemperatureSetPoint;
+                tParameters.sPhaseType = 'liquid';
+                
+                % Now we can call the findProperty() method.
+                fLiquidSpecificHeatCapacitySetPoint = this.oMT.findProperty(tParameters);
+                
+                tParameters.fFirstDepValue = fCurrentOutletWaterTemperature;
+                
+                fLiquidSpecificHeatCapacityOutlet = this.oMT.findProperty(tParameters);
+                
+                % The heat rejection error is used as the parameter
+                % that defines how much the valve should open or close.
+                fHeatRejectionError = abs (this.toBranches.OutletBranch.fFlowRate  *  ...
+                    (fLiquidSpecificHeatCapacitySetPoint * this.fTemperatureSetPoint - ...
+                    fLiquidSpecificHeatCapacityOutlet  *  fCurrentOutletWaterTemperature));
+                
+                % If outlet temperature rises above the temperature limit,
+                % calculate the heat rejection error and open the valve.
+                if ( (fCurrentOutletWaterTemperature - 273.15) > 1.007 * (this.fTemperatureSetPoint - 273.15))
+                    
+                    % Two different proportional constants for two
+                    % different sections of the Heat Rejection vs. Valve
+                    % Position curve (Makinen, Anchonodo et al. 2013, "RVP
+                    % SWME; A Next-Generation Evaporative Cooling
+                    % System[...]"
+                    if (this.iBPVCurrentSteps <= 600)
+                        iRequiredValveSteps = round (fHeatRejectionError);
+                    else
+                        iRequiredValveSteps = 24 * round (fHeatRejectionError);
+                    end
+                    
+                    % Overriding the previously implemented controller,
+                    % since it makes the simulation too unstable, but i am
+                    % still leaving the code there, maybe for future work?
+                    if (iRequiredValveSteps > 1)
+                        iRequiredValveSteps= 1;
+                    end
+                    
+                    % Setting the new current position of the valve and
+                    % setting the time of last adjustment to current
+                    % simulation time
+                    this.iBPVCurrentSteps    = this.iBPVCurrentSteps + iRequiredValveSteps;
+                    
+                    % Same as above, but this time if the temperature falls
+                    % below the limit, the response of the motor is to
+                    % close the valve
+                elseif ( (fCurrentOutletWaterTemperature - 273.15) < 0.993 * (this.fTemperatureSetPoint - 273.15) )
+                    
+                    if (this.iBPVCurrentSteps <= 600)
+                        iRequiredValveSteps = round (fHeatRejectionError);
+                    else
+                        iRequiredValveSteps = 24 * round (fHeatRejectionError);
+                    end
+                    
+                    % Overriding the previously implemented controller,
+                    % since it makes the simulation too unstable, but i am
+                    % still leaving the code there, maybe for future work?
+                    if (iRequiredValveSteps > 1)
+                        iRequiredValveSteps= 1;
+                    end
+                    
+                    % Since the controller above makes the simulation
+                    % unstable, a step by step controller was used instead.
+                    % I'm leaving the code for an eventual future work.
+                    this.iBPVCurrentSteps    = this.iBPVCurrentSteps - iRequiredValveSteps;
+                    
+                end
+                
+                this.fTimeOfLastBPVAdjustment = this.oTimer.fTime;
+                
+            end
+            
+            % Last conditional statement to avoid impossible motor steps
+            % positions. if it falls below zero, sets it back to zero and
+            % if rises above the maximum amount of steps sets it to the
+            % maximum.
+            if (this.iBPVCurrentSteps < 0)
+                this.iBPVCurrentSteps = 0;
+            elseif (this.iBPVCurrentSteps > this.iValveMaximumSteps)
+                this.iBPVCurrentSteps = this.iValveMaximumSteps;
+            end
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Calculating the water vapor flux through the valve %%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+            % Getting the current density from the phase
+            fVaporDensity = this.toStores.SWMEStore.toPhases.VaporSWME.fDensity;
+            
+            % Calculating the current open area of the valve based on the
+            % current position of the stepper motor
+            %TODO Check if this linear correlation between the area and the
+            %actual geometry of the valve is valid.
+            fValveCurrentArea = (this.iBPVCurrentSteps / this.iValveMaximumSteps) * this.fValveMaximumArea;
+            
+            %if the valve is open, calculates the vapor flux
+            if (this.iBPVCurrentSteps ~=0)
+                
+                fC1 = sqrt((8 * fPressureInternal) / (pi * fVaporDensity));
+                
+                fCriticalPressure = fPressureInternal * ((2 / (1 + this.fKappa))^(this.fKappa / (this.fKappa - 1)));
+                
+                if this.fEnvironmentalPressure > fCriticalPressure
+                    
+                    % If the internal pressure is lower than the external
+                    % pressure, fPsi becomes imaginary. Theoretically
+                    % impossible, since the internal pressure should never
+                    % be lower than the external pressure. But with big
+                    % time steps or unstable simulations (high external
+                    % pressure) could happen. In this case the frequency
+                    % how often the .exec() method is called in the
+                    % SWME class (components.SWME) is called
+                    % should be decreased to make the simulation more
+                    % stable.
+                    rPressure = this.fEnvironmentalPressure / fPressureInternal;
+                    
+                    fPsi = sqrt( (this.fKappa / (this.fKappa - 1))  *  ((rPressure^(2 / this.fKappa)) - (rPressure^((1 + this.fKappa) / this.fKappa))));
+                    
+                else
+                    fPsi = sqrt(0.5 * this.fKappa * ((2 / (1 + this.fKappa))^((this.fKappa + 1) / (this.fKappa - 1))));
+                end
+                
+                this.fVaporFlowRate = (0.86 * fValveCurrentArea * 4 * fPressureInternal * fPsi)  /  (fC1 * sqrt(pi));
+                
+            else
+                % If the valve is closed, vapor flux is zero.
+                this.fVaporFlowRate = 0;
+            end
+            
+            % Now we can set the new flow rate on the branch connecting the
+            % SWME housing with the environment.
+            this.toBranches.EnvironmentBranch.oHandler.setFlowRate(this.fVaporFlowRate);
+            
         end
     end
     

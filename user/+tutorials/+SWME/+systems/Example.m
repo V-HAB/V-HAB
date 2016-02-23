@@ -16,6 +16,10 @@ classdef Example < vsys
             % Instatiating the SWME
             components.SWME(this, 'SWME', this.fInitialTemperature);
             
+            % Setting the initial temperature set point. 10 degrees Celcius
+            % is a standard temperature here. 
+            this.toChildren.SWME.setTemperatureSetPoint(283.15);
+            
         end
         
         function createMatterStructure(this)
