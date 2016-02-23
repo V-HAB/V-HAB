@@ -82,10 +82,6 @@ classdef SWME < vsys
             components.pipe(this, 'Pipe_1', 0.01, 0.0127);
             components.pipe(this, 'Pipe_2', 0.01, 0.0127);
             
-            % Creating the BPV, passing the constant pressure exme as the
-            % reference for the environmental pressure.
-            components.SWME.procs.BPV(this, 'BPV', oExme);
-            
             % We need to change the outlet temperature via a f2f processor,
             % which we create here.
             oProc = components.SWME.procs.TemperatureProcessor(this, 'TemperatureProcessor');
