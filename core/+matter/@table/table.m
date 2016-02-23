@@ -104,37 +104,38 @@ classdef table < base
             % Check for pre-existing data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            % First we'll check if the source files for all the matter data
-            % have changed since this constructor was last run. If not,
-            % then we can just use the existing data without having to go
-            % through the entire import process again.
+            % First we'll check if there is previously stored matter data
+            % and if so, we check if the source files for all the matter
+            % data have changed since this constructor was last run. If
+            % not, then we can just use the existing data without having to
+            % go through the entire import process again.
             disp('Checking for changes regarding the matter table source data.');
-            if ~tools.checkForChanges(fullfile('lib','+matterdata')) && ~tools.checkForChanges(fullfile('core','+matter','@table'))
+            if exist(strrep('data\MatterData.mat', '\', filesep),'file') && ...
+               ~tools.checkForChanges(fullfile('lib','+matterdata')) && ...
+               ~tools.checkForChanges(fullfile('core','+matter','@table'))
                 % If the matter files or the matter table itself have not
                 % changed, we can load the MatterData.mat file, if it
                 % exists.
-                if exist(strrep('data\MatterData.mat', '\', filesep),'file')
-                    load(strrep('data\MatterData.mat', '\', filesep));
-                    
-                    % There are a few properties that will have been saved
-                    % by the previous run of V-HAB in the matter.table
-                    % object that need to be reset to their initial values,
-                    % otherwise there might be errors if the object classes
-                    % were changed between runs.
-                    %
-                    % Also, objects here are included in e.g. mass balance
-                    % calculations, leading to wrong results.
-                    % 
-                    %TODO delete these as soon as aoPhases and aoFlows
-                    %properties have been removed from this class. 
-                    this.aoPhases = [];
-                    this.aoFlows  = matter.flow.empty();
-                    
-                    disp('Matter table loaded from stored version.');
-                    
-                    % The return command ends the constructor method
-                    return;
-                end
+                load(strrep('data\MatterData.mat', '\', filesep));
+                
+                % There are a few properties that will have been saved
+                % by the previous run of V-HAB in the matter.table
+                % object that need to be reset to their initial values,
+                % otherwise there might be errors if the object classes
+                % were changed between runs.
+                %
+                % Also, objects here are included in e.g. mass balance
+                % calculations, leading to wrong results.
+                %
+                %TODO delete these as soon as aoPhases and aoFlows
+                %properties have been removed from this class.
+                this.aoPhases = [];
+                this.aoFlows  = matter.flow.empty();
+                
+                disp('Matter table loaded from stored version.');
+                
+                % The return command ends the constructor method
+                return;
             end
             
             % Notify user that generating the matter data will take some time.
