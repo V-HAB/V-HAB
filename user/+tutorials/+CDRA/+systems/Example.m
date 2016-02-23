@@ -55,7 +55,7 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName);
+            this@vsys(oParent, sName, 60);
             
             % Initial ratio for amount of flow that is channeled through the
             % CHX
@@ -455,10 +455,10 @@ classdef Example < vsys
                 end
             end
             
-            if (this.oTimer.fTime > (20*3600)) && (this.oTimer.fTime < (39*3600))
+            if (this.oTimer.fTime > (30*3600)) && (this.oTimer.fTime < (49*3600))
                 this.iCrewMembers = 4;
                 this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1,1]);
-            elseif (this.oTimer.fTime >= (39*3600))
+            elseif (this.oTimer.fTime >= (49*3600))
                 this.iCrewMembers = 3;
                 this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1]);
             end

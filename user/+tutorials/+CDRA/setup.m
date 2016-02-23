@@ -30,7 +30,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 48; % In seconds
+            this.fSimTime = 3600 * 70; % In seconds
             this.bUseTime = true;
         end
         
@@ -204,6 +204,13 @@ classdef setup < simulation.infrastructure
                 xlabel('Time in h')
                 ylabel('Partial Pressure CO2 in Pa')
                 
+                figure('name', 'Partial Pressure CO2 Torr')
+                grid on
+                hold on
+                plot((afTime./3600), mLogDataCO2Cabin./133.33)
+                xlabel('Time in h')
+                ylabel('Partial Pressure CO2 in Torr')
+                
                 figure('name', '5A Flowrates')
                 grid on
                 hold on
@@ -246,6 +253,13 @@ classdef setup < simulation.infrastructure
                 grid on
                 hold on
                 plot((afTime./3600), mLogDataCO2Cabin)
+                xlabel('Time in h')
+                ylabel('Partial Pressure CO2 in Pa')
+                
+                figure('name', 'Partial Pressure CO2 Torr')
+                grid on
+                hold on
+                plot((afTime./3600), mLogDataCO2Cabin./133.33)
                 xlabel('Time in h')
                 ylabel('Partial Pressure CO2 in Pa')
             end

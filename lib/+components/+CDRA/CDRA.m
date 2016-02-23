@@ -19,7 +19,7 @@ classdef CDRA < vsys
         %to increase the zeolite temperature during the CO2 scrubbing.
         % TO DO: didnt find an actual reference so for now using a values
         % that seems plausible
-        fMaxHeaterPower = 8000;          % [W] 
+        fMaxHeaterPower = 10000;          % [W] 
         
         %Target temperature the zeolite is supposed to reach during the
         %desorption of CO2
@@ -113,7 +113,7 @@ classdef CDRA < vsys
             % "Multi-Dimensional Simulation of Flows Inside Polydisperse Packed Beds"
             % download link https://www.google.de/url?sa=t&rct=j&q=&esrc=s&source=web&cd=6&cad=rja&uact=8&ved=0ahUKEwjwstb2-OfKAhXEoQ4KHdkUAC8QFghGMAU&url=https%3A%2F%2Fwww.comsol.com%2Fconference2015%2Fdownload-presentation%2F29402&usg=AFQjCNERyzJcfMautp6BfFFUERc1FvISNw&bvm=bv.113370389,d.bGg
             % sorry couldn't find a better one.
-            fCrossSection = (17*13E-3)^2; 
+            fCrossSection = (18*13E-3)^2; 
             
             tGeometry5A.fCrossSection       = fCrossSection;
             tGeometrySylobead.fCrossSection = fCrossSection;
@@ -150,6 +150,9 @@ classdef CDRA < vsys
             % ~35g CO2 for each kg of zeolite. Therefore the zeolite mass
             % has to be around 23 to 26 kg. (current calculation results in
             % ~25kg)
+            % TO DO: 13x was previously just adsorbing H2O all the time,
+            % currently trying to reduce its mass to get it to desorb as
+            % well
             fMassZeolite13x         = fCrossSection * tGeometry13x.fLength       * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
             fMassSylobead           = fCrossSection * tGeometrySylobead.fLength  * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
             fMassZeolite5A          = fCrossSection * tGeometry5A.fLength       * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
@@ -467,6 +470,15 @@ classdef CDRA < vsys
             else
                 this.tbReduceTimeStep.CycleChange = false;
             end
+            % Updates the p2p procs before the flow rate calculation (if
+            % they had already been updated they just return back here)
+%             this.toStores.Filter_Sylobead_1.toProcsP2P.Filter_Sylobead_1_proc.update();
+%             this.toStores.Filter_Sylobead_2.toProcsP2P.Filter_Sylobead_2_proc.update();
+%             this.toStores.Filter_13X_1.toProcsP2P.Filter_13X_1_proc.update();
+%             this.toStores.Filter_13X_2.toProcsP2P.Filter_13X_2_proc.update();
+%             this.toStores.Filter5A_1.toProcsP2P.Filter_5A_1_proc.update();
+%             this.toStores.Filter5A_2.toProcsP2P.Filter_5A_2_proc.update();
+            
             % Flow rates of the filtered matter (needed to calculate the following flow rates of the branches)
             fFlowRateSylobead_1 = this.toStores.Filter_Sylobead_1.toProcsP2P.Filter_Sylobead_1_proc.fFlowRate + this.toStores.Filter_Sylobead_1.toProcsP2P.DesorptionProcessor.fFlowRate;
             fFlowRateSylobead_2 = this.toStores.Filter_Sylobead_2.toProcsP2P.Filter_Sylobead_2_proc.fFlowRate + this.toStores.Filter_Sylobead_2.toProcsP2P.DesorptionProcessor.fFlowRate;
@@ -537,7 +549,7 @@ classdef CDRA < vsys
                 if mod(this.oTimer.fTime, this.fCycleTime * 2) < (this.fAirSafeTime)
                     %assuming that the air safe pump can achieve a pressure
                     %of 5 Pa
-                    if this.toStores.Filter5A_1.toPhases.FlowPhase.fPressure > 5000
+                    if this.toStores.Filter5A_1.toPhases.FlowPhase.fPressure > 500
                         %This whole process should be modelled better but
                         %no data on the flow rates could be found. So here
                         %the flow rate was simply set to ensure that the
@@ -622,7 +634,7 @@ classdef CDRA < vsys
                 if mod(this.oTimer.fTime, this.fCycleTime * 2) < (this.fCycleTime + this.fAirSafeTime)
                     %assuming that the air safe pump can achieve a pressure
                     %of 5 Pa
-                    if this.toStores.Filter5A_2.toPhases.FlowPhase.fPressure > 5000
+                    if this.toStores.Filter5A_2.toPhases.FlowPhase.fPressure > 500
                         %This whole process should be modelled better but
                         %no data on the flow rates could be found. So here
                         %the flow rate was simply set to ensure that the
@@ -689,7 +701,21 @@ classdef CDRA < vsys
             
             % Reduces the time step if needed
             if this.tbReduceTimeStep.Heater || this.tbReduceTimeStep.AirSafe || this.tbReduceTimeStep.CycleChange || this.tbReduceTimeStep.PressureEq
-                this.setTimeStep(1);
+                if (mod(this.oTimer.fTime, this.fCycleTime) < 10) || (mod(this.oTimer.fTime, this.fCycleTime) > (this.fCycleTime-1))
+                    this.setTimeStep(0.1);
+                    
+                    oPhase = this.toStores.Filter5A_1.toPhases.FlowPhase;
+                    oPhase.fMaxStep = 0.1;
+                    oPhase = this.toStores.Filter5A_2.toPhases.FlowPhase;
+                    oPhase.fMaxStep = 0.1;
+                else
+                    this.setTimeStep(1);
+                    
+                    oPhase = this.toStores.Filter5A_1.toPhases.FlowPhase;
+                    oPhase.fMaxStep = 1;
+                    oPhase = this.toStores.Filter5A_2.toPhases.FlowPhase;
+                    oPhase.fMaxStep = 1;
+                end
             else
                 this.setTimeStep(this.fOriginalTimeStep);
             end
@@ -700,6 +726,11 @@ classdef CDRA < vsys
             % during the desorption phase
             this.toCDRA_Heaters.Filter5A_1.update();
             this.toCDRA_Heaters.Filter5A_2.update();
+            
+            % sets the interface flowrate for the CCAA (from CDRA to CCAA)
+            fIF_Flow = this.toBranches.CDRA_to_CHX_2.oHandler.fRequestedFlowRate + this.toBranches.CDRA_to_CHX_1.oHandler.fRequestedFlowRate;
+            this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CDRA_TCCV.oHandler.setFlowRate(-fIF_Flow);
+            
         end
     end
     

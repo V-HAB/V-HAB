@@ -481,6 +481,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             
             % Apply initial conditions
             mfC(:,:,1) = this.mfC_current;
+            mfC_LastToth = mfC(:,:,1) ;
             mfC(:,1,1) = this.afConcentration;
             mfQ(:,:,1) = this.mfQ_current;
             
@@ -498,7 +499,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                     % Solve equation system Equation 3.23 from RT BA 13_15
                     mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
 
-                    mDiff = abs(mfC(:,:,aiTime_index) - mfC(:,:,aiTime_index - 1)); 
+                    mDiff = abs(mfC(:,:,aiTime_index) - mfC_LastToth); 
                     if (max(mDiff(:)) > 1e-1) || aiTime_index == 2
 
                         % Calculates the capacity of the filter using the toth equation
@@ -507,7 +508,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                         % if multiplied with the current concentration, yields the
                         % current capacity of the filter.
                         mfThermodynConst_K = this.ofilter_table.get_ThermodynConst_K(mfC(:,1:end-1,aiTime_index), this.fSorptionTemperature, this.fRhoSorbent, this.csNames, this.afMolarMass);     %linearized adsorption equilibrium isotherm slope [-]
-
+                        mfC_LastToth = mfC(:,:,aiTime_index);
                         % either gets the saved constant kinematic constant or
                         % calculates it from the equations saved in the filter table
                         if this.bConst_k_l

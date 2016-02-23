@@ -121,6 +121,9 @@ classdef Zeolite5A_Table < handle
             omega_ij = this.calculate_collision_integral(fTemperature);
             D_m = this.calculate_D_m(fTemperature,fPressure,afC_in,omega_ij);            
             D_L = 0.73*D_m + this.fR_pellet.*fFluidVelocity./(1+4.85*D_m./fFluidVelocity./this.fR_pellet); %axial diffusivity coefficient for [H2O,CO2,N2,O2] [m^2/s]
+            if D_L < 1e-5
+                D_L = 1e-5;
+            end
         end   
         
         % Lumped LDF coefficient according to Glueckauf / Ruthven
