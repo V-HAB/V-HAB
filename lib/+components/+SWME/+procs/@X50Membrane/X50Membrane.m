@@ -33,7 +33,7 @@ classdef X50Membrane < matter.procs.p2ps.flow
         
         fPressureDropCoefficient = 1.021;       % [-]    Correction factor for the vapor pressure directly outside of the membrane
         fMembraneArea            = 1.5;         % [m^2]  Total surface area of the membrane
-        fMembraneTortuosity      = 2.325;       % [-]    Tortuosity factor of the membrane
+        fMembraneTortuosity      = 2.74;        % [-]    Tortuosity factor of the membrane
         fMembraneThickness       = 40e-6;       % [m]    Thickness of the membrane wall
         fMembraneOpenPoreArea    = 0.6;         % [m^2]  Open pore area of the surface of the membrane
         fMembranePorosity        = 0.4;         % [-]    Porosity of the membrane
