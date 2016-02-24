@@ -173,6 +173,11 @@ classdef setup < simulation.infrastructure
             oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.ED_CGR_d', 'kg', 'Inedible Dry Biomass');                  % 280      Biomass composition: edible dry
             oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.ED_CGR_f', 'kg', 'Inedible Fluid Biomass');
             
+            % Gas exchanges
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oProc_Plants_H2OGasExchange', 'fFlowRate', 'kg/s', 'Transpiration');                  % 200          Exchange rate H2O (transpiration); positive: Plants-phase -> air-phase
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oProc_Plants_O2GasExchange', 'fFlowRate', 'kg/s', 'O2 Exchange');                   %        Exchange rate O2; positive: Plants-phase -> air-phase
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oProc_Plants_CO2GasExchange', 'fFlowRate', 'kg/s', 'CO2 Exchange');
+            
             
             %% Define Plots
             
