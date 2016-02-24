@@ -159,7 +159,25 @@ classdef infrastructure < base & event.source
             oTimer = event.timer();
 
             hTimer = tic();
-            oMT = matter.table();
+            
+            % If we are running this simulation in parallel with other
+            % simulations, a key in the ptConfigParams container map must
+            % be 'ParallelExecution'. If this key is present, the matter
+            % table object will have been instantiated outside of the
+            % parallel loop and ist contained in the container map as the
+            % value for the key 'ParallelExecution'. So we just assign it
+            % here. 
+            % If this simulation is being run individually, we can call the
+            % matter table constructor directly.
+            if isKey(ptConfigParams, 'ParallelExecution')
+                oMT = ptConfigParams('ParallelExecution');
+                if ~isa(oMT, 'matter.table')
+                    this.throw('infrastructure','The provided object is not a matter table.');
+                end
+            else
+                oMT = matter.table();
+            end
+            
             disp(['Matter Table created in ', num2str(toc(hTimer)), ' seconds.'])
             
             oCfgParams = simulation.configuration_parameters(ptConfigParams);
