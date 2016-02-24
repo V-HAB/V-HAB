@@ -455,10 +455,10 @@ classdef Example < vsys
                 end
             end
             
-            if (this.oTimer.fTime > (30*3600)) && (this.oTimer.fTime < (49*3600))
+            if (this.oTimer.fTime > (19.3*3600)) && (this.oTimer.fTime < (38.3*3600))
                 this.iCrewMembers = 4;
                 this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1,1]);
-            elseif (this.oTimer.fTime >= (49*3600))
+            elseif (this.oTimer.fTime >= (38.3*3600))
                 this.iCrewMembers = 3;
                 this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1]);
             end
