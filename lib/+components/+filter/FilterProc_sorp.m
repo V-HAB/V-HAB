@@ -69,10 +69,22 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
         arPartials_ads;
         arPartials_des;
         
-        % TO DO: Explain these variables!
+        % kinematic constant for the adsorption calculation. This parameter
+        % is only used if static values are used, otherwise a calculation
+        % in the Filter Table has to be provided.
         k_l;
-        mfThermodynConst_K_save; 
+        
+        % boolean parameter to decide if constant kinetic parameters are
+        % used (resulted in faster if/else query if a boolean is used
+        % instead of isempty)
         bConst_k_l = false;
+        
+        % boolean parameter to decide if the toth equation should only be
+        % evaluated if a sufficient change in the concentration has
+        % occured. The current limit for this is a change of at least 1e-3
+        % mol/m³ in concentration which relates to a change of about 2.5 Pa
+        % in partial pressure
+        bLimitTothCalculation = false;
         
         % Transfer variable for plotting
         q_plot;
@@ -92,7 +104,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
         %%%%%%%%% Constructor %%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function [this] = FilterProc_sorp(oStore, sName, sPhaseIn, sPhaseOut, sType)
+        function [this] = FilterProc_sorp(oStore, sName, sPhaseIn, sPhaseOut, sType, bLimitTothCalculation)
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
             
             % Link sorption processor to desorption processor 
@@ -101,6 +113,10 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             % Define chosen filter type
             this.sType = sType;
             
+            if nargin > 5
+                this.bLimitTothCalculation = bLimitTothCalculation;
+            end
+            
             % Get the filter volumes that are defined in the filter class
             try
                 this.fVolSolid = this.oStore.tGeometryParameters.fVolumeSolid;
@@ -108,7 +124,11 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                 this.fVolSolid = this.oStore.toPhases.FilteredPhase.fVolume;
             end
             
-            
+            % tries to get the flow volume from the geometry parameter
+            % struct. This was implemented since it can be necessary to use
+            % a larger volume for the phase in the V-HAB model to allow
+            % large enough time steps. But that increased volume should not
+            % be used for the filter calculation!
             try
                 this.fVolFlow = this.oStore.tGeometryParameters.fVolumeFlow;
             catch
@@ -392,9 +412,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                 this.fSorptionPressure    = this.oIn.oPhase.fPressure;
                 % Phase temperature
                 this.fSorptionTemperature = this.oIn.oPhase.fTemperature;
-%                 % Phase mass fractions
-%                 this.arMassFractions           = this.oIn.oPhase.arPartialMass ...
-%                                            (this.oIn.oPhase.arPartialMass > 0);
+                % Phase mass fractions
                 this.arMassFractions           = this.oIn.oPhase.arPartialMass(this.aiPositions);
                 
                 % Calculating the mol fraction [-]
@@ -408,9 +426,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                 this.fSorptionPressure    = oInFlow.fPressure;
                 % Inlet temperature
                 this.fSorptionTemperature = oInFlow.fTemperature;
-%                 % Inlet mass fractions
-%                 this.arMassFractions           = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.arPartialMass ...
-%                                            (this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.arPartialMass > 0);
+                % Inlet mass fractions
                 this.arMassFractions           = oInFlow.arPartialMass(this.aiPositions);
                 
                 % Calculating the mol fraction [-]
@@ -485,30 +501,83 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             mfC(:,1,1) = this.afConcentration;
             mfQ(:,:,1) = this.mfQ_current;
             
-            
-            if ~strcmp(this.sType, 'MetOx')
-                %----------------------------------------------
-                %------------------SOLVE-----------------------
-                %----------------------------------------------
-                for aiTime_index = 2:iTimePoints
-
+            if this.bLimitTothCalculation
+                if ~strcmp(this.sType, 'MetOx')
                     %----------------------------------------------
-                    %---------------fluid transport----------------
+                    %------------------SOLVE-----------------------
                     %----------------------------------------------
+                    for aiTime_index = 2:iTimePoints
 
-                    % Solve equation system Equation 3.23 from RT BA 13_15
-                    mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
+                        %----------------------------------------------
+                        %---------------fluid transport----------------
+                        %----------------------------------------------
 
-                    mDiff = abs(mfC(:,:,aiTime_index) - mfC_LastToth); 
-                    if (max(mDiff(:)) > 1e-1) || aiTime_index == 2
+                        % Solve equation system Equation 3.23 from RT BA 13_15
+                        mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
 
+                        mDiff = abs(mfC(:,:,aiTime_index) - mfC_LastToth); 
+                        if (max(mDiff(:)) > 1e-3) || aiTime_index == 2
+
+                            % Calculates the capacity of the filter using the toth equation
+                            % saved in the filter table file. The caclulation is then
+                            % performeed using a linearized thermodynamic konstant k which,
+                            % if multiplied with the current concentration, yields the
+                            % current capacity of the filter.
+                            mfThermodynConst_K = this.ofilter_table.get_ThermodynConst_K(mfC(:,1:end-1,aiTime_index), this.fSorptionTemperature, this.fRhoSorbent, this.csNames, this.afMolarMass);     %linearized adsorption equilibrium isotherm slope [-]
+                            mfC_LastToth = mfC(:,:,aiTime_index);
+                            % either gets the saved constant kinematic constant or
+                            % calculates it from the equations saved in the filter table
+                            if this.bConst_k_l
+                                mfKineticConst_k_l = this.k_l(:,(1:length(mfThermodynConst_K)));
+                            else
+                                mfKineticConst_k_l = this.ofilter_table.get_KineticConst_k_l(mfThermodynConst_K, this.fSorptionTemperature, this.fSorptionPressure, this.fSorptionDensity, this.afConcentration, this.fRhoSorbent, this.fVolumetricFlowRate, this.rVoidFraction, this.csNames, this.afMolarMass);
+                            end
+                        end
+                        %---------------------------------------------------------------
+                        %-----------------------LDF reaction part-----------------------
+                        %---------------------------------------------------------------
+
+                        % Store transportation result values in buffer for later usage
+                        mfQ_save = mfQ(:,1:end-1,aiTime_index-1);
+
+                        % Calculate local equilibrium value
+                        % Equation 3.37 from RT BA 13_15
+                        mfQ_equ = mfThermodynConst_K .* (mfC(:,1:end-1,aiTime_index) + fHelperConstant_a*mfQ_save) ./ (1 + mfThermodynConst_K*fHelperConstant_a);
+
+                        % Result of the time step according to LDF formula
+                        % Equation 3.35 from RT BA 13_15 (it is reorder but it
+                        % is this equation)
+                        mfQ(:,1:end-1,aiTime_index) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * fHelperConstant_a) * afInnerTimeStep(2)) .*...  this part is Equation 3.36 or lambda
+                            (mfQ_save - mfQ_equ) + mfQ_equ;
+
+                        % Concentration of the substances in the gas
+                        mfC(:,1:end-1,aiTime_index) = fHelperConstant_a * (mfQ_save-mfQ(:,1:end-1,aiTime_index)) + mfC(:,1:end-1,aiTime_index);
+
+                        % Apply bed r.b.c.
+                        mfC(:, end, aiTime_index) = mfC(:, end-1, aiTime_index);
+                    end
+                end
+            else
+                if ~strcmp(this.sType, 'MetOx')
+                    %----------------------------------------------
+                    %------------------SOLVE-----------------------
+                    %----------------------------------------------
+                    for aiTime_index = 2:iTimePoints
+
+                        %----------------------------------------------
+                        %---------------fluid transport----------------
+                        %----------------------------------------------
+
+                        % Solve equation system Equation 3.23 from RT BA 13_15
+                        mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
+                        
                         % Calculates the capacity of the filter using the toth equation
                         % saved in the filter table file. The caclulation is then
                         % performeed using a linearized thermodynamic konstant k which,
                         % if multiplied with the current concentration, yields the
                         % current capacity of the filter.
                         mfThermodynConst_K = this.ofilter_table.get_ThermodynConst_K(mfC(:,1:end-1,aiTime_index), this.fSorptionTemperature, this.fRhoSorbent, this.csNames, this.afMolarMass);     %linearized adsorption equilibrium isotherm slope [-]
-                        mfC_LastToth = mfC(:,:,aiTime_index);
+
                         % either gets the saved constant kinematic constant or
                         % calculates it from the equations saved in the filter table
                         if this.bConst_k_l
@@ -516,32 +585,35 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                         else
                             mfKineticConst_k_l = this.ofilter_table.get_KineticConst_k_l(mfThermodynConst_K, this.fSorptionTemperature, this.fSorptionPressure, this.fSorptionDensity, this.afConcentration, this.fRhoSorbent, this.fVolumetricFlowRate, this.rVoidFraction, this.csNames, this.afMolarMass);
                         end
+                        
+                        %---------------------------------------------------------------
+                        %-----------------------LDF reaction part-----------------------
+                        %---------------------------------------------------------------
+
+                        % Store transportation result values in buffer for later usage
+                        mfQ_save = mfQ(:,1:end-1,aiTime_index-1);
+
+                        % Calculate local equilibrium value
+                        % Equation 3.37 from RT BA 13_15
+                        mfQ_equ = mfThermodynConst_K .* (mfC(:,1:end-1,aiTime_index) + fHelperConstant_a*mfQ_save) ./ (1 + mfThermodynConst_K*fHelperConstant_a);
+
+                        % Result of the time step according to LDF formula
+                        % Equation 3.35 from RT BA 13_15 (it is reorder but it
+                        % is this equation)
+                        mfQ(:,1:end-1,aiTime_index) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * fHelperConstant_a) * afInnerTimeStep(2)) .*...  this part is Equation 3.36 or lambda
+                            (mfQ_save - mfQ_equ) + mfQ_equ;
+
+                        % Concentration of the substances in the gas
+                        mfC(:,1:end-1,aiTime_index) = fHelperConstant_a * (mfQ_save-mfQ(:,1:end-1,aiTime_index)) + mfC(:,1:end-1,aiTime_index);
+
+                        % Apply bed r.b.c.
+                        mfC(:, end, aiTime_index) = mfC(:, end-1, aiTime_index);
                     end
-                    %---------------------------------------------------------------
-                    %-----------------------LDF reaction part-----------------------
-                    %---------------------------------------------------------------
-
-                    % Store transportation result values in buffer for later usage
-                    mfQ_save = mfQ(:,1:end-1,aiTime_index-1);
-
-                    % Calculate local equilibrium value
-                    % Equation 3.37 from RT BA 13_15
-                    mfQ_equ = mfThermodynConst_K .* (mfC(:,1:end-1,aiTime_index) + fHelperConstant_a*mfQ_save) ./ (1 + mfThermodynConst_K*fHelperConstant_a);
-
-                    % Result of the time step according to LDF formula
-                    % Equation 3.35 from RT BA 13_15
-                    mfQ(:,1:end-1,aiTime_index) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * fHelperConstant_a) * afInnerTimeStep(2)) .*... Equation 3.36 or lambda
-                        (mfQ_save - mfQ_equ) + mfQ_equ; % 3.35
-
-                    % Concentration of the substances in the gas
-                    mfC(:,1:end-1,aiTime_index) = fHelperConstant_a * (mfQ_save-mfQ(:,1:end-1,aiTime_index)) + mfC(:,1:end-1,aiTime_index);
-
-                    % Apply bed r.b.c.
-                    mfC(:, end, aiTime_index) = mfC(:, end-1, aiTime_index);
                 end
-
+            end
+            
             % Concentration and loading for MetOx absorption
-            elseif strcmp(this.sType, 'MetOx')
+            if strcmp(this.sType, 'MetOx')
                 %----------------------------------------------
                 %------------------SOLVE-----------------------
                 %----------------------------------------------
