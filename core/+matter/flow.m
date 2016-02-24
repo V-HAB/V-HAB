@@ -605,8 +605,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % If only one flow, no f2f exists --> set pressure, temp
                 % according to IN exme
                 if iL == 1
-                    aoFlows.fPressure    = fPortPress;
-                    aoFlows.fTemperature = fCurrentTemperature;
+                    oThis.fPressure    = fPortPress;
+                    oThis.fTemperature = fCurrentTemperature;
                 end
                 
                 
@@ -636,7 +636,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
 
                     % So following this equation:
                     % Q' = m' * c_p * deltaT
-                    fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / ((oThis.fSpecificHeatCapacity + fOtherCp) / 2);
+                    %fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / ((oThis.fSpecificHeatCapacity + fOtherCp) / 2);
+                    fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / fOtherCp;
                 end
                 
                 if isnan(fCurrentTemperature)
