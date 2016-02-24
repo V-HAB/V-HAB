@@ -210,7 +210,7 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oInput, 'filterport2');
             matter.procs.exmes.absorber(oFiltered, 'filterport2');
             components.filter.FilterProc_deso(this.toStores.Filter_Sylobead_1, 'DesorptionProcessor', 'FlowPhase.filterport2', 'FilteredPhase.filterport2');
-            components.filter.FilterProc_sorp(this.toStores.Filter_Sylobead_1, 'Filter_Sylobead_1_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', 'Sylobead', true);
+            components.filter.FilterProc_sorp(this.toStores.Filter_Sylobead_1, 'Filter_Sylobead_1_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', 'Sylobead', 1e-3);
             
             % Creating the Filter_13X_1 (H2O filter)
             tfMasses = struct('H2O', 0, 'Zeolite13x', fMassZeolite13x);
@@ -234,7 +234,7 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oInput, 'filterport2');
             matter.procs.exmes.absorber(oFiltered, 'filterport2');
             components.filter.FilterProc_deso(this.toStores.Filter_13X_1, 'DesorptionProcessor', 'FlowPhase.filterport2', 'FilteredPhase.filterport2');
-            components.filter.FilterProc_sorp(this.toStores.Filter_13X_1, 'Filter_13X_1_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '13x', true);
+            components.filter.FilterProc_sorp(this.toStores.Filter_13X_1, 'Filter_13X_1_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '13x', 1e-3);
              
             % Creating the Sylobead Filter (H2O filter) Note that this
             % filter and the 13x filter are actually one filter within CDRA
@@ -262,7 +262,7 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oInput, 'filterport2');
             matter.procs.exmes.absorber(oFiltered, 'filterport2');
             components.filter.FilterProc_deso(this.toStores.Filter_Sylobead_2, 'DesorptionProcessor', 'FlowPhase.filterport2', 'FilteredPhase.filterport2');
-            components.filter.FilterProc_sorp(this.toStores.Filter_Sylobead_2, 'Filter_Sylobead_2_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', 'Sylobead', true);
+            components.filter.FilterProc_sorp(this.toStores.Filter_Sylobead_2, 'Filter_Sylobead_2_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', 'Sylobead', 1e-3);
                
             % Creating the Filter_13X_2 (H2O filter)
             tfMasses = struct('H2O', 0, 'Zeolite13x', fMassZeolite13x);
@@ -286,7 +286,7 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oInput, 'filterport2');
             matter.procs.exmes.absorber(oFiltered, 'filterport2');
             components.filter.FilterProc_deso(this.toStores.Filter_13X_2, 'DesorptionProcessor', 'FlowPhase.filterport2', 'FilteredPhase.filterport2');
-            components.filter.FilterProc_sorp(this.toStores.Filter_13X_2, 'Filter_13X_2_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '13x', true);
+            components.filter.FilterProc_sorp(this.toStores.Filter_13X_2, 'Filter_13X_2_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '13x', 1e-3);
                 
             % Creating the Filter5A_1 (CO2 filter)
             tfMasses = struct('CO2', 0, 'Zeolite5A', fMassZeolite5A);
@@ -310,7 +310,7 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oInput, 'filterport2');
             matter.procs.exmes.absorber(oFiltered, 'filterport2');
             components.filter.FilterProc_deso(this.toStores.Filter5A_1, 'DesorptionProcessor', 'FlowPhase.filterport2', 'FilteredPhase.filterport2');
-            components.filter.FilterProc_sorp(this.toStores.Filter5A_1, 'Filter_5A_1_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '5A-RK38', true);
+            components.filter.FilterProc_sorp(this.toStores.Filter5A_1, 'Filter_5A_1_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '5A-RK38', 1e-3);
             
             this.toCDRA_Heaters.Filter5A_1 = components.CDRA.components.CDRA_Heater(this.toStores.Filter5A_1, 'Filter5A_1_Heater');
             
@@ -336,7 +336,7 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oInput, 'filterport2');
             matter.procs.exmes.absorber(oFiltered, 'filterport2');
             components.filter.FilterProc_deso(this.toStores.Filter5A_2, 'DesorptionProcessor', 'FlowPhase.filterport2', 'FilteredPhase.filterport2');
-            components.filter.FilterProc_sorp(this.toStores.Filter5A_2, 'Filter_5A_2_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '5A-RK38', true);
+            components.filter.FilterProc_sorp(this.toStores.Filter5A_2, 'Filter_5A_2_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '5A-RK38', 1e-3);
             
             this.toCDRA_Heaters.Filter5A_2 = components.CDRA.components.CDRA_Heater(this.toStores.Filter5A_2, 'Filter5A_2_Heater');
             

@@ -79,12 +79,13 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
         % instead of isempty)
         bConst_k_l = false;
         
-        % boolean parameter to decide if the toth equation should only be
-        % evaluated if a sufficient change in the concentration has
-        % occured. The current limit for this is a change of at least 1e-3
-        % mol/m³ in concentration which relates to a change of about 2.5 Pa
-        % in partial pressure
-        bLimitTothCalculation = false;
+        % parameter to decide if the toth equation should only be evaluated
+        % if a sufficient change in the concentration has occured. The
+        % limit for this is set by the user and should be given as
+        % concentration in mol/m³. For example a limit of 1e-3 results in a
+        % recalculation of the toth equation if a change of ~2.5 Pa for the
+        % partial pressure occurs.
+        fLimitTothCalculation;
         
         % Transfer variable for plotting
         q_plot;
@@ -104,7 +105,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
         %%%%%%%%% Constructor %%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function [this] = FilterProc_sorp(oStore, sName, sPhaseIn, sPhaseOut, sType, bLimitTothCalculation)
+        function [this] = FilterProc_sorp(oStore, sName, sPhaseIn, sPhaseOut, sType, fLimitTothCalculation)
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
             
             % Link sorption processor to desorption processor 
@@ -114,7 +115,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             this.sType = sType;
             
             if nargin > 5
-                this.bLimitTothCalculation = bLimitTothCalculation;
+                this.fLimitTothCalculation = fLimitTothCalculation;
             end
             
             % Get the filter volumes that are defined in the filter class
@@ -501,7 +502,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             mfC(:,1,1) = this.afConcentration;
             mfQ(:,:,1) = this.mfQ_current;
             
-            if this.bLimitTothCalculation
+            if ~isempty(this.fLimitTothCalculation)
                 if ~strcmp(this.sType, 'MetOx')
                     %----------------------------------------------
                     %------------------SOLVE-----------------------
@@ -516,7 +517,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                         mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
 
                         mDiff = abs(mfC(:,:,aiTime_index) - mfC_LastToth); 
-                        if (max(mDiff(:)) > 1e-3) || aiTime_index == 2
+                        if (max(mDiff(:)) > this.fLimitTothCalculation) || aiTime_index == 2
 
                             % Calculates the capacity of the filter using the toth equation
                             % saved in the filter table file. The caclulation is then
