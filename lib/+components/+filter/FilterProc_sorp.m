@@ -490,7 +490,8 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             
             % for speed optimization local boolean variables are used to
             % decide if the toth and kinematic constant simplification
-            % should be used or not
+            % should be used or not (faster than strcmp, isemtpy or
+            % property boolean variables)
             if ~isempty(this.k_l)
                 bConst_k_l = true;
             else
@@ -501,20 +502,26 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             else
                 bLimitToth = false;
             end
-            
             if ~strcmp(this.sType, 'MetOx')
-                if (this.fTimeFactor_1 == 1) && (this.fTimeFactor_2 == 1)
-                    %----------------------------------------------
-                    %------------------SOLVE-----------------------
-                    %----------------------------------------------
-                    for aiTime_index = 2:iTimePoints
+                bMetox = false;
+            else
+                bMetox = true;
+            end
+            
+            if (this.fTimeFactor_1 == 1) && (this.fTimeFactor_2 == 1)
+                %----------------------------------------------
+                %------------------SOLVE-----------------------
+                %----------------------------------------------
+                for aiTime_index = 2:iTimePoints
 
-                        %----------------------------------------------
-                        %---------------fluid transport----------------
-                        %----------------------------------------------
+                    %----------------------------------------------
+                    %---------------fluid transport----------------
+                    %----------------------------------------------
 
-                        % Solve equation system Equation 3.23 from RT BA 13_15
-                        mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
+                    % Solve equation system Equation 3.23 from RT BA 13_15
+                    mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
+
+                    if ~bMetox
                         if bLimitToth
                             mDiff = abs(mfC(:,:,aiTime_index) - mfC_LastToth); 
                             if (max(mDiff(:)) > this.fLimitTothCalculation) || aiTime_index == 2
@@ -559,90 +566,83 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                         % formula (modified equation 3.40 from 
                         % RT-BA 2013/15)
                         mfQ( :, 1:end-1, aiTime_index ) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * this.fHelperConstant_a) * fReactionTimeStep) .* (mfQ(:, 1:end-1, aiTime_index-1) - mfQ_equ_local) + mfQ_equ_local;
-                        
+
                         % Equation 3-29 from RT-BA 2013/15
                         mfC( :, 1:end-1, aiTime_index ) = this.fHelperConstant_a * (mfQ_save - mfQ( :, 1:end-1, aiTime_index )) + mfC(:,1:end-1,aiTime_index);
 
                         % Apply bed r.b.c.
                         mfC(:, end, aiTime_index) = mfC(:, end-1, aiTime_index);
+                    else
+                        % Concentration and loading for MetOx absorption
+                        mfC( :, 1:end-1, aiTime_index ) = this.ofilter_table.calculate_C_new(mfC( :, 1:end-1, aiTime_index ), fReactionTimeStep, this.fSorptionTemperature, this.csNames, this.fVolSolid, this.iNumGridPoints, this.afMolarMass);
+                        mfQ( :, 1:end-1, aiTime_index ) = mfQ( :, 1:end-1, aiTime_index ) + (mfC_save - mfC( :, 1:end-1, aiTime_index ));
                     end
-                else 
-                    %----------------------------------------------
-                    %------------------SOLVE-----------------------
-                    %----------------------------------------------
-                    for aiTime_index = 2:iTimePoints
-                        % TO DO: the number of iTimePoints was reduced by
-                        % the value of fTimeFactor_1 (for a value of 2 the
-                        % number of iTimePoints is 1/2 of the original
-                        % value). This was performed to reduce the number
-                        % of plotting intervals (see section 4.2.1 from
-                        % RT_BA_2013_15). However the way this was implemented
-                        % in V-HAB did not result in a limitation of the
-                        % plotting variable since previously these two
-                        % lines were at this position:
-                        %
-                        % Read values from previous time step
-                        % mfC( :, :, aiTime_index ) = mfC( :, :, aiTime_index-1 );
-                        % mfQ( :, :, aiTime_index ) = mfQ( :, :, aiTime_index-1 );
-                        %
-                        % However these values are set later on anyway,
-                        % therefore it does result in a reduction of
-                        % simulation time as stated in RT_BA_2013-15 but
-                        % instead increases it since an unnecessary
-                        % allocation takes place
-                        %
-                        for iI = 1:this.fTimeFactor_1
+                end
+            else 
+                %----------------------------------------------
+                %------------------SOLVE-----------------------
+                %----------------------------------------------
+                for aiTime_index = 2:iTimePoints
+                    % TO DO: the number of iTimePoints was reduced by
+                    % the value of fTimeFactor_1 (for a value of 2 the
+                    % number of iTimePoints is 1/2 of the original
+                    % value). This was performed to reduce the number
+                    % of plotting intervals (see section 4.2.1 from
+                    % RT_BA_2013_15). However the way this was implemented
+                    % in V-HAB did not result in a limitation of the
+                    % plotting variable since previously these two
+                    % lines were at this position:
+                    %
+                    % Read values from previous time step
+                    % mfC( :, :, aiTime_index ) = mfC( :, :, aiTime_index-1 );
+                    % mfQ( :, :, aiTime_index ) = mfQ( :, :, aiTime_index-1 );
+                    %
+                    % However these values are set later on anyway,
+                    % therefore it does result in a reduction of
+                    % simulation time as stated in RT_BA_2013-15 but
+                    % instead increases it since an unnecessary
+                    % allocation takes place
+                    %
+                    for iI = 1:this.fTimeFactor_1
 
-                            %----------------------------------------------
-                            %---------------fluid transport----------------
-                            %----------------------------------------------
+                        %----------------------------------------------
+                        %---------------fluid transport----------------
+                        %----------------------------------------------
 
-                            % Solve equation system
-                            if iI == 1
-                                mfC( :, :, aiTime_index ) = mfC( :, :, aiTime_index-1 ) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
+                        % Solve equation system
+                        if iI == 1
+                            mfC( :, :, aiTime_index ) = mfC( :, :, aiTime_index-1 ) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
 
-                                % Store transportation result values in buffer for later usage
-                                mfQ_save = mfQ( :, 1:end-1, aiTime_index-1 );
-                                mfC_save = mfC( :, 1:end-1, aiTime_index-1 );
-                            else
-                                mfC( :, :, aiTime_index ) = mfC( :, :, aiTime_index ) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
+                            % Store transportation result values in buffer for later usage
+                            mfQ_save = mfQ( :, 1:end-1, aiTime_index-1 );
+                            mfC_save = mfC( :, 1:end-1, aiTime_index-1 );
+                        else
+                            mfC( :, :, aiTime_index ) = mfC( :, :, aiTime_index ) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
 
-                                % Store transportation result values in buffer for later usage
-                                mfQ_save = mfQ( :, 1:end-1, aiTime_index );
-                                mfC_save = mfC( :, 1:end-1, aiTime_index );
-                            end
+                            % Store transportation result values in buffer for later usage
+                            mfQ_save = mfQ( :, 1:end-1, aiTime_index );
+                            mfC_save = mfC( :, 1:end-1, aiTime_index );
+                        end
 
-                            %---------------------------------------------------------------
-                            %-----------------------LDF reaction part-----------------------
-                            %---------------------------------------------------------------
+                        %---------------------------------------------------------------
+                        %-----------------------LDF reaction part-----------------------
+                        %---------------------------------------------------------------
 
-                            for iJ = 1:this.fTimeFactor_2
+                        for iJ = 1:this.fTimeFactor_2
 
-                                % Concentration and loading for FBA and RCA/Amine absorption
-
-                                    % Update thermodynamic constant
-                                    if bLimitToth
-                                        mDiff = abs(mfC(:,:,aiTime_index) - mfC_LastToth); 
-                                        if (max(mDiff(:)) > this.fLimitTothCalculation) || aiTime_index == 2
-                                            % Calculates the capacity of the filter using the toth equation
-                                            % saved in the filter table file. The caclulation is then
-                                            % performeed using a linearized thermodynamic konstant k which,
-                                            % if multiplied with the current concentration, yields the
-                                            % current capacity of the filter.
-                                            mfThermodynConst_K = this.ofilter_table.get_ThermodynConst_K(mfC(:,1:end-1,aiTime_index), this.fSorptionTemperature, this.fRhoSorbent, this.csNames, this.afMolarMass);     %linearized adsorption equilibrium isotherm slope [-]
-                                            mfC_LastToth = mfC(:,:,aiTime_index);
-
-                                            % Update kinetic lumped constant                        
-                                            % either gets the saved constant kinematic constant or
-                                            % calculates it from the equations saved in the filter table
-                                            if bConst_k_l
-                                                mfKineticConst_k_l = this.k_l(:,(1:length(mfThermodynConst_K)));
-                                            else
-                                                mfKineticConst_k_l = this.ofilter_table.get_KineticConst_k_l(mfThermodynConst_K, this.fSorptionTemperature, this.fSorptionPressure, this.fSorptionDensity, this.afConcentration, this.fRhoSorbent, this.fVolumetricFlowRate, this.rVoidFraction, this.csNames, this.afMolarMass);
-                                            end
-                                        end
-                                    else
-                                        mfThermodynConst_K = this.ofilter_table.get_ThermodynConst_K(mfC( :, 1:end-1, aiTime_index ), this.fSorptionTemperature, this.fRhoSorbent, this.csNames, this.afMolarMass);     %linearized adsorption equilibrium isotherm slope [-]
+                            % Concentration and loading for FBA and RCA/Amine absorption
+                            if ~bMetox
+                                % Update thermodynamic constant
+                                if bLimitToth
+                                    mDiff = abs(mfC(:,:,aiTime_index) - mfC_LastToth); 
+                                    if (max(mDiff(:)) > this.fLimitTothCalculation) || aiTime_index == 2
+                                        % Calculates the capacity of the filter using the toth equation
+                                        % saved in the filter table file. The caclulation is then
+                                        % performeed using a linearized thermodynamic konstant k which,
+                                        % if multiplied with the current concentration, yields the
+                                        % current capacity of the filter.
+                                        mfThermodynConst_K = this.ofilter_table.get_ThermodynConst_K(mfC(:,1:end-1,aiTime_index), this.fSorptionTemperature, this.fRhoSorbent, this.csNames, this.afMolarMass);     %linearized adsorption equilibrium isotherm slope [-]
+                                        mfC_LastToth = mfC(:,:,aiTime_index);
 
                                         % Update kinetic lumped constant                        
                                         % either gets the saved constant kinematic constant or
@@ -653,36 +653,46 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                                             mfKineticConst_k_l = this.ofilter_table.get_KineticConst_k_l(mfThermodynConst_K, this.fSorptionTemperature, this.fSorptionPressure, this.fSorptionDensity, this.afConcentration, this.fRhoSorbent, this.fVolumetricFlowRate, this.rVoidFraction, this.csNames, this.afMolarMass);
                                         end
                                     end
+                                else
+                                    mfThermodynConst_K = this.ofilter_table.get_ThermodynConst_K(mfC( :, 1:end-1, aiTime_index ), this.fSorptionTemperature, this.fRhoSorbent, this.csNames, this.afMolarMass);     %linearized adsorption equilibrium isotherm slope [-]
 
-                                    % Calculate local equilibrium value
-                                    % Equation 3.42 from RT-BA 2013/15
-                                    mfQ_equ_local = mfThermodynConst_K .* (mfC_save + this.fHelperConstant_a * mfQ_save) ./ (1 + mfThermodynConst_K * this.fHelperConstant_a);
-
-                                    % Result of the time step according to LDF
-                                    % formula (modified equation 3.40 from 
-                                    % RT-BA 2013/15)
-                                    if iI == 1 && iJ == 1
-                                        mfQ( :, 1:end-1, aiTime_index ) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * this.fHelperConstant_a) * fReactionTimeStep) .* (mfQ(:, 1:end-1, aiTime_index-1) - mfQ_equ_local) + mfQ_equ_local;
+                                    % Update kinetic lumped constant                        
+                                    % either gets the saved constant kinematic constant or
+                                    % calculates it from the equations saved in the filter table
+                                    if bConst_k_l
+                                        mfKineticConst_k_l = this.k_l(:,(1:length(mfThermodynConst_K)));
                                     else
-                                        mfQ( :, 1:end-1, aiTime_index ) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * this.fHelperConstant_a) * fReactionTimeStep) .* (mfQ(:, 1:end-1, aiTime_index) - mfQ_equ_local) + mfQ_equ_local;
+                                        mfKineticConst_k_l = this.ofilter_table.get_KineticConst_k_l(mfThermodynConst_K, this.fSorptionTemperature, this.fSorptionPressure, this.fSorptionDensity, this.afConcentration, this.fRhoSorbent, this.fVolumetricFlowRate, this.rVoidFraction, this.csNames, this.afMolarMass);
                                     end
-                                    % Equation 3-29 from RT-BA 2013/15
-                                    mfC( :, 1:end-1, aiTime_index ) = this.fHelperConstant_a * (mfQ_save - mfQ( :, 1:end-1, aiTime_index )) + mfC_save;
+                                end
 
+                                % Calculate local equilibrium value
+                                % Equation 3.42 from RT-BA 2013/15
+                                mfQ_equ_local = mfThermodynConst_K .* (mfC_save + this.fHelperConstant_a * mfQ_save) ./ (1 + mfThermodynConst_K * this.fHelperConstant_a);
 
+                                % Result of the time step according to LDF
+                                % formula (modified equation 3.40 from 
+                                % RT-BA 2013/15)
+                                if iI == 1 && iJ == 1
+                                    mfQ( :, 1:end-1, aiTime_index ) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * this.fHelperConstant_a) * fReactionTimeStep) .* (mfQ(:, 1:end-1, aiTime_index-1) - mfQ_equ_local) + mfQ_equ_local;
+                                else
+                                    mfQ( :, 1:end-1, aiTime_index ) = exp(-mfKineticConst_k_l .* (1 + mfThermodynConst_K * this.fHelperConstant_a) * fReactionTimeStep) .* (mfQ(:, 1:end-1, aiTime_index) - mfQ_equ_local) + mfQ_equ_local;
+                                end
+                                % Equation 3-29 from RT-BA 2013/15
+                                mfC( :, 1:end-1, aiTime_index ) = this.fHelperConstant_a * (mfQ_save - mfQ( :, 1:end-1, aiTime_index )) + mfC_save;
+                            else
+                                % Concentration and loading for MetOx absorption
+                                mfC( :, 1:end-1, aiTime_index ) = this.ofilter_table.calculate_C_new(mfC( :, 1:end-1, aiTime_index ), fReactionTimeStep, this.fSorptionTemperature, this.csNames, this.fVolSolid, this.iNumGridPoints, this.afMolarMass);
+                                mfQ( :, 1:end-1, aiTime_index ) = mfQ( :, 1:end-1, aiTime_index ) + (mfC_save - mfC( :, 1:end-1, aiTime_index ));
                             end
 
-                            % Apply bed r.b.c.
-                            mfC(:, end, aiTime_index) = mfC(:, end-1, aiTime_index);
-
                         end
+
+                        % Apply bed r.b.c.
+                        mfC(:, end, aiTime_index) = mfC(:, end-1, aiTime_index);
+
                     end
                 end
-            % Concentration and loading for MetOx absorption
-            elseif strcmp(this.sType, 'MetOx')
-                % TO DO: Fix this
-%                 mfC( :, 1:end-1, aiTime_index ) = this.ofilter_table.calculate_C_new(mfC( :, 1:end-1, aiTime_index ), fReactionTimeStep, this.fSorptionTemperature, this.csNames, this.fVolSolid, this.iNumGridPoints, this.afMolarMass);
-%                 mfQ( :, 1:end-1, aiTime_index ) = mfQ( :, 1:end-1, aiTime_index ) + (mfC_save - mfC( :, 1:end-1, aiTime_index ));
             end
             
             %% Post Processing
