@@ -32,7 +32,7 @@ classdef Example < vsys
             matter.store(this, 'SpaceSuit', 0.015);
             oAir = this.toStores.SpaceSuit.createPhase('N2Atmosphere', 0.015, fInitialTemperature);
             special.matter.const_press_exme(oAir, 'Out', 28900);
-            special.matter.const_press_exme(oAir, 'In', 28600);
+            special.matter.const_press_exme(oAir, 'In', 28300);
             matter.procs.exmes.gas(oAir, 'H2OInlet');
             matter.procs.exmes.gas(oAir, 'CO2Inlet');
             matter.procs.exmes.gas(oAir, 'N2Inlet');
@@ -77,7 +77,7 @@ classdef Example < vsys
             matter.branch(this, 'RCA_Out', {'Pipe_2'}, 'SpaceSuit.In');
             
             % Setting the in and out flow for the RCA
-            this.toChildren.RCA.setInterfaces('RCA_In', 'RCA_Out', this.toStores.SpaceSuit.toPhases.SpaceSuit_Phase_1.toProcsEXME.In);
+            this.toChildren.RCA.setInterfaces('RCA_In', 'RCA_Out');
             
             % Setting the flow rate
             %this.toChildren.RCA.fFlowRate = 6.834e-4;      

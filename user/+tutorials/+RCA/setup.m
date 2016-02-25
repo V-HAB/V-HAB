@@ -50,12 +50,12 @@ classdef setup < simulation.infrastructure
             oPlot = this.toMonitors.oPlotter;
             
             oPlot.definePlotWithFilter(tiLog.Parent,   'Pa', 'PLSS Pressures');
-            oPlot.definePlotWithFilter(tiLog.Parent,    'K', 'PLSS Temperatures');
+%             oPlot.definePlotWithFilter(tiLog.Parent,    'K', 'PLSS Temperatures');
             oPlot.definePlotWithFilter(tiLog.Parent,   'kg', 'PLSS Tank Masses');
             oPlot.definePlotWithFilter(tiLog.Parent, 'kg/s', 'PLSS Flow Rates');
             
             oPlot.definePlotWithFilter(tiLog.RCA,   'Pa', 'RCA Pressures');
-            oPlot.definePlotWithFilter(tiLog.RCA,    'K', 'RCA Temperatures');
+%             oPlot.definePlotWithFilter(tiLog.RCA,    'K', 'RCA Temperatures');
             oPlot.definePlotWithFilter(tiLog.RCA,   'kg', 'RCA Tank Masses');
             oPlot.definePlotWithFilter(tiLog.RCA, 'kg/s', 'RCA Flow Rates');
             
