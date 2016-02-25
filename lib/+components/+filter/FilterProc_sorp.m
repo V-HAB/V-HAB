@@ -398,7 +398,16 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow
             mfQ_mol_change = mfQ(:, :, end) - this.mfQ_current;
             
             % Convert the change to [kg/m3]
-            mfQ_density_change = mfQ_mol_change .* this.afMolarMass';
+            mfMolarMass = ones(size(mfQ_mol_change));
+            for iSubstance = 1:length(this.afMolarMass)
+                mfMolarMass(iSubstance,:) = mfMolarMass(iSubstance,:).*this.afMolarMass(iSubstance);
+            end
+            
+            mfQ_density_change = mfQ_mol_change .* mfMolarMass;
+            % Tthe following operation ist more elegant, but unfortunately
+            % only works with MATLAB 2016a or newer. It can be changed here
+            % at a time when most users have updated.
+            %mfQ_density_change = mfQ_mol_change .* this.afMolarMass';
             
             % Convert the change to mass in [kg]
             mfQ_mass_change = mfQ_density_change(:, 1:end-1) * this.fVolSolid / (this.iNumGridPoints-2);   % in [kg]       % -1 (ghost cell) -1 (2 boundary points)
