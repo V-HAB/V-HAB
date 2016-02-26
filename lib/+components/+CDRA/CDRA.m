@@ -104,8 +104,8 @@ classdef CDRA < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            fPressure = 101325;
-            fCO2Percent = 0.0062;
+            fPressure = this.tAtmosphere.fPressure;
+            fCO2Percent = this.tAtmosphere.fCO2Percent;
             
             %% Creating the stores  
             % CDRA Adsorber Bed Cross Section
@@ -289,7 +289,7 @@ classdef CDRA < vsys
             components.filter.FilterProc_sorp(this.toStores.Filter_13X_2, 'Filter_13X_2_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '13x', 1e-3);
                 
             % Creating the Filter5A_1 (CO2 filter)
-            tfMasses = struct('CO2', 0, 'Zeolite5A', fMassZeolite5A);
+            tfMasses = struct('CO2', 0.1, 'Zeolite5A', fMassZeolite5A);
             fSolidVolume = this.oMT.calculateSolidVolume(tfMasses, this.tAtmosphere.fTemperature, true);
             
             matter.store(this, 'Filter5A_1', fVolumeFlow+fSolidVolume, 1, tGeometry5A);

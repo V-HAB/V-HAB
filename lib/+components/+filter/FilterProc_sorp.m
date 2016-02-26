@@ -89,6 +89,9 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
         % execute.
         fUpdateDuration;
         
+        
+        % For Debuggin: internal loading in kg
+        fInternalLoading = 0;
     end
     
    
@@ -280,12 +283,17 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                 this.mfC_current(:,iK) = mfC_current_Flow;
             end
 
+            % TO DO: for the loading mfQ this is actually too simplified since the
+            % loading in the filter is not actually uniform for all cells
+            % but has certain differences. Therefore the desorption with a
+            % uniform spread of the loading in the filter does not work!
+            
         	% current loading of substances in fluid [mol/m^3]
             this.mfQ_current = zeros(this.iNumSubstances, this.iNumGridPoints,1);
             % current loading in adsorber phase
             mfQ_current_Adsorber = (this.oOut.oPhase.afMass(this.aiPositions)./this.afMolarMass) / this.fVolSolid;
             mfQ_current_Adsorber = mfQ_current_Adsorber';
-            for iK = 1:this.iNumGridPoints
+            for iK = 1:(this.iNumGridPoints - 1)
                 this.mfQ_current(:,iK) = mfQ_current_Adsorber;
             end
             %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -520,7 +528,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
 
                     % Solve equation system Equation 3.23 from RT BA 13_15
                     mfC(:,:,aiTime_index) = mfC(:,:,aiTime_index-1) * mfMatrix_Transport_A1 + afVektor_Transport_b1;
-
+                    
                     if ~bMetox
                         if bLimitToth
                             mDiff = abs(mfC(:,:,aiTime_index) - mfC_LastToth); 
@@ -574,8 +582,8 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                         mfC(:, end, aiTime_index) = mfC(:, end-1, aiTime_index);
                     else
                         % Concentration and loading for MetOx absorption
-                        mfC( :, 1:end-1, aiTime_index ) = this.ofilter_table.calculate_C_new(mfC( :, 1:end-1, aiTime_index ), fReactionTimeStep, this.fSorptionTemperature, this.csNames, this.fVolSolid, this.iNumGridPoints, this.afMolarMass);
-                        mfQ( :, 1:end-1, aiTime_index ) = mfQ( :, 1:end-1, aiTime_index ) + (mfC_save - mfC( :, 1:end-1, aiTime_index ));
+                        mfC( :, 1:end-1, aiTime_index ) = this.ofilter_table.calculate_C_new(mfC( :, 1:end-1, aiTime_index-1 ), fReactionTimeStep, this.fSorptionTemperature, this.csNames, this.fVolSolid, this.iNumGridPoints, this.afMolarMass);
+                        mfQ( :, 1:end-1, aiTime_index ) = mfQ( :, 1:end-1, aiTime_index ) + (mfC(:,:,aiTime_index-1 ) - mfC( :, 1:end-1, aiTime_index ));
                     end
                 end
             else 
@@ -705,22 +713,51 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             % Initialize array for filtered mass
             afLoadedMass_ads = zeros(1, this.iNumSubstances);
             afLoadedMass_des = zeros(1, this.iNumSubstances); 
+           
             
+            % Convert to Loading [kg/m3]
+%             mfMolarMass = ones(size(mfQ(:, 1:end-1, end)));
+%             for iSubstance = 1:length(this.afMolarMass)
+%                 mfMolarMass(iSubstance,:) = mfMolarMass(iSubstance,:).*this.afMolarMass(iSubstance);
+%             end
+            
+%             mfQ_density = mfQ(:, 1:end-1, end).*mfMolarMass; % [kg/m3]
+%             
+%             % mean density time total volume yields total loading:
+%             afCurrentLoading = mean(mfQ_density ,2) * this.fVolSolid;
+%             
+%             % and subtracting the new current loading from the loading
+%             % already in the filter phase results in the respective mass
+%             % flows
+%             afLoadedMass = afCurrentLoading - this.oOut.oPhase.afMass(this.aiPositions)';
+             
             % Sum up loading change in [mol/m3]
             mfQ_mol_change = mfQ(:, :, end) - this.mfQ_current;
             
-            % Convert the change to [kg/m3]
-            mfMolarMass = ones(size(mfQ_mol_change));
+            mfMolarMass = ones(size(mfQ(:, :, end)));
             for iSubstance = 1:length(this.afMolarMass)
                 mfMolarMass(iSubstance,:) = mfMolarMass(iSubstance,:).*this.afMolarMass(iSubstance);
             end
             
             mfQ_density_change = mfQ_mol_change .* mfMolarMass;
-            % the previous assignment resulted in a dimension mismatch and
-            % therefore an error
+
+            % TO DO: apparently there is a difference in the calculation
+            % for matlab 2016a since the previous assignment resulted in
+            % a dimension mismatch and therefore an error for Matlab 2015
+            % version but the same piece of code works in matlab 2016a
+            % --> maybe reset this once no one uses matlab versions older
+            % than 16a?
 %             mfQ_density_change = mfQ_mol_change .* this.afMolarMass';
             
             % Convert the change to mass in [kg]
+            % TO DO: two cells are mentioned as boundary cells but in
+            % mfQ_density_change only one cell is neglected? The last
+            % entry of mfQ is always 0, that is definityl a boundary cell
+            % (that is not used in any calculations btw) but aside from
+            % that is the first cell actually a boundary cell? Or is it
+            % only a boundary cell for the concentration mfC (where the
+            % first cell is required to have the concentration of the inlet
+            % flow)
             mfQ_mass_change = mfQ_density_change(:, 1:end-1) * this.fVolSolid / (this.iNumGridPoints-2);   % in [kg]       % -1 (ghost cell) -1 (2 boundary points)
             
             % Sum up filtered mass during the time step
@@ -740,7 +777,26 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                 this.arPartials_des(this.aiPositions) = afLoadedMass_des / sum(afLoadedMass_des);
             end
 
-                 
+            
+            % Debugging break point
+%             if (this.oOut.oPhase.afMass(this.oMT.tiN2I.CO2) == 0) && (abs(this.fFlowRate_des) > 1e-6)
+%                 keyboard()
+%             end
+%             
+%             if (mod(this.oTimer.fTime, 1000) < 2) && strcmp(this.sName, 'Filter_5A_2_proc')
+%                 B = this.mfQ_current(:,2:end-1) .* mfMolarMass;
+%                 A = mean(B,2) * this.fVolSolid;
+%                 C = this.oOut.oPhase.afMass(this.aiPositions);
+%                 keyboard()
+%             end
+
+            this.fInternalLoading = mean((this.mfQ_current(:,1:end-1) .* mfMolarMass(:,1:end-1)),2)* this.fVolSolid;
+            if strcmp(this.sName, 'Filter_5A_2_proc') || strcmp(this.sName, 'Filter_5A_1_proc')
+                this.fInternalLoading = this.fInternalLoading(1); %can only log scalar values, here CO2 loading for 5A and H2o for all others
+            else
+                this.fInternalLoading = this.fInternalLoading(2); %can only log scalar values, here CO2 loading for 5A and H2o for all others
+            end
+            
             %% Set the matter properties      
             % Update bed status
             this.mfC_current = mfC(:, :, end);
@@ -764,6 +820,8 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             if isnan(this.fFlowRate_des) || isnan(this.fFlowRate_ads) || ~isreal(this.fFlowRate_des) || ~isreal(this.fFlowRate_ads)
                 keyboard()
             end
+            
+            
 % TODO: DO WE NEED THAT???
 %             % Calculation of the pressure drop through the filter bed
 %             fDeltaP = this.ofilter_table.calculate_dp(this.fFilterLength, this.fFluidVelocity, this.rVoidFraction, this.fSorptionTemperature, this.fSorptionDensity);

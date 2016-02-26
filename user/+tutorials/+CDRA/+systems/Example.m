@@ -67,6 +67,8 @@ classdef Example < vsys
             tAtmosphere.fTemperature = 295;
             tAtmosphere.fRelHumidity = 0.5;
             tAtmosphere.fPressure = 101325;
+            tAtmosphere.fCO2Percent = 0.0062;
+            
             % name for the asscociated CDRA subsystem, leave empty if CCAA
             % is used as standalone
             sCDRA = 'CDRA';
@@ -156,7 +158,6 @@ classdef Example < vsys
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
-            fCO2Percent = 0.04;
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 100, struct('CO2', fCO2Percent),  295, 0, 2000);
                
             % Adding a phase to the store
@@ -455,10 +456,10 @@ classdef Example < vsys
                 end
             end
             
-            if (this.oTimer.fTime > (19.3*3600)) && (this.oTimer.fTime < (38.3*3600))
+            if (this.oTimer.fTime > (19.3*3600)) && (this.oTimer.fTime < (37.8*3600))
                 this.iCrewMembers = 4;
                 this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1,1]);
-            elseif (this.oTimer.fTime >= (38.3*3600))
+            elseif (this.oTimer.fTime >= (37.8*3600))
                 this.iCrewMembers = 3;
                 this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1]);
             end

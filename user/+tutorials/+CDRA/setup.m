@@ -90,6 +90,14 @@ classdef setup < simulation.infrastructure
 
                 oLog.addValue('Example:c:CDRA.toBranches.Filter13x1_to_Filter5A2.aoFlows(1,3)', 'fFlowRate', 'kg/s', '5A2 Inlet Flow');
                 oLog.addValue('Example:c:CDRA.toBranches.Filter13x1_to_Filter5A2.aoFlows(1,3)', 'arPartialMass(this.oMT.tiN2I.CO2)', '-', '5A2 Inlet Flow CO2 Ratio');
+                
+                
+                oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_1.toProcsP2P.Filter_Sylobead_1_proc', 'fInternalLoading', 'Loading kg', 'Loading Sylobead1');
+                oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_2.toProcsP2P.Filter_Sylobead_2_proc', 'fInternalLoading', 'Loading kg', 'Loading Sylobead2');
+                oLog.addValue('Example:c:CDRA:s:Filter_13X_1.toProcsP2P.Filter_13X_1_proc', 'fInternalLoading', 'Loading kg', 'Loading 13x1');
+                oLog.addValue('Example:c:CDRA:s:Filter_13X_2.toProcsP2P.Filter_13X_2_proc', 'fInternalLoading', 'Loading kg', 'Loading 13x2');
+                oLog.addValue('Example:c:CDRA:s:Filter5A_1.toProcsP2P.Filter_5A_1_proc', 'fInternalLoading', 'Adsorbed kg 5A', 'Internal Loading CO2 5Ax1');
+                oLog.addValue('Example:c:CDRA:s:Filter5A_2.toProcsP2P.Filter_5A_2_proc', 'fInternalLoading', 'Adsorbed kg 5A', 'Internal Loading CO2 5Ax2');
             end
             
             oLog.add('Example:c:CDRA', 'flow_props');
@@ -153,6 +161,12 @@ classdef setup < simulation.infrastructure
                     if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Desorption Flowrate 5A2')
                         i5A2DesorpFlow = iIndex;
                     end
+%                     if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Loading 5Ax1')
+%                         i5A1Loading = iIndex;
+%                     end
+%                     if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Loading 5Ax2')
+%                         i5A2Loading = iIndex;
+%                     end
                 end
                 mLogDataHumidityCabin = this.toMonitors.oLogger.mfLog(:,iHumidityCabin);
                 mLogDataHumidityCabin(isnan(mLogDataHumidityCabin(:,1)),:)=[];
@@ -185,6 +199,12 @@ classdef setup < simulation.infrastructure
                 m5A2DesorpFlow = this.toMonitors.oLogger.mfLog(:,i5A2DesorpFlow);
                 m5A2DesorpFlow(isnan(m5A2DesorpFlow(:,1)),:)=[];
 
+%                 m5A1Loading = this.toMonitors.oLogger.mfLog(:,i5A1Loading);
+%                 m5A1Loading(isnan(m5A1Loading(:,1)),:)=[];
+%                 
+%                 m5A2Loading = this.toMonitors.oLogger.mfLog(:,i5A2Loading);
+%                 m5A2Loading(isnan(m5A2Loading(:,1)),:)=[];
+                
                 m5A1InletFlowCO2 = m5A1InletFlow.*m5A1InletFlowRatio;
                 m5A2InletFlowCO2 = m5A2InletFlow.*m5A2InletFlowRatio;
 
@@ -222,7 +242,9 @@ classdef setup < simulation.infrastructure
                      (afTime./3600), m5A2DesorpFlow)
                 xlabel('Time in h')
                 ylabel('Flow Rate in kg/s')
-                legend('5A1 Inlet CO2', '5A2 Inlet CO2', '5A1 Adsorp', '5A2 Adsorp', '5A1 Desorp', '5A2 Desorp')
+                legend('5A1 Inlet CO2', '5A2 Inlet CO2', '5A1 Adsorp', '5A2 Adsorp', '5A1 Desorp', '5A2 Desorp', 'Internal Loading CO2 5A1', 'Internal Loading CO2 5A2')
+                
+                
             else
                 for iIndex = 1:length(this.toMonitors.oLogger.tLogValues)
                     if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Relative Humidity Cabin')
