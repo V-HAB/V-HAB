@@ -136,7 +136,7 @@ classdef Tutorial_Greenhouse < vsys
                         
             % Initializing of CO2 absorber that processes the excess CO2
             this.oProc_ExceedingCO2Absorber = tutorials.plant_module.components.CO2Absorber.AbsorbingCO2(this.toStores.GreenhouseUnit, 'CO2Absorber', 'Greenhouse_Air.ToCO2Excess_Out', 'CO2ExcessPhase.CO2Excess_In', 'CO2');
-            % Initializing of CO2 absorber that processes the excess CO2
+            % Initializing of O2 absorber that processes the excess O2
             this.oProc_ExceedingO2Absorber = tutorials.plant_module.components.O2Absorber.AbsorbingO2(this.toStores.GreenhouseUnit, 'O2Absorber', 'Greenhouse_Air.ToO2Excess_Out', 'O2ExcessPhase.O2Excess_In', 'O2');
             
             %% Water Separator

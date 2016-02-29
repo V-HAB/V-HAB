@@ -50,13 +50,15 @@ classdef PlantModule < vsys
             
             %% Create store and atmosphere phase with exmes
             
+            % TODO: call calculateSolidVolume
+            
             % create the plant module store, volume 100 just for
             % initialization, store size depends on how many plant cultures
             % are grown inside the module, volume has to be recalculated
             % afterwards to fit each setup.
             matter.store(this, 'PlantModule', 100);
             
-            % add atmosphere phase to plant module
+            % add atmosphere phase to plant module, try to keep it at 2 m^3
             % TODO: maybe write atmosphere helper later for standard plant
             % atmosphere phase
             oAtmosphere = matter.phases.gas(...
@@ -67,7 +69,7 @@ classdef PlantModule < vsys
                     'O2',   0.27, ...
                     'CO2',  0.05, ...
                     'H2O',  0.05), ...
-                fVolumeInit, ...                    % phase volume      [m^3]
+                2, ...                              % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
                 
             % add exmes to atmosphere phase
@@ -185,7 +187,7 @@ classdef PlantModule < vsys
             % add inedible biomass phase to plant module
             oBiomassInedible = matter.phases.solid(...
                 this.toStores.PlantModule, ...      % store containing phase
-                'BiomassEdible', ...                % phase name
+                'BiomassInedible', ...              % phase name
                 struct(...                          % phase contents    [kg]
                     ), ...
                 fVolumeInit, ...                    % phase volume      [m^3]
@@ -251,10 +253,18 @@ classdef PlantModule < vsys
             
             %% Create mass balance manipulator
             
+            % create manipulator and link it to mass balance phase
+            tutorials.LunarGreenhouseMMEC.components.MassBalance(this, 'MassBalance_Manip', this.toStores.PlantModule.toPhases.BiomassBalance);
             
             %% Create culture objects
             
-            
+            % TODO:
+            % use something like a struct as a transfer parameter to create
+            % all cultures via simple use of a for-loop. How to organize
+            % struct/whatever and how/where to get inputs has yet to be
+            % determined. Inputs should be stuff like planting area and
+            % PPFD, fixed plant parameters will be taken from matter table 
+            % inside the culture object.
         end
         
         function createSolverStructure(this)
@@ -280,6 +290,14 @@ classdef PlantModule < vsys
             this.oAtmosphereReference   = oAtmosphereReference;
             this.oWaterReference        = oWaterReference;
             this.oNutrientReference     = oNutrientReference;
+        end
+    end
+    
+    methods (Access = protected)
+        function exec(this, ~)
+            exec@vsys(this);
+            
+            
         end
     end
 end

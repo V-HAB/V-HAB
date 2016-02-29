@@ -4,11 +4,15 @@ classdef ConvertBiomass < matter.manips.substance.flow
     % biomass (lettuce, wheat, etc.).
     
     properties
+        % parent system reference containing the manipulator
+        oParent;
     end
     
     methods
-        function this = ConvertBiomass(oParent, sName)
-            this@matter.manips.substance.flow(oParent, sName);
+        function this = ConvertBiomass(oParent, sName, oPhase)
+            this@matter.manips.substance.flow(oPhase, sName);
+            
+            this.oParent = oParent;
         end
     end
 end

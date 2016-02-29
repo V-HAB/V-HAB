@@ -1,7 +1,6 @@
-classdef CultureGrowth < matter.procs.p2p
-    % This p2p processor moves "general" biomass from the biomass buffer
-    % phase into the culture's phase to according to the culture's 
-    % calculated growth rate.
+classdef CultureHarvest < matter.procs.p2p
+    % This p2p processor moves biomass from the culture's phase into edible
+    % or inedible biomass phase
     
     properties
         % mass flow property to be set from the parent system
@@ -9,7 +8,7 @@ classdef CultureGrowth < matter.procs.p2p
     end
     
     methods
-        function this = CultureGrowth(oParent, sName, sPhaseAndPortIn, sPhaseAndPortOut, sSubstance)
+        function this = CultureHarvest(oParent, sName, sPhaseAndPortIn, sPhaseAndPortOut, sSubstance)
             this@matter.procs.p2p(oParent, sName, sPhaseAndPortIn, sPhaseAndPortOut);
             
             % set 1 for substance to extract

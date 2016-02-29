@@ -17,11 +17,15 @@ classdef MassBalance < matter.manips.substance.flow
     % converted into culture specific biomass accordingly.
     
     properties
+        % parent system reference containing the manipulator
+        oParent;
     end
     
     methods
-        function this = MassBalance(oParent, sName)
-            this@matter.manips.substance.flow(oParent, sName);
+        function this = MassBalance(oParent, sName, oPhase)
+            this@matter.manips.substance.flow(oPhase, sName);
+            
+            this.oParent = oParent;
         end
     end
 end
