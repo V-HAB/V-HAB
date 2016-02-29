@@ -289,7 +289,7 @@ classdef CDRA < vsys
             components.filter.FilterProc_sorp(this.toStores.Filter_13X_2, 'Filter_13X_2_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '13x', 1e-3);
                 
             % Creating the Filter5A_1 (CO2 filter)
-            tfMasses = struct('CO2', 0.1, 'Zeolite5A', fMassZeolite5A);
+            tfMasses = struct('CO2', 0, 'Zeolite5A', fMassZeolite5A);
             fSolidVolume = this.oMT.calculateSolidVolume(tfMasses, this.tAtmosphere.fTemperature, true);
             
             matter.store(this, 'Filter5A_1', fVolumeFlow+fSolidVolume, 1, tGeometry5A);
@@ -424,20 +424,16 @@ classdef CDRA < vsys
                 solver.matter.manual.branch(this.aoBranches(k));
             end
             
-            oPhase = this.toStores.Filter_Sylobead_1.toPhases.FlowPhase;
-            oPhase.fMaxStep = 1;
-            oPhase = this.toStores.Filter_Sylobead_2.toPhases.FlowPhase;
-            oPhase.fMaxStep = 1;
+            csFilter = {'Filter_Sylobead_1','Filter_Sylobead_2','Filter_13X_1','Filter_13X_2','Filter5A_1','Filter5A_2'};
             
-            oPhase = this.toStores.Filter_13X_1.toPhases.FlowPhase;
-            oPhase.fMaxStep = 1;
-            oPhase = this.toStores.Filter_13X_2.toPhases.FlowPhase;
-            oPhase.fMaxStep = 1;
+            for iK = 1:length(csFilter)
+                oPhase = this.toStores.(csFilter{iK}).toPhases.FlowPhase;
+                oPhase.fMaxStep = 5;
+                
+                oPhase = this.toStores.(csFilter{iK}).toPhases.FilteredPhase;
+                oPhase.fMaxStep = 5;
+            end
             
-            oPhase = this.toStores.Filter5A_1.toPhases.FlowPhase;
-            oPhase.fMaxStep = 1;
-            oPhase = this.toStores.Filter5A_2.toPhases.FlowPhase;
-            oPhase.fMaxStep = 1;
         end           
         
         %% Function to connect the system and subsystem level branches with each other
