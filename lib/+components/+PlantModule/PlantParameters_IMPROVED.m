@@ -273,7 +273,7 @@ function [ cxPlantsRETURNED ] = PlantParameters_IMPROVED(sPlantSpecies)
     cxPlants.Sweetpotato.CO2_Nominal    = 1200;
     cxPlants.Tomato.CO2_Nominal         = 1200;
     cxPlants.Wheat.CO2_Nominal          = 1200;
-    cxPlants.Whitepotato.CO2_Nominal    = 200;
+    cxPlants.Whitepotato.CO2_Nominal    = 1200;
     
     cxPlants.Drybean.CO2_Max        = 1300;
     cxPlants.Lettuce.CO2_Max        = 1300;

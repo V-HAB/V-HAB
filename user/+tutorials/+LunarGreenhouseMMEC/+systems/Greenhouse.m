@@ -19,7 +19,7 @@ classdef Greenhouse < vsys
             %% Create Subsystems
             
             % Initializing Subsystem: PlantModule
-            this.oPlantModule = tutorials.LunarGreeenhouseMMEC.subsystems.PlantModule(this, 'PlantModule');
+            this.oPlantModule = tutorials.LunarGreenhouseMMEC.subsystems.PlantModule(this, 'PlantModule');
         end
         
         function createMatterStructure(this)
