@@ -30,7 +30,7 @@ classdef solid < matter.phase
             for iI = 1:length(csKeys)
                 sKey     = csKeys{iI};
                 fMass    = this.afMass(this.oMT.tiN2I.(sKey));
-                fVolumeSolid = this.oMT.calculateSolidVolume(tfMasses, fTemperature);
+                fVolumeSolid = this.oMT.calculateSolidVolume(tfMasses, fTemperature, true);
                 fDensity = fMass/fVolumeSolid;
                 %what is the purpose of this?
                 afVolumes(this.oMT.tiN2I.(sKey)) = fMass / fDensity;
@@ -66,15 +66,47 @@ classdef solid < matter.phase
             % justify a recalculation
             % TO DO: Make limits adaptive
             if (this.oTimer.iTick <= 0) ||... %necessary to prevent the phase intialization from crashing the remaining checks
-               (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
-               (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
-
-                % Actually updating the specific heat capacity
-                this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
+                    (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
+                    (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
+                
+                % First the standard heat capacity for all
+                % substances within the adsorber is calculated
+                aiIndices   = find(this.arPartialMass > 0);
+                iNumIndices = length(aiIndices);
+                
+                % Initialize a new array filled with zeros. Then iterate through all
+                % indexed substances and get their specific heat capacity.
+                afCp = zeros(this.oMT.iSubstances, 1);
+                
+                for iI = 1:iNumIndices
+                    try
+                        afCp(aiIndices(iI)) = this.oMT.ttxMatter.(this.oMT.csSubstances{aiIndices(iI)}).fStandardSpecificHeatCapacity;
+                    catch
+                        try
+                            afCp(aiIndices(iI)) = this.oMT.ttxMatter.(this.oMT.csSubstances{aiIndices(iI)}).ttxPhases.tSolid.HeatCapacity;
+                        catch
+                            try 
+                                afCp(aiIndices(iI)) = this.oMT.ttxMatter.(this.oMT.csSubstances{aiIndices(iI)}).ttxPhases.tLiquid.HeatCapacity;
+                            catch
+                                try
+                                    afCp(aiIndices(iI)) = this.oMT.ttxMatter.(this.oMT.csSubstances{aiIndices(iI)}).ttxPhases.tGas.HeatCapacity;
+                                catch
+                                    this.throw('solid', 'No heat capacity given in any state for %s.', this.oMT.csSubstances{aiIndices(iI)});
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                % Multiply the specific heat capacities with the mass fractions. The
+                % result of the matrix multiplication is the specific heat capacity of
+                % the mixture.
+                this.fSpecificHeatCapacity           = sum(this.arPartialMass * afCp);
                 
                 % Setting the properties for the next check
                 this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
                 this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+
             end
         end
         
