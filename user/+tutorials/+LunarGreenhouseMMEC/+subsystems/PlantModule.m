@@ -7,6 +7,9 @@ classdef PlantModule < vsys
     % inedible biomass respectively.
     
     properties
+        % struct containing structs containing a dataset for each culture
+        ttxPlantParameters;
+        
         % struct containing all culture objects grown within the plant
         % module
         toCultures;
@@ -24,6 +27,27 @@ classdef PlantModule < vsys
     methods
         function this = PlantModule(oParent, sName)
             this@vsys(oParent, sName);
+            
+            %% Import Plant Parameters
+            
+            % import plant parameters from .csv file
+            this.ttxPlantParameters = ...
+                tutorials.LunarGreenhouseMMEC.plantparameters.importPlantParameters();
+            
+            % import coefficient matrices for CQY and T_A
+            % save fieldnames to temporary cell array
+            csPlantSpecies = fieldnames(this.ttxPlantParameters);
+            
+            % loop over entries in cell array (= number of plant species)
+            for iI = 1:size(csPlantSpecies)
+                % import coefficient matrices for CQY
+                this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_CQY = ...
+                    csvread(['user/+tutorials/+LunarGreenhouseMMEC/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_CQY.csv']);
+                
+                % import coefficient matrices for T_A
+                this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_T_A = ...
+                    csvread(['user/+tutorials/+LunarGreenhouseMMEC/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_T_A.csv']);
+            end
         end
         
         function createMatterStructure(this)
