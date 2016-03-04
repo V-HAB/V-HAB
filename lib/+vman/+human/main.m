@@ -54,7 +54,7 @@ classdef main < vsys
         fRandomUrineFactor = 0.2*rand(1,1);
         fRandomFecesFactor = 0.1*rand(1,1);
         
-        fEatStartTime = -1;
+        fEatStartTime = inf;
         
         % according to BVAD page 43 table 3.21
         fNominalDailyEnergyRequirement = 12.996*10^6; % J
@@ -65,6 +65,8 @@ classdef main < vsys
         
         mfTotalRequiredFoodMass;
         fSetTimeFoodRequirement = - 48 * 3600;
+        
+        fFoodConsumeTime = 5*60;
         
         tMealTimes;
     end
@@ -385,7 +387,7 @@ classdef main < vsys
         function consumeFood(this, fFoodMass)
             % Function used by the main system once the food preperation is
             % finished that tells the human to eat the food
-            this.toBranches.Solid_Food_In.oHandler.setFlowRate(-fFoodMass/this.fTimeStep);
+            this.toBranches.Solid_Food_In.oHandler.setFlowRate(-fFoodMass/this.fFoodConsumeTime);
             this.fEatStartTime = this.oTimer.fTime;
         end
     end
@@ -464,10 +466,6 @@ classdef main < vsys
             % Overwrites previously set food consumtpion flowrates (all
             % food intake is assumed to occur within one TS)
             this.toBranches.Liquid_Food_In.oHandler.setFlowRate(0);
-            if this.oTimer.fTime > this.fEatStartTime
-                this.toBranches.Solid_Food_In.oHandler.setFlowRate(0);
-                this.fEatStartTime = -1;
-            end
             
             this.toBranches.Feces_Out.oHandler.setFlowRate(0);
             this.toBranches.Urine_Out.oHandler.setFlowRate(0);

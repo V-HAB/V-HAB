@@ -11,6 +11,8 @@ classdef Example < vsys
         tCurrentFoodRequest;
         cScheduledFoodRequest = cell(0,0);
         fFoodPrepTime = 3*60; %assumes that it take 3 minutes to prepare the food
+        
+        fInitialFoodPrepMass;
     end
     
     methods
@@ -136,11 +138,13 @@ classdef Example < vsys
             % Creates a store for the dry food preperation (dry food and
             % water are combined to create edible food)
             % Food Preperation
-            tfMasses = struct('Al', 0.2); % initialized to contain only aluminium since the food preperation is only filled once a human requests food
+            tfMasses = struct('C', 0.1);
             fSolidVolume = this.oMT.calculateSolidVolume(tfMasses, 295, true);
             
             matter.store(this, 'FoodPreperation', fSolidVolume + 1e-4);
             oPreparedFoodPhase = matter.phases.solid(this.toStores.FoodPreperation, 'PreparedFood',  tfMasses, [], 295);
+            
+            this.fInitialFoodPrepMass = oPreparedFoodPhase.fMass;
             
             matter.procs.exmes.solid(oPreparedFoodPhase, 'DryFoodIn');
             matter.procs.exmes.solid(oPreparedFoodPhase, 'H2O_In');
@@ -255,7 +259,9 @@ classdef Example < vsys
                     
                     this.toStores.FoodPreperation.toProcsP2P.FoodPrepP2P.setFlowRate( fWaterForFoodFlowRate );
                     
-                elseif (this.oTimer.fTime - this.tCurrentFoodRequest.fStartTime) > this.fFoodPrepTime
+                    this.setTimeStep(1);
+                    
+                elseif ((this.oTimer.fTime - this.tCurrentFoodRequest.fStartTime) >= this.fFoodPrepTime) && (this.toChildren.(this.tCurrentFoodRequest.sHumanModelName).fEatStartTime == inf) 
                     % food preperation is finished:
                     this.toBranches.DryFood_To_Preperation.oHandler.setFlowRate(0);
                     % it is assumed that the end product of food contains 0.42%
@@ -264,18 +270,25 @@ classdef Example < vsys
                     this.toStores.FoodPreperation.toProcsP2P.FoodPrepP2P.setFlowRate(0);
                     
                     % And the human who requested the food eats it:
-                    this.toChildren.(this.tCurrentFoodRequest.sHumanModelName).consumeFood(this.tCurrentFoodRequest.tEvent.fConsumption);
+                    this.toChildren.(this.tCurrentFoodRequest.sHumanModelName).consumeFood(this.toStores.FoodPreperation.toPhases.PreparedFood.fMass - this.fInitialFoodPrepMass);
                     
                     this.tCurrentFoodRequest = [];
                 end
             elseif ~isempty(this.cScheduledFoodRequest)
                 % if currently no food is prepared but another event is in
-                % the schedulr it will be set as current event and is then
+                % the scheduler it will be set as current event and is then
                 % deleted from the scheduler
                 this.tCurrentFoodRequest = this.cScheduledFoodRequest{1};
                 this.cScheduledFoodRequest = this.cScheduledFoodRequest(2:end);
             end
             
+            if ~isempty(this.tCurrentFoodRequest)
+                if this.toStores.FoodPreperation.toPhases.PreparedFood.fMass <= this.fInitialFoodPrepMass
+                    this.toChildren.(this.tCurrentFoodRequest.sHumanModelName).toBranches.Solid_Food_In.oHandler.setFlowRate(0);
+                    this.toChildren.(this.tCurrentFoodRequest.sHumanModelName).fEatStartTime = inf;
+                    this.setTimeStep(-1);
+                end
+            end
         end
      end
     
