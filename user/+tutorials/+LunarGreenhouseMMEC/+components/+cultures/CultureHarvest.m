@@ -5,6 +5,9 @@ classdef CultureHarvest < matter.procs.p2p
     properties
         % mass flow property to be set from the parent system
         fMassFlow = 0;
+        
+        % substance to extract
+        arExtractPartials;
     end
     
     methods

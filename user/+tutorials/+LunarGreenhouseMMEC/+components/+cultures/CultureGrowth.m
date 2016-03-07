@@ -6,6 +6,9 @@ classdef CultureGrowth < matter.procs.p2p
     properties
         % mass flow property to be set from the parent system
         fMassFlow = 0;
+        
+        % species to be extracted
+        arExtractPartials;
     end
     
     methods

@@ -10,7 +10,7 @@ classdef ConvertBiomass < matter.manips.substance.flow
     
     methods
         function this = ConvertBiomass(oParent, sName, oPhase)
-            this@matter.manips.substance.flow(oPhase, sName);
+            this@matter.manips.substance.flow(sName, oPhase);
             
             this.oParent = oParent;
         end

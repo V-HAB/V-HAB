@@ -10,6 +10,9 @@ classdef PlantModule < vsys
         % struct containing structs containing a dataset for each culture
         ttxPlantParameters;
         
+        % struct containing inputs for the grown cultures
+        ttxInput;
+        
         % struct containing all culture objects grown within the plant
         % module
         toCultures;
@@ -47,11 +50,36 @@ classdef PlantModule < vsys
                 % import coefficient matrices for T_A
                 this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_T_A = ...
                     csvread(['user/+tutorials/+LunarGreenhouseMMEC/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_T_A.csv']);
+                
+                % Unit conversion factor. not a true "plant" parameter per
+                % se but needed in the MMEC calculations so it will be part 
+                % of ttxPlantParameters.
+                % [s h^-1 mol µmol^-1]
+                this.ttxPlantParameters.(csPlantSpecies{iI}).fAlpha = 0.0036;
             end
+            
+            %% Import Culture Setup Inputs
+            
+            % temporary variable to shorten property structure (to get
+            % layout ttxInput.cultureXYZ.blablubb instead of
+            % ttxInput.CultureInput.cultureXYZ.blablubb). 
+            % TODO: find a better way for providing inputs for culture
+            % setup. old way will have to do for now, it works at least.
+            blubb = load(...
+                strrep('tutorials\+LunarGreenhouseMMEC\+components\+cultures\CultureInput.mat', '\', filesep));
+            
+            % write to property
+            this.ttxInput = blubb.CultureInput;
         end
         
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
+            
+            % init stuff just for testing, will be reomved when proper
+            % initialization scenario has been found. most/all volumes are
+            % arbitrary values as well
+            fTemperatureInit = 293.15;  % [K]
+            fPressureInit = 101325;     % [Pa]
             
             %% Create Plant Module Infrastructure
             
@@ -116,7 +144,7 @@ classdef PlantModule < vsys
                 'WaterSupply', ...                  % phase name
                 struct(...                          % phase contents    [kg]
                     'H2O', 10), ...
-                fVolumeInit, ...                    % phase volume      [m^3]
+                1, ...                              % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 fPressureInit);                     % phase pressure    [Pa]
             
@@ -135,8 +163,8 @@ classdef PlantModule < vsys
                 this.toStores.PlantModule, ...      % store containing phase
                 'NutrientSupply', ...               % phase name
                 struct(...                          % phase contens     [kg]
-                    'nutrients', 10), ...
-                fVolumeInit, ...                    % phase volume      [m^3]
+                    'Nutrients', 10), ...
+                1, ...                              % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 fPressureInit);                     % phase pressure    [Pa]
             
@@ -155,10 +183,10 @@ classdef PlantModule < vsys
                 this.toStores.PlantModule, ...      % store containing phase
                 'BiomassBalance', ...               % phase name
                 struct(...                          % phase contents    [kg]
-                    'biomass', 10), ...
+                    'BiomassBalance', 10), ...
                 fTemperatureInit, ...               % phase temperature [K]
                 'solid', ...                        % phase state
-                'biomass');                         % phase absorbing substance
+                'BiomassBalance');                  % phase absorbing substance
             
             % add exmes to biomass balance phase
             % exmes to connect the p2p procs for O2, CO2 and H2O gas
@@ -176,8 +204,8 @@ classdef PlantModule < vsys
                 this.toStores.PlantModule, ...      % store containing phase
                 'BiomassBuffer', ...                % phase name
                 struct(...                          % phase contents    [kg]
-                    'biomass', 10), ...
-                fVolumeInit, ...                    % phase volume      [m^3]
+                    'BiomassBalance', 10), ...
+                2, ...                              % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
             % add exmes to biomass buffer phase
@@ -197,7 +225,7 @@ classdef PlantModule < vsys
                 'BiomassEdible', ...                % phase name
                 struct(...                          % phase contents    [kg]
                     ), ...
-                fVolumeInit, ...                    % phase volume      [m^3]
+                2, ...                              % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
             % add exmes to edible biomass phase
@@ -214,7 +242,7 @@ classdef PlantModule < vsys
                 'BiomassInedible', ...              % phase name
                 struct(...                          % phase contents    [kg]
                     ), ...
-                fVolumeInit, ...                    % phase volume      [m^3]
+                2, ...                              % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
             % add exmes to inedible biomass phase
@@ -265,15 +293,15 @@ classdef PlantModule < vsys
                 'NutrientSupply_P2P', ...                                   % p2p processor name
                 'NutrientSupply.NutrientSupply_NutrientSupply_P2P', ...     % first phase and exme
                 'BiomassBalance.BiomassBalance_NutrientSupply_P2P', ...     % second phase and exme
-                'nutrients');                                               % substance to extract
+                'Nutrients');                                               % substance to extract
             
             % biomass transfer from balance to buffer
             tutorials.LunarGreenhouseMMEC.components.HourlyRatesMMEC(...
                 this.toStores.PlantModule, ...                              % store containing phases
-                'WaterSupply_P2P', ...                                      % p2p processor name
+                'BufferTransfer_P2P', ...                                   % p2p processor name
                 'BiomassBalance.BiomassBalance_BufferTransfer_P2P', ...     % first phase and exme
                 'BiomassBuffer.BiomassBuffer_BufferTransfer_P2P', ...       % second phase and exme
-                'biomass');                                                 % substance to extract
+                'BiomassBalance');                                          % substance to extract
             
             %% Create mass balance manipulator
             
@@ -287,8 +315,21 @@ classdef PlantModule < vsys
             % all cultures via simple use of a for-loop. How to organize
             % struct/whatever and how/where to get inputs has yet to be
             % determined. Inputs should be stuff like planting area and
-            % PPFD, fixed plant parameters will be taken from matter table 
-            % inside the culture object.
+            % PPFD.
+            
+            % write culture names into cell array to be accessed within
+            % loop
+            csPlantCultures = fieldnames(this.ttxInput);
+            
+            % loop over total cultures amount
+            for iI = 1:length(csPlantCultures)
+                % culuture object gets assigned using its culture name 
+                this.toCultures.(csPlantCultures{iI}) = ...
+                    tutorials.LunarGreenhouseMMEC.components.cultures.CultureBatch(...
+                        this, ...                               % parent system reference
+                        this.ttxPlantParameters.(this.ttxInput.(csPlantCultures{iI}).sPlantSpecies), ...
+                        this.ttxInput.(csPlantCultures{iI}));   % input for specific culture
+            end
         end
         
         function createSolverStructure(this)
@@ -321,7 +362,19 @@ classdef PlantModule < vsys
         function exec(this, ~)
             exec@vsys(this);
             
+            csCultures = fieldnames(this.toCultures);
             
+            for iI = 1:length(csCultures)
+                % get the 8 parameters via MMEC and FAO model equations
+                [ this.toCultures.(csCultures{iI}).tfMMECRates ] = ...
+                    tutorials.LunarGreenhouseMMEC.components.PlantGrowth(...
+                        this.toCultures.(csCultures{iI}), ...   % current culture object
+                        fDensityAtmosphere, ...                 % atmosphere density
+                        fTemperatureAtmosphere, ...             % atmosphere temperature
+                        fRelativeHumidityAtmosphere, ...        % atmosphere relative humidity
+                        fHeatCapacityAtmosphere, ...            % atmosphere heat capacity
+                        fDensityH2O);                           % density of liquid water under atmosphere conditions
+            end
         end
     end
 end

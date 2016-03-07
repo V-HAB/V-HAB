@@ -1,5 +1,5 @@
-sPlantSpecies,bLegume,fA_Max,fN,fCQY_Min,fCUE_Max,fCUE_Min,fH_0,fPlantingDensity,fTemperatureLight,fTemperatureDark,fXFRT,fT_E,fT_Q,fT_M,fBCF,fOPF,fNC_fr,fDRY_fr,fWBF,fPPFD_Ref_Min,fPPFD_Ref_Nominal,fPPFD_Ref_Max,fCO2_Ref_Min,fCO2_Ref_Nominal,fCO2_Ref_Max,fKC_Mid,fKC_Late,
-sPlantSpecies,bLegume,fA_Max,fN,fCQY_Min,fCUE_Max,fCUE_Min,fH_0,fPlantingDensity,fTemperatureLight,fTemperatureDark,fXFRT,fT_E,fT_Q,fT_M,fBCF,fOPF,fNC_fr,fDRY_fr,fWBF,fPPFD_Ref_Min,fPPFD_Ref_Nominal,fPPFD_Ref_Max,fCO2_Ref_Min,fCO2_Ref_Nominal,fCO2_Ref_Max,fKC_Mid,fKC_Late,
+sPlantSpecies,bLegume,fA_Max,fN,fCQY_Min,fCUE_Max,fCUE_Min,fH_0,fPlantingDensity,fTemperatureLight,fTemperatureDark,fXFRT,fT_E,fT_Q,fT_M,fBCF,fOPF,fNC_Fraction,fDRY_Fraction,fWBF,fPPFD_Ref_Min,fPPFD_Ref_Nominal,fPPFD_Ref_Max,fCO2_Ref_Min,fCO2_Ref_Nominal,fCO2_Ref_Max,fKC_Mid,fKC_Late,
+sPlantSpecies,bLegume,fA_Max,fN,fCQY_Min,fCUE_Max,fCUE_Min,fH_0,fPlantingDensity,fTemperatureLight,fTemperatureDark,fXFRT,fT_E,fT_Q,fT_M,fBCF,fOPF,fNC_Fraction,fDRY_Fraction,fWBF,fPPFD_Ref_Min,fPPFD_Ref_Nominal,fPPFD_Ref_Max,fCO2_Ref_Min,fCO2_Ref_Nominal,fCO2_Ref_Max,fKC_Mid,fKC_Late,
 -,-,-,-,µmol_C_Fixed/µmol_PPF_Absorbed,-,-,h/d,plants/m2,°C,°C,-,d_AE,d_AE,d_AE,-,mol_O2/mol_C,g_Nutrients/g_Dry,-,-,µmol/m2*s,µmol/m2*s,µmol/m2*s,µmol/mol,µmol/mol,µmol/mol,-,-,
 Drybean,1,0.93,2,0.02,0.65,0.5,12,7,26,22,0.97,40,42,63,0.45,1.10,0.026*1.166,0.1552,0.10,200,600,1000,330,1200,1300,1.15,0.35,
 Lettuce,0,0.93,2.5,0.01,0.625,0,16,19.2,23,23,0.95,1,48,30,0.40,1.08,0.034*1.166,0.0527,0.95,200,300,500,330,1200,1300,1.3,0.95,

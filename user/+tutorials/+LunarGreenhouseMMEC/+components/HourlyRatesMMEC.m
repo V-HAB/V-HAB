@@ -8,6 +8,9 @@ classdef HourlyRatesMMEC < matter.procs.p2p
     properties
         % mass flow property to be set from the parent system
         fMassFlow = 0;
+        
+        % which substance to extract
+        arExtractPartials;
     end
     
     methods

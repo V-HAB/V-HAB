@@ -8,72 +8,79 @@ classdef CultureBatch
     % plant data depending on the species grown.
     
     properties
-        % struct containing plant parameters, from matter table
-        tPlantData;
+        % struct containing plant parameters specific to the grown culture, 
+        % from parent system
+        txPlantParameters;
         
         % save input parameters, they need to be requested
-        tInput;
+        txInput;
+        
+        % struct containing the 8 parameters calculated via the (M)MEC and
+        % FAO model equations. written by PlantGrowth() call in parent
+        % system's exec() function.
+        tfMMECRates = struct();
     end
     
     methods
-        function this = CultureBatch(oParent, tInput)
+        function this = CultureBatch(oParent, txPlantParameters, txInput)
             
-            this.tInput = tInput;
+            this.txPlantParameters = txPlantParameters;
+            this.txInput = txInput;
             
             %% Create culture phase and exmes
             
             % TODO: phase name and content from input
             % add phase to plant module store
-            eval(['o' tInput.sCultureName]) = matter.phases.solid(...
+            oPhase = matter.phases.solid(...
                 oParent.toStores.PlantModule, ...       % store containing phase
-                tInput.sCultureName, ...                % phase name
+                txInput.sCultureName, ...               % phase name 
                 struct(...                              % phase contents    [kg]
-                    ), ...
-                oParent.fVolumeInit, ...                % phase volume      [m^3]
-                oParent.fTemperatureInit);              % phase temperature [K]
+                    'BiomassBalance', 1), ...
+                [], ...                                 % ignored volume    [m^3]
+                293.15);                                % phase temperature [K]
             
             % add exmes to culture phase
             % exmes to connect the p2p procs for biomass input from biomass
             % buffer phase and for output to edible and inedible biomass
-            matter.procs.exmes.solid(eval(['o' tInput.sCultureName]), 'Culture_CultureGrowth_P2P');
-            matter.procs.exmes.solid(eval(['o' tInput.sCultureName]), 'Culture_HarvestEdible_P2P');
-            matter.procs.exmes.solid(eval(['o' tInput.sCultureName]), 'Culture_HarvestInedible_P2P');
+            matter.procs.exmes.solid(oPhase, [txInput.sCultureName, '_CultureGrowth_P2P']);
+            matter.procs.exmes.solid(oPhase, [txInput.sCultureName, '_HarvestEdible_P2P']);
+            matter.procs.exmes.solid(oPhase, [txInput.sCultureName, '_HarvestInedible_P2P']);
             
             % exmes in the parent system phases to connect the p2p procs
-            matter.procs.exmes.solid(oParent.toStores.PlantModule.toPhases.BiomassBuffer, 'BiomassBuffer_CultureGrowth_P2P');
-            matter.procs.exmes.solid(oParent.toStores.PlantModule.toPhases.BiomassEdible, 'BiomassEdible_HarvestEdible_P2P');
-            matter.procs.exmes.solid(oParent.toStores.PlantModule.toPhases.BiomassInedible, 'BiomassInedible_HarvestInedible_P2P');
+            matter.procs.exmes.solid(oParent.toStores.PlantModule.toPhases.BiomassBuffer, [txInput.sCultureName, '_CultureGrowth_P2P']);
+            matter.procs.exmes.solid(oParent.toStores.PlantModule.toPhases.BiomassEdible, [txInput.sCultureName, '_HarvestEdible_P2P']);
+            matter.procs.exmes.solid(oParent.toStores.PlantModule.toPhases.BiomassInedible, [txInput.sCultureName, '_HarvestInedible_P2P']);
             
             %% Create P2P processors
             
             % culture growth rate
-            tutorials.LunarGreenhouseMMEC.cultures.CultureGrowth(...
-                oParent.toStores.PlantModule, ...                           % store containing phases
-                'CultureGrowth_P2P', ...                                    % p2p processor name
-                'BiomassBuffer.BiomassBuffer_CultureGrowth_P2P', ...        % first phase and exme
-                [tInput.sCultureName, '.Culture_CultureGrowth_P2P'], ...    % second phase and exme
-                '');                                                        % substance to extract
+            tutorials.LunarGreenhouseMMEC.components.cultures.CultureGrowth(...
+                oParent.toStores.PlantModule, ...                                               % store containing phases
+                [txInput.sCultureName, '_CultureGrowth_P2P'], ...                               % p2p processor name
+                ['BiomassBuffer.', txInput.sCultureName, '_CultureGrowth_P2P'], ...             % first phase and exme
+                [txInput.sCultureName, '.', txInput.sCultureName, '_CultureGrowth_P2P'], ...    % second phase and exme
+                'BiomassBalance');                                                              % substance to extract
             
             % harvest edible biomass
-            tutorials.LunarGreenhouseMMEC.cultures.CultureHarvest(...
-                oParent.toStores.PlantModule, ...                           % store containing phases
-                'HarvestEdible_P2P', ...                                    % p2p processor name
-                [tInput.sCultureName, '.Culture_HarvestEdible_P2P'], ...    % first phase and exme
-                'BiomassEdible.BiomassEdible_HarvestEdible_P2P', ...        % second phase and exme
-                '');                                                        % substance to extract
+            tutorials.LunarGreenhouseMMEC.components.cultures.CultureHarvest(...
+                oParent.toStores.PlantModule, ...                                               % store containing phases
+                [txInput.sCultureName, '_HarvestEdible_P2P'], ...                               % p2p processor name
+                [txInput.sCultureName, '.', txInput.sCultureName, '_HarvestEdible_P2P'], ...    % first phase and exme
+                ['BiomassEdible.', txInput.sCultureName, '_HarvestEdible_P2P'], ...             % second phase and exme
+                'BiomassBalance');                                                              % substance to extract
             
             % harvest inedible biomass
-            tutorials.LunarGreenhouseMMEC.cultures.CultureHarvest(...
-                oParent.toStores.PlantModule, ...                           % store containing phases
-                'HarvestInedible_P2P', ...                                  % p2p processor name
-                [tInput.sCultureName, '.Culture_HarvestInedible_P2P'], ...  % first phase and exme
-                'BiomassInedible.BiomassInedible_HarvestInedible_P2P', ...  % second phase and exme
-                '');                                                        % substance to extract
+            tutorials.LunarGreenhouseMMEC.components.cultures.CultureHarvest(...
+                oParent.toStores.PlantModule, ...                                               % store containing phases
+                [txInput.sCultureName, '_HarvestInedible_P2P'], ...                             % p2p processor name
+                [txInput.sCultureName, '.', txInput.sCultureName, '_HarvestInedible_P2P'], ...  % first phase and exme
+                ['BiomassInedible.', txInput.sCultureName, '_HarvestInedible_P2P'], ...         % second phase and exme
+                'BiomassBalance');                                                              % substance to extract
             
             %% Create biomass conversion manipulator
             
             % TODO: path correct? or can do better?
-            tutorials.LunarGreenhouseMMEC.cultures.ConvertBiomass(eval(['oParent.toStores.PlantModule.toPhases.' tInput.sCultureName]), 'CultureConversion_Manip');
+            tutorials.LunarGreenhouseMMEC.components.cultures.ConvertBiomass(oParent, [txInput.sCultureName, '_CultureConversion_Manip'], oPhase);
         end
     end
 end

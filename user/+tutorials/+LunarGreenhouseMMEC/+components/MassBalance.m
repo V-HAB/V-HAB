@@ -23,7 +23,7 @@ classdef MassBalance < matter.manips.substance.flow
     
     methods
         function this = MassBalance(oParent, sName, oPhase)
-            this@matter.manips.substance.flow(oPhase, sName);
+            this@matter.manips.substance.flow(sName, oPhase);
             
             this.oParent = oParent;
         end
