@@ -2,12 +2,6 @@ classdef Example < vsys
     %EXAMPLE Example simulation for a human model in V-HAB 2.0
     
     properties (SetAccess = protected, GetAccess = public)
-        fPipeLength   = 1.5;
-        fPipeDiameter = 0.005;
-        
-        % Pressure difference in bar
-        fPressureDifference = 1;
-        
         tCurrentFoodRequest;
         cScheduledFoodRequest = cell(0,0);
         fFoodPrepTime = 3*60; %assumes that it take 3 minutes to prepare the food
@@ -190,8 +184,6 @@ classdef Example < vsys
             matter.branch(this, 'Liquid_Food_Out', {}, 'PotableWaterStorage.PotableWaterDrinkingOut');
             matter.branch(this, 'Urine_In', {}, 'UrineStorage.Urine_In');
             
-%             this.toChildren.Three_Humans.setIfFlows('Air_Out', 'Air_In', 'Solid_Food_Out', 'Feces_In', 'Liquid_Food_Out', 'Urine_In');
-            
             this.toChildren.One_Human.setIfFlows('Air_Out', 'Air_In', 'Solid_Food_Out', 'Feces_In', 'Liquid_Food_Out', 'Urine_In');
             
         end
@@ -218,9 +210,8 @@ classdef Example < vsys
             end
         end
         function requestFood(this, sHumanModelName, tEvent)
-            % TO DO: start preparing food for the crew member that
-            % requested food. Then once the food is prepared give it to the
-            % crew member
+            % start preparing food for the crew member that requested food.
+            % Then once the food is prepared give it to the crew member
             if isempty(this.tCurrentFoodRequest)
                 this.tCurrentFoodRequest.sHumanModelName = sHumanModelName;
                 this.tCurrentFoodRequest.tEvent = tEvent;

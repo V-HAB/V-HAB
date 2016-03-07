@@ -66,7 +66,16 @@ classdef main < vsys
         mfTotalRequiredFoodMass;
         fSetTimeFoodRequirement = - 48 * 3600;
         
+        % Time it takes the human to eat food
         fFoodConsumeTime = 5*60;
+        
+        % Time the human spends on the rest room
+        fRestRoomTime = 5*60;
+        
+        fRestRoomStartTime = inf;
+        
+        fDrinkTime = 5*60;
+        fDrinkStartTime = inf;
         
         tMealTimes;
     end
@@ -403,22 +412,18 @@ classdef main < vsys
             %function used to trigger the food consumption of the crew
             %member
             if tEvent.bSolid
-%                 tEvent.fConsumption; % consumed food mass
-%                 tEvent.arFoodComposition; % consumed food composition (vector according to matter table)
-
                 this.oParent.requestFood(this.sName, tEvent)
-                % Implement request food event in parent system that
-                % triggers the perperation of the food? 
-                % TO DO: Finish eating simulation!
             else
                % if the crew member is drining instead of eating he just gets water from the potable water store (over ~ 60s)
                fWaterConsumptionFlowRate = tEvent.fConsumption/this.fTimeStep;
                this.toBranches.Liquid_Food_In.oHandler.setFlowRate(-fWaterConsumptionFlowRate);
+               this.fDrinkStartTime = this.oTimer.fTime;
             end
         end
         
         function triggerRestroomEvent(this, bLarge)
             %function used to trigger the restroom use of the crew member
+            this.fRestRoomStartTime = this.oTimer.fTime;
             if this.iCrewMembers > 1
                 % If the human model represents more than one crew member
                 % the feces and urine in the stores of the human model are
@@ -444,10 +449,10 @@ classdef main < vsys
                     else
                         fFecesMassEvent = 0.2 + rand(1,1)*(fMassFecesPerCEM - 0.2);
                     end
-                    this.toBranches.Urine_Out.oHandler.setFlowRate(fUrineMassEvent/this.fTimeStep);
-                    this.toBranches.Feces_Out.oHandler.setFlowRate(fFecesMassEvent/this.fTimeStep);
+                    this.toBranches.Urine_Out.oHandler.setFlowRate(fUrineMassEvent/this.fRestRoomTime);
+                    this.toBranches.Feces_Out.oHandler.setFlowRate(fFecesMassEvent/this.fRestRoomTime);
                 else
-                    this.toBranches.Urine_Out.oHandler.setFlowRate(fUrineMassEvent/this.fTimeStep);
+                    this.toBranches.Urine_Out.oHandler.setFlowRate(fUrineMassEvent/this.fRestRoomTime);
                 end
             else
                 % if the model only represents one human it is easier since
@@ -456,10 +461,10 @@ classdef main < vsys
                 % each event (the events for one human are already
                 % randomized)
                 if bLarge
-                    this.toBranches.Urine_Out.oHandler.setFlowRate((this.toStores.Human.toPhases.Urine.fMass - this.fInitialMassUrine)/this.fTimeStep);
-                    this.toBranches.Feces_Out.oHandler.setFlowRate((this.toStores.Human.toPhases.Feces.fMass - this.fInitialMassFeces)/this.fTimeStep);
+                    this.toBranches.Urine_Out.oHandler.setFlowRate((this.toStores.Human.toPhases.Urine.fMass - this.fInitialMassUrine)/this.fRestRoomTime);
+                    this.toBranches.Feces_Out.oHandler.setFlowRate((this.toStores.Human.toPhases.Feces.fMass - this.fInitialMassFeces)/this.fRestRoomTime);
                 else
-                    this.toBranches.Urine_Out.oHandler.setFlowRate((this.toStores.Human.toPhases.Urine.fMass - this.fInitialMassUrine)/this.fTimeStep);
+                    this.toBranches.Urine_Out.oHandler.setFlowRate((this.toStores.Human.toPhases.Urine.fMass - this.fInitialMassUrine)/this.fRestRoomTime);
                 end
             end
         end
@@ -468,12 +473,18 @@ classdef main < vsys
             % exec(ute) function for this system
             exec@vsys(this);
             
-            % Overwrites previously set food consumption flowrates (all
-            % food intake is assumed to occur within one TS)
-            this.toBranches.Liquid_Food_In.oHandler.setFlowRate(0);
+            % Overwrites previously set flowrates if the duration of the
+            % event has beene exceeded
+            if (this.oTimer.fTime - this.fDrinkStartTime) >= this.fDrinkTime
+                this.toBranches.Liquid_Food_In.oHandler.setFlowRate(0);
+                this.fDrinkStartTime = inf;
+            end
             
-            this.toBranches.Feces_Out.oHandler.setFlowRate(0);
-            this.toBranches.Urine_Out.oHandler.setFlowRate(0);
+            if (this.oTimer.fTime - this.fRestRoomStartTime) >= this.fRestRoomTime
+                this.toBranches.Feces_Out.oHandler.setFlowRate(0);
+                this.toBranches.Urine_Out.oHandler.setFlowRate(0);
+                this.fRestRoomStartTime = inf;
+            end
             
             if (this.oTimer.fTime - this.fEatStartTime) >= this.fFoodConsumeTime
                 
