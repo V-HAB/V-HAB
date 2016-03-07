@@ -239,7 +239,7 @@ classdef timer < base
             %iExec   = length(cTmpCbs);
             
             for iE = 1:iExec
-                this.cCallBacks{aiExec(iE)}();
+                this.cCallBacks{aiExec(iE)}(this);
                 %cTmpCbs{iE}();
             end
             
