@@ -6,7 +6,7 @@ classdef heatsource < base
         sName;
     end
     
-    properties (Access = protected)
+    properties (SetAccess = protected, GetAccess = public)
         fPower = 0; % [W]
     end
     
