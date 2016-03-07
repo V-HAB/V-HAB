@@ -29,7 +29,8 @@ classdef Feces_Removal < matter.procs.p2ps.flow
             end
             
             fWaterFlowRate = this.oIn.oPhase.toManips.substance.fWaterFlowToFeces;
-            fFecesFlowRate = (this.oIn.oPhase.afMass(this.oMT.tiN2I.Feces) - this.oIn.oPhase.oStore.oContainer.fInitialMassFeces)/fTimeStep;
+            fFecesFlowRate = this.oIn.oPhase.afMass(this.oMT.tiN2I.Feces)/fTimeStep;
+            
             if fWaterFlowRate < 0
                 fWaterFlowRate = 0;
             end

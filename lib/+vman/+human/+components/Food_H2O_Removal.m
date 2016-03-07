@@ -22,19 +22,18 @@ classdef Food_H2O_Removal < matter.procs.p2ps.flow
             fTimeStep = this.oIn.oPhase.oStore.oTimer.fTime-this.fLastUpdate;
             
             %very small time steps are simply skipped by this calculation.
-            %It is exectued at most every 0.1 seconds
-            if fTimeStep <= 0.1
+            %It is exectued at most every 1 seconds
+            if fTimeStep <= 1
                 return
             end
-            % feces are supposed to contain some amount of water, the
-            % percentage used in this model is saved in the food to feces
-            % converter manip
-            fCurrentFecesWaterMass = this.oIn.oPhase.toManips.substance.fFecesWaterPercent * this.oIn.oPhase.afMass(this.oMT.tiN2I.C) / (1-this.oIn.oPhase.toManips.substance.fFecesWaterPercent);
-            if this.oIn.oPhase.afMass(this.oMT.tiN2I.H2O) > fCurrentFecesWaterMass
-                fFlowRate = (this.oIn.oPhase.afMass(this.oMT.tiN2I.H2O) - fCurrentFecesWaterMass)/fTimeStep;
-            else
-                fFlowRate = 0;
-            end
+            % feces are supposed to contain some amount of water therefore
+            % this proc should not remove all water from the food phase to
+            % allow the digestion simulation to use some for the feces
+            % production:
+            fFlowRate = (this.oIn.oPhase.afMass(this.oMT.tiN2I.H2O) - 0.05)/(10*fTimeStep);
+            % If the solid food phase contains less than 50g of water the
+            % water is taken from the liquid digestion system (for example
+            % if the human eats very dry food)
             
             % Set the new flow rate. If the second parameter (partial
             % masses to extract) is not provided, the partial masses from

@@ -40,8 +40,8 @@ classdef main < vsys
         %or ended
         tCrewPlaner = [];
         
-        afInitialMassSolidFood;
         afInitialMassLiquidFood;
+        afInitialMassSolidFood;
         
         fInitialMassFeces;
         fInitialMassUrine;
@@ -195,16 +195,19 @@ classdef main < vsys
             tfMasses = struct('C', 0.5, 'O2', 0.4);
             fSolidVolume = this.oMT.calculateSolidVolume(tfMasses, fHumanTemperature, true);
             
-            tfMassesStomache = struct('C', 0.5, 'H2O', 0.5*0.42);
-            fSolidVolumeStomache = this.oMT.calculateSolidVolume(tfMasses, fHumanTemperature, true);
+            tfMassesStomache = struct('C', 0.06, 'H2O', 0.05);
+            fSolidVolumeStomache = this.oMT.calculateSolidVolume(tfMassesStomache, fHumanTemperature, true);
             
-            tfMassesFeces =  struct('Feces', 0.092, 'H2O', 0.091);
-            fSolidVolumeFeces = this.oMT.calculateSolidVolume(tfMasses, fHumanTemperature, true);
+            tfMassesFeces =  struct('Feces', 0.002, 'H2O', 0.001);
+            fSolidVolumeFeces = this.oMT.calculateSolidVolume(tfMassesFeces, fHumanTemperature, true);
+            
+            tfMassesWaste =  struct('Waste', 0.001);
+            fSolidVolumeWaste = this.oMT.calculateSolidVolume(tfMassesWaste, fHumanTemperature, true);
             
             fLiquidFoodVolume   = 2e-4;
             fBladderVolume      = 1e-4;
             
-            matter.store(this, 'Human', 2 + fSolidVolume + fSolidVolumeStomache + fSolidVolumeFeces + fLiquidFoodVolume + fBladderVolume);
+            matter.store(this, 'Human', 2 + fSolidVolume + fSolidVolumeStomache + fSolidVolumeFeces + fSolidVolumeWaste + fLiquidFoodVolume + fBladderVolume);
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
@@ -249,7 +252,6 @@ classdef main < vsys
             % towards the amount of liquid the humans drink
             
             oStomacheSolidPhase = matter.phases.solid(this.toStores.Human, 'SolidFood', tfMassesStomache, [], fHumanTemperature);
-            
             this.afInitialMassSolidFood = oStomacheSolidPhase.afMass;
             
             % Adding extract/merge processors to the phase
@@ -257,6 +259,8 @@ classdef main < vsys
             matter.procs.exmes.solid(oStomacheSolidPhase, 'C_Out');
             matter.procs.exmes.solid(oStomacheSolidPhase, 'Feces_Out_Internal');
             matter.procs.exmes.solid(oStomacheSolidPhase, 'H2O_Out_Internal');
+            matter.procs.exmes.solid(oStomacheSolidPhase, 'Waste_Out_Internal');
+            matter.procs.exmes.solid(oStomacheSolidPhase, 'UrineSolids_Out_Internal');
             
             vman.human.components.Breathing_Carbon_Supply(this.toStores.Human, 'C_from_food_to_breathing', 'SolidFood.C_Out', 'ProcessPhase.C_In');
             
@@ -266,11 +270,17 @@ classdef main < vsys
             matter.procs.exmes.solid(oFecesPhase, 'Feces_In_Internal');
             matter.procs.exmes.solid(oFecesPhase, 'Feces_Out');
             
+            oWastePhase = matter.phases.solid(this.toStores.Human, 'Waste', tfMassesWaste, [], fHumanTemperature);
+            matter.procs.exmes.solid(oWastePhase, 'Waste_In_Internal');
+            
             % add a manip that converts food to feces
-            vman.human.components.Food_to_Feces_Converter('Food_to_Feces_Manip', oStomacheSolidPhase);
+            vman.human.components.DigestionSimulator('DigestionSimulator_Manip', oStomacheSolidPhase);
             
             % add a p2p to move the feces to a different phase
             vman.human.components.Feces_Removal(this.toStores.Human, 'Feces_Removal', 'SolidFood.Feces_Out_Internal', 'Feces.Feces_In_Internal');
+            
+            % P2P proc to remove other solid waste from the food phase
+            vman.human.components.Removal_P2P(this.toStores.Human, 'Waste_Removal', 'SolidFood.Waste_Out_Internal', 'Waste.Waste_In_Internal', 'Waste');
             
             %% Digestion (liquid)
             % this part of the code is used to model drinking and
@@ -278,7 +288,6 @@ classdef main < vsys
             % sweat/humidity
             
             oStomacheLiquidPhase = matter.phases.liquid(this.toStores.Human, 'LiquidFood', struct('H2O', fLiquidFoodVolume*999), fLiquidFoodVolume, fHumanTemperature, 101325); 
-            
             this.afInitialMassLiquidFood = oStomacheLiquidPhase.afMass;
             
             % Adding extract/merge processors to the phase
@@ -293,18 +302,16 @@ classdef main < vsys
             % to transform into urine
             vman.human.components.Crew_Humidity_Generator(this.toStores.Human, 'Humidity_P2P', 'LiquidFood.Humidity_Out', 'Air.Humidity_In');
             
-            oBladderPhase = matter.phases.liquid(this.toStores.Human, 'Urine', struct('Urine', fBladderVolume *999.1), fBladderVolume , fHumanTemperature, 101325); 
+            oBladderPhase = matter.phases.liquid(this.toStores.Human, 'Urine', struct('H2O', fBladderVolume *999.1), fBladderVolume , fHumanTemperature, 101325); 
             
             this.fInitialMassUrine = oBladderPhase.fMass;
             
-            matter.procs.exmes.liquid(oBladderPhase, 'Urine_In_Internal');
             matter.procs.exmes.liquid(oBladderPhase, 'Urine_Out');
-            
-            % add a manip that converts water to urine
-            vman.human.components.Water_to_Urine_Converter('Water_to_Urine_Manip', oStomacheLiquidPhase);
+            matter.procs.exmes.liquid(oBladderPhase, 'Urine_In_Internal');
+            matter.procs.exmes.liquid(oBladderPhase, 'UrineSolids_In_Internal');
             
             % add a p2p to move the urine to a different phase
-            vman.human.components.Urine_Removal(this.toStores.Human, 'Urine_Removal', 'LiquidFood.Urine_Out_Internal', 'Urine.Urine_In_Internal');
+            vman.human.components.Urine_Production(this.toStores.Human, 'Urine_Removal', 'LiquidFood.Urine_Out_Internal', 'Urine.Urine_In_Internal');
             
             %% connecting p2p procs
             
@@ -313,13 +320,9 @@ classdef main < vsys
             % the model)
             vman.human.components.Food_H2O_Removal(this.toStores.Human, 'Food_H2O_P2P', 'SolidFood.H2O_Out_Internal', 'LiquidFood.H2O_In_Internal');
             
-            % TO DO: Add a manip that converts ingoing food of various
-            % composition (e.g. carrots, peanuts) into C and feces and add
-            % a calculation of the nutrition the human gets from the food.
-            % If the nutrition is not properly balanced add states of
-            % sickness and/or death. Also use some of the H2O in the manip
-            % that produces feces (since they also retain some water)
-            
+            % P2P proc to remove the solid part of the urine from the solid
+            % food phase
+            vman.human.components.Removal_P2P(this.toStores.Human, 'UrineSolids_Removal', 'SolidFood.UrineSolids_Out_Internal', 'Urine.UrineSolids_In_Internal', 'UrineSolids');
             
             %% Human Thermal Model (simplified)
             % TO DO: everything
@@ -478,6 +481,13 @@ classdef main < vsys
                 this.fEatStartTime = inf;
                 this.setTimeStep(60);
                 
+                % Updates the digestion manip so that it calculates the
+                % required digestion flow rate for the food the human just
+                % ate
+                this.toStores.Human.toPhases.SolidFood.toManips.substance.eat()
+                
+                % Deletes the food request this human made to the habitat
+                % system
                 this.oParent.deleteFoodRequest();
             end
             %%
@@ -711,12 +721,12 @@ classdef main < vsys
                     warning('a restroom schedule was given to the subsystem but it only simulates one human, therefore internal calculations are used to schedule restroom events instead!')
                     this.bAlreadyWarned = true;
                 end
-                if (this.toStores.Human.toPhases.Feces.fMass - this.fInitialMassFeces) > 0.1 + this.fRandomFecesFactor % values are just an initial guess atm
+                if (this.toStores.Human.toPhases.Feces.fMass - this.fInitialMassFeces) > 0.07 + this.fRandomFecesFactor % values are just an initial guess atm
                     this.triggerRestroomEvent(true);
-                    this.fRandomFecesFactor = 0.1*rand(1,1);
+                    this.fRandomFecesFactor = 0.13*rand(1,1);
                 end
 
-                if (this.toStores.Human.toPhases.Urine.fMass - this.fInitialMassUrine) > 0.1 + this.fRandomUrineFactor % values are just an initial guess atm
+                if (this.toStores.Human.toPhases.Urine.fMass - this.fInitialMassUrine) > 0.2 + this.fRandomUrineFactor % values are just an initial guess atm
                     this.triggerRestroomEvent(false);
                     this.fRandomUrineFactor = 0.2*rand(1,1);
                 end

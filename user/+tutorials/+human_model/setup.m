@@ -61,7 +61,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 48; % In seconds
+            this.fSimTime = 3600 * 24 * 5; % In seconds
             this.iSimTicks = 1500;
             this.bUseTime = true;
         end
@@ -99,6 +99,12 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood', 'afMass(this.oMT.tiN2I.C)', 'P_kg', 'Partial Mass Dry Solid Food');
             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood', 'afMass(this.oMT.tiN2I.H2O)', 'P_kg', 'Partial Mass H2O in Solid Food');
             
+             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.C)', 'Manip_kg/s', 'Digestion C Flow Rate');
+             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.H2O)', 'Manip_kg/s', 'Digestion Water Flow Rate');
+             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.Feces)', 'Manip_kg/s', 'Digestion Feces Flow Rate');
+             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.UrineSolids)', 'Manip_kg/s', 'Digestion UrineSolids Flow Rate');
+             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.Waste)', 'Manip_kg/s', 'Digestion Waste Flow Rate');
+            
             %% Define plots
             
             oPlot = this.toMonitors.oPlotter;
@@ -111,6 +117,8 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('P_Pa', 'Partial Pressures in Cabin');
             oPlot.definePlotAllWithFilter('-', 'Relative Humidity in Cabin');
             oPlot.definePlotAllWithFilter('P_kg', 'Partial Masses in human');
+            
+            oPlot.definePlotAllWithFilter('Manip_kg/s', 'Digestion Flow Rates');
             
 
         end
