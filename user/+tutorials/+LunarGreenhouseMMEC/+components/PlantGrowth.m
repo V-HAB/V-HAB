@@ -132,16 +132,16 @@ function [oCulture] ...
     
     % Vapor Pressure for Light and Dark Phases (kept both, probably just
     % need the one if referencing from atmsophere. check again later
-    fVaporPressureLight= 0.6108 * exp(17.27 * fTemperatureAtmosphere / (fTemperatureAtmosphere + 237.3)); 
-    fVaporPressureDark = 0.6108 * exp(17.27 * fTemperatureAtmosphere  / (fTemperatureAtmosphere  + 237.3));
+    fVaporPressureLight = 0.6108 * exp(17.27 * fTemperatureAtmosphere / (fTemperatureAtmosphere + 237.3)); 
+    fVaporPressureDark = 0.6108 * exp(17.27 * fTemperatureAtmosphere / (fTemperatureAtmosphere + 237.3));
 
     fE_S = (fVaporPressureLight + fVaporPressureDark) / 2 * 1000;
 
     fE_A = fE_S * fRelativeHumidityAtmosphere; %%% relative humidity consant factor in closed environemnts ! simplified equation
         
         
-    % P_net: net canopy photosynthesis 
-    fP_Net = fA * fCQY * fPPFD;                  %[µmol_Carbon m^2 s]
+    % P_net: net canopy photosynthesis [µmol_Carbon m^2 s]
+    fP_Net = fA * fCQY * fPPFD;                  
         
     % Rate of change of saturation specific humidity with air temperature in [Pa K^-1]
     fD = 1000 * 4098 * 0.6108 * exp(17.27 * fTemperatureAtmosphere / ( fTemperatureAtmosphere + 237.3 )) / (( fTemperatureAtmosphere + 237)^2); 
@@ -217,13 +217,13 @@ function [oCulture] ...
     
     % attach calculated plant consumsption and production rates to culture 
     % object, further handling on the upper level 
-    oCulture.tfMMECRates.HWC    = fHWC;
-    oCulture.tfMMECRates.HTR    = fHTR;
-    oCulture.tfMMECRates.HOC    = fHOC;
-    oCulture.tfMMECRates.HOP    = fHOP;
-    oCulture.tfMMECRates.HCO2C  = fHCO2C;
-    oCulture.tfMMECRates.HCO2P  = fHCO2P;
-    oCulture.tfMMECRates.HNC    = fHNC;
-    oCulture.tfMMECRates.HWCGR  = fHWCGR;
+    oCulture.tfMMECRates.fHWC    = fHWC;
+    oCulture.tfMMECRates.fHTR    = fHTR;
+    oCulture.tfMMECRates.fHOC    = fHOC;
+    oCulture.tfMMECRates.fHOP    = fHOP;
+    oCulture.tfMMECRates.fHCO2C  = fHCO2C;
+    oCulture.tfMMECRates.fHCO2P  = fHCO2P;
+    oCulture.tfMMECRates.fHNC    = fHNC;
+    oCulture.tfMMECRates.fHWCGR  = fHWCGR;
 end
 
