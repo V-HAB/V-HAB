@@ -389,6 +389,8 @@ classdef main < vsys
             % finished that tells the human to eat the food
             this.toBranches.Solid_Food_In.oHandler.setFlowRate(-fFoodMass/this.fFoodConsumeTime);
             this.fEatStartTime = this.oTimer.fTime;
+            
+            this.setTimeStep(1);
         end
     end
     
@@ -463,14 +465,21 @@ classdef main < vsys
             % exec(ute) function for this system
             exec@vsys(this);
             
-            % Overwrites previously set food consumtpion flowrates (all
+            % Overwrites previously set food consumption flowrates (all
             % food intake is assumed to occur within one TS)
             this.toBranches.Liquid_Food_In.oHandler.setFlowRate(0);
             
             this.toBranches.Feces_Out.oHandler.setFlowRate(0);
             this.toBranches.Urine_Out.oHandler.setFlowRate(0);
             
-            
+            if (this.oTimer.fTime - this.fEatStartTime) >= this.fFoodConsumeTime
+                
+                this.toBranches.Solid_Food_In.oHandler.setFlowRate(0);
+                this.fEatStartTime = inf;
+                this.setTimeStep(60);
+                
+                this.oParent.deleteFoodRequest();
+            end
             %%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%              Crew Metabolism Simulator                  %%%

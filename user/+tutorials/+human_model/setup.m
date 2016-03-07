@@ -96,6 +96,9 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:One_Human:s:Human.toPhases.Air', 'afPP(this.oMT.tiN2I.CO2)', 'P_Pa', 'Partial Pressure CO2 Human');
             oLog.addValue('Example:c:One_Human:s:Human.toPhases.Air', 'afPP(this.oMT.tiN2I.O2)', 'P_Pa', 'Partial Pressure O2 Human');
             
+            oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood', 'afMass(this.oMT.tiN2I.C)', 'P_kg', 'Partial Mass Dry Solid Food');
+            oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood', 'afMass(this.oMT.tiN2I.H2O)', 'P_kg', 'Partial Mass H2O in Solid Food');
+            
             %% Define plots
             
             oPlot = this.toMonitors.oPlotter;
@@ -107,6 +110,7 @@ classdef setup < simulation.infrastructure
             
             oPlot.definePlotAllWithFilter('P_Pa', 'Partial Pressures in Cabin');
             oPlot.definePlotAllWithFilter('-', 'Relative Humidity in Cabin');
+            oPlot.definePlotAllWithFilter('P_kg', 'Partial Masses in human');
             
 
         end

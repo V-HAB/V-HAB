@@ -45,8 +45,8 @@ classdef Food_to_Feces_Converter < matter.manips.substance.flow
             % Total baseline flowrate of feces (solid and water)
             fBaselineFlowRate = this.oPhase.oStore.oContainer.iCrewMembers * this.fDailyFecesProductionPerCM / (24*3600);
             
-            if fFoodMass > (this.oPhase.oStore.oContainer.iCrewMembers * this.fDailyFecesProductionPerCM)
-                fExcessMass = fFoodMass - (this.oPhase.oStore.oContainer.iCrewMembers * this.fDailyFecesProductionPerCM * (1/this.fFecesWaterPercent));
+            if fFoodMass > (this.oPhase.oStore.oContainer.iCrewMembers * this.fDailyFecesProductionPerCM * (1 - this.fFecesWaterPercent))
+                fExcessMass = fFoodMass - (this.oPhase.oStore.oContainer.iCrewMembers * this.fDailyFecesProductionPerCM * (1 - this.fFecesWaterPercent));
                 fFoodProcessTime = 12*3600;
                 
                 fAdditionalFecesFlow = fExcessMass / fFoodProcessTime;

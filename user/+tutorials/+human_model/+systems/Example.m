@@ -236,6 +236,11 @@ classdef Example < vsys
             end
             
         end
+        function deleteFoodRequest(this,~)
+            if ~isempty(this.tCurrentFoodRequest)
+                this.tCurrentFoodRequest = [];
+            end
+        end
     end
     
      methods (Access = protected)
@@ -261,7 +266,7 @@ classdef Example < vsys
                     
                     this.setTimeStep(1);
                     
-                elseif ((this.oTimer.fTime - this.tCurrentFoodRequest.fStartTime) >= this.fFoodPrepTime) && (this.toChildren.(this.tCurrentFoodRequest.sHumanModelName).fEatStartTime == inf) 
+                elseif ((this.oTimer.fTime - this.tCurrentFoodRequest.fStartTime) >= this.fFoodPrepTime) && (this.toChildren.(this.tCurrentFoodRequest.sHumanModelName).fEatStartTime == inf)
                     % food preperation is finished:
                     this.toBranches.DryFood_To_Preperation.oHandler.setFlowRate(0);
                     % it is assumed that the end product of food contains 0.42%
@@ -272,22 +277,15 @@ classdef Example < vsys
                     % And the human who requested the food eats it:
                     this.toChildren.(this.tCurrentFoodRequest.sHumanModelName).consumeFood(this.toStores.FoodPreperation.toPhases.PreparedFood.fMass - this.fInitialFoodPrepMass);
                     
-                    this.tCurrentFoodRequest = [];
+                    this.setTimeStep(-1);
                 end
+                
             elseif ~isempty(this.cScheduledFoodRequest)
                 % if currently no food is prepared but another event is in
                 % the scheduler it will be set as current event and is then
                 % deleted from the scheduler
                 this.tCurrentFoodRequest = this.cScheduledFoodRequest{1};
                 this.cScheduledFoodRequest = this.cScheduledFoodRequest(2:end);
-            end
-            
-            if ~isempty(this.tCurrentFoodRequest)
-                if this.toStores.FoodPreperation.toPhases.PreparedFood.fMass <= this.fInitialFoodPrepMass
-                    this.toChildren.(this.tCurrentFoodRequest.sHumanModelName).toBranches.Solid_Food_In.oHandler.setFlowRate(0);
-                    this.toChildren.(this.tCurrentFoodRequest.sHumanModelName).fEatStartTime = inf;
-                    this.setTimeStep(-1);
-                end
             end
         end
      end
