@@ -36,15 +36,9 @@ classdef logger_basic < simulation.monitor
         % Shortcut to the paths of variables to log
         csPaths;
         
-        % Preallocation - how much rows should be preallocated for logging?
-        iPrealloc = 1000;
-        
-        % Dump mfLog to .mat file when re-preallocating?
-        %TODO-RESTRUCTURING implement that! See TODO file -> move to
-        % exporter monitor? Storage directory in sim.infrastructure?
-        bDumpToMat = false;
-        
-        
+        % Path to directory into which log files will be placed, if
+        % bDumpToMat is set to true.
+        sStorageDirectory;
         
         % Sim time for each log point
         afTime;
@@ -63,10 +57,23 @@ classdef logger_basic < simulation.monitor
         logDataEvald;
     end
     
+    properties  (SetAccess = public, GetAccess = public)
+        % Preallocation - how much rows should be preallocated for logging?
+        iPrealloc = 10000;
+        
+        % Dump mfLog to .mat file when re-preallocating
+        bDumpToMat = false;
+        
+    end
+    
     methods
         function this = logger_basic(oSimulationInfrastructure)
             %this@simulation.monitor(oSimulationInfrastructure, struct('tick_post', 'logData', 'init_post', 'init'));
             this@simulation.monitor(oSimulationInfrastructure, { 'tick_post', 'init_post' });
+            
+            % Setting the storage directory for dumping
+            fCreated = now();
+            this.sStorageDirectory = [ datestr(fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') '_' oSimulationInfrastructure.sName ];
         end
         
         
@@ -197,7 +204,6 @@ classdef logger_basic < simulation.monitor
         function iIndex = addValueToLog(this, tLogProp)
             %IMPORTANT NOTE: tLogProp definition HAS to be as in tLogProps
             
-            iIndex = [];
             oObj   = [];
             
             % Replace shorthand to full path (e.g. :s: to .toStores.) and
@@ -274,7 +280,7 @@ classdef logger_basic < simulation.monitor
                 try
                     tLogProp.sLabel = oObj.sName;
                     
-                catch oErr
+                catch 
                     tLogProp.sLabel = tLogProp.sObjectPath;
                     
                 end
@@ -283,7 +289,7 @@ classdef logger_basic < simulation.monitor
                 try
                     tLogProp.sLabel = [ tLogProp.sLabel ' - ' this.poUnitsToLabels(tLogProp.sUnit) ];
                     
-                catch oErr
+                catch 
                     tLogProp.sLabel = tLogProp.sExpression;
                     
                 end
@@ -423,88 +429,49 @@ classdef logger_basic < simulation.monitor
             
             % Increase after actual logging in case of ctrl+c interruption!
             this.iLogIdx = this.iLogIdx + 1;
+            
+            
+            if this.iLogIdx == this.iAllocated
+                if this.bDumpToMat
+                    % If periodic dumping of the results into a .mat file
+                    % is activated and the dumping interval hast passed, we
+                    % call the appropriate method here.
+                    %WARNING: At this time (08.03.2016) the plotter_basic
+                    %class does NOT support reading data from these .mat
+                    %files. This functionality has to be re-implemeted.
+                    this.dumpToMat();
+                else
+                    % If dumping is not implemented, we will expand the
+                    % mfLog array by pre-allocating more memory. This makes
+                    % writing into the log matrix faster. 
+                    this.mfLog(this.iLogIdx + 1:(this.iLogIdx + this.iPrealloc), :) = nan(this.iPrealloc, length(this.tLogValues));
+                    % Now we have to increase the iAllocated property so
+                    % the next execution of this pre-allocation is
+                    % iPrealloc Ticks in the future.
+                    this.iAllocated = this.iAllocated + this.iPrealloc;
+                end
+            end
         end
         
         
-        
-        
-        function log(this)
-            %iTmpSize = size(this.mfLog, 1);
-            this.iLogIdx = this.iLogIdx + 1;
-            
-            %TODO
-            %   - instead of hardcoded 1000 - get from this.iPrealloc
-            %   - value this.iDump (or make eq iPrealloc?) -> dump mfLog:
-            %       - write to [uuid]/[cnt].mat, clean mfLog
-            %       - at the end, for plotAll or so, do some .reloadLog()
-            %       -> mat files within SimObj uuid Dir --> load all
-            %          and re-create mfLog!
-            
-            % HERE if bDump and > iTmpSize - WRITE (use iCnt?) to MAT!
-            %   then just reset vars to NaN on mfLog, do not append!
-            
-            %if this.oTimer.iTick > iTmpSize
-            if this.iLogIdx > this.iAllocated
-                if this.bDumpToMat
-                    if ~isdir([ 'data/runs/' this.sStorageDir ])
-                        mkdir([ 'data/runs/' this.sStorageDir ]);
-                    end
-                    
-                    
-                    sMat = [ 'data/runs/' this.sStorageDir '/dump_' num2str(this.oTimer.iTick) '.mat' ];
-                    
-                    disp('#############################################');
-                    disp(['DUMPING - write to .mat: ' sMat]);
-                    
-                    mfLog = this.mfLog;
-                    save(sMat, 'mfLog');
-                    
-                    disp('... done!');
-                    
-                    this.mfLog(:, :) = nan(this.iPrealloc, length(this.csLog));
-                    this.iLogIdx     = 1;
-                else
-                    this.iAllocated = this.iAllocated + this.iPrealloc;
-                    
-                    %this.mfLog((iTmpSize + 1):(iTmpSize + this.iPrealloc), :) = nan(this.iPrealloc, length(this.csLog));
-                    this.mfLog(this.iLogIdx:(this.iLogIdx + this.iPrealloc - 1), :) = nan(this.iPrealloc, length(this.csLog));
-                end
+        function dumpToMat(this)
+            % First we check if the 
+            if ~isdir([ 'data/runs/' this.sStorageDirectory ])
+                mkdir([ 'data/runs/' this.sStorageDirectory ]);
             end
             
-            % Create one loggin function!
-            if isempty(this.logData)
-                sCmd = '[';
-                
-                for iL = this.aiLog
-                    sCmd = [ sCmd 'this.oRoot.' this.csLog{iL} ',' ];
-                    %sCmd = [ sCmd sprintf('this.oRoot.%s,\n', this.csLog{iL}) ];
-                end
-
-                sCmd = [ sCmd(1:(end - 1)) ']' ];
-                
-                this.logData = eval([ '@() ' sCmd ]);
-            end
+            sMat = sprintf('data/runs/%s/dump_%i.mat', this.sStorageDirectory, this.oSimulationInfrastructure.oSimulationContainer.oTimer.iTick + 1 );
             
-            %this.mfLog(this.oTimer.iTick + 1, :) = this.logData();
+            fprintf('#############################################\n');
+            fprintf('DUMPING - write to .mat: %s\n', sMat);
             
-            try
-                this.mfLog(this.iLogIdx, :) = this.logData();
-            catch
-                % Don't know where in anonymous log function the error
-                % happend, so go through logs one by one - one of them
-                % should throw an error!
-                for iL = this.aiLog
-                    try
-                        eval([ 'this.oRoot.' this.csLog{iL} ';' ]);
-                    catch oErr
-                        this.throw('simulation','Error trying to log this.oRoot.%s.\nError Message: %s\nPlease check your logging configuration in setup.m!', this.csLog{iL}, oErr.message);
-                    end
-                end
-            end
-            %for iL = this.aiLog
-            %    this.mfLog(this.oTimer.iTick + 1, iL) = eval([ 'this.oRoot.' this.csLog{iL} ]);
-            %end
+            mfLogMatrix = this.mfLog; %#ok<NASGU>
+            save(sMat, 'mfLogMatrix');
+            
+            disp('... done!');
+            
+            this.mfLog(:, :) = nan(this.iPrealloc, length(this.tLogValues));
+            this.iLogIdx     = 0;
         end
     end
 end
-
