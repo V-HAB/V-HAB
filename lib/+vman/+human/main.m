@@ -51,8 +51,8 @@ classdef main < vsys
         sGenericDrinkEvent;
         
         % Random factors to trigger restroom events
-        fRandomUrineFactor = 0.2*rand(1,1);
-        fRandomFecesFactor = 0.1*rand(1,1);
+        fRandomUrineFactor;
+        fRandomFecesFactor;
         
         fEatStartTime = inf;
         
@@ -77,11 +77,13 @@ classdef main < vsys
         fDrinkTime = 5*60;
         fDrinkStartTime = inf;
         
+        iAsscociatedNodes = 1;
+        
         tMealTimes;
     end
     
     methods
-        function this = main(oParent, sName, iCrewMembers, tCrewPlaner, tMealTimes)
+        function this = main(oParent, sName, iCrewMembers, tCrewPlaner, tMealTimes, iAsscociatedNodes)
             % Call parent constructor. Third parameter defined how often
             % the .exec() method of this subsystem is called. This can be
             % used to change the system state, e.g. close valves or switch
@@ -109,6 +111,14 @@ classdef main < vsys
             end
             
             this.tMealTimes = tMealTimes;
+            
+            this.iAsscociatedNodes = iAsscociatedNodes;
+            
+            % initializes the random factor for the urine and feces:
+            rng('shuffle'); % command required to ensure that each human has an individual factor
+            
+            this.fRandomUrineFactor = 0.2*rand(1,1);
+            this.fRandomFecesFactor = 0.1*rand(1,1);
         end
         
         
@@ -225,8 +235,7 @@ classdef main < vsys
                
             oAirPhase = matter.phases.gas(this.toStores.Human, 'Air', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
-            matter.procs.exmes.gas(oAirPhase, 'AirHumanModelIn');
-            matter.procs.exmes.gas(oAirPhase, 'AirHumanModelOut');
+            
             matter.procs.exmes.gas(oAirPhase, 'O2_Out');
             matter.procs.exmes.gas(oAirPhase, 'CO2_In');
             matter.procs.exmes.gas(oAirPhase, 'Humidity_In');
@@ -339,9 +348,13 @@ classdef main < vsys
             %% Interface branches of the human subsystem to other systems
             % This includes the output of CO2, feces, urine and humidity
             % and the intake of food, water and O2
-            
-            matter.branch(this, 'Human.AirHumanModelIn', {}, 'Air_In', 'Air_In');
-            matter.branch(this, 'Human.AirHumanModelOut', {}, 'Air_Out', 'Air_Out');
+            for iK = 1:this.iAsscociatedNodes
+                matter.procs.exmes.gas(oAirPhase, ['AirHumanModelIn',num2str(iK)]);
+                matter.procs.exmes.gas(oAirPhase, ['AirHumanModelOut',num2str(iK)]);
+                
+                matter.branch(this, ['Human.AirHumanModelIn',num2str(iK)], {}, ['Air_In',num2str(iK)], ['Air_In',num2str(iK)]);
+                matter.branch(this, ['Human.AirHumanModelOut',num2str(iK)], {}, ['Air_Out',num2str(iK)], ['Air_Out',num2str(iK)]);
+            end
             
             matter.branch(this, 'Human.Solid_Food_In', {}, 'Solid_Food_In', 'Solid_Food_In');
             matter.branch(this, 'Human.Feces_Out', {}, 'Feces_Out', 'Feces_Out');
@@ -354,17 +367,24 @@ classdef main < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            solver.matter.residual.branch(this.toBranches.Air_Out);
             
-            solver.matter.manual.branch(this.toBranches.Air_In);
-            this.toBranches.Air_In.oHandler.setFlowRate(-this.iCrewMembers*0.1);
             
             solver.matter.manual.branch(this.toBranches.Solid_Food_In);
             solver.matter.manual.branch(this.toBranches.Feces_Out);
             solver.matter.manual.branch(this.toBranches.Liquid_Food_In);
             solver.matter.manual.branch(this.toBranches.Urine_Out);
             
+            for iK = 1:this.iAsscociatedNodes
+                solver.matter.residual.branch(this.toBranches.(['Air_Out',num2str(iK)]));
+                % sets all residual branches except for one to be inactive
+                if iK > 1
+                    this.toBranches.(['Air_Out',num2str(iK)]).oHandler.setActive(false);
+                end
+                solver.matter.manual.branch(this.toBranches.(['Air_In',num2str(iK)]));
+            end
             
+            this.toBranches.Air_In1.oHandler.setFlowRate(-this.iCrewMembers*0.1);
+                 
             %All phases except the human air phase work with a 60s time
             %step
             csStoreNames = fieldnames(this.toStores);
@@ -379,21 +399,30 @@ classdef main < vsys
             
         end
         
-        function setIfFlows(this, sInterface1, sInterface2, sInterface3, sInterface4, sInterface5, sInterface6)
-            this.connectIF('Air_In' , sInterface1);
-            this.connectIF('Air_Out' , sInterface2);
-            this.connectIF('Solid_Food_In', sInterface3);
-            this.connectIF('Feces_Out', sInterface4);
-            this.connectIF('Liquid_Food_In', sInterface5);
-            this.connectIF('Urine_Out', sInterface6);
+        function setIfFlows(this, varargin)
+            this.connectIF('Solid_Food_In',     varargin{1});
+            this.connectIF('Feces_Out',         varargin{2});
+            this.connectIF('Liquid_Food_In',    varargin{3});
+            this.connectIF('Urine_Out',         varargin{4});
+            
+            miInterface = 1:2:(2*this.iAsscociatedNodes);
+            for iK = 1:this.iAsscociatedNodes
+                this.connectIF(['Air_Out',num2str(iK)] , varargin{4+miInterface(iK)});
+                this.connectIF(['Air_In',num2str(iK)] , varargin{5+miInterface(iK)});
+            end
         end
         
-        function setCrew(this, iCrewMembers)
-            % TO DO: reimplement the possibility to discretize the habitat
-            % volume! Question, implement that part on the subsystem level
-            % or within the main system where the discretization takes
-            % place?
-            this.iCrewMembers = iCrewMembers;
+        function setConnection(this, iConnection)
+            for iK = 1:this.iAsscociatedNodes
+                % sets all residual branches to be inactive
+                this.toBranches.(['Air_Out',num2str(iK)]).oHandler.setActive(false);
+                % Sets all inlet flows to be inactive
+                this.toBranches.(['Air_In',num2str(iK)]).oHandler.setFlowRate(0);
+            end
+            % now sets only the branches with the specified connection
+            % number to be active
+            this.toBranches.(['Air_Out',num2str(iConnection)]).oHandler.setActive(true);
+            this.toBranches.(['Air_In',num2str(iConnection)]).oHandler.setFlowRate(-this.iCrewMembers*0.1);
         end
         
         function consumeFood(this, fFoodMass)
@@ -424,6 +453,10 @@ classdef main < vsys
         function triggerRestroomEvent(this, bLarge)
             %function used to trigger the restroom use of the crew member
             this.fRestRoomStartTime = this.oTimer.fTime;
+            
+            % Good people flush their toilets...
+            this.oParent.triggerToiletFlush();
+            
             if this.iCrewMembers > 1
                 % If the human model represents more than one crew member
                 % the feces and urine in the stores of the human model are
@@ -437,6 +470,7 @@ classdef main < vsys
                 elseif fMassUrinePerCEM < 0.1
                     fUrineMassEvent = fMassUrinePerCM;
                 else
+                    rng('shuffle')
                     fUrineMassEvent = 0.1 + rand(1,1)*(fMassUrinePerCEM-0.1);
                 end
                 
@@ -447,6 +481,7 @@ classdef main < vsys
                     elseif fMassFecesPerCEM < 0.2
                         fFecesMassEvent = fMassFecesPerCM;
                     else
+                        rng('shuffle')
                         fFecesMassEvent = 0.2 + rand(1,1)*(fMassFecesPerCEM - 0.2);
                     end
                     this.toBranches.Urine_Out.oHandler.setFlowRate(fUrineMassEvent/this.fRestRoomTime);
@@ -568,8 +603,25 @@ classdef main < vsys
                         %has not been started yet the crew state has to be
                         %switched
                         if (this.tCrewPlaner.cMetabolism{iCM,iEvent}.Start < this.oTimer.fTime) && (~this.tCrewPlaner.cMetabolism{iCM,iEvent}.Started)
-                            this.cCrewState{iCM} = this.tCrewPlaner.cMetabolism{iCM,iEvent}.State;
-                            if strcmp(this.tCrewPlaner.cMetabolism{iCM,iEvent}.State, 'exercise015') || strcmp(this.tCrewPlaner.cMetabolism{iCM,iEvent}.State, 'EVA')
+                            % To prevent another event from overwriting the
+                            % EVA here we check if the CM is in EVA
+                            % condition already
+                            if ~strcmp(this.cCrewState{iCM}, 'exercise015') && ~strcmp(this.cCrewState{iCM}, 'exercise1530')
+                                this.cCrewState{iCM} = this.tCrewPlaner.cMetabolism{iCM,iEvent}.State;
+                            end
+                            if strcmp(this.tCrewPlaner.cMetabolism{iCM,iEvent}.State, 'exercise015')
+                                
+                                fExerciseTime = this.tCrewPlaner.cMetabolism{iCM,iEvent}.End - this.tCrewPlaner.cMetabolism{iCM,iEvent}.Start;
+                                % according to NASA STD 3001 Vol 2A for one
+                                % hour of EVA 837 kJ of additional energy
+                                % have to supply via the food. It is
+                                % assumed that for exercise the same rule
+                                % applies
+                                this.miEnergyRequirement(iCM) = this.miEnergyRequirement(iCM) + (fExerciseTime/3600)*837000;
+                                
+                            elseif strcmp(this.tCrewPlaner.cMetabolism{iCM,iEvent}.State, 'EVA')
+                                this.setConnection(2);
+                                this.oParent.triggerEVA_Start();
                                 fExerciseTime = this.tCrewPlaner.cMetabolism{iCM,iEvent}.End - this.tCrewPlaner.cMetabolism{iCM,iEvent}.Start;
                                 % according to NASA STD 3001 Vol 2A for one
                                 % hour of EVA 837 kJ of additional energy
@@ -590,6 +642,10 @@ classdef main < vsys
                                 this.cCrewState{iCM} = 'nominal';
                             %of the crew member was working out --> enter
                             %recovery state
+                            elseif strcmp(this.tCrewPlaner.cMetabolism{iCM,iEvent}.State, 'EVA')
+                                this.setConnection(1);
+                                this.oParent.triggerEVA_End();
+                                this.cCrewState{iCM} = 'recovery015';
                             else
                                 this.cCrewState{iCM} = 'recovery015';
                             end
@@ -734,11 +790,13 @@ classdef main < vsys
                 end
                 if (this.toStores.Human.toPhases.Feces.fMass - this.fInitialMassFeces) > 0.07 + this.fRandomFecesFactor % values are just an initial guess atm
                     this.triggerRestroomEvent(true);
+                    rng('shuffle')
                     this.fRandomFecesFactor = 0.13*rand(1,1);
                 end
 
                 if (this.toStores.Human.toPhases.Urine.fMass - this.fInitialMassUrine) > 0.2 + this.fRandomUrineFactor % values are just an initial guess atm
                     this.triggerRestroomEvent(false);
+                    rng('shuffle')
                     this.fRandomUrineFactor = 0.2*rand(1,1);
                 end
             else

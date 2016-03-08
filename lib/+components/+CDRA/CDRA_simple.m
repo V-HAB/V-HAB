@@ -112,6 +112,45 @@ classdef CDRA_simple < vsys
             fCO2Percent = 0.0038;
             
             %% Creating the stores  
+            % CDRA Adsorber Bed Cross Section
+            % quadratic cross section with ~16 channels of~13mm length according to a presentation at the comsol conference 2015
+            % "Multi-Dimensional Simulation of Flows Inside Polydisperse Packed Beds"
+            % download link https://www.google.de/url?sa=t&rct=j&q=&esrc=s&source=web&cd=6&cad=rja&uact=8&ved=0ahUKEwjwstb2-OfKAhXEoQ4KHdkUAC8QFghGMAU&url=https%3A%2F%2Fwww.comsol.com%2Fconference2015%2Fdownload-presentation%2F29402&usg=AFQjCNERyzJcfMautp6BfFFUERc1FvISNw&bvm=bv.113370389,d.bGg
+            % sorry couldn't find a better one.
+            fCrossSection = (16*13E-3)^2; 
+            
+            tGeometry5A.fCrossSection       = fCrossSection;
+            
+            % Length for the individual filter material within CDRA
+            % according to ICES-2014-160
+            tGeometry5A.fLength         =  16.68        *2.54/100;
+            
+            %From ICES-2014-168 Table 2 e_sorbent
+            tGeometry5A.rVoidFraction       = 0.445;
+            
+            % Assuming a human produces ~ 1kg of CO2 per day and CDRA is
+            % sized for 6 humans at 400 Pascal partial pressure of CO2 then
+            % each CDRA has to absorb (1/(24*60))*144*6 = 600g CO2 per
+            % cycle (144 min cycle time, 6 humans). However that does not
+            % yet take into account that CDRA (through the air safe mode
+            % used at the beginning of the desorption) also releases some
+            % of the CO2 back into the cabin. Test data for CDRA
+            % (00ICES-234 'International Space Station Carbon Dioxide
+            % Removal Assembly Testing' James C. Knox) shows that this
+            % release back into the cabin is ~60 Pascal of Partial Pressure
+            % for a Volume of ~100m³. Using the ideal gas law with room
+            % temperature this release of CO2 back into the cabin can be
+            % calculate to about 110g per cycle. This means that the
+            % capacity has to be at least 710g. But the maximum capacity is
+            % hard to reach and it is save to assume that each bed requires
+            % a capacity of ~800g to 900g of CO2 at 400 Pa partial
+            % pressure. At that partial pressure the zeolite capacity is
+            % ~35g CO2 for each kg of zeolite. Therefore the zeolite mass
+            % has to be around 23 to 26 kg. (current calculation results in
+            % ~25kg)
+            fMassZeolite5A          = fCrossSection * tGeometry5A.fLength       * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
+            
+            
             % Creating the Filter_13X_1 (H2O filter)
             % TO DO:
             % Should use Zeolite13x for the afMass struct but no matter data
@@ -127,6 +166,9 @@ classdef CDRA_simple < vsys
             oInput = matter.phases.gas(this.toStores.Filter_13X_1, 'PhaseIn', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             % Filtered phase
             oFiltered = matter.phases.absorber(this.toStores.Filter_13X_1, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite5A'); 
+            
+            oInput.fFixedTS = 5;
+            oFiltered.fFixedTS = 5;
             
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In_1');
@@ -160,6 +202,9 @@ classdef CDRA_simple < vsys
             % Filtered phase
             oFiltered = matter.phases.absorber(this.toStores.Filter_13X_2, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite5A');
             
+            oInput.fFixedTS = 5;
+            oFiltered.fFixedTS = 5;
+            
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In_1');
             matter.procs.exmes.gas(oInput, 'Flow_In_2');
@@ -175,7 +220,7 @@ classdef CDRA_simple < vsys
             end
             
             % Creating the Filter5A_1 (CO2 filter)
-            tfMasses = struct('CO2', 0.05, 'Zeolite5A', 4);
+            tfMasses = struct('CO2', 0.05, 'Zeolite5A', fMassZeolite5A);
             fSolidVolume = this.oMT.calculateSolidVolume(tfMasses, this.tAtmosphere.fTemperature, true);
             
             matter.store(this, 'Filter5A_1', 0.084557+fSolidVolume);
@@ -217,7 +262,7 @@ classdef CDRA_simple < vsys
             end
             
             % Creating the Filter5A_2 (CO2 filter)
-            tfMasses = struct('CO2', 0, 'Zeolite5A', 4);
+            tfMasses = struct('CO2', 0, 'Zeolite5A', fMassZeolite5A);
             fSolidVolume = this.oMT.calculateSolidVolume(tfMasses, this.tAtmosphere.fTemperature, true);
             
             matter.store(this, 'Filter5A_2', 0.084557+fSolidVolume);
@@ -541,6 +586,11 @@ classdef CDRA_simple < vsys
             else
                 this.toStores.Filter5A_2.toProcsP2P.Filter5A_2_proc.setHeaterPower(0);
             end
+            
+             % sets the interface flowrate for the CCAA (from CDRA to CCAA)
+            fIF_Flow = this.toBranches.Filter13x2_to_CHX.oHandler.fRequestedFlowRate + this.toBranches.Filter13x1_to_CHX.oHandler.fRequestedFlowRate;
+            this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CDRA_TCCV.oHandler.setFlowRate(-fIF_Flow);
+            
         end
     end
     

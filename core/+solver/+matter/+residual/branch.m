@@ -12,6 +12,7 @@ classdef branch < solver.matter.manual.branch
         % setPositiveFlowDirection() method. 
         bPositiveFlowDirection = true;
         
+        bActive = true;
     end
     
     
@@ -26,10 +27,19 @@ classdef branch < solver.matter.manual.branch
         function setPositiveFlowDirection(this, bPositiveFlowDirection)
             this.bPositiveFlowDirection = bPositiveFlowDirection;
         end
+        
+        function setActive(this, bActive)
+            this.bActive = bActive;
+        end
     end
     
     methods (Access = protected)
         function update(this)
+            if ~this.bActive
+                this.fRequestedFlowRate = 0;
+                update@solver.matter.manual.branch(this);
+                return
+            end
             % CALC GET THE FLOW RATE
             fResidualFlowRate  = 0;
             

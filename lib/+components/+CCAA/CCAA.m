@@ -275,6 +275,9 @@ classdef CCAA < vsys
                     this.toBranches.CDRA_TCCV.oHandler.setFlowRate(-0.01133971667);
                 end
             end
+            oPhase = this.toStores.CHX.toPhases.CHX_PhaseIn;
+            oPhase.rMaxChange = 2;
+            oPhase.fMaxStep = 5;
         end           
         
             %% Function to connect the system and subsystem level branches with each other
