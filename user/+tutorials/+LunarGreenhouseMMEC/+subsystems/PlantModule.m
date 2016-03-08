@@ -13,6 +13,9 @@ classdef PlantModule < vsys
         % struct containing inputs for the grown cultures
         ttxInput;
         
+        % cell arry conatining the names of all grown cultures
+        csCultures;
+        
         % struct containing all culture objects grown within the plant
         % module
         toCultures;
@@ -51,11 +54,25 @@ classdef PlantModule < vsys
                 this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_T_A = ...
                     csvread(['user/+tutorials/+LunarGreenhouseMMEC/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_T_A.csv']);
                 
+                %% Additional Required Parameters
+                
                 % Unit conversion factor. not a true "plant" parameter per
                 % se but needed in the MMEC calculations so it will be part 
                 % of ttxPlantParameters.
                 % [s h^-1 mol µmol^-1]
                 this.ttxPlantParameters.(csPlantSpecies{iI}).fAlpha = 0.0036;
+                
+                % fresh basis water factor FBWF_Edible = WBF * (1 - WBF)^-1
+                % for edible biomass
+                this.ttxPlantParameters.(csPlantSpecies{iI}).fFBWF_Edible = ...
+                    this.ttxPlantParameters.(csPlantSpecies{iI}).fWBF * ...
+                    (1 - this.ttxPlantParameters.(csPlantSpecies{iI}).fWBF)^-1;
+                
+                % fresh basis water factor for inedible biomass
+                % FBWF_Inedible. since inedible biomass water content is
+                % always assumed to be 90% this factor equals 9 for all
+                % species
+                this.ttxPlantParameters.(csPlantSpecies{iI}).fFWBF_Inedible = 9;
             end
             
             %% Import Culture Setup Inputs
@@ -319,16 +336,16 @@ classdef PlantModule < vsys
             
             % write culture names into cell array to be accessed within
             % loop
-            csPlantCultures = fieldnames(this.ttxInput);
+            this.csCultures = fieldnames(this.ttxInput);
             
             % loop over total cultures amount
-            for iI = 1:length(csPlantCultures)
+            for iI = 1:length(this.csCultures)
                 % culuture object gets assigned using its culture name 
-                this.toCultures.(csPlantCultures{iI}) = ...
+                this.toCultures.(this.csCultures{iI}) = ...
                     tutorials.LunarGreenhouseMMEC.components.cultures.CultureBatch(...
                         this, ...                               % parent system reference
-                        this.ttxPlantParameters.(this.ttxInput.(csPlantCultures{iI}).sPlantSpecies), ...
-                        this.ttxInput.(csPlantCultures{iI}));   % input for specific culture
+                        this.ttxPlantParameters.(this.ttxInput.(this.csCultures{iI}).sPlantSpecies), ...
+                        this.ttxInput.(this.csCultures{iI}));   % input for specific culture
             end
         end
         
@@ -362,19 +379,39 @@ classdef PlantModule < vsys
         function exec(this, ~)
             exec@vsys(this);
             
-            csCultures = fieldnames(this.toCultures);
+            %% Calculate 8 MMEC Parameters
             
-            for iI = 1:length(csCultures)
-                % get the 8 parameters via MMEC and FAO model equations
-                [ this.toCultures.(csCultures{iI}).tfMMECRates ] = ...
+            % calculate density of liquid H2O, required for transpiration
+            tH2O.sSubstance = 'H2O';
+            tH2O.sProperty = 'Density';
+            tH2O.sFirstDepName = 'Pressure';
+            tH2O.fFirstDepValue = this.oAtmosphereReference.fPressure;
+            tH2O.sSecondDepName = 'Temperature';
+            tH2O.fSecondDepValue = this.oAtmosphereReference.fTemperature;
+            tH2O.sPhaseType = 'liquid';
+            
+            fDensityH2O = this.oMT.findProperty(tH2O);
+            
+            % calculate CO2 concentration of atmosphere
+            fCO2 = tutorials.LunarGreenhouseMMEC.components.CalculateCO2Concentration(this.oAtmosphereReference);
+            
+            % loop over all cultures
+            % TODO: maybe parfor later
+            for iI = 1:length(this.csCultures)
+                % calculate plant induced flowrates
+                [ this.toCultures.(this.csCultures{iI}) ] = ...                 % return current culture object
                     tutorials.LunarGreenhouseMMEC.components.PlantGrowth(...
-                        this.toCultures.(csCultures{iI}), ...   % current culture object
-                        fDensityAtmosphere, ...                 % atmosphere density
-                        fTemperatureAtmosphere, ...             % atmosphere temperature
-                        fRelativeHumidityAtmosphere, ...        % atmosphere relative humidity
-                        fHeatCapacityAtmosphere, ...            % atmosphere heat capacity
-                        fDensityH2O);                           % density of liquid water under atmosphere conditions
+                        this.toCultures.(this.csCultures{iI}), ...              % current culture object
+                        this.oAtmosphereReference.fDensity, ...                 % atmosphere density
+                        this.oAtmosphereReference.fTemperature, ...             % atmosphere temperature
+                        this.oAtmosphereReference.rRelHumidity, ...             % atmosphere relative humidity
+                        this.oAtmosphereReference.fSpecificHeatCapacity, ...    % atmosphere heat capacity
+                        fDensityH2O, ...                                        % density of liquid water under atmosphere conditions
+                        fCO2);                                                  % CO2 concentration in ppm;
             end
+            
+            % use returned stuff
+            
         end
     end
 end

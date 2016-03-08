@@ -118,7 +118,7 @@ classdef PlantModule < vsys
             %       considered for computation
 
 
-        bUseGlobalPlantConditions           = 1;
+        bUseGlobalPlantConditions           = 0;
             % If bUseGlobalPlantConditions == 1:
             %       the same global conditions for all cultures are
             %       used
@@ -140,7 +140,7 @@ classdef PlantModule < vsys
           % Reference for loading the plant setup from "PlantEng"
             this.PlantEng =                                             ...        
              load(strrep(                                               ...
-             'components\+PlantModule\+setups\PlantEng.mat', ...
+             'components\+PlantModule\+setups\PlantEng_SCALISS.mat', ...
              '\', ...   %PlantEng: Setup containing several plant cultures
              filesep));
          
@@ -170,7 +170,7 @@ classdef PlantModule < vsys
         %% -PlantModule Structure-
         
             % Creating the filter, last parameter is the filter capacity in kg.
-                matter.store(this, 'PlantCultivationStore', 32);
+                matter.store(this, 'PlantCultivationStore', 22);
             
             %Adding Air Phase:   -> aoPhases(1); Cultivation Store
                 oAerationPhase = matter.phases.gas(this.toStores.PlantCultivationStore, ...                     %Store in which the phase is located
@@ -209,29 +209,27 @@ classdef PlantModule < vsys
             
             
             % Adding HarvestInedible:  -> aoPhases(3); Cultivation Store
-            oHarvestInedible = matter.phases.liquid(this.toStores.PlantCultivationStore, ...    %Store in which the phase is located
+            oHarvestInedible = matter.phases.solid(this.toStores.PlantCultivationStore, ...    %Store in which the phase is located
                 'HarvestInedible', ...                                                          %Phase name
-                struct('Waste',0.1), ...                                    %Phase contents
+                struct(), ...                                    %Phase contents
                 10, ...                                                                         %Phase volume
-                293.15, ...                                                             %Phase temperature
-                101325);                                                                %Phase pressure    
+                293.15);                                                                %Phase pressure    
             
             % Adding a default extract/merge processor to the phase            
-            matter.procs.exmes.liquid(oHarvestInedible, 'p14');
-            matter.procs.exmes.liquid(oHarvestInedible, 'p15');
+            matter.procs.exmes.solid(oHarvestInedible, 'p14');
+            matter.procs.exmes.solid(oHarvestInedible, 'p15');
             
             
             %Adding HarvestEdible:     -> aoPhases(4); Cultivation Store
-            oHarvestEdible = matter.phases.liquid(this.toStores.PlantCultivationStore, ...   Store in which the phase is located
+            oHarvestEdible = matter.phases.solid(this.toStores.PlantCultivationStore, ...   Store in which the phase is located
                 'HarvestEdible', ...         Phase name
-                struct('Food',0.1), ...      Phase contents
+                struct(), ...      Phase contents
                 10, ...                 Phase volume
-                293.15, ...             %Phase temperature
-                101325);               %Phase pressure
+                293.15);               %Phase pressure
             
             % Adding a default extract/merge processor to the phase
-            matter.procs.exmes.liquid(oHarvestEdible, 'p16');
-            matter.procs.exmes.liquid(oHarvestEdible, 'p17');
+            matter.procs.exmes.solid(oHarvestEdible, 'p16');
+            matter.procs.exmes.solid(oHarvestEdible, 'p17');
             
             
             %necessary because absorber phase, which cannot be directly connected
@@ -325,19 +323,19 @@ classdef PlantModule < vsys
                 'HarvestEdible.p16');                                           % Output phase
             
             
-       %Initializing manipulators for tranforming plant specific biomass 
-           %Initializing the manipulator for tranforming plant specific
-           %inedible biomass to waste
-            this.oManip_Process_InediblePlantsToWaste                           ... % Object name
-                = components.PlantModule.Process_InediblePlantsToWaste(         ... % Path to class constructor
-                'InedibleHarvestReactor',                                       ... % Name of manipulator
-                oHarvestInedible);                                                  % Treated phase
-           %Initializing the manipulator for tranforming plant specific
-           %edible biomass to food
-            this.oManip_Process_EdiblePlantsToFood                              ... % Object name
-                = components.PlantModule.Process_EdiblePlantsToFood(            ... % Path to class constructor
-                'EdibleHarvestReactor',                                         ... % Name of manipulator
-                oHarvestEdible);                                                    % Treated phase
+%        %Initializing manipulators for tranforming plant specific biomass 
+%            %Initializing the manipulator for tranforming plant specific
+%            %inedible biomass to waste
+%             this.oManip_Process_InediblePlantsToWaste                           ... % Object name
+%                 = components.PlantModule.Process_InediblePlantsToWaste(         ... % Path to class constructor
+%                 'InedibleHarvestReactor',                                       ... % Name of manipulator
+%                 oHarvestInedible);                                                  % Treated phase
+%            %Initializing the manipulator for tranforming plant specific
+%            %edible biomass to food
+%             this.oManip_Process_EdiblePlantsToFood                              ... % Object name
+%                 = components.PlantModule.Process_EdiblePlantsToFood(            ... % Path to class constructor
+%                 'EdibleHarvestReactor',                                         ... % Name of manipulator
+%                 oHarvestEdible);                                                    % Treated phase
                      
             
             

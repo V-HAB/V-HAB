@@ -19,6 +19,23 @@ classdef CultureBatch
         % FAO model equations. written by PlantGrowth() call in parent
         % system's exec() function.
         tfMMECRates = struct();
+        
+        % internal time of plant culture (passed time AFTER planting)
+        fInternalTime = 0;
+        
+        %% Culture Mass Transfer Rates
+        
+        % culture gas exchange with atmosphere (O2, CO2, H2O)
+        tfGasExchangeRates;         % [kg s^-1]
+        
+        % culture water consumption
+        fWaterConsumptionRate;      % [kg s^-1]
+        
+        % culture nutrient consumption
+        fNutrientConsumptionRate;   % [kg s^-1]
+        
+        % culture biomass growth (edible and inedible, both wet)
+        tfBiomassGrowthRates;       % [kg s^-1]
     end
     
     methods

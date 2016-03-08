@@ -152,8 +152,12 @@ classdef Create_Biomass < matter.manips.substance.flow
                     
                     %Assigning CO2, PPF, H value from the corresponding culture state
                     this.fPPF       = this.fCCulture.plants{x, 1}.state.PPF;    % [µmol/m^2/s]
-                    this.fCO2ppm    = this.fCCulture.plants{x, 1}.state.CO2;    % [µmol/mol]
+%                     this.fCO2ppm    = this.fCCulture.plants{x, 1}.state.CO2;    % [µmol/mol]
                     this.fH         = this.fCCulture.plants{x, 1}.state.H;      % [hours/day]
+                    
+                    
+                    this.fCO2ppm    = fCO2ppm;   % [µmol/mol]
+                    this.fCCulture.plants{x, 1}.state.CO2 = this.fCO2ppm;
                 end
                 
                 
@@ -296,7 +300,7 @@ classdef Create_Biomass < matter.manips.substance.flow
                     this.fCO2ppm    = this.oParent.fCO2ppm;                         %CO2 PPM of parent system; Either 'predefined' or 'live LSS' value
                 else
                     this.fPPF       = this.fCCulture.plants{iI, 1}.state.PPF;        %Use PPF from plant setup
-                    this.fCO2ppm    = this.fCCulture.plants{iI, 1}.state.CO2;        %Use CO2 PPM from plant setup
+%                     this.fCO2ppm    = this.fCCulture.plants{iI, 1}.state.CO2;        %Use CO2 PPM from plant setup
                     this.fH         = this.fCCulture.plants{iI, 1}.state.H;          %Use H (photoperiod per day) value from plant setup
                 end
                 

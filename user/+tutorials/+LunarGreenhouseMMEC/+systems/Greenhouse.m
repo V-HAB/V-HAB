@@ -25,6 +25,12 @@ classdef Greenhouse < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
+            % init stuff just for testing, will be reomved when proper
+            % initialization scenario has been found. most/all volumes are
+            % arbitrary values as well
+            fTemperatureInit = 293.15;  % [K]
+            fPressureInit = 101325;     % [Pa]
+            
             %% Greenhouse Unit
             
             % create the greenhouse main unit (volume ref ICES-2014-167),
@@ -100,13 +106,13 @@ classdef Greenhouse < vsys
             
             % add phase to water supply tank
             oWaterSupply = matter.phases.liquid(...
-                this.toStores.WaterTank, ...    % store containing phase
-                'WaterSupply', ...              % phase name
-                struct(...                      % phase contents    [kg]
+                this.toStores.WaterSupplyTank, ...  % store containing phase
+                'WaterSupply', ...                  % phase name
+                struct(...                          % phase contents    [kg]
                     'H2O', 1e3 * 1e3), ...
-                1e3, ...                        % phase volume      [m^3]
-                fTemperatureInit, ...           % phase temperature [K]
-                fPressureInit);                 % phase pressure    [Pa]
+                1e3, ...                            % phase volume      [m^3]
+                fTemperatureInit, ...               % phase temperature [K]
+                fPressureInit);                     % phase pressure    [Pa]
             
             % add exmes to water supply phase
             % output exme to connect with plant module interface
@@ -120,13 +126,13 @@ classdef Greenhouse < vsys
             % add phase to water supply tank
             % TODO: create nutrients data in matter table
             oNutrientSupply = matter.phases.liquid(...
-                this.toStores.NutrientTank, ... % store containing phase
-                'NutrientSupply', ...           % phase name
-                struct(...                      % phase contents    [kg]
-                    'nutrients', 1e3 * 1e3), ...
-                1e3, ...                        % phase volume      [m^3]
-                fTemperatureInit, ...           % phase temperature [K]
-                fPressureInit);                 % phase pressure    [Pa]
+                this.toStores.NutrientSupplyTank, ...   % store containing phase
+                'NutrientSupply', ...                   % phase name
+                struct(...                              % phase contents    [kg]
+                    'Nutrients', 1e3 * 1e3), ...
+                1e3, ...                                % phase volume      [m^3]
+                fTemperatureInit, ...                   % phase temperature [K]
+                fPressureInit);                         % phase pressure    [Pa]
             
             % add exmes to nutrient supply phase
             % output exme to connect with plant module interface
@@ -229,8 +235,8 @@ classdef Greenhouse < vsys
             % atmosphere, water and nutrient supply paths for plant module
             this.toChildren.PlantModule.setReferencePhase(...
                 this.toStores.GreenhouseUnit.aoPhases(1,1), ...     % atmosphere phase
-                this.toStores.WaterTank.aoPhases(1,1), ...          % water phase
-                this.toStores.NutrientTank.aoPhases(1,1));          % nutrient phase
+                this.toStores.WaterSupplyTank.aoPhases(1,1), ...    % water phase
+                this.toStores.NutrientSupplyTank.aoPhases(1,1));    % nutrient phase
         end
         
         function createSolverStructure(this)
