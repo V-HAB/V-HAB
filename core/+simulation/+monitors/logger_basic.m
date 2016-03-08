@@ -318,7 +318,7 @@ classdef logger_basic < simulation.monitor
                 
                 
                 % Insert object path into expression
-                if ~strcmp(this.csPaths{iL}(1:5), 'this.')
+                if length(this.csPaths{iL}) < 5 || ~strcmp(this.csPaths{iL}(1:5), 'this.')
                     this.csPaths{iL} = [ 'this.' this.csPaths{iL} ];
                 end
                 
