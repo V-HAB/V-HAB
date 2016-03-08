@@ -223,11 +223,11 @@ classdef logger_basic < simulation.monitor
             % Only add property if not yet logged!
             aiObjMatches = find(strcmp({ this.tLogValues.sObjUuid }, tLogProp.sObjUuid));
             
-            if ~isempty(aiObjMatches)
+            if any(aiObjMatches)
                 aiExpressionMatches = find(strcmp({ this.tLogValues(aiObjMatches).sExpression }, tLogProp.sExpression));
                 
-                if ~isempty(aiExpressionMatches)
-                    iIndex = this.tLogValues(aiExpressionMatches(1)).iIndex;
+                if any(aiExpressionMatches)
+                    iIndex = this.tLogValues(aiObjMatches(aiExpressionMatches(1))).iIndex;
                     
                     return;
                 end
