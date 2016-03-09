@@ -657,8 +657,8 @@ classdef main < vsys
                             % repeated each day (every 24 h). Therefore
                             % the parameters are set to enable this
                             % repetition
-                            this.tCrewPlaner.cMetabolism{iCM,iEvent}.Start = this.tCrewPlaner.cMetabolism{iCM,iEvent}.Start + (24*3600);
-                            this.tCrewPlaner.cMetabolism{iCM,iEvent}.End = this.tCrewPlaner.cMetabolism{iCM,iEvent}.End + (24*3600);
+                            this.tCrewPlaner.cMetabolism{iCM,iEvent}.Start = this.tCrewPlaner.cMetabolism{iCM,iEvent}.Start + (this.tCrewPlaner.cMetabolism{iCM,iEvent}.fRepeatTime);
+                            this.tCrewPlaner.cMetabolism{iCM,iEvent}.End = this.tCrewPlaner.cMetabolism{iCM,iEvent}.End + (this.tCrewPlaner.cMetabolism{iCM,iEvent}.fRepeatTime);
                             this.tCrewPlaner.cMetabolism{iCM,iEvent}.Started = false;
                             this.tCrewPlaner.cMetabolism{iCM,iEvent}.Ended = false;
                         end
@@ -840,8 +840,8 @@ classdef main < vsys
                                 % repeated in 24h
                                 if this.tCrewPlaner.cRestroom{iCM,iEvent}.bRepeat
                                     this.tCrewPlaner.cRestroom{iCM,iEvent}.Ended = false;
-                                    this.tCrewPlaner.cRestroom{iCM,iEvent}.TimeIntervall(1) = this.tCrewPlaner.cRestroom{iCM,iEvent}.TimeIntervall(1) + (24*3600);
-                                    this.tCrewPlaner.cRestroom{iCM,iEvent}.TimeIntervall(2) = this.tCrewPlaner.cRestroom{iCM,iEvent}.TimeIntervall(2) + (24*3600);
+                                    this.tCrewPlaner.cRestroom{iCM,iEvent}.TimeIntervall(1) = this.tCrewPlaner.cRestroom{iCM,iEvent}.TimeIntervall(1) + (this.tCrewPlaner.cRestroom{iCM,iEvent}.fRepeatTime);
+                                    this.tCrewPlaner.cRestroom{iCM,iEvent}.TimeIntervall(2) = this.tCrewPlaner.cRestroom{iCM,iEvent}.TimeIntervall(2) + (this.tCrewPlaner.cRestroom{iCM,iEvent}.fRepeatTime);
                                     this.tCrewPlaner.cRestroom{iCM,iEvent}.fStartTime = [];
                                 else
                                     % if not the event is set to have ended

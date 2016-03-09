@@ -25,7 +25,7 @@ classdef DigestionSimulator < matter.manips.substance.flow
         % of other solids are produced. These values are transformed into %
         % values now:
         fPercentFeces           = 0.0395;
-        fPercentUrineSolid      = 0.7284;
+        fPercentUrineSolid      = 0.07284;
         fPercentMetabolicH2O    = 0.494;
         fPercentOtherWaste      = 0.11716;
         % the value missing for 100% is the C used for CO2 production, but

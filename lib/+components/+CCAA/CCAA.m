@@ -321,7 +321,7 @@ classdef CCAA < vsys
             % set to zero and the calculation is aborted
             if this.bActive == 0
                 this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(0);
-                this.toBranches.TCCV_CHX.oHandler.setFlowRate(0.);
+                this.toBranches.TCCV_CHX.oHandler.setFlowRate(0);
                 this.toBranches.Coolant_In.oHandler.setFlowRate(0); 
                 this.toBranches.Coolant_Out.oHandler.setFlowRate(0);
                 return

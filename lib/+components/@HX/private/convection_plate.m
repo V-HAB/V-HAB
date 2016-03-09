@@ -81,7 +81,7 @@ elseif fRe == 0
 %values of Reynolds and Prandtlnumber as well as some key data to simplify
 %debugging for the user   
 else
-    string = sprintf(' either the Reynolds or the Prandtl number are out of bounds. \n Reynolds is valid for Re < 10^7. The value is %d \n Prandtl is valid between 0.6 and 10^3. The value is %d \n the flow speed is: %d \n the kinematic viscosity is %d', fRe, fPr_m, fFlowSpeed, fKin_Visc);
+    string = sprintf(' either the Reynolds or the Prandtl number are out of bounds. \n Reynolds is valid for Re < 10^7. The value is %d \n Prandtl is valid between 0.6 and 10^3. The value is %d \n the flow speed is: %d \n the kinematic viscosity is %d', fRe, fPr, fFlowSpeed, fKin_Visc);
     disp(string)
     error('no possible equation was found in convection_plate, either Reynolds number or Prandtl number out of boundaries')    
 end
