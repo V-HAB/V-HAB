@@ -55,6 +55,8 @@ classdef main < vsys
         fRandomFecesFactor;
         
         fEatStartTime = inf;
+        fFoodMass = 0;
+        fFoodWaterMass = 0;
         
         % according to BVAD page 43 table 3.21
         fNominalDailyEnergyRequirement = 12.996*10^6; % J
@@ -425,9 +427,11 @@ classdef main < vsys
             this.toBranches.(['Air_In',num2str(iConnection)]).oHandler.setFlowRate(-this.iCrewMembers*0.1);
         end
         
-        function consumeFood(this, fFoodMass)
+        function consumeFood(this, fFoodMass, fFoodWaterMass)
             % Function used by the main system once the food preperation is
             % finished that tells the human to eat the food
+            this.fFoodMass = fFoodMass;
+            this.fFoodWaterMass = fFoodWaterMass;
             this.toBranches.Solid_Food_In.oHandler.setFlowRate(-fFoodMass/this.fFoodConsumeTime);
             this.fEatStartTime = this.oTimer.fTime;
             
@@ -530,8 +534,9 @@ classdef main < vsys
                 % Updates the digestion manip so that it calculates the
                 % required digestion flow rate for the food the human just
                 % ate
-                this.toStores.Human.toPhases.SolidFood.toManips.substance.eat()
-                
+                this.toStores.Human.toPhases.SolidFood.toManips.substance.eat(this.fFoodMass, this.fFoodWaterMass)
+                this.fFoodMass = 0;
+                this.fFoodWaterMass = 0;
                 % Deletes the food request this human made to the habitat
                 % system
                 this.oParent.deleteFoodRequest();

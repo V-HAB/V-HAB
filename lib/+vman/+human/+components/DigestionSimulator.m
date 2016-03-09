@@ -52,18 +52,11 @@ classdef DigestionSimulator < matter.manips.substance.flow
             this.afPartialFlows= zeros(1, this.oPhase.oMT.iSubstances);
         end
         
-        function eat(this,~)
+        function eat(this,fFoodMass, fFoodWaterMass)
             % Function used to update the food the human ate
             tEat.fTime                   = this.oTimer.fTime;
             
-            afMassCurrent                = this.oPhase.afMass - this.afInitialMassSolidFood;
-            % now the mass eaten previously to this eat event is calculated
-            fMassPreviouslyEaten = 0;
-            for iK = 1:length(this.cEatenFood)
-                fMassPreviouslyEaten = fMassPreviouslyEaten + this.cEatenFood{iK}.fDrymass;
-            end
-            
-            tEat.fDrymass                = afMassCurrent(this.oMT.tiN2I.C) - fMassPreviouslyEaten;
+            tEat.fDrymass                = fFoodMass - fFoodWaterMass;
             
             % And the flow rates required for this eat event to process the
             % food are calculated. Note that no precise time for the
