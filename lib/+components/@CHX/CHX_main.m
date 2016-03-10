@@ -86,6 +86,17 @@ if strcmpi(sHX_type, 'counter annular passage')
     fR_i = mHX(3);
     fLength = mHX(4);
     
+    try
+        oFlow_1 = oHX.oF2F_1.getInFlow(); 
+    catch
+        oFlow_1 = oHX.oF2F_1.aoFlows(1);
+    end
+    try
+        oFlow_2 = oHX.oF2F_2.getInFlow(); 
+    catch
+        oFlow_2 = oHX.oF2F_2.aoFlows(1);
+    end
+    
     %calculates the further needed variables for the heat exchanger from
     %the given values
     
@@ -149,6 +160,112 @@ if strcmpi(sHX_type, 'counter annular passage')
              fEntry_Temp1, fEntry_Temp2);
         end
     end
+    
+   %in case that condensation does occur this is the lower limit for the
+    %heat flow. In case that nothing condenses it is the actual heat flow
+    fHeatFlow = abs(fHeat_Capacity_Flow_1*(fEntry_Temp1-fOutlet_Temp_1));
+    
+    %% check for condensation
+    %the CHX concept for counter flow heat exchangers is different from the
+    %one for cross flow and parallel flow heat exchanger because it is not
+    %possible to use the direct incremental HX approach used for the other
+    %types, because for the counter flow type only one of the two necessary
+    %inflow temperatures is known for each incremental HX at either side.
+    %Therefore the CHX approach for the counter flow heat exchanger
+    %requires an iterative solution which requires more computations than
+    %the incremental approach. For this reason the HX is first checked to
+    %see if condensation can occur at all. To do this the lowest possible
+    %wall temperature for the hot side is checked for condensation. This
+    %temperature has to be at the hot side outlet.
+    
+    if fEntry_Temp1 > fEntry_Temp2 
+        %for the wall temperature it is assumed that inlet coolant
+        %temperature is the wall temperature because that is the overall
+        %lowest temperature in the system so if no condensation occurs for
+        %that temperature it is impossible for it to occur at all
+        fTWall = fEntry_Temp2;
+    
+        [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
+                (oHX, struct(), fHeat_Capacity_Flow_1, fHeatFlow, fTWall, fOutlet_Temp_1,fEntry_Temp1, oFlow_1);
+    else
+        fTWall = fEntry_Temp1;
+        
+        [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
+                (oHX, struct(), fHeat_Capacity_Flow_2, fHeatFlow, fTWall, fOutlet_Temp_2,fEntry_Temp2, oFlow_2);
+    end
+    
+    %now the iterative condensation calculation is only executed if
+    %condensation does occur in the HX
+    if fCondensateHeatFlow ~= 0
+        
+        %in order to prevent writing the whole calculation for each case of
+        %fluid 1 beeing the hot one or fluid 2 beeing the hot one the
+        %indices will be changed to hot and cold for the calculation.
+        if  fEntry_Temp1 > fEntry_Temp2 
+            fEntryTempHot = fEntry_Temp1;
+            fOutletTempHot_Normal =  fOutlet_Temp_1;
+            fOutletTempHot_New = fOutlet_Temp_1;
+            fEntryTempCold = fEntry_Temp2;
+            fHeatCapacityFlowHot = fHeat_Capacity_Flow_1;
+            fHeatCapacityFlowCold = fHeat_Capacity_Flow_2;
+            oFlowHot = oFlow_1;
+        else
+            fEntryTempHot = fEntry_Temp2;
+            fOutletTempHot_Normal =  fOutlet_Temp_2;
+            fOutletTempHot_New = fOutlet_Temp_2;
+            fEntryTempCold = fEntry_Temp1;
+            fHeatCapacityFlowHot = fHeat_Capacity_Flow_2;
+            fHeatCapacityFlowCold = fHeat_Capacity_Flow_1;
+            oFlowHot = oFlow_2;
+        end
+        fHeatFlow_Old = 0;
+        iCounter = 0;
+        
+        while (abs(fHeatFlow-fHeatFlow_Old) > 1e-8) && iCounter < 1000
+            
+            %the effect of condensation on the heat flow is taken into
+            %account by increasing the heat capacity flow for the hot fluid
+            %by a value calculated based on the amount of heat taken up by
+            %the condensation
+            fPhaseChangeHeatCapacityFlow = abs(fCondensateHeatFlow/(fEntryTempHot-fOutletTempHot_New));
+
+            %then the normal heat exchanger function is used to calculate
+            %the new outlet temperatures using the adapted heat capacity
+            %flow
+            [fOutletTempCold_New, fOutletTempHot_New] = temperature_counterflow ...
+                (fArea, fU, fHeatCapacityFlowCold, (fHeatCapacityFlowHot+fPhaseChangeHeatCapacityFlow),...
+                 fEntryTempCold, fEntryTempHot);
+
+            %with the new outlet temperatures a new value for the heat flow
+            %can be calculated that is higher than the previous value
+            %(because the condensation keeps the temperature at an higher
+            %level over all)
+            fHeatFlow_Old = fHeatFlow;
+            fHeatFlow = (fHeatCapacityFlowHot+fPhaseChangeHeatCapacityFlow)*(fEntryTempHot-fOutletTempHot_New);
+
+            [sCondensateFlowRate, ~,~,fCondensateHeatFlow] = condensation(oHX, struct(), fHeatCapacityFlowHot, fHeatFlow, fTWall,...
+                fOutletTempHot_Normal,fEntryTempHot, oFlowHot);
+
+            iCounter = iCounter+1;
+        end
+        
+        if  fEntry_Temp1 > fEntry_Temp2 
+            fOutlet_Temp_1 = fOutletTempHot_New;
+            fOutlet_Temp_2 = fOutletTempCold_New;
+        else
+            fOutlet_Temp_2 = fOutletTempHot_New;
+            fOutlet_Temp_1 = fOutletTempCold_New;
+        end
+        oHX.sCondensateMassFlow = sCondensateFlowRate;
+        
+    else
+        %if nothing condenses the condensate mass flow in the oHX object
+        %has to be set to an empty struct
+        oHX.sCondensateMassFlow = struct();
+    end
+    
+    oHX.fTotalCondensateHeatFlow = fCondensateHeatFlow;
+    oHX.fTotalHeatFlow = fHeatFlow;
     
     %calculation of pressure loss for both fluids:
     fDelta_P_1 = pressure_loss_pipe((2*fR_i), fLength, fFlowSpeed_Fluid1,...
