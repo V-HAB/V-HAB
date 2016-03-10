@@ -59,6 +59,12 @@ classdef CCAA < vsys
         % phase. This is used to calculate the amount of condensate that
         % was actually produced between the activation of the kick valve.
         fInitialCHXWaterMass;
+        
+        % Temp Change allowed before CHX is recalculated
+        fTempChange = 1;
+        % Percental Change allowed to Massflow/Pressure/Composition of
+        % Flow before CHX is recalculated
+        fPercentChange = 0.025;
     end
     
     methods 
@@ -129,11 +135,6 @@ classdef CCAA < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            % Temp Change allowed before CHX is recalculated
-            fTempChange = 1;
-            % Percental Change allowed to Massflow/Pressure/Composition of
-            % Flow before CHX is recalculated
-            fPercentChange = 0.025;
             
             % Standard pressure used for the phase definition of water
             % phases
@@ -188,7 +189,7 @@ classdef CCAA < vsys
             % The CHX used for CCAA is calculated by using the
             % interpolation for the effectivnes instead of physically
             % calculating the CHX.
-            oCCAA_CHX = components.CHX(this, 'CCAA_CHX', this.interpolateEffectiveness, 'ISS CHX', 0, 15, fTempChange, fPercentChange);
+            oCCAA_CHX = components.CHX(this, 'CCAA_CHX', this.interpolateEffectiveness, 'ISS CHX', 0, 15, this.fTempChange, this.fPercentChange);
             
             % adds the P2P proc for the CHX that takes care of the actual
             % phase change
@@ -310,6 +311,15 @@ classdef CCAA < vsys
         % correctly control the flow rate through the CHX.
         function setReferencePhase(this, oPhase)
                 this.oAtmosphere = oPhase;
+        end
+        
+        function setNumericalParameters(this, fTempChange, fPercentChange)
+            
+            % Temp Change allowed before CHX is recalculated
+            this.fTempChange = fTempChange;
+            % Percental Change allowed to Massflow/Pressure/Composition of
+            % Flow before CHX is recalculated
+            this.fPercentChange = fPercentChange;
         end
     end
     

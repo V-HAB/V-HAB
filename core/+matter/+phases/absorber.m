@@ -62,6 +62,13 @@ classdef absorber < matter.phase
             tParameters.fFirstDepValue = fTemperature;
             tParameters.sPhaseType = sMatterState;
             
+            if strcmp(sMatterState, 'liquid') || strcmp(sMatterState, 'gas')
+                fPressure = this.oMT.Standard.Pressure;
+                tParameters.sSecondDepName = 'Pressure';
+                tParameters.fSecondDepValue = fPressure;
+            end
+            
+            
             % Now we can call the findProperty() method.
             fDensity = this.oMT.findProperty(tParameters);
             
