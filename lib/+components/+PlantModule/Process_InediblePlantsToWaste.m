@@ -35,9 +35,10 @@ classdef Process_InediblePlantsToWaste < matter.manips.substance.flow
                 %form the matter table.
                     arPartials2 = zeros(18, this.oPhase.oMT.iSubstances);
                     
-            % Reference of position number inside matter table for
-            % requested matter
-            tiN2I = this.oPhase.oMT.tiN2I;
+                % Reference for molecular mass of requested matter    
+                    afMolMass  = this.oPhase.oMT.afMolarMass;
+                % Reference of position number inside matter table for requested matter
+                    tiN2I      = this.oPhase.oMT.tiN2I;
                     
             % Array with considered matter - all inedible parts, dry and fluid, of available plants    
             aiSubstanceArray=[tiN2I.DrybeanInedibleFluid, ...
@@ -74,18 +75,11 @@ classdef Process_InediblePlantsToWaste < matter.manips.substance.flow
             end;
             
             %All H2O will be summated from the single plants contribution
-            afPartials(tiN2I.H2O)=sum(arPartials2(:,tiN2I.H2O));
+                afPartials(tiN2I.H2O)=sum(arPartials2(:,tiN2I.H2O));
                 
             fTimeStep = this.oPhase.oStore.oTimer.fTime - this.fLastUpdate;
             
-            % If no time has passed, we can just set the flow rates to
-            % zero. Otherwise we divide the partial masses by the timestep
-            % to get the flows.
-            if fTimeStep <= 0
-                afPartialFlows = zeros(1, this.oPhase.oMT.iSubstances);
-            else
-                afPartialFlows = afPartials ./ fTimeStep;
-            end
+            afPartialFlows = afPartials ./ fTimeStep;
             
             %Setting control variable for call frequency check
             this.fLastUpdate = this.oPhase.oStore.oTimer.fTime;

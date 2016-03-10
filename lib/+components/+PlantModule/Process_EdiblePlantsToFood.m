@@ -31,11 +31,10 @@ classdef Process_EdiblePlantsToFood < matter.manips.substance.flow
                 %form the matter table.
                     arPartials2 = zeros(18, this.oPhase.oMT.iSubstances);
             
-            % Reference for molar mass of requested matter
-            afMolarMasses = this.oPhase.oMT.afMolarMass;
-            % Reference of position number inside matter table for
-            % requested matter
-            tiN2I = this.oPhase.oMT.tiN2I;
+            % Reference for molecular mass of requested matter
+                afMolMass  = this.oPhase.oMT.afMolarMass;
+            % Reference of position number inside matter table for requested matter
+                tiN2I      = this.oPhase.oMT.tiN2I;
             
             % Array with considered matter - all edible parts, dry and fluid, of available plants    
             aiSpeciesArray=[tiN2I.DrybeanEdibleFluid, ...
@@ -60,15 +59,15 @@ classdef Process_EdiblePlantsToFood < matter.manips.substance.flow
             %Processing every single matter stated in "SpeciesArray" separatly
             % The amount of matter that is destructed will create the same
             % amount of food-matter
-            for i=1:1:18
-                
+            for i=1:1:18                
                 iSubstance = aiSpeciesArray(i);
                 
                 %Matter that is destructed - particular plant components
-                afPartials(iSubstance)     = -afFRs(iSubstance);
+                    afPartials(iSubstance)=-afFRs(iSubstance);
                 %Matter that is created as food-matter
-                arPartials2(i, tiN2I.Food) = afFRs(iSubstance) / afMolarMasses(iSubstance) * afMolarMasses(tiN2I.Food);
-                
+                    arPartials2(i,tiN2I.Food)=afFRs(iSubstance)/afMolMass(iSubstance)*afMolMass(tiN2I.Food);
+
+
             end;
             
             %All food will be summated from the single plants contribution
@@ -76,14 +75,7 @@ classdef Process_EdiblePlantsToFood < matter.manips.substance.flow
                 
             fTimeStep = this.oPhase.oStore.oTimer.fTime - this.fLastUpdate;
             
-            % If no time has passed, we can just set the flow rates to
-            % zero. Otherwise we divide the partial masses by the timestep
-            % to get the flows.
-            if fTimeStep <= 0
-                afPartialFlows = zeros(1, this.oPhase.oMT.iSubstances);
-            else
-                afPartialFlows = afPartials ./ fTimeStep;
-            end
+            afPartialFlows = afPartials ./ fTimeStep;
             
             %Setting control variable for call frequency check
             this.fLastUpdate = this.oPhase.oStore.oTimer.fTime;

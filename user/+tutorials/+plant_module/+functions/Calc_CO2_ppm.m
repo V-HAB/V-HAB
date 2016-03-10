@@ -1,5 +1,5 @@
-function [ CO2ppm ] = Calc_CO2_ppm( oPhase )
-    %PPM_CO2 Calculates the ppm level of CO2 of input Phase
+function [ CO2ppm ] = Calc_CO2_ppm(oPhase)
+    % PPM_CO2 Calculates the ppm level of CO2 of input Phase
     
     % Mass of CO2 in considered phase
     fMassCO2 = oPhase.afMass(oPhase.oMT.tiN2I.CO2); %[kg]
@@ -10,8 +10,7 @@ function [ CO2ppm ] = Calc_CO2_ppm( oPhase )
     % Molar mass of phase
     fMolarMassPhase = oPhase.fMolarMass; %[kg/mol]
     
-    %Calculating ppm of CO2
-    CO2ppm = (fMassCO2 * fMolarMassPhase) / (fTotalGasMass * fMolarMassCO2) * 1000000; %[-]
-    
+    % Calculating ppm of CO2
+    CO2ppm = (fMassCO2 * fMolarMassPhase) / (fTotalGasMass * fMolarMassCO2) * 1e6; % [-]
 end
 
