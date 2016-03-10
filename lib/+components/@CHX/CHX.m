@@ -365,7 +365,7 @@ classdef CHX < vsys
                 (abs(fEntryTemp_2-this.fEntryTemp_Old_2) > this.fTempChangeToRecalc)||...                           %if entry temp changed by more than X°
                 (abs(1-(fMassFlow_2/this.fMassFlow_Old_2)) > this.fPercentChangeToRecalc)||...                      %if mass flow changes by more than X%
                 (max(abs(1-(oFlows_1.arPartialMass./this.arPartialMass1Old))) > this.fPercentChangeToRecalc)||...  	%if composition of mass flow changed by more than X%
-                (max(abs(1-(oFlows_2.arPartialMass./this.arPartialMass2Old))) > this.fPercentChangeToRecalc)||...   	%if composition of mass flow changed by more than X%
+                (max(abs(1-(oFlows_2.arPartialMass./this.arPartialMass2Old))) > this.fPercentChangeToRecalc)||...   %if composition of mass flow changed by more than X%
                 (abs(1-(oFlows_1.fPressure/this.fOldPressureFlow1)) > this.fPercentChangeToRecalc)||...             %if Pressure changed by more than X%
                 (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow1)) > this.fPercentChangeToRecalc)                  %if Pressure changed by more than X%
                             
