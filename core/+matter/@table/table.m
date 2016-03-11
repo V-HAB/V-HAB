@@ -428,6 +428,16 @@ classdef table < base
                 
                 % Check for number or uppercase
                 bIsNaN = isnan(str2double(sCurrentChar));
+                % Well, this works fine, but if you convert the lower case
+                % 'i' to a number using str2double MATLAB will read it as a
+                % number in the sense of the square root of -1...
+                % So we check if it is the letter 'i'... Usually that is
+                % not a number associated with the number of atoms in a
+                % molecule...
+                if strcmp(sCurrentChar,'i')
+                    bIsNaN = true;
+                end
+                
                 bUpper = bIsNaN && isstrprop(sCurrentChar, 'upper');
                 
                 % If the letter is uppercase it's the start of a new
