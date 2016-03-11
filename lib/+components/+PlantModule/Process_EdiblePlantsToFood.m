@@ -22,7 +22,7 @@ classdef Process_EdiblePlantsToFood < matter.manips.substance.flow
             %column. -> 1 x this.oPhase.oMT.iSpecies
             % It contains all particular masses of all matter available
             % inside the considered phase
-                afFRs      = this.getTotalFlowRates();
+                afFRs      = this.getTotalFlowRates(this);
             
             %Arrays for matter handling
                 %Array for matter summation

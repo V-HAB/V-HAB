@@ -23,14 +23,14 @@ classdef EdibleBiomass_To_Carbon_And_H2O < matter.manips.substance.flow
                 return
             end
             
-            afFRs = this.getTotalFlowrates();
-            afPartialFlowRates = zeros(1, this.oPhase.oMT.iSubstances);
+            afFRs = this.getTotalFlowRates();
+            afPartialFlows = zeros(1, this.oPhase.oMT.iSubstances);
             tiN2I      = this.oPhase.oMT.tiN2I;
             
             % Edible dry mass array
             afDrymass = [...
                 tiN2I.DrybeanEdibleDry, ...
-                tiN2I.LettucenEdibleDry, ...
+                tiN2I.LettuceEdibleDry, ...
                 tiN2I.PeanutEdibleDry, ...
                 tiN2I.RiceEdibleDry, ...
                 tiN2I.SoybeanEdibleDry, ...
@@ -42,7 +42,7 @@ classdef EdibleBiomass_To_Carbon_And_H2O < matter.manips.substance.flow
             % edible fluid mass array
             afFluid = [...
                 tiN2I.DrybeanEdibleFluid, ...
-                tiN2I.LettucenEdibleFluid, ...
+                tiN2I.LettuceEdibleFluid, ...
                 tiN2I.PeanutEdibleFluid, ...
                 tiN2I.RiceEdibleFluid, ...
                 tiN2I.SoybeanEdibleFluid, ...
@@ -55,19 +55,19 @@ classdef EdibleBiomass_To_Carbon_And_H2O < matter.manips.substance.flow
             for iI = 1:length(afDrymass)
                 iSubstance = afDrymass(iI);
                 
-                afPartialFlowrates(iSubstance) = -afFRs(iSubstance);
-                afPartialFlowrates(tiN2I.C) = afPartialFlowrates(tiN2I.C) + afFRs(iSubstance);
+                afPartialFlows(iSubstance) = -afFRs(iSubstance);
+                afPartialFlows(tiN2I.C) = afPartialFlows(tiN2I.C) + afFRs(iSubstance);
             end
             
             % convert edible fluid mass to H2O
             for iI = 1:length(afFluid)
                 iSubstance = afFluid(iI);
                 
-                afPartialFlowrates(iSubstance) = -afFRs(iSubstance);
-                afPartialFlowrates(tiN2I.H2O) = afPartialFlowrates(tiN2I.H2O) + afFRs(iSubstance);
+                afPartialFlows(iSubstance) = -afFRs(iSubstance);
+                afPartialFlows(tiN2I.H2O) = afPartialFlows(tiN2I.H2O) + afFRs(iSubstance);
             end
             
-            update@matter.manips.substance.flow(this, afPartialFlowRates);
+            update@matter.manips.substance.flow(this, afPartialFlows);
             
             this.fLastUpdate = this.oPhase.oStore.oTimer.fTime;
         end
