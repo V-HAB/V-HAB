@@ -7,14 +7,6 @@ classdef EdibleBiomass_To_Carbon_And_H2O < matter.manips.substance.flow
     
     properties (SetAccess = protected, GetAccess = public)
        fLastUpdate;
-       
-       fRequiredCMassFlow = 0;
-       
-       fC_FlowRate = 0;
-       
-       afFluidMass,
-       
-       afDrymass;
     end
     
     methods
@@ -31,34 +23,51 @@ classdef EdibleBiomass_To_Carbon_And_H2O < matter.manips.substance.flow
                 return
             end
             
-            arPartialFlowRates = zeros(1, this.oPhase.oMT.iSubstances);
+            afFRs = this.getTotalFlowrates();
+            afPartialFlowRates = zeros(1, this.oPhase.oMT.iSubstances);
             tiN2I      = this.oPhase.oMT.tiN2I;
             
-            %simply converts all the O2 in the human into CO2, since only
-            %O2 that is consumed by the human goes into the phase it is not
-            %necessary to regard the ~17% O2 that are left in the air when
-            %a human breathes out
-            fO2MassFlow     = this.oPhase.toProcsEXME.O2_In.oFlow.fFlowRate;
+            % Edible dry mass array
+            afDrymass = [...
+                tiN2I.DrybeanEdibleDry, ...
+                tiN2I.LettucenEdibleDry, ...
+                tiN2I.PeanutEdibleDry, ...
+                tiN2I.RiceEdibleDry, ...
+                tiN2I.SoybeanEdibleDry, ...
+                tiN2I.SweetpotatoEdibleDry, ...
+                tiN2I.TomatoEdibleDry, ...
+                tiN2I.WheatEdibleDry, ...
+                tiN2I.WhitepotatoEdibleDry];
             
-            fMolarMassO2    = this.oMT.ttxMatter.O2.fMolarMass;
-            fO2MolFlow      = fO2MassFlow / fMolarMassO2; % mol/s
+            % edible fluid mass array
+            afFluid = [...
+                tiN2I.DrybeanEdibleFluid, ...
+                tiN2I.LettucenEdibleFluid, ...
+                tiN2I.PeanutEdibleFluid, ...
+                tiN2I.RiceEdibleFluid, ...
+                tiN2I.SoybeanEdibleFluid, ...
+                tiN2I.SweetpotatoEdibleFluid, ...
+                tiN2I.TomatoEdibleFluid, ...
+                tiN2I.WheatEdibleFluid, ...
+                tiN2I.WhitepotatoEdibleFluid];
             
-            % The required mol flow for C to produce CO2 from O2 is the
-            % exact same as the O2 mol flow. therefore the required mass of
-            % C can be calculated from the o2 mol flow
-            fMolarMassCO2           = this.oMT.ttxMatter.C.fMolarMass;
-            this.fRequiredCMassFlow = fO2MolFlow * fMolarMassCO2;
+            % convert edible drymass to C
+            for iI = 1:length(afDrymass)
+                iSubstance = afDrymass(iI);
+                
+                afPartialFlowrates(iSubstance) = -afFRs(iSubstance);
+                afPartialFlowrates(tiN2I.C) = afPartialFlowrates(tiN2I.C) + afFRs(iSubstance);
+            end
             
-            % The overall CO2 mass flow then is the sum of the mass flows
-            % of C and O2.
-            this.fCO2_FlowRate      = fO2MassFlow + this.fRequiredCMassFlow;
+            % convert edible fluid mass to H2O
+            for iI = 1:length(afFluid)
+                iSubstance = afFluid(iI);
+                
+                afPartialFlowrates(iSubstance) = -afFRs(iSubstance);
+                afPartialFlowrates(tiN2I.H2O) = afPartialFlowrates(tiN2I.H2O) + afFRs(iSubstance);
+            end
             
-            % Now the flow rates have to be set for the manip
-            arPartialFlowRates(tiN2I.CO2)   =  this.fCO2_FlowRate;
-            arPartialFlowRates(tiN2I.O2)    = -fO2MassFlow;
-            arPartialFlowRates(tiN2I.C)     = -this.fRequiredCMassFlow;
-            
-            update@matter.manips.substance.flow(this, arPartialFlowRates);
+            update@matter.manips.substance.flow(this, afPartialFlowRates);
             
             this.fLastUpdate = this.oPhase.oStore.oTimer.fTime;
         end
