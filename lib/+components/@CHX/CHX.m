@@ -367,7 +367,7 @@ classdef CHX < vsys
                 (max(abs(1-(oFlows_1.arPartialMass./this.arPartialMass1Old))) > this.fPercentChangeToRecalc)||...  	%if composition of mass flow changed by more than X%
                 (max(abs(1-(oFlows_2.arPartialMass./this.arPartialMass2Old))) > this.fPercentChangeToRecalc)||...   %if composition of mass flow changed by more than X%
                 (abs(1-(oFlows_1.fPressure/this.fOldPressureFlow1)) > this.fPercentChangeToRecalc)||...             %if Pressure changed by more than X%
-                (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow1)) > this.fPercentChangeToRecalc)                  %if Pressure changed by more than X%
+                (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow2)) > this.fPercentChangeToRecalc)                  %if Pressure changed by more than X%
                             
                 fDensity_1 = oFlows_1.getDensity();
                 fDensity_2 = oFlows_2.getDensity();
