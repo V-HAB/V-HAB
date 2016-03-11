@@ -36,14 +36,9 @@ classdef Greenhouse < vsys
             oProc_ExceedingCO2Absorber;
             oProc_ExceedingO2Absorber;
         
-        %Object properties for handling following branch objects
-            oB1;
-            oB2;
-            oB3;
-            oB4;
-            oB5;
+
       
-       
+       oSubSysPlantCultivation;
     end
     
     %% -System Definition
@@ -70,7 +65,15 @@ classdef Greenhouse < vsys
                 %Leakage loss 4.5 times main gh volume per day * density kg/m^3     
                     this.fLeakageFlowRate = 0.00144;  % [kg/s]  
                  
-                    
+                    %% -Subsystems-
+            
+            %Initializing Subsystem: PlantModule
+                this.oSubSysPlantCultivation = modules.PlantModule(this, 'PlantModule');
+                % Assigning an object for handling later following interface connections
+        end
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this)
                     
         %% -Greenhouse System structure-
             %Greenhouse Unit
@@ -223,83 +226,57 @@ classdef Greenhouse < vsys
                     %Interfaces
                         matter.procs.exmes.liquid(oInedibleBiomass, 'InedibBioIn');
 
-                        
-                        
-
-        %% -Subsystems-
+                    %% Set Reference Phases
             
-            %Initializing Subsystem: PlantModule
-                oSubSysPlantCultivation = modules.PlantModule(this, 'PlantModule');
-                % Assigning an object for handling later following interface connections
-             
-                
-                
-                
+            % atmosphere and water supply for plant module
+            this.toChildren.PlantModule.setReferencePhase(this.toStores.GH_Unit.aoPhases(1,1), this.toStores.WaterTank.aoPhases(1,1));
+            
         %% -Connections-      
            %Misc
-            %Adding Pipes
-               %Greenhouse system
-                    components.pipe(this, 'Pipe_01', 0.5, 0.10); 
-                    components.pipe(this, 'Pipe_02', 0.5, 0.10); 
-                    components.pipe(this, 'Pipe_03', 0.5, 0.10); 
-                    components.pipe(this, 'Pipe_04', 0.5, 0.05);     
-                    components.pipe(this, 'Pipe_05', 0.5, 0.05);
-                
-               %To PlantModule subsystem
-                    components.pipe(this, 'Pipe_06',  0.5, 0.005);
-                    components.pipe(this, 'Pipe_07',  0.5, 0.005);
-                    components.pipe(this, 'Pipe_08',  0.5, 0.005);
-                    components.pipe(this, 'Pipe_09',  0.5, 0.005);
-                    components.pipe(this, 'Pipe_10', 0.5, 0.005);
+%             %Adding Pipes
+%                %Greenhouse system
+%                     components.pipe(this, 'Pipe_01', 0.5, 0.10); 
+%                     components.pipe(this, 'Pipe_02', 0.5, 0.10); 
+%                     components.pipe(this, 'Pipe_03', 0.5, 0.10); 
+%                     components.pipe(this, 'Pipe_04', 0.5, 0.05);     
+%                     components.pipe(this, 'Pipe_05', 0.5, 0.05);
+%                 
+%                %To PlantModule subsystem
+%                     components.pipe(this, 'Pipe_06',  0.5, 0.005);
+%                     components.pipe(this, 'Pipe_07',  0.5, 0.005);
+%                     components.pipe(this, 'Pipe_08',  0.5, 0.005);
+%                     components.pipe(this, 'Pipe_09',  0.5, 0.005);
+%                     components.pipe(this, 'Pipe_10', 0.5, 0.005);
 
                     
                %Branches regarding the Greenhouse
-                    oBranch1 = matter.branch(this, 'GH_Unit.CirculationOut',      {'Pipe_01'}, 'WaterSeparator.FromGreenhouse');
-                    oBranch2 = matter.branch(this, 'WaterSeparator.ToGreenhouse', {'Pipe_02'}, 'GH_Unit.CirculationIn');
-                    oBranch3 = matter.branch(this, 'N2Buffer.N2BufferOut',        {'Pipe_03'}, 'GH_Unit.N2BufferIn');
-                    oBranch4 = matter.branch(this, 'GH_Unit.ToLeakageStore',      {'Pipe_04'}, 'LeakageStore.From_GH_Unit');
-                    oBranch5 = matter.branch(this, 'CO2Buffer.CO2BufferOut',      {'Pipe_05'}, 'GH_Unit.CO2BufferIn');
+                    matter.branch(this, 'GH_Unit.CirculationOut',      {}, 'WaterSeparator.FromGreenhouse',  'Air_GreenhouseToWaterSeparator');
+                    matter.branch(this, 'WaterSeparator.ToGreenhouse', {}, 'GH_Unit.CirculationIn',          'Air_WaterSeparatorToGreenhouse');
+                    matter.branch(this, 'N2Buffer.N2BufferOut',        {}, 'GH_Unit.N2BufferIn',             'N2_BufferToGreenhouse');
+                    matter.branch(this, 'GH_Unit.ToLeakageStore',      {}, 'LeakageStore.From_GH_Unit',      'Air_GreenhouseToLeakage');
+                    matter.branch(this, 'CO2Buffer.CO2BufferOut',      {}, 'GH_Unit.CO2BufferIn',            'CO2_BufferToGreenhouse');
 
                %Branches regarding the PlantModule interface
-                    matter.branch(this, 'sFromLSS_AirIN', { 'Pipe_06' }, 'GH_Unit.ToPlantModuleIn');
-                    matter.branch(this, 'sToLSS_AirOUT',  { 'Pipe_07' }, 'GH_Unit.FromPlantModuleOut');
-                    matter.branch(this, 'sWaterSupply',   { 'Pipe_08' }, 'WaterTank.WaterOut');
-                    matter.branch(this, 'sFoodOUT',       { 'Pipe_09' }, 'FoodStore.EdibBioIn');
-                    matter.branch(this, 'sWasteOUT',      { 'Pipe_10' }, 'WasteTank.InedibBioIn');
+                    matter.branch(this, 'sFromLSS_AirIN', {}, 'GH_Unit.ToPlantModuleIn');
+                    matter.branch(this, 'sToLSS_AirOUT',  {}, 'GH_Unit.FromPlantModuleOut');
+                    matter.branch(this, 'sWaterSupply',   {}, 'WaterTank.WaterOut');
+                    matter.branch(this, 'sFoodOUT',       {}, 'FoodStore.EdibBioIn');
+                    matter.branch(this, 'sWasteOUT',      {}, 'WasteTank.InedibBioIn');
                 
                     
                     
-                    
-                    
-               %Connecting 'LSS' system with subsystem 'PlantModule'
+                    %Connecting 'LSS' system with subsystem 'PlantModule'
                %   (setIfFlows  =  set interface flows)
-                 oSubSysPlantCultivation.setIfFlows(... % Call setIfFlows-function of "PlantModule"'s assigned object
-                                                    ... % Strings used for branch connectors:
+                 this.oSubSysPlantCultivation.setIfFlows(... % Call setIfFlows-function of "PlantModule"'s assigned object
                                   'sFromLSS_AirIN', ... %   Air-phase connector (FYI: from LSS to PlantModule)
                                   'sToLSS_AirOUT',  ... %   Air-phase connector (FYI: from PlantModule to LSS)
                                   'sWaterSupply',   ... %   Connector to Water tank 
                                   'sFoodOUT',       ... %   Connector to food store
                                   'sWasteOUT');         %   Connector to waste tank
+                    
+               
                 
-                                               
-            this.seal();
-            
-            %Definition of solvers for 'Greenhouse' system
-                this.oB1 = solver.matter.manual.branch(oBranch1);
-                this.oB2 = solver.matter.manual.branch(oBranch2);
-                this.oB3 = solver.matter.manual.branch(oBranch3);
-                this.oB4 = solver.matter.manual.branch(oBranch4);
-                this.oB5 = solver.matter.manual.branch(oBranch5);
-            
-            
-            
 
-             %Initial setting of the branches flowrates
-                this.oB1.setFlowRate(this.fFlowRate);          
-                this.oB2.setFlowRate(this.fFlowRate);
-                this.oB3.setFlowRate(0);
-                this.oB4.setFlowRate(this.fLeakageFlowRate); 
-                this.oB5.setFlowRate(0.00005);
                 
 
              %Setting timesteps of phases to a global timestep ...
@@ -344,9 +321,28 @@ classdef Greenhouse < vsys
                         %Separated water phase
                         aoPhases(2).fFixedTS = 15; %this.fglobTS;
                         
-                
+        
         end
         
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            
+            %% Add Branches to Solver
+            
+            solver.matter.manual.branch(this.toBranches.Air_GreenhouseToWaterSeparator);
+            solver.matter.manual.branch(this.toBranches.Air_WaterSeparatorToGreenhouse);
+            solver.matter.manual.branch(this.toBranches.N2_BufferToGreenhouse);
+            solver.matter.manual.branch(this.toBranches.Air_GreenhouseToLeakage);
+            solver.matter.manual.branch(this.toBranches.CO2_BufferToGreenhouse);
+            
+            %% Initialize Flowrates
+            
+            this.toBranches.Air_GreenhouseToWaterSeparator.oHandler.setFlowRate(this.fFlowRate);
+            this.toBranches.Air_WaterSeparatorToGreenhouse.oHandler.setFlowRate(this.fFlowRate);
+            this.toBranches.N2_BufferToGreenhouse.oHandler.setFlowRate(0);
+            this.toBranches.Air_GreenhouseToLeakage.oHandler.setFlowRate(this.fLeakageFlowRate);
+            this.toBranches.CO2_BufferToGreenhouse.oHandler.setFlowRate(0.00005);
+        end
     end
     
     %% -Updating-
@@ -376,7 +372,7 @@ classdef Greenhouse < vsys
                                 %Circulation flowrate
                                     this.fFlowRate = 0.065;                                            % [kg/s]
                                 %Flowrate to 'air'-phase of the WaterSeparator
-                                    this.oB1.setFlowRate(this.fFlowRate);                              % [kg/s]
+                                    this.toBranches.Air_GreenhouseToWaterSeparator.oHandler.setFlowRate(this.fFlowRate);                              % [kg/s]
                                 %Pressure in water separators air phase
                                     this.fPressureWaterSeparator = ...
                                         this.toStores.WaterSeparator.aoPhases(1).fPressure;            % [Pa]
@@ -388,20 +384,20 @@ classdef Greenhouse < vsys
                                 %  outgoing flowrate 
                                 
                                     if  this.fPressureWaterSeparator > 100000      % [Pa]
-                                        this.oB2.setFlowRate(this.fFlowRate);                           % [kg/s]
+                                        this.toBranches.Air_WaterSeparatorToGreenhouse.oHandler.setFlowRate(this.fFlowRate);                           % [kg/s]
                                     elseif this.fPressureWaterSeparator >= 90000  % [Pa]
-                                        this.oB2.setFlowRate(this.fFlowRate - 0.00045);                 % [kg/s]
+                                        this.toBranches.Air_WaterSeparatorToGreenhouse.oHandler.setFlowRate(this.fFlowRate - 0.00045);                 % [kg/s]
                                     elseif this.fPressureWaterSeparator < 90000   % [Pa]
-                                        this.oB2.setFlowRate(this.fFlowRate - 0.0009);                  % [kg/s]
+                                        this.toBranches.Air_WaterSeparatorToGreenhouse.oHandler.setFlowRate(this.fFlowRate - 0.0009);                  % [kg/s]
                                     end
                                     
                                     
                              %this.oBranch2.bind('outdated', @(~) this.oB2.setFlowRate(this.fFlowRate - this.toStores.WaterSeparator.toProcsP2P.SeparatorProc.fFlowRate));
                         elseif this.fRH < 0.65                   % relative Humidity
                             %Flowrate to 'air'-phase of the WaterSeparator
-                                this.oB1.setFlowRate(0);
+                                this.toBranches.Air_GreenhouseToWaterSeparator.oHandler.setFlowRate(0);
                             %Flowrate from WaterSeparator's 'air'-phase to Greenhouse's atmosphere
-                                this.oB2.setFlowRate(0);
+                                this.toBranches.Air_WaterSeparatorToGreenhouse.oHandler.setFlowRate(0);
                             
                         end
            end %End of Frequency If statement 
@@ -425,7 +421,7 @@ classdef Greenhouse < vsys
                         
                             %No CO2 supply flow over 1000 ppm CO2
                             if this.fCO2ppm_Measured > 1005 % ppm
-                                this.oB5.setFlowRate(0); % [kg/s]
+                                this.toBranches.CO2_BufferToGreenhouse.oHandler.setFlowRate(0); % [kg/s]
                                 %Absorbing CO2, when crossing a level of 1200 ppm CO2 in atmosphere                  
                                     if this.fCO2ppm_Measured >1200 % ppm
                                         this.oProc_ExceedingCO2Absorber.fCO2AbsorptionRate = 0.0000000001+1.5*this.fCO2flowrate; %[kg/s]
@@ -441,9 +437,9 @@ classdef Greenhouse < vsys
                             if this.fCO2ppm_Measured < 995  % ppm
                                 %At
                                 if this.oTimer.fTime < 10000 % [s]
-                                    this.oB5.setFlowRate(0.000002);  % [kg/s]
+                                    this.toBranches.CO2_BufferToGreenhouse.oHandler.setFlowRate(0.000002);  % [kg/s]
                                 else
-                                    this.oB5.setFlowRate(0.0000000001+2*this.fCO2flowrate);  % [kg/s]
+                                    this.toBranches.CO2_BufferToGreenhouse.oHandler.setFlowRate(0.0000000001+2*this.fCO2flowrate);  % [kg/s]
                                 end
                             end 
                                               
@@ -477,11 +473,11 @@ classdef Greenhouse < vsys
                         %If N2 partial mass higher than 76%    --> stopp supply
                        
                         if this.fparMassN2Greenhouse < 0.75
-                            this.oB3.setFlowRate(0.0000007); % [kg/s]
+                            this.toBranches.N2_BufferToGreenhouse.oHandler.setFlowRate(0.0000007); % [kg/s]
                         end
                         
                         if this.fparMassN2Greenhouse > 0.755
-                            this.oB5.setFlowRate(0);        % [kg/s]
+                            this.toBranches.N2_BufferToGreenhouse.oHandler.setFlowRate(0);        % [kg/s]
                         end
                         
            end %End of Frequency If statement 
@@ -497,9 +493,9 @@ classdef Greenhouse < vsys
                         this.fPressureGreenhouseAir = this.toStores.GH_Unit.aoPhases(1).fPressure;
                             
                         if  this.fPressureGreenhouseAir > 101325
-                            this.oB4.setFlowRate(this.fLeakageFlowRate);
+                            this.toBranches.Air_GreenhouseToLeakage.oHandler.setFlowRate(this.fLeakageFlowRate);
                         else %If lower than supposed outside pressure -> no leakage loss
-                            this.oB4.setFlowRate(0);
+                            this.toBranches.Air_GreenhouseToLeakage.oHandler.setFlowRate(0);
                         end
 
 

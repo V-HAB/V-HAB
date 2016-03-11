@@ -77,11 +77,8 @@ classdef Harvest_EdibleBiomass < matter.procs.p2ps.flow
                  end;
             end;
 
-            if ~any(this.arExtractPartials)
-                fFlowRate = 0;
-            else
-                fFlowRate =  0.001; %[kg/s]
-            end
+            
+            fFlowRate =  0.001; %[kg/s]
 
             % Set the new flow rate. If the second parameter (partial
             % masses to extract) is not provided, the partial masses from

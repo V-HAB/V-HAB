@@ -235,15 +235,15 @@ plant(9).tQ=75;
 % Source: Baseline Values and Assumptions Document 2015 - Table 4.101
 % "Stock Usage per Dry Biomass"
 % [L/g_dry] - only available for Soybean, Wheat, Potato, Lettuce
-    plant(1).NCfr=0;
-    plant(2).NCfr=0.034;  
-    plant(3).NCfr=0; 
-    plant(4).NCfr=0; 
-    plant(5).NCfr=0.026; 
-    plant(6).NCfr=0.022;  
-    plant(7).NCfr=0;
-    plant(8).NCfr=0.021; 
-    plant(9).NCfr=0.022;
+    plant(1).NCfr=0.026*1.166;      % assumed by CH
+    plant(2).NCfr=0.034*1.166;  
+    plant(3).NCfr=0.026*1.166;      % assumed by CH
+    plant(4).NCfr=0.026*1.166;      % assumed by CH
+    plant(5).NCfr=0.026*1.166;  
+    plant(6).NCfr=0.022*1.166;  
+    plant(7).NCfr=0.026*1.166;      % assumed by CH
+    plant(8).NCfr=0.021*1.166; 
+    plant(9).NCfr=0.022*1.166;
 
 %Crop  dry over wet  biomass fraction 
 % -->  DRYfr = 1-WBF (Water biomass fraction); averaged from edible and
