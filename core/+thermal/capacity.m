@@ -143,23 +143,35 @@ classdef capacity < base
             
         end
         
-%         function setTemperature(this, fTemperature, bOverload)
-%             
-%             if nargin > 2 && bOverload
-%                 this.fTemperature = fTemperature;
-%                 return; % We're done here.
-%             end
-%             
-%             this.warn('capacity:setTemperature', 'You may not want to do this. Use "changeInnerEnergy" instead.');
-%             
-%             %TODO: remove
-%             try
-%                 this.oMatterObject.setTemperature(fTemperature);
-%             catch
-%                 this.oMatterObject.fTemperature = fTemperature;
-%             end
-%             
-%         end
+        function setTemperature(this, fNewTemperature)
+            
+            % You can obviously only do this for boundary nodes. Otherwise
+            % the whole thermal solver would be pointless
+            if ~this.bBoundary
+                this.throw('capacity:setTemperature','You cannot set the temperature for %s because it is not a boundary node.',this.sName);
+            end
+            
+            % To actually change the temperature, we'll get the actual heat
+            % capacity of the matter object this capacity is associated
+            % with. This is usually an ignored value (see
+            % this.getTotalHeatCapacity()). But the matter object will
+            % have a mass and therefore a heat capacity. So we get that,
+            % calculate the necessary change in inner energy required to
+            % achieve the desired temperature change and call the
+            % changeInnerEnergy() method. 
+            
+            % Getting the matter object's total heat capacity in [J/K]
+            fTotalHeatCapacity = this.oMatterObject.getTotalHeatCapacity();
+            
+            % Getting the matter object's temperature in [K]
+            fCurrentTemperature = this.oMatterObject.fTemperature;
+            
+            % Calculating the necessary change in inner energy in [J]
+            fEnergyChange = fTotalHeatCapacity * (fNewTemperature - fCurrentTemperature);
+            
+            this.oMatterObject.changeInnerEnergy(fEnergyChange);
+            
+        end
         
         function fTemperature = getTemperature(this)%, bForceMatterRead)
             % Get the current temperature of the associated matter object

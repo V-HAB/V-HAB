@@ -10,14 +10,14 @@ classdef linear < thermal.conductor
     
     methods
         
-        function this = linear(oLeft, oRight, fConductivity, sIdentifier)
+        function this = linear(oLeftCapacity, oRightCapacity, fConductivity, sIdentifier)
             % Create a linear conductor instance, derive a name and store
             % the (initial) conductivity value.
             
             if nargin < 4
-                sIdentifier = ['linear:', oLeft.sName, '+', oRight.sName];
+                sIdentifier = ['linear:', oLeftCapacity.sName, '+', oRightCapacity.sName];
             end
-            this@thermal.conductor(sIdentifier, oLeft, oRight);
+            this@thermal.conductor(sIdentifier, oLeftCapacity, oRightCapacity);
             
             % Store conductivity.
             this.fConductivity = fConductivity;

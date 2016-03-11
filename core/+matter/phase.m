@@ -182,12 +182,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % was. This is to prevent multiple updates per tick. 
         fLastUpdate = -10;
         
-        % Time when the total heat capacity was last updated. Need to save
-        % this information in order to prevent the heat capacity
-        % calculation to be performed multiple times per timestep.
-        fLastTotalHeatCapacityUpdate = 0;
-        
-        
         % Last time branches were set oudated
         fLastSetOutdated = -10;
         
@@ -198,6 +192,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         % Boolean indicator of an outdated time step
         %TODO rename to bOutdatedTimeStep
         bOutdatedTS = false;
+        
+        % Time when the total heat capacity was last updated. Need to save
+        % this information in order to prevent the heat capacity
+        % calculation to be performed multiple times per timestep.
+        fLastTotalHeatCapacityUpdate = 0;
 
     end
 
@@ -226,6 +225,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
         fPressureLastHeatCapacityUpdate    = 0;
         fTemperatureLastHeatCapacityUpdate = 0;
         arPartialMassLastHeatCapacityUpdate;
+       
     end
 
     properties (Transient, SetAccess = private, GetAccess = public)

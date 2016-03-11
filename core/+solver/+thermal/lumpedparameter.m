@@ -63,7 +63,7 @@ classdef lumpedparameter < base
                 fTimestep = 1;
             end
             
-            if isempty(bTherMoSInterface) || nargin < 3
+            if nargin < 3 || isempty(bTherMoSInterface)
                 this.bTherMoSInterface = false; 
             else
                 this.bTherMoSInterface = bTherMoSInterface;
