@@ -187,6 +187,10 @@ classdef HX < vsys
         fEntryTemp_Old_2;
         fMassFlow_Old_1;
         fMassFlow_Old_2;
+        arPartialMass1Old;
+        arPartialMass2Old;
+        fOldPressureFlow1;
+        fOldPressureFlow2;
         
         %variable to check wether it is the first iteration step
         iFirst_Iteration = int8(1);
@@ -281,8 +285,7 @@ classdef HX < vsys
             
             fCp_1 = oFlows_1.fSpecificHeatCapacity;
             fCp_2 = oFlows_2.fSpecificHeatCapacity;
-                 
-        
+            
             % For changes in entry temperature that are larger than 0.1 K or
             % changes in massflow which are larger than 1 g/sec the heat
             % exchanger is calculated anew
@@ -296,7 +299,7 @@ classdef HX < vsys
                 (max(abs(1-(oFlows_1.arPartialMass./this.arPartialMass1Old))) > this.fPercentChangeToRecalc)||...  	%if composition of mass flow changed by more than X%
                 (max(abs(1-(oFlows_2.arPartialMass./this.arPartialMass2Old))) > this.fPercentChangeToRecalc)||...   %if composition of mass flow changed by more than X%
                 (abs(1-(oFlows_1.fPressure/this.fOldPressureFlow1)) > this.fPercentChangeToRecalc)||...             %if Pressure changed by more than X%
-                (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow1)) > this.fPercentChangeToRecalc)                  %if Pressure changed by more than X%
+                (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow2)) > this.fPercentChangeToRecalc)                  %if Pressure changed by more than X%
                 
                 fDensity_1      = this.oMT.calculateDensity(oFlows_1);
                 fDensity_2      = this.oMT.calculateDensity(oFlows_2);
@@ -355,6 +358,10 @@ classdef HX < vsys
                 this.fEntryTemp_Old_2    = fEntryTemp_2;
                 this.fMassFlow_Old_1     = fMassFlow_1;
                 this.fMassFlow_Old_2     = fMassFlow_2;
+                this.arPartialMass1Old = oFlows_1.arPartialMass;
+                this.arPartialMass2Old = oFlows_2.arPartialMass;
+                this.fOldPressureFlow1 = oFlows_1.fPressure;
+                this.fOldPressureFlow2 = oFlows_2.fPressure;
             end
             
             this.fLastUpdate = this.oTimer.fTime; 
