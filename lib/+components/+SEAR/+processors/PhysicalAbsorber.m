@@ -173,8 +173,10 @@ classdef PhysicalAbsorber < matter.procs.p2ps.flow
             this.fHeatFlow = this.fFlowRate * (this.oStore.toPhases.AbsorberPhase.fEnthalpyDilution + fEnthalpy);
             
             % Updating the heat source connected to the absorber phase.
-            this.oStore.oContainer.toCapacities.Absorber.oHeatSource.setPower(this.fHeatFlow);
-            this.oStore.oContainer.taint();
+            sParent_SEAR_Name = this.oStore.oContainer.oParent.sName;
+            oCapacity = this.oStore.oContainer.oParent.oParent.poCapacities([sParent_SEAR_Name,'_Absorbent']);
+            oCapacity.oHeatSource.setPower(this.fHeatFlow);
+            this.oStore.oContainer.oParent.oParent.taint();
             % Update Absorber/Radiator Temperature
 %             this.oStore.updateRadiatorTemp(this.fHeatFlow);            
            

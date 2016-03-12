@@ -30,6 +30,7 @@ classdef LCARSystem < vsys
         oAbsorber;
         
         toCapacities;
+        toConductors;
         
         fSinkTemperature = 175;
     end
@@ -52,13 +53,17 @@ classdef LCARSystem < vsys
     end
     
     methods
-        function this = LCARSystem(oParent, sName)
+        function this = LCARSystem(oParent, sName, tParameters)
             
             % Calling vsys-constructor-method. Third parameter determines
             % how often the .exec() method of this subsystem is called.
             % Possible Interval: 0-inf [s]
             this@vsys(oParent, sName, -1);            
-                      
+            
+            % Parsing the parameters struct, if it exists
+            if ~isempty(tParameters)
+                this.tParameters = tParameters;
+            end
         end
         
         function createMatterStructure(this)
@@ -94,7 +99,8 @@ classdef LCARSystem < vsys
             this.toCapacities.Radiator = oRadiatorCapacity;
             
             % Conductors
-            this.addConductor(thermal.transfers.conductive(oAbsorberCapacity, oRadiatorCapacity, this.tParameters.fThermalConductivity, this.tParameters.fAbsorberArea, 0.1));
+            this.toConductors.AbsorberToRadiator = thermal.transfers.conductive(oAbsorberCapacity, oRadiatorCapacity, this.tParameters.fThermalConductivity, this.tParameters.fAbsorberArea, 0.1);
+            this.addConductor(this.toConductors.AbsorberToRadiator);
             
             
             
@@ -126,10 +132,10 @@ classdef LCARSystem < vsys
         function exec(this, ~)
             exec@vsys(this);
             
-            this.fRadiatedPower = this.tParameters.fAbsorberArea * this.tParameters.fEmissivity * this.tParameters.fViewFactor * this.tParameters.fAbsorbtivity * ...
-                            this.oMT.Const.fStefanBoltzmann * (((this.fSinkTemperature)^4) - (this.toStores.LCARAbsorber.toPhases.RadiatorSurface.fTemperature^4));
-            
-            this.toCapacities.Radiator.oHeatSource.setPower(this.fRadiatedPower);
+%             this.fRadiatedPower = this.tParameters.fAbsorberArea * this.tParameters.fEmissivity * this.tParameters.fViewFactor * this.tParameters.fAbsorbtivity * ...
+%                             this.oMT.Const.fStefanBoltzmann * (((this.fSinkTemperature)^4) - (this.toStores.LCARAbsorber.toPhases.RadiatorSurface.fTemperature^4));
+%             
+%             this.toCapacities.Radiator.oHeatSource.setPower(this.fRadiatedPower);
         end
         
 
