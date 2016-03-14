@@ -246,9 +246,9 @@ classdef CCAA < vsys
             % Creating the flowpath into this subsystem
             solver.matter.manual.branch(this.toBranches.CCAA_In_FromCabin);
             solver.matter.manual.branch(this.toBranches.TCCV_CHX);
-            solver.matter.residual.branch(this.toBranches.CHX_Cabin);
-            solver.matter.residual.branch(this.toBranches.TCCV_Cabin);
-            solver.matter.residual.branch(this.toBranches.Condensate_Out);
+            solver.matter.manual.branch(this.toBranches.CHX_Cabin);
+            solver.matter.manual.branch(this.toBranches.TCCV_Cabin);
+            solver.matter.manual.branch(this.toBranches.Condensate_Out);
             solver.matter.manual.branch(this.toBranches.Coolant_In);
             solver.matter.manual.branch(this.toBranches.Coolant_Out);
             
@@ -393,11 +393,16 @@ classdef CCAA < vsys
                 % Gets the two flow rates exiting the TCCV
                 fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
                 
+                
                 this.toBranches.TCCV_CHX.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
                 
                 % Calculates the flow rate of gas exiting the CHX
                 fFlowRateGas = fTCCV_To_CHX_FlowRate - this.toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
                 
+            
+                this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas);
+                this.toBranches.TCCV_Cabin.oHanlder.setFlowRate((1-fFlowPercentageCHX)*(fInFlow+fInFlow2));
+            
                 % in case a CDRA is connected to this CCAA the flowrate
                 % entering the CDRA has to be calculated
                 if ~isempty(this.sCDRA)
@@ -411,6 +416,26 @@ classdef CCAA < vsys
                         end
                     end
                     this.oParent.toChildren.(this.sCDRA).update();
+                end
+                
+                % Condensate is released over a kickvalve every 75 minutes
+                
+                if mod(this.oTimer.fTime, 75 * 60) <= (1.5*this.fTimeStep)
+                    %minus this.fInitialCHXWaterMass because that is the inital
+                    %mass in the phase and is therefore not the condensate
+                    %generated, also serves to prevent numerical errors in the
+                    %simulation that occur if a phase is completly emptied.
+                    fFlowRateCondOut = (this.toStores.CHX.toPhases.CHX_H2OPhase.fMass - this.fInitialCHXWaterMass) / 60;
+                    if fFlowRateCondOut < 0
+                        fFlowRateCondOut = 0;
+                    end
+                    this.toBranches.Condensate_Out.oHandler.setFlowRate(fFlowRateCondOut);
+                    this.bKickValveAktivated = true;
+                    this.fKickValveAktivatedTime = this.oTimer.fTime;
+                end
+                if this.bKickValveAktivated && (this.toStores.CHX.toPhases.CHX_H2OPhase.fMass <= this.fInitialCHXWaterMass)
+                    this.toBranches.Condensate_Out.oHandler.setFlowRate(0);
+                    this.bKickValveAktivated = false;
                 end
             end
         end

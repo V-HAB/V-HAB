@@ -167,9 +167,6 @@ classdef CDRA_simple < vsys
             % Filtered phase
             oFiltered = matter.phases.absorber(this.toStores.Filter_13X_1, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite5A'); 
             
-            oInput.fFixedTS = 5;
-            oFiltered.fFixedTS = 5;
-            
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In_1');
             matter.procs.exmes.gas(oInput, 'Flow_In_2');
@@ -201,9 +198,6 @@ classdef CDRA_simple < vsys
             oInput = matter.phases.gas(this.toStores.Filter_13X_2, 'PhaseIn', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             % Filtered phase
             oFiltered = matter.phases.absorber(this.toStores.Filter_13X_2, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite5A');
-            
-            oInput.fFixedTS = 5;
-            oFiltered.fFixedTS = 5;
             
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In_1');
@@ -243,9 +237,6 @@ classdef CDRA_simple < vsys
             % Filtered phase
             oFiltered = matter.phases.absorber(this.toStores.Filter5A_1, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite5A');
             
-            oInput.fFixedTS = 5;
-            oFiltered.fFixedTS = 5;
-            
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In');
             matter.procs.exmes.gas(oInput, 'Flow_Out_1');
@@ -272,9 +263,6 @@ classdef CDRA_simple < vsys
             
             % Filtered phase
             oFiltered = matter.phases.absorber(this.toStores.Filter5A_2, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite5A');
-            
-            oInput.fFixedTS = 5;
-            oFiltered.fFixedTS = 5;
             
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In');
@@ -388,6 +376,17 @@ classdef CDRA_simple < vsys
             %from the absorber bed before it is connected to the vacuum.
             solver.matter.manual.branch(this.aoBranches(11,1));
             solver.matter.manual.branch(this.aoBranches(12,1));
+            
+            
+            %All phases except the human air phase work with a 60s time
+            %step
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    oPhase.fFixedTS = 5;
+                end
+            end
         end           
         
         %% Function to connect the system and subsystem level branches with each other

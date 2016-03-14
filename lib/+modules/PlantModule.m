@@ -384,7 +384,7 @@ classdef PlantModule < vsys
             
             %Assigning the subsystem interface branches to the manual solver
                 this.oInputAirBranch    = solver.matter.manual.branch(this.toBranches.FromLSS);
-                this.oOutputAirBranch   = solver.matter.residual.branch(this.toBranches.ToLSS);
+                this.oOutputAirBranch   = solver.matter.manual.branch(this.toBranches.ToLSS);
                 this.oInputWaterBranch  = solver.matter.manual.branch(this.toBranches.WaterInput);
                 this.oOutputFoodBranch  = solver.matter.manual.branch(this.toBranches.FoodOut);
                 this.oOutputWasteBranch = solver.matter.manual.branch(this.toBranches.WasteOut);
@@ -530,7 +530,7 @@ classdef PlantModule < vsys
                     % Greenhouse  -> PlantModule
                     this.oInputAirBranch.setFlowRate(-0.1);  % [kg/s]
                     % PlantModule -> Greenhouse
-%                     this.oOutputAirBranch.setFlowRate(0.03 + this.oProc_Plants_H2OGasExchange.fFlowRate + this.oProc_Plants_O2GasExchange.fFlowRate - this.oProc_Plants_CO2GasExchange.fFlowRate);  % [kg/s]
+                    this.oOutputAirBranch.setFlowRate(0.03 + this.oProc_Plants_H2OGasExchange.fFlowRate + this.oProc_Plants_O2GasExchange.fFlowRate - this.oProc_Plants_CO2GasExchange.fFlowRate);  % [kg/s]
                 % Water supply flowrate
                     this.oInputWaterBranch.setFlowRate(-this.oManip_Create_Biomass.fWaterNeed);  % [kg/s]
                     this.oAbsorberBufferP2P.fFlowRateToPlants = this.oManip_Create_Biomass.fWaterNeed;  % [kg/s]
