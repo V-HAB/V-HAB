@@ -331,6 +331,12 @@ classdef CCAA < vsys
             % Flow before CHX is recalculated
             this.fPercentChange = fPercentChange;
         end
+        function recalculateOutlet(this,~)
+            % Function used to set the correct outlet flow once the p2p is
+            % updated
+            % Calculates the flow rate of gas exiting the CHX 
+            this.toBranches.CHX_Cabin.oHandler.setFlowRate(this.toBranches.TCCV_CHX.fFlowRate - this.toStores.CHX.toProcsP2P.CondensingHX.fFlowRate);
+        end
     end
     
      methods (Access = protected)
@@ -377,9 +383,9 @@ classdef CCAA < vsys
             %CHX! Meaning for high humidity the angle has to increase
             %and vice versa
             if this.rRelHumidity > 0.45 && this.rTCCV_ratio > 0
-                this.rTCCV_ratio = this.rTCCV_ratio - 0.0256*min(this.oTimer.afTimeStep); 
+                this.rTCCV_ratio = this.rTCCV_ratio - 0.0256 * this.fTimeStep; 
             elseif this.rRelHumidity < 0.35 && this.rTCCV_ratio < 1
-                this.rTCCV_ratio = this.rTCCV_ratio + 0.0256*min(this.oTimer.afTimeStep);
+                this.rTCCV_ratio = this.rTCCV_ratio + 0.0256 * this.fTimeStep;
             end
 
             if this.rTCCV_ratio > 1
@@ -395,7 +401,7 @@ classdef CCAA < vsys
                 this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fInFlow);
                 
                 if ~isempty(this.sCDRA)
-                    fInFlow2 = this.toBranches.CDRA_TCCV.oHandler.fFlowRate;
+                    fInFlow2 = -this.toBranches.CDRA_TCCV.oHandler.fFlowRate;
                 else
                     fInFlow2 = 0;
                 end
@@ -406,13 +412,11 @@ classdef CCAA < vsys
                 % Gets the two flow rates exiting the TCCV
                 fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
                 
-                
                 this.toBranches.TCCV_CHX.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
                 
                 % Calculates the flow rate of gas exiting the CHX
                 fFlowRateGas = fTCCV_To_CHX_FlowRate - this.toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
                 
-            
                 this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas);
                 this.toBranches.TCCV_Cabin.oHandler.setFlowRate((1-fFlowPercentageCHX)*(fInFlow+fInFlow2));
             

@@ -1,4 +1,4 @@
-classdef CHX_p2p < matter.procs.p2ps.flow
+classdef CHX_p2p < matter.procs.p2ps.flow & event.source
     
     %% p2p proc for a condensing heat exchanger
     %this p2p proc has to be added to a store DOWNSTREAM of the actual heat
@@ -64,7 +64,11 @@ classdef CHX_p2p < matter.procs.p2ps.flow
             % the phase itself are used (i.e. extracting all species
             % equally).
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
-            
+            try
+                this.oIn.oPhase.oStore.oContainer.recalculateOutlet();
+            catch
+                % well if nothing is defined nothing can be recalculated
+            end
         end
     end
 end
