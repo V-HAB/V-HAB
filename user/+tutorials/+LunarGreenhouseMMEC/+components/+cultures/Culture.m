@@ -36,6 +36,11 @@ classdef Culture
         
         % culture biomass growth (edible and inedible, both wet)
         tfBiomassGrowthRates;       % [kg s^-1]
+        
+        %% Grown Biomass
+        
+        % 
+        tfBiomass;                  % [kg]
     end
     
     methods

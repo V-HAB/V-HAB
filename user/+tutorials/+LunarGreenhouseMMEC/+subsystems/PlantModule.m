@@ -24,6 +24,10 @@ classdef PlantModule < vsys
     
     
     properties
+        % TODO: implement!
+        % fixed time step for plant module file (between 1 to 60 min)
+        fFixedTimeStep;
+        
         % struct containing structs containing a dataset for each culture, 
         % NOT in SI units!!!!
         ttxPlantParameters;
@@ -50,8 +54,10 @@ classdef PlantModule < vsys
     end
     
     methods
-        function this = PlantModule(oParent, sName)
-            this@vsys(oParent, sName);
+        function this = PlantModule(oParent, sName, fFixedTimeStep)
+            this@vsys(oParent, sName, fFixedTimeStep);
+            
+            this.fFixedTimeStep = fFixedTimeStep;
             
             %% Import Plant Parameters
             
@@ -83,6 +89,7 @@ classdef PlantModule < vsys
                 
                 % fresh basis water factor FBWF_Edible = WBF * (1 - WBF)^-1
                 % for edible biomass
+                % [fluid mass over dry mass]
                 this.ttxPlantParameters.(csPlantSpecies{iI}).fFBWF_Edible = ...
                     this.ttxPlantParameters.(csPlantSpecies{iI}).fWBF * ...
                     (1 - this.ttxPlantParameters.(csPlantSpecies{iI}).fWBF)^-1;
@@ -91,7 +98,8 @@ classdef PlantModule < vsys
                 % FBWF_Inedible. since inedible biomass water content is
                 % always assumed to be 90% this factor equals 9 for all
                 % species
-                this.ttxPlantParameters.(csPlantSpecies{iI}).fFWBF_Inedible = 9;
+                % [fluid mass over dry mass]
+                this.ttxPlantParameters.(csPlantSpecies{iI}).fFBWF_Inedible = 9;
             end
             
             %% Import Culture Setup Inputs
@@ -439,6 +447,17 @@ classdef PlantModule < vsys
             end
             
             % use returned stuff
+            
+            % calculate produced biomass from growth rates
+            for iI = 1:length(this.csCultures)
+                % produced edible biomass
+                this.toCultures.(this.csCultures{iI}).tfBiomass.fEdibleBiomass = ...
+                    this.toCultures.(this.csCultures{iI}).tfBiomassGrowthRates.fGrowthRateEdible * this.fFixedTimeStep;
+                
+                % produced inedible biomass
+                this.toCultures.(this.csCultures{iI}).tfBiomass.fInedibleBiomass = ...
+                    this.toCultures.(this.csCultures{iI}).tfBiomassGrowthRates.fGrowthRateInedible * this.fFixedTimeStep;
+            end
             
         end
     end

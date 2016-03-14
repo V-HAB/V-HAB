@@ -93,11 +93,45 @@ function [  ] = ...
                 
                 oCulture.fNutrientConsumptionRate = oCulture.tfMMECRates.fNC * oCulture.txInput.fGrowthArea;
                 
-                %
-                oCulture.tfBiomassGrowthRates.fGrowthRateEdible = 0;
-                oCulture.tfBiomassGrowthRates.fGrowthRateInedible = 0;
+                %% Biomass Growth
+                
+                % As long as water is available, conduct growth calculations
+                if (WaterAvailable >= WaterNeed) && aoPlants.state.t_without_H2O <= aoPlants.FactorDaysToMinutes
+
+                    % If internaltime of considered culture's growth cycle
+                    % exceeds tE (time at onset of edible biomass)
+                    if oCulture.fInternalTime > oCulture.txPlantParameters.fT_E  
+                        % Mass balance of biomass uptake when exceeding tE
+                        % TODO: JUST GROWTH RATES! actual growth happens 
+                        % inside the plant module exec() function
+                        oCulture.tfBiomassGrowthRates.fGrowthRateEdible = ...
+                            fCGR * oCulture.txPlantParameters.fXFRT * oCulture.txInput.fGrowthArea + ...                                                % edible dry part
+                            fCGR * oCulture.txPlantParameters.fXFRT * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fFBWF_Edible;           % edible water part
+                        
+                        oCulture.tfBiomassGrowthRates.fGrowthRateInedible = ...
+                            fCGR * (1 - oCulture.txPlantParameters.fXFRT) * oCulture.txInput.fGrowthArea + ...                                          % inedible dry part
+                            fCGR * (1 - oCulture.txPlantParameters.fXFRT) * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fFBWF_Indible;    % inedible water part
+                      
+                        % If tE is not exceeded yet, only inedible biomass is created 
+                        % (and therefore contributes to the total crop biomass (TCB) solely)
+                    else
+                        % Mass balance of biomass uptake before tE
+                        oCulture.tfBiomassGrowthRates.fGrowthRateEdible = 0;                                                                                    
+                        
+                        oCulture.tfBiomassGrowthRates.fGrowthRateInedible = ...
+                            fCGR * (1 - oCulture.txPlantParameters.fXFRT) * oCulture.txInput.fGrowthArea + ...                                          % inedible dry part
+                            fCGR * (1 - oCulture.txPlantParameters.fXFRT) * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fFBWF_Indible;    % inedible water part
+                    end
+                    
+                else
+                    % NOT ENOUGH WATER!!
+                    keyboard();
+                end
+            
+            % harvest time exceeded -> harvest crops   
+            else
+                
             end
         end
     end
 end
-

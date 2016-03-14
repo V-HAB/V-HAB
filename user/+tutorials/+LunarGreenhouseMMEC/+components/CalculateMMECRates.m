@@ -101,7 +101,13 @@ function [ oCulture ] ...
     
     % hourly wet crop growth rate [g m^-2 h^-1]
     % HWCGR = HCGR * (1 - WBF)^-1 (Eq. 7)
-    fHWCGR = fHCGR * (1 - oCulture.txPlantParameters.fWBF)^-1;
+    % if T_E exceeded -> use total water fraction, if not only inedible
+    % biomass is produced -> water fraction = 0.9 (BVAD 2015, table 4.98)
+    if fInternalTime >= oCulture.txPlantParameters.fT_E
+        fHWCGR = fHCGR * (1 - oCulture.txPlantParameters.fWBF_Total)^-1;
+    else
+        fHWCGR = fHCGR * (1 - 0.9)^-1;
+    end
     
     % hourly oxygen production [g m^-2 h^-1]
     % HOP = HCG * CUE_24 ^-1 * OPF * MW_O2 (Eq. 8)
@@ -229,6 +235,9 @@ function [ oCulture ] ...
     oCulture.tfMMECRates.fCO2C  = fHCO2C    * (1000 * 3600)^-1;
     oCulture.tfMMECRates.fCO2P  = fHCO2P    * (1000 * 3600)^-1;
     oCulture.tfMMECRates.fNC    = fHNC      * (1000 * 3600)^-1;
-    oCulture.tfMMECRates.fWCGR  = fHWCGR    * (1000 * 3600)^-1;
+    
+    % growth rate on dry basis because edible and inedible biomass parts
+    % have different water content
+    oCulture.tfMMECRates.fCGR   = fHCGR     * (1000 * 3600)^-1;
 end
 
