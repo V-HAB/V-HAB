@@ -6,14 +6,33 @@ classdef PlantModule < vsys
     % input required for plant growth and two for the output of edible and
     % inedible biomass respectively.
     
+    
+    %% WARNING!! -- VERY IMPORTANT!! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %
+    % Be careful with UNITS as the plant module does NOT use SI units for
+    % calculation until after all the MMEC parameters are calculated. The
+    % MMEC model uses Multi Polynomial Regression (MPR) with coefficient
+    % matrices containing values where each one is a different unit. It is
+    % also an experimental model and not analytic, so to prevent mistakes
+    % due to misunderstanding and the most probable conversion errors the 
+    % plant module uses NON-SI units until all calculations regarding MMEC 
+    % are done, the resulting rates are then immediately converted to SI 
+    % units and all further calculations including everythin V-HAB related 
+    % will be in SI units. Be mindful of this when altering code!
+    %
+    %% WARNING!! -- VERY IMPORTANT!! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    
     properties
-        % struct containing structs containing a dataset for each culture
+        % struct containing structs containing a dataset for each culture, 
+        % NOT in SI units!!!!
         ttxPlantParameters;
         
-        % struct containing inputs for the grown cultures
+        % struct containing inputs for the grown cultures,
+        % NOT in SI units!!!!
         ttxInput;
         
-        % cell arry conatining the names of all grown cultures
+        % cell arry containing the names of all grown cultures
         csCultures;
         
         % struct containing all culture objects grown within the plant
@@ -132,7 +151,7 @@ classdef PlantModule < vsys
             % atmosphere phase
             oAtmosphere = matter.phases.gas(...
                 this.toStores.PlantModule, ...      % store containing phase
-                'Atmosphere', ...                   % phas name
+                'Atmosphere', ...                   % phase name
                 struct(...                          % phase contents    [kg]
                     'N2',   1, ...
                     'O2',   0.27, ...
@@ -342,7 +361,7 @@ classdef PlantModule < vsys
             for iI = 1:length(this.csCultures)
                 % culuture object gets assigned using its culture name 
                 this.toCultures.(this.csCultures{iI}) = ...
-                    tutorials.LunarGreenhouseMMEC.components.cultures.CultureBatch(...
+                    tutorials.LunarGreenhouseMMEC.components.cultures.Culture(...
                         this, ...                               % parent system reference
                         this.ttxPlantParameters.(this.ttxInput.(this.csCultures{iI}).sPlantSpecies), ...
                         this.ttxInput.(this.csCultures{iI}));   % input for specific culture
@@ -373,6 +392,8 @@ classdef PlantModule < vsys
             this.oWaterReference        = oWaterReference;
             this.oNutrientReference     = oNutrientReference;
         end
+        
+        %% Calculate Atmosphere CO2 Concentration
         
         function [ fCO2 ] = CalculateCO2Concentration(oPhase)
             % function to calculate the CO2 concentration in the atmosphere
@@ -408,12 +429,13 @@ classdef PlantModule < vsys
                 [ this.toCultures.(this.csCultures{iI}) ] = ...                 % return current culture object
                     tutorials.LunarGreenhouseMMEC.components.PlantGrowth(...
                         this.toCultures.(this.csCultures{iI}), ...              % current culture object
+                        this.oTimer.fTime, ...                                  % current simulation time
                         this.oAtmosphereReference.fDensity, ...                 % atmosphere density
                         this.oAtmosphereReference.fTemperature, ...             % atmosphere temperature
                         this.oAtmosphereReference.rRelHumidity, ...             % atmosphere relative humidity
                         this.oAtmosphereReference.fSpecificHeatCapacity, ...    % atmosphere heat capacity
                         fDensityH2O, ...                                        % density of liquid water under atmosphere conditions
-                        fCO2);                                                  % CO2 concentration in ppm;
+                        fCO2);                                                  % CO2 concentration in ppm
             end
             
             % use returned stuff

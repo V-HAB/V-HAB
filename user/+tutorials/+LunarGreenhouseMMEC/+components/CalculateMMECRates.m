@@ -1,6 +1,10 @@
 function [ oCulture ] ...
     = CalculateMMECRates(...
-        oCulture, fDensityAtmosphere, fTemperatureAtmosphere, fRelativeHumidityAtmosphere, fHeatCapacityAtmosphere, fDensityH2O, fCO2)
+        oCulture, fInternalTime, fDensityAtmosphere, fTemperatureAtmosphere, fRelativeHumidityAtmosphere, fHeatCapacityAtmosphere, fDensityH2O, fCO2)
+    
+    %% WARNING!! -- FILE CONTENT NOT IN SI UNITS!!! %%%%%%%%%%%%%%%%%%%%%%%
+    
+    
     % This function contains all necessary calculations for plant growth
     % according to the MMEC model. source for numbered equations: 
     % "Advances in Space Research 50 (2012) 941–951"
@@ -217,14 +221,14 @@ function [ oCulture ] ...
     %% Write Transfer Parameter
     
     % attach calculated plant consumsption and production rates to culture 
-    % object, further handling on the upper level 
-    oCulture.tfMMECRates.fHWC    = fHWC;
-    oCulture.tfMMECRates.fHTR    = fHTR;
-    oCulture.tfMMECRates.fHOC    = fHOC;
-    oCulture.tfMMECRates.fHOP    = fHOP;
-    oCulture.tfMMECRates.fHCO2C  = fHCO2C;
-    oCulture.tfMMECRates.fHCO2P  = fHCO2P;
-    oCulture.tfMMECRates.fHNC    = fHNC;
-    oCulture.tfMMECRates.fHWCGR  = fHWCGR;
+    % object, further handling on the upper level and convert to SI units
+    oCulture.tfMMECRates.fWC    = fHWC      * (1000 * 3600)^-1;
+    oCulture.tfMMECRates.fTR    = fHTR      * (1000 * 3600)^-1;
+    oCulture.tfMMECRates.fOC    = fHOC      * (1000 * 3600)^-1;
+    oCulture.tfMMECRates.fOP    = fHOP      * (1000 * 3600)^-1;
+    oCulture.tfMMECRates.fCO2C  = fHCO2C    * (1000 * 3600)^-1;
+    oCulture.tfMMECRates.fCO2P  = fHCO2P    * (1000 * 3600)^-1;
+    oCulture.tfMMECRates.fNC    = fHNC      * (1000 * 3600)^-1;
+    oCulture.tfMMECRates.fWCGR  = fHWCGR    * (1000 * 3600)^-1;
 end
 

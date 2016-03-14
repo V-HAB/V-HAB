@@ -1,6 +1,6 @@
 function [  ] = ...
     PlantGrowth(...
-        oCulture, fDensityAtmosphere, fTemperatureAtmosphere, fRelativeHumidityAtmosphere, fHeatCapacityAtmosphere, fDensityH2O, fCO2)
+        oCulture, fSimTime, fDensityAtmosphere, fTemperatureAtmosphere, fRelativeHumidityAtmosphere, fHeatCapacityAtmosphere, fDensityH2O, fCO2)
 
     % get the 8 parameters via MMEC and FAO model equations
     [ oCulture ] = ...
@@ -19,6 +19,15 @@ function [  ] = ...
         if oCulture.iInternalGeneration <= oCulture.txInput.iConsecutiveGenerations
             % growth if time since planting is lower than harvest time
             if oCulture.fInternalTime < oCulture.txInput.fHarvestTime
+                
+                % calculate internal time (time since planting) for the
+                % current culture
+                if oCulture.fInternalTime ~= 0    
+                    oCulture.fInternalTime = fSimTime - (oCulture.iInternalGeneration - 1) * oCulture.txInput.fHarvestTime - oCulture.txInput.fEmergeTime;
+                else
+                    oCulture.fInternalTime = fSimTime - (oCulture.iInternalGeneration - 1) * oCulture.txInput.fHarvestTime;                            
+                end
+                
                 % check if CO2 level is within model boundary, get MMEC
                 % flow and growth rates
                 if (fCO2 >= 330) && (fCO2 <= 1300)
@@ -27,6 +36,7 @@ function [  ] = ...
                     [ oCulture ] = ...
                         tutorials.LunarGreenhouseMMEC.components.CalculateMMECRates(...
                             oCulture, ...                       % current culture object
+                            oCulture.fInternalTime * 86400, ... % culture internal time in days
                             fDensityAtmosphere, ...             % atmosphere density
                             fTemperatureAtmosphere, ...         % atmosphere temperature
                             fRelativeHumidityAtmosphere, ...    % atmosphere relative humidity
@@ -41,6 +51,7 @@ function [  ] = ...
                     [ oCulture ] = ...
                         tutorials.LunarGreenhouseMMEC.components.CalculateMMECRates(...
                             oCulture, ...                               % current culture object
+                            oCulture.fInternalTime * 86400, ...         % culture internal time in days
                             fDensityAtmosphere, ...                     % atmosphere density
                             fTemperatureAtmosphere, ...                 % atmosphere temperature
                             fRelativeHumidityAtmosphere, ...            % atmosphere relative humidity
@@ -55,6 +66,7 @@ function [  ] = ...
                     [ oCulture ] = ...
                         tutorials.LunarGreenhouseMMEC.components.CalculateMMECRates(...
                             oCulture, ...                               % current culture object
+                            oCulture.fInternalTime * 86400, ...         % culture internal time in days
                             fDensityAtmosphere, ...                     % atmosphere density
                             fTemperatureAtmosphere, ...                 % atmosphere temperature
                             fRelativeHumidityAtmosphere, ...            % atmosphere relative humidity
@@ -72,20 +84,18 @@ function [  ] = ...
                 
                 %% Calculate Culture Mass Transfer Rates
                 
-                %
-                oCulture.tfGasExchangeRates.fO2ExchangeRate = ;
-                oCulture.tfGasExchangeRates.fCO2ExchangeRate = ;
-                oCulture.tfGasExchangeRates.fTranspirationRate = ;
+                % 
+                oCulture.tfGasExchangeRates.fO2ExchangeRate = (oCulture.tfMMECRates.fOP - oCulture.tfMMECRates.fOC) * oCulture.txInput.fGrowthArea;
+                oCulture.tfGasExchangeRates.fCO2ExchangeRate = (oCulture.tfMMECRates.fCO2C - oCulture.tfMMECRates.fCO2P) * oCulture.txInput.fGrowthArea;
+                oCulture.tfGasExchangeRates.fTranspirationRate = oCulture.tfMMECRates.fTR * oCulture.txInput.fGrowthArea;
+                
+                oCulture.fWaterConsumptionRate = oCulture.tfMMECRates.fWC * oCulture.txInput.fGrowthArea;
+                
+                oCulture.fNutrientConsumptionRate = oCulture.tfMMECRates.fNC * oCulture.txInput.fGrowthArea;
                 
                 %
-                oCulture.fWaterConsumptionRate = ;
-                
-                %
-                oCulture.fNutrientConsumptionRate = ;
-                
-                %
-                oCulture.tfBiomassGrowthRates.fGrowthRateEdible = ;
-                oCulture.tfBiomassGrowthRates.fGrowthRateInedible = ;
+                oCulture.tfBiomassGrowthRates.fGrowthRateEdible = 0;
+                oCulture.tfBiomassGrowthRates.fGrowthRateInedible = 0;
             end
         end
     end

@@ -1,4 +1,4 @@
-classdef CultureBatch
+classdef Culture
     % This class is used in creating the culture objects. It provides the
     % phase for plant growth, adds a p2p processor which is automatically 
     % connected to biomass buffer store, two exmes and corresponding p2p 
@@ -39,7 +39,7 @@ classdef CultureBatch
     end
     
     methods
-        function this = CultureBatch(oParent, txPlantParameters, txInput)
+        function this = Culture(oParent, txPlantParameters, txInput)
             
             this.txPlantParameters = txPlantParameters;
             this.txInput = txInput;

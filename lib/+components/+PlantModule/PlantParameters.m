@@ -261,7 +261,7 @@ plant(9).tQ=75;
     plant(9).DRYfr=0.154;
 
 
-%Water Biomass Fraction (of edible biomass)
+% Water Biomass Fraction (of edible biomass)
 % It is the fraction of water in biomass in edible biomass
 % Source: Derived from "Baseline Values and Assumptions Document" 2015 - Table 4.98
 % In BVAD the respective parameter is called fresh basis water content FBWC
@@ -274,6 +274,18 @@ plant(9).tQ=75;
     plant(7).WBF=0.94;
     plant(8).WBF=0.12;
     plant(9).WBF=0.80;
+
+    % Water Biomass FRACTION (TOTAL MASS, EDIBLE + INEDIBLE, WET BASIS!!!)
+    % ((1-XFRT)*FWBF_Inedible+XFRT*FWBF_Edible)/((1-XFRT)*FWBF_Inedible+XFRT*FWBF_Edible+1)
+    plant(1).WBF_Total=0.2742;
+    plant(2).WBF_Total=0.9492;
+    plant(3).WBF_Total=0.2467;
+    plant(4).WBF_Total=0.2869;
+    plant(5).WBF_Total=0.2742;
+    plant(6).WBF_Total=0.7256;
+    plant(7).WBF_Total=0.9393;
+    plant(8).WBF_Total=0.2869;
+    plant(9).WBF_Total=0.8058;
     
     %%%Kcmid and Kclate - Crop Coefficients for Water Model [-]
     plant(1).Kcmid = 1.15;
