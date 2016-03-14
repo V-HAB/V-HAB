@@ -373,6 +373,12 @@ classdef PlantModule < vsys
             this.oWaterReference        = oWaterReference;
             this.oNutrientReference     = oNutrientReference;
         end
+        
+        function [ fCO2 ] = CalculateCO2Concentration(oPhase)
+            % function to calculate the CO2 concentration in the atmosphere
+            fCO2 = ((oPhase.afMass(oPhase.oMT.tiN2I.CO2) * oPhase.fMolarMass) / (oPhase.fMass * oPhase.oMT.afMolarMass(oPhase.oMT.tiN2I.CO2))) * 1e6;
+        end
+
     end
     
     methods (Access = protected)
@@ -393,7 +399,7 @@ classdef PlantModule < vsys
             fDensityH2O = this.oMT.findProperty(tH2O);
             
             % calculate CO2 concentration of atmosphere
-            fCO2 = tutorials.LunarGreenhouseMMEC.components.CalculateCO2Concentration(this.oAtmosphereReference);
+            fCO2 = this.CalculateCO2Concentration(this.oAtmosphereReference);
             
             % loop over all cultures
             % TODO: maybe parfor later

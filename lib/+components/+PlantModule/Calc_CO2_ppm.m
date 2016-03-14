@@ -13,4 +13,3 @@ function [ CO2ppm ] = Calc_CO2_ppm(oPhase)
     % Calculating ppm of CO2
     CO2ppm = (fMassCO2 * fMolarMassPhase) / (fTotalGasMass * fMolarMassCO2) * 1e6; % [-]
 end
-
