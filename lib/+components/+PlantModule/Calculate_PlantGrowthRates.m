@@ -142,7 +142,7 @@ c_p=1005;
     
     
 %Hourly crop growth rate on a wet basis
-    HWCGR = HCGR / (1 - aoPlants.plant.WBF);   %[g/m^2/h]
+    HWCGR = HCGR / (1 - aoPlants.plant.WBF_Total);   %[g/m^2/h]
 
     
 %Hourly oxygen production
