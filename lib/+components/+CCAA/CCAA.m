@@ -401,7 +401,7 @@ classdef CCAA < vsys
                 
             
                 this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas);
-                this.toBranches.TCCV_Cabin.oHanlder.setFlowRate((1-fFlowPercentageCHX)*(fInFlow+fInFlow2));
+                this.toBranches.TCCV_Cabin.oHandler.setFlowRate((1-fFlowPercentageCHX)*(fInFlow+fInFlow2));
             
                 % in case a CDRA is connected to this CCAA the flowrate
                 % entering the CDRA has to be calculated
