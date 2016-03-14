@@ -51,7 +51,7 @@ classdef Urine_Production < matter.procs.p2ps.flow
             % on page 50. I know its not perfect but it is good enough for
             % now
             if fWaterMass > (this.oIn.oPhase.oStore.oContainer.iCrewMembers * 3.5)
-                fExcessWaterMass = fWaterMass - (this.oPhase.oStore.oContainer.iCrewMembers * 3.5);
+                fExcessWaterMass = fWaterMass - (this.oIn.oPhase.oStore.oContainer.iCrewMembers * 3.5);
                 
                 fAdditionalUrineFlow = fExcessWaterMass / (24*3600);
             else
