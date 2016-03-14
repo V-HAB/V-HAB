@@ -261,6 +261,16 @@ classdef CCAA < vsys
 %                 this.toBranches.CDRA_TCCV.oHandler.setPositiveFlowDirection(false);
             end
             
+            %All phases except the human air phase work with a 60s time
+            %step
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    oPhase.fFixedTS = 5;
+                end
+            end
+            
             if this.bActive == 1
                 %% Setting of initial flow rates
                 this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-0.2324661667);
@@ -343,16 +353,19 @@ classdef CCAA < vsys
             % cfm = cubic feet per minute
 
             fInFlow = 0.2124*this.oAtmosphere.fDensity;
-            fPercentalFlowChange = abs((this.toBranches.CCAA_In_FromCabin.fFlowRate + fInFlow)/(this.toBranches.CCAA_In_FromCabin.fFlowRate));
             
-            fHumidityChange = abs(this.rRelHumidity - this.oAtmosphere.rRelHumidity);
+            % Since CCAA calculation was reverted to use manual branches it
+            % HAS to be calculated every time!
+%             fPercentalFlowChange = abs((this.toBranches.CCAA_In_FromCabin.fFlowRate + fInFlow)/(this.toBranches.CCAA_In_FromCabin.fFlowRate));
+%             
+%             fHumidityChange = abs(this.rRelHumidity - this.oAtmosphere.rRelHumidity);
             
             % If the inlet flow changed by less than 1% and the humidity
             % changed by less than 1% it is not necessary to recalculate
             % the CCAA
-            if (fPercentalFlowChange < 0.01) && (fHumidityChange < 0.01)
-                return
-            end
+%             if (fPercentalFlowChange < 0.01) && (fHumidityChange < 0.01)
+%                 return
+%             end
             
             this.rRelHumidity = this.oAtmosphere.rRelHumidity;
             %since the original step was 1s the angle change is considered
