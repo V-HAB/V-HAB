@@ -42,8 +42,12 @@ function [ aoPlants, INEDIBLE_CGR_d_out, INEDIBLE_CGR_f_out, ED_CGR_d_out, ED_CG
                     aoPlants.state.internaltime = aoPlants.state.time_since_planting;  %[min]
 
             %If CO2 ppm level is in allowed range
-                if CO2_Measured > 350 && CO2_Measured < 1400       % [µmol/mol]
-
+%                 if CO2_Measured > 330 && CO2_Measured < 1300       % [µmol/mol]
+                if CO2_Measured > 1300 
+                    CO2_Measured = 1300;
+                elseif CO2_Measured < 330
+                    CO2_Measured = 330;
+                end
 
                     
                 % tA:time after emergence [UOT]
@@ -69,7 +73,7 @@ function [ aoPlants, INEDIBLE_CGR_d_out, INEDIBLE_CGR_f_out, ED_CGR_d_out, ED_CG
                             aoPlants.plant.tQ,          ...         % Time at onset of canopy senescence    [min]
                             aoPlants.plant.tM_nominal,  ...         % Time at harvest                       [min]
                             PPF,                        ...         % Photosynthetic photon flux            [µmol/m^2/s]
-                            CO2,                        ...         % CO2 level                             [µmol/mol]
+                            CO2_Measured,               ...         % CO2 level                             [µmol/mol]
                             RH_day,                     ...         % Relative humidity day                 [-]
                             RH_night,                   ...         % Relative humidity night               [-]
                             p_atm,                      ...         % Pressure                              [Pa]
@@ -228,22 +232,22 @@ function [ aoPlants, INEDIBLE_CGR_d_out, INEDIBLE_CGR_f_out, ED_CGR_d_out, ED_CG
                     end
 
               %If allowed CO2 ppm range is exceeded
-                else
+%                 else
 
-                    if CO2_Measured > 1400
-                         disp('Warning: CO2ppm > 1400 /n');
-                        aoPlants.state.O2_exchange      = 0;    % [kg/s]
-                        aoPlants.state.CO2_exchange     = 0;    % [kg/s]
-                        aoPlants.state.water_exchange   = 0;    % [kg/s]
-                    end
-
-                    if CO2_Measured < 350
-                       disp('Warning: CO2ppm < 350 /n');
-                        aoPlants.state.O2_exchange      = 0;    % [kg/s]
-                        aoPlants.state.CO2_exchange     = 0;    % [kg/s]
-                        aoPlants.state.water_exchange   = 0;    % [kg/s]
-                    end
-                end
+%                     if CO2_Measured > 1300
+%                          disp('Warning: CO2ppm > 1400 /n');
+%                         aoPlants.state.O2_exchange      = 0;    % [kg/s]
+%                         aoPlants.state.CO2_exchange     = 0;    % [kg/s]
+%                         aoPlants.state.water_exchange   = 0;    % [kg/s]
+%                     end
+% 
+%                     if CO2_Measured < 330
+%                        disp('Warning: CO2ppm < 350 /n');
+%                         aoPlants.state.O2_exchange      = 0;    % [kg/s]
+%                         aoPlants.state.CO2_exchange     = 0;    % [kg/s]
+%                         aoPlants.state.water_exchange   = 0;    % [kg/s]
+%                     end
+%                 end
            
            %At harvest time reached...
             else
