@@ -76,7 +76,7 @@ function [ oCulture ] ...
     % source: "Advances in Space Research 34 (2004) 1528–1538"
     fCQY_Max = ...
         [1/fCO2 1 fCO2 fCO2^2 fCO2^3] * ...                 % row vector for CO2
-        oCulture.txPlantParameters.mfMatrix_CQY_Max * ...  % coefficient matrix
+        oCulture.txPlantParameters.mfMatrix_CQY_Max * ...   % coefficient matrix
         [1/oCulture.txInput.fPPFD; 1; oCulture.txInput.fPPFD; oCulture.txInput.fPPFD^2; oCulture.txInput.fPPFD^3]; % column vector for PPFD
     
     % calculate canopy quantum yield (CQY) 
@@ -169,7 +169,7 @@ function [ oCulture ] ...
     % stomatal conductance in [m^2 s mol^-1]
     fG_S = 8.2 * fRelativeHumidityAtmosphere * (fP_Net / fCO2);
 
-    %%%crop height of grass in [m]
+    % crop height of grass in [m]
     fGrassHeight = 0.12;
 
     % Leaf Area Index [-]
@@ -181,7 +181,7 @@ function [ oCulture ] ...
     % bulk stomatal resistance[s m^-1]
     fR_1 = 1 / (0.025 * fG_S);
 
-    %%%bulk surface resistance [s m^-1]
+    % bulk surface resistance [s m^-1]
     fR_S = fR_1 / fLAI_Active; 
 
     % soil heat flux in [W m^-2]
@@ -193,7 +193,7 @@ function [ oCulture ] ...
     % aerodynamic resistance [m s^-1]
     fR_A =  208 / fU;
     
-    % Penman-Monteith equation ET_0 in [L m^-2 s^-1]
+    % Penman-Monteith equation ET_0 in [liter m^-2 s^-1]
     % Atmsophere density from referneced atmosphere
     a = fD * (fR_Net - fSoilHeatFlux) + fDensityAtmosphere * fHeatCapacityAtmosphere * (fE_S - fE_A) / fR_A;
     b = (fD + fGamma * (1 + fR_S / fR_A)) * fL_V;
@@ -237,7 +237,7 @@ function [ oCulture ] ...
     oCulture.tfMMECRates.fNC    = fHNC      * (1000 * 3600)^-1;
     
     % growth rate on dry basis because edible and inedible biomass parts
-    % have different water content
+    % have different water contents
     oCulture.tfMMECRates.fCGR   = fHCGR     * (1000 * 3600)^-1;
 end
 

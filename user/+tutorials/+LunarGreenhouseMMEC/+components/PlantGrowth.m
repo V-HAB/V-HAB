@@ -1,11 +1,11 @@
-function [  ] = ...
+function [ oCulture ] = ...
     PlantGrowth(...
         oCulture, fSimTime, fDensityAtmosphere, fTemperatureAtmosphere, fRelativeHumidityAtmosphere, fHeatCapacityAtmosphere, fDensityH2O, fCO2)
 
     % get the 8 parameters via MMEC and FAO model equations
-    [ oCulture ] = ...
+    [ oCulture ] = ...                                  % return culture object
         tutorials.LunarGreenhouseMMEC.components.CalculateMMECRates(...
-            oCulture, ...                   % current culture object
+            oCulture, ...                               % current culture object
             fDensityAtmosphere, ...                     % atmosphere density
             fTemperatureAtmosphere, ...                 % atmosphere temperature
             fRelativeHumidityAtmosphere, ...            % atmosphere relative humidity
@@ -13,12 +13,19 @@ function [  ] = ...
             fDensityH2O, ...                            % density of liquid water under atmosphere conditions
             fCO2);                                      % CO2 concentration in ppm
         
-    %
+    % time of first emergence reached
     if fSimTime >= oCulture.txInput.fEmergeTime
+        % if first time entering this section (= fallow state until now), 
+        % to only change state once
+        if oCulture.iState == 4
+            % set culture state to growth
+            oCulture.iState = 1;
+        end
+        
         % growth if current generation does not exceed maximum 
         if oCulture.iInternalGeneration <= oCulture.txInput.iConsecutiveGenerations
             % growth if time since planting is lower than harvest time
-            if oCulture.fInternalTime < oCulture.txInput.fHarvestTime
+            if (oCulture.fInternalTime < oCulture.txInput.fHarvestTime) && (oCulture.iState == 1)
                 
                 % calculate internal time (time since planting) for the
                 % current culture
@@ -119,8 +126,8 @@ function [  ] = ...
                         oCulture.tfBiomassGrowthRates.fGrowthRateEdible = 0;                                                                                    
                         
                         oCulture.tfBiomassGrowthRates.fGrowthRateInedible = ...
-                            fCGR * (1 - oCulture.txPlantParameters.fXFRT) * oCulture.txInput.fGrowthArea + ...                                          % inedible dry part
-                            fCGR * (1 - oCulture.txPlantParameters.fXFRT) * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fFBWF_Indible;    % inedible water part
+                            fCGR * oCulture.txInput.fGrowthArea + ...                                          % inedible dry part
+                            fCGR * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fFBWF_Indible;    % inedible water part
                     end
                     
                 else
@@ -128,9 +135,46 @@ function [  ] = ...
                     keyboard();
                 end
             
-            % harvest time exceeded -> harvest crops   
+            % harvest time reached -> change state to harvest   
             else
+                % if first time entering this section (= growth state until
+                % now), to only change state once
+                if oCulture.iState == 1
+                    % set culture state to harvest
+                    oCulture.iState = 2;
+                    
+                    % plants stop everything during harvest! this is to
+                    % properly empty the culture phase and to prevent
+                    % screwing up the mass balance.
+                    % TODO: maybe gradually scale down later (e.g. one
+                    % third harvested -> everything on 2 thirds
+                    % effectiveness). Need to apply properly to everything
+                    % to maintain mass balance as well as find a solution
+                    % to still empty the phase completely if something
+                    % grows during harvest.
+                    
+                    % get fieldnames for loop
+                    csFieldNames = fieldnames(oCulture.tfMMECRates);
+                    
+                    % set all entries of tfMMECRates to zero
+                    for iI = 1:length(csFieldNames)
+                        oCulture.tfMMECRates.(csFieldNames{iI}) = 0;
+                    end
+                    
+                    % set the resulting flow rates to zero too, small
+                    % structs so no loops
+                    oCulture.fWaterConsumptionRate = 0;
+                    oCulture.fNutrientConsumptionRate = 0;
+                    
+                    oCulture.tfGasExchangeRates.fO2ExchangeRate = 0;
+                    oCulture.tfGasExchangeRates.fCO2ExchangeRate = 0;
+                    oCulture.tfGasExchangeRates.fTranspirationRate = 0;
+                    
+                    oCulture.tfBiomassGrowthRates.fGrowthRateEdible = 0;
+                    oCulture.tfBiomassGrowthRates.fGrowthRateInedible = 0;
+                end
                 
+                % TODO: something else needed to stop plant growth/exchange
             end
         end
     end

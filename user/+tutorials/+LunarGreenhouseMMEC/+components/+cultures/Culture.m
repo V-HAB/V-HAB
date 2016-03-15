@@ -18,10 +18,13 @@ classdef Culture
         % struct containing the 8 parameters calculated via the (M)MEC and
         % FAO model equations. written by PlantGrowth() call in parent
         % system's exec() function.
-        tfMMECRates = struct();
+        tfMMECRates = struct();     % [kg s^-1]
         
         % internal time of plant culture (passed time AFTER planting)
-        fInternalTime = 0;
+        fInternalTime = 0;          % [s]
+        
+        % state of culture: 1 = growth, 2 = harvest, 3 = decay, 4 = fallow
+        iState;
         
         %% Culture Mass Transfer Rates
         
@@ -39,8 +42,8 @@ classdef Culture
         
         %% Grown Biomass
         
-        % 
-        tfBiomass;                  % [kg]
+%         % 
+%         tfBiomass;                  % [kg]
     end
     
     methods

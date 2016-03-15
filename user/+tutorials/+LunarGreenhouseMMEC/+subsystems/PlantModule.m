@@ -26,7 +26,7 @@ classdef PlantModule < vsys
     properties
         % TODO: implement!
         % fixed time step for plant module file (between 1 to 60 min)
-        fFixedTimeStep;
+        fFixedTimeStep;         % [s]
         
         % struct containing structs containing a dataset for each culture, 
         % NOT in SI units!!!!
@@ -51,6 +51,13 @@ classdef PlantModule < vsys
         
         % phase object to connected parent system nutrient supply phase
         oNutrientReference;
+        
+        % harvest activity speed factor, time required per square meter and
+        % crew member 
+        fHarvestSpeed;          % [s m^-2]
+        
+        % atmosphere circulation 
+        fAtmosphereCirculation; % [kg s^-1]
     end
     
     methods
@@ -374,10 +381,37 @@ classdef PlantModule < vsys
                         this.ttxPlantParameters.(this.ttxInput.(this.csCultures{iI}).sPlantSpecies), ...
                         this.ttxInput.(this.csCultures{iI}));   % input for specific culture
             end
+            
+            %% Create Branches
+            
+            matter.branch(this, 'PlantModule.Atmosphere_FromInterface_In',      {}, 'Atmosphere_Interface_In',          'Atmosphere_In');
+            matter.branch(this, 'PlantModule.Atmosphere_ToInterface_Out',       {}, 'Atmosphere_Interface_Out',         'Atmosphere_Out');
+            matter.branch(this, 'PlantModule.WaterSupply_FromInterface_In',     {}, 'WaterSupply_Interface_In',         'WaterSupply_In');
+            matter.branch(this, 'PlantModule.NutrientSupply_FromInterface_In',  {}, 'NutrientSupply_Interface_In',      'NutrientSupply_In');
+            matter.branch(this, 'PlantModule.BiomassEdible_ToInterface_Out',    {}, 'BiomassEdible_Interface_Out',      'BiomassEdible_Out');
+            matter.branch(this, 'PlantModule.BiomassInedible_ToInterface_Out',  {}, 'BiomassInedible_Interface_Out',    'BiomassInedible_Out');
         end
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
+            
+            %% Add Branches To Solvers
+            
+            solver.matter.manual.branch(this.toBranches.Atmosphere_In);
+            solver.matter.manual.branch(this.toBranches.Atmosphere_Out);
+            solver.matter.manual.branch(this.toBranches.WaterSupply_In);
+            solver.matter.manual.branch(this.toBranches.NutrientSupply_In);
+            solver.matter.manual.branch(this.toBranches.BiomassEdible_Out);
+            solver.matter.manual.branch(this.toBranches.BiomassInedible_Out);
+            
+            %% Initialzie Branch Flow Rates
+            
+            this.toBranches.Atmosphere_In.oHandler.setFlowRate(this.fAirCirculation);
+            this.toBranches.Atmosphere_In.oHandler.setFlowRate(this.fAirCirculation);
+            this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
+            this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
+            this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
+            this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
         end
         
         %% Connect Subsystem Interfaces with Parent System
@@ -446,19 +480,29 @@ classdef PlantModule < vsys
                         fCO2);                                                  % CO2 concentration in ppm
             end
             
-            % use returned stuff
+            %% Biomass Growth
             
-            % calculate produced biomass from growth rates
-            for iI = 1:length(this.csCultures)
-                % produced edible biomass
-                this.toCultures.(this.csCultures{iI}).tfBiomass.fEdibleBiomass = ...
-                    this.toCultures.(this.csCultures{iI}).tfBiomassGrowthRates.fGrowthRateEdible * this.fFixedTimeStep;
+%             % calculate produced biomass from growth rates 
+%             for iI = 1:length(this.csCultures)
+%                 % produced edible biomass
+%                 this.toCultures.(this.csCultures{iI}).tfBiomass.fEdibleBiomass = ...
+%                     this.toCultures.(this.csCultures{iI}).tfBiomassGrowthRates.fGrowthRateEdible * this.fFixedTimeStep;
+%                 
+%                 % produced inedible biomass
+%                 this.toCultures.(this.csCultures{iI}).tfBiomass.fInedibleBiomass = ...
+%                     this.toCultures.(this.csCultures{iI}).tfBiomassGrowthRates.fGrowthRateInedible * this.fFixedTimeStep;
+%             end
+            
+            %% Set P2P Flow Rates
+            
+            
+
+            %% Harvest
+            
+            % if current culture state is harvest
+            if oCulture.iState == 2
                 
-                % produced inedible biomass
-                this.toCultures.(this.csCultures{iI}).tfBiomass.fInedibleBiomass = ...
-                    this.toCultures.(this.csCultures{iI}).tfBiomassGrowthRates.fGrowthRateInedible * this.fFixedTimeStep;
             end
-            
         end
     end
 end

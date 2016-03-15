@@ -229,7 +229,7 @@ classdef Greenhouse < vsys
             %% Water Separator
             
             % TODO
-            
+
             %% Set Reference Phases
             
             % atmosphere, water and nutrient supply paths for plant module
@@ -237,10 +237,33 @@ classdef Greenhouse < vsys
                 this.toStores.GreenhouseUnit.aoPhases(1,1), ...     % atmosphere phase
                 this.toStores.WaterSupplyTank.aoPhases(1,1), ...    % water phase
                 this.toStores.NutrientSupplyTank.aoPhases(1,1));    % nutrient phase
+            
+            %% Create Branches
+            
+            matter.branch(this, 'Atmosphere_Interface_Out',     {}, 'GreenhouseUnit.Atmosphere_ToInterface_Out',            'Atmosphere_Out');
+            matter.branch(this, 'Atmosphere_Interface_In',      {}, 'GreenhouseUnit.Atmosphere_FromInterface_In',           'Atmosphere_In');
+            matter.branch(this, 'WaterSupply_Interface_Out',    {}, 'WaterSupplyTank.WaterSupply_ToInterface_Out',          'WaterSupply_Out');
+            matter.branch(this, 'NutrientSupply_Interface_Out', {}, 'NutrientSupplyTank.NutrientSupply_ToInterface_Out',    'NutrientSupply_Out');
+            matter.branch(this, 'BiomassEdible_Interface_In',   {}, 'FoodStore.BiomassEdible_FromInterface_In',             'BiomassEdible_In');
+            matter.branch(this, 'BiomassInedible_Interface_In', {}, 'WasteStore.BiomassInedible_FromInterface_In',          'BiomassInedible_In');
+            
+            %% Connect Interfaces
+            
+            this.oPlantModule.setIfFlows(...
+                'Atmosphere_Interface_Out', ...
+                'Atmosphere_Interface_In', ...
+                'WaterSupply_Interface_Out', ...
+                'NutrientSupply_Interface_Out', ...
+                'BiomassEdible_Interface_In', ...
+                'BiomassInedible_Interface_In');
         end
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
+            
+            %% Add Branches To Solvers
+            
+            
         end
     end
 end
