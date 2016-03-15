@@ -195,6 +195,7 @@ classdef CCAA < vsys
             % phase change
             oCCAA_CHX.oP2P =components.HX.CHX_p2p(this.toStores.CHX, 'CondensingHX', 'CHX_PhaseIn.filterport', 'CHX_H2OPhase.filterport', oCCAA_CHX);
 
+            oCCAA_CHX.oP2P.bind('update', @(~) this.recalculateOutlet());
             % Store that contains the coolant passing through the CHX. This
             % store is only necessary because it is not possible to have
             % System Interfaces without a store in between.
@@ -263,32 +264,25 @@ classdef CCAA < vsys
             
             %All phases except the human air phase work with a 60s time
             %step
-            csStoreNames = fieldnames(this.toStores);
-            for iStore = 1:length(csStoreNames)
-                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
-                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
-                    oPhase.fFixedTS = 5;
-                end
-            end
-            
+%             csStoreNames = fieldnames(this.toStores);
+%             for iStore = 1:length(csStoreNames)
+%                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+%                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+%                     oPhase.fFixedTS = 5;
+%                 end
+%             end
+%             oPhase = this.toStores.CHX.toPhases.CHX_PhaseIn;
+%             oPhase.rMaxChange = 1;
+%             oPhase.fMaxStep = 5;
+%             
             if this.bActive == 1
                 %% Setting of initial flow rates
-                this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-0.2324661667);
-                this.toBranches.TCCV_CHX.oHandler.setFlowRate(0.2317);
-                this.toBranches.CHX_Cabin.oHandler.setFlowRate(0.2317);
                 %allowed coolant flow is between 600 and 1290 lb/hr but the CHX
                 %performance data is given for 600 lb/hr so this flow rate is
                 %assumed here for the coolant
                 this.toBranches.Coolant_In.oHandler.setFlowRate(-0.0755987283); %600 lb/hr
                 this.toBranches.Coolant_Out.oHandler.setFlowRate(0.0755987283); %600 lb/hr
-
-                if ~isempty(this.sCDRA)
-                    this.toBranches.CDRA_TCCV.oHandler.setFlowRate(-0.01133971667);
-                end
             end
-            oPhase = this.toStores.CHX.toPhases.CHX_PhaseIn;
-            oPhase.rMaxChange = 2;
-            oPhase.fMaxStep = 5;
         end           
         
             %% Function to connect the system and subsystem level branches with each other
@@ -331,11 +325,11 @@ classdef CCAA < vsys
             % Flow before CHX is recalculated
             this.fPercentChange = fPercentChange;
         end
-        function recalculateOutlet(this,~)
+        function recalculateOutlet(this, ~)
             % Function used to set the correct outlet flow once the p2p is
             % updated
-            % Calculates the flow rate of gas exiting the CHX 
-            this.toBranches.CHX_Cabin.oHandler.setFlowRate(this.toBranches.TCCV_CHX.fFlowRate - this.toStores.CHX.toProcsP2P.CondensingHX.fFlowRate);
+            % Calculates the flow rate of gas exiting the CHX
+            this.toBranches.CHX_Cabin.oHandler.setFlowRate(this.toBranches.TCCV_CHX.oHandler.fRequestedFlowRate - this.toStores.CHX.toProcsP2P.CondensingHX.fFlowRate - this.toBranches.CHX_CDRA.oHandler.fRequestedFlowRate);
         end
     end
     
@@ -417,9 +411,6 @@ classdef CCAA < vsys
                 % Calculates the flow rate of gas exiting the CHX
                 fFlowRateGas = fTCCV_To_CHX_FlowRate - this.toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
                 
-                this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas);
-                this.toBranches.TCCV_Cabin.oHandler.setFlowRate((1-fFlowPercentageCHX)*(fInFlow+fInFlow2));
-            
                 % in case a CDRA is connected to this CCAA the flowrate
                 % entering the CDRA has to be calculated
                 if ~isempty(this.sCDRA)
@@ -434,6 +425,10 @@ classdef CCAA < vsys
                     end
                     this.oParent.toChildren.(this.sCDRA).update();
                 end
+                
+                % Calculates and sets the outlet flows to the cabin
+                this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas - this.toBranches.CHX_CDRA.oHandler.fRequestedFlowRate);
+                this.toBranches.TCCV_Cabin.oHandler.setFlowRate((1-fFlowPercentageCHX)*(fInFlow+fInFlow2));
                 
                 % Condensate is released over a kickvalve every 75 minutes
                 
