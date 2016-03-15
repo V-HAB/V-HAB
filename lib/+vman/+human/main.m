@@ -612,7 +612,15 @@ classdef main < vsys
                             % EVA here we check if the CM is in EVA
                             % condition already
                             if ~strcmp(this.cCrewState{iCM}, 'exercise015') && ~strcmp(this.cCrewState{iCM}, 'exercise1530')
-                                this.cCrewState{iCM} = this.tCrewPlaner.cMetabolism{iCM,iEvent}.State;
+                                % EVA is not a valid setting for the
+                                % metabolic rate but it is counted as
+                                % exercise. Therefore if the event is an
+                                % EVA it simply set exercise015 as well
+                                if ~strcmp(this.tCrewPlaner.cMetabolism{iCM,iEvent}.State, 'EVA')
+                                    this.cCrewState{iCM} = this.tCrewPlaner.cMetabolism{iCM,iEvent}.State;
+                                else
+                                    this.cCrewState{iCM} = 'exercise015';
+                                end
                             end
                             if strcmp(this.tCrewPlaner.cMetabolism{iCM,iEvent}.State, 'exercise015')
                                 
