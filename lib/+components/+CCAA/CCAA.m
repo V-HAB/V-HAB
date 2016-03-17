@@ -90,7 +90,7 @@ classdef CCAA < vsys
             % which normaly contains the subsystem name for the asccoiated
             % CDRA empty. If it is empty it is assumed that this CCAA does
             % not have a CDRA connected to it.
-            if ~isempty(sCDRA)
+            if (nargin > 6) && ~isempty(sCDRA)
                 this.sCDRA = sCDRA;
                 if nargin > 7
                     this.fCDRA_FlowRate = fCDRA_FlowRate;
@@ -424,10 +424,12 @@ classdef CCAA < vsys
                         end
                     end
                     this.oParent.toChildren.(this.sCDRA).update();
+                    this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas - this.toBranches.CHX_CDRA.oHandler.fRequestedFlowRate);
+                else
+                    this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas);
                 end
                 
                 % Calculates and sets the outlet flows to the cabin
-                this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas - this.toBranches.CHX_CDRA.oHandler.fRequestedFlowRate);
                 this.toBranches.TCCV_Cabin.oHandler.setFlowRate((1-fFlowPercentageCHX)*(fInFlow+fInFlow2));
                 
                 % Condensate is released over a kickvalve every 75 minutes
