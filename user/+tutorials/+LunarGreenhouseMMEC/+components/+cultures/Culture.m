@@ -26,7 +26,11 @@ classdef Culture
         % internal time of plant culture (passed time AFTER planting)
         fInternalTime = 0;          % [s]
         
+        % TODO: maybe later implement some kind of decay mechanic, already 
+        % using a placeholder for it here.
+        % using numbers instead of strings for quicker and easier access
         % state of culture: 1 = growth, 2 = harvest, 3 = decay, 4 = fallow
+        % default is fallow
         iState = 4;
         
         % internal generation counter, start at 1

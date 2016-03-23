@@ -233,10 +233,10 @@ function [ oCulture ] ...
     % HWC = HTR + HOP + HCO2P + HWCGR - HOC - HCO2C - HNC (Eq. 16)
     fHWC = fHTR + fHOP + fHCO2P + fHWCGR - fHOC - fHCO2C - fHNC;
     
-    %% Write Transfer Parameter
+    %% Write Return Parameter
     
     % attach calculated plant consumsption and production rates to culture 
-    % object, further handling on the upper level and convert to SI units
+    % object, further handling on the upper level. also convert to SI units
     oCulture.tfMMECRates.fWC    = fHWC      * (1000 * 3600)^-1;
     oCulture.tfMMECRates.fTR    = fHTR      * (1000 * 3600)^-1;
     oCulture.tfMMECRates.fOC    = fHOC      * (1000 * 3600)^-1;

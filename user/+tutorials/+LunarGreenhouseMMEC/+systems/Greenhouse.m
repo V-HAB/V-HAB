@@ -74,6 +74,7 @@ classdef Greenhouse < vsys
             % output exme to leakage store
             matter.procs.exmes.gas(oAtmosphere, 'Atmosphere_ToLeakage_Out');
             
+            
             % Add Phase for excess CO2 - Excess CO2 is ejected to this 
             % phase. (Avoid to exceed CO2 limit due to nightly CO2 
             % production by plants)
@@ -102,6 +103,7 @@ classdef Greenhouse < vsys
 
             % add exmes to CO2 excess phase
             matter.procs.exmes.gas(oO2Excess, 'O2Excess_FromAtmosphere_In');
+            
             
             % create P2Ps to manage excess flowrates
             tutorials.LunarGreenhouseMMEC.components.Absorber(this.toStores.GreenhouseUnit, 'CO2Excess_P2P', 'Atmosphere.CO2_ToCO2Excess_Out', 'CO2Excess.CO2Excess_FromAtmosphere_In', 'CO2');
@@ -236,18 +238,17 @@ classdef Greenhouse < vsys
             
             %% Water Separator
             
-            % TODO
             % create water separator store
             matter.store(this, 'WaterSeparator', 1.1);
             
             % add atmosphere phase to separator store
             oAtmosphereSeparator = matter.phases.gas(...
-                this.toStores.WaterSeparator, ...
-                'AtmosphereSeparator', ...
-                struct(...
+                this.toStores.WaterSeparator, ...   % store containing phase
+                'AtmosphereSeparator', ...          % phase name
+                struct(...                          % phase contents    [kg]
                     ), ...
-                1, ...
-                fTemperatureInit);
+                1, ...                              % phase volume      [m^3]
+                fTemperatureInit);                  % phase temperature [K]
             
             % add exmes to atmosphere phase
             % exmes to connect with main greenhouse atmosphere
@@ -257,19 +258,21 @@ classdef Greenhouse < vsys
             % exme to connect with separator/absorber proc
             matter.procs.exmes.gas(oAtmosphereSeparator, 'SeparatorPort');
             
+            
             % add water phase to separator store
             oH2OSeparator = matter.phases.liquid(...
-                this.toStores.WaterSeparator, ...
-                'H2OSeparator', ...
-                struct(...
+                this.toStores.WaterSeparator, ...   % store containing phase
+                'H2OSeparator', ...                 % phase name
+                struct(...                          % phase contents    [kg]
                     'H2O', 0.1 * 1e3), ...
-                0.1, ...
-                fTemperatureInit, ...
-                fPressureInit);
+                0.1, ...                            % phase volume      [m^3]
+                fTemperatureInit, ...               % phase temperature [K]
+                fPressureInit);                     % phase pressure    [Pa]
             
             % add exmes to water phase
             % exme to connect with separator/absorber proc
             matter.procs.exmes.liquid(oH2OSeparator, 'SeparatorPort');
+            
             
             % create separator proc
             tutorials.LunarGreenhouseMMEC.components.Absorber(this.toStores.WaterSeparator, 'WaterSeparator_P2P', 'AtmosphereSeparator.SeparatorPort', 'H2OSeparator.SeparatorPort', 'H2O');
@@ -288,7 +291,7 @@ classdef Greenhouse < vsys
             matter.branch(this, 'GreenhouseUnit.Atmosphere_ToSeparator_Out',    {}, 'WaterSeparator.Atmosphere_FromGreenhouse_In',      'Greenhouse_WaterSeparator');
             matter.branch(this, 'WaterSeparator.Atmosphere_ToGreenhouse_Out',   {}, 'GreenhouseUnit.Atmosphere_FromSeparator_In',       'WaterSeparator_Greenhouse');
             matter.branch(this, 'CO2SupplyTank.CO2Supply_ToAtmosphere_Out',     {}, 'GreenhouseUnit.CO2_FromCO2Supply_In',              'CO2Supply_Greenhouse');
-            matter.branch(this, 'N2SupplyTank.N2Supply_ToAtmosphere_Out',       {}, 'GreenhouseUnit.N2_FromN2Supply_In',               'N2Supply_Greenhouse');
+            matter.branch(this, 'N2SupplyTank.N2Supply_ToAtmosphere_Out',       {}, 'GreenhouseUnit.N2_FromN2Supply_In',                'N2Supply_Greenhouse');
             matter.branch(this, 'GreenhouseUnit.Atmosphere_ToLeakage_Out',      {}, 'LeakageTank.Atmosphere_FromGreenhouseUnit_In',     'Greenhouse_Leakage');
             
             % Subsystem Branches
@@ -302,12 +305,12 @@ classdef Greenhouse < vsys
             %% Connect Interfaces
             
             this.oPlantModule.setIfFlows(...
-                'Atmosphere_Interface_Out', ...
-                'Atmosphere_Interface_In', ...
-                'WaterSupply_Interface_Out', ...
-                'NutrientSupply_Interface_Out', ...
-                'BiomassEdible_Interface_In', ...
-                'BiomassInedible_Interface_In');
+                'Atmosphere_Interface_Out', ...         % Atmosphere to plant module
+                'Atmosphere_Interface_In', ...          % Atmsophere from plant module
+                'WaterSupply_Interface_Out', ...        % Water to plant module
+                'NutrientSupply_Interface_Out', ...     % Nutrients to plant module
+                'BiomassEdible_Interface_In', ...       % Edible biomass from plant module
+                'BiomassInedible_Interface_In');        % Inedible biomass from plant module
         end
         
         function createSolverStructure(this)
@@ -329,8 +332,6 @@ classdef Greenhouse < vsys
             this.toBranches.CO2Supply_Greenhouse.oHandler.setFlowRate(0);
             this.toBranches.N2Supply_Greenhouse.oHandler.setFlowRate(0);
             this.toBranches.Greenhouse_Leakage.oHandler.setFlowRate(0);
-            
-            
         end
     end
 end

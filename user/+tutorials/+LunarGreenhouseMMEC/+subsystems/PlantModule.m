@@ -410,11 +410,11 @@ classdef PlantModule < vsys
             %% Initialzie Branch Flow Rates
             
             this.toBranches.Atmosphere_In.oHandler.setFlowRate(this.fAtmosphereCirculation);
-            this.toBranches.Atmosphere_In.oHandler.setFlowRate(this.fAtmosphereCirculation);
-            this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
-            this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
-            this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
-            this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
+            this.toBranches.Atmosphere_Out.oHandler.setFlowRate(this.fAtmosphereCirculation);
+            this.toBranches.WaterSupply_In.oHandler.setFlowRate(0);
+            this.toBranches.NutrientSupply_In.oHandler.setFlowRate(0);
+            this.toBranches.BiomassEdible_Out.oHandler.setFlowRate(0);
+            this.toBranches.BiomassInedible_Out.oHandler.setFlowRate(0);
         end
         
         %% Connect Subsystem Interfaces with Parent System
