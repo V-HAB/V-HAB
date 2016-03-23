@@ -10,9 +10,16 @@ classdef vhab
             disp('--------------------------------------')
             disp('-------- V-HAB Initialization --------')
             disp('--------------------------------------')
-            addpath([ strrep(pwd(), '\', '/') '/lib' ]);
+            addpath([ strrep(pwd(), '\', '/') '/lib'  ]);
             addpath([ strrep(pwd(), '\', '/') '/core' ]);
             addpath([ strrep(pwd(), '\', '/') '/user' ]);
+            
+            % The old V-HAB projects are collected in one big project that
+            % is located in the 'old' folder. Users may or may not have
+            % this project, so we check for the folder.
+            if isdir([ strrep(pwd(), '\', '/') '/old' ])
+                addpath([ strrep(pwd(), '\', '/') '/old' ]);
+            end
         end
         
         
