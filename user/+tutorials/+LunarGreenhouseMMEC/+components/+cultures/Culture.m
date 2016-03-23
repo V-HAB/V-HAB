@@ -8,6 +8,9 @@ classdef Culture
     % plant data depending on the species grown.
     
     properties
+        % matter table object (from parent system)
+        oMT;
+        
         % struct containing plant parameters specific to the grown culture, 
         % from parent system
         txPlantParameters;
@@ -24,7 +27,10 @@ classdef Culture
         fInternalTime = 0;          % [s]
         
         % state of culture: 1 = growth, 2 = harvest, 3 = decay, 4 = fallow
-        iState;
+        iState = 4;
+        
+        % internal generation counter, start at 1
+        iInternalGeneration = 1;
         
         %% Culture Mass Transfer Rates
         
@@ -49,6 +55,8 @@ classdef Culture
     methods
         function this = Culture(oParent, txPlantParameters, txInput)
             
+            % write properties
+            this.oMT = oParent.oMT;
             this.txPlantParameters = txPlantParameters;
             this.txInput = txInput;
             

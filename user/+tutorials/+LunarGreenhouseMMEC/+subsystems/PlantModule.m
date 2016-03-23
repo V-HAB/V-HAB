@@ -54,10 +54,13 @@ classdef PlantModule < vsys
         
         % harvest activity speed factor, time required per square meter and
         % crew member 
-        fHarvestSpeed;          % [s m^-2]
+        fHarvestSpeed;                  % [s m^-2]
         
         % atmosphere circulation 
-        fAtmosphereCirculation; % [kg s^-1]
+        fAtmosphereCirculation = 0;     % [kg s^-1]
+        
+        % CO2 concentration in ppm, required for MMEC calculations 
+        fCO2 = 0;                       % [ppm]
     end
     
     methods
@@ -406,8 +409,8 @@ classdef PlantModule < vsys
             
             %% Initialzie Branch Flow Rates
             
-            this.toBranches.Atmosphere_In.oHandler.setFlowRate(this.fAirCirculation);
-            this.toBranches.Atmosphere_In.oHandler.setFlowRate(this.fAirCirculation);
+            this.toBranches.Atmosphere_In.oHandler.setFlowRate(this.fAtmosphereCirculation);
+            this.toBranches.Atmosphere_In.oHandler.setFlowRate(this.fAtmosphereCirculation);
             this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
             this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
             this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
@@ -437,9 +440,10 @@ classdef PlantModule < vsys
         
         %% Calculate Atmosphere CO2 Concentration
         
-        function [ fCO2 ] = CalculateCO2Concentration(oPhase)
-            % function to calculate the CO2 concentration in the atmosphere
-            fCO2 = ((oPhase.afMass(oPhase.oMT.tiN2I.CO2) * oPhase.fMolarMass) / (oPhase.fMass * oPhase.oMT.afMolarMass(oPhase.oMT.tiN2I.CO2))) * 1e6;
+        function [ fCO2 ] = CalculateCO2Concentration(this)
+            % function to calculate the CO2 concentration in the referenced
+            % atmosphere
+            fCO2 = ((this.oAtmosphereReference.afMass(this.oAtmosphereReference.oMT.tiN2I.CO2) * this.oAtmosphereReference.fMolarMass) / (this.oAtmosphereReference.fMass * this.oAtmosphereReference.oMT.afMolarMass(this.oAtmosphereReference.oMT.tiN2I.CO2))) * 1e6;
         end
 
     end
@@ -462,28 +466,30 @@ classdef PlantModule < vsys
             fDensityH2O = this.oMT.findProperty(tH2O);
             
             % calculate CO2 concentration of atmosphere
-            fCO2 = this.CalculateCO2Concentration(this.oAtmosphereReference);
+            this.fCO2 = this.CalculateCO2Concentration();
             
             % loop over all cultures
             % TODO: maybe parfor later
+            % TODO: implement check for enough water available HERE, not
+            % inside the function!!
             for iI = 1:length(this.csCultures)
                 % calculate plant induced flowrates
                 [ this.toCultures.(this.csCultures{iI}) ] = ...                 % return current culture object
                     tutorials.LunarGreenhouseMMEC.components.PlantGrowth(...
                         this.toCultures.(this.csCultures{iI}), ...              % current culture object
                         this.oTimer.fTime, ...                                  % current simulation time
+                        this.oAtmosphereReference.fPressure, ...                % atmosphere pressure
                         this.oAtmosphereReference.fDensity, ...                 % atmosphere density
                         this.oAtmosphereReference.fTemperature, ...             % atmosphere temperature
                         this.oAtmosphereReference.rRelHumidity, ...             % atmosphere relative humidity
                         this.oAtmosphereReference.fSpecificHeatCapacity, ...    % atmosphere heat capacity
                         fDensityH2O, ...                                        % density of liquid water under atmosphere conditions
-                        fCO2);                                                  % CO2 concentration in ppm
-            end
+                        this.fCO2);                                             % CO2 concentration in ppm
             
-            %% Biomass Growth
             
-%             % calculate produced biomass from growth rates 
-%             for iI = 1:length(this.csCultures)
+                %% Biomass Growth
+            
+%                 % calculate produced biomass from growth rates 
 %                 % produced edible biomass
 %                 this.toCultures.(this.csCultures{iI}).tfBiomass.fEdibleBiomass = ...
 %                     this.toCultures.(this.csCultures{iI}).tfBiomassGrowthRates.fGrowthRateEdible * this.fFixedTimeStep;
@@ -491,17 +497,20 @@ classdef PlantModule < vsys
 %                 % produced inedible biomass
 %                 this.toCultures.(this.csCultures{iI}).tfBiomass.fInedibleBiomass = ...
 %                     this.toCultures.(this.csCultures{iI}).tfBiomassGrowthRates.fGrowthRateInedible * this.fFixedTimeStep;
-%             end
+%             
             
-            %% Set P2P Flow Rates
+                %% Set P2P Flow Rates
             
             
 
-            %% Harvest
+                %% Harvest
             
-            % if current culture state is harvest
-            if oCulture.iState == 2
+                % if current culture state is harvest
+                if this.toCultures.(this.csCultures{iI}).iState == 2
                 
+                else
+                    
+                end
             end
         end
     end
