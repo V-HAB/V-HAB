@@ -103,17 +103,26 @@ classdef plotter_basic < simulation.monitor
         
         %% Default plot method
         function plot(this, tParameters)
+            
+            bLegendOn   = true;
+            bTimePlotOn = true;
+            
+            if nargin > 1 
+                if isfield(tParameters, 'bLegendOn')
+                    bLegendOn = tParameters.bLegendOn;
+                end
+                if isfield(tParameters, 'bTimePlotOn');
+                    bTimePlotOn = tParameters.bTimePlotOn;
+                end
+            end
+            
             oInfra  = this.oSimulationInfrastructure;
             oFigure = figure();
-            iPlots  = length(this.tPlots) + 1;
+            iPlots  = length(this.tPlots) + sif(bTimePlotOn,1,0);
             iGrid   = ceil(sqrt(iPlots));
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             
-            bLegendOn = true;
             
-            if nargin > 1 && isfield(tParameters, 'bLegendOn')
-                bLegendOn = tParameters.bLegendOn;
-            end
             
             
             % Rows of grid - can we reduce?
@@ -132,7 +141,7 @@ classdef plotter_basic < simulation.monitor
             
             for iP = 1:length(this.tPlots)
                 %hHandle = subplot(iGridRows, iGridCols, iP);
-                hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP, 'Spacing', 0, 'Padding', this.rPadding, 'Margin', 0);
+                hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP, 'Spacing', 0.05, 'Padding', this.rPadding, 'Margin', 0.05);
                 
                 [ mfData, tLogProps ] = oLogger.get(this.tPlots(iP).aiIdx);
                 
@@ -151,20 +160,20 @@ classdef plotter_basic < simulation.monitor
                 coHandles{end + 1} = hHandle;
             end
             
-            
-            %hHandle = subplot(iGridRows, iGridCols, iP + 1);
-            hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP + 1, 'Spacing', 0, 'Padding', this.rPadding, 'Margin', 0);
-            
-            
-            hold(hHandle, 'on');
-            grid(hHandle, 'minor');
-            plot(1:length(oLogger.afTime), oLogger.afTime);
-            xlabel('Ticks');
-            ylabel('Time in s');
-            title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
-            
-            coHandles{end + 1} = hHandle;
-            
+            if bTimePlotOn
+                %hHandle = subplot(iGridRows, iGridCols, iP + 1);
+                hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP + 1, 'Spacing', 0.5, 'Padding', this.rPadding, 'Margin', 0.05);
+                
+                
+                hold(hHandle, 'on');
+                grid(hHandle, 'minor');
+                plot(1:length(oLogger.afTime), oLogger.afTime);
+                xlabel('Ticks');
+                ylabel('Time in s');
+                title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
+                
+                coHandles{end + 1} = hHandle;
+            end
             
             set(oFigure, 'name', [ oInfra.sName ' - (' oInfra.sCreated ')' ]);
                         
@@ -189,6 +198,10 @@ classdef plotter_basic < simulation.monitor
             
             
             oFigure.UserData = struct('coAxesHandles', { coHandles });
+        end
+        
+        function clearPlots(this)
+            this.tPlots = struct('sTitle', {}, 'aiIdx', {});
         end
     end
     
