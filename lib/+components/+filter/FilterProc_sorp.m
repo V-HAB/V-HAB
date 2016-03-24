@@ -92,6 +92,8 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
         
         % For Debuggin: internal loading in kg
         fInternalLoading = 0;
+        
+        iImaginaryOccCounter = 0;
     end
     
    
@@ -343,9 +345,17 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                 end
             end
             iInFlowEXME = find(mbInFlows);
-            if length(iInFlowEXME) == 1
-                oInFlow = this.oIn.oPhase.coProcsEXME{iInFlowEXME}.oFlow;
-                fFlowRateIn = oInFlow.fFlowRate * this.oIn.oPhase.coProcsEXME{iInFlowEXME}.iSign;
+            
+            if length(iInFlowEXME) >= 1
+                coInFlow = cell(length(iInFlowEXME),1);
+                mfFlowRateIn = zeros(length(iInFlowEXME),1);
+                for iK = 1:length(iInFlowEXME)
+                    coInFlow{iK} = this.oIn.oPhase.coProcsEXME{iInFlowEXME(iK)}.oFlow;
+                    mfFlowRateIn(iK) = coInFlow{iK}.fFlowRate * this.oIn.oPhase.coProcsEXME{iInFlowEXME(iK)}.iSign;
+                end
+                mbMaxInFlow = mfFlowRateIn == max(mfFlowRateIn);
+                oInFlow = coInFlow{mbMaxInFlow};
+                fFlowRateIn = mfFlowRateIn(mbMaxInFlow);
             elseif isempty(iInFlowEXME)
 %                 oInFlow = [];
                 fFlowRateIn = 0;
@@ -408,7 +418,7 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
                 % Phase pressure
                 this.fSorptionPressure    = this.oIn.oPhase.fPressure;
                 % Phase temperature
-                this.fSorptionTemperature = this.oIn.oPhase.fTemperature;
+                this.fSorptionTemperature = this.oOut.oPhase.fTemperature;
                 % Phase mass fractions
                 arMassFractions           = this.oIn.oPhase.arPartialMass(this.aiPositions);
                 
@@ -461,10 +471,8 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             % BUT: calculated time step needs to be smaller than current vhab time step
             
             if this.fTimeFactor_1 * fTransportTimeStep >= this.fTimeStep
-                %TODO Turn this into a very low level debug output once the
-                %debug class is implemented
-                %fprintf('%i\t(%f)\t%s: Skipping because inner time step is larger than external timestep.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
-                return;
+                return
+%                 fTransportTimeStep = this.fTimeStep / this.fTimeFactor_1;
             end
             
             % Make reaction time constant a multiple of transport time constant
@@ -714,30 +722,26 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             afLoadedMass_ads = zeros(1, this.iNumSubstances);
             afLoadedMass_des = zeros(1, this.iNumSubstances); 
            
-            
+            %%
             % Convert to Loading [kg/m3]
-%             mfMolarMass = ones(size(mfQ(:, 1:end-1, end)));
-%             for iSubstance = 1:length(this.afMolarMass)
-%                 mfMolarMass(iSubstance,:) = mfMolarMass(iSubstance,:).*this.afMolarMass(iSubstance);
-%             end
-            
-%             mfQ_density = mfQ(:, 1:end-1, end).*mfMolarMass; % [kg/m3]
-%             
-%             % mean density time total volume yields total loading:
-%             afCurrentLoading = mean(mfQ_density ,2) * this.fVolSolid;
-%             
-%             % and subtracting the new current loading from the loading
-%             % already in the filter phase results in the respective mass
-%             % flows
-%             afLoadedMass = afCurrentLoading - this.oOut.oPhase.afMass(this.aiPositions)';
-             
-            % Sum up loading change in [mol/m3]
-            mfQ_mol_change = mfQ(:, :, end) - this.mfQ_current;
-            
             mfMolarMass = ones(size(mfQ(:, :, end)));
             for iSubstance = 1:length(this.afMolarMass)
                 mfMolarMass(iSubstance,:) = mfMolarMass(iSubstance,:).*this.afMolarMass(iSubstance);
             end
+            
+            mfQ_density = mfQ(:, 1:end-1, end).*mfMolarMass(:, 1:end-1); % [kg/m3]
+            
+            % mean density time total volume yields total loading:
+            afCurrentLoading = mean(mfQ_density ,2) * this.fVolSolid;
+            
+            % and subtracting the new current loading from the loading
+            % already in the filter phase results in the respective mass
+            % flows
+            afLoadedMassDifference = real(afCurrentLoading) - this.oOut.oPhase.afMass(this.aiPositions)';
+            
+             %%
+            % Sum up loading change in [mol/m3]
+            mfQ_mol_change = mfQ(:, :, end) - this.mfQ_current;
             
             mfQ_density_change = mfQ_mol_change .* mfMolarMass;
 
@@ -761,8 +765,18 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             mfQ_mass_change = mfQ_density_change(:, 1:end-1) * this.fVolSolid / (this.iNumGridPoints-2);   % in [kg]       % -1 (ghost cell) -1 (2 boundary points)
             
             % Sum up filtered mass during the time step
-            afLoadedMass = sum(mfQ_mass_change, 2);
+            afLoadedMass = real(sum(mfQ_mass_change, 2));
             
+            % the internal calculated absorbed mass and the actually
+            % absorbed mass in the V-HAB phase can be different. This
+            % difference is balanced with the following calculation. It
+            % basically tries to balance out the current difference over 10
+            % s to prevent oscillations. Only the DIfference is multiplied
+            % with the time step to prevent very small time steps from
+            % resulting in extreemly large flow rates.
+            afLoadedMass = afLoadedMass + 0.1 * (afLoadedMassDifference*(afDiscreteTime(end) - afDiscreteTime(1)));
+            
+%%
             % Distinguish sorption and desorption part
             afLoadedMass_ads(afLoadedMass >= 0) = afLoadedMass(afLoadedMass >= 0);     % [kg]
             afLoadedMass_des(afLoadedMass < 0)  = afLoadedMass(afLoadedMass < 0);       % [kg]
@@ -790,7 +804,8 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
 %                 keyboard()
 %             end
 
-            this.fInternalLoading = mean((this.mfQ_current(:,1:end-1) .* mfMolarMass(:,1:end-1)),2)* this.fVolSolid;
+            
+            this.fInternalLoading = mean((this.mfQ_current(:,1:end-1) .* mfMolarMass(:, 1:end-1)),2)* this.fVolSolid;
             if strcmp(this.sName, 'Filter_5A_2_proc') || strcmp(this.sName, 'Filter_5A_1_proc')
                 this.fInternalLoading = this.fInternalLoading(1); %can only log scalar values, here CO2 loading for 5A and H2o for all others
             else
@@ -799,8 +814,13 @@ classdef FilterProc_sorp < matter.procs.p2ps.flow & event.source
             
             %% Set the matter properties      
             % Update bed status
-            this.mfC_current = mfC(:, :, end);
-            this.mfQ_current = mfQ(:, :, end);
+            if ~isreal(mfC(:,:,end))
+                this.iImaginaryOccCounter = this.iImaginaryOccCounter +1;
+            end
+            
+            this.mfC_current = real(mfC(:, :, end));
+            this.mfQ_current = real(mfQ(:, :, end));
+            
             this.fCurrentSorptionTime = this.fCurrentSorptionTime + (afDiscreteTime(end) - afDiscreteTime(1));
             % Update the execution time
             this.fLastExec = this.oStore.oTimer.fTime;
