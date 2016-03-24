@@ -74,7 +74,7 @@ classdef branch_incompressible_liquid < solver.matter.base.branch
         %definition of the branch and the possible input values.
         %For explanation about the values see initial comment section.
         function this = branch_incompressible_liquid(oBranch)
-            this@solver.matter.base.branch(oBranch, 0, 'callback');  
+            this@solver.matter.base.branch(oBranch, 0, 'hydraulic');  
             
             if this.iBranchNumber == 0
                 for k = 1:length(this.oBranch.oContainer.aoBranches)

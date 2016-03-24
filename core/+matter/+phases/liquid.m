@@ -160,7 +160,7 @@ classdef liquid < matter.phase
                 tParameters.sPhaseType = 'liquid';
                 tParameters.sSecondDepName = 'Temperature';
                 tParameters.fSecondDepValue = this.fTemperature;
-                tParameters.bUseIsobaricData = false;
+                tParameters.bUseIsobaricData = true;
                 
                 this.fPressure = this.oMT.findProperty(tParameters);
                 

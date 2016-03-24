@@ -136,10 +136,10 @@ classdef branch_liquid < solver.matter.base.branch
         fMassFlowResidualFactor = 0;
         
         %the minimum mass flow during the simulation is saved in this variable
-        fMassFlowMin = 'empty'; %kg/s
+        fMassFlowMin; %kg/s
         
         %the mass flow of the previous timestep is saved in this variable
-        mMassFlowOld = 'empty'; %kg/s
+        mMassFlowOld; %kg/s
         
         %counter for the number of steps the mass flow difference has been
         %lower than the residual target. After a certian number is reached
@@ -158,19 +158,19 @@ classdef branch_liquid < solver.matter.base.branch
         iSteadyState = 0;
         
         %values inside the branch cells for the previous time step
-        mVirtualPressureOld       = 'empty';
-        mVirtualInternalEnergyOld = 'empty';
-        mVirtualDensityOld        = 'empty';
-        mFlowSpeedOld             = 'empty';
-        mVirtualTemperatureOld    = 'empty';
+        mVirtualPressureOld;
+        mVirtualInternalEnergyOld;
+        mVirtualDensityOld;
+        mFlowSpeedOld;
+        mVirtualTemperatureOld;
         
-        mPressureOld3             = 'empty';
-        mPressureOld2             = 'empty';
-        mPressureOld1             = 'empty';
-        mPressureOld              = 'empty';
-        mInternalEnergyOld        = 'empty';
-        mDensityOld               = 'empty';
-        mTemperatureOld           = 'empty';
+        mPressureOld3;
+        mPressureOld2;
+        mPressureOld1;
+        mPressureOld;
+        mInternalEnergyOld;
+        mDensityOld;
+        mTemperatureOld;
         
         fFlowSpeedBoundary1Old    = 0;
         fFlowSpeedBoundary2Old    = 0;
@@ -181,7 +181,7 @@ classdef branch_liquid < solver.matter.base.branch
         mFlowSpeedLoss;
         
         %Delta temperature in the pipes created from flow procs
-        mDeltaTemperaturePipe = 'empty';
+        mDeltaTemperaturePipe;
         
         %these values are not required for the calculation but can be used
         %to plot the respective values.
@@ -194,7 +194,7 @@ classdef branch_liquid < solver.matter.base.branch
         %definition of the branch and the possible input values.
         %For explanation about the values see initial comment section.
         function this = branch_liquid(oBranch, iCells, fPressureResidualFactor, fMassFlowResidualFactor, fCourantNumber, sCourantAdaption)
-            this@solver.matter.base.branch(oBranch);  
+            this@solver.matter.base.branch(oBranch, 0, 'hydraulic'); 
             
             if nargin == 2
                 this.inCells = iCells;
@@ -254,12 +254,10 @@ classdef branch_liquid < solver.matter.base.branch
             %calculate the internal Energy
             fTempRef = 293;
 
-            %TO DO:Make heat capacity Calculations temperature and pressure
-            %dependant
             if this.oBranch.fFlowRate >= 0
-                fHeatCapacity = this.oBranch.oContainer.oData.oMT.calculateHeatCapacity(this.oBranch.aoFlows(1,1));
+                fHeatCapacity = this.oBranch.oContainer.oMT.calculateSpecificHeatCapacity(this.oBranch.aoFlows(1,1));
             else
-                fHeatCapacity = this.oBranch.oContainer.oData.oMT.calculateHeatCapacity(this.oBranch.aoFlows(1,end));
+                fHeatCapacity = this.oBranch.oContainer.oMT.calculateSpecificHeatCapacity(this.oBranch.aoFlows(1,end));
             end
             
             %gets the total number of processors used in the branch
@@ -454,9 +452,9 @@ classdef branch_liquid < solver.matter.base.branch
                     elseif mDirectionDeltaPressureComp(k) < 0
                         fPressureBoundary2WithProcs = fPressureBoundary2WithProcs + mDeltaPressureComp(k);
                     else
-                        if ~strcmp(this.mMassFlowOld(1), 'empty') && this.mMassFlowOld(1) > 0
+                        if ~isempty(this.mMassFlowOld) && this.mMassFlowOld(1) > 0
                             fPressureBoundary1WithProcs = fPressureBoundary1WithProcs - mDeltaPressureComp(k);
-                        elseif ~strcmp(this.mMassFlowOld(1), 'empty') && this.mMassFlowOld(1) < 0
+                        elseif ~isempty(this.mMassFlowOld) && this.mMassFlowOld(1) < 0
                             fPressureBoundary2WithProcs = fPressureBoundary2WithProcs - mDeltaPressureComp(k);
                         end
                     end
@@ -482,7 +480,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %later defined pressure is that in the virtual pressure
                 %variable for each no influence from procs in the cell
                 %itself is applied
-                if strcmp(this.mVirtualPressureOld,'empty')
+                if isempty(this.mVirtualPressureOld)
                     
                     mVirtualInternalEnergy = zeros(this.inCells, 1);
                     mVirtualDensity = zeros(this.inCells, 1);
@@ -531,7 +529,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %of 0.16 m the entry of mCompCellPosition would be 2
                 mCompCellPosition = zeros(this.inCells, 1);
                 
-                if (~strcmp(this.mMassFlowOld(1), 'empty') && this.mMassFlowOld(1) >= 0) || (fPressureBoundary1WithProcs >= fPressureBoundary2WithProcs)
+                if (~isempty(this.mMassFlowOld) && this.mMassFlowOld(1) >= 0) || (fPressureBoundary1WithProcs >= fPressureBoundary2WithProcs)
                     for k = 1:length(mHydrLength)
                         mCompCellPosition(k)=ceil(sum(mHydrLength(1:k))/fCellLength);
                         if (mod(sum(mHydrLength(1:k)),fCellLength) == 0) && (mCompCellPosition(k) ~= this.inCells)
@@ -583,7 +581,7 @@ classdef branch_liquid < solver.matter.base.branch
                     if mPressure(k) ~= mVirtualPressure(k) || mTemperature(k) ~= mVirtualTemperature(k)
                         %afMass cannot change within a branch so using the
                         %first flow for all is sufficient
-                        mDensity(k) = this.oBranch.oContainer.oData.oMT.calculateDensity('liquid', this.oBranch.aoFlows(1,1).arPartialMass, mTemperature(k), mPressure(k));
+                        mDensity(k) = this.oBranch.oContainer.oMT.calculateDensity('liquid', this.oBranch.aoFlows(1,1).arPartialMass, mTemperature(k), mPressure(k));
                     else
                         mDensity(k) = mVirtualDensity(k);
                     end
@@ -1060,7 +1058,7 @@ classdef branch_liquid < solver.matter.base.branch
                     tParameters.fSecondDepValue = mTemperatureNew(k);
                     tParameters.bUseIsobaricData = true;
                     
-                    mPressureNew(k) = this.oBranch.oContainer.oData.oMT.findProperty(tParameters);
+                    mPressureNew(k) = this.oBranch.oContainer.oMT.findProperty(tParameters);
                 end
                 %%
                 %calculation of the virtual cell values
@@ -1088,7 +1086,7 @@ classdef branch_liquid < solver.matter.base.branch
                     tParameters.fSecondDepValue = mVirtualTemperatureNew(k);
                     tParameters.bUseIsobaricData = true;
                     
-                    mVirtualPressureNew(k) = this.oBranch.oContainer.oData.oMT.findProperty(tParameters);
+                    mVirtualPressureNew(k) = this.oBranch.oContainer.oMT.findProperty(tParameters);
                 end
                 
                 %%
@@ -1221,11 +1219,11 @@ classdef branch_liquid < solver.matter.base.branch
                 %writes values for the massflow into the object parameters
                 %to decide in the next step wether further numeric
                 %calculation is required
-                if strcmp(this.mMassFlowOld, 'empty')
-                    this.mMassFlowOld = zeros(5000,1);
+                if isempty(this.mMassFlowOld) 
+                    this.mMassFlowOld = zeros(10,1);
                 end
                 
-                for k = 2:5000
+                for k = 2:10
                    this.mMassFlowOld(k) = this.mMassFlowOld(k-1);
                 end
                 
@@ -1235,13 +1233,13 @@ classdef branch_liquid < solver.matter.base.branch
                     this.fMaxPressureDifference = abs(fPressureBoundary1WithProcs-fPressureBoundary2WithProcs);
                 end 
                 
-                fAverageMassFlow1 = sum(this.mMassFlowOld(1:2500))/length(this.mMassFlowOld(1:2500));
-                fAverageMassFlow2 = sum(this.mMassFlowOld(2501:5000))/length(this.mMassFlowOld(2501:5000));
+                fAverageMassFlow1 = sum(this.mMassFlowOld(1:5))/length(this.mMassFlowOld(1:5));
+                fAverageMassFlow2 = sum(this.mMassFlowOld(6:10))/length(this.mMassFlowOld(6:10));
                 
                 fAverageMassFlowDiff = fAverageMassFlow1-fAverageMassFlow2;
                 
                 %if the difference between the average massflow of the last
-                %100 time steps and the averagev massflow of the 100 
+                %5 time steps and the average massflow of the 5 
                 %timesteps before that is less than the residual target 
                 %the counter for the number of times this has happened in a
                 %row is increased
@@ -1257,7 +1255,7 @@ classdef branch_liquid < solver.matter.base.branch
                 %smaller than the initial pressure multiplied with the
                 %residual target the counter for how often this has
                 %happened in a row is increased.
-                if this.fPressureResidualFactor ~= 0 && ~strcmp(this.fMaxPressureDifference, 'empty') && (abs(fPressureBoundary1-fPressureBoundary2) < this.fMaxPressureDifference*this.fPressureResidualFactor)
+                if this.fPressureResidualFactor ~= 0 && ~isempty(this.fMaxPressureDifference) && (abs(fPressureBoundary1-fPressureBoundary2) < this.fMaxPressureDifference*this.fPressureResidualFactor)
                     this.iPressureResidualCounter = this.iPressureResidualCounter+1;
                 elseif this.iPressureResidualCounter ~= 0 && (abs(fPressureBoundary1-fPressureBoundary2) > this.fMaxPressureDifference*this.fPressureResidualFactor)
                     %resets the counter to 0 if the target is no longer
@@ -1291,17 +1289,6 @@ classdef branch_liquid < solver.matter.base.branch
                 this.mTemperatureOld = mTemperatureNew;
                 this.mVirtualTemperatureOld = mVirtualTemperatureNew;
                 
-                %This part is only necessary if cell values are of interest
-                %and should be plotted
-                metaaoLiquidBranch = findprop((this.oBranch.oContainer), 'aoLiquidBranch');
-                if ~isempty(metaaoLiquidBranch)
-                    for k = 1:length(this.oBranch.oContainer.aoBranches)
-                        if strcmp(this.oBranch.sName, this.oBranch.oContainer.aoBranches(k).sName)
-                            this.oBranch.oContainer.aoLiquidBranch{k} = this;
-                        end
-                    end
-                end
-                
                 %if the solver had already reached a steady state the
                 %solver still calculates one complete loop every 0.1s. For
                 %this purpose this variable tells the solver that the
@@ -1317,18 +1304,20 @@ classdef branch_liquid < solver.matter.base.branch
                 %sets the timestep from this branch for the base branch
                 this.setTimeStep(fTimeStep);
                 
-                %tells the stores when to update
-%                 this.oBranch.coExmes{1, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
-%                 this.oBranch.coExmes{2, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
+            	%tells the phases when to update
+                oPhase1 = this.oBranch.coExmes{1, 1}.oPhase;
+                oPhase1.fFixedTS = fTimeStep;
+                oPhase2 = this.oBranch.coExmes{2, 1}.oPhase;
+                oPhase2.fFixedTS = fTimeStep;
+
                 %calls the update for the base branch using the newly
                 %calculated mass flow
                 %branch(this, fFlowRate, afPressures, afTemperatures)
                 update@solver.matter.base.branch(this, fMassFlow, afPressure);
                 
-                for k = 1: length(this.oBranch.aoFlowProcs)
+               	for k = 1: length(this.oBranch.aoFlowProcs)
                     this.oBranch.aoFlowProcs(1,k).update();
                 end
-                
             end
         end
     end
