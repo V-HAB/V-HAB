@@ -271,27 +271,30 @@ classdef main < vsys
             % that the water provided from the solid food also counts
             % towards the amount of liquid the humans drink
             
-            oStomacheSolidPhase = matter.phases.solid(this.toStores.Human, 'SolidFood', tfMassesStomache, [], fHumanTemperature);
+            fVolume = this.oMT.calculateSolidVolume(tfMassesStomache, fHumanTemperature, true);
+            oStomacheSolidPhase = matter.phases.liquid(this.toStores.Human, 'SolidFood', tfMassesStomache, fVolume, fHumanTemperature);
             this.afInitialMassSolidFood = oStomacheSolidPhase.afMass;
             
             % Adding extract/merge processors to the phase
-            matter.procs.exmes.solid(oStomacheSolidPhase, 'Solid_Food_In');
-            matter.procs.exmes.solid(oStomacheSolidPhase, 'C_Out');
-            matter.procs.exmes.solid(oStomacheSolidPhase, 'Feces_Out_Internal');
-            matter.procs.exmes.solid(oStomacheSolidPhase, 'H2O_Out_Internal');
-            matter.procs.exmes.solid(oStomacheSolidPhase, 'Waste_Out_Internal');
-            matter.procs.exmes.solid(oStomacheSolidPhase, 'UrineSolids_Out_Internal');
+            matter.procs.exmes.liquid(oStomacheSolidPhase, 'Solid_Food_In');
+            matter.procs.exmes.liquid(oStomacheSolidPhase, 'C_Out');
+            matter.procs.exmes.liquid(oStomacheSolidPhase, 'Feces_Out_Internal');
+            matter.procs.exmes.liquid(oStomacheSolidPhase, 'H2O_Out_Internal');
+            matter.procs.exmes.liquid(oStomacheSolidPhase, 'Waste_Out_Internal');
+            matter.procs.exmes.liquid(oStomacheSolidPhase, 'UrineSolids_Out_Internal');
             
             vman.human.components.Breathing_Carbon_Supply(this.toStores.Human, 'C_from_food_to_breathing', 'SolidFood.C_Out', 'ProcessPhase.C_In');
             
-            oFecesPhase = matter.phases.solid(this.toStores.Human, 'Feces', tfMassesFeces, [], fHumanTemperature);
+            fVolume = this.oMT.calculateSolidVolume(tfMassesFeces, fHumanTemperature, true);
+            oFecesPhase = matter.phases.liquid(this.toStores.Human, 'Feces', tfMassesFeces, fVolume, fHumanTemperature);
             this.fInitialMassFeces = oFecesPhase.fMass;
             
-            matter.procs.exmes.solid(oFecesPhase, 'Feces_In_Internal');
-            matter.procs.exmes.solid(oFecesPhase, 'Feces_Out');
+            matter.procs.exmes.liquid(oFecesPhase, 'Feces_In_Internal');
+            matter.procs.exmes.liquid(oFecesPhase, 'Feces_Out');
             
-            oWastePhase = matter.phases.solid(this.toStores.Human, 'Waste', tfMassesWaste, [], fHumanTemperature);
-            matter.procs.exmes.solid(oWastePhase, 'Waste_In_Internal');
+            fVolume = this.oMT.calculateSolidVolume(tfMassesWaste, fHumanTemperature, true);
+            oWastePhase = matter.phases.liquid(this.toStores.Human, 'Waste', tfMassesWaste, fVolume, fHumanTemperature);
+            matter.procs.exmes.liquid(oWastePhase, 'Waste_In_Internal');
             
             % add a manip that converts food to feces
             vman.human.components.DigestionSimulator('DigestionSimulator_Manip', oStomacheSolidPhase);

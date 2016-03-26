@@ -162,7 +162,7 @@ classdef plotter_basic < simulation.monitor
             
             if bTimePlotOn
                 %hHandle = subplot(iGridRows, iGridCols, iP + 1);
-                hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP + 1, 'Spacing', 0.5, 'Padding', this.rPadding, 'Margin', 0.05);
+                hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP + 1, 'Spacing', 0.05, 'Padding', this.rPadding, 'Margin', 0.05);
                 
                 
                 hold(hHandle, 'on');
