@@ -1,4 +1,4 @@
-classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
+classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp_old
 %RCA_FILTERPROC_SORP Filter processor inherits from the generic filter processor
 %   Properties and post-processing for plots are added An if-line is added
 %   to prevent unnecessary call of the inactive bed A function to reset the
@@ -33,7 +33,7 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
         
         % Initialization like in the generic filter processor
         function [this] = RCA_FilterProc_sorp(oParentSys, oStore, sName, sPhaseIn, sPhaseOut, sType)
-            this@components.filter.FilterProc_sorp(oStore, sName, sPhaseIn, sPhaseOut, sType);   
+            this@components.filter.FilterProc_sorp_old(oStore, sName, sPhaseIn, sPhaseOut, sType);   
             
             this.oParentSys = oParentSys;
         end
@@ -46,7 +46,7 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
                 return;
             end             
             
-            update@components.filter.FilterProc_sorp(this)
+            update@components.filter.FilterProc_sorp_old(this)
             
             %% Post Processing
             % Save for plotting:
@@ -113,7 +113,7 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp
         % Desorption function after generic filter
         % Delete also the values for the plotting
         function desorption(this, rDesorptionRatio)
-            desorption@components.filter.FilterProc_sorp(this, rDesorptionRatio)
+            desorption@components.filter.FilterProc_sorp_old(this, rDesorptionRatio)
             
             % Reset plotting values
             this.q_plot_H2O    = zeros(3,1);

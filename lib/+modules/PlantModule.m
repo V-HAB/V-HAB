@@ -79,6 +79,10 @@ classdef PlantModule < vsys
                             oManip_Process_InediblePlantsToWaste;
                             oManip_Process_EdiblePlantsToFood;
                             
+                            oAbsorberBufferP2P;
+                            
+                            oAtmosphereReference;
+                            oWaterReference;
           % ---------------------------------------------------------------
           % End of properties
     end
@@ -114,7 +118,7 @@ classdef PlantModule < vsys
             %       considered for computation
 
 
-        bUseGlobalPlantConditions           = 1;
+        bUseGlobalPlantConditions           = 0;
             % If bUseGlobalPlantConditions == 1:
             %       the same global conditions for all cultures are
             %       used
@@ -136,7 +140,7 @@ classdef PlantModule < vsys
           % Reference for loading the plant setup from "PlantEng"
             this.PlantEng =                                             ...        
              load(strrep(                                               ...
-             'components\+PlantModule\+setups\PlantEng.mat', ...
+             'components\+PlantModule\+setups\PlantEng_SCALISS.mat', ...
              '\', ...   %PlantEng: Setup containing several plant cultures
              filesep));
          
@@ -158,12 +162,15 @@ classdef PlantModule < vsys
                 this.fPlant             = ...
                     components.PlantModule.PlantParameters();
            
-            
+        end  
+        function createMatterStructure(this)
+            % call superconstructor
+            createMatterStructure@vsys(this);
             
         %% -PlantModule Structure-
         
             % Creating the filter, last parameter is the filter capacity in kg.
-                matter.store(this, 'PlantCultivationStore', 32);
+                matter.store(this, 'PlantCultivationStore', 22);
             
             %Adding Air Phase:   -> aoPhases(1); Cultivation Store
                 oAerationPhase = matter.phases.gas(this.toStores.PlantCultivationStore, ...                     %Store in which the phase is located
@@ -180,53 +187,64 @@ classdef PlantModule < vsys
             
             
             %Adding Plants:     -> aoPhases(2); Cultivation Store
-                oPlants = matter.phases.liquid(this.toStores.PlantCultivationStore, ...     %Store in which the phase is located
+                oPlants = matter.phases.absorber(this.toStores.PlantCultivationStore, ...     %Store in which the phase is located
                     'Plants', ...                                                           %Phase name
-                    struct('H2O', 0.1,'CO2', 0.1,'O2', 0.1), ...                            %Phase contents
-                    10, ...                                                                %Phase volume
+                    struct('H2O', 1,'CO2', 0.1,'O2', 0.1), ...                            %Phase contents
                     293.15, ...                                                             %Phase temperature
-                    101325);                                                                %Phase pressure
+                    'liquid', ...
+                    'H2O');
             
 
 
             % Adding a default extract/merge processor to the phase
-                matter.procs.exmes.liquid(oPlants, 'p4'); %Plants phase
-                matter.procs.exmes.liquid(oPlants, 'p5');
-                matter.procs.exmes.liquid(oPlants, 'p8'); %Plants phase
-                matter.procs.exmes.liquid(oPlants, 'p10'); %Plants phase
+                matter.procs.exmes.absorber(oPlants, 'p4'); %Plants phase
+                matter.procs.exmes.absorber(oPlants, 'p8'); %Plants phase
+                matter.procs.exmes.absorber(oPlants, 'p10'); %Plants phase
 
-                matter.procs.exmes.liquid(oPlants, 'p12');
-                matter.procs.exmes.liquid(oPlants, 'p13');
+                matter.procs.exmes.absorber(oPlants, 'p12');
+                matter.procs.exmes.absorber(oPlants, 'p13');
+                
+                matter.procs.exmes.absorber(oPlants, 'FromBuffer');
             
             
             
             % Adding HarvestInedible:  -> aoPhases(3); Cultivation Store
-            oHarvestInedible = matter.phases.liquid(this.toStores.PlantCultivationStore, ...    %Store in which the phase is located
+            oHarvestInedible = matter.phases.solid(this.toStores.PlantCultivationStore, ...    %Store in which the phase is located
                 'HarvestInedible', ...                                                          %Phase name
-                struct('Waste',0.1), ...                                    %Phase contents
+                struct(), ...                                    %Phase contents
                 10, ...                                                                         %Phase volume
-                293.15, ...                                                             %Phase temperature
-                101325);                                                                %Phase pressure    
+                293.15);                                                                %Phase pressure    
             
             % Adding a default extract/merge processor to the phase            
-            matter.procs.exmes.liquid(oHarvestInedible, 'p14');
-            matter.procs.exmes.liquid(oHarvestInedible, 'p15');
+            matter.procs.exmes.solid(oHarvestInedible, 'p14');
+            matter.procs.exmes.solid(oHarvestInedible, 'p15');
             
             
             %Adding HarvestEdible:     -> aoPhases(4); Cultivation Store
-            oHarvestEdible = matter.phases.liquid(this.toStores.PlantCultivationStore, ...   Store in which the phase is located
+            oHarvestEdible = matter.phases.solid(this.toStores.PlantCultivationStore, ...   Store in which the phase is located
                 'HarvestEdible', ...         Phase name
-                struct('Food',0.1), ...      Phase contents
+                struct(), ...      Phase contents
                 10, ...                 Phase volume
-                293.15, ...             %Phase temperature
-                101325);               %Phase pressure
+                293.15);               %Phase pressure
             
             % Adding a default extract/merge processor to the phase
-            matter.procs.exmes.liquid(oHarvestEdible, 'p16');
-            matter.procs.exmes.liquid(oHarvestEdible, 'p17');
+            matter.procs.exmes.solid(oHarvestEdible, 'p16');
+            matter.procs.exmes.solid(oHarvestEdible, 'p17');
             
             
+            %necessary because absorber phase, which cannot be directly connected
+            %to a brach, thus enter this phase first and then the plants
+            %phase via p2p
+            oWaterAbsorberBuffer = matter.phases.liquid(...
+                this.toStores.PlantCultivationStore, ...
+                'AbsorberBuffer', ...
+                struct('H2O', 100), ...
+                0.1, ...
+                293.15, ...
+                101325);
             
+            matter.procs.exmes.liquid(oWaterAbsorberBuffer, 'ToPlants');
+            matter.procs.exmes.liquid(oWaterAbsorberBuffer, 'FromWaterSupply');
             
             
         %Initializing manipulator for creating biomass and handling gas exchanges
@@ -249,6 +267,13 @@ classdef PlantModule < vsys
                                                 this.fTemp_light,       ...    % Mean air temperature       [°C]
                                                 this.fTemp_dark);             % Mean air temperature       [°C]
 
+                                            
+                                            % set absorber buffer p2p
+                                            this.oAbsorberBufferP2P = components.PlantModule.AbsorberBufferP2P(...
+                                                this.toStores.PlantCultivationStore, ...
+                                                'AbsorberBufferP2P', ...
+                                                'AbsorberBuffer.ToPlants', ...
+                                                'Plants.FromBuffer');
             
          %Gas exchange p2p-processors    PlantCultivationStore: Plants-phase <-> air-phase
            %Initializing the processor for exchanging water (transpiration)
@@ -298,61 +323,45 @@ classdef PlantModule < vsys
                 'HarvestEdible.p16');                                           % Output phase
             
             
-       %Initializing manipulators for tranforming plant specific biomass 
-           %Initializing the manipulator for tranforming plant specific
-           %inedible biomass to waste
-            this.oManip_Process_InediblePlantsToWaste                           ... % Object name
-                = components.PlantModule.Process_InediblePlantsToWaste(         ... % Path to class constructor
-                'InedibleHarvestReactor',                                       ... % Name of manipulator
-                oHarvestInedible);                                                  % Treated phase
-           %Initializing the manipulator for tranforming plant specific
-           %edible biomass to food
-            this.oManip_Process_EdiblePlantsToFood                              ... % Object name
-                = components.PlantModule.Process_EdiblePlantsToFood(            ... % Path to class constructor
-                'EdibleHarvestReactor',                                         ... % Name of manipulator
-                oHarvestEdible);                                                    % Treated phase
+            
+            
+                
+%        %Initializing manipulators for tranforming plant specific biomass 
+%            %Initializing the manipulator for tranforming plant specific
+%            %inedible biomass to waste
+%             this.oManip_Process_InediblePlantsToWaste                           ... % Object name
+%                 = components.PlantModule.Process_InediblePlantsToWaste(         ... % Path to class constructor
+%                 'InedibleHarvestReactor',                                       ... % Name of manipulator
+%                 oHarvestInedible);                                                  % Treated phase
+%            %Initializing the manipulator for tranforming plant specific
+%            %edible biomass to food
+%             this.oManip_Process_EdiblePlantsToFood                              ... % Object name
+%                 = components.PlantModule.Process_EdiblePlantsToFood(            ... % Path to class constructor
+%                 'EdibleHarvestReactor',                                         ... % Name of manipulator
+%                 oHarvestEdible);                                                    % Treated phase
                      
             
             
             
         %% -Connections- 
         
-            % Adding pipes to connect the components
-                components.pipe(this, 'Pipe_1', 0.5, 0.01);
-                components.pipe(this, 'Pipe_2', 0.5, 0.01);
-                components.pipe(this, 'Pipe_3', 0.5, 0.01);
-                components.pipe(this, 'Pipe_4', 0.5, 0.01);
-                components.pipe(this, 'Pipe_5', 0.5, 0.01);
+%             % Adding pipes to connect the components
+%                 this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 0.5, 0.01));
+%                 this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 0.5, 0.01));
+%                 this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_3', 0.5, 0.01));
+%                 this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_4', 0.5, 0.01));
+%                 this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_5', 0.5, 0.01));
             
             
             % Creating the flowpath (=branch) between the components
-                oInput_Air_Branch       = matter.branch(this, 'PlantCultivationStore.p1',     { 'Pipe_1' }, 'FromLSSAirIN');
-                oOutput_Air_Branch      = matter.branch(this, 'PlantCultivationStore.p2',     { 'Pipe_2' }, 'ToLSSAirOUT');
-                oInput_Water_Branch     = matter.branch(this, 'PlantCultivationStore.p5',     { 'Pipe_3' }, 'WaterSupply');
-                oOutput_Food_Branch     = matter.branch(this, 'PlantCultivationStore.p17',    { 'Pipe_4' }, 'FoodOUT');
-                oOutput_Waste_Branch    = matter.branch(this, 'PlantCultivationStore.p15',    { 'Pipe_5' }, 'WasteOUT');
+                matter.branch(this, 'PlantCultivationStore.p1',     {}, 'FromLSSAirIN',   'FromLSS');
+                matter.branch(this, 'PlantCultivationStore.p2',     {}, 'ToLSSAirOUT',    'ToLSS');
+                matter.branch(this, 'PlantCultivationStore.FromWaterSupply',     {}, 'WaterSupply',    'WaterInput');
+                matter.branch(this, 'PlantCultivationStore.p17',    {}, 'FoodOUT',        'FoodOut');
+                matter.branch(this, 'PlantCultivationStore.p15',    {}, 'WasteOUT',       'WasteOut');
             
             
-            
-            
-            
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
-            
-            
-            
-            %Assigning the subsystem interface branches to the manual solver
-                this.oInputAirBranch    = solver.matter.manual.branch(oInput_Air_Branch);
-                this.oOutputAirBranch   = solver.matter.manual.branch(oOutput_Air_Branch);
-                this.oInputWaterBranch  = solver.matter.manual.branch(oInput_Water_Branch);
-                this.oOutputFoodBranch  = solver.matter.manual.branch(oOutput_Food_Branch);
-                this.oOutputWasteBranch = solver.matter.manual.branch(oOutput_Waste_Branch);
-            
-
             %Setting fixed timestep for phases of PlantCultivationStore
-            %TODO Change this to utilize the new toPhases struct for better
-            %code readability
                 aoPhases = this.toStores.PlantCultivationStore.aoPhases;
                     %air-phase
                         aoPhases(1).fFixedTS = 15;
@@ -363,16 +372,29 @@ classdef PlantModule < vsys
                     %Edible-phase
                         aoPhases(4).fFixedTS = 15;
             
-            %Setting the pressure of PlantCultivationStore's Plants-phase
-%                 this.toStores.PlantCultivationStore.aoPhases(2).setPressure(101325);
 
-            %Default setting of the interface flowrates
-                this.oInputAirBranch.setFlowRate(0);
-                this.oOutputAirBranch.setFlowRate(0);
-                this.oInputWaterBranch.setFlowRate(0);
-                this.oOutputFoodBranch.setFlowRate(0);
-                this.oOutputWasteBranch.setFlowRate(0);
+
+            
                 
+        end
+        
+        function createSolverStructure(this)
+            % call superconstructor
+            createSolverStructure@vsys(this);
+            
+            %Assigning the subsystem interface branches to the manual solver
+                this.oInputAirBranch    = solver.matter.manual.branch(this.toBranches.FromLSS);
+                this.oOutputAirBranch   = solver.matter.manual.branch(this.toBranches.ToLSS);
+                this.oInputWaterBranch  = solver.matter.manual.branch(this.toBranches.WaterInput);
+                this.oOutputFoodBranch  = solver.matter.manual.branch(this.toBranches.FoodOut);
+                this.oOutputWasteBranch = solver.matter.manual.branch(this.toBranches.WasteOut);
+                
+                %Default setting of the interface flowrates
+                this.toBranches.FromLSS.oHandler.setFlowRate(0);
+                this.toBranches.ToLSS.oHandler.setFlowRate(0);
+                this.toBranches.WaterInput.oHandler.setFlowRate(0);
+                this.toBranches.FoodOut.oHandler.setFlowRate(0);
+                this.toBranches.WasteOut.oHandler.setFlowRate(0);
         end
         
         function setIfFlows(this, sFromLSSAirIN, sToLSSAirOUT, sWaterSupply, sFoodOUT, sWasteOUT)
@@ -383,8 +405,15 @@ classdef PlantModule < vsys
                 this.connectIF('WaterSupply'    ,   sWaterSupply);
                 this.connectIF('FoodOUT'        ,   sFoodOUT);
                 this.connectIF('WasteOUT'       ,   sWasteOUT);
-            
-            
+        end
+        
+        %% Set Reference Phases
+        
+        % set path for reference phases to enable dynamic calculation, must
+        % be called from the parent system with the correct paths
+        function setReferencePhase(this, oAtmosphere, oWater)
+            this.oAtmosphereReference   = oAtmosphere;
+            this.oWaterReference        = oWater;
         end
     end
     
@@ -401,7 +430,7 @@ classdef PlantModule < vsys
 
             if bUseLSSConditions == 1 
                 
-                        if this.oParent.oParent.oTimer.fTime > 1 % condition necessary for initialization
+                        if this.oTimer.fTime > 1 % condition necessary for initialization
    
     %     THIS SECTION NEEDS TO BE ADAPTED WHEN APPLYING A NEW SYSTEM     %         
     %                       (ADAPTIONS 2 of 3)                            %
@@ -421,10 +450,10 @@ classdef PlantModule < vsys
                 = this.oParent.fCO2ppm_Measured;                          
         % Relative Humidity air-phase
             this.fRH_Measured       ...                     % [-]
-                = this.oParent.toStores.GH_Unit.aoPhases(1).rRelHumidity; 
+                = this.oAtmosphereReference.rRelHumidity; 
         % Atmospheric pressure air-phase
             this.fP_atm_Measured    ...                     % [Pa]
-                = this.oParent.toStores.GH_Unit.aoPhases(1).fPressure;    
+                = this.oAtmosphereReference.fPressure;    
  
     % ------------------------------------------------------------------- %
     % ------------------------------------------------------------------- %                    
@@ -459,7 +488,7 @@ classdef PlantModule < vsys
     %  The object paths to the "measured" LSS growth conditions should be %
     %  stated here - They are specific for your system                    %
             
-            if this.oParent.oParent.oTimer.fTime > 1 
+            if this.oTimer.fTime > 1 
         % CO2 level air-phase, parts per million
             this.fCO2ppm_Measured   ...                     % [µmol/mol]
                 = this.oParent.fCO2ppm_Measured;
@@ -467,7 +496,7 @@ classdef PlantModule < vsys
             end
         % Mass of available water for plant growth
             this.fWaterAvailable    ...                     % [kg]
-                = this.oParent.toStores.WaterTank.aoPhases(1).fMass;
+                = this.oWaterReference.fMass;
             
     % ------------------------------------------------------------------- %
     % ------------------------------------------------------------------- %           
@@ -499,11 +528,12 @@ classdef PlantModule < vsys
             %Setting gas/water exchange rates:  Greenhouse <-> PlantModule
                 % Gas exchange, 'air'-phases
                     % Greenhouse  -> PlantModule
-                    this.oInputAirBranch.setFlowRate(-0.03);  % [kg/s]
+                    this.oInputAirBranch.setFlowRate(-0.1);  % [kg/s]
                     % PlantModule -> Greenhouse
-                    this.oOutputAirBranch.setFlowRate(0.03 + this.oProc_Plants_H2OGasExchange.fFlowRate + this.oProc_Plants_O2GasExchange.fFlowRate - this.oProc_Plants_CO2GasExchange.fFlowRate);  % [kg/s]
+                    this.oOutputAirBranch.setFlowRate(0.1 + this.oProc_Plants_H2OGasExchange.fFlowRate + this.oProc_Plants_O2GasExchange.fFlowRate - this.oProc_Plants_CO2GasExchange.fFlowRate);  % [kg/s]
                 % Water supply flowrate
                     this.oInputWaterBranch.setFlowRate(-this.oManip_Create_Biomass.fWaterNeed);  % [kg/s]
+                    this.oAbsorberBufferP2P.fFlowRateToPlants = this.oManip_Create_Biomass.fWaterNeed;  % [kg/s]
 
             
             %Harvesting - Produced biomass in PlantModule is extracted to

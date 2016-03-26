@@ -10,13 +10,13 @@ classdef setup < simulation.infrastructure
             % monitors
             ttMonitorConfig = struct();
             
-            this@simulation.infrastructure('plant_module_tutorial', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('PlantModule_Tutorial', ptConfigParams, tSolverParams, ttMonitorConfig);
           
         %% -General Settings-
             %Setting of time parameters:
             % TODO this should probably be done in the constructor and the
             % provision of the ptConfigParams map
-
+            warning('off', 'all');
 
             
         %% -Root Object - Greenhouse System-     
@@ -25,10 +25,7 @@ classdef setup < simulation.infrastructure
             tutorials.plant_module.systems.Greenhouse(this.oSimulationContainer, 'Greenhouse');
            
 
-        %% -Logging Setup-
-            oLogger = this.toMonitors.oLogger;
-            
-            oLogger.addValue('Greenhouse:s:CO2Buffer.toPhases.CO2BufferPhase', 'fMass', 'CO2 Mass', 'kg');
+        
                     
         %% -Simulation Settings-
         
@@ -38,7 +35,7 @@ classdef setup < simulation.infrastructure
             % was chosen. To produce more significant results, the
             % simulation should be run for 12 000 000 seconds. This will
             % however take several hours on a modern computer.
-            this.fSimTime  = 50000;     % [s]
+            this.fSimTime  = 20e6;     % [s]
             this.iSimTicks = 400;       % ticks
             this.bUseTime  = true;      % true -> use this.fSimTime as Duration of Simulation
 
@@ -154,370 +151,408 @@ classdef setup < simulation.infrastructure
         end
         
         
+        function configureMonitors(this)
+            %% -Logging Setup-
+            oLogger = this.toMonitors.oLogger;
+            
+            oLogger.add('Greenhouse', 'flow_props');
+            oLogger.add('Greenhouse', 'thermal_properties');
+            oLogger.add('Greenhouse/PlantModule', 'flow_props');
+            
+            oLogger.addValue('Greenhouse:s:CO2Buffer.toPhases.CO2BufferPhase', 'fMass', 'CO2 Mass', 'kg');
+            
+            % Lettuce
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{1, 1}.INEDIBLE_CGR_d', 'kg', 'Inedible Dry Biomass');            % 270      Biomass composition: inedible dry
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{1, 1}.INEDIBLE_CGR_f', 'kg',  'Inedible Fluid Biomass');            %    Biomass composition: inedible fluid
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{1, 1}.ED_CGR_d', 'kg', 'Edible Dry Biomass');                  % 272      Biomass composition: edible dry
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{1, 1}.ED_CGR_f', 'kg', 'Edible Fluid Biomass');
+            
+            % Sweet Potato
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.INEDIBLE_CGR_d', 'kg', 'Inedible Dry Biomass');            % 278      Biomass composition: inedible dry
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.INEDIBLE_CGR_f', 'kg', 'Inedible Fluid Biomass');            %    Biomass composition: inedible fluid
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.ED_CGR_d', 'kg', 'Edible Dry Biomass');                  % 280      Biomass composition: edible dry
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oManip_Create_Biomass', 'fCCulture.plants{2, 1}.ED_CGR_f', 'kg', 'Edible Fluid Biomass');
+            
+            % Gas exchanges
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oProc_Plants_H2OGasExchange', 'fFlowRate', 'kg/s', 'Transpiration');                  % 200          Exchange rate H2O (transpiration); positive: Plants-phase -> air-phase
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oProc_Plants_O2GasExchange', 'fFlowRate', 'kg/s', 'O2 Exchange');                   %        Exchange rate O2; positive: Plants-phase -> air-phase
+            oLogger.addValue('Greenhouse.toChildren.PlantModule.oProc_Plants_CO2GasExchange', 'fFlowRate', 'kg/s', 'CO2 Exchange');
+            
+            
+            %% Define Plots
+            
+            oPlot = this.toMonitors.oPlotter;
+            
+            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
+            oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
+            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
+        end
+        
    %% -Plotting-
         function plot(this)
             close all
            
-         %Greenhouse parameters
-            %Greenhouse's air-phase pressure
-                figure('name', 'Pressure');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 2));
-                legend('Greenhouse Air-Phase');
-                ylabel('Pressure [Pa]');
-                xlabel('Time in [d]');
-            %Greenhouse's air-phase mass
-                figure('name', 'Mass');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 3));
-                legend('Greenhouse Air-Phase');
-                ylabel('Mass [kg]');
-                xlabel('Time in [d]');
-            %Greenhouse's air-phase temperature
-                figure('name', 'Temperature');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 36));
-                legend('Greenhouse Air-Phase');
-                ylabel('Temperature [K]');
-                xlabel('Time in [d]');
-                
-            %Greenhouse's air composition partial masses
-                figure('name', 'Partial Masses Greenhouse');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [8,11,66,12]));
-                legend('O2', 'N2', 'CO2', 'H2O');
-                ylabel('Mass (Fraction) [-]');
-                xlabel('Time in [d]');
-                
-            %Greenhouse's and PlantModules's O2 partial mass
-                figure('name', 'Partial Mass - O2');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [8,9]));
-                legend('Greenhouse Air-Phase', 'PlantModule Air-Phase');
-                ylabel('Mass (Fraction) [-]');
-                xlabel('Time in [d]');
-                
-            %Greenhouse's O2 partial mass
-                figure('name', 'Partial Mass - O2');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 8));
-                legend('Greenhouse Air-Phase');
-                ylabel('Mass (Fraction) [-]');
-                xlabel('Time in [d]');   
-                
-            %Greenhouse's and PlantModules's N2 partial mass
-                figure('name', 'Partial Mass - N2');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [11,13]));
-                legend('Greenhouse Air-Phase', 'PlantModule Air-Phase');
-                ylabel('Mass (Fraction) [-]');
-                xlabel('Time in [d]');
-            
-            %Greenhouse's N2 partial mass
-                figure('name', 'Partial Mass - N2');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 11));
-                legend('Greenhouse Air-Phase');
-                ylabel('Mass (Fraction) [-]');
-                xlabel('Time in [d]');
-            
-            %Greenhouse's humidity 
-                figure('name', 'Humidity');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 10));
-                legend('Greenhouse Air-Phase');
-                ylabel('Humidity [-]');
-                xlabel('Time in [d]');
-            
-            %Greenhouse's H2O partial mass
-                figure('name', 'Partial Mass - H2O');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 12));
-                legend('Greenhouse Air-Phase');
-                ylabel('Mass (Fraction) [-]');
-                xlabel('Time in [d]');
-            
-            %CO2 Levels
-                figure('name', 'CO2 Partial Pressure');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 18));
-                legend('Greenhouse');
-                ylabel(' Partial Pressure [-]');
-                xlabel('Time in [d]');
-
-                figure('name', 'CO2 Parts Per Million');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 19));
-                legend('Greenhouse CO2 Level');
-                ylabel('CO2 ppm [mumol/mol]');
-                xlabel('Time in [d]');
-            
-             %Flowrate and activity of CO2 supply conroller
-                figure('name', 'Flowrate CO2 Supply');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 35));
-                legend('CO2 Buffer');
-                ylabel(' [kg/s]');
-                xlabel('Time in [d]');
-                
-                
-            %Flowrates -  Greenhouse System <-> Plant Cultivation Subsystem
-                figure('name', 'Flow Rates -  Greenhouse Air <-> Plant Cultivation Air');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [23, 24]));
-                legend('Input: Greenhouse -> Plant Cultivation', 'Output: Plant Cultivation -> Greenhouse');
-                ylabel(' Massflow [kg/s]');
-                xlabel('Time in [d]');
-                
-            %Pressure Compensation Greenhouse Air-Phase
-                figure('name', 'Flowrate - Greenhouse <-> Leakage Tank');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 44));
-                legend('Greenhouse Leakage Rate');
-                ylabel(' Massflow [kg/s]');
-                xlabel('Time in [d]');
-                
-            %Water Tank
-                figure('name', 'Water (Supply-)Tank Mass');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 20));
-                legend('Water Tank');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-                
-         %Water Separator
-           %Separated water-phase total mass
-                figure('name', 'Separated Water Mass');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 15));
-                legend('Separated Water');
-                ylabel('Mass [kg]');
-                xlabel('Time in [d]');
-          
-          %Flowrates from/ till Greenhouse
-                figure('name', 'Water Separator/Circulation Flows');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [6, 7]));
-                legend('Water Separator Flow In', 'Water Separator Flow Out');
-                ylabel('Mass [kg/s]');
-                xlabel('Time in [d]');
-                
-            %Air-phase pressure
-                figure('name', 'Pressure');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 17));
-                legend('Water Separator Air-Phase');
-                ylabel('Pressure [Pa]');
-                xlabel('Time in [d]');
-                
-            %Air-phase total mass
-                figure('name', 'Air Phase Mass');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 14));
-                legend('Water Separator');
-                ylabel('Mass [kg]');
-                xlabel('Time in [d]');
-                
-         %Plant Growth and Harvesting
-            %Plant Generations
-                figure('name', 'Plants Generation');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [31,32]));
-                legend('Lettuce', 'Sweetpotato');
-                ylabel(' ticks [-]');
-                xlabel('Time in [d]');
-            
-            %Elapsed time since planting
-                figure('name', 'Internaltime - Iterative Plant Cycles (Generations)');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [33,34]));
-                legend('Lettuce', 'Sweetpotato');
-                ylabel('Time in [min] (since planted)');
-                xlabel('Time in [d]');
-                
-            %Harvested Biomass
-                figure('name', 'Harvested Edible Biomass');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 21));
-                legend('Edible Biomass Tank');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-
-                figure('name', 'Harvested Inedible Biomass');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 22));
-                legend('Inedible Biomass Tank');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-
-            
-            %Calculated Biomass - Comparison
-                figure('name', 'Cumulated Plant Growth Values - Till Harvesting');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [37,38,39,40]));
-                legend('Total Crop Biomass (TCB) - Lettuce','Total Crop Biomass (TCB) - Sweetpotato', 'Total Edible Biomass (TEB) - Lettuce', 'Total Edible Biomass (TEB) - Sweetpotato');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-                
-                %Calculated Biomass - Comparison Lettuce
-                figure('name', 'Cumulated Plant Growth Values - Till Harvesting - Lettuce');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [37,39]));
-                legend('Total Crop Biomass (TCB) - Lettuce', 'Total Edible Biomass (TEB) - Lettuce');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-                
-                %Calculated Biomass - Comparison Sweetpotato
-                figure('name', 'Cumulated Plant Growth Values - Till Harvesting - Sweetpotato');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [38,40]));
-                legend('Total Crop Biomass (TCB) - Sweetpotato', 'Total Edible Biomass (TEB) - Sweetpotato');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-            
-            %For Comparison Cultivation Store Plants-Phase Masses
-                figure('name', 'CultivationStore - Total Mass Plants - Water Mass');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [25,43]));
-                legend('Total Mass Plants-Phase', 'Water Mass');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-                
-            %Comparison of Calculated Biomasses - Lettuce; 
-                figure('name', 'Total Crop Biomass (TCB) Comparison');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [37, 45]));
-                legend('From State Logging', 'From Single Components Evaluation');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-            
-            %Total Crop Biomass separated in its components
-                %Total Crop Biomass separated in its components - Lettuce
-                figure('name', 'TCB Divided Comparison - Lettuce ');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [37, 46, 47, 48, 49]));
-                legend('Total Crop Biomass (TCB)', 'Inedible Dry', 'Inedible Fluid', 'Edible Dry', 'Edible Fluid');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-                
-                %Total Crop Biomass separated in its components - Sweetpotato
-                figure('name', 'TCB Divided Comparison - Sweetpotato ');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [38, 62, 63, 64, 65]));
-                legend('Total Crop Biomass (TCB)', 'Inedible Dry', 'Inedible Fluid', 'Edible Dry', 'Edible Fluid');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-                
-                
-            %Gas Exchange Flowrates
-                figure('name', 'Exchange Rates - Plants');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [26, 27, 28]));
-                legend('H2O', 'O2', 'CO2');
-                ylabel(' Massflow [kg/s]');
-                xlabel('Time in [d]');
-                            
-            %Cumulated total gas exchanges
-                %Total Gas Exchange O2
-                figure('name', 'O2 Gas Exchange - Plants');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [50, 51, 52]));
-                legend('Lettuce', 'Sweetpotato', 'Total');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-            
-            %Total Gas Exchange CO2
-                figure('name', 'CO2 Gas Exchange - Plants');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [53, 54, 55]));
-                legend('Lettuce', 'Sweetpotato', 'Total');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-            
-            %H2O Transpired by Plants
-                figure('name', 'H2O Transpired by Plants');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [56, 57, 58]));
-                legend('Lettuce', 'Sweetpotato', 'Total');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-            
-            %H2O Consumed by Plants
-                figure('name', 'H2O Consumed by Plants');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [59, 60, 61]));
-                legend('Lettuce', 'Sweetpotato', 'Total');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-            
-            %CO2 Excess - due to nightly CO2 production
-                figure('name', 'CO2 Excess Mass');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 4));
-                legend('From Greenhouse Air-Phase');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-
-            %O2 Excess - due to no O2 consumption
-                figure('name', 'O2 Excess Mass');
-                hold on;
-                grid minor;
-                plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 5));
-                legend('From Greenhouse Air-Phase');
-                ylabel(' Mass [kg]');
-                xlabel('Time in [d]');
-            
-            
-            %Time per solver tick
-                figure('name', 'Time Per Solver Tick');
-                hold on;
-                grid minor;
-                plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-                legend('Solver');
-                ylabel('Time in [s]');
-                xlabel('Ticks');
-                
-                
-            %Rearrange Plots    
-                tools.arrangeWindows();
-            
+            this.toMonitors.oPlotter.plot();
+%          %Greenhouse parameters
+%             %Greenhouse's air-phase pressure
+%                 figure('name', 'Pressure');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 2));
+%                 legend('Greenhouse Air-Phase');
+%                 ylabel('Pressure [Pa]');
+%                 xlabel('Time in [d]');
+%             %Greenhouse's air-phase mass
+%                 figure('name', 'Mass');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 3));
+%                 legend('Greenhouse Air-Phase');
+%                 ylabel('Mass [kg]');
+%                 xlabel('Time in [d]');
+%             %Greenhouse's air-phase temperature
+%                 figure('name', 'Temperature');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 36));
+%                 legend('Greenhouse Air-Phase');
+%                 ylabel('Temperature [K]');
+%                 xlabel('Time in [d]');
+%                 
+%             %Greenhouse's air composition partial masses
+%                 figure('name', 'Partial Masses Greenhouse');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [8,11,66,12]));
+%                 legend('O2', 'N2', 'CO2', 'H2O');
+%                 ylabel('Mass (Fraction) [-]');
+%                 xlabel('Time in [d]');
+%                 
+%             %Greenhouse's and PlantModules's O2 partial mass
+%                 figure('name', 'Partial Mass - O2');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [8,9]));
+%                 legend('Greenhouse Air-Phase', 'PlantModule Air-Phase');
+%                 ylabel('Mass (Fraction) [-]');
+%                 xlabel('Time in [d]');
+%                 
+%             %Greenhouse's O2 partial mass
+%                 figure('name', 'Partial Mass - O2');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 8));
+%                 legend('Greenhouse Air-Phase');
+%                 ylabel('Mass (Fraction) [-]');
+%                 xlabel('Time in [d]');   
+%                 
+%             %Greenhouse's and PlantModules's N2 partial mass
+%                 figure('name', 'Partial Mass - N2');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [11,13]));
+%                 legend('Greenhouse Air-Phase', 'PlantModule Air-Phase');
+%                 ylabel('Mass (Fraction) [-]');
+%                 xlabel('Time in [d]');
+%             
+%             %Greenhouse's N2 partial mass
+%                 figure('name', 'Partial Mass - N2');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 11));
+%                 legend('Greenhouse Air-Phase');
+%                 ylabel('Mass (Fraction) [-]');
+%                 xlabel('Time in [d]');
+%             
+%             %Greenhouse's humidity 
+%                 figure('name', 'Humidity');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 10));
+%                 legend('Greenhouse Air-Phase');
+%                 ylabel('Humidity [-]');
+%                 xlabel('Time in [d]');
+%             
+%             %Greenhouse's H2O partial mass
+%                 figure('name', 'Partial Mass - H2O');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 12));
+%                 legend('Greenhouse Air-Phase');
+%                 ylabel('Mass (Fraction) [-]');
+%                 xlabel('Time in [d]');
+%             
+%             %CO2 Levels
+%                 figure('name', 'CO2 Partial Pressure');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 18));
+%                 legend('Greenhouse');
+%                 ylabel(' Partial Pressure [-]');
+%                 xlabel('Time in [d]');
+% 
+%                 figure('name', 'CO2 Parts Per Million');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 19));
+%                 legend('Greenhouse CO2 Level');
+%                 ylabel('CO2 ppm [mumol/mol]');
+%                 xlabel('Time in [d]');
+%             
+%              %Flowrate and activity of CO2 supply conroller
+%                 figure('name', 'Flowrate CO2 Supply');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 35));
+%                 legend('CO2 Buffer');
+%                 ylabel(' [kg/s]');
+%                 xlabel('Time in [d]');
+%                 
+%                 
+%             %Flowrates -  Greenhouse System <-> Plant Cultivation Subsystem
+%                 figure('name', 'Flow Rates -  Greenhouse Air <-> Plant Cultivation Air');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [23, 24]));
+%                 legend('Input: Greenhouse -> Plant Cultivation', 'Output: Plant Cultivation -> Greenhouse');
+%                 ylabel(' Massflow [kg/s]');
+%                 xlabel('Time in [d]');
+%                 
+%             %Pressure Compensation Greenhouse Air-Phase
+%                 figure('name', 'Flowrate - Greenhouse <-> Leakage Tank');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 44));
+%                 legend('Greenhouse Leakage Rate');
+%                 ylabel(' Massflow [kg/s]');
+%                 xlabel('Time in [d]');
+%                 
+%             %Water Tank
+%                 figure('name', 'Water (Supply-)Tank Mass');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 20));
+%                 legend('Water Tank');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%                 
+%          %Water Separator
+%            %Separated water-phase total mass
+%                 figure('name', 'Separated Water Mass');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 15));
+%                 legend('Separated Water');
+%                 ylabel('Mass [kg]');
+%                 xlabel('Time in [d]');
+%           
+%           %Flowrates from/ till Greenhouse
+%                 figure('name', 'Water Separator/Circulation Flows');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [6, 7]));
+%                 legend('Water Separator Flow In', 'Water Separator Flow Out');
+%                 ylabel('Mass [kg/s]');
+%                 xlabel('Time in [d]');
+%                 
+%             %Air-phase pressure
+%                 figure('name', 'Pressure');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 17));
+%                 legend('Water Separator Air-Phase');
+%                 ylabel('Pressure [Pa]');
+%                 xlabel('Time in [d]');
+%                 
+%             %Air-phase total mass
+%                 figure('name', 'Air Phase Mass');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 14));
+%                 legend('Water Separator');
+%                 ylabel('Mass [kg]');
+%                 xlabel('Time in [d]');
+%                 
+%          %Plant Growth and Harvesting
+%             %Plant Generations
+%                 figure('name', 'Plants Generation');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [31,32]));
+%                 legend('Lettuce', 'Sweetpotato');
+%                 ylabel(' ticks [-]');
+%                 xlabel('Time in [d]');
+%             
+%             %Elapsed time since planting
+%                 figure('name', 'Internaltime - Iterative Plant Cycles (Generations)');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [33,34]));
+%                 legend('Lettuce', 'Sweetpotato');
+%                 ylabel('Time in [min] (since planted)');
+%                 xlabel('Time in [d]');
+%                 
+%             %Harvested Biomass
+%                 figure('name', 'Harvested Edible Biomass');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 21));
+%                 legend('Edible Biomass Tank');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+% 
+%                 figure('name', 'Harvested Inedible Biomass');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 22));
+%                 legend('Inedible Biomass Tank');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+% 
+%             
+%             %Calculated Biomass - Comparison
+%                 figure('name', 'Cumulated Plant Growth Values - Till Harvesting');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [37,38,39,40]));
+%                 legend('Total Crop Biomass (TCB) - Lettuce','Total Crop Biomass (TCB) - Sweetpotato', 'Total Edible Biomass (TEB) - Lettuce', 'Total Edible Biomass (TEB) - Sweetpotato');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%                 
+%                 %Calculated Biomass - Comparison Lettuce
+%                 figure('name', 'Cumulated Plant Growth Values - Till Harvesting - Lettuce');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [37,39]));
+%                 legend('Total Crop Biomass (TCB) - Lettuce', 'Total Edible Biomass (TEB) - Lettuce');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%                 
+%                 %Calculated Biomass - Comparison Sweetpotato
+%                 figure('name', 'Cumulated Plant Growth Values - Till Harvesting - Sweetpotato');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [38,40]));
+%                 legend('Total Crop Biomass (TCB) - Sweetpotato', 'Total Edible Biomass (TEB) - Sweetpotato');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%             
+%             %For Comparison Cultivation Store Plants-Phase Masses
+%                 figure('name', 'CultivationStore - Total Mass Plants - Water Mass');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [25,43]));
+%                 legend('Total Mass Plants-Phase', 'Water Mass');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%                 
+%             %Comparison of Calculated Biomasses - Lettuce; 
+%                 figure('name', 'Total Crop Biomass (TCB) Comparison');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [37, 45]));
+%                 legend('From State Logging', 'From Single Components Evaluation');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%             
+%             %Total Crop Biomass separated in its components
+%                 %Total Crop Biomass separated in its components - Lettuce
+%                 figure('name', 'TCB Divided Comparison - Lettuce ');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [37, 46, 47, 48, 49]));
+%                 legend('Total Crop Biomass (TCB)', 'Inedible Dry', 'Inedible Fluid', 'Edible Dry', 'Edible Fluid');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%                 
+%                 %Total Crop Biomass separated in its components - Sweetpotato
+%                 figure('name', 'TCB Divided Comparison - Sweetpotato ');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [38, 62, 63, 64, 65]));
+%                 legend('Total Crop Biomass (TCB)', 'Inedible Dry', 'Inedible Fluid', 'Edible Dry', 'Edible Fluid');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%                 
+%                 
+%             %Gas Exchange Flowrates
+%                 figure('name', 'Exchange Rates - Plants');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [26, 27, 28]));
+%                 legend('H2O', 'O2', 'CO2');
+%                 ylabel(' Massflow [kg/s]');
+%                 xlabel('Time in [d]');
+%                             
+%             %Cumulated total gas exchanges
+%                 %Total Gas Exchange O2
+%                 figure('name', 'O2 Gas Exchange - Plants');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [50, 51, 52]));
+%                 legend('Lettuce', 'Sweetpotato', 'Total');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%             
+%             %Total Gas Exchange CO2
+%                 figure('name', 'CO2 Gas Exchange - Plants');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [53, 54, 55]));
+%                 legend('Lettuce', 'Sweetpotato', 'Total');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%             
+%             %H2O Transpired by Plants
+%                 figure('name', 'H2O Transpired by Plants');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [56, 57, 58]));
+%                 legend('Lettuce', 'Sweetpotato', 'Total');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%             
+%             %H2O Consumed by Plants
+%                 figure('name', 'H2O Consumed by Plants');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, [59, 60, 61]));
+%                 legend('Lettuce', 'Sweetpotato', 'Total');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%             
+%             %CO2 Excess - due to nightly CO2 production
+%                 figure('name', 'CO2 Excess Mass');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 4));
+%                 legend('From Greenhouse Air-Phase');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+% 
+%             %O2 Excess - due to no O2 consumption
+%                 figure('name', 'O2 Excess Mass');
+%                 hold on;
+%                 grid minor;
+%                 plot(this.mfLog(:,1)/(24*60*60), this.mfLog(:, 5));
+%                 legend('From Greenhouse Air-Phase');
+%                 ylabel(' Mass [kg]');
+%                 xlabel('Time in [d]');
+%             
+%             
+%             %Time per solver tick
+%                 figure('name', 'Time Per Solver Tick');
+%                 hold on;
+%                 grid minor;
+%                 plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
+%                 legend('Solver');
+%                 ylabel('Time in [s]');
+%                 xlabel('Ticks');
+%                 
+%                 
+%             %Rearrange Plots    
+%                 tools.arrangeWindows();
+%             
         end
         
         

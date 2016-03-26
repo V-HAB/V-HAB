@@ -9,7 +9,7 @@ classdef SeparatorStore < matter.store
     
     methods
         function this = SeparatorStore(oParent, sName)
-            this@matter.store(oParent, sName, 1);
+            this@matter.store(oParent, sName);
             
               %Forwarding parameters
                 this.fVol = 1;
@@ -25,18 +25,19 @@ classdef SeparatorStore < matter.store
           
           
             %Water Separator 'SeparatedWater'-phase
-                oSeparatedWater = matter.phases.gas(this, ...
+                oSeparatedWater = matter.phases.liquid(this, ...
                                     'H2O',...
-                                    struct(),...
+                                    struct('H2O', 1),...
                                     this.fVol/10,...                                      %Phase volume
-                                    293.15);                                              %Phase temperature
+                                    293.15, ...                                              %Phase temperature
+                                    101325);
             %Interfaces
                 %Regarding Greenhouse
                     matter.procs.exmes.gas(oFlow, 'FromGreenhouse');
                     matter.procs.exmes.gas(oFlow, 'ToGreenhouse');
                 %Regarding Absorber
                     matter.procs.exmes.gas(oFlow, 'SeparatorPort');
-                    matter.procs.exmes.gas(oSeparatedWater, 'SeparatorPort');
+                    matter.procs.exmes.liquid(oSeparatedWater, 'SeparatorPort');
            
             %Initializing Water Absorber
                 this.oProc = tutorials.plant_module.components.WaterSeparator.WaterAbsorber(this.oParent, this, 'SeparatorProc', [this.sName,'_Phase_1.SeparatorPort'], 'H2O.SeparatorPort', 'H2O');

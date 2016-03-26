@@ -13,6 +13,7 @@ classdef heater < matter.procs.f2f
             
             this.supportSolver('hydraulic', 1, 0);
             this.supportSolver('callback',  @this.solverDeltas);
+            this.supportSolver('manual', true, @this.updateManualSolver);
         end
         
         
@@ -23,6 +24,9 @@ classdef heater < matter.procs.f2f
             this.oBranch.setOutdated();
         end
         
+        function updateManualSolver(this)
+            this.fHeatFlow = this.fPower * this.rEfficiency;
+        end
         function fDeltaPress = solverDeltas(this, ~) %#ok<INUSD>
             fDeltaPress = 0;
         end

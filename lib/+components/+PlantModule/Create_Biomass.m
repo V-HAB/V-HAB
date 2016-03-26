@@ -43,10 +43,10 @@ classdef Create_Biomass < matter.manips.substance.flow
         fED_CGR_f;
         
         %gas/water exchange rates
-        fO2_exchange;
-        fCO2_exchange;
-        fwater_exchange;
-        fWaterNeed;
+        fO2_exchange = 0;
+        fCO2_exchange = 0;
+        fwater_exchange = 0;
+        fWaterNeed = 0;
         
         %variable for update check
         fLastUpdate = 0;
@@ -152,8 +152,12 @@ classdef Create_Biomass < matter.manips.substance.flow
                     
                     %Assigning CO2, PPF, H value from the corresponding culture state
                     this.fPPF       = this.fCCulture.plants{x, 1}.state.PPF;    % [µmol/m^2/s]
-                    this.fCO2ppm    = this.fCCulture.plants{x, 1}.state.CO2;    % [µmol/mol]
+%                     this.fCO2ppm    = this.fCCulture.plants{x, 1}.state.CO2;    % [µmol/mol]
                     this.fH         = this.fCCulture.plants{x, 1}.state.H;      % [hours/day]
+                    
+                    
+                    this.fCO2ppm    = fCO2ppm;   % [µmol/mol]
+                    this.fCCulture.plants{x, 1}.state.CO2 = this.fCO2ppm;
                 end
                 
                 
@@ -272,7 +276,17 @@ classdef Create_Biomass < matter.manips.substance.flow
             
             global bUseGlobalPlantConditions
             
+            % get density of liquid water, required for calculating plant 
+            % transpiration
+            tH2O.sSubstance = 'H2O';
+            tH2O.sProperty = 'Density';
+            tH2O.sFirstDepName = 'Pressure';
+            tH2O.fFirstDepValue = this.fP_atm;
+            tH2O.sSecondDepName = 'Temperature';
+            tH2O.fSecondDepValue = this.fTemp_light;
+            tH2O.sPhaseType = 'liquid';
             
+            fDensityH2O = this.oMT.findProperty(tH2O);
             
             for iI = 1:size(this.fCCulture.plants, 1)
                 
@@ -286,7 +300,7 @@ classdef Create_Biomass < matter.manips.substance.flow
                     this.fCO2ppm    = this.oParent.fCO2ppm;                         %CO2 PPM of parent system; Either 'predefined' or 'live LSS' value
                 else
                     this.fPPF       = this.fCCulture.plants{iI, 1}.state.PPF;        %Use PPF from plant setup
-                    this.fCO2ppm    = this.fCCulture.plants{iI, 1}.state.CO2;        %Use CO2 PPM from plant setup
+%                     this.fCO2ppm    = this.fCCulture.plants{iI, 1}.state.CO2;        %Use CO2 PPM from plant setup
                     this.fH         = this.fCCulture.plants{iI, 1}.state.H;          %Use H (photoperiod per day) value from plant setup
                 end
                 
@@ -320,7 +334,8 @@ classdef Create_Biomass < matter.manips.substance.flow
                     this.fCO2ppm_Measured,          ...     % CO2 level in LSS                      [µmol/mol]
                     this.fH,                        ...     % Photoperiod per day                   [h/d]
                     this.fTemp_light,               ...     % Mean air temperature                  [°C]
-                    this.fTemp_dark);                       % Mean air temperature                  [°C]
+                    this.fTemp_dark, ...                    % Mean air temperature                  [°C]
+                    fDensityH2O);                           % liquid water density (for transpiration) [kg/m^3]
                 %%%%%%%%%%%%%%
                 
                 

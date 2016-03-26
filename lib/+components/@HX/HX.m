@@ -187,6 +187,10 @@ classdef HX < vsys
         fEntryTemp_Old_2;
         fMassFlow_Old_1;
         fMassFlow_Old_2;
+        arPartialMass1Old;
+        arPartialMass2Old;
+        fOldPressureFlow1;
+        fOldPressureFlow2;
         
         %variable to check wether it is the first iteration step
         iFirst_Iteration = int8(1);
@@ -200,11 +204,12 @@ classdef HX < vsys
         % Stores the time at which the update() method was last called
         fLastUpdate;
         
-        
+        fTempChangeToRecalc = 0.1;
+        fPercentChangeToRecalc = 0.01;
     end
     
     methods
-        function this = HX(oParent, sName, mHX, sHX_type, fHX_TC)
+        function this = HX(oParent, sName, mHX, sHX_type, fHX_TC, fTempChangeToRecalc, fPercentChangeToRecalc)
             this@vsys(oParent, sName);
             
             %if a thermal conductivity for the heat exchanger is provided
@@ -216,7 +221,10 @@ classdef HX < vsys
             this.mHX = mHX;
             this.sHX_type = sHX_type;      
             this.bExecuteContainer = false;
-            
+            if nargin > 5
+                this.fTempChangeToRecalc = fTempChangeToRecalc;
+                this.fPercentChangeToRecalc = fPercentChangeToRecalc;
+            end
             %Because the HX f2f proc is actually added to the parent system
             %of the HX its definition has to take place here instead of the
             %createMatterStructure function
@@ -272,23 +280,33 @@ classdef HX < vsys
             % gets the values from the flows required for the HX
             fMassFlow_1  = abs(oFlows_1.fFlowRate);      % Get absolute values, hope that's okay...
             fMassFlow_2  = abs(oFlows_2.fFlowRate);      % Get absolute values, hope that's okay...
+            
+            if (fMassFlow_1 == 0) || (fMassFlow_2 == 0)
+                this.oF2F_1.setOutFlow(0, 0);
+                this.oF2F_2.setOutFlow(0, 0);
+                return
+            end
+            
             fEntryTemp_1 = oFlows_1.fTemperature;
             fEntryTemp_2 = oFlows_2.fTemperature;
             
             fCp_1 = oFlows_1.fSpecificHeatCapacity;
             fCp_2 = oFlows_2.fSpecificHeatCapacity;
-                
-
+            
             % For changes in entry temperature that are larger than 0.1 K or
             % changes in massflow which are larger than 1 g/sec the heat
             % exchanger is calculated anew
             % alternativly in the first iteration step the value first is 1
             % and the programm has to calculate the heat exchanger
-            if  this.iFirst_Iteration == 1 || ...
-                (abs(fEntryTemp_1-this.fEntryTemp_Old_1) > 0.1) || ...
-                (abs(fMassFlow_1-this.fMassFlow_Old_1) > 0.001) || ...
-                (abs(fEntryTemp_2-this.fEntryTemp_Old_2) > 0.1)|| ...
-                (abs(fMassFlow_2-this.fMassFlow_Old_2) > 0.001)
+            if  this.iFirst_Iteration == 1 ||...                                                                    %if it is the first iteration
+                (abs(fEntryTemp_1-this.fEntryTemp_Old_1) > this.fTempChangeToRecalc) ||...                          %if entry temp changed by more than X°
+                (abs(1-(fMassFlow_1/this.fMassFlow_Old_1)) > this.fPercentChangeToRecalc) ||...                 	%if mass flow changes by more than X%
+                (abs(fEntryTemp_2-this.fEntryTemp_Old_2) > this.fTempChangeToRecalc)||...                           %if entry temp changed by more than X°
+                (abs(1-(fMassFlow_2/this.fMassFlow_Old_2)) > this.fPercentChangeToRecalc)||...                      %if mass flow changes by more than X%
+                (max(abs(1-(oFlows_1.arPartialMass./this.arPartialMass1Old))) > this.fPercentChangeToRecalc)||...  	%if composition of mass flow changed by more than X%
+                (max(abs(1-(oFlows_2.arPartialMass./this.arPartialMass2Old))) > this.fPercentChangeToRecalc)||...   %if composition of mass flow changed by more than X%
+                (abs(1-(oFlows_1.fPressure/this.fOldPressureFlow1)) > this.fPercentChangeToRecalc)||...             %if Pressure changed by more than X%
+                (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow2)) > this.fPercentChangeToRecalc)                  %if Pressure changed by more than X%
                 
                 fDensity_1      = this.oMT.calculateDensity(oFlows_1);
                 fDensity_2      = this.oMT.calculateDensity(oFlows_2);
@@ -347,6 +365,10 @@ classdef HX < vsys
                 this.fEntryTemp_Old_2    = fEntryTemp_2;
                 this.fMassFlow_Old_1     = fMassFlow_1;
                 this.fMassFlow_Old_2     = fMassFlow_2;
+                this.arPartialMass1Old = oFlows_1.arPartialMass;
+                this.arPartialMass2Old = oFlows_2.arPartialMass;
+                this.fOldPressureFlow1 = oFlows_1.fPressure;
+                this.fOldPressureFlow2 = oFlows_2.fPressure;
             end
             
             this.fLastUpdate = this.oTimer.fTime; 

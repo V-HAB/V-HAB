@@ -48,7 +48,7 @@ if iNumArgs == 1 %nargin < 3
                 end
             end
             
-        elseif strcmp(oMatterRef.getInEXME().oPhase.sType, 'solid')
+        elseif strcmp(oMatterRef.sType, 'solid')
             % Solids do not have a partial pressure or even a pressure,
             % therefore the afPP variable which is used to calculate the
             % matter properties is set to the standard pressure to allow
@@ -129,14 +129,14 @@ if iNumArgs == 1 %nargin < 3
                     end
                 end
             else
-                afPP = oMatterRef.oBranch.coExmes{1,2}.oPhase.afPP;
+                afPP = oMatterRef.oBranch.coExmes{2,1}.oPhase.afPP;
             end
         else
             try
                 if oMatterRef.fFlowRate >= 0
                     afPP = ones(1,this.iSubstances) .* oMatterRef.oBranch.coExmes{1,1}.oPhase.fPressure;
                 else
-                    afPP = ones(1,this.iSubstances) .* oMatterRef.oBranch.coExmes{1,2}.oPhase.fPressure;
+                    afPP = ones(1,this.iSubstances) .* oMatterRef.oBranch.coExmes{2,1}.oPhase.fPressure;
                 end
             catch
                 afPP = ones(1,this.iSubstances) .* this.Standard.Pressure;
