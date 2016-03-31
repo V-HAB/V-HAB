@@ -1,224 +1,59 @@
-classdef container < sys
-    %CONTAINER Summary of this class goes here
+classdef circuit < base & event.source
+    %CIRCUIT Summary of this class goes here
     %   Detailed explanation goes here
     
-    properties (SetAccess = private, GetAccess = public)
-        % Stores stored as struct.
-        %CHECK change to mixin array? Do we need that?
-        %aoStores = matter.store.empty();
-        % @type struct
-        % @types object
+    properties
+        % Reference to a voltage or current source. Is initialized empty so
+        % during seal() the system can determine if it is the master object
+        % for the overall circuit, or just a subsystem part of a circuit.
+        oSource = [];
+        
+        % Reference to the parent electrical system
+        oParent;
+        
+        % Name of this circuit
+        sName;
+        
+        aoStores = [];
+        
         toStores = struct();
         
-        % Branches stored as mixin (?) array, so e.g. all flow rates can be
-        % extracted with [ this.aoBranches.fFlowRate ]
-        % @type array
-        % @types object
-        aoBranches = matter.branch.empty();
+        aoNodes = electrical.node.empty();
         
-        % Processors - also stored in the branch they belong to, but might
-        % be helpfull to access them here through their name to e.g.
-        % execute some methods (close valve, switch off fan, ...)
-        toProcsF2F = struct(); %matter.procs.f2f.empty();
+        toNodes = struct();
         
-        % Cached names
-        csStores;
-        csProcsF2F;
+        iNodes;
         
-        % Reference to the branches, by name
+        aoComponents = [];
+        
+        toComponents = struct();
+        
+        aoBranches = electrical.branch.empty();
+        
         toBranches = struct();
         
+        iBranches;
         
-        % Sealed?
-        bMatterSealed = false;
+        csLoops = cell.empty;
+        
+        mbConnections; 
+        
+        bSealed;
+        
+        % Reference to the timer
+        % @type object
+        oTimer;
     end
-    
-    properties (SetAccess = private, GetAccess = public, Transient)
-        % Make those transient? Would have to be re-referenced in loadobj.
-        oMT;
-    end
-    
-    properties (SetAccess = protected, GetAccess = public)
-        tSolverParams;
-    end
-    
     
     methods
-        function this = container(oParent, sName)
-            this@sys(oParent, sName);
-            
-            % Copy solver params so they can be adapted locally!
-            this.tSolverParams = this.oParent.tSolverParams;
-            
-            
-            if ~isa(this.oRoot.oMT, 'matter.table'), this.throw('container', 'Provided object ~isa matter.table'); end;
-            
-            this.oMT    = this.oRoot.oMT;
-        end
         
-        function afMass = getTotalPartialMasses(this)
-            % Example method - get masses of each species within all phases
-            % from all stores referenced in this container.
+        function this = circuit(oParent, sName)
+            this.oParent = oParent;
+            this.sName = sName;
+            this.oTimer = this.oParent.oRoot.oTimer;
             
-            % Create object array of all phases. Need the [] since Matlab
-            % returns the results the same way a cell with {:} does.
-            % OLD - aoStores now toStores!
-            %aoPhases = [ this.aoStores.aoPhases ];
-            % Convert struct to cell, get all elements, and make array!
-            %CHECK speed? switch back to aoStores?
-            coStores = struct2cell(this.toStores);
-            aoStores = [ coStores{:} ];
-            aoPhases = [ aoStores.aoPhases ];
+            this.oParent.addCircuit(this);
             
-            % Get masses - one long row vector, since masses are stored as
-            % row vector within the phase objects
-            afMassesVector = [ aoPhases.afMass ];
-            
-            % Therefore reshape the afMass vector, with the first dimension
-            % being the amount of species stored in the matter table since
-            % that's the amount of elements all the afMass vectors have.
-            mfMass = reshape(afMassesVector, this.oData.oMT.iSpecies, []);
-            
-            % Now the mfMass contains a matrix where the columns represent
-            % each phase, the rows represent the species (therefore the
-            % second parameter to sum)
-            afMass = sum(mfMass, 2);
-            
-            % afMass now contains the sum for each species from all phases,
-            % well should, not tested :-)
-        end
-    end
-    
-    
-    %% Internal methods
-    % References to the store, f2f etc are stored one-way, i.e. store
-    % does not point to container.
-    methods (Access = protected)
-%TODO
-%DELETE? Is never called...
-%SCJO: yes and no. Within vsys .exec(), this method COULD be called. The
-%      idea was that matter procs like F2Fs are updated here. Maybe this
-%      does not make sense, and rather proc update methods have to be
-%      called explicitly by the user in vsys.exec?
-%
-%         function exec(this, fTimeStep)
-%             
-%             
-%             % Stores call phases call exme .update(). Phases/Exme do the
-%             % actual mass moving, so if just update of internal parameters
-%             % desired, call oPhase.update(0).
-%             %TODO Call EXEC, not update!
-%             for iI = 1:length(this.csStores), this.toStores.(this.csStores{iI}).exec(fTimeStep); end;
-%             
-%             %TODO .exec, not .update (see above)
-%             for iI = 1:length(this.csProcsF2F), this.toProcsF2F.(this.csProcsF2F{iI}).exec(fTimeStep); end;
-%         end
-        
-        
-        
-    end
-    
-    methods (Access = public)
-        
-        function sealMatterStructure(this)
-            if this.bMatterSealed
-                this.throw('sealMatterStructure', 'Already sealed');
-            end
-            
-            
-            csChildren = fieldnames(this.toChildren);
-            
-            for iC = 1:length(csChildren)
-                sChild = csChildren{iC};
-                
-                this.toChildren.(sChild).sealMatterStructure();
-            end
-            
-            
-            
-            
-            
-            this.csStores = fieldnames(this.toStores);
-            this.csProcsF2F = fieldnames(this.toProcsF2F);
-            
-            for iI = 1:length(this.csStores)
-                % Stores need a timer object, to be accessed by the phases
-                % to e.g. register updates, find out elapsed time
-                this.toStores.(this.csStores{iI}).seal();
-            end
-            
-            % Now we seal off all of the branches. Some of them may be
-            % interface branches to subsystems. These leftover stubs of
-            % branches are no longer needed and can be deleted. These stubs
-            % will have an abIf property that looks like this: [1; 0]
-            % meaning their left side is an interface while their right
-            % side is connected to an exme processor. If the branch is a
-            % subsystem interface branch to a supersystem, abIf = [0; 1].
-            % If the branch is a pass-through branch from a subsystem to a
-            % supersystem via an intermediate system, abIf = [1; 1]. So we
-            % only want to delete if abIf = [1; 0].
-            
-            % Of course, we only have to do this, if there are any branches
-            % in the container at all. In some cases, there can be 
-            % subsystems with no branches. The heat exchanger component is 
-            % an example. It only provides two processors. So we check for 
-            % existin branches first. 
-            if ~isempty(this.aoBranches)
-                % Now we can get the 2xN matrix for all the branches in the
-                % container.
-                mbIf = subsref([this.aoBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
-                % Using the element-wise AND operator '&' we delete only the
-                % branches with abIf = [1; 0].
-                % First we create a helper array.
-                aoBranchStubs = this.aoBranches(mbIf(1,:) & ~mbIf(2,:));
-                % Now we delete the branches from the aoBranches property.
-                this.aoBranches(mbIf(1,:) & ~mbIf(2,:)) = [];
-                % Now, using the helper array, we delete the fields from
-                % the toBranches struct.
-                for iI = 1:length(aoBranchStubs)
-                    if ~isempty(aoBranchStubs(iI).sCustomName)
-                        this.toBranches = rmfield(this.toBranches, aoBranchStubs(iI).sCustomName);
-                    else
-                        this.toBranches = rmfield(this.toBranches, aoBranchStubs(iI).sName);
-                    end
-                end
-                
-                for iI = 1:length(this.aoBranches)
-                    % So now the stubs are deleted and the pass-through are
-                    % already sealed, so we only have to seal the non-interface
-                    % branches and the
-                    if sum(this.aoBranches(iI).abIf) <= 1
-                        this.aoBranches(iI).seal();
-                    end
-                end
-                
-                % Now that we've taken care of all the branches in this
-                % container, we also no longer need the pass-through branches
-                % on the subsystems beneath us. So we go through all of them
-                % and call a removal method.
-                if this.iChildren > 0
-                    for iI = 1:this.iChildren
-                        this.toChildren.(this.csChildren{iI}).removePassThroughBranches();
-                    end
-                end
-            end
-            
-            this.bMatterSealed = true;
-        end
-        
-        
-        
-        
-        
-        function createMatterStructure(this)
-            % Call in child elems
-            csChildren = fieldnames(this.toChildren);
-            
-            for iC = 1:length(csChildren)
-                sChild = csChildren{iC};
-                
-                this.toChildren.(sChild).createMatterStructure();
-            end
         end
         
         function addStore(this, oStore)
@@ -230,55 +65,64 @@ classdef container < sys
                 this.throw('addStore', 'The container is sealed, so no stores can be added any more.');
             end
             
-            if ~isa(oStore, 'matter.store')
-                this.throw('addStore', 'Provided object ~isa matter.store!');
+            if ~isa(oStore, 'electrical.store')
+                this.throw('addStore', 'Provided object is not a electrical.store!');
             
             elseif isfield(this.toStores, oStore.sName)
                 this.throw('addStore', 'Store with name %s already exists!', oStore.sName);
-            
-            elseif oStore.oMT ~= this.oMT
-                this.throw('addStore', 'Matter tables don''t match ... should probably not happen? See doc of this method, create stores through container?');
+                
+            elseif isa(oStore, 'electrical.stores.constantVoltageSource') || ...
+                   isa(oStore, 'electrical.stores.constantCurrentSource')
+               
+               if isempty(this.oSource)
+                   this.oSource = oStore;
+               else
+                   this.throw('addStore', 'This circuit (%s) already has a source. A circuit can only have one source.', this.sName);
+               end
+               
             end
             
             % Stores do not contain a reference to the container, so no
             % method needs to be called there.
             this.toStores.(oStore.sName) = oStore;
             
+            if isempty(this.aoStores)
+                this.aoStores = oStore;
+            else
+                this.aoStores(end + 1) = oStore;
+            end
+            
+            
         end
         
-        
-        
-        function this = addProcF2F(this, oProcF2F)
-            % Adds a f2f proc.
-            %
-            %TODO tell the flow proc about that? Or just one-way?
-            
+        function addNode(this, oNode)
             if this.bSealed
-                this.throw('addProcF2F', 'The container is sealed, so no f2f procs can be added any more.');
+                this.throw('addNode', 'The container is sealed, so no nodes can be added any more.');
+            end
+            
+            if ~isa(oNode, 'electrical.node')
+                this.throw('addNode', 'Provided object is not a electrical.node!');
+            
+            elseif isfield(this.toNodes, oNode.sName)
+                this.throw('addNode', 'Node with name %s already exists!', oNode.sName);
+            end
+            
+            this.toNodes.(oNode.sName) = oNode;
+            
+            if isempty(this.aoNodes)
+                this.aoNodes = oNode;
+            else
+                this.aoNodes(end + 1) = oNode;
             end
             
             
-            if ~isa(oProcF2F, 'matter.procs.f2f')
-                this.throw('addF2F', 'Provided object ~isa matter.procs.f2f.');
-                
-            elseif isfield(this.toProcsF2F, oProcF2F.sName)
-                this.throw('addF2F', 'Proc %s already exists.', oProcF2F.sName);
-                
-            elseif this ~= oProcF2F.oContainer
-                this.throw('addP2P', 'F2F proc does not have this vsys set as a container!');
-            
-            end
-            
-            this.toProcsF2F.(oProcF2F.sName) = oProcF2F;
         end
-        
-        
         
         function this = addBranch(this, oBranch)
             if this.bSealed
                 this.throw('addBranch', 'Can''t create branches any more, sealed.');
                 
-            elseif ~isa(oBranch, 'matter.branch')
+            elseif ~isa(oBranch, 'electrical.branch')
                 this.throw('addBranch', 'Provided branch is not a and does not inherit from matter.branch');
                 
             elseif isfield(this.toBranches, oBranch.sName)
@@ -286,9 +130,8 @@ classdef container < sys
                 
             end
             
-            
-            
             this.aoBranches(end + 1, 1)     = oBranch;
+           
             if ~isempty(oBranch.sCustomName)
                 if isfield(this.toBranches, oBranch.sCustomName)
                     error('A branch with this custom name already exists')
@@ -300,8 +143,31 @@ classdef container < sys
             end
         end
         
-        
-        
+        function addComponent(this, oComponent)
+            % Adds a new component to the circuit.
+            if this.bSealed
+                this.throw('addComponent', 'The circuit is sealed, so no components can be added any more.');
+            end
+            
+            if ~isa(oComponent, 'electrical.component')
+                this.throw('addStore', 'Provided object is not a electrical.component!');
+            
+            elseif isfield(this.toComponents, oComponent.sName)
+                this.throw('addStore', 'Component with name %s already exists!', oComponent.sName);
+            
+            end
+            
+            % Stores do not contain a reference to the container, so no
+            % method needs to be called there.
+            this.toComponents.(oComponent.sName) = oComponent;
+            
+            if isempty(this.aoComponents)
+                this.aoComponents = oComponent;
+            else
+                this.aoComponents(end + 1) = oComponent;
+            end
+            
+        end
         
         function connectSubsystemInterfaces(this, sLeftSysAndIf, sRightSysAndIf, csProcsLeft, csProcsRight, fVolume)
             %TODO error check if sys, if etc doesn't exist
@@ -394,9 +260,103 @@ classdef container < sys
             oRightSys.connectIF(sRightSysIf, sRightIf);
             
         end
+        
+        function seal(this)
+            
+            % Sealing the nodes and branches
+            this.iNodes    = length(this.aoNodes);
+            for iI = 1:this.iNodes
+                this.aoNodes(iI).seal();
+            end
+            
+            this.iBranches = length(this.aoBranches);
+            for iI = 1:this.iBranches
+                this.aoBranches(iI).seal();
+            end
+            
+            % Here the whole network analysis magic happens?
+            
+            % If there is a voltage or current source in this circuit, we
+            % need to add one to the number of nodes in the circuit,
+            % because the source counts as one node. 
+            if ~isempty(this.oSource)
+                iLength = this.iNodes + 1;
+            else
+                iLength = this.iNodes;
+            end
+            
+            % Creating the empty connection matrix
+            this.mbConnections = false(iLength);
+            
+            % Go through all branches in the system and enter the
+            % connections between the nodes into the matrix.
+            for iI = 1:this.iBranches
+                
+                %%%%%%% THIS DOESN'T WORK YET
+                iLeftNode  = this.aoNodes == this.aoBranches(iI).coTerminals{1}.oParent;
+                iRightNode = this.aoNodes == this.aoBranches(iI).coTerminals{2}.oParent;
+            end
+            
+            %%% Copied from container
+            % Now we seal off all of the branches. Some of them may be
+            % interface branches to subsystems. These leftover stubs of
+            % branches are no longer needed and can be deleted. These stubs
+            % will have an abIf property that looks like this: [1; 0]
+            % meaning their left side is an interface while their right
+            % side is connected to an exme processor. If the branch is a
+            % subsystem interface branch to a supersystem, abIf = [0; 1].
+            % If the branch is a pass-through branch from a subsystem to a
+            % supersystem via an intermediate system, abIf = [1; 1]. So we
+            % only want to delete if abIf = [1; 0].
+            
+            % Of course, we only have to do this, if there are any branches
+            % in the container at all. In some cases, there can be 
+            % subsystems with no branches. The heat exchanger component is 
+            % an example. It only provides two processors. So we check for 
+            % existin branches first. 
+            if ~isempty(this.aoBranches)
+                % Now we can get the 2xN matrix for all the branches in the
+                % container.
+                mbIf = subsref([this.aoBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
+                % Using the element-wise AND operator '&' we delete only the
+                % branches with abIf = [1; 0].
+                % First we create a helper array.
+                aoBranchStubs = this.aoBranches(mbIf(1,:) & ~mbIf(2,:));
+                % Now we delete the branches from the aoBranches property.
+                this.aoBranches(mbIf(1,:) & ~mbIf(2,:)) = [];
+                % Now, using the helper array, we delete the fields from
+                % the toBranches struct.
+                for iI = 1:length(aoBranchStubs)
+                    if ~isempty(aoBranchStubs(iI).sCustomName)
+                        this.toBranches = rmfield(this.toBranches, aoBranchStubs(iI).sCustomName);
+                    else
+                        this.toBranches = rmfield(this.toBranches, aoBranchStubs(iI).sName);
+                    end
+                end
+                
+                for iI = 1:length(this.aoBranches)
+                    % So now the stubs are deleted and the pass-through are
+                    % already sealed, so we only have to seal the non-interface
+                    % branches and the
+                    if sum(this.aoBranches(iI).abIf) <= 1
+                        this.aoBranches(iI).seal();
+                    end
+                end
+                
+%                 % Now that we've taken care of all the branches in this
+%                 % container, we also no longer need the pass-through branches
+%                 % on the subsystems beneath us. So we go through all of them
+%                 % and call a removal method.
+%                 if this.iChildren > 0
+%                     for iI = 1:this.iChildren
+%                         this.toChildren.(this.csChildren{iI}).removePassThroughBranches();
+%                     end
+%                 end
+            end
+        end
+        
+        
     end
-    
-    
     
     % Changed --> allow external access, e.g. scheduler needs to be able to
     % change the IFs ... or the Sub-System need to implement methods for
@@ -525,11 +485,11 @@ classdef container < sys
                     % namelengthmax is the MATLAB variable that stores the
                     % maximum name length, so in case it changes in the
                     % future, we don't have to change this code!
-                    sName = aoBranchStubs(iI).sName;
-                    if length(sName) > namelengthmax
-                        sName = sName(1:namelengthmax);
+                    sBranchName = aoBranchStubs(iI).sName;
+                    if length(sBranchName) > namelengthmax
+                        sBranchName = sBranchName(1:namelengthmax);
                     end
-                    this.toBranches = rmfield(this.toBranches, sName);
+                    this.toBranches = rmfield(this.toBranches, sBranchName);
                 end
             end
         end

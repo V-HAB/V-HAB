@@ -374,6 +374,10 @@ classdef container < sys
             
         end
         
+        function sealThermalStructure(this)
+            
+        end
+        
     end
     
     methods (Access = protected)
