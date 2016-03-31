@@ -1,3 +1,11 @@
+%HELP_TODOS
+% This script searches for a certain string within all files in the core
+% and user directories. 
+
+%QUESTION: Why not use the MATLAB search for this?
+
+%TODO: This currently only works on Windows, make compatible with Mac. 
+
 
 disp('Find''s all strings like "%TODO xyz ..." or "%NOTE abc"');
 
