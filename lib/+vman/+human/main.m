@@ -516,7 +516,7 @@ classdef main < vsys
             exec@vsys(this);
             
             % Overwrites previously set flowrates if the duration of the
-            % event has beene exceeded
+            % event has been exceeded
             if (this.oTimer.fTime - this.fDrinkStartTime) >= this.fDrinkTime
                 this.toBranches.Liquid_Food_In.oHandler.setFlowRate(0);
                 this.fDrinkStartTime = inf;
@@ -694,6 +694,13 @@ classdef main < vsys
                     fTotalEnergyRequirement = fTotalEnergyRequirement + this.miEnergyRequirement(iCM);
                 end
 
+                % and resets the energy requirement for the Crew to the
+                % nominal value
+                this.miEnergyRequirement = zeros(this.iCrewMembers,1);
+                for iK = 1:this.iCrewMembers
+                    this.miEnergyRequirement(iK) = this.fNominalDailyEnergyRequirement;
+                end
+                
                 % According to the calculated energy requirement three meals
                 % are consumed:
                 % It is assumed here that 1.26 kg of food contain exactly the
