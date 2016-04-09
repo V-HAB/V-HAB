@@ -203,8 +203,6 @@ classdef timer < base
             %      with last exec/time step would be unnecessary, in that
             %      case, directly set this.fTimeStep as fThisStep!
             if fThisStep < this.fMinimumTimeStep
-%                 disp('Setting minimum time step.');
-%                 keyboard();
                 fThisStep = this.fMinimumTimeStep;
             end
             
@@ -215,32 +213,12 @@ classdef timer < base
             % Find all cb's indices whose last exec + time step <= fTime
             % Dependent systems have -1 as time step - therefore this
             % should always be true!
-            %abExec = this.afLastExec + this.afTimeStep <= this.fTime;
-            %TODO Add an extensive explanation here on why the expression
-            % that is being compared here is exactly this:
-            % 'this.fTime + fThisStep - this.fMinimumTimeStep'
-            % Explain what this does to the abExec array. 
-            abExec = (this.afLastExec + this.afTimeStep) <= (this.fTime + fThisStep - this.fMinimumTimeStep);
-%             sString = '%i';
-%             for iI=1:length(abExec)-1
-%                 sString = strcat(sString,' %i');
-%             end
-%             sString = strcat(sString,'\n');
-%             fprintf(sString,abExec);
-            
-            % Execute found cbs
-            % The indexing type for the cell only works if the array is of
-            % real logical / boolean type!
-            
-            %cellfun(@(cb) cb(this), this.cCallBacks(abExec));
+            abExec = (this.afLastExec + this.afTimeStep) <= this.fTime;
             aiExec  = find(abExec);
-            iExec   = length(aiExec);
-            %cTmpCbs = this.cCallBacks(abExec);
-            %iExec   = length(cTmpCbs);
             
-            for iE = 1:iExec
+            % Execute callbacks
+            for iE = 1:length(aiExec)
                 this.cCallBacks{aiExec(iE)}(this);
-                %cTmpCbs{iE}();
             end
             
             
@@ -257,14 +235,10 @@ classdef timer < base
                     iPostTick = 1;
 
                     % iPostTickMax can change in interation!
-                    while iPostTick <= this.aiPostTickMax(iP) % ~isempty(this.chPostTick)
+                    while iPostTick <= this.aiPostTickMax(iP)
                         % Executing the first item in the stack, represented by the
                         % first item in the cell array
                         this.chPostTick{iP, iPostTick}();
-
-                        % Removing the item we just executed
-                        % Don't really need that any more ...
-                        %this.chPostTick{iPostTick} = [];
 
                         iPostTick = iPostTick + 1;
                     end
@@ -273,17 +247,11 @@ classdef timer < base
                 end
             end
             
-            
             % check for bRun -> if true, execute this.step() again!
             if this.bRun
                 this.run();
             end
             
-%             fNextExecutionTime = min((this.afLastExec(~this.abDependent) + this.afTimeStep(~this.abDependent)));
-%             if fNextExecutionTime == this.fTime
-%                 fprintf('\b, Time: %.10f, Tick: %i\n',this.fTime, this.iTick);
-% %                 keyboard();
-%             end
         end
         
         function setTimeStep(this, iCB, fTimeStep, bResetLastExecuted)

@@ -1,4 +1,4 @@
-classdef source < base % < hobj
+classdef source < handle
     %EVENTS blah ...
     %
     %TODO
