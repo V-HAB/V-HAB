@@ -155,6 +155,8 @@ classdef branch < base & event.source
             end
             
             
+            this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
+            
             %keyboard();
             this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
             this.bRegisteredOutdated = true;
