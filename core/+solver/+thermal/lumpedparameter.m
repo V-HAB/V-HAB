@@ -63,14 +63,14 @@ classdef lumpedparameter < base
                 fTimestep = 1;
             end
             
-            if isempty(bTherMoSInterface) || nargin < 3
+            if (nargin < 3) || isempty(bTherMoSInterface)
                 this.bTherMoSInterface = false; 
             else
                 this.bTherMoSInterface = bTherMoSInterface;
             end
             
             % Register with timer: Call |this.update| each |fTimestep|.
-            [this.setTimestep, this.unbindFromTimer] = this.oVSys.oTimer.bind(@(o) this.update(o), fTimestep);
+            [this.setTimestep, this.unbindFromTimer] = this.oVSys.oTimer.bind(@(oTimer) this.update(oTimer), fTimestep);
             
             % Define rate of change function for ODE solver.
             this.calcChangeRate = @(t, m) this.calcTemperatureChangeRate(m, t);
@@ -125,8 +125,10 @@ classdef lumpedparameter < base
             fStepBeginTime = this.fPreviousTimestep;
             fStepEndTime   = oTimer.fTime;
             
-            % Solve the equation. 
-            [mTimePoints, mSolutionTemps] = ode45(this.calcChangeRate, ...
+            % Solve the equation.
+            % http://www.mathworks.com/matlabcentral/answers/101581-why-do-i-receive-a-warning-about-integration-tolerance-when-using-the-ode-solver-functions
+            % ode45, ode23s, ode15s, ode23tb?
+            [mTimePoints, mSolutionTemps] = ode45(this.calcChangeRate, ...    ode23s
                 [fStepBeginTime, fStepEndTime], mNodeTemps, this.tOdeOptions);
             
             % Store solver results. This is mostly for debugging purposes.

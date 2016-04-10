@@ -51,6 +51,21 @@ classdef container < sys
             
         end
         
+        
+        function createThermalStructure(this)
+            % Call in child elems
+            csChildren = fieldnames(this.toChildren);
+            
+            for iC = 1:length(csChildren)
+                sChild = csChildren{iC};
+                
+                this.toChildren.(sChild).createThermalStructure();
+            end
+        end
+        
+        
+        
+        
         %TODO: make a |getThermalNetwork| method that resets |bIsTainted|
         %      and returns pretty much all thermal maps so most of the
         %      stuff below can move to the solver. Should probably create
@@ -135,15 +150,30 @@ classdef container < sys
             % fuses |oCapacity = thermal.capacity|,
             % |oCapacity.setHeatSource|, and
             % |container.addCapacity(oCapacity)|.
-                        
-            oCapacity = thermal.capacity(oMatter.sName, oMatter);
             
-            if nargin > 2
+            %TODO needs to be that detailed for now, as only one tsys
+            %     possible -> capacity names might overlap otherweise.
+            sPrefix = '';
+            oSystem = oMatter.oStore.oContainer;
+            
+            while ~isa(oSystem.oParent, 'simulation.container')
+                sPrefix = [ '_' oSystem.sName sPrefix ];
+                oSystem = oSystem.oParent;
+            end
+            
+            sName     = [ sPrefix(2:end) '__' oMatter.oStore.sName '__' oMatter.sName ];
+            oCapacity = thermal.capacity(sName, oMatter);
+            
+            
+            if nargin > 2 && ~isempty(oHeatSource)
                 oCapacity.setHeatSource(oHeatSource);
             end;
             
             this.addCapacity(oCapacity);
+            
+            
             % We're done here.
+            % Echt? Der Kommentar ist ja NOCH sinnvoller als meine. Danke.
             
         end
         
@@ -160,6 +190,8 @@ classdef container < sys
             this.bIsTainted = true;
             this.poCapacities(oCapacity.sName) = oCapacity;
             
+            
+            %TODO addCapacity, HeatSource, Conductor: call oObj.setContainer(this) on new element, so within those elements, thermal container can be referenced to e.g. do this.oContainer.taint()
         end
         
         function removeCapacity(this, sName)
