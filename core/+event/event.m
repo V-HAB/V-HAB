@@ -6,11 +6,12 @@ classdef event < handle
     properties (SetAccess = private, GetAccess = public)
         sType;
         oCaller;
-        xData;
     end
     
     properties (Access = public)
+        % Payload data for the event
         tData;
+        xData;
         
         % Store current token for setInterval calls etc - e.g.
         % oEvent.oCaller.setTimeout(oEvent.sToken, 245)

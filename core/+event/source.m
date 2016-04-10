@@ -70,7 +70,7 @@ classdef source < base % < hobj
             
             %TODO-SPEED why is that so slow? Find a way to speed up
             %           checking for existing events!
-            if ~this.pcEventCallbacks.isKey(sType)
+            if isempty(this.pcEventCallbacks) || ~this.pcEventCallbacks.isKey(sType)
                 cReturn = {};
                 return;
             end
