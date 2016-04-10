@@ -26,7 +26,15 @@ classdef setup_simpleArm < simulation.infrastructure
             
             % Register timer callback to update capacities of nodes and
             % thermal conductivities of conductive conductors. 
-            this.oSimulationContainer.oTimer.bind(@(o) this.updateMassFlow(o), 1);
+            this.oSimulationContainer.oTimer.bind(@() this.updateMassFlow(), 1);
+            
+            
+            % Simulate 2000s.
+            this.fSimTime = 2000; % [s]
+            
+        end
+        
+        function configureMonitors(this)
             
             % Set what data should be logged.
             oLog = this.toMonitors.oLogger;
@@ -34,6 +42,8 @@ classdef setup_simpleArm < simulation.infrastructure
             %tiFlowProps = oLog.add('simpleArm', 'thermal_properties');
             oLog.add('simpleArm', 'thermal_properties');
             oLog.add('simpleArm', 'temperatures');
+            
+            
             
             %% Define plots
             
@@ -43,14 +53,13 @@ classdef setup_simpleArm < simulation.infrastructure
             oPlot.definePlotAllWithFilter('J/K', 'Capacities');
             oPlot.definePlotAllWithFilter('W/K','Conductances');
             
-            % Simulate 2000s.
-            this.fSimTime = 2000; % [s]
             
         end
         
-        function updateMassFlow(this, oTimer)
+        function updateMassFlow(this)
             
-            oTSys = this.oSimulationContainer.toChildren.simpleArm;
+            oTSys  = this.oSimulationContainer.toChildren.simpleArm;
+            oTimer = oTSys.oTimer;
             
             % Get fluidic conductors map.
             poFluidC = oTSys.poFluidicConductors;
