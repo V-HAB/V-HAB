@@ -30,6 +30,19 @@ classdef vsys < matter.container & thermal.container & systems.timed
 %             end
         end
         
+        
+        
+        
+        function createGeometricStructure(this)
+            % Call in child elems
+            csChildren = fieldnames(this.toChildren);
+            
+            for iC = 1:length(csChildren)
+                sChild = csChildren{iC};
+                
+                this.toChildren.(sChild).createGeometricStructure();
+            end
+        end
     end
     
     methods (Access = protected)
