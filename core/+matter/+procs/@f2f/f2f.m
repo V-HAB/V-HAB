@@ -85,6 +85,11 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         % which this f2f belongs needs to call a method in this processor
         % manually, e.g. in .exec().
         fHeatFlow = 0;
+        
+        % Heat flow object. If set, fPower on obj written to fHeatFlow
+        oHeatFlowObject;
+        
+        iHeatFlowDirection;
     end
     
     
@@ -111,6 +116,23 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             % Create map for the func handles
             this.pthFlow = containers.Map('KeyType', 'single', 'ValueType', 'any');
         end
+        
+        
+        function setHeatFlowObject(this, oHeatFlow, iSign)
+            if ~isempty(this.oHeatFlow)
+                this.throw('setHeatFlowObject', 'Already one heat flow set!');
+            end
+            
+            if nargin < 3 || isempty(iSign) || (iSign ~= -1), iSign = 1; end
+            
+            this.oHeatFlowObject    = oHeatFlow;
+            this.iHeatFlowDirection = iSign;
+            
+            this.oHeatFlowObject.bind('update', @this.updateFromHeatFlowObject);
+            
+            this.updateFromHeatFlowObject();
+        end
+        
         
         
         function seal(this, oBranch)
@@ -185,6 +207,12 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     
     
     methods (Access = protected)
+        function updateFromHeatFlowObject(this, ~)
+            this.fHeatFlow = this.oHeatFlowObject * this.iHeatFlowDirection;
+            
+            this.oBranch.setOutdated();
+        end
+        
         function supportSolver(this, sType, varargin)
             handleClassConstructor = str2func([ 'solver.matter.base.type.' sType ]);
             
