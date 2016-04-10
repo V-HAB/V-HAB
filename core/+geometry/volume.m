@@ -8,6 +8,25 @@ classdef volume < geometry.node
     properties (SetAccess = protected, GetAccess = public)
         % Volume
         fVolume = 0;
+        
+        % Named dimensions, used in surfaces to calculate area etc. For a
+        % hollow cylinder, the properties here would NOT be the diameter,
+        % bounding box or so, but for example the inner, outer circum-
+        % ference etc., to enable the surfaces to calculate their areas.
+        % Dimensions are threfore not 'elementar' or 'basic' but just some
+        % value helping to describe the geometry of the volume.
+        tfDimensions = struct();
+        
+        toSurfaces = struct();
+        
+        %TODO
+        % Now: normals + vector for each surface
+        % Could/Should be: just vector; then connect sides / edges of
+        %                  surfaces to each other -> calculate normal?
+        %
+        % Also: tfDimensions misleading as name?
+        % Change calculateVolume logic, see surfaces? Can dimensions be
+        %        changed and properly be updated right now?
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -49,6 +68,13 @@ classdef volume < geometry.node
             end
             
             this.trigger('set.fVolume', this.fVolume);
+        end
+        
+        
+        function set.tfDimensions(this, tfDimensions)
+            this.tfDimensions = tfDimensions;
+            
+            this.trigger('set.tfDimensions', this.tfDimensions);
         end
     end
     
