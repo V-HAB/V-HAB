@@ -51,6 +51,9 @@ classdef branch < base & event.source
         iFlows = 0;
         iComponents = 0;
         
+        % Overall branch resistance in Ohm.
+        fResistance = 0;
+        
         % Current electrical current on branch
         % @type float
         fCurrent = 0;
@@ -273,11 +276,15 @@ classdef branch < base & event.source
                 
             end
             
-            % Adding the branch to our matter.container
+            % Adding the branch to our electrical.container
             this.oCircuit.addBranch(this);
             
-            this.iFlows     = length(this.aoFlows);
+            this.iFlows      = length(this.aoFlows);
             this.iComponents = length(this.aoComponents);
+            
+            this.calculateResistance();
+            
+            
         end
         
         
@@ -757,7 +764,6 @@ classdef branch < base & event.source
     
     methods (Sealed = true)
         function seal(this)
-            % Seal aoFlows, get FR func handle
             
             if this.bSealed
                 this.throw('seal', 'Already sealed');
@@ -779,12 +785,26 @@ classdef branch < base & event.source
                 end
             end
             
+            % Seal the components and calculate the overall branch
+            % resistance
             for iI = 1:length(this.aoComponents)
                 this.aoComponents(iI).seal(this);
             end
             
-            
             this.bSealed = true;
+        end
+        
+        function calculateResistance(this)
+            
+            if this.iComponents > 0
+                for iI = 1:length(this.aoComponents)
+                    if isa(this.aoComponents(iI), 'electrical.components.resistor')
+                        this.fResistance = this.fResistance + this.aoComponents(iI).fResistance;
+                    end
+                end
+            else
+                this.fResistance = 0;
+            end
         end
     end
     

@@ -31,33 +31,60 @@ classdef Example < vsys
             oCircuit = electrical.circuit(this, 'ExampleCircuit');
             
             % Create source
-            electrical.stores.constantVoltageSource(oCircuit, 'VoltageSource', 'DC', 100);
+            electrical.stores.constantVoltageSource(oCircuit, 'VoltageSource', 'DC', 6);
             
             % Create resistors
-            electrical.components.resistor(oCircuit, 'Resistor1', 1000);
-            electrical.components.resistor(oCircuit, 'Resistor2', 1000);
-            electrical.components.resistor(oCircuit, 'Resistor3', 1000);
+            electrical.components.resistor(oCircuit, 'Resistor1', 7.5);
+            electrical.components.resistor(oCircuit, 'Resistor2', 30);
+            electrical.components.resistor(oCircuit, 'Resistor3', 3);
+            electrical.components.resistor(oCircuit, 'Resistor4', 3.75);
+            electrical.components.resistor(oCircuit, 'Resistor5', 15);
+            electrical.components.resistor(oCircuit, 'Resistor6', 3);
             
-            % Create two nodes
+            % Create five nodes
             oNode1 = electrical.node(oCircuit, 'Node_1');
             oNode2 = electrical.node(oCircuit, 'Node_2');
+            oNode3 = electrical.node(oCircuit, 'Node_3');
+            oNode4 = electrical.node(oCircuit, 'Node_4');
+            oNode5 = electrical.node(oCircuit, 'Node_5');
             
-            % Creating four terminals for the two nodes
-            electrical.terminal(oNode1,  1);
-            electrical.terminal(oNode1, -1);
-            electrical.terminal(oNode2,  1);
-            electrical.terminal(oNode2, -1);
+            % Creating terminals using the createTerminals() method. The
+            % argument is the number of terminals that shall be created. 
+            % TODO Add more explanation here and an example of how one
+            % would do it by manually calling electrical.terminal.
+            oNode1.createTerminals(4);
+            oNode2.createTerminals(3);
+            oNode3.createTerminals(3);
+            oNode4.createTerminals(3);
+            oNode5.createTerminals(3);
             
             % Create electrical branches
-            electrical.branch(oCircuit, 'VoltageSource.positive', {'Resistor1'}, 'Node_1.Terminal_1');
-            electrical.branch(oCircuit, 'Node_1.Terminal_2',      {'Resistor2'}, 'Node_2.Terminal_1');
-            electrical.branch(oCircuit, 'Node_2.Terminal_2',      {'Resistor3'}, 'VoltageSource.negative');
+            % The branches here are defined exactly as shown in the circuit
+            % diagram contained in this tutorial. Note that there are three
+            % branches that do not contain any resistances or any
+            % components for that matter. These do not have to be given
+            % here, it is just to show that the solver will take care of
+            % this and combine the nodes internally. 
+            electrical.branch(oCircuit, 'Node_1.Terminal_4',      {'Resistor1'}, 'Node_5.Terminal_1');
+            electrical.branch(oCircuit, 'Node_1.Terminal_2',      {'Resistor2'}, 'Node_3.Terminal_1');
+            electrical.branch(oCircuit, 'Node_1.Terminal_3',      {'Resistor3'}, 'Node_2.Terminal_1');
+            electrical.branch(oCircuit, 'Node_2.Terminal_2',      {'Resistor4'}, 'Node_4.Terminal_1');
+            electrical.branch(oCircuit, 'Node_2.Terminal_3',      {'Resistor5'}, 'Node_3.Terminal_2');
+            electrical.branch(oCircuit, 'VoltageSource.positive', {'Resistor6'}, 'Node_1.Terminal_1');
+            electrical.branch(oCircuit, 'Node_3.Terminal_3',      {},            'Node_4.Terminal_2');
+            electrical.branch(oCircuit, 'Node_4.Terminal_3',      {},            'Node_5.Terminal_2');
+            electrical.branch(oCircuit, 'Node_5.Terminal_3',      {},            'VoltageSource.negative');
+            
+            
+            
+            
             
         end
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
+            solver.electrical.circuit(this.toCircuits.ExampleCircuit);
             
         end
     end

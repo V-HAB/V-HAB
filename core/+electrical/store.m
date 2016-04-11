@@ -44,8 +44,8 @@ classdef store < base
             % Add this store object to the electrical.circuit
             this.oCircuit.addStore(this);
             
-            this.oPositiveTerminal = electrical.terminal(this, 1);
-            this.oNegativeTerminal = electrical.terminal(this, -1);
+            this.oPositiveTerminal = electrical.terminal(this);
+            this.oNegativeTerminal = electrical.terminal(this);
             
         end
         

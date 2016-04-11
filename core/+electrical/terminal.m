@@ -13,10 +13,13 @@ classdef terminal < base
         bHasFlow = false;
     end
     
+    properties (SetAccess = protected, GetAccess = public)
+        fVoltage;
+    end
+    
     methods
-        function this = terminal(oParent, iSign, sName)
+        function this = terminal(oParent, sName)
             this.oParent = oParent;
-            this.iSign = iSign;
             
             % We only have to call the addTerminal() method on the parent
             % object, if it is a node object. store objects can only have
@@ -45,7 +48,7 @@ classdef terminal < base
                 this.throw('addFlow', 'The parent of this terminal is sealed, so no flows can be added any more.');
             
             elseif ~isempty(this.oFlow)
-                this.throw('addFlow', 'There is already a flow connected to this terminal! You have to create another one.');
+                this.throw('addFlow', 'There is already a flow connected to this terminal! (%s.%s) You have to create another one.', this.oParent.sName, this.sName);
             
             elseif ~isa(oFlow, 'electrical.flow')
                 this.throw('addFlow', 'The provided flow object is not an electrical.flow!');
@@ -56,6 +59,17 @@ classdef terminal < base
             
             this.oFlow = oFlow; 
             this.bHasFlow = true;
+        end
+        
+        function setVoltage(this, fVoltage)
+            %TODO Add something here that makes sure, only a node or store
+            %can call this method.
+            this.fVoltage = fVoltage;
+        end
+        
+        function update(this)
+            % Is called after flows are updated? So we can just get the
+            % flow, look at its sign and then set ours accordingly?
         end
     end
     

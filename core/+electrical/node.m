@@ -2,7 +2,9 @@ classdef node < base
     %NODE Summary of this class goes here
     %   Detailed explanation goes here
     
-    properties
+    properties (SetAccess = protected, GetAccess = public)
+        fVoltage;
+        
         aoTerminals = electrical.terminal.empty();
         
         toTerminals = struct();
@@ -43,9 +45,19 @@ classdef node < base
                 oTerminal = this.toTerminals.(sTerminalName);
             catch
                 if ~isfield(this.toTerminals, sTerminalName)
-                    this.throw('getTerminal','There is no terminal ''%s'' on nodes %s.', sTerminalName, this.sName);
+                    this.throw('getTerminal','There is no terminal ''%s'' on node %s.', sTerminalName, this.sName);
                 end
             end
+        end
+        
+        function createTerminals(this, iNumberOfTerminals)
+            for iI = 1:iNumberOfTerminals
+                electrical.terminal(this);
+            end
+        end
+        
+        function setVoltage(this, fVoltage)
+            this.fVoltage = fVoltage;
         end
     end
     

@@ -130,7 +130,7 @@ classdef circuit < base & event.source
                 
             end
             
-            this.aoBranches(end + 1, 1)     = oBranch;
+            this.aoBranches(end + 1)     = oBranch;
            
             if ~isempty(oBranch.sCustomName)
                 if isfield(this.toBranches, oBranch.sCustomName)
@@ -263,41 +263,13 @@ classdef circuit < base & event.source
         
         function seal(this)
             
-            % Sealing the nodes and branches
+            % Sealing the nodes
             this.iNodes    = length(this.aoNodes);
             for iI = 1:this.iNodes
                 this.aoNodes(iI).seal();
             end
             
-            this.iBranches = length(this.aoBranches);
-            for iI = 1:this.iBranches
-                this.aoBranches(iI).seal();
-            end
-            
-            % Here the whole network analysis magic happens?
-            
-            % If there is a voltage or current source in this circuit, we
-            % need to add one to the number of nodes in the circuit,
-            % because the source counts as one node. 
-            if ~isempty(this.oSource)
-                iLength = this.iNodes + 1;
-            else
-                iLength = this.iNodes;
-            end
-            
-            % Creating the empty connection matrix
-            this.mbConnections = false(iLength);
-            
-            % Go through all branches in the system and enter the
-            % connections between the nodes into the matrix.
-            for iI = 1:this.iBranches
-                
-                %%%%%%% THIS DOESN'T WORK YET
-                iLeftNode  = this.aoNodes == this.aoBranches(iI).coTerminals{1}.oParent;
-                iRightNode = this.aoNodes == this.aoBranches(iI).coTerminals{2}.oParent;
-            end
-            
-            %%% Copied from container
+            %%% Copied from matter.container
             % Now we seal off all of the branches. Some of them may be
             % interface branches to subsystems. These leftover stubs of
             % branches are no longer needed and can be deleted. These stubs
@@ -333,6 +305,8 @@ classdef circuit < base & event.source
                         this.toBranches = rmfield(this.toBranches, aoBranchStubs(iI).sName);
                     end
                 end
+                
+                this.iBranches = length(this.aoBranches);
                 
                 for iI = 1:length(this.aoBranches)
                     % So now the stubs are deleted and the pass-through are
@@ -521,6 +495,28 @@ classdef circuit < base & event.source
                 this.throw('container:updateBranchNames','The provided branch does not exist in this matter container.');
             end
         end
+        
+        function setOutdated(this)
+            % Can be used by stores or components to request recalculation
+            % of the currents and voltages, e.g. after some internal
+            % parameters changed (closing switch).
+            
+            % Only trigger if not yet set
+            if ~this.bOutdated
+                this.bOutdated = true;
+
+                % Trigger outdated so e.g. the branch solver can register a
+                % postTick callback on the timer to recalc flow rate.
+                this.trigger('outdated');
+            end
+        end
+        
+        function update(this, afValues)
+            % Uses data in afValues from solver to set the currents in the
+            % branches, the voltages in the nodes and the signs on the
+            % terminals.
+        end
+        
     end
 end
 

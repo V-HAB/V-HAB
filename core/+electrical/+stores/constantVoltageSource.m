@@ -15,6 +15,9 @@ classdef constantVoltageSource < electrical.store
             this.sType    = sType;
             this.fVoltage = fVoltage;
             
+            this.oPositiveTerminal.setVoltage(fVoltage);
+            this.oNegativeTerminal.setVoltage(0);
+            
         end
         
     end
