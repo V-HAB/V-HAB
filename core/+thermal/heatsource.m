@@ -29,7 +29,7 @@ classdef heatsource < base & event.source
         end
         
         function fPower = getPower(this)
-            %this.warn('getPower', 'Access fPower directly!');
+            this.warn('getPower', 'Access fPower directly!');
             
             fPower = this.fPower;
         end

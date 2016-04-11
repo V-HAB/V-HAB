@@ -124,9 +124,18 @@ classdef container < sys
                 oNode = this.poCapacities(sNode{1});
                 
                 % Get capacity and heater power of current node and store
-                % the data at the associated index (i.e. position).
-                mCapacitances(iIndex, 1) = oNode.getTotalHeatCapacity();
-                mHeatSources(iIndex, 1)  = oNode.getHeatPower();
+                % the data at the associated index (i.e. position). %%%
+                %mCapacitances(iIndex, 1) = oNode.getTotalHeatCapacity();
+                %mCapacitances(iIndex, 1) = oNode.fTotalHeatCapacity;
+                mCapacitances(iIndex, 1) = oNode.oMatterObject.fTotalHeatCapacity;
+                %mHeatSources(iIndex, 1)  = oNode.getHeatPower();
+                %mHeatSources(iIndex, 1)  = oNode.fHeatPower;
+                
+                if ~isempty(oNode.oHeatSource)
+                    mHeatSources(iIndex, 1)  = oNode.oHeatSource.fPower;
+                else
+                    mHeatSources(iIndex, 1) = 0;
+                end
                 
             end
             
@@ -325,7 +334,9 @@ classdef container < sys
                 
                 % Get capacity and heater power of current node and store
                 % the data at the associated index (i.e. position).
-                mTemperatures(iIndex, 1) = oNode.getTemperature();
+                %mTemperatures(iIndex, 1) = oNode.getTemperature();
+                %mTemperatures(iIndex, 1) = oNode.fTemperature;
+                mTemperatures(iIndex, 1) = oNode.oMatterObject.fTemperature;
                 
             end
             
@@ -361,6 +372,8 @@ classdef container < sys
         
         %TODO: the following is not needed when the matrix generation stuff
         % is done in the solver (see TODO above)
+        %TODO2: taint() method - empty the matrices to ensure that no one
+        %       accesses old values, then remove those get* methods!
         function mCapacities = getCapacitances(this)
             
             if this.bIsTainted

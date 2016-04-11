@@ -161,17 +161,22 @@ classdef lumpedparameter < base
             % Update thermal matrices of |container|/|vsys|.
             this.oVSys.generateThermalMatrices();
 
-            % Get heat sources and capacitances. 
-            mHeatSources = this.oVSys.getHeatSources();
-            mCapacities  = this.oVSys.getCapacitances();
+            % Get heat sources and capacitances. %%%
+            %mHeatSources = this.oVSys.getHeatSources();
+            mHeatSources = this.oVSys.mHeatSourceVector;
+            %mCapacities  = this.oVSys.getCapacitances();
+            mCapacities  = this.oVSys.mCapacityVector;
             
             % Build the source rate vector.
             this.mSourceRateVector = mHeatSources ./ mCapacities;
             
-            % Get conductors.
-            mLinearConductors    = this.oVSys.getLinearConductors();
-            mFluidicConductors   = this.oVSys.getFluidicConductors();
-            mRadiativeConductors = this.oVSys.getRadiativeConductors();
+            % Get conductors. %%%
+            %mLinearConductors    = this.oVSys.getLinearConductors();
+            mLinearConductors    = this.oVSys.mLinearConductance;
+            %mFluidicConductors   = this.oVSys.getFluidicConductors();
+            mFluidicConductors   = this.oVSys.mFluidicConductance;
+            %mRadiativeConductors = this.oVSys.getRadiativeConductors();
+            mRadiativeConductors = this.oVSys.mRadiativeConductance;
             
             % Build transfer rate matrices.
             [this.mLinearRateMatrix, this.mFluidFlowRateMatrix, ...
@@ -191,10 +196,13 @@ classdef lumpedparameter < base
             % Get capacitances. 
             %mCapacities = this.mNodeCapacities;
             
-            % Get conductors.
-            mLinearConductors    = this.oVSys.getLinearConductors();
-            mFluidicConductors   = this.oVSys.getFluidicConductors();
-            mRadiativeConductors = this.oVSys.getRadiativeConductors();
+            % Get conductors. %%%
+            %mLinearConductors    = this.oVSys.getLinearConductors();
+            mLinearConductors    = this.oVSys.mLinearConductance;
+            %mFluidicConductors   = this.oVSys.getFluidicConductors();
+            mFluidicConductors   = this.oVSys.mFluidicConductance;
+            %mRadiativeConductors = this.oVSys.getRadiativeConductors();
+            mRadiativeConductors = this.oVSys.mRadiativeConductance;
             
             % Calculate the heat transfer.
             [mHFLinear, mHFFluidic, mHFRadiat] = calcHeatTransfer(mTimes, mTemperatures, ...

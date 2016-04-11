@@ -1,4 +1,4 @@
-classdef dummymatter < matter.store
+classdef dummymatter < matter.store & event.source
     %DUMMYMATTER A dummy stationary mass object
     %   The dummy matter is a simple matter.store that only holds one
     %   homogenous, single-substance phase. Used to model simple matter
@@ -8,6 +8,10 @@ classdef dummymatter < matter.store
     properties (SetAccess = protected)
         
         oPhase; % Reference to phase. A dummy matter can only handle one phase!
+        
+        % Temperature of phase
+        fTemperature;
+        fTotalHeatCapacity;
         
         % Properties that can be overloaded and used instead of the phase
         % properties.
@@ -32,6 +36,8 @@ classdef dummymatter < matter.store
             % Call the superconstructor to make this a proper instance of 
             % |matter.store|.
             this@matter.store(oContainer, sName, fVolume);
+            
+            this.throw('dummymatter', 'asd');
             
         end
         
@@ -102,6 +108,11 @@ classdef dummymatter < matter.store
                 fTemperature ...  % The temperature of the phase (== temperature of the "store"). 
             );
             
+            
+            this.fPhaseTemperature  = this.oPhase.fTemperature;
+            this.fPhaseHeatCapacity = this.oPhase.fHeatCapacity;
+            
+            
             % Overload specific heat capacity if we can.
 %             if bOverwriteHeatCapacity
 %                 if ismethod(this.oPhase, 'overloadSpecificHeatCapacity')
@@ -139,13 +150,22 @@ classdef dummymatter < matter.store
 %             % Calculate new temperature. 
 %             this.fTemperature = this.fTemperature + fEnergyChange / this.fTotalHeatCapacity;
             
+            % Get new temperature from phase
+            %TODO updates every thermal solver tick? Should additionally
+            %     update after each massupdate in phase!
+            this.fTemperature       = this.oPhase.fTemperature;
+            this.fTotalHeatCapacity = this.oPhase.fHeatCapacity;
+            
+            
+            %%%this.trigger('update');
+            
         end
         
         function setTemperature(this, fTemperature)
             % Overload the temperature of the object.
             
-            this.warn('thermal:dummymatter:setTemperature', ...
-                'The temperature should not be set directly because it cannot change the phases'' temperature. Use "changeInnerEnergy" instead.');
+            this.error('thermal:dummymatter:setTemperature', ...
+                'The temperature cannot not be set directly because it cannot change the phases'' temperature. Use "changeInnerEnergy" instead.');
             
             % Set new temperature of matter.
             this.fTemperature = fTemperature;
@@ -153,6 +173,8 @@ classdef dummymatter < matter.store
         end
         
         function fTemperature = getTemperature(this)
+            this.warn('getTemperature', 'Access fTemperature directly!');
+            
             % Get current temperature of store and cross-check with
             % temperature of phase. 
             
@@ -175,6 +197,9 @@ classdef dummymatter < matter.store
         end
         
         function fHeatCapacity = getTotalHeatCapacity(this)
+            
+            this.warn('getTotalHeatCapacity', 'Access fTotalHeatCapacity directly!');
+            
             % Get total heat capacity of store, if it was overloaded, or of
             % the phase.
             

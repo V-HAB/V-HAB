@@ -1,4 +1,4 @@
-classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
+classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     %PHASE Phase with isotropic properties (abstract class)
     %   This class represents a matter phase with homogeneous mass
     %   distribution and thus isotropic properties. It is not meant to be
@@ -391,6 +391,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             afTotalInOuts = this.afCurrentTotalInOuts;
             mfInflowDetails = this.mfCurrentInflowDetails;
             
+%             if strcmp(this.oStore.sName, 'Valve_1')
+%                 disp('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+%                 disp(this.oTimer.fTime);
+%                 disp(find(this.afMass));
+%                 disp(find(this.arPartialMass));
+%                 disp('- cached -');
+%                 disp(find(afTotalInOuts));
+%                 disp('- new -');
+%                 disp(find(this.getTotalMassChange()));
+%                 disp('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+%             end
 
             % Check manipulator
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
@@ -525,6 +536,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Phase sets new time step (registered with parent store, used
             % for all phases of that store)
             this.setOutdatedTS();
+            
+            
+            %%%this.trigger('massupdate.post');
         end
 
         function this = update(this)
@@ -573,6 +587,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 this.fTotalHeatCapacity = this.fSpecificHeatCapacity * this.fMass;
                 this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
             end
+            
+            %%%this.trigger('update.post');
         end
 
     end
@@ -586,19 +602,35 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             %   Change the temperature of a phase by adding or removing
             %   inner energy in |J|.
             
-            fCurrentTotalHeatCapacity = this.getTotalHeatCapacity();
+            % setParameter does .update anyways ... %%%
+%             this.update();
+            %TODO don't do whole update, just set outdated TS - calcTS
+            %     should include temperature change in ts calculations!
+            
+            %TODO check ... heat capacity updates every second, so that
+            %     should be ok? As for mass, use a change rate for the heat
+            %     capacity and, with last update time, calculate current
+            %     value?
+            
+            %fCurrentTotalHeatCapacity = this.getTotalHeatCapacity();
+            fCurrentTotalHeatCapacity = this.fTotalHeatCapacity;
             
             % Calculate temperature change due to change in inner energy.
             fTempDiff = fEnergyChange / fCurrentTotalHeatCapacity;
             
             % Update temperature property of phase.
-            this.setParameter('fTemperature', this.fTemperature + fTempDiff);
+            %this.setParameter('fTemperature', this.fTemperature + fTempDiff);
+            this.fTemperature = this.fTemperature + fTempDiff;
             
+            this.massupdate();
         end
 
 
         function fTotalHeatCapacity = getTotalHeatCapacity(this)
             % Returns the total heat capacity of the phase. 
+            
+            %%%this.warn('getTotalHeatCapacity', 'Use oPhase.fSpecificHeatCapacity * oPhase.fMass!');
+            
             
             % We'll only calculate this again, if it has been at least one
             % second since the last update. This is to reduce the
@@ -975,6 +1007,23 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             [ afChange, mfDetails ] = this.getTotalMassChange();
             
             
+            
+%             if strcmp(this.oStore.sName, 'Valve_1')
+%                 disp('>>>>>>>>>>>>>>>>>>>>  CALC TS  >>>>>>>>>>>>>>');
+%                 disp(this.oTimer.fTime);
+%                 disp(find(this.afMass));
+%                 disp(find(this.arPartialMass));
+%                 disp('- cached -');
+%                 disp(find(this.afCurrentTotalInOuts));
+%                 disp('- new -');
+%                 disp(find(afChange));
+%                 disp(afChange(afChange ~= 0));
+%                 disp('- new - SUM');
+%                 disp(sum(afChange));
+%                 disp('vs mass');
+%                 disp(this.fMass);
+%                 disp('>>>>>>>>>>>>>>>>>>  /CALC TS  >>>>>>>>>>>>>>>>');
+%             end
             
 
             this.afCurrentTotalInOuts = afChange;
