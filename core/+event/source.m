@@ -19,11 +19,34 @@ classdef source < base % < hobj
     properties (SetAccess = private, GetAccess = public)
         tcEventCallbacks = struct();
         pcEventCallbacks;
+        
+        bHasCallbacks = false;
+        
+        tEventObject;
     end
     
     methods
         function this = source()
             this.pcEventCallbacks = containers.Map();
+            
+            
+            this.tEventObject = struct(...
+                'sType', [], ...
+                'oCaller', this, ...
+                'tData', [], ...
+                ...
+                ... %TODO IMPLEMENT - stop further execution of callbacks, 
+                ... e.g. set this.tbStopCurrentEvent.(sType) = true
+                ... 'stopPropagation', @(a, b) this.stopPropagation(sType), ...
+                ...
+                ... %TODO implement, allow callbacks to add return values
+                ...   -> don't use real func outputs because Matlab stinks!
+                ... 'cxReturn', {}, ...
+                'addReturnValue', @this.addReturn ...
+                ... addReturn would write xVal to this.xLastReturn, then 
+                ... after each callbac execution below, check this.xLastRet
+            );
+            
         end
         
         % sType refers to event name, possibly hierachical (e.g.
@@ -37,6 +60,7 @@ classdef source < base % < hobj
             cCallbacks{end + 1} = callBack;
             this.pcEventCallbacks(sType) = cCallbacks;
             
+            this.bHasCallbacks = true;
             
             unbindCallback = @() this.unbind(sType, length(this.pcEventCallbacks(sType)));
         end
@@ -70,7 +94,8 @@ classdef source < base % < hobj
             
             %TODO-SPEED why is that so slow? Find a way to speed up
             %           checking for existing events!
-            if isempty(this.pcEventCallbacks) || ~this.pcEventCallbacks.isKey(sType)
+            %if isempty(this.pcEventCallbacks) || ~this.pcEventCallbacks.isKey(sType)
+            if ~this.bHasCallbacks || ~this.pcEventCallbacks.isKey(sType)
                 cReturn = {};
                 return;
             end
@@ -89,23 +114,31 @@ classdef source < base % < hobj
             % FAKE OBJECT!
             %TODO-SPEED save on this.ttEventObjs.(sType) and reuse! Just
             %           overwrite tData/xData!
-            oEvent = struct(...
-                'sType', sType, ...
-                'oCaller', this, ...
-                'xData', tData, ...
-                'tData', tData, ...
-                ...
-                ... %TODO IMPLEMENT - stop further execution of callbacks, 
-                ... e.g. set this.tbStopCurrentEvent.(sType) = true
-                ... 'stopPropagation', @(a, b) this.stopPropagation(sType), ...
-                ...
-                ... %TODO implement, allow callbacks to add return values
-                ...   -> don't use real func outputs because Matlab stinks!
-                ... 'cxReturn', {}, ...
-                'addReturnValue', @this.addReturn ...
-                ... addReturn would write xVal to this.xLastReturn, then 
-                ... after each callbac execution below, check this.xLastRet
-            );
+%             oEvent = struct(...
+%                 'sType', sType, ...
+%                 'oCaller', this, ...
+%                 'xData', tData, ...
+%                 'tData', tData, ...
+%                 ...
+%                 ... %TODO IMPLEMENT - stop further execution of callbacks, 
+%                 ... e.g. set this.tbStopCurrentEvent.(sType) = true
+%                 ... 'stopPropagation', @(a, b) this.stopPropagation(sType), ...
+%                 ...
+%                 ... %TODO implement, allow callbacks to add return values
+%                 ...   -> don't use real func outputs because Matlab stinks!
+%                 ... 'cxReturn', {}, ...
+%                 'addReturnValue', @this.addReturn ...
+%                 ... addReturn would write xVal to this.xLastReturn, then 
+%                 ... after each callbac execution below, check this.xLastRet
+%             );
+
+            % Copy from default event obj
+            oEvent = this.tEventObject;
+            
+            oEvent.sType = sType;
+            oEvent.tData = tData;
+            
+            
             
             
             cCallbackCell = this.pcEventCallbacks(sType);
