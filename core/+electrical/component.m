@@ -1,6 +1,9 @@
 classdef component < base
     %COMPONENT Summary of this class goes here
     %   Detailed explanation goes here
+    %   Default configuration has only left and right port, needs to be
+    %   overloaded by components that have more than two ports, e.g.
+    %   transistor.
     
     properties
         % Name of component.
@@ -102,6 +105,11 @@ classdef component < base
             this.aoFlows(iIdx) = []; % Seems like deconstruction of all objs, oMT invalid!
             
         end
+    end
+    
+    methods (Abstract)
+        % Methods that child classes MUST implement
+        update(this)
     end
     
 end

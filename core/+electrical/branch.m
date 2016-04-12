@@ -571,6 +571,43 @@ classdef branch < base & event.source
 
         end
         
+        function setCurrent(this, fCurrent)
+            % Set current for all flow objects
+            
+            if this.abIf(1), this.throw('setCurrent', 'Left side is interface, can''t set current on this branch object'); end;
+            
+            % Carried over from matter, if for some reason we want to round
+            % over the last ten currents
+            this.afCurrents = [ this.afCurrents(2:end) fCurrent ];
+            
+            % If sum of the last ten flow rates is < precision, set flow
+            % rate to zero
+            if tools.round.prec(sum(this.afCurrents), this.oCircuit.oTimer.iPrecision) == 0
+                fCurrent = 0;
+                
+            elseif this.fCurrent == 0
+                % If flow rate is already zero, more strict rounding! Don't
+                % re-set a flow rate until its larger then the precision!
+                if tools.round.prec(fCurrent, this.oCircuit.oTimer.iPrecision) == 0
+                    fCurrent = 0;
+                end
+            end
+            
+            this.fCurrent  = fCurrent;
+            this.bOutdated = false;
+            
+            % Update branch components
+            for iI = 1:this.iComponents
+                this.aoComponents(iI).update();
+            end
+            
+            
+            % Update data in flows
+            this.setFlowData();
+            
+            
+        end
+        
         
         function update(~)
             %TODO just get the matter properties from the inflowing EXME
@@ -582,70 +619,6 @@ classdef branch < base & event.source
     
     % Methods provided to a connected subsystem branch
     methods (Access = protected)
-        
-        function setFlowRate(this, fFlowRate, afPressure)
-            % Set flowrate for all flow objects
-            %
-            %NOTE/CHECK: afPressure is pressure DROPS, not total pressures!
-            
-            if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
-            
-            
-            
-            % Connected phases have to do a massupdate before we set the
-            % new flow rate - so the mass for the LAST time step, with the
-            % old flow rate, is actually moved from tank to tank.
-            for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.coExmes{iE}.oPhase.massupdate();
-            end
-            
-            
-            this.afFlowRates = [ this.afFlowRates(2:end) fFlowRate ];
-            
-            % If sum of the last ten flow rates is < precision, set flow
-            % rate to zero
-            if tools.round.prec(sum(this.afFlowRates), this.oCircuit.oTimer.iPrecision) == 0
-                fFlowRate = 0;
-                
-                afPressure = zeros(1,this.iFlowProcs);
-                
-            elseif this.fFlowRate == 0 %&& false
-                % If flow rate is already zero, more strict rounding! Don't
-                % re-set a flow rate until its larger then the precision!
-                if tools.round.prec(fFlowRate, this.oCircuit.oTimer.iPrecision) == 0
-                    fFlowRate = 0;
-                    
-                    afPressure = zeros(1,this.iFlowProcs);
-                end
-            end
-            
-            
-            
-            
-            this.fFlowRate = fFlowRate;
-            this.bOutdated = false;
-            
-            
-            % No pressure? Distribute equally.
-            if nargin < 3 || isempty(afPressure)
-                fPressureDiff = (this.coExmes{1}.getPortProperties() - this.coExmes{2}.getPortProperties());
-                
-                % Each flow proc produces the same pressure drop, the sum
-                % being the actual pressure difference.
-                afPressure = ones(1, this.iFlowProcs) * fPressureDiff / this.iFlowProcs;
-                
-                % Note: no matter the flow direction, positive values on
-                % afPRessure always denote a pressure DROP
-            end
-            
-            
-            
-            % Update data in flows
-            this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure);
-            
-        end
-    
-        
         
         function updateConnectedBranches(this, sNewBranchName)
             
@@ -806,6 +779,41 @@ classdef branch < base & event.source
                 this.fResistance = 0;
             end
         end
+        
+        function setFlowData(this)
+            % Go through the aoFlows array, set the current and voltage on
+            % all flow objects. 
+            
+            % We need to get the flow direction, since the voltage drops
+            % returned by the components are absolute. 
+            if this.fCurrent < 0
+                iSign = -1;
+            else
+                iSign = 1;
+            end
+            
+            % We're going through the branch from left to right.
+            for iI = 1:this.iFlows
+                if iI == 1
+                    % If we're at the beginning of the branch, we can just
+                    % use the voltage from the terminal on the left side. 
+                    fVoltage = this.coTerminals{1}.fVoltage;
+                elseif iI > 1 && iI < this.iFlows
+                    % If we're somewhere inbetween, we subtract the voltage
+                    % drop from the preceeding component.
+                    fVoltage = fVoltage - this.aoComponents(iI - 1).fVoltageDrop * iSign;
+                elseif iI == this.iFlows
+                    % If we're at the end of the branch, we can just use
+                    % the voltage from the terminal on the right side. 
+                    fVoltage = this.coTerminals{2}.fVoltage;
+                end
+                
+                % Setting the properties on the flow objects.
+                this.aoFlows(iI).update(this.fCurrent, fVoltage);
+            end
+            
+        end
+        
     end
     
 end

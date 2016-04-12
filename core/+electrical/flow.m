@@ -7,6 +7,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % @type float
         fCurrent    = 0;   % [A]
         
+        % Voltage
+        % @type float
+        fVoltage = 0; % [V]
+        
         % Reference to the timer
         % @type object
         oTimer;
@@ -33,9 +37,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
         bInterface = false;
     end
     
-    
-    
-    
     %% Public methods
     methods
         function this = flow(oBranch)
@@ -47,10 +48,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
         end
         
-        
-        function this = update(this)
-            disp('flow update')
-            % At the moment done through the solver specific methods ...
+        function this = update(this, fCurrent, fVoltage)
+            this.fCurrent = fCurrent;
+            this.fVoltage = fVoltage;
         end
         
         
@@ -188,206 +188,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             this.oOut = [];
         end
         
-        function setData(aoFlows, oExme, fFlowRate, afPressures)
-            % Sets flow data on an array of flow objects. If flow rate not
-            % provided, just molar masses, cp, arPartials etc are set.
-            % Function handle to this method is provided on seal(), so the
-            % branch can set stuff.
-            %
-            % Is only called by branch (?), for all flows in branch
-            %
-            %
-            %TODO
-            % - This method does not need to be part of the flow class. It
-            %   is called only by the matter.branch class and it does not
-            %   use any private or protected properties and methods of the
-            %   flow object it is being called on. Therfore it could be
-            %   moved to the matter.branch class. 
-            % - right now, solver provide flow rate and pressure drops in
-            %   'sync', i.e. if flow rate is negative, pressure drops will
-            %   be negative values. Should all that be handled here?
-            
-            % We need the initial pressure and temperature of the inflowing
-            % matter, as the values in afPressure / afTemps are relative
-            % changes. If e.g. a valve is shut in the branch, this method
-            % is however called with the oExme parameter empty, so we need
-            % to check that and in that case make no changes to fPressure /
-            % fTemperature in the flows. So get pressure/temperature of in
-            % exme (if FR provided)
-            if nargin >= 3 && ~isempty(oExme)
-                %TODO get exme from this.oBranch, depending on fFlowRate?
-                [ fPortPress, fCurrentTemperature ] = oExme.getPortProperties();
-            else
-                fPortPress = 0;
-                fCurrentTemperature  = 0;
-            end
-            
-            % Get matter properties of the phase
-            if ~isempty(oExme)
-                [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
-                
-                % If a phase was empty in one of the previous time steps
-                % and has had mass added to it, the specific heat capacity
-                % may not have yet been calculated, because the phase has
-                % not been updated. If the phase does have mass but zero
-                % heat capacity, we force an update of this value here. 
-                if fPhaseSpecificHeatCapacity == 0 && oExme.oPhase.fMass ~= 0
-                    %TODO move the following warning to a lower level debug
-                    %output once this is implemented
-                    aoFlows(1).warn('setData', 'Updating specific heat capacity for phase %s %s.', oExme.oPhase.oStore.sName, oExme.oPhase.sName);
-                    oExme.oPhase.updateSpecificHeatCapacity();
-                    fPhaseSpecificHeatCapacity = oExme.oPhase.fSpecificHeatCapacity;
-                end
-
-            
-            % If no exme is provided, those values will not be changed (see
-            % above, in case of e.g. a closed valve within the branch).
-            else
-                arPhasePartialMass         = 0;
-                fPhaseMolarMass            = 0;
-                fPhaseSpecificHeatCapacity = 0;
-            end
-            
-            iL = length(aoFlows);
-            
-            % If no pressure drops / temperature changes are provided, only
-            % set according values in flows if only one flow available,
-            % meaning that the branch doesn't contain any f2fs.
-            %TODO check - do we need the isempty check at all? Just throw
-            %     out? Check for isnan() or something?
-            bSkipFRandPT = (nargin < 3) || isempty(fFlowRate);   % skip flow rate, pressure, temp?
-            bSkipPT      = (nargin < 4) || (isempty(afPressures) && (iL > 1)); % skip pressure, temp?
-            %bSkipT       = (nargin < 5) || (isempty(afTemps) && (iL > 1));     % skip temp?
-            
-            %TODO find out correct behaviour here ... don't set pressures
-            %     or temps (from solver init?) if those params are empty or
-            %     not provided --> but they're also empty if no f2fs exist
-            %     in this branch!!
-            %     then however length(this) == 1 -> use that?
-            %     or just ALWAYS set the flow params for those flows
-            %     directly connected to the EXMEs?
-            %     ALSO: if no afPress/afTemps, just distribute equally!?
-            %if bSkipT || bSkipPT, this.warn('setData', 'setData on flows w/o press/temp (or just empty) --> difference: no delta temp/press (cause no f2f) or really don''t set??'); end;
-            %if (bSkipT || bSkipPT) && (iL > 1), this.warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end;
-            if bSkipPT && (iL > 1), aoFlows(1).warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end;
-            
-            % Rounding precision
-            iPrec = aoFlows(1).oBranch.oContainer.oTimer.iPrecision;
-            
-            % Negative flow rate? Need to do everything in reverse
-            bNeg = fFlowRate < 0;
-            
-            for iI = sif(bNeg, iL:-1:1, 1:iL)
-                oThis = aoFlows(iI);
-                
-                % Only set those params if oExme was provided
-                if ~isempty(oExme)
-                    oThis.arPartialMass         = arPhasePartialMass;
-                    oThis.fMolarMass            = fPhaseMolarMass;
-                    
-                    oThis.fSpecificHeatCapacity = fPhaseSpecificHeatCapacity;
-                end
-                
-                % Skip flowrate, pressure, temperature?
-                if bSkipFRandPT, continue; end;
-                
-                oThis.fFlowRate = fFlowRate;
-                
-                % If only one flow, no f2f exists --> set pressure, temp
-                % according to IN exme
-                if iL == 1
-                    oThis.fPressure    = fPortPress;
-                    oThis.fTemperature = fCurrentTemperature;
-                end
-                
-                
-                % Set temperature based on fHeatFlow in f2fs
-                % First and last Flows directly use the EXMEs value, so
-                % no f2f in between - just set port temperatures directly
-                %TODO if flow rate is zero, what to do? Something HAS to
-                %     heat up ... heating up in the branch should basically
-                %     lead to a flow rate, right?
-                if abs(fFlowRate) > 0
-                    if ~bNeg && (iI > 1)
-                        fHeatFlow = oThis.oIn.fHeatFlow;
-
-                        %NOTE at the moment, one heat capacity throughout all
-                        %     flows in the branch. However, at some point, 
-                        %     might be replaced with e.g. pressure dep. value?
-                        fOtherCp  = aoFlows(iI - 1).fSpecificHeatCapacity;
-
-                    elseif bNeg && (iI < iL)
-                        fHeatFlow = oThis.oOut.fHeatFlow;
-                        fOtherCp  = aoFlows(iI + 1).fSpecificHeatCapacity;
-
-                    else
-                        fHeatFlow = 0;
-                        fOtherCp  = oThis.fSpecificHeatCapacity;
-                    end
-
-                    % So following this equation:
-                    % Q' = m' * c_p * deltaT
-                    %fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / ((oThis.fSpecificHeatCapacity + fOtherCp) / 2);
-                    fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / fOtherCp;
-                end
-                
-                if isnan(fCurrentTemperature)
-                    warning(['On branch: %s\n',...
-                             '         Temperature of connected phase (%s_%s) is NaN.\n',...
-                             '         Using standard temperature instead.\n',...
-                             '         Reason could be empty phase.'],...
-                             oThis.oBranch.sName, oExme.oPhase.oStore.sName, oExme.oPhase.sName);
-                    fCurrentTemperature = oThis.oMT.Standard.Temperature;
-                end
-                
-                oThis.fTemperature = fCurrentTemperature;
-                
-                % Skip pressure, temperature?
-                if bSkipPT, continue; end;
-                
-                oThis.fPressure = fPortPress;
-                
-                if tools.round.prec(fPortPress, iPrec) < 0
-                    oThis.fPressure = 0;
-                    
-                    % Only warn for > 1Pa ... because ...
-                    if fPortPress < -10
-                        aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fPortPress, aoFlows(1).oBranch.sName);
-                    elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
-                        aoFlows(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, aoFlows(1).oBranch.sName);
-                    end
-                elseif tools.round.prec(fPortPress, iPrec) == 0
-                    % If the pressure is extremely small, we also set the
-                    % flow pressure to zero.
-                    oThis.fPressure = 0;
-                end
-                
-                % Calculates the pressure for the NEXT flow, so make sure
-                % this is not the last one!
-                % The 'natural' thing to happen (passive components) is a
-                % pressure drop, therefore positive values represent
-                % pressure drops, negative ones a rise in pressure.
-                % I.e. afPressures = afPressureDROPS
-                if (bNeg && iI > 1) || (~bNeg && iI < iL)
-                    % afPressures contains one element less than the flows
-                    % themselves, as afPressure(Drops) is generated by f2fs
-                    % which are one less than the flows, e.g.
-                    % EXME|FLOW(1)|F2F(1)|FLOW(2)|F2F(2)|FLOW(3)|EXME
-                    % Therefore, if we're starting with FLOW(3), we need to
-                    % subtract one from the FLOW index to get the last F2F
-                    fPortPress = fPortPress - afPressures(iI - sif(bNeg, 1, 0));
-                end
-                
-                % Re-calculate partial pressures
-                oThis.afPartialPressure = oThis.calculatePartialPressures();
-                
-                % Reset to empty, so if requested again, recalculated!
-                oThis.fDensity          = [];
-                oThis.fDynamicViscosity = [];
-                
-            end
-            
-        end
+        
     end
     
 end

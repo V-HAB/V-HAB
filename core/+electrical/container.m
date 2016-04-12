@@ -23,6 +23,23 @@ classdef container < sys
     
     methods (Access = public)
         
+        function createElectricalStructure(this)
+            % Call in child elememts
+            csChildren = fieldnames(this.toChildren);
+            
+            for iC = 1:length(csChildren)
+                sChild = csChildren{iC};
+                
+                this.toChildren.(sChild).createElectricalStructure();
+            end
+        end
+        
+        function addCircuit(this, oCircuit)
+            this.toCircuits.(oCircuit.sName) = oCircuit;
+            this.aoCircuits(end + 1) = oCircuit;
+        end
+
+        
         function sealElectricalStructure(this)
             if this.bElectricalSealed
                 this.throw('sealElectricalStructure', 'Already sealed');
@@ -52,21 +69,6 @@ classdef container < sys
         
         
         
-        function createElectricalStructure(this)
-            % Call in child elememts
-            csChildren = fieldnames(this.toChildren);
-            
-            for iC = 1:length(csChildren)
-                sChild = csChildren{iC};
-                
-                this.toChildren.(sChild).createElectricalStructure();
-            end
-        end
-        
-        function addCircuit(this, oCircuit)
-            this.toCircuits.(oCircuit.sName) = oCircuit;
-            this.aoCircuits(end + 1) = oCircuit;
-        end
         
     end
     

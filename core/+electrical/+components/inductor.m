@@ -22,6 +22,10 @@ classdef inductor < electrical.component
             this.oBranch = oBranch;
             this.bSealed = true;
         end
+        
+        function update(this)
+            
+        end
     end
     
 end

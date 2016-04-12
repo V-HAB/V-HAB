@@ -5,11 +5,18 @@ classdef circuit < base & event.source
     properties
         % Reference to the electrical circuit this solver shall solve.
         oCircuit;
+        
+        % Variable time step
+        fTimeStep;
+        
+        % Fixed time step
+        fFixedTS;
     end
     
     properties (SetAccess = private, GetAccess = protected)
         % Callback to set time step (default: inf) in [s]
         setTimeStep;
+        
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -35,14 +42,17 @@ classdef circuit < base & event.source
             this.oCircuit = oCircuit;
             
             % Use circuit's container timer reference to bind for time step
-            this.setTimeStep = this.oCircuit.oTimer.bind(@(~) this.solve(), inf);
+            this.setTimeStep = this.oCircuit.oTimer.bind(@(~) this.solve(), 0);
             
             % If the circuit triggers the 'outdated' event, need to
             % re-calculate the currents and voltages!
             this.oCircuit.bind('outdated', @this.registerUpdate);
             
-            this.solve();
-            
+            % For now, we'll set the fixed time step, have to change that
+            % later on, when variable time steps are actually implemented.
+            %TODO Delete this for fully variable time steps.
+            this.fFixedTS = 20;
+
         end
         
         function solve(this)
@@ -68,7 +78,14 @@ classdef circuit < base & event.source
             % U2 - U1 - R * I = 0                                       (2)
             %
             % If one of the voltages in the branch is from a voltage
-            % source, it is 
+            % source, an equation is added as a row after the other node's
+            % equations.
+            
+            %TODO The coefficients matrix will not change significantly
+            %over time, resistances might change and the source voltage.
+            %Everything else remains constant. One could figure out a way
+            %to only make these changes here and not always re-create the
+            %entire matrix. 
             
             
             % Initializing the coefficients matrix A
@@ -156,11 +173,25 @@ classdef circuit < base & event.source
             
             % Call method on circuit being handled to set all currents,
             % signs and voltages.
-            this.oCircuit.update()
+            this.oCircuit.update(afResult);
+            
+            this.calculateTimeStep();
             
         end
         
+        function calculateTimeStep(this)
+            if ~isempty(this.fFixedTS)
+                this.setTimeStep(this.fFixedTS, true);
+                this.fTimeStep = this.fFixedTS;
+            else
+                %TODO Insert something nice here
+                
+            end
+        end
+        
     end
+    
+    
     
     methods (Access = protected)
         function registerUpdate(this, ~)

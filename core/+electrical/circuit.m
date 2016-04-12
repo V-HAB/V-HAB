@@ -34,10 +34,6 @@ classdef circuit < base & event.source
         
         iBranches;
         
-        csLoops = cell.empty;
-        
-        mbConnections; 
-        
         bSealed;
         
         % Reference to the timer
@@ -53,7 +49,7 @@ classdef circuit < base & event.source
             this.oTimer = this.oParent.oRoot.oTimer;
             
             this.oParent.addCircuit(this);
-            
+                        
         end
         
         function addStore(this, oStore)
@@ -515,6 +511,19 @@ classdef circuit < base & event.source
             % Uses data in afValues from solver to set the currents in the
             % branches, the voltages in the nodes and the signs on the
             % terminals.
+            % afValues is a 1xN vector containing the voltages for all
+            % nodes, followed by the currents for all branches in the order
+            % in which they are stored in the aoNodes and aoBranches
+            % properties, respectively. 
+            
+            for iI = 1:this.iNodes
+                this.aoNodes(iI).setVoltage(afValues(iI));
+            end
+            
+            for iI = 1:this.iBranches
+                this.aoBranches(iI).setCurrent(afValues(iI + this.iNodes));
+            end
+            
         end
         
     end

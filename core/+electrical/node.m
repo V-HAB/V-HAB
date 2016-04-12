@@ -58,6 +58,10 @@ classdef node < base
         
         function setVoltage(this, fVoltage)
             this.fVoltage = fVoltage;
+            
+            for iI = 1:this.iTerminals
+                this.aoTerminals(iI).setVoltage(this.fVoltage);
+            end
         end
     end
     

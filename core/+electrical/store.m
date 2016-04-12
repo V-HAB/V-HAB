@@ -68,12 +68,14 @@ classdef store < base
         
         
         function exec(this)
-            %TODO-NOW this.toProcsP2P exec, flow and stationary.
-            %this.throw('exec', 'Not implemented!');
+            %CHECK Do we need this here? Is copied from matter.store
         end
         
         function update(this)
             % Update 
+            % Look at in and out flowing currents and reduce the current
+            % capacity.
+            % Also re-calculate the time step
             
         end
         
