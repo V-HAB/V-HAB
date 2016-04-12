@@ -84,7 +84,7 @@ classdef Example < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            solver.electrical.circuit(this.toCircuits.ExampleCircuit);
+            solver.electrical.DC.circuit(this.toCircuits.ExampleCircuit);
             
         end
     end

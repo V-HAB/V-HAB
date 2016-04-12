@@ -75,131 +75,21 @@ classdef setup < simulation.infrastructure
             % exact structure of your model to set log items, so do this
             % when you are done modelling and ready to run a simulation. 
             
-%             oLog = this.toMonitors.oLogger;
+            oLog = this.toMonitors.oLogger;
             
-%             tiFlowProps = oLog.add('Example', 'flow_props');
-%             
-%             % Add single values
-%             iPropLogIndex1 = oLog.addValue('Example', 'iChildren',     [],  'Label of Prop');
-%             %keyboard();
-%             iPropLogIndex2 = oLog.addValue('Example', 'fPipeDiameter', 'm', 'Pipe Diameter');
-            
-            
-%             this.csLog = {
-%                 % System timer
-%                 'oData.oTimer.fTime';                                              % 1
-%                 
-%                 % Logging pressures, masses and the flow rate
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';  % 2
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';  % 4
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
-%                 'toChildren.Example.aoBranches(1).fFlowRate';                      % 6
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemp';
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemp';     % 8
-% 
-%                 % You can add other parameters here
-%                 };
-            
+            tiElectricalProperties = oLog.add('Example', 'electrical_properties');
+        
 
             %% Define plots
             
-%             oPlot = this.toMonitors.oPlotter;
-%             
-%             oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
-%             oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
-%             oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
-%             oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
+            oPlot = this.toMonitors.oPlotter;
             
-            
-
+            oPlot.definePlotAllWithFilter('V', 'Voltages');
+            oPlot.definePlotAllWithFilter('A', 'Currents');
         end
         
         function plot(this) % Plotting the results
-            
-%             this.toMonitors.oPlotter.plot();
-            return;
-            
-            
-            % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
-            % further information
-            
-            
-            
-%             figure('name', 'Tank Pressures');
-%             hold on;
-%             grid minor;
-%             %plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
-%             plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
-%             legend('Tank 1', 'Tank 2');
-%             ylabel('Pressure in Pa');
-%             xlabel('Time in s');
-            
-
-
-            sPlot = 'Tank Masses';
-            csValues = {
-                'Tutorial_Simple_Flow/Example:s:Tank_1:p:Tank_1_Phase_1.fMass';
-                'Tutorial_Simple_Flow/Example:s:Tank_2:p:Tank_2_Phase_1.fMass';
-            };
-            
-            %%% Default Code START
-            
-            figure('name', sPlot);
-            hold on;
-            grid minor;
-            
-            mfLog    = [];
-            sLabel   = [];
-            sUnit    = [];
-            csLegend = {};
-            
-            for iV = 1:length(csValues)
-                [ axData, tDefinition, sLabel ] = oLog.get(csValues{iV});
-                
-                mfLog = [ mfLog, axData ];
-                csLegend{end + 1} = tDefinition.sName;
-                sUnit = tDefinition.sUnit;
-            end
-            
-            plot(oLog.afTime, mfLog);
-            legend(csLegend);
-            
-            ylabel([ sLabel ' in [' sUnit ']' ]);
-            xlabel('Time in s');
-            
-            %%% Default Code END
-            
-            
-            
-            return;
-            
-            
-            figure('name', 'Tank Temperatures');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 7:8));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Temperature in K');
-            xlabel('Time in s');
-            
-            figure('name', 'Flow Rate');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 6));
-            legend('Branch');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
-            
-            figure('name', 'Time Steps');
-            hold on;
-            grid minor;
-            plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-            legend('Solver');
-            ylabel('Time in [s]');
-            xlabel('Ticks');
-            
-            tools.arrangeWindows();
+            this.toMonitors.oPlotter.plot();
         end
         
     end
