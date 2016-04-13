@@ -629,7 +629,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         function fTotalHeatCapacity = getTotalHeatCapacity(this)
             % Returns the total heat capacity of the phase. 
             
-            %%%this.warn('getTotalHeatCapacity', 'Use oPhase.fSpecificHeatCapacity * oPhase.fMass!');
+            this.warn('getTotalHeatCapacity', 'Use oPhase.fSpecificHeatCapacity * oPhase.fMass!');
             
             
             % We'll only calculate this again, if it has been at least one
