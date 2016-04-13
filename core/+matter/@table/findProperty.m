@@ -530,6 +530,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if isnan(fProperty) || isempty(fProperty)
+    fprintf('Error using findProperty. No valid value for %s %s of %s (%s) found in matter table. %s\n', sTypeString, sProperty, sSubstance, sPhaseType, sReportString);
     keyboard();
     this.throw('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table. %s', sTypeString, sProperty, sSubstance, sPhaseType, sReportString);
 end

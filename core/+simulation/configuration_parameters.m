@@ -64,7 +64,7 @@ classdef configuration_parameters < base
             %thing like this.oSubObj.oSubSubObj.tStructAttr.xKey = 'asd';
             %sCode = '[ tC csN ] = this.oRoot.oCfgParams.get(this); for iP = 1:length(csN), this.(csN{iP}) = tC.(csN{iP}); end;';
             
-            sCode = '[ tC csN ] = this.oRoot.oCfgParams.get(this); for iP = 1:length(csN), if ~isempty(strfind(csN{iP}, ''.'')), [ sA, sB ] = strtok(csN{iP}, ''.''); this.(sA).(sB(2:end)) = tC.(csN{iP});; else, this.(csN{iP}) = tC.(csN{iP}); end; end;';
+            sCode = '[ tC csN ] = this.oRoot.oCfgParams.get(this); for iP = 1:length(csN), if ~isempty(strfind(csN{iP}, ''.'')), [ sA, sB ] = strtok(csN{iP}, ''.''); this.(sA).(sB(2:end)) = tC.(csN{iP}); else, this.(csN{iP}) = tC.(csN{iP}); end; end;';
         end
     end
     

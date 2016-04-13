@@ -246,7 +246,7 @@ classdef gas_virtual < matter.phases.gas
             fCurrTmpM2P   = this.fVirtualMassToPressure;
             
             
-            if fMaxFlowRate == 0
+            if fMaxFlowRate == 0 || (abs(fCurrTmpInOut) < fMaxInOut)
                 this.fPressure        = this.fVirtualMassToPressure * this.fMass;
                 this.fVirtualPressure = this.fVirtualMassToPressure * this.fMass;
                 
@@ -295,7 +295,7 @@ classdef gas_virtual < matter.phases.gas
                 if this.fLastFlowRateChangePerPressureChange ~= 0
                     afMassToPress(2) = fCurrTmpM2P + fCurrTmpInOut / this.fLastFlowRateChangePerPressureChange;
                 else
-                    afMassToPress(2) = this.fMassToPressure * sif(fFlowRateCurr > 0, 1.1, 1 / 1.1);
+                    afMassToPress(2) = this.fMassToPressure * sif(fFlowRateCurr > 0, 1.001, 1 / 1.001);
                 end
                 
                 
@@ -494,7 +494,7 @@ classdef gas_virtual < matter.phases.gas
             
             
             
-            return;
+            return; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             if isempty(this.fPreviousStepVirtualPressure)
                 % For next step interpolation
@@ -610,7 +610,7 @@ classdef gas_virtual < matter.phases.gas
         end
         
         
-        function calculateTimeStep(this)
+        function calculateTimeStepXXX(this)
             % Overload time step calulcation
             
             % EXP curve

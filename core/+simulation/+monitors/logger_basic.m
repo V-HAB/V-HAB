@@ -155,15 +155,20 @@ classdef logger_basic < simulation.monitor
                 aiIdx = 1:length(this.tLogValues);
             end
             
+            if isempty(aiIdx)
+                return;
+            end
+            
             %sPath = simulation.helper.paths.convertShorthandToFullPath(sPath);
             %iIdx  = find(strcmp({ this.tLogValues.sPath }, sPath), 1, 'first');
             
             if nargin >= 3 && ~isempty(tFilter) && isstruct(tFilter)
-                csFilters = fieldnames(tFilter);
+                csFilters     = fieldnames(tFilter);
+                abDeleteFinal = false(length(aiIdx), 1);
                 
                 for iF = 1:length(csFilters)
                     sFilter = csFilters{iF};
-                    sValue  = tFilter.(sFilter);
+                    xsValue = tFilter.(sFilter);
                     
                     %{
                     abDelete = false(length(aiIdx), 1);
@@ -178,10 +183,24 @@ classdef logger_basic < simulation.monitor
                     end
                     %}
                     
-                    abDelete = ~strcmp({ this.tLogValues(aiIdx).(sFilter) }', sValue);
+                    if iscell(xsValue)
+                        csLogValues = { this.tLogValues(aiIdx).(sFilter) }';
+                        abNoDelete  = false(length(csLogValues), 1);
+                        
+                        for iV = 1:length(xsValue)
+                            abNoDelete = abNoDelete | strcmp(csLogValues, xsValue{iV});
+                        end
+                        
+                        abDelete = ~abNoDelete;
+                    else
+                        abDelete = ~strcmp({ this.tLogValues(aiIdx).(sFilter) }', xsValue);
+                    end
                     
-                    aiIdx(abDelete) = [];
+                    %aiIdx(abDelete) = [];
+                    abDeleteFinal = abDeleteFinal | abDelete;
                 end
+                
+                aiIdx(abDeleteFinal) = [];
             end
         end
         

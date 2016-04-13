@@ -96,10 +96,17 @@ else
         fTemperature = this.Standard.Temperature; % std temperature (K)
     end
     
-    if nargin > 4
-        afPartialPressures = ones(1, this.iSubstances) * varargin{4};
+    % Assume if vector with length > 1 -> partials, else total pressure
+    if nargin > 4 && ~isempty(varargin{4}) && isvector(varargin{4}) && length(varargin{4}) > 1
+        afPartialPressures = varargin{4};
     else
-        if strcmp(sMatterState, 'gas')
+        fPressure = this.Standard.Pressure;
+        
+        if nargin > 4 && ~isempty(varargin{4}) && isvector(varargin{4}) && isscalar(varargin{4})
+            fPressure = varargin{4};
+        end
+        
+        if any(strcmp(sMatterState, {'gas'}))
             afPartialPressures = this.calculatePartialPressures(sMatterState, afMass, fPressure);
         else
             afPartialPressures = ones(1, this.iSubstances) * this.Standard.Pressure;

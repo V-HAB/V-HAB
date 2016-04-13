@@ -56,9 +56,9 @@ classdef timer < base
         % of the time. If more callbacks are added in one tick, that means
         % that the first time that might be slower because Matlab needs to
         % extend the cell, the following times - quick again.
-        chPostTick = cell(5, 100);
+        chPostTick = cell(7, 100);
         
-        aiPostTickMax = [ 0, 0, 0, 0, 0 ];
+        aiPostTickMax = [ 0, 0, 0, 0, 0, 0, 0 ];
     end
     
     methods
@@ -159,7 +159,7 @@ classdef timer < base
         function bindPostTick(this, hCB, iPriority)
             if nargin < 3 || isempty(iPriority), iPriority = 0; end;
             
-            iPriority = iPriority + 3;
+            iPriority = iPriority + 4;
             
             %this.chPostTick{end + 1} = hCB;
             this.aiPostTickMax(iPriority) = this.aiPostTickMax(iPriority) + 1;
@@ -229,8 +229,8 @@ classdef timer < base
             
             % Just to make sure - prio 2 could attach postTick to prio -1
             while any(this.aiPostTickMax ~= 0)
-                % Prios from -2, -1, 0, 1, 2
-                for iP = 1:5
+                % Prios from -3, -2, -1, 0, 1, 2, 3
+                for iP = 1:7
                     % Post-tick stack
                     iPostTick = 1;
 

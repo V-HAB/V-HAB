@@ -1,4 +1,4 @@
-classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
+classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     %PHASE Phase with isotropic properties (abstract class)
     %   This class represents a matter phase with homogeneous mass
     %   distribution and thus isotropic properties. It is not meant to be
@@ -391,6 +391,18 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             %[ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
             afTotalInOuts = this.afCurrentTotalInOuts;
             mfInflowDetails = this.mfCurrentInflowDetails;
+            
+%             if strcmp(this.oStore.sName, 'Valve_1')
+%                 disp('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+%                 disp(this.oTimer.fTime);
+%                 disp(find(this.afMass));
+%                 disp(find(this.arPartialMass));
+%                 disp('- cached -');
+%                 disp(find(afTotalInOuts));
+%                 disp('- new -');
+%                 disp(find(this.getTotalMassChange()));
+%                 disp('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+%             end
 
             % Check manipulator
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
@@ -524,6 +536,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % Phase sets new time step (registered with parent store, used
             % for all phases of that store)
             this.setOutdatedTS();
+            
+            
+            %%%this.trigger('massupdate.post');
         end
 
         function this = update(this)
@@ -590,6 +605,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 % is called.
                 this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
             end
+            
+            %%%this.trigger('update.post');
         end
 
     end
@@ -603,30 +620,48 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             %   Change the temperature of a phase by adding or removing
             %   inner energy in |J|.
             
-            fCurrentTotalHeatCapacity = this.getTotalHeatCapacity();
+            % setParameter does .update anyways ... %%%
+%             this.update();
+            %TODO don't do whole update, just set outdated TS - calcTS
+            %     should include temperature change in ts calculations!
+            
+            %TODO check ... heat capacity updates every second, so that
+            %     should be ok? As for mass, use a change rate for the heat
+            %     capacity and, with last update time, calculate current
+            %     value?
+            
+            %fCurrentTotalHeatCapacity = this.getTotalHeatCapacity();
+            fCurrentTotalHeatCapacity = this.fTotalHeatCapacity;
             
             % Calculate temperature change due to change in inner energy.
             fTempDiff = fEnergyChange / fCurrentTotalHeatCapacity;
             
             % Update temperature property of phase.
-            this.setParameter('fTemperature', this.fTemperature + fTempDiff);
+            %this.setParameter('fTemperature', this.fTemperature + fTempDiff);
+            this.fTemperature = this.fTemperature + fTempDiff;
             
+            this.massupdate();
         end
 
 
         function fTotalHeatCapacity = getTotalHeatCapacity(this)
             % Returns the total heat capacity of the phase. 
             
-            % We'll only calculate this again, if a certain amount of time
-            % has passed since the last update. This value is set using the
-            % fMinimalTimeBetweenHeatCapacityUpdates property, which is set
-            % to 1 second by default. This is to reduce the computational
-            % load and may be removed in the future, especially if the
-            % calculateSpecificHeatCapactiy() method and the findProperty()
-            % method of the matter table have been substantially
-            % accelerated. One second is also the fixed timestep of the
-            % thermal solver.
-            if this.oTimer.fTime < this.fLastTotalHeatCapacityUpdate + this.fMinimalTimeBetweenHeatCapacityUpdates
+            %%%this.warn('getTotalHeatCapacity', 'Use oPhase.fSpecificHeatCapacity * oPhase.fMass!');
+            
+            % We'll only calculate this again, if it has been at least one
+            % second since the last update. This is to reduce the
+            % computational load and may be removed in the future,
+            % especially if the calculateSpecificHeatCapactiy() method and
+            % the findProperty() method of the matter table have been
+            % substantially accelerated.
+            % One second is also the fixed timestep of the thermal solver. 
+            %
+            % Could that not be written as:
+            % this.oTimer.fTime < (this.fLastTotalHeatCapacityUpdate + ...
+            %                  this.fMinimalTimeBetweenHeatCapacityUpdates)
+            % It feels like that is more readable ...
+            if isempty(this.fLastTotalHeatCapacityUpdate) || (this.oTimer.fTime - this.fLastTotalHeatCapacityUpdate < this.fMinimalTimeBetweenHeatCapacityUpdates)
                 fTotalHeatCapacity = this.fTotalHeatCapacity;
             else
                 this.updateSpecificHeatCapacity();
@@ -772,7 +807,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
 
             % Now sum up in-/outflows over all EXMEs
             afTotalInOuts = sum(mfTotalFlows, 1);
-
+            
+            
+            
+            
+            afTotalInOuts   = tools.round.prec(afTotalInOuts,   this.oTimer.iPrecision);
+            mfInflowDetails = tools.round.prec(mfInflowDetails, this.oTimer.iPrecision);
         end
         
     end
@@ -965,12 +1005,32 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             % afChange contains the flow rates for all substances,
             % mfDetails contains the flow rate, temperature and heat
             % capacity for each INCOMING flow, not the outflows!
-            [ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
+
+            % Change in kg of partial masses per second
+            [ afChange, mfDetails ] = this.getTotalMassChange();
+            
+            
+            
+%             if strcmp(this.oStore.sName, 'Valve_1')
+%                 disp('>>>>>>>>>>>>>>>>>>>>  CALC TS  >>>>>>>>>>>>>>');
+%                 disp(this.oTimer.fTime);
+%                 disp(find(this.afMass));
+%                 disp(find(this.arPartialMass));
+%                 disp('- cached -');
+%                 disp(find(this.afCurrentTotalInOuts));
+%                 disp('- new -');
+%                 disp(find(afChange));
+%                 disp(afChange(afChange ~= 0));
+%                 disp('- new - SUM');
+%                 disp(sum(afChange));
+%                 disp('vs mass');
+%                 disp(this.fMass);
+%                 disp('>>>>>>>>>>>>>>>>>>  /CALC TS  >>>>>>>>>>>>>>>>');
+%             end
             
             % Setting the properties to the current values
-            this.afCurrentTotalInOuts   = afTotalInOuts;
-            this.mfCurrentInflowDetails = mfInflowDetails;
-            
+            this.afCurrentTotalInOuts = afChange;
+            this.mfCurrentInflowDetails = mfDetails;
             
             % If we have set a fixed time steop for this phase, we can just
             % continue without doing any calculations.
@@ -1061,8 +1121,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 % The unit of arPartialsChange is [1/s], so multiplied by
                 % 100 % we would have a percentage change per second for
                 % each substance.
-                abChange = (afTotalInOuts ~= 0);
-                arPartialsChange = abs(afTotalInOuts(abChange) ./ tools.round.prec(this.fMass, this.oTimer.iPrecision));
+                abChange = (afChange ~= 0);
+                arPartialsChange = abs(afChange(abChange) ./ tools.round.prec(this.fMass, this.oTimer.iPrecision));
 
                 % Only use non-inf values. They would be inf if the current
                 % mass of according substance is zero. If a new substance
@@ -1080,7 +1140,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
                 % rTotalPerSecond also has the unit [1/s], giving us the
                 % percentage change per second of the overall mass of the
                 % phase.
-                fChange = sum(afTotalInOuts);
+                fChange = sum(afChange);
 
                 if fChange == 0
                     rTotalPerSecond = 0;

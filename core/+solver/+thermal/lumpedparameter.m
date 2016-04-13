@@ -70,7 +70,7 @@ classdef lumpedparameter < base
             end
             
             % Register with timer: Call |this.update| each |fTimestep|.
-            [this.setTimestep, this.unbindFromTimer] = this.oVSys.oTimer.bind(@(o) this.update(o), fTimestep);
+            [this.setTimestep, this.unbindFromTimer] = this.oVSys.oTimer.bind(@(oTimer) this.update(oTimer), fTimestep);
             
             % Define rate of change function for ODE solver.
             this.calcChangeRate = @(t, m) this.calcTemperatureChangeRate(m, t);
@@ -125,8 +125,10 @@ classdef lumpedparameter < base
             fStepBeginTime = this.fPreviousTimestep;
             fStepEndTime   = oTimer.fTime;
             
-            % Solve the equation. 
-            [mTimePoints, mSolutionTemps] = ode45(this.calcChangeRate, ...
+            % Solve the equation.
+            % http://www.mathworks.com/matlabcentral/answers/101581-why-do-i-receive-a-warning-about-integration-tolerance-when-using-the-ode-solver-functions
+            % ode45, ode23s, ode15s, ode23tb?
+            [mTimePoints, mSolutionTemps] = ode45(this.calcChangeRate, ...    ode23s
                 [fStepBeginTime, fStepEndTime], mNodeTemps, this.tOdeOptions);
             
             % Store solver results. This is mostly for debugging purposes.
@@ -159,17 +161,22 @@ classdef lumpedparameter < base
             % Update thermal matrices of |container|/|vsys|.
             this.oVSys.generateThermalMatrices();
 
-            % Get heat sources and capacitances. 
-            mHeatSources = this.oVSys.getHeatSources();
-            mCapacities  = this.oVSys.getCapacitances();
+            % Get heat sources and capacitances. %%%
+            %mHeatSources = this.oVSys.getHeatSources();
+            mHeatSources = this.oVSys.mHeatSourceVector;
+            %mCapacities  = this.oVSys.getCapacitances();
+            mCapacities  = this.oVSys.mCapacityVector;
             
             % Build the source rate vector.
             this.mSourceRateVector = mHeatSources ./ mCapacities;
             
-            % Get conductors.
-            mLinearConductors    = this.oVSys.getLinearConductors();
-            mFluidicConductors   = this.oVSys.getFluidicConductors();
-            mRadiativeConductors = this.oVSys.getRadiativeConductors();
+            % Get conductors. %%%
+            %mLinearConductors    = this.oVSys.getLinearConductors();
+            mLinearConductors    = this.oVSys.mLinearConductance;
+            %mFluidicConductors   = this.oVSys.getFluidicConductors();
+            mFluidicConductors   = this.oVSys.mFluidicConductance;
+            %mRadiativeConductors = this.oVSys.getRadiativeConductors();
+            mRadiativeConductors = this.oVSys.mRadiativeConductance;
             
             % Build transfer rate matrices.
             [this.mLinearRateMatrix, this.mFluidFlowRateMatrix, ...
@@ -189,10 +196,13 @@ classdef lumpedparameter < base
             % Get capacitances. 
             %mCapacities = this.mNodeCapacities;
             
-            % Get conductors.
-            mLinearConductors    = this.oVSys.getLinearConductors();
-            mFluidicConductors   = this.oVSys.getFluidicConductors();
-            mRadiativeConductors = this.oVSys.getRadiativeConductors();
+            % Get conductors. %%%
+            %mLinearConductors    = this.oVSys.getLinearConductors();
+            mLinearConductors    = this.oVSys.mLinearConductance;
+            %mFluidicConductors   = this.oVSys.getFluidicConductors();
+            mFluidicConductors   = this.oVSys.mFluidicConductance;
+            %mRadiativeConductors = this.oVSys.getRadiativeConductors();
+            mRadiativeConductors = this.oVSys.mRadiativeConductance;
             
             % Calculate the heat transfer.
             [mHFLinear, mHFFluidic, mHFRadiat] = calcHeatTransfer(mTimes, mTemperatures, ...

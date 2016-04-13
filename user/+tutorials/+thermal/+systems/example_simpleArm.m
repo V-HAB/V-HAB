@@ -27,6 +27,11 @@ classdef example_simpleArm < vsys
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
+        end
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+            
             %fDensity = 1000; % [kg/m^3]
             
             fTStart = 308; % [K]
@@ -89,7 +94,7 @@ classdef example_simpleArm < vsys
             
             % Looks like we need to seal the container otherwise a phase
             % update crashes since it does not have a timer. 
-            this.seal();
+            %this.seal();
             
             %END of workaround
             %%
@@ -158,7 +163,7 @@ classdef example_simpleArm < vsys
             % Similar to |thermal.dummymatter.addCreatePhase|.
             
             
-            sSubstance = 'DummyTissue';
+            sSubstance = 'Human';%'DummyTissue';
             sPhase = 'solid';
             
             % Create new masses array and fill it with a dummy mass (of the
@@ -169,7 +174,8 @@ classdef example_simpleArm < vsys
             
             % Calculate the mass of the phase (and thus matter object) in 
             % |kg|.
-            fMass = oMT.calculateDensity(sPhase, afMasses, fTemperature, oMT.Standard.Pressure) * fVolume;
+            %fMass = oMT.calculateDensity(sPhase, afMasses, fTemperature, oMT.Standard.Pressure) * fVolume;
+            fMass = oMT.ttxMatter.(sSubstance).ttxPhases.tSolid.Density * fVolume;
             
             % Create path to the correct phase constructor.
             sPhaseCtor = ['matter.phases.', sPhase];

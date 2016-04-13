@@ -1,6 +1,8 @@
-classdef heatsource < base
+classdef heatsource < base & event.source
     %HEATSOURCE A dumb constant heat source
     %   Detailed explanation goes here
+    %
+    %TODO in thermal solver, directly access fPower? Why getPower?
     
     properties (SetAccess = protected)
         sName;
@@ -22,9 +24,13 @@ classdef heatsource < base
         
         function setPower(this, fPower)
             this.fPower  = fPower;
+            
+            this.trigger('update', fPower);
         end
         
         function fPower = getPower(this)
+            this.warn('getPower', 'Access fPower directly!');
+            
             fPower = this.fPower;
         end
         

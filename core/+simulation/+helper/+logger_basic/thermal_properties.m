@@ -9,10 +9,10 @@ csConfigCells = {'csCapacities', 'csLinearConductors', 'csFluidicConductors', 'c
 %       just collect exmes and compare coExmes{1/2}
 
 if nargin < 3
-    csCapacities          = oVsys.poCapacities.keys;
-    csLinearConductors    = oVsys.poLinearConductors.keys;
-    csFluidicConductors   = oVsys.poFluidicConductors.keys;
-    csRadiativeConductors = oVsys.poRadiativeConductors.keys;
+    csCapacities          = oVsys.poCapacities.keys(); %!!!
+    csLinearConductors    = oVsys.poLinearConductors.keys();
+    csFluidicConductors   = oVsys.poFluidicConductors.keys();
+    csRadiativeConductors = oVsys.poRadiativeConductors.keys();
     
 %TODO Make this actually work with the config struct in an intelligent way
 % else 
@@ -39,8 +39,11 @@ for iI = 1:length(csCapacities)
         sStorePath    = [ sPath, '.toStores.', oCapacity.oMatterObject.sName ];
         sCapacityPath = [ sStorePath, '.toPhases.', oCapacity.oMatterObject.aoPhases(1).sName ];
     else
-        sStorePath    = [ sPath, '.toStores.', oCapacity.oMatterObject.oStore.sName ];
-        sCapacityPath = [ sStorePath, '.toPhases.', oCapacity.oMatterObject.sName ];
+        % Rewritten, use poCapacities() to access the matter object, as the
+        % matter and thermal nodes might not be on the same system!
+        %sStorePath    = [ sPath, '.toStores.', oCapacity.oMatterObject.oStore.sName ];
+        %sCapacityPath = [ sStorePath, '.toPhases.', oCapacity.oMatterObject.sName ];
+        sCapacityPath = [ sPath, '.poCapacities(''', oCapacity.sName, ''').oMatterObject' ];
     end
     
     
