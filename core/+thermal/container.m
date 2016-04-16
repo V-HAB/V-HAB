@@ -125,17 +125,17 @@ classdef container < sys
                 
                 % Get capacity and heater power of current node and store
                 % the data at the associated index (i.e. position). %%%
-                %mCapacitances(iIndex, 1) = oNode.getTotalHeatCapacity();
+                mCapacitances(iIndex, 1) = oNode.getTotalHeatCapacity();
                 %mCapacitances(iIndex, 1) = oNode.fTotalHeatCapacity;
-                mCapacitances(iIndex, 1) = oNode.oMatterObject.fTotalHeatCapacity;
-                %mHeatSources(iIndex, 1)  = oNode.getHeatPower();
+                %mCapacitances(iIndex, 1) = oNode.oMatterObject.fTotalHeatCapacity;
+                mHeatSources(iIndex, 1)  = oNode.getHeatPower();
                 %mHeatSources(iIndex, 1)  = oNode.fHeatPower;
                 
-                if ~isempty(oNode.oHeatSource)
-                    mHeatSources(iIndex, 1)  = oNode.oHeatSource.fPower;
-                else
-                    mHeatSources(iIndex, 1) = 0;
-                end
+                %if ~isempty(oNode.oHeatSource)
+                %    mHeatSources(iIndex, 1)  = oNode.oHeatSource.fPower;
+                %else
+                %    mHeatSources(iIndex, 1) = 0;
+                %end
                 
             end
             

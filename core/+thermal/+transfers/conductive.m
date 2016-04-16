@@ -3,6 +3,9 @@ classdef conductive < thermal.conductors.linear
     %   Detailed explanation goes here
     
     properties
+        fThermalConductivity;
+        fArea;
+        fLength;
     end
     
     methods
@@ -15,6 +18,33 @@ classdef conductive < thermal.conductors.linear
             sIdentifier = ['conductive:', oLeftCapacity.sName, '+', oRightCapacity.sName];
             this@thermal.conductors.linear(oLeftCapacity, oRightCapacity, conductanceValue, sIdentifier);
             
+            
+            this.fThermalConductivity = fThermalConductivity;
+            this.fArea                = fArea;
+            this.fLength              = fLength;
+        end
+        
+        
+        function updateThermalProperties(this, fThermalConductivity, fArea, fLength)
+            
+            if nargin >= 2 && ~isempty(fThermalConductivity)
+                this.fThermalConductivity = fThermalConductivity;
+            end
+            
+            if nargin >= 3 && ~isempty(fArea)
+                this.fArea = fArea;
+            end
+            
+            if nargin >= 4 && ~isempty(fLength)
+                this.fLength = fLength;
+            end
+            
+            
+            
+            calcFunc = str2func([mfilename('class'), '.calculateConductance']);
+            fConductanceValue = calcFunc(this.fThermalConductivity, this.fArea, this.fLength);
+            
+            this.setConductivity(this, fConductanceValue);
         end
         
     end

@@ -149,7 +149,7 @@ classdef capacity < base
             if this.bBoundary
                 fTotalHeatCapacity = Inf;
             else
-                fTotalHeatCapacity = this.oMatterObject.getTotalHeatCapacity();
+                fTotalHeatCapacity = this.oMatterObject.fTotalHeatCapacity; %getTotalHeatCapacity();
             end
             
         end
