@@ -49,7 +49,7 @@ classdef example_simpleArm < vsys
             oArm = matter.store(this, 'Arm', sum(mfVolumeSurface(:, 1)));
             
             % Shoulder (boundary node with fixed temperature)
-            oShoulder = this.createTissuePhase(this.oMT, oArm, 'Arm1Shoulder', mfVolumeSurface(1, 1), fTStart+1);
+            oShoulder = this.createTissuePhase(this.oMT, oArm, 'Arm__Arm1Shoulder', mfVolumeSurface(1, 1), fTStart+1);
             oCapacity1 = thermal.capacity(oShoulder.sName, oShoulder);
             oCapacity1.makeBoundaryNode();
 %             oCapacity1.overloadTotalHeatCapacity(Inf);
@@ -153,6 +153,10 @@ classdef example_simpleArm < vsys
                     0.9, 1, mfVolumeSurface(5, 2), 1) ...
             );
             
+        end
+        
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
         end
         
     end

@@ -40,6 +40,9 @@ classdef setup_heatedBar < simulation.infrastructure
             % system. 
             oThermalSystem.oThermalSolver = this.oThermalSolver;
             
+        end
+        
+        function configureMonitors(this)
             % Set what data should be logged.
             oLog = this.toMonitors.oLogger;
             
