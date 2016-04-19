@@ -119,7 +119,7 @@ classdef dummymatter < matter.store & event.source
             %TODO: remove!
             %this.fTemperature = fTemperature;
             
-            this.fTotalHeatCapacity = this.oPhase.getTotalHeatCapacity();
+            this.fTotalHeatCapacity = this.oPhase.fSpecificHeatCapacity * this.oPhase.fMass;
             this.fTemperature = this.oPhase.fTemperature;
             
         end
@@ -128,7 +128,7 @@ classdef dummymatter < matter.store & event.source
             % Accepts a change in inner energy in |J| to calculate a
             % temperature change of the store and/or its phase.
             
-            if isempty(this.oPhase) || ~isvalid(this.oPhase) || ~ismethod(this.oPhase, 'changeInnerEnergy')
+            if isempty(this.oPhase) || ~isvalid(this.oPhase)
                 % Phase is not set, invalid, or does not have the
                 % |changeInnerEnergy| method.
                 this.warn('thermal:dummymatter:changeInnerEnergy', 'Failed to change inner energy of phase.');
