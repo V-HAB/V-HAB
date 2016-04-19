@@ -38,21 +38,29 @@ classdef matter_observer < simulation.monitor
             oSim   = oInfra.oSimulationContainer;
             oMT    = oSim.oMT;
             
-            
-            if mod(oSim.oTimer.iTick, this.iMassLogInterval) == 0
+            if ~isempty(oMT.aoPhases)
+                if mod(oSim.oTimer.iTick, this.iMassLogInterval) == 0
+                    iIdx = size(this.mfTotalMass, 1) + 1;
+                    
+                    % Total mass: sum over all mass stored in all phases, for each
+                    % species separately.
+                    this.mfTotalMass(iIdx, :) = sum(reshape([ oMT.aoPhases.afMass ], oMT.iSubstances, []), 2)';
+                    
+                    % Lost mass: logged by phases if more mass is extracted then
+                    % available (for each substance separately).
+                    this.mfLostMass(iIdx, :) = sum(reshape([ oMT.aoPhases.afMassLost ], oMT.iSubstances, []), 2)';
+                    
+                    %TODO implement methods for that ... break down everything down
+                    %     to the moles and compare these?! So really count every
+                    %     atom, not the molecules ... compare enthalpy etc?
+                end
+            else
                 iIdx = size(this.mfTotalMass, 1) + 1;
-
+                
                 % Total mass: sum over all mass stored in all phases, for each
                 % species separately.
-                this.mfTotalMass(iIdx, :) = sum(reshape([ oMT.aoPhases.afMass ], oMT.iSubstances, []), 2)';
-
-                % Lost mass: logged by phases if more mass is extracted then
-                % available (for each substance separately).
-                this.mfLostMass(iIdx, :) = sum(reshape([ oMT.aoPhases.afMassLost ], oMT.iSubstances, []), 2)';
-
-                %TODO implement methods for that ... break down everything down
-                %     to the moles and compare these?! So really count every
-                %     atom, not the molecules ... compare enthalpy etc?
+                this.mfTotalMass(iIdx, :) = zeros(1, oMT.iSubstances);
+                this.mfLostMass(iIdx, :)  = zeros(1, oMT.iSubstances);
             end
         end
         

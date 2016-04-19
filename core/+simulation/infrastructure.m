@@ -255,9 +255,25 @@ classdef infrastructure < base & event.source
                     sChild = oRoot.csChildren{iC};
                     oChild = oRoot.toChildren.(sChild);
                     
-                    oChild.createMatterStructure();
+                    if ismethod(oChild,'createMatterStructure')
+                        oChild.createMatterStructure();
+                    end
+                    
+                    if ismethod(oChild,'createThermalStructure')
+                        oChild.createThermalStructure();
+                    end
+                    
+                    if ismethod(oChild,'createElectricalStructure')
+                        oChild.createElectricalStructure();
+                    end
+                    
                     oChild.seal();
                     oChild.createSolverStructure();
+                    
+                    %TODO Might have to add something like this here
+                    %if ismethod(oChild,'createDomainInterfaces')
+                    %   oChild.createDomainInterfaces();
+                    %end
                 end
                 
                 disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
