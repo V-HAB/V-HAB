@@ -404,8 +404,8 @@ classdef branch < base & event.source
                 sOldName = this.sName;
             end
             
-            % Now we set the new name for this branch, inserting the word
-            % 'Interface' in the middle, so when looking at the name, we
+            % Now we set the new name for this branch, inserting the
+            % letters 'if' in the middle, so when looking at the name, we
             % know that this is a subsystem to supersystem branch.
             this.sName = [ csLeftBranchName{1}, '___if___', csRightBranchName{2} ];
             
