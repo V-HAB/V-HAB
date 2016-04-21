@@ -1,4 +1,4 @@
-classdef GasExchange < matter.procs.p2p
+classdef PlantGrowth < matter.procs.p2p
     % This p2p processor moves "general" biomass from the biomass buffer
     % phase into the culture's phase to according to the culture's 
     % calculated growth rate.
@@ -12,7 +12,7 @@ classdef GasExchange < matter.procs.p2p
     end
     
     methods
-        function this = GasExchange(oParent, sName, sPhaseAndPortIn, sPhaseAndPortOut, sSubstance)
+        function this = PlantGrowth(oParent, sName, sPhaseAndPortIn, sPhaseAndPortOut, sSubstance)
             this@matter.procs.p2p(oParent, sName, sPhaseAndPortIn, sPhaseAndPortOut);
 
             
@@ -22,14 +22,9 @@ classdef GasExchange < matter.procs.p2p
         end
         
         function update(this)
-            % calcualte net gas exchange with atmosphere. positive flowrate
-            % out of balance phase
+            % calcualte plant growth out of dry crop growth rate
             this.fMassFlow = ...
-                oParent.tfMMECRates.fTR + ...
-                oParent.tfMMECRates.fOP - ...
-                oParent.tfMMECRates.fOC + ...
-                oParent.tfMMECRates.fCO2P - ...
-                oParent.tfMMECRates.fCO2C;
+                oParent.tfMMECRates.fCGR;
             
             % extract specified substance with desired flow rate
             this.setMatterProperties(this.fMassFlow, this.arExtractPartials);

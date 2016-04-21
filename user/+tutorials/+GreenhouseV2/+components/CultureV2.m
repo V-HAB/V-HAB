@@ -53,18 +53,13 @@ classdef CultureV2 % < vsys
     
     methods
         function this = CultureV2(oParent, txPlantParameters, txInput)
-%             this@vsys(oParent, txInput.sCultureName);
             
             % write properties
-%             this.oMT = oParent.oMT;
+            this.oMT = oParent.oMT;
             this.txPlantParameters = txPlantParameters;
             this.txInput = txInput;
             
             %% Create Store, Phases and Processors
-%         end
-%         
-%         function createMatterStructure(this)
-%             createMatterStructure@vsys(this);
             
             % write helper for standard plant atmosphere later
             fVolumeAirCirculation = 0.2;
@@ -72,8 +67,8 @@ classdef CultureV2 % < vsys
             matter.store(oParent, this.txInput.sCultureName, 20);
             
             oAtmosphere = matter.phases.gas(...
-                oParent.toStores.(this.txInput.sCultureName), ...        % store containing phase
-                [this.txInput.sCultureName, '_Atmosphere'], ...          % phase name 
+                oParent.toStores.(this.txInput.sCultureName), ...   % store containing phase
+                [this.txInput.sCultureName, '_Atmosphere'], ...     % phase name 
                 struct(...                                          % phase contents    [kg]
                     'N2', 0.79 * fVolumeAirCirculation * 1e-3, ...
                     'O2', 0.21 * fVolumeAirCirculation * 1e-3), ...
@@ -86,20 +81,33 @@ classdef CultureV2 % < vsys
             matter.procs.exmes.gas(oAtmosphere, [this.txInput.sCultureName, '_GasExchange_P2P']);
             
             oPlants = matter.phases.solid(...
-                oParent.toStores.(this.txInput.sCultureName), ...        % store containing phase
-                [this.txInput.sCultureName, '_Plants'], ...              % phase name 
+                oParent.toStores.(this.txInput.sCultureName), ...   % store containing phase
+                [this.txInput.sCultureName, '_Plants'], ...         % phase name 
                 struct(...                                          % phase contents    [kg]
                     [this.txPlantParameters.sPlantSpecies, 'EdibleWet'], 1e-3, ...
                     [this.txPlantParameters.sPlantSpecies, 'InedibleWet'], 1e-3), ...
                 19.8, ...                                           % ignored volume    [m^3]
                 293.15);                                            % phase temperature [K]
             
-            matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_NutrientSupply_In']);
-            matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_WaterSupply_In']);
+            
             matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_BiomassEdible_Out']);
             matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_BiomassInedible_Out']);
             
-            matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_GasExchange_P2P']);
+            matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_PlantGrowth_P2P']);
+            
+            oBalance = matter.phases.solid(...
+                oParent.toStores.(this.txInput.sCultureName), ...   % store containing phase
+                [this.txInput.sCultureName, '_Balance'], ...        % phase name 
+                struct(...                                          % phase contents    [kg]
+                    'BiomassBalance', 1e-3), ...
+                19.8, ...                                           % ignored volume    [m^3]
+                293.15);                                            % phase temperature [K]
+            
+            matter.procs.exmes.solid(oBalance, [this.txInput.sCultureName, '_NutrientSupply_In']);
+            matter.procs.exmes.solid(oBalance, [this.txInput.sCultureName, '_WaterSupply_In']);
+            
+            matter.procs.exmes.solid(oBalance, [this.txInput.sCultureName, '_GasExchange_P2P']);
+            matter.procs.exmes.solid(oBalance, [this.txInput.sCultureName, '_PlantGrowth_P2P']);
             
             
             matter.procs.exmes.gas(oParent.toStores.Atmosphere.toPhases.Atmosphere, [this.txInput.sCultureName, '_AtmosphereCirculation_In']);
@@ -118,28 +126,17 @@ classdef CultureV2 % < vsys
                 oParent.toStores.(txInput.sCultureName), ...                                    % store containing phases
                 [txInput.sCultureName, '_GasExchange_P2P'], ...                                 % p2p processor name
                 [oAtmosphere.sName, '.', this.txInput.sCultureName, '_GasExchange_P2P'], ...    % first phase and exme
-                [oPlants.sName, '.', this.txInput.sCultureName, '_GasExchange_P2P'], ...        % second phase and exme
-                [this.txInput.sCultureName, '_GasExchange']);                                   % substance to extract
+                [oBalance.sName, '.', this.txInput.sCultureName, '_GasExchange_P2P'], ...       % second phase and exme
+                'BiomassBalance');                                                              % substance to extract      
+            
+            % p2p for simulation of plant growth (Biomass Edible+Inedible)
+            tutorials.GreenhouseV2.components.PlantGrowth(...
+                oParent.toStores.(txInput.sCultureName), ...                                    % store containing phases
+                [txInput.sCultureName, '_PlantGrowth_P2P'], ...                                 % p2p processor name
+                [oBalance.sName, '.', this.txInput.sCultureName, '_PlantGrowth_P2P'], ...       % first phase and exme
+                [oPlants.sName, '.', this.txInput.sCultureName, '_PlantGrowth_P2P'], ...        % second phase and exme
+                'BiomassBalance');                                                              % substance to extract
         end
-        
-%         function createSolverStructure(this)
-%             createSolverStructure@vsys(this);
-%             
-%             %% Add Branches To Solvers
-%             
-%             
-%         end
-%         
-%         %% Connect Subsystem Interfaces with Parent System
-%         
-%         function setIfFlows(this, sInterface1, sInterface2, sInterface3, sInterface4, sInterface5, sInterface6)
-%             this.connectIF('Atmosphere_In_FromIF', sInterface1);
-%             this.connectIF('Atmosphere_Out_ToIF', sInterface2);
-%             this.connectIF('WaterSupply_In_FromIF', sInterface3);
-%             this.connectIF('NutrientSupply_In_FromIF', sInterface4);
-%             this.connectIF('BiomassEdible_Out_ToIF', sInterface5);
-%             this.connectIF('BiomassInedible_Out_ToIF', sInterface6);
-%         end
     end
     
     methods (Access = protected)

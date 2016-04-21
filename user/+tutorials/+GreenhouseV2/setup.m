@@ -34,8 +34,8 @@ classdef setup < simulation.infrastructure
             oLogger = this.toMonitors.oLogger;
             
             % general logging parameters, greenhouse system
-            oLogger.add('Greenhouse', 'flow_props');
-            oLogger.add('Greenhouse', 'thermal_properties');
+            oLogger.add('GreenhouseV2', 'flow_props');
+            oLogger.add('GreenhouseV2', 'thermal_properties');
             
             %% Define Plots
             

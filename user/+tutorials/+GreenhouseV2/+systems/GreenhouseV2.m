@@ -68,22 +68,6 @@ classdef GreenhouseV2 < vsys
             
             % write to property
             this.ttxInput = blubb.CultureInput;
-            
-%             %% Create Culture Objects
-%             
-%             % write culture names into cell array to be accessed within
-%             % loop
-%             this.csCultures = fieldnames(this.ttxInput);
-%             
-%             % loop over total cultures amount
-%             for iI = 1:length(this.csCultures)
-%                 % culture object gets assigned using its culture name 
-%                 this.toCultures.(this.csCultures{iI}) = ...
-%                     tutorials.GreenhouseV2.components.CultureV2(...
-%                         this, ...                               % parent system reference
-%                         this.ttxPlantParameters.(this.ttxInput.(this.csCultures{iI}).sPlantSpecies), ...
-%                         this.ttxInput.(this.csCultures{iI}));   % input for specific culture
-%             end
         end
         
         function createMatterStructure(this)
@@ -206,6 +190,9 @@ classdef GreenhouseV2 < vsys
             
             %% Create Branches
             
+            % 
+            this.csCultures = fieldnames(this.toCultures);
+            
             for  iI = 1:length(this.csCultures)
                 matter.branch(...
                     this, ...
@@ -220,7 +207,6 @@ classdef GreenhouseV2 < vsys
                     {}, ...
                     [this.toStores.Atmosphere.sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_AtmosphereCirculation_In'], ...
                     [this.ttxInput.(this.csCultures{iI}).sCultureName, '_AtmosphereCirculation_Out']);
-            
             
                 matter.branch(...
                     this, ...
@@ -262,6 +248,10 @@ classdef GreenhouseV2 < vsys
             
         end
         
+        % placeholder for later. it should be possible for user comfort to
+        % add cultures via the following method. will be implemented after
+        % new plant model has been validated as inputs etc. have to be
+        % adjusted.
         function this = addCulture(this, sCultureName, sPlantSpecies, fGrowthArea, fEmergeTime, iConsecutiveGenerations, fHarvestTime, fPPFD, fH)
         end
     end 
