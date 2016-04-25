@@ -209,8 +209,8 @@ classdef RCA < vsys
             oB2  = solver.matter.iterative.branch(this.toBranches.Splitter__Outlet2___Bed_B__Inlet);
 %             oB3  = solver.matter.iterative.branch(this.toBranches.Bed_A__Amine_Vacuum_Port___Vacuum__Inlet_Bed_A_Amine);
 %             oB4  = solver.matter.iterative.branch(this.toBranches.Bed_B__Amine_Vacuum_Port___Vacuum__Inlet_Bed_B_Amine);          
-            oB5  = solver.matter.iterative.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
-            oB6  = solver.matter.iterative.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
+            oB5  = solver.matter.manual.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
+            oB6  = solver.matter.manual.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
             oB7  = solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Inlet1);
             oB8  = solver.matter.iterative.branch(this.toBranches.Bed_B__Outlet___Merger__Inlet2);
             oB9  = solver.matter.iterative.branch(this.toInterfaceBranches.Outlet);
@@ -232,6 +232,9 @@ classdef RCA < vsys
             oB8.iDampFR  = iDampingFactor;
             oB9.iDampFR  = iDampingFactor;
             oB10.iDampFR = iDampingFactor;
+            
+            oB5.setFlowRate(0);
+            oB6.setFlowRate(10000);
             
             % Again in an effort to optimize execution speed and result
             % quality, we set a lower rMaxChange value on the flow phases
@@ -283,13 +286,12 @@ classdef RCA < vsys
     
     methods
         
-        function setInterfaces(this, sInlet, sOutlet, oReferenceExme)
+        function setInterfaces(this, sInlet, sOutlet)
             % Setting both the interface flows as well as the reference
             % exme that will be used to measure the CO2 partial pressure
             % used to determine if a bed switch is necessary. 
             this.connectIF('Inlet',  sInlet);
             this.connectIF('Outlet', sOutlet);
-%             this.oReferenceExme = oReferenceExme;
         end
         
 
@@ -305,10 +307,13 @@ classdef RCA < vsys
                 this.sActiveBed = 'B';
                 
                 % Starting desorption process for Bed A 
-%                 this.toStores.Bed_A.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
-%                 this.toStores.Bed_B.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
+                this.toStores.Bed_A.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
+                this.toStores.Bed_B.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
                 
                 this.oReferenceExme = this.toStores.Bed_B.toPhases.FlowPhase.toProcsEXME.Outlet;
+                
+                this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume.oHandler.setFlowRate(10000);
+                this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume.oHandler.setFlowRate(0);
                 
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
@@ -320,10 +325,13 @@ classdef RCA < vsys
                 this.sActiveBed = 'A';
                 
                 % Starting desorption process for Bed B                
-%                 this.toStores.Bed_B.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
-%                 this.toStores.Bed_A.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
+                this.toStores.Bed_B.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
+                this.toStores.Bed_A.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
                 
                 this.oReferenceExme = this.toStores.Bed_A.toPhases.FlowPhase.toProcsEXME.Outlet;
+                
+                this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume.oHandler.setFlowRate(0);
+                this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume.oHandler.setFlowRate(10000);
                 
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
