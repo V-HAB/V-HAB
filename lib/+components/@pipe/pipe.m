@@ -27,6 +27,19 @@ classdef pipe < matter.procs.f2f
         
         % Pressure differential caused by the pipe in [Pa]
         fDeltaPressure  = 0;
+        
+        % Last time the solverDeltas() method was called
+        fTimeOfLastUpdate = -1;
+        
+        % Current dynamic viscosity
+        fEta = 17.2 / 10^6;
+        
+        % Maximum relative change in temperature or pressure before
+        % recalculation of dynamic viscosity is triggered.
+        rMaxChange = 0.01;
+        
+        fTemperatureLastUpdate = 0;
+        fPressureLastUpdate    = 0;
 
     end
     
@@ -68,14 +81,17 @@ classdef pipe < matter.procs.f2f
                 [oFlowIn, ~ ]=this.getFlows();
 
                 fDensity = this.oMT.calculateDensity(oFlowIn);
-
-                fDynamicViscosity = this.oMT.calculateDynamicViscosity(oFlowIn);
-
+                
+                if this.oTimer.fTime > this.fTimeOfLastUpdate
+                    this.fEta = this.oMT.calculateDynamicViscosity(oFlowIn);
+                end
                 fFlowSpeed = oFlowIn.fFlowRate/(fDensity*pi*0.25*this.fDiameter^2);
 
                 this.fDeltaPressure = pressure_loss_pipe(this.fDiameter, this.fLength,...
-                                fFlowSpeed, fDynamicViscosity, fDensity, this.fRoughness, 0);
+                                fFlowSpeed, this.fEta, fDensity, this.fRoughness, 0);
             end
+            
+            this.fTimeOfLastUpdate = this.oTimer.fTime;
 
         end
         
@@ -98,19 +114,22 @@ classdef pipe < matter.procs.f2f
             %     and warn if it is too large?
             
             % Calculate dynamic viscosity
-            try
-                fEta = this.aoFlows(1).getDynamicViscosity();
-            catch
+            if this.oTimer.fTime > this.fTimeOfLastUpdate
                 try
-                    fEta = this.aoFlows(2).getDynamicViscosity();
+                    this.fEta = this.aoFlows(1).getDynamicViscosity();
                 catch
-                    fEta = 17.2 / 10^6;
-                    this.warn('calculateFlowCoefficient', 'Using default dynamic viscosity.');
+                    try
+                        this.fEta = this.aoFlows(2).getDynamicViscosity();
+                    catch
+                        this.fEta = 17.2 / 10^6;
+                        this.warn('calculateFlowCoefficient', 'Using default dynamic viscosity.');
+                    end
                 end
             end
             
+            fDropCoefficient = (128 * this.fEta * this.fLength) / (pi * this.fDiameter ^ 4);
             
-            fDropCoefficient = (128 * fEta * this.fLength) / (pi * this.fDiameter ^ 4);
+            this.fTimeOfLastUpdate = this.oTimer.fTime;
             
             %fprintf('%s-%s    eta %f   l %f  d %f  =  %f\n', this.oBranch.sName, this.sName, fEta, this.fLength, this.fDiameter, fDropCoefficient);
         end
@@ -168,10 +187,17 @@ classdef pipe < matter.procs.f2f
 
             % Calculate dynamic viscosity
             try
-                %fEta = this.oMT.calculateDynamicViscosity(oFlowIn);
-                fEta = oFlowIn.getDynamicViscosity();
+                if this.oTimer.fTime > this.fTimeOfLastUpdate
+                    rTemperatureChange = abs(1-this.fTemperatureLastUpdate/oFlowIn.fTemperature);
+                    rPressureChange    = abs(1-this.fPressureLastUpdate/oFlowIn.fPressure);
+                    if rTemperatureChange > this.rMaxChange || rPressureChange > this.rMaxChange
+                        this.fEta = oFlowIn.getDynamicViscosity();
+                        this.fTemperatureLastUpdate = oFlowIn.fTemperature;
+                        this.fPressureLastUpdate    = oFlowIn.fPressure;
+                    end
+                end
             catch
-                fEta = 17.2 / 10^6;
+                this.fEta = 17.2 / 10^6;
             end
 
             % If the pipe diameter is zero, no matter can flow through that
@@ -184,13 +210,13 @@ classdef pipe < matter.procs.f2f
 
             % If the dynamic viscosity or the density is empty, return zero
             % as the pressure drop. Else, the pressure drop may become NaN.
-            if (fDensity == 0) || (fEta == 0)
+            if (fDensity == 0) || (this.fEta == 0)
                 fDeltaPressure = 0;
                 return; % Return early.
             end
 
             % Reynolds Number
-            fReynolds = fFlowSpeed * this.fDiameter * fDensity / fEta;
+            fReynolds = fFlowSpeed * this.fDiameter * fDensity / this.fEta;
             % Interpolate transition between turbulent and laminar
             %CHECK What does this do?
             pInterp = 0.13;
@@ -238,6 +264,7 @@ classdef pipe < matter.procs.f2f
             
             this.fDeltaPressure = fDeltaPressure;
             
+            this.fTimeOfLastUpdate = this.oTimer.fTime;
             
             %fprintf('%s: dP %f, FR %f, RHO %f, RE %f, LAMBDA %f\n', this.sName, fDeltaPressure, fFlowRate, fDensity, fReynolds, fLambda);
             
