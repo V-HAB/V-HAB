@@ -31,11 +31,13 @@ classdef RCA < vsys
         % or just partely => rDesorptionRatio < 1
         rDesorptionRatio = 1;   % [-]
         
-        % Time of last bed switch
-        fLastBedSwitch = 0;
+        % Times of two last bed switches
+        afLastBedSwitches = zeros(2,1);
         
-        % Passed time since the last bed switch
-        fDeltaTime; 
+        % Times between bed switches, half cycle is between each switch,
+        % full cycle is time between two switches. 
+        fFullCycleTime = 0;
+        fHalfCycleTime = 0;
         
         % Deadband in seconds, minimum time between bed switches to prevent
         % immediate set back due to inaccuracies after the bed switch
@@ -43,6 +45,11 @@ classdef RCA < vsys
         
         % A string indicating which bed is currently the active one
         sActiveBed = 'A';
+        
+        % Boolead active bed indicators, because you can't really log a
+        % string. 
+        bBedAActive = true;
+        bBedBActive = false;
         
         % A string containing the phase creation helper used for the phases
         % of the RCA filters. 
@@ -265,17 +272,16 @@ classdef RCA < vsys
             
             % Getting the partial pressure of CO2 at the exme we have
             % defined to be the reference for this measurement. 
-%             afExmePartialPressures = this.oReferenceExme.oFlow.getPartialPressures();
             afExmePartialPressures = this.oReferenceExme.oFlow.afPartialPressure;
             fMeasuredCO2PartialPressure = afExmePartialPressures(this.oMT.tiN2I.CO2);
 
             % We need some deadband to prevent the valve from switching too fast at
             % high metabolic rates. This is also done in the actual hardware setup of
             % PLSS 1.0
-            this.fDeltaTime = this.oTimer.fTime - this.fLastBedSwitch;
+            fDeltaTime = this.oTimer.fTime - this.afLastBedSwitches(2);
             
             % Switching beds and setting flow rates if conditions are met
-            if  (fMeasuredCO2PartialPressure >= this.fCO2Limit) && (this.fDeltaTime > this.fDeadband)
+            if (fDeltaTime > this.fDeadband) && (fMeasuredCO2PartialPressure >= this.fCO2Limit)
                 this.switchRCABeds();
             end
             
@@ -305,6 +311,8 @@ classdef RCA < vsys
                 % Setting the indicator and changing the active bed
                 bIndicator = false; 
                 this.sActiveBed = 'B';
+                this.bBedAActive = false;
+                this.bBedBActive = true;
                 
                 % Starting desorption process for Bed A 
                 this.toStores.Bed_A.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
@@ -323,6 +331,8 @@ classdef RCA < vsys
                 % Setting the indicator and changing the active bed
                 bIndicator = true;
                 this.sActiveBed = 'A';
+                this.bBedAActive = true;
+                this.bBedBActive = false;
                 
                 % Starting desorption process for Bed B                
                 this.toStores.Bed_B.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
@@ -352,8 +362,13 @@ classdef RCA < vsys
             this.toProcsF2F.Valve_7.setValvePos(~bIndicator);
             this.toProcsF2F.Valve_8.setValvePos(bIndicator);
             
+            % Logging half and full cycle times
+            this.fFullCycleTime = this.oTimer.fTime - this.afLastBedSwitches(1);
+            this.fHalfCycleTime = this.oTimer.fTime - this.afLastBedSwitches(2);
+            
             % Resetting the timer
-            this.fLastBedSwitch = this.oTimer.fTime;         
+            this.afLastBedSwitches(1) = this.afLastBedSwitches(2);
+            this.afLastBedSwitches(2) = this.oTimer.fTime;         
         end
     end
     

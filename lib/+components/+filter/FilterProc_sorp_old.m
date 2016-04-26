@@ -178,7 +178,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
                 return;
             end
             
-            hTimer = tic();
+%             hTimer = tic();
             
 %             % Position of relevant sorptives in the matter table
 % %             this.aiPositions = (find(this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.arPartialMass > 0));
@@ -457,7 +457,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             this.fFlowRate_des = sum(afLoadedMass_des) / (afDiscreteTime(end) - afDiscreteTime(1));           % [kg/s]     
             this.DesorptionProc.setMatterProperties(this.fFlowRate_des, this.arPartials_des);
             
-            this.fUpdateDuration = toc(hTimer);
+%             this.fUpdateDuration = toc(hTimer);
             
 % TODO: DO WE NEED THAT???
 %             % Calculation of the pressure drop through the filter bed
