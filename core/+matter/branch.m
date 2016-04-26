@@ -592,6 +592,10 @@ classdef branch < base & event.source
                         oExme = [];
                         return;
                     end
+                    
+                    if isa(this.aoFlowProcs(iI), 'components.fan')
+                        iWhichExme = sif(this.aoFlowProcs(iI).iBlowDirection == 1, 1, 2);
+                    end
                 end
             else
                 %iWhichExme = sif(this.fFlowRate < 0, 2, 1);

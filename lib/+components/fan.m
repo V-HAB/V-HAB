@@ -42,7 +42,8 @@ classdef fan < matter.procs.f2f
         
         
         % Direction of the flow the fan is trying to produce. Default
-        % direction is left to right -> iBlowDirection = 1
+        % direction is left to right -> iBlowDirection = 1. For right to
+        % left -> iBlowDirection = -1;
         iBlowDirection = 1;
         
         % Power Consumtion of the fan in [W]
