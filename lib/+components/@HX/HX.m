@@ -252,13 +252,6 @@ classdef HX < vsys
                 return;
             end
             
-            % We also don't need to do all of the calculations multiple
-            % times per timestep, so we do the following check. 
-            if this.oTimer.fTime == this.fLastUpdate
-                return;
-            end
-            
-            
             % Get the two flow objects from the heat exchanger, flow 1 
             % always has to be the one inside the pipes if there are pipes
             
