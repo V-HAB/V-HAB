@@ -198,6 +198,9 @@ classdef pipe < matter.procs.f2f
                 end
             catch
                 this.fEta = 17.2 / 10^6;
+                %TODO Make this a low level debug output once the
+                %infrastructure for it exists.
+                %this.warn('solverDeltas', 'Error calculating dynamic viscosity in pipe (%s - %s). Using default value instead: %f [Pa s].\n', this.oBranch.sName, this.sName, this.fEta);
             end
 
             % If the pipe diameter is zero, no matter can flow through that

@@ -662,7 +662,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 if tools.round.prec(fPortPress, iPrec) < 0
                     oThis.fPressure = 0;
                     
-                    % Only warn for > 1Pa ... because ...
+                    % Only warn for > 10Pa ... because ...
+                    %TODO Make these warnings a lower level debug output,
+                    %once the debug class is implemented.
                     if fPortPress < -10
                         aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fPortPress, aoFlows(1).oBranch.sName);
                     elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
