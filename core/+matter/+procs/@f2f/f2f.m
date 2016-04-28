@@ -249,8 +249,9 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         function afFRs = getFRs(this)
             % Get flow rate of all ports, adjusted with the according sign
             % to ensure that negative FR always means an outflow of mass!
-            
-            afFRs = [ this.aoFlows.fFlowRate ] .* this.aiSign;
+            %afFRs = [ this.aoFlows.fFlowRate ] .* this.aiSign;
+            afFRs(1) = this.aoFlows(1).fFlowRate * this.aiSign(1);
+            afFRs(2) = this.aoFlows(2).fFlowRate * this.aiSign(2);
         end
         
         
