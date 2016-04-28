@@ -202,10 +202,15 @@ classdef HX < vsys
         %resistance from conductance
         
         % Stores the time at which the update() method was last called
-        fLastUpdate;
+        fLastUpdate = -1;
         
         fTempChangeToRecalc = 0.1;
         rChangeToRecalc     = 0.01;
+        
+        % Two structs that store the current information for both fluids so
+        % we don't have to do recalculations during iterative solver calls.
+        tInformation_Fluid_1 = struct();
+        tInformation_Fluid_2 = struct();
     end
     
     methods
@@ -301,38 +306,44 @@ classdef HX < vsys
                 (abs(1-(oFlows_1.fPressure/this.fOldPressureFlow1)) > this.rChangeToRecalc)||...             %if Pressure changed by more than X%
                 (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow2)) > this.rChangeToRecalc)                  %if Pressure changed by more than X%
                 
-                fDensity_1      = this.oMT.calculateDensity(oFlows_1);
-                fDensity_2      = this.oMT.calculateDensity(oFlows_2);
+                % If this is not the first call from the iterative solver,
+                % then we already have done all of these calculations in
+                % the previous iterations, so we can skip it, if the time
+                % stamp is the same.
+                if ~(this.oTimer.fTime == this.fLastUpdate)
+                    fDensity_1      = this.oMT.calculateDensity(oFlows_1);
+                    fDensity_2      = this.oMT.calculateDensity(oFlows_2);
+                    
+                    fDynVisc_1      = this.oMT.calculateDynamicViscosity(oFlows_1);
+                    fConductivity_1 = this.oMT.calculateThermalConductivity(oFlows_1);
+                    
+                    fDynVisc_2      = this.oMT.calculateDynamicViscosity(oFlows_2);
+                    fConductivity_2 = this.oMT.calculateThermalConductivity(oFlows_2);
                 
-                fDynVisc_1      = this.oMT.calculateDynamicViscosity(oFlows_1);
-                fConductivity_1 = this.oMT.calculateThermalConductivity(oFlows_1);
+                    % sets the structs for the two fluids according to the
+                    % definition from HX_main
+                    this.tInformation_Fluid_1 = struct();
+                    this.tInformation_Fluid_1.Massflow                = fMassFlow_1;
+                    this.tInformation_Fluid_1.Entry_Temperature       = fEntryTemp_1;
+                    this.tInformation_Fluid_1.Dynamic_Viscosity       = fDynVisc_1;
+                    this.tInformation_Fluid_1.Density                 = fDensity_1;
+                    this.tInformation_Fluid_1.Thermal_Conductivity    = fConductivity_1;
+                    this.tInformation_Fluid_1.Heat_Capacity           = fCp_1;
                 
-                fDynVisc_2      = this.oMT.calculateDynamicViscosity(oFlows_2);
-                fConductivity_2 = this.oMT.calculateThermalConductivity(oFlows_2);
+                    this.tInformation_Fluid_2 = struct();
+                    this.tInformation_Fluid_2.Massflow                = fMassFlow_2;
+                    this.tInformation_Fluid_2.Entry_Temperature       = fEntryTemp_2;
+                    this.tInformation_Fluid_2.Dynamic_Viscosity       = fDynVisc_2;
+                    this.tInformation_Fluid_2.Density                 = fDensity_2;
+                    this.tInformation_Fluid_2.Thermal_Conductivity    = fConductivity_2;
+                    this.tInformation_Fluid_2.Heat_Capacity           = fCp_2;
+                end
                 
-                % sets the structs for the two fluids according to the
-                % definition from HX_main
-                Fluid_1 = struct();
-                Fluid_1.Massflow                = fMassFlow_1;
-                Fluid_1.Entry_Temperature       = fEntryTemp_1;
-                Fluid_1.Dynamic_Viscosity       = fDynVisc_1;
-                Fluid_1.Density                 = fDensity_1;
-                Fluid_1.Thermal_Conductivity    = fConductivity_1;
-                Fluid_1.Heat_Capacity           = fCp_1;
-                
-                Fluid_2 = struct();
-                Fluid_2.Massflow                = fMassFlow_2;
-                Fluid_2.Entry_Temperature       = fEntryTemp_2;
-                Fluid_2.Dynamic_Viscosity       = fDynVisc_2;
-                Fluid_2.Density                 = fDensity_2;
-                Fluid_2.Thermal_Conductivity    = fConductivity_2;
-                Fluid_2.Heat_Capacity           = fCp_2;      
-
                 % function call for HX_main to get outlet values as first 
                 % value the this struct from object HX is given to the 
                 % function HX_main
                 [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] = ...
-                    this.HX_main(Fluid_1,Fluid_2,this.fHX_TC);        
+                    this.HX_main(this.tInformation_Fluid_1,this.tInformation_Fluid_2,this.fHX_TC);        
 
                 % sets the outlet temperatures into the respective variable
                 % inside the heat exchanger object for plotting purposes
