@@ -205,11 +205,11 @@ classdef HX < vsys
         fLastUpdate;
         
         fTempChangeToRecalc = 0.1;
-        fPercentChangeToRecalc = 0.01;
+        rChangeToRecalc     = 0.01;
     end
     
     methods
-        function this = HX(oParent, sName, mHX, sHX_type, fHX_TC, fTempChangeToRecalc, fPercentChangeToRecalc)
+        function this = HX(oParent, sName, mHX, sHX_type, fHX_TC, fTempChangeToRecalc, rChangeToRecalc)
             this@vsys(oParent, sName);
             
             %if a thermal conductivity for the heat exchanger is provided
@@ -223,7 +223,7 @@ classdef HX < vsys
             this.bExecuteContainer = false;
             if nargin > 5
                 this.fTempChangeToRecalc = fTempChangeToRecalc;
-                this.fPercentChangeToRecalc = fPercentChangeToRecalc;
+                this.rChangeToRecalc = rChangeToRecalc;
             end
             %Because the HX f2f proc is actually added to the parent system
             %of the HX its definition has to take place here instead of the
@@ -300,13 +300,13 @@ classdef HX < vsys
             % and the programm has to calculate the heat exchanger
             if  this.iFirst_Iteration == 1 ||...                                                                    %if it is the first iteration
                 (abs(fEntryTemp_1-this.fEntryTemp_Old_1) > this.fTempChangeToRecalc) ||...                          %if entry temp changed by more than X°
-                (abs(1-(fMassFlow_1/this.fMassFlow_Old_1)) > this.fPercentChangeToRecalc) ||...                 	%if mass flow changes by more than X%
+                (abs(1-(fMassFlow_1/this.fMassFlow_Old_1)) > this.rChangeToRecalc) ||...                 	%if mass flow changes by more than X%
                 (abs(fEntryTemp_2-this.fEntryTemp_Old_2) > this.fTempChangeToRecalc)||...                           %if entry temp changed by more than X°
-                (abs(1-(fMassFlow_2/this.fMassFlow_Old_2)) > this.fPercentChangeToRecalc)||...                      %if mass flow changes by more than X%
-                (max(abs(1-(oFlows_1.arPartialMass./this.arPartialMass1Old))) > this.fPercentChangeToRecalc)||...  	%if composition of mass flow changed by more than X%
-                (max(abs(1-(oFlows_2.arPartialMass./this.arPartialMass2Old))) > this.fPercentChangeToRecalc)||...   %if composition of mass flow changed by more than X%
-                (abs(1-(oFlows_1.fPressure/this.fOldPressureFlow1)) > this.fPercentChangeToRecalc)||...             %if Pressure changed by more than X%
-                (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow2)) > this.fPercentChangeToRecalc)                  %if Pressure changed by more than X%
+                (abs(1-(fMassFlow_2/this.fMassFlow_Old_2)) > this.rChangeToRecalc)||...                      %if mass flow changes by more than X%
+                (max(abs(1-(oFlows_1.arPartialMass./this.arPartialMass1Old))) > this.rChangeToRecalc)||...  	%if composition of mass flow changed by more than X%
+                (max(abs(1-(oFlows_2.arPartialMass./this.arPartialMass2Old))) > this.rChangeToRecalc)||...   %if composition of mass flow changed by more than X%
+                (abs(1-(oFlows_1.fPressure/this.fOldPressureFlow1)) > this.rChangeToRecalc)||...             %if Pressure changed by more than X%
+                (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow2)) > this.rChangeToRecalc)                  %if Pressure changed by more than X%
                 
                 fDensity_1      = this.oMT.calculateDensity(oFlows_1);
                 fDensity_2      = this.oMT.calculateDensity(oFlows_2);
@@ -319,13 +319,15 @@ classdef HX < vsys
                 
                 % sets the structs for the two fluids according to the
                 % definition from HX_main
+                Fluid_1 = struct();
                 Fluid_1.Massflow                = fMassFlow_1;
                 Fluid_1.Entry_Temperature       = fEntryTemp_1;
                 Fluid_1.Dynamic_Viscosity       = fDynVisc_1;
                 Fluid_1.Density                 = fDensity_1;
                 Fluid_1.Thermal_Conductivity    = fConductivity_1;
                 Fluid_1.Heat_Capacity           = fCp_1;
-
+                
+                Fluid_2 = struct();
                 Fluid_2.Massflow                = fMassFlow_2;
                 Fluid_2.Entry_Temperature       = fEntryTemp_2;
                 Fluid_2.Dynamic_Viscosity       = fDynVisc_2;
