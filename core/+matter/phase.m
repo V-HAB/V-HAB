@@ -1087,7 +1087,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % Calculate the change in total and partial mass since the
                 % phase was last updated
                 rPreviousChange  = abs(this.fMass   / this.fMassLastUpdate  - 1);
-                arPreviousChange = abs(this.afMass ./ this.afMassLastUpdate - 1);
+                % The partial mass changes need to be compared to the total
+                % mass in the phase, not to themselves, else if a trace gas
+                % mass does change significantly, it will reduce the time
+                % step too much even though it does not change the overall
+                % phase properties a lot.
+                %TODO maybe use change in temperature, molar mass, ... as
+                %     reference, not the partial mass changes?
+                %arPreviousChange = abs(this.afMass ./ this.afMassLastUpdate - 1);
+                arPreviousChange = abs(this.afMass - this.afMassLastUpdate) / this.fMass;
 
                 % If rPrevious change is not a number ('NaN'), the mass
                 % during the previous update was zero and the current mass
@@ -1129,7 +1137,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % enters the phase, it is still covered through the overall
                 % mass check.
                 % By getting the maximum of the arPartialsChange array, we
-                % have the maximum change of partial mass withing the
+                % have the maximum change of partial mass within the
                 % phase.
                 rPartialsPerSecond = max(arPartialsChange(~isinf(arPartialsChange)));
                 
