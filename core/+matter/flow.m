@@ -554,6 +554,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 arPhasePartialMass         = 0;
                 fPhaseMolarMass            = 0;
                 fPhaseSpecificHeatCapacity = 0;
+                afPressures                = zeros(1, length(afPressures));
             end
             
             iL = length(aoFlows);
