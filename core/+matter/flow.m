@@ -638,6 +638,11 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     % Q' = m' * c_p * deltaT
                     %fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / ((oThis.fSpecificHeatCapacity + fOtherCp) / 2);
                     fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / fOtherCp;
+                    
+                    if fCurrentTemperature < 0
+                        oThis.throw('setData', 'Illegal temperature value for flow processor ''%s''. Please check the heat flows for all processors in the branch (%s).',...
+                            oThis.oIn.sName, oThis.oBranch.sName);
+                    end
                 end
                 
                 if isnan(fCurrentTemperature)

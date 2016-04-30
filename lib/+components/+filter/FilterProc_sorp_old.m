@@ -270,7 +270,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             if this.fSorptionPressure <= 0 
                 %TODO make this a very low level debugging output once the
                 %debug class is implemented
-                fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of zero or negative pressure.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                fprintf('%i\t(%.7fs)\tRCA %s: Skipping adsorption calculation because of zero or negative pressure.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
 
@@ -291,7 +291,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             if this.fTimeFactor_1 * fTransportTimeStep >= this.fTimeStep
                 %TODO Turn this into a very low level debug output once the
                 %debug class is implemented
-                %fprintf('%i\t(%f)\t%s: Skipping because inner time step is larger than external timestep.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                %fprintf('%i\t(%f)\tRCA %s: Skipping because inner time step is larger than external timestep.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
             
@@ -311,7 +311,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             if iTimePoints > 1000
                 %TODO Turn this into a very low level debug output once the
                 %debug class is implemented
-                %fprintf('%i\t(%f)\t%s: Skipping because number of internal time steps exceeds 1000.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                fprintf('%i\t(%f)\tRCA %s: Skipping because number of internal time steps exceeds 1000.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
             
