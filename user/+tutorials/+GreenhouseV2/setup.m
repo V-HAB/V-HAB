@@ -37,6 +37,11 @@ classdef setup < simulation.infrastructure
             oLogger.add('GreenhouseV2', 'flow_props');
             oLogger.add('GreenhouseV2', 'thermal_properties');
             
+            % log culture subsystems
+            for iI = 1:length(this.oSimulationContainer.toChildren.GreenhouseV2.csCultures)
+                oLogger.add([this.oSimulationContainer.toChildren.GreenhouseV2.toChildren.(this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI})], 'flow_props');
+            end
+            
             %% Define Plots
             
             oPlot = this.toMonitors.oPlotter;

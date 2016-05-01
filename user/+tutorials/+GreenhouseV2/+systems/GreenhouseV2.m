@@ -17,7 +17,7 @@ classdef GreenhouseV2 < vsys
             
             % import plant parameters from .csv file
             this.ttxPlantParameters = ...
-                tutorials.LunarGreenhouseMMEC.plantparameters.importPlantParameters();
+                tutorials.GreenhouseV2.plantparameters.importPlantParameters();
             
             % import coefficient matrices for CQY and T_A
             % save fieldnames to temporary cell array
@@ -27,11 +27,11 @@ classdef GreenhouseV2 < vsys
             for iI = 1:size(csPlantSpecies)
                 % import coefficient matrices for CQY
                 this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_CQY = ...
-                    csvread(['user/+tutorials/+LunarGreenhouseMMEC/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_CQY.csv']);
+                    csvread(['user/+tutorials/+GreenhouseV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_CQY.csv']);
                 
                 % import coefficient matrices for T_A
                 this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_T_A = ...
-                    csvread(['user/+tutorials/+LunarGreenhouseMMEC/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_T_A.csv']);
+                    csvread(['user/+tutorials/+GreenhouseV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_T_A.csv']);
                 
                 %% Additional Required Parameters
                 
@@ -64,10 +64,26 @@ classdef GreenhouseV2 < vsys
             % TODO: find a better way for providing inputs for culture
             % setup. old way will have to do for now, it works at least.
             blubb = load(...
-                strrep('tutorials\+LunarGreenhouseMMEC\+components\+cultures\CultureInput.mat', '\', filesep));
+                strrep('tutorials\+GreenhouseV2\+components\+cultures\CultureInput.mat', '\', filesep));
             
             % write to property
             this.ttxInput = blubb.CultureInput;
+            
+            %% Create Culture Objects
+            
+            % write culture names into cell array to be accessed within
+            % loop
+            this.csCultures = fieldnames(this.ttxInput);
+            
+            % loop over total cultures amount
+            for iI = 1:length(this.csCultures)
+                % culture object gets assigned using its culture name 
+                this.toCultures.(this.csCultures{iI}) = ...
+                    tutorials.GreenhouseV2.components.CultureV2(...
+                        this, ...                               % parent system reference
+                        this.ttxPlantParameters.(this.ttxInput.(this.csCultures{iI}).sPlantSpecies), ...
+                        this.ttxInput.(this.csCultures{iI}));   % input for specific culture
+            end
         end
         
         function createMatterStructure(this)
@@ -93,10 +109,7 @@ classdef GreenhouseV2 < vsys
                     'H2O',  0.05), ...
                 20, ...                             % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
-            
-%             matter.procs.exmes.gas(oAtmosphere, 'Atmosphere_FromInterface_In');
-%             matter.procs.exmes.gas(oAtmosphere, 'Atmosphere_ToInterface_Out');
-            
+                  
             %% Water Supply
             
             matter.store(this, 'WaterSupply', 20);
@@ -109,9 +122,7 @@ classdef GreenhouseV2 < vsys
                 20, ...                             % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 fPressureInit);                     % phase pressure    [Pa]
-            
-%             matter.procs.exmes.liquid(oWaterSupply, 'WaterSupply_FromInterface_In');
-            
+                       
             %% Nutrient Supply
             
             matter.store(this, 'NutrientSupply', 20);
@@ -125,7 +136,31 @@ classdef GreenhouseV2 < vsys
                 fTemperatureInit, ...               % phase temperature [K]
                 fPressureInit);                     % phase pressure    [Pa]
             
-%             matter.procs.exmes.liquid(oNutrientSupply, 'NutrientSupply_FromInterface_In');
+            %% Biomass Edible/Inedible Split Buffer
+            
+            matter.store(this, 'BiomassSplit', 1);
+            
+            oBiomassEdibleSplit = matter.phases.solid(...
+                this.toStores.BiomassSplit, ...     % store containing phase
+                'BiomassEdible', ...                % phase name
+                struct(...                          % phase contents    [kg]
+                    ), ...
+                2, ...                              % phase volume      [m^3]
+                fTemperatureInit);                  % phase temperature [K]
+            
+            matter.procs.exmes.solid(oBiomassEdibleSplit, 'BiomassEdible_Out_ToStorage');
+            matter.procs.exmes.solid(oBiomassEdibleSplit, 'EdibleInedible_Split_P2P');
+            
+            oBiomassInedibleSplit = matter.phases.solid(...
+                this.toStores.BiomassSplit, ...     % store containing phase
+                'BiomassInedible', ...              % phase name
+                struct(...                          % phase contents    [kg]
+                    ), ...
+                2, ...                              % phase volume      [m^3]
+                fTemperatureInit);                  % phase temperature [K]
+
+            matter.procs.exmes.solid(oBiomassInedibleSplit, 'BiomassInedible_Out_ToStorage');
+            matter.procs.exmes.solid(oBiomassInedibleSplit, 'EdibleInedible_Split_P2P');
             
             %% Biomass Storage
             
@@ -139,7 +174,7 @@ classdef GreenhouseV2 < vsys
                 2, ...                              % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
-%             matter.procs.exmes.solid(oBiomassEdible, 'BiomassEdible_ToInterface_Out');
+            matter.procs.exmes.solid(oBiomassEdible, 'BiomassEdible_In_FromSplit');
             
             matter.store(this, 'BiomassInedible', 20);
             
@@ -151,101 +186,75 @@ classdef GreenhouseV2 < vsys
                 2, ...                              % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
-%             matter.procs.exmes.solid(oBiomassInedible, 'BiomassInedible_ToInterface_Out');
+            matter.procs.exmes.solid(oBiomassInedible, 'BiomassInedible_In_FromSplit');
+           
+            %% Create Biomass Split P2P
             
-            %% Create culture objects
+            tutorials.GreenhouseV2.components.BiomassSplit(...
+                this.toStores.BiomassSplit, ...
+                'EdibleInedible_Split_P2P', ...
+                'BiomassEdible.EdibleInedible_Split_P2P', ...
+                'BiomassInedible.EdibleInedible_Split_P2P');
             
-            % TODO:
-            % use something like a struct as a transfer parameter to create
-            % all cultures via simple use of a for-loop. How to organize
-            % struct/whatever and how/where to get inputs has yet to be
-            % determined. Inputs should be stuff like planting area and
-            % PPFD.
+            %% Create EXMEs for Culture Connections
             
-            % write culture names into cell array to be accessed within
-            % loop
-            this.csCultures = fieldnames(this.ttxInput);
+            % get names and number of grown cultures
+            this.csCultures = fieldnames(this.toCultures);
             
-            % loop over total cultures amount
+            % loop over all cultures to create each required exmes 
             for iI = 1:length(this.csCultures)
-                % culture object gets assigned using its culture name 
-                this.toCultures.(this.csCultures{iI}) = ...
-                    tutorials.GreenhouseV2.components.CultureV2(...
-                        this, ...                               % parent system reference
-                        this.ttxPlantParameters.(this.ttxInput.(this.csCultures{iI}).sPlantSpecies), ...
-                        this.ttxInput.(this.csCultures{iI}));   % input for specific culture
+                % subsystem interfaces
+                matter.procs.exmes.gas(oAtmosphere,             [this.toCultures.(this.csCultures{iI}).sName, '_AtmosphereCirculation_Out']);
+                matter.procs.exmes.gas(oAtmosphere,             [this.toCultures.(this.csCultures{iI}).sName, '_AtmosphereCirculation_In']);
+                matter.procs.exmes.liquid(oWaterSupply,         [this.toCultures.(this.csCultures{iI}).sName, '_WaterSupply_Out']);
+                matter.procs.exmes.liquid(oNutrientSupply,      [this.toCultures.(this.csCultures{iI}).sName, '_NutrientSupply_Out']);
+                matter.procs.exmes.solid(oBiomassEdibleSplit,   [this.toCultures.(this.csCultures{iI}).sName, '_Biomass_In']);
             end
-
-%             %% Create EXMEs for Culture Connections
-%             
-%             % loop over all cultures to create each six required exmes 
-%             for iI = 1:length(this.csCultures)
-%                 matter.procs.exmes.gas(oAtmosphere, [this.toCultures.(this.csCultures{iI}), '_AtmosphereCirculation_In']);
-%                 matter.procs.exmes.gas(oAtmosphere, [this.toCultures.(this.csCultures{iI}), '_AtmosphereCirculation_Out']);
-%                 matter.procs.exmes.liquid(oWaterSupply, [this.toCultures.(this.csCultures{iI}), '_WaterSupply_Out']);
-%                 matter.procs.exmes.liquid(oNutrientSupply, [this.toCultures.(this.csCultures{iI}), '_NutrientSupply_Out']);
-%                 matter.procs.exmes.solid(oBiomassEdible, [this.toCultures.(this.csCultures{iI}), '_BiomassEdible_In']);
-%                 matter.procs.exmes.solid(oBiomassInedible, [this.toCultures.(this.csCultures{iI}), '_BiomassInedible_In']);
-%             end
             
             %% Create Branches
             
-            % 
-            this.csCultures = fieldnames(this.toCultures);
+            % create edible and inedible biomass branch from split buffer
+            % to storage tanks
+            matter.branch(this, 'BiomassSplit.BiomassEdible_Out_ToStorage',     {}, 'BiomassEdible.BiomassEdible_In_FromSplit',     'SplitToEdible');
+            matter.branch(this, 'BiomassSplit.BiomassInedible_Out_ToStorage',   {}, 'BiomassInedible.BiomassInedible_In_FromSplit', 'SplitToInedible');
             
+            % create subsystem branches, 5 per culture object
             for  iI = 1:length(this.csCultures)
-                matter.branch(...
-                    this, ...
-                    [this.toStores.Atmosphere.sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_AtmosphereCirculation_Out'], ...
-                     {}, ...
-                    [this.toStores.(this.ttxInput.(this.csCultures{iI}).sCultureName).sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_AtmosphereCirculation_In'], ...
-                    [this.ttxInput.(this.csCultures{iI}).sCultureName, '_AtmosphereCirculation_In']);
-            
-                matter.branch(...
-                    this, ...
-                    [this.toStores.(this.ttxInput.(this.csCultures{iI}).sCultureName).sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_AtmosphereCirculation_Out'], ...
-                    {}, ...
-                    [this.toStores.Atmosphere.sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_AtmosphereCirculation_In'], ...
-                    [this.ttxInput.(this.csCultures{iI}).sCultureName, '_AtmosphereCirculation_Out']);
-            
-                matter.branch(...
-                    this, ...
-                    [this.toStores.WaterSupply.sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_WaterSupply_Out'], ...
-                    {}, ...
-                    [this.toStores.(this.ttxInput.(this.csCultures{iI}).sCultureName).sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_WaterSupply_In'], ...
-                    [this.ttxInput.(this.csCultures{iI}).sCultureName, '_WaterSupply_In']);
-            
-                matter.branch(...
-                    this, ...
-                    [this.toStores.NutrientSupply.sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_NutrientSupply_Out'], ...
-                    {}, ...
-                    [this.toStores.(this.ttxInput.(this.csCultures{iI}).sCultureName).sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_NutrientSupply_In'], ...
-                    [this.ttxInput.(this.csCultures{iI}).sCultureName, '_NutrientSupply_In']);
-            
-                matter.branch(...
-                    this, ...
-                    [this.toStores.(this.ttxInput.(this.csCultures{iI}).sCultureName).sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_BiomassEdible_Out'], ...
-                    {}, ...
-                    [this.toStores.BiomassEdible.sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_BiomassEdible_In'], ...
-                    [this.ttxInput.(this.csCultures{iI}).sCultureName, '_BiomassEdible_Out']);
-            
-                matter.branch(...
-                    this, ...
-                    [this.toStores.(this.ttxInput.(this.csCultures{iI}).sCultureName).sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_BiomassInedible_Out'], ...
-                    {}, ...
-                    [this.toStores.BiomassInedible.sName, '.', this.ttxInput.(this.csCultures{iI}).sCultureName, '_BiomassInedible_In'], ...
-                    [this.ttxInput.(this.csCultures{iI}).sCultureName, '_BiomassInedible_Out']);
+                matter.branch(this, [this.toCultures.(this.csCultures{iI}).sName, '_Atmosphere_ToIF_Out'],      {}, ['Atmosphere.',     this.toCultures.(this.csCultures{iI}).sName, '_AtmosphereCirculation_Out']);
+                matter.branch(this, [this.toCultures.(this.csCultures{iI}).sName, '_Atmosphere_FromIF_In'],     {}, ['Atmosphere.',     this.toCultures.(this.csCultures{iI}).sName, '_AtmosphereCirculation_In']);
+                matter.branch(this, [this.toCultures.(this.csCultures{iI}).sName, '_WaterSupply_ToIF_Out'],     {}, ['WaterSupply.',    this.toCultures.(this.csCultures{iI}).sName, '_WaterSupply_Out']);
+                matter.branch(this, [this.toCultures.(this.csCultures{iI}).sName, '_NutrientSupply_ToIF_Out'],  {}, ['NutrientSupply.', this.toCultures.(this.csCultures{iI}).sName, '_NutrientSupply_Out']);
+                matter.branch(this, [this.toCultures.(this.csCultures{iI}).sName, '_Biomass_FromIF_In'],        {}, ['BiomassSplit.',   this.toCultures.(this.csCultures{iI}).sName, '_Biomass_In']);
             end
             
             %% Connect Interfaces
             
-            
+            for iI = 1:length(this.csCultures)
+                this.toCultures.(this.csCultures{iI}).setIfFlows(...
+                    [this.toCultures.(this.csCultures{iI}).sName, '_Atmosphere_ToIF_Out'], ...
+                    [this.toCultures.(this.csCultures{iI}).sName ,'_Atmosphere_FromIF_In'], ...
+                    [this.toCultures.(this.csCultures{iI}).sName ,'_WaterSupply_ToIF_Out'], ...
+                    [this.toCultures.(this.csCultures{iI}).sName ,'_NutrientSupply_ToIF_Out'], ...
+                    [this.toCultures.(this.csCultures{iI}).sName ,'_Biomass_FromIF_In']);
+            end
         end
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
+            solver.matter.manual.branch(this.toBranches.SplitToEdible);
+            solver.matter.manual.branch(this.toBranches.SplitToInedible);
             
+            this.toBranches.SplitToEdible.oHandler.setFlowRate(0);
+            this.toBranches.SplitToInedible.oHandler.setFlowRate(0);
+        end
+        
+        %% Calculate Atmosphere CO2 Concentration
+        
+        function [ fCO2 ] = CalculateCO2Concentration(this)
+            % function to calculate the CO2 concentration in the referenced
+            % atmosphere
+            fCO2 = ((this.toStores.Atmosphere.toPhases.Atmosphere.afMass(this.toStores.Atmosphere.toPhases.Atmosphere.oMT.tiN2I.CO2) * this.toStores.Atmosphere.toPhases.Atmosphere.fMolarMass) / (this.toStores.Atmosphere.toPhases.Atmosphere.fMass * this.toStores.Atmosphere.toPhases.Atmosphere.oMT.afMolarMass(this.toStores.Atmosphere.toPhases.Atmosphere.oMT.tiN2I.CO2))) * 1e6;
         end
         
         % placeholder for later. it should be possible for user comfort to

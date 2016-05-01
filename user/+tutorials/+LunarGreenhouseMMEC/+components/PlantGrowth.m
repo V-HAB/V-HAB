@@ -87,14 +87,22 @@ function [ oCulture ] = ...
                     % set all MMEC rates to zero
                     % TODO: need proper safety mode, flowrates = 0 does not
                     % prevent prevent plant time from increasing and so on
-                    oCulture.tfMMECRates = 0;
+                    oCulture.tfMMECRates.fWC = 0;
+                    oCulture.tfMMECRates.fTR = 0;
+                    oCulture.tfMMECRates.fOC = 0;
+                    oCulture.tfMMECRates.fOP = 0;
+                    oCulture.tfMMECRates.fCO2C = 0;
+                    oCulture.tfMMECRates.fCO2P = 0;
+                    oCulture.tfMMECRates.fNC = 0;
+                    oCulture.tfMMECRates.fCGR = 0;
                 end
                 
                 %% Calculate Culture Mass Transfer Rates
                 
-                % 
+                % positive flowrate for plants -> atmosphere (default P2P
+                % direction)
                 oCulture.tfGasExchangeRates.fO2ExchangeRate = (oCulture.tfMMECRates.fOP - oCulture.tfMMECRates.fOC) * oCulture.txInput.fGrowthArea;
-                oCulture.tfGasExchangeRates.fCO2ExchangeRate = (oCulture.tfMMECRates.fCO2C - oCulture.tfMMECRates.fCO2P) * oCulture.txInput.fGrowthArea;
+                oCulture.tfGasExchangeRates.fCO2ExchangeRate = (oCulture.tfMMECRates.fCO2P - oCulture.tfMMECRates.fCO2C) * oCulture.txInput.fGrowthArea;
                 oCulture.tfGasExchangeRates.fTranspirationRate = oCulture.tfMMECRates.fTR * oCulture.txInput.fGrowthArea;
                 
                 oCulture.fWaterConsumptionRate = oCulture.tfMMECRates.fWC * oCulture.txInput.fGrowthArea;
@@ -115,7 +123,7 @@ function [ oCulture ] = ...
                         
                     oCulture.tfBiomassGrowthRates.fGrowthRateInedible = ...
                         oCulture.tfMMECRates.fCGR * (1 - oCulture.txPlantParameters.fXFRT) * oCulture.txInput.fGrowthArea + ...                                          % inedible dry part
-                        oCulture.tfMMECRates.fCGR * (1 - oCulture.txPlantParameters.fXFRT) * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fFBWF_Indible;    % inedible water part
+                        oCulture.tfMMECRates.fCGR * (1 - oCulture.txPlantParameters.fXFRT) * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fFBWF_Inedible;    % inedible water part
                       
                     % If tE is not exceeded yet, only inedible biomass is created 
                     % (and therefore contributes to the total crop biomass (TCB) solely)

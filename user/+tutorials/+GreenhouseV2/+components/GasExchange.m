@@ -4,35 +4,33 @@ classdef GasExchange < matter.procs.p2p
     % calculated growth rate.
     
     properties
-        % mass flow property to be set from the parent system
-        fMassFlow = 0;
+        % parent system reference
+        oParent;
         
         % species to be extracted
-        arExtractPartials;
+        arExtractPartialsO2;
+        arExtractPartialsCO2;
+        arExtractPartialsH2O;
     end
     
     methods
-        function this = GasExchange(oParent, sName, sPhaseAndPortIn, sPhaseAndPortOut, sSubstance)
-            this@matter.procs.p2p(oParent, sName, sPhaseAndPortIn, sPhaseAndPortOut);
+        function this = GasExchange(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
+            this@matter.procs.p2p(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
 
-            
             % set 1 for substance to extract
-            this.arExtractPartials = zeros(1, this.oMT.iSubstances);
-            this.arExtractPartials(this.oMT.tiN2I.(sSubstance)) = 1;
+            this.arExtractPartialsO2 = zeros(1, this.oMT.iSubstances);
+            this.arExtractPartialsO2(this.oMT.tiN2I.O2) = 1;
+            this.arExtractPartialsCO2 = zeros(1, this.oMT.iSubstances);
+            this.arExtractPartialsCO2(this.oMT.tiN2I.CO2) = 1;
+            this.arExtractPartialsH2O = zeros(1, this.oMT.iSubstances);
+            this.arExtractPartialsH2O(this.oMT.tiN2I.H2O) = 1;
         end
         
-        function update(this)
-            % calcualte net gas exchange with atmosphere. positive flowrate
-            % out of balance phase
-            this.fMassFlow = ...
-                oParent.tfMMECRates.fTR + ...
-                oParent.tfMMECRates.fOP - ...
-                oParent.tfMMECRates.fOC + ...
-                oParent.tfMMECRates.fCO2P - ...
-                oParent.tfMMECRates.fCO2C;
-            
+        function update(this) 
             % extract specified substance with desired flow rate
-            this.setMatterProperties(this.fMassFlow, this.arExtractPartials);
+            this.setMatterProperties(this.oParent.tfGasExchangeRates.fO2ExchangeRate,       this.arExtractPartialsO2);
+            this.setMatterProperties(this.oParent.tfGasExchangeRates.fCO2ExchangeRate,      this.arExtractPartialsCO2);
+            this.setMatterProperties(this.oParent.tfGasExchangeRates.fTranspirationRate,    this.arExtractPartialsH2O);
         end
     end
 end

@@ -695,7 +695,7 @@ classdef store < base
             
             
             % Update volume on phases
-            this.setVolume();
+%             this.setVolume();
             
             
             % Seal phases

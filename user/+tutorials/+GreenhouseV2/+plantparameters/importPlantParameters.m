@@ -8,7 +8,7 @@ function [ ttxImportPlantParameters ] = importPlantParameters()
     %% Import data from PlantParameters.csv file
     
     % Open the file
-    iFileID = fopen(strrep('user/+tutorials/+LunarGreenhouseMMEC/+plantparameters/PlantParameters.csv','/',filesep), 'r');
+    iFileID = fopen(strrep('user/+tutorials/+GreenhouseV2/+plantparameters/PlantParameters.csv','/',filesep), 'r');
     % Get first row
     csFirstRow = textscan(iFileID, '%s', 1, 'Delimiter', '\n');
     % This is a cell array of cells, so we 'unpack' one level to get the
