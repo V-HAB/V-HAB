@@ -141,20 +141,33 @@ classdef branch < solver.matter.base.branch
                 fFlowRate = (this.fFlowRate * this.iDampFR + fFlowRate) / (this.iDampFR + 1);
             end
             
+            % If we actually damped the flow rate, we need to run the
+            % solver specific method on all processors again, since some of
+            % them might need to update some internal values, such as the
+            % heat flow. 
+            %TODO To avoid this, maybe the heat flow should be specific
+            %rather than absolute? 
+            if this.iDampFR ~= 0
+                aiProcs = sif(fFlowRate > 0, 1:this.oBranch.iFlowProcs, this.oBranch.iFlowProcs:-1:1);
+                for iI = aiProcs
+                    this.aoSolverProps(iI).calculateDeltas(fFlowRate);
+                end
+            end
+            
             %TODO remove all this!
             fFlowRateUnrounded = fFlowRate;
             
             % If we don't round at some point, flow rates will eventually
             % become something like 1e-13 etc -> don't want that.
-            if tools.round.prec(fFlowRate, this.oBranch.oContainer.oTimer.iPrecision) == 0
-                %fFlowRate = 0;
-            end
+%             if tools.round.prec(fFlowRate, this.oBranch.oContainer.oTimer.iPrecision) == 0
+%                 %fFlowRate = 0;
+%             end
             
             
             
-            oP1 = this.oBranch.coExmes{1}.oPhase;
-            oP2 = this.oBranch.coExmes{2}.oPhase;
-            coE = this.oBranch.coExmes;
+%             oP1 = this.oBranch.coExmes{1}.oPhase;
+%             oP2 = this.oBranch.coExmes{2}.oPhase;
+%             coE = this.oBranch.coExmes;
             
             %fprintf('FR %.12f, PRESS LEFT %f, PRESS RIGHT %f, PRESS REL %f, MASS REL %f\n', fFlowRate, oP1.fPressure, oP2.fPressure, oP1.fPressure / oP2.fPressure, oP1.fMass / oP2.fMass);
             %fprintf('FR %.12f, FR UNROUNDED %.12f, PRESS REL %.26f, MASS REL %.12f\n', fFlowRate, fFlowRateUnrounded, oP1.fPressure / oP2.fPressure - 1, oP1.fMass / oP2.fMass - 1);
@@ -195,7 +208,7 @@ classdef branch < solver.matter.base.branch
             
             %fprintf('%i, ', this.iFlowRateCompDamp);
             
-            iDampUnrounded = 5;
+%             iDampUnrounded = 5;
             %this.fFlowRateUnrounded = (this.fFlowRateUnrounded * this.iFlowRateCompDamp + fFlowRateUnrounded) / (this.iFlowRateCompDamp + 1);
             %this.fFlowRateUnrounded = (this.fFlowRateUnrounded * iDampUnrounded + fFlowRateUnrounded) / (iDampUnrounded + 1);
             this.fFlowRateUnrounded = fFlowRateUnrounded;
@@ -487,6 +500,9 @@ classdef branch < solver.matter.base.branch
             %TODO-OKT15 BETTER INTERP - REDUCE MAX ERR?
             fErrorMax = this.oBranch.oContainer.oTimer.fMinimumTimeStep * 0.1;%00;% / 1000;
             
+            
+            fMaxErrorMax = 1e-3;
+            
 %             if oBranch.oContainer.oTimer.fTime > 48.5 %71.1 %811.5
 %                 keyboard();
 %             end
@@ -505,10 +521,19 @@ classdef branch < solver.matter.base.branch
                 
                 % Increase error tolerance if too many iterations
                 if iCount > 0 && mod(iCount, 25) == 0
-                    %disp('INC');
+                    %fprintf('Increasing iterative solver error tolerance.\n');
                     fErrorMax = fErrorMax * 10;%2;
+                    if fErrorMax > fMaxErrorMax
+                        fFlowRate = this.fFlowRate;
+                        afDeltaP  = zeros(1, oBranch.iFlowProcs);
+                        %fprintf('Ding!\n');
+                        return;
+                    end
+                    
                 end
+
                 
+
                 % Loop counter
                 iCount = iCount + 1;
                 
@@ -555,10 +580,10 @@ classdef branch < solver.matter.base.branch
                         % means also a negative pressure drop.
                         if ((fPressDiff < 0) && (fPressDrop <= 0))
                             % Correction guess
-                            fCorr = 1 / ((rError - 1) / 2 + 1);% - 1;
+                            fCorr = 1 / 1.01;% ((rError - 1) / 2 + 1);% - 1;
                         else
                             % Both positive - normal correction guess
-                            fCorr = (rError - 1) / 2 + 1;% - 1;
+                            fCorr = 1.01;% (rError - 1) / 2 + 1;% - 1;
                         end
                     end
                     
