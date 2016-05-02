@@ -21,43 +21,48 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName, 30);
             
+        end
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+            
             % Creating a store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1));
+            matter.store(this, 'Tank_1', 1);
             
             % Adding a phase to the store 'Tank_1', 1 m^3 air
             oGasPhase = this.toStores.Tank_1.createPhase('air', 1);
             
             % Creating a second store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 1));
+            matter.store(this, 'Tank_2', 1);
             
             % Adding a phase to the store 'Tank_2', 2 m^3 air
-            oAirPhase = this.toStores.Tank_2.createPhase('air', 1);
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 2);
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oAirPhase, 'Port_2');
             
             % Adding a fan to move the gas
-            %this.addProcF2F(components.fan(this.oData.oMT, 'Fan', 'setSpeed', 40000, 'Right2Left'));
-            this.addProcF2F(components.fan_simple(this.oData.oMT, 'Fan', 2000, false));
-             
+            components.fan_simple(this, 'Fan', 2000, false);
+            
             % Adding a pipe to connect the tanks
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 1, 0.01));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 1, 0.01));
+            components.pipe(this, 'Pipe_1', 1, 0.01);
+            components.pipe(this, 'Pipe_2', 1, 0.01);
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            oBranch = this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2'}, 'Tank_2.Port_2');
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2'}, 'Tank_2.Port_2', 'Branch');
             
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
+        end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
             
             % Now that the system is sealed, we can add the branch to a
             % specific solver. In this case we will use the iterative
             % solver. 
-            solver.matter.iterative.branch(oBranch);
+            solver.matter.iterative.branch(this.toBranches.Branch);
             
         end
     end
