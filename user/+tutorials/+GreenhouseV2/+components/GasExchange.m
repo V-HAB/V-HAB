@@ -14,9 +14,11 @@ classdef GasExchange < matter.procs.p2p
     end
     
     methods
-        function this = GasExchange(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
+        function this = GasExchange(oParent, oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
             this@matter.procs.p2p(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
 
+            this.oParent = oParent;
+            
             % set 1 for substance to extract
             this.arExtractPartialsO2 = zeros(1, this.oMT.iSubstances);
             this.arExtractPartialsO2(this.oMT.tiN2I.O2) = 1;

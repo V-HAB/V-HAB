@@ -2,17 +2,17 @@ function [ oCulture ] = ...
     PlantGrowth(...
         oCulture, fSimTime, fPressureAtmosphere, fDensityAtmosphere, fTemperatureAtmosphere, fRelativeHumidityAtmosphere, fHeatCapacityAtmosphere, fDensityH2O, fCO2)
 
-    % get the 8 parameters via MMEC and FAO model equations
-    [ oCulture ] = ...                                  % return culture object
-        tutorials.GreenhouseV2.components.CalculateMMECRates(...
-            oCulture, ...                               % current culture object
-            fPressureAtmosphere, ...                    % atmosphere pressure
-            fDensityAtmosphere, ...                     % atmosphere density
-            fTemperatureAtmosphere, ...                 % atmosphere temperature
-            fRelativeHumidityAtmosphere, ...            % atmosphere relative humidity
-            fHeatCapacityAtmosphere, ...                % atmosphere heat capacity
-            fDensityH2O, ...                            % density of liquid water under atmosphere conditions
-            fCO2);                                      % CO2 concentration in ppm
+%     % get the 8 parameters via MMEC and FAO model equations
+%     [ oCulture ] = ...                                  % return culture object
+%         tutorials.GreenhouseV2.components.CalculateMMECRates(...
+%             oCulture, ...                               % current culture object
+%             fPressureAtmosphere, ...                    % atmosphere pressure
+%             fDensityAtmosphere, ...                     % atmosphere density
+%             fTemperatureAtmosphere, ...                 % atmosphere temperature
+%             fRelativeHumidityAtmosphere, ...            % atmosphere relative humidity
+%             fHeatCapacityAtmosphere, ...                % atmosphere heat capacity
+%             fDensityH2O, ...                            % density of liquid water under atmosphere conditions
+%             fCO2);                                      % CO2 concentration in ppm
         
     % time of first emergence reached
     if fSimTime >= oCulture.txInput.fEmergeTime
@@ -42,9 +42,9 @@ function [ oCulture ] = ...
                     
                     % get the 8 parameters via MMEC and FAO model equations
                     [ oCulture ] = ...
-                        tutorials.LunarGreenhouseMMEC.components.CalculateMMECRates(...
+                        tutorials.GreenhouseV2.components.CalculateMMECRates(...
                             oCulture, ...                       % current culture object
-                            oCulture.fInternalTime * 86400, ... % culture internal time in days
+                            fPressureAtmosphere, ...            % atmosphere pressure
                             fDensityAtmosphere, ...             % atmosphere density
                             fTemperatureAtmosphere, ...         % atmosphere temperature
                             fRelativeHumidityAtmosphere, ...    % atmosphere relative humidity
@@ -57,9 +57,9 @@ function [ oCulture ] = ...
                 elseif (fCO2 > 1300) && (fCO2 < 3000)
                    % get the 8 parameters via MMEC and FAO model equations
                     [ oCulture ] = ...
-                        tutorials.LunarGreenhouseMMEC.components.CalculateMMECRates(...
+                        tutorials.GreenhouseV2.components.CalculateMMECRates(...
                             oCulture, ...                               % current culture object
-                            oCulture.fInternalTime * 86400, ...         % culture internal time in days
+                            fPressureAtmosphere, ...                    % atmosphere pressure
                             fDensityAtmosphere, ...                     % atmosphere density
                             fTemperatureAtmosphere, ...                 % atmosphere temperature
                             fRelativeHumidityAtmosphere, ...            % atmosphere relative humidity
@@ -72,9 +72,9 @@ function [ oCulture ] = ...
                 elseif (fCO2 < 330) && (fCO2 > 150)
                     % get the 8 parameters via MMEC and FAO model equations
                     [ oCulture ] = ...
-                        tutorials.LunarGreenhouseMMEC.components.CalculateMMECRates(...
+                        tutorials.GreenhouseV2.components.CalculateMMECRates(...
                             oCulture, ...                               % current culture object
-                            oCulture.fInternalTime * 86400, ...         % culture internal time in days
+                            fPressureAtmosphere, ...                    % atmosphere pressure
                             fDensityAtmosphere, ...                     % atmosphere density
                             fTemperatureAtmosphere, ...                 % atmosphere temperature
                             fRelativeHumidityAtmosphere, ...            % atmosphere relative humidity

@@ -79,7 +79,7 @@ classdef GreenhouseV2 < vsys
             for iI = 1:length(this.csCultures)
                 % culture object gets assigned using its culture name 
                 this.toCultures.(this.csCultures{iI}) = ...
-                    tutorials.GreenhouseV2.components.CultureV2(...
+                    tutorials.GreenhouseV2.components.Culture3Phases(...
                         this, ...                               % parent system reference
                         this.ttxPlantParameters.(this.ttxInput.(this.csCultures{iI}).sPlantSpecies), ...
                         this.ttxInput.(this.csCultures{iI}));   % input for specific culture
@@ -99,16 +99,18 @@ classdef GreenhouseV2 < vsys
             
             matter.store(this, 'Atmosphere', 20);
             
-            oAtmosphere = matter.phases.gas(...
-                this.toStores.Atmosphere, ...       % store containing phase
-                'Atmosphere', ...                   % phase name
-                struct(...                          % phase contents    [kg]
-                    'N2',   1, ...
-                    'O2',   0.27, ...
-                    'CO2',  0.05, ...
-                    'H2O',  0.05), ...
-                20, ...                             % phase volume      [m^3]
-                fTemperatureInit);                  % phase temperature [K]
+%             oAtmosphere = matter.phases.gas(...
+%                 this.toStores.Atmosphere, ...       % store containing phase
+%                 'Atmosphere', ...                   % phase name
+%                 struct(...                          % phase contents    [kg]
+%                     'N2',   1, ...
+%                     'O2',   0.27, ...
+%                     'CO2',  0.05, ...
+%                     'H2O',  0.05), ...
+%                 20, ...                             % phase volume      [m^3]
+%                 fTemperatureInit);                  % phase temperature [K]
+
+            oAtmosphere = this.toStores.Atmosphere.createPhase('air', 20, 293.15, 0.5, 101325);
                   
             %% Water Supply
             
@@ -254,7 +256,7 @@ classdef GreenhouseV2 < vsys
         function [ fCO2 ] = CalculateCO2Concentration(this)
             % function to calculate the CO2 concentration in the referenced
             % atmosphere
-            fCO2 = ((this.toStores.Atmosphere.toPhases.Atmosphere.afMass(this.toStores.Atmosphere.toPhases.Atmosphere.oMT.tiN2I.CO2) * this.toStores.Atmosphere.toPhases.Atmosphere.fMolarMass) / (this.toStores.Atmosphere.toPhases.Atmosphere.fMass * this.toStores.Atmosphere.toPhases.Atmosphere.oMT.afMolarMass(this.toStores.Atmosphere.toPhases.Atmosphere.oMT.tiN2I.CO2))) * 1e6;
+            fCO2 = ((this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.oMT.tiN2I.CO2) * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMolarMass) / (this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.oMT.afMolarMass(this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.oMT.tiN2I.CO2))) * 1e6;
         end
         
         % placeholder for later. it should be possible for user comfort to

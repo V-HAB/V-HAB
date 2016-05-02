@@ -1,4 +1,4 @@
-classdef CultureV2 < vsys
+classdef Culture3Phases < vsys
     % This class is used in creating the culture objects. It provides the
     % phase for plant growth, adds a p2p processor which is automatically 
     % connected to biomass buffer store, two exmes and corresponding p2p 
@@ -54,7 +54,7 @@ classdef CultureV2 < vsys
     end
     
     methods
-        function this = CultureV2(oParent, txPlantParameters, txInput)
+        function this = Culture3Phases(oParent, txPlantParameters, txInput)
             this@vsys(oParent, txInput.sCultureName, 60);
             
             this.txPlantParameters = txPlantParameters;
@@ -73,7 +73,7 @@ classdef CultureV2 < vsys
             %% Create Store, Phases and Processors
             
             % write helper for standard plant atmosphere later
-            fVolumeAirCirculation = 0.01;
+            fVolumeAirCirculation = 0.1;
             
             matter.store(this, this.txInput.sCultureName, 20);
             
@@ -98,28 +98,51 @@ classdef CultureV2 < vsys
                 [this.txInput.sCultureName, '_Plants'], ...             % phase name 
                 struct(...                                              % phase contents    [kg]
                     ), ...
-                20 - fVolumeAirCirculation, ...                         % ignored volume    [m^3]
+                19 - fVolumeAirCirculation, ...                         % ignored volume    [m^3]
                 293.15);                                                % phase temperature [K]
             
-            matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_WaterSupply_In']);
-            matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_NutrientSupply_In']);
+            matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_BiomassGrowth_P2P'])
             matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_Biomass_Out']); 
             
-            matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_GasExchange_P2P']);
+            oBalance = matter.phases.solid(...
+                this.toStores.(this.txInput.sCultureName), ...          % store containing phase
+                [this.txInput.sCultureName, '_Balance'], ...            % phase name 
+                struct(...                                              % phase contents    [kg]
+                    'BiomassBalance', 5), ...
+                1, ...                                                  % ignored volume    [m^3]
+                293.15);                                                % phase temperature [K]
             
-            %% Create Gas Exchange P2P processor
+            matter.procs.exmes.solid(oBalance, [this.txInput.sCultureName, '_BiomassGrowth_P2P'])
+            matter.procs.exmes.solid(oBalance, [this.txInput.sCultureName, '_WaterSupply_In']);
+            matter.procs.exmes.solid(oBalance, [this.txInput.sCultureName, '_NutrientSupply_In']);
+             
+            matter.procs.exmes.solid(oBalance, [this.txInput.sCultureName, '_GasExchange_P2P']);
+            
+            %% Create Gas Exchange P2P Processor
             
             % p2p for simulation of gas exchange (O2, CO2, H2O)
-            tutorials.GreenhouseV2.components.GasExchange(...
+            tutorials.GreenhouseV2.components.GasExchange3Phases(...
                 this, ...                                                                       % parent system reference
                 this.toStores.(this.txInput.sCultureName), ...                                  % store containing phases
                 [this.txInput.sCultureName, '_GasExchange_P2P'], ...                            % p2p processor name
-                [oAtmosphere.sName, '.', this.txInput.sCultureName, '_GasExchange_P2P'], ...    % first phase and exme
-                [oPlants.sName, '.', this.txInput.sCultureName, '_GasExchange_P2P']);           % second phase and exme
+                [oBalance.sName, '.', this.txInput.sCultureName, '_GasExchange_P2P'], ...    % first phase and exme
+                [oAtmosphere.sName, '.', this.txInput.sCultureName, '_GasExchange_P2P']);           % second phase and exme
             
-            %% Create Substance Conversion Manipulator
+            %% Create Biomass Growth P2P Processor
             
-            tutorials.GreenhouseV2.components.SubstanceConverter(this, [this.txInput.sCultureName, '_SubstanceConverter'], this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']));
+            % 
+            tutorials.GreenhouseV2.components.BiomassGrowth(...
+                this, ...                                                                       % parent system reference
+                this.toStores.(this.txInput.sCultureName), ...                                  % store containing phases
+                [this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...                            % p2p processor name
+                [oBalance.sName, '.', this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...    % first phase and exme
+                [oPlants.sName, '.', this.txInput.sCultureName, '_BiomassGrowth_P2P']);           % second phase and exme
+            
+            %% Create Substance Conversion Manipulators
+            
+            tutorials.GreenhouseV2.components.SubstanceConverterWaterNutrients(this, [this.txInput.sCultureName, '_SubstanceConverterWaterNutrients'], this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Balance']));
+            tutorials.GreenhouseV2.components.SubstanceConverterGasExchange(this, [this.txInput.sCultureName, '_SubstanceConverterGasExchange'], this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']));
+            tutorials.GreenhouseV2.components.SubstanceConverterPlantGrowth(this, [this.txInput.sCultureName, '_SubstanceConverterPlantGrowth'], this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']));
             
             %% Create Branches
             
@@ -226,8 +249,11 @@ classdef CultureV2 < vsys
                 this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate);
                 
 %                 this.toStores.(this.txInput.sCultureName).update();
-                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).toManips.substance.update();
+                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Balance']).toManips.substance.update();
                 this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_GasExchange_P2P']).update();
+                this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_BiomassGrowth_P2P']).update();
+                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.update();
+                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).toManips.substance.update();
         end
     end
 end
