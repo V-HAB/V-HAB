@@ -21,7 +21,7 @@ classdef Example < vsys
             % Setting parameters if they were set by a simulation runner
             eval(this.oRoot.oCfgParams.configCode(this));
             
-            % Instatiating the SWME
+            % Creating the SWME
             components.SWME(this, 'SWME', this.fInitialTemperature);
             
             % Setting the initial temperature set point. 10 degrees Celcius

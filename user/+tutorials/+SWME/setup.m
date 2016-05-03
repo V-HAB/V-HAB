@@ -18,7 +18,7 @@ classdef setup < simulation.infrastructure
             % monitors
             ttMonitorConfig = struct();
             
-            this@simulation.infrastructure('SWME_Development_Simulation', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('SWME_Simulation', ptConfigParams, tSolverParams, ttMonitorConfig);
 
             % Creating a Test object
             tutorials.SWME.systems.Example(this.oSimulationContainer, 'Test');    
@@ -42,7 +42,7 @@ classdef setup < simulation.infrastructure
             tiLog.ValvePosition = oLogger.addValue('Test/SWME', 'iBPVCurrentSteps', 'steps', 'Valve Position');
             
             tiLog.Combo_1.ValvePosition = tiLog.ValvePosition;
-            tiLog.Combo_1.Backpressure  = oLogger.addValue('Test/SWME:s:SWMEStore:p:VaporSWME', 'this.fMass * this.fMassToPressure', 'Pa', 'Vapor Backpressure');
+            tiLog.Combo_1.Backpressure  = oLogger.addValue('Test/SWME:s:SWMEStore:p:VaporPhase', 'this.fMass * this.fMassToPressure', 'Pa', 'Vapor Backpressure');
             tiLog.Combo_1.HeatRejection = oLogger.addValue('Test/SWME:s:SWMEStore.toProcsP2P.X50Membrane', 'fHeatRejectionSimple', 'W', 'Heat Rejection');
             
             tiLog.HeatRejection = tiLog.Combo_1.HeatRejection;
@@ -52,10 +52,10 @@ classdef setup < simulation.infrastructure
             
             tiLog.OutletTemperature = oLogger.addValue('Test/SWME.toProcsF2F.TemperatureProcessor.aoFlows(2)', 'fTemperature', 'K', 'Outlet Temperature');
             
-            tiLog.WaterTemperatures.Inlet  = oLogger.addValue('Test/SWME:s:SWMEStore:p:HoFiWater.toProcsEXME.WaterIn', 'fTemperature', 'K', 'Inlet Temperature');
+            tiLog.WaterTemperatures.Inlet  = oLogger.addValue('Test/SWME:s:SWMEStore:p:FlowPhase.toProcsEXME.WaterIn', 'fTemperature', 'K', 'Inlet Temperature');
             tiLog.WaterTemperatures.Outlet = tiLog.OutletTemperature;
             
-            tiLog.EnvironmentVaporMass = oLogger.addValue('Test/SWME:s:EnvironmentTank:p:VaporEnvironment', 'fMass', 'kg', 'Vapor Mass lost to Environment');
+            tiLog.EnvironmentVaporMass = oLogger.addValue('Test/SWME:s:EnvironmentTank:p:EnvironmentPhase', 'fMass', 'kg', 'Vapor Mass lost to Environment');
             
             tiLog.VaporFlowRates.Membrane = oLogger.addValue('Test/SWME:s:SWMEStore.toProcsP2P.X50Membrane', 'fWaterVaporFlowRate', 'kg/s', 'Membrane Flow Rate');
             tiLog.VaporFlowRates.Vacuum   = oLogger.addValue('Test/SWME:b:EnvironmentBranch', 'fFlowRate', 'kg/s', 'Environment Flow Rate');

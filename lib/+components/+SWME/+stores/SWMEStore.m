@@ -20,7 +20,7 @@ classdef SWMEStore < matter.store
             % X50 membrane
             oLiquidHoFiPhase = matter.phases.liquid(...
                                this,...                      % Store where the phase is located
-                              'HoFiWater', ...               % Phase name
+                              'FlowPhase', ...               % Phase name
                                struct('H2O', 0.0881439), ... % Phase contents
                                fSWMELiquidVolume, ...        % Phase volume
                                fInitialTemperature,...       % Phase temperature
@@ -30,8 +30,8 @@ classdef SWMEStore < matter.store
             % fibers
             oVaporSWME = matter.phases.gas(...
                          this, ...                           % Store in which the phase is located
-                        'VaporSWME', ...                     % Phase name
-                         struct('H2O', 0), ...               % Phase contents
+                        'VaporPhase', ...                    % Phase name
+                         struct('H2O', 3e-6), ...            % Phase contents
                          fSWMEVaporVolume, ...               % Phase volume
                          fInitialTemperature);               % Phase temperature
             
@@ -47,7 +47,7 @@ classdef SWMEStore < matter.store
             % Creating P2P processor which describes the vapor flux from
             % the inside of the hollow fibers, through the hydrophobic
             % membrane wall, to the inside of the SWME housing
-            components.SWME.procs.X50Membrane(this, 'X50Membrane', 'HoFiWater.WaterToVapor', 'VaporSWME.VaporIn');
+            components.SWME.procs.X50Membrane(this, 'X50Membrane', 'FlowPhase.WaterToVapor', 'VaporPhase.VaporIn');
             
         end
         

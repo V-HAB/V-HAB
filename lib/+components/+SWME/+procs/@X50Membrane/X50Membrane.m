@@ -11,12 +11,12 @@ classdef X50Membrane < matter.procs.p2ps.flow
 
     properties (SetAccess = protected, GetAccess = public)
         % The water vapor flow rate through the membrane in [kg/s]
-        fWaterVaporFlowRate;
+        fWaterVaporFlowRate = 0;
         
         % Heat rejection of the membrane calculated using the
         % simplification of neglecting the advective heat transfer through
         % the evaporated water mass. In [W].
-        fHeatRejectionSimple;
+        fHeatRejectionSimple = 0;
         
     end
     
