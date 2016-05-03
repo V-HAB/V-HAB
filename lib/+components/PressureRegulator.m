@@ -7,7 +7,7 @@ classdef PressureRegulator < vsys
         
         % A string that identifies the phase create helper to be used for
         % all phases in the regulator.
-        sAtmosphereHelper = 'SuitAtmosphere';
+        sAtmosphereHelper = 'N2Atmosphere';
         
         bActive = false;
     end
@@ -37,7 +37,7 @@ classdef PressureRegulator < vsys
             end
             
             if isfield(tParameters, 'sAtmosphereHelper')
-                this.sAtmosphereHelper = sAtmosphereHelper;
+                this.sAtmosphereHelper = tParameters.sAtmosphereHelper;
             end
             
         end
@@ -92,7 +92,7 @@ classdef PressureRegulator < vsys
             this.toProcsF2F.SecondStageValve.setEnvironmentReference(oGasPhaseEnvRef);
         end
         
-        function changePressureSetpoint(this, fPressureSetpoint)
+        function setPressureSetpoint(this, fPressureSetpoint)
             this.fPressureSetpoint = fPressureSetpoint;
             
             % We are only changeing the setpoint of the second stage here,
