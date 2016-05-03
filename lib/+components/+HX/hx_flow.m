@@ -3,7 +3,6 @@ classdef hx_flow < matter.procs.f2f
     %         a heat exchanger 
 
     properties (SetAccess = protected, GetAccess = public)
-        fDeltaTemp = 0;
         fDeltaPress = 0;
         bActive = true;
         fFlowRate = 0;
@@ -55,17 +54,10 @@ classdef hx_flow < matter.procs.f2f
             [ oInFlow, ~ ] = this.getFlows(); 
         end
             
-        function fDeltaTemperature = updateManualSolver(this)
+        function updateManualSolver(this)
             this.fFlowRate = this.oBranch.fFlowRate;
             this.oHXParent.update();
-            if this.aoFlows(1).fFlowRate ~= 0
-                oInFlow             = this.getInFlow();
-                this.fDeltaTemp     = this.fHeatFlow / ( oInFlow.fSpecificHeatCapacity * oInFlow.fFlowRate );
-                fDeltaTemperature   = this.fDeltaTemp;
-            else
-                fDeltaTemperature   = 0;
-            end
-            
+
         end
     end
 end

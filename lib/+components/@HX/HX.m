@@ -204,7 +204,7 @@ classdef HX < vsys
         % Stores the time at which the update() method was last called
         fLastUpdate = -1;
         
-        fTempChangeToRecalc = 0.1;
+        fTempChangeToRecalc = 0.05;
         rChangeToRecalc     = 0.01;
         
         % Two structs that store the current information for both fluids so
