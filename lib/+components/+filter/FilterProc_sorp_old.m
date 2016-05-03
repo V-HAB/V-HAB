@@ -20,6 +20,9 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
         % Constants
         fUnivGasConst_R;                     % universal gas constant [J/(mol*K)]
         afMolarMass;                         % molar masses of substances [kg/mol]
+        mfMolarMass;                         % A matrix with the molar masses of all substances 
+                                             % for each grid point. Created
+                                             % as a property for speed.
         
         % Bed properties
         fFilterLength = 0;                   % filter length [m]
@@ -145,6 +148,19 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             
             this.mfC_current = zeros(this.iNumSubstances, this.iNumGridPoints,1);
             this.mfQ_current = zeros(this.iNumSubstances, this.iNumGridPoints,1);
+            
+            % Getting the molar mass of the relevant sorptives
+            this.afMolarMass = this.oMT.afMolarMass(this.aiPositions);
+            
+            % Creating a matrix for later use in the calculation. The
+            % matrix has the molar masses of all substances defined above
+            % for each internal grid point. 
+            this.mfMolarMass = ones(this.iNumSubstances, this.iNumGridPoints);
+            for iSubstance = 1:length(this.afMolarMass)
+                this.mfMolarMass(iSubstance,:) = this.mfMolarMass(iSubstance,:) .* this.afMolarMass(iSubstance);
+            end
+            
+            
             %%%%%%%%%%%%%%%%%%%%%%%%%%
             
                        
@@ -214,8 +230,6 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
                 return;
             end
             
-            % Getting the molar mass of the relevant sorptives
-            this.afMolarMass = this.oMT.afMolarMass(this.aiPositions);
             
             % This is a flow-p2p processor. This means that the dominant
             % factor in the calculation of the adsorption rate is the
@@ -412,12 +426,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             mfQ_mol_change = mfQ(:, :, end) - this.mfQ_current;
             
             % Convert the change to [kg/m3]
-            mfMolarMass = ones(size(mfQ_mol_change));
-            for iSubstance = 1:length(this.afMolarMass)
-                mfMolarMass(iSubstance,:) = mfMolarMass(iSubstance,:) .* this.afMolarMass(iSubstance);
-            end
-            
-            mfQ_density_change = mfQ_mol_change .* mfMolarMass;
+            mfQ_density_change = mfQ_mol_change .* this.mfMolarMass;
             
             % Convert the change to mass in [kg]
             mfQ_mass_change = mfQ_density_change(:, 1:end-1) * this.fVolSolid / (this.iNumGridPoints-2);   % in [kg]       % -1 (ghost cell) -1 (2 boundary points)
