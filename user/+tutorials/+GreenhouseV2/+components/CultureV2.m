@@ -35,6 +35,12 @@ classdef CultureV2 < vsys
         
         %
         fCO2;
+        
+        %
+        bLight = 1;
+        
+        % 
+        fLightTimeFlag = 0;
     end
     
     properties
@@ -218,6 +224,32 @@ classdef CultureV2 < vsys
                     end
                 end
                 
+                %% Check internal time and light for first growth ticks
+                
+                if this.bLight
+                    if 0 <= this.fInternalTime < 300
+                        % gas exchange ignored
+                        this.tfGasExchangeRates.fO2ExchangeRate = 0;
+                        this.tfGasExchangeRates.fCO2ExchangeRate = 0;
+                        this.tfGasExchangeRates.fH2OExchangeRate = 0;
+                    elseif (300 <= this.fInternalTime < 600) || (this.fLightTimeFlag < 300)
+                        % CO2 ingnored (to provide a
+                        % gas base for the P2P)
+                        this.tfGasExchangeRates.fCO2ExchangeRate = 0;
+                    end
+                else
+                    if 0 <= this.fInternalTime < 300
+                        % gas exchange ignored
+                        this.tfGasExchangeRates.fO2ExchangeRate = 0;
+                        this.tfGasExchangeRates.fCO2ExchangeRate = 0;
+                        this.tfGasExchangeRates.fH2OExchangeRate = 0;
+                    elseif (300 <= this.fInternalTime < 600) || (this.fLightTimeFlag < 300)
+                        % O2 ingnored (to provide a
+                        % gas base for the P2P)
+                        this.tfGasExchangeRates.fO2ExchangeRate = 0;
+                    end
+                end
+                             
                 %% Set branch flow rates
                 
                 this.toBranches.Atmosphere_In.oHandler.setFlowRate(-0.1);
@@ -225,7 +257,6 @@ classdef CultureV2 < vsys
                 this.toBranches.WaterSupply_In.oHandler.setFlowRate(-this.fWaterConsumptionRate);
                 this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate);
                 
-%                 this.toStores.(this.txInput.sCultureName).update();
                 this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).toManips.substance.update();
                 this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_GasExchange_P2P']).update();
         end

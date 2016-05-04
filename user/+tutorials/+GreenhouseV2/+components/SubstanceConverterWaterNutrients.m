@@ -15,7 +15,7 @@ classdef SubstanceConverterWaterNutrients < matter.manips.substance.flow
         
         function update(this)
             
-            if this.oTimer.iTick == 0
+            if this.oTimer.fTime <= 0
                 return;
             end
             

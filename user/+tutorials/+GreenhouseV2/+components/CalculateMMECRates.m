@@ -29,8 +29,18 @@ function [ oCulture ] ...
     % setting
     if mod(oCulture.fInternalTime, 1440) < (oCulture.txInput.fH * 60)
         bI = 1;
+        
+        if oCulture.bLight == 0
+            oCulture.bLightTimeFlag = oCulture.oTimer.fTime;
+            oCulture.bLight = 1;
+        end 
     else
         bI = 0;
+        
+        if oCulture.bLight == 1
+            oCulture.bLightTimeFlag = oCulture.oTimer.fTime;
+            oCulture.bLight = 0;
+        end
     end
     
     % calculate 24-hour carbon use efficiency (CUE_24)

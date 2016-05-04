@@ -36,6 +36,13 @@ function [ oCulture ] = ...
                     oCulture.fInternalTime = fSimTime - (oCulture.iInternalGeneration - 1) * oCulture.txInput.fHarvestTime;                            
                 end
                 
+%                 % calculate passed time in current lighting condition
+%                 if oCulture.fLighTime ~= 0
+%                     oCulture.fLightTime =
+%                 else
+%                     oCulture.fLightTime =
+%                 end
+                
                 % check if CO2 level is within model boundary, get MMEC
                 % flow and growth rates
                 if (fCO2 >= 330) && (fCO2 <= 1300)

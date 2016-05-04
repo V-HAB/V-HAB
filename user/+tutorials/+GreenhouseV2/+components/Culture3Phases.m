@@ -35,6 +35,12 @@ classdef Culture3Phases < vsys
         
         %
         fCO2;
+        
+        %
+        bLight = 1;
+        
+        % 
+        fLightTimeFlag = 0;
     end
     
     properties
