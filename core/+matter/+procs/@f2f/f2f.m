@@ -250,13 +250,18 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             % Get flow rate of all ports, adjusted with the according sign
             % to ensure that negative FR always means an outflow of mass!
             %afFRs = [ this.aoFlows.fFlowRate ] .* this.aiSign;
-            afFRs(1) = this.aoFlows(1).fFlowRate * this.aiSign(1);
-            afFRs(2) = this.aoFlows(2).fFlowRate * this.aiSign(2);
+            %afFRs(1) = this.aoFlows(1).fFlowRate * this.aiSign(1);
+            %afFRs(2) = this.aoFlows(2).fFlowRate * this.aiSign(2);
+            %afFRs = [this.aoFlows(1).fFlowRate * this.aiSign(1) this.aoFlows(2).fFlowRate * this.aiSign(2)];
+            fSecondFlowRate = this.aoFlows(2).fFlowRate * this.aiSign(2);
+            fFirstFlowRate  = this.aoFlows(1).fFlowRate * this.aiSign(1);
+            
+            afFRs = [ fFirstFlowRate fSecondFlowRate ];
         end
         
         
         function [ oFlowIn, oFlowOut ] = getFlows(this, fFlowRate)
-            afFRs = this.getFRs();
+%             afFRs = this.getFRs();
             
             
             if nargin > 1
@@ -270,7 +275,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
                 
                 return;
             end
-            
+            afFRs = [this.aoFlows(1).fFlowRate * this.aiSign(1) this.aoFlows(2).fFlowRate * this.aiSign(2)];
             
             if ~any(afFRs)
                 %CHECK Does it really make sense to do this, just because
