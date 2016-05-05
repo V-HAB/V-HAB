@@ -224,6 +224,11 @@ classdef fan < matter.procs.f2f
             % there is backflow), the fan produces a pressure drop.
             fDeltaPressure = fDensityCorrectedDeltaPressure * this.iBlowDirection * iFlowDir * (-1);
             
+            fRiseTime = 1;
+            if this.oTimer.fTime < fRiseTime
+                fDeltaPressure = fDeltaPressure * (-1 * ((this.oTimer.fTime - fRiseTime) / fRiseTime)^2 + 1);
+            end
+            
             % We might want to log this value, so we set the property
             % accordingly.
             this.fDeltaPressure = fDeltaPressure;

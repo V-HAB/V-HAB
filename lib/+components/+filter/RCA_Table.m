@@ -35,7 +35,7 @@ classdef RCA_Table < handle
         % Freundlich isotherm parameter [unitless]
         % The value for this parameter was reverse engineered, the
         % value given in AIAA-2011-5243 is 0.00164.
-        ralphaH2O = 0.00135;
+        ralphaH2O = 0.00105;
         
         % Gas constant for water in [J/(kg*K)]
         %TODO use the value from the matter table here instead.

@@ -226,7 +226,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             if fFlowRateIn < 0
                 %TODO make this a very low level debugging output once the
                 %debug class is implemented
-                fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of negative flow rate.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                %fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of negative flow rate.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
             
