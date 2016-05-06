@@ -4,6 +4,10 @@ classdef SubstanceConverterPlantGrowth < matter.manips.substance.flow
     properties
         % parent system reference
         oParent;
+        
+        % inflow conversion factor edible and inedible 
+        fFactorEdible = 0;
+        fFactorInedible = 0;
     end
     
     methods
@@ -25,9 +29,9 @@ classdef SubstanceConverterPlantGrowth < matter.manips.substance.flow
             tiN2I      = this.oPhase.oMT.tiN2I;
  
             % edible and inedible biomass growth
-            afPartialFlows(1, tiN2I.([this.oParent.txPlantParameters.sPlantSpecies, 'EdibleWet'])) =   this.oParent.tfBiomassGrowthRates.fGrowthRateEdible;
-            afPartialFlows(1, tiN2I.([this.oParent.txPlantParameters.sPlantSpecies, 'InedibleWet'])) = this.oParent.tfBiomassGrowthRates.fGrowthRateInedible;
-            afPartialFlows(1, tiN2I.BiomassBalance) = -(this.oParent.tfBiomassGrowthRates.fGrowthRateEdible + this.oParent.tfBiomassGrowthRates.fGrowthRateInedible);
+            afPartialFlows(1, tiN2I.([this.oParent.txPlantParameters.sPlantSpecies, 'EdibleWet']))      = this.fFactorEdible * this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
+            afPartialFlows(1, tiN2I.([this.oParent.txPlantParameters.sPlantSpecies, 'InedibleWet']))    = this.fFactorInedible * this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
+            afPartialFlows(1, tiN2I.BiomassBalance)                                                     = -this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
             
             update@matter.manips.substance.flow(this, afPartialFlows);
         end

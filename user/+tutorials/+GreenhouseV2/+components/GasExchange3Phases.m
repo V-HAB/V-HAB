@@ -1,4 +1,4 @@
-classdef GasExchange3Phases < matter.procs.p2p
+classdef GasExchange3Phases < matter.procs.p2ps.flow
     % This p2p processor moves "general" biomass from the biomass buffer
     % phase into the culture's phase to according to the culture's 
     % calculated growth rate.
@@ -9,11 +9,14 @@ classdef GasExchange3Phases < matter.procs.p2p
         
         % species to be extracted
         arExtractPartials;
+        
+        % 
+        fExtractionRate = 0;
     end
     
     methods
         function this = GasExchange3Phases(oParent, oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
-            this@matter.procs.p2p(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
+            this@matter.procs.p2ps.flow(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
 
             this.oParent = oParent;
             
@@ -24,7 +27,7 @@ classdef GasExchange3Phases < matter.procs.p2p
         
         function update(this) 
             % extract specified substance with desired flow rate
-            this.setMatterProperties(this.oParent.tfGasExchangeRates.fO2ExchangeRate + this.oParent.tfGasExchangeRates.fCO2ExchangeRate + this.oParent.tfGasExchangeRates.fTranspirationRate,       this.arExtractPartials);
+            this.setMatterProperties(this.fExtractionRate, this.arExtractPartials);
         end
     end
 end

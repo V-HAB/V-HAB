@@ -4,6 +4,9 @@ classdef SubstanceConverterWaterNutrients < matter.manips.substance.flow
     properties
         % parent system reference
         oParent;
+        
+        % 
+        xyz;
     end
     
     methods
@@ -25,9 +28,9 @@ classdef SubstanceConverterWaterNutrients < matter.manips.substance.flow
             tiN2I      = this.oPhase.oMT.tiN2I;
             
             % phase inflows (water and nutrients)
-            afPartialFlows(1, tiN2I.H2O) =         -this.oParent.fWaterConsumptionRate;
-            afPartialFlows(1, tiN2I.Nutrients) =   -this.oParent.fNutrientConsumptionRate;
-            afPartialFlows(1, tiN2I.BiomassBalance) = this.oParent.fWaterConsumptionRate + this.oParent.fNutrientConsumptionRate;
+            afPartialFlows(1, tiN2I.H2O)                = -this.oPhase.afCurrentTotalInOuts(tiN2I.H2O);
+            afPartialFlows(1, tiN2I.Nutrients)          = -this.oPhase.afCurrentTotalInOuts(tiN2I.Nutrients);
+            afPartialFlows(1, tiN2I.BiomassBalance)     = this.oPhase.afCurrentTotalInOuts(tiN2I.H2O) + this.oPhase.afCurrentTotalInOuts(tiN2I.Nutrients);
             
             update@matter.manips.substance.flow(this, afPartialFlows);
         end

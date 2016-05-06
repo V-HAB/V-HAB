@@ -4,6 +4,11 @@ classdef SubstanceConverterGasExchange < matter.manips.substance.flow
     properties
         % parent system reference
         oParent;
+        
+        % gas component inflow conversion factor
+        fFactorO2 = 0;
+        fFactorCO2 = 0;
+        fFactorH2O = 0;
     end
     
     methods
@@ -26,10 +31,10 @@ classdef SubstanceConverterGasExchange < matter.manips.substance.flow
             
             % gas exchange with atmosphere (default plants -> atmosphere, 
             % so same sign for destruction)
-            afPartialFlows(1, tiN2I.O2) =          this.oParent.tfGasExchangeRates.fO2ExchangeRate;
-            afPartialFlows(1, tiN2I.CO2) =         this.oParent.tfGasExchangeRates.fCO2ExchangeRate;
-            afPartialFlows(1, tiN2I.H2O) =         this.oParent.tfGasExchangeRates.fTranspirationRate;
-            afPartialFlows(1, tiN2I.BiomassBalance) =         -(this.oParent.tfGasExchangeRates.fO2ExchangeRate + this.oParent.tfGasExchangeRates.fCO2ExchangeRate + this.oParent.tfGasExchangeRates.fTranspirationRate);
+            afPartialFlows(1, tiN2I.O2)                 = this.fFactorO2 * this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
+            afPartialFlows(1, tiN2I.CO2)                = this.fFactorCO2 * this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
+            afPartialFlows(1, tiN2I.H2O)                = this.fFactorH2O * this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
+            afPartialFlows(1, tiN2I.BiomassBalance)     = -this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
             
             update@matter.manips.substance.flow(this, afPartialFlows);
         end

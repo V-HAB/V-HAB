@@ -40,7 +40,7 @@ classdef Culture3Phases < vsys
         bLight = 1;
         
         % 
-        fLightTimeFlag = 0;
+        fLightTimeFlag = 0;  
     end
     
     properties
@@ -79,7 +79,7 @@ classdef Culture3Phases < vsys
             %% Create Store, Phases and Processors
             
             % write helper for standard plant atmosphere later
-            fVolumeAirCirculation = 0.1;
+            fVolumeAirCirculation = 0.01;
             
             matter.store(this, this.txInput.sCultureName, 20);
             
@@ -247,6 +247,27 @@ classdef Culture3Phases < vsys
                     end
                 end
                 
+                %% Set manipulator conversion ratios
+                
+                % PlantGrowth
+                if this.tfBiomassGrowthRates.fGrowthRateEdible == 0
+                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).toManips.substance.fFactorEdible = 0;
+                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).toManips.substance.fFactorInedible = 1;
+                else
+                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).toManips.substance.fFactorEdible = this.tfBiomassGrowthRates.fGrowthRateEdible / (this.tfBiomassGrowthRates.fGrowthRateEdible + this.tfBiomassGrowthRates.fGrowthRateInedible);
+                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).toManips.substance.fFactorInedible = 1 - this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).toManips.substance.fFactorEdible;
+                end
+                
+                % GasExchange
+                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorO2 = this.tfGasExchangeRates.fO2ExchangeRate / (abs(this.tfGasExchangeRates.fO2ExchangeRate) + abs(this.tfGasExchangeRates.fCO2ExchangeRate) + this.tfGasExchangeRates.fTranspirationRate);
+                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorCO2 = this.tfGasExchangeRates.fCO2ExchangeRate / (abs(this.tfGasExchangeRates.fO2ExchangeRate) + abs(this.tfGasExchangeRates.fCO2ExchangeRate) + this.tfGasExchangeRates.fTranspirationRate);
+                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorH2O = 1 - (abs(this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorO2) + abs(this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorCO2));
+                
+                %% Set P2P flow rates
+                
+                this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_BiomassGrowth_P2P']).fExtractionRate = this.tfBiomassGrowthRates.fGrowthRateEdible + this.tfBiomassGrowthRates.fGrowthRateInedible;
+                this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_GasExchange_P2P']).fExtractionRate = this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate;
+                
                 %% Set branch flow rates
                 
                 this.toBranches.Atmosphere_In.oHandler.setFlowRate(-0.1);
@@ -254,12 +275,12 @@ classdef Culture3Phases < vsys
                 this.toBranches.WaterSupply_In.oHandler.setFlowRate(-this.fWaterConsumptionRate);
                 this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate);
                 
-%                 this.toStores.(this.txInput.sCultureName).update();
-                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Balance']).toManips.substance.update();
-                this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_GasExchange_P2P']).update();
-                this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_BiomassGrowth_P2P']).update();
-                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.update();
-                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).toManips.substance.update();
+                this.toStores.(this.txInput.sCultureName).update();
+%                 this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Balance']).toManips.substance.update();
+%                 this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_GasExchange_P2P']).update();
+%                 this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_BiomassGrowth_P2P']).update();
+%                 this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.update();
+%                 this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).toManips.substance.update();
         end
     end
 end

@@ -120,7 +120,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.WaterSupply, ...      % store containing phase
                 'WaterSupply', ...                  % phase name
                 struct(...                          % phase contents    [kg]
-                    'H2O', 10), ...
+                    'H2O', 20e3), ...
                 20, ...                             % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 fPressureInit);                     % phase pressure    [Pa]
@@ -133,7 +133,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.NutrientSupply, ...   % store containing phase
                 'NutrientSupply', ...               % phase name
                 struct(...                          % phase contens     [kg]
-                    'Nutrients', 10), ...
+                    'Nutrients', 1e3), ...
                 20, ...                             % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 fPressureInit);                     % phase pressure    [Pa]
