@@ -60,8 +60,8 @@ classdef Culture3Phases < vsys
     end
     
     methods
-        function this = Culture3Phases(oParent, txPlantParameters, txInput)
-            this@vsys(oParent, txInput.sCultureName, 60);
+        function this = Culture3Phases(oParent, txPlantParameters, txInput, fUpdateFrequency)
+            this@vsys(oParent, txInput.sCultureName, fUpdateFrequency);
             
             this.txPlantParameters = txPlantParameters;
             this.txInput = txInput;
@@ -79,11 +79,11 @@ classdef Culture3Phases < vsys
             %% Create Store, Phases and Processors
             
             % write helper for standard plant atmosphere later
-            fVolumeAirCirculation = 0.01;
+            fVolumeAirCirculation = 1;
             
             matter.store(this, this.txInput.sCultureName, 20);
             
-            oAtmosphere = this.toStores.(this.txInput.sCultureName).createPhase('air', fVolumeAirCirculation, 293.15, 0.5, 101325);
+            oAtmosphere = this.toStores.(this.txInput.sCultureName).createPhase('air', fVolumeAirCirculation, 293.15, 0, 101325);
             
 %             oAtmosphere = matter.phases.gas(...
 %                 this.toStores.(this.txInput.sCultureName), ...          % store containing phase
@@ -103,7 +103,7 @@ classdef Culture3Phases < vsys
                 this.toStores.(this.txInput.sCultureName), ...          % store containing phase
                 [this.txInput.sCultureName, '_Plants'], ...             % phase name 
                 struct(...                                              % phase contents    [kg]
-                    ), ...
+                    'BiomassBalance', 0.1), ...
                 19 - fVolumeAirCirculation, ...                         % ignored volume    [m^3]
                 293.15);                                                % phase temperature [K]
             
@@ -127,22 +127,24 @@ classdef Culture3Phases < vsys
             %% Create Gas Exchange P2P Processor
             
             % p2p for simulation of gas exchange (O2, CO2, H2O)
-            tutorials.GreenhouseV2.components.GasExchange3Phases(...
+            tutorials.GreenhouseV2.components.SingleSubstanceExtractor(...
                 this, ...                                                                       % parent system reference
                 this.toStores.(this.txInput.sCultureName), ...                                  % store containing phases
                 [this.txInput.sCultureName, '_GasExchange_P2P'], ...                            % p2p processor name
-                [oBalance.sName, '.', this.txInput.sCultureName, '_GasExchange_P2P'], ...    % first phase and exme
-                [oAtmosphere.sName, '.', this.txInput.sCultureName, '_GasExchange_P2P']);           % second phase and exme
+                [oBalance.sName, '.', this.txInput.sCultureName, '_GasExchange_P2P'], ...       % first phase and exme
+                [oAtmosphere.sName, '.', this.txInput.sCultureName, '_GasExchange_P2P'], ...    % second phase and exme
+                'BiomassBalance');                                                              % substance to extract
             
             %% Create Biomass Growth P2P Processor
             
             % 
-            tutorials.GreenhouseV2.components.BiomassGrowth(...
+            tutorials.GreenhouseV2.components.SingleSubstanceExtractor(...
                 this, ...                                                                       % parent system reference
                 this.toStores.(this.txInput.sCultureName), ...                                  % store containing phases
-                [this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...                            % p2p processor name
-                [oBalance.sName, '.', this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...    % first phase and exme
-                [oPlants.sName, '.', this.txInput.sCultureName, '_BiomassGrowth_P2P']);           % second phase and exme
+                [this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...                          % p2p processor name
+                [oBalance.sName, '.', this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...     % first phase and exme
+                [oPlants.sName, '.', this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...      % second phase and exme
+                'BiomassBalance');                                                              % substance to extract
             
             %% Create Substance Conversion Manipulators
             
@@ -220,7 +222,7 @@ classdef Culture3Phases < vsys
                 % calculate plant induced flowrates
             [ this ] = ...                                                  % return current culture object
                 tutorials.GreenhouseV2.components.PlantGrowth(...
-                    this, ...              % current culture object
+                    this, ...                                               % current culture object
                     this.oTimer.fTime, ...                                  % current simulation time
                     this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fPressure, ...                 % atmosphere pressure
                     this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fDensity, ...                  % atmosphere density
@@ -270,8 +272,8 @@ classdef Culture3Phases < vsys
                 
                 %% Set branch flow rates
                 
-                this.toBranches.Atmosphere_In.oHandler.setFlowRate(-0.1);
-                this.toBranches.Atmosphere_Out.oHandler.setFlowRate(0.1 + this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate);
+                this.toBranches.Atmosphere_In.oHandler.setFlowRate(-1e-4);
+                this.toBranches.Atmosphere_Out.oHandler.setFlowRate(1e-4 + this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate);
                 this.toBranches.WaterSupply_In.oHandler.setFlowRate(-this.fWaterConsumptionRate);
                 this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate);
                 
