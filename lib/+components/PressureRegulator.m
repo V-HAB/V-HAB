@@ -23,7 +23,7 @@ classdef PressureRegulator < vsys
         % constructor function
         function this = PressureRegulator(oParent, sName, tParameters)
             % call parent constructor
-            this@vsys(oParent, sName, -1);
+            this@vsys(oParent, sName);
             
             this.tFirstStageParameters  = tParameters.tFirstStageParameters;
             this.tSecondStageParameters = tParameters.tSecondStageParameters;

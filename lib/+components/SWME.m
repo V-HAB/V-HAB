@@ -309,6 +309,8 @@ classdef SWME < vsys
             % SWME housing with the environment.
             this.toBranches.EnvironmentBranch.oHandler.setFlowRate(this.fVaporFlowRate);
             
+            this.toBranches.InletBranch.setOutdated();
+            
         end
     end
     
