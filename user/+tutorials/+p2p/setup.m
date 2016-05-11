@@ -106,10 +106,13 @@ classdef setup < simulation.infrastructure
             %tSolverParams.rHighestMaxChangeDecrease = 50;
             
             
+            % Params for the monitor logger -> dump to mat!
+            ttMonitorCfg = struct('oLogger', struct('cParams', {{ true, 100 }}));
+            
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_p2p', ptConfigParams, tSolverParams);
+            this@simulation.infrastructure('Tutorial_p2p', ptConfigParams, tSolverParams, ttMonitorCfg);
             
             
             % Creating the 'Example' system as a child of the root system
@@ -121,7 +124,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Simulation length - stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 2000 * 1;
+            this.fSimTime = 5000 * 1;
             %this.fSimTime = 1700;
             this.iSimTicks = 600;
             this.bUseTime = true;

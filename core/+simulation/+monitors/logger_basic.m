@@ -5,6 +5,9 @@ classdef logger_basic < simulation.monitor
     %TODO see old master -> simulation.m ==> bDumpToMat!
     %       1) in regular intervals, dump mfLog data to .mat file
     %       2) provide readData method -> re-read data from .mat files
+    %
+    %   check if sim already running (set bSealed in onInitPost) -> not
+    %   possible to add additional log values!
     
     properties (GetAccess = public, Constant = true)
         % Loops through keys, comparison only with length of key
@@ -58,8 +61,22 @@ classdef logger_basic < simulation.monitor
     end
     
     properties  (SetAccess = public, GetAccess = public)
-        % Preallocation - how much rows should be preallocated for logging?
-        iPrealloc = 10000;
+        % Preallocation - how much data should be preallocated for logging?
+        % iPrealloc = 10000;
+        % CHANGED: in the past, that value refered to the numer of rows
+        % that should be pre-allocated. Now, iPreallocData refers to the 
+        % total fields that should be pre-allocated, i.e. rows * columns!
+        % This way, the value can be translated into the amount of RAM or,
+        % in case dump to mat is active, size of the .mat files for each
+        % pre-allocation cycle.
+        %
+        % By default, set to 10k rows with 100 columns.
+        iPreallocData = 1e4 * 100; %10000;
+        % Old pre-alloc value - will be calculated based on amount of log
+        % values!
+        iPrealloc = [];
+        
+        
         
         % Dump mfLog to .mat file when re-preallocating
         bDumpToMat = false;
@@ -67,13 +84,26 @@ classdef logger_basic < simulation.monitor
     end
     
     methods
-        function this = logger_basic(oSimulationInfrastructure)
+        function this = logger_basic(oSimulationInfrastructure, bDumpToMat, iPreallocRows)
+            % bDumpToMat -> each time preallocation happens, dump data to
+            % .mat file instead and empty mfLog? After the simulation, the
+            % data needs to be re-read with this.readDataFromMat()
+            %   
+            
             %this@simulation.monitor(oSimulationInfrastructure, struct('tick_post', 'logData', 'init_post', 'init'));
-            this@simulation.monitor(oSimulationInfrastructure, { 'tick_post', 'init_post' });
+            this@simulation.monitor(oSimulationInfrastructure, { 'tick_post', 'init_post', 'finish' });
             
             % Setting the storage directory for dumping
             fCreated = now();
             this.sStorageDirectory = [ datestr(fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') '_' oSimulationInfrastructure.sName ];
+            
+            if nargin >= 2 && islogical(bDumpToMat)
+                this.bDumpToMat = bDumpToMat;
+            end
+            
+            if nargin >= 3 && isnumeric(iPreallocRows)
+                this.iPreallocData = iPreallocRows * 100;
+            end
         end
         
         
@@ -214,6 +244,73 @@ classdef logger_basic < simulation.monitor
             
             mxData  = this.mfLog(1:iTick, aiIdx);
             tConfig = this.tLogValues(aiIdx);
+        end
+        
+        
+        
+        
+        function readDataFromMat(this)
+            if ~this.bDumpToMat
+                return;
+            end
+            
+            fprintf('LOGGER: reading data from .mat files - NOTE: logger will probably fail if the simulation would be continued!\n');
+            
+            
+            % Cache current log values
+            mfLogCached  = this.mfLog;
+            afTimeCached = this.afTime;
+            
+            % First read all dumps and parse tick number
+            sDir    = [ 'data/runs/' this.sStorageDirectory '/' ];
+            tDir    = dir(sDir);
+            aiDumps = [];
+            
+            for iD = 1:length(tDir)
+                if (length(tDir(iD).name) > 5) && strcmp(tDir(iD).name(1:5), 'dump_')
+                    %disp([ sDir tDir(iD).name ]);
+                    aiDumps(end + 1) = str2double(tDir(iD).name(6:(end - 4)));
+                end
+            end
+            
+            % Sort dumps by tick (just in case)
+            aiDumps = sort(aiDumps);
+            
+            % Preallocate
+            this.mfLog = nan(this.iPrealloc * (length(aiDumps) + 1), length(this.tLogValues));
+            this.afTime = nan(1, this.iPrealloc * length(aiDumps));
+            
+            disp(size(this.mfLog));
+            
+
+            % Actually read the mat files
+            for iF = 1:length(aiDumps) % length(aiDumps):-1:1
+                fprintf('LOGGER: reading mat file dump_%i.mat ...', aiDumps(iF));
+                
+                tFile = load([ sDir 'dump_' num2str(aiDumps(iF)) '.mat' ]);
+                
+                iStartIdx = (iF - 1) * this.iPrealloc + 1;
+                iEndIdx   = iStartIdx + this.iPrealloc - 1;
+                
+                fprintf(' ... and writing to index %i:%i\n', iStartIdx, iEndIdx);
+                
+                %this.mfLog = [ tFile.mfLog; this.mfLog ];
+                this.mfLog(iStartIdx:iEndIdx, :) = tFile.mfLogMatrix;
+                this.afTime(iStartIdx:iEndIdx)   = tFile.afTimeVector;
+            end
+            
+            
+            % Append final data
+            this.mfLog((iEndIdx + 1):end, :) = mfLogCached;
+            
+            % No preallocation for afTime - just as long as current log idx
+            for iTime = 1:length(afTimeCached)
+                this.afTime(end + 1) = afTimeCached(iTime);
+            end
+            
+            
+            this.iAllocated = size(this.mfLog, 1);
+            this.iLogIdx    = this.iLogIdx + this.iPrealloc * length(aiDumps); %size(this.mfLog, 1);
         end
     end
     
@@ -357,12 +454,14 @@ classdef logger_basic < simulation.monitor
             end
             
             
-            
-            
+            % 
+            this.iPrealloc  = floor(this.iPreallocData / length(this.csPaths));
             this.aiLog      = 1:length(this.csPaths);
             this.mfLog      = nan(this.iPrealloc, length(this.csPaths));
             this.iAllocated = this.iPrealloc;
             
+            
+            fprintf('LOGGER: allocating rows:%i\n', this.iPrealloc);
             
             % Create pre-evald loggin' function!
             
@@ -473,6 +572,22 @@ classdef logger_basic < simulation.monitor
         end
         
         
+        function onFinish(this, ~)
+            if this.bDumpToMat
+                if ~isdir([ 'data/runs/' this.sStorageDirectory ])
+                    mkdir([ 'data/runs/' this.sStorageDirectory ]);
+                end
+                
+                sMat = sprintf('data/runs/%s/oLastSimObj.mat', this.sStorageDirectory);
+
+                fprintf('DUMPING - write to .mat: %s\n', sMat);
+
+                oLastSimObj = this.oSimulationInfrastructure; %#ok<NASGU>
+                save(sMat, 'oLastSimObj');
+            end
+        end
+        
+        
         function dumpToMat(this)
             % First we check if the 
             if ~isdir([ 'data/runs/' this.sStorageDirectory ])
@@ -485,12 +600,22 @@ classdef logger_basic < simulation.monitor
             fprintf('DUMPING - write to .mat: %s\n', sMat);
             
             mfLogMatrix = this.mfLog; %#ok<NASGU>
-            save(sMat, 'mfLogMatrix');
+            afTimeVector = this.afTime; %#ok<NASGU>
+            save(sMat, 'mfLogMatrix', 'afTimeVector');
             
             disp('... done!');
             
             this.mfLog(:, :) = nan(this.iPrealloc, length(this.tLogValues));
             this.iLogIdx     = 0;
+            this.afTime      = [];
+            
+            
+            sMat = sprintf('data/runs/%s/oLastSimObj.mat', this.sStorageDirectory);
+            
+            fprintf('DUMPING - write to .mat: %s\n', sMat);
+            
+            oLastSimObj = this.oSimulationInfrastructure; %#ok<NASGU>
+            save(sMat, 'oLastSimObj');
         end
     end
 end
