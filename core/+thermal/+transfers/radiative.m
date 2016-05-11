@@ -63,7 +63,7 @@ classdef radiative < thermal.conductors.radiative
             calcFunc = str2func([mfilename('class'), '.calculateConductance']);
             fConductanceValue = calcFunc(this.fEmissivity, this.fAbsorptivity, this.fArea, this.fViewFactor);
             
-            this.setConductivity(this, fConductanceValue);
+            this.setConductivity(fConductanceValue);
         end
     end
     

@@ -44,7 +44,7 @@ classdef conductive < thermal.conductors.linear
             calcFunc = str2func([mfilename('class'), '.calculateConductance']);
             fConductanceValue = calcFunc(this.fThermalConductivity, this.fArea, this.fLength);
             
-            this.setConductivity(this, fConductanceValue);
+            this.setConductivity(fConductanceValue);
         end
         
     end
