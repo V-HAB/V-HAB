@@ -70,8 +70,8 @@ classdef logger_basic < simulation.monitor
         % in case dump to mat is active, size of the .mat files for each
         % pre-allocation cycle.
         %
-        % By default, set to 100k rows with 100 columns.
-        iPreallocData = 1e5 * 100; %10000;
+        % By default, set to 10k rows with 100 columns.
+        iPreallocData = 1e4 * 100; %10000;
         % Old pre-alloc value - will be calculated based on amount of log
         % values!
         iPrealloc = [];
