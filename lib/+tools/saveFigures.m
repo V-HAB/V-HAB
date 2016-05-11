@@ -82,7 +82,7 @@ end
 sFilePath = strrep([sFolderName, '/', sTimeStamp, '_', sName], '/', filesep);
 
 % Finally we can save our beloved figures!
-savefig(aoFigures, sFilePath);
+savefig(aoFigures, sFilePath, 'compact');
 
 end
 
