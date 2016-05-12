@@ -34,7 +34,11 @@ classdef branch < base & event.source
         sMode = 'simple';
     end
     
-    properties (SetAccess = private, GetAccess = protected, Transient = true)
+    properties (SetAccess = private, GetAccess = protected) %, Transient = true)
+        %TODO These properties should be transient. That requires a static
+        % method (loadobj) to be implemented in this class, so when the
+        % simulation is re-loaded from a .mat file, the properties are
+        % reset to their proper values.
         bRegisteredOutdated = false;
     end
     
@@ -66,7 +70,10 @@ classdef branch < base & event.source
         poColIndexToObj;
         
         
-        %TODO make transient, reload on .load(obj)
+        %TODO These properties should be transient. That requires a static
+        % method (loadobj) to be implemented in this class, so when the
+        % simulation is re-loaded from a .mat file, the properties are
+        % reset to their proper values.
         csVariablePressurePhases;
         csObjUuidsToColIndex;
         csBoundaryPhases;

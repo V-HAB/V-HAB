@@ -40,7 +40,11 @@ classdef capacity < base
 %         fHeatPower = 0;
     end
     
-    properties (Transient, SetAccess = protected)
+    properties (SetAccess = protected) %, Transient)
+        %%TODO These properties should be transient. That requires a static
+        % method (loadobj) to be implemented in this class, so when the
+        % simulation is re-loaded from a .mat file, the properties are
+        % reset to their proper values.
         
         fEnergyDiff = 0; %FIXUP: for logging only
         

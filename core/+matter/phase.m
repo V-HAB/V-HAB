@@ -149,7 +149,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % |matter.procs.p2ps.flow|) that are connected to an ExMe of this
         % phase. Used to quickly access the objects in |this.massupdate()|;
         % created in |this.seal()|.
-        %TODO make Transient, reload on loadobj
+        %TODO These properties should be transient. That requires a static
+        % method (loadobj) to be implemented in this class, so when the
+        % simulation is re-loaded from a .mat file, the properties are
+        % reset to their proper values.
         coProcsP2Pflow;
         iProcsP2Pflow;
         
@@ -228,7 +231,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
        
     end
 
-    properties (Transient, SetAccess = private, GetAccess = public)
+    properties (SetAccess = private, GetAccess = public)
 
         % Masses in phase at last update.
         fMassLastUpdate;
