@@ -35,6 +35,12 @@ classdef SWMEStore < matter.store
                          fSWMEVaporVolume, ...               % Phase volume
                          fInitialTemperature);               % Phase temperature
             
+            % We need to make sure, that this phase is updated frequently,
+            % otherwise it is possible, that the connected branch that
+            % transfers the water vapor to the environment sucks all of the
+            % matter out of the phase in one time step. 
+            oVaporSWME.fMaxStep = 0.5;
+            
             % Creating exmes for the vapor phase
             matter.procs.exmes.gas(oVaporSWME, 'VaporIn');                % vapor exiting the  X50 membrane
             matter.procs.exmes.gas(oVaporSWME, 'VaporOut');               % vapor exiting the housing to the backpressure valve
