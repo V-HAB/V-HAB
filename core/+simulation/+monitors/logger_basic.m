@@ -254,6 +254,16 @@ classdef logger_basic < simulation.monitor
                 return;
             end
             
+            % First read all dumps and parse tick number
+            sDir    = [ 'data/runs/' this.sStorageDirectory '/' ];
+            tDir    = dir(sDir);
+            aiDumps = [];
+            
+            if isempty(tDir)
+                fprintf('LOGGER: No dumped data files available, aborting.\n');
+                return;
+            end
+            
             fprintf('LOGGER: reading data from .mat files - NOTE: logger will probably fail if the simulation would be continued!\n');
             
             
@@ -261,15 +271,10 @@ classdef logger_basic < simulation.monitor
             mfLogCached  = this.mfLog;
             afTimeCached = this.afTime;
             
-            % First read all dumps and parse tick number
-            sDir    = [ 'data/runs/' this.sStorageDirectory '/' ];
-            tDir    = dir(sDir);
-            aiDumps = [];
-            
             for iD = 1:length(tDir)
                 if (length(tDir(iD).name) > 5) && strcmp(tDir(iD).name(1:5), 'dump_')
                     %disp([ sDir tDir(iD).name ]);
-                    aiDumps(end + 1) = str2double(tDir(iD).name(6:(end - 4)));
+                    aiDumps(end + 1) = str2double(tDir(iD).name(6:(end - 4))); %#ok<AGROW>
                 end
             end
             
@@ -277,10 +282,10 @@ classdef logger_basic < simulation.monitor
             aiDumps = sort(aiDumps);
             
             % Preallocate
-            this.mfLog = nan(this.iPrealloc * (length(aiDumps) + 1), length(this.tLogValues));
-            this.afTime = nan(1, this.iPrealloc * length(aiDumps));
+            mfLogNew  = nan(this.iPrealloc * (length(aiDumps) + 1), length(this.tLogValues));
+            afTimeNew = nan(1, this.iPrealloc * length(aiDumps));
             
-            disp(size(this.mfLog));
+            disp(size(mfLogNew));
             
 
             % Actually read the mat files
@@ -292,25 +297,28 @@ classdef logger_basic < simulation.monitor
                 iStartIdx = (iF - 1) * this.iPrealloc + 1;
                 iEndIdx   = iStartIdx + this.iPrealloc - 1;
                 
-                fprintf(' ... and writing to index %i:%i\n', iStartIdx, iEndIdx);
+                fprintf(' and writing to index %i:%i\n', iStartIdx, iEndIdx);
                 
                 %this.mfLog = [ tFile.mfLog; this.mfLog ];
-                this.mfLog(iStartIdx:iEndIdx, :) = tFile.mfLogMatrix;
-                this.afTime(iStartIdx:iEndIdx)   = tFile.afTimeVector;
+                mfLogNew(iStartIdx:iEndIdx, :) = tFile.mfLogMatrix;
+                afTimeNew(iStartIdx:iEndIdx)   = tFile.afTimeVector;
             end
             
             
             % Append final data
-            this.mfLog((iEndIdx + 1):end, :) = mfLogCached;
+            mfLogNew((iEndIdx + 1):end, :) = mfLogCached;
             
             % No preallocation for afTime - just as long as current log idx
             for iTime = 1:length(afTimeCached)
-                this.afTime(end + 1) = afTimeCached(iTime);
+                afTimeNew(end + 1) = afTimeCached(iTime); %#ok<AGROW>
             end
             
-            
-            this.iAllocated = size(this.mfLog, 1);
+            % Now we are all done and we can set all of the properties on
+            % the logger.
+            this.iAllocated = size(mfLogNew, 1);
             this.iLogIdx    = this.iLogIdx + this.iPrealloc * length(aiDumps); %size(this.mfLog, 1);
+            this.mfLog      = mfLogNew;
+            this.afTime     = afTimeNew;
         end
     end
     
