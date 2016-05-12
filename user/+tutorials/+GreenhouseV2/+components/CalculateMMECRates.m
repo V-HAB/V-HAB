@@ -68,9 +68,10 @@ function [ oCulture ] ...
     % [µmol_Carbon.Fixed * µmol_Absorbed.PPFD)^-1]
     % source: "Advances in Space Research 34 (2004) 1528–1538"
     fT_A = ...
-        [1/fCO2 1 fCO2 fCO2^2 fCO2^3] * ...             % row vector for CO2
-        oCulture.txPlantParameters.mfMatrix_T_A * ...   % coefficient matrix
-        [1/fPPFD_E; 1; fPPFD_E; fPPFD_E^2; fPPFD_E^3];  % column vector for PPFD
+        [1/fCO2 1 fCO2 fCO2^2 fCO2^3] * ...                     % row vector for CO2
+        oCulture.txPlantParameters.mfMatrix_T_A * ...           % coefficient matrix
+        [1/fPPFD_E; 1; fPPFD_E; fPPFD_E^2; fPPFD_E^3] * ...     % column vector for PPFD
+        86400;                                                  % T_A needs to be in seconds
     
     % calculate fraction of PPFD absorbed by canopy (A)
     % before time of canopy closure

@@ -26,9 +26,9 @@ classdef SingleSubstanceExtractor < matter.procs.p2ps.flow
         end
         
         function update(this) 
-%             if this.oTimer.fTime > 120
-%                 keyboard();
-%             end
+            if this.oTimer.fTime >=120
+                keyboard();
+            end
             % extract specified substance with desired flow rate
             this.setMatterProperties(this.fExtractionRate, this.arExtractPartials);
         end

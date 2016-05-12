@@ -83,7 +83,7 @@ classdef Culture3Phases < vsys
             
             matter.store(this, this.txInput.sCultureName, 20);
             
-            oAtmosphere = this.toStores.(this.txInput.sCultureName).createPhase('air', fVolumeAirCirculation, 293.15, 0, 101325);
+            oAtmosphere = this.toStores.(this.txInput.sCultureName).createPhase('air', fVolumeAirCirculation, 293.15, 0.5, 101325);
             
 %             oAtmosphere = matter.phases.gas(...
 %                 this.toStores.(this.txInput.sCultureName), ...          % store containing phase
@@ -220,15 +220,27 @@ classdef Culture3Phases < vsys
             % inside the function!!
 %             for iI = 1:length(this.csCultures)
                 % calculate plant induced flowrates
-            [ this ] = ...                                                  % return current culture object
+%             [ this ] = ...                                                  % return current culture object
+%                 tutorials.GreenhouseV2.components.PlantGrowth(...
+%                     this, ...                                               % current culture object
+%                     this.oTimer.fTime, ...                                  % current simulation time
+%                     this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fPressure, ...                 % atmosphere pressure
+%                     this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fDensity, ...                  % atmosphere density
+%                     this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fTemperature, ...              % atmosphere temperature
+%                     this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).rRelHumidity, ...              % atmosphere relative humidity
+%                     this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fSpecificHeatCapacity, ...     % atmosphere heat capacity
+%                     fDensityH2O, ...                                        % density of liquid water under atmosphere conditions
+%                     this.fCO2);                                             % CO2 concentration in ppm
+                
+                [ this ] = ...                                                  % return current culture object
                 tutorials.GreenhouseV2.components.PlantGrowth(...
                     this, ...                                               % current culture object
                     this.oTimer.fTime, ...                                  % current simulation time
-                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fPressure, ...                 % atmosphere pressure
-                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fDensity, ...                  % atmosphere density
-                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fTemperature, ...              % atmosphere temperature
-                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).rRelHumidity, ...              % atmosphere relative humidity
-                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fSpecificHeatCapacity, ...     % atmosphere heat capacity
+                    this.oParent.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass * this.oParent.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMassToPressure, ...                 % atmosphere pressure
+                    this.oParent.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fDensity, ...                  % atmosphere density
+                    this.oParent.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fTemperature, ...              % atmosphere temperature
+                    this.oParent.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.rRelHumidity, ...              % atmosphere relative humidity
+                    this.oParent.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fSpecificHeatCapacity, ...     % atmosphere heat capacity
                     fDensityH2O, ...                                        % density of liquid water under atmosphere conditions
                     this.fCO2);                                             % CO2 concentration in ppm
             
