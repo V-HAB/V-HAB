@@ -534,6 +534,16 @@ classdef flow < base & matlab.mixin.Heterogeneous
             if ~isempty(oExme)
                 [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
                 
+                % In some edge cases (the one that triggered the creation
+                % of the following code involved manual branches bound to
+                % p2p updates) the arPhasePartialMass may be all zeros,
+                % even though the phase mass is not zero. In that case,
+                % we'll just update the phase.
+                if sum(arPhasePartialMass) == 0 && oExme.oPhase.fMass ~= 0
+                    oExme.oPhase.update();
+                    [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
+                end
+
                 % If a phase was empty in one of the previous time steps
                 % and has had mass added to it, the specific heat capacity
                 % may not have yet been calculated, because the phase has
