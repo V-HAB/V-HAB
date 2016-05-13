@@ -273,19 +273,34 @@ classdef Culture3Phases < vsys
                 end
                 
                 % GasExchange
-                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorO2 = this.tfGasExchangeRates.fO2ExchangeRate / (abs(this.tfGasExchangeRates.fO2ExchangeRate) + abs(this.tfGasExchangeRates.fCO2ExchangeRate) + this.tfGasExchangeRates.fTranspirationRate);
-                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorCO2 = this.tfGasExchangeRates.fCO2ExchangeRate / (abs(this.tfGasExchangeRates.fO2ExchangeRate) + abs(this.tfGasExchangeRates.fCO2ExchangeRate) + this.tfGasExchangeRates.fTranspirationRate);
-                this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorH2O = 1 - (abs(this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorO2) + abs(this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorCO2));
+                if (abs(this.tfGasExchangeRates.fO2ExchangeRate) + abs(this.tfGasExchangeRates.fCO2ExchangeRate) + this.tfGasExchangeRates.fTranspirationRate) == 0
+                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorO2 = 0;
+                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorCO2 = 0;
+                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorH2O = 0;
+                else
+                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorO2 = this.tfGasExchangeRates.fO2ExchangeRate / (abs(this.tfGasExchangeRates.fO2ExchangeRate) + abs(this.tfGasExchangeRates.fCO2ExchangeRate) + this.tfGasExchangeRates.fTranspirationRate);
+                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorCO2 = this.tfGasExchangeRates.fCO2ExchangeRate / (abs(this.tfGasExchangeRates.fO2ExchangeRate) + abs(this.tfGasExchangeRates.fCO2ExchangeRate) + this.tfGasExchangeRates.fTranspirationRate);
+                    this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorH2O = 1 - (abs(this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorO2) + abs(this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).toManips.substance.fFactorCO2));
+                end
                 
                 %% Set P2P flow rates
                 
-                this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_BiomassGrowth_P2P']).fExtractionRate = this.tfBiomassGrowthRates.fGrowthRateEdible + this.tfBiomassGrowthRates.fGrowthRateInedible;
-                this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_GasExchange_P2P']).fExtractionRate = this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate;
+                if (this.tfBiomassGrowthRates.fGrowthRateEdible + this.tfBiomassGrowthRates.fGrowthRateInedible) < 0
+                    this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_BiomassGrowth_P2P']).fExtractionRate = 0;
+                else
+                    this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_BiomassGrowth_P2P']).fExtractionRate = this.tfBiomassGrowthRates.fGrowthRateEdible + this.tfBiomassGrowthRates.fGrowthRateInedible;
+                end 
+                
+                if (this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate) < 0
+                    this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_GasExchange_P2P']).fExtractionRate = 0;
+                else
+                    this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_GasExchange_P2P']).fExtractionRate = this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate;
+                end
                 
                 %% Set branch flow rates
                 
-                this.toBranches.Atmosphere_In.oHandler.setFlowRate(-1e-4);
-                this.toBranches.Atmosphere_Out.oHandler.setFlowRate(1e-4 + this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate);
+                this.toBranches.Atmosphere_In.oHandler.setFlowRate(-1e-3);
+                this.toBranches.Atmosphere_Out.oHandler.setFlowRate(1e-3 + this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate);
                 this.toBranches.WaterSupply_In.oHandler.setFlowRate(-this.fWaterConsumptionRate);
                 this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate);
                 

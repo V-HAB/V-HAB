@@ -451,9 +451,9 @@ classdef GreenhouseV2 < vsys
             %% O2 Controller
             
             if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.O2) >= 0.232
-                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 1e-4;
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 1e-4;
             elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.O2) < 0.228
-                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 0;
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 0;
             end
             
             %% CO2 Controller
@@ -468,7 +468,7 @@ classdef GreenhouseV2 < vsys
                     this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 0;
                 end
             elseif fCO2 < 995
-                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(1e-4);
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(1e-3);
             end
             
             %% Humidity Controller

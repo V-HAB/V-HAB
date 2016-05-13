@@ -29,6 +29,10 @@ classdef SubstanceConverterGasExchange < matter.manips.substance.flow
             % for faster reference
             tiN2I      = this.oPhase.oMT.tiN2I;
             
+%             if this.oTimer.fTime >=120
+%                 keyboard();
+%             end
+            
             % gas exchange with atmosphere (default plants -> atmosphere, 
             % so same sign for destruction)
             afPartialFlows(1, tiN2I.O2)                 = this.fFactorO2 * this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
