@@ -13,6 +13,24 @@ classdef configuration_parameters < base
             this.ptConfigParams = ptConfigParams;
         end
         
+        function configureChild(this, oVsys, sChild, tConfig)
+            % Path for oVsys
+            % sChild could also be firstChild/secondChild
+            % -> concat path/sCHild
+            %
+            % CHECK if exist - merge structs!
+            %
+            
+            sSysPath = [ simulation.helper.paths.getSysPath(oVsys) '/' sChild ];
+            bExists  = this.ptConfigParams.isKey(sSysPath);
+            
+            if bExists
+                tConfig = tools.struct.mergeStructs(this.ptConfigParams(sSysPath), tConfig);
+            end
+            
+            this.ptConfigParams(sSysPath) = tConfig;
+        end
+        
         function [ tParams, csKeys ] = get(this, oVsys)
             % Return by class, path, ...? placeholders possible?
             % Path Overwrites Class --> MERGE!
