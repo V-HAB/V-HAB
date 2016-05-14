@@ -42,6 +42,9 @@ classdef timer < base
         % Last execution time for each callback
         afLastExec = [];
         
+        % Optional payload for each callback.
+        ctPayload = {};
+        
         % Time steps == -1 --> execute when timer executes, NOT in global
         % time step (0 would mean global timestep, leading to the timer
         % being required to execute every global TS. If -1, and the
@@ -127,8 +130,22 @@ classdef timer < base
         end
         
         
-        function [ setTimeStep, unbind ] = bind(this, callBack, fTimeStep)
+        function [ setTimeStep, unbind ] = bind(this, callBack, fTimeStep, tPayload)
             % Bind a callback
+            
+            % Payload?
+            tPayloadDef = struct('oSrcObj', [], 'sMethod', [], 'sDescription', [], 'cAdditional', {{}});
+            
+            if nargin >= 4 && isstruct(tPayload)
+                csFields = fieldnames(tPayloadDef);
+                
+                for iF = 1:length(csFields)
+                    if ~isfield(tPayload, csFields{iF}), continue; end;
+                    
+                    tPayloadDef.(csFields{iF}) = tPayload.(csFields{iF});
+                end
+            end
+            
             
             % Get index for new callback
             iIdx = length(this.afTimeStep) + 1;
@@ -136,6 +153,7 @@ classdef timer < base
             % Callback and last execution time
             this.cCallBacks{iIdx} = callBack;
             this.afLastExec(iIdx) = -inf; % preset with -inf -> always execute in first exec!
+            this.ctPayload{iIdx}  = tPayloadDef;
             
             % Time step - provided or use the global
             if nargin >= 3, this.afTimeStep(iIdx) = fTimeStep;
@@ -176,6 +194,7 @@ classdef timer < base
             this.cCallBacks(iCB) = [];
             this.afTimeStep(iCB) = [];
             this.afLastExec(iCB) = [];
+            this.ctPayload(iCB)  = [];
         end
         
         function run(this)
@@ -219,6 +238,17 @@ classdef timer < base
             % Execute callbacks
             for iE = 1:length(aiExec)
                 this.cCallBacks{aiExec(iE)}(this);
+                
+                tPayload = this.ctPayload{aiExec(iE)};
+                
+                this.out(1, 1, 'run', 'Exec callback %i', { aiExec(iE) });
+                
+                if isempty(tPayload.oSrcObj)
+                    this.out(1, 2, 'run', 'Payload - Method Name: %s, Bind Decsription: %s', { tPayload.sMethod, tPayload.sDescription });
+                else
+                    this.out(1, 2, 'run', 'Payload - Method Name: %s, Source Obj Entity %s', { tPayload.sMethod, tPayload.oSrcObj.sEntity });
+                    this.out(1, 3, 'run', 'Payload - Src Obj UUID %s, Bind Description: "%s"', { tPayload.oSrcObj.sUUID, tPayload.sDescription });
+                end
             end
             
             
