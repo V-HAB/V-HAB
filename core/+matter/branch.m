@@ -680,6 +680,7 @@ classdef branch < base & event.source
             % Update data in flows
             this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure);
             
+            this.trigger('setFlowRate');
         end
     
         
