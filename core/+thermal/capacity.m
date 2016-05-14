@@ -108,6 +108,8 @@ classdef capacity < base
             % Is oHeatSource an instance of thermal.heatsource?
             if ~isa(oHeatSource, 'thermal.heatsource')
                 this.throw('capacity:setHeatSource', 'This is no heat source!');
+            elseif ~isempty(this.oHeatSource)
+                this.throw('capacity:setHeatSource', 'Heat source already set. Maybe its a ''multiple'' heat source, so additional heat sources can be added to that one!');
             end
             
             % Store heat source object instance.

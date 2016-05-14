@@ -2,7 +2,8 @@ classdef heatsource < base & event.source
     %HEATSOURCE A dumb constant heat source
     %   Detailed explanation goes here
     %
-    %TODO in thermal solver, directly access fPower? Why getPower?
+    %TODO 
+    %   TAINT CONTAINER!!! after setPower
     
     properties (SetAccess = protected)
         sName;
