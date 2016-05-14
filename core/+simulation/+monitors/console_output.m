@@ -1,7 +1,8 @@
 classdef console_output < simulation.monitor
     %LOGGER_BASIC Summary of this class goes here
     %   Detailed explanation goes here
-    
+    %
+    %TODO see bOutputUuids
     
     
     properties (SetAccess = protected, GetAccess = public)
@@ -38,6 +39,9 @@ classdef console_output < simulation.monitor
         
         % Only LOWER or EQUAL are printed
         iMaxVerbosity = 1;
+        
+        % Uuid of object that was the last one to debug something!
+        sLastOutObjectUuid;
         
         
         % Local setting for objs, by UUID
@@ -92,13 +96,11 @@ classdef console_output < simulation.monitor
         end
         
         
-        function setLogOff(this)
-            this.oLog.setOutputState(false);
-        end
         
-        function setLogOn(this)
-            this.oLog.setOutputState(true);
-        end
+        
+        
+        
+        
         
         
         function this = setReportingInterval(this, iTicks, iMinorTicks)
@@ -125,6 +127,29 @@ classdef console_output < simulation.monitor
                 this.iMinorReportingInterval = 0;
             end
         end
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        function this = setLogOff(this)
+            this.oLog.setOutputState(false);
+        end
+        
+        function this = setLogOn(this)
+            this.oLog.setOutputState(true);
+        end
+        
+        function this = toggleShowStack(this)
+            this.oLog.toggleCreateStack();
+        end
+        
+        
+        
         
         
         
@@ -258,23 +283,31 @@ classdef console_output < simulation.monitor
             %   * additionally globally filter by ISA and identifier!
             
             
-            if ~isempty(this.csIdentifiers)
+            % Don't filter by identifier if empty - even if filters active,
+            % always shown.
+            if ~isempty(this.csIdentifiers) && ~isempty(tPayload.sIdentifier)
                 if ~any(strcmp(this.csIdentifiers, tPayload.sIdentifier))
                     return;
                 end
             end
             
-            if ~isempty(this.csTypes)
-                if ~any(strcmp(this.csTypes, tPayload.oObj.sEntity))
-                    return;
-                end
-            end
             
             if ~isempty(this.csUuids)
                 if ~any(strcmp(this.csUuids, tPayload.oObj.sUUID))
                     return;
                 end
             end
+            
+            
+            
+            %TODO filter by ISA? (i.e. also parent classes included in
+            %     check).
+            if ~isempty(this.csTypes)
+                if ~any(strcmp(this.csTypes, tPayload.oObj.sEntity))
+                    return;
+                end
+            end
+            
             
 %             if this.iTypes > 0
 %                 bFound = false;
@@ -289,6 +322,8 @@ classdef console_output < simulation.monitor
 %                 
 %                 if ~bFound, return; end;
 %             end
+
+
             
             
             % Filter by rootline path?
@@ -320,23 +355,12 @@ classdef console_output < simulation.monitor
             
             
             
-            %TODO FILTER BY this.iMinLevel and this.iMaxVerbosity
-            %       as well as this.ttUuidCfg.iMinLevel / iMaxVerbosity
-            %   vs. tPayload.iLevel / iVerbosity
+            %CHECK local level/verbosity levelsfor specific Objs by UUID?
+            %      need that? probably not, filtering can be done via ident
+            %      or obj uuid or obj entity ...?
             if this.iMinLevel > tPayload.iLevel || this.iMaxVerbosity < tPayload.iVerbosity
                 return;
             end
-            
-            
-            %TODO remember last output? of oObj the same - GROUP outputs?
-            %   E.g. output obj UUID, type, sIDENT, iLevel/iVerbosity etc
-            %   once as 'headline'?
-            
-            %TODO possibility to provide some way/config so name of
-            %   object can be plotted? For phases, this would mean the 
-            %   vsys, store and phase names! Separete from sIDentifier,
-            %   that should be more for stuff like method name!
-            
             
             
             oTimer = this.oSimulationInfrastructure.oSimulationContainer.oTimer;
@@ -347,17 +371,41 @@ classdef console_output < simulation.monitor
                 this.iLastTick = oTimer.iTick;
             end
             
+            %TODO flag bOutputUuids --> store last tPayload.oObj.sUUID on
+            %     this.sLastOutObjectUuid --> if curr obj uuid and that are
+            %     not equal, output: '===> OBJ UUID: [uuid]' and possible
+            %     try sName, sTitle, sLabel, s...?
+            %       -> v-hab specific code here, so we can directly have
+            %       some helper that generates e.g. matter.phae, f2f, ...
+            %       names (including vsys/store/phase, or vsys/branch/f2f
+            %       names)
+            %     => optionally output whole path of obj? We do have that
+            %        functionality for default classes ... which every
+            %        object should somehow inherit from ...
+            %
+            %   ALSO - same for identifier - only output if not the same
+            %          obj / not the same identifier
+            %
+            %   ALSO - output oObj.sEntity! Also only once as long as
+            %          obj/ident are the same!
+            %
+            % PATH, ENTITIY, UUID optionally output
+            % GROUP if same obj uuid, ident several times (store last uuid,
+            %     last ident)
             
             
-            fprintf('[%i/%i]', tPayload.iLevel, tPayload.iVerbosity);
+            fprintf('[%i/%i][%s]', tPayload.iLevel, tPayload.iVerbosity, tPayload.oObj.sEntity);
             
             if ~isempty(tPayload.sIdentifier)
                 fprintf('[%s]', tPayload.sIdentifier);
             end
             
+            fprintf(['\t' tPayload.sMessage '\n' ], tPayload.cParams{:});
             
-            if ~isempty(tPayload.sIdentifier)
-                fprintf(['\t' tPayload.sMessage '\n' ], tPayload.cParams{:});
+            if this.oLog.bCreateStack
+                fprintf('     STACK');
+                fprintf(' <- %s', tPayload.tStack(:).name);
+                fprintf('\n\n');
             end
         end
         
