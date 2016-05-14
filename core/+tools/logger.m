@@ -15,6 +15,9 @@ classdef logger < base & event.source
         % Logging globally off?
         bOff = true;
         
+        % Create stack for each call?
+        bCreateStack = false;
+        
         % Collect instead of .trigger?
         bCollect = false;
         
@@ -65,8 +68,14 @@ classdef logger < base & event.source
                 'iVerbosity',   iVerbosity, ...
                 'sIdentifier',  sIdentifier, ...
                 'sMessage',     sMessage, ...
+                'tStack',       [], ...
                 'cParams',      { cParams } ...
             );
+            
+            
+            if this.bCreateStack
+                tPayload.tStack = dbstack(2, '-completenames');
+            end
             
             if this.bCollect
                 this.tCollection(end + 1) = tPayload;
@@ -128,9 +137,22 @@ classdef logger < base & event.source
         end
         
         
-        function setOutputState(this, bOutput)
+        function this = setOutputState(this, bOutput)
             this.bOff = ~bOutput;
         end
+        
+        function this = toggleOutputState(this)
+            this.bOff = ~this.bOff;
+        end
+        
+        function this = setCreateStack(this, bCreateStack)
+            this.bCreateStack = ~~bCreateStack;
+        end
+        
+        function this = toggleCreateStack(this)
+            this.bCreateStack = ~this.bCreateStack;
+        end
+        
         
         
         %TODO setCollect on true directly in sim infra/vhab.exec, then when

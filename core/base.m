@@ -269,7 +269,8 @@ classdef base < handle
     end
     
     methods (Access = protected)
-        function this = o(this, varargin)
+        %% LOG/DEBG HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function this = out(this, varargin)
             % Flag to globally switch off logging!
             if base.oLog.bOff, return; end;
             
@@ -327,15 +328,10 @@ classdef base < handle
             % All params collected, pass to logger which triggers an event.
             base.oLog.output(this, iLevel, iVerbosity, sIdentifier, sMessage, cParams);
         end
-    end
-    
-    
-    
-    
-    
-    
-    %% ERROR HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods (Access = protected)
+        
+        
+        %% ERROR HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function throw(this, sIdent, sMsg, varargin)
             % Wrapper for throwing errors - includes path to the class
             
