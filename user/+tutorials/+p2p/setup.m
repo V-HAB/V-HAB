@@ -133,7 +133,49 @@ classdef setup < simulation.infrastructure
             
             
             
+            % Register callback for debug state
+            %   -> dependent, i.e. no 'own' time step, just exec each tick
+            this.oSimulationContainer.oTimer.bind(@this.switchDebugState, -1, struct('sMethod', 'switchDebugState', 'sDescription', 'setup - logdbg ctrl fct'));
             
+        end
+        
+        
+        
+        function switchDebugState(this, oTimer)
+            iTick  = oTimer.iTick;
+            oOut   = this.toMonitors.oConsoleOutput;
+            
+            if iTick == 115
+                oOut.setLogOn();
+                
+            elseif iTick == 120
+                oOut.addIdentFilter('update');
+            
+            elseif iTick == 130
+                oOut.resetIdentFilters();
+                oOut.toggleShowStack();
+            
+            elseif iTick == 135
+                oOut.toggleShowStack();
+            
+            elseif iTick == 140
+                oOut.setVerbosity(3);
+            
+            elseif iTick == 145
+                oOut.setVerbosity(1);
+            
+            elseif iTick == 150
+                oOut.setLevel(2);
+            
+            elseif iTick == 155
+                oOut.setLogOff();
+            end
+            
+            
+            %TODO e.g. set level/verbosity, filter by some identifiers to
+            %     show some specific behaviour.
+            %     get objs uuids via this.oSimCont.toChildren.(...)
+            %           -> filter by those UUIDs, e.g. just one phase debug
         end
         
         

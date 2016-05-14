@@ -39,7 +39,7 @@ classdef Example1 < vsys
             tutorials.p2p.components.Filter(this, 'Filter', 0.5);
             
             % Adding a fan
-            components.fan(this, 'Fan', 'setSpeed', 40000, 'Left2Right');
+            components.fan(this, 'Fan', 40000, 'Left2Right');
             
             % Adding pipes to connect the components
             components.pipe(this, 'Pipe_1', 0.5, 0.005);
