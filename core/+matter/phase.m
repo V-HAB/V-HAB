@@ -374,6 +374,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % Return if no time has passed
             if fLastStep == 0
+                
+                this.o(2, 1, 'massupdate', 'Skipping massupdate in %s-%s-%s\tset branches outdated? %i', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, bSetBranchesOutdated });
+                
                 %NOTE need that in case .exec sets flow rate in manual branch triggering massupdate,
                 %     and later in that tick phase does .update -> branches won't be set outdated!
                 if bSetBranchesOutdated
@@ -382,6 +385,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 
                 return;
             end
+            
+            this.o(tools.logger.INFO, 1, 'massupdate', 'Execute massupdate in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName });
 
             % Immediately set fLastMassUpdate, so if there's a recursive call
             % to massupdate, e.g. by a p2ps.flow, nothing happens!
@@ -411,7 +416,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
                 % Add the changes from the manipulator to the total inouts
                 afTotalInOuts = afTotalInOuts + this.toManips.substance.afPartialFlows;
-
+                
+                this.o(tools.logger.MESSAGE, 1, 'massupdate', 'Has substance manipulator'); % directly follows message above, so don't output name
             end
 
             % Cache total mass in/out so the EXMEs can use that
@@ -439,6 +445,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if any(abNegative)
                 this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
                 this.afMass(abNegative) = 0;
+                
+                this.o(tools.logger.NOTICE, 1, 'massupdate', 'Got negative mass, added to mass lost.', {}); % directly follows message above, so don't output name
+                this.o(3, 2, 'massupdate', 'TODO: output all substance names with negative masses!');
             end
 
 
@@ -510,6 +519,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 %      flows separately and then calculate the new
                 %      weighted temperature from those values?
                 this.fTemperature = sum(mfEnergy) / sum(mfEnergyPerKelvin);
+                
+                this.o(1, 1, 'massupdate', 'New temperature: %fK', { this.fTemperature });
+                this.o(1, 2, 'massupdate', 'Total inner energy: %f\tEnergy per Kelvin: %f', { sum(mfEnergy), sum(mfEnergyPerKelvin) });
 
             end
 
@@ -547,8 +559,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         function this = update(this)
             % Only update if not yet happened at the current time.
             if (this.oTimer.fTime <= this.fLastUpdate) || (this.oTimer.fTime < 0)
+                this.o(2, 1, 'update', 'Skip update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName });
+                
                 return;
             end
+            
+            this.o(2, 1, 'update', 'Execute update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName });
+            
 
             % Store update time
             this.fLastUpdate = this.oTimer.fTime;

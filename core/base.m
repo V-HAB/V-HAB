@@ -43,6 +43,11 @@ classdef base < handle
         % created objects of all classes derived from base.
         pDumper = containers.Map({ 'bSerialize', 'coSerializers', 'poSerializers', 'aiSerializers', 'csSerialized' }, { false, {}, containers.Map(), 0, {} });
         
+        
+        % Registered loggers
+        oLog = tools.logger();
+        
+        
         % Attributes for socket connection
         %NOTE not used right now, dumps directly to console / stdout
         %sHost = '127.0.0.1';
@@ -81,11 +86,19 @@ classdef base < handle
             %return;
             
             for iS = aiSerializers
+                if iS < 1, continue; end;
+                
                 %delete(coSerializers{iS});
                 coSerializers{iS}.flush();
+                delete(coSerializers{iS});
             end
             
             %poSerializers.remove(poSerializers.keys());
+            
+            
+            
+            base.oLog.flush();
+            delete(base.oLog);
         end
         
         
@@ -139,6 +152,19 @@ classdef base < handle
                 end
             end
         end
+        
+        
+        % Kind of 'static' events (i.e. bound to the class, not the object)
+        function [ oObj, iId ] = signal(sSignal, varargin)
+            oObj = '';
+            iId  = [];
+            
+            if strcmp(sSignal, 'log')
+                iId = base.oLog.bind(varargin{:});
+                
+                oObj = base.oLog;
+            end
+        end
     end
     
     
@@ -170,6 +196,16 @@ classdef base < handle
     
     methods
         function this = base()
+            
+            %NOTE for e.g. vsys, base constructor called several times, as
+            %     every parent class does eventually call the base
+            %     constructor. So if oMeta, sEntity, sUUID already set -
+            %     don't do anything in here.
+            if ~isempty(this.sUUID)
+                return;
+            end
+            
+            
             %TODO should only do that once, probably? Or Matlab smart enough to only create the metaclass instance once?
             %      remove oMeta, sEntity and sURL, just leave uuid? Wouldn't be needed anyways (type checks done with isa() etc ...) and just store in dumper/vhab static class?
             this.oMeta   = metaclass(this);
@@ -180,6 +216,16 @@ classdef base < handle
             % URL - used as identification for logging
             %CHECK prefix something like localhost?
             this.sURL = [ '/' strrep(this.sEntity, '.', '/') '/' this.sUUID ];
+            
+            
+            
+            
+            % Adding this object to the logger
+            if ~isa(this, 'tools.logger')
+                base.oLog.add(this);
+            end
+            
+            
             
             
             % Matlab sometime acts weird when accessing static attributes that are handle objects ...
@@ -205,6 +251,7 @@ classdef base < handle
             pDumper('coSerializers') = coSerializers;
             pDumper('aiSerializers') = 1:length(coSerializers);
             
+            
         end
         
         function tObj = serialize(this)
@@ -214,9 +261,71 @@ classdef base < handle
             %tObj = base.oCO.poSerializers(this.sEntity).serialize(this);
         end
         
-        function delete(this)
+%         function delete(this)
 %             poObjects     = this.poObjects;
 %             poObjects.remove(this.sUUID);
+%         end
+        
+    end
+    
+    methods (Access = protected)
+        function this = o(this, varargin)
+            % Flag to globally switch off logging!
+            if base.oLog.bOff, return; end;
+            
+            
+            % varargin:
+            % [iLevel, [iVerbosity, ]][sIdentifier, ]sMessage[, cParams]
+            
+            % Minimal call = just sMessage!
+            
+            iElem     = 1;
+            iElemsMax = nargin - 1;
+            
+            % iLevel and iVerbosity are optional. Therefore check first two
+            % elems of varargin for numeric types.
+            if isnumeric(varargin{iElem})
+                iLevel = varargin{iElem};
+                iElem  = iElem + 1;
+                
+                % If iLevel was provided, there HAS to be another elem in
+                % varargin - at least sMessage!
+                if isnumeric(varargin{iElem})
+                    iVerbosity = varargin{iElem};
+                    iElem      = iElem + 1;
+                else
+                    iVerbosity = 1;
+                end
+            else
+                iLevel     = 1;
+                iVerbosity = 1;
+            end
+            
+            
+            
+            % Now check if current AND next elem are strings - if yes,
+            % thats sIdentifier and sMessage. Else, that'd be sMessage and
+            % cParams!
+            if iElemsMax >= (iElem + 1) && ischar(varargin{iElem}) && ischar(varargin{iElem + 1})
+                sIdentifier = varargin{iElem};
+                sMessage    = varargin{iElem + 1};
+                iElem       = iElem + 2;
+            else
+                sIdentifier = '';
+                sMessage    = varargin{iElem};
+                iElem       = iElem + 1;
+            end
+            
+            
+            if iElemsMax >= iElem && iscell(varargin{iElem})
+                cParams = varargin{iElem};
+            else
+                cParams = {};
+            end
+            
+            
+            % All params collected, pass to logger which triggers an event.
+            base.oLog.output(this, iLevel, iVerbosity, sIdentifier, sMessage, cParams);
         end
     end
     
