@@ -43,6 +43,11 @@ classdef Example < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
+            % Atmos - Capacity
+            matter.store(this, 'Atmos', 100);
+            this.toStores.Atmos.createPhase('air', 'hell', 100, 300);
+            
+            
             % Creating a store, volume 1 m^3
             matter.store(this, 'Tank_1', 1);
             
@@ -68,6 +73,18 @@ classdef Example < vsys
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
             matter.branch(this, 'Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2');
             
+        end
+        
+        
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            
+            oCapa = this.addCreateCapacity(this.toStores.Atmos.toPhases.hell);
+            oProc = this.toProcsF2F.Pipe;
+            fArea = oProc.fLength * pi * (oProc.fDiameter / 2)^2;
+            
+            %TODO debug - if included, time step stuck at min
+            %thermal.f2f_wrapper(oProc, oCapa, 1, fArea);
         end
         
         

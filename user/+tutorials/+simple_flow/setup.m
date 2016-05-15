@@ -48,13 +48,16 @@ classdef setup < simulation.infrastructure
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            tutorials.simple_flow.systems.Example(this.oSimulationContainer, 'Example');
+            oSys = tutorials.simple_flow.systems.Example(this.oSimulationContainer, 'Example');
             
             % This is an alternative to providing the ttMonitorConfig above
             %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
             
             
             
+            
+            
+            solver.thermal.lumpedparameter(oSys);
             
             
 
@@ -85,6 +88,10 @@ classdef setup < simulation.infrastructure
             iPropLogIndex2 = oLog.addValue('Example', 'fPipeDiameter', 'm', 'Pipe Diameter');
             
             
+            iTempIdx1 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(1)', 'fTemperature', 'K', 'Flow Temperature - Left');
+            iTempIdx2 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(2)', 'fTemperature', 'K', 'Flow Temperature - Right');
+            
+            
 %             this.csLog = {
 %                 % System timer
 %                 'oData.oTimer.fTime';                                              % 1
@@ -111,6 +118,7 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
             oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
             
+            oPlot.definePlot([ iTempIdx1, iTempIdx2 ], 'Flow Temperatures');
             
 
         end
