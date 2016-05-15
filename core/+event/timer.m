@@ -241,7 +241,7 @@ classdef timer < base
                 
                 tPayload = this.ctPayload{aiExec(iE)};
                 
-                this.out(1, 1, 'run', 'Exec callback %i', { aiExec(iE) });
+                this.out(1, 1, 'run', 'Exec callback %i: %s', { aiExec(iE) func2str(this.cCallBacks{aiExec(iE)}) });
                 
                 if isempty(tPayload.oSrcObj)
                     this.out(1, 2, 'run', 'Payload - Method Name: %s, Bind Decsription: %s', { tPayload.sMethod, tPayload.sDescription });
