@@ -18,15 +18,6 @@ classdef matter_observer < simulation.monitor
         function this = matter_observer(oSimulationInfrastructure)
             this@simulation.monitor(oSimulationInfrastructure, { 'tick_post', 'init_post', 'finish', 'pause' });
             
-            oInfra = this.oSimulationInfrastructure;
-            oSim   = oInfra.oSimulationContainer;
-            
-            % Init the mass log matrices - don't log yet, system's not
-            % initialized yet! Just create with one row, for the initial
-            % mass log. Subsequent logs dynamically allocate new memory -
-            % bad for performance, but only happens every Xth tick ...
-            this.mfTotalMass = zeros(0, oSim.oMT.iSubstances);
-            this.mfLostMass  = zeros(0, oSim.oMT.iSubstances);
         end
     end
     
@@ -66,9 +57,19 @@ classdef matter_observer < simulation.monitor
         
         
         function onInitPost(this, ~)
-            oSim = this.oSimulationInfrastructure.oSimulationContainer;
+            %oSim = this.oSimulationInfrastructure.oSimulationContainer;
             
             % Initialize arrays etc
+            
+            oInfra = this.oSimulationInfrastructure;
+            oSim   = oInfra.oSimulationContainer;
+            
+            % Init the mass log matrices - don't log yet, system's not
+            % initialized yet! Just create with one row, for the initial
+            % mass log. Subsequent logs dynamically allocate new memory -
+            % bad for performance, but only happens every Xth tick ...
+            this.mfTotalMass = zeros(0, oSim.oMT.iSubstances);
+            this.mfLostMass  = zeros(0, oSim.oMT.iSubstances);
         end
         
         

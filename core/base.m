@@ -269,7 +269,61 @@ classdef base < handle
     end
     
     methods (Access = protected)
-        function this = o(this, varargin)
+        %% LOG/DEBG HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function this = out(this, varargin)
+            % This function can be used to output debug/log info. The
+            % minimal function call is:
+            % this.out('Some debug message');
+            % 
+            % Optionally, an identifier and sprintf parameters can be
+            % provided:
+            % this.out('currentMethodName', 'Some %s (%i)', { 'asd', 1 });
+            %
+            % Two parameters exist to determine the log level and verbosity
+            % of the message. Default log levels are 1 (MESSAGE), 2 (INFO),
+            % 3 (NOTICE), 4 (WARN) and 5 (ERROR).
+            % Independently of the log level, the verbosity describes how
+            % much information was passed, for example:
+            % this.out(4, 1, 'myMethod', 'Param X out of bounds');
+            % this.out(4, 2, 'myMethod', 'Additional info, e.g. limits for param X, current value, ...');
+            % this.out(4, 2, 'myMethod', 'Other relevant variables, e.g. if param X based on those.');
+            % this.out(4, 3, 'myMethod', 'Even more ...');
+            % 
+            % Using the methods in the console_output simulation monitor,
+            % the minimum level for a message to be displayed, and the
+            % maximum verbosity can be set. Both values do not have an
+            % upper limit, i.e. one could call this.out(100, 'my msg') and 
+            % set oLastSimObj.toMonitors.oConsoleOutput.setLevel(100);
+            %
+            % For any log messages to be shown, logging has to be activated
+            % with oLastSimObj.toMonitors.oConsoleOutput.setLogOn(). If the
+            % parameters generated for this.out are more complex, i.e.
+            % consume time, the global logging flag can be checked:
+            % if ~base.oLog.bOff, (... prepare params and call .out() ...)
+            %
+            % The console output monitor contains various methods to filter
+            % the logging output:
+            % 
+            %   oOut = oLastSimObj.toMonitors.oConsoleOutput;
+            %   
+            %   % First string param to .out (myMethod in example above)
+            %   oOut.addIdentFilter('myMethod')
+            %   
+            %   % Filter by sEntity object value (e.g. matter.phases.gas)
+            %   oOut.addTypeToFilter('matter.phases.gas');
+            %
+            %   % Others: addPathToFilter -> by obj path, addUuidFilter
+            %   
+            %   % Reset -> oOut.reset*Filters
+            %   %   * = Uuid, Paths, Types, Ident
+            % 
+            % For each filter, several values can be set. If none set,
+            % filter not active.
+            %
+            % Finally, the stack for each log call can be shown/hidden:
+            %   oOut.toggleShowStack();
+            
+            
             % Flag to globally switch off logging!
             if base.oLog.bOff, return; end;
             
@@ -327,15 +381,10 @@ classdef base < handle
             % All params collected, pass to logger which triggers an event.
             base.oLog.output(this, iLevel, iVerbosity, sIdentifier, sMessage, cParams);
         end
-    end
-    
-    
-    
-    
-    
-    
-    %% ERROR HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    methods (Access = protected)
+        
+        
+        %% ERROR HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function throw(this, sIdent, sMsg, varargin)
             % Wrapper for throwing errors - includes path to the class
             

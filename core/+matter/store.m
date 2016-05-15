@@ -147,7 +147,7 @@ classdef store < base
             %this.throw('exec', 'Not implemented!');
         end
         
-        function update(this)
+        function update(this, ~)
             % Update phases, then recalculate internal values as volume
             % available for phases.
             %
@@ -686,7 +686,12 @@ classdef store < base
             
             % Bind the .update method to the timer, with a time step of 0
             % (i.e. smallest step), will be adapted after each .update
-            this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0);
+            %this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0);
+            this.setTimeStep = this.oTimer.bind(@this.update, 0, struct(...
+                'sMethod', 'update', ...
+                'sDescription', 'The .update method of a store (i.e. including phases)', ...
+                'oSrcObj', this ...
+            ));
             
             
             this.iPhases    = length(this.aoPhases);

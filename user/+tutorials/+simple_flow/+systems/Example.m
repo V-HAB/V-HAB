@@ -107,7 +107,7 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
-            this.o(2, 1, 'exec', 'Exec vsys %s', { this.sName });
+            this.out(2, 1, 'exec', 'Exec vsys %s', { this.sName });
         end
         
      end

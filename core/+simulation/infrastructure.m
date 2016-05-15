@@ -161,6 +161,22 @@ classdef infrastructure < base & event.source
             
             
             
+            %%% Create monitors
+            csMonitors = fieldnames(this.ttMonitorCfg);
+            
+            for iM = 1:length(csMonitors)
+                cParams = {};
+                monitorConstructor = str2func(this.ttMonitorCfg.(csMonitors{iM}).sClass);
+                
+                if isfield(this.ttMonitorCfg.(csMonitors{iM}), 'cParams')
+                    cParams = this.ttMonitorCfg.(csMonitors{iM}).cParams;
+                end
+                
+                this.toMonitors.(csMonitors{iM}) = monitorConstructor(this, cParams{:});
+            end
+            
+            
+            
 
             %%% Global objects and settings for constructors
 
@@ -221,20 +237,6 @@ classdef infrastructure < base & event.source
 % %             this.mfLostMass  = zeros(0, this.oData.oMT.iSubstances);
         
             
-
-            % Create monitors
-            csMonitors = fieldnames(this.ttMonitorCfg);
-            
-            for iM = 1:length(csMonitors)
-                cParams = {};
-                monitorConstructor = str2func(this.ttMonitorCfg.(csMonitors{iM}).sClass);
-                
-                if isfield(this.ttMonitorCfg.(csMonitors{iM}), 'cParams')
-                    cParams = this.ttMonitorCfg.(csMonitors{iM}).cParams;
-                end
-                
-                this.toMonitors.(csMonitors{iM}) = monitorConstructor(this, cParams{:});
-            end
         
         
             % Pre Init

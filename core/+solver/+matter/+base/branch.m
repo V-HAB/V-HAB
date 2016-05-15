@@ -105,8 +105,12 @@ classdef branch < base & event.source
             %this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.registerUpdate(), inf);
             
             %TODO check - which one?
-            %this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.executeUpdate(), inf);
-            this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.registerUpdate(), inf);
+            %this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.registerUpdate(), inf);
+            this.setTimeStep = this.oBranch.oTimer.bind(@this.executeUpdate, inf, struct(...
+                'sMethod', 'executeUpdate', ...
+                'sDescription', 'ExecuteUpdate in solver which does massupdate and then registers .update in post tick!', ...
+                'oSrcObj', this ...
+            ));
             
             % Initial flow rate?
             if (nargin >= 2) && ~isempty(fInitialFlowRate)
@@ -115,51 +119,50 @@ classdef branch < base & event.source
             
             % If the branch triggers the 'outdated' event, need to
             % re-calculate the flow rate!
-            this.oBranch.bind('outdated', @this.registerUpdate);
+            %CHECK-160514
+            %this.oBranch.bind('outdated', @this.registerUpdate);
+            this.oBranch.bind('outdated', @this.executeUpdate);
         end
         
         
-        function syncToSolver(this, oSolver)
-            % 
-            %
-            %TODO
-            % Allow several synced solvers!!
-            
-            if ~isempty(this.oSyncedSolver)
-                this.throw('syncToSolver', 'Cannot set another synced solver');
-            end
-            
-            this.oSyncedSolver = oSolver;
-            this.oSyncedSolver.bind('update', @(~) this.syncedUpdateCall());
-        end
+%         function syncToSolver(this, oSolver)
+%             % 
+%             %
+%             %TODO
+%             % Allow several synced solvers!!
+%             
+%             if ~isempty(this.oSyncedSolver)
+%                 this.throw('syncToSolver', 'Cannot set another synced solver');
+%             end
+%             
+%             this.oSyncedSolver = oSolver;
+%             this.oSyncedSolver.bind('update', @(~) this.syncedUpdateCall());
+%         end
     end
     
     methods (Access = private)
-        function executeUpdate(this)
+        function executeUpdate(this, ~)
+            this.out(1, 1, 'executeUpdate', 'Call massupdate on both branches, depending on flow rate %f', { this.oBranch.fFlowRate });
+            
             for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
                 this.oBranch.coExmes{iE}.oPhase.massupdate();
             end
             
-            this.update();
+            %CHECK-160514
+            %this.update();
+            this.registerUpdate();
         end
     end
     
     methods (Access = protected)
         function registerUpdate(this, ~)
-            %TOD) check
+            %CHECK-160514
             %if this.bRegisteredOutdated, return; end;
-            if this.bRegisteredOutdated % this.fLastUpdate >= this.oBranch.oTimer.fTime
-                return;
-            end
-            
-            
-            
-            for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.oBranch.coExmes{iE}.oPhase.massupdate();
-            end
-            
-            
+            if this.bRegisteredOutdated, return; end;
+
             this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
+            
+            this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName });
             
             %keyboard();
             this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
@@ -189,6 +192,8 @@ classdef branch < base & event.source
             %       make sure that a short time step (0!!) is set when the
             %       flow rate direction changed!!
             %       -> setFlowRate automatically updates all!
+            
+            this.out(1, 1, 'update', 'Setting flow rate %f for branch %s', { fFlowRate, this.oBranch.sName });
             
             this.fLastUpdate = this.oBranch.oTimer.fTime;
             
