@@ -22,7 +22,7 @@ classdef capacity < base
         % Associated objects
         sMatterClass;  % The class of the associated matter object, e.g. phase, store, or dummy.
         oMatterObject; % A matter object representing this capacity.
-        oHeatSource;   % A heatsource object attached to this capacity.
+        oHeatSource; % = struct('fPower', 0);   % A heatsource object attached to this capacity.
         
         
         % Overloaded properties of associated objects
@@ -33,9 +33,18 @@ classdef capacity < base
         
         bBoundary = false;
         
+        
+        % Local values, copied from ref objs
+%         fTemperature = 0;
+%         fTotalHeatCapacity = inf;
+%         fHeatPower = 0;
     end
     
-    properties (Transient, SetAccess = protected)
+    properties (SetAccess = protected) %, Transient)
+        %%TODO These properties should be transient. That requires a static
+        % method (loadobj) to be implemented in this class, so when the
+        % simulation is re-loaded from a .mat file, the properties are
+        % reset to their proper values.
         
         fEnergyDiff = 0; %FIXUP: for logging only
         
@@ -61,6 +70,13 @@ classdef capacity < base
             this.fEnergyDiff = fEnergyChange;
             
             if isnan(fEnergyChange) && ~this.bBoundary
+                
+% % %                 oMain = this.oMatterObject.oStore.oContainer.oRoot.toChildren.thermal_layer;
+% % %                 oNode = oMain.toChildren.arm_left.toChildren.lower.toChildren.node_2;
+% % %                 
+% % %                 fprintf('MET %f, TEMP ENV %f, ALPHA %f, VASO %f\n', oMain.fMetabolicLoad, oMain.fInitialTemperatureModule, oNode.fAlphaSkinToAir, oNode.rInitialBloodFlowDistribution);
+                
+                
 %                 if this.fOverloadedTotalHeatCapacity ~= Inf
                     this.warn('thermal:capacity:changeInnerEnergy', 'Received NaN energy change but node "%s" has a finite capacity.', this.sName);
 %                 end
@@ -79,6 +95,11 @@ classdef capacity < base
             % Forward call to matter object.
             this.oMatterObject.changeInnerEnergy(fEnergyChange);
             
+            
+            %%%
+%             this.updateLocalHeatPower();
+%             this.updateLocalTotalHeatCapacity();
+%             this.updateLocalTemperature();
         end
         
         function setHeatSource(this, oHeatSource)
@@ -87,11 +108,17 @@ classdef capacity < base
             % Is oHeatSource an instance of thermal.heatsource?
             if ~isa(oHeatSource, 'thermal.heatsource')
                 this.throw('capacity:setHeatSource', 'This is no heat source!');
+            elseif ~isempty(this.oHeatSource)
+                this.throw('capacity:setHeatSource', 'Heat source already set. Maybe its a ''multiple'' heat source, so additional heat sources can be added to that one!');
             end
             
             % Store heat source object instance.
             this.oHeatSource = oHeatSource;
             
+            
+            %%%
+%             this.oHeatSource.bind('update', @this.updateLocalHeatPower);
+%             this.updateLocalHeatPower();
         end
         
 %         function overloadTotalHeatCapacity(this, fTotalHeatCapacity, ~) %bOverload)
@@ -103,6 +130,9 @@ classdef capacity < base
 %         end
         
         function fTotalHeatCapacity = getTotalHeatCapacity(this)%, bForceMatterRead)
+            
+            %%%this.warn('getTotalHeatCapacity', 'Access fTotalHeatCapacity directly!');
+            
             % Get the heat capacity of the associated matter object OR the
             % overloaded property set by the capacity if |bForceMatterRead|
             % is not set or false. 
@@ -125,16 +155,19 @@ classdef capacity < base
             if this.bBoundary
                 fTotalHeatCapacity = Inf;
             else
-                fTotalHeatCapacity = this.oMatterObject.getTotalHeatCapacity();
+                fTotalHeatCapacity = this.oMatterObject.fTotalHeatCapacity; %getTotalHeatCapacity();
             end
             
         end
         
         function fHeaterPower = getHeatPower(this)
             
+            %%%this.warn('getHeatPower', 'Access fHeatPower directly!');
+            
             if ~isempty(this.oHeatSource) && isvalid(this.oHeatSource)
                 % Get current power of heat source.
-                fHeaterPower = this.oHeatSource.getPower();
+                %fHeaterPower = this.oHeatSource.getPower();
+                fHeaterPower = this.oHeatSource.fPower;
             else
                 % Without an attached heat source, the heater power is 
                 % |0 W|.
@@ -174,6 +207,9 @@ classdef capacity < base
         end
         
         function fTemperature = getTemperature(this)%, bForceMatterRead)
+            
+            %%%this.warn('getTemperature', 'Access fTemperature directly!');
+            
             % Get the current temperature of the associated matter object
             % OR the overloaded property set by the capacity if
             % |bForceMatterRead| is not set or false. 
@@ -192,11 +228,11 @@ classdef capacity < base
                 % Otherwise load the capacity from the associated matter
                 % object.
                 %TODO: fix bottleneck
-                try
-                    fTemperature = this.oMatterObject.getTemperature();
-                catch
+                %try
+                %    fTemperature = this.oMatterObject.getTemperature();
+                %catch
                     fTemperature = this.oMatterObject.fTemperature;
-                end
+                %end
 %             end
             
         end
@@ -249,6 +285,16 @@ classdef capacity < base
             
             this.oMatterObject = oMatterPhase;
             
+            % If boundary node, total heat capacity will remain inf
+            %%%
+%             if ~this.bBoundary
+%                 this.oMatterObject.bind('update.post', @this.updateLocalTotalHeatCapacity);
+%                 this.updateLocalTotalHeatCapacity();
+%             end
+%             
+%             this.oMatterObject.bind('massupdate.post', @this.updateLocalTemperature);
+%             this.updateLocalTemperature();
+            
         end
         
         function loadStoreCapacity(this, oMatterStore)
@@ -269,10 +315,35 @@ classdef capacity < base
             
             this.oMatterObject = oDummyMatter;
             
+            %%%
+%             if ~this.bBoundary
+%                 this.oMatterObject.bind('update', @this.updateLocalTotalHeatCapacity);
+%                 this.updateLocalTotalHeatCapacity();
+%             end
+%             
+%             this.oMatterObject.bind('update', @this.updateLocalTemperature);
+%             this.updateLocalTemperature();
+            
         end
         
         % TODO: createFromFlow() ??
         
+        
+        %%%
+%         function updateLocalHeatPower(this, ~)
+%             if ~isempty(this.oHeatSource) && isvalid(this.oHeatSource)
+%                 % Get current power of heat source.
+%                 this.fHeatPower = this.oHeatSource.fPower;
+%             end
+%         end
+%         
+%         function updateLocalTotalHeatCapacity(this, ~)
+%             this.fTotalHeatCapacity = this.oMatterObject.fTotalHeatCapacity;
+%         end
+%         
+%         function updateLocalTemperature(this, ~)
+%             this.fTemperature = this.oMatterObject.fTemperature;
+%         end
     end
     
 end

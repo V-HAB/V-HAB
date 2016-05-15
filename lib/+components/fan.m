@@ -37,8 +37,13 @@ classdef fan < matter.procs.f2f
     end
     
     properties (SetAccess = protected, GetAccess = public)
+        % Switched off?
+        bActive = true;
+        
+        
         % Direction of the flow the fan is trying to produce. Default
-        % direction is left to right -> iBlowDirection = 1
+        % direction is left to right -> iBlowDirection = 1. For right to
+        % left -> iBlowDirection = -1;
         iBlowDirection = 1;
         
         % Power Consumtion of the fan in [W]
@@ -133,7 +138,25 @@ classdef fan < matter.procs.f2f
         end
         
         
+        function switchOn(this)
+            this.bActive = true;
+            this.oBranch.setOutdated();
+        end
+        
+        function switchOff(this)
+            this.bActive = false;
+            this.oBranch.setOutdated();
+        end
+        
+        
         function fDeltaPressure = solverDeltas(this, fFlowRate)
+            
+            
+            % Switched off? No dP no matter what
+            if ~this.bActive
+                fDeltaPressure = 0;
+                return;
+            end
             
             % We're setting the incoming flow with respect to the blow
             % direction. Technically this should be done with respect to
@@ -200,6 +223,11 @@ classdef fan < matter.procs.f2f
             % is blowing against a flow but is not powerful enough, so
             % there is backflow), the fan produces a pressure drop.
             fDeltaPressure = fDensityCorrectedDeltaPressure * this.iBlowDirection * iFlowDir * (-1);
+            
+            fRiseTime = 1;
+            if this.oTimer.fTime < fRiseTime
+                fDeltaPressure = fDeltaPressure * (-1 * ((this.oTimer.fTime - fRiseTime) / fRiseTime)^2 + 1);
+            end
             
             % We might want to log this value, so we set the property
             % accordingly.

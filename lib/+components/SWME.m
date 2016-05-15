@@ -65,7 +65,7 @@ classdef SWME < vsys
             % an empty tank
             oEnvironment = matter.phases.gas(...
                 this.toStores.EnvironmentTank, ...        % Store in which the phase is located
-                'VaporEnvironment', ...                   % Phase name
+                'EnvironmentPhase', ...                   % Phase name
                 struct('H2O', 0), ...                     % Phase contents
                 0.001, ...                                % Phase volume
                 293);                                     % Phase temperature
@@ -258,7 +258,7 @@ classdef SWME < vsys
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
             % Getting the current density from the phase
-            fVaporDensity = this.toStores.SWMEStore.toPhases.VaporSWME.fDensity;
+            fVaporDensity = this.toStores.SWMEStore.toPhases.VaporPhase.fDensity;
             
             % Calculating the current open area of the valve based on the
             % current position of the stepper motor
@@ -308,6 +308,8 @@ classdef SWME < vsys
             % Now we can set the new flow rate on the branch connecting the
             % SWME housing with the environment.
             this.toBranches.EnvironmentBranch.oHandler.setFlowRate(this.fVaporFlowRate);
+            
+            this.toBranches.InletBranch.setOutdated();
             
         end
     end

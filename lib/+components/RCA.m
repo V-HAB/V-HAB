@@ -31,11 +31,13 @@ classdef RCA < vsys
         % or just partely => rDesorptionRatio < 1
         rDesorptionRatio = 1;   % [-]
         
-        % Time of last bed switch
-        fLastBedSwitch = 0;
+        % Times of two last bed switches
+        afLastBedSwitches = zeros(2,1);
         
-        % Passed time since the last bed switch
-        fDeltaTime; 
+        % Times between bed switches, half cycle is between each switch,
+        % full cycle is time between two switches. 
+        fFullCycleTime = 0;
+        fHalfCycleTime = 0;
         
         % Deadband in seconds, minimum time between bed switches to prevent
         % immediate set back due to inaccuracies after the bed switch
@@ -43,6 +45,11 @@ classdef RCA < vsys
         
         % A string indicating which bed is currently the active one
         sActiveBed = 'A';
+        
+        % Boolead active bed indicators, because you can't really log a
+        % string. 
+        bBedAActive = true;
+        bBedBActive = false;
         
         % A string containing the phase creation helper used for the phases
         % of the RCA filters. 
@@ -209,8 +216,8 @@ classdef RCA < vsys
             oB2  = solver.matter.iterative.branch(this.toBranches.Splitter__Outlet2___Bed_B__Inlet);
 %             oB3  = solver.matter.iterative.branch(this.toBranches.Bed_A__Amine_Vacuum_Port___Vacuum__Inlet_Bed_A_Amine);
 %             oB4  = solver.matter.iterative.branch(this.toBranches.Bed_B__Amine_Vacuum_Port___Vacuum__Inlet_Bed_B_Amine);          
-            oB5  = solver.matter.iterative.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
-            oB6  = solver.matter.iterative.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
+            oB5  = solver.matter.manual.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
+            oB6  = solver.matter.manual.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
             oB7  = solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Inlet1);
             oB8  = solver.matter.iterative.branch(this.toBranches.Bed_B__Outlet___Merger__Inlet2);
             oB9  = solver.matter.iterative.branch(this.toInterfaceBranches.Outlet);
@@ -232,6 +239,9 @@ classdef RCA < vsys
             oB8.iDampFR  = iDampingFactor;
             oB9.iDampFR  = iDampingFactor;
             oB10.iDampFR = iDampingFactor;
+            
+            oB5.setFlowRate(0);
+            oB6.setFlowRate(10000);
             
             % Again in an effort to optimize execution speed and result
             % quality, we set a lower rMaxChange value on the flow phases
@@ -262,17 +272,16 @@ classdef RCA < vsys
             
             % Getting the partial pressure of CO2 at the exme we have
             % defined to be the reference for this measurement. 
-%             afExmePartialPressures = this.oReferenceExme.oFlow.getPartialPressures();
             afExmePartialPressures = this.oReferenceExme.oFlow.afPartialPressure;
             fMeasuredCO2PartialPressure = afExmePartialPressures(this.oMT.tiN2I.CO2);
 
             % We need some deadband to prevent the valve from switching too fast at
             % high metabolic rates. This is also done in the actual hardware setup of
             % PLSS 1.0
-            this.fDeltaTime = this.oTimer.fTime - this.fLastBedSwitch;
+            fDeltaTime = this.oTimer.fTime - this.afLastBedSwitches(2);
             
             % Switching beds and setting flow rates if conditions are met
-            if  (fMeasuredCO2PartialPressure >= this.fCO2Limit) && (this.fDeltaTime > this.fDeadband)
+            if (fDeltaTime > this.fDeadband) && (fMeasuredCO2PartialPressure >= this.fCO2Limit)
                 this.switchRCABeds();
             end
             
@@ -283,13 +292,12 @@ classdef RCA < vsys
     
     methods
         
-        function setInterfaces(this, sInlet, sOutlet, oReferenceExme)
+        function setInterfaces(this, sInlet, sOutlet)
             % Setting both the interface flows as well as the reference
             % exme that will be used to measure the CO2 partial pressure
             % used to determine if a bed switch is necessary. 
             this.connectIF('Inlet',  sInlet);
             this.connectIF('Outlet', sOutlet);
-%             this.oReferenceExme = oReferenceExme;
         end
         
 
@@ -303,12 +311,17 @@ classdef RCA < vsys
                 % Setting the indicator and changing the active bed
                 bIndicator = false; 
                 this.sActiveBed = 'B';
+                this.bBedAActive = false;
+                this.bBedBActive = true;
                 
                 % Starting desorption process for Bed A 
-%                 this.toStores.Bed_A.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
-%                 this.toStores.Bed_B.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
+                this.toStores.Bed_A.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
+                this.toStores.Bed_B.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
                 
                 this.oReferenceExme = this.toStores.Bed_B.toPhases.FlowPhase.toProcsEXME.Outlet;
+                
+                this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume.oHandler.setFlowRate(10000);
+                this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume.oHandler.setFlowRate(0);
                 
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
@@ -318,12 +331,17 @@ classdef RCA < vsys
                 % Setting the indicator and changing the active bed
                 bIndicator = true;
                 this.sActiveBed = 'A';
+                this.bBedAActive = true;
+                this.bBedBActive = false;
                 
                 % Starting desorption process for Bed B                
-%                 this.toStores.Bed_B.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
-%                 this.toStores.Bed_A.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
+                this.toStores.Bed_B.toProcsP2P.SorptionProcessor.desorption(this.rDesorptionRatio);
+                this.toStores.Bed_A.toProcsP2P.SorptionProcessor.reset_timer(this.oTimer.fTime);
                 
                 this.oReferenceExme = this.toStores.Bed_A.toPhases.FlowPhase.toProcsEXME.Outlet;
+                
+                this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume.oHandler.setFlowRate(0);
+                this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume.oHandler.setFlowRate(10000);
                 
                 % Notifying the user
                 %TODO This should be put somewhere in the debugging system
@@ -344,8 +362,13 @@ classdef RCA < vsys
             this.toProcsF2F.Valve_7.setValvePos(~bIndicator);
             this.toProcsF2F.Valve_8.setValvePos(bIndicator);
             
+            % Logging half and full cycle times
+            this.fFullCycleTime = this.oTimer.fTime - this.afLastBedSwitches(1);
+            this.fHalfCycleTime = this.oTimer.fTime - this.afLastBedSwitches(2);
+            
             % Resetting the timer
-            this.fLastBedSwitch = this.oTimer.fTime;         
+            this.afLastBedSwitches(1) = this.afLastBedSwitches(2);
+            this.afLastBedSwitches(2) = this.oTimer.fTime;         
         end
     end
     

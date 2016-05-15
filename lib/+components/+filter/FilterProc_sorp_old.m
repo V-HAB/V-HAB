@@ -20,6 +20,9 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
         % Constants
         fUnivGasConst_R;                     % universal gas constant [J/(mol*K)]
         afMolarMass;                         % molar masses of substances [kg/mol]
+        mfMolarMass;                         % A matrix with the molar masses of all substances 
+                                             % for each grid point. Created
+                                             % as a property for speed.
         
         % Bed properties
         fFilterLength = 0;                   % filter length [m]
@@ -145,6 +148,19 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             
             this.mfC_current = zeros(this.iNumSubstances, this.iNumGridPoints,1);
             this.mfQ_current = zeros(this.iNumSubstances, this.iNumGridPoints,1);
+            
+            % Getting the molar mass of the relevant sorptives
+            this.afMolarMass = this.oMT.afMolarMass(this.aiPositions);
+            
+            % Creating a matrix for later use in the calculation. The
+            % matrix has the molar masses of all substances defined above
+            % for each internal grid point. 
+            this.mfMolarMass = ones(this.iNumSubstances, this.iNumGridPoints);
+            for iSubstance = 1:length(this.afMolarMass)
+                this.mfMolarMass(iSubstance,:) = this.mfMolarMass(iSubstance,:) .* this.afMolarMass(iSubstance);
+            end
+            
+            
             %%%%%%%%%%%%%%%%%%%%%%%%%%
             
                        
@@ -178,7 +194,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
                 return;
             end
             
-            hTimer = tic();
+%             hTimer = tic();
             
 %             % Position of relevant sorptives in the matter table
 % %             this.aiPositions = (find(this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.arPartialMass > 0));
@@ -210,12 +226,10 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             if fFlowRateIn < 0
                 %TODO make this a very low level debugging output once the
                 %debug class is implemented
-                fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of negative flow rate.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                %fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of negative flow rate.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
             
-            % Getting the molar mass of the relevant sorptives
-            this.afMolarMass = this.oMT.afMolarMass(this.aiPositions);
             
             % This is a flow-p2p processor. This means that the dominant
             % factor in the calculation of the adsorption rate is the
@@ -270,7 +284,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             if this.fSorptionPressure <= 0 
                 %TODO make this a very low level debugging output once the
                 %debug class is implemented
-                fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of zero or negative pressure.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                fprintf('%i\t(%.7fs)\tRCA %s: Skipping adsorption calculation because of zero or negative pressure.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
 
@@ -286,12 +300,12 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             % Initialize time domain
             % Numerical time grid spacing (dispersive transport stability)
             fTransportTimeStep = this.fDeltaX^2 / (this.fFluidVelocity * this.fDeltaX + 2 * fAxialDispersion_D_l);
-            % BUT: calculated time step needs to be smaller than current vhab time step
             
+            % BUT: calculated time step needs to be smaller than current vhab time step
             if this.fTimeFactor_1 * fTransportTimeStep >= this.fTimeStep
                 %TODO Turn this into a very low level debug output once the
                 %debug class is implemented
-                %fprintf('%i\t(%f)\t%s: Skipping because inner time step is larger than external timestep.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                %fprintf('%i\t(%f)\tRCA %s: Skipping because inner time step is larger than external timestep.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
             
@@ -300,7 +314,21 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             % Discretized time domain
             afDiscreteTime = (this.fCurrentSorptionTime : (this.fTimeFactor_1 * fTransportTimeStep) : this.fCurrentSorptionTime + this.fTimeStep);   
             % Number of numerical time grid points
-            iTimePoints = length(afDiscreteTime);  
+            iTimePoints = length(afDiscreteTime);
+            
+            % After a bed switch, the volumetric flow rate may become
+            % extremely high due to low pressures and high mass flow rates.
+            % This can in turn lead to extremely small transport timesteps
+            % and cause the number of time points to exeed 100,000... To
+            % avoid this, we'll just skip this iteration if  the number of
+            % time points exceeds 1000.
+            if iTimePoints > 1000
+                %TODO Turn this into a very low level debug output once the
+                %debug class is implemented
+                %fprintf('%i\t(%f)\tRCA %s: Skipping because number of internal time steps exceeds 1000.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                return;
+            end
+            
             this.fTimeDifference = this.fTimeStep - (afDiscreteTime(end) - afDiscreteTime(1));        
             
             % Initialize matrices for dispersive transport
@@ -398,16 +426,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             mfQ_mol_change = mfQ(:, :, end) - this.mfQ_current;
             
             % Convert the change to [kg/m3]
-            mfMolarMass = ones(size(mfQ_mol_change));
-            for iSubstance = 1:length(this.afMolarMass)
-                mfMolarMass(iSubstance,:) = mfMolarMass(iSubstance,:).*this.afMolarMass(iSubstance);
-            end
-            
-            mfQ_density_change = mfQ_mol_change .* mfMolarMass;
-            % Tthe following operation ist more elegant, but unfortunately
-            % only works with MATLAB 2016a or newer. It can be changed here
-            % at a time when most users have updated.
-            %mfQ_density_change = mfQ_mol_change .* this.afMolarMass';
+            mfQ_density_change = mfQ_mol_change .* this.mfMolarMass;
             
             % Convert the change to mass in [kg]
             mfQ_mass_change = mfQ_density_change(:, 1:end-1) * this.fVolSolid / (this.iNumGridPoints-2);   % in [kg]       % -1 (ghost cell) -1 (2 boundary points)
@@ -447,7 +466,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             this.fFlowRate_des = sum(afLoadedMass_des) / (afDiscreteTime(end) - afDiscreteTime(1));           % [kg/s]     
             this.DesorptionProc.setMatterProperties(this.fFlowRate_des, this.arPartials_des);
             
-            this.fUpdateDuration = toc(hTimer);
+%             this.fUpdateDuration = toc(hTimer);
             
 % TODO: DO WE NEED THAT???
 %             % Calculation of the pressure drop through the filter bed

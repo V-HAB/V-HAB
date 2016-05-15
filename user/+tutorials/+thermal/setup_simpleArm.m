@@ -26,7 +26,15 @@ classdef setup_simpleArm < simulation.infrastructure
             
             % Register timer callback to update capacities of nodes and
             % thermal conductivities of conductive conductors. 
-            this.oSimulationContainer.oTimer.bind(@(o) this.updateMassFlow(o), 1);
+            this.oSimulationContainer.oTimer.bind(@(~) this.updateMassFlow(), 1);
+            
+            
+            % Simulate 2000s.
+            this.fSimTime = 2000; % [s]
+            
+        end
+        
+        function configureMonitors(this)
             
             % Set what data should be logged.
             oLog = this.toMonitors.oLogger;
@@ -34,6 +42,8 @@ classdef setup_simpleArm < simulation.infrastructure
             %tiFlowProps = oLog.add('simpleArm', 'thermal_properties');
             oLog.add('simpleArm', 'thermal_properties');
             oLog.add('simpleArm', 'temperatures');
+            
+            
             
             %% Define plots
             
@@ -43,14 +53,13 @@ classdef setup_simpleArm < simulation.infrastructure
             oPlot.definePlotAllWithFilter('J/K', 'Capacities');
             oPlot.definePlotAllWithFilter('W/K','Conductances');
             
-            % Simulate 2000s.
-            this.fSimTime = 2000; % [s]
             
         end
         
-        function updateMassFlow(this, oTimer)
+        function updateMassFlow(this)
             
-            oTSys = this.oSimulationContainer.toChildren.simpleArm;
+            oTSys  = this.oSimulationContainer.toChildren.simpleArm;
+            oTimer = oTSys.oTimer;
             
             % Get fluidic conductors map.
             poFluidC = oTSys.poFluidicConductors;
@@ -73,31 +82,31 @@ classdef setup_simpleArm < simulation.infrastructure
             hCalcFunc = str2func('thermal.transfers.fluidic.calculateConductance');
             
             % Set new conductivities: 
-            poFluidC('fluidic:Arm1Shoulder+Arm2Upper').setConductivity( ...
+            poFluidC('fluidic:Arm__Arm1Shoulder+Arm__Arm2Upper').setConductivity( ...
                 hCalcFunc(oTSys.fSpecificHeatCap, 1.00*oTSys.fMassFlowRate) ...
             );
-            poFluidC('fluidic:Arm2Upper+Arm1Shoulder').setConductivity( ...
+            poFluidC('fluidic:Arm__Arm2Upper+Arm__Arm1Shoulder').setConductivity( ...
                 hCalcFunc(oTSys.fSpecificHeatCap, 1.00*oTSys.fMassFlowRate) ...
             );
             
-            poFluidC('fluidic:Arm2Upper+Arm3Elbow').setConductivity( ...
+            poFluidC('fluidic:Arm__Arm2Upper+Arm__Arm3Elbow').setConductivity( ...
                 hCalcFunc(oTSys.fSpecificHeatCap, 0.52*oTSys.fMassFlowRate) ...
             );
-            poFluidC('fluidic:Arm3Elbow+Arm2Upper').setConductivity( ...
+            poFluidC('fluidic:Arm__Arm3Elbow+Arm__Arm2Upper').setConductivity( ...
                 hCalcFunc(oTSys.fSpecificHeatCap, 0.52*oTSys.fMassFlowRate) ...
             );
             
-            poFluidC('fluidic:Arm3Elbow+Arm4Lower').setConductivity( ...
+            poFluidC('fluidic:Arm__Arm3Elbow+Arm__Arm4Lower').setConductivity( ...
                 hCalcFunc(oTSys.fSpecificHeatCap, 0.48*oTSys.fMassFlowRate) ...
             );
-            poFluidC('fluidic:Arm4Lower+Arm3Elbow').setConductivity( ...
+            poFluidC('fluidic:Arm__Arm4Lower+Arm__Arm3Elbow').setConductivity( ...
                 hCalcFunc(oTSys.fSpecificHeatCap, 0.48*oTSys.fMassFlowRate) ...
             );
             
-            poFluidC('fluidic:Arm4Lower+Arm5Hand').setConductivity( ...
+            poFluidC('fluidic:Arm__Arm4Lower+Arm__Arm5Hand').setConductivity( ...
                 hCalcFunc(oTSys.fSpecificHeatCap, 0.08*oTSys.fMassFlowRate) ...
             );
-            poFluidC('fluidic:Arm5Hand+Arm4Lower').setConductivity( ...
+            poFluidC('fluidic:Arm__Arm5Hand+Arm__Arm4Lower').setConductivity( ...
                 hCalcFunc(oTSys.fSpecificHeatCap, 0.08*oTSys.fMassFlowRate) ...
             );
             

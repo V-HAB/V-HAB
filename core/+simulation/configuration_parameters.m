@@ -13,6 +13,24 @@ classdef configuration_parameters < base
             this.ptConfigParams = ptConfigParams;
         end
         
+        function configureChild(this, oVsys, sChild, tConfig)
+            % Path for oVsys
+            % sChild could also be firstChild/secondChild
+            % -> concat path/sCHild
+            %
+            % CHECK if exist - merge structs!
+            %
+            
+            sSysPath = [ simulation.helper.paths.getSysPath(oVsys) '/' sChild ];
+            bExists  = this.ptConfigParams.isKey(sSysPath);
+            
+            if bExists
+                tConfig = tools.struct.mergeStructs(this.ptConfigParams(sSysPath), tConfig);
+            end
+            
+            this.ptConfigParams(sSysPath) = tConfig;
+        end
+        
         function [ tParams, csKeys ] = get(this, oVsys)
             % Return by class, path, ...? placeholders possible?
             % Path Overwrites Class --> MERGE!
@@ -64,7 +82,7 @@ classdef configuration_parameters < base
             %thing like this.oSubObj.oSubSubObj.tStructAttr.xKey = 'asd';
             %sCode = '[ tC csN ] = this.oRoot.oCfgParams.get(this); for iP = 1:length(csN), this.(csN{iP}) = tC.(csN{iP}); end;';
             
-            sCode = '[ tC csN ] = this.oRoot.oCfgParams.get(this); for iP = 1:length(csN), if ~isempty(strfind(csN{iP}, ''.'')), [ sA, sB ] = strtok(csN{iP}, ''.''); this.(sA).(sB(2:end)) = tC.(csN{iP});; else, this.(csN{iP}) = tC.(csN{iP}); end; end;';
+            sCode = '[ tC csN ] = this.oRoot.oCfgParams.get(this); for iP = 1:length(csN), if ~isempty(strfind(csN{iP}, ''.'')), [ sA, sB ] = strtok(csN{iP}, ''.''); this.(sA).(sB(2:end)) = tC.(csN{iP}); else, this.(csN{iP}) = tC.(csN{iP}); end; end;';
         end
     end
     

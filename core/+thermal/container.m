@@ -51,6 +51,21 @@ classdef container < sys
             
         end
         
+        
+        function createThermalStructure(this)
+            % Call in child elems
+            csChildren = fieldnames(this.toChildren);
+            
+            for iC = 1:length(csChildren)
+                sChild = csChildren{iC};
+                
+                this.toChildren.(sChild).createThermalStructure();
+            end
+        end
+        
+        
+        
+        
         %TODO: make a |getThermalNetwork| method that resets |bIsTainted|
         %      and returns pretty much all thermal maps so most of the
         %      stuff below can move to the solver. Should probably create
@@ -109,9 +124,18 @@ classdef container < sys
                 oNode = this.poCapacities(sNode{1});
                 
                 % Get capacity and heater power of current node and store
-                % the data at the associated index (i.e. position).
+                % the data at the associated index (i.e. position). %%%
                 mCapacitances(iIndex, 1) = oNode.getTotalHeatCapacity();
+                %mCapacitances(iIndex, 1) = oNode.fTotalHeatCapacity;
+                %mCapacitances(iIndex, 1) = oNode.oMatterObject.fTotalHeatCapacity;
                 mHeatSources(iIndex, 1)  = oNode.getHeatPower();
+                %mHeatSources(iIndex, 1)  = oNode.fHeatPower;
+                
+                %if ~isempty(oNode.oHeatSource)
+                %    mHeatSources(iIndex, 1)  = oNode.oHeatSource.fPower;
+                %else
+                %    mHeatSources(iIndex, 1) = 0;
+                %end
                 
             end
             
@@ -135,15 +159,45 @@ classdef container < sys
             % fuses |oCapacity = thermal.capacity|,
             % |oCapacity.setHeatSource|, and
             % |container.addCapacity(oCapacity)|.
-                        
-            oCapacity = thermal.capacity(oMatter.sName, oMatter);
             
-            if nargin > 2
+            
+            
+            %TODO needs to be that detailed for now, as only one tsys
+            %     possible -> capacity names might overlap otherweise.
+            sPrefix = char.empty();
+            
+            if isa(oMatter, 'thermal.dummymatter') || isa(oMatter, 'matter.store')
+                oSystem = oMatter.oContainer;
+                sStoreName = '';
+            elseif isa(oMatter, 'matter.phase')
+                oSystem = oMatter.oStore.oContainer;
+                sStoreName = [ oMatter.oStore.sName, '__' ];
+            else
+                this.throw('container:addCreateCapacity', 'Invalid object provided (%s), should be an instance of |matter.phase| or |matter.store|!', oMatter.sName);
+            end
+            
+            while ~isa(oSystem.oParent, 'simulation.container')
+                sPrefix = strcat('_', oSystem.sName, sPrefix);
+                oSystem = oSystem.oParent;
+            end
+            
+            if ~isempty(sPrefix)
+                sPrefix = strcat(sPrefix(2:end), '__');
+            end
+            
+            sName     = [ sPrefix, sStoreName, oMatter.sName ];
+            oCapacity = thermal.capacity(sName, oMatter);
+            
+            
+            if nargin > 2 && ~isempty(oHeatSource)
                 oCapacity.setHeatSource(oHeatSource);
             end;
             
             this.addCapacity(oCapacity);
+            
+            
             % We're done here.
+            % Echt? Der Kommentar ist ja NOCH sinnvoller als meine. Danke.
             
         end
         
@@ -160,6 +214,8 @@ classdef container < sys
             this.bIsTainted = true;
             this.poCapacities(oCapacity.sName) = oCapacity;
             
+            
+            %TODO addCapacity, HeatSource, Conductor: call oObj.setContainer(this) on new element, so within those elements, thermal container can be referenced to e.g. do this.oContainer.taint()
         end
         
         function removeCapacity(this, sName)
@@ -293,7 +349,9 @@ classdef container < sys
                 
                 % Get capacity and heater power of current node and store
                 % the data at the associated index (i.e. position).
-                mTemperatures(iIndex, 1) = oNode.getTemperature();
+                %mTemperatures(iIndex, 1) = oNode.getTemperature();
+                %mTemperatures(iIndex, 1) = oNode.fTemperature;
+                mTemperatures(iIndex, 1) = oNode.oMatterObject.fTemperature;
                 
             end
             
@@ -329,6 +387,8 @@ classdef container < sys
         
         %TODO: the following is not needed when the matrix generation stuff
         % is done in the solver (see TODO above)
+        %TODO2: taint() method - empty the matrices to ensure that no one
+        %       accesses old values, then remove those get* methods!
         function mCapacities = getCapacitances(this)
             
             if this.bIsTainted
@@ -371,6 +431,10 @@ classdef container < sys
                 this.warn('thermal:container:getFluidicConductors', 'container was changed, this might not return the expected results.');
             end
             mFluidicConductance = this.mFluidicConductance;
+            
+        end
+        
+        function sealThermalStructure(this)
             
         end
         

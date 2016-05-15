@@ -3,6 +3,8 @@ classdef convective < thermal.conductors.linear
     %   Detailed explanation goes here
     
     properties
+        fHeatTransferCoeff;
+        fArea;
     end
     
     methods
@@ -15,8 +17,30 @@ classdef convective < thermal.conductors.linear
             sIdentifier = ['convective:', oLeftCapacity.sName, '+', oRightCapacity.sName];
             this@thermal.conductors.linear(oLeftCapacity, oRightCapacity, conductanceValue, sIdentifier);
             
+            
+            this.fHeatTransferCoeff = fHeatTransferCoeff;
+            this.fArea              = fArea;
         end
         
+        
+        
+        function updateThermalProperties(this, fHeatTransferCoeff, fArea)
+            
+            if nargin >= 2 && ~isempty(fHeatTransferCoeff)
+                this.fHeatTransferCoeff = fHeatTransferCoeff;
+            end
+            
+            if nargin >= 3 && ~isempty(fArea)
+                this.fArea = fArea;
+            end
+            
+            
+            
+            calcFunc = str2func([mfilename('class'), '.calculateConductance']);
+            fConductanceValue = calcFunc(this.fHeatTransferCoeff, this.fArea);
+            
+            this.setConductivity( fConductanceValue);
+        end
     end
     
     methods (Static)

@@ -30,6 +30,9 @@ classdef setup_cooledBar < simulation.infrastructure
             % Register timer callback to update capacities of nodes and
             % thermal conductivities of conductive conductors. 
             this.oSimulationContainer.oTimer.bind(@(~) this.updateThermalProperties(), 1);
+        end
+        
+        function configureMonitors(this)
             
             % Set what data should be logged.
             oLog = this.toMonitors.oLogger;

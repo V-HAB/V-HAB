@@ -87,7 +87,8 @@ classdef infrastructure < base & event.source
         % Default monitors
         ttMonitorCfg = struct(...
             ... % Logs specific simulation values, can be specified throug helpers
-            'oLogger', struct('sClass', 'simulation.monitors.logger_basic'), ...
+            ... % First param is bDumpToMat --> active?
+            'oLogger', struct('sClass', 'simulation.monitors.logger_basic', 'cParams', {{ false }}), ...
             ... % Post-processing - show plots
             'oPlotter', struct('sClass', 'simulation.monitors.plotter_basic'), ...   'simulation.monitors.plotgrid_with_tree'), ...
             ... % Logs the simulation process in the console - params are major, minor tick
@@ -255,9 +256,25 @@ classdef infrastructure < base & event.source
                     sChild = oRoot.csChildren{iC};
                     oChild = oRoot.toChildren.(sChild);
                     
-                    oChild.createMatterStructure();
+                    if ismethod(oChild,'createMatterStructure')
+                        oChild.createMatterStructure();
+                    end
+                    
+                    if ismethod(oChild,'createThermalStructure')
+                        oChild.createThermalStructure();
+                    end
+                    
+                    if ismethod(oChild,'createElectricalStructure')
+                        oChild.createElectricalStructure();
+                    end
+                    
                     oChild.seal();
                     oChild.createSolverStructure();
+                    
+                    %TODO Might have to add something like this here
+                    %if ismethod(oChild,'createDomainInterfaces')
+                    %   oChild.createDomainInterfaces();
+                    %end
                 end
                 
                 disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])

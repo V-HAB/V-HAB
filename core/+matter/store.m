@@ -25,9 +25,16 @@ classdef store < base
         
         % @type cell
         % @types string
+        %TODO This property should be transient. That requires a static
+        % method (loadobj) to be implemented in this class, so when the
+        % simulation is re-loaded from a .mat file, the properties are
+        % reset to their proper values.
         csProcsP2P = {};
         
-        % Should also (as csProcsP2P) transient
+        %TODO This property should be transient. That requires a static
+        % method (loadobj) to be implemented in this class, so when the
+        % simulation is re-loaded from a .mat file, the properties are
+        % reset to their proper values.
         aiProcsP2Pstationary;
         
         % Matter table

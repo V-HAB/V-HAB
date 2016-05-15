@@ -38,7 +38,11 @@ classdef branch < base & event.source
         bUpdateTrigger = false;
     end
     
-    properties (SetAccess = private, GetAccess = protected, Transient = true)
+    properties (SetAccess = private, GetAccess = protected) %, Transient = true)
+        %TODO These properties should be transient. That requires a static
+        % method (loadobj) to be implemented in this class, so when the
+        % simulation is re-loaded from a .mat file, the properties are
+        % reset to their proper values.
         bRegisteredOutdated = false;
     end
     
@@ -99,7 +103,10 @@ classdef branch < base & event.source
             %CHECK nope, Infinity, right?
             %this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.update(), inf);
             %this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.registerUpdate(), inf);
-            this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.executeUpdate(), inf);
+            
+            %TODO check - which one?
+            %this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.executeUpdate(), inf);
+            this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.registerUpdate(), inf);
             
             % Initial flow rate?
             if (nargin >= 2) && ~isempty(fInitialFlowRate)
@@ -139,8 +146,22 @@ classdef branch < base & event.source
     
     methods (Access = protected)
         function registerUpdate(this, ~)
+            %TOD) check
             %if this.bRegisteredOutdated, return; end;
+            if this.bRegisteredOutdated % this.fLastUpdate >= this.oBranch.oTimer.fTime
+                return;
+            end
             
+            
+            
+            for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
+                this.oBranch.coExmes{iE}.oPhase.massupdate();
+            end
+            
+            
+            this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
+            
+            %keyboard();
             this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
             this.bRegisteredOutdated = true;
         end

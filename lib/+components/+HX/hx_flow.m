@@ -3,9 +3,9 @@ classdef hx_flow < matter.procs.f2f
     %         a heat exchanger 
 
     properties (SetAccess = protected, GetAccess = public)
-        fDeltaTemp = 0;
         fDeltaPress = 0;
         bActive = true;
+        fFlowRate = 0;
         
     end
     
@@ -27,16 +27,20 @@ classdef hx_flow < matter.procs.f2f
            this.oHXParent.update(); 
         end
         
-        function [ fDeltaPress, fDeltaTemp ] = solverDeltas(this, ~)
+        function fDeltaPress = solverDeltas(this, fFlowRate)
+            % Setting the flow rate given to us by the solver
+            this.fFlowRate = fFlowRate;
+            
+            % Updating the parent HX system, this will update both the
+            % fDeltaPressure and fHeatFlow property of this processor.
             this.oHXParent.update(); 
-            if this.aoFlows(1).fFlowRate ~= 0
-                fDeltaPress     = this.fDeltaPress;
-                oInFlow         = this.getInFlow();
-                this.fDeltaTemp = this.fHeatFlow / ( oInFlow.fSpecificHeatCapacity * oInFlow.fFlowRate );
-                fDeltaTemp      = this.fDeltaTemp;
+            
+            % If the flow rate is non-zero we set the delta pressure
+            % according to our property, otherwise it's just zero.
+            if fFlowRate ~= 0
+                fDeltaPress = this.fDeltaPress;
             else
-                fDeltaPress     = 0;
-                fDeltaTemp      = 0;
+                fDeltaPress = 0;
             end
         end
         
@@ -50,16 +54,10 @@ classdef hx_flow < matter.procs.f2f
             [ oInFlow, ~ ] = this.getFlows(); 
         end
             
-        function fDeltaTemperature = updateManualSolver(this)
+        function updateManualSolver(this)
+            this.fFlowRate = this.oBranch.fFlowRate;
             this.oHXParent.update();
-            if this.aoFlows(1).fFlowRate ~= 0
-                oInFlow             = this.getInFlow();
-                this.fDeltaTemp     = this.fHeatFlow / ( oInFlow.fSpecificHeatCapacity * oInFlow.fFlowRate );
-                fDeltaTemperature   = this.fDeltaTemp;
-            else
-                fDeltaTemperature   = 0;
-            end
-            
+
         end
     end
 end

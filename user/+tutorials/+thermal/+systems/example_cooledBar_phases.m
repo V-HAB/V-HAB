@@ -20,6 +20,11 @@ classdef example_cooledBar_phases < vsys
             % analysis). 
             this@vsys(oParent, sName, 1);
             
+        end
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+            
             % Cross-section area for all blocks: |16 cm^2| in |m^2|.
             fCSArea = 0.0016;
             
@@ -72,7 +77,7 @@ classdef example_cooledBar_phases < vsys
             
             % Looks like we need to seal the container otherwise a phase
             % update crashes since it does not have a timer. 
-            this.seal();
+%             this.seal();
             
             %END of workaround
             %%

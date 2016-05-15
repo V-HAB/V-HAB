@@ -28,14 +28,14 @@ classdef RCA_Table < handle
         % Heat of adsorption at zero surface coverage in [J/mol].
         % AIAA-2011-5243 gives the isoteric heat of adsorption at 94000
         % J/mol
-        fQ_ads = 77500;
+        fQ_ads = 74500;
         
         % Constants for H2O adsorption:
         
         % Freundlich isotherm parameter [unitless]
         % The value for this parameter was reverse engineered, the
         % value given in AIAA-2011-5243 is 0.00164.
-        ralphaH2O = 0.00135;
+        ralphaH2O = 0.00105;
         
         % Gas constant for water in [J/(kg*K)]
         %TODO use the value from the matter table here instead.

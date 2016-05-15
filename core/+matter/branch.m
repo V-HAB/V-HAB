@@ -404,10 +404,10 @@ classdef branch < base & event.source
                 sOldName = this.sName;
             end
             
-            % Now we set the new name for this branch, inserting the word
-            % 'Interface' in the middle, so when looking at the name, we
+            % Now we set the new name for this branch, inserting the
+            % letters 'if' in the middle, so when looking at the name, we
             % know that this is a subsystem to supersystem branch.
-            this.sName = [ csLeftBranchName{1}, '___Interface___', csRightBranchName{2} ];
+            this.sName = [ csLeftBranchName{1}, '___if___', csRightBranchName{2} ];
             
             % Now we call the updateBranchNames() method on our container,
             % so the updated branch names are also visible there. 
@@ -420,7 +420,10 @@ classdef branch < base & event.source
             % updateConnectedBranches() method.
             if all(this.abIf)
                 sLeftBranchName = strrep(oBranch.sName, this.csNames{2}, '');
-                sNewSubsystemBranchName = [ sLeftBranchName, 'Interface', sRightBranchName ];
+                
+                %sjo - sRightBranchName was not defined ... instead using
+                %   csRightBranchName{2}, no idea of that's correct ...
+                sNewSubsystemBranchName = [ sLeftBranchName, 'Interface', csRightBranchName{2} ];
             else
                 sNewSubsystemBranchName = '';
             end
@@ -589,6 +592,10 @@ classdef branch < base & event.source
                         oExme = [];
                         return;
                     end
+                    
+                    if isa(this.aoFlowProcs(iI), 'components.fan')
+                        iWhichExme = sif(this.aoFlowProcs(iI).iBlowDirection == 1, 1, 2);
+                    end
                 end
             else
                 %iWhichExme = sif(this.fFlowRate < 0, 2, 1);
@@ -660,7 +667,9 @@ classdef branch < base & event.source
                 
                 % Each flow proc produces the same pressure drop, the sum
                 % being the actual pressure difference.
-                afPressure = ones(1, this.iFlowProcs) * fPressureDiff / this.iFlowProcs;
+                %CHECK need the abs() of the pressure diff because need to
+                %      make sure pressure drops are positive?
+                afPressure = ones(1, this.iFlowProcs) * (fPressureDiff) / this.iFlowProcs;
                 
                 % Note: no matter the flow direction, positive values on
                 % afPRessure always denote a pressure DROP
@@ -671,6 +680,7 @@ classdef branch < base & event.source
             % Update data in flows
             this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure);
             
+            this.trigger('setFlowRate');
         end
     
         

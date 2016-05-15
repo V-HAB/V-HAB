@@ -19,6 +19,10 @@ classdef example_heatedBar < vsys
             % method at each second (does not have an influence on thermal
             % analysis). 
             this@vsys(oParent, sName, 1);
+        end
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
             
             % Cross-section area for all blocks: |16 cm^2| in |m^2|.
             fCSArea = 0.0016;
@@ -30,22 +34,22 @@ classdef example_heatedBar < vsys
             % and a specific heat capacity of |900 J/(kg*K)| (valid for all
             % following blocks as well).
             oBlock1 = thermal.dummymatter(this, 'Block1', fCSArea*0.025);
-            oBlock1.addCreatePhase('DummyAlu', 'solid', 50+273.15);
+            oBlock1.addCreatePhase('Al', 'solid', 50+273.15);
             oHeatSource = thermal.heatsource('HeaterAtBlock1', 100);
             oCapacity1 = this.addCreateCapacity(oBlock1, oHeatSource);
             
             % Create three blocks with an Aluminium phase and
             % |T[start] = 50 °C| and create/add the capacity to the system.
             oBlock2 = thermal.dummymatter(this, 'Block2', fCSArea*0.05);
-            oBlock2.addCreatePhase('DummyAlu', 'solid', 50+273.15);
+            oBlock2.addCreatePhase('Al', 'solid', 50+273.15);
             oCapacity2 = this.addCreateCapacity(oBlock2);
             
             oBlock3 = thermal.dummymatter(this, 'Block3', fCSArea*0.05);
-            oBlock3.addCreatePhase('DummyAlu', 'solid', 50+273.15);
+            oBlock3.addCreatePhase('Al', 'solid', 50+273.15);
             oCapacity3 = this.addCreateCapacity(oBlock3);
             
             oBlock4 = thermal.dummymatter(this, 'Block4', fCSArea*0.05);
-            oBlock4.addCreatePhase('DummyAlu', 'solid', 50+273.15);
+            oBlock4.addCreatePhase('Al', 'solid', 50+273.15);
             oCapacity4 = this.addCreateCapacity(oBlock4);
             
             % Create one "half" block with an Aluminium phase and
@@ -53,7 +57,7 @@ classdef example_heatedBar < vsys
             % an |inifinite| capacity (heat sink) on the |oCapacity5|
             % capacity object. Add the capacity to the |tsys|.
             oBlock5 = thermal.dummymatter(this, 'Block5', fCSArea*0.025);
-            oBlock5.addCreatePhase('DummyAlu', 'solid', 20+273.15);
+            oBlock5.addCreatePhase('Al', 'solid', 20+273.15);
             oCapacity5 = thermal.capacity(oBlock5.sName, oBlock5);
             oCapacity5.makeBoundaryNode();
 %             oCapacity5.overloadTotalHeatCapacity(Inf);
@@ -61,7 +65,7 @@ classdef example_heatedBar < vsys
             
             % Looks like we need to seal the container otherwise a phase
             % update crashes since it does not have a timer. 
-            this.seal();
+%             this.seal();
             
             %END of workaround
             %%

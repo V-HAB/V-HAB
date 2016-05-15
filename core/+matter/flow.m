@@ -534,6 +534,16 @@ classdef flow < base & matlab.mixin.Heterogeneous
             if ~isempty(oExme)
                 [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
                 
+                % In some edge cases (the one that triggered the creation
+                % of the following code involved manual branches bound to
+                % p2p updates) the arPhasePartialMass may be all zeros,
+                % even though the phase mass is not zero. In that case,
+                % we'll just update the phase.
+                if sum(arPhasePartialMass) == 0 && oExme.oPhase.fMass ~= 0
+                    oExme.oPhase.update();
+                    [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
+                end
+
                 % If a phase was empty in one of the previous time steps
                 % and has had mass added to it, the specific heat capacity
                 % may not have yet been calculated, because the phase has
@@ -554,6 +564,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 arPhasePartialMass         = 0;
                 fPhaseMolarMass            = 0;
                 fPhaseSpecificHeatCapacity = 0;
+                afPressures                = zeros(1, length(afPressures));
             end
             
             iL = length(aoFlows);
@@ -638,6 +649,11 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     % Q' = m' * c_p * deltaT
                     %fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / ((oThis.fSpecificHeatCapacity + fOtherCp) / 2);
                     fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / fOtherCp;
+                    
+                    if fCurrentTemperature < 0
+                        oThis.throw('setData', 'Illegal temperature value for flow processor ''%s''. Please check the heat flows for all processors in the branch (%s).',...
+                            oThis.oIn.sName, oThis.oBranch.sName);
+                    end
                 end
                 
                 if isnan(fCurrentTemperature)
@@ -662,7 +678,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 if tools.round.prec(fPortPress, iPrec) < 0
                     oThis.fPressure = 0;
                     
-                    % Only warn for > 1Pa ... because ...
+                    % Only warn for > 10Pa ... because ...
+                    %TODO Make these warnings a lower level debug output,
+                    %once the debug class is implemented.
                     if fPortPress < -10
                         aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fPortPress, aoFlows(1).oBranch.sName);
                     elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
