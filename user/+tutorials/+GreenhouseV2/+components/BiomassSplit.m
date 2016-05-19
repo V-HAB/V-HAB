@@ -1,6 +1,8 @@
 classdef BiomassSplit < matter.procs.p2p
     properties
         arExtractPartials;
+        
+        fExtractionRate;
     end
     
     methods
@@ -11,7 +13,7 @@ classdef BiomassSplit < matter.procs.p2p
         end
         
         function update(this)
-            
+            this.setMatterProperties(this.fExtractionRate, this.arExtractPartials);
         end
     end
 end

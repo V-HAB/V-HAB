@@ -25,6 +25,12 @@ classdef WaterAbsorber < matter.procs.p2ps.flow
         function update(this) 
             % get inflow rates
             [ afFlowRate, mrPartials ] = this.getInFlows();
+            
+            if isempty(afFlowRate)
+                this.setMatterProperties(0, this.arExtractPartials);
+
+                return;
+            end
                 
             afFlowRate = afFlowRate .* mrPartials(:, this.oMT.tiN2I.H2O);
             

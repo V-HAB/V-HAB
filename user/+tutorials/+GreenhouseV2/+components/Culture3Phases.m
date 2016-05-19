@@ -99,30 +99,32 @@ classdef Culture3Phases < vsys
             
             matter.procs.exmes.gas(oAtmosphere, [this.txInput.sCultureName, '_GasExchange_P2P']);
             
-            oPlants = matter.phases.solid(...
+            oPlants = matter.phases.liquid(...
                 this.toStores.(this.txInput.sCultureName), ...          % store containing phase
                 [this.txInput.sCultureName, '_Plants'], ...             % phase name 
                 struct(...                                              % phase contents    [kg]
-                    'BiomassBalance', 0.1), ...
+                    ), ...
                 19 - fVolumeAirCirculation, ...                         % ignored volume    [m^3]
-                293.15);                                                % phase temperature [K]
+                293.15, ...                                             % phase temperature [K]
+                101325);                                                
             
-            matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_BiomassGrowth_P2P'])
-            matter.procs.exmes.solid(oPlants, [this.txInput.sCultureName, '_Biomass_Out']); 
+            matter.procs.exmes.liquid(oPlants, [this.txInput.sCultureName, '_BiomassGrowth_P2P'])
+            matter.procs.exmes.liquid(oPlants, [this.txInput.sCultureName, '_Biomass_Out']); 
             
-            oBalance = matter.phases.solid(...
+            oBalance = matter.phases.liquid(...
                 this.toStores.(this.txInput.sCultureName), ...          % store containing phase
                 [this.txInput.sCultureName, '_Balance'], ...            % phase name 
                 struct(...                                              % phase contents    [kg]
                     'BiomassBalance', 5), ...
                 1, ...                                                  % ignored volume    [m^3]
-                293.15);                                                % phase temperature [K]
+                293.15, ...                                             % phase temperature [K]
+                101325);
             
-            matter.procs.exmes.solid(oBalance, [this.txInput.sCultureName, '_BiomassGrowth_P2P'])
-            matter.procs.exmes.solid(oBalance, [this.txInput.sCultureName, '_WaterSupply_In']);
-            matter.procs.exmes.solid(oBalance, [this.txInput.sCultureName, '_NutrientSupply_In']);
+            matter.procs.exmes.liquid(oBalance, [this.txInput.sCultureName, '_BiomassGrowth_P2P'])
+            matter.procs.exmes.liquid(oBalance, [this.txInput.sCultureName, '_WaterSupply_In']);
+            matter.procs.exmes.liquid(oBalance, [this.txInput.sCultureName, '_NutrientSupply_In']);
              
-            matter.procs.exmes.solid(oBalance, [this.txInput.sCultureName, '_GasExchange_P2P']);
+            matter.procs.exmes.liquid(oBalance, [this.txInput.sCultureName, '_GasExchange_P2P']);
             
             %% Create Gas Exchange P2P Processor
             
@@ -250,6 +252,7 @@ classdef Culture3Phases < vsys
                 if this.iState == 2
                     this.toBranches.Biomass_Out.oHandler.setFlowRate(0.1);
                 
+                    disp('Harvesting');
                 % if phase empty too, increase generation and change status
                 % to growth, or set to fallow 
                 elseif (this.iState == 2) && (this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fMass == 0)
@@ -285,13 +288,13 @@ classdef Culture3Phases < vsys
                 
                 %% Set P2P flow rates
                 
-                if (this.tfBiomassGrowthRates.fGrowthRateEdible + this.tfBiomassGrowthRates.fGrowthRateInedible) < 0
+                if (this.tfBiomassGrowthRates.fGrowthRateEdible + this.tfBiomassGrowthRates.fGrowthRateInedible) <= 0
                     this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_BiomassGrowth_P2P']).fExtractionRate = 0;
                 else
                     this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_BiomassGrowth_P2P']).fExtractionRate = this.tfBiomassGrowthRates.fGrowthRateEdible + this.tfBiomassGrowthRates.fGrowthRateInedible;
                 end 
                 
-                if (this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate) < 0
+                if (this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate) <= 0
                     this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_GasExchange_P2P']).fExtractionRate = 0;
                 else
                     this.toStores.(this.txInput.sCultureName).toProcsP2P.([this.txInput.sCultureName, '_GasExchange_P2P']).fExtractionRate = this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate;
@@ -299,8 +302,8 @@ classdef Culture3Phases < vsys
                 
                 %% Set branch flow rates
                 
-                this.toBranches.Atmosphere_In.oHandler.setFlowRate(-1e-3);
-                this.toBranches.Atmosphere_Out.oHandler.setFlowRate(1e-3 + this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate);
+                this.toBranches.Atmosphere_In.oHandler.setFlowRate(-1e-2);
+                this.toBranches.Atmosphere_Out.oHandler.setFlowRate(1e-2 + this.tfGasExchangeRates.fO2ExchangeRate + this.tfGasExchangeRates.fCO2ExchangeRate + this.tfGasExchangeRates.fTranspirationRate);
                 this.toBranches.WaterSupply_In.oHandler.setFlowRate(-this.fWaterConsumptionRate);
                 this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate);
                 

@@ -31,14 +31,14 @@ function [ oCulture ] ...
         bI = 1;
         
         if oCulture.bLight == 0
-            oCulture.bLightTimeFlag = oCulture.oTimer.fTime;
+            oCulture.fLightTimeFlag = oCulture.oTimer.fTime;
             oCulture.bLight = 1;
         end 
     else
         bI = 0;
         
         if oCulture.bLight == 1
-            oCulture.bLightTimeFlag = oCulture.oTimer.fTime;
+            oCulture.fLightTimeFlag = oCulture.oTimer.fTime;
             oCulture.bLight = 0;
         end
     end

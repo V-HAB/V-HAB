@@ -108,7 +108,8 @@ classdef GreenhouseV2 < vsys
             
             %% Atmosphere
             
-            matter.store(this, 'Atmosphere', 20);
+            % comment 2e6 if regulation is not needed
+            matter.store(this, 'Atmosphere', 20 + 2e6);
             
 %             oAtmosphere = matter.phases.gas(...
 %                 this.toStores.Atmosphere, ...       % store containing phase
@@ -153,53 +154,57 @@ classdef GreenhouseV2 < vsys
             
             matter.store(this, 'BiomassSplit', 1);
             
-            oBiomassEdibleSplit = matter.phases.solid(...
+            oBiomassEdibleSplit = matter.phases.liquid(...
                 this.toStores.BiomassSplit, ...     % store containing phase
                 'BiomassEdible', ...                % phase name
                 struct(...                          % phase contents    [kg]
                     ), ...
                 2, ...                              % phase volume      [m^3]
-                fTemperatureInit);                  % phase temperature [K]
+                fTemperatureInit, ...               % phase temperature [K]
+                101325);
             
-            matter.procs.exmes.solid(oBiomassEdibleSplit, 'BiomassEdible_Out_ToStorage');
-            matter.procs.exmes.solid(oBiomassEdibleSplit, 'EdibleInedible_Split_P2P');
+            matter.procs.exmes.liquid(oBiomassEdibleSplit, 'BiomassEdible_Out_ToStorage');
+            matter.procs.exmes.liquid(oBiomassEdibleSplit, 'EdibleInedible_Split_P2P');
             
-            oBiomassInedibleSplit = matter.phases.solid(...
+            oBiomassInedibleSplit = matter.phases.liquid(...
                 this.toStores.BiomassSplit, ...     % store containing phase
                 'BiomassInedible', ...              % phase name
                 struct(...                          % phase contents    [kg]
                     ), ...
                 2, ...                              % phase volume      [m^3]
-                fTemperatureInit);                  % phase temperature [K]
+                fTemperatureInit, ...               % phase temperature [K]
+                101325);
 
-            matter.procs.exmes.solid(oBiomassInedibleSplit, 'BiomassInedible_Out_ToStorage');
-            matter.procs.exmes.solid(oBiomassInedibleSplit, 'EdibleInedible_Split_P2P');
+            matter.procs.exmes.liquid(oBiomassInedibleSplit, 'BiomassInedible_Out_ToStorage');
+            matter.procs.exmes.liquid(oBiomassInedibleSplit, 'EdibleInedible_Split_P2P');
             
             %% Biomass Storage
             
             matter.store(this, 'BiomassEdible', 20);
             
-            oBiomassEdible = matter.phases.solid(...
+            oBiomassEdible = matter.phases.liquid(...
                 this.toStores.BiomassEdible, ...    % store containing phase
                 'BiomassEdible', ...                % phase name
                 struct(...                          % phase contents    [kg]
                     ), ...
                 2, ...                              % phase volume      [m^3]
-                fTemperatureInit);                  % phase temperature [K]
+                fTemperatureInit, ...               % phase temperature [K]
+                101325);
             
-            matter.procs.exmes.solid(oBiomassEdible, 'BiomassEdible_In_FromSplit');
+            matter.procs.exmes.liquid(oBiomassEdible, 'BiomassEdible_In_FromSplit');
             
             matter.store(this, 'BiomassInedible', 20);
             
-            oBiomassInedible = matter.phases.solid(...
+            oBiomassInedible = matter.phases.liquid(...
                 this.toStores.BiomassInedible, ...  % store containing phase
                 'BiomassInedible', ...              % phase name
                 struct(...                          % phase contents    [kg]
                     ), ...
                 2, ...                              % phase volume      [m^3]
-                fTemperatureInit);                  % phase temperature [K]
+                fTemperatureInit, ...               % phase temperature [K]
+                101325);
             
-            matter.procs.exmes.solid(oBiomassInedible, 'BiomassInedible_In_FromSplit');
+            matter.procs.exmes.liquid(oBiomassInedible, 'BiomassInedible_In_FromSplit');
             
             %% Leakage Buffer
             
@@ -268,10 +273,10 @@ classdef GreenhouseV2 < vsys
             
             
             % add water separator store
-            matter.store(this, 'WaterSeparator', 1e3);
+            matter.store(this, 'WaterSeparator', 1.1);
             
             % add atmosphere phase to water separator
-            oAtmosphereWS = this.toStores.WaterSeparator.createPhase('air', 1, 293.15, 0.5, 101325);
+            oAtmosphereWS = this.toStores.WaterSeparator.createPhase('air', 1, 293.15, 0, 101325);
            
             % add water phase to water separator
             oWaterWS = matter.phases.liquid(...
@@ -279,7 +284,7 @@ classdef GreenhouseV2 < vsys
                 'WaterWS', ...                          % phase name
                 struct(...                              % phase contents    [kg]
                     'H2O', 1e-3), ...
-                1e3 - 1, ...                            % phase volume      [m^3]
+                0.1, ...                                % phase volume      [m^3]
                 fTemperatureInit, ...                   % phase temperature [K]
                 fPressureInit);                         % phase pressure    [Pa]
            
@@ -304,7 +309,7 @@ classdef GreenhouseV2 < vsys
                 'ExcessO2', ...                     % phase name
                 struct(...                          % phase contents    [kg]
                     'O2', 1e-3), ...
-                0.5, ...                            % phase volume      [m^3]
+                1e6, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
             matter.procs.exmes.gas(oExcessO2, 'ExcessO2_P2P');
@@ -315,7 +320,7 @@ classdef GreenhouseV2 < vsys
                 'ExcessCO2', ...                    % phase name
                 struct(...                          % phase contents    [kg]
                     'CO2', 1e-3), ...
-                0.5, ...                            % phase volume      [m^3]
+                1e6, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
             matter.procs.exmes.gas(oExcessCO2, 'ExcessCO2_P2P');
@@ -364,7 +369,7 @@ classdef GreenhouseV2 < vsys
                 matter.procs.exmes.gas(oAtmosphere,             [this.toCultures.(this.csCultures{iI}).sName, '_AtmosphereCirculation_In']);
                 matter.procs.exmes.liquid(oWaterSupply,         [this.toCultures.(this.csCultures{iI}).sName, '_WaterSupply_Out']);
                 matter.procs.exmes.liquid(oNutrientSupply,      [this.toCultures.(this.csCultures{iI}).sName, '_NutrientSupply_Out']);
-                matter.procs.exmes.solid(oBiomassEdibleSplit,   [this.toCultures.(this.csCultures{iI}).sName, '_Biomass_In']);
+                matter.procs.exmes.liquid(oBiomassEdibleSplit,  [this.toCultures.(this.csCultures{iI}).sName, '_Biomass_In']);
             end
             
             %% Create Branches
@@ -419,7 +424,7 @@ classdef GreenhouseV2 < vsys
             solver.matter.manual.branch(this.toBranches.SplitToEdible);
             solver.matter.manual.branch(this.toBranches.SplitToInedible);
             
-            this.toBranches.Leakage.oHandler.setFlowRate(0);
+            this.toBranches.Leakage.oHandler.setFlowRate(1e-5);
             this.toBranches.SplitToEdible.oHandler.setFlowRate(0);
             this.toBranches.SplitToInedible.oHandler.setFlowRate(0);
         end
@@ -450,32 +455,42 @@ classdef GreenhouseV2 < vsys
             
             %% O2 Controller
             
-            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.O2) >= 0.232
-                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 1e-4;
-            elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.O2) < 0.228
+            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.O2) >= 0.232
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 1e-3;
+            elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.O2) < 0.228
                 this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 0;
             end
             
             %% CO2 Controller
             
             fCO2 = this.CalculateCO2Concentration();
-            if fCO2 >= 1010
+            if fCO2 >= 1300
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
-                
-                if fCO2 >= 1200
-                    this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 1e-4;
-                elseif fCO2 < 1100
-                    this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 0;
-                end
-            elseif fCO2 < 995
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 1e-4;
+            elseif fCO2 < 330
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate(1e-3);
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 0;
             end
             
             %% Humidity Controller
             
             if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.rRelHumidity >= 0.7
+                
                 this.toBranches.AtmosphereToWS.oHandler.setFlowRate(this.fFlowRateWS);
-                this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - this.toStores.WaterSeparator.toProcsP2P.WaterAbsorber_P2P.fFlowRate);
+                
+                fPressureAtmosphereWS = this.toStores.WaterSeparator.toPhases.WaterSeparator_Phase_1.fMass * this.toStores.WaterSeparator.toPhases.WaterSeparator_Phase_1.fMassToPressure;
+                
+                if fPressureAtmosphereWS > 1e5
+                    this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS);
+                elseif fPressureAtmosphereWS >= 9e4
+                    this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - 0.00045);
+                else 
+                    this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - 0.0009);
+                end
+                
+                
+                
+%                 this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - this.toStores.WaterSeparator.toProcsP2P.WaterAbsorber_P2P.fFlowRate);
             elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.rRelHumidity < 0.65
                 this.toBranches.AtmosphereToWS.oHandler.setFlowRate(0);
                 this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(0);
@@ -483,11 +498,16 @@ classdef GreenhouseV2 < vsys
             
             %% Pressure Controller
             
-            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.N2) >= 0.755
+            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.N2) >= 0.755
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
-            elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.O2) < 0.7
-                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(1e-4);
+            elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.N2) < 0.7
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(1e-1);
             end
+            
+            %% Split to Storage
+            
+%             if this.toStores.BiomassSplit.toPhases.BiomassEdible.fMass > 0
+%             end
         end
     end 
 end

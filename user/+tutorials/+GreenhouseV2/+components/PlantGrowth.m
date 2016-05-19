@@ -26,7 +26,7 @@ function [ oCulture ] = ...
         % growth if current generation does not exceed maximum 
         if oCulture.iInternalGeneration <= oCulture.txInput.iConsecutiveGenerations
             % growth if time since planting is lower than harvest time
-            if (oCulture.fInternalTime < oCulture.txInput.fHarvestTime) && (oCulture.iState == 1)
+            if (oCulture.fInternalTime < oCulture.txInput.fHarvestTime * 86400) && (oCulture.iState == 1)
                 
                 % calculate internal time (time since planting) for the
                 % current culture
