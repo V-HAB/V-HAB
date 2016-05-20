@@ -16,7 +16,7 @@ classdef GreenhouseV2 < vsys
         fFlowRateWS = 0.065;
         
         %
-        
+        fCO2;
     end
     
     methods
@@ -457,18 +457,21 @@ classdef GreenhouseV2 < vsys
             
             if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.O2) >= 0.232
                 this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 1e-3;
-            elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.O2) < 0.228
+            else
                 this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 0;
             end
             
             %% CO2 Controller
             
-            fCO2 = this.CalculateCO2Concentration();
-            if fCO2 >= 1300
+            this.fCO2 = this.CalculateCO2Concentration();
+            if this.fCO2 >= 1300
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
                 this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 1e-4;
-            elseif fCO2 < 330
+            elseif this.fCO2 < 330
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate(1e-3);
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 0;
+            else
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
                 this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 0;
             end
             
@@ -491,17 +494,17 @@ classdef GreenhouseV2 < vsys
                 
                 
 %                 this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - this.toStores.WaterSeparator.toProcsP2P.WaterAbsorber_P2P.fFlowRate);
-            elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.rRelHumidity < 0.65
+            else
                 this.toBranches.AtmosphereToWS.oHandler.setFlowRate(0);
                 this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(0);
             end
             
             %% Pressure Controller
             
-            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.N2) >= 0.755
+            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fPressure < 1e5
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(1e-3);
+            else 
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
-            elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.N2) < 0.7
-                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(1e-1);
             end
             
             %% Split to Storage

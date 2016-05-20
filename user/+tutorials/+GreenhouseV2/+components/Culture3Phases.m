@@ -255,7 +255,7 @@ classdef Culture3Phases < vsys
                     disp('Harvesting');
                 % if phase empty too, increase generation and change status
                 % to growth, or set to fallow 
-                elseif (this.iState == 2) && (this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fMass == 0)
+                elseif (this.iState == 2) && (this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fMass <= 1e-3)
                     if this.iInternalGeneration < this.txInput.iConsecutiveGenerations
                         this.iInternalGeneration = this.iInternalGeneration + 1;
                         this.iState = 1;
