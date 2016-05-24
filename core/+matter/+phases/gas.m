@@ -188,7 +188,16 @@ classdef gas < matter.phase
                (abs(this.fPressureLastHeatCapacityUpdate - this.fPressure) > 100) ||...
                (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
                (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
-
+                
+           
+                
+                this.out(1, 1, 'name', '%s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName });
+                
+                this.out(1, 2, 'last', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
+                this.out(1, 2, 'last', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
+                this.out(1, 2, 'last', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
+                this.out(1, 2, 'last', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
+                
                 % Actually updating the specific heat capacity
                 this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
                 
@@ -197,6 +206,11 @@ classdef gas < matter.phase
                 this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
                 this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
                 
+                
+                this.out(1, 2, 'curr', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
+                this.out(1, 2, 'curr', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
+                this.out(1, 2, 'curr', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
+                this.out(1, 2, 'curr', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
             end
         end
 

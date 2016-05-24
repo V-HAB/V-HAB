@@ -445,7 +445,10 @@ classdef console_output < simulation.monitor
             
             sVerbosityIndent = repmat('. ', 1, tPayload.iVerbosity);
             
-            fprintf([ sVerbosityIndent(2:end) tPayload.sMessage '\n' ], tPayload.cParams{:});
+            %fprintf([ sVerbosityIndent(2:end) tPayload.sMessage '\n' ], tPayload.cParams{:});
+            fprintf(sVerbosityIndent(2:end));
+            fprintf(tPayload.sMessage, tPayload.cParams{:});
+            fprintf('\n');
             
             if this.oLog.bCreateStack
                 fprintf('     STACK');
