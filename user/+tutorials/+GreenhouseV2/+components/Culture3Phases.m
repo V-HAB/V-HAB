@@ -250,12 +250,16 @@ classdef Culture3Phases < vsys
             
                 % if current culture state is harvest
                 if this.iState == 2
-                    this.toBranches.Biomass_Out.oHandler.setFlowRate(0.1);
+                    %
+                    this.toBranches.Biomass_Out.oHandler.setFlowRate(...
+                        this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).fMass / this.oParent.fUpdateFrequency);
+                    
+%                     this.toBranches.Biomass_Out.oHandler.setFlowRate(0.1);
                 
                     disp('Harvesting');
                 % if phase empty too, increase generation and change status
                 % to growth, or set to fallow 
-                elseif (this.iState == 2) && (this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fMass <= 1e-3)
+                elseif (this.iState == 2) && (this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).fMass <= 1e-3)
                     if this.iInternalGeneration < this.txInput.iConsecutiveGenerations
                         this.iInternalGeneration = this.iInternalGeneration + 1;
                         this.iState = 1;

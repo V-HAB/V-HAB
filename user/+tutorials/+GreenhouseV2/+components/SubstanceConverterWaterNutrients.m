@@ -5,8 +5,10 @@ classdef SubstanceConverterWaterNutrients < matter.manips.substance.flow
         % parent system reference
         oParent;
         
-        % 
-        xyz;
+        %% for logging
+        fBalanceFlow = 0;
+        fWaterFlow = 0;
+        fNutrientFlow = 0;
     end
     
     methods
@@ -26,6 +28,11 @@ classdef SubstanceConverterWaterNutrients < matter.manips.substance.flow
             
             % for faster reference
             tiN2I      = this.oPhase.oMT.tiN2I;
+            
+            %% for logging
+            this.fWaterFlow     = -this.oPhase.afCurrentTotalInOuts(tiN2I.H2O);
+            this.fNutrientFlow  = -this.oPhase.afCurrentTotalInOuts(tiN2I.Nutrients);
+            this.fBalanceFlow   = this.oPhase.afCurrentTotalInOuts(tiN2I.H2O) + this.oPhase.afCurrentTotalInOuts(tiN2I.Nutrients);
             
             % phase inflows (water and nutrients)
             afPartialFlows(1, tiN2I.H2O)                = -this.oPhase.afCurrentTotalInOuts(tiN2I.H2O);

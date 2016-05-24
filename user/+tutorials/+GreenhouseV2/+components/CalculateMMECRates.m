@@ -63,6 +63,7 @@ function [ oCulture ] ...
     % [µmol m^-2 s-^1]
     fPPFD_E = oCulture.txInput.fPPFD * (oCulture.txInput.fH * oCulture.txPlantParameters.fH_0^-1);
     
+    % TODO: is it really necessary? day-night cycle already implemented.
     % calculate time of canopy closure (T_A)
     % calculate maximum canopy qunatum yield (CQY_Max)
     % [µmol_Carbon.Fixed * µmol_Absorbed.PPFD)^-1]

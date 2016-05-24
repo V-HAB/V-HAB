@@ -16,7 +16,7 @@ classdef GreenhouseV2 < vsys
         fFlowRateWS = 0.065;
         
         %
-        fCO2;
+        fCO2 = 330;
     end
     
     methods
@@ -272,6 +272,23 @@ classdef GreenhouseV2 < vsys
             matter.procs.exmes.gas(oAtmosphere, 'CO2_In_FromBuffer');
             
             
+            % add O2 buffer Store
+             matter.store(this, 'O2BufferSupply', 1e3);
+            
+            % add phase to N2 buffer store
+            oO2BufferSupply = matter.phases.gas(...
+                this.toStores.O2BufferSupply, ...       % store containing phase
+                'O2BufferSupply', ...                   % phase name
+                struct(...                              % phase contents    [kg]
+                    'O2', 20e3), ...
+                1e3, ...                                % phase volume      [m^3]
+                fTemperatureInit);                      % phase temperature [K]
+                
+            % add exmes
+            matter.procs.exmes.gas(oO2BufferSupply, 'O2_Out_ToAtmosphere');
+            matter.procs.exmes.gas(oAtmosphere, 'O2_In_FromBuffer');
+            
+            
             % add water separator store
             matter.store(this, 'WaterSeparator', 1.1);
             
@@ -344,10 +361,11 @@ classdef GreenhouseV2 < vsys
                 'CO2');                                     % substance to extract
             
             % create branches exclusive to this section
-            matter.branch(this, 'N2BufferSupply.N2_Out_ToAtmosphere', {}, 'Atmosphere.N2_In_FromBuffer', 'N2BufferSupply');
-            matter.branch(this, 'CO2BufferSupply.CO2_Out_ToAtmosphere', {}, 'Atmosphere.CO2_In_FromBuffer', 'CO2BufferSupply');
-            matter.branch(this, 'Atmosphere.Atmosphere_Out_ToSeparator', {}, 'WaterSeparator.Atmosphere_In_FromAtmosphere', 'AtmosphereToWS');
-            matter.branch(this, 'WaterSeparator.Atmosphere_Out_ToAtmosphere', {}, 'Atmosphere.Atmosphere_In_FromSeparator', 'AtmosphereFromWS');
+            matter.branch(this, 'N2BufferSupply.N2_Out_ToAtmosphere',           {}, 'Atmosphere.N2_In_FromBuffer',                  'N2BufferSupply');
+            matter.branch(this, 'CO2BufferSupply.CO2_Out_ToAtmosphere',         {}, 'Atmosphere.CO2_In_FromBuffer',                 'CO2BufferSupply');
+            matter.branch(this, 'O2BufferSupply.O2_Out_ToAtmosphere',           {}, 'Atmosphere.O2_In_FromBuffer',                  'O2BufferSupply');
+            matter.branch(this, 'Atmosphere.Atmosphere_Out_ToSeparator',        {}, 'WaterSeparator.Atmosphere_In_FromAtmosphere',  'AtmosphereToWS');
+            matter.branch(this, 'WaterSeparator.Atmosphere_Out_ToAtmosphere',   {}, 'Atmosphere.Atmosphere_In_FromSeparator',       'AtmosphereFromWS');
        
             %% Create Biomass Split P2P
             
@@ -411,11 +429,13 @@ classdef GreenhouseV2 < vsys
             
             solver.matter.manual.branch(this.toBranches.N2BufferSupply);
             solver.matter.manual.branch(this.toBranches.CO2BufferSupply);
+            solver.matter.manual.branch(this.toBranches.O2BufferSupply);
             solver.matter.manual.branch(this.toBranches.AtmosphereToWS);
             solver.matter.manual.branch(this.toBranches.AtmosphereFromWS);
             
             this.toBranches.N2BufferSupply.oHandler.setFlowRate(0);
             this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
+            this.toBranches.O2BufferSupply.oHandler.setFlowRate(0);
             this.toBranches.AtmosphereToWS.oHandler.setFlowRate(0);
             this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(0);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -452,13 +472,21 @@ classdef GreenhouseV2 < vsys
             % Atmosphere controllers required for standalone greenhouse. If
             % atmosphere control managed by other (sub)systems comment this
             % section
+            if ~this.oTimer.fTime
+                return;
+            end
             
             %% O2 Controller
             
-            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.O2) >= 0.232
-                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 1e-3;
+            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afPP(this.oMT.tiN2I.O2) <= 21000
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 0;
+                this.toBranches.O2BufferSupply.oHandler.setFlowRate(1e-3);
+            elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afPP(this.oMT.tiN2I.O2) > 22000
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 1e-4;
+                this.toBranches.O2BufferSupply.oHandler.setFlowRate(0);
             else
                 this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 0;
+                this.toBranches.O2BufferSupply.oHandler.setFlowRate(0);
             end
             
             %% CO2 Controller
@@ -502,9 +530,9 @@ classdef GreenhouseV2 < vsys
             %% Pressure Controller
             
             if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fPressure < 1e5
-                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(1e-3);
+                this.toBranches.N2BufferSupply.oHandler.setFlowRate(1e-3);
             else 
-                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
+                this.toBranches.N2BufferSupply.oHandler.setFlowRate(0);
             end
             
             %% Split to Storage

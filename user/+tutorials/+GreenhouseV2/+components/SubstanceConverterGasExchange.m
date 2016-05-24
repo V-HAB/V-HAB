@@ -9,6 +9,12 @@ classdef SubstanceConverterGasExchange < matter.manips.substance.flow
         fFactorO2 = 0;
         fFactorCO2 = 0;
         fFactorH2O = 0;
+        
+        %% for logging
+        fBalanceFlow = 0;
+        fO2Flow = 0;
+        fCO2Flow = 0;
+        fH2OFlow = 0;
     end
     
     methods
@@ -33,12 +39,24 @@ classdef SubstanceConverterGasExchange < matter.manips.substance.flow
 %                 keyboard();
 %             end
             
-            % gas exchange with atmosphere (default plants -> atmosphere, 
-            % so same sign for destruction)
-            afPartialFlows(1, tiN2I.O2)                 = this.fFactorO2 * this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
-            afPartialFlows(1, tiN2I.CO2)                = this.fFactorCO2 * this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
-            afPartialFlows(1, tiN2I.H2O)                = this.fFactorH2O * this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
-            afPartialFlows(1, tiN2I.BiomassBalance)     = -this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
+            %%  for logging
+            this.fBalanceFlow    = this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
+            this.fO2Flow        = this.fFactorO2 * this.fBalanceFlow;
+            this.fCO2Flow       = this.fFactorCO2 * this.fBalanceFlow;
+            this.fH2OFlow       = this.fFactorH2O * this.fBalanceFlow;
+            
+            afPartialFlows(1, tiN2I.O2)                 = this.fO2Flow;
+            afPartialFlows(1, tiN2I.CO2)                = this.fCO2Flow;
+            afPartialFlows(1, tiN2I.H2O)                = this.fH2OFlow;
+            afPartialFlows(1, tiN2I.BiomassBalance)     = -this.fBalanceFlow;
+            
+            %%
+%             % gas exchange with atmosphere (default plants -> atmosphere, 
+%             % so same sign for destruction)
+%             afPartialFlows(1, tiN2I.O2)                 = this.fFactorO2 * this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
+%             afPartialFlows(1, tiN2I.CO2)                = this.fFactorCO2 * this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
+%             afPartialFlows(1, tiN2I.H2O)                = this.fFactorH2O * this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
+%             afPartialFlows(1, tiN2I.BiomassBalance)     = -this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
             
             update@matter.manips.substance.flow(this, afPartialFlows);
         end
