@@ -9,6 +9,8 @@ classdef logger < base & event.source
         NOTICE  = 3;
         WARN    = 4;
         ERROR   = 5;
+        
+        IDX_TO_CHAR = [ 'M', 'I', 'N', 'W', 'E' ];
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -61,11 +63,15 @@ classdef logger < base & event.source
             
             hCallBack = this.tiUuidsToCallback.(oObj.sUUID);
             
+            % Get caller method name from stack
+            tStack   = dbstack(2);
+            csMethod = strsplit(tStack(1).name, '.');
             
             tPayload = struct(...
                 'oObj',         oObj, ...
                 'iLevel',       iLevel, ...
                 'iVerbosity',   iVerbosity, ...
+                'sMethod',      csMethod{2}, ...
                 'sIdentifier',  sIdentifier, ...
                 'sMessage',     sMessage, ...
                 'tStack',       [], ...
@@ -86,6 +92,8 @@ classdef logger < base & event.source
         
         
         function flush(this)
+            if isempty(this), return; end;
+            
             this.bOff = true;
             
             this.chCallbacks = {};

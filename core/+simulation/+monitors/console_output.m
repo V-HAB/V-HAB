@@ -25,6 +25,9 @@ classdef console_output < simulation.monitor
         % Filter messages by identifier
         csIdentifiers = {};
         
+        % Filter messages by method
+        csMethods = {};
+        
         % Filter by UUIDs
         csUuids = {};
         
@@ -230,6 +233,27 @@ classdef console_output < simulation.monitor
         end
         
         
+        % Method filters
+        function this = resetMethodFilters(this)
+            this.csMethods = {};
+        end
+        
+        function this = addMethodFilter(this, sMethod)
+            if ~any(strcmp(this.csMethods, sMethod))
+                this.csMethods{end + 1} = sMethod;
+            end
+        end
+        
+        function this = removeMethodFilter(this, sMethod)
+            iIdx = find(strcmp(this.csMethods, sMethod));
+            
+            if ~isempty(iIdx)
+                this.csMethods(iIdx) = [];
+            end
+        end
+        
+        
+        
         
         % Uuid filters
         function this = resetUuidFilters(this)
@@ -287,6 +311,13 @@ classdef console_output < simulation.monitor
             % always shown.
             if ~isempty(this.csIdentifiers) && ~isempty(tPayload.sIdentifier)
                 if ~any(strcmp(this.csIdentifiers, tPayload.sIdentifier))
+                    return;
+                end
+            end
+            
+            
+            if ~isempty(this.csMethods)
+                if ~any(strcmp(this.csMethods, tPayload.sMethod))
                     return;
                 end
             end
@@ -363,6 +394,9 @@ classdef console_output < simulation.monitor
             end
             
             
+            %%%%%%%% Print output! %%%%%%%%
+            
+            
             oTimer = this.oSimulationInfrastructure.oSimulationContainer.oTimer;
             
             if oTimer.iTick > this.iLastTick
@@ -393,20 +427,34 @@ classdef console_output < simulation.monitor
             % GROUP if same obj uuid, ident several times (store last uuid,
             %     last ident)
             
+            sFullUuid   = [ tPayload.oObj.sUUID '.' tPayload.sMethod ];
+            bContinuing = strcmp(sFullUuid, this.sLastOutObjectUuid);
             
-            fprintf('[%i/%i][%s]', tPayload.iLevel, tPayload.iVerbosity, tPayload.oObj.sEntity);
+            if bContinuing
+                sTemp   = sprintf('[%s][%s]', tPayload.oObj.sEntity, tPayload.sMethod);
+                sIndent = repmat(' ', 1, length(sTemp));
+                
+                fprintf('%s[%i]', sIndent, tPayload.iLevel);
+            else
+                fprintf('[%s][%s][%i]', tPayload.oObj.sEntity, tPayload.sMethod, tPayload.iLevel);
+            end
             
             if ~isempty(tPayload.sIdentifier)
                 fprintf('[%s]', tPayload.sIdentifier);
             end
             
-            fprintf(['\t' tPayload.sMessage '\n' ], tPayload.cParams{:});
+            sVerbosityIndent = repmat('. ', 1, tPayload.iVerbosity);
+            
+            fprintf([ sVerbosityIndent(2:end) tPayload.sMessage '\n' ], tPayload.cParams{:});
             
             if this.oLog.bCreateStack
                 fprintf('     STACK');
                 fprintf(' <- %s', tPayload.tStack(:).name);
                 fprintf('\n\n');
             end
+            
+            
+            this.sLastOutObjectUuid = sFullUuid;
         end
         
         

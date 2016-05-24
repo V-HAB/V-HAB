@@ -277,17 +277,17 @@ classdef base < handle
             % 
             % Optionally, an identifier and sprintf parameters can be
             % provided:
-            % this.out('currentMethodName', 'Some %s (%i)', { 'asd', 1 });
+            % this.out('section-identifier', 'Some %s (%i)', { 'asd', 1 });
             %
             % Two parameters exist to determine the log level and verbosity
             % of the message. Default log levels are 1 (MESSAGE), 2 (INFO),
             % 3 (NOTICE), 4 (WARN) and 5 (ERROR).
             % Independently of the log level, the verbosity describes how
             % much information was passed, for example:
-            % this.out(4, 1, 'myMethod', 'Param X out of bounds');
-            % this.out(4, 2, 'myMethod', 'Additional info, e.g. limits for param X, current value, ...');
-            % this.out(4, 2, 'myMethod', 'Other relevant variables, e.g. if param X based on those.');
-            % this.out(4, 3, 'myMethod', 'Even more ...');
+            % this.out(4, 1, 'inputs', 'Param X out of bounds');
+            % this.out(4, 2, 'inputs', 'Additional info, e.g. limits for param X, current value, ...');
+            % this.out(4, 2, 'inputs', 'Other relevant variables, e.g. if param X based on those.');
+            % this.out(4, 3, 'inputs', 'Even more ...');
             % 
             % Using the methods in the console_output simulation monitor,
             % the minimum level for a message to be displayed, and the
@@ -306,8 +306,11 @@ classdef base < handle
             % 
             %   oOut = oLastSimObj.toMonitors.oConsoleOutput;
             %   
+            %   % Filter by method name (where the .out() happened)
+            %   oOut.addMethodFilter('massupdate')
+            %   
             %   % First string param to .out (myMethod in example above)
-            %   oOut.addIdentFilter('myMethod')
+            %   oOut.addIdentFilter('inputs')
             %   
             %   % Filter by sEntity object value (e.g. matter.phases.gas)
             %   oOut.addTypeToFilter('matter.phases.gas');
