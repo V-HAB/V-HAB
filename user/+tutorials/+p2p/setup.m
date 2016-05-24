@@ -14,7 +14,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams)
+        function this = setup(ptConfigParams, tSolverParams, fSimTime)
             
             %if nargin < 1 || isempty(tOpt), tOpt = struct(); end;
             
@@ -107,7 +107,8 @@ classdef setup < simulation.infrastructure
             
             
             % Params for the monitor logger -> dump to mat!
-            ttMonitorCfg = struct('oLogger', struct('cParams', {{ true, 100 }}));
+            ttMonitorCfg = struct();
+            %ttMonitorCfg = struct('oLogger', struct('cParams', {{ true, 100 }}));
             
             
             % First we call the parent constructor and tell it the name of
@@ -125,6 +126,12 @@ classdef setup < simulation.infrastructure
             % Simulation length - stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
             this.fSimTime = 5000 * 1;
+            
+            if nargin >= 3 && ~isempty(fSimTime)
+                this.fSimTime = fSimTime;
+            end
+            
+            
             %this.fSimTime = 1700;
             this.iSimTicks = 600;
             this.bUseTime = true;
@@ -148,29 +155,29 @@ classdef setup < simulation.infrastructure
             iTick  = oTimer.iTick;
             oOut   = this.toMonitors.oConsoleOutput;
             
-            if iTick == 115
+            if iTick == 1015
                 oOut.setLogOn();
                 
-            elseif iTick == 120
+            elseif iTick == 1020
                 oOut.addIdentFilter('update');
             
-            elseif iTick == 130
+            elseif iTick == 1030
                 oOut.resetIdentFilters();
                 oOut.toggleShowStack();
             
-            elseif iTick == 135
+            elseif iTick == 1035
                 oOut.toggleShowStack();
             
-            elseif iTick == 140
+            elseif iTick == 1040
                 oOut.setVerbosity(3);
             
-            elseif iTick == 145
+            elseif iTick == 1045
                 oOut.setVerbosity(1);
             
-            elseif iTick == 150
+            elseif iTick == 1050
                 oOut.setLevel(2);
             
-            elseif iTick == 155
+            elseif iTick == 1055
                 oOut.setLogOff();
             end
             

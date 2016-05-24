@@ -12,7 +12,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, fSimTime) % Constructor function
             
             % vhab.exec always passes in ptConfigParams, tSolverParams
             % If not provided, set to empty containers.Map/struct
@@ -65,6 +65,11 @@ classdef setup < simulation.infrastructure
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
             this.fSimTime = 3600 * 1; % In seconds
+            
+            if nargin >= 3 && ~isempty(fSimTime)
+                this.fSimTime = fSimTime;
+            end
+            
             this.iSimTicks = 1500;
             this.bUseTime = true;
         end
