@@ -34,7 +34,7 @@ classdef Culture3Phases < vsys
         iInternalGeneration = 1;
         
         %
-        fCO2;
+        fCO2 = 330;
         
         %
         bLight = 1;
@@ -66,12 +66,22 @@ classdef Culture3Phases < vsys
             this.txPlantParameters = txPlantParameters;
             this.txInput = txInput;
             
+            % intialize empty structs
             this.tfGasExchangeRates.fO2ExchangeRate = 0;
             this.tfGasExchangeRates.fCO2ExchangeRate = 0;
             this.tfGasExchangeRates.fTranspirationRate = 0;
             
             this.tfBiomassGrowthRates.fGrowthRateEdible = 0;
             this.tfBiomassGrowthRates.fGrowthRateInedible = 0;
+        
+            this.tfMMECRates.fWC = 0;
+            this.tfMMECRates.fTR = 0;
+            this.tfMMECRates.fOC = 0;
+            this.tfMMECRates.fOP = 0;
+            this.tfMMECRates.fCO2C = 0;
+            this.tfMMECRates.fCO2P = 0;
+            this.tfMMECRates.fNC = 0;
+            this.tfMMECRates.fCGR = 0;
         end
         
         function createMatterStructure(this)

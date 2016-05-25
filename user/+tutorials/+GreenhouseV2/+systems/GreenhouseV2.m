@@ -290,7 +290,7 @@ classdef GreenhouseV2 < vsys
             
             
             % add water separator store
-            matter.store(this, 'WaterSeparator', 1.1);
+            matter.store(this, 'WaterSeparator', 5);
             
             % add atmosphere phase to water separator
             oAtmosphereWS = this.toStores.WaterSeparator.createPhase('air', 1, 293.15, 0, 101325);
@@ -301,7 +301,7 @@ classdef GreenhouseV2 < vsys
                 'WaterWS', ...                          % phase name
                 struct(...                              % phase contents    [kg]
                     'H2O', 1e-3), ...
-                0.1, ...                                % phase volume      [m^3]
+                4, ...                                  % phase volume      [m^3]
                 fTemperatureInit, ...                   % phase temperature [K]
                 fPressureInit);                         % phase pressure    [Pa]
            
