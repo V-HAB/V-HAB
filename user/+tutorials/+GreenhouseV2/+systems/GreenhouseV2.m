@@ -1,5 +1,7 @@
 classdef GreenhouseV2 < vsys
     properties
+        ttxNutrientData;
+        
         ttxPlantParameters;
         
         ttxInput;
@@ -22,6 +24,12 @@ classdef GreenhouseV2 < vsys
     methods
         function this = GreenhouseV2(oParent, sName)
             this@vsys(oParent, sName, 60);
+            
+            %% Import Nutrient Data
+            
+            % import nutirent data from .csv file
+            this.ttxNutrientData = ...
+                tutorials.GreenhouseV2.food.data.importNutrientData();
             
             %% Import Plant Parameters
             
@@ -462,6 +470,39 @@ classdef GreenhouseV2 < vsys
         % new plant model has been validated as inputs etc. have to be
         % adjusted.
         function this = addCulture(this, sCultureName, sPlantSpecies, fGrowthArea, fEmergeTime, iConsecutiveGenerations, fHarvestTime, fPPFD, fH)
+        end
+        
+        function this = calculateNutritionalContent(this, oPhase)
+            
+            % temporary struct
+            ttxTemp = struct();
+            
+            % check contained substances if nutritional data available
+            for iI = 1:length(oPhase.oMT.iSubstances)
+                if oPhase.oMT.tiN2I.(iI) ~= 0
+                    % check for all currently available edible substances, 
+                    % TODO: add edible flag to matter table for easier
+                    % checking
+                    if strcmp(oPhase.oMT.csI2N{iI}, 'DrybeanEdibleWet') || ...
+                            strcmp(oPhase.oMT.csI2N{iI}, 'LettuceEdibleWet') || ...
+                            strcmp(oPhase.oMT.csI2N{iI}, 'PeanutEdibleWet') || ...
+                            strcmp(oPhase.oMT.csI2N{iI}, 'RiceEdibleWet') || ...
+                            strcmp(oPhase.oMT.csI2N{iI}, 'SoybeanEdibleWet') || ...
+                            strcmp(oPhase.oMT.csI2N{iI}, 'SweetpotatoEdibleWet') || ...
+                            strcmp(oPhase.oMT.csI2N{iI}, 'TomatoEdibleWet') || ...
+                            strcmp(oPhase.oMT.csI2N{iI}, 'WheatEdibleWet') || ...
+                            strcmp(oPhase.oMT.csI2N{iI}, 'WhitepotatoEdibleWet')
+               
+                        % write substance name and mass    
+                        ttxTemp.(oPhase.oMT.csI2N{iI}) = oPhase.oMT.csI2N{iI};
+                        ttxTemp.(oPhase.oMT.csI2N{iI}).fMass = oPhase.afMass(iI);                        
+                    end
+                    
+                    % calculate nutritional content of substances in
+                    % ttxTemp
+                    
+                end
+            end
         end
     end
     
