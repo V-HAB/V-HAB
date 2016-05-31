@@ -592,6 +592,101 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             end
         end
 
+        %% Calculate Nutritional Content 
+        
+        function [ ttxTemp ] = calculateNutritionalContent(this)
+            
+            % temporary struct
+            ttxTemp = struct();
+            
+            % check contained substances if nutritional data available
+            for iI = 1:(this.oMT.iSubstances)
+                if this.afMass(iI) ~= 0
+                    % check for all currently available edible substances 
+                    if isfield(this.oMT.ttxMatter.(this.oMT.csI2N{iI}), 'txNutrientData')     
+                        
+                        % substance name
+                        ttxTemp.(this.oMT.csI2N{iI}).Substance = this.oMT.csI2N{iI};
+                        
+                        % substance mass and dry mass [kg]
+                        ttxTemp.(this.oMT.csI2N{iI}).Mass = this.afMass(iI);
+                        ttxTemp.(this.oMT.csI2N{iI}).DryMass = this.afMass(iI) * (1 - this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fWaterMass);
+                        
+                        % protein, lipid, carbohydrate and ash content [kg]
+                        ttxTemp.(this.oMT.csI2N{iI}).ProteinMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fProteinDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).LipidMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fLipidDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).CarbohydrateMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCarbohydrateDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).AshMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass - (ttxTemp.(this.oMT.csI2N{iI}).ProteinMass + ttxTemp.(this.oMT.csI2N{iI}).LipidMass + ttxTemp.(this.oMT.csI2N{iI}).CarbohydrateMass);
+                        
+                        % total and partly energy content [J]
+                        ttxTemp.(this.oMT.csI2N{iI}).TotalEnergy = this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fEnergyMass * ttxTemp.(this.oMT.csI2N{iI}).Mass;
+                        ttxTemp.(this.oMT.csI2N{iI}).ProteinEnergy = ttxTemp.(this.oMT.csI2N{iI}).ProteinMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fProteinEnergyFactor;
+                        ttxTemp.(this.oMT.csI2N{iI}).LipidEnergy = ttxTemp.(this.oMT.csI2N{iI}).ProteinMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fLipidEnergyFactor;
+                        ttxTemp.(this.oMT.csI2N{iI}).CarbohydrateEnergy = ttxTemp.(this.oMT.csI2N{iI}).ProteinMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCarbohydrateEnergyFactor;
+                        
+                        % Mineral content [kg]
+                        ttxTemp.(this.oMT.csI2N{iI}).CalciumMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCalciumDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).IronMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fIronDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).MagnesiumMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fMagnesiumDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).PhosphorusMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fPhosphorusDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).PotassiumMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fPotassiumDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).SodiumMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fSodiumDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).ZincMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fZincDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).CopperMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCopperDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).ManganeseMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fManganeseDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).SeleniumMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fSeleniumDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).FluorideMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fFluorideDMF;
+                        
+                        % Vitamin content [kg]
+                        ttxTemp.(this.oMT.csI2N{iI}).VitaminCMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminCDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).ThiaminMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fThiaminDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).RiboflavinMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fRiboflavinDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).NiacinMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fNiacinDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).PantothenicAcidMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fPantothenicAcidDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).VitaminB6Mass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminB6DMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).FolateMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fFolateDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).VitaminB12Mass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminB12DMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).VitaminAMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminADMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).VitaminEMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminEDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).VitaminDMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminDDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).VitaminKMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminKDMF;
+                        
+                        % Amino Acid content [kg]
+                        ttxTemp.(this.oMT.csI2N{iI}).TryptophanMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fTryptophanDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).ThreonineMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fThreonineDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).IsoleucineMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fIsoleucineDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).LeucineMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fLeucineDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).LysineMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fLysineDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).MethionineMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fMethionineDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).CystineMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCystineDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).PhenylalanineMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fPhenylalanineDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).TyrosineMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fTyrosineDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).ValineMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fValineDMF;
+                        ttxTemp.(this.oMT.csI2N{iI}).HistidineMass = ttxTemp.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fHistidineDMF;
+                        
+                    % if not an edible substance
+                    else
+                        % substance name
+                        ttxTemp.(this.oMT.csI2N{iI}).Substance = this.oMT.csI2N{iI};
+                        
+                        % substance mass and dry mass [kg]
+                        ttxTemp.(this.oMT.csI2N{iI}).Mass = this.afMass(iI);
+                    end
+                    
+                else
+%                     keyboard();
+                end
+            end
+            
+            % log number of entries in ttxTemp for indexed access
+            csSubstances = fieldnames(ttxTemp);
+            
+            % display struct contents
+            for iJ = 1:length(csSubstances)
+                disp(ttxTemp.(csSubstances{iJ}));
+            end
+        end
+        
     end
 
 
@@ -1203,6 +1298,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous
             this.update();
 
         end
+        
 
     end
 

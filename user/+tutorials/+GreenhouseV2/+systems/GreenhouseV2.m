@@ -194,7 +194,8 @@ classdef GreenhouseV2 < vsys
                 this.toStores.BiomassEdible, ...    % store containing phase
                 'BiomassEdible', ...                % phase name
                 struct(...                          % phase contents    [kg]
-                    ), ...
+                    'CabbageEdibleWet', 5, ...
+                    'StrawberryEdibleWet', 3), ...
                 2, ...                              % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
@@ -224,7 +225,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.LeakageBuffer, ...        % store containing phase
                 'LeakageBuffer', ...                    % phase name
                 struct(...                              % phase contents    [kg]
-                    'CO2', 1e-3), ...
+                'CO2', 1e-3), ...
                 1e3, ...                                % phase volume      [m^3]
                 fTemperatureInit);                      % phase temperature [K]
                 
@@ -472,38 +473,100 @@ classdef GreenhouseV2 < vsys
         function this = addCulture(this, sCultureName, sPlantSpecies, fGrowthArea, fEmergeTime, iConsecutiveGenerations, fHarvestTime, fPPFD, fH)
         end
         
-        function this = calculateNutritionalContent(this, oPhase)
-            
-            % temporary struct
-            ttxTemp = struct();
-            
-            % check contained substances if nutritional data available
-            for iI = 1:length(oPhase.oMT.iSubstances)
-                if oPhase.oMT.tiN2I.(iI) ~= 0
-                    % check for all currently available edible substances, 
-                    % TODO: add edible flag to matter table for easier
-                    % checking
-                    if strcmp(oPhase.oMT.csI2N{iI}, 'DrybeanEdibleWet') || ...
-                            strcmp(oPhase.oMT.csI2N{iI}, 'LettuceEdibleWet') || ...
-                            strcmp(oPhase.oMT.csI2N{iI}, 'PeanutEdibleWet') || ...
-                            strcmp(oPhase.oMT.csI2N{iI}, 'RiceEdibleWet') || ...
-                            strcmp(oPhase.oMT.csI2N{iI}, 'SoybeanEdibleWet') || ...
-                            strcmp(oPhase.oMT.csI2N{iI}, 'SweetpotatoEdibleWet') || ...
-                            strcmp(oPhase.oMT.csI2N{iI}, 'TomatoEdibleWet') || ...
-                            strcmp(oPhase.oMT.csI2N{iI}, 'WheatEdibleWet') || ...
-                            strcmp(oPhase.oMT.csI2N{iI}, 'WhitepotatoEdibleWet')
-               
-                        % write substance name and mass    
-                        ttxTemp.(oPhase.oMT.csI2N{iI}) = oPhase.oMT.csI2N{iI};
-                        ttxTemp.(oPhase.oMT.csI2N{iI}).fMass = oPhase.afMass(iI);                        
-                    end
-                    
-                    % calculate nutritional content of substances in
-                    % ttxTemp
-                    
-                end
-            end
-        end
+%         function [ ttxTemp ] = calculateNutritionalContent(this, oPhase)
+%             
+%             % temporary struct
+%             ttxTemp = struct();
+%             
+%             % check contained substances if nutritional data available
+%             for iI = 1:(oPhase.oMT.iSubstances)
+%                 if oPhase.afMass(iI) ~= 0
+%                     % check for all currently available edible substances 
+%                     if isfield(oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}), 'txNutrientData')     
+%                         
+%                         %% calculate stuff
+%                         
+%                         % substance name
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).Substance = oPhase.oMT.csI2N{iI};
+%                         
+%                         % substance mass and dry mass [kg]
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).Mass = oPhase.afMass(iI);
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass = oPhase.afMass(iI) * (1 - oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fWaterMass);
+%                         
+%                         % protein, lipid, carbohydrate and ash content [kg]
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).ProteinMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fProteinDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).LipidMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fLipidDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).CarbohydrateMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fCarbohydrateDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).AshMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass - (ttxTemp.(oPhase.oMT.csI2N{iI}).ProteinMass + ttxTemp.(oPhase.oMT.csI2N{iI}).LipidMass + ttxTemp.(oPhase.oMT.csI2N{iI}).CarbohydrateMass);
+%                         
+%                         % total and partly energy content [J]
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).TotalEnergy = oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fEnergyMass * ttxTemp.(oPhase.oMT.csI2N{iI}).Mass;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).ProteinEnergy = ttxTemp.(oPhase.oMT.csI2N{iI}).ProteinMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fProteinEnergyFactor;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).LipidEnergy = ttxTemp.(oPhase.oMT.csI2N{iI}).ProteinMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fLipidEnergyFactor;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).CarbohydrateEnergy = ttxTemp.(oPhase.oMT.csI2N{iI}).ProteinMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fCarbohydrateEnergyFactor;
+%                         
+%                         % Mineral content [kg]
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).CalciumMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fCalciumDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).IronMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fIronDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).MagnesiumMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fMagnesiumDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).PhosphorusMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fPhosphorusDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).PotassiumMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fPotassiumDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).SodiumMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fSodiumDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).ZincMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fZincDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).CopperMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fCopperDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).ManganeseMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fManganeseDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).SeleniumMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fSeleniumDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).FluorideMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fFluorideDMF;
+%                         
+%                         % Vitamin content [kg]
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).VitaminCMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fVitaminCDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).ThiaminMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fThiaminDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).RiboflavinMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fRiboflavinDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).NiacinMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fNiacinDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).PantothenicAcidMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fPantothenicAcidDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).VitaminB6Mass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fVitaminB6DMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).FolateMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fFolateDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).VitaminB12Mass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fVitaminB12DMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).VitaminAMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fVitaminADMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).VitaminEMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fVitaminEDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).VitaminDMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fVitaminDDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).VitaminKMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fVitaminKDMF;
+%                         
+%                         % Amino Acid content [kg]
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).TryptophanMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fTryptophanDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).ThreonineMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fThreonineDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).IsoleucineMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fIsoleucineDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).LeucineMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fLeucineDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).LysineMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fLysineDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).MethionineMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fMethionineDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).CystineMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fCystineDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).PhenylalanineMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fPhenylalanineDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).TyrosineMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fTyrosineDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).ValineMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fValineDMF;
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).HistidineMass = ttxTemp.(oPhase.oMT.csI2N{iI}).DryMass * oPhase.oMT.ttxMatter.(oPhase.oMT.csI2N{iI}).txNutrientData.fHistidineDMF;
+%                         
+%                     % if not an edible substance
+%                     else
+%                         % substance name
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).Substance = oPhase.oMT.csI2N{iI};
+%                         
+%                         % substance mass and dry mass [kg]
+%                         ttxTemp.(oPhase.oMT.csI2N{iI}).Mass = oPhase.afMass(iI);
+%                     end
+%                     
+%                 else
+% %                     keyboard();
+%                 end
+%             end
+%             
+%             % log number of entries in ttxTemp for indexed access
+%             csSubstances = fieldnames(ttxTemp);
+%             
+%             % display struct contents
+%             for iJ = 1:length(csSubstances)
+%                 disp(ttxTemp.(csSubstances{iJ}));
+%             end
+%         end
     end
     
     methods (Access = protected)
@@ -516,6 +579,9 @@ classdef GreenhouseV2 < vsys
             if ~this.oTimer.fTime
                 return;
             end
+            
+            % output
+            this.toStores.BiomassEdible.toPhases.BiomassEdible.calculateNutritionalContent();
             
             %% O2 Controller
             
