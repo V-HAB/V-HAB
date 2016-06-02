@@ -40,7 +40,7 @@ classdef SubstanceConverterGasExchange < matter.manips.substance.flow
 %             end
             
             %%  for logging
-            this.fBalanceFlow    = this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
+            this.fBalanceFlow   = this.oPhase.afCurrentTotalInOuts(tiN2I.BiomassBalance);
             this.fO2Flow        = this.fFactorO2 * this.fBalanceFlow;
             this.fCO2Flow       = this.fFactorCO2 * this.fBalanceFlow;
             this.fH2OFlow       = this.fFactorH2O * this.fBalanceFlow;

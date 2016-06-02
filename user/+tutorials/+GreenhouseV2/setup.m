@@ -62,6 +62,7 @@ classdef setup < simulation.infrastructure
                 oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Plants.toManips.substance'], 'fInedibleFlow', 'kg/s', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' PG Inedible Flow']);
                 
                 % culture atmosphere cycle phase
+                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Phase_1'], 'fPressure', 'Pa', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' Total Pressure']);
                 oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Phase_1'], 'afPP(this.oMT.tiN2I.O2)', 'Pa', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' PP O2']);
                 oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Phase_1'], 'afPP(this.oMT.tiN2I.CO2)', 'Pa', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' PP CO2']);
                 oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Phase_1'], 'afPP(this.oMT.tiN2I.N2)', 'Pa', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' PP N2']);
@@ -98,6 +99,7 @@ classdef setup < simulation.infrastructure
             oLogger.addValue('GreenhouseV2', 'fCO2', 'ppm', 'CO2 Concentration');
             
             % greenhouse atmosphere composition
+            oLogger.addValue('GreenhouseV2:s:Atmosphere.toPhases.Atmosphere_Phase_1', 'fPressure', 'Pa', 'Total Pressure');
             oLogger.addValue('GreenhouseV2:s:Atmosphere.toPhases.Atmosphere_Phase_1', 'afPP(this.oMT.tiN2I.O2)', 'Pa', 'O2 Partial Pressure');
             oLogger.addValue('GreenhouseV2:s:Atmosphere.toPhases.Atmosphere_Phase_1', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'CO2 Partial Pressure');
             oLogger.addValue('GreenhouseV2:s:Atmosphere.toPhases.Atmosphere_Phase_1', 'afPP(this.oMT.tiN2I.N2)', 'Pa', 'N2 Partial Pressure');
@@ -150,6 +152,10 @@ classdef setup < simulation.infrastructure
                     if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'N2 Partial Pressure')
                         iN2PP = iIndex;
                     end
+                    
+                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Total Pressure')
+                        iTotalPressure = iIndex;
+                    end
                 end
             end
             
@@ -158,6 +164,10 @@ classdef setup < simulation.infrastructure
             for iI = 1:length(this.oSimulationContainer.toChildren.GreenhouseV2.csCultures)
                 if isa(this.oSimulationContainer.toChildren.GreenhouseV2.toChildren.(this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}), 'tutorials.GreenhouseV2.components.Culture3Phases')
                     for iJ = 1:length(this.toMonitors.oLogger.tLogValues)
+                        if strcmp(this.toMonitors.oLogger.tLogValues(iJ).sLabel, [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' Total Pressure'])
+                            this.tiCultureParametersIndex(iI).iTotalPressure = iJ;
+                        end
+                        
                         if strcmp(this.toMonitors.oLogger.tLogValues(iJ).sLabel, [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' PP O2'])
                             this.tiCultureParametersIndex(iI).iPPO2 = iJ;
                         end
@@ -277,6 +287,9 @@ classdef setup < simulation.infrastructure
             % bring data down to correct size
             for iI = 1:length(this.oSimulationContainer.toChildren.GreenhouseV2.csCultures) 
                 % atmosphere partial pressure
+                this.tmCultureParametersValues(iI).mTotalPressure = this.toMonitors.oLogger.mfLog(:, this.tiCultureParametersIndex(iI).iTotalPressure);
+                this.tmCultureParametersValues(iI).mTotalPressure(isnan(this.tmCultureParametersValues(iI).mTotalPressure(:,1)), :) = [];
+                
                 this.tmCultureParametersValues(iI).mPPO2 = this.toMonitors.oLogger.mfLog(:, this.tiCultureParametersIndex(iI).iPPO2);
                 this.tmCultureParametersValues(iI).mPPO2(isnan(this.tmCultureParametersValues(iI).mPPO2(:,1)), :) = [];       
                     
@@ -384,6 +397,9 @@ classdef setup < simulation.infrastructure
             mN2PP = this.toMonitors.oLogger.mfLog(:, iN2PP);
             mN2PP(isnan(mN2PP(:,1)), :) = [];
             
+            mTotalPressure = this.toMonitors.oLogger.mfLog(:, iTotalPressure);
+            mTotalPressure(isnan(mTotalPressure(:,1)), :) = [];
+            
             figure('name', 'P2P Flowrates')
             hold on
             grid minor
@@ -407,12 +423,13 @@ classdef setup < simulation.infrastructure
             hold on
             grid minor
             plot(...
+                (afTime./86400), mTotalPressure, ...
                 (afTime./86400), mO2PP, ...
                 (afTime./86400), mCO2PP, ...
                 (afTime./86400), mN2PP)
             xlabel('Time in d')
             ylabel('Pressure in Pa')
-            legend('PP O2', 'PP CO2', 'PP N2')
+            legend('Total Pressure', 'PP O2', 'PP CO2', 'PP N2')
             
             for iI = 1:length(this.oSimulationContainer.toChildren.GreenhouseV2.csCultures)
                 
@@ -421,12 +438,13 @@ classdef setup < simulation.infrastructure
                 hold on
                 grid minor
                 plot(...
+                    (afTime./86400), this.tmCultureParametersValues(iI).mTotalPressure, ...
                     (afTime./86400), this.tmCultureParametersValues(iI).mPPO2, ...
                     (afTime./86400), this.tmCultureParametersValues(iI).mPPCO2, ...
                     (afTime./86400), this.tmCultureParametersValues(iI).mPPN2)
                 xlabel('time in d')
                 ylabel('Pressure in Pa')
-                legend('PP O2', 'PP CO2', 'PP N2')
+                legend('Total Pressure', 'PP O2', 'PP CO2', 'PP N2')
                 
                 % water + nutrients conversion manipulator flowrates
                 figure('name', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, 'WaterNutrient Conversion'])
