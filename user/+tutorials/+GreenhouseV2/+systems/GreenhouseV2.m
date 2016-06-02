@@ -488,6 +488,10 @@ classdef GreenhouseV2 < vsys
 %             % output
 %             this.toStores.BiomassEdible.toPhases.BiomassEdible.calculateNutritionalContent();
             
+            if this.oTimer.fTime >= 1e5
+                keyboard();
+            end
+
             %% O2 Controller
             
             if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afPP(this.oMT.tiN2I.O2) <= 21000
