@@ -140,7 +140,7 @@ classdef PlantModule < vsys
           % Reference for loading the plant setup from "PlantEng"
             this.PlantEng =                                             ...        
              load(strrep(                                               ...
-             'components\+PlantModule\+setups\PlantEng_SCALISS.mat', ...
+             'components\+PlantModule\+setups\PlantEngV2.mat', ...
              '\', ...   %PlantEng: Setup containing several plant cultures
              filesep));
          
@@ -323,9 +323,6 @@ classdef PlantModule < vsys
                 'HarvestEdible.p16');                                           % Output phase
             
             
-            
-            
-                
 %        %Initializing manipulators for tranforming plant specific biomass 
 %            %Initializing the manipulator for tranforming plant specific
 %            %inedible biomass to waste
@@ -528,9 +525,9 @@ classdef PlantModule < vsys
             %Setting gas/water exchange rates:  Greenhouse <-> PlantModule
                 % Gas exchange, 'air'-phases
                     % Greenhouse  -> PlantModule
-                    this.oInputAirBranch.setFlowRate(-0.1);  % [kg/s]
+                    this.oInputAirBranch.setFlowRate(-0.03);  % [kg/s]
                     % PlantModule -> Greenhouse
-                    this.oOutputAirBranch.setFlowRate(0.1 + this.oProc_Plants_H2OGasExchange.fFlowRate + this.oProc_Plants_O2GasExchange.fFlowRate - this.oProc_Plants_CO2GasExchange.fFlowRate);  % [kg/s]
+                    this.oOutputAirBranch.setFlowRate(0.03 + this.oProc_Plants_H2OGasExchange.fFlowRate + this.oProc_Plants_O2GasExchange.fFlowRate - this.oProc_Plants_CO2GasExchange.fFlowRate);  % [kg/s]
                 % Water supply flowrate
                     this.oInputWaterBranch.setFlowRate(-this.oManip_Create_Biomass.fWaterNeed);  % [kg/s]
                     this.oAbsorberBufferP2P.fFlowRateToPlants = this.oManip_Create_Biomass.fWaterNeed;  % [kg/s]

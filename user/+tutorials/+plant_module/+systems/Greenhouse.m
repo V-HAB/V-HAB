@@ -225,11 +225,6 @@ classdef Greenhouse < vsys
                             101325);                        %Phase pressure
                     %Interfaces
                         matter.procs.exmes.liquid(oInedibleBiomass, 'InedibBioIn');
-                        
-                        % convert biomass
-                        components.PlantModule.EdibleBiomass_To_Carbon_And_H2O(...
-                            'EdibleBiomassConversion', ...
-                            oEdibleBiomass);
 
                     %% Set Reference Phases
             
