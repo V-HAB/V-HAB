@@ -216,9 +216,11 @@ classdef Culture3Phases < vsys
             tH2O.sSubstance = 'H2O';
             tH2O.sProperty = 'Density';
             tH2O.sFirstDepName = 'Pressure';
-            tH2O.fFirstDepValue = this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fPressure;
+%             tH2O.fFirstDepValue = this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fPressure;
+            tH2O.fFirstDepValue = this.oParent.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fPressure;
             tH2O.sSecondDepName = 'Temperature';
-            tH2O.fSecondDepValue = this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fTemperature;
+%             tH2O.fSecondDepValue = this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fTemperature;
+            tH2O.fSecondDepValue = this.oParent.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fTemperature;
             tH2O.sPhaseType = 'liquid';
             
             fDensityH2O = this.oMT.findProperty(tH2O);

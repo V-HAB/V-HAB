@@ -109,21 +109,21 @@ function [ oCulture ] ...
     
     % hourly crop growth rate (dry) [g m^-2 h^-1]
     % HCGR = HCG * MW_C * BCF^-1 (Eq. 6)
-    fHCGR = fHCG * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.C) * oCulture.txPlantParameters.fBCF;
+    fHCGR = fHCG * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.C) * oCulture.txPlantParameters.fBCF ^-1;
     
     % hourly wet crop growth rate [g m^-2 h^-1]
     % HWCGR = HCGR * (1 - WBF)^-1 (Eq. 7)
     % if T_E exceeded -> use total water fraction, if not only inedible
     % biomass is produced -> water fraction = 0.9 (BVAD 2015, table 4.98)
     if oCulture.fInternalTime >= oCulture.txPlantParameters.fT_E
-        fHWCGR = fHCGR * (1 - oCulture.txPlantParameters.fWBF_Total)^-1;
+        fHWCGR = fHCGR * (1 - oCulture.txPlantParameters.fWBF_Total) ^-1;
     else
         fHWCGR = fHCGR * (1 - 0.9)^-1;
     end
     
     % hourly oxygen production [g m^-2 h^-1]
     % HOP = HCG * CUE_24 ^-1 * OPF * MW_O2 (Eq. 8)
-    fHOP = fHCG * fCUE_24 * oCulture.txPlantParameters.fOPF * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2);
+    fHOP = fHCG * fCUE_24 ^-1 * oCulture.txPlantParameters.fOPF * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2);
     
     % hourly oxygen consumption [g m^-2 h^-1]
     % HOC = HCG * I^-1 * (1 - CUE_24) * CUE_24^-1 * OPF * MW_O2 * H * 24^-1

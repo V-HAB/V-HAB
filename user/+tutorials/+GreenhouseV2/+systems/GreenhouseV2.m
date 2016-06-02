@@ -82,7 +82,7 @@ classdef GreenhouseV2 < vsys
             % TODO: find a better way for providing inputs for culture
             % setup. old way will have to do for now, it works at least.
             blubb = load(...
-                strrep('tutorials\+GreenhouseV2\+components\+cultures\CultureInput.mat', '\', filesep));
+                strrep('tutorials\+GreenhouseV2\+components\+cultures\CultureInputLSP.mat', '\', filesep));
             
             % write to property
             this.ttxInput = blubb.CultureInput;
@@ -485,8 +485,8 @@ classdef GreenhouseV2 < vsys
                 return;
             end
             
-            % output
-            this.toStores.BiomassEdible.toPhases.BiomassEdible.calculateNutritionalContent();
+%             % output
+%             this.toStores.BiomassEdible.toPhases.BiomassEdible.calculateNutritionalContent();
             
             %% O2 Controller
             
