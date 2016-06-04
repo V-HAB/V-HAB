@@ -281,7 +281,7 @@ classdef RCA < vsys
             fDeltaTime = this.oTimer.fTime - this.afLastBedSwitches(2);
             
             % Switching beds and setting flow rates if conditions are met
-            if (fDeltaTime > this.fDeadband) && (fMeasuredCO2PartialPressure >= this.fCO2Limit)
+            if (fDeltaTime > this.fDeadband - 1 ) && (fMeasuredCO2PartialPressure >= this.fCO2Limit)
                 this.switchRCABeds();
             end
             
