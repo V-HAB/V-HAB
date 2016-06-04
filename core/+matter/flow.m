@@ -593,8 +593,30 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % Rounding precision
             iPrec = aoFlows(1).oBranch.oContainer.oTimer.iPrecision;
             
-            % Negative flow rate? Need to do everything in reverse
-            bNeg = fFlowRate < 0;
+            % We need to update the flows in the direction of the flow. In
+            % case the flow rate is zero, we'll check the pressures of the
+            % connected phases to determine the flow direction. The bNeg
+            % boolean variable is set true if the updates have to happen in
+            % the negative direction of the branch (i.e. from right to
+            % left).
+            if fFlowRate == 0
+                if strcmp(aoFlows(1).oBranch.coExmes{1}.oPhase.sType, 'gas')
+                    fPressureLeft  = aoFlows(1).oBranch.coExmes{1}.oPhase.fMass * aoFlows(1).oBranch.coExmes{1}.oPhase.fMassToPressure;
+                    fPressureRight = aoFlows(1).oBranch.coExmes{2}.oPhase.fMass * aoFlows(1).oBranch.coExmes{2}.oPhase.fMassToPressure;
+                else
+                    fPressureLeft  = aoFlows(1).oBranch.coExmes{1}.oPhase.fPressure;
+                    fPressureRight = aoFlows(1).oBranch.coExmes{2}.oPhase.fPressure;
+                end
+                
+                if fPressureLeft > fPressureRight
+                    bNeg = false;
+                else
+                    bNeg = true;
+                end
+            else
+                bNeg = fFlowRate < 0;
+            end
+       
             
             for iI = sif(bNeg, iL:-1:1, 1:iL)
                 oThis = aoFlows(iI);
