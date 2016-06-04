@@ -186,6 +186,8 @@ classdef absorber < matter.phase
             % for the absorbed masses to zero.
             this.afMass(abStoredMasses) = 0;
             
+            this.fMass = sum(this.afMass);
+            
             % Calling the phase update method to update all other
             % properties.
             this.update();
