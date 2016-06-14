@@ -70,7 +70,7 @@ if length(varargin) == 1
     arPartialMass = varargin{1}.arPartialMass;
     
     % in no mass given also no density possible
-    if sum(arPartialMass) == 0;
+    if sum(arPartialMass) == 0
         fDensity = 0;
         return;
     end

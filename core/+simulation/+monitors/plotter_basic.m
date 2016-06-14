@@ -111,7 +111,7 @@ classdef plotter_basic < simulation.monitor
                 if isfield(tParameters, 'bLegendOn')
                     bLegendOn = tParameters.bLegendOn;
                 end
-                if isfield(tParameters, 'bTimePlotOn');
+                if isfield(tParameters, 'bTimePlotOn')
                     bTimePlotOn = tParameters.bTimePlotOn;
                 end
             end
