@@ -246,7 +246,7 @@ classdef fan < matter.procs.f2f
             
             % Calculating the heat flow produced by the fan that is
             % imparted onto the gas flow.
-            this.fHeatFlow = fFlowRate * this.oFlowIn.fSpecificHeatCapacity * fDeltaTemperature;
+            this.fHeatFlow = abs(fFlowRate) * this.oFlowIn.fSpecificHeatCapacity * fDeltaTemperature;
             
             % Calculating Power consumed by the fan in [W]
             if fFlowRate > 0
