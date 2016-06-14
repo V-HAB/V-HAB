@@ -42,7 +42,7 @@ if iNumArgs == 1 %nargin < 3
             afPP = oMatterRef.afPP;
             if isempty(afPP)
                 try
-                    afPP = this.calculatePartialPressures(oMatterRef);
+                    [ afPP, ~ ] = this.calculatePartialPressures(oMatterRef);
                 catch
                     afPP = ones(1,this.iSubstances) .* this.Standard.Pressure;
                 end
@@ -90,7 +90,7 @@ if iNumArgs == 1 %nargin < 3
             afPP = oMatterRef.getInEXME().oPhase.afPP;
             if isempty(afPP)
                 try
-                    afPP = this.calculatePartialPressures(oMatterRef.getInEXME().oPhase);
+                    [ afPP, ~ ] = this.calculatePartialPressures(oMatterRef.getInEXME().oPhase);
                 catch
                     afPP = ones(1,this.iSubstances) .* this.Standard.Pressure;
                 end
@@ -123,7 +123,7 @@ if iNumArgs == 1 %nargin < 3
                 afPP = oMatterRef.oBranch.coExmes{1,1}.oPhase.afPP;
                 if isempty(afPP)
                     try
-                        afPP = this.calculatePartialPressures(oMatterRef.oBranch.coExmes{1,1}.oPhase);
+                        [ afPP, ~ ] = this.calculatePartialPressures(oMatterRef.oBranch.coExmes{1,1}.oPhase);
                     catch
                         afPP = ones(1,this.iSubstances) .* this.Standard.Pressure;
                     end
