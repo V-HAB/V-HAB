@@ -1,13 +1,20 @@
 classdef RCA < vsys
     %RCA Simulation model of the Rapid Cycle Amine swing bed CO2 absorber
     %
-    %   Update description!
+    %   At the heart of the RCA model are two filter beds. One is always
+    %   connected to the gas flow, the other desorbs into vacuum. Splitter
+    %   and merger tanks with associated valves direct the flow into the
+    %   currently active bed. If the outlet CO2 partial pressure exeeds a
+    %   predefined limit, a bed switch is initiated. 
+    %   The inlet and outlet branches are defined as iterative solver
+    %   branches to be connected on the supersystem level. 
     %
-    %   The distributor tank is connected with the filter unit with
-    %   pipes in a loop. The filter consists of two beds which are able to
-    %   switch when one bed is saturated. The two beds are also connected via
-    %   pipes with the vacuum, so they can be desorbed if they are in the
-    %   respective state.
+    %   NOTES:
+    %   This version of the model is optimized for use with the iterative
+    %   solver. It may be necessary to use manual solvers instead. This is
+    %   currently not supported by the RCA API and needs to be changed
+    %   directly in the code. This functionality may be added to the API in
+    %   a future release. 
     
     properties
         % A struct containing the interface branches. We need this because
@@ -132,8 +139,6 @@ classdef RCA < vsys
             % flow volume and amine phases.
             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_FlowVolume', 0);
             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_B_FlowVolume', 0);
-%             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_A_Amine', 0);
-%             special.matter.const_press_exme(oVacuum, 'Inlet_Bed_B_Amine', 0);
 
             %% Adding valves
             % True/false decides if the valve is open or closed and the
@@ -143,10 +148,8 @@ classdef RCA < vsys
             components.valve(this, 'Valve_2', true , 0.05);
             components.valve(this, 'Valve_3', false, 0.05);
             components.valve(this, 'Valve_4', false, 0.05);
-%             components.valve(this, 'Valve_5', false, 0.05);
-%             components.valve(this, 'Valve_6', true , 0.05);
-            components.valve(this, 'Valve_7', false, 0.05);
-            components.valve(this, 'Valve_8', true , 0.05);
+            components.valve(this, 'Valve_5', false, 0.05);
+            components.valve(this, 'Valve_6', true , 0.05);
             
             %% Adding pipes
             % Adding pipes to connect the components
@@ -165,14 +168,10 @@ classdef RCA < vsys
             % the time needed for the desorption process. Unfortunately the
             % pipe properties could reach unrealistic values
             fSmallificationFactor = 0.5;
-%             components.pipe(this, 'Pipe_9',  this.fPipeLength, this.fPipeDiameter / 10);
-%             components.pipe(this, 'Pipe_10', this.fPipeLength, this.fPipeDiameter / 10);
-%             components.pipe(this, 'Pipe_11', this.fPipeLength, this.fPipeDiameter / 10);
-%             components.pipe(this, 'Pipe_12', this.fPipeLength, this.fPipeDiameter / 10);
-            components.pipe(this, 'Pipe_13', this.fPipeLength, this.fPipeDiameter / fSmallificationFactor);
-            components.pipe(this, 'Pipe_14', this.fPipeLength, this.fPipeDiameter / fSmallificationFactor);
-            components.pipe(this, 'Pipe_15', this.fPipeLength, this.fPipeDiameter / fSmallificationFactor);
-            components.pipe(this, 'Pipe_16', this.fPipeLength, this.fPipeDiameter / fSmallificationFactor);
+            components.pipe(this, 'Pipe_9',  this.fPipeLength, this.fPipeDiameter / fSmallificationFactor);
+            components.pipe(this, 'Pipe_10', this.fPipeLength, this.fPipeDiameter / fSmallificationFactor);
+            components.pipe(this, 'Pipe_11', this.fPipeLength, this.fPipeDiameter / fSmallificationFactor);
+            components.pipe(this, 'Pipe_12', this.fPipeLength, this.fPipeDiameter / fSmallificationFactor);
             
             %% Creating the flowpath between the components
             % Splitter to Bed A
@@ -187,17 +186,11 @@ classdef RCA < vsys
             % Bed B to Merger
             matter.branch(this, 'Bed_B.Outlet',{'Pipe_7','Valve_4','Pipe_8' },'Merger.Inlet2');
             
-%             % Bed A Amine to Vacuum
-%             matter.branch(this, 'Bed_A.Amine_Vacuum_Port',{'Pipe_9','Valve_5','Pipe_10'},'Vacuum.Inlet_Bed_A_Amine');
-%             
-%             % Bed B Amine to Vacuum
-%             matter.branch(this, 'Bed_B.Amine_Vacuum_Port',{'Pipe_11','Valve_6','Pipe_12'},'Vacuum.Inlet_Bed_B_Amine');
-            
             % Bed A Flow Phase to Vacuum
-            matter.branch(this, 'Bed_A.FlowVolume_Vacuum_Port',{'Pipe_13','Valve_7','Pipe_14'},'Vacuum.Inlet_Bed_A_FlowVolume');
+            matter.branch(this, 'Bed_A.FlowVolume_Vacuum_Port',{'Pipe_9','Valve_5','Pipe_10'},'Vacuum.Inlet_Bed_A_FlowVolume');
             
             % Bed B Flow Phase to Vacuum
-            matter.branch(this, 'Bed_B.FlowVolume_Vacuum_Port',{'Pipe_15','Valve_8','Pipe_16'},'Vacuum.Inlet_Bed_B_FlowVolume');
+            matter.branch(this, 'Bed_B.FlowVolume_Vacuum_Port',{'Pipe_11','Valve_6','Pipe_12'},'Vacuum.Inlet_Bed_B_FlowVolume');
             
             % Spliter to Inlet
             this.toInterfaceBranches.Inlet = matter.branch(this, 'Splitter.Inlet', {}, 'Inlet');
@@ -212,16 +205,14 @@ classdef RCA < vsys
             createSolverStructure@vsys(this);
             
             % Now we can create all of the solver branches
-            oB1  = solver.matter.iterative.branch(this.toBranches.Splitter__Outlet1___Bed_A__Inlet);
-            oB2  = solver.matter.iterative.branch(this.toBranches.Splitter__Outlet2___Bed_B__Inlet);
-%             oB3  = solver.matter.iterative.branch(this.toBranches.Bed_A__Amine_Vacuum_Port___Vacuum__Inlet_Bed_A_Amine);
-%             oB4  = solver.matter.iterative.branch(this.toBranches.Bed_B__Amine_Vacuum_Port___Vacuum__Inlet_Bed_B_Amine);          
-            oB5  = solver.matter.manual.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
-            oB6  = solver.matter.manual.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
-            oB7  = solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Inlet1);
-            oB8  = solver.matter.iterative.branch(this.toBranches.Bed_B__Outlet___Merger__Inlet2);
-            oB9  = solver.matter.iterative.branch(this.toInterfaceBranches.Outlet);
-            oB10 = solver.matter.iterative.branch(this.toInterfaceBranches.Inlet);
+            oB1 = solver.matter.iterative.branch(this.toBranches.Splitter__Outlet1___Bed_A__Inlet);
+            oB2 = solver.matter.iterative.branch(this.toBranches.Splitter__Outlet2___Bed_B__Inlet);
+            oB3 = solver.matter.manual.branch(this.toBranches.Bed_A__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_A_FlowVolume);
+            oB4 = solver.matter.manual.branch(this.toBranches.Bed_B__FlowVolume_Vacuum_Port___Vacuum__Inlet_Bed_B_FlowVolume);
+            oB5 = solver.matter.iterative.branch(this.toBranches.Bed_A__Outlet___Merger__Inlet1);
+            oB6 = solver.matter.iterative.branch(this.toBranches.Bed_B__Outlet___Merger__Inlet2);
+            oB7 = solver.matter.iterative.branch(this.toInterfaceBranches.Outlet);
+            oB8 = solver.matter.iterative.branch(this.toInterfaceBranches.Inlet);
             
             % Through experimentation, the following damping factor has
             % proven the optimal compromise between execution speed and
@@ -229,19 +220,15 @@ classdef RCA < vsys
             iDampingFactor = 10;
             
             % Setting the damping factor on all branches. 
-            oB1.iDampFR  = iDampingFactor;
-            oB2.iDampFR  = iDampingFactor;
-%             oB3.iDampFR  = iDampingFactor;
-%             oB4.iDampFR  = iDampingFactor;
-%             oB5.iDampFR  = iDampingFactor;
-%             oB6.iDampFR  = iDampingFactor;
-            oB7.iDampFR  = iDampingFactor;
-            oB8.iDampFR  = iDampingFactor;
-            oB9.iDampFR  = iDampingFactor;
-            oB10.iDampFR = iDampingFactor;
+            oB1.iDampFR = iDampingFactor;
+            oB2.iDampFR = iDampingFactor;
+            oB5.iDampFR = iDampingFactor;
+            oB6.iDampFR = iDampingFactor;
+            oB7.iDampFR = iDampingFactor;
+            oB8.iDampFR = iDampingFactor;
             
-            oB5.setFlowRate(0);
-            oB6.setFlowRate(10000);
+            oB3.setFlowRate(0);
+            oB4.setFlowRate(10000);
             
             % Again in an effort to optimize execution speed and result
             % quality, we set a lower rMaxChange value on the flow phases
@@ -265,10 +252,6 @@ classdef RCA < vsys
         
         function exec(this, ~)
             exec@vsys(this);
-            
-%             if this.oTimer.fTime > 50 && strcmp(this.sActiveBed, 'A')
-%                 this.switchRCABeds();
-%             end
             
             % Getting the partial pressure of CO2 at the exme we have
             % defined to be the reference for this measurement. 
@@ -357,10 +340,8 @@ classdef RCA < vsys
             this.toProcsF2F.Valve_4.setValvePos(~bIndicator);
             
             % Vacuum flow
-%             this.toProcsF2F.Valve_5.setValvePos(~bIndicator);
-%             this.toProcsF2F.Valve_6.setValvePos(bIndicator);
-            this.toProcsF2F.Valve_7.setValvePos(~bIndicator);
-            this.toProcsF2F.Valve_8.setValvePos(bIndicator);
+            this.toProcsF2F.Valve_5.setValvePos(~bIndicator);
+            this.toProcsF2F.Valve_6.setValvePos(bIndicator);
             
             % Logging half and full cycle times
             this.fFullCycleTime = this.oTimer.fTime - this.afLastBedSwitches(1);
@@ -368,7 +349,12 @@ classdef RCA < vsys
             
             % Resetting the timer
             this.afLastBedSwitches(1) = this.afLastBedSwitches(2);
-            this.afLastBedSwitches(2) = this.oTimer.fTime;         
+            this.afLastBedSwitches(2) = this.oTimer.fTime;
+            
+            this.toStores.Bed_A.toPhases.FlowPhase.update();
+            this.toStores.Bed_A.toPhases.FilteredPhase.update();
+            this.toStores.Bed_B.toPhases.FlowPhase.update();
+            this.toStores.Bed_B.toPhases.FilteredPhase.update();
         end
     end
     

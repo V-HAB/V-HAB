@@ -60,9 +60,9 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
         csNames;                             % names in right order of the substances in the flow
         % Time variables
         fCurrentSorptionTime = 0;            % exact time for the calculation (slightly behind timer due remains of the numerical scheme) [s]
-        fTimeDifference      = 0;            % time remains due to the subdivision of the numerical time steps         
+        fTimeDifference      = -1;           % time remains due to the subdivision of the numerical time steps         
         fTimeStep            = 0;            % (real) time to simulate [s]        
-        fLastExec            = 0;            % saves the time of the last execution of the calculation. 
+        fLastExec            = -1;           % saves the time of the last execution of the calculation. 
                                              %  => Take care to set correctly when using multiple sorption processors
         
         % For p2p flow rates
@@ -74,10 +74,16 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
         % Transfer variable for plotting
         q_plot;
         c_plot;
+        mfBedMasses;
+        fFlowPhaseMass = 0;
+        fFilterPhaseCO2Mass = 0;
+        fFlowPhaseCO2Mass = 0;
         
         % Logging variable to see how long the update method takes to
         % execute.
-        fUpdateDuration;
+        fUpdateDuration = 0;
+        
+        fTimeOffset = 0;
         
     end
     
@@ -115,7 +121,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
                     % Set bed length
                     this.fFilterLength = this.oStore.fx;    % [m]
                     % Load corresponding helper table
-                    this.ofilter_table = components.filter.RCA_Table; 
+                    this.ofilter_table = components.filter.RCA_Table(this); 
                     
                 case 'MetOx'
                     this.fRhoSorbent   = 636.7;    % TODO: Add right value [kg/m^3]
@@ -191,17 +197,22 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             % If this method has already been called during this time step,
             % we don't have to execute it again. 
             if this.oStore.oTimer.fTime == this.fLastExec
+                %TODO make this a very low level debugging output once the
+                    %debug class is implemented
+                    fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because time step is zero.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
                 return;
             end
+
+            % Calculating the timestep
+            this.fTimeStep = this.oStore.oTimer.fTime - this.fLastExec + this.fTimeDifference;        %[s]
             
-%             hTimer = tic();
+            if this.fTimeStep == 0
+                return;
+            end
+
             
-%             % Position of relevant sorptives in the matter table
-% %             this.aiPositions = (find(this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.arPartialMass > 0));
-%             this.aiPositions = [190 193 194];
-%             % With their according names
-%             this.csNames = this.oMT.csSubstances(this.aiPositions);
-%             
+            hTimer = tic();
+            
 %             % According to the flow save the number of species in the flow
 %             % NOT ALWAYS VALID: new substances are accounted for, but
 %             % saved values for the concentration and loading are
@@ -213,69 +224,119 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
 %                 this.mfQ_current = zeros(this.iNumSubstances, this.iNumGridPoints,1);
 %             end 
             
-            % Calculating the timestep
-            this.fTimeStep = this.oStore.oTimer.fTime - this.fLastExec + this.fTimeDifference;        %[s]
-            
             % Get inflow flow rate
-            fFlowRateIn = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fFlowRate;
+            % This is a little tricky, since we need to figure out, from
+            % where the inflow is coming. In some cases (pressure swing
+            % adsorbtion for instance) the filter bed switches are highly
+            % dynamic and the inflow can actually come through both the
+            % inlet and outlet, because the filter was evacuated prior to
+            % the bed switch. 
+            % To catch these cases, we check the flow rates on all exmes of
+            % the flow phase and then decide what to do.
             
-            % If there is matter flowing out of the inlet, then we are in
-            % some sort of transient phase at the beginning of a simulation
-            % or right after a bed switch. To avoid problems later on,
-            % we'll just skip this execution and try next time. 
-            if fFlowRateIn < 0
-                %TODO make this a very low level debugging output once the
-                %debug class is implemented
-                %fprintf('%i\t(%.7fs)\t%s: Skipping adsorption calculation because of negative flow rate.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
-                return;
+            % To be sure we have the most recent flow data, we perform a
+            % massupdate() on the flow phase.
+            this.oStore.toPhases.FlowPhase.massupdate();
+            
+            % Now we can get the inflow rates.
+            afInFlowRates = this.oStore.toPhases.FlowPhase.mfCurrentInflowDetails(:,1);
+            
+            if length(afInFlowRates) > 1
+                % There are two inflows, so we use the sum of both. This is
+                % equivalent to assuming that all of the mass enters the
+                % filter on one side, instead of from both sides. This is a
+                % modeling error. It should however be small, because the
+                % time period during which the inflow is from both sides
+                % should be relatively small, only until the pressures have
+                % equalized. 
+                fFlowRateIn = sum(this.oStore.toPhases.FlowPhase.mfCurrentInflowDetails(:,1));
+                
+                % Setting the boolean that decides if we use the flow data
+                % or the phase data later on.
+                bUseFlow = false;
+
+            else
+                % There are one or no inflows
+                fInputPortFlowRate  = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fFlowRate;
+                fOutletPortFlowRate = this.oStore.toPhases.FlowPhase.toProcsEXME.Outlet.oFlow.fFlowRate;
+                
+                % Initialize flow rate
+                fFlowRateIn = 0;
+                
+                if fInputPortFlowRate > 0
+                    % The inlet flow rate is the one that is larger than
+                    % zero.
+                    fFlowRateIn = fInputPortFlowRate;
+                    % Setting the inflow object variable for later use. 
+                    oInFlow = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow;
+                    % Setting the boolean that decides if we use the flow
+                    % data or the phase data later on.
+                    bUseFlow = true;
+                end
+                
+                if fOutletPortFlowRate < 0
+                    % The outlet flow rate is the one that is larger than
+                    % zero
+                    fFlowRateIn = fOutletPortFlowRate * -1;
+                    % Setting the inflow object variable for later use. 
+                    oInFlow = this.oStore.toPhases.FlowPhase.toProcsEXME.Outlet.oFlow;
+                    % Setting the boolean that decides if we use the flow
+                    % data or the phase data later on.
+                    bUseFlow = true;
+                end
+                
+                if fFlowRateIn == 0
+                    % The flow rates are both directed out of the phase or
+                    % actually zero. In either case, we will use the phase
+                    % data for the absorbtion calculation.
+                    bUseFlow = false; 
+                end
+                    
+
             end
             
-            
-            % This is a flow-p2p processor. This means that the dominant
-            % factor in the calculation of the adsorption rate is the
-            % incoming flow. However, if this adsorber is connected to a
-            % lower pressure, or cooled or heated, all depending on the
-            % adsorbent properties, desorption may be ocurring. If this is
-            % wanted, then the incoming flow rate will be zero. So we have
-            % to set some of our variables differently, if this is the
-            % case. 
-%             if fFlowRateIn == 0
-%                 % If the incoming flow rate is zero, we use the properties
-%                 % of the phase from which we adsorb.
-%                 % Phase pressure
-%                 this.fSorptionPressure    = this.oIn.oPhase.fPressure;
-%                 % Phase temperature
-%                 this.fSorptionTemperature = this.oIn.oPhase.fTemperature;
-% %                 % Phase mass fractions
-% %                 arMassFractions           = this.oIn.oPhase.arPartialMass ...
-% %                                            (this.oIn.oPhase.arPartialMass > 0);
-%                 arMassFractions           = this.oIn.oPhase.arPartialMass(this.aiPositions);
-%                 
-%                 % Calculating the mol fraction [-]
-%                 arMolFractions            = arMassFractions * this.oIn.oPhase.fMolarMass ./ this.afMolarMass;      
-%                 % Calculation of phase concentrations in [mol/m^3]
-%                 this.afConcentration      = arMolFractions * this.fSorptionPressure / (this.fUnivGasConst_R * this.fSorptionTemperature);                    
-%                 % Calculating the density of the phase in [kg/m^3]
-%                 this.fSorptionDensity     = this.fSorptionPressure * this.oIn.oPhase.fMolarMass / ...                    
-%                                             this.fUnivGasConst_R / this.fSorptionTemperature;
-%             else
+            % This is a flow-p2p processor. This means that usually the
+            % dominant factor in the calculation of the adsorption rate is
+            % the incoming flow. However, in some cases the incoming flow
+            % rate will be zero or there might be inflow from both sides.
+            % So we have to set some of our variables differently, if this
+            % is the case.
+            if ~bUseFlow
+                % If the incoming flow rate is zero, we use the properties
+                % of the phase from which we adsorb.
+                % Phase pressure
+                this.fSorptionPressure    = this.oIn.oPhase.fMass * this.oIn.oPhase.fMassToPressure;
+                % Phase temperature
+                this.fSorptionTemperature = this.oIn.oPhase.fTemperature;
+                % Phase mass fractions
+                arMassFractions           = this.oIn.oPhase.arPartialMass(this.aiPositions);
+                % Calculating the mol fraction [-]
+                arMolFractions            = arMassFractions * this.oIn.oPhase.fMolarMass ./ this.afMolarMass;      
+                % Calculation of phase concentrations in [mol/m^3]
+                this.afConcentration      = arMolFractions * this.fSorptionPressure / (this.fUnivGasConst_R * this.fSorptionTemperature);                    
+                % Calculating the density of the phase in [kg/m^3]
+                this.fSorptionDensity     = this.fSorptionPressure * this.oIn.oPhase.fMolarMass / ...                    
+                                            this.fUnivGasConst_R / this.fSorptionTemperature;
+                for iI = 1:this.iNumGridPoints
+                    this.mfC_current(:,iI) = this.afConcentration';
+                end
+                
+            else
                 % Inlet pressure
-                this.fSorptionPressure    = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fPressure;
+                this.fSorptionPressure    = oInFlow.fPressure;
                 % Inlet temperature
-                this.fSorptionTemperature = this.oStore.aoPhases(1).toProcsEXME.Inlet.oFlow.fTemperature;
-%                 % Inlet mass fractions
-%                 arMassFractions           = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.arPartialMass ...
-%                                            (this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.arPartialMass > 0);
-                arMassFractions           = this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.arPartialMass(this.aiPositions);
+                this.fSorptionTemperature = oInFlow.fTemperature;
+                % Inlet mass fractions
+                arMassFractions           = oInFlow.arPartialMass(this.aiPositions);
                                        
                 % Calculating the mol fraction [-]
-                arMolFractions            = arMassFractions * this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fMolarMass ./ this.afMolarMass;
+                arMolFractions            = arMassFractions * oInFlow.fMolarMass ./ this.afMolarMass;
                 % Calculation of the incoming concentrations in [mol/m^3]
                 this.afConcentration      = arMolFractions * this.fSorptionPressure / (this.fUnivGasConst_R * this.fSorptionTemperature);
                 % Calculating the density of the inflowing matter in [kg/m^3]
-                this.fSorptionDensity     = (this.fSorptionPressure * this.oStore.toPhases.FlowPhase.toProcsEXME.Inlet.oFlow.fMolarMass) / ...
+                this.fSorptionDensity     = (this.fSorptionPressure * oInFlow.fMolarMass) / ...
                                             (this.fUnivGasConst_R * this.fSorptionTemperature);
-%             end
+            end
             
             % In some cases (manual solver in combination with an empty
             % phase at one end to which this p2p processor is connected)
@@ -297,20 +358,29 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             % Get dispersion coefficient
             fAxialDispersion_D_l = this.ofilter_table.get_AxialDispersion_D_L(this.fFluidVelocity, this.fSorptionTemperature, this.fSorptionPressure, this.afConcentration, this.csNames, this.afMolarMass);
             
-            % Initialize time domain
-            % Numerical time grid spacing (dispersive transport stability)
-            fTransportTimeStep = this.fDeltaX^2 / (this.fFluidVelocity * this.fDeltaX + 2 * fAxialDispersion_D_l);
-            
-            % BUT: calculated time step needs to be smaller than current vhab time step
-            if this.fTimeFactor_1 * fTransportTimeStep >= this.fTimeStep
-                %TODO Turn this into a very low level debug output once the
-                %debug class is implemented
-                %fprintf('%i\t(%f)\tRCA %s: Skipping because inner time step is larger than external timestep.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
-                return;
+            if fFlowRateIn == 0
+                % If the flow rate is zero, we need to set the transport
+                % and reaction time steps to the external time step with
+                % which the filter has been called.
+                fTransportTimeStep = this.fTimeStep;
+                fReactionTimeStep  = fTransportTimeStep;
+            else
+                % Initialize time domain Numerical time grid spacing
+                % (dispersive transport stability)
+                fTransportTimeStep = this.fDeltaX^2 / (this.fFluidVelocity * this.fDeltaX + 2 * fAxialDispersion_D_l);
+                
+                % BUT: calculated time step needs to be smaller than current vhab time step
+                if this.fTimeFactor_1 * fTransportTimeStep >= this.fTimeStep
+                    %TODO Turn this into a very low level debug output once
+                    %the debug class is implemented
+                    %fprintf('%i\t(%f)\tRCA %s: Skipping because inner time step is larger than external timestep.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+                    return;
+                end
+                
+                % Make reaction time constant a multiple of transport time constant
+                fReactionTimeStep = fTransportTimeStep / this.fTimeFactor_2;
             end
             
-            % Make reaction time constant a multiple of transport time constant
-            fReactionTimeStep = fTransportTimeStep / this.fTimeFactor_2;
             % Discretized time domain
             afDiscreteTime = (this.fCurrentSorptionTime : (this.fTimeFactor_1 * fTransportTimeStep) : this.fCurrentSorptionTime + this.fTimeStep);   
             % Number of numerical time grid points
@@ -321,15 +391,17 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             % This can in turn lead to extremely small transport timesteps
             % and cause the number of time points to exeed 100,000... To
             % avoid this, we'll just skip this iteration if  the number of
-            % time points exceeds 1000.
-            if iTimePoints > 1000
-                %TODO Turn this into a very low level debug output once the
-                %debug class is implemented
-                %fprintf('%i\t(%f)\tRCA %s: Skipping because number of internal time steps exceeds 1000.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
+            % time points exceeds 100,000.
+            if iTimePoints > 100000
+                % TODO Turn this into a very low level debug output once
+                % the debug class is implemented
+                fprintf('%i\t(%.7fs)\tRCA %s: Skipping because number of internal time steps exceeds 100,000. (Steps: %i)\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, iTimePoints);
                 return;
             end
             
-            this.fTimeDifference = this.fTimeStep - (afDiscreteTime(end) - afDiscreteTime(1));        
+            % TODO Turn this into a very low level debug output once the
+            % debug class is implemented
+            %fprintf('%i\t(%.7fs)\tRCA %s: Passed all checks! Now performing absorbtion calculation.\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName);
             
             % Initialize matrices for dispersive transport
             mfMatrix_A = zeros(this.iNumGridPoints);
@@ -342,9 +414,12 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             mfC = zeros(this.iNumSubstances,this.iNumGridPoints,iTimePoints);
             mfQ = zeros(this.iNumSubstances,this.iNumGridPoints,iTimePoints);
             
-            % Apply initial conditions
+            % Apply initial conditions:
+            % Current state of the flow phase
             mfC(:,:,1) = this.mfC_current;
+            % Set inflow concentrations in boundary cell
             mfC(:,1,1) = this.afConcentration;
+            % Current state of the bed loading
             mfQ(:,:,1) = this.mfQ_current;
             
             %----------------------------------------------
@@ -415,8 +490,9 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
 
             % Save as transfer variable for plotting
             % Loading of the filter
-            this.q_plot = mfQ(:, [1,ceil(length(mfQ(1, :, end))/2), end-1],end) / this.fRhoSorbent;   % [mol/kg]
-            this.c_plot = mfC(:, [1,ceil(length(mfQ(1, :, end))/2), end-1],end) / this.fRhoSorbent;   % [mol/kg]
+            %                     Front           Middle             End
+            this.q_plot = mfQ(:, [1, ceil(length(mfQ(1, :, end))/2), end-1], end) / this.fRhoSorbent;   % [mol/kg]
+            this.c_plot = mfC(:, [1, ceil(length(mfQ(1, :, end))/2), end-1], end) / this.fRhoSorbent;   % [mol/kg]
             
             % Initialize array for filtered mass
             afLoadedMass_ads = zeros(1, this.iNumSubstances);
@@ -452,7 +528,21 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             %% Set the matter properties      
             % Update bed status
             this.mfC_current = mfC(:, :, end);
+            mfBedDensity = this.mfC_current .* this.mfMolarMass;
+            mfCellMasses = mfBedDensity(:, 1:end-1) * this.fVolFlow / (this.iNumGridPoints-2);
+            this.fFlowPhaseCO2Mass = sum(mfCellMasses(1,:));
+            this.mfBedMasses = sum(mfCellMasses, 2);
+            this.fFlowPhaseMass = sum(this.mfBedMasses);
+            
             this.mfQ_current = mfQ(:, :, end);
+            
+            mfBedDensity = this.mfQ_current .* this.mfMolarMass;
+            mfCellMasses = mfBedDensity(:, 1:end-1) * this.fVolSolid / (this.iNumGridPoints-2);
+            this.fFilterPhaseCO2Mass = sum(mfCellMasses(1,:));
+            
+            
+            this.fTimeDifference = this.fTimeStep - (afDiscreteTime(end) - afDiscreteTime(1));        
+            
             this.fCurrentSorptionTime = this.fCurrentSorptionTime + (afDiscreteTime(end) - afDiscreteTime(1));
             % Update the execution time
             this.fLastExec = this.oStore.oTimer.fTime;
@@ -466,21 +556,10 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             this.fFlowRate_des = sum(afLoadedMass_des) / (afDiscreteTime(end) - afDiscreteTime(1));           % [kg/s]     
             this.DesorptionProc.setMatterProperties(this.fFlowRate_des, this.arPartials_des);
             
-%             this.fUpdateDuration = toc(hTimer);
+            this.fUpdateDuration = toc(hTimer);
             
-% TODO: DO WE NEED THAT???
-%             % Calculation of the pressure drop through the filter bed
-%             fDeltaP = this.ofilter_table.calculate_dp(this.fFilterLength, this.fFluidVelocity, this.rVoidFraction, this.fSorptionTemperature, this.fSorptionDensity);
-%             % New pressure at the outlet port
-%             fPressureOut = this.oStore.aoPhases(1).toProcsEXME.Inlet.aoFlows.fPressure - fDeltaP;       %[Pa]
-%             % Get the flowrate, partial mass and temperature at the outlet
-%             fFlowRateOut = this.oStore.aoPhases(1).toProcsEXME.Inlet.aoFlows.fFlowRate - this.fFlowRate_ads - this.fFlowRate_des;    %[kg/s]
-%             arPartialMassOut = zeros(1,this.oMT.iSpecies);
-%             arPartialMassOut(this.aiPositions) = mfC(:,end,end).*this.afMolarMass' / sum(mfC(:,end,end).*this.afMolarMass');
-%             fTempOut = this.oStore.aoPhases(1).toProcsEXME.Inlet.aoFlows.fTemp;                        %[K]
-%             
-%             % Update the matter properties with the new lower pressure
-%             this.oStore.aoPhases(1).toProcsEXME.Outlet.aoFlows.setMatterProperties(fFlowRateOut, arPartialMassOut, fTempOut, fPressureOut);                   
+            
+            this.fTimeOffset = this.oTimer.fTime - this.fCurrentSorptionTime;
             
         end
         
@@ -528,7 +607,9 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             % Through a desorption ratio lower than 1 a not complete desorption
             % can be simulated.
             this.mfC_current = (1 - rDesorptionRatio) * this.mfC_current;
-            this.mfQ_current = (1 - rDesorptionRatio) * this.mfQ_current;            
+            this.mfQ_current = (1 - rDesorptionRatio) * this.mfQ_current;  
+            
+            this.fFlowPhaseMass = 0;
             
         end
         
@@ -539,6 +620,24 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             this.fTimeFactor_1  = fTimeFactor_1;
             this.fTimeFactor_2  = fTimeFactor_2;
               
+        end
+        
+        function setInitialConcentration(this)
+            % Phase pressure
+            this.fSorptionPressure    = this.oIn.oPhase.fMass * this.oIn.oPhase.fMassToPressure;
+            % Phase temperature
+            this.fSorptionTemperature = this.oIn.oPhase.fTemperature;
+            % Phase mass fractions
+            arMassFractions           = this.oIn.oPhase.arPartialMass(this.aiPositions);
+            % Calculating the mol fraction [-]
+            arMolFractions            = arMassFractions * this.oIn.oPhase.fMolarMass ./ this.afMolarMass;
+            % Calculation of phase concentrations in [mol/m^3]
+            this.afConcentration      = arMolFractions * this.fSorptionPressure / (this.fUnivGasConst_R * this.fSorptionTemperature);
+            
+            for iI = 1:this.iNumGridPoints
+                this.mfC_current(:,iI) = this.afConcentration';
+            end
+            
         end
     end
 end

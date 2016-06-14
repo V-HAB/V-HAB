@@ -12,8 +12,14 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp_old
         % Loadings
         q_plot_H2O = zeros(1,3);    % loading of H2O
         q_plot_CO2 = zeros(1,3);    % loading of CO2
-        q_plot_O2 = zeros(1,3);     % loading of O2 
-        q_plot_N2 = zeros(1,3)      % loading of N2
+        q_plot_O2  = zeros(1,3);     % loading of O2 
+        q_plot_N2  = zeros(1,3);     % loading of N2
+        
+        c_plot_H2O = zeros(1,3);    % loading of H2O
+        c_plot_CO2 = zeros(1,3);    % loading of CO2
+        c_plot_O2  = zeros(1,3);     % loading of O2 
+        c_plot_N2  = zeros(1,3);     % loading of N2
+        
         % Outlet values
         fC_CO2Out = 0;              % outlet concentration of CO2 in [Pa], [mmHg] or [ppm]
         rRH_in = 0;                 % relative humidity at the inlet [%]
@@ -55,10 +61,17 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp_old
             end
             
             this.q_plot_H2O = zeros(3,1);
-%             this.q_plot_H2O = q_plot(strcmp('H2O',this.csNames), :);
+            this.q_plot_H2O = this.q_plot(strcmp('H2O',this.csNames), :);
+            this.q_plot_CO2 = zeros(3,1);
             this.q_plot_CO2 = this.q_plot(strcmp('CO2',this.csNames), :);
-            this.q_plot_O2  = zeros(3,1);
-            this.q_plot_O2  = this.q_plot(strcmp('O2',this.csNames), :);
+            
+            this.c_plot_H2O = zeros(3,1);
+            this.c_plot_H2O = this.c_plot(strcmp('H2O',this.csNames), :);
+            this.c_plot_CO2 = zeros(3,1);
+            this.c_plot_CO2 = this.c_plot(strcmp('CO2',this.csNames), :);
+            
+%             this.q_plot_O2  = zeros(3,1);
+%             this.q_plot_O2  = this.q_plot(strcmp('O2',this.csNames), :);
 %             this.q_plot_N2 = this.q_plot(strcmp('N2',this.csNames), :);    
             
             % To make the code more readable and reduce the number of
@@ -75,6 +88,8 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp_old
             rMolFraction_CO2 = rMassFraction_CO2 * this.oStore.toPhases.FlowPhase.toProcsEXME.Outlet.oFlow.fMolarMass / this.oMT.afMolarMass(iIndexCO2); % mol fraction [-]
             this.fC_CO2Out   = rMolFraction_CO2 * this.fSorptionPressure / (this.oMT.Const.fUniversalGas * this.fTemperature);          % [mol/m^3]
             this.fC_CO2Out   = this.fC_CO2Out * this.oMT.Const.fUniversalGas * this.fTemperature * 7.5006e-3;                     % [mmHg]   
+            
+            %fprintf('\n%i\t(%.8fs)\tCO2 Out: %.10f\n\n', this.oStore.oTimer.iTick, this.oStore.oTimer.fTime, this.fC_CO2Out);
             
             % Calculate relative humitidy
             % Saturated vapor pressure in [Pa]
@@ -116,9 +131,14 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp_old
             desorption@components.filter.FilterProc_sorp_old(this, rDesorptionRatio)
             
             % Reset plotting values
+            this.q_plot        = zeros(3,this.iNumSubstances);
+            this.c_plot        = zeros(3,this.iNumSubstances);
             this.q_plot_H2O    = zeros(3,1);
             this.q_plot_O2     = zeros(3,1);
             this.q_plot_CO2    = zeros(3,1);
+            this.c_plot_H2O    = zeros(3,1);
+            this.c_plot_O2     = zeros(3,1);
+            this.c_plot_CO2    = zeros(3,1);
             this.rRH_in        = 0;
             this.fDewPoint_in  = 0;
             this.rRH_out       = 0;
@@ -137,6 +157,7 @@ classdef RCA_FilterProc_sorp < components.filter.FilterProc_sorp_old
             % Set the timer for the new bed to the time of the bed switch
             % (as the new filterproc hasn't been called the values remained at the initial value)
             this.fLastExec            = fTime;
+            this.fTimeDifference      = 0;
             this.fCurrentSorptionTime = fTime;
         end
         
