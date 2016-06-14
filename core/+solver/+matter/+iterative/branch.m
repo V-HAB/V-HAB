@@ -30,6 +30,10 @@ classdef branch < solver.matter.base.branch
         % averaged.
         iDampFR = 0;
         
+        % A helper array that saves the last iDampFR flow rates for
+        % averaging. 
+        afFlowRates;
+        
         % Fixed time step - set to empty ([]) to deactivate
         fFixedTS = [];
         
@@ -49,6 +53,12 @@ classdef branch < solver.matter.base.branch
         fFlowRateUnrounded = 0;
         bFlowRateChangePos = 0;
         iFlowRateCompDamp  = 0;
+        
+        % Boolean variable to turn the suppression of flow rate
+        % oscillations on or off. 
+        bOscillationSuppression = false;
+        
+        
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -62,6 +72,10 @@ classdef branch < solver.matter.base.branch
         
         %TODO Add description
         fDropTime = 0;
+        
+        % Integer counting the number of oscillations that have already
+        % happened.
+        iOscillationCounter;
         
     end
     
@@ -114,6 +128,11 @@ classdef branch < solver.matter.base.branch
                 return;
             end
             
+            if this.oBranch.oTimer.fTime == 0
+                this.afFlowRates = zeros(1, this.iDampFR);
+            end
+            
+            
             
             if this.oBranch.oTimer.fTime <= this.fLastUpdate
                 % If branch update has been called before during this time
@@ -125,9 +144,6 @@ classdef branch < solver.matter.base.branch
             % pressures as well as delta temperatures.
             [ fFlowRate, afDeltaP ] = this.solveFlowRate();
             
-            
-            
-            
             % See base branch, same check here - if input phase nearly
             % empty, just set flow rate to zero
             oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
@@ -136,9 +152,84 @@ classdef branch < solver.matter.base.branch
                 fFlowRate = 0;
             end
             
-            % Dampening the flow rate by 
-            if fFlowRate ~= 0
+            if this.bOscillationSuppression
+                % Oscillation suppression is turned on, so we'll check if
+                % the flow rate is oscillating and if so, try to do
+                % something about it. Action is triggered after 20
+                % consecutive flow rate direction changes. If the flow rate
+                % is in the same direction twice in a row, the oscillation
+                % counter will be reset.
+                % If an oscillation is detected, the flow rate is set to 
+                % the value calculated in the previous time step. This will
+                % keep the flow rate more constant and prevent further
+                % oscillations. These usually occur when a fan is involved
+                % and the flow rate is around zero at startup or due to
+                % large pressure swings in the branch that cause the fan to
+                % operate in reverse.
+                
+                
+                % First we need to check, if there was a sign change in the
+                % flow rate.
+                
+                % Detecting the new flow rate direction
+                if fFlowRate < 0
+                    iNewDirection = -1;
+                else
+                    iNewDirection = 1;
+                end
+                
+                % Detecting the previous flow rate direction
+                if this.fFlowRate < 0
+                    iOldDirection = -1;
+                else
+                    iOldDirection = 1;
+                end
+                
+                % Comparing the two directions
+                if iNewDirection ~= iOldDirection
+                    % There was a change, so we increase the oscillation
+                    % counter.
+                    this.iOscillationCounter = this.iOscillationCounter + 1;
+                else
+                    % There was no change, so we reset the oscillation
+                    % counter.
+                    this.iOscillationCounter = 0;
+                end
+                
+                % If there have been more than 20 sign changes, the branch
+                % is oscillating. So we set the flow rate to the one
+                % calculated in the previous time step.
+                if this.iOscillationCounter > 20
+                    %fprintf('Oscillation detected!\n');
+                    fFlowRate = this.afFlowRates(end);
+                    this.iOscillationCounter = this.iOscillationCounter + 1;
+                    bRecalculateFlowProperties = true;
+                    
+                    % After 60 oscillations, we reset the counter to see if
+                    % the system is stable now.
+                    if this.iOscillationCounter > 60
+                        %fprintf('Max Oscillation reset!\n');
+                        this.iOscillationCounter = 0;
+                    end
+                    
+                elseif fFlowRate ~= 0 && this.iDampFR ~= 0
+                    % There is no oscillation, so we'll just damp the flow
+                    % rate, if iDampFR is non-zero.
+                    fFlowRate = (sum(this.afFlowRates) + fFlowRate) / (this.iDampFR + 1);
+                    this.afFlowRates = [ this.afFlowRates(2:end) fFlowRate ];
+                    bRecalculateFlowProperties = true;
+                else
+                    % There are no oscillations and not dampening, that
+                    % means we can use the flow rate as is and don't have
+                    % to do any recalculations of flow properties.
+                    bRecalculateFlowProperties = false;
+                end
+                
+            else
+                % Oscillation suppression is not turned on, so we just
+                % execute the previous behavior. 
                 fFlowRate = (this.fFlowRate * this.iDampFR + fFlowRate) / (this.iDampFR + 1);
+                bRecalculateFlowProperties = true;
             end
             
             % If we actually damped the flow rate, we need to run the
@@ -147,7 +238,7 @@ classdef branch < solver.matter.base.branch
             % heat flow. 
             %TODO To avoid this, maybe the heat flow should be specific
             %rather than absolute? 
-            if this.iDampFR ~= 0
+            if this.iDampFR ~= 0 && bRecalculateFlowProperties
                 aiProcs = sif(fFlowRate > 0, 1:this.oBranch.iFlowProcs, this.oBranch.iFlowProcs:-1:1);
                 for iI = aiProcs
                     this.aoSolverProps(iI).calculateDeltas(fFlowRate);
@@ -982,11 +1073,11 @@ classdef branch < solver.matter.base.branch
                     
                     
                     
-                    fMass = min([ this.oBranch.coExmes{1}.oPhase.fMass, this.oBranch.coExmes{1}.oPhase.fMass ]);
+                    %fMass = min([ this.oBranch.coExmes{1}.oPhase.fMass, this.oBranch.coExmes{1}.oPhase.fMass ]);
                     
-                    if this.oBranch.oContainer.oTimer.iTick > 400
+                    %if this.oBranch.oContainer.oTimer.iTick > 400
                         %fprintf('rC %.12f, rC_rnd %.12f, rC_new %.12f\n', rChange, tools.round.prec(rChange, this.oBranch.oContainer.oTimer.iPrecision), rChange / fMass);
-                    end
+                    %end
                     
                     
                     %keyboard();
