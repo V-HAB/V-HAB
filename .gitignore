@@ -1,4 +1,4 @@
-# Ignore for bootstrapping package
+# Ignore for STEPS base folder
 
 # Ignore all user folders except the tutorials folder
 user/+*
@@ -7,6 +7,9 @@ user/+*
 # Ignore simulation results, excepct README
 data/*
 !data/README.md
+
+# Ignore stupid MATLAB prerelease folder
+SupportPackages/
 
 # We DO manage main.m and init.m, but NOT the main_xyz.m etc
 main_*.m
