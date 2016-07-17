@@ -1423,6 +1423,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
 
 
+            this.out(1, 1, 'new-timestep', '%s-%s-%s new TS: %fs', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep });
+
+
             % Set the time at which the containing store will be updated
             % again. Need to pass on an absolute time, not a time step.
             % Value in store is only updated, if the new update time is
