@@ -28,7 +28,10 @@ classdef gas < matter.phase
         fPressure;              
         
         % Partial pressures in Pa
-        afPP;                   
+        afPP;   
+        
+        % Substance concentrations in ppm
+        afPartsPerMillion;
         
         % Coefficient for pressure = COEFF * mass,  depends on current 
         % matter properties
@@ -104,10 +107,9 @@ classdef gas < matter.phase
             if ~isempty(this.fVolume)
                 this.fMassToPressure = this.calculatePressureCoefficient();
                 
-                %this.fPressure = sum(this.afMass) * this.fMassToPressure;
                 this.fPressure = this.fMass * this.fMassToPressure;
-                this.afPP      = this.oMT.calculatePartialPressures(this);
-                this.fDensity  = this.fMass / this.fVolume;
+                [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
+                this.fDensity = this.fMass / this.fVolume;
                 
                 
                 % Function rRelHumidity calculates the relative humidity of
@@ -141,7 +143,7 @@ classdef gas < matter.phase
         function [ afPartialPressures ] = getPartialPressures(this)
             %TODO should we still provide this proxy method? Or throw a
             %     deprecation warning/error?
-            afPartialPressures = this.oMT.calculatePartialPressures(this);
+            [ afPartialPressures, ~ ] = this.oMT.calculatePartialPressures(this);
         end
         
         

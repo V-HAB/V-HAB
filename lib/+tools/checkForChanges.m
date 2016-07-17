@@ -86,7 +86,7 @@ if exist(sSavePath, 'file') ~= 0
     % action. 
     tSavedInfo.bLastActionComplete = false;
     % Saving the change to the data file.
-    save(sSavePath,'tSavedInfo');
+    save(sSavePath,'tSavedInfo','-v7');
     
     % Make sure the string is cleaned up and doesn't contain any
     % illegal characters that can't be used as field names
@@ -107,7 +107,7 @@ if exist(sSavePath, 'file') ~= 0
             % of our tSavedInfo struct.
             tSavedInfo.(csFieldNames{1}) = struct();
             % As usual we save our work right away into the .mat file.
-            save(sSavePath,'tSavedInfo');
+            save(sSavePath,'tSavedInfo','-v7');
             % Now we get the information struct for the folder via the
             % dir() method. This struct contains information on all
             % files and folders inside the folder we are currently
@@ -131,7 +131,7 @@ if exist(sSavePath, 'file') ~= 0
                     % the current version of the data file again.
                     load(sSavePath);
                     tSavedInfo.bLastActionComplete = true;
-                    save(sSavePath,'tSavedInfo');
+                    save(sSavePath,'tSavedInfo','-v7');
                     % Recursive call of this function
                     tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name]);
                 else
@@ -144,7 +144,7 @@ if exist(sSavePath, 'file') ~= 0
                     % bLastActionComplete variable to true.
                     tSavedInfo.(csFieldNames{1}).(sFileName) = tInfo(iI).datenum;
                     tSavedInfo.bLastActionComplete = true;
-                    save(sSavePath,'tSavedInfo');
+                    save(sSavePath,'tSavedInfo','-v7');
                 end
             end
             
@@ -169,7 +169,7 @@ if exist(sSavePath, 'file') ~= 0
             % to reload the file because we are not in a loop. The variable
             % will still be the same as in the beginning of this execution.
             tSavedInfo.bLastActionComplete = true;
-            save(sSavePath,'tSavedInfo');
+            save(sSavePath,'tSavedInfo','-v7');
             
             % Now go through all the items and see if there are
             % changes.
@@ -225,7 +225,7 @@ if exist(sSavePath, 'file') ~= 0
             % it to the data file.
             tSavedInfo.bLastActionComplete = true;
             % Saving the changed struct to the file
-            save(sSavePath,'tSavedInfo');
+            save(sSavePath,'tSavedInfo','-v7');
             % Go into the folder to add its subfolders and files.
             for iI = 1:length(tInfo)
                 tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name]);
@@ -239,7 +239,7 @@ if exist(sSavePath, 'file') ~= 0
             % we have to set the bLastActionComplete variable to true.
             eval([sStructString,'.',sFieldName,' = tInfo.datenum;']);
             tSavedInfo.bLastActionComplete = true;
-            save(sSavePath,'tSavedInfo');
+            save(sSavePath,'tSavedInfo','-v7');
         end
         % Alright, all done in here, since we came into this part of
         % the if-condition because there was a non-existent field, this
@@ -280,7 +280,7 @@ if exist(sSavePath, 'file') ~= 0
                 % It has changed! So we can set our return variable to
                 % true and also save the new date to the file.
                 eval([sStructString,'.',sFieldName,' = tInfo.datenum;'])
-                save(sSavePath,'tSavedInfo');
+                save(sSavePath,'tSavedInfo','-v7');
                 bChanged = true;
             else
                 % Seems like nothing has changed, so we can return false.
@@ -321,7 +321,7 @@ else
     
     % Saving the struct to a file from where it can be loaded by the
     % other instances of this function.
-    save(sSavePath,'tSavedInfo');
+    save(sSavePath,'tSavedInfo','-v7');
     % Since we want to scan the entire V-HAB folder, we'll use the
     % directory information of the current folder ('pwd').
     tInfo = dir(pwd);
@@ -345,7 +345,7 @@ else
                 % struct for this top level folder.
                 load(sSavePath);
                 tSavedInfo.bLastActionComplete = true;
-                save(sSavePath,'tSavedInfo');
+                save(sSavePath,'tSavedInfo','-v7');
                 tools.checkForChanges(tInfo(iI).name);
             end
         else
@@ -355,7 +355,7 @@ else
             sFileName = tools.normalizePath(tInfo(iI).name);
             load(sSavePath);
             tSavedInfo.(sFileName) = tInfo(iI).datenum;
-            save(sSavePath,'tSavedInfo');
+            save(sSavePath,'tSavedInfo','-v7');
         end
     end
     
@@ -371,7 +371,7 @@ else
     tSavedInfo = rmfield(tSavedInfo, 'bInitialScanInProgress');
     tSavedInfo = rmfield(tSavedInfo, 'bLastActionComplete');
     tSavedInfo.bInitialScanComplete   = true;
-    save(sSavePath,'tSavedInfo');
+    save(sSavePath,'tSavedInfo','-v7');
     return;
 end
 end

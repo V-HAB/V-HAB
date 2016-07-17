@@ -45,6 +45,13 @@ classdef table < base
     end
     
     properties (SetAccess = protected, GetAccess = public)
+        % struct containing nutritional data of edible substances. read
+        % independently but will added directly to matter table too for
+        % according edible substances. tuhs only the adding part to the
+        % matter table has to be adjusted in addition to the .csv files
+        % when adding new edible substances (e.g. frozen astronaut food)
+        ttxNutrientData;
+        
         % This struct is the heart of the matter table. In it all data on
         % each substance is stored. The key for each substance is its name,
         % e.g. 'H2O' for water, or 'He' for Helium. In the case of complex
@@ -72,6 +79,9 @@ classdef table < base
         % Reverse of tiN2I, a cell containing all the names of the
         % substances, accessible via their index. 
         csI2N;
+        
+        % cell array for all edible substances
+        csEdibleSubstances;
         
         % A cell array with the names of all substances contained in the
         % matter table
@@ -187,6 +197,8 @@ classdef table < base
             this.afMolarMass = zeros(1, this.iSubstances);
             this.tiN2I       = struct();
             
+            %%
+            
             % Now we go through all substances in the 'MatterData'
             % worksheet and fill the ttxMatter struct
             for iI = 1:this.iSubstances
@@ -249,6 +261,33 @@ classdef table < base
                 
             end
             
+            %% Add nutritional data
+            
+            % read from .csv file
+            this.ttxNutrientData = importNutrientData();
+            
+            % get all edible substances
+            this.csEdibleSubstances = fieldnames(this.ttxNutrientData);
+            
+            %%%%%%%%%%%%
+            % WARNING! %
+            %%%%%%%%%%%%
+            
+            % right now, Drybean has been substituted with values from
+            % Kidney Beans and Redbeets have been substituted with Beets.
+            % BVAD uses those substances but they are not listed on the
+            % USDA Food Database as of time of writing.
+            % Nutrients are always linked to the USDA NDB No. (iUSDAID in
+            % the file), so check that if unsure!
+            
+            %%%%%%%%%%%%
+            
+            % loop over all edible substances
+            for iJ = 1:length(this.csEdibleSubstances)
+                if strcmp(this.csEdibleSubstances{iJ}, this.csSubstances{this.tiN2I.(this.csEdibleSubstances{iJ})})
+                    this.ttxMatter.(this.csEdibleSubstances{iJ}).txNutrientData = this.ttxNutrientData.(this.csEdibleSubstances{iJ});
+                end
+            end
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Importing from individual substance files %%%%%%%%%%%%%%%%%%%

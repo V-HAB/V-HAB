@@ -18,8 +18,8 @@ classdef logger_basic < simulation.monitor
         );
         
         poUnitsToLabels = containers.Map(...
-            { 'kg',   'kg/s',      'K',           'Pa',       'J/K',                 'J/kgK',                  'W/K',          'W',     'F',        '?',          'H',           'A',       'V',       'C',      '-'}, ...
-            { 'Mass', 'Flow Rate', 'Temperature', 'Pressure', 'Total Heat Capacity', 'Specific Heat Capacity', 'Conductivity', 'Power', 'Capacity', 'Resistance', 'Inductivity', 'Current', 'Voltage', 'Charge', '' } ...
+            { 's',    'kg',   'kg/s',      'K',           'Pa',       'J/K',                 'J/kgK',                  'W/K',          'W',     'F',        'Ohm',        'H',           'A',       'V',       'C',      'mol/kg',        'ppm',           '%',       '-'}, ...
+            { 'Time', 'Mass', 'Flow Rate', 'Temperature', 'Pressure', 'Total Heat Capacity', 'Specific Heat Capacity', 'Conductivity', 'Power', 'Capacity', 'Resistance', 'Inductivity', 'Current', 'Voltage', 'Charge', 'Concentration', 'Concentration', 'Percent', '' } ...
         );
     end
     
@@ -264,7 +264,8 @@ classdef logger_basic < simulation.monitor
                 return;
             end
             
-            fprintf('LOGGER: reading data from .mat files - NOTE: logger will probably fail if the simulation would be continued!\n');
+            fprintf(['LOGGER: reading data from .mat files - NOTE: logger will probably fail if the simulation is continued using this oLastSimObj!\n', ...
+                     'To avoid problems, delete the oLastSimObj and reload the object from the data/runs folder.\n']);
             
             
             % Cache current log values
@@ -510,6 +511,9 @@ classdef logger_basic < simulation.monitor
                 % To prevent this from halting the simulation, we will find
                 % the item that returns 'empty' and insert 'NaN' at its
                 % index in the returned array. 
+                % NOTE: This only works if there is one 'empty' return
+                % variable. If there are two or more, this check will still
+                % return an error.
                 
                 % First we get the return array directly.
                 afValues = this.logDataEvald();

@@ -1,4 +1,4 @@
-function [ afPartialPressures ] = calculatePartialPressures(this, varargin)
+function [ afPartialPressures, afPartsPerMillion ] = calculatePartialPressures(this, varargin)
 %CALCULATEPARTIALPRESSURES Calculates partial pressures of gas phases and
 %flows
 %   Calculates the partial pressures for all substances in a gas phase, gas
@@ -45,6 +45,7 @@ if length(varargin) == 1
     
     if fPressure == 0
         afPartialPressures = zeros(1,length(afMass));
+        afPartsPerMillion  = zeros(1,length(afMass));
         return;
     end
     
@@ -84,6 +85,9 @@ arFractions = afMols ./ fGasAmount;
 % Calculating the partial pressures by multiplying with the
 % total pressure in the phase
 afPartialPressures = arFractions .* fPressure;
+
+% Calculating the concentration in ppm 
+afPartsPerMillion = (afMass .* varargin{1}.fMolarMass) ./ (this.afMolarMass .* varargin{1}.fMass) * 1e6;
 
 end
 

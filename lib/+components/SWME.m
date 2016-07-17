@@ -114,6 +114,11 @@ classdef SWME < vsys
             % to the inlet branches' 'outdated' event.
             this.toBranches.InletBranch.bind('outdated', @(~) this.toBranches.OutletBranch.oHandler.setFlowRate(-1 * this.toBranches.InletBranch.fFlowRate - this.toStores.SWMEStore.toProcsP2P.X50Membrane.fWaterVaporFlowRate));
             
+            % We need to make sure, that this phase is updated frequently,
+            % otherwise it is possible, that the connected branch that
+            % transfers the water vapor to the environment sucks all of the
+            % matter out of the phase in one time step. 
+            this.toStores.SWMEStore.toPhases.VaporPhase.fMaxStep = 0.5;
         end
         
         function setInterfaces(this, sInlet, sOutlet)

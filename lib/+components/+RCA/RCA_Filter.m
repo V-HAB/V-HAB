@@ -23,6 +23,7 @@ classdef RCA_Filter < components.filter
             matter.procs.exmes.gas(oFlow,     'FlowVolume_Vacuum_Port');            
 %             matter.procs.exmes.absorber(oFiltered, 'Amine_Vacuum_Port');
             
+            this.toProcsP2P.SorptionProcessor.setInitialConcentration();
             
 %             this.oProc_sorp = hoth.RCADevelopment.subsystems.RCA.special.RCA_FilterProc_sorp_new(this.oParentSys, this, [this.sName, '_filterproc_sorp'], 'FlowPhase.filterport_sorp', 'FilteredPhase.filterport_sorp', this.sType);
 %             this.oProc_deso = hoth.RCADevelopment.Filter.helper.FilterProc_deso(this, [this.sName, '_filterproc_deso'], 'FlowPhase.filterport_deso', 'FilteredPhase.filterport_deso');

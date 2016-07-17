@@ -44,7 +44,7 @@ if length(varargin) == 1
             return;
         end
         
-        afPartialPressures = this.calculatePartialPressures(varargin{1});
+        [ afPartialPressures, ~ ] = this.calculatePartialPressures(varargin{1});
         
     elseif strcmp(sMatterState, 'liquid')
         % For liquids the density has to be calculated from the matter
@@ -70,7 +70,7 @@ if length(varargin) == 1
     arPartialMass = varargin{1}.arPartialMass;
     
     % in no mass given also no density possible
-    if sum(arPartialMass) == 0;
+    if sum(arPartialMass) == 0
         fDensity = 0;
         return;
     end
@@ -107,7 +107,7 @@ else
         end
         
         if any(strcmp(sMatterState, {'gas'}))
-            afPartialPressures = this.calculatePartialPressures(sMatterState, afMass, fPressure);
+            [ afPartialPressures, ~ ] = this.calculatePartialPressures(sMatterState, afMass, fPressure);
         else
             afPartialPressures = ones(1, this.iSubstances) * this.Standard.Pressure;
         end
