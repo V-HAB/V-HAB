@@ -154,7 +154,13 @@ classdef fan < matter.procs.f2f
             
             % Switched off? No dP no matter what
             if ~this.bActive
+                
+                % VERY IMPORTANT! No flow -> no heat transfer!!
+                this.fHeatFlow = 0;
+                
                 fDeltaPressure = 0;
+                this.fDeltaPressure = fDeltaPressure;
+                
                 return;
             end
             

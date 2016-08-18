@@ -76,7 +76,7 @@ classdef vsys < matter.container & thermal.container & electrical.container & sy
     methods (Access = protected)
         
         function exec(this, ~)
-            this.out(2, 1, 'exec', 'vsys.exec %s', { this.sName });
+            this.out(2, 1, 'exec', 'vsys.exec system "%s"', { this.sName });
             
             exec@systems.timed(this);
             
