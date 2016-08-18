@@ -75,6 +75,7 @@ classdef store < base
         oTimer;
         fLastUpdate = 0;
         fTimeStep = 0;
+        fNextExec = inf;
         
         fTotalPressureErrorStore = 0;
         iNestedIntervallCounterStore = 0;
@@ -488,6 +489,11 @@ classdef store < base
                 end  
             end
             
+            
+            
+            this.out(1, 1, 'store-update', 'UPDATE store %s-%s and set last update!', { this.oContainer.sName, this.sName });
+            
+            
             % Update phases
             for iI = 1:this.iPhases, this.aoPhases(iI).update(); end;
 
@@ -497,7 +503,7 @@ classdef store < base
             end
             
             this.fLastUpdate = this.oTimer.fTime;
-            
+            this.fNextExec   = inf;
         end
         
         %CHECK Can this method be deleted?
@@ -507,6 +513,8 @@ classdef store < base
             % IMPORTANT - parameter does NOT define next time step but the 
             %             next ABSOLUTE time this store is updated.
             
+            this.throw('setNextUpdateTime', 'Use setNextTimeStep(fTimeStep) instead! Measured from the current point in time!');
+            
             % Check if last update time (same as the one stored within the
             % timer) plus current time step larger then new exec time - if
             % yes, calc the new time step with fTime and set!
@@ -514,6 +522,8 @@ classdef store < base
             %     for each subsystem, on each callback execution?
             if (this.fLastUpdate + this.fTimeStep) > fTime
                 this.fTimeStep = fTime - this.fLastUpdate;
+                
+                this.out(1, 1, 'set-new-ts', 'New TS in Store %s-%s: %.16f s - Next Exec: %.16f s', { this.oContainer.sName, this.sName, this.fTimeStep, this.fLastUpdate + this.fTimeStep });
                 
                 % If time step < 0, timer sets it to 0!
                 this.setTimeStep(this.fTimeStep);
@@ -543,7 +553,7 @@ classdef store < base
             
             % So we will first get the next execution time based on the
             % current time step and the last time this store was updated.
-            fCurrentNextExec = this.fLastUpdate + this.fTimeStep;
+            %fCurrentNextExec = this.fLastUpdate + this.fTimeStep;
             
             % Since the fTimeStep parameter that is passed on by the phase
             % that called this method is based on the current time, we
@@ -552,14 +562,18 @@ classdef store < base
             % this store.
             fNewNextExec     = this.oTimer.fTime + fTimeStep;
             
+            this.out(1, 1, 'check-set-new-ts', 'Set new TS in store %s-%s ?? Current Next Exec: %.16f s - New next Exec: %.16f s - New Time Step: %.16f s', { this.oContainer.sName, this.sName, this.fNextExec, fNewNextExec, fTimeStep });
+            
             % Now we can compare the current next execution time and the
             % potential new execution time. If the new execution time would
             % be AFTER the current execution time, it means that the phase
             % that is currently calling this method is faster than a
             % previous caller. In this case we do nothing and just return.
-            if fCurrentNextExec < fNewNextExec
+            if this.fNextExec <= fNewNextExec
                 return;
             end
+            
+            this.out(1, 1, 'set-new-ts', 'New TS in Store %s-%s: %.16f s - Next Exec: %.16f s', { this.oContainer.sName, this.sName, fTimeStep, fNewNextExec });
             
             % The new time step is smaller than the old one, so we can
             % actually set then new timestep. The setTimeStep() method
@@ -573,6 +587,7 @@ classdef store < base
             % Finally we set this stores fTimeStep property to the new time
             % step.
             this.fTimeStep = fTimeStep;
+            this.fNextExec = this.oTimer.fTime + this.fTimeStep;
         end
     end
     

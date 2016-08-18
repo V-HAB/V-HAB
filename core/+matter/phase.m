@@ -400,6 +400,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             afTotalInOuts = this.afCurrentTotalInOuts;
             mfInflowDetails = this.mfCurrentInflowDetails;
             
+            this.out(1, 2, 'total-fr', 'Total flow rate in %s-%s: %.20f', { this.oStore.sName, this.sName, sum(afTotalInOuts) });
+            
 %             if strcmp(this.oStore.sName, 'Valve_1')
 %                 disp('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
 %                 disp(this.oTimer.fTime);
@@ -447,7 +449,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.afMass(abNegative) = 0;
                 
                 this.out(tools.logger.NOTICE, 1, 'negative-mass', 'Got negative mass, added to mass lost.', {}); % directly follows message above, so don't output name
-                this.out(3, 2, 'negative-mass', 'TODO: output all substance names with negative masses!');
+                %this.out(3, 2, 'negative-mass', 'TODO: output all substance names with negative masses!');
+                this.out(3, 2, 'negative-mass', '%s\t', this.oMT.csI2N(abNegative));
+                
+                %csNegatives = {};
+                
+%                 for iNeg = 1:length(abNegative)
+%                     if ~abNegative(iNeg), continue; end;
+%                     
+%                     csNegatives{end + 1} = this.oMT.csI2N{iNeg};
+%                 end
             end
 
 
@@ -631,6 +642,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
         %% Calculate Nutritional Content 
         
+        %SCJO - what ... hmmm ... NO! Definitely does NOT belong here!!!
         function [ ttxResults ] = calculateNutritionalContent(this)
             
             %% Initialize
@@ -1251,6 +1263,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 %                 disp('>>>>>>>>>>>>>>>>>>  /CALC TS  >>>>>>>>>>>>>>>>');
 %             end
             
+            afTmpCurrentTotalInOuts = this.afCurrentTotalInOuts;
+
             % Setting the properties to the current values
             this.afCurrentTotalInOuts = afChange;
             this.mfCurrentInflowDetails = mfDetails;
@@ -1319,7 +1333,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 %     reference, not the partial mass changes?
                 %arPreviousChange = abs(this.afMass ./ this.afMassLastUpdate - 1);
                 arPreviousChange = abs(this.afMass - this.afMassLastUpdate) / this.fMass;
-
+    
+                
                 % If rPrevious change is not a number ('NaN'), the mass
                 % during the previous update was zero and the current mass
                 % is also zero. That means that afMass was also all zeros
@@ -1376,6 +1391,27 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 if fChange == 0
                     rTotalPerSecond = 0;
                 else
+                    % The change needs to be calculated with respect to the
+                    % total mass at the time of the last update, as values
+                    % like molar mass or the heat capacity were calculated
+                    % based on that mass.
+                    % Using fMass could lead to two issues:
+                    % * prolonged/shortened time steps, if the mass in the
+                    %   phase in- or decreases (rTotalPerSecond will be
+                    %   smaller if the current mass is larger than the one
+                    %   at the last update -> smaller change = larger TS).
+                    % * the previous change is based on the mass at last
+                    %   updated whereas the current change is based on the
+                    %   current mass. This can lead to a change slightly 
+                    %   larger than rMaxChange leading to a negative time
+                    %   step. This however will only happen if the store
+                    %   would update soon anyways and should therefore not
+                    %   lead to larger issues.
+                    %CHECK use fMassLastUpdate or fMass? The latter leads
+                    %      to larger time steps but is logically slightly
+                    %      incorrect. [also above, arPartialsChange!]
+                    % FOR NOW ... we'll go with fMass, faster and does not
+                    % seem to introduce big issues ...
                     rTotalPerSecond = abs(fChange / this.fMass);
                 end
                 
@@ -1391,6 +1427,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % The new time step will be set to the smaller one of these
                 % two candidates.
                 fNewStep = min([ fNewStepTotal fNewStepPartials ]);
+                
+                if fNewStep < 0
+                    this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep });
+                end
                 
                 % The actual minimum time step of the phase is set by the
                 % timer object and its current minimum time step property.
@@ -1420,10 +1460,18 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     %TODO Make this output a lower level debug message.
                     %fprintf('Tick %i, Time %f: Phase %s.%s setting minimum timestep\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, this.sName);
                 end
+                
+                
+                
+                this.out(1, 1, 'prev-timestep', 'Previous changes for new time step calc for %s-%s-%s - previous change: %.8f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, rPreviousChange });
+                this.out(1, 2, 'prev-timestep', 'PREV TS: %.16f s, ACtual Time: %.16f s', { this.fTimeStep, this.oTimer.fTime });
+                this.out(1, 2, 'prev-timestep', 'Last Update: %.16f s, Mass at Last Update: %.16f s', { this.fLastUpdate, this.fMassLastUpdate });
+                this.out(1, 2, 'prev-timestep', 'MASS: %.16f kg, Prevous Mass Change Rate: %.16f kg/s / Total: %.16f kg ', { this.fMass, sum(afTmpCurrentTotalInOuts), sum(afTmpCurrentTotalInOuts)*(this.oTimer.fTime-this.fLastUpdate) });
+                this.out(1, 2, 'prev-timestep', 'MASS: %.16f kg, New Mass Change Rate: %.16f kg/s / Total: %.16f kg ', { this.fMass, sum(this.afCurrentTotalInOuts), sum(this.afCurrentTotalInOuts)*fNewStep });
+                
+                
+                this.out(1, 1, 'new-timestep', '%s-%s-%s new TS: %.16fs', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep });
             end
-
-
-            this.out(1, 1, 'new-timestep', '%s-%s-%s new TS: %fs', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep });
 
 
             % Set the time at which the containing store will be updated
