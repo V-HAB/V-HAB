@@ -400,9 +400,10 @@ classdef console_output < simulation.monitor
             oTimer = this.oSimulationInfrastructure.oSimulationContainer.oTimer;
             
             if oTimer.iTick > this.iLastTick
-                fprintf('\n- - - - - - - - tick: %i / time: %fs - - - - - - - -\n', oTimer.iTick, oTimer.fTime);
+                fprintf('\n- - - - - - - - tick: %i / time: %.16fs - - - - - - - -\n', oTimer.iTick, oTimer.fTime);
                 
                 this.iLastTick = oTimer.iTick;
+                this.sLastOutObjectUuid = '';
             end
             
             %TODO flag bOutputUuids --> store last tPayload.oObj.sUUID on
