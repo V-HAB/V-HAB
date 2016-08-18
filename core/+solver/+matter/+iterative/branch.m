@@ -628,8 +628,8 @@ classdef branch < solver.matter.base.branch
                 % Loop counter
                 iCount = iCount + 1;
                 
-                if iCount > 250, this.throw('solveBranch', 'Too many iterations'); end;
-                if iCount > 249, keyboard(); end;
+                if iCount > 401, this.throw('solveBranch', 'Too many iterations'); end;
+                if iCount > 400, keyboard(); end;
                 
                 % Depending on rError, the new flow rate needs to be in- or
                 % decreased. Depending on situation, guess or derive a

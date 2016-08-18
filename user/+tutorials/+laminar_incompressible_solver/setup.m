@@ -46,7 +46,27 @@ classdef setup < simulation.infrastructure
         function configureMonitors(this)
             
             
-            this.oSimulationContainer.oTimer.setMinStep(1e-12)
+            oConsOut = this.toMonitors.oConsoleOutput;
+            
+            
+            %%
+%             oConsOut.setLogOn().setVerbosity(3);
+%             oConsOut.addMethodFilter('updatePressure');
+%             oConsOut.addMethodFilter('massupdate');
+%             oConsOut.addIdentFilter('changing-boundary-conditions');
+            
+% %             oConsOut.addIdentFilter('solve-flow-rates');
+% %             oConsOut.addIdentFilter('calc-fr');
+% %             oConsOut.addIdentFilter('set-fr');
+% %             oConsOut.addIdentFilter('total-fr');
+% %             oConsOut.addIdentFilter('negative-mass');
+            
+% %             oConsOut.addTypeToFilter('matter.phases.gas_pressure_manual');
+            %%
+            
+            
+            %this.oSimulationContainer.oTimer.setMinStep(1e-12)
+            this.oSimulationContainer.oTimer.setMinStep(1e-16);
             
             
             %% Logging

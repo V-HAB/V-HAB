@@ -57,7 +57,7 @@ classdef setup < simulation.infrastructure
             
             
             
-            solver.thermal.lumpedparameter(oSys);
+            %solver.thermal.lumpedparameter(oSys);
             
             
 

@@ -133,7 +133,7 @@ classdef setup < simulation.infrastructure
             
             
             %this.fSimTime = 1700;
-            this.iSimTicks = 600;
+            this.iSimTicks = 3000;
             this.bUseTime = true;
             
             
@@ -152,6 +152,9 @@ classdef setup < simulation.infrastructure
         
         
         function switchDebugState(this, oTimer)
+            
+            return;
+            
             iTick  = oTimer.iTick;
             oOut   = this.toMonitors.oConsoleOutput;
             
@@ -192,6 +195,11 @@ classdef setup < simulation.infrastructure
         
         function configureMonitors(this)
             
+            
+            %this.oSimulationContainer.oTimer.setMinStep(1e-12);
+            
+            
+            %this.toMonitors.oConsoleOutput.setLogOn().setLevel(3);
             
             %% Logging
             % Creating a cell setting the log items. You need to know the
