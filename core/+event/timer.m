@@ -144,6 +144,13 @@ classdef timer < base
                     
                     tPayloadDef.(csFields{iF}) = tPayload.(csFields{iF});
                 end
+            else
+                % At least some info?
+                try %#ok<TRYNC>
+                    tPayloadDef.oSrcObj = evalin('caller', 'this');
+                end
+                
+                tPayloadDef.sMethod = func2str(callBack);
             end
             
             
@@ -233,6 +240,7 @@ classdef timer < base
             % Dependent systems have -1 as time step - therefore this
             % should always be true!
             abExec = (this.afLastExec + this.afTimeStep) <= this.fTime;
+            %abExec = (this.afLastExec + this.afTimeStep) <= (this.fTime + fThisStep - this.fMinimumTimeStep);
             aiExec  = find(abExec);
             
             % Execute callbacks
@@ -259,6 +267,9 @@ classdef timer < base
             % this works, don't need find!
             this.afLastExec(abExec) = this.fTime;
             
+            
+            this.out(1, 1, 'post-tick', 'Running post-tick tasks!');
+            this.out(1, 2, 'post-tick-num', 'Amount of cbs: %i\t', { this.aiPostTickMax });
             
             % Just to make sure - prio 2 could attach postTick to prio -1
             while any(this.aiPostTickMax ~= 0)
