@@ -12,6 +12,7 @@ H2O2,Hydrogen Peroxide,liquid,0.03401468,272.72,423.3,1450,1267,,,http://webbook
 O3,Ozone,gas,0.0479982,81,161,2.144,,,,
 KO2,Potassium Superoxide,solid,0.0711,653.15,,2140,,,,
 KOH,Potassium Hydroxide,solid,0.05611,633.15,1593.15,2044,1180,,,
+LiOH,Lithium Hydroxide,solid,0.02395,735,1197,1460,2071,,,
 H,Hydrogen,gas,0.00100794,14.15,20.25,0.084,709,,0.02,
 He,Helium,gas,0.0040026,1.15,4.25,0.17,5193,,0.1,
 Li,Lithium,solid,0.006941,453.65,1615.15,530,3582,58,1.16,
