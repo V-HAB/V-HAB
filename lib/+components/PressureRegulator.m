@@ -5,6 +5,8 @@ classdef PressureRegulator < vsys
         % slow.
         fFixedTimeStep = 0.1;
         
+        iFlowRateDampeningFactor = 0;
+        
         % A string that identifies the phase create helper to be used for
         % all phases in the regulator.
         sAtmosphereHelper = 'N2Atmosphere';
@@ -55,7 +57,7 @@ classdef PressureRegulator < vsys
             
             % Adding Valves for the first and second stages
             components.PressureRegulator.valve(this, 'FirstStageValve', this.tFirstStageParameters); 
-            components.PressureRegulator.valve(this, 'SecondStageValve', this.tSecondStageParameters); % 56500, [29600 42700 6270 56500 24800]);
+            components.PressureRegulator.valve(this, 'SecondStageValve', this.tSecondStageParameters);
 
 
             % add extract/merge processors
@@ -74,14 +76,17 @@ classdef PressureRegulator < vsys
             % add branches to solver
             oBranch = solver.matter.linear.branch(this.toBranches.InletBranch);
             oBranch.fFixedTS = this.fFixedTimeStep;
+            oBranch.iDampFR = this.iFlowRateDampeningFactor;
             
             oBranch = solver.matter.linear.branch(this.toBranches.OutletBranch);
             oBranch.fFixedTS = this.fFixedTimeStep;
+            oBranch.iDampFR = this.iFlowRateDampeningFactor;
         end
         
         function setIfFlows(this, sInlet, sOutlet)
-            % This function connects the system and subsystem level branches with each other. It
-            % uses the connectIF function provided by the matter.container class
+            % This function connects the system and subsystem level
+            % branches with each other. It uses the connectIF function
+            % provided by the matter.container class
             this.connectIF('Inlet',  sInlet);
             this.connectIF('Outlet', sOutlet);
             
