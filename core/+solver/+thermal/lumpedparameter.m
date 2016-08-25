@@ -31,6 +31,10 @@ classdef lumpedparameter < base
         
         fPreviousTimestep = -1; % The time at the previous call to |update|.
         
+        % A boolean to indicate if the solver has already been scheduled to
+        % update in the post tick.
+        bOutdated = true;
+        
         % Rate matrices for matrix based solution of a transient heat
         % transfer problem.
         mSourceRateVector    = []; % The source rate vector in |K/s|.
@@ -79,9 +83,21 @@ classdef lumpedparameter < base
             % |update()|.
             this.oVSys.taint();
             
+            % Set the thermal solver property on the system
+            this.oVSys.setThermalSolver(this);
+            
         end
         
         function update(this, oTimer)
+            
+            this.bOutdated = false;
+                        
+            % Do nothing if this method has already been called this
+            % timestep
+            if this.fPreviousTimestep == oTimer.fTime
+                return;
+            end
+            
             % Solve the thermal network: Calculate the new temperatures
             % after a time step and pass the change in inner heat energy on
             % to the thermal container. 
@@ -151,6 +167,8 @@ classdef lumpedparameter < base
             % Remember the current (end) time for the next call to this
             % method, where it is used as the start time.
             this.fPreviousTimestep = fStepEndTime;
+            
+
             
         end
         
@@ -267,6 +285,18 @@ classdef lumpedparameter < base
             
             fVal = xProp(iPos1, iPos2);
             
+        end
+        
+        function registerUpdate(this)
+            % This function can be called by any class that wishes to
+            % trigger a full solver update. By checking agains the
+            % bOutdated property, we make sure that the update is only
+            % attached to the post-tick once. 
+            if ~this.bOutdated
+                this.oVSys.oTimer.bindPostTick(@(~) this.update(this.oVSys.oTimer), 0);
+                this.oVSys.taint();
+                this.bOutdated = true;
+            end
         end
         
     end
