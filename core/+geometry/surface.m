@@ -53,7 +53,7 @@ classdef surface < geometry.node & event.source
             this.afDimensions       = nan(1, length(csDimensionMapping));
             this.csDimensionMapping = csDimensionMapping;
             
-            this.oVolume.bind('set.tfDimensions', @this.updateDimensions);
+            this.oVolume.bind('set_tfDimensions', @this.updateDimensions);
             
             this.updateDimensions();
         end
