@@ -174,10 +174,6 @@ switch sPhaseType
         sPhaseStructName = 'tSupercritical';
         iPhaseType       = 4;
         sPhaseAdjective  = 'gaseous';
-    case 'all'
-        sPhaseStructName = 'tAll';
-        iPhaseType       = 5;
-        sPhaseAdjective  = 'all';
 end
 
 % Again for debugging purposes, we'll get the unit names for the two

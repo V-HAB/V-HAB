@@ -104,6 +104,15 @@ function fSpeedOfSound = calculateSpeedOfSound(this, varargin) %sMatterState, af
     % Initialize a new array filled with zeros. Then iterate through all
     % indexed substances and get their specific heat capacity.
     afSpeedOfSound = zeros(iNumIndices, 1);
+    
+    csPhase = {'solid';'liquid';'gas';'supercritical'};
+    tiP2N.solid = 1;
+    tiP2N.liquid = 2;
+    tiP2N.gas = 3;
+    tiP2N.supercritical = 4;
+    if ~strcmp(sMatterState, 'mixture')
+        aiPhase = tiP2N.(sMatterState)*ones(1,this.iSubstances);
+    end
     for iI = 1:iNumIndices
         % Creating the input struct for the findProperty() method
         tParameters = struct();
@@ -111,7 +120,7 @@ function fSpeedOfSound = calculateSpeedOfSound(this, varargin) %sMatterState, af
         tParameters.sProperty = 'Speed Of Sound';
         tParameters.sFirstDepName = 'Temperature';
         tParameters.fFirstDepValue = fTemperature;
-        tParameters.sPhaseType = sMatterState;
+        tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
         if iNumArgs > 4
             tParameters.sSecondDepName = 'Density';
             tParameters.fSecondDepValue = fDensity;

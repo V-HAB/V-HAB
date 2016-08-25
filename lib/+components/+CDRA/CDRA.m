@@ -198,7 +198,7 @@ classdef CDRA < vsys
             oInput = matter.phases.gas(this.toStores.Filter_Sylobead_1, 'FlowPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             % Filtered phase
-            oFiltered = matter.phases.absorber(this.toStores.Filter_Sylobead_1, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Sylobead_B125'); 
+            oFiltered = matter.phases.mixture(this.toStores.Filter_Sylobead_1, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, this.tAtmosphere.fTemperature, fPressure);
             
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In_1');
@@ -206,9 +206,9 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oInput, 'Flow_Out_1');
             matter.procs.exmes.gas(oInput, 'Flow_Out_2');
             matter.procs.exmes.gas(oInput, 'filterport');
-            matter.procs.exmes.absorber(oFiltered, 'filterport');
+            matter.procs.exmes.mixture(oFiltered, 'filterport');
             matter.procs.exmes.gas(oInput, 'filterport2');
-            matter.procs.exmes.absorber(oFiltered, 'filterport2');
+            matter.procs.exmes.mixture(oFiltered, 'filterport2');
             components.filter.FilterProc_deso(this.toStores.Filter_Sylobead_1, 'DesorptionProcessor', 'FlowPhase.filterport2', 'FilteredPhase.filterport2');
             components.filter.FilterProc_sorp(this.toStores.Filter_Sylobead_1, 'Filter_Sylobead_1_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', 'Sylobead', 1e-3);
             
@@ -222,17 +222,16 @@ classdef CDRA < vsys
             oInput = matter.phases.gas(this.toStores.Filter_13X_1, 'FlowPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             % Filtered phase
-            oFiltered = matter.phases.absorber(this.toStores.Filter_13X_1, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite13x'); 
-            
+            oFiltered = matter.phases.mixture(this.toStores.Filter_13X_1, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, this.tAtmosphere.fTemperature, fPressure);
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In_1');
             matter.procs.exmes.gas(oInput, 'Flow_In_2');
             matter.procs.exmes.gas(oInput, 'Flow_Out_1');
             matter.procs.exmes.gas(oInput, 'Flow_Out_2');
             matter.procs.exmes.gas(oInput, 'filterport');
-            matter.procs.exmes.absorber(oFiltered, 'filterport');
+            matter.procs.exmes.mixture(oFiltered, 'filterport');
             matter.procs.exmes.gas(oInput, 'filterport2');
-            matter.procs.exmes.absorber(oFiltered, 'filterport2');
+            matter.procs.exmes.mixture(oFiltered, 'filterport2');
             components.filter.FilterProc_deso(this.toStores.Filter_13X_1, 'DesorptionProcessor', 'FlowPhase.filterport2', 'FilteredPhase.filterport2');
             components.filter.FilterProc_sorp(this.toStores.Filter_13X_1, 'Filter_13X_1_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '13x', 1e-3);
              
@@ -250,7 +249,7 @@ classdef CDRA < vsys
             oInput = matter.phases.gas(this.toStores.Filter_Sylobead_2, 'FlowPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             % Filtered phase
-            oFiltered = matter.phases.absorber(this.toStores.Filter_Sylobead_2, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Sylobead_B125'); 
+            oFiltered = matter.phases.mixture(this.toStores.Filter_Sylobead_2, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, this.tAtmosphere.fTemperature, fPressure);
             
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In_1');
@@ -258,9 +257,9 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oInput, 'Flow_Out_1');
             matter.procs.exmes.gas(oInput, 'Flow_Out_2');
             matter.procs.exmes.gas(oInput, 'filterport');
-            matter.procs.exmes.absorber(oFiltered, 'filterport');
+            matter.procs.exmes.mixture(oFiltered, 'filterport');
             matter.procs.exmes.gas(oInput, 'filterport2');
-            matter.procs.exmes.absorber(oFiltered, 'filterport2');
+            matter.procs.exmes.mixture(oFiltered, 'filterport2');
             components.filter.FilterProc_deso(this.toStores.Filter_Sylobead_2, 'DesorptionProcessor', 'FlowPhase.filterport2', 'FilteredPhase.filterport2');
             components.filter.FilterProc_sorp(this.toStores.Filter_Sylobead_2, 'Filter_Sylobead_2_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', 'Sylobead', 1e-3);
                
@@ -274,7 +273,7 @@ classdef CDRA < vsys
             oInput = matter.phases.gas(this.toStores.Filter_13X_2, 'FlowPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             % Filtered phase
-            oFiltered = matter.phases.absorber(this.toStores.Filter_13X_2, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite13x');
+            oFiltered = matter.phases.mixture(this.toStores.Filter_13X_2, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, this.tAtmosphere.fTemperature, fPressure);
             
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In_1');
@@ -282,9 +281,9 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oInput, 'Flow_Out_1');
             matter.procs.exmes.gas(oInput, 'Flow_Out_2');
             matter.procs.exmes.gas(oInput, 'filterport');
-            matter.procs.exmes.absorber(oFiltered, 'filterport');
+            matter.procs.exmes.mixture(oFiltered, 'filterport');
             matter.procs.exmes.gas(oInput, 'filterport2');
-            matter.procs.exmes.absorber(oFiltered, 'filterport2');
+            matter.procs.exmes.mixture(oFiltered, 'filterport2');
             components.filter.FilterProc_deso(this.toStores.Filter_13X_2, 'DesorptionProcessor', 'FlowPhase.filterport2', 'FilteredPhase.filterport2');
             components.filter.FilterProc_sorp(this.toStores.Filter_13X_2, 'Filter_13X_2_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '13x', 1e-3);
                 
@@ -298,7 +297,7 @@ classdef CDRA < vsys
             oInput = matter.phases.gas(this.toStores.Filter5A_1, 'FlowPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             % Filtered phase
-            oFiltered = matter.phases.absorber(this.toStores.Filter5A_1, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite5A');
+            oFiltered = matter.phases.mixture(this.toStores.Filter5A_1, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, this.tAtmosphere.fTemperature, fPressure);
             
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In');
@@ -306,9 +305,9 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oInput, 'Flow_Out_2');
             matter.procs.exmes.gas(oInput, 'AirSafe');
             matter.procs.exmes.gas(oInput, 'filterport');
-            matter.procs.exmes.absorber(oFiltered, 'filterport');
+            matter.procs.exmes.mixture(oFiltered, 'filterport');
             matter.procs.exmes.gas(oInput, 'filterport2');
-            matter.procs.exmes.absorber(oFiltered, 'filterport2');
+            matter.procs.exmes.mixture(oFiltered, 'filterport2');
             components.filter.FilterProc_deso(this.toStores.Filter5A_1, 'DesorptionProcessor', 'FlowPhase.filterport2', 'FilteredPhase.filterport2');
             components.filter.FilterProc_sorp(this.toStores.Filter5A_1, 'Filter_5A_1_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '5A-RK38', 1e-3);
             
@@ -324,7 +323,7 @@ classdef CDRA < vsys
             oInput = matter.phases.gas(this.toStores.Filter5A_2, 'FlowPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             % Filtered phase
-            oFiltered = matter.phases.absorber(this.toStores.Filter5A_2, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite5A');
+            oFiltered = matter.phases.mixture(this.toStores.Filter5A_2, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, this.tAtmosphere.fTemperature, fPressure);
             
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In');
@@ -332,9 +331,9 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oInput, 'Vent');
             matter.procs.exmes.gas(oInput, 'AirSafe');
             matter.procs.exmes.gas(oInput, 'filterport');
-            matter.procs.exmes.absorber(oFiltered, 'filterport');
+            matter.procs.exmes.mixture(oFiltered, 'filterport');
             matter.procs.exmes.gas(oInput, 'filterport2');
-            matter.procs.exmes.absorber(oFiltered, 'filterport2');
+            matter.procs.exmes.mixture(oFiltered, 'filterport2');
             components.filter.FilterProc_deso(this.toStores.Filter5A_2, 'DesorptionProcessor', 'FlowPhase.filterport2', 'FilteredPhase.filterport2');
             components.filter.FilterProc_sorp(this.toStores.Filter5A_2, 'Filter_5A_2_proc', 'FlowPhase.filterport', 'FilteredPhase.filterport', '5A-RK38', 1e-3);
             

@@ -87,8 +87,11 @@ arFractions = afMols ./ fGasAmount;
 afPartialPressures = arFractions .* fPressure;
 
 % Calculating the concentration in ppm 
-afPartsPerMillion = (afMass .* varargin{1}.fMolarMass) ./ (this.afMolarMass .* varargin{1}.fMass) * 1e6;
-
+try
+    afPartsPerMillion = (afMass .* varargin{1}.fMolarMass) ./ (this.afMolarMass .* varargin{1}.fMass) * 1e6;
+catch
+    afPartsPerMillion = (afMass .* this.calculateMolarMass(afMass)) ./ (this.afMolarMass .* sum(afMass)) * 1e6;
+end
 end
 
 

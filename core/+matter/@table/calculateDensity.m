@@ -50,8 +50,29 @@ if length(varargin) == 1
         % For liquids the density has to be calculated from the matter
         % table.
         afPartialPressures = ones(1, this.iSubstances) * varargin{1}.fPressure;
-        
+    elseif strcmp(oMatterRef.sType, 'mixture')
+        % for mixtures the actual matter type is set by the user and
+        % also differs for each substance. The partial pressure for a gas
+        % mixture phase (e.g. gas that contains solids) has to be
+        % calculated the same way as for a gas phase except for the
+        % substances that are solid
+
+        if isempty(oMatterRef.sPhaseType)
+            afPartialPressures = ones(1,this.iSubstances) .* this.Standard.Pressure;
+            aiPhase = this.determinePhase(oMatterRef.afMass, oMatterRef.fTemperature, this.Standard.Pressure);
+        else
+            aiPhase = this.determinePhase(oMatterRef.afMass, oMatterRef.fTemperature, oMatterRef.fPressure);
+            if strcmp(oMatterRef.sPhaseType, 'gas')
+                afMassGas = zeros(1,this.iSubstances);
+                afMassGas(aiPhase == 3) = oMatterRef.afMass(aiPhase == 3);
+                afPartialPressures = this.calculatePartialPressures('gas',afMassGas, oMatterRef.fPressure);
+                afPartialPressures(aiPhase ~= 3) = oMatterRef.fPressure;
+            else
+                afPartialPressures = ones(1,this.iSubstances) .* oMatterRef.fPressure;
+            end
+        end
     else
+        
         if isa(varargin{1}, 'matter.phase')
             % Solid phases are easy again, we can just divide the mass by
             % the volume and we're done.
@@ -121,6 +142,15 @@ aiIndices = find(arPartialMass > 0);
 % Go through all substances that have mass and get the density of each. 
 afRho = zeros(1, length(aiIndices));
 
+csPhase = {'solid';'liquid';'gas';'supercritical'};
+tiP2N.solid = 1;
+tiP2N.liquid = 2;
+tiP2N.gas = 3;
+tiP2N.supercritical = 4;
+if ~strcmp(sMatterState, 'mixture')
+    aiPhase = tiP2N.(sMatterState)*ones(1,this.iSubstances);
+end
+
 for iI = 1:length(aiIndices)
     % Generating the paramter struct that findProperty() requires.
     tParameters = struct();
@@ -128,7 +158,7 @@ for iI = 1:length(aiIndices)
     tParameters.sProperty = 'Density';
     tParameters.sFirstDepName = 'Temperature';
     tParameters.fFirstDepValue = fTemperature;
-    tParameters.sPhaseType = sMatterState;
+    tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
     tParameters.bUseIsobaricData = true;

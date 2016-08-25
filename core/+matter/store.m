@@ -761,7 +761,7 @@ classdef store < base
             if nargin >= 2, this.fVolume = fVolume; end;
             
             % Update ...
-            csVolPhases  = { 'solid', 'liquid', 'absorber'};
+            csVolPhases  = { 'solid', 'liquid', 'absorber', 'mixture'};
             iPhasesSet   = 0;
             fVolume      = this.fVolume;
             
