@@ -62,8 +62,8 @@ switch length(Args.NumericArguments)
        return % no arguments but rows/cols.... 
    case 1
        if numel(Args.NumericArguments{1}) > 1 % restore subplot(m,n,[x y]) behaviour
-           [x1 y1] = ind2sub([Args.cols Args.rows],Args.NumericArguments{1}(1)); % subplot and ind2sub count differently (column instead of row first) --> switch cols/rows
-           [x2 y2] = ind2sub([Args.cols Args.rows],Args.NumericArguments{1}(end));
+           [x1, y1] = ind2sub([Args.cols Args.rows],Args.NumericArguments{1}(1)); % subplot and ind2sub count differently (column instead of row first) --> switch cols/rows
+           [x2, y2] = ind2sub([Args.cols Args.rows],Args.NumericArguments{1}(end));
        else
            x1=mod((Args.NumericArguments{1}-1),Args.cols)+1; x2=x1;
            y1=floor((Args.NumericArguments{1}-1)/Args.cols)+1; y2=y1;

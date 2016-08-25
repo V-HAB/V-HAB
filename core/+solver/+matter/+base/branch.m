@@ -145,23 +145,18 @@ classdef branch < base & event.source
     end
     
     methods (Access = protected)
+        
         function registerUpdate(this, ~)
-            %TOD) check
-            %if this.bRegisteredOutdated, return; end;
-            if this.bRegisteredOutdated % this.fLastUpdate >= this.oBranch.oTimer.fTime
+            if this.bRegisteredOutdated
                 return;
             end
-            
-            
             
             for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
                 this.oBranch.coExmes{iE}.oPhase.massupdate();
             end
             
-            
             this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
             
-            %keyboard();
             this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
             this.bRegisteredOutdated = true;
         end

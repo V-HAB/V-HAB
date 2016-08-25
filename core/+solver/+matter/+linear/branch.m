@@ -79,7 +79,7 @@ classdef branch < solver.matter.base.branch
             end
             
             % Getting all hydraulic diameters and lengths
-            afHydrDiam   = [ this.aoSolverProps.fHydrDiam ];
+            afHydrDiam   = [ this.aoSolverProps.fHydrDiam   ];
             afHydrLength = [ this.aoSolverProps.fHydrLength ];
             
             % Find all components with negative hydraulic diameters
@@ -89,11 +89,11 @@ classdef branch < solver.matter.base.branch
                 % sum them up and create new arrays with just the
                 % components producing pressure drops
                 fPressureRises = sum(this.aoSolverProps(afNegHydrDiam).fDeltaPressure);
-                afPosHydrDiam = afHydrDiam(afHydrDiam>0);
-                afHydrLength  = afHydrLength(afHydrDiam>0);
+                afPosHydrDiam  = afHydrDiam(afHydrDiam>0);
+                afHydrLength   = afHydrLength(afHydrDiam>0);
             else
                 fPressureRises = 0;
-                afPosHydrDiam = afHydrDiam;
+                afPosHydrDiam  = afHydrDiam;
             end
             
            

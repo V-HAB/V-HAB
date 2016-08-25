@@ -341,7 +341,7 @@ classdef logger_basic < simulation.monitor
                 tLogProp.sObjUuid = oObj.sUUID;
             catch oErr
                 assignin('base', 'oLastErr', oErr);
-                this.throw('addValueToLog', 'Object does not seem to exist: %s (message was: %s)', tLogProp.sObjectPath, oErr.message);
+                this.throw('addValueToLog', 'Object does not seem to exist: %s \n(message was: %s)', tLogProp.sObjectPath, oErr.message);
             end
             
             
@@ -453,11 +453,10 @@ classdef logger_basic < simulation.monitor
                     this.csPaths{iL} = [ 'this.' this.csPaths{iL} ];
                 end
                 
-                
                 this.csPaths{iL} = strrep(this.csPaths{iL}, ...
                     'this.', ...
                     [ 'this.oSimulationInfrastructure.oSimulationContainer.toChildren.' this.tLogValues(iL).sObjectPath '.' ] ...
-                );
+                    );
                 
                 %tLogProp.sExpression = strrep(tLogProp.sExpression, 'this.', [ tLogProp.sObjectPath '.' ]);
             end

@@ -1421,6 +1421,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
 
         function setOutdatedTS(this)
+            
             if ~this.bOutdatedTS
                 this.bOutdatedTS = true;
 

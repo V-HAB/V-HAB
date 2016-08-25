@@ -35,7 +35,7 @@ classdef vhab
         
         
         function clear(bDontPreserveBreakpoints)
-            if nargin < 1 || ~islogical(bDontPreserveBreakpoints),
+            if nargin < 1 || ~islogical(bDontPreserveBreakpoints)
                 bDontPreserveBreakpoints = false;
             end
             

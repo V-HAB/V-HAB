@@ -771,7 +771,8 @@ classdef store < base
                 if any(strcmp(csVolPhases, this.aoPhases(iI).sType))
                     fVolume = fVolume - this.aoPhases(iI).fVolume;
                     
-                else iPhasesSet = iPhasesSet + 1;
+                else
+                    iPhasesSet = iPhasesSet + 1;
                 end
             end
             
