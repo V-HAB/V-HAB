@@ -50,7 +50,7 @@ if length(varargin) == 1
             return;
         end
         
-        [ afPartialPressures, ~ ] = this.calculatePartialPressures(varargin{1});
+        afPartialPressures = this.calculatePartialPressures(varargin{1});
         
     elseif strcmp(sMatterState, 'liquid')
         % For liquids the density has to be calculated from the matter

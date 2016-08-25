@@ -86,9 +86,10 @@ arFractions = afMols ./ fGasAmount;
 % total pressure in the phase
 afPartialPressures = arFractions .* fPressure;
 
-% Calculating the concentration in ppm 
-afPartsPerMillion = (afMass .* varargin{1}.fMolarMass) ./ (this.afMolarMass .* varargin{1}.fMass) * 1e6;
-
+if nargout > 1
+    % Calculating the concentration in ppm 
+    afPartsPerMillion = (afMass .* varargin{1}.fMolarMass) ./ (this.afMolarMass .* varargin{1}.fMass) * 1e6;
+end
 end
 
 
