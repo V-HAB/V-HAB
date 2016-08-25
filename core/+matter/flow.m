@@ -171,9 +171,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         
         function [ setData, hRemoveIfProc ] = seal(this, bIf, oBranch)
-            %if strcmp(this.oBranch.sName, 'Filter__FilterIn___Interface___Tank_1__Port_1')
-            %    keyboard();
-            %end
             
             if this.bSealed
                 this.throw('seal', 'Already sealed!');

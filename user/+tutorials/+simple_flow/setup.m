@@ -115,9 +115,9 @@ classdef setup < simulation.infrastructure
 
         end
         
-        function plot(this) % Plotting the results
+        function plot(this, varargin) % Plotting the results
             
-            this.toMonitors.oPlotter.plot();
+            this.toMonitors.oPlotter.plot(varargin{:});
             return;
             
             
