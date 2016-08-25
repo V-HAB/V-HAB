@@ -776,6 +776,13 @@ classdef store < base
                 end
             end
             
+            % Check if the user has entered values for the solid, liquid or
+            % absorber phase volumes that are larger than the store's. If
+            % so, throw an error. 
+            if tools.round.prec(fVolume, this.oTimer.iPrecision) < 0
+                this.throw('The values you have entered for the phase volumes of the ''%s'' store are larger than the store itself.', this.sName);
+            end
+            
             % Set remaining volume for each phase - see above, need to
             % calculate an absolute pressure from all gas/plasma phases?
             for iI = 1:this.iPhases
