@@ -40,6 +40,11 @@ classdef infrastructure < base & event.source
         % is being called by TherMoS every simulated second and we want to
         % minimize clutter on the console.
         bSuppressConsoleOutput = false;
+        
+        % Sometimes it may be helpful for the user to receive an acoustic
+        % message when a simulation is complete. This can be enabled by
+        % setting this flag to true.
+        bPlayFinishSound = false;
     end
     
     
@@ -228,6 +233,9 @@ classdef infrastructure < base & event.source
                 
                 this.toMonitors.(csMonitors{iM}) = monitorConstructor(this, cParams{:});
             end
+            
+            % Bind the playFinishSound() method to the 'finished' event.
+            this.bind('finish', @(~) this.playFinishSound());
         
         
             % Pre Init
@@ -526,6 +534,15 @@ classdef infrastructure < base & event.source
             
             save([ 'data/' sPath '.mat' ], 'oSimObj');
 
+        end
+        
+        function playFinishSound(this)
+            if this.bPlayFinishSound
+                % Loading the data for the finishing sound
+                [afSampleData, afSampleRate] = audioread('lib/+special/V-HAB Finish Sound.mp3');
+                % Playing the finishing sound
+                sound(afSampleData, afSampleRate);
+            end
         end
 
     end
