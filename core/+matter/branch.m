@@ -374,12 +374,20 @@ classdef branch < base & event.source
                 rethrow(oErr);
             end
             
-            % Connect the interface flow here to the first f2f proc in the
-            % newly connected branch - but first check if it has flow
-            % procs, if not check for right exme!
+            % Does this branch we are connecting to have any flow to flow
+            % processors?
             if this.coBranches{2}.iFlowProcs == 0
-                % RIGHT one - can't have a left exme!
-                oProc = this.coBranches{2}.coExmes{2};
+                % Is the branch we are connecting to a pass-through branch?
+                if ~all(this.coBranches{2}.abIf)
+                    % Since this non-pass-through branch has no flow
+                    % processors, we can connect directly to the exme on
+                    % the right side of this branch. It can't be on the
+                    % left side, of course, since this is where the
+                    % interface is!
+                    oProc = this.coBranches{2}.coExmes{2};
+                else
+                    this.throw('Pass-through branches currently require at least one f2f processor. Branch %s has none.', this.coBranches{2}.sName);
+                end
             else
                 oProc = this.coBranches{2}.aoFlowProcs(1);
             end
@@ -420,9 +428,6 @@ classdef branch < base & event.source
             % updateConnectedBranches() method.
             if all(this.abIf)
                 sLeftBranchName = strrep(oBranch.sName, this.csNames{2}, '');
-                
-                %sjo - sRightBranchName was not defined ... instead using
-                %   csRightBranchName{2}, no idea of that's correct ...
                 sNewSubsystemBranchName = [ sLeftBranchName, 'Interface', csRightBranchName{2} ];
             else
                 sNewSubsystemBranchName = '';
@@ -741,7 +746,9 @@ classdef branch < base & event.source
                 % branch, there will be a new Name for this branch. If not,
                 % then the 'sNewBranchName' variable is empty.
                 if ~(strcmp(sNewBranchName,''))
+                    %sOldName = this.sName;
                     this.sName = sNewBranchName;
+                    %this.oContainer.updateBranchNames(this, sOldName);                 
                 end
             end
         end
