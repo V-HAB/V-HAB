@@ -244,6 +244,8 @@ classdef infrastructure < base & event.source
             % iSimTicks/fSimTime reached - directly set attributes to
             % influence behaviour
             
+            iPhases = 0;
+            iBranches = 0;
             
             if this.oSimulationContainer.oTimer.iTick == -1
                 % Construct matter, solvers, ...
@@ -275,9 +277,13 @@ classdef infrastructure < base & event.source
                     %if ismethod(oChild,'createDomainInterfaces')
                     %   oChild.createDomainInterfaces();
                     %end
+                    
+                    iPhases = iPhases + oChild.iPhases;
+                    iBranches = iBranches + oChild.iBranches;
                 end
                 
                 disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
+                disp(['Model contains ', num2str(iBranches), ' Branches and ', num2str(iPhases), ' Phases.'])
                 
                 % Setup monitors
                 this.configureMonitors();

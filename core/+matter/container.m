@@ -28,6 +28,8 @@ classdef container < sys
         % Reference to the branches, by name
         toBranches = struct();
         
+        iBranches = 0;
+        iPhases = 0;
         
         % Sealed?
         bMatterSealed = false;
@@ -135,6 +137,9 @@ classdef container < sys
                 sChild = csChildren{iC};
                 
                 this.toChildren.(sChild).sealMatterStructure();
+                
+                this.iPhases = this.iPhases + this.toChildren.(sChild).iPhases;
+                this.iBranches = this.iBranches + length(this.toChildren.(sChild).toBranches);
             end
             
             
@@ -148,6 +153,8 @@ classdef container < sys
                 % Stores need a timer object, to be accessed by the phases
                 % to e.g. register updates, find out elapsed time
                 this.toStores.(this.csStores{iI}).seal();
+                
+                this.iPhases = this.iPhases + this.toStores.(this.csStores{iI}).iPhases;
             end
             
             % Now we seal off all of the branches. Some of them may be
@@ -205,6 +212,8 @@ classdef container < sys
                     end
                 end
             end
+            
+            this.iBranches = this.iBranches + length(this.aoBranches);
             
             this.bMatterSealed = true;
         end
