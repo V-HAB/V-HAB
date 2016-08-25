@@ -132,7 +132,7 @@ if iNumArgs == 1 %nargin < 3
                     end
                 end
             else
-                afPP = oMatterRef.oBranch.coExmes{1,2}.oPhase.afPP;
+                afPP = oMatterRef.oBranch.coExmes{2,1}.oPhase.afPP;
             end
         else
             try
