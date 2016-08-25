@@ -104,8 +104,9 @@ classdef plotter_basic < simulation.monitor
         %% Default plot method
         function plot(this, tParameters)
             
-            bLegendOn   = true;
-            bTimePlotOn = true;
+            bLegendOn    = true;
+            bTimePlotOn  = true;
+            bPlotToolsOn = false;
             
             if nargin > 1 
                 if isfield(tParameters, 'bLegendOn')
@@ -114,6 +115,9 @@ classdef plotter_basic < simulation.monitor
                 if isfield(tParameters, 'bTimePlotOn')
                     bTimePlotOn = tParameters.bTimePlotOn;
                 end
+                if isfield(tParameters, 'bPlotToolsOn')
+                    bPlotToolsOn = tParameters.bPlotToolsOn;
+                end
             end
             
             oInfra  = this.oSimulationInfrastructure;
@@ -121,9 +125,6 @@ classdef plotter_basic < simulation.monitor
             iPlots  = length(this.tPlots) + sif(bTimePlotOn,1,0);
             iGrid   = ceil(sqrt(iPlots));
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
-            
-            
-            
             
             % Rows of grid - can we reduce?
             iGridRows = iGrid;
@@ -193,9 +194,13 @@ classdef plotter_basic < simulation.monitor
 
             drawnow;
             
-            % Maximize figure
-            set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
             
+            if bPlotToolsOn
+                plottools(oFigure, 'on');
+            else
+                % Maximize figure
+                set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
+            end
             
             oFigure.UserData = struct('coAxesHandles', { coHandles });
         end
