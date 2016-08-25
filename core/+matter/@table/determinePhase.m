@@ -20,7 +20,7 @@ if isnumeric(sSubstance)
     
     miPhase = zeros(1,this.iSubstances);
     for k = 1:length(csSubstances)
-        [miPhase(this.tiN2I.(csSubstances{k})), ~] = determinePhaseForSubstance(this, csSubstances{k}, fTemperature, fPressure);
+        [miPhase(this.tiN2I.(csSubstances{k})), ~] = determinePhaseForSubstance(this, csSubstances{k}, fTemperature, fPressure(this.tiN2I.(csSubstances{k})));
     end
     
     try

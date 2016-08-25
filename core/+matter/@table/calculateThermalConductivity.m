@@ -65,14 +65,16 @@ if iNumArgs == 1 %nargin < 3
             
             if isempty(oMatterRef.sPhaseType)
                 afPP = ones(1,this.iSubstances) .* this.Standard.Pressure;
-                aiPhase = this.determinePhase(oMatterRef.afMass, oMatterRef.fTemperature, this.Standard.Pressure);
+                aiPhase = this.determinePhase(oMatterRef.afMass, oMatterRef.fTemperature, ones(1,this.iSubstances) .* this.Standard.Pressure);
             else
-                aiPhase = this.determinePhase(oMatterRef.afMass, oMatterRef.fTemperature, oMatterRef.fPressure);
+                aiPhase = this.determinePhase(oMatterRef.afMass, oMatterRef.fTemperature, ones(1,this.iSubstances) .* oMatterRef.fPressure);
                 if strcmp(oMatterRef.sPhaseType, 'gas')
                     afMassGas = zeros(1,this.iSubstances);
-                    afMassGas(aiPhase == 3) = oMatterRef.afMass(aiPhase == 3);
+                    afMassGas(aiPhase ~= 1) = oMatterRef.afMass(aiPhase ~= 1);
                     afPP = this.calculatePartialPressures('gas',afMassGas, oMatterRef.fPressure);
-                    afPP(aiPhase ~= 3) = oMatterRef.fPressure;
+                    afPP(aiPhase == 1) = oMatterRef.fPressure;
+
+                    aiPhase = this.determinePhase(oMatterRef.afMass, oMatterRef.fTemperature, afPP);
                 else
                     afPP = ones(1,this.iSubstances) .* oMatterRef.fPressure;
                 end
@@ -122,6 +124,21 @@ if iNumArgs == 1 %nargin < 3
                     afPP = ones(1,this.iSubstances) .* this.Standard.Pressure;
                 end
             end
+            
+        elseif strcmp(sMatterState, 'mixture')
+            oPhase = oMatterRef.getInEXME().oPhase;
+            
+            aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, ones(1,this.iSubstances) .* oPhase.fPressure);
+            if strcmp(oPhase.sPhaseType, 'gas')
+                afMassGas = zeros(1,this.iSubstances);
+                afMassGas(aiPhase ~= 1) = oPhase.afMass(aiPhase ~= 1);
+                afPP = this.calculatePartialPressures('gas',afMassGas, oPhase.fPressure);
+                afPP(aiPhase == 1) = oPhase.fPressure;
+
+                aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, afPP);
+            else
+                afPP = ones(1,this.iSubstances) .* oPhase.fPressure;
+            end
         else
             try
                 if ~isnan(oMatterRef.getInEXME().oPhase.fPressure)
@@ -161,6 +178,25 @@ if iNumArgs == 1 %nargin < 3
                 end
             else
                 afPP = oMatterRef.oBranch.coExmes{2,1}.oPhase.afPP;
+            end
+            
+        elseif strcmp(sMatterState, 'mixture')
+            if oMatterRef.fFlowRate >= 0
+                oPhase = oMatterRef.oBranch.coExmes{1,1}.oPhase;
+            else
+                oPhase = oMatterRef.oBranch.coExmes{2,1}.oPhase;
+            end
+            
+            aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, ones(1,this.iSubstances) .* oPhase.fPressure);
+            if strcmp(oPhase.sPhaseType, 'gas')
+                afMassGas = zeros(1,this.iSubstances);
+                afMassGas(aiPhase ~= 1) = oPhase.afMass(aiPhase ~= 1);
+                afPP = this.calculatePartialPressures('gas',afMassGas, oPhase.fPressure);
+                afPP(aiPhase == 1) = oPhase.fPressure;
+
+                aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, afPP);
+            else
+                afPP = ones(1,this.iSubstances) .* oPhase.fPressure;
             end
         else
             try

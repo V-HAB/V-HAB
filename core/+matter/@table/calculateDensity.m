@@ -25,9 +25,11 @@ if length(varargin) == 1
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type
     if isa(varargin{1}, 'matter.phase')
-        sMatterState = varargin{1}.sType; 
+        sMatterState = varargin{1}.sType;
+        oPhase = varargin{1};
     elseif isa(varargin{1}, 'matter.flow')
         sMatterState = varargin{1}.oBranch.getInEXME().oPhase.sType;
+        oPhase = varargin{1}.oBranch.getInEXME().oPhase;
     end
     
     fTemperature = varargin{1}.fTemperature;
@@ -50,25 +52,27 @@ if length(varargin) == 1
         % For liquids the density has to be calculated from the matter
         % table.
         afPartialPressures = ones(1, this.iSubstances) * varargin{1}.fPressure;
-    elseif strcmp(oMatterRef.sType, 'mixture')
+    elseif strcmp(sMatterState, 'mixture')
         % for mixtures the actual matter type is set by the user and
         % also differs for each substance. The partial pressure for a gas
         % mixture phase (e.g. gas that contains solids) has to be
         % calculated the same way as for a gas phase except for the
         % substances that are solid
 
-        if isempty(oMatterRef.sPhaseType)
+        if isempty(oPhase.sPhaseType)
             afPartialPressures = ones(1,this.iSubstances) .* this.Standard.Pressure;
-            aiPhase = this.determinePhase(oMatterRef.afMass, oMatterRef.fTemperature, this.Standard.Pressure);
+            aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, ones(1,this.iSubstances) .* this.Standard.Pressure);
         else
-            aiPhase = this.determinePhase(oMatterRef.afMass, oMatterRef.fTemperature, oMatterRef.fPressure);
-            if strcmp(oMatterRef.sPhaseType, 'gas')
+            aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, ones(1,this.iSubstances) .* oPhase.fPressure);
+            if strcmp(oPhase.sPhaseType, 'gas')
                 afMassGas = zeros(1,this.iSubstances);
-                afMassGas(aiPhase == 3) = oMatterRef.afMass(aiPhase == 3);
-                afPartialPressures = this.calculatePartialPressures('gas',afMassGas, oMatterRef.fPressure);
-                afPartialPressures(aiPhase ~= 3) = oMatterRef.fPressure;
+                afMassGas(aiPhase ~= 1) = oPhase.afMass(aiPhase ~= 1);
+                afPartialPressures = this.calculatePartialPressures('gas',afMassGas, oPhase.fPressure);
+                afPartialPressures(aiPhase == 1) = oPhase.fPressure;
+
+                aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, afPartialPressures);
             else
-                afPartialPressures = ones(1,this.iSubstances) .* oMatterRef.fPressure;
+                afPartialPressures = ones(1,this.iSubstances) .* oPhase.fPressure;
             end
         end
     else

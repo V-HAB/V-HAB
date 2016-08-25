@@ -33,6 +33,18 @@ classdef mixture < matter.phase
             this.fPressureLastHeatCapacityUpdate = this.fPressure;
         end
         
+    function this = update(this)
+        update@matter.phase(this);
+        
+        this.fDensity = this.fMass / this.fVolume;
+        
+        % TO DO: implement pressure calculation for liquid phase
+        if strcmp(this.sPhaseType, 'gas')
+            this.fPressure = this.oMT.calculatePressure(this);
+        end
+        
+        
+    end
     function updateSpecificHeatCapacity(this)
         
         
@@ -53,8 +65,6 @@ classdef mixture < matter.phase
             this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
         end
     end
-        
     end
-    
 end
 
