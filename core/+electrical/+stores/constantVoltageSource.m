@@ -20,6 +20,10 @@ classdef constantVoltageSource < electrical.store
             
         end
         
+        function update(this)
+            update@electrical.store(this);
+        end
+        
     end
     
 end

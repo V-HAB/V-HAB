@@ -18,6 +18,8 @@ classdef circuit < base & event.source
         
         toStores = struct();
         
+        iStores;
+        
         aoNodes = electrical.node.empty();
         
         toNodes = struct();
@@ -260,9 +262,15 @@ classdef circuit < base & event.source
         function seal(this)
             
             % Sealing the nodes
-            this.iNodes    = length(this.aoNodes);
+            this.iNodes = length(this.aoNodes);
             for iI = 1:this.iNodes
                 this.aoNodes(iI).seal();
+            end
+            
+            % Sealing the stores
+            this.iStores = length(this.aoStores);
+            for iI = 1:this.iStores
+                this.aoStores(iI).seal();
             end
             
             %%% Copied from matter.container
