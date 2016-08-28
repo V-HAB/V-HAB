@@ -22,13 +22,18 @@ classdef Example < vsys
             
             % Make the system configurable
             eval(this.oRoot.oCfgParams.configCode(this));
+            
+            % In order to make components in the other domains (matter,
+            % thermal) able to access the electrical circuits in this
+            % system, we create them here.
+            electrical.circuit(this, 'ExampleCircuit');
         end
         
         function createElectricalStructure(this)
             createElectricalStructure@vsys(this);
             
-            % Create circuit
-            oCircuit = electrical.circuit(this, 'ExampleCircuit');
+            % Create circuit reference, so the code isn't so long.
+            oCircuit = this.toCircuits.ExampleCircuit;
             
             % Create source
             electrical.stores.constantVoltageSource(oCircuit, 'VoltageSource', 'DC', 6);
@@ -74,10 +79,6 @@ classdef Example < vsys
             electrical.branch(oCircuit, 'Node_3.Terminal_3',      {},            'Node_4.Terminal_2');
             electrical.branch(oCircuit, 'Node_4.Terminal_3',      {},            'Node_5.Terminal_2');
             electrical.branch(oCircuit, 'Node_5.Terminal_3',      {},            'VoltageSource.negative');
-            
-            
-            
-            
             
         end
         
