@@ -122,10 +122,54 @@ switch sMatterState
     case 'solid'
         error('In V-HAB solids do not have a pressure')
     case 'liquid'
-        % for liquids the partial density of each substance would be the
-        % density of the substance if it occupies the complete volume by
-        % itself without any other substances. (Because liquids do not have
-        % a partial pressure like gases)
+        % for liquids the partial density of each substance can not be
+        % calculated as simply as for gases where each gas can be assumed
+        % to occupy the complete volume by itself. Instead of each
+        % component of the liquid having an individual partial pressure it
+        % is more accurate to assume that all substance inside the liquid
+        % have the same pressure. However if the same principle would be
+        % applied to the density it would not result in correct values
+        % since e.g. water has a density of ~1000 kg/m³ while Isopentan has
+        % a density of 616 kg/m². If the two would form a mixture with very
+        % little water and then using the overall density to calculate the
+        % pressure would result in the water changing its phase according
+        % to this calculation.
+        % Instead it is more accurate to say that each liquid occupies a
+        % part volume and has a partial density that fits the pressure and
+        % temperature for a pure liquid of this substance. However that
+        % makes the calculation of the pressure for liquids difficult
+        % because the pressure is required in order to calculate the
+        % density. If now the density is required to calculate the pressure
+        % as well this could only be solved iterativly with a huge impact
+        % on the computation time. 
+        % Furthermore for mixtures of several liquids the calculation of
+        % the partial volumes would require yet another iteration to ensure
+        % that each liquid of the mixture actually reaches the same
+        % pressure. 
+        %
+        % Brainstorming: What can we easily calculate?
+        % - Overall Density
+        % - Overall Temperature
+        % - Overall Volume
+        % - Overall Mass
+        % - Partial Masses
+        % - Mass Ratios
+        % 
+        % And how can we use that to calculate the pressure of a liquid
+        % mixture? (note pure liquids are simple ;))
+        %
+        % Also aside from liquid + liquid mixtures it is also necessary to
+        % implement the mixture of liquid+solid+gas. For liquid + solid the
+        % same approach as for solid + gas can be used! For liquid + gas
+        % the approach would be to assume that the gas has the same
+        % pressure as the liquid and it is ignored during the pressure
+        % calculation
+        %
+        % Liquid + Liquid mixture calculation approach:
+        % 
+        %
+        %
+        
         error('Not yet implemented sorry')
     case 'gas'
         % gases behave as if each component of the gas mixture is alone in
