@@ -142,58 +142,37 @@ classdef Example < vsys
             components.pipe(this, 'Pipe5', 1, 0.01, 0.0002);
             components.pipe(this, 'Pipe6', 1, 0.01, 0.0002);
             
-            tutorials.incompressible_solver.components.fan(this, 'Fan_1', 1e4, 1);
-            tutorials.incompressible_solver.components.fan(this, 'Fan_2', 1e4, 1);
-            
             % Creating the flow path between the two gas tanks via the heat
             % exchanger
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            matter.branch(this, 'Tank_1.Port_1', {'Fan_1', 'Pipe1', 'CondensingHeatExchanger_2', 'Pipe2'}, 'Tank_2.Port_2');
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe1', 'CondensingHeatExchanger_2', 'Pipe2'}, 'Tank_2.Port_2');
             matter.branch(this, 'Tank_2.Port_4', {'Pipe5', 'Air_Heater'}, 'Tank_1.Port_3');
             
             % Creating the flow path between the two water tanks via the 
             % heat exchanger
-            matter.branch(this, 'Tank_3.Port_5', {'Fan_2', 'Pipe3', 'CondensingHeatExchanger_1', 'Pipe4'}, 'Tank_4.Port_6');
+            matter.branch(this, 'Tank_3.Port_5', {'Pipe3', 'CondensingHeatExchanger_1', 'Pipe4'}, 'Tank_4.Port_6');
             matter.branch(this, 'Tank_4.Port_8', {'Pipe6', 'Water_Heater'}, 'Tank_3.Port_7');
             
         end
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
+            % Creating the solver branches.
+            oB1 = solver.matter.manual.branch(this.aoBranches(1));
+            oB2 = solver.matter.manual.branch(this.aoBranches(2));
+            oB3 = solver.matter.manual.branch(this.aoBranches(3));
+            oB4 = solver.matter.manual.branch(this.aoBranches(4));
             
-            for iI = 1:length(this.aoBranches)
-                solver.matter.incompressible_liquid.branch_incompressible_liquid(this.aoBranches(iI));
-            end
-
-            iIncompBranches = length(this.aoBranches);
-            %This matrix defines which branches form an interdependant
-            %loop. For each loop the matrix contains one columns that has
-            %the branch number within this loop as row entries. This is
-            %required for the steady state calculation to set viable steady
-            %state flowrates that allow high time steps.
-            mLoopBranches = [1,3;2,4];
-            %System Solver Inputs:
-            %(oSystem, fMinTimeStep, fMaxTimeStep, fMaxProcentualFlowSpeedChange, iPartialSteps, iLastSystemBranch, fSteadyStateTimeStep, fSteadyStateAcceleration, mLoopBranches)  
-            this.oSystemSolver = solver.matter.incompressible_liquid.system_incompressible_liquid(this, 1e-2, 5, 1e-2, 100, iIncompBranches, 5, 5, mLoopBranches);
-           
+            % Now we set the flow rate in the manual solver branches to a
+            % slow 10 grams per second.
+            oB1.setFlowRate(0.01);
+            oB2.setFlowRate(0.01);
+            oB3.setFlowRate(0.01);
+            oB4.setFlowRate(0.01);
             
-            
-%             % Creating the solver branches.
-%             oB1 = solver.matter.manual.branch(this.aoBranches(1));
-%             oB2 = solver.matter.manual.branch(this.aoBranches(2));
-%             oB3 = solver.matter.manual.branch(this.aoBranches(3));
-%             oB4 = solver.matter.manual.branch(this.aoBranches(4));
-%             
-%             % Now we set the flow rate in the manual solver branches to a
-%             % slow 10 grams per second.
-%             oB1.setFlowRate(0.01);
-%             oB2.setFlowRate(0.01);
-%             oB3.setFlowRate(0.01);
-%             oB4.setFlowRate(0.01);
-            
-            this.toProcsF2F.Air_Heater.setPower(10);
-            this.toProcsF2F.Water_Heater.setPower(-10);
+            this.toProcsF2F.Air_Heater.fPower = 10;
+            this.toProcsF2F.Water_Heater.fPower = -10;
         end
     end
     

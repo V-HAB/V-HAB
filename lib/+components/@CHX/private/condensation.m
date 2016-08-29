@@ -55,7 +55,7 @@ fPressure = oFlow_Hot.fPressure;
 fMolarMassFlow = oFlow_Hot.fMolarMass;
 
 for n = 1: length(acSubstanceNamesFlow)
-    mVaporPressures(n) = calcVaporPressure(fTwall, acSubstanceNamesFlow{n});
+    mVaporPressures(n) = oHX.oMT.calculateVaporPressure(fTwall, acSubstanceNamesFlow{n});
     
     mMolarMassSubstance(n) = oFlow_Hot.oMT.afMolarMass(oFlow_Hot.oMT.tiN2I.(acSubstanceNamesFlow{n}));
     mPartialMass(n) = oFlow_Hot.arPartialMass(oFlow_Hot.oMT.tiN2I.(acSubstanceNamesFlow{n}));
@@ -100,7 +100,7 @@ if max(mMaxCondensateMassFlow) > 0
     mVaporPressuresCore = zeros(length(acSubstanceNamesFlow),1);
     
     for n = 1: length(acSubstanceNamesFlow)
-        mVaporPressuresCore(n) = calcVaporPressure(fOutlet_Temp_Hot, acSubstanceNamesFlow{n});
+        mVaporPressuresCore(n) = oHX.oMT.calculateVaporPressure(fOutlet_Temp_Hot, acSubstanceNamesFlow{n});
     end
     
     mMaxMassFractionCore = (mVaporPressuresCore./fPressure).*(mMolarMassSubstance./fMolarMassFlow);

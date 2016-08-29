@@ -111,15 +111,12 @@ aiIndices   = find(arPartialMass > 0);
 % with the density
 
 csPhase = {'solid';'liquid';'gas';'supercritical'};
-tiP2N.solid = 1;
-tiP2N.liquid = 2;
-tiP2N.gas = 3;
-tiP2N.supercritical = 4;
 
 % One of the most important parts to correctly calculate the pressure is to
 % use the correct partial densities.
 switch sMatterState
     case 'solid'
+        
         error('In V-HAB solids do not have a pressure')
     case 'liquid'
         % for liquids the partial density of each substance can not be
@@ -176,7 +173,10 @@ switch sMatterState
         % the total gas volume and therefore the partial density is the
         % mass ratio times the total density.
         afPartialDensity = arPartialMass.*fDensity;
-        aiPhase = tiP2N.(sMatterState)*ones(1,this.iSubstances);
+        
+        aiPhase = this.determinePhase(afMass, fTemperature, ones(1,this.iSubstances) .* fCurrentPressure);
+        aiLiquidIndices = find(aiPhase == 2,1);
+            
     case 'mixture'
         switch oPhase.sPhaseType
             case 'solid'
@@ -191,18 +191,25 @@ switch sMatterState
             % gases in this case (like water vapor in the air). In order to
             % achieve this it is necessary to first calculate the density
             % for the solid components.
-            afMassSolids = afMass;
-            afMassSolids(aiPhase ~= 1) = 0;
-            fDensitySolids = this.calculateDensity('solid',afMassSolids, fTemperature, fCurrentPressure);
+            aiSolidIndices = find(aiPhase == 1,1);
+            aiLiquidIndices = find(aiPhase == 2,1);
+            if ~isempty(aiSolidIndices)
+                
+                afMassSolids = afMass;
+                afMassSolids(aiPhase ~= 1)= 0;
+                fDensitySolids = this.calculateDensity('solid',afMassSolids, fTemperature, fCurrentPressure);
+
+                fVolumeGas = (oPhase.fVolume - (sum(afMassSolids) / fDensitySolids));
+                fDensityGas = sum(afMass(aiPhase~=1))/fVolumeGas;
+                afPartialDensity = arPartialMass.*fDensityGas;
             
-            fVolumeGas = (oPhase.fVolume - (sum(afMassSolids) / fDensitySolids));
-            fDensityGas = sum(afMass(afMass~=1))/fVolumeGas;
-            afPartialDensity = arPartialMass.*fDensityGas;
-            
-            afPartialDensity(aiPhase == 1) = 0;
-           
-            aiIndices(aiIndices == find(aiPhase == 1)) = [];
-            
+                afPartialDensity(aiSolidIndices) = 0;
+
+                aiIndices(aiIndices == aiSolidIndices) = [];
+                
+            else
+                afPartialDensity = arPartialMass.*fDensity;
+            end
             aiPhase = 3*ones(1,this.iSubstances);
         end
 end
@@ -227,6 +234,53 @@ for iI = 1:iNumIndices
     
     % Now we can call the findProperty() method.
     afPP(iI) = this.findProperty(tParameters);
+end
+
+
+if ~isempty(aiLiquidIndices)
+% For liquids in gases it is necessary to calculate the
+% vapor pressure and check if actually all of the liquid is
+% vapor or if some is liquid. For this purpose the vapor
+% pressure is calculated here and then compared to the
+% calculated partial pressure assuming that all of the liquid
+% is vapor. If the partial pressure calculated under this
+% assumption is higher than the vapor pressure some of the
+% water has to be liquid.
+    csLiquids = this.csSubstances(aiLiquidIndices);
+    for iK = 1:length(csLiquids)
+        tVaporPressure.(csLiquids{iK}) = this.calculateVaporPressure(fTemperature, csLiquids{iK});
+    end
+    afLiquidPartialPressures = afPP(aiIndices == aiLiquidIndices);
+    for iK = 1:length(afLiquidPartialPressures)
+        if afLiquidPartialPressures(iK) > tVaporPressure.(csLiquids{iK})
+            % in this case some of the normally liquid substance in the gas
+            % phase is actually liquid and the partial pressure for it is
+            % exactly the vapor pressure
+            afPP(aiIndices == aiLiquidIndices(iK)) = tVaporPressure.(csLiquids{iK});
+            % the available volume for the gas in this case also would have
+            % to be reduced by the volume the actually liquid substance
+            % occupies but that would require an actual calculation how
+            % much of the substance is liquid and how much is vapor. For
+            % this it would be necessary to calculate the vapor density at
+            % the given vapor pressure and multiply it with the gas volume
+            % resulting the vapor mass for the substance. That could then
+            % be subtracted from the overall substance mass to gain the
+            % liquid mass of the substance. Then the density for the liquid
+            % at the total pressure and temperature would have to be
+            % calculated in order to obtain the volume the liquid occupies.
+            % This volume could then be subtracted from the gas volume to
+            % gain the actual gas volume which then could be used to
+            % calculate the new partial densities for the substances. Now
+            % the whole find property calculation would have to be redone
+            % in order to calculate the correct partial pressures. For the
+            % precise solution this would even have to be iterated.
+            %
+            % To make a long story short, the assumption for this case
+            % (since the actual calculation would be overkill) is that the
+            % liquid volume is much smaller than the gas volume and can be
+            % neglected.
+        end
+    end
 end
 
 % Make sure there is no NaN in the specific heat capacity vector.
