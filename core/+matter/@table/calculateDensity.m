@@ -67,10 +67,12 @@ if length(varargin) == 1
             if strcmp(oPhase.sPhaseType, 'gas')
                 afMassGas = zeros(1,this.iSubstances);
                 afMassGas(aiPhase ~= 1) = oPhase.afMass(aiPhase ~= 1);
-                afPartialPressures = this.calculatePartialPressures('gas',afMassGas, oPhase.fPressure);
+                afPartialPressures = this.calculatePartialPressures('gas',afMassGas, oPhase.fPressure, oPhase.fTemperature);
                 afPartialPressures(aiPhase == 1) = oPhase.fPressure;
 
                 aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, afPartialPressures);
+                
+                aiPhase = round(aiPhase,0);
             else
                 afPartialPressures = ones(1,this.iSubstances) .* oPhase.fPressure;
             end

@@ -1,5 +1,5 @@
 function fPressure = calculatePressure(this, varargin) %sMatterState, afMasses, fTemperature, fPressure)
-
+% TO DO: Add description, also give partial pressures as output?
 
 iNumArgs = length(varargin); % |iNumArgs == nargin - 1|!?
 

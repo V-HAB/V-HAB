@@ -7,7 +7,8 @@ function fVaporPressure = calculateVaporPressure(~, fTemperature, sSubstance)
     
 %first it is necessary to decide for which substance the vapor pressure
 %should be calculated
-if strcmp(sSubstance, 'CH4')
+switch sSubstance
+    case 'CH4'
     %Anotine Equation Parameters
     if fTemperature < 90.99
         %Methan is  a liquid at this temperature
@@ -23,7 +24,7 @@ if strcmp(sSubstance, 'CH4')
         %Methan is a gas at this temperature
         fVaporPressure = inf;
     end
-elseif strcmp(sSubstance, 'H2')
+    case 'H2'
     %Anotine Equation Parameters
     if fTemperature < 21.01
         %Hydrogen is  a liquid at this temperature
@@ -39,7 +40,7 @@ elseif strcmp(sSubstance, 'H2')
         %Hydrogen is a gas at this temperature
         fVaporPressure = inf;
     end
-elseif strcmp(sSubstance, 'O2')
+    case 'O2'
     %Anotine Equation Parameters
     if fTemperature < 54.36
         %liquid at this temperature
@@ -55,7 +56,7 @@ elseif strcmp(sSubstance, 'O2')
         %gas at this temperature
         fVaporPressure = inf;
     end
-elseif strcmp(sSubstance, 'H2O')
+    case 'H2O'
     %Anotine Equation Parameters
     if fTemperature < 255.9
         %Water is  a liquid at this temperature
@@ -78,7 +79,7 @@ elseif strcmp(sSubstance, 'H2O')
         %Water is a gas at this temperature
         fVaporPressure = inf;
     end
-elseif strcmp(sSubstance, 'CO2') 
+    case 'CO2' 
     %Anotine Equation Parameters
     if fTemperature < 154.26
         %Carbondioxid is  a liquid at this temperature
@@ -94,7 +95,7 @@ elseif strcmp(sSubstance, 'CO2')
         %Carbondioxid is a gas at this temperature
         fVaporPressure = inf;
     end
-elseif strcmp(sSubstance, 'NH3') 
+    case 'NH3' 
     %Anotine Equation Parameters
     if fTemperature < 164
         %Carbondioxid is  a liquid at this temperature
@@ -117,7 +118,7 @@ elseif strcmp(sSubstance, 'NH3')
         %Carbondioxid is a gas at this temperature
         fVaporPressure = inf;
     end
-elseif strcmp(sSubstance, 'CO') 
+    case 'CO' 
     %for CO there were no Antoine Equation Parameters on the nist website.
     %Therefore only the boiling point is used as deciding instance
     if fTemperature < 81.63
@@ -127,7 +128,7 @@ elseif strcmp(sSubstance, 'CO')
         %CO is a gas at this temperature
         fVaporPressure = inf;
     end
-elseif strcmp(sSubstance, 'N2') 
+    case 'N2' 
     %for CO there were no Antoine Equation Parameters on the nist website.
     %Therefore only the boiling point is used as deciding instance
     if fTemperature < 64.14
@@ -144,7 +145,7 @@ elseif strcmp(sSubstance, 'N2')
         %gas at this temperature
         fVaporPressure = inf;
     end
-elseif strcmp(sSubstance, 'Ar')
+    case 'Ar'
     %Anotine Equation Parameters
     if fTemperature < 83.78
         %liquid at this temperature
@@ -164,7 +165,7 @@ elseif strcmp(sSubstance, 'Ar')
 %possible trace contaminants but they are not in the normal matter table
 %yet
 
-elseif strcmp(sSubstance, 'C3H6O')
+    case 'C3H6O'
     %Anotine Equation Parameters
     if fTemperature < 259.16
         %liquid at this temperature
@@ -180,7 +181,7 @@ elseif strcmp(sSubstance, 'C3H6O')
         %gas at this temperature
         fVaporPressure = inf;
     end    
-elseif strcmp(sSubstance, 'CH2CL2')
+    case 'CH2CL2'
     %Anotine Equation Parameters
     if fTemperature < 233
         %liquid at this temperature
@@ -196,7 +197,7 @@ elseif strcmp(sSubstance, 'CH2CL2')
         %gas at this temperature
         fVaporPressure = inf;
     end   
-elseif strcmp(sSubstance, 'CH4O')
+    case 'CH4O'
     %Anotine Equation Parameters
     if fTemperature < 288.1
         %liquid at this temperature
@@ -219,7 +220,7 @@ elseif strcmp(sSubstance, 'CH4O')
         %gas at this temperature
         fVaporPressure = inf;
     end   
-elseif strcmp(sSubstance, 'C8H10')
+    case 'C8H10'
     %Anotine Equation Parameters
     if fTemperature < 273
         %liquid at this temperature
@@ -242,7 +243,7 @@ elseif strcmp(sSubstance, 'C8H10')
         %gas at this temperature
         fVaporPressure = inf;
     end   
-else
+    otherwise
     error('the calculation for the substance %s is not available. Please visit http://webbook.nist.gov/chemistry/ and add the calculation to this file', sSubstance);
 end
 

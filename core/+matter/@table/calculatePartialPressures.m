@@ -38,9 +38,11 @@ if length(varargin) == 1
     end
     
     fPressure = varargin{1}.fPressure;
+    fTemperature = varargin{1}.fTemperature;
     
     if isempty(fPressure) || isnan(fPressure)
         fPressure = this.Standard.Pressure; % std pressure (Pa)
+        fTemperature = this.Standard.Temperature; % std temperature (K)
     end       
     
     if fPressure == 0
@@ -60,10 +62,17 @@ else
     afMass  = varargin{2};
     
     % If pressure is given use it, otherwise use standard pressure
-    if nargin > 2
+    if length(varargin) > 2
         fPressure = varargin{3};
     else
         fPressure = this.Standard.Pressure;       % std pressure (Pa)
+    end
+    
+    % If temperature is given use it, otherwise use standard temperature
+    if length(varargin) > 3
+        fTemperature = varargin{4};
+    else
+        fTemperature = this.Standard.Temperature;  % std temperature (K)
     end
     
 end
@@ -85,6 +94,14 @@ arFractions = afMols ./ fGasAmount;
 % Calculating the partial pressures by multiplying with the
 % total pressure in the phase
 afPartialPressures = arFractions .* fPressure;
+
+% for cases with partial pressures above the vapor pressure the
+% partial pressure has to be limited to the vapor pressure
+aiPhases = this.determinePhase(afMass, fTemperature, afPartialPressures);
+miTwoPhaseIndices = find(mod(aiPhases,1));
+for iK = 1:length(miTwoPhaseIndices)
+    afPartialPressures(miTwoPhaseIndices(iK)) = this.calculateVaporPressure(fTemperature, this.csSubstances{miTwoPhaseIndices(iK)});
+end
 
 % Calculating the concentration in ppm 
 try
