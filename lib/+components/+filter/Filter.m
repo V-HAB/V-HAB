@@ -1,10 +1,40 @@
 classdef Filter < vsys
 % TO DO: Description goes here lazy guy
     
+    properties (SetAccess = public, GetAccess = public)
+        % rMaxChange defines the maximum percentage by which the flow rate
+        % can change within one (total) time step
+        rMaxChange = 0.05;
+
+        % fMinimumTimeStep defines the minimal total time step
+        fMinimumTimeStep = 0.001;
+
+        % fMaximumTimeStep defines the minimal total time step
+        fMaximumTimeStep = 0.01;
+
+        % fSteadyStateTimeStep defines the time step that will be used once
+        % the steady state has been reached
+        fSteadyStateTimeStep = 60;
+        
+        % fMaxSteadyStateFlowRateChange is the criterion for when the
+        % steady state has been reached. It defines the maximum difference
+        % between the current and the new mass flow in kg/s. For example
+        % for a value of 1e-6 the calculation will assume steady state if
+        % the difference between the current and the new flow rate is less
+        % than 1 milli g/s
+        fMaxSteadyStateFlowRateChange = 1e-6;
+
+        % Number of internal partial steps used in the flow rate
+        % calculation. In principle the total time step is split into
+        % several smaller internal ones for the flow rate calculation and
+        % this number defines how many of these partial steps will be made
+        iInternalSteps = 100;
+    end
+
     properties (SetAccess = protected, GetAccess = public)
         
         % number of cells used in the filter model
-        iCellNumber = 3;
+        iCellNumber;
         
         % initialization struct to set the initial parameters of the filter
         % model
@@ -13,23 +43,25 @@ classdef Filter < vsys
         %       tfMassAbsorber 	 =   Mass struct for the filter material
         %       tfMassFlow       =   Mass struct for the flow material
         %       fTemperature     =   Initial temperature of the filter in K
+        %       iCellNumber      =   number of cells used in the filter model
+        %       fFrictionFactor  =   Factor used to calculate the pressure loss by multiplying it with the MassFlow^2
+        
+        tGeometry;
+        % Geometry struct for the filter with the following field:
+        %       fArea            =   Area perpendicular to the flow direction in m²
         %       fFlowVolume      =   free volume for the gas flow in the filter in m³
         %       fAbsorberVolume  =   volume of the absorber material in m³
-        %       iCellNumber      =   number of cells used in the filter model
-        %       fFrictionFactor  =
-        
-        % TO DO: other properties (like geometry, maybe Volume should be
-        % part of geometry struct?)
-        
     end
     
     methods
-        function this = Filter(oParent, sName, tInitialization)
+        function this = Filter(oParent, sName, tInitialization, tGeometry)
             
             this@vsys(oParent, sName, 30);
             
             this.tInitialization = tInitialization;
             this.iCellNumber = tInitialization.iCellNumber;
+            
+            this.tGeometry = tGeometry;
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -39,7 +71,7 @@ classdef Filter < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            components.filter.components.FilterStore(this, this.sName, (this.tInitialization.fFlowVolume + this.tInitialization.fAbsorberVolume));
+            components.filter.components.FilterStore(this, this.sName, (this.tGeometry.fFlowVolume + this.tGeometry.fAbsorberVolume));
             
             % The filter and flow phase total masses provided in the
             % tInitialization struct have to be divided by the number of
@@ -59,9 +91,9 @@ classdef Filter < vsys
             % can be created. A for loop is used to allow any number of
             % cells from 2 upwards.
             for iCell = 1:this.iCellNumber
-                oFilterPhase = matter.phases.mixture(this.toStores.(this.sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(this.tInitialization.fAbsorberVolume/this.iCellNumber), this.tInitialization.fTemperature, 1e5);
+                oFilterPhase = matter.phases.mixture(this.toStores.(this.sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(this.tGeometry.fAbsorberVolume/this.iCellNumber), this.tInitialization.fTemperature, 1e5);
                 
-                oFlowPhase = matter.phases.gas(this.toStores.(this.sName), ['Flow_',num2str(iCell)], tfMassesFlow,(this.tInitialization.fFlowVolume/this.iCellNumber), this.tInitialization.fTemperature);
+                oFlowPhase = matter.phases.gas(this.toStores.(this.sName), ['Flow_',num2str(iCell)], tfMassesFlow,(this.tGeometry.fFlowVolume/this.iCellNumber), this.tInitialization.fTemperature);
                 
                 matter.procs.exmes.mixture(oFilterPhase, ['Adsorption_',num2str(iCell)]);
                 matter.procs.exmes.mixture(oFilterPhase, ['Desorption_',num2str(iCell)]);
@@ -131,16 +163,6 @@ classdef Filter < vsys
      methods (Access = protected)
         function updateInterCellFlowrates(this, ~)
             
-            %TO DO: make properties
-            fArea = 1e-2;
-            rMaxChange = 0.05;
-            fMinimumTimeStep = 0.001;
-            fMaximumTimeStep = 0.01;
-            
-            fSteadyStateTimeStep = 60;
-            
-            iInternalSteps = 100;
-            
             % TO DO: currently calculation only for positive flow rate,
             % have to adapt some things to make them work for both cases
             
@@ -149,13 +171,13 @@ classdef Filter < vsys
             % outlet (depending on flow direction) and a flowrate condition
             % at the inlet
             
-            mfCellPressure  = zeros(this.iCellNumber,   iInternalSteps);
-            mfCellMass      = zeros(this.iCellNumber,   iInternalSteps);
-            mfMassChange    = zeros(this.iCellNumber+1, iInternalSteps);
-            mfFlowRates     = zeros(this.iCellNumber+1, iInternalSteps);
-            mfPressureLoss  = zeros(this.iCellNumber-1, iInternalSteps);
-            mfDeltaFlowRate = zeros(this.iCellNumber-1, iInternalSteps);
-            mfTimeStep      = zeros(1, iInternalSteps);
+            mfCellPressure  = zeros(this.iCellNumber,   this.iInternalSteps);
+            mfCellMass      = zeros(this.iCellNumber,   this.iInternalSteps);
+            mfMassChange    = zeros(this.iCellNumber+1, this.iInternalSteps);
+            mfFlowRates     = zeros(this.iCellNumber+1, this.iInternalSteps);
+            mfPressureLoss  = zeros(this.iCellNumber-1, this.iInternalSteps);
+            mfDeltaFlowRate = zeros(this.iCellNumber-1, this.iInternalSteps);
+            mfTimeStep      = zeros(1, this.iInternalSteps);
             % get in flow side, the flow through the filter can be in both
             % directions, get the flow
             mfCellPressure(:,1) = [this.toStores.(this.sName).aoPhases(2:2:end).fPressure];
@@ -169,12 +191,12 @@ classdef Filter < vsys
             end
             mfFlowRates(1,1) = - mfFlowRates(1,1);
             
-            fHelper1 = ((fArea^2) ./ mfCellVolume(1:end-1));
-            rMaxPartialChange   = rMaxChange/iInternalSteps;
-            fMaxPartialTimeStep = fMaximumTimeStep/iInternalSteps;
-            fMinPartialTimeStep = fMinimumTimeStep/iInternalSteps;
+            fHelper1 = ((this.tGeometry.fArea^2) ./ mfCellVolume(1:end-1));
+            rMaxPartialChange   = this.rMaxChange/this.iInternalSteps;
+            fMaxPartialTimeStep = this.fMaximumTimeStep/this.iInternalSteps;
+            fMinPartialTimeStep = this.fMinimumTimeStep/this.iInternalSteps;
             
-            for iStep = 1:iInternalSteps
+            for iStep = 1:this.iInternalSteps
                 % pressure loss calculation by setting a factor as property and
                 % factor * cell length * flow speed = pressure loss?
                 mfPressureLoss(:,iStep)  = (this.tInitialization.fFrictionFactor/(this.iCellNumber-1)) .* abs(mfFlowRates(2:end-1,iStep)).^2;
@@ -205,7 +227,7 @@ classdef Filter < vsys
                 mfMassChange(:,iStep) = mfFlowRates(:,iStep) * mfTimeStep(iStep);
             end
             
-            if max(abs(mfFlowRates(:, iInternalSteps) - mfFlowRates(:, 1))) < 1e-7
+            if max(abs(mfFlowRates(:, this.iInternalSteps) - mfFlowRates(:, 1))) < this.fMaxSteadyStateFlowRateChange
                 % Steady State case: Small discrepancies between the
                 % flowrates will always remain in a dynamic calculation.
                 % But if the differences are small enough this calculation
@@ -234,7 +256,7 @@ classdef Filter < vsys
                     % TO DO:
                     keyboard()
                 end
-                this.setTimeStep(fSteadyStateTimeStep);
+                this.setTimeStep(this.fSteadyStateTimeStep);
             else
                 % dynamic case where the flow rates that were calculated by
                 % the dynamic flow rate calculation are set. The overall

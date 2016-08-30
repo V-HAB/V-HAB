@@ -13,16 +13,17 @@ classdef Example < vsys
         	tInitialization.tfMassAbsorber  =   struct('Zeolite5A',1);
             tInitialization.tfMassFlow      =   struct('N2',1 , 'CO2', 0.01, 'O2', 0.23);
             tInitialization.fTemperature    =   293;
-            tInitialization.fFlowVolume     =   1;
-            tInitialization.fAbsorberVolume =   1;
             tInitialization.iCellNumber     =   10;
             % this factor times the mass flow^2 will decide the pressure
             % loss. In this case the pressure loss will be 0.25 bar at a
             % flowrate of 0.1 kg/s
             tInitialization.fFrictionFactor =   25e5;
             
+            tGeometry.fArea = 1e-2;
+            tGeometry.fFlowVolume     =   1;
+            tGeometry.fAbsorberVolume =   1;
             
-            components.filter.Filter(this, 'Filter', tInitialization);
+            components.filter.Filter(this, 'Filter', tInitialization, tGeometry);
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
