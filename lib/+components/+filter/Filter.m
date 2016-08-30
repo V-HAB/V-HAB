@@ -9,7 +9,8 @@ classdef Filter < vsys
         % fMinimumTimeStep defines the minimal total time step
         fMinimumTimeStep = 0.001;
 
-        % fMaximumTimeStep defines the minimal total time step
+        % fMaximumTimeStep defines the maximum total time step during
+        % dynamic calculations
         fMaximumTimeStep = 0.01;
 
         % fSteadyStateTimeStep defines the time step that will be used once
@@ -46,11 +47,16 @@ classdef Filter < vsys
         %       iCellNumber      =   number of cells used in the filter model
         %       fFrictionFactor  =   Factor used to calculate the pressure loss by multiplying it with the MassFlow^2
         
+        % struct that contains information about the geometry of the filter
         tGeometry;
         % Geometry struct for the filter with the following field:
         %       fArea            =   Area perpendicular to the flow direction in m²
         %       fFlowVolume      =   free volume for the gas flow in the filter in m³
         %       fAbsorberVolume  =   volume of the absorber material in m³
+        
+        % boolean to easier decide if the flow rate through the filter is
+        % negative
+        bNegativeFlow = false;
     end
     
     methods
@@ -149,20 +155,19 @@ classdef Filter < vsys
             
             if fInletFlow >= 0
                 this.aoBranches(1).oHandler.setFlowRate(-fInletFlow);
-                this.aoBranches(end).oHandler.setFlowRate(fInletFlow);
+                this.bNegativeFlow = false;
             else
                 % for negative flow rates the outlet becomes the inlet
-                this.aoBranches(1).oHandler.setFlowRate(fInletFlow);
-                this.aoBranches(end).oHandler.setFlowRate(-fInletFlow);
+                this.aoBranches(end).oHandler.setFlowRate(fInletFlow);
+                this.bNegativeFlow = true;
             end
             
-            this.setTimeStep(0.01);
+            this.setTimeStep(this.oTimer.fMinimumTimeStep);
         end
     end
     
      methods (Access = protected)
         function updateInterCellFlowrates(this, ~)
-            
             % TO DO: currently calculation only for positive flow rate,
             % have to adapt some things to make them work for both cases
             
@@ -171,61 +176,118 @@ classdef Filter < vsys
             % outlet (depending on flow direction) and a flowrate condition
             % at the inlet
             
-            mfCellPressure  = zeros(this.iCellNumber,   this.iInternalSteps);
-            mfCellMass      = zeros(this.iCellNumber,   this.iInternalSteps);
-            mfMassChange    = zeros(this.iCellNumber+1, this.iInternalSteps);
-            mfFlowRates     = zeros(this.iCellNumber+1, this.iInternalSteps);
-            mfPressureLoss  = zeros(this.iCellNumber-1, this.iInternalSteps);
-            mfDeltaFlowRate = zeros(this.iCellNumber-1, this.iInternalSteps);
+            mfCellPressure  = zeros(this.iCellNumber+1,   this.iInternalSteps);
+            mfMassChange    = zeros(this.iCellNumber+1,   this.iInternalSteps);
+            mfFlowRates     = zeros(this.iCellNumber+1,   this.iInternalSteps);
+            
+            mfCellMass      = zeros(this.iCellNumber,     this.iInternalSteps);
+            mfPressureLoss  = zeros(this.iCellNumber,     this.iInternalSteps);
+            mfDeltaFlowRate = zeros(this.iCellNumber,     this.iInternalSteps);
+            
             mfTimeStep      = zeros(1, this.iInternalSteps);
-            % get in flow side, the flow through the filter can be in both
-            % directions, get the flow
-            mfCellPressure(:,1) = [this.toStores.(this.sName).aoPhases(2:2:end).fPressure];
+            
             mfCellVolume(:,1)   = [this.toStores.(this.sName).aoPhases(2:2:end).fVolume];
-            mfCellMass(:,1)     = [this.toStores.(this.sName).aoPhases(2:2:end).fMass];
+           	mfCellMass(:,1)     = [this.toStores.(this.sName).aoPhases(2:2:end).fMass];
             mfFlowRates(:,1)    = [this.aoBranches.fFlowRate];
             
-            if mfFlowRates(1) ~= this.aoBranches(1).oHandler.fRequestedFlowRate
-            	this.setTimeStep(this.oTimer.fMinimumTimeStep);
-                return
-            end
-            mfFlowRates(1,1) = - mfFlowRates(1,1);
             
-            fHelper1 = ((this.tGeometry.fArea^2) ./ mfCellVolume(1:end-1));
+            fHelper1 = ((this.tGeometry.fArea^2) ./ mfCellVolume(1:end));
             rMaxPartialChange   = this.rMaxChange/this.iInternalSteps;
             fMaxPartialTimeStep = this.fMaximumTimeStep/this.iInternalSteps;
             fMinPartialTimeStep = this.fMinimumTimeStep/this.iInternalSteps;
             
-            for iStep = 1:this.iInternalSteps
-                % pressure loss calculation by setting a factor as property and
-                % factor * cell length * flow speed = pressure loss?
-                mfPressureLoss(:,iStep)  = (this.tInitialization.fFrictionFactor/(this.iCellNumber-1)) .* abs(mfFlowRates(2:end-1,iStep)).^2;
-
-                % TO DO get correct cell values  for varying flow directions
-                mfDeltaPressure = (mfCellPressure(1:end-1, iStep) - mfCellPressure(2:end, iStep)) - sign(mfFlowRates(2:end-1,iStep)).*mfPressureLoss(:,iStep);
-                
-                mfDeltaFlowRate(:,iStep) = (mfDeltaPressure .* fHelper1);
-
-                mfTimeStep(1,iStep) = min(abs((rMaxPartialChange) .* mfFlowRates(2:end-1,iStep)) ./ abs(mfDeltaFlowRate(:,iStep)));
-
-                if mfTimeStep(1,iStep) > fMaxPartialTimeStep
-                    mfTimeStep(1,iStep) = fMaxPartialTimeStep;
-                elseif isnan(mfTimeStep(1,iStep))
-                    mfTimeStep(1,iStep) = fMinPartialTimeStep;
-                elseif mfTimeStep(1,iStep)  <= fMinPartialTimeStep
-                    mfTimeStep(1,iStep) = fMinPartialTimeStep;
+            % get in flow side, the flow through the filter can be in both
+            % directions, get the flow
+            if this.bNegativeFlow
+                %%
+                if mfFlowRates(end,1) ~= this.aoBranches(end).oHandler.fRequestedFlowRate
+                    this.setTimeStep(this.oTimer.fMinimumTimeStep);
+                    return
                 end
+                
+                mfFlowRates(1,1) = -mfFlowRates(1,1);
+                
+                % in case that the flow through the filter is negative, the
+                % first cell contains the pressure boundary condition
+                mfCellPressure(2:end,1) = [this.toStores.(this.sName).aoPhases(2:2:end).fPressure];
+                mfCellPressure(1,1)     = this.aoBranches(1).coExmes{2}.oPhase.fPressure;
+                
+                for iStep = 1:this.iInternalSteps
+                    % pressure loss calculation by setting a factor as property and
+                    % factor * cell length * flow speed = pressure loss?
+                    mfPressureLoss(:,iStep)  = (this.tInitialization.fFrictionFactor/(this.iCellNumber)) .* abs(mfFlowRates(1:end-1,iStep)).^2;
 
-                mfFlowRates(2:end-1, iStep+1) = mfFlowRates(2:end-1, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep);
-                mfFlowRates(1, iStep+1) = mfFlowRates(1, iStep);
-                mfFlowRates(end, iStep+1) = mfFlowRates(end, iStep);
+                    % TO DO get correct cell values  for varying flow directions
+                    mfDeltaPressure = (mfCellPressure(1:end-1, iStep) - mfCellPressure(2:end, iStep)) - sign(mfFlowRates(1:end-1,iStep)).*mfPressureLoss(:,iStep);
+
+                    mfDeltaFlowRate(:,iStep) = (mfDeltaPressure .* fHelper1);
+
+                    mfTimeStep(1,iStep) = min(abs((rMaxPartialChange) .* mfFlowRates(1:end-1,iStep)) ./ abs(mfDeltaFlowRate(:,iStep)));
+
+                    if mfTimeStep(1,iStep) > fMaxPartialTimeStep
+                        mfTimeStep(1,iStep) = fMaxPartialTimeStep;
+                    elseif isnan(mfTimeStep(1,iStep))
+                        mfTimeStep(1,iStep) = fMinPartialTimeStep;
+                    elseif mfTimeStep(1,iStep)  <= fMinPartialTimeStep
+                        mfTimeStep(1,iStep) = fMinPartialTimeStep;
+                    end
+
+                    mfFlowRates(1:end-1, iStep+1) = mfFlowRates(1:end-1, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep);
+                    mfFlowRates(end, iStep+1) = mfFlowRates(end, iStep);
+
+                    mfCellMass(:,iStep+1) = mfCellMass(:,iStep) + ((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep)) * mfTimeStep(1,iStep));
+
+                    mfCellPressure(2:end,iStep+1) = (mfCellMass(:,iStep+1)./mfCellMass(:,iStep)).*mfCellPressure(2:end,iStep);
+                    mfCellPressure(1, iStep+1) = mfCellPressure(1, iStep);
+
+                    mfMassChange(:,iStep) = mfFlowRates(:,iStep) * mfTimeStep(iStep);
+                end
+            else
+                %%
+                if mfFlowRates(1,1) ~= this.aoBranches(1).oHandler.fRequestedFlowRate
+                    this.setTimeStep(this.oTimer.fMinimumTimeStep);
+                    return
+                end
+                % in case that the flow through the filter is positive, the
+                % last cell contains the pressure boundary condition
+                mfCellPressure(1:end-1,1) = [this.toStores.(this.sName).aoPhases(2:2:end).fPressure];
+                mfCellPressure(end,1)     = this.aoBranches(end).coExmes{2}.oPhase.fPressure;
                 
-                mfCellMass(:,iStep+1) = mfCellMass(:,iStep) + ((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep)) * mfTimeStep(1,iStep));
+                mfFlowRates(1,1) = - mfFlowRates(1,1);
                 
-                mfCellPressure(:,iStep+1) = (mfCellMass(:,iStep+1)./mfCellMass(:,iStep)).*mfCellPressure(:,iStep);
+                for iStep = 1:this.iInternalSteps
+                    % pressure loss calculation by setting a factor as property and
+                    % factor * cell length * flow speed = pressure loss?
+                    mfPressureLoss(:,iStep)  = (this.tInitialization.fFrictionFactor/(this.iCellNumber)) .* abs(mfFlowRates(2:end,iStep)).^2;
+
+                    % TO DO get correct cell values  for varying flow directions
+                    mfDeltaPressure = (mfCellPressure(1:end-1, iStep) - mfCellPressure(2:end, iStep)) - sign(mfFlowRates(2:end,iStep)).*mfPressureLoss(:,iStep);
+
+                    mfDeltaFlowRate(:,iStep) = (mfDeltaPressure .* fHelper1);
+
+                    mfTimeStep(1,iStep) = min(abs((rMaxPartialChange) .* mfFlowRates(2:end,iStep)) ./ abs(mfDeltaFlowRate(:,iStep)));
+
+                    if mfTimeStep(1,iStep) > fMaxPartialTimeStep
+                        mfTimeStep(1,iStep) = fMaxPartialTimeStep;
+                    elseif isnan(mfTimeStep(1,iStep))
+                        mfTimeStep(1,iStep) = fMinPartialTimeStep;
+                    elseif mfTimeStep(1,iStep)  <= fMinPartialTimeStep
+                        mfTimeStep(1,iStep) = fMinPartialTimeStep;
+                    end
+
+                    mfFlowRates(2:end, iStep+1) = mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep);
+                    mfFlowRates(1, iStep+1) = mfFlowRates(1, iStep);
+
+                    mfCellMass(:,iStep+1) = mfCellMass(:,iStep) + ((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep)) * mfTimeStep(1,iStep));
+
+                    mfCellPressure(1:end-1,iStep+1) = (mfCellMass(:,iStep+1)./mfCellMass(:,iStep)).*mfCellPressure(1:end-1,iStep);
+                    mfCellPressure(end, iStep+1) = mfCellPressure(end, iStep);
+
+                    mfMassChange(:,iStep) = mfFlowRates(:,iStep) * mfTimeStep(iStep);
+                end
                 
-                mfMassChange(:,iStep) = mfFlowRates(:,iStep) * mfTimeStep(iStep);
             end
+            
             
             if max(abs(mfFlowRates(:, this.iInternalSteps) - mfFlowRates(:, 1))) < this.fMaxSteadyStateFlowRateChange
                 % Steady State case: Small discrepancies between the
@@ -244,17 +306,24 @@ classdef Filter < vsys
                     mfAdsorptionFlowRate(iK) = this.toStores.(this.sName).toProcsP2P.(['AdsorptionProcessor_',num2str(iK)]).fFlowRate;
                 end
                 
-                fInletFlowRate = mfFlowRates(1,1);
-                if fInletFlowRate >= 0
+                if this.bNegativeFlow
+                    fInletFlowRate = mfFlowRates(end,1);
+                    for iK = 2:length(mfFlowRates(:,1))-1
+                        % TO DO: maybe bind this calculation/part of it to
+                        % the update functions of the P2Ps?
+                        fFlowRate = fInletFlowRate + mfAdsorptionFlowRate(iK-1) - mfDesorptionFlowRate(iK-1);
+                        this.aoBranches(iK).oHandler.setFlowRate(fFlowRate);
+                    end
+                    fFlowRate = abs(fInletFlowRate + mfAdsorptionFlowRate(iK-1) - mfDesorptionFlowRate(iK-1));
+                    this.aoBranches(1).oHandler.setFlowRate(fFlowRate);
+                else
+                    fInletFlowRate = mfFlowRates(1,1);
                     for iK = 2:length(mfFlowRates(:,1))
                         % TO DO: maybe bind this calculation/part of it to
                         % the update functions of the P2Ps?
                         fFlowRate = fInletFlowRate - mfAdsorptionFlowRate(iK-1) + mfDesorptionFlowRate(iK-1);
                         this.aoBranches(iK).oHandler.setFlowRate(fFlowRate);
                     end
-                else
-                    % TO DO:
-                    keyboard()
                 end
                 this.setTimeStep(this.fSteadyStateTimeStep);
             else
@@ -264,8 +333,15 @@ classdef Filter < vsys
                 this.setTimeStep(sum(mfTimeStep));
                 mfFlowRatesNew = sum(mfMassChange,2)/this.fTimeStep;
                 
-                for iK = 2:(length(mfFlowRatesNew(:))-1)
-                    this.aoBranches(iK).oHandler.setFlowRate(mfFlowRatesNew(iK));
+                if this.bNegativeFlow
+                    for iK = 2:(length(mfFlowRatesNew(:))-1)
+                        this.aoBranches(iK).oHandler.setFlowRate(mfFlowRatesNew(iK));
+                    end
+                  	this.aoBranches(1).oHandler.setFlowRate(abs(mfFlowRatesNew(1)));
+                else
+                    for iK = 2:length(mfFlowRatesNew(:))
+                        this.aoBranches(iK).oHandler.setFlowRate(mfFlowRatesNew(iK));
+                    end
                 end
                 
             end
