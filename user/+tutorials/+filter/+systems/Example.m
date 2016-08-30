@@ -11,11 +11,16 @@ classdef Example < vsys
             
             
         	tInitialization.tfMassAbsorber  =   struct('Zeolite5A',1);
-            tInitialization.tfMassFlow      =   struct('N2',1);
+            tInitialization.tfMassFlow      =   struct('N2',1 , 'CO2', 0.01, 'O2', 0.23);
             tInitialization.fTemperature    =   293;
             tInitialization.fFlowVolume     =   1;
             tInitialization.fAbsorberVolume =   1;
             tInitialization.iCellNumber     =   10;
+            % this factor times the mass flow^2 will decide the pressure
+            % loss. In this case the pressure loss will be 0.25 bar at a
+            % flowrate of 0.1 kg/s
+            tInitialization.fFrictionFactor =   25e5;
+            
             
             components.filter.Filter(this, 'Filter', tInitialization);
             
@@ -76,6 +81,7 @@ classdef Example < vsys
             createSolverStructure@vsys(this);
             
             
+            this.toChildren.Filter.setInletFlow(0.1);
             % SOLVERS ETC!
             
             % specific properties for rMaxChange etc, possibly depending on
@@ -90,6 +96,7 @@ classdef Example < vsys
             % exec(ute) function for this system
             % Here it only calls its parent's exec function
             exec@vsys(this);
+            
             
         end
         
