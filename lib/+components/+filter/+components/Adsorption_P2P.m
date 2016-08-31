@@ -20,7 +20,9 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
         end
         
-        function update(~)   
+        function update(this, ~)
+            this.oMT.calculateEquilibriumLoading(this);
+            keyboard()
         end
     end
 end

@@ -23,7 +23,9 @@ classdef Example < vsys
             tGeometry.fFlowVolume     =   1;
             tGeometry.fAbsorberVolume =   1;
             
-            components.filter.Filter(this, 'Filter', tInitialization, tGeometry);
+            oFilter = components.filter.Filter(this, 'Filter', tInitialization, tGeometry);
+            
+            oFilter.iInternalSteps = 100;
             
             eval(this.oRoot.oCfgParams.configCode(this));
             

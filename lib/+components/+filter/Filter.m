@@ -1,5 +1,14 @@
 classdef Filter < vsys
-% TO DO: Description goes here lazy guy
+% This is a model of a Filter/Asorber that removes certain substances from
+% a gas stream. The typical example for such a component is a CO2 scrubber
+% filled with Zeolite. Please view the comments for the properties for
+% information about the required input variables!
+%
+% WARNING: Each cell is composed of two phases (one gas one mixture phase)
+% for the flow and the absorber material respectivly. Additionally for each
+% cell two additional P2Ps and one additional branch are required.
+% Therefore using a very high number of cells will result in a slow model
+% assembly.
     
     properties (SetAccess = public, GetAccess = public)
         % rMaxChange defines the maximum percentage by which the flow rate
