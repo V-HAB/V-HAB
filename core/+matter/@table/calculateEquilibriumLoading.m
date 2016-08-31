@@ -1,7 +1,12 @@
 function mfEquilibriumLoading = calculateEquilibriumLoading(this, varargin)
 % Function to calculate the equilibrium loading of absorber material based
-% on the toth equation. The function requires a P2P object as input or
+% on the toth equation. The function returns a vector with the length of
+% the substances in the V-HAB matter table (also ordered accordingly) that
+% contains the mass (in kg) of each substance that can be absorbed by the
+% given absorber mass in equilibrium conditions.
+% The function can either be given a P2P object as input or 
 % afMass, afPP and fTemperature in this order.
+%
 % The paramteres for the Toth equation are stored in the matter table!
 
 if length(varargin) == 1
@@ -31,40 +36,53 @@ else
     afMass          = varargin{1};
     afPP            = varargin{2};
     fTemperature    = varargin{3};    
+    if ~any(afMass(this.abAbsorber))
+        % Output zero eq loading!!
+        mfEquilibriumLoading = zeros(1,this.iSubstances);
+        return
+    end
 end
-
 
 % findout what of the mass can actually absorb something else
 csAbsorbers = this.csSubstances(((afMass ~= 0) .* this.abAbsorber) ~= 0);
 
+mfEquilibriumLoadingPerAbsorberMolsPerKG = zeros(length(csAbsorbers),this.iSubstances);
 mfEquilibriumLoadingPerAbsorber = zeros(length(csAbsorbers),this.iSubstances);
 
-% TO DO: Check if the calculation for the equilibrium of several absorbers
-% in the same phase is valid like this
 for iAbsorber = 1:length(csAbsorbers)
     
     switch csAbsorbers{iAbsorber}
         
         case 'Zeolite5A'
-            mfEquilibriumLoadingPerAbsorber(iAbsorber,:) = calculateEquilibriumLoading_Zeolite5A(this, afPP, fTemperature);
+            mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:) = calculateEquilibriumLoading_Zeolite5A(this, afPP, fTemperature);
         case 'Zeolite5A_RK38'
-            mfEquilibriumLoadingPerAbsorber(iAbsorber,:) = calculateEquilibriumLoading_Zeolite5A_RK38(this, afPP, fTemperature);
+            mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:) = calculateEquilibriumLoading_Zeolite5A_RK38(this, afPP, fTemperature);
             
         case 'Zeolite13x'
-            mfEquilibriumLoadingPerAbsorber(iAbsorber,:) = calculateEquilibriumLoading_Zeolite13x(this, afPP, fTemperature);
+            mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:) = calculateEquilibriumLoading_Zeolite13x(this, afPP, fTemperature);
             
         case 'SilicaGel_40'
-            mfEquilibriumLoadingPerAbsorber(iAbsorber,:) = calculateEquilibriumLoading_SilicaGel_40(this, afPP, fTemperature);
+            mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:) = calculateEquilibriumLoading_SilicaGel_40(this, afPP, fTemperature);
             
         case 'Sylobead_B125'
-            mfEquilibriumLoadingPerAbsorber(iAbsorber,:) = calculateEquilibriumLoading_Sylobead_B125(this, afPP, fTemperature);
+            mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:) = calculateEquilibriumLoading_Sylobead_B125(this, afPP, fTemperature);
             
         otherwise
             error('it seems a new absorber substances was defined without adding the required toth equation function')
     end
+    
+    mfEquilibriumLoadingPerAbsorber(iAbsorber,:) = (mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:).*afMass(this.tiN2I.(csAbsorbers{iAbsorber}))).*this.afMolarMass;
+    
 end
 
+% The mfEquilibriumLoadingPerAbsorber vector contains the amount of each
+% substance in the matter table that can be absorbed in equilibrium
+% conditions for each absorber in mol/kg. This will now be transformed into
+% a absolute kg value for each substance that can be absorbed and summed
+% up to one vector
 mfEquilibriumLoading = sum(mfEquilibriumLoadingPerAbsorber,1);
+
+% hm value currently off by about factor E-3 --> find reason for this!
 
 end
 
@@ -79,14 +97,8 @@ mf_B = this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_B0.*exp(this.ttxMat
 mf_t_T = this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_T0 + this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_C0/fTemperature;
 
 % Toth equation from ICES 2014-168 equation 21
+% The toth equation itself returns the equilibrium loading in mol/kg
 mfQ_equ = (mf_A .* afPP) ./ ((1 + (mf_B .* afPP).^mf_t_T).^(1./mf_t_T));
-
-% The toth equation itself returns the equilibrium loading in mol/m³ for
-% V-HAB the loading in mol/kg is easier to use and therefore the
-mfQ_equ = mfQ_equ./this.ttxMatter.Zeolite5A.ttxPhases.tSolid.Density;
-% TO DO: use calculate density function seems overkill here and instead the
-% density is referenced directly. Might lead to problems if a dynamic
-% representation of the density is implemented.
 end
 
 function [mfQ_equ] = calculateEquilibriumLoading_Zeolite5A_RK38(this, afPP, fTemperature)
@@ -97,14 +109,8 @@ mf_B = this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_B0.*exp(this.t
 mf_t_T = this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_T0 + this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_C0/fTemperature;
 
 % Toth equation from ICES 2014-168 equation 21
+% The toth equation itself returns the equilibrium loading in mol/kg
 mfQ_equ = (mf_A .* afPP) ./ ((1 + (mf_B .* afPP).^mf_t_T).^(1./mf_t_T));
-
-% The toth equation itself returns the equilibrium loading in mol/m³ for
-% V-HAB the loading in mol/kg is easier to use and therefore the
-mfQ_equ = mfQ_equ./this.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
-% TO DO: use calculate density function seems overkill here and instead the
-% density is referenced directly. Might lead to problems if a dynamic
-% representation of the density is implemented.
 end
 
 function [mfQ_equ] = calculateEquilibriumLoading_Zeolite13x(this, afPP, fTemperature)
@@ -115,14 +121,8 @@ mf_B = this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_B0.*exp(this.ttxMa
 mf_t_T = this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_T0 + this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_C0/fTemperature;
 
 % Toth equation from ICES 2014-168 equation 21
+% The toth equation itself returns the equilibrium loading in mol/kg
 mfQ_equ = (mf_A .* afPP) ./ ((1 + (mf_B .* afPP).^mf_t_T).^(1./mf_t_T));
-
-% The toth equation itself returns the equilibrium loading in mol/m³ for
-% V-HAB the loading in mol/kg is easier to use and therefore the
-mfQ_equ = mfQ_equ./this.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
-% TO DO: use calculate density function seems overkill here and instead the
-% density is referenced directly. Might lead to problems if a dynamic
-% representation of the density is implemented.
 end
 
 function [mfQ_equ] = calculateEquilibriumLoading_SilicaGel_40(this, afPP, fTemperature)
@@ -133,14 +133,8 @@ mf_B = this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_B0.*exp(this.ttx
 mf_t_T = this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_T0 + this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_C0/fTemperature;
 
 % Toth equation from ICES 2014-168 equation 21
+% The toth equation itself returns the equilibrium loading in mol/kg
 mfQ_equ = (mf_A .* afPP) ./ ((1 + (mf_B .* afPP).^mf_t_T).^(1./mf_t_T));
-
-% The toth equation itself returns the equilibrium loading in mol/m³ for
-% V-HAB the loading in mol/kg is easier to use and therefore the
-mfQ_equ = mfQ_equ./this.ttxMatter.SilicaGel_40.ttxPhases.tSolid.Density;
-% TO DO: use calculate density function seems overkill here and instead the
-% density is referenced directly. Might lead to problems if a dynamic
-% representation of the density is implemented.
 end
 
 function [mfQ_equ] = calculateEquilibriumLoading_Sylobead_B125(this, afPP, fTemperature)
@@ -151,12 +145,6 @@ mf_B = this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_B0.*exp(this.tt
 mf_t_T = this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_T0 + this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_C0/fTemperature;
 
 % Toth equation from ICES 2014-168 equation 21
+% The toth equation itself returns the equilibrium loading in mol/kg
 mfQ_equ = (mf_A .* afPP) ./ ((1 + (mf_B .* afPP).^mf_t_T).^(1./mf_t_T));
-
-% The toth equation itself returns the equilibrium loading in mol/m³ for
-% V-HAB the loading in mol/kg is easier to use and therefore the
-mfQ_equ = mfQ_equ./this.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
-% TO DO: use calculate density function seems overkill here and instead the
-% density is referenced directly. Might lead to problems if a dynamic
-% representation of the density is implemented.
 end
