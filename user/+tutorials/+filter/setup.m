@@ -128,7 +128,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             % Stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 900 * 1; % In seconds
+            this.fSimTime = 3600 * 2; % In seconds
             this.iSimTicks = 600;
             this.bUseTime = true;
 
@@ -190,7 +190,7 @@ classdef setup < simulation.infrastructure
             
             mLogDataH2O = size(this.toMonitors.oLogger.mfLog);
             mLogDataH2O = zeros(10,mLogDataH2O(1));
-            for iK = 1:10
+            for iK = 1:iCells
                 mLogDataH2O(iK,:) = this.toMonitors.oLogger.mfLog(:,miAbsorbedH2OCell(iK));
             end
             
