@@ -50,11 +50,15 @@ classdef Filter < vsys
         % model
         tInitialization = struct();
         % tInitialization has to be a struct with the following fields:
-        %       tfMassAbsorber 	 =   Mass struct for the filter material
-        %       tfMassFlow       =   Mass struct for the flow material
-        %       fTemperature     =   Initial temperature of the filter in K
-        %       iCellNumber      =   number of cells used in the filter model
-        %       fFrictionFactor  =   Factor used to calculate the pressure loss by multiplying it with the MassFlow^2
+        %       tfMassAbsorber            =   Mass struct for the filter material
+        %       tfMassFlow                =   Mass struct for the flow material
+        %       fTemperature              =   Initial temperature of the filter in K
+        %       iCellNumber               =   number of cells used in the filter model
+        %       fFrictionFactor           =   Factor used to calculate the pressure loss 
+        %                                     by multiplying it with the MassFlow^2
+        %       mfMassTransferCoefficient =   coefficient to calculate the mass transfer to the absorber 
+        %                                     (see e.g. k_m from ICES-2014-168 table 3) has to be zero for 
+        %                                     all substances that should not be absorbed. Unit is 1/s !!!
         
         % struct that contains information about the geometry of the filter
         tGeometry;
@@ -66,6 +70,8 @@ classdef Filter < vsys
         % boolean to easier decide if the flow rate through the filter is
         % negative
         bNegativeFlow = false;
+        
+        
     end
     
     methods
@@ -124,7 +130,7 @@ classdef Filter < vsys
                 % while another is desorbing which results in two different
                 % flow directions that can occur at the same time.
                 components.filter.components.Desorption_P2P(this.toStores.(this.sName), ['DesorptionProcessor_',num2str(iCell)], ['Absorber_',num2str(iCell),'.Desorption_',num2str(iCell)], ['Flow_',num2str(iCell),'.Desorption_',num2str(iCell)]);
-                components.filter.components.Adsorption_P2P(this.toStores.(this.sName), ['AdsorptionProcessor_',num2str(iCell)], ['Flow_',num2str(iCell),'.Adsorption_',num2str(iCell)], ['Absorber_',num2str(iCell),'.Adsorption_',num2str(iCell)]);
+                components.filter.components.Adsorption_P2P(this.toStores.(this.sName), ['AdsorptionProcessor_',num2str(iCell)], ['Flow_',num2str(iCell),'.Adsorption_',num2str(iCell)], ['Absorber_',num2str(iCell),'.Adsorption_',num2str(iCell)], this.tInitialization.mfMassTransferCoefficient);
                 
                 % Each cell is connected to the next cell by a branch, the
                 % first and last cell also have the inlet and outlet branch

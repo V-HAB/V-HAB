@@ -10,7 +10,7 @@ classdef Example < vsys
             % Adding the subsystem
             
             
-        	tInitialization.tfMassAbsorber  =   struct('Zeolite5A',1);
+        	tInitialization.tfMassAbsorber  =   struct('Zeolite5A',10);
             tInitialization.tfMassFlow      =   struct('N2',1 , 'CO2', 0.01, 'O2', 0.23);
             tInitialization.fTemperature    =   293;
             tInitialization.iCellNumber     =   10;
@@ -19,16 +19,29 @@ classdef Example < vsys
             % flowrate of 0.1 kg/s
             tInitialization.fFrictionFactor =   25e5;
             
+            % TO DO: Should these be stored in the matter table as well?
+            % Values for the mass transfer coefficient can be found in the
+            % paper ICES-2014-268. Here the values for Zeolite5A are used
+            % assuming that the coefficients for 5A and 5A-RK38 are equal.
+            mfMassTransferCoefficient = zeros(1,this.oMT.iSubstances);
+            mfMassTransferCoefficient(this.oMT.tiN2I.CO2) = 0.003;
+            mfMassTransferCoefficient(this.oMT.tiN2I.H2O) = 0.0007;
+            tInitialization.mfMassTransferCoefficient =   mfMassTransferCoefficient;
+            
             tGeometry.fArea = 1e-2;
             tGeometry.fFlowVolume     =   1;
             tGeometry.fAbsorberVolume =   1;
             
             oFilter = components.filter.Filter(this, 'Filter', tInitialization, tGeometry);
             
-            oFilter.iInternalSteps = 100;
+            oFilter.iInternalSteps      = 200;
+            oFilter.rMaxChange          = 0.005;
+            oFilter.fMaximumTimeStep    = 0.1;
+            
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
+            this.oTimer.setMinStep(1e-12)
             
         end
         
@@ -40,7 +53,9 @@ classdef Example < vsys
             matter.store(this, 'Cabin', 100);
             
             % Adding a phase to the store 'Tank_1', 2 m^3 air
-            oGasPhase = this.toStores.Cabin.createPhase('air', 100);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 100, struct('CO2', 0.04), 293, 0.75, 1e5);
+            
+            oGasPhase = matter.phases.gas(this.toStores.Cabin, 'air', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
