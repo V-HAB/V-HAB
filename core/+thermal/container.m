@@ -38,7 +38,6 @@ classdef container < sys
         
         % Thermal connections
         poLinearConductors;    % A Map of associated |thermal.conductors.linear| objects.
-        poLinearDynamicConductors;    % A Map of associated |thermal.conductors.linear| objects.
         poFluidicConductors;   % A Map of associated |thermal.conductors.fluidic| objects.
         poRadiativeConductors; % A Map of associated |thermal.conductors.radiative| objects.
 
@@ -66,7 +65,6 @@ classdef container < sys
             this.poCapacities          = containers.Map();
             this.piCapacityIndices     = containers.Map();
             this.poLinearConductors    = containers.Map();
-            this.poLinearDynamicConductors    = containers.Map();
             this.poFluidicConductors   = containers.Map();
             this.poRadiativeConductors = containers.Map();
             
@@ -271,8 +269,6 @@ classdef container < sys
             % and load the appropriate property.
             if isa(oConductor, 'thermal.conductors.linear')
                 sType = 'Linear';
-            elseif isa(oConductor, 'thermal.conductors.linear_dynamic')
-                sType = 'LinearDynamic';
             elseif isa(oConductor, 'thermal.conductors.fluidic')
                 sType = 'Fluidic';
             elseif isa(oConductor, 'thermal.conductors.radiative')
@@ -302,7 +298,6 @@ classdef container < sys
             % the handle object seems to be updated nonetheless. But better
             % not trust MATLAB's quirks and rather be safe than sorry.
             this.(sConductorMap) = poConductors;
-            
         end
         
         function removeConductor(this, sName)
@@ -509,7 +504,6 @@ classdef container < sys
                 mConductorMatrix(iCounter, :) = [double(iIndexLeft), double(iIndexRight), fConductance];
                 
             end
-            
         end
         
         function exec(this, varargin)

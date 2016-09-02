@@ -81,6 +81,8 @@ classdef Filter < vsys
         fHeaterPower = 0;
         
         oThermalSolver;
+        
+        tLastUpdateProps;
     end
     
     methods
@@ -92,7 +94,11 @@ classdef Filter < vsys
             this.iCellNumber = tInitialization.iCellNumber;
             
             this.tGeometry = tGeometry;
-            
+
+            this.tLastUpdateProps.mfDensity              = zeros(this.iCellNumber,1);
+            this.tLastUpdateProps.mfFlowSpeed            = zeros(this.iCellNumber,1);
+            this.tLastUpdateProps.mfSpecificHeatCapacity = zeros(this.iCellNumber,1);
+                
             eval(this.oRoot.oCfgParams.configCode(this));
             
         end
@@ -154,22 +160,21 @@ classdef Filter < vsys
                 if iCell == 1
                     % Inlet branch
                     matter.branch(this, [this.sName,'.','Inflow_',num2str(iCell)], {}, 'Inlet', 'Inlet');
-                    this.addConductor(thermal.conductors.linear_dynamic(this, moCapacity{iCell,1}, moCapacity{iCell,2}, 0, ['ConvectiveConductor_', num2str(iCell)]));
+                    this.addConductor(thermal.conductors.linear(this, moCapacity{iCell,1}, moCapacity{iCell,2}, 0, ['ConvectiveConductor_', num2str(iCell)]));
                 elseif iCell == this.iCellNumber
                     % branch between the current and the previous cell
                     matter.branch(this, [this.sName,'.','Outflow_',num2str(iCell-1)], {}, [this.sName,'.','Inflow_',num2str(iCell)], ['Flow',num2str(iCell-1),'toFlow',num2str(iCell)]);
                     % Outlet branch
                     matter.branch(this, [this.sName,'.','Outflow_',num2str(iCell)], {}, 'Outlet', 'Outlet');
                     
-                    % Create and add linear conductors between each serial block
-                    % with a conductance value of |GL = 7.68 W/K|.
-                    this.addConductor(thermal.conductors.linear(moCapacity{iCell-1,1}, moCapacity{iCell,1}, this.tInitialization.fConductance));
-                    this.addConductor(thermal.conductors.linear_dynamic(this, moCapacity{iCell,1}, moCapacity{iCell,2}, 0, ['ConvectiveConductor_', num2str(iCell)]));
+                    this.addConductor(thermal.conductors.linear(this, moCapacity{iCell,1}, moCapacity{iCell,2}, 0, ['ConvectiveConductor_', num2str(iCell)]));
 
                 else
                     % branch between the current and the previous cell
                     matter.branch(this, [this.sName,'.','Outflow_',num2str(iCell-1)], {}, [this.sName,'.','Inflow_',num2str(iCell)], ['Flow',num2str(iCell-1),'toFlow',num2str(iCell)]);
-                    this.addConductor(thermal.conductors.linear_dynamic(this, moCapacity{iCell,1}, moCapacity{iCell,2}, 0, ['ConvectiveConductor_', num2str(iCell)]));
+                    % Create and add linear conductors between each serial block
+                    this.addConductor(thermal.conductors.linear(this, moCapacity{iCell-1,1}, moCapacity{iCell,1}, this.tInitialization.fConductance));
+                    this.addConductor(thermal.conductors.linear(this, moCapacity{iCell,1}, moCapacity{iCell,2}, 0, ['ConvectiveConductor_', num2str(iCell)]));
                 end
             end
         end
@@ -417,31 +422,51 @@ classdef Filter < vsys
             % just thermal conductivity of fluid and the MaxFreeDistance to
             % calculate a HeatTransferCoeff?
             % D_Hydraulic and fLength defined in geometry struct
+            mfDensity                       = zeros(this.iCellNumber,1);
+            mfFlowSpeed                     = zeros(this.iCellNumber,1);
+            mfSpecificHeatCapacity          = zeros(this.iCellNumber,1);
             mfHeatTransferCoefficient       = zeros(this.iCellNumber,1);
-           
+            aoPhase                         = cell(this.iCellNumber,1);
             fLength = (this.tGeometry.fFlowVolume/this.tGeometry.fD_Hydraulic)/this.iCellNumber;
             
             % TO DO: Limit how often this is recalculated depending on
             % flowrate/temperature/pressure changes
-          	
-            % TO DO: well should be prime example where parfor loop can be
-            % used but we will see :)
-%             parfor iCell = 1:this.iCellNumber
-%                 fDensity                       = this.toStores.(this.sName).aoPhases(iCell*2).fDensity;
-%                 fFlowSpeed                     = (abs(this.aoBranches(iCell).fFlowRate) + abs(this.aoBranches(iCell+1).fFlowRate))/(2*fDensity);
-%                 fSpecificHeatCapacity          = this.toStores.(this.sName).aoPhases(iCell*2).fSpecificHeatCapacity;
-%                 
-%                 fDynamicViscosity              = this.oMT.calculateDynamicViscosity(this.toStores.(this.sName).aoPhases(iCell*2));
-%                 fThermalConductivity           = this.oMT.calculateThermalConductivity(this.toStores.(this.sName).aoPhases(iCell*2));
-%                 fConvectionCoeff               = components.filter.functions.convection_pipe(this.tGeometry.fD_Hydraulic, fLength,...
-%                                                   fFlowSpeed, fDynamicViscosity, fDensity, fThermalConductivity, fSpecificHeatCapacity, 1);
-%                 mfHeatTransferCoefficient(iCell)= fConvectionCoeff * (this.tGeometry.fAbsorberSurfaceArea/this.iCellNumber);
-%             end
-%             
-%             for iCell = 1:this.iCellNumber
-%                 oConductor = this.poLinearDynamicConductors(['ConvectiveConductor_', num2str(iCell)]);
-%                 oConductor.setConductivity(mfHeatTransferCoefficient(iCell));
-%             end
+          	for iCell = 1:this.iCellNumber
+                mfDensity(iCell)                = this.toStores.(this.sName).aoPhases(iCell*2).fDensity;
+                mfFlowSpeed(iCell)              = (abs(this.aoBranches(iCell).fFlowRate) + abs(this.aoBranches(iCell+1).fFlowRate))/(2*mfDensity(iCell));
+                mfSpecificHeatCapacity(iCell)   = this.toStores.(this.sName).aoPhases(iCell*2).fSpecificHeatCapacity;
+                
+                aoPhase{iCell} = this.toStores.(this.sName).aoPhases(iCell*2);
+            end
+            
+            if (max(abs(this.tLastUpdateProps.mfDensity - mfDensity))                           > min(1e-2 * mfDensity)) ||...
+               (max(abs(this.tLastUpdateProps.mfFlowSpeed - mfFlowSpeed))                       > min(1e-2 * mfFlowSpeed)) ||...
+               (max(abs(this.tLastUpdateProps.mfSpecificHeatCapacity - mfSpecificHeatCapacity)) > min(1e-2 * mfSpecificHeatCapacity))
+                
+                fD_Hydraulic = this.tGeometry.fD_Hydraulic;
+                fAbsorberSurfaceArea = this.tGeometry.fAbsorberSurfaceArea;
+                iTotalCells = this.iCellNumber;
+                
+                % TO DO: well should be prime example where parfor loop can be
+                % used but we will see :) I removed all this relations
+                % because it made parfor very slow but how can i then call 
+                % the matter table functions?
+                for iCell = 1:this.iCellNumber
+                    fDynamicViscosity              = this.oMT.calculateDynamicViscosity(aoPhase{iCell});
+                    fThermalConductivity           = this.oMT.calculateThermalConductivity(aoPhase{iCell});
+                    fConvectionCoeff               = components.filter.functions.convection_pipe(fD_Hydraulic, fLength,...
+                                                      mfFlowSpeed(iCell), fDynamicViscosity, mfDensity(iCell), fThermalConductivity, mfSpecificHeatCapacity(iCell), 1);
+                    mfHeatTransferCoefficient(iCell)= fConvectionCoeff * (fAbsorberSurfaceArea/iTotalCells);
+                end
+                
+                this.tLastUpdateProps.mfDensity              = mfDensity;
+                this.tLastUpdateProps.mfFlowSpeed            = mfFlowSpeed;
+                this.tLastUpdateProps.mfSpecificHeatCapacity = mfSpecificHeatCapacity;
+            end
+            for iCell = 1:this.iCellNumber
+                oConductor = this.poLinearConductors(['ConvectiveConductor_', num2str(iCell)]);
+                oConductor.setConductivity(mfHeatTransferCoefficient(iCell));
+            end
             
             % TO DO: alternative case if the flowrate is 0
 %             this.tGeometry.fMaximumFreeGasDistance
