@@ -6,18 +6,20 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName)
-            this@vsys(oParent, sName);
+            this@vsys(oParent, sName, 10);
             % Adding the subsystem
             
             
         	tInitialization.tfMassAbsorber  =   struct('Zeolite5A',10);
             tInitialization.tfMassFlow      =   struct('N2',1 , 'CO2', 0.01, 'O2', 0.23);
             tInitialization.fTemperature    =   293;
-            tInitialization.iCellNumber     =   100;
+            tInitialization.iCellNumber     =   10;
             % this factor times the mass flow^2 will decide the pressure
-            % loss. In this case the pressure loss will be 0.25 bar at a
+            % loss. In this case the pressure loss will be 1 bar at a
             % flowrate of 0.1 kg/s
-            tInitialization.fFrictionFactor =   25e5;
+            tInitialization.fFrictionFactor =   100e5;
+            
+            tInitialization.fConductance = 1;
             
             % TO DO: Should these be stored in the matter table as well?
             % Values for the mass transfer coefficient can be found in the
@@ -28,15 +30,21 @@ classdef Example < vsys
             mfMassTransferCoefficient(this.oMT.tiN2I.H2O) = 0.0007;
             tInitialization.mfMassTransferCoefficient =   mfMassTransferCoefficient;
             
-            tGeometry.fArea = 1e-2;
-            tGeometry.fFlowVolume     =   1;
-            tGeometry.fAbsorberVolume =   1;
+            tGeometry.fArea = (18*13E-3)^2;
+            
+            tGeometry.fAbsorberVolume =   tInitialization.tfMassAbsorber.Zeolite5A/this.oMT.ttxMatter.Zeolite5A.ttxPhases.tSolid.Density;
+%             tGeometry.fFlowVolume     =   (((18*13E-3)^2) *16.68*2.54/100) - tGeometry.fAbsorberVolume;
+            tGeometry.fFlowVolume     =     1;
+            tGeometry.fD_Hydraulic              = 1e-4;
+            tGeometry.fAbsorberSurfaceArea      = 70;
             
             oFilter = components.filter.Filter(this, 'Filter', tInitialization, tGeometry);
             
-            oFilter.iInternalSteps      = 200;
-            oFilter.rMaxChange          = 0.01;
-            oFilter.fMaximumTimeStep    = 0.01;
+            oFilter.iInternalSteps          = 100;
+            oFilter.rMaxChange              = 0.0005;
+%             oFilter.fMinimumTimeStep        = 1e-5;
+            oFilter.fMaximumTimeStep        = 1;
+            oFilter.fSteadyStateTimeStep    = 10;
             
             
             eval(this.oRoot.oCfgParams.configCode(this));
@@ -115,7 +123,9 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
-            
+            if this.oTimer.fTime > 200
+                this.toChildren.Filter.setHeaterPower(1000);
+            end
         end
         
      end

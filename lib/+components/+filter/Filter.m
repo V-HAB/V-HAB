@@ -60,18 +60,27 @@ classdef Filter < vsys
         %                                     (see e.g. k_m from ICES-2014-168 table 3) has to be zero for 
         %                                     all substances that should not be absorbed. Unit is 1/s !!!
         
+        % Possible alternative for the Friction Factor would be to use a
+        % Hydraulic Diameter and length defined by the user for the pipe
+        % pressure loss equation
+        
         % struct that contains information about the geometry of the filter
         tGeometry;
         % Geometry struct for the filter with the following field:
-        %       fArea            =   Area perpendicular to the flow direction in m²
-        %       fFlowVolume      =   free volume for the gas flow in the filter in m³
-        %       fAbsorberVolume  =   volume of the absorber material in m³
+        %       fArea                   =   Area perpendicular to the flow direction in m²
+        %       fFlowVolume             =   free volume for the gas flow in the filter in m³
+        %       fAbsorberVolume         =   volume of the absorber material in m³
+        %       fAbsorberSurfaceArea    =   assumed total surface area for the absorber material 
+        %       fMaximumFreeGasDistance =   
         
         % boolean to easier decide if the flow rate through the filter is
         % negative
         bNegativeFlow = false;
         
+        % power of the electrical heater attached to this filter
+        fHeaterPower = 0;
         
+        oThermalSolver;
     end
     
     methods
@@ -111,6 +120,7 @@ classdef Filter < vsys
             % Now the phases, exmes, p2ps and branches for the filter model
             % can be created. A for loop is used to allow any number of
             % cells from 2 upwards.
+            moCapacity = cell(this.iCellNumber,2);
             for iCell = 1:this.iCellNumber
                 oFilterPhase = matter.phases.mixture(this.toStores.(this.sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(this.tGeometry.fAbsorberVolume/this.iCellNumber), this.tInitialization.fTemperature, 1e5);
                 
@@ -123,6 +133,12 @@ classdef Filter < vsys
                 matter.procs.exmes.gas(oFlowPhase, ['Desorption_',num2str(iCell)]);
                 matter.procs.exmes.gas(oFlowPhase, ['Inflow_',num2str(iCell)]);
                 matter.procs.exmes.gas(oFlowPhase, ['Outflow_',num2str(iCell)]);
+                
+                oHeatSource = thermal.heatsource(this, ['AbsorberHeatSource_',num2str(iCell)], 0);
+                moCapacity{iCell,1} = this.addCreateCapacity(oFilterPhase, oHeatSource);
+                
+                oHeatSource = thermal.heatsource(this, ['FlowHeatSource_',num2str(iCell)], 0);
+                moCapacity{iCell,2} = this.addCreateCapacity(oFlowPhase, oHeatSource);
                 
                 % adding two P2P processors, one for desorption and one for
                 % adsorption. Two independent P2Ps are required because it
@@ -138,14 +154,22 @@ classdef Filter < vsys
                 if iCell == 1
                     % Inlet branch
                     matter.branch(this, [this.sName,'.','Inflow_',num2str(iCell)], {}, 'Inlet', 'Inlet');
+                    this.addConductor(thermal.conductors.linear_dynamic(this, moCapacity{iCell,1}, moCapacity{iCell,2}, 0, ['ConvectiveConductor_', num2str(iCell)]));
                 elseif iCell == this.iCellNumber
                     % branch between the current and the previous cell
                     matter.branch(this, [this.sName,'.','Outflow_',num2str(iCell-1)], {}, [this.sName,'.','Inflow_',num2str(iCell)], ['Flow',num2str(iCell-1),'toFlow',num2str(iCell)]);
                     % Outlet branch
                     matter.branch(this, [this.sName,'.','Outflow_',num2str(iCell)], {}, 'Outlet', 'Outlet');
+                    
+                    % Create and add linear conductors between each serial block
+                    % with a conductance value of |GL = 7.68 W/K|.
+                    this.addConductor(thermal.conductors.linear(moCapacity{iCell-1,1}, moCapacity{iCell,1}, this.tInitialization.fConductance));
+                    this.addConductor(thermal.conductors.linear_dynamic(this, moCapacity{iCell,1}, moCapacity{iCell,2}, 0, ['ConvectiveConductor_', num2str(iCell)]));
+
                 else
                     % branch between the current and the previous cell
                     matter.branch(this, [this.sName,'.','Outflow_',num2str(iCell-1)], {}, [this.sName,'.','Inflow_',num2str(iCell)], ['Flow',num2str(iCell-1),'toFlow',num2str(iCell)]);
+                    this.addConductor(thermal.conductors.linear_dynamic(this, moCapacity{iCell,1}, moCapacity{iCell,2}, 0, ['ConvectiveConductor_', num2str(iCell)]));
                 end
             end
         end
@@ -155,6 +179,8 @@ classdef Filter < vsys
             for k = 1:length(this.aoBranches)
                 solver.matter.manual.branch(this.aoBranches(k));
             end
+            
+            this.oThermalSolver = solver.thermal.lumpedparameter(this);
         end
         
         function setIfFlows(this, sInterface1, sInterface2)
@@ -176,20 +202,22 @@ classdef Filter < vsys
                 this.aoBranches(end).oHandler.setFlowRate(fInletFlow);
                 this.bNegativeFlow = true;
             end
-            
             this.setTimeStep(this.oTimer.fMinimumTimeStep);
         end
+        
+        
+        function setHeaterPower(this, fPower)
+            
+            this.fHeaterPower = fPower;
+            
+            % recalculate the thermal properties
+            this.calculateThermalProperties();
+        end
+        
     end
     
      methods (Access = protected)
         function updateInterCellFlowrates(this, ~)
-            % TO DO: currently calculation only for positive flow rate,
-            % have to adapt some things to make them work for both cases
-            
-            % TO DO: currently the boundary conditions are flow rates on
-            % both sides. Change this to have a pressure condition at the
-            % outlet (depending on flow direction) and a flowrate condition
-            % at the inlet
             
             mfCellPressure  = zeros(this.iCellNumber+1,   this.iInternalSteps);
             mfMassChange    = zeros(this.iCellNumber+1,   this.iInternalSteps);
@@ -237,8 +265,9 @@ classdef Filter < vsys
 
                     mfDeltaFlowRate(:,iStep) = (mfDeltaPressure .* fHelper1);
 
-                    mfTimeStep(1,iStep) = min(abs((rMaxPartialChange) .* mfFlowRates(1:end-1,iStep)) ./ abs(mfDeltaFlowRate(:,iStep)));
 
+                    mfTimeStep(1,iStep) = min(abs(((rMaxPartialChange) .* mfCellMass(:,iStep))/((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep))))); 
+                    
                     if mfTimeStep(1,iStep) > fMaxPartialTimeStep
                         mfTimeStep(1,iStep) = fMaxPartialTimeStep;
                     elseif isnan(mfTimeStep(1,iStep))
@@ -280,8 +309,8 @@ classdef Filter < vsys
 
                     mfDeltaFlowRate(:,iStep) = (mfDeltaPressure .* fHelper1);
 
-                    mfTimeStep(1,iStep) = min(abs((rMaxPartialChange) .* mfFlowRates(2:end,iStep)) ./ abs(mfDeltaFlowRate(:,iStep)));
-
+                    mfTimeStep(1,iStep) = min(abs(((rMaxPartialChange) .* mfCellMass(:,iStep))./((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep))))); 
+                    
                     if mfTimeStep(1,iStep) > fMaxPartialTimeStep
                         mfTimeStep(1,iStep) = fMaxPartialTimeStep;
                     elseif isnan(mfTimeStep(1,iStep))
@@ -363,12 +392,76 @@ classdef Filter < vsys
             
             this.toStores.(this.sName).setNextTimeStep(this.fTimeStep);
         end
+        
+        function calculateThermalProperties(this)
+            
+            % Sets the heat source power in the absorber material as a
+            % combination of the heat of absorption and the heater power.
+            % Note that the heater power can also be negative resulting in
+            % cooling.
+            mfAdsorptionHeatFlow    = zeros(this.iCellNumber,1);
+            mfHeatFlow              = zeros(this.iCellNumber,1);
+            for iCell = 1:this.iCellNumber
+                mfAdsorptionHeatFlow(iCell)    = this.toStores.(this.sName).toProcsP2P.(['AdsorptionProcessor_',num2str(iCell)]).fHeatFlow;
+                
+                mfHeatFlow(iCell)              = mfAdsorptionHeatFlow(iCell) + this.fHeaterPower/this.iCellNumber;
+                
+                oCapacity = this.poCapacities([this.sName ,'__',this.sName,'__Absorber_',num2str(iCell)]);
+                oCapacity.oHeatSource.setPower(mfHeatFlow(iCell));
+            end
+            
+            % Now the convective heat transfer between the absorber material
+            % and the flow phases has to be calculated
+            
+            % alternative solution for the case without flowspeed? Use
+            % just thermal conductivity of fluid and the MaxFreeDistance to
+            % calculate a HeatTransferCoeff?
+            % D_Hydraulic and fLength defined in geometry struct
+            mfHeatTransferCoefficient       = zeros(this.iCellNumber,1);
+           
+            fLength = (this.tGeometry.fFlowVolume/this.tGeometry.fD_Hydraulic)/this.iCellNumber;
+            
+            % TO DO: Limit how often this is recalculated depending on
+            % flowrate/temperature/pressure changes
+          	
+            % TO DO: well should be prime example where parfor loop can be
+            % used but we will see :)
+%             parfor iCell = 1:this.iCellNumber
+%                 fDensity                       = this.toStores.(this.sName).aoPhases(iCell*2).fDensity;
+%                 fFlowSpeed                     = (abs(this.aoBranches(iCell).fFlowRate) + abs(this.aoBranches(iCell+1).fFlowRate))/(2*fDensity);
+%                 fSpecificHeatCapacity          = this.toStores.(this.sName).aoPhases(iCell*2).fSpecificHeatCapacity;
+%                 
+%                 fDynamicViscosity              = this.oMT.calculateDynamicViscosity(this.toStores.(this.sName).aoPhases(iCell*2));
+%                 fThermalConductivity           = this.oMT.calculateThermalConductivity(this.toStores.(this.sName).aoPhases(iCell*2));
+%                 fConvectionCoeff               = components.filter.functions.convection_pipe(this.tGeometry.fD_Hydraulic, fLength,...
+%                                                   fFlowSpeed, fDynamicViscosity, fDensity, fThermalConductivity, fSpecificHeatCapacity, 1);
+%                 mfHeatTransferCoefficient(iCell)= fConvectionCoeff * (this.tGeometry.fAbsorberSurfaceArea/this.iCellNumber);
+%             end
+%             
+%             for iCell = 1:this.iCellNumber
+%                 oConductor = this.poLinearDynamicConductors(['ConvectiveConductor_', num2str(iCell)]);
+%                 oConductor.setConductivity(mfHeatTransferCoefficient(iCell));
+%             end
+            
+            % TO DO: alternative case if the flowrate is 0
+%             this.tGeometry.fMaximumFreeGasDistance
+            
+        end
+        
         function exec(this, ~)
             % exec(ute) function for this system
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
+            % in order to keep it somewhat transpart what is calculated
+            % when (and to allow individual parts of the code the be called
+            % individually) the necessary calculations for the filter are
+            % split up into several subfunctions
             this.updateInterCellFlowrates()
+            
+            this.calculateThermalProperties()
+            
+            this.oThermalSolver.setTimestep(this.fTimeStep);
         end
      end
 end

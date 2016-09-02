@@ -1,12 +1,13 @@
 classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
     
-    % TO DO: at the moment just empty to create the basic simulation
-    % infrastructure for the new filter model
+    
     
     properties
         mfMassTransferCoefficient;
         
         sCell;
+        
+        fHeatFlow = 0;
     end
     
    
@@ -29,7 +30,9 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             mfQ_eq = this.oMT.calculateEquilibriumLoading(this);
             
-            mfQ = this.oOut.oPhase.afMass;
+            afMass = this.oOut.oPhase.afMass;
+            
+            mfQ = afMass;
             % the absorber material is not considered loading ;)
             mfQ(this.oMT.abAbsorber) = 0;
             
@@ -50,6 +53,21 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             fDesorptionFlowRate                             = sum(mfFlowRatesDesorption);
             arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
             arPartialsDesorption(mfFlowRatesDesorption~=0)  = mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./fDesorptionFlowRate;
+            
+            csAbsorbers = this.oMT.csSubstances(((afMass ~= 0) .* this.oMT.abAbsorber) ~= 0);
+            
+            fAbsorberMass = sum(afMass(this.oMT.abAbsorber));
+            mfAbsorptionEnthalpy = zeros(1,this.oMT.iSubstances);
+            for iAbsorber = 1:length(csAbsorbers)
+                rAbsorberMassRatio = afMass(this.oMT.tiN2I.(csAbsorbers{iAbsorber}))/fAbsorberMass;
+                mfAbsorptionEnthalpy = mfAbsorptionEnthalpy + rAbsorberMassRatio * this.oMT.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.mfAbsorptionEnthalpy;
+            end
+            
+            % Positive values in mfFlowRates mean something is beeing
+            % absorbed and the Absorption Enthalpy is stored with a
+            % negative value if heat is generated. Therefore the overall
+            % result has to be mutliplied with -1
+            this.fHeatFlow = - sum(mfFlowRates.*this.oMT.afMolarMass.*mfAbsorptionEnthalpy);
             
             this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
             

@@ -4,9 +4,15 @@ classdef heatsource < base & event.source
     %
     %TODO 
     %   TAINT CONTAINER!!! after setPower
+    %   Well i implemented that because otherwise the heatsource vector
+    %   would just never update for me. However the taint function seems to
+    %   be unfinished itself and I had to add the vsys as input parameter
+    %   to even be able to access it (puda)
     
     properties (SetAccess = protected)
         sName;
+        
+        oVsys;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -15,7 +21,8 @@ classdef heatsource < base & event.source
     
     methods
         
-        function this = heatsource(sIdentifier, fPower)
+        function this = heatsource(oVsys, sIdentifier, fPower)
+            this.oVsys = oVsys;
             this.sName  = sIdentifier;
             
             if nargin > 1
@@ -27,6 +34,8 @@ classdef heatsource < base & event.source
             this.fPower  = fPower;
             
             this.trigger('update', fPower);
+            
+            this.oVsys.taint();
         end
         
         function fPower = getPower(this)
