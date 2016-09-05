@@ -67,18 +67,19 @@ classdef setup < simulation.infrastructure
             
             
             if ~isfield('tSolverParams', 'rHighestMaxChangeDecrease')
-                tSolverParams.rHighestMaxChangeDecrease = 500;
+                tSolverParams.rHighestMaxChangeDecrease = 0;
             end
-            
             
             
             this@simulation.infrastructure('Tutorial_Filter', ptConfigParams, tSolverParams);
             
-            
-            
-            
             % Creating the root object
             oExample = tutorials.filter.systems.Example(this.oSimulationContainer, 'Example');
+            
+            % the manual solver at the inlet will start giving warnings
+            % since he works against a pressure without containing a pump,
+            % not that this actually matters.
+            warning( 'off', 'all')
             
             
         end
