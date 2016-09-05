@@ -50,7 +50,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             arPartialsAdsorption                            = zeros(1,this.oMT.iSubstances);
             arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./fAdsorptionFlowRate;
             
-            fDesorptionFlowRate                             = sum(mfFlowRatesDesorption);
+            fDesorptionFlowRate                             = -sum(mfFlowRatesDesorption);
             arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
             arPartialsDesorption(mfFlowRatesDesorption~=0)  = mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./fDesorptionFlowRate;
             
