@@ -37,7 +37,7 @@ classdef CCAA < vsys
         % According to "International Space Station Carbon Dioxide Removal
         % Assembly Testing" 00ICES-234 James C. Knox (2000) the minmal flow
         % rate for CDRA to remove enough CO2 is 41 kg/hr. The nominal flow
-        % through CDRA is supposed to be 42.7 kg/s. Factor of 1.13 used to
+        % through CDRA is supposed to be 42.7 kg/hr. Factor of 1.13 used to
         % fit CDRA to test data
         fCDRA_FlowRate = 1.14 * 1.187e-2;
         

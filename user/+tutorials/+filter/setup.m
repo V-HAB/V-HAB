@@ -102,7 +102,7 @@ classdef setup < simulation.infrastructure
             
             iCells = this.oSimulationContainer.toChildren.Example.toChildren.Filter.iCellNumber;
             
-            for iK = 1:iCells
+            for iK = 1:10:iCells
                 oLog.addValue(['Example:c:Filter:s:Filter.toPhases.Absorber_',num2str(iK)], 'afMass(this.oMT.tiN2I.CO2)', 'P_kg', ['Absorbed Partial Mass CO2 Cell ',num2str(iK)]);
                 oLog.addValue(['Example:c:Filter:s:Filter.toPhases.Absorber_',num2str(iK)], 'afMass(this.oMT.tiN2I.H2O)', 'P_kg', ['Absorbed Partial Mass H2O Cell ',num2str(iK)]);
             end
@@ -143,7 +143,7 @@ classdef setup < simulation.infrastructure
 
             iCells = this.oSimulationContainer.toChildren.Example.toChildren.Filter.iCellNumber;
             for iIndex = 1:length(this.toMonitors.oLogger.tLogValues)
-                for iK = 1:iCells
+                for iK = 1:10:iCells
                     if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, ['Absorbed Partial Mass CO2 Cell ',num2str(iK)])
                         miAbsorbedCO2Cell(iK) = iIndex;
                     end
@@ -183,15 +183,15 @@ classdef setup < simulation.infrastructure
             
             mLogDataCO2 = size(this.toMonitors.oLogger.mfLog);
             mLogDataCO2 = zeros(iCells,mLogDataCO2(1));
-            for iK = 1:iCells
+            for iK = 1:10:iCells
                 mLogDataCO2(iK,:) = this.toMonitors.oLogger.mfLog(:,miAbsorbedCO2Cell(iK));
             end
             
           	mLogDataCO2(:,isnan(mLogDataCO2(iK,:)))=[];
             
             mLogDataH2O = size(this.toMonitors.oLogger.mfLog);
-            mLogDataH2O = zeros(10,mLogDataH2O(1));
-            for iK = 1:iCells
+            mLogDataH2O = zeros(iCells,mLogDataH2O(1));
+            for iK = 1:10:iCells
                 mLogDataH2O(iK,:) = this.toMonitors.oLogger.mfLog(:,miAbsorbedH2OCell(iK));
             end
             
@@ -256,7 +256,7 @@ classdef setup < simulation.infrastructure
             figure('name', 'Absorbed Mass CO2')
             grid on
             hold on
-            for iK = 1:iCells
+            for iK = 1:10:iCells
                 plot((afTime), mLogDataCO2(iK,:))
             end
             xlabel('Time in s')
@@ -265,7 +265,7 @@ classdef setup < simulation.infrastructure
             figure('name', 'Absorbed Mass H2O')
             grid on
             hold on
-            for iK = 1:iCells
+            for iK = 1:10:iCells
                 plot((afTime), mLogDataH2O(iK,:))
             end
             xlabel('Time in s')

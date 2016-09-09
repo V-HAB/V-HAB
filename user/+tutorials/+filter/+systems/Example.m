@@ -10,14 +10,14 @@ classdef Example < vsys
             % Adding the subsystem
             
             
-        	tInitialization.tfMassAbsorber  =   struct('Zeolite5A',10);
-            tInitialization.tfMassFlow      =   struct('N2',1 , 'CO2', 0.01, 'O2', 0.23);
+        	tInitialization.tfMassAbsorber  =   struct('Zeolite5A',25);
+            tInitialization.tfMassFlow      =   struct('N2',1 , 'CO2', 0.01, 'O2', 0.23); %struct('N2',2.32e-3 , 'CO2', 2.32e-5, 'O2', 5.33e-4);
             tInitialization.fTemperature    =   293;
-            tInitialization.iCellNumber     =   20;
+            tInitialization.iCellNumber     =   200;
             % this factor times the mass flow^2 will decide the pressure
             % loss. In this case the pressure loss will be 1 bar at a
-            % flowrate of 0.1 kg/s
-            tInitialization.fFrictionFactor =   100e5;
+            % flowrate of 0.01 kg/s
+            tInitialization.fFrictionFactor =   1e9;
             
             tInitialization.fConductance = 1;
             
@@ -40,11 +40,14 @@ classdef Example < vsys
             
             oFilter = components.filter.Filter(this, 'Filter', tInitialization, tGeometry);
             
-            oFilter.iInternalSteps          = 250;
-            oFilter.fMinimumTimeStep        = 1e-8;
-            oFilter.fMaximumTimeStep        = 60;
+            iInternalSteps          = 200;
+            fMinimumTimeStep        = 1e-10;
+            fMaximumTimeStep        = 60;
+            rMaxChange              = 0.001;
+            
+            oFilter.setNumericProperties(rMaxChange,fMinimumTimeStep,fMaximumTimeStep,iInternalSteps);
+            
             oFilter.fSteadyStateTimeStep    = 10;
-            oFilter.rMaxChange              = 0.005;
             % deactivated steady state simplification under all
             % circumstances
             oFilter.fMaxSteadyStateFlowRateChange = 0;
@@ -60,10 +63,10 @@ classdef Example < vsys
             createMatterStructure@vsys(this);
             
             % Creating a store, volume 1 m^3
-            matter.store(this, 'Cabin', 100);
+            matter.store(this, 'Cabin', 1000);
             
             % Adding a phase to the store 'Tank_1', 2 m^3 air
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 100, struct('CO2', 0.04), 293, 0.25, 1e5);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 1000, struct('CO2', 0.008), 293, 0, 1e5);
             
             oGasPhase = matter.phases.gas(this.toStores.Cabin, 'air', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
@@ -109,7 +112,7 @@ classdef Example < vsys
             createSolverStructure@vsys(this);
             
             
-            this.toChildren.Filter.setInletFlow(0.1);
+            this.toChildren.Filter.setInletFlow(0.012);
             % SOLVERS ETC!
             
             % specific properties for rMaxChange etc, possibly depending on

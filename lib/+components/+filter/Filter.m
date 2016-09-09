@@ -11,17 +11,7 @@ classdef Filter < vsys
 % assembly.
     
     properties (SetAccess = public, GetAccess = public)
-        % rMaxChange defines the maximum percentage by which the flow rate
-        % can change within one (total) time step
-        rMaxChange = 0.05;
         
-        % fMinimumTimeStep defines the minimal total time step
-        fMinimumTimeStep = 1e-8;
-
-        % fMaximumTimeStep defines the maximum total time step during
-        % dynamic calculations
-        fMaximumTimeStep = 1;
-
         % fSteadyStateTimeStep defines the time step that will be used once
         % the steady state has been reached
         fSteadyStateTimeStep = 60;
@@ -32,16 +22,33 @@ classdef Filter < vsys
         % value of 1e-3 means that if the flow rate changes less than 0.1%
         % the solver assumes it has reached steady state conditions
         fMaxSteadyStateFlowRateChange = 1e-3;
+        
+        mfAdsorptionFlowRate;
+        mfAdsorptionHeatFlow;
+    end
 
+    properties (SetAccess = protected, GetAccess = public)
+        % rMaxChange defines the maximum percentage by which the flow rate
+        % can change within one (total) time step
+        rMaxChange = 0.05;
+        
+        % fMinimumTimeStep defines the minimal total time step
+        fMinimumTimeStep = 1e-8;
+
+        % fMaximumTimeStep defines the maximum total time step during
+        % dynamic calculations
+        fMaximumTimeStep = 1;
+        
         % Number of internal partial steps used in the flow rate
         % calculation. In principle the total time step is split into
         % several smaller internal ones for the flow rate calculation and
         % this number defines how many of these partial steps will be made
         iInternalSteps = 100;
-    end
-
-    properties (SetAccess = protected, GetAccess = public)
         
+        rMaxPartialChange;
+        fMaxPartialTimeStep;
+        fMinPartialTimeStep;
+            
         % number of cells used in the filter model
         iCellNumber;
         
@@ -89,6 +96,9 @@ classdef Filter < vsys
         % update that is used to decide if recalculations should be made or
         % not
         tLastUpdateProps;
+        
+        mfCellVolume;
+        fHelper1;
     end
     
     methods
@@ -113,6 +123,13 @@ classdef Filter < vsys
             this.tLastUpdateProps.mfSpecificHeatCapacity = zeros(this.iCellNumber,1);
                 
             eval(this.oRoot.oCfgParams.configCode(this));
+            
+            this.mfAdsorptionFlowRate   = zeros(this.iCellNumber,1);
+            this.mfAdsorptionHeatFlow 	= zeros(this.iCellNumber,1);
+            
+            this.rMaxPartialChange   = this.rMaxChange/this.iInternalSteps;
+            this.fMaxPartialTimeStep = this.fMaximumTimeStep/this.iInternalSteps;
+            this.fMinPartialTimeStep = this.fMinimumTimeStep/this.iInternalSteps;
             
         end
         
@@ -213,6 +230,13 @@ classdef Filter < vsys
                     this.addConductor(thermal.conductors.linear(this, moCapacity{iCell,1}, moCapacity{iCell,2}, 0, ['ConvectiveConductor_', num2str(iCell)]));
                 end
             end
+            
+            this.mfCellVolume(:,1)   = [this.toStores.(this.sName).aoPhases(2:2:end).fVolume];
+           	
+            % in order to save calculation steps this helper is only
+            % calculated once and then used in all iterations since it
+            % remains constant.
+            this.fHelper1 = ((this.tGeometry.fArea^2) ./ this.mfCellVolume);
         end
         
         function createSolverStructure(this)
@@ -223,6 +247,10 @@ classdef Filter < vsys
             % manual branches
             for k = 1:length(this.aoBranches)
                 solver.matter.manual.branch(this.aoBranches(k));
+            end
+            
+            for k = 1:length(this.toStores.(this.sName).aoPhases)
+                this.toStores.(this.sName).aoPhases(k).rMaxChange = inf;
             end
             
             % adds the lumped parameter thermal solver to calculate the
@@ -278,6 +306,28 @@ classdef Filter < vsys
             this.calculateThermalProperties();
         end
         
+        function setNumericProperties(this,rMaxChange,fMinimumTimeStep,fMaximumTimeStep, iInternalSteps)
+            % in order to only recalculate these properties when they are
+            % actually reset a specific function has to be used to set them
+            
+            this.rMaxChange = rMaxChange;
+
+            this.fMinimumTimeStep = fMinimumTimeStep;
+
+            this.fMaximumTimeStep = fMaximumTimeStep;
+            
+            this.iInternalSteps = iInternalSteps;
+            
+            % the numerical properties of the filter give the overall
+            % allowed changes and timesteps over one complete step. In
+            % order to increase the maximum allowable timestep the solver
+            % divides this into several internal steps (if the user chose
+            % this option)
+            this.rMaxPartialChange   = this.rMaxChange/this.iInternalSteps;
+            this.fMaxPartialTimeStep = this.fMaximumTimeStep/this.iInternalSteps;
+            this.fMinPartialTimeStep = this.fMinimumTimeStep/this.iInternalSteps;
+        end
+        
     end
     
      methods (Access = protected)
@@ -299,31 +349,9 @@ classdef Filter < vsys
             
             mfTimeStep      = zeros(1, this.iInternalSteps);
             
-            mfCellVolume(:,1)   = [this.toStores.(this.sName).aoPhases(2:2:end).fVolume];
-           	mfCellMass(:,1)     = [this.toStores.(this.sName).aoPhases(2:2:end).fMass];
+            mfCellMass(:,1)     = [this.toStores.(this.sName).aoPhases(2:2:end).fMass];
             mfFlowRates(:,1)    = [this.aoBranches.fFlowRate];
             
-            % in order to save calculation steps this helper is only
-            % calculated once and then used in all iterations since it
-            % remains constant.
-            fHelper1 = ((this.tGeometry.fArea^2) ./ mfCellVolume(1:end));
-            
-            % the numerical properties of the filter give the overall
-            % allowed changes and timesteps over one complete step. In
-            % order to increase the maximum allowable timestep the solver
-            % divides this into several internal steps (if the user chose
-            % this option)
-            rMaxPartialChange   = this.rMaxChange/this.iInternalSteps;
-            fMaxPartialTimeStep = this.fMaximumTimeStep/this.iInternalSteps;
-            fMinPartialTimeStep = this.fMinimumTimeStep/this.iInternalSteps;
-            
-            mfAdsorptionFlowRate = zeros(this.iCellNumber,1);
-
-            for iK = 1:this.iCellNumber                 
-                fDesorptionFlowRate = this.toStores.(this.sName).toProcsP2P.(['DesorptionProcessor_',num2str(iK)]).fFlowRate;
-                mfAdsorptionFlowRate(iK) = this.toStores.(this.sName).toProcsP2P.(['AdsorptionProcessor_',num2str(iK)]).fFlowRate - fDesorptionFlowRate;
-            end
-                
             % the bNegatitveFlow property is set by the setInFlow function
             % of the filter and specifies wether the flow is going in
             % positive or negative direction. This saves time on the if
@@ -373,7 +401,7 @@ classdef Filter < vsys
                     % With the pressure difference between the cells the
                     % difference of the mass flow per time can be
                     % calculated for each cell:
-                    mfDeltaFlowRate(:,iStep) = (mfDeltaPressure .* fHelper1);
+                    mfDeltaFlowRate(:,iStep) = (mfDeltaPressure .* this.fHelper1);
                     % The following equations are used in the calculation of the new mass flow:
                     % F = m*a --> P*A = V_cell*rho*a
                     % massflow(t+delta_t) = massflow(t) + rho*A*delta_flowspeed
@@ -385,22 +413,22 @@ classdef Filter < vsys
                     % the highest possible internal time step can now be
                     % calculated based on the current mass change for each
                     % cell and the current cell mass
-                    mfTimeStep(1,iStep) = min(abs(((rMaxPartialChange) .* mfCellMass(:,iStep))/((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep))))); 
+                    mfTimeStep(1,iStep) = min(abs(((this.rMaxPartialChange) .* mfCellMass(:,iStep))/((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep))))); 
                     
                     % in case the time step is outside of the defined
                     % boundaries it is reset to these boundaries
-                    if mfTimeStep(1,iStep) > fMaxPartialTimeStep
-                        mfTimeStep(1,iStep) = fMaxPartialTimeStep;
+                    if mfTimeStep(1,iStep) > this.fMaxPartialTimeStep
+                        mfTimeStep(1,iStep) = this.fMaxPartialTimeStep;
                     elseif isnan(mfTimeStep(1,iStep))
-                        mfTimeStep(1,iStep) = fMinPartialTimeStep;
-                    elseif mfTimeStep(1,iStep)  <= fMinPartialTimeStep
-                        mfTimeStep(1,iStep) = fMinPartialTimeStep;
+                        mfTimeStep(1,iStep) = this.fMinPartialTimeStep;
+                    elseif mfTimeStep(1,iStep)  <= this.fMinPartialTimeStep
+                        mfTimeStep(1,iStep) = this.fMinPartialTimeStep;
                     end
 
                     % now the new flow rates can be calculated based on the
                     % equation derived above
                     % massflow(t+delta_t) = massflow(t) + A*(P*A/V_cell)*delta_t
-                    mfFlowRates(1:end-1, iStep+1) = mfFlowRates(1:end-1, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep) + mfAdsorptionFlowRate;
+                    mfFlowRates(1:end-1, iStep+1) = mfFlowRates(1:end-1, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep) + this.mfAdsorptionFlowRate;
                     % since one boundary condition is a flow rate this
                     % flowrate is simply kept constant for all steps
                     mfFlowRates(end, iStep+1) = mfFlowRates(end, iStep);
@@ -437,21 +465,26 @@ classdef Filter < vsys
                 
                 for iStep = 1:this.iInternalSteps
                     mfPressureLoss(:,iStep)  = (this.tInitialization.fFrictionFactor/(this.iCellNumber)) .* abs(mfFlowRates(2:end,iStep)).^2;
+                    
                     mfDeltaPressure = (mfCellPressure(1:end-1, iStep) - mfCellPressure(2:end, iStep)) - sign(mfFlowRates(2:end,iStep)).*mfPressureLoss(:,iStep);
 
-                    mfDeltaFlowRate(:,iStep) = (mfDeltaPressure .* fHelper1);
+                    mfDeltaFlowRate(:,iStep) = (mfDeltaPressure .* this.fHelper1);
 
-                    mfTimeStep(1,iStep) = min(abs(((rMaxPartialChange) .* mfCellMass(:,iStep))./((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep))))); 
+                    mfTimeStep(1,iStep) = min(abs((this.rMaxPartialChange .* mfCellMass(:,iStep))./((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep))))); 
                     
-                    if mfTimeStep(1,iStep) > fMaxPartialTimeStep
-                        mfTimeStep(1,iStep) = fMaxPartialTimeStep;
+                    if mfTimeStep(1,iStep) > this.fMaxPartialTimeStep
+                        mfTimeStep(1,iStep) = this.fMaxPartialTimeStep;
                     elseif isnan(mfTimeStep(1,iStep))
-                        mfTimeStep(1,iStep) = fMinPartialTimeStep;
-                    elseif mfTimeStep(1,iStep)  <= fMinPartialTimeStep
-                        mfTimeStep(1,iStep) = fMinPartialTimeStep;
+                        mfTimeStep(1,iStep) = this.fMinPartialTimeStep;
+                    elseif mfTimeStep(1,iStep)  <= this.fMinPartialTimeStep
+                        mfTimeStep(1,iStep) = this.fMinPartialTimeStep;
                     end
 
-                    mfFlowRates(2:end, iStep+1) = mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep) - mfAdsorptionFlowRate;
+                    if min(abs(mfFlowRates(2:end, iStep))) < max(abs(this.mfAdsorptionFlowRate))
+                        mfFlowRates(2:end, iStep+1) = mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep);
+                    else
+                        mfFlowRates(2:end, iStep+1) = mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep) - this.mfAdsorptionFlowRate;
+                    end
                     mfFlowRates(1, iStep+1) = mfFlowRates(1, iStep);
 
                     mfCellMass(:,iStep+1) = mfCellMass(:,iStep) + ((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep)) * mfTimeStep(1,iStep));
@@ -479,17 +512,17 @@ classdef Filter < vsys
                     for iK = 2:length(mfFlowRates(:,1))-1
                         % TO DO: maybe bind this calculation/part of it to
                         % the update functions of the P2Ps?
-                        fFlowRate = fInletFlowRate + mfAdsorptionFlowRate(iK-1);
+                        fFlowRate = fInletFlowRate + this.mfAdsorptionFlowRate(iK-1);
                         this.aoBranches(iK).oHandler.setFlowRate(fFlowRate);
                     end
-                    fFlowRate = abs(fInletFlowRate + mfAdsorptionFlowRate(iK-1));
+                    fFlowRate = abs(fInletFlowRate + this.mfAdsorptionFlowRate(iK-1));
                     this.aoBranches(1).oHandler.setFlowRate(fFlowRate);
                 else
                     fInletFlowRate = mfFlowRates(1,1);
                     for iK = 2:length(mfFlowRates(:,1))
                         % TO DO: maybe bind this calculation/part of it to
                         % the update functions of the P2Ps?
-                        fFlowRate = fInletFlowRate - mfAdsorptionFlowRate(iK-1);
+                        fFlowRate = fInletFlowRate - this.mfAdsorptionFlowRate(iK-1);
                         this.aoBranches(iK).oHandler.setFlowRate(fFlowRate);
                     end
                 end
@@ -538,12 +571,9 @@ classdef Filter < vsys
             % combination of the heat of absorption and the heater power.
             % Note that the heater power can also be negative resulting in
             % cooling.
-            mfAdsorptionHeatFlow    = zeros(this.iCellNumber,1);
             mfHeatFlow              = zeros(this.iCellNumber,1);
             for iCell = 1:this.iCellNumber
-                mfAdsorptionHeatFlow(iCell)    = this.toStores.(this.sName).toProcsP2P.(['AdsorptionProcessor_',num2str(iCell)]).fHeatFlow;
-                
-                mfHeatFlow(iCell)              = mfAdsorptionHeatFlow(iCell) + this.fHeaterPower/this.iCellNumber;
+                mfHeatFlow(iCell)              = this.mfAdsorptionHeatFlow(iCell) + this.fHeaterPower/this.iCellNumber;
                 
                 oCapacity = this.poCapacities([this.sName ,'__',this.sName,'__Absorber_',num2str(iCell)]);
                 oCapacity.oHeatSource.setPower(mfHeatFlow(iCell));
@@ -576,41 +606,37 @@ classdef Filter < vsys
             % In order to limit the recalculation of the convective heat
             % exchange coefficient to a manageable degree they are only
             % recalculated if any relevant property changed by at least 1%
-            if (max(abs(this.tLastUpdateProps.mfDensity - mfDensity))                           > min(1e-2 * mfDensity)) ||...
-               (max(abs(this.tLastUpdateProps.mfFlowSpeed - mfFlowSpeed))                       > min(1e-2 * mfFlowSpeed)) ||...
-               (max(abs(this.tLastUpdateProps.mfSpecificHeatCapacity - mfSpecificHeatCapacity)) > min(1e-2 * mfSpecificHeatCapacity))
-                
-                % well this should be a good example for a par for loop but
-                % it seems that the required communication overhead for a
-                % par for loop far surpasses the achievable increase in
-                % calculation speed at least while objects are used in the
-                % loop. If there is a way to call the matter table
-                % functions without the matter table object this might
-                % work, but obviously then the functions are missing the
-                % required matter data.
+            mbRecalculate = (abs(this.tLastUpdateProps.mfDensity - mfDensity)                            > (1e-2 * mfDensity)) +...
+                            (abs(this.tLastUpdateProps.mfFlowSpeed - mfFlowSpeed)                        > (1e-2 * mfFlowSpeed)) + ...
+                            (abs(this.tLastUpdateProps.mfSpecificHeatCapacity - mfSpecificHeatCapacity)  > (1e-2 * mfSpecificHeatCapacity));
+            
+            mbRecalculate = (mbRecalculate ~= 0);
+            
+            if any(mbRecalculate)
                 for iCell = 1:this.iCellNumber
-                    fDynamicViscosity              = this.oMT.calculateDynamicViscosity(aoPhase{iCell});
-                    fThermalConductivity           = this.oMT.calculateThermalConductivity(aoPhase{iCell});
-                    fConvectionCoeff               = components.filter.functions.convection_pipe(this.tGeometry.fD_Hydraulic, fLength,...
-                                                      mfFlowSpeed(iCell), fDynamicViscosity, mfDensity(iCell), fThermalConductivity, mfSpecificHeatCapacity(iCell), 1);
-                    mfHeatTransferCoefficient(iCell)= fConvectionCoeff * (this.tGeometry.fAbsorberSurfaceArea/this.iCellNumber);
-                end
-                
-                % in case that this was actually recalculated store the
-                % current properties in the LastUpdateProps struct to
-                % decide when the next recalculation is required
-                this.tLastUpdateProps.mfDensity              = mfDensity;
-                this.tLastUpdateProps.mfFlowSpeed            = mfFlowSpeed;
-                this.tLastUpdateProps.mfSpecificHeatCapacity = mfSpecificHeatCapacity;
-                
-                % now the calculated coefficients have to be set to the
-                % conductor of each cell
-                for iCell = 1:this.iCellNumber
-                    oConductor = this.poLinearConductors(['ConvectiveConductor_', num2str(iCell)]);
-                    oConductor.setConductivity(mfHeatTransferCoefficient(iCell));
+                    if mbRecalculate(iCell)
+
+                        fDynamicViscosity              = this.oMT.calculateDynamicViscosity(aoPhase{iCell});
+                        fThermalConductivity           = this.oMT.calculateThermalConductivity(aoPhase{iCell});
+                        fConvectionCoeff               = components.filter.functions.convection_pipe(this.tGeometry.fD_Hydraulic, fLength,...
+                                                          mfFlowSpeed(iCell), fDynamicViscosity, mfDensity(iCell), fThermalConductivity, mfSpecificHeatCapacity(iCell), 1);
+                        mfHeatTransferCoefficient(iCell)= fConvectionCoeff * (this.tGeometry.fAbsorberSurfaceArea/this.iCellNumber);
+
+                        % in case that this was actually recalculated store the
+                        % current properties in the LastUpdateProps struct to
+                        % decide when the next recalculation is required
+                        this.tLastUpdateProps.mfDensity(iCell)              = mfDensity(iCell);
+                        this.tLastUpdateProps.mfFlowSpeed(iCell)            = mfFlowSpeed(iCell);
+                        this.tLastUpdateProps.mfSpecificHeatCapacity(iCell) = mfSpecificHeatCapacity(iCell);
+
+                        
+                        % now the calculated coefficients have to be set to the
+                        % conductor of each cell
+                        oConductor = this.poLinearConductors(['ConvectiveConductor_', num2str(iCell)]);
+                        oConductor.setConductivity(mfHeatTransferCoefficient(iCell));
+                    end
                 end
             end
-            
             % TO DO: alternative case if the flowrate is 0, currently no
             % heat exchange takes place when the flow rate is zero. For
             % this case the heat exchange would be based on conduction and

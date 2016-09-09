@@ -81,9 +81,6 @@ end
 % a absolute kg value for each substance that can be absorbed and summed
 % up to one vector
 mfEquilibriumLoading = sum(mfEquilibriumLoadingPerAbsorber,1);
-
-% hm value currently off by about factor E-3 --> find reason for this!
-
 end
 
 %% Functions to calculate the Equilibrium loading for each absorber Substance
