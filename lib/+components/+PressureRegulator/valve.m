@@ -196,21 +196,21 @@ classdef valve < matter.procs.f2f
                 this.fHydrDiam = 0;
                 this.toSolve.hydraulic.fHydrDiam = this.fHydrDiam;
                 
-                % save current time value for new timestep calculation when
+                % Save current time value for new timestep calculation when
                 % the actual update is next executed. This prevents a large
                 % transient at that point. 
                 this.fTimeOld = this.oBranch.oContainer.oTimer.fTime;
                 
                 return;
             end
-            % get timestep of simualtion
+            % Get timestep of simualtion
             this.fTimeStep = (this.oBranch.oContainer.oTimer.fTime - this.fTimeOld);
             
             if this.fTimeStep <= 0
                 return;
             end
             
-            % calculate valve dislocation
+            % Calculate valve dislocation
             oPhaseLeft = this.oBranch.coExmes{1}.oPhase;
             fChamberPressureLeft = oPhaseLeft.fMass * oPhaseLeft.fMassToPressure;
             oPhaseRight = this.oBranch.coExmes{2}.oPhase;
@@ -221,9 +221,9 @@ classdef valve < matter.procs.f2f
                 fChamberPressure = fChamberPressureLeft;
             end
             this.DeltaX(fChamberPressure);
-            % calculate hydraulic diameter
+            % Calculate hydraulic diameter
             this.HydrDiam();
-            % save current time value for new timestep calculation
+            % Save current time value for new timestep calculation
             this.fTimeOld = this.oBranch.oContainer.oTimer.fTime;
             
             % Setting the new hydraulic diameter on the solver properties

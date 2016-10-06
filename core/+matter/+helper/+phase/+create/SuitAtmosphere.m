@@ -63,11 +63,13 @@ else
     fMassGes = 0;
     fMassFractionH2O = 0;
 end
+
 % Matter composition
 tfMass = struct(...
     'O2',  0.999 * fMass, ...
     'CO2', 0.001 * fMass ...
     );
+
 % Calculate H2O mass if present 
 tfMass.H2O = fMassGes * fMassFractionH2O; 
 
