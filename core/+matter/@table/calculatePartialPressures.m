@@ -45,8 +45,13 @@ if length(varargin) == 1
         return;
     end
     
-    fPressure = varargin{1}.fPressure;
     fTemperature = varargin{1}.fTemperature;
+
+    if bIsaMatterPhase
+        fPressure = varargin{1}.fMass * varargin{1}.fMassToPressure;
+    else
+        fPressure = varargin{1}.fPressure;
+    end
     
     if isempty(fPressure) || isnan(fPressure)
         fPressure = this.Standard.Pressure; % std pressure (Pa)
