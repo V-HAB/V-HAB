@@ -588,7 +588,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             if bSkipPT && (iL > 1), aoFlows(1).warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end;
             
             % Rounding precision
-            iPrec = aoFlows(1).oBranch.oContainer.oTimer.iPrecision;
+            iPrec = aoFlows(1).oTimer.iPrecision;
             
             % We need to update the flows in the direction of the flow. In
             % case the flow rate is zero, we'll check the pressures of the
