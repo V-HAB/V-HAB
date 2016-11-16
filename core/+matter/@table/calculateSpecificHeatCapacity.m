@@ -59,6 +59,30 @@ if iNumArgs == 1 %nargin < 3
             % the matter table to calculate the values for gases that are
             % adsorbed into solids
             afPP = ones(1,this.iSubstances) .* this.Standard.Pressure;
+        elseif strcmp(oMatterRef.sType, 'mixture')
+            % for mixtures the actual matter type is set by the user and
+            % also differs for each substance. The partial pressure for a gas
+            % mixture phase (e.g. gas that contains solids) has to be
+            % calculated the same way as for a gas phase except for the
+            % substances that are solid
+            
+            if isempty(oMatterRef.sPhaseType)
+                afPP = ones(1,this.iSubstances) .* this.Standard.Pressure;
+                aiPhase = this.determinePhase(oMatterRef.afMass, oMatterRef.fTemperature, afPP);
+            else
+                aiPhase = this.determinePhase(oMatterRef.afMass, oMatterRef.fTemperature, (ones(1,this.iSubstances).*oMatterRef.fPressure));
+                if strcmp(oMatterRef.sPhaseType, 'gas')
+                    afMassGas = zeros(1,this.iSubstances);
+                    afMassGas(aiPhase ~= 1) = oMatterRef.afMass(aiPhase ~= 1);
+                    afPP = this.calculatePartialPressures('gas',afMassGas, oMatterRef.fPressure);
+                    afPP(aiPhase == 1) = oMatterRef.fPressure;
+                    
+                    aiPhase = this.determinePhase(oMatterRef.afMass, oMatterRef.fTemperature, afPP);
+                else
+                    afPP = ones(1,this.iSubstances) .* oMatterRef.fPressure;
+                end
+            end
+            
         else
             % The problem is that liquids (and solids) in V-HAB do not have
             % a partial pressure variable and they cannot be view as ideal
@@ -99,6 +123,21 @@ if iNumArgs == 1 %nargin < 3
                     afPP = ones(1,this.iSubstances) .* this.Standard.Pressure;
                 end
             end
+            
+        elseif strcmp(sMatterState, 'mixture')
+            oPhase = oMatterRef.getInEXME().oPhase;
+            
+            aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, (ones(1,this.iSubstances).*oPhase.fPressure));
+            if strcmp(oPhase.sPhaseType, 'gas')
+                afMassGas = zeros(1,this.iSubstances);
+                afMassGas(aiPhase ~= 1) = oPhase.afMass(aiPhase ~= 1);
+                afPP = this.calculatePartialPressures('gas',afMassGas, oPhase.fPressure);
+                afPP(aiPhase == 1) = oPhase.fPressure;
+
+                aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, afPP);
+            else
+                afPP = ones(1,this.iSubstances) .* oPhase.fPressure;
+            end
         else
             try
                 if ~isnan(oMatterRef.getInEXME().oPhase.fPressure)
@@ -132,7 +171,26 @@ if iNumArgs == 1 %nargin < 3
                     end
                 end
             else
-                afPP = oMatterRef.oBranch.coExmes{2,1}.oPhase.afPP;
+                afPP = oMatterRef.oBranch.coExmes{1,2}.oPhase.afPP;
+            end
+            
+        elseif strcmp(sMatterState, 'mixture')
+            if oMatterRef.fFlowRate >= 0
+                oPhase = oMatterRef.oBranch.coExmes{1,1}.oPhase;
+            else
+                oPhase = oMatterRef.oBranch.coExmes{2,1}.oPhase;
+            end
+            
+            aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, (ones(1,this.iSubstances).*oPhase.fPressure));
+            if strcmp(oPhase.sPhaseType, 'gas')
+                afMassGas = zeros(1,this.iSubstances);
+                afMassGas(aiPhase ~= 1) = oPhase.afMass(aiPhase ~= 1);
+                afPP = this.calculatePartialPressures('gas',afMassGas, oPhase.fPressure);
+                afPP(aiPhase == 1) = oPhase.fPressure;
+
+                aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, afPP);
+            else
+                afPP = ones(1,this.iSubstances) .* oPhase.fPressure;
             end
         else
             try
@@ -212,6 +270,15 @@ iNumIndices = length(aiIndices);
 % indexed substances and get their specific heat capacity.
 afCp = zeros(iNumIndices, 1);
 
+csPhase = {'solid';'liquid';'gas';'supercritical'};
+tiP2N.solid = 1;
+tiP2N.liquid = 2;
+tiP2N.gas = 3;
+tiP2N.supercritical = 4;
+if ~strcmp(sMatterState, 'mixture')
+    aiPhase = tiP2N.(sMatterState)*ones(1,this.iSubstances);
+end
+
 for iI = 1:iNumIndices
     % Creating the input struct for the findProperty() method
     tParameters = struct();
@@ -219,7 +286,7 @@ for iI = 1:iNumIndices
     tParameters.sProperty = 'Heat Capacity';
     tParameters.sFirstDepName = 'Temperature';
     tParameters.fFirstDepValue = fTemperature;
-    tParameters.sPhaseType = sMatterState;
+    tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPP(aiIndices(iI));
     tParameters.bUseIsobaricData = bUseIsobaricData;

@@ -170,15 +170,10 @@ switch sPhaseType
     case 'gas'
         sPhaseStructName = 'tGas';
         iPhaseType       = 3;
-        sPhaseAdjective  = 'gaseous';
     case 'supercritical'
         sPhaseStructName = 'tSupercritical';
         iPhaseType       = 4;
-        sPhaseAdjective  = 'supercritical';
-    case 'all'
-        sPhaseStructName = 'tAll';
-        iPhaseType       = 5;
-        sPhaseAdjective  = 'all';
+        sPhaseAdjective  = 'gaseous';
 end
 
 % Again for debugging purposes, we'll get the unit names for the two
@@ -430,18 +425,13 @@ if txMatterForSubstance.bIndividualFile
             try
                 % If there is data, we use it.
                 fProperty = txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(sPropertyNoSpaces).(sID)(fFirstDepValue, fSecondDepValue);
-                
-            catch
-                % If the interpolation exists, but still produces an error,
-                % then we really have a problem here, abort. 
-                if isfield(txMatterForSubstanceAndTypeAndAggregate.tInterpolations, sPropertyNoSpaces) && ...
-                    isfield(txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(sPropertyNoSpaces), sID)
+                if isnan(fProperty)
                     this.throw('findProperty',['The combination of dependencies provided to the findProperty method is impossible.\n',...
                                'There is no %s %s at a %s of %.2f [%s] and a %s of %.2f [%s].'], sPhaseAdjective, sSubstance, sFirstDepName, ...
-                                                                                                 fFirstDepValue, sFirstDepUnit, sSecondDepName, ...
-                                                                                                 fSecondDepValue, sSecondDepUnit);
+                                                                                             fFirstDepValue, sFirstDepUnit, sSecondDepName, ...
+                                                                                             fSecondDepValue, sSecondDepUnit);
                 end
-                
+            catch
                 % The interpolation function does not yet
                 % exist, so we have to go and run the
                 % interpolation.

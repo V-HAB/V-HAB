@@ -28,7 +28,15 @@ if length(varargin) == 1
     % Getting the phase type (gas, liquid, solid) depending on the object
     % type, also setting the afMass array. 
     if bIsaMatterPhase
-        sPhase = varargin{1}.sType;
+        switch varargin{1}.sType
+            case 'gas'
+                sPhase = varargin{1}.sType;
+                bIsMixture = false;
+            case 'mixture'
+                sPhase = varargin{1}.sPhaseType;
+                bIsMixture = true;
+        end
+        
         afMass = varargin{1}.afMass;
         
     elseif bIsaMatterFlow
@@ -38,9 +46,11 @@ if length(varargin) == 1
     end
     
     fPressure = varargin{1}.fPressure;
+    fTemperature = varargin{1}.fTemperature;
     
     if isempty(fPressure) || isnan(fPressure)
         fPressure = this.Standard.Pressure; % std pressure (Pa)
+        fTemperature = this.Standard.Temperature; % std temperature (K)
     end       
     
     if fPressure == 0
@@ -58,12 +68,20 @@ else
     % PhaseType (solid, liquid or gas)
     sPhase  = varargin{1};
     afMass  = varargin{2};
+ 	bIsMixture = false;
     
     % If pressure is given use it, otherwise use standard pressure
-    if nargin > 2
+    if length(varargin) > 2
         fPressure = varargin{3};
     else
         fPressure = this.Standard.Pressure;       % std pressure (Pa)
+    end
+    
+    % If temperature is given use it, otherwise use standard temperature
+    if length(varargin) > 3
+        fTemperature = varargin{4};
+    else
+        fTemperature = this.Standard.Temperature;  % std temperature (K)
     end
     
 end
@@ -86,9 +104,21 @@ arFractions = afMols ./ fGasAmount;
 % total pressure in the phase
 afPartialPressures = arFractions .* fPressure;
 
-if nargout > 1
-    % Calculating the concentration in ppm 
+% for cases with partial pressures above the vapor pressure the
+% partial pressure has to be limited to the vapor pressure
+if bIsMixture
+    aiPhases = this.determinePhase(afMass, fTemperature, afPartialPressures);
+    miTwoPhaseIndices = find(mod(aiPhases,1));
+    for iK = 1:length(miTwoPhaseIndices)
+        afPartialPressures(miTwoPhaseIndices(iK)) = this.calculateVaporPressure(fTemperature, this.csSubstances{miTwoPhaseIndices(iK)});
+    end
+end
+
+% Calculating the concentration in ppm 
+try
     afPartsPerMillion = (afMass .* varargin{1}.fMolarMass) ./ (this.afMolarMass .* varargin{1}.fMass) * 1e6;
+catch
+    afPartsPerMillion = (afMass .* this.calculateMolarMass(afMass)) ./ (this.afMolarMass .* sum(afMass)) * 1e6;
 end
 end
 
