@@ -44,7 +44,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             if (max(abs(this.afMassOld - afMass) - (1e-2 * this.afMassOld)) > 0) ||...
                 (max(abs(this.afPPOld - afPP)    - (1e-2 * this.afPPOld))   > 0) ||...
                 abs(this.fTemperatureOld - fTemperature) > (1e-2 * this.fTemperatureOld)
-            
+                
                 mfQ_eq = this.oMT.calculateEquilibriumLoading(this);
 
                 mfQ = afMass;

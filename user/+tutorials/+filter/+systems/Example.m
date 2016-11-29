@@ -11,9 +11,9 @@ classdef Example < vsys
             
             
         	tInitialization.tfMassAbsorber  =   struct('Zeolite5A',25);
-            tInitialization.tfMassFlow      =   struct('N2',1 , 'CO2', 0.01, 'O2', 0.23); %struct('N2',2.32e-3 , 'CO2', 2.32e-5, 'O2', 5.33e-4);
+            tInitialization.tfMassFlow      =   struct('N2',1 , 'CO2', 0.01, 'O2', 0.23); % struct('N2',2.32e-3 , 'CO2', 2.32e-5, 'O2', 5.33e-4);
             tInitialization.fTemperature    =   293;
-            tInitialization.iCellNumber     =   200;
+            tInitialization.iCellNumber     =   20;
             % this factor times the mass flow^2 will decide the pressure
             % loss. In this case the pressure loss will be 1 bar at a
             % flowrate of 0.01 kg/s
@@ -38,12 +38,12 @@ classdef Example < vsys
             tGeometry.fD_Hydraulic              = 1e-4;
             tGeometry.fAbsorberSurfaceArea      = 70;
             
-            oFilter = components.filter.Filter(this, 'Filter', tInitialization, tGeometry);
+            oFilter = components.filter.Filter(this, 'Filter', tInitialization, tGeometry, true);
             
             iInternalSteps          = 200;
             fMinimumTimeStep        = 1e-10;
             fMaximumTimeStep        = 60;
-            rMaxChange              = 0.001;
+            rMaxChange              = 0.01;
             
             oFilter.setNumericProperties(rMaxChange,fMinimumTimeStep,fMaximumTimeStep,iInternalSteps);
             
@@ -55,7 +55,6 @@ classdef Example < vsys
             eval(this.oRoot.oCfgParams.configCode(this));
             
             this.oTimer.setMinStep(1e-12)
-            
         end
         
         

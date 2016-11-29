@@ -83,6 +83,10 @@ classdef Filter < vsys
         % negative
         bNegativeFlow = false;
         
+        bDynamicFlowRates = true;
+        
+        mfDensitiesOld;
+        
         % the heating power of the electrical heater attached to this filter
         % can be changed by using the setHeaterPower function
         fHeaterPower = 0;
@@ -102,7 +106,7 @@ classdef Filter < vsys
     end
     
     methods
-        function this = Filter(oParent, sName, tInitialization, tGeometry)
+        function this = Filter(oParent, sName, tInitialization, tGeometry, bDynamicFlowRates)
             this@vsys(oParent, sName, 1);
             
             % The initialization struct is saved as property to be used
@@ -130,6 +134,10 @@ classdef Filter < vsys
             this.rMaxPartialChange   = this.rMaxChange/this.iInternalSteps;
             this.fMaxPartialTimeStep = this.fMaximumTimeStep/this.iInternalSteps;
             this.fMinPartialTimeStep = this.fMinimumTimeStep/this.iInternalSteps;
+            
+            if nargin > 4
+                this.bDynamicFlowRates = bDynamicFlowRates;
+            end
             
         end
         
@@ -233,6 +241,8 @@ classdef Filter < vsys
             
             this.mfCellVolume(:,1)   = [this.toStores.(this.sName).aoPhases(2:2:end).fVolume];
            	
+            this.mfDensitiesOld(:,1) = [this.toStores.(this.sName).aoPhases(2:2:end).fDensity]; 
+            
             % in order to save calculation steps this helper is only
             % calculated once and then used in all iterations since it
             % remains constant.
@@ -249,8 +259,15 @@ classdef Filter < vsys
                 solver.matter.manual.branch(this.aoBranches(k));
             end
             
-            for k = 1:length(this.toStores.(this.sName).aoPhases)
-                this.toStores.(this.sName).aoPhases(k).rMaxChange = inf;
+            if this.bDynamicFlowRates
+                for k = 1:length(this.toStores.(this.sName).aoPhases)
+                    this.toStores.(this.sName).aoPhases(k).rMaxChange = inf;
+                end
+            else
+                for k = 1:length(this.toStores.(this.sName).aoPhases)
+                    this.toStores.(this.sName).aoPhases(k).rMaxChange = this.rMaxPartialChange;
+                end
+                
             end
             
             % adds the lumped parameter thermal solver to calculate the
@@ -275,19 +292,62 @@ classdef Filter < vsys
         end
         
         function setInletFlow(this, fInletFlow)
-            % in order to correctly set the inlet flow rate for the filter
-            % this function has to be used. It can handle both positive and
-            % negative flow rates (and zero) and sets all necessary
-            % parameters correctly to enable calculation of the remaining
-            % flowrates
-            if fInletFlow >= 0
-                this.aoBranches(1).oHandler.setFlowRate(-fInletFlow);
-                this.bNegativeFlow = false;
+            
+            if this.bDynamicFlowRates
+                % in order to correctly set the inlet flow rate for the filter
+                % this function has to be used. It can handle both positive and
+                % negative flow rates (and zero) and sets all necessary
+                % parameters correctly to enable calculation of the remaining
+                % flowrates
+                if fInletFlow >= 0
+                    this.aoBranches(1).oHandler.setFlowRate(-fInletFlow);
+                    this.bNegativeFlow = false;
+                else
+                    % for negative flow rates the outlet becomes the inlet
+                    this.aoBranches(end).oHandler.setFlowRate(fInletFlow);
+                    this.bNegativeFlow = true;
+                end
+                
             else
-                % for negative flow rates the outlet becomes the inlet
-                this.aoBranches(end).oHandler.setFlowRate(fInletFlow);
-                this.bNegativeFlow = true;
+                % For Non Dynamic Flow Rate calculation the changes are
+                % simply set for ALL branches at the same time
+                
+                
+                
+                if fInletFlow >= 0
+                   	this.bNegativeFlow = false;
+                    fVolumetricFlow = fInletFlow/this.aoBranches(1).coExmes{2}.oPhase.fDensity;
+                    this.aoBranches(1).oHandler.setFlowRate(-fInletFlow);
+                    
+                    for iK = (2:length(this.aoBranches))
+                        % Assuming a constant volumetric flow rate is
+                        % entering the filter
+                        % TO DO: Check if generally a volumetric flow rate
+                        % should be set
+                        fFlowRate = fVolumetricFlow * this.toStores.Filter.aoPhases((iK-1)*2).fDensity;
+                        this.aoBranches(iK).oHandler.setFlowRate(fFlowRate);
+                    end
+                
+                else
+                    this.bNegativeFlow = true;
+                    fVolumetricFlow = fInletFlow/this.aoBranches(end).coExmes{2}.oPhase.fDensity;
+                    
+                    this.aoBranches(end).oHandler.setFlowRate(fInletFlow);
+                    fFlowRate = fVolumetricFlow * this.toStores.Filter.aoPhases(2).fDensity;
+                    this.aoBranches(1).oHandler.setFlowRate(-fFlowRate);
+                    
+                    for iK = (2:length(this.aoBranches)-1)
+                        % Assuming a constant volumetric flow rate is
+                        % entering the filter
+                        % TO DO: Check if generally a volumetric flow rate
+                        % should be set
+                        fFlowRate = fVolumetricFlow * this.toStores.Filter.aoPhases((iK)*2).fDensity;
+                        this.aoBranches(iK).oHandler.setFlowRate(fFlowRate);
+                    end
+                end
+                
             end
+            
             % since this usually represents a very heavy impact on the
             % operating conditions of the filter its timestep will be set
             % to the minimum for the next tick.
@@ -332,6 +392,57 @@ classdef Filter < vsys
     
      methods (Access = protected)
         function updateInterCellFlowrates(this, ~)
+            
+            % Check if Update is necessary based on the comparison of the
+            % flow phase densities:
+            
+            % TO DO: THe density of the phases has to be calculated based
+            % on the current temperature and pressure in the phase (since
+            % otherwise the temperature effects are completly neglected)
+            mfDensities(:,1) = [this.toStores.(this.sName).aoPhases(2:2:end).fDensity]; 
+            
+            rDensityChange = abs((this.mfDensitiesOld-mfDensities)./this.mfDensitiesOld);
+            
+          	if ~this.bNegativeFlow
+             	fInletFlow = -this.aoBranches(1).oHandler.fFlowRate;
+              	fVolumetricFlow = fInletFlow/this.aoBranches(1).coExmes{2}.oPhase.fDensity;
+
+                for iK = (2:length(this.aoBranches))
+                    if rDensityChange(iK-1) > this.rMaxChange
+                        % Assuming a constant volumetric flow rate is
+                        % entering the filter
+                        % TO DO: Check if generally a volumetric flow rate
+                        % should be set
+                        fFlowRate = fVolumetricFlow * this.toStores.Filter.aoPhases((iK-1)*2).fDensity;
+                        this.aoBranches(iK).oHandler.setFlowRate(fFlowRate);
+                        this.mfDensitiesOld(iK-1) = mfDensities(iK-1);
+                    end
+                end
+            else
+                fInletFlow = this.aoBranches(end).oHandler.fFlowRate;
+                fVolumetricFlow = fInletFlow/this.aoBranches(end).coExmes{2}.oPhase.fDensity;
+                fFlowRate = fVolumetricFlow * this.toStores.Filter.aoPhases(2).fDensity;
+                this.aoBranches(1).oHandler.setFlowRate(-fFlowRate);
+                
+                for iK = (2:length(this.aoBranches)-1)
+                    if rDensityChange(iK) > this.rMaxChange
+
+
+                        % Assuming a constant volumetric flow rate is
+                        % entering the filter
+                        % TO DO: Check if generally a volumetric flow rate
+                        % should be set
+                        fFlowRate = fVolumetricFlow * this.toStores.Filter.aoPhases((iK)*2).fDensity;
+                        this.aoBranches(iK).oHandler.setFlowRate(fFlowRate);
+                        this.mfDensitiesOld(iK) = mfDensities(iK);
+                    end
+                end
+            end
+                    
+            % Sets the update time step to the same as the filter
+            this.setTimeStep(this.toStores.Filter.fTimeStep);
+        end
+        function updateInterCellFlowratesDynamic(this, ~)
             % this function is used to calculate the flowrates between the
             % cells of the filter model. It uses a simplified
             % incompressible solution algorithm that was adopted
@@ -360,7 +471,7 @@ classdef Filter < vsys
                 % if the flow rate and the requested flow rate of the inlet
                 % branch do not match the filter model will abort this
                 % calculation and recalculate after one minimal time step
-                if mfFlowRates(end,1) ~= this.aoBranches(end).oHandler.fRequestedFlowRate
+                if abs(mfFlowRates(end,1)) ~= abs(this.aoBranches(end).oHandler.fRequestedFlowRate)
                     this.setTimeStep(this.oTimer.fMinimumTimeStep);
                     return
                 end
@@ -453,7 +564,7 @@ classdef Filter < vsys
                 % negative flowrate above. The difference is in the
                 % boundary conditions and which cell properties are
                 % attributed to which flow
-                if mfFlowRates(1,1) ~= this.aoBranches(1).oHandler.fRequestedFlowRate
+                if abs(mfFlowRates(1,1)) ~= abs(this.aoBranches(1).oHandler.fRequestedFlowRate)
                     this.setTimeStep(this.oTimer.fMinimumTimeStep);
                     return
                 end
@@ -467,9 +578,9 @@ classdef Filter < vsys
                     mfPressureLoss(:,iStep)  = (this.tInitialization.fFrictionFactor/(this.iCellNumber)) .* abs(mfFlowRates(2:end,iStep)).^2;
                     
                     mfDeltaPressure = (mfCellPressure(1:end-1, iStep) - mfCellPressure(2:end, iStep)) - sign(mfFlowRates(2:end,iStep)).*mfPressureLoss(:,iStep);
-
+                    
                     mfDeltaFlowRate(:,iStep) = (mfDeltaPressure .* this.fHelper1);
-
+                    
                     mfTimeStep(1,iStep) = min(abs((this.rMaxPartialChange .* mfCellMass(:,iStep))./((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep))))); 
                     
                     if mfTimeStep(1,iStep) > this.fMaxPartialTimeStep
@@ -479,12 +590,41 @@ classdef Filter < vsys
                     elseif mfTimeStep(1,iStep)  <= this.fMinPartialTimeStep
                         mfTimeStep(1,iStep) = this.fMinPartialTimeStep;
                     end
-
-                    if min(abs(mfFlowRates(2:end, iStep))) < max(abs(this.mfAdsorptionFlowRate))
-                        mfFlowRates(2:end, iStep+1) = mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep);
-                    else
-                        mfFlowRates(2:end, iStep+1) = mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep) - this.mfAdsorptionFlowRate;
+                    
+                    mfNewInterimFlowRate = mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep);
+                    
+                    % another limiting factor for the time step is the fact
+                    % that the pressure loss should not be allowed to act as
+                    % a driving force. Therefore, it is necessary to reduce
+                    % the time step far enough that no sign switch of the
+                    % flowrate occurs within one timestep
+                    bDirectionSwitch = sign(mfNewInterimFlowRate) ~= (sign(mfFlowRates(2:end, iStep)));
+                    % the sign functions also calls a change if 0 is
+                    % changed to positive or negative value. These cases
+                    % should not be considered sign changes for this logic
+                    bDirectionSwitch(mfFlowRates(2:end, iStep) == 0) = false;
+                    
+                    mfInterimFlowRate = mfFlowRates(2:end, iStep);
+                    
+                    fMaxTimeStepDirectionChange = min(abs(0.1*mfInterimFlowRate(bDirectionSwitch)./mfDeltaFlowRate(bDirectionSwitch,iStep)));
+                    if mfTimeStep(1,iStep) > fMaxTimeStepDirectionChange
+                        mfTimeStep(1,iStep) = fMaxTimeStepDirectionChange;
+                        
+                        if mfTimeStep(1,iStep) > this.fMaxPartialTimeStep
+                            mfTimeStep(1,iStep) = this.fMaxPartialTimeStep;
+                        elseif isnan(mfTimeStep(1,iStep))
+                            mfTimeStep(1,iStep) = this.fMinPartialTimeStep;
+                        elseif mfTimeStep(1,iStep)  <= this.fMinPartialTimeStep
+                            mfTimeStep(1,iStep) = this.fMinPartialTimeStep;
+                        end
+                        
+                        mfNewInterimFlowRate = mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep);
                     end
+                    
+                    mfNewInterimFlowRate(mfNewInterimFlowRate > this.mfAdsorptionFlowRate) = mfNewInterimFlowRate(mfNewInterimFlowRate > this.mfAdsorptionFlowRate) - this.mfAdsorptionFlowRate(mfNewInterimFlowRate > this.mfAdsorptionFlowRate);
+                    
+                    mfFlowRates(2:end, iStep+1) = mfNewInterimFlowRate;
+                    
                     mfFlowRates(1, iStep+1) = mfFlowRates(1, iStep);
 
                     mfCellMass(:,iStep+1) = mfCellMass(:,iStep) + ((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep)) * mfTimeStep(1,iStep));
@@ -498,7 +638,7 @@ classdef Filter < vsys
             end
             
             % check if steady state simplification can be used
-            if max(abs((mfFlowRates(:, this.iInternalSteps) - mfFlowRates(:, 1))./mfFlowRates(:, 1)) - abs(this.fMaxSteadyStateFlowRateChange.*mfFlowRates(:, 1))) <= 0
+            if max(abs((mfFlowRates(:, this.iInternalSteps) - mfFlowRates(:, 1))./mfFlowRates(:, 1)) - abs(this.fMaxSteadyStateFlowRateChange.*mfFlowRates(:, 1))) < 0
                 % Steady State case: Small discrepancies between the
                 % flowrates will always remain in a dynamic calculation.
                 % But if the differences are small enough this calculation
@@ -526,6 +666,7 @@ classdef Filter < vsys
                         this.aoBranches(iK).oHandler.setFlowRate(fFlowRate);
                     end
                 end
+                keyboard()
                 this.setTimeStep(this.fSteadyStateTimeStep);
             else
                 % dynamic case where the flow rates that were calculated by
@@ -554,6 +695,10 @@ classdef Filter < vsys
                         this.aoBranches(iK).oHandler.setFlowRate(mfFlowRatesNew(iK));
                     end
                 end
+            end
+            
+            if any(abs(mfFlowRatesNew) > 1e5)
+                keyboard()
             end
             % sets the update of the store and phases to be in tune with
             % the updated flow rates. Otherwise changes in the flow rate
@@ -657,7 +802,12 @@ classdef Filter < vsys
             % when (and to allow individual parts of the code the be called
             % individually) the necessary calculations for the filter are
             % split up into several subfunctions
-            this.updateInterCellFlowrates()
+            
+            if this.bDynamicFlowRates
+                this.updateInterCellFlowratesDynamic()
+            else
+                this.updateInterCellFlowrates()
+            end
             
             this.calculateThermalProperties()
             
