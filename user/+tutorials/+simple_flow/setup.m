@@ -84,6 +84,11 @@ classdef setup < simulation.infrastructure
             %keyboard();
             iPropLogIndex2 = oLog.addValue('Example', 'fPipeDiameter', 'm', 'Pipe Diameter');
             
+            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO_2 Tank 1');
+            oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO_2 Tank 2');
+            
+            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 1');
+            oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
             
 %             this.csLog = {
 %                 % System timer
@@ -111,7 +116,15 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
             oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
             
-            
+            cNames = {'Partial Pressure CO_2 Tank 1', 'Partial Pressure CO_2 Tank 2'};
+            sTitle = 'Partial Pressure CO2';
+            yLabel = 'Partial Pressure CO2 in Pa';
+            oPlot.definePlotByName(cNames, sTitle, yLabel);
+
+            cNames = {'Partial Mass CO_2 Tank 1', 'Partial Mass CO_2 Tank 2'};
+            sTitle = 'Partial Mass CO2';
+            yLabel = 'Partial Mass CO2 in kg';
+            oPlot.definePlotByName(cNames, sTitle, yLabel);
 
         end
         

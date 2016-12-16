@@ -12,6 +12,8 @@ classdef plotter_basic < simulation.monitor
         sLogger = 'oLogger';
         
         tPlots = struct('sTitle', {}, 'aiIdx', {});
+        
+        tPlotsByName;
     end
     
     methods
@@ -28,9 +30,21 @@ classdef plotter_basic < simulation.monitor
         
         %% Methods to define plots
         
+        function definePlotByName(this, cNames, sTitle, yLabel)
+            
+            % In this function only the struct with the necessary function to
+            % perform the plotting is defined, the plotting itself is
+            % performed in the plot command
+            this.tPlotsByName(end+1).sTitle = sTitle;
+            this.tPlotsByName(end).cNames = cNames;
+            this.tPlotsByName(end).yLabel = yLabel;
+            
+        end
         
         function definePlot(this, xDataReference, sTitle)
             this.definePlotWithFilter(xDataReference, [], sTitle);
+            
+            
         end
         
         
@@ -203,6 +217,43 @@ classdef plotter_basic < simulation.monitor
             end
             
             oFigure.UserData = struct('coAxesHandles', { coHandles });
+            
+            
+            
+            %% Define Plot by Name
+            
+            for iIndex = 1:length(oLogger.tLogValues)
+                for iPlot = 1:length(this.tPlotsByName)
+                    for iName = 1:length(this.tPlotsByName(iPlot).cNames) 
+                        if strcmp(oLogger.tLogValues(iIndex).sLabel, this.tPlotsByName(iPlot).cNames{iName})
+
+                           % Stores the logged values for the plot and name
+                           % in the struct
+                           mfLog = oLogger.mfLog(:,iIndex);
+
+                           % remove NaNs from the log
+                           mfLog(isnan(mfLog)) = [];
+
+                           this.tPlotsByName(iPlot).mLogData(:,iName) = mfLog;
+                        end
+                    end
+                end
+            end
+            
+            for iPlot = 1:length(this.tPlotsByName)
+            
+                figure('name', this.tPlotsByName(iPlot).sTitle)
+                grid on
+                hold on
+                for iName = 1:length(this.tPlotsByName(iPlot).cNames) 
+                    plot((oLogger.afTime./3600), this.tPlotsByName(iPlot).mLogData(:,iName))
+                end
+                xlabel('Time in h')
+                ylabel( this.tPlotsByName(iPlot).yLabel)
+                legend(this.tPlotsByName(iPlot).cNames)
+                
+            end
+            
         end
         
         function clearPlots(this)
