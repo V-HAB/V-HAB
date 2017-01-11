@@ -563,7 +563,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end;
             
             % Each row: Partial Mass flows as vector
-            afPartialFlowRate        = zeros(this.iProcsEXME, this.oMT.iSubstances);
+            afPartialFlowRateOut        = zeros(this.iProcsEXME, this.oMT.iSubstances);
+            afPartialFlowRateIn = zeros(this.iProcsEXME, this.oMT.iSubstances);
             
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
@@ -575,8 +576,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % of the exme.
                 oExme = this.coProcsEXME{iI};
                 [ fFlowRate, arFlowPartials, ~ ] = oExme.getFlowData();
-               
-                afPartialFlowRate(iI,:) = fFlowRate .* arFlowPartials;
+                % We only care for the outflows in this case!
+                if fFlowRate >= 0
+                    afPartialFlowRateIn(iI,:) = fFlowRate .* arFlowPartials;
+                else
+                    afPartialFlowRateOut(iI,:) = fFlowRate .* arFlowPartials;
+                end
             end 
             
             % at this point we have the information which substances became
@@ -589,46 +594,26 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             miNegatives = find(abNegative);
             
             
-            afPartialFlowRateNew = afPartialFlowRate;
+            afPartialFlowRateOutNew = afPartialFlowRateOut;
             
             for iK = 1:length(miNegatives)
                 
                 % get the total outlet flow rate of the current negative
                 % substance (with index miNegatives(iK) )
-                fCurrentOutFlow = sum(afPartialFlowRate(:,miNegatives(iK)));
+                fCurrentOutFlow = sum(afPartialFlowRateOut(:,miNegatives(iK)));
+                fCurrentInFlow = sum(afPartialFlowRateIn(:,miNegatives(iK)));
                 
-                fExcessOutletFlow = afMassNew(miNegatives(iK))/this.fMassUpdateTimeStep;
-                
-                if abs(fExcessOutletFlow) < abs(fCurrentOutFlow)
-                    % Calculate the actual overall outlet flow for this
-                    % substance that can occur without negative masses
-                    fActualOutFlow = fCurrentOutFlow - fExcessOutletFlow;
-                    
-                    % Then split that outlet flow according to the current
-                    % partial flow rates, weighted against the current out
-                    % flow and overwrite this value on the partial out flow
-                    % array
-                    for iI = 1:this.iProcsEXME
-                        afPartialFlowRateNew(iI,miNegatives(iK)) = fActualOutFlow * (afPartialFlowRate(iI,miNegatives(iK))/fCurrentOutFlow);
-                    end
-                else
-                    % Well this can happen if the mass in the phase is very
-                    % close to 0. In this case the actual out flow is
-                    % simply set to the current mass in phase for this
-                    % substance
-                    if this.afMass(miNegatives(iK)) < 10^-8
-                        fActualOutFlow = -(this.afMass(miNegatives(iK))/this.fMassUpdateTimeStep);
-                    else
-                        % TO DO: can this happen in any other case?
-                        keyboard()
-                    end
-                    % Then split that outlet flow according to the current
-                    % partial flow rates, weighted against the current out
-                    % flow and overwrite this value on the partial out flow
-                    % array
-                    for iI = 1:this.iProcsEXME
-                        afPartialFlowRateNew(iI,miNegatives(iK)) = fActualOutFlow * (afPartialFlowRate(iI,miNegatives(iK))/fCurrentOutFlow);
-                    end
+                % Calculate the actual overall outlet flow for this
+                % substance that can occur without negative masses
+                % (calculated in a way to ensure that the mass is 0 at the
+                % end of this step)
+                fActualOutFlow = -((this.afMass(miNegatives(iK))/this.fMassUpdateTimeStep)+fCurrentInFlow);
+                % Then split that outlet flow according to the current
+                % partial flow rates, weighted against the current out
+                % flow and overwrite this value on the partial out flow
+                % array
+                for iI = 1:this.iProcsEXME
+                    afPartialFlowRateOutNew(iI,miNegatives(iK)) = fActualOutFlow * (afPartialFlowRateOut(iI,miNegatives(iK))/fCurrentOutFlow);
                 end
             end
             
@@ -641,10 +626,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % updated
             for iI = 1:this.iProcsEXME
                 % skip all exmes that are not affected
-                fFlowRateNew = sum(afPartialFlowRateNew(iI,:));
+                fFlowRateNew = sum(afPartialFlowRateOutNew(iI,:));
                 if fFlowRateNew == 0, continue; end;
                 
-              	arPartialsNew = afPartialFlowRateNew(iI,:) ./ fFlowRateNew;
+              	arPartialsNew = afPartialFlowRateOutNew(iI,:) ./ fFlowRateNew;
                 % First the flow rates of the P2P/branch have to
                 % be adapted to reflect the newly calculate flow rates.
                 % Then it is checked whether the mass update of the other
@@ -693,7 +678,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     % through this.
                     afExcessTransmittedMass =  zeros(1, this.oMT.iSubstances);
                     for iK = 1:length(miNegatives)
-                        afExcessTransmittedMass(miNegatives(iK)) = (afPartialFlowRateNew(iI,miNegatives(iK)) - afPartialFlowRate(iI,miNegatives(iK))) * oCounterExMe.oPhase.fMassUpdateTimeStep;
+                        afExcessTransmittedMass(miNegatives(iK)) = (afPartialFlowRateOutNew(iI,miNegatives(iK)) - afPartialFlowRateOut(iI,miNegatives(iK))) * oCounterExMe.oPhase.fMassUpdateTimeStep;
                     end
                     oCounterExMe.oPhase.removeExcessTransmittedMass(afExcessTransmittedMass);
                 end
@@ -703,21 +688,29 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % values, with which no negative masses should occur anymore.
             % In order to resolve the issue for this phase the afMass
             % property has to be calculated using the new adapted flows
+            %
+            % however for this purpose the getTotalMassChange function
+            % cannot be used because currently the values for afMass in
+            % this phase would result in different arPartials for the
+            % flows, and the exmes of outgoing branches use the partial
+            % masses of the phase to calculate their composition.
+            % Therefore, the internally calculated flow rates of this
+            % function have to be used to change the mass!
             
-            [ afTotalInOuts, ~ ] = getTotalMassChange(this);
+            afPartialFlowRateNew = sum((afPartialFlowRateOutNew + afPartialFlowRateIn),1);
             
             % Check manipulator
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
                 % Add the changes from the manipulator to the total inouts
-                afTotalInOuts = afTotalInOuts + this.toManips.substance.afPartialFlows;
+                afPartialFlowRateNew = afPartialFlowRateNew + this.toManips.substance.afPartialFlows;
 
             end
 
             % Cache total mass in/out so the EXMEs can use that
-            this.fCurrentTotalMassInOut = sum(afTotalInOuts);
+            this.fCurrentTotalMassInOut = sum(afPartialFlowRateNew);
 
             % Multiply with current time step
-            afTotalInOuts = afTotalInOuts * this.fMassUpdateTimeStep;
+            afTotalInOuts = afPartialFlowRateNew * this.fMassUpdateTimeStep;
             
             afMassNew2 =  this.afMass + afTotalInOuts;
             
