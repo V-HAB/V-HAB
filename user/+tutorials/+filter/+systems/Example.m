@@ -1,17 +1,17 @@
 classdef Example < vsys
 
     properties
-        
+        mfTotalSystemMass;
     end
     
     methods
         function this = Example(oParent, sName)
-            this@vsys(oParent, sName, 10);
+            this@vsys(oParent, sName, -1);
             % Adding the subsystem
             
             
         	tInitialization.tfMassAbsorber  =   struct('Zeolite5A',25);
-            tInitialization.tfMassFlow      =   struct('N2',1 , 'CO2', 0.01, 'O2', 0.23); % struct('N2',2.32e-3 , 'CO2', 2.32e-5, 'O2', 5.33e-4);
+            tInitialization.tfMassFlow      =   struct('N2',1 , 'CO2', 0.01, 'O2', 0.23, 'H2O', 0); % struct('N2',2.32e-3 , 'CO2', 2.32e-5, 'O2', 5.33e-4);
             tInitialization.fTemperature    =   293;
             tInitialization.iCellNumber     =   20;
             % this factor times the mass flow^2 will decide the pressure
@@ -40,10 +40,10 @@ classdef Example < vsys
             
             oFilter = components.filter.Filter(this, 'Filter', tInitialization, tGeometry, true);
             
-            iInternalSteps          = 200;
+            iInternalSteps          = 100;
             fMinimumTimeStep        = 1e-10;
             fMaximumTimeStep        = 60;
-            rMaxChange              = 0.01;
+            rMaxChange              = 0.005;
             
             oFilter.setNumericProperties(rMaxChange,fMinimumTimeStep,fMaximumTimeStep,iInternalSteps);
             
@@ -65,7 +65,7 @@ classdef Example < vsys
             matter.store(this, 'Cabin', 1000);
             
             % Adding a phase to the store 'Tank_1', 2 m^3 air
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 1000, struct('CO2', 0.008), 293, 0, 1e5);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 1000, struct('CO2', 0.008), 293, 0.5, 1e5);
             
             oGasPhase = matter.phases.gas(this.toStores.Cabin, 'air', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
@@ -127,6 +127,17 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
+            %        sum(sum(reshape([ this.oMT.aoPhases.afRemovedExcessMass ], this.oMT.iSubstances, []), 2));
+            
+            this.mfTotalSystemMass(end+1,:) = sum(reshape([ this.oMT.aoPhases.afMass ], this.oMT.iSubstances, []), 2)';
+            
+%             if ( sum(this.mfTotalSystemMass(end,:)) - sum(this.mfTotalSystemMass(1,:)) ) > 2e-4
+%                 keyboard()
+%             end
+            
+%             if this.oTimer.iTick == 13
+%                 keyboard()
+%             end
 %             if this.oTimer.fTime > 200
 %                 this.toChildren.Filter.setHeaterPower(1000);
 %             end

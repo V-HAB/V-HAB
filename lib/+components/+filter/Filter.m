@@ -273,6 +273,10 @@ classdef Filter < vsys
             % adds the lumped parameter thermal solver to calculate the
             % convective and conductive heat transfer
             this.oThermalSolver = solver.thermal.lumpedparameter(this);
+            
+            % sets the minimum time step that can be used by the thermal
+            % solver
+            this.oThermalSolver.fMinimumTimeStep = 1e-1;
         end
         
         function setIfFlows(this, sInterface1, sInterface2)
@@ -720,6 +724,7 @@ classdef Filter < vsys
             for iCell = 1:this.iCellNumber
                 mfHeatFlow(iCell)              = this.mfAdsorptionHeatFlow(iCell) + this.fHeaterPower/this.iCellNumber;
                 
+                                              % Subsystem ,     , Store,                                              
                 oCapacity = this.poCapacities([this.sName ,'__',this.sName,'__Absorber_',num2str(iCell)]);
                 oCapacity.oHeatSource.setPower(mfHeatFlow(iCell));
             end

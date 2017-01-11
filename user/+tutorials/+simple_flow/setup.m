@@ -102,6 +102,8 @@ classdef setup < simulation.infrastructure
 %                 };
             
 
+            oLog.addValue('Example:s:Tank_1.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.H2O)', 'Partial kg', 'Partial Mass Water');
+            
             %% Define plots
             
             oPlot = this.toMonitors.oPlotter;
@@ -111,6 +113,7 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
             oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
             
+            oPlot.definePlotAllWithFilter('Partial kg', 'Tank Masses');
             
 
         end

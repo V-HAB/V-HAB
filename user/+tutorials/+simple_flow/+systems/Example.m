@@ -46,22 +46,22 @@ classdef Example < vsys
             % Creating a store, volume 1 m^3
             matter.store(this, 'Tank_1', 1);
             
-            tfMasses = struct('N2', 10, 'CO2', 1, 'H2O', 2, 'Sylobead_B125', 0.5);
-            % Adding a phase to the store 'Tank_1', 1 m^3 air at 20 deg C
-            oGasPhase = matter.phases.mixture(this.toStores.Tank_1, 'FilteredPhase', 'gas', tfMasses, 10, 293, 1e5);
+            tfMasses = struct('N2', 20, 'CO2', 1, 'H2O', 0.01);
+            %Adding a phase to the store 'Tank_1', 1 m^3 air at 20 deg C
+            oGasPhase = matter.phases.gas(this.toStores.Tank_1, 'FilteredPhase', tfMasses, 10, 293);
 %             oGasPhase = this.toStores.Tank_1.createPhase('air', 1, 293.15);
             
             % Creating a second store, volume 1 m^3
             matter.store(this, 'Tank_2', 1);
             
-            tfMasses = struct('N2', 20, 'CO2', 2, 'H2O', 4, 'Sylobead_B125', 1);
+            tfMasses = struct('N2', 10, 'CO2', 2, 'H2O', 4);
             % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
-            oAirPhase = matter.phases.mixture(this.toStores.Tank_2, 'FilteredPhase', 'gas', tfMasses, 10, 293, 2e5);
+            oAirPhase = matter.phases.gas(this.toStores.Tank_2, 'FilteredPhase', tfMasses, 10, 293);
 %             oAirPhase = this.toStores.Tank_2.createPhase('air', this.fPressureDifference + 1, 323.15);
             
             % Adding extract/merge processors to the phase
-            matter.procs.exmes.mixture(oGasPhase, 'Port_1');
-            matter.procs.exmes.mixture(oAirPhase, 'Port_2');
+            matter.procs.exmes.gas(oGasPhase, 'Port_1');
+            matter.procs.exmes.gas(oAirPhase, 'Port_2');
              
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter.
@@ -81,8 +81,10 @@ classdef Example < vsys
             % Now that the system is sealed, we can add the branch to a
             % specific solver. In this case we will use the iterative
             % solver. 
-            oIt1 = solver.matter.iterative.branch(this.aoBranches(1));
-            
+            %oIt1 = solver.matter.iterative.branch(this.aoBranches(1));
+            oBranch = solver.matter.manual.branch(this.aoBranches(1));
+             oBranch.setFlowRate(0.1);
+             
             %oIt1.iDampFR = 5;
         end
     end
@@ -93,6 +95,7 @@ classdef Example < vsys
             % exec(ute) function for this system
             % Here it only calls its parent's exec function
             exec@vsys(this);
+            
         end
         
      end

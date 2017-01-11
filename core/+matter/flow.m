@@ -386,6 +386,13 @@ classdef flow < base & matlab.mixin.Heterogeneous
                                     ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
             end
         end
+        
+        
+        function resolveNegativeMasses(this, fFlowRate, arPartialMass)
+            % Function only used to resolve negative mass occurances
+            this.fFlowRate     = fFlowRate;
+            this.arPartialMass = arPartialMass;
+        end
     end
     
 
@@ -565,6 +572,14 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 fPhaseMolarMass            = 0;
                 fPhaseSpecificHeatCapacity = 0;
                 afPressures                = zeros(1, length(afPressures));
+            end
+            if nargin >= 5
+                % Only used by resolve negative masses to set the correct
+                % partial mass ratios without a negative mass occuring by
+                % this flow. (Molar Mass and heat capacity should be affect
+                % only very little by the small mass change this results
+                % in, and are therefore not changed)
+                arPhasePartialMass = arPartials;
             end
             
             iL = length(aoFlows);

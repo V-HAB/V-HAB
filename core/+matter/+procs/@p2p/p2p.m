@@ -122,6 +122,11 @@ classdef p2p < matter.flow
                 this.setMatterProperties();
             end
         end
+        function resolveNegativeMasses(this, fFlowRate, arPartials)
+            % function to resolve negative mass occurances in the adjacent
+            % phases
+            resolveNegativeMasses@matter.flow(this, fFlowRate, arPartials);
+        end
     end
     
     
