@@ -386,13 +386,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
                                     ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
             end
         end
-        
-        
-        function resolveNegativeMasses(this, fFlowRate, arPartialMass)
-            % Function only used to resolve negative mass occurances
-            this.fFlowRate     = fFlowRate;
-            this.arPartialMass = arPartialMass;
-        end
     end
     
 

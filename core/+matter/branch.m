@@ -611,22 +611,6 @@ classdef branch < base & event.source
             %TODO just get the matter properties from the inflowing EXME
             %     and set (arPartialMass, Molar Mass, Heat Capacity)?
         end
-        
-        
-        function resolveNegativeMasses(this, fFlowRate, arPartials)
-            
-            this.fFlowRate = fFlowRate;
-            %To Do: should this be false or true in this case? like when
-            %are the branch updated called? If it is only on the next tick
-            %it should be true if it happens after the phase massupdates in
-            %this tick it should be false.
-            this.bOutdated = false;
-            
-            for iF = 1:length(this.aoFlows)
-                this.aoFlows(iF).resolveNegativeMasses(fFlowRate, arPartials);
-            end
-        end
-        
     end
     
     

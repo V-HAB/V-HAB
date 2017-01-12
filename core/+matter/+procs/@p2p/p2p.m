@@ -122,11 +122,6 @@ classdef p2p < matter.flow
                 this.setMatterProperties();
             end
         end
-        function resolveNegativeMasses(this, fFlowRate, arPartials)
-            % function to resolve negative mass occurances in the adjacent
-            % phases
-            resolveNegativeMasses@matter.flow(this, fFlowRate, arPartials);
-        end
     end
     
     
@@ -167,9 +162,18 @@ classdef p2p < matter.flow
             % change in a p2p ... pressure not really.
             if (nargin < 4) || isempty(fTemperature), fTemperature = fPortTemperature; end;
             if (nargin < 5) || isempty(fPressure), fPressure = fPortPressure; end;
-                
             
             setMatterProperties@matter.flow(this, fFlowRate, arPartialMass, fTemperature, fPressure);
+            
+            % TO DO: A Branch always has to call the phase mass updates
+            % when the flowrate of the branch changes (because otherwise
+            % the phases could not work with different time steps), why is
+            % this not also done for the update of P2Ps?
+            % Note currently this wont change anything since the massupdate
+            % is only called once if the branch and the P2P change in the
+            % same tick
+%             this.oIn.oPhase.massupdate();
+%             this.oOut.oPhase.massupdate();
         end
     end
 end

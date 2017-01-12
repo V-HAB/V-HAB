@@ -129,11 +129,16 @@ classdef Example < vsys
             
             %        sum(sum(reshape([ this.oMT.aoPhases.afRemovedExcessMass ], this.oMT.iSubstances, []), 2));
             
-            this.mfTotalSystemMass(end+1,:) = sum(reshape([ this.oMT.aoPhases.afMass ], this.oMT.iSubstances, []), 2)';
+            fMassLoss = sum(sum(reshape([ this.oMT.aoPhases.afMassLost ], this.oMT.iSubstances, []), 2));
+            fExcessMass = sum(sum(reshape([ this.oMT.aoPhases.afExcessMass ], this.oMT.iSubstances, []), 2));
+            this.mfTotalSystemMass(end+1,:) = sum(reshape([ this.oMT.aoPhases.afMass ], this.oMT.iSubstances, []), 1)';
             
-%             if ( sum(this.mfTotalSystemMass(end,:)) - sum(this.mfTotalSystemMass(1,:)) ) > 2e-4
-%                 keyboard()
-%             end
+            if ( abs( sum(this.mfTotalSystemMass(end,:)) - sum(this.mfTotalSystemMass(1,:)) ) > (abs(fMassLoss) + abs(fExcessMass)) ) && ...
+                    abs( sum(this.mfTotalSystemMass(end,:)) - sum(this.mfTotalSystemMass(1,:)) ) > 1e-10
+                
+                
+                A = 1;
+            end
             
 %             if this.oTimer.iTick == 13
 %                 keyboard()
