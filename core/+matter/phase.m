@@ -445,10 +445,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % command window in the post simulation summary.
             abNegative = afMassNew < 0;
             
-            if strcmp(this.sName, 'Flow_8') || strcmp(this.sName, 'Absorber_8')
-                A=1;
-            end
-            
             if any(abNegative)
                 this.resolveNegativeMasses(afMassNew, abNegative);
                 
@@ -541,7 +537,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if this.fMass > 0
                 this.arPartialMass = this.afMass./this.fMass;
             else
-                this.arPartialMass = zeros(1, this.iSubstances);
+                this.arPartialMass = zeros(1, this.oMT.iSubstances);
             end
             
             % Trigger branch solver updates in post tick for all branches

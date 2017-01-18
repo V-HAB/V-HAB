@@ -8,9 +8,12 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         sCell;
         iCell;
         
+        fAdsorptionHeatFlow = 0;
+        
         afMassOld;
         afPPOld;
         fTemperatureOld;
+        
     end
     
    
@@ -82,7 +85,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % absorbed and the Absorption Enthalpy is stored with a
                 % negative value if heat is generated. Therefore the overall
                 % result has to be mutliplied with -1
-                this.oStore.oContainer.mfAdsorptionHeatFlow(this.iCell) = - sum(mfFlowRates.*this.oMT.afMolarMass.*mfAbsorptionEnthalpy);
+                this.fAdsorptionHeatFlow = - sum(mfFlowRates.*this.oMT.afMolarMass.*mfAbsorptionEnthalpy);
+                this.oStore.oContainer.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
                 this.oStore.oContainer.mfAdsorptionFlowRate(this.iCell) = sum(mfFlowRates);
 
                 this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);

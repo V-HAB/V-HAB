@@ -1,12 +1,12 @@
 classdef Example < vsys
 
     properties
-        mfTotalSystemMass;
+        
     end
     
     methods
         function this = Example(oParent, sName)
-            this@vsys(oParent, sName, -1);
+            this@vsys(oParent, sName, 10);
             % Adding the subsystem
             
             
@@ -127,25 +127,6 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
-            %        sum(sum(reshape([ this.oMT.aoPhases.afRemovedExcessMass ], this.oMT.iSubstances, []), 2));
-            
-            fMassLoss = sum(sum(reshape([ this.oMT.aoPhases.afMassLost ], this.oMT.iSubstances, []), 2));
-            fExcessMass = sum(sum(reshape([ this.oMT.aoPhases.afExcessMass ], this.oMT.iSubstances, []), 2));
-            this.mfTotalSystemMass(end+1,:) = sum(reshape([ this.oMT.aoPhases.afMass ], this.oMT.iSubstances, []), 1)';
-            
-            if ( abs( sum(this.mfTotalSystemMass(end,:)) - sum(this.mfTotalSystemMass(1,:)) ) > (abs(fMassLoss) + abs(fExcessMass)) ) && ...
-                    abs( sum(this.mfTotalSystemMass(end,:)) - sum(this.mfTotalSystemMass(1,:)) ) > 1e-10
-                
-                
-                A = 1;
-            end
-            
-%             if this.oTimer.iTick == 13
-%                 keyboard()
-%             end
-%             if this.oTimer.fTime > 200
-%                 this.toChildren.Filter.setHeaterPower(1000);
-%             end
         end
         
      end

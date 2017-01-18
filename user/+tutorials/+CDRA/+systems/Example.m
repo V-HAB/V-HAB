@@ -84,7 +84,7 @@ classdef Example < vsys
             if bSimpleCDRA
                 components.CDRA.CDRA_simple(this, 'CDRA', 60, tAtmosphere, sCCAA);
             else
-                components.CDRA.CDRA(this, 'CDRA', 60, tAtmosphere, sCCAA);
+                components.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA);
             end
             
             eval(this.oRoot.oCfgParams.configCode(this));
@@ -183,7 +183,7 @@ classdef Example < vsys
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 0.2, struct('CO2', fCO2Percent),  295, 0, 1e5);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 0.1, struct('CO2', fCO2Percent),  295, 0, 1e5);
                
             % Adding a phase to the store
              oConnectionPhase = matter.phases.gas(this.toStores.CDRA_CCAA_Connection, 'ConnectionPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
