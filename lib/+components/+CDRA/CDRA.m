@@ -754,7 +754,7 @@ classdef CDRA < vsys
             % made to the flowrates, which are only necessary ONCE!
             % (setting the flowrates of all branches to zero, and only then
             % recalculate the filter)
-            if (this.iCycleActive == 2) && (mod(this.oTimer.fTime, this.fCycleTime * 2) < (this.fCycleTime))
+            if (this.iCycleActive == 2) && (mod(this.oTimer.fTime, this.fCycleTime * 2) < (this.fCycleTime)) && (this.oTimer.iTick ~= 0)
                 % On cycle change all flow rates are momentarily set to zero
                 for iBranch = 1:length(this.aoBranchesCycleTwo)
                     this.aoBranchesCycleTwo(iBranch).oHandler.setFlowRate(0);
@@ -778,9 +778,10 @@ classdef CDRA < vsys
                 % Now the mass difference required in the phases is
                 % translated into massflows for the branches for the next
                 % second
+                mfFlowRate = zeros(this.iCells,1);
                 for iBranch = 1:(length(this.aoBranchesCycleOne)-1)
-                    fFlowRate = sum(mfMassDiff(iBranch:end));
-                    this.aoBranchesCycleOne(iBranch).oHandler.setFlowRate(fFlowRate);
+                    mfFlowRate(iBranch) = this.miNegativesCycleOne(iBranch) * sum(mfMassDiff(iBranch:end));
+                    this.aoBranchesCycleOne(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
                 % TO DO
@@ -800,10 +801,17 @@ classdef CDRA < vsys
                     this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).iCell = this.iCells + iP2P;
                 end
                 
-                this.setTimeStep(1);
+                this.setTimeStep(1+this.oTimer.fMinimumTimeStep);
+                this.toStores.Sylobead_1.setNextTimeStep(1);
+                this.toStores.Sylobead_2.setNextTimeStep(1);
+                this.toStores.Zeolite13x_1.setNextTimeStep(1);
+                this.toStores.Zeolite13x_2.setNextTimeStep(1);
+                this.toStores.Zeolite5A_1.setNextTimeStep(1);
+                this.toStores.Zeolite5A_2.setNextTimeStep(1);
+                
                 % TO DO: Heaters, Airsafe, desorption!
                 
-            elseif (this.iCycleActive == 1) && (mod(this.oTimer.fTime, this.fCycleTime * 2) >= (this.fCycleTime))
+            elseif (this.iCycleActive == 1) && (mod(this.oTimer.fTime, this.fCycleTime * 2) >= (this.fCycleTime)) && (this.oTimer.iTick ~= 0)
                 % On cycle change all flow rates are momentarily set to zero
                 for iBranch = 1:length(this.aoBranchesCycleOne)
                     this.aoBranchesCycleOne(iBranch).oHandler.setFlowRate(0);
@@ -828,7 +836,7 @@ classdef CDRA < vsys
                 % translated into massflows for the branches for the next
                 % second
                 for iBranch = 1:(length(this.aoBranchesCycleTwo)-1)
-                    fFlowRate = sum(mfMassDiff(iBranch:end));
+                    fFlowRate = this.miNegativesCycleTwo(iBranch) * sum(mfMassDiff(iBranch:end));
                     this.aoBranchesCycleTwo(iBranch).oHandler.setFlowRate(fFlowRate);
                 end
                 
@@ -841,10 +849,17 @@ classdef CDRA < vsys
                     this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).iCell = this.iCells + iP2P;
                 end
                 
-                this.setTimeStep(1);
+                this.setTimeStep(1+this.oTimer.fMinimumTimeStep);
+                this.toStores.Sylobead_1.setNextTimeStep(1);
+                this.toStores.Sylobead_2.setNextTimeStep(1);
+                this.toStores.Zeolite13x_1.setNextTimeStep(1);
+                this.toStores.Zeolite13x_2.setNextTimeStep(1);
+                this.toStores.Zeolite5A_1.setNextTimeStep(1);
+                this.toStores.Zeolite5A_2.setNextTimeStep(1);
+                
                 % TO DO: Heaters, Airsafe, desorption!
                 
-            else
+            elseif (this.oTimer.iTick ~= 0)
                 % the flowrate update function is only called if no cycle
                 % change is occuring in this tick!
                 if this.fFlowrateMain == 0
@@ -873,46 +888,36 @@ classdef CDRA < vsys
             % without dynamic flowrates (just setting a constant FR and
             % subtracting all absorber FRs) if the thermal part of the
             % model is not included
-            if this.iCycleActive == 1
+            if this.iCycleActive == 1                
                 % Flow going out of CCAA into CDRA
                 fFlowRate_CCAA_CDRA = this.aoBranchesCycleOne(1).oHandler.fRequestedFlowRate;
                 % Flow rate going from CDRA back to the CCAA
                 fFlowRate_CDRA_CCAA = this.aoBranchesCycleOne(end).oHandler.fRequestedFlowRate;
-                
-                fCurrentFlowRate_CHX_Cabin = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_Cabin.oHandler.fRequestedFlowRate;                
-                fFlowRate_CCAA_Condensate = this.oParent.toChildren.(this.sAsscociatedCCAA).toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
-                
-                % Sets the new flowrate from TCCV to CHX inside CCAA
-                fNewFlowRate_TCCV_CHX = fFlowRate_CCAA_CDRA + fCurrentFlowRate_CHX_Cabin + fFlowRate_CCAA_Condensate;
-                this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.TCCV_CHX.oHandler.setFlowRate(fNewFlowRate_TCCV_CHX);
-                
-                fCurrentFlowRate_TCCV_Cabin = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.TCCV_Cabin.oHandler.fRequestedFlowRate;
-                
-                % Sets the new flowrate from Cabin to TCCV inside CCAA
-                fNewFlowRate_Cabin_TCCV = fNewFlowRate_TCCV_CHX + fCurrentFlowRate_TCCV_Cabin - fFlowRate_CDRA_CCAA; 
-                this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(fNewFlowRate_Cabin_TCCV);
             else
                 % Flow going out of CCAA into CDRA
                 fFlowRate_CCAA_CDRA = this.aoBranchesCycleTwo(1).oHandler.fRequestedFlowRate;
                 % Flow rate going from CDRA back to the CCAA
                 fFlowRate_CDRA_CCAA = this.aoBranchesCycleTwo(end).oHandler.fRequestedFlowRate;
-                
-                fCurrentFlowRate_CHX_Cabin = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_Cabin.oHandler.fRequestedFlowRate;                
-                fFlowRate_CCAA_Condensate = this.oParent.toChildren.(this.sAsscociatedCCAA).toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
-                
-                % Sets the new flowrate from TCCV to CHX inside CCAA
-                fNewFlowRate_TCCV_CHX = fFlowRate_CCAA_CDRA + fCurrentFlowRate_CHX_Cabin + fFlowRate_CCAA_Condensate;
-                this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.TCCV_CHX.oHandler.setFlowRate(fNewFlowRate_TCCV_CHX);
-                
-                fCurrentFlowRate_TCCV_Cabin = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.TCCV_Cabin.oHandler.fRequestedFlowRate;
-                
-                % Sets the new flowrate from Cabin to TCCV inside CCAA
-                fNewFlowRate_Cabin_TCCV = fNewFlowRate_TCCV_CHX + fCurrentFlowRate_TCCV_Cabin - fFlowRate_CDRA_CCAA; 
-                this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(fNewFlowRate_Cabin_TCCV);
             end
+
+            this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_CDRA.oHandler.setFlowRate(fFlowRate_CCAA_CDRA);
+            this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CDRA_TCCV.oHandler.setFlowRate(-fFlowRate_CDRA_CCAA);
+
+            fCurrentFlowRate_CHX_Cabin = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_Cabin.oHandler.fRequestedFlowRate;                
+            fFlowRate_CCAA_Condensate = this.oParent.toChildren.(this.sAsscociatedCCAA).toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
+
+            % Sets the new flowrate from TCCV to CHX inside CCAA
+            fNewFlowRate_TCCV_CHX = fFlowRate_CCAA_CDRA + fCurrentFlowRate_CHX_Cabin + fFlowRate_CCAA_Condensate;
+            this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.TCCV_CHX.oHandler.setFlowRate(fNewFlowRate_TCCV_CHX);
+
+            fCurrentFlowRate_TCCV_Cabin = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.TCCV_Cabin.oHandler.fRequestedFlowRate;
+
+            % Sets the new flowrate from Cabin to TCCV inside CCAA
+            fNewFlowRate_Cabin_TCCV = fNewFlowRate_TCCV_CHX + fCurrentFlowRate_TCCV_Cabin - fFlowRate_CDRA_CCAA; 
+            this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fNewFlowRate_Cabin_TCCV);
+
             
-%             this.calculateThermalProperties()
-            
+            % this.calculateThermalProperties()
             % since the thermal solver currently only has constant time
             % steps it currently uses the same time step as the filter
             % model.
@@ -963,10 +968,13 @@ classdef CDRA < vsys
                 mfFlowRates(:,1)    = this.miNegativesCycleTwo.*[this.aoBranchesCycleTwo.fFlowRate]';
             end
             
-%             mfFlowRates(:,1) = ones(this.iCells+1,1) .* this.fFlowrateMain;
-%             mfFlowRates(2:end,1) = mfFlowRates(2:end,1) + this.mfAdsorptionFlowRate(1:this.iCells);
+            % TO DO: Flow from zeolite 5 to second sylobead bed is not
+            % correct! propably sign error
+            
+            mfFlowRates(:,1) = ones(this.iCells+1,1) .* this.fFlowrateMain;
+            mfFlowRates(2:end,1) = mfFlowRates(2:end,1) + this.mfAdsorptionFlowRate(1:this.iCells);
             % Sets the inlet flow condition!
-            mfFlowRates(1,1) = this.fFlowrateMain;
+%             mfFlowRates(1,1) = this.fFlowrateMain;
 
             % Now the internal steps can be performed. Note that this
             % is not an iteration (it would be possible to add that as
