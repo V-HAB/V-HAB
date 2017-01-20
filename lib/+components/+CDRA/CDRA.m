@@ -103,13 +103,13 @@ classdef CDRA < vsys
         mfAdsorptionHeatFlow;
         mfAdsorptionFlowRate;
 
-        iInternalSteps          = 200;
+        iInternalSteps          = 50;
         fMinimumTimeStep        = 1e-10;
         fMaximumTimeStep        = 60;
-        rMaxChange              = 0.05;
-        rMaxPartialChange       = 0.05/200;
-        fMaxPartialTimeStep     = 60/200;
-        fMinPartialTimeStep     = 1e-10/200;
+        rMaxChange              = 0.01;
+        rMaxPartialChange       = 0.01/50;
+        fMaxPartialTimeStep     = 60/50;
+        fMinPartialTimeStep     = 1e-10/50;
         
         bPressureInitialization = false;
         
@@ -200,7 +200,6 @@ classdef CDRA < vsys
             fMassSylobead           = tGeometry.Sylobead.fAbsorberVolume   * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
             fMassZeolite5A          = tGeometry.Zeolite5A.fAbsorberVolume         * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
             
-            % this factor times the
             % These are the correct estimates for the flow volumes of each
             % bed which are used in the filter adsorber proc for
             % calculations. 
@@ -208,21 +207,21 @@ classdef CDRA < vsys
             tGeometry.Sylobead.fVolumeFlow            =        (tGeometry.Sylobead.fCrossSection  	* tGeometry.Sylobead.fLength * tGeometry.Sylobead.rVoidFraction);
             tGeometry.Zeolite5A.fVolumeFlow           =        (tGeometry.Zeolite5A.fCrossSection  	* tGeometry.Zeolite5A.fLength       * tGeometry.Zeolite5A.rVoidFraction);
 
-%             tGeometry.Zeolite13x.fVolumeFlow    = 0.1;
-%             tGeometry.Sylobead.fVolumeFlow      = 0.1;
-%             tGeometry.Zeolite5A.fVolumeFlow     = 0.1;
+            % TO DO: Get the simulation speed up without changing the flow
+            % volume!. This adaption is only made to increase the
+            % simulation speed
+            tGeometry.Zeolite13x.fVolumeFlow    = 10*tGeometry.Zeolite13x.fVolumeFlow;
+            tGeometry.Sylobead.fVolumeFlow      = 10*tGeometry.Sylobead.fVolumeFlow;
+            tGeometry.Zeolite5A.fVolumeFlow     = 10*tGeometry.Zeolite5A.fVolumeFlow;
             
         	tInitialization.Zeolite13x.tfMassAbsorber  =   struct('Zeolite13x',fMassZeolite13x);
             tInitialization.Zeolite13x.fTemperature    =   293;
-            tInitialization.Zeolite13x.iCellNumber     =   20;
             
         	tInitialization.Sylobead.tfMassAbsorber  =   struct('Sylobead_B125',fMassSylobead);
             tInitialization.Sylobead.fTemperature    =   293;
-            tInitialization.Sylobead.iCellNumber     =   20;
             
         	tInitialization.Zeolite5A.tfMassAbsorber  =   struct('Zeolite5A',fMassZeolite5A);
             tInitialization.Zeolite5A.fTemperature    =   293;
-            tInitialization.Zeolite5A.iCellNumber     =   20;
             
             % Sets the cell numbers used for the individual filters
             tInitialization.Zeolite13x.iCellNumber = 5;
@@ -750,6 +749,8 @@ classdef CDRA < vsys
                 this.fFlowrateMain  = this.oParent.toChildren.(this.sAsscociatedCCAA).fCDRA_FlowRate;
 %                 this.fFlowrateMain  = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_CDRA.oHandler.fRequestedFlowRate;
             end
+            
+            fInitTimeStep = 10;
             %% Cycle Change handling:
             % in case the cycle is switched a number of changes has to be
             % made to the flowrates, which are only necessary ONCE!
@@ -781,10 +782,11 @@ classdef CDRA < vsys
                 % second
                 mfFlowRate = zeros(this.iCells,1);
                 for iBranch = 1:(length(this.aoBranchesCycleOne)-1)
-                    mfFlowRate(iBranch) = this.miNegativesCycleOne(iBranch) * sum(mfMassDiff(iBranch:end-1));
+                    mfFlowRate(iBranch) = this.miNegativesCycleOne(iBranch) * sum(mfMassDiff(iBranch:end-1))/fInitTimeStep;
                     this.aoBranchesCycleOne(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
+                this.bPressureInitialization = true;
                 % TO DO
                 % Somewhere the flowrate of the first branch is overwritten
                 % with 0...
@@ -802,13 +804,13 @@ classdef CDRA < vsys
                     this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).iCell = this.iCells + iP2P;
                 end
                 
-                this.setTimeStep(1+this.oTimer.fMinimumTimeStep);
-                this.toStores.Sylobead_1.setNextTimeStep(1);
-                this.toStores.Sylobead_2.setNextTimeStep(1);
-                this.toStores.Zeolite13x_1.setNextTimeStep(1);
-                this.toStores.Zeolite13x_2.setNextTimeStep(1);
-                this.toStores.Zeolite5A_1.setNextTimeStep(1);
-                this.toStores.Zeolite5A_2.setNextTimeStep(1);
+                this.setTimeStep(fInitTimeStep+this.oTimer.fMinimumTimeStep);
+                this.toStores.Sylobead_1.setNextTimeStep(fInitTimeStep);
+                this.toStores.Sylobead_2.setNextTimeStep(fInitTimeStep);
+                this.toStores.Zeolite13x_1.setNextTimeStep(fInitTimeStep);
+                this.toStores.Zeolite13x_2.setNextTimeStep(fInitTimeStep);
+                this.toStores.Zeolite5A_1.setNextTimeStep(fInitTimeStep);
+                this.toStores.Zeolite5A_2.setNextTimeStep(fInitTimeStep);
                 
                 % TO DO: Heaters, Airsafe, desorption!
                 
@@ -838,7 +840,7 @@ classdef CDRA < vsys
                 % second
                 mfFlowRate = zeros(this.iCells,1);
                 for iBranch = 1:(length(this.aoBranchesCycleTwo)-1)
-                    mfFlowRate(iBranch) = this.miNegativesCycleTwo(iBranch) * sum(mfMassDiff(iBranch:(end-1)));
+                    mfFlowRate(iBranch) = this.miNegativesCycleTwo(iBranch) * sum(mfMassDiff(iBranch:(end-1)))/fInitTimeStep;
                     this.aoBranchesCycleTwo(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
@@ -851,13 +853,13 @@ classdef CDRA < vsys
                     this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).iCell = this.iCells + iP2P;
                 end
                 
-                this.setTimeStep(1+this.oTimer.fMinimumTimeStep);
-                this.toStores.Sylobead_1.setNextTimeStep(1);
-                this.toStores.Sylobead_2.setNextTimeStep(1);
-                this.toStores.Zeolite13x_1.setNextTimeStep(1);
-                this.toStores.Zeolite13x_2.setNextTimeStep(1);
-                this.toStores.Zeolite5A_1.setNextTimeStep(1);
-                this.toStores.Zeolite5A_2.setNextTimeStep(1);
+                this.setTimeStep(fInitTimeStep+this.oTimer.fMinimumTimeStep);
+                this.toStores.Sylobead_1.setNextTimeStep(fInitTimeStep);
+                this.toStores.Sylobead_2.setNextTimeStep(fInitTimeStep);
+                this.toStores.Zeolite13x_1.setNextTimeStep(fInitTimeStep);
+                this.toStores.Zeolite13x_2.setNextTimeStep(fInitTimeStep);
+                this.toStores.Zeolite5A_1.setNextTimeStep(fInitTimeStep);
+                this.toStores.Zeolite5A_2.setNextTimeStep(fInitTimeStep);
                 
                 this.bPressureInitialization = true;
                 
@@ -909,8 +911,10 @@ classdef CDRA < vsys
             % calculate the inital mass within the phases to get the
             % flowrates?
             
-            this.oParent.toChildren.(this.sAsscociatedCCAA).toChildren.CCAA_CHX.update()
-            
+            % TO DO: For larger volumes the CHX crashes because the
+            % flowrate through the CHX is increased abnormally by this
+            % logic. How can this be solved? The mass entering CDRA should
+            % pass through the CHX first to remove the humidity....
             this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_CDRA.oHandler.setFlowRate(fFlowRate_CCAA_CDRA);
             this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CDRA_TCCV.oHandler.setFlowRate(-fFlowRate_CDRA_CCAA);
 
@@ -927,6 +931,7 @@ classdef CDRA < vsys
             fNewFlowRate_Cabin_TCCV = fNewFlowRate_TCCV_CHX + fCurrentFlowRate_TCCV_Cabin - fFlowRate_CDRA_CCAA; 
             this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fNewFlowRate_Cabin_TCCV);
             
+%             this.oParent.toChildren.(this.sAsscociatedCCAA).toChildren.CCAA_CHX.update()
             % this.calculateThermalProperties()
             % since the thermal solver currently only has constant time
             % steps it currently uses the same time step as the filter
