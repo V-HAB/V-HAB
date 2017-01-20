@@ -103,17 +103,12 @@ classdef CDRA < vsys
         mfAdsorptionHeatFlow;
         mfAdsorptionFlowRate;
 
-        iInternalSteps          = 50;
         fMinimumTimeStep        = 1e-10;
         fMaximumTimeStep        = 60;
-        rMaxChange              = 0.01;
-        rMaxPartialChange       = 0.01/50;
-        fMaxPartialTimeStep     = 60/50;
-        fMinPartialTimeStep     = 1e-10/50;
-        
-        bPressureInitialization = false;
+        rMaxChange              = 0.05;
         
         mfFrictionFactor;
+        % TO DO: Probably not needed anymore
         mfHelper1;
         
         fSteadyStateTimeStep    = 10;
@@ -154,19 +149,19 @@ classdef CDRA < vsys
             fCrossSection = (18*13E-3)^2; 
             
             tGeometry.Zeolite5A.fCrossSection       = fCrossSection;
-            tGeometry.Sylobead.fCrossSection = fCrossSection;
+            tGeometry.Sylobead.fCrossSection        = fCrossSection;
             tGeometry.Zeolite13x.fCrossSection      = fCrossSection;
             
             % Length for the individual filter material within CDRA
             % according to ICES-2014-160
             tGeometry.Zeolite5A.fLength         =  16.68        *2.54/100;
-            tGeometry.Sylobead.fLength   =  6.13         *2.54/100;
+            tGeometry.Sylobead.fLength          =  6.13         *2.54/100;
             tGeometry.Zeolite13x.fLength        = (5.881+0.84)  *2.54/100;
             
             %From ICES-2014-168 Table 2 e_sorbent
             tGeometry.Zeolite13x.rVoidFraction      = 0.457;
             tGeometry.Zeolite5A.rVoidFraction       = 0.445;
-            tGeometry.Sylobead.rVoidFraction = 0.348;
+            tGeometry.Sylobead.rVoidFraction        = 0.348;
             
             % Assuming a human produces ~ 1kg of CO2 per day and CDRA is
             % sized for 6 humans at 400 Pascal partial pressure of CO2 then
@@ -193,11 +188,11 @@ classdef CDRA < vsys
             % well
             
             tGeometry.Zeolite13x.fAbsorberVolume        =   (1-tGeometry.Zeolite13x.rVoidFraction)        * fCrossSection * tGeometry.Zeolite13x.fLength;
-            tGeometry.Sylobead.fAbsorberVolume          =   (1-tGeometry.Sylobead.rVoidFraction)   * fCrossSection * tGeometry.Sylobead.fLength;
+            tGeometry.Sylobead.fAbsorberVolume          =   (1-tGeometry.Sylobead.rVoidFraction)          * fCrossSection * tGeometry.Sylobead.fLength;
             tGeometry.Zeolite5A.fAbsorberVolume         =   (1-tGeometry.Zeolite5A.rVoidFraction)         * fCrossSection * tGeometry.Zeolite5A.fLength;
             
             fMassZeolite13x         = tGeometry.Zeolite13x.fAbsorberVolume        * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
-            fMassSylobead           = tGeometry.Sylobead.fAbsorberVolume   * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
+            fMassSylobead           = tGeometry.Sylobead.fAbsorberVolume          * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
             fMassZeolite5A          = tGeometry.Zeolite5A.fAbsorberVolume         * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
             
             % These are the correct estimates for the flow volumes of each
@@ -206,13 +201,6 @@ classdef CDRA < vsys
             tGeometry.Zeolite13x.fVolumeFlow          =        (tGeometry.Zeolite13x.fCrossSection 	* tGeometry.Zeolite13x.fLength      * tGeometry.Zeolite13x.rVoidFraction);
             tGeometry.Sylobead.fVolumeFlow            =        (tGeometry.Sylobead.fCrossSection  	* tGeometry.Sylobead.fLength * tGeometry.Sylobead.rVoidFraction);
             tGeometry.Zeolite5A.fVolumeFlow           =        (tGeometry.Zeolite5A.fCrossSection  	* tGeometry.Zeolite5A.fLength       * tGeometry.Zeolite5A.rVoidFraction);
-
-            % TO DO: Get the simulation speed up without changing the flow
-            % volume!. This adaption is only made to increase the
-            % simulation speed
-            tGeometry.Zeolite13x.fVolumeFlow    = 10*tGeometry.Zeolite13x.fVolumeFlow;
-            tGeometry.Sylobead.fVolumeFlow      = 10*tGeometry.Sylobead.fVolumeFlow;
-            tGeometry.Zeolite5A.fVolumeFlow     = 10*tGeometry.Zeolite5A.fVolumeFlow;
             
         	tInitialization.Zeolite13x.tfMassAbsorber  =   struct('Zeolite13x',fMassZeolite13x);
             tInitialization.Zeolite13x.fTemperature    =   293;
@@ -786,14 +774,6 @@ classdef CDRA < vsys
                     this.aoBranchesCycleOne(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
-                this.bPressureInitialization = true;
-                % TO DO
-                % Somewhere the flowrate of the first branch is overwritten
-                % with 0...
-                % --> Mass of the phase got to 0 --> check FR from CCAA and
-                % that CCAA is updated AFTER CDRA!
-                
-                
                 this.iCycleActive = 1;
                 % Sets the correct cells for the adsorption P2Ps to store
                 % their values
@@ -804,13 +784,7 @@ classdef CDRA < vsys
                     this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).iCell = this.iCells + iP2P;
                 end
                 
-                this.setTimeStep(fInitTimeStep+this.oTimer.fMinimumTimeStep);
-                this.toStores.Sylobead_1.setNextTimeStep(fInitTimeStep);
-                this.toStores.Sylobead_2.setNextTimeStep(fInitTimeStep);
-                this.toStores.Zeolite13x_1.setNextTimeStep(fInitTimeStep);
-                this.toStores.Zeolite13x_2.setNextTimeStep(fInitTimeStep);
-                this.toStores.Zeolite5A_1.setNextTimeStep(fInitTimeStep);
-                this.toStores.Zeolite5A_2.setNextTimeStep(fInitTimeStep);
+                this.setTimeStep(fInitTimeStep);
                 
                 % TO DO: Heaters, Airsafe, desorption!
                 
@@ -853,15 +827,7 @@ classdef CDRA < vsys
                     this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).iCell = this.iCells + iP2P;
                 end
                 
-                this.setTimeStep(fInitTimeStep+this.oTimer.fMinimumTimeStep);
-                this.toStores.Sylobead_1.setNextTimeStep(fInitTimeStep);
-                this.toStores.Sylobead_2.setNextTimeStep(fInitTimeStep);
-                this.toStores.Zeolite13x_1.setNextTimeStep(fInitTimeStep);
-                this.toStores.Zeolite13x_2.setNextTimeStep(fInitTimeStep);
-                this.toStores.Zeolite5A_1.setNextTimeStep(fInitTimeStep);
-                this.toStores.Zeolite5A_2.setNextTimeStep(fInitTimeStep);
-                
-                this.bPressureInitialization = true;
+                this.setTimeStep(fInitTimeStep);
                 
                 % TO DO: Heaters, Airsafe, desorption!
                 
@@ -942,239 +908,74 @@ classdef CDRA < vsys
     
     methods (Access = protected)
         function updateInterCellFlowrates(this, ~)
-            % this function is used to calculate the flowrates between the
-            % cells of the filter model. It uses a simplified
-            % incompressible solution algorithm that was adopted
-            % specifically to work for the one dimensional filter model
-            % case.
-            
-            % initialization of the required vectors and matrices, this
-            % actually depends on what cycle is currently active, since
-            % that changes how the beds are connected
             
             if this.iCycleActive == 1
-                mfCellPressure  = zeros(this.iCells+1,   this.iInternalSteps);
-                mfMassChange    = zeros(this.iCells+1,   this.iInternalSteps);
-                mfFlowRates     = zeros(this.iCells+1,   this.iInternalSteps);
-
-                mfCellMass      = zeros(this.iCells,     this.iInternalSteps);
-                mfPressureLoss  = zeros(this.iCells,     this.iInternalSteps);
-                mfDeltaFlowRate = zeros(this.iCells,     this.iInternalSteps);
-
-                mfTimeStep      = zeros(1, this.iInternalSteps);
-
-                mfCellMass(:,1)   	= [this.aoPhasesCycleOne(2:end).fMass];
-                mfCellPressure(:,1)	= [this.aoPhasesCycleOne.fPressure];
-                mfFlowRates(:,1)    = this.miNegativesCycleOne.*[this.aoBranchesCycleOne.fFlowRate]';
-                
+                sCycle = 'One';
             else
-                mfCellPressure  = zeros(this.iCells+1,   this.iInternalSteps);
-                mfMassChange    = zeros(this.iCells+1,   this.iInternalSteps);
-                mfFlowRates     = zeros(this.iCells+1,   this.iInternalSteps);
+                sCycle = 'Two';
+            end
+            % well the phase pressures have not been updated ( the
+            % rMaxChange was set to inf) in order to do controlled updates
+            % now
+            for iPhase = 1:length(this.(['aoPhasesCycle',sCycle]))
+                this.(['aoPhasesCycle',sCycle])(iPhase).update();
+            end
+                
+            % The logic used to calculate the flow rates is as follows:
+            %
+            % The required phase pressures are easily calculated from the
+            % flow rate that should go through CDRA, from there we can
+            % calculate the required mass within the phases. Now
+            % calculating the differenc between that mass and the current
+            % mass allows us to calculate flowrate adaptions to the overall
+            % flowrate to achieve the specified mass and pressure values.
+            % The temperature changes are accounter for by using the mass
+            % to pressure variable which accounts for the current phase
+            % temperature!.
+            mfCellMass(:,1)   	= [this.(['aoPhasesCycle',sCycle])(2:end).fMass];
+%            	mfCellPressure(:,1)	= [this.(['aoPhasesCycle',sCycle]).fPressure];
+            
+            mfFlowRates(:,1) = ones(this.iCells+1,1) .* this.fFlowrateMain;
+            mfFlowRates(2:end,1) = mfFlowRates(2:end,1) - this.mfAdsorptionFlowRate(1:this.iCells);
+            
+            % In order to get the flow rate calculation to higher
+            % speeds at each cycle change the phases are preset to
+            % contain pressures close to the final pressure (after the
+            % initial flowrate setup)
+            mfPressureDiff = this.mfFrictionFactor .* (this.oParent.toChildren.(this.sAsscociatedCCAA).fCDRA_FlowRate)^2;
+            mfPressurePhase = zeros(this.iCells+1,1);
+            for iPhase = 1:length(this.(['aoPhasesCycle',sCycle]))
+                mfPressurePhase(iPhase) = this.(['aoPhasesCycle',sCycle])(end).fPressure + sum(mfPressureDiff(iPhase:end));
+            end
+            % The time step for the cycle change case is set to ONE
+            % second, therefore the calculated mass difference is
+            % directly the required flow rate that has to go into the
+            % phase to reach the desired mass
+            mfMassDiff = (mfPressurePhase - [this.(['aoPhasesCycle',sCycle]).fPressure]')./[this.(['aoPhasesCycle',sCycle]).fMassToPressure]';
 
-                mfCellMass      = zeros(this.iCells,     this.iInternalSteps);
-                mfPressureLoss  = zeros(this.iCells,     this.iInternalSteps);
-                mfDeltaFlowRate = zeros(this.iCells,     this.iInternalSteps);
-
-                mfTimeStep      = zeros(1, this.iInternalSteps);
-
-                mfCellMass(:,1)   	= [this.aoPhasesCycleTwo(1:end-1).fMass];
-                mfCellPressure(:,1)	= [this.aoPhasesCycleTwo.fPressure];
-                mfFlowRates(:,1)    = this.miNegativesCycleTwo.*[this.aoBranchesCycleTwo.fFlowRate]';
+            % Now the time step can be calculated by using the maximum
+            % allowable mass change within one step
+            fTimeStep = min(1./(abs(mfMassDiff(1:end-1)) ./ (this.rMaxChange .* mfCellMass)));
+            if fTimeStep > this.fMaximumTimeStep
+                fTimeStep = this.fMaximumTimeStep;
+            elseif fTimeStep  <= this.fMinimumTimeStep
+                fTimeStep = this.fMinimumTimeStep;
             end
             
-            % TO DO: The negative part of the cells and the flows do not
-            % match (the cell numbering has to be changed to match the
-            % flows)
-            if this.bPressureInitialization
-                mfFlowRates(:,1) = ones(this.iCells+1,1) .* this.fFlowrateMain;
-                mfFlowRates(2:end,1) = mfFlowRates(2:end,1) + this.mfAdsorptionFlowRate(1:this.iCells);
-                this.bPressureInitialization = false;
-            else
-                % Sets the inlet flow condition!
-                mfFlowRates(1,1) = this.fFlowrateMain;
-            end
+            abReduceMassDiff = abs(mfMassDiff(1:end-1)) > (this.rMaxChange .* mfCellMass);
+            mfMassDiff(abReduceMassDiff) = sign(mfMassDiff(abReduceMassDiff)).*(this.rMaxChange .* mfCellMass(abReduceMassDiff));
             
-            % Now the internal steps can be performed. Note that this
-            % is not an iteration (it would be possible to add that as
-            % well) but just an internal calculation with smaller
-            % timesteps
-            for iStep = 1:this.iInternalSteps
-                % pressure loss is calculated by multiplying the
-                % friction factor with the mass flow^2. An alternative
-                % way to calculate this would be the pressure loss
-                % calculation for pipes using a specified length and
-                % hydraulic diameter
-                mfPressureLoss(:,iStep)  = this.mfFrictionFactor .* abs(mfFlowRates(2:end,iStep)).^2;
-
-                % the overall pressure difference between the cells is
-                % defined as the difference between the two cell
-                % pressures and from that the pressure loss is
-                % subtracted (times the sign of the mass flow to ensure
-                % it always acts against it)
-                mfDeltaPressure = (mfCellPressure(1:end-1, iStep) - mfCellPressure(2:end, iStep)) - sign(mfFlowRates(2:end,iStep)).*mfPressureLoss(:,iStep);
-
-                % With the pressure difference between the cells the
-                % difference of the mass flow per time can be
-                % calculated for each cell:
-                mfDeltaFlowRate(:,iStep) = (mfDeltaPressure .* this.mfHelper1);
+            % Now the mass difference required in the phases is
+            % translated into massflows for the branches for the next
+            % second
+            mfFlowRatesNew = zeros(this.iCells+1,1);
+            for iBranch = 1:(length(this.(['aoBranchesCycle',sCycle])))
+                mfFlowRatesNew(iBranch) = this.(['miNegativesCycle',sCycle])(iBranch) * (mfFlowRates(iBranch) + (sum(mfMassDiff(iBranch:end))/fTimeStep));
                 
-                % The following equations are used in the calculation of the new mass flow:
-                % F = m*a --> P*A = V_cell*rho*a
-                % massflow(t+delta_t) = massflow(t) + rho*A*delta_flowspeed
-                % delta_flowspeed = a*delta_t
-                % massflow(t+delta_t) = massflow(t) + rho*A*(P*A/V_cell*rho)*delta_t
-                % massflow(t+delta_t) = massflow(t) + A*(P*A/V_cell)*delta_t
-                % --> DeltaMassFlow = (P*A^2/V_cell)*delta_t 
-                % --> A^2/V_cell = fHelper1
-
-                % the highest possible internal time step can now be
-                % calculated based on the current mass change for each
-                % cell and the current cell mass
-                mfTimeStep(1,iStep) = min(abs((this.rMaxPartialChange .* mfCellMass(:,iStep))./((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep))))); 
-
-                % in case the time step is outside of the defined
-                % boundaries it is reset to these boundaries
-                if mfTimeStep(1,iStep) > this.fMaxPartialTimeStep
-                    mfTimeStep(1,iStep) = this.fMaxPartialTimeStep;
-                elseif isnan(mfTimeStep(1,iStep))
-                    mfTimeStep(1,iStep) = this.fMinPartialTimeStep;
-                elseif mfTimeStep(1,iStep)  <= this.fMinPartialTimeStep
-                    mfTimeStep(1,iStep) = this.fMinPartialTimeStep;
-                end
-
-                % now the new flow rates can be calculated based on the
-                % equation derived above
-                % massflow(t+delta_t) = massflow(t) + A*(P*A/V_cell)*delta_t
-                mfNewInterimFlowRate = mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep);
-
-                % another limiting factor for the time step is the fact
-                % that the pressure loss should not be allowed to act as
-                % a driving force. Therefore, it is necessary to reduce
-                % the time step far enough that no sign switch of the
-                % flowrate occurs within one timestep
-                bDirectionSwitch = sign(mfNewInterimFlowRate) ~= (sign(mfFlowRates(2:end, iStep)));
-                % the sign functions also calls a change if 0 is
-                % changed to positive or negative value. These cases
-                % should not be considered sign changes for this logic
-                bDirectionSwitch(mfFlowRates(2:end, iStep) == 0) = false;
-                
-                mfInterimFlowRate = mfFlowRates(2:end, iStep);
-
-                fMaxTimeStepDirectionChange = min(abs(0.1.*mfInterimFlowRate(bDirectionSwitch)./mfDeltaFlowRate(bDirectionSwitch,iStep)));
-                if mfTimeStep(1,iStep) > fMaxTimeStepDirectionChange
-                    mfTimeStep(1,iStep) = fMaxTimeStepDirectionChange;
-
-                    if mfTimeStep(1,iStep) > this.fMaxPartialTimeStep
-                        mfTimeStep(1,iStep) = this.fMaxPartialTimeStep;
-                    elseif isnan(mfTimeStep(1,iStep))
-                        mfTimeStep(1,iStep) = this.fMinPartialTimeStep;
-                    elseif mfTimeStep(1,iStep)  <= this.fMinPartialTimeStep
-                        mfTimeStep(1,iStep) = this.fMinPartialTimeStep;
-                    end
-
-                    mfNewInterimFlowRate = mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep);
-                end
-
-                mfNewInterimFlowRate(mfNewInterimFlowRate > this.mfAdsorptionFlowRate(1:this.iCells)) = mfNewInterimFlowRate(mfNewInterimFlowRate > this.mfAdsorptionFlowRate(1:this.iCells)) - this.mfAdsorptionFlowRate(mfNewInterimFlowRate > this.mfAdsorptionFlowRate(1:this.iCells));
-
-                if any(isnan(mfNewInterimFlowRate)) || any(isinf(mfNewInterimFlowRate))
-                    keyboard()
-                end
-                mfFlowRates(2:end, iStep+1) = mfNewInterimFlowRate;
-
-                % since one boundary condition is a flow rate this
-                % flowrate is simply kept constant for all steps
-                mfFlowRates(1, iStep+1) = mfFlowRates(1, iStep);
-
-                % now an estimate for the new cell mass after this step
-                % can be calculated
-                mfCellMass(:,iStep+1) = mfCellMass(:,iStep) + ((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep)) * mfTimeStep(1,iStep));
-
-               	% and from this an estimate for the new cell pressure
-                mfCellPressure(1:end-1,iStep+1) = (mfCellMass(:,iStep+1)./mfCellMass(:,iStep)).*mfCellPressure(1:end-1,iStep);
-                % the second boundary condition is the pressure which
-              	% is set here
-                mfCellPressure(end, iStep+1) = mfCellPressure(end, iStep);
-
-                % to simplify the calculation of the overall flowrate
-                % the mass change for each internal step is calculated
-                mfMassChange(:,iStep) = mfFlowRates(:,iStep) * mfTimeStep(iStep);
+                this.(['aoBranchesCycle',sCycle])(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
             end
-            
-            % check if steady state simplification can be used
-            if max(abs((mfFlowRates(:, this.iInternalSteps) - mfFlowRates(:, 1))./mfFlowRates(:, 1)) - abs(this.fMaxSteadyStateFlowRateChange.*mfFlowRates(:, 1))) < 0
-                % Steady State case: Small discrepancies between the
-                % flowrates will always remain in a dynamic calculation.
-                % But if the differences are small enough this calculation
-                % is used to set the correct steady state flow rates at
-                % which the phase mass will no longer change. Of course
-                % other effects like temperature changes will remain and
-                % therefore the timestep in this case cannot be infinite
-                
-%             mfFlowRates(:,1) = ones(this.iCells+1,1) .* this.fFlowrateMain;
-%             mfFlowRates(2:end,1) = mfFlowRates(2:end,1) + this.mfAdsorptionFlowRate(1:this.iCells);
-                if this.bNegativeFlow
-                    fInletFlowRate = mfFlowRates(end,1);
-                    for iK = 2:length(mfFlowRates(:,1))-1
-                        % TO DO: maybe bind this calculation/part of it to
-                        % the update functions of the P2Ps?
-                        fFlowRate = fInletFlowRate + this.mfAdsorptionFlowRate(iK-1);
-                        this.aoBranches(iK).oHandler.setFlowRate(fFlowRate);
-                    end
-                    fFlowRate = abs(fInletFlowRate + this.mfAdsorptionFlowRate(iK-1));
-                    this.aoBranches(1).oHandler.setFlowRate(fFlowRate);
-                else
-                    fInletFlowRate = mfFlowRates(1,1);
-                    for iK = 2:length(mfFlowRates(:,1))
-                        % TO DO: maybe bind this calculation/part of it to
-                        % the update functions of the P2Ps?
-                        fFlowRate = fInletFlowRate - this.mfAdsorptionFlowRate(iK-1);
-                        this.aoBranches(iK).oHandler.setFlowRate(fFlowRate);
-                    end
-                end
-                keyboard()
-                this.setTimeStep(this.fSteadyStateTimeStep);
-            else
-                % dynamic case where the flow rates that were calculated by
-                % the dynamic flow rate calculation are set. 
-                
-                % The overall timestep is the sum over all partial time steps.
-                this.setTimeStep(sum(mfTimeStep));
-                % The overall flow rate that has to be set is the sum over
-                % all internally calculated time steps multiplied with each
-                % internal time step and then divided with the overall
-                % time step to calculate the time averaged flow rate that
-                % results in the same mass changes as the integral over all
-                % internal flow rates
-                mfFlowRatesNew = sum(mfMassChange,2)/this.fTimeStep;
-                
-                % for negative and positive flow cases the boundary
-                % condition changes the sides and therefore the location of
-                % the flow that does not have to be set changes sides
-                mfFlowRatesNew = this.miNegativesCycleOne.*mfFlowRatesNew;
-                
-                if any(isnan(mfFlowRatesNew))
-                    keyboard()
-                end
-                for iBranch = 1:(length(this.aoBranchesCycleOne))
-                    this.aoBranchesCycleOne(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
-                end
-            end
-            
-            % sets the update of the store and phases to be in tune with
-            % the updated flow rates. Otherwise changes in the flow rate
-            % will be reflected in the pressures too slow
-            % TO DO: this should be optimizable by setting the rMaxChange
-            % of each phase, however when i tested that it did not work as
-            % well. So for now this version will be used as it definitly
-            % works
-            this.toStores.Sylobead_1.setNextTimeStep(this.fTimeStep);
-            this.toStores.Sylobead_2.setNextTimeStep(this.fTimeStep);
-            this.toStores.Zeolite13x_1.setNextTimeStep(this.fTimeStep);
-            this.toStores.Zeolite13x_2.setNextTimeStep(this.fTimeStep);
-            this.toStores.Zeolite5A_1.setNextTimeStep(this.fTimeStep);
-            this.toStores.Zeolite5A_2.setNextTimeStep(this.fTimeStep);
+
+            this.setTimeStep(fTimeStep);
         end
         
         function calculateThermalProperties(this)

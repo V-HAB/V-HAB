@@ -40,7 +40,6 @@ classdef setup < simulation.infrastructure
             oLog = this.toMonitors.oLogger;
             
             oLog.add('Example', 'flow_props');
-            oLog.add('Example', 'thermal_properties');
             
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity', '-', 'Relative Humidity Cabin');
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2');
@@ -126,6 +125,9 @@ classdef setup < simulation.infrastructure
             close all
           
             this.toMonitors.oPlotter.plot();
+            
+            return
+            % TO DO: Fix logging
             
             if isa(this.oSimulationContainer.toChildren.Example.toChildren.CDRA, 'components.CDRA.CDRA')
                 for iIndex = 1:length(this.toMonitors.oLogger.tLogValues)
