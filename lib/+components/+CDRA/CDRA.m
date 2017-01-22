@@ -109,7 +109,7 @@ classdef CDRA < vsys
         mfAdsorptionHeatFlow;
         mfAdsorptionFlowRate;
 
-        fMinimumTimeStep        = 1e-10;
+        fMinimumTimeStep        = 1e-2;
         fMaximumTimeStep        = 60;
         rMaxChange              = 0.05;
         
@@ -213,13 +213,13 @@ classdef CDRA < vsys
             this.tGeometry.Zeolite5A.fVolumeFlow           =        (this.tGeometry.Zeolite5A.fCrossSection  	* this.tGeometry.Zeolite5A.fLength       * this.tGeometry.Zeolite5A.rVoidFraction);
             
         	tInitialization.Zeolite13x.tfMassAbsorber  =   struct('Zeolite13x',fMassZeolite13x);
-            tInitialization.Zeolite13x.fTemperature    =   293;
+            tInitialization.Zeolite13x.fTemperature    =   285;
             
         	tInitialization.Sylobead.tfMassAbsorber  =   struct('Sylobead_B125',fMassSylobead);
-            tInitialization.Sylobead.fTemperature    =   293;
+            tInitialization.Sylobead.fTemperature    =   285;
             
         	tInitialization.Zeolite5A.tfMassAbsorber  =   struct('Zeolite5A',fMassZeolite5A);
-            tInitialization.Zeolite5A.fTemperature    =   293;
+            tInitialization.Zeolite5A.fTemperature    =   285;
             
             % Sets the cell numbers used for the individual filters
             tInitialization.Zeolite13x.iCellNumber = 5;
@@ -581,6 +581,9 @@ classdef CDRA < vsys
             this.tLastUpdateProps.mfDensity              = zeros(this.iCells,1);
             this.tLastUpdateProps.mfFlowSpeed            = zeros(this.iCells,1);
             this.tLastUpdateProps.mfSpecificHeatCapacity = zeros(this.iCells,1);
+
+            this.tLastUpdateProps.mfDynamicViscosity     = zeros(this.iCells,1);
+            this.tLastUpdateProps.mfThermalConductivity  = zeros(this.iCells,1);
         end
         
         function createSolverStructure(this)
@@ -606,7 +609,7 @@ classdef CDRA < vsys
             
             % sets the minimum time step that can be used by the thermal
             % solver
-            this.oThermalSolver.fMinimumTimeStep = 1e-1;
+            this.oThermalSolver.fMinimumTimeStep = 1;
         end           
         
         %% Function to connect the system and subsystem level branches with each other
@@ -1105,11 +1108,12 @@ classdef CDRA < vsys
             if any(mbRecalculate)
                 for iCell = 1:this.iCells
                     if mbRecalculate(iCell)
-
-                        fDynamicViscosity              = this.oMT.calculateDynamicViscosity(aoPhases(iCell));
-                        fThermalConductivity           = this.oMT.calculateThermalConductivity(aoPhases(iCell));
+                        if (abs(this.tLastUpdateProps.mfDensity(iCell) - mfDensity(iCell))  > (1e-1 * mfDensity(iCell)))
+                            this.tLastUpdateProps.mfDynamicViscosity(iCell)     = this.oMT.calculateDynamicViscosity(aoPhases(iCell));
+                            this.tLastUpdateProps.mfThermalConductivity(iCell)  = this.oMT.calculateThermalConductivity(aoPhases(iCell));
+                        end
                         fConvectionCoeff               = components.filter.functions.convection_pipe(this.tGeometry.mfD_Hydraulic(iCell), this.tGeometry.mfLength(iCell),...
-                                                          mfFlowSpeed(iCell), fDynamicViscosity, mfDensity(iCell), fThermalConductivity, mfSpecificHeatCapacity(iCell), 1);
+                                                          mfFlowSpeed(iCell), this.tLastUpdateProps.mfDynamicViscosity(iCell), mfDensity(iCell), this.tLastUpdateProps.mfThermalConductivity(iCell), mfSpecificHeatCapacity(iCell), 1);
                         mfHeatTransferCoefficient(iCell)= fConvectionCoeff * this.tGeometry.mfAbsorberSurfaceArea(iCell);
 
                         % in case that this was actually recalculated store the
@@ -1118,7 +1122,6 @@ classdef CDRA < vsys
                         this.tLastUpdateProps.mfDensity(iCell)              = mfDensity(iCell);
                         this.tLastUpdateProps.mfFlowSpeed(iCell)            = mfFlowSpeed(iCell);
                         this.tLastUpdateProps.mfSpecificHeatCapacity(iCell) = mfSpecificHeatCapacity(iCell);
-
                         
                         % now the calculated coefficients have to be set to the
                         % conductor of each cell

@@ -100,7 +100,6 @@ classdef setup < simulation.infrastructure
 %             end
             
             oLog.add('Example:c:CDRA', 'flow_props');
-            oLog.add('Example:c:CDRA', 'thermal_properties');
             
             %% Define plots
             
