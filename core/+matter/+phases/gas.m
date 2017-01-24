@@ -95,7 +95,6 @@ classdef gas < matter.phase
         
         
         function this = update(this)
-            update@matter.phase(this);
             
             %TODO coeff m to p: also in liquids, plasma. Not solids, right?
             %     calc afPPs, rel humidity, ... --> in matter table!
@@ -138,6 +137,13 @@ classdef gas < matter.phase
             else
                 this.fPressure = 0;
             end
+            
+            % Moved the update of matter.phase below the Pressure and
+            % Humidity calculation because these influence the update (like
+            % the specific heat capacity calculation) of the remaining
+            % properties and therefore should be executed before them
+            update@matter.phase(this);
+            
         end
         
         function [ afPartialPressures ] = getPartialPressures(this)

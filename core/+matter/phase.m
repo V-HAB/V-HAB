@@ -596,8 +596,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % at the exme for each substance. 
                 % afProperties contains the temperature and heat capacity
                 % of the exme.
-                oExme = this.coProcsEXME{iI};
-                [ fFlowRate, arFlowPartials, ~ ] = oExme.getFlowData();
+                [ fFlowRate, arFlowPartials, ~ ] = this.coProcsEXME{iI}.getFlowData();
                 % We only care for the outflows in this case!
                 if fFlowRate >= 0
                     afPartialFlowRateIn(iI,:) = fFlowRate .* arFlowPartials;
@@ -696,7 +695,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % Times -1 because the masses is afNegativeMassByExMe are
                 % negative, but the mass in afExcessMass is positive for
                 % mass that has to be removed
-                oCounterExMe.oPhase.afExcessMass = oCounterExMe.oPhase.afExcessMass -1.*afNegativeMassByExMe(iI,:);
+                oCounterExMe.oPhase.afExcessMass = oCounterExMe.oPhase.afExcessMass - afNegativeMassByExMe(iI,:);
             end
             
             % In order to resolve the issue for this phase the afMass
