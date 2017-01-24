@@ -12,6 +12,8 @@ classdef plotter_basic < simulation.monitor
         sLogger = 'oLogger';
         
         tPlots = struct('sTitle', {}, 'aiIdx', {});
+        
+        tPlotsByName;
     end
     
     methods
@@ -28,9 +30,24 @@ classdef plotter_basic < simulation.monitor
         
         %% Methods to define plots
         
+        function definePlotByName(this, cNames, sTitle, yLabel, mbPosition)
+            
+            % In this function only the struct with the necessary function to
+            % perform the plotting is defined, the plotting itself is
+            % performed in the plot command
+            this.tPlotsByName(end+1).sTitle = sTitle;
+            this.tPlotsByName(end).cNames = cNames;
+            this.tPlotsByName(end).yLabel = yLabel;
+            if nargin > 4
+                this.tPlotsByName(end).mbPosition = mbPosition;
+            end
+            
+        end
         
         function definePlot(this, xDataReference, sTitle)
             this.definePlotWithFilter(xDataReference, [], sTitle);
+            
+            
         end
         
         
@@ -104,8 +121,9 @@ classdef plotter_basic < simulation.monitor
         %% Default plot method
         function plot(this, tParameters)
             
-            bLegendOn   = true;
-            bTimePlotOn = true;
+            bLegendOn    = true;
+            bTimePlotOn  = true;
+            bPlotToolsOn = false;
             
             if nargin > 1 
                 if isfield(tParameters, 'bLegendOn')
@@ -114,6 +132,9 @@ classdef plotter_basic < simulation.monitor
                 if isfield(tParameters, 'bTimePlotOn')
                     bTimePlotOn = tParameters.bTimePlotOn;
                 end
+                if isfield(tParameters, 'bPlotToolsOn')
+                    bPlotToolsOn = tParameters.bPlotToolsOn;
+                end
             end
             
             oInfra  = this.oSimulationInfrastructure;
@@ -121,9 +142,6 @@ classdef plotter_basic < simulation.monitor
             iPlots  = length(this.tPlots) + sif(bTimePlotOn,1,0);
             iGrid   = ceil(sqrt(iPlots));
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
-            
-            
-            
             
             % Rows of grid - can we reduce?
             iGridRows = iGrid;
@@ -193,11 +211,69 @@ classdef plotter_basic < simulation.monitor
 
             drawnow;
             
-            % Maximize figure
-            set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
             
+            if bPlotToolsOn
+                plottools(oFigure, 'on');
+            else
+                % Maximize figure
+                set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
+            end
             
             oFigure.UserData = struct('coAxesHandles', { coHandles });
+            
+            
+            
+            %% Define Plot by Name
+            
+            for iIndex = 1:length(oLogger.tLogValues)
+                for iPlot = 1:length(this.tPlotsByName)
+                    for iName = 1:length(this.tPlotsByName(iPlot).cNames) 
+                        if strcmp(oLogger.tLogValues(iIndex).sLabel, this.tPlotsByName(iPlot).cNames{iName})
+
+                           % Stores the logged values for the plot and name
+                           % in the struct
+                           mfLog = oLogger.mfLog(:,iIndex);
+
+                           % remove NaNs from the log
+                           mfLog(isnan(mfLog)) = [];
+
+                           this.tPlotsByName(iPlot).mLogData(:,iName) = mfLog;
+                        end
+                    end
+                end
+            end
+            csFigures = cell(0,0);
+            for iPlot = 1:length(this.tPlotsByName)
+                
+                bFoundFigure = false;
+                for iFigure = 1:length(csFigures)
+                    if strcmp(csFigures{iFigure}.Name, this.tPlotsByName(iPlot).sTitle)
+                        set(0, 'currentfigure', csFigures{iFigure});
+                        bFoundFigure = true;
+                        break
+                    end
+                end
+                
+                if ~bFoundFigure
+                    csFigures{end+1} = figure('name', this.tPlotsByName(iPlot).sTitle);
+                    set(0, 'currentfigure', csFigures{end});
+                end
+                if ~isempty(this.tPlotsByName(iPlot).mbPosition)
+                    [iNumberRows, iNumberColumns] = size(this.tPlotsByName(iPlot).mbPosition);
+                    [iRow, iColumn] = find(this.tPlotsByName(iPlot).mbPosition);
+                    iPlotNumber = ((iRow - 1)*iNumberColumns) + iColumn;
+                    subplot(iNumberRows,iNumberColumns,iPlotNumber)
+                end
+                grid on
+                hold on
+                for iName = 1:length(this.tPlotsByName(iPlot).cNames) 
+                    plot((oLogger.afTime./3600), this.tPlotsByName(iPlot).mLogData(:,iName))
+                end
+                xlabel('Time in h')
+                ylabel( this.tPlotsByName(iPlot).yLabel)
+                legend(this.tPlotsByName(iPlot).cNames)
+            end
+            
         end
         
         function clearPlots(this)

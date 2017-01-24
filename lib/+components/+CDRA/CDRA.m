@@ -609,7 +609,7 @@ classdef CDRA < vsys
             
             % sets the minimum time step that can be used by the thermal
             % solver
-            this.oThermalSolver.fMinimumTimeStep = 1;
+            this.oThermalSolver.fMinimumTimeStep = 0.01;
         end           
         
         %% Function to connect the system and subsystem level branches with each other
