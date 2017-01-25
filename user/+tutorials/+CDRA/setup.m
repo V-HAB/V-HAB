@@ -60,7 +60,7 @@ classdef setup < simulation.infrastructure
             end
             
             for iBed = 1:2
-                for iCell = 1:10
+                for iCell = 1:5
                     oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.CO2)', 'kg', ['Partial Mass CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.H2O)', 'kg', ['Partial Mass H2O Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                 end
@@ -98,10 +98,10 @@ classdef setup < simulation.infrastructure
                 end
             end
             
-            csZeolite5A_CO2 = cell(2,10);
-            csZeolite5A_H2O = cell(2,10);
+            csZeolite5A_CO2 = cell(2,5);
+            csZeolite5A_H2O = cell(2,5);
             for iBed = 1:2
-                for iCell = 1:10
+                for iCell = 1:5
                     csZeolite5A_CO2{iBed,iCell} = ['Partial Mass CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
                     csZeolite5A_H2O{iBed,iCell} = ['Partial Mass H2O Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
                 end

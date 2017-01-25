@@ -111,7 +111,7 @@ classdef CDRA < vsys
 
         fMinimumTimeStep        = 1e-2;
         fMaximumTimeStep        = 60;
-        rMaxChange              = 0.05;
+        rMaxChange              = 0.01;
         
         tGeometry;
         
@@ -120,11 +120,6 @@ classdef CDRA < vsys
         mfFrictionFactor;
         
         tLastUpdateProps;
-        
-        fSteadyStateTimeStep    = 10;
-        % deactivated steady state simplification under all
-        % circumstances
-        fMaxSteadyStateFlowRateChange = 0;
     end
     
     methods
@@ -193,9 +188,6 @@ classdef CDRA < vsys
             % ~35g CO2 for each kg of zeolite. Therefore the zeolite mass
             % has to be around 23 to 26 kg. (current calculation results in
             % ~25kg)
-            % TO DO: 13x was previously just adsorbing H2O all the time,
-            % currently trying to reduce its mass to get it to desorb as
-            % well
             
             this.tGeometry.Zeolite13x.fAbsorberVolume        =   (1-this.tGeometry.Zeolite13x.rVoidFraction)        * fCrossSection * this.tGeometry.Zeolite13x.fLength;
             this.tGeometry.Sylobead.fAbsorberVolume          =   (1-this.tGeometry.Sylobead.rVoidFraction)          * fCrossSection * this.tGeometry.Sylobead.fLength;
@@ -213,18 +205,18 @@ classdef CDRA < vsys
             this.tGeometry.Zeolite5A.fVolumeFlow           =        (this.tGeometry.Zeolite5A.fCrossSection  	* this.tGeometry.Zeolite5A.fLength       * this.tGeometry.Zeolite5A.rVoidFraction);
             
         	tInitialization.Zeolite13x.tfMassAbsorber  =   struct('Zeolite13x',fMassZeolite13x);
-            tInitialization.Zeolite13x.fTemperature    =   285;
+            tInitialization.Zeolite13x.fTemperature    =   281.25;
             
         	tInitialization.Sylobead.tfMassAbsorber  =   struct('Sylobead_B125',fMassSylobead);
-            tInitialization.Sylobead.fTemperature    =   285;
+            tInitialization.Sylobead.fTemperature    =   281.25;
             
         	tInitialization.Zeolite5A.tfMassAbsorber  =   struct('Zeolite5A',fMassZeolite5A);
-            tInitialization.Zeolite5A.fTemperature    =   285;
+            tInitialization.Zeolite5A.fTemperature    =   281.25;
             
             % Sets the cell numbers used for the individual filters
             tInitialization.Zeolite13x.iCellNumber = 5;
             tInitialization.Sylobead.iCellNumber = 5;
-            tInitialization.Zeolite5A.iCellNumber = 10;
+            tInitialization.Zeolite5A.iCellNumber = 5;
             
             % Values for the mass transfer coefficient can be found in the
             % paper ICES-2014-268. Here the values for Zeolite5A are used
@@ -304,7 +296,7 @@ classdef CDRA < vsys
                 fAbsorberVolume         = this.tGeometry.(csTypes{iType}).fAbsorberVolume;
                 fFlowVolume             = this.tGeometry.(csTypes{iType}).fVolumeFlow;
                 iCellNumber             = tInitialization.(csTypes{iType}).iCellNumber;
-                fTemperatureFlow        = this.tAtmosphere.fTemperature;
+                fTemperatureFlow        = tInitialization.(csTypes{iType}).fTemperature;
                 fTemperatureAbsorber    = tInitialization.(csTypes{iType}).fTemperature;
                 fPressure               = this.tAtmosphere.fPressure;
                 fConductance            = tInitialization.(csTypes{iType}).fConductance;
@@ -318,7 +310,7 @@ classdef CDRA < vsys
                 components.filter.components.FilterStore(this, [(csTypes{iType}), '_2'], (fFlowVolume + fAbsorberVolume));
 
                 fDensityAir = 1.2; % at 20°C and 1 atm
-                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', (fFlowVolume*fDensityAir*this.tAtmosphere.fCO2Percent)), this.tAtmosphere.fTemperature, 0, this.tAtmosphere.fPressure);
+                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', (fFlowVolume*fDensityAir*this.tAtmosphere.fCO2Percent)), fTemperatureFlow, 0, this.tAtmosphere.fPressure);
 
                 % The filter and flow phase total masses provided in the
                 % tInitialization struct have to be divided by the number of
@@ -842,13 +834,14 @@ classdef CDRA < vsys
                 % directly the required flow rate that has to go into the
                 % phase to reach the desired mass
                 mfMassDiff = (mfPressurePhase - [this.aoPhasesCycleOne.fPressure]')./[this.aoPhasesCycleOne.fMassToPressure]';
+
                 
                 % Now the mass difference required in the phases is
                 % translated into massflows for the branches for the next
                 % second
                 mfFlowRate = zeros(this.iCells,1);
-                for iBranch = 1:(length(this.aoBranchesCycleOne)-1)
-                    mfFlowRate(iBranch) = this.miNegativesCycleOne(iBranch) * sum(mfMassDiff(iBranch:end-1))/fInitTimeStep;
+                for iBranch = 1:(length(this.aoBranchesCycleOne))
+                    mfFlowRate(iBranch) = this.miNegativesCycleOne(iBranch) * sum(mfMassDiff(iBranch:end))/fInitTimeStep;
                     this.aoBranchesCycleOne(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
@@ -891,8 +884,8 @@ classdef CDRA < vsys
                 % translated into massflows for the branches for the next
                 % second
                 mfFlowRate = zeros(this.iCells,1);
-                for iBranch = 1:(length(this.aoBranchesCycleTwo)-1)
-                    mfFlowRate(iBranch) = this.miNegativesCycleTwo(iBranch) * sum(mfMassDiff(iBranch:(end-1)))/fInitTimeStep;
+                for iBranch = 1:(length(this.aoBranchesCycleTwo))
+                    mfFlowRate(iBranch) = this.miNegativesCycleTwo(iBranch) * sum(mfMassDiff(iBranch:end))/fInitTimeStep;
                     this.aoBranchesCycleTwo(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
@@ -928,16 +921,11 @@ classdef CDRA < vsys
                 end
             end
             
-            % Handling the flowrates of the asscoiated CCAA. Hm so there
-            % are a few options for this:
-            % Option 1: CCAA also receives dynamic flow rates
-            % Option 2: CCAA flowrates are adapted here based on the
-            % dynamic flowrates of CDRA
-            %
-            % Overall regarding the dynamic flowrates. The filter will work
-            % without dynamic flowrates (just setting a constant FR and
-            % subtracting all absorber FRs) if the thermal part of the
-            % model is not included
+            % Handling the flowrates of the asscoiated CCAA. The CCAA
+            % flowrates are adapted here based on the dynamic flowrates of
+            % CDRA. This way the CCAA can still work with the simpler flow
+            % rate calculations as that should be fine for the CCAA (at
+            % least at the moment)
             if this.iCycleActive == 1                
                 % Flow going out of CCAA into CDRA
                 fFlowRate_CCAA_CDRA = -this.aoBranchesCycleOne(1).oHandler.fRequestedFlowRate;
@@ -950,15 +938,6 @@ classdef CDRA < vsys
                 fFlowRate_CDRA_CCAA = this.aoBranchesCycleTwo(end).oHandler.fRequestedFlowRate;
             end
             
-            % TO DO: TS without large changes is currently limited to
-            % ~0.035s tickdelta over 100 ticks. Maybe use the logic to
-            % calculate the inital mass within the phases to get the
-            % flowrates?
-            
-            % TO DO: For larger volumes the CHX crashes because the
-            % flowrate through the CHX is increased abnormally by this
-            % logic. How can this be solved? The mass entering CDRA should
-            % pass through the CHX first to remove the humidity....
             this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_CDRA.oHandler.setFlowRate(fFlowRate_CCAA_CDRA);
             this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CDRA_TCCV.oHandler.setFlowRate(-fFlowRate_CDRA_CCAA);
 
@@ -981,6 +960,30 @@ classdef CDRA < vsys
             % model.
             this.oThermalSolver.setTimestep(this.fTimeStep);
         end
+        
+        function adjustBranchToP2P(this, iCell, fAdsorptionFlowRate)
+            fFlowRateAdaption = fAdsorptionFlowRate - this.mfAdsorptionFlowRate(iCell);
+            if iCell <= this.iCells
+                if this.iCycleActive == 1
+                     this.aoBranchesCycleOne(iCell+1).oHandler.setFlowRate(this.aoBranchesCycleOne(iCell+1).oHandler.fRequestedFlowRate - fFlowRateAdaption);
+                     
+                     % TO DO: Oscillation in the adsorption/desorption,
+                     % also the mass change actually occuring in the phase,
+                     % for some strange reason, is different from the one
+                     % calculated and intended here...
+                     % TO DO: IT seems the flow rate of the branch that is
+                     % changed here is again changed between now and the
+                     % next phase time step calculation (where the
+                     % flowrates are taken) --> CHeck what changes the
+                     % flowrate
+                     % HM or it could be that the flowrate is not correctly
+                     % set by this logic...
+                     MassDiffNow = this.fTimeStep * (abs(this.aoBranchesCycleOne(iCell).oHandler.fRequestedFlowRate)-abs(this.aoBranchesCycleOne(iCell+1).oHandler.fRequestedFlowRate) - fAdsorptionFlowRate);
+                else
+                     this.aoBranchesCycleTwo(iCell+1).oHandler.setFlowRate(this.aoBranchesCycleTwo(iCell+1).oHandler.fRequestedFlowRate - fFlowRateAdaption);
+                end
+            end
+        end
     end
     
     methods (Access = protected)
@@ -996,6 +999,14 @@ classdef CDRA < vsys
             % now
             for iPhase = 1:length(this.(['aoPhasesCycle',sCycle]))
                 this.(['aoPhasesCycle',sCycle])(iPhase).update();
+                this.(['aoPhasesCycle',sCycle])(iPhase).toProcsEXME();
+            end
+            % In order to ensure that the flow rates considered during this
+            % calculation are also the ones actually used by the P2P a
+            % manual update function that is only called here is used for
+            % the P2Ps
+            for iCell = 1:length(this.(['aoAbsorberCycle',sCycle]))
+                this.(['aoAbsorberCycle',sCycle])(iCell).ManualUpdate();
             end
                 
             % The logic used to calculate the flow rates is as follows:
@@ -1009,8 +1020,8 @@ classdef CDRA < vsys
             % The temperature changes are accounter for by using the mass
             % to pressure variable which accounts for the current phase
             % temperature!.
-            mfCellMass(:,1)   	= [this.(['aoPhasesCycle',sCycle])(2:end).fMass];
-%            	mfCellPressure(:,1)	= [this.(['aoPhasesCycle',sCycle]).fPressure];
+            mfCellMass(:,1)   	= [this.(['aoPhasesCycle',sCycle]).fMass];
+           	mfCellPressure(:,1)	= [this.(['aoPhasesCycle',sCycle]).fPressure];
             
             mfFlowRates(:,1) = ones(this.iCells+1,1) .* this.fFlowrateMain;
             mfFlowRates(2:end,1) = mfFlowRates(2:end,1) - this.mfAdsorptionFlowRate(1:this.iCells);
@@ -1028,20 +1039,28 @@ classdef CDRA < vsys
             % second, therefore the calculated mass difference is
             % directly the required flow rate that has to go into the
             % phase to reach the desired mass
-            mfMassDiff = (mfPressurePhase - [this.(['aoPhasesCycle',sCycle]).fPressure]')./[this.(['aoPhasesCycle',sCycle]).fMassToPressure]';
-
+            mfMassDiff = (mfPressurePhase - mfCellPressure)./[this.(['aoPhasesCycle',sCycle]).fMassToPressure]';
+            
             % Now the time step can be calculated by using the maximum
             % allowable mass change within one step
-            fTimeStep = min(1./(abs(mfMassDiff(1:end-1)) ./ (this.rMaxChange .* mfCellMass)));
+            fTimeStep = min(1./(abs(mfMassDiff) ./ (this.rMaxChange .* mfCellMass)));
             if fTimeStep > this.fMaximumTimeStep
                 fTimeStep = this.fMaximumTimeStep;
             elseif fTimeStep  <= this.fMinimumTimeStep
                 fTimeStep = this.fMinimumTimeStep;
             end
             
-            abReduceMassDiff = abs(mfMassDiff(1:end-1)) > (this.rMaxChange .* mfCellMass);
-            mfMassDiff(abReduceMassDiff) = sign(mfMassDiff(abReduceMassDiff)).*(this.rMaxChange .* mfCellMass(abReduceMassDiff));
-            
+            abReduceMassDiff = abs(mfMassDiff) > (this.rMaxChange .* mfCellMass);
+            if any(abReduceMassDiff)
+                % factor by which the mass change currently exceeds the
+                % allowed mass change for each cell
+                mfFactor = abs(mfMassDiff(abReduceMassDiff))./(this.rMaxChange .* mfCellMass(abReduceMassDiff));
+                % The mass changes all have to be divided with the maximum
+                % factor, to keep the relative change of mass between the
+                % cells as intended
+                mfMassDiff = mfMassDiff./max(mfFactor);
+            end
+
             % Now the mass difference required in the phases is
             % translated into massflows for the branches for the next
             % second
@@ -1051,7 +1070,12 @@ classdef CDRA < vsys
                 
                 this.(['aoBranchesCycle',sCycle])(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
             end
-
+            
+%             iCell = 1;
+%             ActualMassDiffLast = this.fTimeStep * (abs(this.(['aoBranchesCycle',sCycle])(iCell).fFlowRate) - abs(this.(['aoBranchesCycle',sCycle])(iCell+1).fFlowRate) - this.mfAdsorptionFlowRate(iCell));
+            
+%             ActualMassDiffNow = fTimeStep * (abs(this.(['aoBranchesCycle',sCycle])(iCell).oHandler.fRequestedFlowRate) - abs(this.(['aoBranchesCycle',sCycle])(iCell+1).oHandler.fRequestedFlowRate) - this.mfAdsorptionFlowRate(iCell));
+            
             this.setTimeStep(fTimeStep);
         end
         

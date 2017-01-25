@@ -37,7 +37,11 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             this.fTemperatureOld = 0;
         end
         
-        function update(this, ~)
+        function update(~)
+            %Nope nothing happens here, it is manually controlled by the
+            %CDRA solver...
+        end
+        function ManualUpdate(this, ~)
             
             afMass          = this.oOut.oPhase.afMass;
             fTemperature    = this.oOut.oPhase.fTemperature;
@@ -86,8 +90,9 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % negative value if heat is generated. Therefore the overall
                 % result has to be mutliplied with -1
                 this.fAdsorptionHeatFlow = - sum(mfFlowRates.*this.oMT.afMolarMass.*mfAbsorptionEnthalpy);
+%                 this.oStore.oContainer.adjustBranchToP2P(this.iCell, (fAdsorptionFlowRate - fDesorptionFlowRate));
                 this.oStore.oContainer.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
-                this.oStore.oContainer.mfAdsorptionFlowRate(this.iCell) = sum(mfFlowRates);
+                this.oStore.oContainer.mfAdsorptionFlowRate(this.iCell) = fAdsorptionFlowRate - fDesorptionFlowRate;
 
                 this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
 

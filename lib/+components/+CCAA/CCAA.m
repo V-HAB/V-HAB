@@ -168,7 +168,7 @@ classdef CCAA < vsys
             % has trouble correctly calculating small volumes
             matter.store(this, 'CHX', 2);
             % Input phase
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CHX, 1, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, 0, this.tAtmosphere.fPressure);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CHX, 1, struct('CO2', fCO2Percent), this.fCoolantTemperature, 0, this.tAtmosphere.fPressure);
             oInput = matter.phases.gas(this.toStores.CHX, 'CHX_PhaseIn',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             % H2O phase
             cWaterHelper = matter.helper.phase.create.water(this.toStores.CHX, 1, this.fCoolantTemperature, fPressure);
@@ -414,16 +414,17 @@ classdef CCAA < vsys
                 % in case a CDRA is connected to this CCAA the flowrate
                 % entering the CDRA has to be calculated
                 if ~isempty(this.sCDRA)
-                    if fFlowRateGas >= this.fCDRA_FlowRate
-                        this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
-                    elseif fFlowRateGas < this.fCDRA_FlowRate
-                        if fFlowRateGas >= 0
-                            this.toBranches.CHX_CDRA.oHandler.setFlowRate(fFlowRateGas);
-                        else
-                            this.toBranches.CHX_CDRA.oHandler.setFlowRate(0);
-                        end
-                    end
-                    this.oParent.toChildren.(this.sCDRA).update();
+                    % TO DO; Implement a limitation of the flowrate into
+                    % CDRA calculations
+%                     if fFlowRateGas >= this.fCDRA_FlowRate
+%                         this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
+%                     elseif fFlowRateGas < this.fCDRA_FlowRate
+%                         if fFlowRateGas >= 0
+%                             this.toBranches.CHX_CDRA.oHandler.setFlowRate(fFlowRateGas);
+%                         else
+%                             this.toBranches.CHX_CDRA.oHandler.setFlowRate(0);
+%                         end
+%                     end
                     this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas - this.toBranches.CHX_CDRA.oHandler.fRequestedFlowRate);
                 else
                     this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas);

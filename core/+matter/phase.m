@@ -429,11 +429,21 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % In the same step remove mass that was transmitted from other phases which
             % resulted in a negative mass for the other phase
             afMassNew =  this.afMass + afTotalInOuts;
+            
             if all(afMassNew >= this.afExcessMass)
                 afMassNew = afMassNew - this.afExcessMass;
                 this.afRemovedExcessMass = this.afRemovedExcessMass + this.afExcessMass;
                 this.afExcessMass = zeros(1,this.oMT.iSubstances);
             end
+            
+            % Very small masses always lead to issues but deleting them is
+            % also bad in the long run. Therefore, the afExcessMass
+            % property is used to store these masses and once they reach a
+            % significant amount again, they are added to the phase again
+            mbSmallMass = (afMassNew > 0)&(afMassNew < 1e-12);
+            this.afExcessMass(mbSmallMass) = this.afExcessMass(mbSmallMass) - afMassNew(mbSmallMass);
+            mbAddStoredMass = (afMassNew(this.afExcessMass < 0) > 1e-6);
+            afMassNew(mbAddStoredMass) = afMassNew(mbAddStoredMass) - this.afExcessMass(mbAddStoredMass);
             
             % Now we check if any of the masses has become negative. This
             % can happen for two reasons, the first is just MATLAB rounding
