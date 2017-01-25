@@ -111,7 +111,7 @@ classdef CDRA < vsys
 
         fMinimumTimeStep        = 1e-2;
         fMaximumTimeStep        = 60;
-        rMaxChange              = 0.01;
+        rMaxChange              = 0.02;
         
         tGeometry;
         
@@ -151,23 +151,11 @@ classdef CDRA < vsys
             % "Multi-Dimensional Simulation of Flows Inside Polydisperse Packed Beds"
             % download link https://www.google.de/url?sa=t&rct=j&q=&esrc=s&source=web&cd=6&cad=rja&uact=8&ved=0ahUKEwjwstb2-OfKAhXEoQ4KHdkUAC8QFghGMAU&url=https%3A%2F%2Fwww.comsol.com%2Fconference2015%2Fdownload-presentation%2F29402&usg=AFQjCNERyzJcfMautp6BfFFUERc1FvISNw&bvm=bv.113370389,d.bGg
             % sorry couldn't find a better one.
-            fCrossSection = (18*13E-3)^2; 
-            
-            this.tGeometry.Zeolite5A.fCrossSection       = fCrossSection;
-            this.tGeometry.Sylobead.fCrossSection        = fCrossSection;
-            this.tGeometry.Zeolite13x.fCrossSection      = fCrossSection;
-            
-            % Length for the individual filter material within CDRA
-            % according to ICES-2014-160
-            this.tGeometry.Zeolite5A.fLength         =  16.68        *2.54/100;
-            this.tGeometry.Sylobead.fLength          =  6.13         *2.54/100;
-            this.tGeometry.Zeolite13x.fLength        = (5.881+0.84)  *2.54/100;
-            
-            %From ICES-2014-168 Table 2 e_sorbent
-            this.tGeometry.Zeolite13x.rVoidFraction      = 0.457;
-            this.tGeometry.Zeolite5A.rVoidFraction       = 0.445;
-            this.tGeometry.Sylobead.rVoidFraction        = 0.348;
-            
+            % However I am a bit unsure if that actually is correct. The
+            % zeolite mass using those value would be ~14 kg thus CDRA
+            % would not be able to take in enough CO2 to actually remove
+            % the CO2 of 6 humans:
+            %
             % Assuming a human produces ~ 1kg of CO2 per day and CDRA is
             % sized for 6 humans at 400 Pascal partial pressure of CO2 then
             % each CDRA has to absorb (1/(24*60))*144*6 = 600g CO2 per
@@ -187,7 +175,23 @@ classdef CDRA < vsys
             % pressure. At that partial pressure the zeolite capacity is
             % ~35g CO2 for each kg of zeolite. Therefore the zeolite mass
             % has to be around 23 to 26 kg. (current calculation results in
-            % ~25kg)
+            % ~23.5 kg)
+            fCrossSection = (18*15E-3)^2; 
+            
+            this.tGeometry.Zeolite5A.fCrossSection       = fCrossSection;
+            this.tGeometry.Sylobead.fCrossSection        = fCrossSection;
+            this.tGeometry.Zeolite13x.fCrossSection      = fCrossSection;
+            
+            % Length for the individual filter material within CDRA
+            % according to ICES-2014-160
+            this.tGeometry.Zeolite5A.fLength         =  16.68        *2.54/100;
+            this.tGeometry.Sylobead.fLength          =  6.13         *2.54/100;
+            this.tGeometry.Zeolite13x.fLength        = (5.881+0.84)  *2.54/100;
+            
+            %From ICES-2014-168 Table 2 e_sorbent
+            this.tGeometry.Zeolite13x.rVoidFraction      = 0.457;
+            this.tGeometry.Zeolite5A.rVoidFraction       = 0.445;
+            this.tGeometry.Sylobead.rVoidFraction        = 0.348;
             
             this.tGeometry.Zeolite13x.fAbsorberVolume        =   (1-this.tGeometry.Zeolite13x.rVoidFraction)        * fCrossSection * this.tGeometry.Zeolite13x.fLength;
             this.tGeometry.Sylobead.fAbsorberVolume          =   (1-this.tGeometry.Sylobead.rVoidFraction)          * fCrossSection * this.tGeometry.Sylobead.fLength;
