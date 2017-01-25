@@ -559,16 +559,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
 
         function resolveNegativeMasses(this, afMassNew, abNegative)
-            
-            % For small negative masses the old logic is used
-            abSmall = abs(afMassNew(abNegative)) < 10^-(this.oTimer.iPrecision+5);
-            this.afMassLost(abSmall) = this.afMassLost(abSmall) - afMassNew(abSmall);
-            afMassNew(abSmall) = 0;
-            if all(afMassNew(abNegative) >= 0)
-                this.afMass = afMassNew;
-                return
-            end
-
             if this.fMassUpdateTimeStep <= 0
                 % In Case the time step is zero or negative the new
                 % solution to prevent negative masses will not work and
