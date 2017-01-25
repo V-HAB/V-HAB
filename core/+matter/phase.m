@@ -559,6 +559,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
 
         function resolveNegativeMasses(this, afMassNew, abNegative)
+            % For small negative masses the old logic is used
+            abSmall = abs(afMassNew(abNegative)) < -10^-20;
+            this.afMassLost(abSmall) = this.afMassLost(abSmall) - afMassNew(abSmall);
+            afMassNew(abSmall) = 0;
+            if all(afMassNew(abNegative) >= 0)
+                this.afMass = afMassNew;
+                return
+            end
+
             if this.fMassUpdateTimeStep <= 0
                 % In Case the time step is zero or negative the new
                 % solution to prevent negative masses will not work and
@@ -567,9 +576,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % this should not occur normaly, just to prevent any
                 % strange crashes from happening ;)
                 this.afMass = afMassNew;
-                abNegative2 = this.afMass < 0;
-                this.afMassLost(abNegative2) = this.afMassLost(abNegative2) - this.afMass(abNegative2);
-                this.afMass(abNegative2) = 0;
+                abNegative = this.afMass < 0;
+                this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
+                this.afMass(abNegative) = 0;
                 return;
             end;
             
@@ -636,7 +645,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     else
                         % Different idea for this, only use branches to get
                         % it downstream
-                        afNegativeMassByExMe(mbBranch,miNegatives(iK)) = afNegativeMass(miNegatives(iK)) .*  sum(afPartialFlowRateOut(mbBranch),2)./fCurrentOutFlow;
+                        afNegativeMassByExMe(mbBranch,miNegatives(iK)) = afNegativeMass(miNegatives(iK)) .*  sum(afPartialFlowRateOut(mbBranch,:),2)./fCurrentOutFlow;
                     end
                 else
                     % Additionally the mass that was removed from this phase
@@ -721,10 +730,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % In Case the time step is zero or negative the new
                 % solution to prevent negative masses will not work and
                 % instead the old version is used.
+                abNegative2 = afMassNew2 < 0;
+                this.afMassLost(abNegative2) = this.afMassLost(abNegative2) - afMassNew2(abNegative2);
+                afMassNew2(abNegative2) = 0;
                 this.afMass = afMassNew2;
-                abNegative2 = this.afMass < 0;
-                this.afMassLost(abNegative2) = this.afMassLost(abNegative2) - this.afMass(abNegative2);
-                this.afMass(abNegative2) = 0;
                 
             else
                 this.afMass = afMassNew2;
@@ -1033,7 +1042,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %this.setParameter('fTemperature', this.fTemperature + fTempDiff);
             this.fTemperature = this.fTemperature + fTempDiff;
             
-            this.massupdate();
+            % Why would a massupdate be necessary at this location?
+            % Changing the temperature does not change the mass (it changes
+            % the temperature and pressure for the branches, but that is
+            % at best covered indirectly by calling a massupdate here)
+            %this.massupdate();
         end
 
 
