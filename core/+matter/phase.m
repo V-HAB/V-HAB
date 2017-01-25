@@ -430,20 +430,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % resulted in a negative mass for the other phase
             afMassNew =  this.afMass + afTotalInOuts;
             
-            if all(afMassNew >= this.afExcessMass)
-                afMassNew = afMassNew - this.afExcessMass;
-                this.afRemovedExcessMass = this.afRemovedExcessMass + this.afExcessMass;
-                this.afExcessMass = zeros(1,this.oMT.iSubstances);
-            end
-            
-            % Very small masses always lead to issues but deleting them is
-            % also bad in the long run. Therefore, the afExcessMass
-            % property is used to store these masses and once they reach a
-            % significant amount again, they are added to the phase again
-            mbSmallMass = (afMassNew > 0)&(afMassNew < 1e-12);
-            this.afExcessMass(mbSmallMass) = this.afExcessMass(mbSmallMass) - afMassNew(mbSmallMass);
-            mbAddStoredMass = (afMassNew(this.afExcessMass < 0) > 1e-6);
-            afMassNew(mbAddStoredMass) = afMassNew(mbAddStoredMass) - this.afExcessMass(mbAddStoredMass);
+            afMassNew = afMassNew - this.afExcessMass;
+            this.afRemovedExcessMass = this.afRemovedExcessMass + this.afExcessMass;
+            this.afExcessMass = zeros(1,this.oMT.iSubstances);
             
             % Now we check if any of the masses has become negative. This
             % can happen for two reasons, the first is just MATLAB rounding
@@ -457,10 +446,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             if any(abNegative)
                 this.resolveNegativeMasses(afMassNew, abNegative);
-                
-%                 this.afMass = afMassNew;
-%                 this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
-%                 this.afMass(abNegative) = 0;
             else
                 this.afMass = afMassNew;
             end
@@ -540,8 +525,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.fTemperature = sum(mfEnergy) / sum(mfEnergyPerKelvin);
 
             end
-
-
             % Update total mass
             this.fMass = sum(this.afMass);
             if this.fMass > 0
@@ -577,9 +560,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
         function resolveNegativeMasses(this, afMassNew, abNegative)
             
-            % To DO: Keep the old way to handle this for very low errors?
-            % (smaller than 10-15 maybe?)
-            
+            % For small negative masses the old logic is used
+            abSmall = abs(afMassNew(abNegative)) < 10^-(this.oTimer.iPrecision+5);
+            this.afMassLost(abSmall) = this.afMassLost(abSmall) - afMassNew(abSmall);
+            afMassNew(abSmall) = 0;
+            if all(afMassNew(abNegative) >= 0)
+                this.afMass = afMassNew;
+                return
+            end
+
             if this.fMassUpdateTimeStep <= 0
                 % In Case the time step is zero or negative the new
                 % solution to prevent negative masses will not work and
@@ -598,6 +587,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             afPartialFlowRateOut        = zeros(this.iProcsEXME, this.oMT.iSubstances);
             afPartialFlowRateIn         = zeros(this.iProcsEXME, this.oMT.iSubstances);
             
+           	mbBranch  	= false(this.iProcsEXME,1);
+            miSign      = zeros(this.iProcsEXME, 1);
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
                 % The fFlowRate parameter is the flow rate at the exme,
@@ -613,6 +604,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 else
                     afPartialFlowRateOut(iI,:) = fFlowRate .* arFlowPartials;
                 end
+                mbBranch(iI) = ~this.coProcsEXME{iI}.bFlowIsAProcP2P;
+                miSign(iI) = this.coProcsEXME{iI}.iSign;
             end 
             
             % From the negative value that did occur it is possible to
@@ -632,31 +625,35 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             miNegatives = find(abNegative);
             
-            afPartialFlowRateOutNew = afPartialFlowRateOut;
-            
             for iK = 1:length(miNegatives)
-                
                 % get the total outlet flow rate of the current negative
                 % substance (with index miNegatives(iK) )
                 fCurrentOutFlow = sum(afPartialFlowRateOut(:,miNegatives(iK)));
-                fCurrentInFlow = sum(afPartialFlowRateIn(:,miNegatives(iK)));
-                
-                % Calculate the actual overall outlet flow for this
-                % substance that can occur without negative masses
-                % (calculated in a way to ensure that the mass is 0 at the
-                % end of this step)
-                fActualOutFlow = -((this.afMass(miNegatives(iK))/this.fMassUpdateTimeStep)+fCurrentInFlow);
-                % Then split that outlet flow according to the current
-                % partial flow rates, weighted against the current out
-                % flow and overwrite this value on the partial out flow
-                % array. Note only the P2P flowrates are adapted because
-                % the negative mass case should not occur without P2P
-                afPartialFlowRateOutNew(:,miNegatives(iK)) = fActualOutFlow .* (afPartialFlowRateOut(:,miNegatives(iK))./fCurrentOutFlow);
-                
-                % Additionally the mass that was removed from this phase
-                % beyond the current capacity is split between the outflows
-                % based on their current outflows:
-                afNegativeMassByExMe(:,miNegatives(iK)) = afNegativeMass(miNegatives(iK)) .* (afPartialFlowRateOut(:,miNegatives(iK))./fCurrentOutFlow);
+                % It is possible that this is zero (if the negative mass
+                % logic itself is handing negative masses downstream
+                % because all phases are too small)
+                if fCurrentOutFlow == 0
+                    % In this case just equally spread it over all current
+                    % outgoing flows based on the total outflow
+                    fCurrentOutFlow = sum(sum(afPartialFlowRateOut(mbBranch,:)));
+                    if fCurrentOutFlow == 0
+                        mbUseBranch = (mbBranch + (miSign == -1)) == 2;
+                        if sum(mbUseBranch) == 0
+                            afNegativeMassByExMe(:,miNegatives(iK))           = ones(length(mbUseBranch),1) .* (afNegativeMass(miNegatives(iK)) ./ length(mbUseBranch));
+                        else
+                            afNegativeMassByExMe(mbUseBranch,miNegatives(iK)) = mbUseBranch(mbUseBranch) .* (afNegativeMass(miNegatives(iK)) ./sum(mbUseBranch));
+                        end
+                    else
+                        % Different idea for this, only use branches to get
+                        % it downstream
+                        afNegativeMassByExMe(mbBranch,miNegatives(iK)) = afNegativeMass(miNegatives(iK)) .*  sum(afPartialFlowRateOut(mbBranch),2)./fCurrentOutFlow;
+                    end
+                else
+                    % Additionally the mass that was removed from this phase
+                    % beyond the current capacity is split between the outflows
+                    % based on their current outflows:
+                    afNegativeMassByExMe(:,miNegatives(iK)) = afNegativeMass(miNegatives(iK)) .* (afPartialFlowRateOut(:,miNegatives(iK))./fCurrentOutFlow);
+                end
             end
             
             % now we have the correct partial (and therefore also total)
@@ -678,6 +675,20 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % phase beyond the current capacity of the phase is removed
             % from the phases to which the mass is transported on the next
             % mass update of these phases. 
+            %
+            % Furthermore this logic should also keep the total mass in the
+            % phases constant to maintain the pressure (for everything
+            % except mixture, because other phases would not be able to
+            % handle mixture substances :). Therefore the negative mass
+            % that was removed too much from one substance, which is added
+            % to the phase again, is instead removed from another substance
+            % that has a higher mass, if that is available
+            fMaxPartialMass = max(afMassNew);
+            if (fMaxPartialMass > abs(sum(afNegativeMass))) && ~strcmp(this.sType, 'mixture')
+                abMax = afMassNew == fMaxPartialMass;
+                aiMax = find(abMax);
+                afNegativeMassByExMe(:,aiMax(1)) = afNegativeMassByExMe(:,aiMax(1)) - sum(afNegativeMassByExMe,2);
+            end
             for iI = 1:this.iProcsEXME
                 % First the exme on the other side of the affected outflows
                 % has to be found
@@ -708,32 +719,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 oCounterExMe.oPhase.afExcessMass = oCounterExMe.oPhase.afExcessMass - afNegativeMassByExMe(iI,:);
             end
             
-            % In order to resolve the issue for this phase the afMass
-            % property has to be calculated using the new adapted flows
-            %
-            % however for this purpose the getTotalMassChange function
-            % cannot be used because currently the values for afMass in
-            % this phase would result in different arPartials for the
-            % flows, and the exmes of outgoing branches use the partial
-            % masses of the phase to calculate their composition.
-            % Therefore, the internally calculated flow rates of this
-            % function have to be used to change the mass!
-            afPartialFlowRateNew = sum((afPartialFlowRateOutNew + afPartialFlowRateIn),1);
-            
-            % Check manipulator
-            if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
-                % Add the changes from the manipulator to the total inouts
-                afPartialFlowRateNew = afPartialFlowRateNew + this.toManips.substance.afPartialFlows;
-
-            end
-
-            % Cache total mass in/out so the EXMEs can use that
-            this.fCurrentTotalMassInOut = sum(afPartialFlowRateNew);
-
-            % Multiply with current time step
-            afTotalInOuts = afPartialFlowRateNew * this.fMassUpdateTimeStep;
-            
-            afMassNew2 =  this.afMass + afTotalInOuts;
+            % Well now the mass that is created in this phase by
+            % overwriting the negative value with 0 is subtracted from the
+            % phases downstream. For this phase we have to overwrite the
+            % negative values 
+            afMassNew2 =  afMassNew - sum(afNegativeMassByExMe,1);
             
             if any(afMassNew2 < 0)
                 % Well if all this still didn't fix anything the old logic
