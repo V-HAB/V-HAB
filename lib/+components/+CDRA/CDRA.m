@@ -960,30 +960,6 @@ classdef CDRA < vsys
             % model.
             this.oThermalSolver.setTimestep(this.fTimeStep);
         end
-        
-        function adjustBranchToP2P(this, iCell, fAdsorptionFlowRate)
-            fFlowRateAdaption = fAdsorptionFlowRate - this.mfAdsorptionFlowRate(iCell);
-            if iCell <= this.iCells
-                if this.iCycleActive == 1
-                     this.aoBranchesCycleOne(iCell+1).oHandler.setFlowRate(this.aoBranchesCycleOne(iCell+1).oHandler.fRequestedFlowRate - fFlowRateAdaption);
-                     
-                     % TO DO: Oscillation in the adsorption/desorption,
-                     % also the mass change actually occuring in the phase,
-                     % for some strange reason, is different from the one
-                     % calculated and intended here...
-                     % TO DO: IT seems the flow rate of the branch that is
-                     % changed here is again changed between now and the
-                     % next phase time step calculation (where the
-                     % flowrates are taken) --> CHeck what changes the
-                     % flowrate
-                     % HM or it could be that the flowrate is not correctly
-                     % set by this logic...
-                     MassDiffNow = this.fTimeStep * (abs(this.aoBranchesCycleOne(iCell).oHandler.fRequestedFlowRate)-abs(this.aoBranchesCycleOne(iCell+1).oHandler.fRequestedFlowRate) - fAdsorptionFlowRate);
-                else
-                     this.aoBranchesCycleTwo(iCell+1).oHandler.setFlowRate(this.aoBranchesCycleTwo(iCell+1).oHandler.fRequestedFlowRate - fFlowRateAdaption);
-                end
-            end
-        end
     end
     
     methods (Access = protected)
@@ -997,9 +973,9 @@ classdef CDRA < vsys
             % well the phase pressures have not been updated ( the
             % rMaxChange was set to inf) in order to do controlled updates
             % now
-            for iPhase = 1:length(this.(['aoPhasesCycle',sCycle]))
-                this.(['aoPhasesCycle',sCycle])(iPhase).update();
-                this.(['aoPhasesCycle',sCycle])(iPhase).toProcsEXME();
+            for iCell = 1:length(this.(['aoPhasesCycle',sCycle]))
+                this.(['aoPhasesCycle',sCycle])(iCell).update();
+                this.(['aoPhasesCycle',sCycle])(iCell).toProcsEXME();
             end
             % In order to ensure that the flow rates considered during this
             % calculation are also the ones actually used by the P2P a
@@ -1023,8 +999,6 @@ classdef CDRA < vsys
             mfCellMass(:,1)   	= [this.(['aoPhasesCycle',sCycle]).fMass];
            	mfCellPressure(:,1)	= [this.(['aoPhasesCycle',sCycle]).fPressure];
             
-            mfFlowRates(:,1) = ones(this.iCells+1,1) .* this.fFlowrateMain;
-            mfFlowRates(2:end,1) = mfFlowRates(2:end,1) - this.mfAdsorptionFlowRate(1:this.iCells);
             
             % In order to get the flow rate calculation to higher
             % speeds at each cycle change the phases are preset to
@@ -1032,8 +1006,8 @@ classdef CDRA < vsys
             % initial flowrate setup)
             mfPressureDiff = this.mfFrictionFactor .* (this.oParent.toChildren.(this.sAsscociatedCCAA).fCDRA_FlowRate)^2;
             mfPressurePhase = zeros(this.iCells+1,1);
-            for iPhase = 1:length(this.(['aoPhasesCycle',sCycle]))
-                mfPressurePhase(iPhase) = this.(['aoPhasesCycle',sCycle])(end).fPressure + sum(mfPressureDiff(iPhase:end));
+            for iCell = 1:length(this.(['aoPhasesCycle',sCycle]))
+                mfPressurePhase(iCell) = this.(['aoPhasesCycle',sCycle])(end).fPressure + sum(mfPressureDiff(iCell:end));
             end
             % The time step for the cycle change case is set to ONE
             % second, therefore the calculated mass difference is
@@ -1065,17 +1039,28 @@ classdef CDRA < vsys
             % translated into massflows for the branches for the next
             % second
             mfFlowRatesNew = zeros(this.iCells+1,1);
-            for iBranch = 1:(length(this.(['aoBranchesCycle',sCycle])))
-                mfFlowRatesNew(iBranch) = this.(['miNegativesCycle',sCycle])(iBranch) * (mfFlowRates(iBranch) + (sum(mfMassDiff(iBranch:end))/fTimeStep));
-                
+            % First branch has to be handled differently
+            iBranch = 1;
+            mfFlowRatesNew(iBranch) = this.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))/fTimeStep));
+          	this.(['aoBranchesCycle',sCycle])(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
+            
+            for iBranch = 2:(length(this.(['aoBranchesCycle',sCycle])))
+            % The reduction in flow rate from the P2Ps has to be given to
+            % all the following branches as well
+                mfFlowRatesNew(iBranch) = this.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))/fTimeStep) - sum(this.mfAdsorptionFlowRate(1:iBranch-1)));
                 this.(['aoBranchesCycle',sCycle])(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
             end
             
+            % Usefull code for debugging :)
 %             iCell = 1;
 %             ActualMassDiffLast = this.fTimeStep * (abs(this.(['aoBranchesCycle',sCycle])(iCell).fFlowRate) - abs(this.(['aoBranchesCycle',sCycle])(iCell+1).fFlowRate) - this.mfAdsorptionFlowRate(iCell));
-            
+%              
 %             ActualMassDiffNow = fTimeStep * (abs(this.(['aoBranchesCycle',sCycle])(iCell).oHandler.fRequestedFlowRate) - abs(this.(['aoBranchesCycle',sCycle])(iCell+1).oHandler.fRequestedFlowRate) - this.mfAdsorptionFlowRate(iCell));
-            
+%             
+%             this.(['aoBranchesCycle',sCycle])(iCell).oHandler.fRequestedFlowRate
+%             this.(['aoBranchesCycle',sCycle])(iCell+1).oHandler.fRequestedFlowRate
+%             this.mfAdsorptionFlowRate(iCell)
+
             this.setTimeStep(fTimeStep);
         end
         
