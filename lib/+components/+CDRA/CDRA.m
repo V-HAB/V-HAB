@@ -118,6 +118,7 @@ classdef CDRA < vsys
         mfHeaterPower;
         
         mfFrictionFactor;
+        tThermalProps;
         
         tLastUpdateProps;
     end
@@ -269,15 +270,41 @@ classdef CDRA < vsys
             % 13x is 2.19 mm --> the volume of each sphere is
             % 4/3*pi*(2.19/2)^3 = 5.5 mm3, while the area is 
             % 4*pi*(2.19/2)^2 = 15 mm2
-            this.tGeometry.Zeolite13x.fAbsorberSurfaceArea      = (15e-6)*(tInitialization.Zeolite13x.tfMassAbsorber.Zeolite13x/(this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density * 5.5e-9));
+            nSpheres_13x = (tInitialization.Zeolite13x.tfMassAbsorber.Zeolite13x/(this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density * 5.5e-9));
+            this.tGeometry.Zeolite13x.fAbsorberSurfaceArea      = (15e-6)*nSpheres_13x;
             % For Sylobead the average diameter is mentioned to be 2.25 mm:
             % 4/3*pi*(2.25/2)^3 = 5.96 mm3, while the area is 
             % 4*pi*(2.25/2)^2 = 15.9 mm2
-            this.tGeometry.Sylobead.fAbsorberSurfaceArea        = (15.9e-6)*(tInitialization.Zeolite13x.tfMassAbsorber.Zeolite13x/(this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density * 5.96e-9));
-            % For 5a the average diameter is mentioned to be 2.2.1 mm:
+            nSpheres_Sylobead = (tInitialization.Zeolite13x.tfMassAbsorber.Zeolite13x/(this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density * 5.96e-9));
+            this.tGeometry.Sylobead.fAbsorberSurfaceArea        = (15.9e-6)*nSpheres_Sylobead;
+            % For 5a the average diameter is mentioned to be 2.21 mm:
             % 4/3*pi*(2.1/2)^3 = 4.85 mm3, while the area is 
             % 4*pi*(2.1/2)^2 = 13.85 mm2
-            this.tGeometry.Zeolite5A.fAbsorberSurfaceArea       = (13.85e-6)*(tInitialization.Zeolite13x.tfMassAbsorber.Zeolite13x/(this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density * 4.85e-9));
+            nSpheres_5A = (tInitialization.Zeolite13x.tfMassAbsorber.Zeolite13x/(this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density * 4.85e-9));
+            this.tGeometry.Zeolite5A.fAbsorberSurfaceArea       = (13.85e-6)*nSpheres_5A;
+            
+            % For the thermal calculations during which nothing flow the
+            % free gas distance is necessary as value. This is assumed to
+            % be half the diameter of the spheres
+            this.iCells = 2*tInitialization.Sylobead.iCellNumber + 2*tInitialization.Zeolite13x.iCellNumber + tInitialization.Zeolite5A.iCellNumber;
+            
+            this.tThermalProps.mfAbsorbentRadius = zeros(this.iCells+tInitialization.Zeolite5A.iCellNumber,1);
+            this.tThermalProps.mfAbsorbentRadius(1:tInitialization.Sylobead.iCellNumber) = 2.25e-3/2;
+            
+            iCurrentCell = tInitialization.Sylobead.iCellNumber+1;
+            this.tThermalProps.mfAbsorbentRadius(iCurrentCell : iCurrentCell+tInitialization.Zeolite13x.iCellNumber) = 2.19e-3/2;
+            
+            iCurrentCell = tInitialization.Sylobead.iCellNumber + tInitialization.Zeolite13x.iCellNumber + 1;
+            this.tThermalProps.mfAbsorbentRadius(iCurrentCell:iCurrentCell+tInitialization.Zeolite5A.iCellNumber) = 2.21e-3/2;
+            
+            iCurrentCell = tInitialization.Sylobead.iCellNumber + tInitialization.Zeolite13x.iCellNumber + tInitialization.Zeolite5A.iCellNumber + 1;
+            this.tThermalProps.mfAbsorbentRadius(iCurrentCell:iCurrentCell+tInitialization.Zeolite13x.iCellNumber) = 2.19e-3/2;
+            
+            iCurrentCell = tInitialization.Sylobead.iCellNumber + 2*tInitialization.Zeolite13x.iCellNumber + tInitialization.Zeolite5A.iCellNumber + 1;
+            this.tThermalProps.mfAbsorbentRadius(iCurrentCell:iCurrentCell+tInitialization.Sylobead.iCellNumber) = 2.25e-3/2;
+            
+            iCurrentCell = 2*tInitialization.Sylobead.iCellNumber + 2*tInitialization.Zeolite13x.iCellNumber + tInitialization.Zeolite5A.iCellNumber + 1;
+            this.tThermalProps.mfAbsorbentRadius(iCurrentCell:iCurrentCell+tInitialization.Zeolite5A.iCellNumber) = 2.21e-3/2;
             
             % Now all values to create the system are defined and the 6
             % absorbers can be defined. There will be 6 absorbers because
@@ -488,7 +515,6 @@ classdef CDRA < vsys
             
             %% For easier handling the branches are ordered in the order through which the flow goes for each of the two cycles
             % Cycle One
-            this.iCells = 2*tInitialization.Sylobead.iCellNumber + 2*tInitialization.Zeolite13x.iCellNumber + tInitialization.Zeolite5A.iCellNumber;
             iSize = this.iCells + 1;
             
             this.miNegativesCycleOne = ones(iSize,1);
@@ -1125,17 +1151,34 @@ classdef CDRA < vsys
                             this.tLastUpdateProps.mfDynamicViscosity(iCell)     = this.oMT.calculateDynamicViscosity(aoPhases(iCell));
                             this.tLastUpdateProps.mfThermalConductivity(iCell)  = this.oMT.calculateThermalConductivity(aoPhases(iCell));
                         end
-                        fConvectionCoeff               = components.filter.functions.convection_pipe(this.tGeometry.mfD_Hydraulic(iCell), this.tGeometry.mfLength(iCell),...
-                                                          mfFlowSpeed(iCell), this.tLastUpdateProps.mfDynamicViscosity(iCell), mfDensity(iCell), this.tLastUpdateProps.mfThermalConductivity(iCell), mfSpecificHeatCapacity(iCell), 1);
-                        mfHeatTransferCoefficient(iCell)= fConvectionCoeff * this.tGeometry.mfAbsorberSurfaceArea(iCell);
+                        if mfFlowSpeed(iCell) ~= 0
+                            fConvectionCoeff               = components.filter.functions.convection_pipe(this.tGeometry.mfD_Hydraulic(iCell), this.tGeometry.mfLength(iCell),...
+                                                              mfFlowSpeed(iCell), this.tLastUpdateProps.mfDynamicViscosity(iCell), mfDensity(iCell), this.tLastUpdateProps.mfThermalConductivity(iCell), mfSpecificHeatCapacity(iCell), 1);
+                            mfHeatTransferCoefficient(iCell)= fConvectionCoeff * this.tGeometry.mfAbsorberSurfaceArea(iCell);
 
+                        else
+                            % In this case the flow speed is zero and
+                            % therefore no convection will occur to improve
+                            % the heat transfer. Instead only diffusion and
+                            % conduction will transport heat (there is no
+                            % free convection in space ;)
+                            %
+                            % The Basic equation for several conductive
+                            % thermal resistances in a row is
+                            % U = 1/[(s_2/lambda_2)+(s_2/lambda_2)]
+                            % Q_dot = U * A * delta_T
+                            % In the current calculation the free gas
+                            % distance and the radius of the spheres is
+                            % identical
+                            fAbsorbentConductivity = 0.1; % TO DO: Get value
+                            mfHeatTransferCoefficient(iCell) = 1/((this.tThermalProps.mfAbsorbentRadius(iCell)/fAbsorbentConductivity) + (this.tThermalProps.mfAbsorbentRadius(iCell)/this.tLastUpdateProps.mfThermalConductivity(iCell))) * this.tGeometry.mfAbsorberSurfaceArea(iCell);
+                        end
                         % in case that this was actually recalculated store the
                         % current properties in the LastUpdateProps struct to
                         % decide when the next recalculation is required
                         this.tLastUpdateProps.mfDensity(iCell)              = mfDensity(iCell);
                         this.tLastUpdateProps.mfFlowSpeed(iCell)            = mfFlowSpeed(iCell);
                         this.tLastUpdateProps.mfSpecificHeatCapacity(iCell) = mfSpecificHeatCapacity(iCell);
-                        
                         % now the calculated coefficients have to be set to the
                         % conductor of each cell
                         oConductor = this.poLinearConductors(this.(['csThermalNetwork_Flow_Cycle',sCycle]){iCell,1});
@@ -1151,6 +1194,7 @@ classdef CDRA < vsys
             % of free gas and the conductivity of the gas could be used to
             % calculate the heat exchange coefficient.
 %             this.this.tGeometry.fMaximumFreeGasDistance
+            %
             
         end
         
