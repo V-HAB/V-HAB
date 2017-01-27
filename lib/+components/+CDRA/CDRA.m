@@ -613,7 +613,7 @@ classdef CDRA < vsys
             
             % sets the minimum time step that can be used by the thermal
             % solver
-            this.oThermalSolver.fMinimumTimeStep = 0.1;
+            this.oThermalSolver.fMinimumTimeStep = 0.01;
             
             
             this.tTimeProperties.AdsorptionLastExec = -10;

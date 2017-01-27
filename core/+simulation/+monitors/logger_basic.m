@@ -247,7 +247,13 @@ classdef logger_basic < simulation.monitor
         end
         
         
-        
+        function add_mfLogValue(this,sNewLogName, mfLogValue, sUnit)
+            this.mfLog(:,end+1) = mfLogValue;
+            iIndex = length(this.mfLog(1,:));
+            this.tLogValues(iIndex).sLabel = sNewLogName;
+            this.tLogValues(iIndex).sUnit = sUnit;
+            this.tLogValues(iIndex).iIndex = iIndex;
+        end
         
         function readDataFromMat(this)
             if ~this.bDumpToMat

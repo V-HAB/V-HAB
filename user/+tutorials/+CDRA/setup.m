@@ -44,8 +44,14 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity', '-', 'Relative Humidity Cabin');
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2');
             
+            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'fTemperature', 'K', 'Temperature Atmosphere');
+            oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn', 'fTemperature', 'K', 'Temperature CHX');
+            
             for iBed = 1:2
                 for iCell = 1:5
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    
                     oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.CO2)', 'kg', ['Partial Mass CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.H2O)', 'kg', ['Partial Mass H2O Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
                 end
@@ -53,6 +59,9 @@ classdef setup < simulation.infrastructure
             
             for iBed = 1:2
                 for iCell = 1:5
+                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    
                     oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.CO2)', 'kg', ['Partial Mass CO2 Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.H2O)', 'kg', ['Partial Mass H2O Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
                 end
@@ -60,23 +69,39 @@ classdef setup < simulation.infrastructure
             
             for iBed = 1:2
                 for iCell = 1:5
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    
                     oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.CO2)', 'kg', ['Partial Mass CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.H2O)', 'kg', ['Partial Mass H2O Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                 end
             end
             
-            % CDRA CO2 In
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2');
-            % CDRA CO2 Out
+            % CDRA In
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'fFlowRate', 'kg/s', 'CDRA Air Inlet Flow 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_2.aoFlows(1)', 'fFlowRate', 'kg/s', 'CDRA Air Inlet Flow 2');
             
-            % CDRA Humidity In
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Partialratio 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Inlet Partialratio 1');
             
-            % CDRA Humidity Out
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_2.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Partialratio 2');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_2.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Inlet Partialratio 2');
+            
+            % CDRA Out
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_1.aoFlows(1)', 'fFlowRate', 'kg/s', 'CDRA Air Outlet Flow 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_2.aoFlows(1)', 'fFlowRate', 'kg/s', 'CDRA Air Outlet Flow 2');
+            
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_1.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Outlet Partialratio 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_1.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Outlet Partialratio 1');
+            
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_2.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Outlet Partialratio 2');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_2.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Outlet Partialratio 2');
             
             %% Define plots
             
             oPlot = this.toMonitors.oPlotter;
             
+            oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
             
             csZeolite13x_CO2 = cell(2,5);
             csZeolite13x_H2O = cell(2,5);
@@ -153,6 +178,10 @@ classdef setup < simulation.infrastructure
             mbPosition = [false,false;false,false;false,true];
             oPlot.definePlotByName(csZeolite5A_H2O(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
+            csNames = {'CDRA CO2 Inlet Flow', 'CDRA CO2 Outlet Flow'};
+            sTitle = 'CDRA CO2 Flowrates'; 
+            yLabel = 'FlowRate CO_2 in kg/s';
+            oPlot.definePlotByName(csNames, sTitle, yLabel, sTimeUnit);
             
             csNames = {'Partial Pressure CO2'};
             sTitle = 'Partial Pressure CO2 Habitat'; 
@@ -169,7 +198,19 @@ classdef setup < simulation.infrastructure
             % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
             % further information
             close all
-          
+            
+            this.toMonitors.oPlotter.plot();
+            
+            hCDRA_InletCalc = @(x1,x2,x3,x4)(-(x1 .* x2 + x3 .* x4));
+            csLogVariables =  {'CDRA Air Inlet Flow 1','CDRA CO2 Inlet Partialratio 1','CDRA Air Inlet Flow 2','CDRA CO2 Inlet Partialratio 2'};
+            sNewLogName = 'CDRA CO2 Inlet Flow';
+            this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_InletCalc, sNewLogName, 'kg/s');
+            
+            hCDRA_OutletCalc = @(x1,x2,x3,x4)((x1 .* x2 + x3 .* x4));
+            csLogVariables =  {'CDRA Air Outlet Flow 1','CDRA CO2 Outlet Partialratio 1','CDRA Air Outlet Flow 2','CDRA CO2 Outlet Partialratio 2'};
+            sNewLogName = 'CDRA CO2 Outlet Flow';
+            this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_OutletCalc, sNewLogName, 'kg/s');
+            
             this.toMonitors.oPlotter.plotByName();
             
             return

@@ -239,6 +239,35 @@ classdef plotter_basic < simulation.monitor
             
             
         end
+        function MathematicOperationOnLog(this, csLogVariables, hFunction, sNewLogName, sUnit)
+            %% Function used to perform mathematical operations on logged values and store them as new log value
+            % 
+            % Requires a function input to describe the desired operation,
+            % and a cell array to describe the log variables in the order
+            % they should be used in the function
+            oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
+            cmfArgument = cell(length(csLogVariables),1);
+            
+            for iIndex = 1:length(oLogger.tLogValues)
+                for iLogVariable = 1:length(csLogVariables)
+                    if strcmp(oLogger.tLogValues(iIndex).sLabel, csLogVariables{iLogVariable})
+
+                       % Stores the logged values for the plot and name
+                       % in the struct
+                       mfArgument = oLogger.mfLog(:,iIndex);
+
+                       % remove NaNs from the log
+                       mfArgument(isnan(mfArgument)) = [];
+                       
+                       cmfArgument{iLogVariable} = mfArgument;
+                    end
+                end
+            end
+            mfLogValue = nan(length(oLogger.mfLog(:,1)),1);
+            mfLogValue(1:length(mfArgument)) = hFunction(cmfArgument{:});
+            
+            oLogger.add_mfLogValue(sNewLogName, mfLogValue, sUnit)
+        end
         function plotByName(this, ~)
             %% Define Plot by Name
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
