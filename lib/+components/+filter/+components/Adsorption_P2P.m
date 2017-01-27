@@ -67,8 +67,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
                 mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
                 mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
-
-                mfFlowRatesAdsorption(abs(mfFlowRatesAdsorption) < 1e-10) = 0;
                 
                 fAdsorptionFlowRate                             = sum(mfFlowRatesAdsorption);
                 arPartialsAdsorption                            = zeros(1,this.oMT.iSubstances);
@@ -92,9 +90,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % negative value if heat is generated. Therefore the overall
                 % result has to be mutliplied with -1
                 this.fAdsorptionHeatFlow = - sum(mfFlowRates.*this.oMT.afMolarMass.*mfAbsorptionEnthalpy);
-%                 this.oStore.oContainer.adjustBranchToP2P(this.iCell, (fAdsorptionFlowRate - fDesorptionFlowRate));
-                this.oStore.oContainer.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
-                this.oStore.oContainer.mfAdsorptionFlowRate(this.iCell) = fAdsorptionFlowRate - fDesorptionFlowRate;
+                this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
+                this.oStore.oContainer.tMassNetwork.mfAdsorptionFlowRate(this.iCell) = fAdsorptionFlowRate - fDesorptionFlowRate;
 
                 this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
 
