@@ -44,7 +44,6 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity', '-', 'Relative Humidity Cabin');
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2');
             
-            
             for iBed = 1:2
                 for iCell = 1:5
                     oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.CO2)', 'kg', ['Partial Mass CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
@@ -66,18 +65,17 @@ classdef setup < simulation.infrastructure
                 end
             end
             
+            % CDRA CO2 In
+            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2');
+            % CDRA CO2 Out
             
-            oLog.add('Example:c:CDRA', 'flow_props');
+            % CDRA Humidity In
             
+            % CDRA Humidity Out
             
             %% Define plots
             
             oPlot = this.toMonitors.oPlotter;
-            
-            oPlot.definePlotAllWithFilter('Pa',  'Tank Pressures');
-            oPlot.definePlotAllWithFilter('K',   'Temperatures');
-            oPlot.definePlotAllWithFilter('kg',  'Tank Masses');
-            oPlot.definePlotAllWithFilter('kg/s','Flow Rates');
             
             
             csZeolite13x_CO2 = cell(2,5);
@@ -113,58 +111,58 @@ classdef setup < simulation.infrastructure
             
             sTitle = 'Partial Mass CO2 CDRA'; 
             yLabel = 'Partial Mass CO2 in kg';
+            sTimeUnit = 'h';
             
             mbPosition = [true,false;false,false;false,false];
-            oPlot.definePlotByName(csSylobead_CO2(1,:), sTitle, yLabel, mbPosition);
+            oPlot.definePlotByName(csSylobead_CO2(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,true;false,false;false,false];
-            oPlot.definePlotByName(csSylobead_CO2(2,:), sTitle, yLabel, mbPosition);
+            oPlot.definePlotByName(csSylobead_CO2(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;true,false;false,false];
-            oPlot.definePlotByName(csZeolite13x_CO2(1,:), sTitle, yLabel, mbPosition);
+            oPlot.definePlotByName(csZeolite13x_CO2(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;false,true;false,false];
-            oPlot.definePlotByName(csZeolite13x_CO2(2,:), sTitle, yLabel, mbPosition);
+            oPlot.definePlotByName(csZeolite13x_CO2(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;false,false;true,false];
-            oPlot.definePlotByName(csZeolite5A_CO2(1,:), sTitle, yLabel, mbPosition);
+            oPlot.definePlotByName(csZeolite5A_CO2(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;false,false;false,true];
-            oPlot.definePlotByName(csZeolite5A_CO2(2,:), sTitle, yLabel, mbPosition);
-            
+            oPlot.definePlotByName(csZeolite5A_CO2(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             
             sTitle = 'Partial Mass H2O CDRA'; 
             yLabel = 'Partial Mass H2O in kg';
             
             mbPosition = [true,false;false,false;false,false];
-            oPlot.definePlotByName(csSylobead_H2O(1,:), sTitle, yLabel, mbPosition);
+            oPlot.definePlotByName(csSylobead_H2O(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,true;false,false;false,false];
-            oPlot.definePlotByName(csSylobead_H2O(2,:), sTitle, yLabel, mbPosition);
+            oPlot.definePlotByName(csSylobead_H2O(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;true,false;false,false];
-            oPlot.definePlotByName(csZeolite13x_H2O(1,:), sTitle, yLabel, mbPosition);
+            oPlot.definePlotByName(csZeolite13x_H2O(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;false,true;false,false];
-            oPlot.definePlotByName(csZeolite13x_H2O(2,:), sTitle, yLabel, mbPosition);
+            oPlot.definePlotByName(csZeolite13x_H2O(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;false,false;true,false];
-            oPlot.definePlotByName(csZeolite5A_H2O(1,:), sTitle, yLabel, mbPosition);
+            oPlot.definePlotByName(csZeolite5A_H2O(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;false,false;false,true];
-            oPlot.definePlotByName(csZeolite5A_H2O(2,:), sTitle, yLabel, mbPosition);
+            oPlot.definePlotByName(csZeolite5A_H2O(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             
             csNames = {'Partial Pressure CO2'};
             sTitle = 'Partial Pressure CO2 Habitat'; 
             yLabel = 'Partial Pressure CO_2 in Pa';
-            oPlot.definePlotByName(csNames, sTitle, yLabel);
+            oPlot.definePlotByName(csNames, sTitle, yLabel, sTimeUnit);
             
             csNames = {'Relative Humidity Cabin'};
             sTitle = 'Relative Humidity Habitat'; 
             yLabel = 'Relative Humidity';
-            oPlot.definePlotByName(csNames, sTitle, yLabel);
+            oPlot.definePlotByName(csNames, sTitle, yLabel, sTimeUnit);
         end
         
         function plot(this) % Plotting the results
@@ -172,7 +170,7 @@ classdef setup < simulation.infrastructure
             % further information
             close all
           
-            this.toMonitors.oPlotter.plot();
+            this.toMonitors.oPlotter.plotByName();
             
             return
             

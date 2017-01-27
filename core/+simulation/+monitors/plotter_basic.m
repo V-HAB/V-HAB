@@ -30,7 +30,22 @@ classdef plotter_basic < simulation.monitor
         
         %% Methods to define plots
         
-        function definePlotByName(this, cNames, sTitle, yLabel, mbPosition)
+        function definePlotByName(this, cNames, sTitle, yLabel, sTimeUnit, mbPosition)
+            % The cNames input should be a cell(array) containing the
+            % custom names for all log parameters that should be put into
+            % this plot
+            %
+            % The sTitle input will define the title of the figure and also
+            % define which plots are put into which figure if subplots are
+            % used. If you want to have multiple plots in the same figure,
+            % use the same title for all the plots that should go into the
+            % same figure. The position of the plots has to be defined by
+            % the mbPosition input (more information below)
+            %
+            % yLabel defines the label of the y-axis
+            %
+            % sTimeUnit defines the unit used for the time. The possible
+            % inputs currently are: 's', 'min', 'h', 'd', 'weeks'
             
             % In this function only the struct with the necessary function to
             % perform the plotting is defined, the plotting itself is
@@ -38,7 +53,8 @@ classdef plotter_basic < simulation.monitor
             this.tPlotsByName(end+1).sTitle = sTitle;
             this.tPlotsByName(end).cNames = cNames;
             this.tPlotsByName(end).yLabel = yLabel;
-            if nargin > 4
+            this.tPlotsByName(end).sTimeUnit = sTimeUnit;
+            if nargin > 5
                 this.tPlotsByName(end).mbPosition = mbPosition;
             end
             
@@ -222,8 +238,10 @@ classdef plotter_basic < simulation.monitor
             oFigure.UserData = struct('coAxesHandles', { coHandles });
             
             
-            
+        end
+        function plotByName(this, ~)
             %% Define Plot by Name
+            oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             
             for iIndex = 1:length(oLogger.tLogValues)
                 for iPlot = 1:length(this.tPlotsByName)
@@ -267,9 +285,24 @@ classdef plotter_basic < simulation.monitor
                 grid on
                 hold on
                 for iName = 1:length(this.tPlotsByName(iPlot).cNames) 
-                    plot((oLogger.afTime./3600), this.tPlotsByName(iPlot).mLogData(:,iName))
+                    switch this.tPlotsByName(iPlot).sTimeUnit
+                        case 's'
+                            plot((oLogger.afTime), this.tPlotsByName(iPlot).mLogData(:,iName))
+                            xlabel('Time in s')
+                        case 'min'
+                            plot((oLogger.afTime./60), this.tPlotsByName(iPlot).mLogData(:,iName))
+                            xlabel('Time in min')
+                        case 'h'
+                            plot((oLogger.afTime./3600), this.tPlotsByName(iPlot).mLogData(:,iName))
+                            xlabel('Time in h')
+                        case 'd'
+                            plot((oLogger.afTime./86400), this.tPlotsByName(iPlot).mLogData(:,iName))
+                            xlabel('Time in d')
+                        case 'weeks'
+                            plot((oLogger.afTime./604800), this.tPlotsByName(iPlot).mLogData(:,iName))
+                            xlabel('Time in weeks')
+                    end
                 end
-                xlabel('Time in h')
                 ylabel( this.tPlotsByName(iPlot).yLabel)
                 legend(this.tPlotsByName(iPlot).cNames)
             end
