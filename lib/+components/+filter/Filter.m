@@ -547,7 +547,19 @@ classdef Filter < vsys
                     % since one boundary condition is a flow rate this
                     % flowrate is simply kept constant for all steps
                     mfFlowRates(end, iStep+1) = mfFlowRates(end, iStep);
+                    
+                    iCounter = 0;
+                    fError = 1;
 
+                    while fError > 1e-2 && iCounter < 500
+                        mfTimeStep(1,iStep) = min(abs((this.rMaxChange/iDesorbCells .* mfCellMass(:,iStep))./(( mfFlowRates(1:end-1, iStep+1) -  mfFlowRates(2:end, iStep+1))))); 
+
+                        mfNewInterimFlowRate(2:end) = (mfNewInterimFlowRate(2:end) + (mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep)))./2;
+
+                        fError = max(abs((mfNewInterimFlowRate - mfFlowRates(2:end, iStep+1))));
+                        mfFlowRates(1:end-1, iStep+1) = mfNewInterimFlowRate;
+                        iCounter = iCounter+1;
+                    end
                     % now an estimate for the new cell mass after this step
                     % can be calculated
                     mfCellMass(:,iStep+1) = mfCellMass(:,iStep) + ((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep)) * mfTimeStep(1,iStep));
