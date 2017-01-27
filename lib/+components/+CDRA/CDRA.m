@@ -104,6 +104,8 @@ classdef CDRA < vsys
         aoAbsorberCycleOne = matter.procs.p2p.empty;
         aoAbsorberCycleTwo = matter.procs.p2p.empty;
         
+        aoAbsorberPhases = matter.phase.empty;
+            
         iCells;
         
         mfAdsorptionHeatFlow;
@@ -633,7 +635,15 @@ classdef CDRA < vsys
             
             % sets the minimum time step that can be used by the thermal
             % solver
-            this.oThermalSolver.fMinimumTimeStep = 0.01;
+            this.oThermalSolver.fMinimumTimeStep = 0.1;
+            
+            
+            this.tTimeProperties.AdsorptionLastExec = -10;
+            this.tTimeProperties.AdsorptionStep = -1;
+            this.tTimeProperties.DesorptionLastExec = -10;
+            this.tTimeProperties.DesorptionStep = -1;
+            this.tTimeProperties.DesorptionThermalLastExec = -10;
+            this.tTimeProperties.DesorptionThermalStep = -1;
         end           
         
         %% Function to connect the system and subsystem level branches with each other
@@ -724,7 +734,7 @@ classdef CDRA < vsys
             end
             
             for iCell = 1:this.tZeolite5A.Bed_2.iCellNumber
-                this.csThermalNetwork_Absorber_CycleOne{end+1,1} = [this.sName ,'__Zeolite5A_1__Absorber_',num2str(iCell)];
+                this.csThermalNetwork_Absorber_CycleOne{end+1,1} = [this.sName ,'__Zeolite5A_2__Absorber_',num2str(iCell)];
             end
             
             this.aoPhasesCycleOne(end+1,1) = this.toBranches.CDRA_Air_Out_1.coExmes{2}.oPhase;
@@ -787,38 +797,16 @@ classdef CDRA < vsys
                 this.oAtmosphere = oPhase;
         end
         
-        function setHeaterPower(this, fPower)
+        function setHeaterPower(this, mfPower)
             % this function is used to set the power of the electrical
             % heaters inside the filter. If no heaters are used just leave
             % this property at zero at all times.
-            this.fHeaterPower = fPower;
+            this.mfHeaterPower = mfPower;
             
             % in case that a new heater power was set the function to
             % recalculate the thermal properties of the filter has to be
             % called to ensure that the change is recoginzed by the model
             this.calculateThermalProperties();
-        end
-        
-        function setNumericProperties(this,rMaxChange,fMinimumTimeStep,fMaximumTimeStep, iInternalSteps)
-            % in order to only recalculate these properties when they are
-            % actually reset a specific function has to be used to set them
-            
-            this.rMaxChange = rMaxChange;
-
-            this.fMinimumTimeStep = fMinimumTimeStep;
-
-            this.fMaximumTimeStep = fMaximumTimeStep;
-            
-            iInternalSteps = iInternalSteps;
-            
-            % the numerical properties of the filter give the overall
-            % allowed changes and timesteps over one complete step. In
-            % order to increase the maximum allowable timestep the solver
-            % divides this into several internal steps (if the user chose
-            % this option)
-            this.rMaxPartialChange   = this.rMaxChange/iInternalSteps;
-            this.fMaxPartialTimeStep = this.fMaximumTimeStep/iInternalSteps;
-            this.fMinPartialTimeStep = this.fMinimumTimeStep/iInternalSteps;
         end
     end
     
@@ -853,9 +841,13 @@ classdef CDRA < vsys
             % recalculate the filter)
             if (this.iCycleActive == 2) && (mod(this.oTimer.fTime, this.fCycleTime * 2) < (this.fCycleTime)) && (this.oTimer.iTick ~= 0)
                 % On cycle change all flow rates are momentarily set to zero
-                for iBranch = 1:length(this.aoBranches)
-                    this.aoBranches(iBranch).oHandler.setFlowRate(0);
+                for iBranch = 1:length(this.aoBranchesCycleTwo)
+                    this.aoBranchesCycleTwo(iBranch).oHandler.setFlowRate(0);
                 end
+                
+                this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
+                this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
+                
                 this.tTimeProperties.fLastCycleSwitch = this.oTimer.fTime;
                 
                 % In order to get the flow rate calculation to higher
@@ -890,6 +882,7 @@ classdef CDRA < vsys
                 end
                 for iP2P = 1:this.tZeolite5A.Bed_2.iCellNumber
                     this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).iCell = this.iCells + iP2P;
+                    this.aoAbsorberPhases(iP2P) = this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).oOut.oPhase;
                 end
                 
                 this.setTimeStep(fInitTimeStep);
@@ -898,9 +891,13 @@ classdef CDRA < vsys
                 
             elseif (this.iCycleActive == 1) && (mod(this.oTimer.fTime, this.fCycleTime * 2) >= (this.fCycleTime)) && (this.oTimer.iTick ~= 0)
                 % On cycle change all flow rates are momentarily set to zero
-                for iBranch = 1:length(this.aoBranches)
-                    this.aoBranches(iBranch).oHandler.setFlowRate(0);
+                for iBranch = 1:length(this.aoBranchesCycleOne)
+                    this.aoBranchesCycleOne(iBranch).oHandler.setFlowRate(0);
                 end
+                
+                this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
+                this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
+                
                 this.tTimeProperties.fLastCycleSwitch = this.oTimer.fTime;
                 
                 % In order to get the flow rate calculation to higher
@@ -934,6 +931,7 @@ classdef CDRA < vsys
                 end
                 for iP2P = 1:this.tZeolite5A.Bed_1.iCellNumber
                     this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).iCell = this.iCells + iP2P;
+                    this.aoAbsorberPhase(iCell) = this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).oOut.oPhase;
                 end
                 
                 this.setTimeStep(fInitTimeStep);
@@ -958,19 +956,27 @@ classdef CDRA < vsys
                     % If the cycle is not currently changing the normal
                     % calculation for the flowrates in continous operation
                     % are used
-                    this.updateFlowratesAdsorption()
-                    this.updateFlowratesDesorption()
+                    if ((this.tTimeProperties.AdsorptionLastExec + this.tTimeProperties.AdsorptionStep) - this.oTimer.fTime) < 0
+                        this.updateFlowratesAdsorption()
+                    end
+                    if ((this.tTimeProperties.DesorptionLastExec + this.tTimeProperties.DesorptionStep) - this.oTimer.fTime) < 0
+                        this.updateFlowratesDesorption()
+                    end
+%                     if ((this.tTimeProperties.DesorptionThermalLastExec + this.tTimeProperties.DesorptionThermalStep) - this.oTimer.fTime) < 0
+%                         this.updateThermalDesorption()
+%                     end
+                    
                     % The overall timestep of the system is set to the
                     % minimum timestep from the two calculations. However
                     % the calculations themself are executed using their
                     % individual time steps
                     fAdsorptionStep = (this.tTimeProperties.AdsorptionLastExec + this.tTimeProperties.AdsorptionStep) - this.oTimer.fTime;
                     fDesorptionStep = (this.tTimeProperties.DesorptionLastExec + this.tTimeProperties.DesorptionStep) - this.oTimer.fTime;
-            
-                    this.setTimeStep(min(fAdsorptionStep, fDesorptionStep));
+                    %fThermalDesorptionStep = (this.tTimeProperties.DesorptionThermalLastExec + this.tTimeProperties.DesorptionThermalStep) - this.oTimer.fTime;
+                    
+                    this.setTimeStep(min([fAdsorptionStep, fDesorptionStep]));
                 end
             end
-            
             
             %% Handling the flowrates of the asscoiated CCAA
             % The CCAA flowrates are adapted here based on the dynamic
@@ -1028,7 +1034,7 @@ classdef CDRA < vsys
             % now
             for iCell = 1:length(this.(['aoPhasesCycle',sCycle]))
                 this.(['aoPhasesCycle',sCycle])(iCell).update();
-                this.(['aoPhasesCycle',sCycle])(iCell).toProcsEXME();
+                %this.(['aoPhasesCycle',sCycle])(iCell).toProcsEXME();
             end
             % In order to ensure that the flow rates considered during this
             % calculation are also the ones actually used by the P2P a
@@ -1070,12 +1076,13 @@ classdef CDRA < vsys
             % Now the time step can be calculated by using the maximum
             % allowable mass change within one step
             fTimeStep = min(1./(abs(mfMassDiff) ./ (this.rMaxChange .* mfCellMass)));
+            
             if fTimeStep > this.fMaximumTimeStep
                 fTimeStep = this.fMaximumTimeStep;
             elseif fTimeStep  <= this.fMinimumTimeStep
                 fTimeStep = this.fMinimumTimeStep;
             end
-            
+                    
             abReduceMassDiff = abs(mfMassDiff) > (this.rMaxChange .* mfCellMass);
             if any(abReduceMassDiff)
                 % factor by which the mass change currently exceeds the
@@ -1151,145 +1158,80 @@ classdef CDRA < vsys
             iStartCell = 1+(this.tSylobead.Bed_1.iCellNumber + this.tZeolite13x.Bed_1.iCellNumber);
             
             aoPhases = this.(['aoPhasesCycle',sCycle])(iStartCell:iStartCell+iDesorbCells-1);
+            aoAbsorber = this.(['aoAbsorberCycle',sCycle])(iStartCell:iStartCell+iDesorbCells-1);
             aoBranches = this.(['aoBranchesCycle',sCycle])(iStartCell+1:iStartCell+iDesorbCells-1);
             
-            iInternalSteps = 50;
+            for iPhase = 1:length(aoPhases)
+                aoPhases(iPhase).update();
+            end
             
-            mfCellPressure  = zeros(iDesorbCells+1,   iInternalSteps);
-            mfCellPressure(1:end-1,1) = [aoPhases.fPressure];
-            % Boundary condition:
-            % The pressure at the outlet is close to Vaccuum ;)
-            mfCellPressure(end,1)     = 500;
+            for iAbsorber = 1:length(aoAbsorber)
+                aoAbsorber(iAbsorber).ManualUpdate();
+            end
             
-            % TO DO: Include check if the pressure is already low, then use
-            % a calculation to keep the mass constant
+            mfCellMass(:,1)     = [aoPhases.fMass];
+            mfCellPressure(:,1) = [aoPhases.fPressure];
             
-            % initialization of the required vectors and matrices
-            mfMassChange    = zeros(iDesorbCells+1,   iInternalSteps);
-            mfFlowRates     = zeros(iDesorbCells+1,   iInternalSteps);
-            
-            mfCellMass      = zeros(iDesorbCells,     iInternalSteps);
-            mfPressureLoss  = zeros(iDesorbCells,     iInternalSteps);
-            mfDeltaFlowRate = zeros(iDesorbCells,     iInternalSteps);
-            
-            mfTimeStep      = zeros(1, iInternalSteps);
-            fMaximumPartialTimeStep = this.fMaximumTimeStep/iInternalSteps;
-            fMinimumPartialTimeStep = this.fMinimumTimeStep/iInternalSteps;
-            
-            mfFrictionFactorDesorb = this.mfFrictionFactor(iStartCell:iStartCell+iDesorbCells-1);
-            mfFrictionFactorDesorb(end) = mfFrictionFactorDesorb(end);
-            % This is only switch necessary between airsafe and normal vent
-            % mode
+            mfDesorptionFlowRate = -this.mfAdsorptionFlowRate(this.iCells+1:end);
+
             if (this.oTimer.fTime - this.tTimeProperties.fLastCycleSwitch) < 600
                 aoBranches(end+1) = this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]);
             else
                 aoBranches(end+1) = this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]);
-                this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).setFlowRate(0);
+                this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
             end
             
-            mfCellMass(:,1)     = [aoPhases.fMass];
-            % TO DO: CHeck if the correct branches are used by this
-            mfFlowRates(2:end,1)    = [aoBranches.fFlowRate];
+            abHighPressure = (mfCellPressure > 500);
             
-            % Boundary Condition: There is no input flowrate
-            mfFlowRates(1,1) = 0;
+            mfMassDiff = zeros(length(aoPhases),1);
+            mfMassDiff(abHighPressure) = -mfCellMass(abHighPressure)./200;
             
-            mfDesorptionFlowRate = -this.mfAdsorptionFlowRate(this.iCells+1:end);
+            fTimeStep = min(abs((this.rMaxChange .* mfCellMass) ./ mfMassDiff));
             
-            for iStep = 1:iInternalSteps
-                mfPressureLoss(:,iStep)  = mfFrictionFactorDesorb .* abs(mfFlowRates(2:end,iStep)).^2;
-
-                mfDeltaPressure = (mfCellPressure(1:end-1, iStep) - mfCellPressure(2:end, iStep)) - sign(mfFlowRates(2:end,iStep)).*mfPressureLoss(:,iStep);
-
-                mfDeltaFlowRate(:,iStep) = (mfDeltaPressure .* this.tZeolite5A.Bed_1.mfHelper1);
-
-                mfTimeStep(1,iStep) = min(abs((this.rMaxChange/iDesorbCells .* mfCellMass(:,iStep))./((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep))))); 
-
-                if isnan(mfTimeStep(1,iStep)) || isinf(mfTimeStep(1,iStep))
-                    mfTimeStep(1,iStep) = this.oTimer.fMinimumTimeStep;
-                end
-                mfNewInterimFlowRate = zeros(length(mfFlowRates(:,1)),1);
-                mfNewInterimFlowRateNew = zeros(length(mfFlowRates(:,1)),1);
-                mfNewInterimFlowRate(1) = mfFlowRates(1,1);
-                mfNewInterimFlowRateNew(1) = mfFlowRates(1,1);
-                mfNewInterimFlowRate(2:end) = mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep);
-                iCounter = 0;
-                fError = 1;
-                
-                while fError > 1e-2 && iCounter < 500
-                    mfTimeStep(1,iStep) = min(abs((this.rMaxChange/iDesorbCells .* mfCellMass(:,iStep))./((mfNewInterimFlowRate(1:end-1) - mfNewInterimFlowRate(2:end))))); 
-
-                    mfNewInterimFlowRateNew(2:end) = (mfNewInterimFlowRate(2:end) + (mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep)))./2;
-                    
-                    fError = max(abs((mfNewInterimFlowRate - mfNewInterimFlowRateNew)));
-                    mfNewInterimFlowRate = mfNewInterimFlowRateNew;
-                    iCounter = iCounter+1;
-                end
-                
-                if isnan(mfTimeStep(1,iStep)) || isinf(mfTimeStep(1,iStep))
-                    mfTimeStep(1,iStep) = this.oTimer.fMinimumTimeStep;
-                elseif mfTimeStep(1,iStep) > fMaximumPartialTimeStep
-                    mfTimeStep(1,iStep) = fMaximumPartialTimeStep;
-                elseif mfTimeStep(1,iStep)  <= this.oTimer.fMinimumTimeStep
-                    mfTimeStep(1,iStep) = this.oTimer.fMinimumTimeStep;
-                end
-                mfNewInterimFlowRate = mfNewInterimFlowRate(2:end);
-                % another limiting factor for the time step is the fact
-                % that the pressure loss should not be allowed to act as
-                % a driving force. Therefore, it is necessary to reduce
-                % the time step far enough that no sign switch of the
-                % flowrate occurs within one timestep
-                bDirectionSwitch = sign(mfNewInterimFlowRate) ~= (sign(mfFlowRates(2:end, iStep)));
-                % the sign functions also calls a change if 0 is
-                % changed to positive or negative value. These cases
-                % should not be considered sign changes for this logic
-                bDirectionSwitch(mfFlowRates(2:end, iStep) == 0) = false;
-
-                mfInterimFlowRate = mfFlowRates(2:end, iStep);
-
-                fMaxTimeStepDirectionChange = min(abs(0.1*mfInterimFlowRate(bDirectionSwitch)./mfDeltaFlowRate(bDirectionSwitch,iStep)));
-                if mfTimeStep(1,iStep) > fMaxTimeStepDirectionChange
-                    mfTimeStep(1,iStep) = fMaxTimeStepDirectionChange;
-
-                    if mfTimeStep(1,iStep) > fMaximumPartialTimeStep
-                        mfTimeStep(1,iStep) = fMaximumPartialTimeStep;
-                    elseif mfTimeStep(1,iStep) < this.oTimer.fMinimumTimeStep
-                        mfTimeStep(1,iStep) = this.oTimer.fMinimumTimeStep;
-                    elseif isnan(mfTimeStep(1,iStep))
-                        mfTimeStep(1,iStep) = fMinimumPartialTimeStep;
-                    end
-
-                    mfNewInterimFlowRate = mfFlowRates(2:end, iStep) + mfTimeStep(1,iStep) .* mfDeltaFlowRate(:,iStep);
-                end
-
-                mfNewInterimFlowRate(mfNewInterimFlowRate > abs(mfDesorptionFlowRate)) = mfNewInterimFlowRate(mfNewInterimFlowRate > abs(mfDesorptionFlowRate)) + mfDesorptionFlowRate(mfNewInterimFlowRate > abs(mfDesorptionFlowRate));
-
-                mfFlowRates(2:end, iStep+1) = mfNewInterimFlowRate;
-
-                mfFlowRates(1, iStep+1) = mfFlowRates(1, iStep);
-
-                mfCellMass(:,iStep+1) = mfCellMass(:,iStep) + ((mfFlowRates(1:end-1, iStep) - mfFlowRates(2:end, iStep)) * mfTimeStep(1,iStep));
-
-                mfCellPressure(1:end-1,iStep+1) = (mfCellMass(:,iStep+1)./mfCellMass(:,iStep)).*mfCellPressure(1:end-1,iStep);
-                mfCellPressure(end, iStep+1) = mfCellPressure(end, iStep);
-
-                mfMassChange(:,iStep) = mfFlowRates(:,iStep) * mfTimeStep(iStep);
+            if fTimeStep > this.fMaximumTimeStep
+                fTimeStep = this.fMaximumTimeStep;
+            elseif fTimeStep  <= this.fMinimumTimeStep
+                fTimeStep = this.fMinimumTimeStep;
             end
-            % The overall timestep is the sum over all partial time steps.
-            fTimeStep = (sum(mfTimeStep));
+            
+            mfFlowRatesNew = zeros(length(aoBranches),1);
+            for iBranch = 1:(length(aoBranches))
+                mfFlowRatesNew(iBranch) = (-sum(mfMassDiff(1:iBranch))/fTimeStep) + sum(mfDesorptionFlowRate(1:iBranch));
+                if mfFlowRatesNew(iBranch) < 0
+                    mfFlowRatesNew(iBranch) = 0;
+                end
+                aoBranches(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
+            end
+            
             this.tTimeProperties.DesorptionStep = fTimeStep;
-
-            % The overall flow rate that has to be set is the sum over
-            % all internally calculated time steps multiplied with each
-            % internal time step and then divided with the overall
-            % time step to calculate the time averaged flow rate that
-            % results in the same mass changes as the integral over all
-            % internal flow rates
-            mfFlowRatesNew = sum(mfMassChange,2)/this.fTimeStep;
             
-            for iK = 1:length(aoBranches)
-                aoBranches(iK).oHandler.setFlowRate(mfFlowRatesNew(iK+1));
+            %% Set the heater power for the desorption cells
+            % Check cell temperature of the desorber cells
+            
+            mfCellTemperature(:,1)     = [this.aoAbsorberPhases.fTemperature];
+            mfCellHeatCap(:,1)         = [this.aoAbsorberPhases.fSpecificHeatCapacity] .* [this.aoAbsorberPhases.fMass];
+            
+            mfPowerDesorbCells = this.mfHeaterPower(this.iCells+1:end);
+            mbTempReached = abs(mfCellTemperature - this.TargetTemperature) < 1;
+            if any(mfPowerDesorbCells(mbTempReached) ~= 0) || any(mfPowerDesorbCells(~mbTempReached) == 0)
+                mfPowerDesorbCells(mbTempReached) = 0;
+                mfPowerDesorbCells(~mbTempReached) = ((this.TargetTemperature - mfCellTemperature(~mbTempReached)).* mfCellHeatCap(~mbTempReached))/600;
+                mfPowerDesorbCells(mfPowerDesorbCells > this.fMaxHeaterPower) = this.fMaxHeaterPower/this.tZeolite5A.Bed_1.iCellNumber;
+                mfPower = zeros(this.iCells+this.tZeolite5A.Bed_1.iCellNumber,1);
+                mfPower(this.iCells+1:end) = mfPowerDesorbCells;
+                this.setHeaterPower(mfPower);
             end
+%             % timestep set to allow at most 1 K temperature change within
+%             % one step
+%             fTimeStep = min(abs(mfPowerDesorbCells./(mfCellHeatCap.*1)));
+%             
+%             if fTimeStep > this.fMaximumTimeStep
+%                 fTimeStep = this.fMaximumTimeStep;
+%             elseif fTimeStep  <= this.fMinimumTimeStep
+%                 fTimeStep = this.fMinimumTimeStep;
+%             end
+%             this.tTimeProperties.DesorptionThermalStep = fTimeStep;
+%             this.tTimeProperties.DesorptionThermalLastExec = this.oTimer.fTime;
         end
         
         function calculateThermalProperties(this)

@@ -68,6 +68,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
                 mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
 
+                mfFlowRatesAdsorption(abs(mfFlowRatesAdsorption) < 1e-10) = 0;
+                
                 fAdsorptionFlowRate                             = sum(mfFlowRatesAdsorption);
                 arPartialsAdsorption                            = zeros(1,this.oMT.iSubstances);
                 arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./fAdsorptionFlowRate;
