@@ -35,6 +35,7 @@ classdef logger_basic < simulation.monitor
         %              means that e.g. 'this.oMT.tiN2I.O2' can be used.
         % sName: if empty, will be generated from sExpression
         tLogValues = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {}, 'sObjUuid', {}, 'iIndex', {});%, 'iIndex', {});
+        tDerivedLogValues = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {}, 'sObjUuid', {}, 'iIndex', {});%, 'iIndex', {});
         
         % Shortcut to the paths of variables to log
         csPaths;
@@ -47,6 +48,7 @@ classdef logger_basic < simulation.monitor
         afTime;
         
         % Logged data
+        mfDerivedLog;
         mfLog;
         aiLog;
         
@@ -248,11 +250,23 @@ classdef logger_basic < simulation.monitor
         
         
         function add_mfLogValue(this,sNewLogName, mfLogValue, sUnit)
-            this.mfLog(:,end+1) = mfLogValue;
-            iIndex = length(this.mfLog(1,:));
-            this.tLogValues(iIndex).sLabel = sNewLogName;
-            this.tLogValues(iIndex).sUnit = sUnit;
-            this.tLogValues(iIndex).iIndex = iIndex;
+            
+            bLogExists = false;
+            for iLogIndex = 1:length(this.tDerivedLogValues)
+                if strcmp(this.tDerivedLogValues(iLogIndex).sLabel, sNewLogName)
+                    bLogExists = true;
+                    iIndex = iLogIndex;
+                end
+            end
+            
+            if ~bLogExists
+                this.mfDerivedLog(:,end+1) = mfLogValue;
+                this.tDerivedLogValues(end+1).sLabel = sNewLogName;
+                this.tDerivedLogValues(end).sUnit = sUnit;
+                this.tDerivedLogValues(end).iIndex = length(this.mfDerivedLog(1,:));
+            else
+                this.mfDerivedLog(:,iIndex) = mfLogValue;
+            end
         end
         
         function readDataFromMat(this)

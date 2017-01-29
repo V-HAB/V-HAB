@@ -13,7 +13,7 @@ classdef CDRA < vsys
     % remaining humidity before the CO2 adsorbing beds.
     
     properties
-        %% Old Props: TO DO Check if they still apply
+        %% Properties
         %The maximum power in watt for the electrical heaters that are used
         %to increase the zeolite temperature during the CO2 scrubbing.
         % TO DO: didnt find an actual reference so for now using a values
@@ -117,6 +117,9 @@ classdef CDRA < vsys
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
+            % Minimum time step has to be reduced, not because it is used
+            % in the system but to prevent flowrates from beeing rounded
+            % to zero
             this.oTimer.setMinStep(1e-12)
         end
             
@@ -197,7 +200,7 @@ classdef CDRA < vsys
             % bed which are used in the filter adsorber proc for
             % calculations. 
             this.tGeometry.Zeolite13x.fVolumeFlow          =        (this.tGeometry.Zeolite13x.fCrossSection 	* this.tGeometry.Zeolite13x.fLength      * this.tGeometry.Zeolite13x.rVoidFraction);
-            this.tGeometry.Sylobead.fVolumeFlow            =        (this.tGeometry.Sylobead.fCrossSection  	* this.tGeometry.Sylobead.fLength * this.tGeometry.Sylobead.rVoidFraction);
+            this.tGeometry.Sylobead.fVolumeFlow            =        (this.tGeometry.Sylobead.fCrossSection  	* this.tGeometry.Sylobead.fLength        * this.tGeometry.Sylobead.rVoidFraction);
             this.tGeometry.Zeolite5A.fVolumeFlow           =        (this.tGeometry.Zeolite5A.fCrossSection  	* this.tGeometry.Zeolite5A.fLength       * this.tGeometry.Zeolite5A.rVoidFraction);
             
         	tInitialization.Zeolite13x.tfMassAbsorber  =   struct('Zeolite13x',fMassZeolite13x);
@@ -206,7 +209,7 @@ classdef CDRA < vsys
         	tInitialization.Sylobead.tfMassAbsorber  =   struct('Sylobead_B125',fMassSylobead);
             tInitialization.Sylobead.fTemperature    =   281.25;
             
-        	tInitialization.Zeolite5A.tfMassAbsorber  =   struct('Zeolite5A',fMassZeolite5A);
+        	tInitialization.Zeolite5A.tfMassAbsorber  =   struct('Zeolite5A',fMassZeolite5A, 'CO2', 0.1);
             tInitialization.Zeolite5A.fTemperature    =   281.25;
             
             % Sets the cell numbers used for the individual filters
@@ -1027,17 +1030,27 @@ classdef CDRA < vsys
             % well the phase pressures have not been updated ( the
             % rMaxChange was set to inf) in order to do controlled updates
             % now
-            for iCell = 1:length(aoPhases)
+            for iCell = 1:this.iCells
                 aoPhases(iCell).update();
             end
+            
             % In order to ensure that the flow rates considered during this
             % calculation are also the ones actually used by the P2P a
             % manual update function that is only called here is used for
             % the P2Ps
+            arPartialsAdsorption = zeros(this.iCells, this.oMT.iSubstances);
             for iCell = 1:length(this.tMassNetwork.(['aoAbsorberCycle',sCycle]))
                 this.tMassNetwork.(['aoAbsorberCycle',sCycle])(iCell).ManualUpdate();
-            end
                 
+                arPartialsAdsorption(iCell,:) = this.tMassNetwork.(['aoAbsorberCycle',sCycle])(iCell).arPartialMass;
+            end
+              
+            afChangeH2O = zeros(this.iCells,1);
+            for iCell = 1:this.iCells
+                afChangeH2O(iCell) = (aoBranches(iCell).fFlowRate * aoBranches(iCell).aoFlows.arPartialMass(this.oMT.tiN2I.H2O))...
+                    - (aoBranches(iCell).fFlowRate * aoPhases(iCell).arPartialMass(this.oMT.tiN2I.H2O))...
+                    - (arPartialsAdsorption(iCell,this.oMT.tiN2I.H2O) * this.tMassNetwork.mfAdsorptionFlowRate(iCell));
+            end  
             % The logic used to calculate the flow rates is as follows:
             %
             % The required phase pressures are easily calculated from the
@@ -1069,8 +1082,14 @@ classdef CDRA < vsys
             
             % Now the time step can be calculated by using the maximum
             % allowable mass change within one step
-            fTimeStep = min(1./(abs(mfMassDiff) ./ (this.rMaxChange .* mfCellMass)));
+            fTimeStepFlow = min(1./(abs(mfMassDiff) ./ (this.rMaxChange .* mfCellMass)));
+            % Since the humidity requires special care because the matter
+            % table crashes otherwise, a special time step for the humidity
+            % is performed. Humidity of > 100% is reached at partial masses
+            % above 0.0039 so limit was set to 0.002
+            fTimeStepH2O = min(abs((2e-3*mfCellMass((afChangeH2O < 0)))./afChangeH2O(afChangeH2O < 0)));
             
+            fTimeStep = min([fTimeStepFlow,fTimeStepH2O]);
             if fTimeStep > this.fMaximumTimeStep
                 fTimeStep = this.fMaximumTimeStep;
             elseif fTimeStep  <= this.fMinimumTimeStep
@@ -1190,10 +1209,7 @@ classdef CDRA < vsys
             
             mfFlowRatesNew = zeros(length(aoBranches),1);
             for iBranch = 1:(length(aoBranches))
-                mfFlowRatesNew(iBranch) = (-sum(mfMassDiff(1:iBranch))/fTimeStep) + sum(mfDesorptionFlowRate(1:iBranch));
-                if mfFlowRatesNew(iBranch) < 0
-                    mfFlowRatesNew(iBranch) = 0;
-                end
+                mfFlowRatesNew(iBranch) = (-sum(mfMassDiff(1:iBranch))) + sum(mfDesorptionFlowRate(1:iBranch));
                 aoBranches(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
             end
             

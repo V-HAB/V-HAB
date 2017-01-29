@@ -289,6 +289,25 @@ classdef plotter_basic < simulation.monitor
                     end
                 end
             end
+            
+            for iIndex = 1:length(oLogger.tDerivedLogValues)
+                for iPlot = 1:length(this.tPlotsByName)
+                    for iName = 1:length(this.tPlotsByName(iPlot).cNames) 
+                        if strcmp(oLogger.tDerivedLogValues(iIndex).sLabel, this.tPlotsByName(iPlot).cNames{iName})
+
+                           % Stores the logged values for the plot and name
+                           % in the struct
+                           mfLog = oLogger.mfDerivedLog(:,iIndex);
+
+                           % remove NaNs from the log
+                           mfLog(isnan(mfLog)) = [];
+
+                           this.tPlotsByName(iPlot).mLogData(:,iName) = mfLog;
+                        end
+                    end
+                end
+            end
+            
             csFigures = cell(0,0);
             for iPlot = 1:length(this.tPlotsByName)
                 

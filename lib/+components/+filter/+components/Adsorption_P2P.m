@@ -60,9 +60,17 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
 
                 % According to RT_BA 13_15 (TO DO: get original source)
                 % equation 3.31 the change in loading over time is the
-                % (equilibrium loading - actual loading) times a factor
-                mfFlowRates = this.mfMassTransferCoefficient .* (mfQ_eq - mfQ);
-
+                % (equilibrium loading - actual loading) times a factor:
+                % mfFlowRates = this.mfMassTransferCoefficient .* (mfQ_eq - mfQ);
+                % which is a differential equation dq/dt = k(q*-q) which
+                % has the solution: q* - (q* - q0)e^(-kt)
+                % This can be used to calculate the new loading for the
+                % given timestep and current loading assuming the
+                % equilibrium loading remains constant
+                fTimeStep = (this.oTimer.fTime - this.fLastUpdate);
+                mfQ_New = mfQ_eq - ((mfQ_eq - mfQ).*exp(-this.mfMassTransferCoefficient.*fTimeStep));
+                mfFlowRates = (mfQ_New - mfQ)/fTimeStep;
+                
                 mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
                 mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
                 mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);

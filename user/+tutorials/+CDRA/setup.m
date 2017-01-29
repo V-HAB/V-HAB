@@ -51,7 +51,8 @@ classdef setup < simulation.infrastructure
             
             for iBed = 1:2
                 for iCell = 1:5
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Pressure Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.H2O)', 'Pa', ['Flow Pressure H2O Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
                     
@@ -62,7 +63,8 @@ classdef setup < simulation.infrastructure
             
             for iBed = 1:2
                 for iCell = 1:5
-                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Pressure Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.H2O)', 'Pa', ['Flow Pressure H2O Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
                     
@@ -73,7 +75,7 @@ classdef setup < simulation.infrastructure
             
             for iBed = 1:2
                 for iCell = 1:5
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Pressure Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                     
