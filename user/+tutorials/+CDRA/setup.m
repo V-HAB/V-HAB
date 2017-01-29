@@ -43,12 +43,15 @@ classdef setup < simulation.infrastructure
             
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity', '-', 'Relative Humidity Cabin');
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2');
-            
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'fTemperature', 'K', 'Temperature Atmosphere');
+            
             oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn', 'fTemperature', 'K', 'Temperature CHX');
+            oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn', 'fPressure', 'Pa', 'Pressure CHX');
+            oLog.addValue('Example:c:CCAA:s:CHX.toProcsP2P.CondensingHX', 'fFlowRate', 'kg/s', 'Condensate Flowrate CHX');
             
             for iBed = 1:2
                 for iCell = 1:5
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
                     
@@ -59,6 +62,7 @@ classdef setup < simulation.infrastructure
             
             for iBed = 1:2
                 for iCell = 1:5
+                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
                     
@@ -69,6 +73,7 @@ classdef setup < simulation.infrastructure
             
             for iBed = 1:2
                 for iCell = 1:5
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                     
@@ -102,6 +107,7 @@ classdef setup < simulation.infrastructure
             oPlot = this.toMonitors.oPlotter;
             
             oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
+            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
             
             csZeolite13x_CO2 = cell(2,5);
             csZeolite13x_H2O = cell(2,5);
@@ -183,6 +189,16 @@ classdef setup < simulation.infrastructure
             yLabel = 'FlowRate CO_2 in kg/s';
             oPlot.definePlotByName(csNames, sTitle, yLabel, sTimeUnit);
             
+            csNames = {'CDRA H2O Inlet Flow', 'CDRA H2O Outlet Flow'};
+            sTitle = 'CDRA H2O Flowrates'; 
+            yLabel = 'FlowRate H_2O in kg/s';
+            oPlot.definePlotByName(csNames, sTitle, yLabel, sTimeUnit);
+            
+            csNames = {'Condensate Flowrate CHX'};
+            sTitle = 'CHX Condensate Flowrate'; 
+            yLabel = 'FlowRate H_2O in kg/s';
+            oPlot.definePlotByName(csNames, sTitle, yLabel, sTimeUnit);
+            
             csNames = {'Partial Pressure CO2'};
             sTitle = 'Partial Pressure CO2 Habitat'; 
             yLabel = 'Partial Pressure CO_2 in Pa';
@@ -209,6 +225,14 @@ classdef setup < simulation.infrastructure
             hCDRA_OutletCalc = @(x1,x2,x3,x4)((x1 .* x2 + x3 .* x4));
             csLogVariables =  {'CDRA Air Outlet Flow 1','CDRA CO2 Outlet Partialratio 1','CDRA Air Outlet Flow 2','CDRA CO2 Outlet Partialratio 2'};
             sNewLogName = 'CDRA CO2 Outlet Flow';
+            this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_OutletCalc, sNewLogName, 'kg/s');
+            
+            csLogVariables =  {'CDRA Air Inlet Flow 1','CDRA H2O Inlet Partialratio 1','CDRA Air Inlet Flow 2','CDRA H2O Inlet Partialratio 2'};
+            sNewLogName = 'CDRA H2O Inlet Flow';
+            this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_InletCalc, sNewLogName, 'kg/s');
+            
+            csLogVariables =  {'CDRA Air Outlet Flow 1','CDRA H2O Outlet Partialratio 1','CDRA Air Outlet Flow 2','CDRA H2O Outlet Partialratio 2'};
+            sNewLogName = 'CDRA H2O Outlet Flow';
             this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_OutletCalc, sNewLogName, 'kg/s');
             
             this.toMonitors.oPlotter.plotByName();

@@ -577,16 +577,17 @@ classdef CDRA < vsys
             this.tMassNetwork.aoBranchesCycleTwo(end+1,1) = this.toBranches.CDRA_Air_Out_2;
             
             % initializes the adsorption heat flow property
-            this.tThermalNetwork.mfAdsorptionHeatFlow 	= zeros(this.iCells+tInitialization.Zeolite5A.iCellNumber,1);
-            this.tMassNetwork.mfAdsorptionFlowRate 	= zeros(this.iCells+tInitialization.Zeolite5A.iCellNumber,1);
-            this.tThermalNetwork.mfHeaterPower          = zeros(this.iCells+tInitialization.Zeolite5A.iCellNumber,1);
+            iThermalCells = this.iCells+tInitialization.Zeolite5A.iCellNumber;
+            this.tThermalNetwork.mfAdsorptionHeatFlow 	= zeros(iThermalCells,1);
+            this.tMassNetwork.mfAdsorptionFlowRate      = zeros(iThermalCells,1);
+            this.tThermalNetwork.mfHeaterPower          = zeros(iThermalCells,1);
             
-            this.tLastUpdateProps.mfDensity              = zeros(this.iCells,1);
-            this.tLastUpdateProps.mfFlowSpeed            = zeros(this.iCells,1);
-            this.tLastUpdateProps.mfSpecificHeatCapacity = zeros(this.iCells,1);
+            this.tLastUpdateProps.mfDensity              = zeros(iThermalCells,1);
+            this.tLastUpdateProps.mfFlowSpeed            = zeros(iThermalCells,1);
+            this.tLastUpdateProps.mfSpecificHeatCapacity = zeros(iThermalCells,1);
 
-            this.tLastUpdateProps.mfDynamicViscosity     = zeros(this.iCells,1);
-            this.tLastUpdateProps.mfThermalConductivity  = zeros(this.iCells,1);
+            this.tLastUpdateProps.mfDynamicViscosity     = zeros(iThermalCells,1);
+            this.tLastUpdateProps.mfThermalConductivity  = zeros(iThermalCells,1);
             
         end
         
@@ -646,8 +647,8 @@ classdef CDRA < vsys
             mfAbsorberSurfaceArea   = zeros(this.iCells,1);
             mfD_Hydraulic           = zeros(this.iCells,1);
             
-            csNodes_Absorber_CycleOne = cell(this.iCells,1);
-            csNodes_Flow_CycleOne     = cell(this.iCells,1);
+            csNodes_Absorber_CycleOne = cell(this.iCells + this.tGeometry.Zeolite5A.iCellNumber,1);
+            csNodes_Flow_CycleOne     = cell(this.iCells + this.tGeometry.Zeolite5A.iCellNumber,1);
             csNodes_Absorber_CycleTwo = cell(this.iCells + this.tGeometry.Zeolite5A.iCellNumber,1);
             csNodes_Flow_CycleTwo     = cell(this.iCells + this.tGeometry.Zeolite5A.iCellNumber,1);
             
@@ -719,6 +720,8 @@ classdef CDRA < vsys
             
             for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
                 csNodes_Absorber_CycleOne{this.iCells + iCell,1} = [this.sName ,'__Zeolite5A_2__Absorber_',num2str(iCell)];
+                csNodes_Flow_CycleOne{this.iCells + iCell,1} = ['Zeolite5A_2ConvectiveConductor_', num2str(iCell)];
+                mfAbsorberSurfaceArea(this.iCells + iCell,1) = this.tGeometry.Sylobead.fAbsorberSurfaceArea/this.tGeometry.Sylobead.iCellNumber;
             end
             
             this.tMassNetwork.aoPhasesCycleOne(end+1,1) = this.toBranches.CDRA_Air_Out_1.coExmes{2}.oPhase;
@@ -772,6 +775,7 @@ classdef CDRA < vsys
             
             for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
                 csNodes_Absorber_CycleTwo{this.iCells + iCell,1} = [this.sName ,'__Zeolite5A_1__Absorber_',num2str(iCell)];
+                csNodes_Flow_CycleTwo{this.iCells + iCell,1} = ['Zeolite5A_1ConvectiveConductor_', num2str(iCell)];
             end
             
             this.tMassNetwork.aoPhasesCycleTwo(end+1,1) = this.toBranches.CDRA_Air_Out_2.coExmes{2}.oPhase;
@@ -1228,8 +1232,10 @@ classdef CDRA < vsys
             
             if this.iCycleActive == 1
                 sCycle = 'One';
+                sDesorbingBed = 'Zeolite5A_2';
             else
                 sCycle = 'Two';
+                sDesorbingBed = 'Zeolite5A_1';
             end
             
             iTotalCells = length(this.tThermalNetwork.mfAdsorptionHeatFlow);
@@ -1251,19 +1257,20 @@ classdef CDRA < vsys
             % just thermal conductivity of fluid and the MaxFreeDistance to
             % calculate a HeatTransferCoeff?
             % D_Hydraulic and fLength defined in geometry struct
-            mfDensity                       = zeros(this.iCells,1);
-            mfFlowSpeed                     = zeros(this.iCells,1);
-            mfSpecificHeatCapacity          = zeros(this.iCells,1);
-            mfHeatTransferCoefficient       = zeros(this.iCells,1);
+            mfHeatTransferCoefficient       = zeros(iTotalCells,1);
+            mfFlowSpeed                     = zeros(iTotalCells,1);
             aoPhases                        = this.tMassNetwork.(['aoPhasesCycle',sCycle]);
             aoBranches                      = this.tMassNetwork.(['aoBranchesCycle',sCycle]);
+            
+            for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
+                aoPhases(this.iCells+iCell) = this.toStores.(sDesorbingBed).toPhases.(['Flow_',num2str(iCell)]);
+            end
             % gets the required properties for each cell and stores them in
             % variables for easier access
-          	for iCell = 1:this.iCells
-                mfDensity(iCell)                = aoPhases.fDensity;
-                mfFlowSpeed(iCell)              = (abs(aoBranches(iCell).fFlowRate) + abs(aoBranches(iCell+1).fFlowRate))/(2*mfDensity(iCell));
-                mfSpecificHeatCapacity(iCell)   = aoPhases(iCell).fSpecificHeatCapacity;
-            end
+            mfDensity                  = [aoPhases.fDensity]';
+            mfSpecificHeatCapacity     = [aoPhases.fSpecificHeatCapacity]';
+            % Flow speed for desorbing cells is assumed to be zero
+            mfFlowSpeed(1:this.iCells) = (abs([aoBranches(1:end-1).fFlowRate]') + abs([aoBranches(2:end).fFlowRate]')./(2*mfDensity(1:this.iCells)));
             
             % In order to limit the recalculation of the convective heat
             % exchange coefficient to a manageable degree they are only
@@ -1275,7 +1282,7 @@ classdef CDRA < vsys
             mbRecalculate = (mbRecalculate ~= 0);
             
             if any(mbRecalculate)
-                for iCell = 1:this.iCells
+                for iCell = 1:iTotalCells
                     if mbRecalculate(iCell)
                         if (abs(this.tLastUpdateProps.mfDensity(iCell) - mfDensity(iCell))  > (1e-1 * mfDensity(iCell)))
                             this.tLastUpdateProps.mfDynamicViscosity(iCell)     = this.oMT.calculateDynamicViscosity(aoPhases(iCell));
@@ -1300,8 +1307,25 @@ classdef CDRA < vsys
                             % In the current calculation the free gas
                             % distance and the radius of the spheres is
                             % identical
-                            fAbsorbentConductivity = 0.1; % TO DO: Get value
+                            fAbsorbentConductivity = 0.12; % TO DO: Get value
                             mfHeatTransferCoefficient(iCell) = 1/((this.tGeometry.mfAbsorbentRadius(iCell)/fAbsorbentConductivity) + (this.tGeometry.mfAbsorbentRadius(iCell)/this.tLastUpdateProps.mfThermalConductivity(iCell))) * this.tGeometry.mfAbsorberSurfaceArea(iCell);
+                        end
+                        
+                        % Now there remains only one issue with the current
+                        % thermal solver. Phases that are evacuated and
+                        % therefore have very low mass result in extremly
+                        % high temperature changes (obviously) and the
+                        % thermal solver current does not have a logic to
+                        % simply solve large changes by equalizing the
+                        % temperature between the two connected phases
+                        % where such a large change occurs. (simply take
+                        % current temperature and heat capacity and
+                        % calculate the resulting temperature of the two
+                        % phases from that). Therefore the conductance
+                        % between the absorbers and the flows for flows
+                        % with a pressure below 0.1 bar are set to 0.
+                        if aoPhases(iCell).fPressure < 10000
+                            mfHeatTransferCoefficient(iCell) = 0;
                         end
                         % in case that this was actually recalculated store the
                         % current properties in the LastUpdateProps struct to
