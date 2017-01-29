@@ -802,7 +802,7 @@ classdef CDRA < vsys
             % in case that a new heater power was set the function to
             % recalculate the thermal properties of the filter has to be
             % called to ensure that the change is recoginzed by the model
-            this.calculateThermalProperties();
+%             this.calculateThermalProperties();
         end
     end
     
@@ -883,8 +883,6 @@ classdef CDRA < vsys
                 
                 this.setTimeStep(fInitTimeStep);
                 
-                % TO DO: Heaters, Airsafe, desorption!
-                
             elseif (this.iCycleActive == 1) && (mod(this.oTimer.fTime, this.fCycleTime * 2) >= (this.fCycleTime)) && (this.oTimer.iTick ~= 0)
                 % On cycle change all flow rates are momentarily set to zero
                 for iBranch = 1:length(this.tMassNetwork.aoBranchesCycleOne)
@@ -932,8 +930,6 @@ classdef CDRA < vsys
                 
                 this.setTimeStep(fInitTimeStep);
                 
-                % TO DO: Heaters, Airsafe, desorption!
-                
             elseif (this.oTimer.iTick ~= 0)
                 % the flowrate update function is only called if no cycle
                 % change is occuring in this tick!
@@ -958,9 +954,6 @@ classdef CDRA < vsys
                     if ((this.tTimeProperties.DesorptionLastExec + this.tTimeProperties.DesorptionStep) - this.oTimer.fTime) < 0
                         this.updateFlowratesDesorption()
                     end
-%                     if ((this.tTimeProperties.DesorptionThermalLastExec + this.tTimeProperties.DesorptionThermalStep) - this.oTimer.fTime) < 0
-%                         this.updateThermalDesorption()
-%                     end
                     
                     % The overall timestep of the system is set to the
                     % minimum timestep from the two calculations. However
@@ -968,7 +961,6 @@ classdef CDRA < vsys
                     % individual time steps
                     fAdsorptionStep = (this.tTimeProperties.AdsorptionLastExec + this.tTimeProperties.AdsorptionStep) - this.oTimer.fTime;
                     fDesorptionStep = (this.tTimeProperties.DesorptionLastExec + this.tTimeProperties.DesorptionStep) - this.oTimer.fTime;
-                    %fThermalDesorptionStep = (this.tTimeProperties.DesorptionThermalLastExec + this.tTimeProperties.DesorptionThermalStep) - this.oTimer.fTime;
                     
                     this.setTimeStep(min([fAdsorptionStep, fDesorptionStep]));
                 end
