@@ -1047,8 +1047,8 @@ classdef CDRA < vsys
               
             afChangeH2O = zeros(this.iCells,1);
             for iCell = 1:this.iCells
-                afChangeH2O(iCell) = (aoBranches(iCell).fFlowRate * aoBranches(iCell).aoFlows.arPartialMass(this.oMT.tiN2I.H2O))...
-                    - (aoBranches(iCell).fFlowRate * aoPhases(iCell).arPartialMass(this.oMT.tiN2I.H2O))...
+                afChangeH2O(iCell) = abs(aoBranches(iCell).fFlowRate * aoBranches(iCell).aoFlows.arPartialMass(this.oMT.tiN2I.H2O))...
+                    - abs(aoBranches(iCell).fFlowRate * aoPhases(iCell).arPartialMass(this.oMT.tiN2I.H2O))...
                     - (arPartialsAdsorption(iCell,this.oMT.tiN2I.H2O) * this.tMassNetwork.mfAdsorptionFlowRate(iCell));
             end  
             % The logic used to calculate the flow rates is as follows:
@@ -1087,7 +1087,7 @@ classdef CDRA < vsys
             % table crashes otherwise, a special time step for the humidity
             % is performed. Humidity of > 100% is reached at partial masses
             % above 0.0039 so limit was set to 0.002
-            fTimeStepH2O = min(abs((2e-3*mfCellMass((afChangeH2O < 0)))./afChangeH2O(afChangeH2O < 0)));
+            fTimeStepH2O = min(abs((2e-3*mfCellMass((afChangeH2O > 0)))./afChangeH2O(afChangeH2O > 0)));
             
             fTimeStep = min([fTimeStepFlow,fTimeStepH2O]);
             if fTimeStep > this.fMaximumTimeStep
@@ -1197,7 +1197,7 @@ classdef CDRA < vsys
             abHighPressure = (mfCellPressure > 500);
             
             mfMassDiff = zeros(length(aoPhases),1);
-            mfMassDiff(abHighPressure) = -mfCellMass(abHighPressure)./(this.fAirSafeTime/3);
+            mfMassDiff(abHighPressure) = -mfCellMass(abHighPressure)./(this.fAirSafeTime/2);
             
             fTimeStep = min(abs((this.rMaxChange .* mfCellMass) ./ mfMassDiff));
             
@@ -1225,7 +1225,7 @@ classdef CDRA < vsys
             mbTempReached = abs(mfCellTemperature - this.TargetTemperature) < 1;
             if any(mfPowerDesorbCells(mbTempReached) ~= 0) || any(mfPowerDesorbCells(~mbTempReached) == 0)
                 mfPowerDesorbCells(mbTempReached) = 0;
-                mfPowerDesorbCells(~mbTempReached) = ((this.TargetTemperature - mfCellTemperature(~mbTempReached)).* mfCellHeatCap(~mbTempReached))/600;
+                mfPowerDesorbCells(~mbTempReached) = ((this.TargetTemperature - mfCellTemperature(~mbTempReached)).* mfCellHeatCap(~mbTempReached))/this.fAirSafeTime;
                 mfPowerDesorbCells(mfPowerDesorbCells > this.fMaxHeaterPower) = this.fMaxHeaterPower/this.tGeometry.Zeolite5A.iCellNumber;
                 mfPower = zeros(this.iCells+this.tGeometry.Zeolite5A.iCellNumber,1);
                 mfPower(this.iCells+1:end) = mfPowerDesorbCells;
