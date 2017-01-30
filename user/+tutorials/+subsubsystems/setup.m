@@ -78,7 +78,7 @@ classdef setup < simulation.infrastructure
             
             
             % Creating the root object
-            oExample = tutorials.subsubsystems.systems.Example(this.oSimulationContainer, 'Example');
+            tutorials.subsubsystems.systems.Example(this.oSimulationContainer, 'Example');
             
             
         end
@@ -106,52 +106,16 @@ classdef setup < simulation.infrastructure
             
             oPlot = this.toMonitors.oPlotter;
             
-            
-            % 
             oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
             %oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
-            
             
             oPlot.definePlotWithFilter(tiLog.ALL_EMP, 'kg', 'Tank Masses - System Example');
             oPlot.definePlotWithFilter(tiLog.ALL_SUB, 'kg', 'Tank Masses - System Subsystem');
             
-            
             oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
             
-            
-            
             % Just specific indices - O2
-            oPlot.definePlot([ tiLog.PM_O2_Tank_1 tiLog.PM_O2_Tank_2 ], 'Tank 1/2 O2 Partials in Percent (1 = 100%)');
-            
-            
-            
-            
-            % Creating a cell setting the log items
-%             this.csLog = {
-%                 % System timer
-%                 'oData.oTimer.fTime';                                                                   % 1
-%                 
-%                 % Add other parameters here
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';                       % 2
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';                                 % 3
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';                       % 4
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';                                 % 5
-%                 'toChildren.Example.toChildren.SubSystem.aoBranches(1).fFlowRate';                      % 6
-%                 'toChildren.Example.toChildren.SubSystem.aoBranches(2).fFlowRate';                      % 7
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(1).fMassToPressure';  % 8
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(1).fMass';            % 9
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(2).fMassToPressure';  % 10
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(2).fMass';            % 11
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.oProc.fFlowRate';              % 12
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)';% 13
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)';% 14
-%                 
-%                 
-%             };
-            
-            
-            
-            
+            oPlot.definePlot([ tiLog.PM_O2_Tank_1 tiLog.PM_O2_Tank_2 ], 'Tank 1/2 O2 Partials in Percent (1 = 100%)');            
             
             %% Simulation length
             % Stop when specific time in sim is reached
@@ -162,68 +126,10 @@ classdef setup < simulation.infrastructure
 
         end
         
-        function plot(this) % Plotting the results
+        function plot(this, varargin) % Plotting the results
             
-            this.toMonitors.oPlotter.plot();
+            this.toMonitors.oPlotter.plot(varargin{:});
             
-            return;
-            
-            
-            
-            % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
-            % further information
-            
-            close all
-            
-            figure('name', 'Tank Pressures');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [2 4 8]) .* this.mfLog(:, [3 5 9]));
-            legend('Tank 1', 'Tank 2', 'Filter');
-            ylabel('Pressure in Pa');
-            xlabel('Time in s');
-            
-            figure('name', 'Tank Masses (1)');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [3 5]));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
-            
-            figure('name', 'Tank Masses (2)');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [9 11]));
-            legend('Filter', 'Absorber');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
-                        
-            figure('name', 'Flow Rate');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [6 7 12]));
-            legend('In', 'Out', 'Filter Flow');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
-            
-            figure('name', 'O2 Percentages');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [13 14]) * 100);
-            legend('Tank 1', 'Tank 2');
-            ylabel('O2 [%]');
-            xlabel('Time in s');
-
-            figure('name', 'Time Steps');
-            hold on;
-            grid minor;
-            plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-            legend('Solver');
-            ylabel('Time in [s]');
-            xlabel('Ticks');
-            
-            tools.arrangeWindows();
         end
         
     end

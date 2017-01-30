@@ -28,6 +28,9 @@ classdef p2p < matter.flow
             % Parent constructor
             this@matter.flow(oStore);
             
+            %TODO A lot of this stuff can be discarded, now that we have
+            %the toPhases struct on all stores. No need to get the indexes
+            %of the phases. 
             
             % Phases / ports
             [ sPhaseIn,  sPortIn ]  = strtok(sPhaseAndPortIn, '.');

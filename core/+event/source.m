@@ -53,25 +53,20 @@ classdef source < handle
         % schedule.exercise.bicycle); must not contain underscores
         function [ this, unbindCallback ] = bind(this, sType, callBack)
             % Create struct for callback if it doesn't exist yet
-            if ~this.pcEventCallbacks.isKey(sType), this.pcEventCallbacks(sType) = {}; end;
+            if ~isfield(this.tcEventCallbacks, sType)
+                this.tcEventCallbacks.(sType) = {};
+            end
             
-            
-            cCallbacks = this.pcEventCallbacks(sType);
-            cCallbacks{end + 1} = callBack;
-            this.pcEventCallbacks(sType) = cCallbacks;
+            this.tcEventCallbacks.(sType){end+1} = callBack;
             
             this.bHasCallbacks = true;
             
-            unbindCallback = @() this.unbind(sType, length(this.pcEventCallbacks(sType)));
+            unbindCallback = @() this.unbind(sType, length(this.tcEventCallbacks.(sType)));
         end
         
         
-        function unbind(this, sType, iId)
-            cCallbacks = this.pcEventCallbacks(sType);
-            
-            cCallbacks(iId) = [];
-            
-            this.pcEventCallbacks(sType) = cCallbacks;
+        function unbind(this, sType, iId)            
+            this.tcEventCallbacks.(sType)(iId) = [];
         end
     end
     
@@ -92,20 +87,11 @@ classdef source < handle
         function cReturn = trigger(this, sType, tData)
             %global oSim;
             
-            %TODO-SPEED why is that so slow? Find a way to speed up
-            %           checking for existing events!
-            %if isempty(this.pcEventCallbacks) || ~this.pcEventCallbacks.isKey(sType)
-            if ~this.bHasCallbacks || ~this.pcEventCallbacks.isKey(sType)
+            
+            if ~this.bHasCallbacks
                 cReturn = {};
                 return;
-            end
-%             try
-%                 this.tcEventCallbacks.(sType);
-%             catch oErr
-%                 tReturn = struct();
-%                 return;
-%             end
-            
+            end            
             
             if nargin < 3, tData = []; end;
             
@@ -138,12 +124,14 @@ classdef source < handle
             oEvent.sType = sType;
             oEvent.tData = tData;
             
+            try
+                cCallbackCell = this.tcEventCallbacks.(sType);
+            catch
+                cReturn = {};
+                return;
+            end
             
-            
-            
-            cCallbackCell = this.pcEventCallbacks(sType);
             cReturn = cell(1, length(cCallbackCell));
-            
             
             for iC = 1:length(cCallbackCell)
                 callBack = cCallbackCell{iC};

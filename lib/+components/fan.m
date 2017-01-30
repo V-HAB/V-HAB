@@ -233,8 +233,13 @@ classdef fan < matter.procs.f2f
             % accordingly.
             this.fDeltaPressure = fDeltaPressure;
             
-            % Calculating the delta temperatures of the flowing matter.
-            fDeltaTemperature = fDensityCorrectedDeltaPressure / fDensity / ...
+            % Calculating the delta temperatures of the flowing matter. We
+            % need to use the absolute value of the delta pressure here
+            % because in case the flow speed is higher than the maximum
+            % flow speed of the fan, the pressure difference becomes
+            % negative. We still will produce a positive temperature change
+            % though. 
+            fDeltaTemperature = abs(fDensityCorrectedDeltaPressure) / fDensity / ...
                 this.oFlowIn.fSpecificHeatCapacity / this.fInternalEfficiency * ...
                 this.fPowerFactor;
             

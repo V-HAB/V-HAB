@@ -32,7 +32,7 @@ classdef branch < solver.matter.base.branch
         
         % A helper array that saves the last iDampFR flow rates for
         % averaging. 
-        afFlowRates;
+        afFlowRatesForDampening;
         
         % Fixed time step - set to empty ([]) to deactivate
         fFixedTS = [];
@@ -86,9 +86,17 @@ classdef branch < solver.matter.base.branch
     methods
         
         %% Constructor
-        function this = branch(oBranch)
+        function this = branch(oBranch, fInitialFlowRate)
             
-            this@solver.matter.base.branch(oBranch, [], 'callback');
+            if nargin < 2
+                fInitialFlowRate = [];
+            end
+            
+            this@solver.matter.base.branch(oBranch, fInitialFlowRate, 'callback');
+            
+            if this.oBranch.iFlowProcs == 0
+                this.warn('There are no f2f processors in the iterative solver branch %s.\nThis may cause problems during flow rate calculation.\nIt is recommended to insert a small pipe.');
+            end
             
             this.fSensitivity = this.oBranch.oContainer.tSolverParams.fSolverSensitivity;
             this.fMaxStep     = this.oBranch.oContainer.tSolverParams.fMaxTimeStep;
@@ -129,10 +137,8 @@ classdef branch < solver.matter.base.branch
             end
             
             if this.oBranch.oTimer.fTime == 0
-                this.afFlowRates = zeros(1, this.iDampFR);
+                this.afFlowRatesForDampening = zeros(1, this.iDampFR);
             end
-            
-            
             
             if this.oBranch.oTimer.fTime <= this.fLastUpdate
                 % If branch update has been called before during this time
@@ -201,7 +207,7 @@ classdef branch < solver.matter.base.branch
                 % calculated in the previous time step.
                 if this.iOscillationCounter > 20
                     %fprintf('Oscillation detected!\n');
-                    fFlowRate = this.afFlowRates(end);
+                    fFlowRate = this.afFlowRatesForDampening(end);
                     this.iOscillationCounter = this.iOscillationCounter + 1;
                     bRecalculateFlowProperties = true;
                     
@@ -215,8 +221,8 @@ classdef branch < solver.matter.base.branch
                 elseif fFlowRate ~= 0 && this.iDampFR ~= 0
                     % There is no oscillation, so we'll just damp the flow
                     % rate, if iDampFR is non-zero.
-                    fFlowRate = (sum(this.afFlowRates) + fFlowRate) / (this.iDampFR + 1);
-                    this.afFlowRates = [ this.afFlowRates(2:end) fFlowRate ];
+                    fFlowRate = (sum(this.afFlowRatesForDampening) + fFlowRate) / (this.iDampFR + 1);
+                    this.afFlowRatesForDampening = [ this.afFlowRatesForDampening(2:end) fFlowRate ];
                     bRecalculateFlowProperties = true;
                 else
                     % There are no oscillations and not dampening, that

@@ -31,8 +31,6 @@ classdef setup < simulation.infrastructure
             % By constructor
             %%%ptConfigParams('tutorials.simple_flow.systems.Example') = struct('fPipeLength', 5, 'fPressureDifference', 2);
             
-            
-            
             % Possible to change the constructor paths and params for the
             % monitors
             ttMonitorConfig = struct();
@@ -53,20 +51,13 @@ classdef setup < simulation.infrastructure
             % This is an alternative to providing the ttMonitorConfig above
             %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
             
-            
-            
-            
-            
-
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 1; % In seconds
+            this.fSimTime = 100 * 1; % In seconds
             this.iSimTicks = 1500;
             this.bUseTime = true;
         end
-        
-        
         
         function configureMonitors(this)
             
@@ -77,7 +68,7 @@ classdef setup < simulation.infrastructure
             
             oLog = this.toMonitors.oLogger;
             
-            tiElectricalProperties = oLog.add('Example', 'electrical_properties');
+            oLog.add('Example', 'electrical_properties');
         
 
             %% Define plots
@@ -88,8 +79,8 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('A', 'Currents');
         end
         
-        function plot(this) % Plotting the results
-            this.toMonitors.oPlotter.plot();
+        function plot(this, varargin) % Plotting the results
+            this.toMonitors.oPlotter.plot(varargin{:});
         end
         
     end

@@ -27,15 +27,24 @@ classdef store < base
         oTimer;
         fLastUpdate = 0;
         fTimeStep = 0;
+        
+        % Fixed time step for updating
+        %TODO This is currently set to a fixed value of one. The
+        %calculateTimeStep() method has to be extended to calculate a
+        %proper, dynamic time step depending on the actual in and outflows
+        %and the capacity. 
+        fFixedTimeStep = 1;
+        
+        setTimeStep;
     end
-    
     
     methods
         function this = store(oCircuit, sName, fCapacity)
             % Create an electrical store object. 
             
-            this.oCircuit  = oCircuit;
-            this.sName     = sName;
+            this.oCircuit = oCircuit;
+            this.sName    = sName;
+            this.oTimer   = oCircuit.oTimer;
             
             if nargin > 2
                 this.fCapacity = fCapacity;
@@ -72,12 +81,21 @@ classdef store < base
         end
         
         function update(this)
-            % Update 
-            % Look at in and out flowing currents and reduce the current
-            % capacity.
-            % Also re-calculate the time step
+            % Re-calculate the time step
+            this.calculateTimeStep();
             
+            this.fLastUpdate = this.oTimer.fTime;
         end
+        
+        function calculateTimeStep(this)
+            if isempty(this.fFixedTimeStep)
+                %TODO Implement dynamic time step calculation
+            else
+                this.setTimeStep(this.fFixedTimeStep);
+            end
+        end
+        
+        
         
         function setNextTimeStep(this, fTimeStep)
             % This method is called from the phase object during its
@@ -132,43 +150,12 @@ classdef store < base
     methods
         
         function seal(this)
-            % See doc for bSealed attr.
-            %
-            %TODO create indices of phases, their ports etc! Trigger event?
-            %     -> external solver can build stuff ... whatever, matrix,
-            %        function handle cells, indices ...
-            %     also create indices for amount of phases, in phases for
-            %     amount of ports etc
             
             if this.bSealed, return; end;
-            
-            
             
             % Bind the .update method to the timer, with a time step of 0
             % (i.e. smallest step), will be adapted after each .update
             this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0);
-            
-            
-            this.iPhases    = length(this.aoPhases);
-            this.csProcsP2P = fieldnames(this.toProcsP2P);
-            
-            % Find stationary p2ps
-            %TODO split those up completely, stationary/flow p2ps?
-            for iI = 1:length(this.csProcsP2P)
-                if isa(this.toProcsP2P.(this.csProcsP2P{iI}), 'matter.procs.p2ps.stationary')
-                    this.aiProcsP2Pstationary(end + 1) = iI;
-                end
-            end
-            
-            
-            % Update volume on phases
-            this.setVolume();
-            
-            
-            % Seal phases
-            for iI = 1:length(this.aoPhases)
-                this.aoPhases(iI).seal(); 
-            end
             
             this.bSealed = true;
         end

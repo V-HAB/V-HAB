@@ -51,7 +51,7 @@ classdef branch < solver.matter.manual.branch
                 iDir  = -1;
             end
             
-            oPhase             = this.oBranch.coExmes{iExme}.oPhase;
+            oPhase = this.oBranch.coExmes{iExme}.oPhase;
             
             % Branches and p2p flows - they're also branches!
             for iE = 1:oPhase.iProcsEXME
@@ -67,7 +67,7 @@ classdef branch < solver.matter.manual.branch
             
             this.fRequestedFlowRate = fResidualFlowRate * iDir;
             
-            %fprintf('[%fs] Branch %s Residual Solver - set Flow Rate %f\n', this.oBranch.oContainer.oData.oTimer.fTime, this.oBranch.sName, this.fRequestedFlowRate);
+            %fprintf('%i\t(%.7fs)\tBranch %s Residual Solver - set Flow Rate %f\n', this.oBranch.oTimer.iTick, this.oBranch.oTimer.fTime, this.oBranch.sName, this.fRequestedFlowRate);
             
             update@solver.matter.manual.branch(this);
         end

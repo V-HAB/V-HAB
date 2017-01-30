@@ -13,13 +13,13 @@ classdef logger_basic < simulation.monitor
         % Loops through keys, comparison only with length of key
         % -> 'longer' keys need to be defined first (fMass * fMassToPress)
         poExpressionToUnit = containers.Map(...
-            { 'this.fMass * this.fMassToPressure', 'fMassToPressure', 'fMass', 'afMass', 'fFlowRate', 'fTemperature', 'fPressure', 'afPP', 'fTotalHeatCapacity', 'fSpecificHeatCapacity', 'fConductivity', 'fPower', 'fCapacity', 'fResistance', 'fInductivity', 'fCurrent', 'fVoltage', 'fCharge' }, ...
-            { 'Pa',                                'Pa/kg',           'kg',    'kg',     'kg/s',      'K',            'Pa',        'Pa',   'J/K',                'J/kgK',                 'W/K',           'W',      'F',         '?',           'H',            'A',        'V',        'C'       }  ...
+            { 'this.fMass * this.fMassToPressure', 'fMassToPressure', 'fMass', 'afMass', 'fFlowRate', 'fTemperature', 'fPressure', 'afPP', 'fTotalHeatCapacity', 'fSpecificHeatCapacity', 'fConductivity', 'fPower', 'fCapacity', 'fResistance', 'fInductivity', 'fCurrent', 'fVoltage', 'fCharge', 'fBatteryCharge' }, ...
+            { 'Pa',                                'Pa/kg',           'kg',    'kg',     'kg/s',      'K',            'Pa',        'Pa',   'J/K',                'J/kgK',                 'W/K',           'W',      'F',         '?',           'H',            'A',        'V',        'C',       'Ah'             }  ...
         );
         
         poUnitsToLabels = containers.Map(...
-            { 's',    'kg',   'kg/s',      'K',           'Pa',       'J/K',                 'J/kgK',                  'W/K',          'W',     'F',        'Ohm',        'H',           'A',       'V',       'C',      'mol/kg',        'ppm',           '%',       '-'}, ...
-            { 'Time', 'Mass', 'Flow Rate', 'Temperature', 'Pressure', 'Total Heat Capacity', 'Specific Heat Capacity', 'Conductivity', 'Power', 'Capacity', 'Resistance', 'Inductivity', 'Current', 'Voltage', 'Charge', 'Concentration', 'Concentration', 'Percent', '' } ...
+            { 's',    'kg',   'kg/s',      'K',           'Pa',       'J/K',                 'J/kgK',                  'W/K',          'W',     'F',        'Ohm',        'H',           'A',       'V',       'C',      'mol/kg',        'ppm',           '%',       'Ah',     '-'}, ...
+            { 'Time', 'Mass', 'Flow Rate', 'Temperature', 'Pressure', 'Total Heat Capacity', 'Specific Heat Capacity', 'Conductivity', 'Power', 'Capacity', 'Resistance', 'Inductivity', 'Current', 'Voltage', 'Charge', 'Concentration', 'Concentration', 'Percent', 'Charge', '' } ...
         );
     end
     
@@ -380,7 +380,7 @@ classdef logger_basic < simulation.monitor
                 tLogProp.sObjUuid = oObj.sUUID;
             catch oErr
                 assignin('base', 'oLastErr', oErr);
-                this.throw('addValueToLog', 'Object does not seem to exist: %s (message was: %s)', tLogProp.sObjectPath, oErr.message);
+                this.throw('addValueToLog', 'Object does not seem to exist: %s \n(message was: %s)', tLogProp.sObjectPath, oErr.message);
             end
             
             
@@ -492,12 +492,17 @@ classdef logger_basic < simulation.monitor
                     this.csPaths{iL} = [ 'this.' this.csPaths{iL} ];
                 end
                 
-                
                 this.csPaths{iL} = strrep(this.csPaths{iL}, ...
                     'this.', ...
                     [ 'this.oSimulationInfrastructure.oSimulationContainer.toChildren.' this.tLogValues(iL).sObjectPath '.' ] ...
-                );
+                    );
                 
+                try
+                    [~] = eval(this.csPaths{iL});
+                catch oError
+                    this.throw('\n\nSomething went wrong while logging ''%s'' on ''%s''. \nMATLAB provided the following error message:\n%s\n', this.tLogValues(iL).sExpression, this.tLogValues(iL).sObjectPath, oError.message);
+                end
+            
                 %tLogProp.sExpression = strrep(tLogProp.sExpression, 'this.', [ tLogProp.sObjectPath '.' ]);
             end
             
@@ -527,8 +532,8 @@ classdef logger_basic < simulation.monitor
 
             try
                 this.logDataEvald = eval([ '@() ' sCmd ]);
-            catch
-                this.throw('logger_basic','Something went wrong during logging. Please check your setup file.');
+            catch oError
+                this.throw('logger_basic','Something went wrong during logging. Please check your setup file.\nMessage: %s', oError.message);
             end
         end
         

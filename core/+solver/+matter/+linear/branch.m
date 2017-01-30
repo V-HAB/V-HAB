@@ -14,6 +14,10 @@ classdef branch < solver.matter.base.branch
         
         iDampFR    = 0;
         
+        % A helper array that saves the last iDampFR flow rates for
+        % averaging. 
+        afFlowRatesForDampening;
+        
         % Fixed time step - set to empty ([]) to deactivate
         fFixedTS = [];
         
@@ -57,6 +61,10 @@ classdef branch < solver.matter.base.branch
                 return;
             end
             
+            if this.oBranch.oTimer.fTime == 0
+                this.afFlowRatesForDampening = zeros(1, this.iDampFR);
+            end
+            
             % Checking if there are any active processors in the branch,
             % if yes, update them.
             abActiveProcs = [ this.aoSolverProps.bActive ];
@@ -79,7 +87,7 @@ classdef branch < solver.matter.base.branch
             end
             
             % Getting all hydraulic diameters and lengths
-            afHydrDiam   = [ this.aoSolverProps.fHydrDiam ];
+            afHydrDiam   = [ this.aoSolverProps.fHydrDiam   ];
             afHydrLength = [ this.aoSolverProps.fHydrLength ];
             
             % Find all components with negative hydraulic diameters
@@ -89,13 +97,17 @@ classdef branch < solver.matter.base.branch
                 % sum them up and create new arrays with just the
                 % components producing pressure drops
                 fPressureRises = sum(this.aoSolverProps(afNegHydrDiam).fDeltaPressure);
-                afPosHydrDiam = afHydrDiam(afHydrDiam>0);
-                afHydrLength  = afHydrLength(afHydrDiam>0);
+                afPosHydrDiam  = afHydrDiam(afHydrDiam>0);
+                afHydrLength   = afHydrLength(afHydrDiam>0);
             else
                 fPressureRises = 0;
-                afPosHydrDiam = afHydrDiam;
+                afPosHydrDiam  = afHydrDiam;
             end
             
+            if any(afHydrLength == 0)
+                afPosHydrDiam(afHydrLength == 0) = [];
+                afHydrLength(afHydrLength == 0)  = [];
+            end
            
             %TODO real calcs, also derive pressures/temperatures
             %     check active components - get pressure rise / hydr.
@@ -115,9 +127,42 @@ classdef branch < solver.matter.base.branch
             % Damp flow rate?
             %TODO only if it gets bigger or smaller? Time-specific? Right
             %     now tick length not taken into account ...
-            fFlowRate = (fFlowRate + this.iDampFR * this.fFlowRate) / (1 + this.iDampFR);
+            %fFlowRate = (fFlowRate + this.iDampFR * this.fFlowRate) / (1 + this.iDampFR);
 
+            if this.iDampFR ~= 0
+                % Damp the flow rate, if iDampFR is non-zero.
+                fFlowRate = (sum(this.afFlowRatesForDampening) + fFlowRate) / (this.iDampFR + 1);
+                this.afFlowRatesForDampening = [ this.afFlowRatesForDampening(2:end) fFlowRate ];
+                bRecalculateFlowProperties = true;
+            else
+                bRecalculateFlowProperties = false;
+            end
             
+            % If we actually damped the flow rate, we need to run the
+            % solver specific method on all processors again, since some of
+            % them might need to update some internal values, such as the
+            % heat flow. 
+            %TODO To avoid this, maybe the heat flow should be specific
+            %rather than absolute? 
+            if this.iDampFR ~= 0 && bRecalculateFlowProperties
+                for iI = 1:length(abActiveProcs)
+                    if abActiveProcs(iI)
+                        % There are two kinds of processors: Ones that create a
+                        % pressure rise and ones that just change their
+                        % hydraulic parameters. The latter just needs to be
+                        % updated, but the former needs to write a new value
+                        % for fDeltaPressure to the solver type object. This is
+                        % only done, if the updateDeltaPressure() method is
+                        % called with one or more return values. This is the
+                        % reason for the following if-condition.
+                        if this.aoSolverProps(iI).fHydrDiam < 0
+                            [~] = this.aoSolverProps(iI).updateDeltaPressure();
+                        else
+                            this.aoSolverProps(iI).updateDeltaPressure();
+                        end
+                    end
+                end
+            end
             
             if ~isempty(this.fFixedTS)
                 if this.fTimeStep ~= this.fFixedTS

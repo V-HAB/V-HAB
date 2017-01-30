@@ -35,6 +35,7 @@ classdef container < sys
         
         poCapacities;      % A map of associated |thermal.capacity| objects
         piCapacityIndices; % Map a capacity to an index.
+        tiCapacityIndices; % A struct linking capacities to their indexes
         
         % Thermal connections
         poLinearConductors;    % A Map of associated |thermal.conductors.linear| objects.
@@ -47,6 +48,10 @@ classdef container < sys
         mLinearConductance    = [];
         mFluidicConductance   = [];
         mRadiativeConductance = [];
+        
+        % A reference to the solver object that handles this thermal
+        % container.
+        oThermalSolver;
                 
     end
     
@@ -64,6 +69,7 @@ classdef container < sys
             % Re-initialize some properties because MATLAB may not do it.
             this.poCapacities          = containers.Map();
             this.piCapacityIndices     = containers.Map();
+            this.tiCapacityIndices     = struct();
             this.poLinearConductors    = containers.Map();
             this.poFluidicConductors   = containers.Map();
             this.poRadiativeConductors = containers.Map();
@@ -80,6 +86,7 @@ classdef container < sys
                 
                 this.toChildren.(sChild).createThermalStructure();
             end
+            
         end
         
         
@@ -107,10 +114,11 @@ classdef container < sys
                 
                 % Reset the index map.
                 this.piCapacityIndices = containers.Map();
+                this.tiCapacityIndices = struct();
                 
                 % Reset the internal matrices.
-                this.mCapacityVector   = [];
-                this.mHeatSourceVector = [];
+                this.mCapacityVector       = [];
+                this.mHeatSourceVector     = [];
                 this.mLinearConductance    = [];
                 this.mFluidicConductance   = [];
                 this.mRadiativeConductance = [];
@@ -126,6 +134,12 @@ classdef container < sys
             % the |poCapacities| map.
             this.piCapacityIndices = containers.Map(this.poCapacities.keys, uint32(1:iNodes));
             
+            ciIndexes = cell(1,iNodes);
+            for iI = 1:iNodes
+                ciIndexes{iI} = iI; 
+            end
+            this.tiCapacityIndices = cell2struct(ciIndexes, this.poCapacities.keys, 2);
+            
             % Generate the capacity and heat source matrices:
             
             % Pre-allocate capacity and heat source vectors.
@@ -137,7 +151,7 @@ classdef container < sys
             for sNode = this.piCapacityIndices.keys
                 
                 % Get index of current node.
-                iIndex = this.piCapacityIndices(sNode{1});
+                iIndex = this.tiCapacityIndices.(sNode{1});
                 
                 % Get the node object.
                 oNode = this.poCapacities(sNode{1});
@@ -145,16 +159,7 @@ classdef container < sys
                 % Get capacity and heater power of current node and store
                 % the data at the associated index (i.e. position). %%%
                 mCapacitances(iIndex, 1) = oNode.getTotalHeatCapacity();
-                %mCapacitances(iIndex, 1) = oNode.fTotalHeatCapacity;
-                %mCapacitances(iIndex, 1) = oNode.oMatterObject.fTotalHeatCapacity;
                 mHeatSources(iIndex, 1)  = oNode.getHeatPower();
-                %mHeatSources(iIndex, 1)  = oNode.fHeatPower;
-                
-                %if ~isempty(oNode.oHeatSource)
-                %    mHeatSources(iIndex, 1)  = oNode.oHeatSource.fPower;
-                %else
-                %    mHeatSources(iIndex, 1) = 0;
-                %end
                 
             end
             
@@ -214,12 +219,8 @@ classdef container < sys
             
             this.addCapacity(oCapacity);
             
-            
-            % We're done here.
-            % Echt? Der Kommentar ist ja NOCH sinnvoller als meine. Danke.
             % Ihr solltet eure Kommentare noch mit tag versehen damit man
             % weis wer wen gerade basht (Gruß puda ;)
-            
         end
         
         function addCapacity(this, oCapacity)
@@ -334,7 +335,7 @@ classdef container < sys
             for sNode = this.piCapacityIndices.keys
                 
                 % Get index of current node.
-                iIndex = this.piCapacityIndices(sNode{1});
+                iIndex = this.tiCapacityIndices.(sNode{1}); 
                 
                 % Get the node object.
                 oNode = this.poCapacities(sNode{1});
@@ -362,15 +363,13 @@ classdef container < sys
             for sNode = this.piCapacityIndices.keys
                 
                 % Get index of current node.
-                iIndex = this.piCapacityIndices(sNode{1});
+                iIndex = this.tiCapacityIndices.(sNode{1});
                 
                 % Get the node object.
                 oNode = this.poCapacities(sNode{1});
                 
                 % Get capacity and heater power of current node and store
                 % the data at the associated index (i.e. position).
-                %mTemperatures(iIndex, 1) = oNode.getTemperature();
-                %mTemperatures(iIndex, 1) = oNode.fTemperature;
                 mTemperatures(iIndex, 1) = oNode.oMatterObject.fTemperature;
                 
             end
@@ -385,7 +384,7 @@ classdef container < sys
             for sNode = this.piCapacityIndices.keys
                 
                 % Get index of current node.
-                iIndex = this.piCapacityIndices(sNode{1});
+                iIndex = this.tiCapacityIndices.(sNode{1});
                 
                 % Get the node object.
                 oNode = this.poCapacities(sNode{1});
@@ -454,8 +453,31 @@ classdef container < sys
             
         end
         
+        function setThermalSolver(this, oThermalSolver)
+            this.oThermalSolver = oThermalSolver;
+        end
+        
         function sealThermalStructure(this)
+            % We need all of the heat source updates to trigger to the
+            % update() method of the thermal solver to make sure, that all
+            % of the heat flow rates are updated, if something changes
+            % between the regular solver calls.
             
+            csKeys = this.poCapacities.keys;
+            for iI = 1:size(this.poCapacities)
+                if ~isempty(this.poCapacities(csKeys{iI}).oHeatSource)
+                    if isa(this.poCapacities(csKeys{iI}).oHeatSource, 'vhp_thermal.lib.thermal.heatsource_multi')
+                        for iJ = 1:length(this.poCapacities(csKeys{iI}).oHeatSource.aoHeatSources)
+                            oHeatSource = this.poCapacities(csKeys{iI}).oHeatSource.aoHeatSources(iJ);
+                            oHeatSource.setUpdateCallBack(this.oThermalSolver);
+                        end
+                    else
+                        oHeatSource = this.poCapacities(csKeys{iI}).oHeatSource;
+                        oHeatSource.setUpdateCallBack(this.oThermalSolver);
+                    end
+                end
+            end
+
         end
         
     end
@@ -488,11 +510,12 @@ classdef container < sys
                 iCounter = iCounter + 1;
                 
                 % Get the names of the connected nodes.
-                [sNameLeft, sNameRight] = oConductor{1}.getCapacityNames();
+                sNameLeft  = oConductor{1}.oLeft.sName;
+                sNameRight = oConductor{1}.oRight.sName;
                 
                 % Get the indices of the connected nodes. 
-                iIndexLeft  = this.piCapacityIndices(sNameLeft);
-                iIndexRight = this.piCapacityIndices(sNameRight);
+                iIndexLeft  = this.tiCapacityIndices.(sNameLeft);
+                iIndexRight = this.tiCapacityIndices.(sNameRight);
                 
                 % Get the value of conductance. 
                 fConductance = oConductor{1}.fConductivity;

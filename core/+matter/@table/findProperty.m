@@ -44,11 +44,6 @@ function fProperty = findProperty(this, tParameters)
 %                                   'false', so isochoric data will be
 %                                   used.
 
-%% Initializing the return variable
-%CHECK: Do we really not need this, ever? Then delete. 
-%fProperty = [];
-
-
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Checking inputs for correctness %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -176,22 +171,33 @@ switch sPhaseType
         sPhaseAdjective  = 'gaseous';
 end
 
-% Again for debugging purposes, we'll get the unit names for the two
-% dependencies and put them into shorter-named variables for better code
-% readability.
+
+% Shorthand to save execution time!
 if txMatterForSubstance.bIndividualFile
-    % Shorthand to save execution time!
     txMatterForSubstanceAndType             = txMatterForSubstance.(sTypeStruct);
     txMatterForSubstanceAndTypeAndAggregate = txMatterForSubstanceAndType.(sPhaseStructName);
-    
-    sFirstDepUnit  = txMatterForSubstanceAndType.tUnits.(sFirstDepName);
-    
-    if iDependencies == 2
-        sSecondDepUnit = txMatterForSubstanceAndType.tUnits.(sSecondDepName);
-    end
 end
 
-sReportString = 'Nothing to report.';
+% If one would like to debug this function, set the following variable to
+% true. This will gather some additional information in the sReportString
+% variable.
+bDebug = false;
+
+if bDebug == true
+    % For debugging purposes, we'll get the unit names for the two
+    % dependencies and put them into shorter-named variables for better
+    % code readability.
+    if txMatterForSubstance.bIndividualFile
+        
+        sFirstDepUnit  = txMatterForSubstanceAndType.tUnits.(sFirstDepName);
+        
+        if iDependencies == 2
+            sSecondDepUnit = txMatterForSubstanceAndType.tUnits.(sSecondDepName);
+        end
+    end
+    
+    sReportString = 'Nothing to report.';
+end
 
 sPropertyNoSpaces = strrep(sProperty,' ','');
 
@@ -249,31 +255,13 @@ if txMatterForSubstance.bIndividualFile
         abOutOfRange(1) = true;
     end
     
-    iRowsFirst = txMatterForSubstanceAndTypeAndAggregate.mfData(:,iColumnFirst) == fFirstDepValue;
-    
     %-----------------------------------------------------------------%
     % Only one dependency is given
     %-----------------------------------------------------------------%
     
     if iDependencies == 1
         
-        if any(iRowsFirst) && ~abOutOfRange(1)
-            % dependencyvalue in table and in range of table
-            % direct usage
-            fProperty = txMatterForSubstanceAndTypeAndAggregate.mfData(iRowsFirst, iColumn);
-            sReportString = 'One dependency in range. Tried to get value directly from matter table.';
-            % If more than one value is returned, we cannot determine
-            % which value is correct. An example for this would be the heat
-            % capacity of a gas, which is dependent on temperature AND
-            % pressure, but the call only specifies the temperature. Then
-            % there will be multiple entries in the matter table with the
-            % same temperature but different heat capacities. If this is
-            % the case, we abort and give the appropriate error message.
-            if length(fProperty) > 1
-                fProperty = NaN;
-                sReportString = 'The property you are looking for is dependent on more than one value. Please add more dependencies to the call of findProperty().';
-            end
-        elseif ~abOutOfRange(1)
+        if ~abOutOfRange(1)
             % If the property is not directly given an interpolation is
             % needed.
             
@@ -330,15 +318,18 @@ if txMatterForSubstance.bIndividualFile
                 filename = strrep('data\MatterData.mat', '\', filesep);
                 save(filename, 'this', '-v7');
             end
-            
-            sReportString = 'One dependency in range. Tried to get value by interpolation.';
+            if bDebug == true
+                sReportString = 'One dependency in range. Tried to get value by interpolation.';
+            end
         else
             % The dependency value is out of range and not directly given
             % in the matter table. We already set fFirstDepValue to a
             % minimum or maximum value, so we'll just take that.
-            
+            iRowsFirst = txMatterForSubstanceAndTypeAndAggregate.mfData(:,iColumnFirst) == fFirstDepValue;
             fProperty = txMatterForSubstanceAndTypeAndAggregate.mfData((txMatterForSubstanceAndTypeAndAggregate.mfData(iRowsFirst,iColumnFirst) == fFirstDepValue), iColumn);
-            sReportString = ['The value given for ',sFirstDepName,' (',num2str(tParameters.fFirstDepValue),') is out of range. Tried to get best value in range.'];
+            if bDebug == true
+                sReportString = ['The value given for ',sFirstDepName,' (',num2str(tParameters.fFirstDepValue),') is out of range. Tried to get best value in range.'];
+            end
             
             % If more than one value is returned, we cannot determine
             % which value is correct. An example for this would be the heat
@@ -349,7 +340,9 @@ if txMatterForSubstance.bIndividualFile
             % the case, we abort and give the appropriate error message.
             if length(fProperty) > 1
                 fProperty = NaN;
-                sReportString = 'The property you are looking for is dependent on more than one value. Please add more dependencies to the call of findProperty().';
+                if bDebug == true
+                    sReportString = 'The property you are looking for is dependent on more than one value. Please add more dependencies to the call of findProperty().';
+                end
             end
         end
         
@@ -386,96 +379,75 @@ if txMatterForSubstance.bIndividualFile
             abOutOfRange(2) = true;
         end
         
-        % get columns with already given values of searched second dependency
-        iRowsSecond = txMatterForSubstanceAndTypeAndAggregate.mfData(:,iColumnSecond) == fSecondDepValue;
+        % Check and see, if this interpolation has been
+        % done before and use those values for better
+        % performance.
         
-        % Check if values are directly given in the matter table
-        if any(iRowsFirst) && any(iRowsSecond) && any((iRowsFirst + iRowsSecond) == 2)
-            % If the desired property for the given
-            % dependencies is directly given in the matter
-            % table, we just get it.
-            % find() is really inefficient, so we'll do it in here, only
-            % when we are sure, that the desired values are actually in the
-            % table.
-            iRowsFirst  = find(txMatterForSubstanceAndTypeAndAggregate.mfData(:,iColumnFirst) == fFirstDepValue);
-            iRowsSecond = find(txMatterForSubstanceAndTypeAndAggregate.mfData(:,iColumnSecond) == fSecondDepValue);
-            fProperty   = txMatterForSubstanceAndTypeAndAggregate.mfData(intersect(iRowsFirst,iRowsSecond), iColumn);
-            
-            sReportString = 'Both dependencies in range. Tried to get value directly from matter table.';
-            
-        else
-            % If the property is not directly given an
-            % interpolation over both dependencies is
-            % needed.
-            
-            % Check and see, if this interpolation has been
-            % done before and use those values for better
-            % performance.
-            
-            % First we need to create the unique ID for
-            % this specific interpolation to see, if it
-            % already exists.
-            sID = sprintf('ID%i', iColumnFirst * 10000 + iColumnSecond * 100 + iPhaseType);
-            
-            
-            % Now we check if this interpolation already
-            % exists. If yes, we just use the saved
-            % function.
-            
-            try
-                % If there is data, we use it.
-                fProperty = txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(sPropertyNoSpaces).(sID)(fFirstDepValue, fSecondDepValue);
-                if isnan(fProperty)
-                    this.throw('findProperty',['The combination of dependencies provided to the findProperty method is impossible.\n',...
-                               'There is no %s %s at a %s of %.2f [%s] and a %s of %.2f [%s].'], sPhaseAdjective, sSubstance, sFirstDepName, ...
-                                                                                             fFirstDepValue, sFirstDepUnit, sSecondDepName, ...
-                                                                                             fSecondDepValue, sSecondDepUnit);
-                end
-            catch
-                % The interpolation function does not yet
-                % exist, so we have to go and run the
-                % interpolation.
-                
-                % create temporary array because scatteredInterpolant doesn't allow NaN values
-                afTemporary = txMatterForSubstanceAndTypeAndAggregate.mfData(:,[iColumn, iColumnFirst, iColumnSecond]);
-                
-                % Now we remove all rows that contain NaN values
-                afTemporary(any(isnan(afTemporary), 2), :) = [];
-                
-                % Only unique values are needed (also scatteredInterpolant would give out a warning in that case)
-                afTemporary = unique(afTemporary,'rows');
-                % Sometimes there are also multiple values for
-                % the same combination of dependencies. Here we
-                % get rid of those too.
-                [ ~, aIndices ] = unique(afTemporary(:, [2 3]), 'rows');
-                afTemporary = afTemporary(aIndices, :);
-                
-                % interpolate linear with no extrapolation
-                %CHECK Does it make sense not to extrapolate?
-                hInterpolation = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
-                fProperty = hInterpolation(fFirstDepValue, fSecondDepValue);
-                
-                % To make this faster the next time around, we
-                % save the scatteredInterpolant into the matter
-                % table.
-                
-                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(sPropertyNoSpaces).(sID) = hInterpolation;
-                this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).bInterpolations = true;
-                
-                % This addition to the matter table will be
-                % overwritten, when the next simulation
-                % starts, even if Matter.xlsx has not
-                % changed. To prevent this, we need to save
-                % the table object again.
-                filename = strrep('data\MatterData.mat', '\', filesep);
-                save(filename, 'this', '-v7');
+        % First we need to create the unique ID for
+        % this specific interpolation to see, if it
+        % already exists.
+        sID = sprintf('ID%i', iColumnFirst * 10000 + iColumnSecond * 100 + iPhaseType);
+        
+        
+        % Now we check if this interpolation already
+        % exists. If yes, we just use the saved
+        % function.
+        
+        try
+            % If there is data, we use it.
+            fProperty = txMatterForSubstanceAndTypeAndAggregate.tInterpolations.(sPropertyNoSpaces).(sID)(fFirstDepValue, fSecondDepValue);
+            if isnan(fProperty)
+                this.throw('findProperty',['The combination of dependencies provided to the findProperty method is impossible.\n',...
+                    'There is no %s %s at a %s of %.2f [%s] and a %s of %.2f [%s].'], sPhaseAdjective, sSubstance, sFirstDepName, ...
+                    fFirstDepValue, sFirstDepUnit, sSecondDepName, ...
+                    fSecondDepValue, sSecondDepUnit);
             end
+        catch
+            % The interpolation function does not yet
+            % exist, so we have to go and run the
+            % interpolation.
             
+            % create temporary array because scatteredInterpolant doesn't allow NaN values
+            afTemporary = txMatterForSubstanceAndTypeAndAggregate.mfData(:,[iColumn, iColumnFirst, iColumnSecond]);
+            
+            % Now we remove all rows that contain NaN values
+            afTemporary(any(isnan(afTemporary), 2), :) = [];
+            
+            % Only unique values are needed (also scatteredInterpolant would give out a warning in that case)
+            afTemporary = unique(afTemporary,'rows');
+            % Sometimes there are also multiple values for
+            % the same combination of dependencies. Here we
+            % get rid of those too.
+            [ ~, aIndices ] = unique(afTemporary(:, [2 3]), 'rows');
+            afTemporary = afTemporary(aIndices, :);
+            
+            % interpolate linear with no extrapolation
+            %CHECK Does it make sense not to extrapolate?
+            hInterpolation = scatteredInterpolant(afTemporary(:,2),afTemporary(:,3),afTemporary(:,1),'linear','none');
+            fProperty = hInterpolation(fFirstDepValue, fSecondDepValue);
+            
+            % To make this faster the next time around, we
+            % save the scatteredInterpolant into the matter
+            % table.
+            
+            this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).tInterpolations.(sPropertyNoSpaces).(sID) = hInterpolation;
+            this.ttxMatter.(sSubstance).(sTypeStruct).(sPhaseStructName).bInterpolations = true;
+            
+            % This addition to the matter table will be
+            % overwritten, when the next simulation
+            % starts, even if Matter.xlsx has not
+            % changed. To prevent this, we need to save
+            % the table object again.
+            filename = strrep('data\MatterData.mat', '\', filesep);
+            save(filename, 'this', '-v7');
+        end
+        
+        if bDebug == true
             % Doing some nice user interface output messages.
             if ~(abOutOfRange(1) || abOutOfRange(2))
                 sReportString = 'Both dependencies in range. Tried to get value by interpolation.';
             else
-                % To make the code more readable, we first create some 
+                % To make the code more readable, we first create some
                 % local variables with short names.
                 sActualFirstDepValue  = sprintf('%f',tParameters.fFirstDepValue);
                 sUsedFirstDepValue    = sprintf('%f',fFirstDepValue);
@@ -495,6 +467,7 @@ if txMatterForSubstance.bIndividualFile
                 end
             end
         end
+        
     end
     
     
@@ -515,7 +488,9 @@ else
         if isnan(fProperty) || isempty(fProperty)
             this.throw('findProperty', 'Error using findProperty. The matter data for %s (%s) does not include a value for %s.', sSubstance, sPhaseType, sProperty);
         else
-            sReportString = 'Just took the value from the ''Matter Data'' worksheet.';
+            if bDebug == true
+                sReportString = 'Just took the value from the ''Matter Data'' worksheet.';
+            end
         end
     
     
@@ -526,9 +501,17 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if isnan(fProperty) || isempty(fProperty)
-    this.warn('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table. %s\n', sTypeString, sProperty, sSubstance, sPhaseType, sReportString);
-%     keyboard();
-    this.throw('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table. %s', sTypeString, sProperty, sSubstance, sPhaseType, sReportString);
+    if bDebug == true
+        this.warn('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table. %s\n', sTypeString, sProperty, sSubstance, sPhaseType, sReportString);
+        %     keyboard();
+        this.throw('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table. %s\n', sTypeString, sProperty, sSubstance, sPhaseType, sReportString);
+    else
+        this.warn('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table.\n', sTypeString, sProperty, sSubstance, sPhaseType);
+        %     keyboard();
+        this.throw('findProperty', 'Error using findProperty. No valid value for %s %s of %s (%s) found in matter table.\n', sTypeString, sProperty, sSubstance, sPhaseType);
+
+    end
+    
 end
 
 end

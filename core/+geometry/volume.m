@@ -71,10 +71,10 @@ classdef volume < geometry.node
         end
         
         
-        function set.tfDimensions(this, tfDimensions)
+        function set_tfDimensions(this, tfDimensions)
             this.tfDimensions = tfDimensions;
             
-            this.trigger('set.tfDimensions', this.tfDimensions);
+            this.trigger('set_tfDimensions', this.tfDimensions);
         end
     end
     

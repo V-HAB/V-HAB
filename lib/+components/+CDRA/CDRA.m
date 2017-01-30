@@ -61,9 +61,6 @@ classdef CDRA < vsys
         % imitation (since no data on Vozdukh is available)
         bVozdukh = false;
         
-        % Object of the thermal solver used for this CDRA
-        oThermalSolver;
-        
         % Number of cells within the current adsorption cycle (THIS DOES
         % NOT INLCUDE THE CELLS IN THE BED CURRENTLY DESORBING!)
         iCells;

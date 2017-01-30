@@ -1,4 +1,4 @@
-function sFilePath = saveFigures(varargin)
+function saveFigures(varargin)
 %SAVEFIGURES Saves all open figures into a folder
 %
 %   Usage:
@@ -83,6 +83,8 @@ sFilePath = strrep([sFolderName, '/', sTimeStamp, '_', sName], '/', filesep);
 
 % Finally we can save our beloved figures!
 savefig(aoFigures, sFilePath, 'compact');
+
+fprintf('Files saved here: %s\n', sFilePath);
 
 end
 

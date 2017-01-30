@@ -40,6 +40,11 @@ classdef infrastructure < base & event.source
         % is being called by TherMoS every simulated second and we want to
         % minimize clutter on the console.
         bSuppressConsoleOutput = false;
+        
+        % Sometimes it may be helpful for the user to receive an acoustic
+        % message when a simulation is complete. This can be enabled by
+        % setting this flag to true.
+        bPlayFinishSound = false;
     end
     
     
@@ -228,6 +233,9 @@ classdef infrastructure < base & event.source
                 
                 this.toMonitors.(csMonitors{iM}) = monitorConstructor(this, cParams{:});
             end
+            
+            % Bind the playFinishSound() method to the 'finished' event.
+            this.bind('finish', @(~) this.playFinishSound());
         
         
             % Pre Init
@@ -244,6 +252,8 @@ classdef infrastructure < base & event.source
             % iSimTicks/fSimTime reached - directly set attributes to
             % influence behaviour
             
+            iPhases = 0;
+            iBranches = 0;
             
             if this.oSimulationContainer.oTimer.iTick == -1
                 % Construct matter, solvers, ...
@@ -275,9 +285,13 @@ classdef infrastructure < base & event.source
                     %if ismethod(oChild,'createDomainInterfaces')
                     %   oChild.createDomainInterfaces();
                     %end
+                    
+                    iPhases = iPhases + oChild.iPhases;
+                    iBranches = iBranches + oChild.iBranches;
                 end
                 
                 disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
+                disp(['Model contains ', num2str(iBranches), ' Branches and ', num2str(iPhases), ' Phases.'])
                 
                 % Setup monitors
                 this.configureMonitors();
@@ -520,6 +534,15 @@ classdef infrastructure < base & event.source
             
             save([ 'data/' sPath '.mat' ], 'oSimObj');
 
+        end
+        
+        function playFinishSound(this)
+            if this.bPlayFinishSound
+                % Loading the data for the finishing sound
+                [afSampleData, afSampleRate] = audioread('lib/+special/V-HAB Finish Sound.mp3');
+                % Playing the finishing sound
+                sound(afSampleData, afSampleRate);
+            end
         end
 
     end
