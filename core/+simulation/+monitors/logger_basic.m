@@ -250,7 +250,18 @@ classdef logger_basic < simulation.monitor
         
         
         function add_mfLogValue(this,sNewLogName, mfLogValue, sUnit)
+            % This function is used by the plotter when mathematical
+            % operations are performed on different log values to create
+            % new derived log values. These new derived log values are
+            % stored in the logger by this function by adding them to the
+            % tDerivedLogValues struct and the mfDerivedLog matric. The two
+            % new properties "derived" were created to enable the advanceTo
+            % function of a finished or paused simulation to operate
+            % normally
             
+            % Checks if the derived log already exists, in which case it
+            % should not be created as a new log again, but the previous
+            % values should be overwritten.
             bLogExists = false;
             for iLogIndex = 1:length(this.tDerivedLogValues)
                 if strcmp(this.tDerivedLogValues(iLogIndex).sLabel, sNewLogName)
@@ -259,12 +270,20 @@ classdef logger_basic < simulation.monitor
                 end
             end
             
+            % If the log does not exists already a new entry is created,
+            % storing the name of the log value and the unit as the well as
+            % the actual entries
             if ~bLogExists
                 this.mfDerivedLog(:,end+1) = mfLogValue;
                 this.tDerivedLogValues(end+1).sLabel = sNewLogName;
                 this.tDerivedLogValues(end).sUnit = sUnit;
                 this.tDerivedLogValues(end).iIndex = length(this.mfDerivedLog(1,:));
             else
+                % TO DO: Check if this works, if a simulation was paused,
+                % the plot command was used and derived logs created and
+                % then the simulation restarted, after which the plot is
+                % called a second time. (Might have a dimension mismatch
+                % here) 
                 this.mfDerivedLog(:,iIndex) = mfLogValue;
             end
         end

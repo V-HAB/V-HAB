@@ -240,14 +240,20 @@ classdef plotter_basic < simulation.monitor
             
         end
         function MathematicOperationOnLog(this, csLogVariables, hFunction, sNewLogName, sUnit)
-            %% Function used to perform mathematical operations on logged values and store them as new log value
+            %% Function used to perform mathematical operations on logged values and store them as new derived log value
             % 
             % Requires a function input to describe the desired operation,
             % and a cell array to describe the log variables in the order
-            % they should be used in the function
+            % they should be used in the function. For examples please view
+            % the CDRA tutorial
+            
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             cmfArgument = cell(length(csLogVariables),1);
             
+            % First it is necessary to finde the log values from the
+            % variables used in the operation and store them in the
+            % argument cell array (a cell array was necessary because it is 
+            % used as function input) 
             for iIndex = 1:length(oLogger.tLogValues)
                 for iLogVariable = 1:length(csLogVariables)
                     if strcmp(oLogger.tLogValues(iIndex).sLabel, csLogVariables{iLogVariable})
@@ -263,15 +269,41 @@ classdef plotter_basic < simulation.monitor
                     end
                 end
             end
+            % In order to ensure that these logs are the same length as the
+            % "normal" logs, a vector with nans of the same length as the
+            % "normal" logs is created
             mfLogValue = nan(length(oLogger.mfLog(:,1)),1);
+            % Now only the values that actual have a number are overwritten
+            % with values, the rest remains as nans
             mfLogValue(1:length(mfArgument)) = hFunction(cmfArgument{:});
             
+            % Since this is the plotter it is not possible to add the value
+            % from here. Instead a function of the logger is called to
+            % store the new log value, together with a name and a unit in
+            % the tDerivedLogValues struct and the mfDerivedLog matrix of
+            % the logger
             oLogger.add_mfLogValue(sNewLogName, mfLogValue, sUnit)
         end
         function plotByName(this, ~)
-            %% Define Plot by Name
+            %% Plot by Name
+            % This function can be used to create plots by specifying the
+            % names of the log variables that should be used in the
+            % individual plot. These have to be defined in the setup file
+            % by using the definePlotByName function from this file. For
+            % information on the inputs and usage of the Plot By Name
+            % functionalty please view the comments of that function
+            
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             
+            %% Associating log values and plots
+            % In order to create the plots it is first necessary to find
+            % the log values and asscociate them with the correct plots.
+            % This is performed by looping over all log entries, plots, and
+            % names of variables that should be plotted for each plot to
+            % get the correct mfLog entries. This might be inefficient, but
+            % I currently have no idea how to make this more performant and
+            % since it is only executed once during plotting and not during
+            % the simulation itself, this should be fine
             for iIndex = 1:length(oLogger.tLogValues)
                 for iPlot = 1:length(this.tPlotsByName)
                     for iName = 1:length(this.tPlotsByName(iPlot).cNames) 
@@ -283,13 +315,19 @@ classdef plotter_basic < simulation.monitor
 
                            % remove NaNs from the log
                            mfLog(isnan(mfLog)) = [];
-
+                            
+                           % associate the log values with the correct
+                           % plot
                            this.tPlotsByName(iPlot).mLogData(:,iName) = mfLog;
                         end
                     end
                 end
             end
             
+            % Since derived logs (that were generated from normal log
+            % values through mathematical operations) were introduced a
+            % second loop is necessary to check if the desired value is
+            % a derived log
             for iIndex = 1:length(oLogger.tDerivedLogValues)
                 for iPlot = 1:length(this.tPlotsByName)
                     for iName = 1:length(this.tPlotsByName(iPlot).cNames) 
@@ -301,30 +339,66 @@ classdef plotter_basic < simulation.monitor
 
                            % remove NaNs from the log
                            mfLog(isnan(mfLog)) = [];
-
+                            
+                           % associate the log values with the correct
+                           % plot
                            this.tPlotsByName(iPlot).mLogData(:,iName) = mfLog;
                         end
                     end
                 end
             end
             
+            %% Plotting
+            % Now the log values and plots are correctly asscociated and
+            % the actual plotting can start. 
+            
+            % In order to allow multiple plots to be set as subplots for
+            % one figure it is necessary to store all figures in a cell
+            % array to allow later reacces to them
             csFigures = cell(0,0);
+            
+            % Then we loop through all plots that are defined in this way
             for iPlot = 1:length(this.tPlotsByName)
                 
+                % For each plot a title of the figure is specified and if
+                % multiple plots are used as subplots the title also serves
+                % as identifier into which figure they should be plotted.
+                % This loop checks if the figure for this loop already
+                % exists
                 bFoundFigure = false;
                 for iFigure = 1:length(csFigures)
                     if strcmp(csFigures{iFigure}.Name, this.tPlotsByName(iPlot).sTitle)
+                        % and if it does exist we set the already existing
+                        % figure as current figure
                         set(0, 'currentfigure', csFigures{iFigure});
                         bFoundFigure = true;
                         break
                     end
                 end
                 
+                % If the figure was not found a new figure has to be
+                % created and stored in the cell array
                 if ~bFoundFigure
                     csFigures{end+1} = figure('name', this.tPlotsByName(iPlot).sTitle);
                     set(0, 'currentfigure', csFigures{end});
                 end
+                
+                % Now we check if the figure is intended as subplot. The
+                % subplot position is defined by mbPosition which has only
+                % one boolean true at the intended position of the plot.
+                % For example the matrix:
+                % 0 0 0
+                % 0 1 0
+                % 0 0 0
+                % would define the subplot in the middle of a 3x3 field of
+                % subplots
                 if ~isempty(this.tPlotsByName(iPlot).mbPosition)
+                    % The boolean matrix has to be translated into the
+                    % required inputs for the subplot command, which is the
+                    % total row and line number and the number of the
+                    % subplot (which are counted from the top left to right
+                    % in each row and then from top to bottom for several
+                    % rows)
                     [iNumberRows, iNumberColumns] = size(this.tPlotsByName(iPlot).mbPosition);
                     [iRow, iColumn] = find(this.tPlotsByName(iPlot).mbPosition);
                     iPlotNumber = ((iRow - 1)*iNumberColumns) + iColumn;
@@ -332,6 +406,11 @@ classdef plotter_basic < simulation.monitor
                 end
                 grid on
                 hold on
+                % In order to allow the user to define the desired time
+                % output the actual plotting checks for the sTimeUnit
+                % string and transforms the log (which is always in
+                % seconds) into the desired time unit and sets the correct
+                % legend entry
                 for iName = 1:length(this.tPlotsByName(iPlot).cNames) 
                     switch this.tPlotsByName(iPlot).sTimeUnit
                         case 's'
@@ -353,6 +432,8 @@ classdef plotter_basic < simulation.monitor
                 end
                 ylabel( this.tPlotsByName(iPlot).yLabel)
                 legend(this.tPlotsByName(iPlot).cNames)
+                % Maximize figure
+                set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
             end
             
         end
