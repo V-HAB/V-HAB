@@ -1079,14 +1079,14 @@ classdef CDRA < vsys
             
             % Now the time step can be calculated by using the maximum
             % allowable mass change within one step
-            fTimeStepFlow = min(1./(abs(mfMassDiff) ./ (this.rMaxChange .* mfCellMass)));
+            fTimeStep = min(1./(abs(mfMassDiff) ./ (this.rMaxChange .* mfCellMass)));
             % Since the humidity requires special care because the matter
             % table crashes otherwise, a special time step for the humidity
             % is performed. Humidity of > 100% is reached at partial masses
-            % above 0.0039 so limit was set to 0.002
-            fTimeStepH2O = min(abs((2e-3*mfCellMass((afChangeH2O > 0)))./afChangeH2O(afChangeH2O > 0)));
-            
-            fTimeStep = min([fTimeStepFlow,fTimeStepH2O]);
+            % above 0.0039 so limit was set to 0.0005
+%             fTimeStepH2O = min(abs((1e-3*mfCellMass((afChangeH2O > 0)))./afChangeH2O(afChangeH2O > 0)));
+%             
+%             fTimeStep = min([fTimeStepFlow,fTimeStepH2O]);
             if fTimeStep > this.fMaximumTimeStep
                 fTimeStep = this.fMaximumTimeStep;
             elseif fTimeStep  <= this.fMinimumTimeStep
