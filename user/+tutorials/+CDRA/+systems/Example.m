@@ -350,7 +350,7 @@ classdef Example < vsys
             tutorials.CDRA.components.Crew_Humidity_Generator(...
                 this.toStores.Cabin,'CrewHumidityGen',...
                 'HumanWater.HumidityOut', 'CabinAir.HumidityIn',...
-                [1,1], this);
+                [1,1,1,1,1,1], this);
             
         end
         function createSolverStructure(this)
@@ -443,7 +443,7 @@ classdef Example < vsys
                             this.cCrewPlaner{iCM,iEvent}.Ended = true;
                             %if the crew member was sleeping --> enter nominal
                             %state
-                            if strcmp(this.cCrewPlaner{iCM,iEvent}.State, 'sleep');
+                            if strcmp(this.cCrewPlaner{iCM,iEvent}.State, 'sleep')
                                 this.cCrewState{iCM} = 'nominal';
                             %of the crew member was working out --> enter
                             %recovery state
@@ -459,9 +459,11 @@ classdef Example < vsys
             if (this.oTimer.fTime > (19.3*3600)) && (this.oTimer.fTime < (37.8*3600))
                 this.iCrewMembers = 4;
                 this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1,1]);
+                this.toStores.Cabin.toProcsP2P.CrewHumidityGen.setCrew([1,1,1,1]);
             elseif (this.oTimer.fTime >= (37.8*3600))
                 this.iCrewMembers = 3;
                 this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1]);
+                this.toStores.Cabin.toProcsP2P.CrewHumidityGen.setCrew([1,1,1]);
             end
             
         end

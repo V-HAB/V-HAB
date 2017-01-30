@@ -85,7 +85,7 @@ classdef CDRA < vsys
         
         % As it sounde, the minimum  and maximum timestep used for the system
         fMinimumTimeStep        = 1e-2;
-        fMaximumTimeStep        = 60;
+        fMaximumTimeStep        = 10;
         
         % This variable decide by how much percent the mass in any one cell
         % is allowed to change within one tick (increasing this does not
@@ -318,6 +318,8 @@ classdef CDRA < vsys
                 % divided by the number of cells to obtain the tfMass struct
                 % for each phase of each cell. Currently the assumption here is
                 % that each cell has the same size.
+                clear tfMassesAbsorber;
+                clear tfMassesFlow;
                 fAbsorberVolume         = this.tGeometry.(csTypes{iType}).fAbsorberVolume;
                 fFlowVolume             = this.tGeometry.(csTypes{iType}).fVolumeFlow;
                 iCellNumber             = tInitialization.(csTypes{iType}).iCellNumber;
@@ -335,7 +337,7 @@ classdef CDRA < vsys
                 components.filter.components.FilterStore(this, [(csTypes{iType}), '_2'], (fFlowVolume + fAbsorberVolume));
 
                 fDensityAir = 1.2; % at 20°C and 1 atm
-                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', (fFlowVolume*fDensityAir*this.tAtmosphere.fCO2Percent)), fTemperatureFlow, 0, this.tAtmosphere.fPressure);
+                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', (fFlowVolume*fDensityAir*this.tAtmosphere.fCO2Percent)), fTemperatureFlow, 0.1, this.tAtmosphere.fPressure);
 
                 % The filter and flow phase total masses provided in the
                 % tInitialization struct have to be divided by the number of
@@ -608,6 +610,7 @@ classdef CDRA < vsys
                 for iP = 1:length(this.toStores.(csStores{iS}).aoPhases)
                     oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
                     oPhase.rMaxChange = inf;
+                    oPhase.fMaxStep = inf;
                 end
             end
             
@@ -948,10 +951,10 @@ classdef CDRA < vsys
                     % If the cycle is not currently changing the normal
                     % calculation for the flowrates in continous operation
                     % are used
-                    if ((this.tTimeProperties.AdsorptionLastExec + this.tTimeProperties.AdsorptionStep) - this.oTimer.fTime) < 0
+                    if ((this.tTimeProperties.AdsorptionLastExec + this.tTimeProperties.AdsorptionStep) - this.oTimer.fTime) <= 0
                         this.updateFlowratesAdsorption()
                     end
-                    if ((this.tTimeProperties.DesorptionLastExec + this.tTimeProperties.DesorptionStep) - this.oTimer.fTime) < 0
+                    if ((this.tTimeProperties.DesorptionLastExec + this.tTimeProperties.DesorptionStep) - this.oTimer.fTime) <= 0
                         this.updateFlowratesDesorption()
                     end
                     
@@ -1018,12 +1021,14 @@ classdef CDRA < vsys
             % recalculated
             aoBranches  = this.tMassNetwork.(['aoBranchesCycle',sCycle]);
             aoPhases    = this.tMassNetwork.(['aoPhasesCycle',sCycle]);
+            aoAbsorber = this.tMassNetwork.(['aoAbsorberCycle',sCycle])(1:this.iCells);
             
             % well the phase pressures have not been updated ( the
             % rMaxChange was set to inf) in order to do controlled updates
             % now
             for iCell = 1:this.iCells
                 aoPhases(iCell).update();
+                aoAbsorber(iCell).oOut.oPhase.update();
             end
             
             % In order to ensure that the flow rates considered during this
@@ -1168,6 +1173,7 @@ classdef CDRA < vsys
             
             for iPhase = 1:length(aoPhases)
                 aoPhases(iPhase).update();
+                aoAbsorber(iPhase).oOut.oPhase.update();
             end
             
             for iAbsorber = 1:length(aoAbsorber)
@@ -1189,7 +1195,7 @@ classdef CDRA < vsys
             abHighPressure = (mfCellPressure > 500);
             
             mfMassDiff = zeros(length(aoPhases),1);
-            mfMassDiff(abHighPressure) = -mfCellMass(abHighPressure)./(this.fAirSafeTime/2);
+            mfMassDiff(abHighPressure) = -mfCellMass(abHighPressure)./(this.fAirSafeTime/3);
             
             fTimeStep = min(abs((this.rMaxChange .* mfCellMass) ./ mfMassDiff));
             
