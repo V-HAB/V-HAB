@@ -234,6 +234,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         
         % Mass that has to be removed on next mass update
         afExcessMass;
+        mfTotalFlowsByExme;
     end
 
     properties (SetAccess = private, GetAccess = public)
@@ -582,27 +583,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 return;
             end;
             
-            % Each row: Partial Mass flows as vector
-            afPartialFlowRateOut        = zeros(this.iProcsEXME, this.oMT.iSubstances);
-            afPartialFlowRateIn         = zeros(this.iProcsEXME, this.oMT.iSubstances);
-            
            	mbBranch  	= false(this.iProcsEXME,1);
             miSign      = zeros(this.iProcsEXME, 1);
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
-                % The fFlowRate parameter is the flow rate at the exme,
-                % with a negative flow rate being an extraction!
-                % arFlowPartials is a vector, with the partial mass ratios
-                % at the exme for each substance. 
-                % afProperties contains the temperature and heat capacity
-                % of the exme.
-                [ fFlowRate, arFlowPartials, ~ ] = this.coProcsEXME{iI}.getFlowData();
-                % We only care for the outflows in this case!
-                if fFlowRate >= 0
-                    afPartialFlowRateIn(iI,:) = fFlowRate .* arFlowPartials;
-                else
-                    afPartialFlowRateOut(iI,:) = fFlowRate .* arFlowPartials;
-                end
                 mbBranch(iI) = ~this.coProcsEXME{iI}.bFlowIsAProcP2P;
                 miSign(iI) = this.coProcsEXME{iI}.iSign;
             end 
@@ -621,6 +605,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % mfFlowRates). Now these outlet flows have to be reduced
             % according to the missing mass to prevent a negative mass from
             % occuring.
+            afPartialFlowRateOut = zeros(this.iProcsEXME, this.oMT.iSubstances);
+            afPartialFlowRateOut(any(this.mfTotalFlowsByExme,2)) = this.mfTotalFlowsByExme(any(this.mfTotalFlowsByExme,2));
             
             miNegatives = find(abNegative);
             
@@ -1231,6 +1217,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             afTotalInOuts = sum(mfTotalFlows, 1);
             
             
+            this.mfTotalFlowsByExme = mfTotalFlows;
             
             
             afTotalInOuts   = tools.round.prec(afTotalInOuts,   this.oTimer.iPrecision);

@@ -1105,16 +1105,18 @@ classdef CDRA < vsys
             % Now the mass difference required in the phases is
             % translated into massflows for the branches for the next
             % second
+            mfMassDiff = mfMassDiff./fTimeStep;
+            
             mfFlowRatesNew = zeros(this.iCells+1,1);
             % First branch has to be handled differently
             iBranch = 1;
-            mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))/fTimeStep));
+            mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))));
           	aoBranches(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
             
             for iBranch = 2:length(aoBranches)
             % The reduction in flow rate from the P2Ps has to be given to
             % all the following branches as well
-                mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))/fTimeStep) - sum(this.tMassNetwork.mfAdsorptionFlowRate(1:iBranch-1)));
+                mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))) - sum(this.tMassNetwork.mfAdsorptionFlowRate(1:iBranch-1)));
                 aoBranches(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
             end
             
@@ -1181,53 +1183,57 @@ classdef CDRA < vsys
             
             iDesorbCells = this.tGeometry.Zeolite5A.iCellNumber;
             iStartCell = 1+(this.tGeometry.Sylobead.iCellNumber + this.tGeometry.Zeolite13x.iCellNumber);
-            
+
             aoPhases = this.tMassNetwork.(['aoPhasesCycle',sCycle])(iStartCell:iStartCell+iDesorbCells-1);
             aoAbsorber = this.tMassNetwork.(['aoAbsorberCycle',sCycle])(iStartCell:iStartCell+iDesorbCells-1);
             aoBranches = this.tMassNetwork.(['aoBranchesCycle',sCycle])(iStartCell+1:iStartCell+iDesorbCells-1);
-            
-            for iPhase = 1:length(aoPhases)
-                aoPhases(iPhase).update();
-                aoAbsorber(iPhase).oOut.oPhase.update();
-            end
-            
-            for iAbsorber = 1:length(aoAbsorber)
-                aoAbsorber(iAbsorber).ManualUpdate();
-            end
-            
-            mfCellMass(:,1)     = [aoPhases.fMass];
-            mfCellPressure(:,1) = [aoPhases.fPressure];
-            
-            mfDesorptionFlowRate = -this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+1:end);
 
-            if (this.oTimer.fTime - this.tTimeProperties.fLastCycleSwitch) < this.fAirSafeTime
-                aoBranches(end+1) = this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]);
+            if min([aoAbsorber.fTemperature]) > 350
+
+                for iPhase = 1:length(aoPhases)
+                    aoPhases(iPhase).update();
+                    aoAbsorber(iPhase).oOut.oPhase.update();
+                end
+
+                for iAbsorber = 1:length(aoAbsorber)
+                    aoAbsorber(iAbsorber).ManualUpdate();
+                end
+
+                mfCellMass(:,1)     = [aoPhases.fMass];
+                mfCellPressure(:,1) = [aoPhases.fPressure];
+
+                mfDesorptionFlowRate = -this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+1:end);
+
+                if (this.oTimer.fTime - this.tTimeProperties.fLastCycleSwitch) < this.fAirSafeTime
+                    aoBranches(end+1) = this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]);
+                else
+                    aoBranches(end+1) = this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]);
+                    this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
+                end
+
+                abHighPressure = (mfCellPressure > 500);
+
+                mfMassDiff = zeros(length(aoPhases),1);
+                mfMassDiff(abHighPressure) = -mfCellMass(abHighPressure)./(this.fAirSafeTime/3);
+
+                fTimeStep = min(abs((this.rMaxChange .* mfCellMass) ./ mfMassDiff));
+
+                if fTimeStep > this.fMaximumTimeStep
+                    fTimeStep = this.fMaximumTimeStep;
+                elseif fTimeStep  <= this.fMinimumTimeStep
+                    fTimeStep = this.fMinimumTimeStep;
+                end
+
+                mfFlowRatesNew = zeros(length(aoBranches),1);
+                for iBranch = 1:(length(aoBranches))
+                    mfFlowRatesNew(iBranch) = (-sum(mfMassDiff(1:iBranch))) + sum(mfDesorptionFlowRate(1:iBranch));
+                    aoBranches(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
+                end
+
+                this.tTimeProperties.DesorptionStep = fTimeStep;
             else
-                aoBranches(end+1) = this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]);
-                this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
+                this.tTimeProperties.DesorptionStep = 1;
             end
-            
-            abHighPressure = (mfCellPressure > 500);
-            
-            mfMassDiff = zeros(length(aoPhases),1);
-            mfMassDiff(abHighPressure) = -mfCellMass(abHighPressure)./(this.fAirSafeTime/3);
-            
-            fTimeStep = min(abs((this.rMaxChange .* mfCellMass) ./ mfMassDiff));
-            
-            if fTimeStep > this.fMaximumTimeStep
-                fTimeStep = this.fMaximumTimeStep;
-            elseif fTimeStep  <= this.fMinimumTimeStep
-                fTimeStep = this.fMinimumTimeStep;
-            end
-            
-            mfFlowRatesNew = zeros(length(aoBranches),1);
-            for iBranch = 1:(length(aoBranches))
-                mfFlowRatesNew(iBranch) = (-sum(mfMassDiff(1:iBranch))) + sum(mfDesorptionFlowRate(1:iBranch));
-                aoBranches(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
-            end
-            
-            this.tTimeProperties.DesorptionStep = fTimeStep;
-            
             %% Set the heater power for the desorption cells
             % Check cell temperature of the desorber cells
             
