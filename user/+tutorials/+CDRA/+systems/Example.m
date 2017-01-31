@@ -105,6 +105,7 @@ classdef Example < vsys
                
             % Adding a phase to the store 'Cabin', 100 m^3 air
             oCabinPhase = matter.phases.gas(this.toStores.Cabin, 'CabinAir', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            this.toChildren.CDRA.setReferencePhase(oCabinPhase);
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oCabinPhase, 'Port_ToCCAA');

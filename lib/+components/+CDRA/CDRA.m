@@ -882,7 +882,7 @@ classdef CDRA < vsys
                 end
                 
                 this.setTimeStep(fInitTimeStep);
-                
+                this.updateCCAA();
             elseif (this.iCycleActive == 1) && (mod(this.oTimer.fTime, this.fCycleTime * 2) >= (this.fCycleTime)) && (this.oTimer.iTick ~= 0)
                 % On cycle change all flow rates are momentarily set to zero
                 for iBranch = 1:length(this.tMassNetwork.aoBranchesCycleOne)
@@ -925,11 +925,11 @@ classdef CDRA < vsys
                 end
                 for iP2P = 1:this.tGeometry.Zeolite5A.iCellNumber
                     this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).iCell = this.iCells + iP2P;
-                    this.aoAbsorberPhase(iCell) = this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).oOut.oPhase;
+                    this.tMassNetwork.aoAbsorberPhase(iP2P) = this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).oOut.oPhase;
                 end
                 
                 this.setTimeStep(fInitTimeStep);
-                
+                this.updateCCAA();
             elseif (this.oTimer.iTick ~= 0)
                 % the flowrate update function is only called if no cycle
                 % change is occuring in this tick!
@@ -966,7 +966,15 @@ classdef CDRA < vsys
                 end
             end
             
-            %% Handling the flowrates of the asscoiated CCAA
+            this.calculateThermalProperties()
+            
+            % since the thermal solver currently only has constant time
+            % steps it currently uses the same time step as the filter
+            % model.
+            this.oThermalSolver.setTimestep(this.fTimeStep);
+        end
+        function updateCCAA(this,~)
+            %% Handling the flowrates of the associated CCAA
             % The CCAA flowrates are adapted here based on the dynamic
             % flowrates of CDRA. This way the CCAA can still work with the
             % simpler flow rate calculations as that should be fine for the
@@ -998,13 +1006,6 @@ classdef CDRA < vsys
             % Sets the new flowrate from Cabin to TCCV inside CCAA
             fNewFlowRate_Cabin_TCCV = fNewFlowRate_TCCV_CHX + fCurrentFlowRate_TCCV_Cabin - fFlowRate_CDRA_CCAA; 
             this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fNewFlowRate_Cabin_TCCV);
-            
-            this.calculateThermalProperties()
-            
-            % since the thermal solver currently only has constant time
-            % steps it currently uses the same time step as the filter
-            % model.
-            this.oThermalSolver.setTimestep(this.fTimeStep);
         end
         function updateFlowratesAdsorption(this, ~)
             
@@ -1129,6 +1130,23 @@ classdef CDRA < vsys
             
             this.tTimeProperties.AdsorptionLastExec = this.oTimer.fTime;
             this.tTimeProperties.AdsorptionStep = fTimeStep;
+            
+            % Updates the atmosphere
+            this.oAtmosphere.update();
+            
+            aoTCCV = this.oParent.toChildren.(this.sAsscociatedCCAA).toStores.TCCV.aoPhases;
+            for iPhase = 1:length(aoTCCV)
+                aoTCCV(iPhase).update();
+            end
+            
+            aoCHX = this.oParent.toChildren.(this.sAsscociatedCCAA).toStores.CHX.aoPhases;
+            for iPhase = 1:length(aoCHX)
+                aoCHX(iPhase).update();
+            end
+            
+            % Updates the CCAA flowrates
+            this.updateCCAA();
+            
         end
         function updateFlowratesDesorption(this, ~)
             

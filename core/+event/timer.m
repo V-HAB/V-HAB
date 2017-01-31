@@ -157,6 +157,13 @@ classdef timer < base
         
         
         function bindPostTick(this, hCB, iPriority)
+            % This function can be used to define functions that should be
+            % executed after one tick of the system in an order defined by
+            % iPriority. Valid entries for iPriority are -3 to 3 in integer
+            % and go in the order from -3 for the functions executed first
+            % in the posttick to 3 for the functions executed last in the
+            % posttick. hCB should be a function for the callback (hence
+            % hCB) which can be defined for example as @this.update
             if nargin < 3 || isempty(iPriority), iPriority = 0; end;
             
             iPriority = iPriority + 4;
