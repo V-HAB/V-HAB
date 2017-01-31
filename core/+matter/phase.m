@@ -682,11 +682,27 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % that was removed too much from one substance, which is added
             % to the phase again, is instead removed from all the other
             % substances
+            % Also for P2P the user probably does not want to keep the mass
+            % constant but control what flows into the other phase.
+            % Therefore this is only used on Branches. The mass that was
+            % recreated because of P2Ps is instead also transfered through
+            % branches
             fPositiveMass = sum(afMassNew(~abNegative));
             if (fPositiveMass > abs(sum(afNegativeMass))) && ~strcmp(this.sType, 'mixture')
-                afPositiveMassByExMe = zeros(this.iProcsEXME, this.oMT.iSubstances);
-                afPositiveMassByExMe(:,~abNegative) = -((afMassNew(~abNegative)./fPositiveMass).*sum(afNegativeMassByExMe,2));
-                afNegativeMassByExMe = afNegativeMassByExMe + afPositiveMassByExMe;
+                fNegativeMassThroughP2P = sum(sum(afNegativeMassByExMe(~mbBranch,:),1));
+                afNegativeMassThroughBranch = sum(afNegativeMassByExMe(mbBranch,:),2);
+                if any(afNegativeMassThroughBranch)
+                    mfWeightingFactor = zeros(this.iProcsEXME, 1);
+                    mfWeightingFactor(mbBranch) = afNegativeMassThroughBranch./sum(afNegativeMassThroughBranch);
+
+                    afPositiveMassByExMe = zeros(this.iProcsEXME, this.oMT.iSubstances);
+                    for iExme = 1:this.iProcsEXME
+                        if mbBranch(iExme)
+                            afPositiveMassByExMe(iExme,~abNegative) = -((afMassNew(~abNegative)./fPositiveMass).*(sum(afNegativeMassByExMe(iExme,:),2) + (mfWeightingFactor(iExme) .* fNegativeMassThroughP2P)));
+                        end
+                    end
+                    afNegativeMassByExMe = afNegativeMassByExMe + afPositiveMassByExMe;
+                end
             end
             for iI = 1:this.iProcsEXME
                 % First the exme on the other side of the affected outflows

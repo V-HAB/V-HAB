@@ -110,6 +110,7 @@ classdef setup < simulation.infrastructure
             
             oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
             oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
+            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
             
             csZeolite13x_CO2 = cell(2,5);
             csZeolite13x_H2O = cell(2,5);
