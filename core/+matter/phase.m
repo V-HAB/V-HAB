@@ -680,13 +680,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % except mixture, because other phases would not be able to
             % handle mixture substances :). Therefore the negative mass
             % that was removed too much from one substance, which is added
-            % to the phase again, is instead removed from another substance
-            % that has a higher mass, if that is available
-            fMaxPartialMass = max(afMassNew);
-            if (fMaxPartialMass > abs(sum(afNegativeMass))) && ~strcmp(this.sType, 'mixture')
-                abMax = afMassNew == fMaxPartialMass;
-                aiMax = find(abMax);
-                afNegativeMassByExMe(:,aiMax(1)) = afNegativeMassByExMe(:,aiMax(1)) - sum(afNegativeMassByExMe,2);
+            % to the phase again, is instead removed from all the other
+            % substances
+            fPositiveMass = sum(afMassNew(~abNegative));
+            if (fPositiveMass > abs(sum(afNegativeMass))) && ~strcmp(this.sType, 'mixture')
+                afPositiveMassByExMe = zeros(this.iProcsEXME, this.oMT.iSubstances);
+                afPositiveMassByExMe(:,~abNegative) = -((afMassNew(~abNegative)./fPositiveMass).*sum(afNegativeMassByExMe,2));
+                afNegativeMassByExMe = afNegativeMassByExMe + afPositiveMassByExMe;
             end
             for iI = 1:this.iProcsEXME
                 % First the exme on the other side of the affected outflows
