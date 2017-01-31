@@ -176,7 +176,24 @@ classdef exme < base
                     %      if that get's updated, fr recalc is called
                     %      on all branches which would set the new
                     %      arPartials on all flows ... right?
-                    arPartials   = this.oFlow.arPartialMass;
+                    %
+                    % Well in the CDRA system this actuall differed. Also I
+                    % would would say the most important thing here is that
+                    % both phases use the same partial mass composition for
+                    % their massupdates for all mass transfers, because
+                    % otherwise we are transforming one mass into another
+                    % almost unnoticeably for the user. Since this function
+                    % is only called by the calculateTimeStep on the post
+                    % Tick it should be ensured that the phase does not
+                    % change its composition between the update function.
+                    
+                    if this == this.oFlow.oBranch.coExmes{2}
+                        oCounterExMe = this.oFlow.oBranch.coExmes{1};
+                    else
+                        oCounterExMe = this.oFlow.oBranch.coExmes{2};
+                    end
+                    arPartials   = oCounterExMe.oPhase.arPartialMass;
+                    
                     afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
                     
                 else 
