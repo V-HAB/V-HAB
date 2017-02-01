@@ -361,7 +361,7 @@ classdef Example < vsys
             this.toBranches.Cabin_TempControl.oHandler.setFlowRate(10);
             
             solver.matter.manual.branch(this.toBranches.Coolant_TempControl);
-            this.toBranches.Coolant_TempControl.oHandler.setFlowRate(1);
+            this.toBranches.Coolant_TempControl.oHandler.setFlowRate(10);
             
         end
     end

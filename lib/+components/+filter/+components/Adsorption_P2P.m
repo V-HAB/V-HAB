@@ -114,15 +114,17 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 this.afPPOld            = afPP;
                 this.fTemperatureOld    = fTemperature;
             else
-                mfFlowRatesAdsorption = (fTimeStep * this.fFlowRate) .* this.arPartialMass;
-                mfFlowRatesDesorption = (fTimeStep * this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).fFlowRate) .* this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).arPartialMass;
+                mfFlowRatesAdsorption =  this.fFlowRate .* this.arPartialMass;
+                mfFlowRatesDesorption = -this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).fFlowRate .* this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).arPartialMass;
             end
             
-            afAvailableMass = afInFlow.*fTimeStep + this.oIn.oPhase.afMass;
+            afOutflow = (sum(afInFlow) - sum(mfFlowRatesAdsorption)) .* this.oIn.oPhase.arPartialMass;
+            
+            afAvailableMass = (afInFlow - afOutflow).*fTimeStep + this.oIn.oPhase.afMass;
             
             fP2P_MassChange = fTimeStep .* mfFlowRatesAdsorption;
             
-            fP2P_MassChange(fP2P_MassChange > afAvailableMass) = afAvailableMass(fP2P_MassChange > afAvailableMass) ./ fTimeStep;
+            fP2P_MassChange(fP2P_MassChange > afAvailableMass) = afAvailableMass(fP2P_MassChange > afAvailableMass);
             
             afPartialFlowRates = fP2P_MassChange./fTimeStep;
             
@@ -135,7 +137,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             this.setMatterProperties(fFlowRate, arPartials);
             
-            mfFlowRates = afPartialFlowRates - mfFlowRatesDesorption;
+            mfFlowRates = afPartialFlowRates + mfFlowRatesDesorption;
             
             this.fAdsorptionHeatFlow = - sum(mfFlowRates.*this.oMT.afMolarMass.*this.mfAbsorptionEnthalpy);
             this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;

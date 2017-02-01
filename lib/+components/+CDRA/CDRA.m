@@ -1074,7 +1074,9 @@ classdef CDRA < vsys
             mfMassDiff = (mfPressurePhase - mfCellPressure)./[aoPhases.fMassToPressure]';
             
             % Now the time step can be calculated by using the maximum
-            % allowable mass change within one step
+            % allowable mass change within one step (Basically the time
+            % step is 1/ Times Max Mass Change. For large mass changes it
+            % therefore is small and for small mass changes it is large ;)
             fTimeStep = min(1./(abs(mfMassDiff) ./ (this.rMaxChange .* mfCellMass)));
             
             if fTimeStep > this.fMaximumTimeStep
@@ -1083,6 +1085,9 @@ classdef CDRA < vsys
                 fTimeStep = this.fMinimumTimeStep;
             end
             
+            % Well this actually enforces the percental mass change limit
+            % imposed by rMaxChange (as the timestep in this case does not
+            % do this since absolute masses are calculated)
             abReduceMassDiff = abs(mfMassDiff) > (this.rMaxChange .* mfCellMass);
             if any(abReduceMassDiff)
                 % factor by which the mass change currently exceeds the
@@ -1134,13 +1139,13 @@ classdef CDRA < vsys
             end
             
             % Usefull code for debugging :)
-%             iCell = 1;
-%             ActualMassDiffLast = this.fTimeStep * (abs(this.(['aoBranchesCycle',sCycle])(iCell).fFlowRate) - abs(this.(['aoBranchesCycle',sCycle])(iCell+1).fFlowRate) - this.tMassNetwork.mfAdsorptionFlowRate(iCell));
+%             iCell = 25;
+%             ActualMassDiffLast = aoPhases(iCell).fMass - aoPhases(iCell).fMassLastUpdate;
 %              
-%             ActualMassDiffNow = fTimeStep * (abs(this.(['aoBranchesCycle',sCycle])(iCell).oHandler.fRequestedFlowRate) - abs(this.(['aoBranchesCycle',sCycle])(iCell+1).oHandler.fRequestedFlowRate) - this.tMassNetwork.mfAdsorptionFlowRate(iCell));
+%             ActualMassDiffNow = fTimeStep * (abs(this.tMassNetwork.(['aoBranchesCycle',sCycle])(iCell).oHandler.fRequestedFlowRate) - abs(this.tMassNetwork.(['aoBranchesCycle',sCycle])(iCell+1).oHandler.fRequestedFlowRate) - this.tMassNetwork.mfAdsorptionFlowRate(iCell));
 %             
-%             this.(['aoBranchesCycle',sCycle])(iCell).oHandler.fRequestedFlowRate
-%             this.(['aoBranchesCycle',sCycle])(iCell+1).oHandler.fRequestedFlowRate
+%             this.tMassNetwork.(['aoBranchesCycle',sCycle])(iCell).oHandler.fRequestedFlowRate
+%             this.tMassNetwork.(['aoBranchesCycle',sCycle])(iCell+1).oHandler.fRequestedFlowRate
 %             this.tMassNetwork.mfAdsorptionFlowRate(iCell)
             
             this.tTimeProperties.AdsorptionLastExec = this.oTimer.fTime;
