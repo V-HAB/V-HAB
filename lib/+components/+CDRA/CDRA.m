@@ -878,7 +878,7 @@ classdef CDRA < vsys
                 % second
                 mfFlowRate = zeros(this.iCells,1);
                 for iBranch = 1:(length(this.tMassNetwork.aoBranchesCycleOne))
-                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleOne(iBranch) * sum(mfMassDiff(iBranch:end))/fInitTimeStep;
+                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleOne(iBranch) * (this.fFlowrateMain + sum(mfMassDiff(iBranch:end))/fInitTimeStep);
                     this.tMassNetwork.aoBranchesCycleOne(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
@@ -892,6 +892,16 @@ classdef CDRA < vsys
                     this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).iCell = this.iCells + iP2P;
                     this.tMassNetwork.aoAbsorberPhases(iP2P) = this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).oOut.oPhase;
                 end
+                
+                aoAbsorber = this.tMassNetwork.aoAbsorberCycleOne;
+                for iAbsorber = 1:length(aoAbsorber)
+                    aoAbsorber(iAbsorber).setFlowRateToZero();
+                end
+                aoAbsorber = this.tMassNetwork.aoAbsorberCycleTwo;
+                for iAbsorber = 1:length(aoAbsorber)
+                    aoAbsorber(iAbsorber).setFlowRateToZero();
+                end
+                this.tMassNetwork.mfAdsorptionFlowRate = zeros(this.iCells + this.tGeometry.Zeolite5A.iCellNumber,1);
                 
                 this.setTimeStep(fInitTimeStep);
                 this.updateCCAA();
@@ -926,7 +936,7 @@ classdef CDRA < vsys
                 % second
                 mfFlowRate = zeros(this.iCells,1);
                 for iBranch = 1:(length(this.tMassNetwork.aoBranchesCycleTwo))
-                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleTwo(iBranch) * sum(mfMassDiff(iBranch:end))/fInitTimeStep;
+                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleTwo(iBranch) * (this.fFlowrateMain + sum(mfMassDiff(iBranch:end))/fInitTimeStep);
                     this.tMassNetwork.aoBranchesCycleTwo(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
@@ -940,7 +950,15 @@ classdef CDRA < vsys
                     this.tMassNetwork.aoAbsorberPhase(iP2P) = this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).oOut.oPhase;
                 end
                 
-                keyboard()
+                aoAbsorber = this.tMassNetwork.aoAbsorberCycleOne;
+                for iAbsorber = 1:length(aoAbsorber)
+                    aoAbsorber(iAbsorber).setFlowRateToZero();
+                end
+                aoAbsorber = this.tMassNetwork.aoAbsorberCycleTwo;
+                for iAbsorber = 1:length(aoAbsorber)
+                    aoAbsorber(iAbsorber).setFlowRateToZero();
+                end
+                this.tMassNetwork.mfAdsorptionFlowRate = zeros(this.iCells + this.tGeometry.Zeolite5A.iCellNumber,1);
                 
                 this.setTimeStep(fInitTimeStep);
                 this.updateCCAA();
