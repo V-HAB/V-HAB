@@ -610,6 +610,9 @@ classdef CDRA < vsys
                     oPhase.fMaxStep = inf;
                 end
             end
+            oPhase = this.tMassNetwork.aoBranchesCycleOne(1).coExmes{2}.oPhase;
+            oPhase.rMaxChange = inf;
+            oPhase.fMaxStep = inf;
             
             % adds the lumped parameter thermal solver to calculate the
             % convective and conductive heat transfer
@@ -1039,6 +1042,7 @@ classdef CDRA < vsys
                 aoPhases(iCell).update();
                 aoAbsorber(iCell).oOut.oPhase.update();
             end
+            aoBranches(1).coExmes{2}.oPhase.update();
             
             % The logic used to calculate the flow rates is as follows:
             %
@@ -1122,7 +1126,7 @@ classdef CDRA < vsys
             mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))));            
             aoBranches(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
             
-            for iBranch = 1:length(aoBranches)
+            for iBranch = 2:length(aoBranches)
             % The reduction in flow rate from the P2Ps has to be given to
             % all the following branches as well
                 mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))) - sum(this.tMassNetwork.mfAdsorptionFlowRate(1:iBranch-1)));
