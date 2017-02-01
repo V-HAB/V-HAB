@@ -235,6 +235,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Mass that has to be removed on next mass update
         afExcessMass;
         mfTotalFlowsByExme;
+        oOriginPhase;
     end
 
     properties (SetAccess = private, GetAccess = public)
@@ -429,8 +430,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %
             % In the same step remove mass that was transmitted from other phases which
             % resulted in a negative mass for the other phase
-            afMassNew =  this.afMass + afTotalInOuts;
             
+            afMassNew =  this.afMass + afTotalInOuts;
             afMassNew = afMassNew - this.afExcessMass;
             this.afRemovedExcessMass = this.afRemovedExcessMass + this.afExcessMass;
             this.afExcessMass = zeros(1,this.oMT.iSubstances);
@@ -606,7 +607,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % according to the missing mass to prevent a negative mass from
             % occuring.
             afPartialFlowRateOut = zeros(this.iProcsEXME, this.oMT.iSubstances);
-            afPartialFlowRateOut(any(this.mfTotalFlowsByExme,2)) = this.mfTotalFlowsByExme(any(this.mfTotalFlowsByExme,2));
+            abNegativeFlows = sum(this.mfTotalFlowsByExme,2) < 0;
+            afPartialFlowRateOut(abNegativeFlows,:) = this.mfTotalFlowsByExme(abNegativeFlows,:);
             
             miNegatives = find(abNegative);
             
@@ -671,23 +673,43 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Also for P2P the user probably does not want to keep the mass
             % constant but control what flows into the other phase.
             % Therefore this is only used on Branches. The mass that was
-            % recreated because of P2Ps is instead also transfered through
-            % branches
+            % recreated because of P2Ps is instead tranferred to the origin
+            % mass which has to be a larger mass that is allowed to change
+            % in mass
             fPositiveMass = sum(afMassNew(~abNegative));
-            if (fPositiveMass > abs(sum(afNegativeMass))) && ~strcmp(this.sType, 'mixture')
-                fNegativeMassThroughP2P = sum(sum(afNegativeMassByExMe(~mbBranch,:),1));
+            afPositiveMassOrigin = zeros(1,this.oMT.iSubstances);
+            if  strcmp(this.sType, 'mixture')
+                % In this case the absorber is experiencing a desorption
+                % process and a negative mass in the process
+                
+            elseif (fPositiveMass > abs(sum(afNegativeMass)))
+                
                 afNegativeMassThroughBranch = sum(afNegativeMassByExMe(mbBranch,:),2);
+                
                 if any(afNegativeMassThroughBranch)
-                    mfWeightingFactor = zeros(this.iProcsEXME, 1);
-                    mfWeightingFactor(mbBranch) = afNegativeMassThroughBranch./sum(afNegativeMassThroughBranch);
-
                     afPositiveMassByExMe = zeros(this.iProcsEXME, this.oMT.iSubstances);
                     for iExme = 1:this.iProcsEXME
                         if mbBranch(iExme)
-                            afPositiveMassByExMe(iExme,~abNegative) = -((afMassNew(~abNegative)./fPositiveMass).*(sum(afNegativeMassByExMe(iExme,:),2) + (mfWeightingFactor(iExme) .* fNegativeMassThroughP2P)));
+                            afPositiveMassByExMe(iExme,~abNegative) = -((afMassNew(~abNegative)./fPositiveMass).*(sum(afNegativeMassByExMe(iExme,:),2)));
                         end
                     end
+                    
                     afNegativeMassByExMe = afNegativeMassByExMe + afPositiveMassByExMe;
+                end
+                
+                % For P2P flowrates it is not possible to change the
+                % substances that are transfered through the P2P, therefore
+                % that mass is simply removed from the P2P. Through this
+                % mass is also created in this phase which is removed from
+                % the other substances in this phase and instead added to a
+                % larger origin phase (the atmosphere of the habitat)
+                fNegativeMassThroughP2P = sum(sum(afNegativeMassByExMe(~mbBranch,:),1));
+                if ~isempty(this.oOriginPhase) && fNegativeMassThroughP2P ~= 0
+                    % Weighted contribution of mass removed from this phase
+                    % and added to the origin phase
+                    afPositiveMassOrigin(~abNegative) = -(afMassNew(~abNegative)./fPositiveMass) .* fNegativeMassThroughP2P;
+                    
+                    this.oOriginPhase.afExcessMass = this.oOriginPhase.afExcessMass - afPositiveMassOrigin;
                 end
             end
             for iI = 1:this.iProcsEXME
@@ -724,7 +746,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % overwriting the negative value with 0 is subtracted from the
             % phases downstream. For this phase we have to overwrite the
             % negative values 
-            afMassNew2 =  afMassNew - sum(afNegativeMassByExMe,1);
+            afMassNew2 =  afMassNew - sum(afNegativeMassByExMe,1) - afPositiveMassOrigin;
             
             if any(afMassNew2 < 0)
                 % Well if all this still didn't fix anything the old logic

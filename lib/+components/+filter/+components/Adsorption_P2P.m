@@ -14,6 +14,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         afPPOld;
         fTemperatureOld;
         
+        mfAbsorptionEnthalpy;
     end
     
    
@@ -35,13 +36,36 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             this.afMassOld   = zeros(1,this.oMT.iSubstances);
             this.afPPOld     = zeros(1,this.oMT.iSubstances);
             this.fTemperatureOld = 0;
+            
+            
+            afMass = this.oOut.oPhase.afMass;
+            csAbsorbers = this.oMT.csSubstances(((afMass ~= 0) .* this.oMT.abAbsorber) ~= 0);
+
+            fAbsorberMass = sum(afMass(this.oMT.abAbsorber));
+            mfAbsorptionEnthalpyHelper = zeros(1,this.oMT.iSubstances);
+            for iAbsorber = 1:length(csAbsorbers)
+                rAbsorberMassRatio = afMass(this.oMT.tiN2I.(csAbsorbers{iAbsorber}))/fAbsorberMass;
+                mfAbsorptionEnthalpyHelper = mfAbsorptionEnthalpyHelper + rAbsorberMassRatio * this.oMT.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.mfAbsorptionEnthalpy;
+            end
+            this.mfAbsorptionEnthalpy = mfAbsorptionEnthalpyHelper;
         end
+            
         
         function update(~)
             %Nope nothing happens here, it is manually controlled by the
             %CDRA solver...
         end
-        function ManualUpdate(this, ~)
+        function setFlowRateToZero(this, ~)
+            % OK this is a workaround because within CDRA the flowrate
+            % logic for desorption is not able to handle it if the
+            % absorbers are still absorbing during the intended desorption
+            % time ;)
+            arPartials	= zeros(1,this.oMT.iSubstances);
+            fFlowRate 	= 0;
+            this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fFlowRate, arPartials);
+            this.setMatterProperties(fFlowRate, arPartials);
+        end
+        function ManualUpdate(this, fTimeStep, afInFlow)
             
             afMass          = this.oOut.oPhase.afMass;
             fTemperature    = this.oOut.oPhase.fTemperature;
@@ -67,7 +91,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % This can be used to calculate the new loading for the
                 % given timestep and current loading assuming the
                 % equilibrium loading remains constant
-                fTimeStep = (this.oTimer.fTime - this.fLastUpdate);
                 mfQ_New = mfQ_eq - ((mfQ_eq - mfQ).*exp(-this.mfMassTransferCoefficient.*fTimeStep));
                 mfFlowRates = (mfQ_New - mfQ)/fTimeStep;
                 
@@ -76,39 +99,47 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
                 mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
                 
-                fAdsorptionFlowRate                             = sum(mfFlowRatesAdsorption);
-                arPartialsAdsorption                            = zeros(1,this.oMT.iSubstances);
-                arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./fAdsorptionFlowRate;
-
                 fDesorptionFlowRate                             = -sum(mfFlowRatesDesorption);
                 arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
                 arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./fDesorptionFlowRate);
-
-                csAbsorbers = this.oMT.csSubstances(((afMass ~= 0) .* this.oMT.abAbsorber) ~= 0);
-
-                fAbsorberMass = sum(afMass(this.oMT.abAbsorber));
-                mfAbsorptionEnthalpy = zeros(1,this.oMT.iSubstances);
-                for iAbsorber = 1:length(csAbsorbers)
-                    rAbsorberMassRatio = afMass(this.oMT.tiN2I.(csAbsorbers{iAbsorber}))/fAbsorberMass;
-                    mfAbsorptionEnthalpy = mfAbsorptionEnthalpy + rAbsorberMassRatio * this.oMT.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.mfAbsorptionEnthalpy;
-                end
 
                 % Positive values in mfFlowRates mean something is beeing
                 % absorbed and the Absorption Enthalpy is stored with a
                 % negative value if heat is generated. Therefore the overall
                 % result has to be mutliplied with -1
-                this.fAdsorptionHeatFlow = - sum(mfFlowRates.*this.oMT.afMolarMass.*mfAbsorptionEnthalpy);
-                this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
-                this.oStore.oContainer.tMassNetwork.mfAdsorptionFlowRate(this.iCell) = fAdsorptionFlowRate - fDesorptionFlowRate;
 
                 this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
-
-                this.setMatterProperties(fAdsorptionFlowRate, arPartialsAdsorption);
                 
                 this.afMassOld          = afMass;
                 this.afPPOld            = afPP;
                 this.fTemperatureOld    = fTemperature;
+            else
+                mfFlowRatesAdsorption = (fTimeStep * this.fFlowRate) .* this.arPartialMass;
+                mfFlowRatesDesorption = (fTimeStep * this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).fFlowRate) .* this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).arPartialMass;
             end
+            
+            afAvailableMass = afInFlow.*fTimeStep + this.oIn.oPhase.afMass;
+            
+            fP2P_MassChange = fTimeStep .* mfFlowRatesAdsorption;
+            
+            fP2P_MassChange(fP2P_MassChange > afAvailableMass) = afAvailableMass(fP2P_MassChange > afAvailableMass) ./ fTimeStep;
+            
+            afPartialFlowRates = fP2P_MassChange./fTimeStep;
+            
+            fFlowRate = sum(afPartialFlowRates);
+            if fFlowRate ~= 0
+                arPartials = afPartialFlowRates ./ fFlowRate;
+            else
+                arPartials = zeros(1,this.oMT.iSubstances);
+            end
+            
+            this.setMatterProperties(fFlowRate, arPartials);
+            
+            mfFlowRates = afPartialFlowRates - mfFlowRatesDesorption;
+            
+            this.fAdsorptionHeatFlow = - sum(mfFlowRates.*this.oMT.afMolarMass.*this.mfAbsorptionEnthalpy);
+            this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
+            this.oStore.oContainer.tMassNetwork.mfAdsorptionFlowRate(this.iCell) = sum(mfFlowRates);
         end
     end
 end

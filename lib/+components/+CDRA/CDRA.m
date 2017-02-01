@@ -367,7 +367,7 @@ classdef CDRA < vsys
                         oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), fTemperatureAbsorber, fPressure);
 
                         oFlowPhase = matter.phases.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow);
-
+                        
                         % An individual adsorption and desorption Exme and P2P is
                         % required because it is possible that a few substances are
                         % beeing desorbed at the same time as others are beeing
@@ -728,6 +728,11 @@ classdef CDRA < vsys
             end
             
             this.tMassNetwork.aoPhasesCycleOne(end+1,1) = this.toBranches.CDRA_Air_Out_1.coExmes{2}.oPhase;
+            
+            for iPhase = 1:length(this.tMassNetwork.aoPhasesCycleOne)
+                this.tMassNetwork.aoPhasesCycleOne(iPhase).oOriginPhase = this.oAtmosphere;
+            end
+            
             this.tThermalNetwork.csNodes_Absorber_CycleOne = csNodes_Absorber_CycleOne;
             this.tThermalNetwork.csNodes_Flow_CycleOne = csNodes_Flow_CycleOne;
             
@@ -782,6 +787,10 @@ classdef CDRA < vsys
             end
             
             this.tMassNetwork.aoPhasesCycleTwo(end+1,1) = this.toBranches.CDRA_Air_Out_2.coExmes{2}.oPhase;
+            
+            for iPhase = 1:length(this.tMassNetwork.aoPhasesCycleTwo)
+                this.tMassNetwork.aoPhasesCycleTwo(iPhase).oOriginPhase = this.oAtmosphere;
+            end
             
             this.tThermalNetwork.csNodes_Absorber_CycleTwo = csNodes_Absorber_CycleTwo;
             this.tThermalNetwork.csNodes_Flow_CycleTwo = csNodes_Flow_CycleTwo;
@@ -928,6 +937,8 @@ classdef CDRA < vsys
                     this.tMassNetwork.aoAbsorberPhase(iP2P) = this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).oOut.oPhase;
                 end
                 
+                keyboard()
+                
                 this.setTimeStep(fInitTimeStep);
                 this.updateCCAA();
             elseif (this.oTimer.iTick ~= 0)
@@ -1029,23 +1040,6 @@ classdef CDRA < vsys
                 aoAbsorber(iCell).oOut.oPhase.update();
             end
             
-            % In order to ensure that the flow rates considered during this
-            % calculation are also the ones actually used by the P2P a
-            % manual update function that is only called here is used for
-            % the P2Ps
-            arPartialsAdsorption = zeros(this.iCells, this.oMT.iSubstances);
-            for iCell = 1:length(this.tMassNetwork.(['aoAbsorberCycle',sCycle]))
-                this.tMassNetwork.(['aoAbsorberCycle',sCycle])(iCell).ManualUpdate();
-                
-                arPartialsAdsorption(iCell,:) = this.tMassNetwork.(['aoAbsorberCycle',sCycle])(iCell).arPartialMass;
-            end
-              
-            afChangeH2O = zeros(this.iCells,1);
-            for iCell = 1:this.iCells
-                afChangeH2O(iCell) = abs(aoBranches(iCell).fFlowRate * aoBranches(iCell).aoFlows.arPartialMass(this.oMT.tiN2I.H2O))...
-                    - abs(aoBranches(iCell).fFlowRate * aoPhases(iCell).arPartialMass(this.oMT.tiN2I.H2O))...
-                    - (arPartialsAdsorption(iCell,this.oMT.tiN2I.H2O) * this.tMassNetwork.mfAdsorptionFlowRate(iCell));
-            end  
             % The logic used to calculate the flow rates is as follows:
             %
             % The required phase pressures are easily calculated from the
@@ -1078,19 +1072,13 @@ classdef CDRA < vsys
             % Now the time step can be calculated by using the maximum
             % allowable mass change within one step
             fTimeStep = min(1./(abs(mfMassDiff) ./ (this.rMaxChange .* mfCellMass)));
-            % Since the humidity requires special care because the matter
-            % table crashes otherwise, a special time step for the humidity
-            % is performed. Humidity of > 100% is reached at partial masses
-            % above 0.0039 so limit was set to 0.0005
-%             fTimeStepH2O = min(abs((1e-3*mfCellMass((afChangeH2O > 0)))./afChangeH2O(afChangeH2O > 0)));
-%             
-%             fTimeStep = min([fTimeStepFlow,fTimeStepH2O]);
+            
             if fTimeStep > this.fMaximumTimeStep
                 fTimeStep = this.fMaximumTimeStep;
             elseif fTimeStep  <= this.fMinimumTimeStep
                 fTimeStep = this.fMinimumTimeStep;
             end
-                    
+            
             abReduceMassDiff = abs(mfMassDiff) > (this.rMaxChange .* mfCellMass);
             if any(abReduceMassDiff)
                 % factor by which the mass change currently exceeds the
@@ -1101,19 +1089,40 @@ classdef CDRA < vsys
                 % cells as intended
                 mfMassDiff = mfMassDiff./max(mfFactor);
             end
-
+            
+            % Intended new cell masses on next tick, if this is not the
+            % case use for debugging ;)
+            this.tMassNetwork.mfIntendedCellMass = mfCellMass + mfMassDiff;
+            
             % Now the mass difference required in the phases is
             % translated into massflows for the branches for the next
             % second
             mfMassDiff = mfMassDiff./fTimeStep;
             
             mfFlowRatesNew = zeros(this.iCells+1,1);
+            
+            for iBranch = 1:length(aoBranches)
+            % The reduction in flow rate from the P2Ps has to be given to
+            % all the following branches as well
+                mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))));
+            end
+            
+            % In order to ensure that the flow rates considered during this
+            % calculation are also the ones actually used by the P2P a
+            % manual update function that is only called here is used for
+            % the P2Ps. It is given the timestep and Inflow to prevent the
+            % P2P from removing more mass than is actually available
+          	aoAbsorber(1).ManualUpdate(fTimeStep, abs(mfFlowRatesNew(1) .* aoBranches(1).coExmes{2}.oPhase.arPartialMass));
+            for iAbsorber = 2:length(aoAbsorber)
+                aoAbsorber(iAbsorber).ManualUpdate(fTimeStep, abs(mfFlowRatesNew(iAbsorber) .* aoPhases(iAbsorber-1).arPartialMass));
+            end
+            
             % First branch has to be handled differently
             iBranch = 1;
-            mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))));
-          	aoBranches(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
+            mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))));            
+            aoBranches(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
             
-            for iBranch = 2:length(aoBranches)
+            for iBranch = 1:length(aoBranches)
             % The reduction in flow rate from the P2Ps has to be given to
             % all the following branches as well
                 mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))) - sum(this.tMassNetwork.mfAdsorptionFlowRate(1:iBranch-1)));
@@ -1188,52 +1197,52 @@ classdef CDRA < vsys
             aoAbsorber = this.tMassNetwork.(['aoAbsorberCycle',sCycle])(iStartCell:iStartCell+iDesorbCells-1);
             aoBranches = this.tMassNetwork.(['aoBranchesCycle',sCycle])(iStartCell+1:iStartCell+iDesorbCells-1);
 
-            if min([aoAbsorber.fTemperature]) > 350
-
-                for iPhase = 1:length(aoPhases)
-                    aoPhases(iPhase).update();
-                    aoAbsorber(iPhase).oOut.oPhase.update();
-                end
-
-                for iAbsorber = 1:length(aoAbsorber)
-                    aoAbsorber(iAbsorber).ManualUpdate();
-                end
-
-                mfCellMass(:,1)     = [aoPhases.fMass];
-                mfCellPressure(:,1) = [aoPhases.fPressure];
-
-                mfDesorptionFlowRate = -this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+1:end);
-
-                if (this.oTimer.fTime - this.tTimeProperties.fLastCycleSwitch) < this.fAirSafeTime
-                    aoBranches(end+1) = this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]);
-                else
-                    aoBranches(end+1) = this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]);
-                    this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
-                end
-
-                abHighPressure = (mfCellPressure > 500);
-
-                mfMassDiff = zeros(length(aoPhases),1);
-                mfMassDiff(abHighPressure) = -mfCellMass(abHighPressure)./(this.fAirSafeTime/3);
-
-                fTimeStep = min(abs((this.rMaxChange .* mfCellMass) ./ mfMassDiff));
-
-                if fTimeStep > this.fMaximumTimeStep
-                    fTimeStep = this.fMaximumTimeStep;
-                elseif fTimeStep  <= this.fMinimumTimeStep
-                    fTimeStep = this.fMinimumTimeStep;
-                end
-
-                mfFlowRatesNew = zeros(length(aoBranches),1);
-                for iBranch = 1:(length(aoBranches))
-                    mfFlowRatesNew(iBranch) = (-sum(mfMassDiff(1:iBranch))) + sum(mfDesorptionFlowRate(1:iBranch));
-                    aoBranches(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
-                end
-
-                this.tTimeProperties.DesorptionStep = fTimeStep;
-            else
-                this.tTimeProperties.DesorptionStep = 1;
+            for iPhase = 1:length(aoPhases)
+                aoPhases(iPhase).update();
+                aoAbsorber(iPhase).oOut.oPhase.update();
             end
+
+            mfCellMass(:,1)     = [aoPhases.fMass];
+            mfCellPressure(:,1) = [aoPhases.fPressure];
+
+            if (this.oTimer.fTime - this.tTimeProperties.fLastCycleSwitch) < this.fAirSafeTime
+                aoBranches(end+1) = this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]);
+            else
+                aoBranches(end+1) = this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]);
+                this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
+            end
+
+            abHighPressure = (mfCellPressure > 500);
+
+            mfMassDiff = zeros(length(aoPhases),1);
+            mfMassDiff(abHighPressure) = -mfCellMass(abHighPressure)./(this.fAirSafeTime/3);
+            
+            fTimeStep = min(abs((this.rMaxChange .* mfCellMass) ./ mfMassDiff));
+            
+            if fTimeStep > this.fMaximumTimeStep
+                fTimeStep = this.fMaximumTimeStep;
+            elseif fTimeStep  <= this.fMinimumTimeStep
+                fTimeStep = this.fMinimumTimeStep;
+            end
+            
+            for iAbsorber = 1:length(aoAbsorber)
+                aoAbsorber(iAbsorber).ManualUpdate(fTimeStep, zeros(1,this.oMT.iSubstances));
+                if -this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+iAbsorber) < 0
+                    aoAbsorber(iAbsorber).setFlowRateToZero();
+                    this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+iAbsorber) = 0;
+                end
+            end
+
+            mfDesorptionFlowRate = -this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+1:end);
+            
+            mfFlowRatesNew = zeros(length(aoBranches),1);
+            for iBranch = 1:(length(aoBranches))
+                mfFlowRatesNew(iBranch) = (-sum(mfMassDiff(1:iBranch))) + sum(mfDesorptionFlowRate(1:iBranch));
+                aoBranches(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
+            end
+
+            this.tTimeProperties.DesorptionStep = fTimeStep;
+            
             %% Set the heater power for the desorption cells
             % Check cell temperature of the desorber cells
             
@@ -1306,6 +1315,7 @@ classdef CDRA < vsys
             mfSpecificHeatCapacity     = [aoPhases.fSpecificHeatCapacity]';
             % Flow speed for desorbing cells is assumed to be zero
             mfFlowSpeed(1:this.iCells) = (abs([aoBranches(1:end-1).fFlowRate]') + abs([aoBranches(2:end).fFlowRate]')./(2*mfDensity(1:this.iCells)));
+            mfFlowSpeed(mfDensity == 0) = 0;
             
             % In order to limit the recalculation of the convective heat
             % exchange coefficient to a manageable degree they are only
