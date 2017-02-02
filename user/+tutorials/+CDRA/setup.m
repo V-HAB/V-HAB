@@ -53,6 +53,7 @@ classdef setup < simulation.infrastructure
                 for iCell = 1:5
                     oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Pressure Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.H2O)', 'Pa', ['Flow Pressure H2O Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.CO2)', 'Pa', ['Flow Pressure CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
                     
@@ -64,7 +65,8 @@ classdef setup < simulation.infrastructure
             for iBed = 1:2
                 for iCell = 1:5
                     oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Pressure Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.H2O)', 'Pa', ['Flow Pressure H2O Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.H2O)', 'Pa', ['Flow Pressure H2O Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.CO2)', 'Pa', ['Flow Pressure CO2 Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
                     
@@ -76,6 +78,8 @@ classdef setup < simulation.infrastructure
             for iBed = 1:2
                 for iCell = 1:5
                     oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Pressure Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.H2O)', 'Pa', ['Flow Pressure H2O Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
+                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.CO2)', 'Pa', ['Flow Pressure CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                     oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
                     
@@ -112,32 +116,50 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
             oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
             
-            csZeolite13x_CO2 = cell(2,5);
-            csZeolite13x_H2O = cell(2,5);
+            csZeolite13x_CO2_Mass = cell(2,5);
+            csZeolite13x_H2O_Mass = cell(2,5);
+            csZeolite13x_CO2_Pressure = cell(2,5);
+            csZeolite13x_H2O_Pressure = cell(2,5);
+            
             for iBed = 1:2
                 for iCell = 1:5
-                     csZeolite13x_CO2{iBed,iCell} = ['Partial Mass CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
-                     csZeolite13x_H2O{iBed,iCell} = ['Partial Mass H2O Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
+                     csZeolite13x_CO2_Mass{iBed,iCell} = ['Partial Mass CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
+                     csZeolite13x_H2O_Mass{iBed,iCell} = ['Partial Mass H2O Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
+                    
+                     csZeolite13x_H2O_Pressure{iBed,iCell} = ['Flow Pressure CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
+                     csZeolite13x_CO2_Pressure{iBed,iCell} = ['Flow Pressure CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
                 end
             end
             
-            csSylobead_CO2 = cell(2,5);
-            csSylobead_H2O = cell(2,5);
+            csSylobead_CO2_Mass = cell(2,5);
+            csSylobead_H2O_Mass = cell(2,5);
+            csSylobead_CO2_Pressure = cell(2,5);
+            csSylobead_H2O_Pressure = cell(2,5);
+            
             for iBed = 1:2
                 for iCell = 1:5
-                     csSylobead_CO2{iBed,iCell} = ['Partial Mass CO2 Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
-                     csSylobead_H2O{iBed,iCell} = ['Partial Mass H2O Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
+                     csSylobead_CO2_Mass{iBed,iCell} = ['Partial Mass CO2 Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
+                     csSylobead_H2O_Mass{iBed,iCell} = ['Partial Mass H2O Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
+                    
+                     csSylobead_H2O_Pressure{iBed,iCell} = ['Flow Pressure CO2 Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
+                     csSylobead_CO2_Pressure{iBed,iCell} = ['Flow Pressure CO2 Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
                 end
             end
             
-            csZeolite5A_CO2 = cell(2,5);
-            csZeolite5A_H2O = cell(2,5);
+            csZeolite5A_CO2_Mass = cell(2,5);
+            csZeolite5A_H2O_Mass = cell(2,5);
+            csZeolite5A_CO2_Pressure = cell(2,5);
+            csZeolite5A_H2O_Pressure = cell(2,5);
             for iBed = 1:2
                 for iCell = 1:5
-                    csZeolite5A_CO2{iBed,iCell} = ['Partial Mass CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
-                    csZeolite5A_H2O{iBed,iCell} = ['Partial Mass H2O Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
+                    csZeolite5A_CO2_Mass{iBed,iCell} = ['Partial Mass CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
+                    csZeolite5A_H2O_Mass{iBed,iCell} = ['Partial Mass H2O Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
+                    
+                    csZeolite5A_H2O_Pressure{iBed,iCell} = ['Flow Pressure CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
+                    csZeolite5A_CO2_Pressure{iBed,iCell} = ['Flow Pressure CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
                 end
             end
+            
             
 %             csCO2_Total = {csZeolite13x_CO2{1,:}, csZeolite13x_CO2{2,:}, csSylobead_CO2{1,:}, csSylobead_CO2{2,:}, csZeolite5A_CO2{1,:}, csZeolite5A_CO2{2,:}};
 %             
@@ -148,44 +170,91 @@ classdef setup < simulation.infrastructure
             sTimeUnit = 'h';
             
             mbPosition = [true,false;false,false;false,false];
-            oPlot.definePlotByName(csSylobead_CO2(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            oPlot.definePlotByName(csSylobead_CO2_Mass(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,true;false,false;false,false];
-            oPlot.definePlotByName(csSylobead_CO2(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            oPlot.definePlotByName(csSylobead_CO2_Mass(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;true,false;false,false];
-            oPlot.definePlotByName(csZeolite13x_CO2(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            oPlot.definePlotByName(csZeolite13x_CO2_Mass(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;false,true;false,false];
-            oPlot.definePlotByName(csZeolite13x_CO2(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            oPlot.definePlotByName(csZeolite13x_CO2_Mass(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;false,false;true,false];
-            oPlot.definePlotByName(csZeolite5A_CO2(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            oPlot.definePlotByName(csZeolite5A_CO2_Mass(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;false,false;false,true];
-            oPlot.definePlotByName(csZeolite5A_CO2(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            oPlot.definePlotByName(csZeolite5A_CO2_Mass(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             
             sTitle = 'Partial Mass H2O CDRA'; 
             yLabel = 'Partial Mass H2O in kg';
             
             mbPosition = [true,false;false,false;false,false];
-            oPlot.definePlotByName(csSylobead_H2O(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            oPlot.definePlotByName(csSylobead_H2O_Mass(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,true;false,false;false,false];
-            oPlot.definePlotByName(csSylobead_H2O(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            oPlot.definePlotByName(csSylobead_H2O_Mass(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;true,false;false,false];
-            oPlot.definePlotByName(csZeolite13x_H2O(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            oPlot.definePlotByName(csZeolite13x_H2O_Mass(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;false,true;false,false];
-            oPlot.definePlotByName(csZeolite13x_H2O(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            oPlot.definePlotByName(csZeolite13x_H2O_Mass(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;false,false;true,false];
-            oPlot.definePlotByName(csZeolite5A_H2O(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            oPlot.definePlotByName(csZeolite5A_H2O_Mass(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             mbPosition = [false,false;false,false;false,true];
-            oPlot.definePlotByName(csZeolite5A_H2O(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            oPlot.definePlotByName(csZeolite5A_H2O_Mass(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            
+            
+            sTitle = 'Partial Pressure H2O CDRA'; 
+            yLabel = 'Partial Pressure H2O in Pa';
+            
+            mbPosition = [true,false;false,false;false,false];
+            oPlot.definePlotByName(csSylobead_H2O_Pressure(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,true;false,false;false,false];
+            oPlot.definePlotByName(csSylobead_H2O_Pressure(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;true,false;false,false];
+            oPlot.definePlotByName(csZeolite13x_H2O_Pressure(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;false,true;false,false];
+            oPlot.definePlotByName(csZeolite13x_H2O_Pressure(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;false,false;true,false];
+            oPlot.definePlotByName(csZeolite5A_H2O_Pressure(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;false,false;false,true];
+            oPlot.definePlotByName(csZeolite5A_H2O_Pressure(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            
+            sTitle = 'Partial Pressure CO2 CDRA'; 
+            yLabel = 'Partial Pressure CO2 in Pa';
+            
+            mbPosition = [true,false;false,false;false,false];
+            oPlot.definePlotByName(csSylobead_CO2_Pressure(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,true;false,false;false,false];
+            oPlot.definePlotByName(csSylobead_CO2_Pressure(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;true,false;false,false];
+            oPlot.definePlotByName(csZeolite13x_CO2_Pressure(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;false,true;false,false];
+            oPlot.definePlotByName(csZeolite13x_CO2_Pressure(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;false,false;true,false];
+            oPlot.definePlotByName(csZeolite5A_CO2_Pressure(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;false,false;false,true];
+            oPlot.definePlotByName(csZeolite5A_CO2_Pressure(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            
             
             csNames = {'CDRA CO2 Inlet Flow', 'CDRA CO2 Outlet Flow'};
             sTitle = 'CDRA CO2 Flowrates'; 
