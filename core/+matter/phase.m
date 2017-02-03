@@ -592,6 +592,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 miSign(iI) = this.coProcsEXME{iI}.iSign;
             end 
             
+            %% Calculate negative mass by each EXME
             % From the negative value that did occur it is possible to
             % calculate how much mass would be removed beyond the phase
             % capacity at the current flow rates:
@@ -641,8 +642,51 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     % based on their current outflows:
                     afNegativeMassByExMe(:,miNegatives(iK)) = afNegativeMass(miNegatives(iK)) .* (afPartialFlowRateOut(:,miNegatives(iK))./fCurrentOutFlow);
                 end
+                
+                %% P2Ps
+                % Since P2Ps remove mass specifically they are given priority
+                % to remove mass. E.g. an absorber that removes CO2 via a p2p
+                % would remove the co2 in a cell before the branch can transfer
+                % it to the next cell
+                
+                % Current mass that should got through P2Ps
+                fCurrentMassThroughP2P = this.fMassUpdateTimeStep * sum(afPartialFlowRateOut(~mbBranch,miNegatives(iK)));
+                if fCurrentMassThroughP2P ~= 0
+                    % Mass of the substance after the P2Ps have removed their
+                    % mass
+                    fSubstanceMassAfterP2P = this.afMass(miNegatives(iK)) - fCurrentMassThroughP2P;
+
+                    fCurrentOutFlowBranches = sum(afPartialFlowRateOut(mbBranch,miNegatives(iK)));
+                    
+                    if fCurrentOutFlowBranches ~= 0
+                        % If this mass is larger or equal than 0 then the P2Ps can
+                        % be completly filled with mass and it is not necessary to
+                        % remove any excess mass from them. Instead even less mass
+                        % should have been transferred through the branches
+                        if fSubstanceMassAfterP2P >= 0
+                            afNegativeMassByExMe(mbBranch,miNegatives(iK)) = afNegativeMassByExMe(mbBranch,miNegatives(iK)) +...
+                                sum(afNegativeMassByExMe(~mbBranch,miNegatives(iK))) .* (afPartialFlowRateOut(mbBranch,miNegatives(iK))./ fCurrentOutFlowBranches);
+
+                            afNegativeMassByExMe(~mbBranch,miNegatives(iK)) = 0;
+                        else
+                            % In this case the P2Ps have some negative mass
+                            % remaining that has to be subtracted from them
+                            fCurrentOutFlowP2Ps = sum(afPartialFlowRateOut(~mbBranch,miNegatives(iK)));
+                            fAdditionalNegativeMassBranches = sum(afNegativeMassByExMe(~mbBranch,miNegatives(iK))) - fSubstanceMassAfterP2P;
+                            
+                            afNegativeMassByExMe(mbBranch,miNegatives(iK)) = afNegativeMassByExMe(mbBranch,miNegatives(iK)) +...
+                                fAdditionalNegativeMassBranches .* (afPartialFlowRateOut(mbBranch,miNegatives(iK))./ fCurrentOutFlowBranches);
+                            
+                            % removes the negative mass added to the
+                            % branches from the P2Ps
+                            afNegativeMassByExMe(~mbBranch,miNegatives(iK)) = afNegativeMassByExMe(~mbBranch,miNegatives(iK)) -...
+                                fAdditionalNegativeMassBranches .* (afPartialFlowRateOut(~mbBranch,miNegatives(iK))./ fCurrentOutFlowP2Ps);
+                        end
+                    end
+                end
             end
             
+            %%
             % now we have the correct partial (and therefore also total)
             % mass flow rates for each exme that have to be used to prevent
             % a negative mass from occuring.

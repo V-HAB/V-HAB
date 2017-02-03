@@ -87,7 +87,7 @@ classdef CDRA < vsys
         % This variable decide by how much percent the mass in any one cell
         % is allowed to change within one tick (increasing this does not
         % necessarily speed up the simulation, but you can try)
-        rMaxChange              = 0.005;
+        rMaxChange              = 0.001;
         
         % Sturct to store properties from the last recalculation of phases
         % to decide if they have to be recalculated or not
@@ -591,6 +591,7 @@ classdef CDRA < vsys
             this.tLastUpdateProps.mfDynamicViscosity     = zeros(iThermalCells,1);
             this.tLastUpdateProps.mfThermalConductivity  = zeros(iThermalCells,1);
             
+            this.tThermalNetwork.miRecalcFailed          = zeros(iThermalCells,1);
         end
         
         function createSolverStructure(this)
@@ -1378,8 +1379,23 @@ classdef CDRA < vsys
                 for iCell = 1:iTotalCells
                     if mbRecalculate(iCell)
                         if (abs(this.tLastUpdateProps.mfDensity(iCell) - mfDensity(iCell))  > (1e-1 * mfDensity(iCell)))
-                            this.tLastUpdateProps.mfDynamicViscosity(iCell)     = this.oMT.calculateDynamicViscosity(aoPhases(iCell));
-                            this.tLastUpdateProps.mfThermalConductivity(iCell)  = this.oMT.calculateThermalConductivity(aoPhases(iCell));
+                            try
+                                this.tLastUpdateProps.mfDynamicViscosity(iCell)     = this.oMT.calculateDynamicViscosity(aoPhases(iCell));
+                                this.tLastUpdateProps.mfThermalConductivity(iCell)  = this.oMT.calculateThermalConductivity(aoPhases(iCell));
+                                this.tThermalNetwork.miRecalcFailed(iCell) = 0;
+                            catch
+                                % The internal condensation counter of the
+                                % phase will prevent this from happening
+                                % too often in a row (some short high
+                                % humidity is allowed to give the system
+                                % time to react to it and remove it) For
+                                % safety an additional check is used here
+                                if this.tThermalNetwork.miRecalcFailed(iCell) < 5
+                                    this.tThermalNetwork.miRecalcFailed(iCell) = this.tThermalNetwork.miRecalcFailed(iCell) + 1;
+                                else
+                                    error('Condensation occurs in CDRA')
+                                end
+                            end
                         end
                         if mfFlowSpeed(iCell) ~= 0
                             fConvectionCoeff               = components.filter.functions.convection_pipe(this.tGeometry.mfD_Hydraulic(iCell), this.tGeometry.mfLength(iCell),...
