@@ -78,7 +78,7 @@ fStartingExponent = -7;
 % higher later on. So we initially set it to 0.01 MPa. ( ! Not Pa as in
 % V-HAB ! ) In the following while-loop we can change the increment
 % according to the current pressure.
-fStartingPressure = 0.001;
+fStartingPressure = 0.0001;
 
 % Right now, we're only interested in pressures up to 100 bars, which is 10
 % MPa

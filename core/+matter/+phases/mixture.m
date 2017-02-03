@@ -18,7 +18,7 @@ classdef mixture < matter.phase
         % Volume in m^3
         fVolume;       
         fPressure;
-
+        fMassToPressure;
         sPhaseType;
     end
     
@@ -41,6 +41,7 @@ classdef mixture < matter.phase
         % TO DO: implement pressure calculation for liquid phase
         if strcmp(this.sPhaseType, 'gas')
             this.fPressure = this.oMT.calculatePressure(this);
+            this.fMassToPressure = this.fPressure/this.fMass;
         end
         
         

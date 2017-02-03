@@ -219,17 +219,21 @@ iNumIndices = length(aiIndices);
 % Initialize a new array filled with zeros. Then iterate through all
 % indexed substances and get their specific heat capacity.
 afPP = zeros(iNumIndices, 1);
-
-for iI = 1:iNumIndices
+if ~isempty(aiLiquidIndices)
+    aiGasIndices = aiIndices(aiIndices ~= aiLiquidIndices);
+else
+    aiGasIndices = aiIndices;
+end
+for iI = 1:length(aiGasIndices)
     % Creating the input struct for the findProperty() method
     tParameters = struct();
-    tParameters.sSubstance = this.csSubstances{aiIndices(iI)};
+    tParameters.sSubstance = this.csSubstances{aiGasIndices(iI)};
     tParameters.sProperty = 'Pressure';
     tParameters.sFirstDepName = 'Temperature';
     tParameters.fFirstDepValue = fTemperature;
-    tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
+    tParameters.sPhaseType = csPhase{aiPhase(aiGasIndices(iI))};
     tParameters.sSecondDepName = 'Density';
-    tParameters.fSecondDepValue = afPartialDensity(aiIndices(iI));
+    tParameters.fSecondDepValue = afPartialDensity(aiGasIndices(iI));
     tParameters.bUseIsobaricData = bUseIsobaricData;
     
     % Now we can call the findProperty() method.

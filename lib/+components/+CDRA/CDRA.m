@@ -1295,17 +1295,22 @@ classdef CDRA < vsys
             %% Set the heater power for the desorption cells
             % Check cell temperature of the desorber cells
             
-            mfCellTemperature(:,1)     = [this.tMassNetwork.aoAbsorberPhases.fTemperature];
-            mfCellHeatCap(:,1)         = [this.tMassNetwork.aoAbsorberPhases.fSpecificHeatCapacity] .* [this.tMassNetwork.aoAbsorberPhases.fMass];
-            
-            mfPowerDesorbCells = this.tThermalNetwork.mfHeaterPower(this.iCells+1:end);
-            mbTempReached = abs(mfCellTemperature - this.TargetTemperature) < 1;
-            if any(mfPowerDesorbCells(mbTempReached) ~= 0) || any(mfPowerDesorbCells(~mbTempReached) == 0)
-                mfPowerDesorbCells(mbTempReached) = 0;
-                mfPowerDesorbCells(~mbTempReached) = ((this.TargetTemperature - mfCellTemperature(~mbTempReached)).* mfCellHeatCap(~mbTempReached))/this.fAirSafeTime;
-                mfPowerDesorbCells(mfPowerDesorbCells > this.fMaxHeaterPower) = this.fMaxHeaterPower/this.tGeometry.Zeolite5A.iCellNumber;
+            if (mod(this.oTimer.fTime, this.fCycleTime)) > this.fAirSafeTime
+                mfCellTemperature(:,1)     = [this.tMassNetwork.aoAbsorberPhases.fTemperature];
+                mfCellHeatCap(:,1)         = [this.tMassNetwork.aoAbsorberPhases.fSpecificHeatCapacity] .* [this.tMassNetwork.aoAbsorberPhases.fMass];
+
+                mfPowerDesorbCells = this.tThermalNetwork.mfHeaterPower(this.iCells+1:end);
+                mbTempReached = abs(mfCellTemperature - this.TargetTemperature) < 1;
+                if any(mfPowerDesorbCells(mbTempReached) ~= 0) || any(mfPowerDesorbCells(~mbTempReached) == 0)
+                    mfPowerDesorbCells(mbTempReached) = 0;
+                    mfPowerDesorbCells(~mbTempReached) = ((this.TargetTemperature - mfCellTemperature(~mbTempReached)).* mfCellHeatCap(~mbTempReached))/this.fAirSafeTime;
+                    mfPowerDesorbCells(mfPowerDesorbCells > this.fMaxHeaterPower) = this.fMaxHeaterPower/this.tGeometry.Zeolite5A.iCellNumber;
+                    mfPower = zeros(this.iCells+this.tGeometry.Zeolite5A.iCellNumber,1);
+                    mfPower(this.iCells+1:end) = mfPowerDesorbCells;
+                    this.setHeaterPower(mfPower);
+                end
+            else
                 mfPower = zeros(this.iCells+this.tGeometry.Zeolite5A.iCellNumber,1);
-                mfPower(this.iCells+1:end) = mfPowerDesorbCells;
                 this.setHeaterPower(mfPower);
             end
 %             % timestep set to allow at most 1 K temperature change within
