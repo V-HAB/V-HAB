@@ -100,7 +100,7 @@ classdef Example < vsys
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
-            fCO2Percent = 0.0062;
+            fCO2Percent = 0.0055;
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 97.71, struct('CO2', fCO2Percent),  295, 0.4, 1e5);
                
             % Adding a phase to the store 'Cabin', 100 m^3 air
@@ -176,14 +176,14 @@ classdef Example < vsys
             % Adding a phase to the store - a mixture phase is used because
             % the humidity released from CDRA back into the cabin might be
             % higher than 100% for some times
-            oConnectionPhase = matter.phases.mixture(this.toStores.CCAA_CDRA_Connection, 'ConnectionPhase', 'gas', cAirHelper{1},cAirHelper{2}, cAirHelper{3}, 1e5);
-%             oConnectionPhase = matter.phases.gas(this.toStores.CCAA_CDRA_Connection, 'ConnectionPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
-%             matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
-%             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
-%             matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
-            matter.procs.exmes.mixture( oConnectionPhase, 'Port_1');
-            matter.procs.exmes.mixture( oConnectionPhase, 'Port_2');
-            matter.procs.exmes.mixture( oConnectionPhase, 'Port_3');
+%             oConnectionPhase = matter.phases.mixture(this.toStores.CCAA_CDRA_Connection, 'ConnectionPhase', 'gas', cAirHelper{1},cAirHelper{2}, cAirHelper{3}, 1e5);
+             oConnectionPhase = matter.phases.gas(this.toStores.CCAA_CDRA_Connection, 'ConnectionPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
+            matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
+            matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
+%             matter.procs.exmes.mixture( oConnectionPhase, 'Port_1');
+%             matter.procs.exmes.mixture( oConnectionPhase, 'Port_2');
+%             matter.procs.exmes.mixture( oConnectionPhase, 'Port_3');
             
             % creates a store to connect the CCAA and the CDRA
             matter.store(this, 'CDRA_CCAA_Connection', 0.1);

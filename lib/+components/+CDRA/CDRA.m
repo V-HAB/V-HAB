@@ -87,7 +87,7 @@ classdef CDRA < vsys
         % This variable decide by how much percent the mass in any one cell
         % is allowed to change within one tick (increasing this does not
         % necessarily speed up the simulation, but you can try)
-        rMaxChange              = 0.001;
+        rMaxChange              = 0.005;
         
         % Sturct to store properties from the last recalculation of phases
         % to decide if they have to be recalculated or not
@@ -1254,17 +1254,17 @@ classdef CDRA < vsys
             mfCellMass(:,1)     = [aoPhases.fMass];
             mfCellPressure(:,1) = [aoPhases.fPressure];
 
-            if (this.oTimer.fTime - this.tTimeProperties.fLastCycleSwitch) < this.fAirSafeTime
+            if (mod(this.oTimer.fTime, this.fCycleTime)) < this.fAirSafeTime
                 aoBranches(end+1) = this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]);
             else
                 aoBranches(end+1) = this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]);
                 this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
             end
 
-            abHighPressure = (mfCellPressure > 500);
+            abHighPressure = (mfCellPressure > 100);
 
             mfMassDiff = zeros(length(aoPhases),1);
-            mfMassDiff(abHighPressure) = -mfCellMass(abHighPressure)./(this.fAirSafeTime/3);
+            mfMassDiff(abHighPressure) = -mfCellMass(abHighPressure)./(this.fAirSafeTime/2.5);
             
             fTimeStep = min(abs((this.rMaxChange .* mfCellMass) ./ mfMassDiff));
             
@@ -1300,15 +1300,14 @@ classdef CDRA < vsys
                 mfCellHeatCap(:,1)         = [this.tMassNetwork.aoAbsorberPhases.fSpecificHeatCapacity] .* [this.tMassNetwork.aoAbsorberPhases.fMass];
 
                 mfPowerDesorbCells = this.tThermalNetwork.mfHeaterPower(this.iCells+1:end);
+                
                 mbTempReached = abs(mfCellTemperature - this.TargetTemperature) < 1;
-                if any(mfPowerDesorbCells(mbTempReached) ~= 0) || any(mfPowerDesorbCells(~mbTempReached) == 0)
-                    mfPowerDesorbCells(mbTempReached) = 0;
-                    mfPowerDesorbCells(~mbTempReached) = ((this.TargetTemperature - mfCellTemperature(~mbTempReached)).* mfCellHeatCap(~mbTempReached))/this.fAirSafeTime;
-                    mfPowerDesorbCells(mfPowerDesorbCells > this.fMaxHeaterPower) = this.fMaxHeaterPower/this.tGeometry.Zeolite5A.iCellNumber;
-                    mfPower = zeros(this.iCells+this.tGeometry.Zeolite5A.iCellNumber,1);
-                    mfPower(this.iCells+1:end) = mfPowerDesorbCells;
-                    this.setHeaterPower(mfPower);
-                end
+                mfPowerDesorbCells(mbTempReached) = 0;
+                mfPowerDesorbCells(~mbTempReached) = ((this.TargetTemperature - mfCellTemperature(~mbTempReached)).* mfCellHeatCap(~mbTempReached))/this.fAirSafeTime;
+                mfPowerDesorbCells(mfPowerDesorbCells > this.fMaxHeaterPower) = this.fMaxHeaterPower/this.tGeometry.Zeolite5A.iCellNumber;
+                mfPower = zeros(this.iCells+this.tGeometry.Zeolite5A.iCellNumber,1);
+                mfPower(this.iCells+1:end) = mfPowerDesorbCells;
+                this.setHeaterPower(mfPower);
             else
                 mfPower = zeros(this.iCells+this.tGeometry.Zeolite5A.iCellNumber,1);
                 this.setHeaterPower(mfPower);
