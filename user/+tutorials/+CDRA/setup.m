@@ -126,7 +126,7 @@ classdef setup < simulation.infrastructure
                      csZeolite13x_CO2_Mass{iBed,iCell} = ['Partial Mass CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
                      csZeolite13x_H2O_Mass{iBed,iCell} = ['Partial Mass H2O Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
                     
-                     csZeolite13x_H2O_Pressure{iBed,iCell} = ['Flow Pressure CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
+                     csZeolite13x_H2O_Pressure{iBed,iCell} = ['Flow Pressure H2O Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
                      csZeolite13x_CO2_Pressure{iBed,iCell} = ['Flow Pressure CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
                 end
             end
@@ -141,7 +141,7 @@ classdef setup < simulation.infrastructure
                      csSylobead_CO2_Mass{iBed,iCell} = ['Partial Mass CO2 Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
                      csSylobead_H2O_Mass{iBed,iCell} = ['Partial Mass H2O Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
                     
-                     csSylobead_H2O_Pressure{iBed,iCell} = ['Flow Pressure CO2 Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
+                     csSylobead_H2O_Pressure{iBed,iCell} = ['Flow Pressure H2O Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
                      csSylobead_CO2_Pressure{iBed,iCell} = ['Flow Pressure CO2 Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
                 end
             end
@@ -155,7 +155,7 @@ classdef setup < simulation.infrastructure
                     csZeolite5A_CO2_Mass{iBed,iCell} = ['Partial Mass CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
                     csZeolite5A_H2O_Mass{iBed,iCell} = ['Partial Mass H2O Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
                     
-                    csZeolite5A_H2O_Pressure{iBed,iCell} = ['Flow Pressure CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
+                    csZeolite5A_H2O_Pressure{iBed,iCell} = ['Flow Pressure H2O Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
                     csZeolite5A_CO2_Pressure{iBed,iCell} = ['Flow Pressure CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
                 end
             end

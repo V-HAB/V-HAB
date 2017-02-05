@@ -46,6 +46,14 @@ classdef CDRA < vsys
         %bed back into the cabin before the bed is connected to vacuum.
         fAirSafeTime;                   % [s]
         
+        % Initialitation time for the pressure to reach "nominal"
+        % conditions after a CDRA cycle switch
+        fInitTime = 10;                 % [s]
+        
+        % Number of steps taken within the initialitation time to built up
+        % the pressure
+        iInitStep = 100;                % [-]
+        
         % Subsystem name for the CCAA that is connected to this CDRA
         sAsscociatedCCAA;
         
@@ -87,7 +95,7 @@ classdef CDRA < vsys
         % This variable decide by how much percent the mass in any one cell
         % is allowed to change within one tick (increasing this does not
         % necessarily speed up the simulation, but you can try)
-        rMaxChange              = 0.005;
+        rMaxChange              = 0.001;
         
         % Sturct to store properties from the last recalculation of phases
         % to decide if they have to be recalculated or not
@@ -842,7 +850,6 @@ classdef CDRA < vsys
 %                 this.fFlowrateMain  = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_CDRA.oHandler.fRequestedFlowRate;
             end
             
-            fInitTimeStep = 10;
             %% Cycle Change handling:
             % in case the cycle is switched a number of changes has to be
             % made to the flowrates, which are only necessary ONCE!
@@ -899,11 +906,10 @@ classdef CDRA < vsys
                 % second
                 mfFlowRate = zeros(this.iCells+1,1);
                 for iBranch = 1:(length(this.tMassNetwork.aoBranchesCycleOne))
-                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleOne(iBranch) * (this.fFlowrateMain + sum(mfMassDiff(iBranch:end))/fInitTimeStep);
+                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleOne(iBranch) * (this.fFlowrateMain + sum(mfMassDiff(iBranch:end))/this.fInitTime);
                     this.tMassNetwork.aoBranchesCycleOne(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
-                this.iCycleActive = 1;
                 % Sets the correct cells for the adsorption P2Ps to store
                 % their values
                 for iP2P = 1:length(this.tMassNetwork.aoAbsorberCycleOne)
@@ -914,9 +920,12 @@ classdef CDRA < vsys
                     this.tMassNetwork.aoAbsorberPhases(iP2P) = this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).oOut.oPhase;
                 end
                 
-                this.setTimeStep(fInitTimeStep);
+                this.setTimeStep(this.fInitTime/this.iInitStep);
                 this.updateCCAA();
-            elseif (this.iCycleActive == 1) && (mod(this.oTimer.fTime, this.fCycleTime * 2) < (this.fCycleTime)) && (this.oTimer.iTick ~= 0)
+                
+                this.iCycleActive = 1;
+                
+            elseif ((this.iCycleActive == 1) && (mod(this.oTimer.fTime, this.fCycleTime * 2) < (this.fCycleTime)) && (this.oTimer.iTick ~= 0))
                 % On cycle change all flow rates are momentarily set to zero
                 for iBranch = 1:length(this.tMassNetwork.aoBranchesCycleOne)
                     this.tMassNetwork.aoBranchesCycleOne(iBranch).oHandler.setFlowRate(0);
@@ -967,11 +976,9 @@ classdef CDRA < vsys
                 % second
                 mfFlowRate = zeros(this.iCells+1,1);
                 for iBranch = 1:(length(this.tMassNetwork.aoBranchesCycleTwo))
-                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleTwo(iBranch) * (this.fFlowrateMain + sum(mfMassDiff(iBranch:end))/fInitTimeStep);
+                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleTwo(iBranch) * (this.fFlowrateMain + sum(mfMassDiff(iBranch:end))/this.fInitTime);
                     this.tMassNetwork.aoBranchesCycleTwo(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
-                
-                this.iCycleActive = 2;
                 
                 for iP2P = 1:length(this.tMassNetwork.aoAbsorberCycleOne)
                     this.tMassNetwork.aoAbsorberCycleTwo(iP2P).iCell = iP2P;
@@ -981,7 +988,24 @@ classdef CDRA < vsys
                     this.tMassNetwork.aoAbsorberPhases(iP2P) = this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).oOut.oPhase;
                 end
                 
-                this.setTimeStep(fInitTimeStep);
+                this.setTimeStep(this.fInitTime/this.iInitStep);
+                this.updateCCAA();
+                
+                this.iCycleActive = 2;
+                
+            elseif mod(this.oTimer.fTime, this.fCycleTime) < this.fInitTime
+                
+                % The flowrates for the initilization are only set once and
+                % then used for the rest of the init time,
+                aoPhases = this.tMassNetwork.aoPhasesCycleOne;
+                for iCell = 1:this.iCells
+                    aoPhases(iCell).update();
+                end
+                aoPhases = this.tMassNetwork.aoPhasesCycleTwo;
+                for iCell = 1:this.iCells
+                    aoPhases(iCell).update();
+                end
+                
                 this.updateCCAA();
                 
             elseif (this.oTimer.iTick ~= 0)
