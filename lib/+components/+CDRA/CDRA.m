@@ -229,11 +229,6 @@ classdef CDRA < vsys
             mfMassTransferCoefficient(this.oMT.tiN2I.CO2)   = 0.003;
             mfMassTransferCoefficient(this.oMT.tiN2I.H2O)   = 0.0007;
             tInitialization.Zeolite5A.mfMassTransferCoefficient     =   mfMassTransferCoefficient;
-            
-            % using the value from RK38 for 13x for CO2 resulted in quite
-            % high CO2 adsorption on 13x. Therefore the value was reduced
-            % to achieve more realistic values
-            mfMassTransferCoefficient(this.oMT.tiN2I.CO2)   = 0.0003;
             tInitialization.Zeolite13x.mfMassTransferCoefficient    =   mfMassTransferCoefficient;
             
             mfMassTransferCoefficient(this.oMT.tiN2I.CO2)   = 0;

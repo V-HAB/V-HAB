@@ -118,15 +118,16 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
             oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
             
+            sTimeUnit = 's';
             cNames = {'Partial Pressure CO_2 Tank 1', 'Partial Pressure CO_2 Tank 2'};
             sTitle = 'Partial Pressure CO2';
             yLabel = 'Partial Pressure CO2 in Pa';
-            oPlot.definePlotByName(cNames, sTitle, yLabel);
+            oPlot.definePlotByName(cNames, sTitle, yLabel, sTimeUnit);
 
             cNames = {'Partial Mass CO_2 Tank 1', 'Partial Mass CO_2 Tank 2'};
             sTitle = 'Partial Mass CO2';
             yLabel = 'Partial Mass CO2 in kg';
-            oPlot.definePlotByName(cNames, sTitle, yLabel);
+            oPlot.definePlotByName(cNames, sTitle, yLabel, sTimeUnit);
 
         end
         
