@@ -41,13 +41,13 @@ classdef setup < simulation.infrastructure
             
             oLog.add('Example', 'flow_props');
             
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity', '-', 'Relative Humidity Cabin');
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2');
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'fTemperature', 'K', 'Temperature Atmosphere');
+            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity',              '-',    'Relative Humidity Cabin');
+            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)',  'Pa',   'Partial Pressure CO2');
+            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'fTemperature',              'K',    'Temperature Atmosphere');
             
-            oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn', 'fTemperature', 'K', 'Temperature CHX');
-            oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn', 'fPressure', 'Pa', 'Pressure CHX');
-            oLog.addValue('Example:c:CCAA:s:CHX.toProcsP2P.CondensingHX', 'fFlowRate', 'kg/s', 'Condensate Flowrate CHX');
+            oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn', 'fTemperature',      'K',    'Temperature CHX');
+            oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn', 'fPressure',         'Pa',   'Pressure CHX');
+            oLog.addValue('Example:c:CCAA:s:CHX.toProcsP2P.CondensingHX', 'fFlowRate',      'kg/s', 'Condensate Flowrate CHX');
             
             for iBed = 1:2
                 for iCell = 1:5
@@ -276,6 +276,11 @@ classdef setup < simulation.infrastructure
             yLabel = 'Partial Pressure CO_2 in Pa';
             oPlot.definePlotByName(csNames, sTitle, yLabel, sTimeUnit);
             
+            csNames = {'Partial Pressure CO2 in Torr'};
+            sTitle = 'Partial Pressure CO2 Habitat'; 
+            yLabel = 'Partial Pressure CO_2 in Torr';
+            oPlot.definePlotByName(csNames, sTitle, yLabel, sTimeUnit);
+            
             csNames = {'Relative Humidity Cabin'};
             sTitle = 'Relative Humidity Habitat'; 
             yLabel = 'Relative Humidity';
@@ -306,6 +311,11 @@ classdef setup < simulation.infrastructure
             csLogVariables =  {'CDRA Air Outlet Flow 1','CDRA H2O Outlet Partialratio 1','CDRA Air Outlet Flow 2','CDRA H2O Outlet Partialratio 2'};
             sNewLogName = 'CDRA H2O Outlet Flow';
             this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_OutletCalc, sNewLogName, 'kg/s');
+            
+            hPascalToTorr = @(x1)(x1./133.322368);
+            csLogVariables =  {'Partial Pressure CO2'};
+            sNewLogName = 'Partial Pressure CO2 in Torr';
+            this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hPascalToTorr, sNewLogName, 'Torr');
             
             this.toMonitors.oPlotter.plotByName();
             

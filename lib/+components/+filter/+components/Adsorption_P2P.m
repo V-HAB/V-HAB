@@ -76,23 +76,26 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 (max(abs(this.afPPOld - afPP)    - (1e-2 * this.afPPOld))   > 0) ||...
                 abs(this.fTemperatureOld - fTemperature) > (1e-2 * this.fTemperatureOld)
                 
-                mfQ_eq = this.oMT.calculateEquilibriumLoading(this);
+                mfEquilibriumLoading = this.oMT.calculateEquilibriumLoading(this);
 
-                mfQ = afMass;
+                mfCurrentLoading = afMass;
                 % the absorber material is not considered loading ;)
-                mfQ(this.oMT.abAbsorber) = 0;
+                mfCurrentLoading(this.oMT.abAbsorber) = 0;
 
-                % According to RT_BA 13_15 (TO DO: get original source)
-                % equation 3.31 the change in loading over time is the
-                % (equilibrium loading - actual loading) times a factor:
-                % mfFlowRates = this.mfMassTransferCoefficient .* (mfQ_eq - mfQ);
-                % which is a differential equation dq/dt = k(q*-q) which
-                % has the solution: q* - (q* - q0)e^(-kt)
-                % This can be used to calculate the new loading for the
-                % given timestep and current loading assuming the
-                % equilibrium loading remains constant
-                mfQ_New = mfQ_eq - ((mfQ_eq - mfQ).*exp(-this.mfMassTransferCoefficient.*fTimeStep));
-                mfFlowRates = (mfQ_New - mfQ)/fTimeStep;
+                % According to RT_BA 13_15 equation 3.31 the change in
+                % loading over time is the (equilibrium loading - actual
+                % loading) times a factor: dq/dt = k(q*-q)
+                %
+                % q here is the current loading which changes over time
+                % q* is the equilibrium loading
+                % q0 is the current loading at the beginning of this step
+                %
+                % This differential equation has the solution: 
+                % q* - (q* - q0)e^(-kt) This can be used to calculate the
+                % new loading for the given timestep and current loading
+                % assuming the equilibrium loading remains constant
+                mfNewLoading = mfEquilibriumLoading - ((mfEquilibriumLoading - mfCurrentLoading).*exp(-this.mfMassTransferCoefficient.*fTimeStep));
+                mfFlowRates = (mfNewLoading - mfCurrentLoading)/fTimeStep;
                 
                 mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
                 mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
