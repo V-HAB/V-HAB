@@ -121,9 +121,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 mfFlowRatesDesorption = -this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).fFlowRate .* this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).arPartialMass;
             end
             
-            afOutflow = (sum(afInFlow) - sum(mfFlowRatesAdsorption)) .* this.oIn.oPhase.arPartialMass;
-            
-            afAvailableMass = (afInFlow - afOutflow).*fTimeStep + this.oIn.oPhase.afMass;
+            afAvailableMass = afInFlow.*fTimeStep + this.oIn.oPhase.afMass;
             afAvailableMass(afAvailableMass < 0) = 0;
             
             fP2P_MassChange = fTimeStep .* mfFlowRatesAdsorption;
