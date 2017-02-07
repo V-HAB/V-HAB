@@ -392,7 +392,7 @@ classdef plotter_basic < simulation.monitor
                 % 0 0 0
                 % would define the subplot in the middle of a 3x3 field of
                 % subplots
-                if ~isempty(this.tPlotsByName(iPlot).mbPosition)
+                if isfield(this.tPlotsByName(iPlot), 'mbPosition') && ~isempty(this.tPlotsByName(iPlot).mbPosition)
                     % The boolean matrix has to be translated into the
                     % required inputs for the subplot command, which is the
                     % total row and line number and the number of the
