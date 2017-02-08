@@ -93,6 +93,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 (max(abs(this.afPPOld - afPP)    - (1e-2 * this.afPPOld))   > 0) ||...
                 abs(this.fTemperatureOld - fTemperature) > (1e-2 * this.fTemperatureOld)
                 
+                % Iteration in case of desorption because that would
+                % increase the available partial pressure within the phase
                 iCounter = 0;
                 while iCounter < 2
                     mfEquilibriumLoading = this.oMT.calculateEquilibriumLoading(afMass, afPP, fTemperature);

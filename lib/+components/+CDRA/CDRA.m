@@ -353,21 +353,7 @@ classdef CDRA < vsys
                 % more than one gas phase is used to implement several cells
                 components.filter.components.FilterStore(this, [(csTypes{iType}), '_1'], (fFlowVolume + fAbsorberVolume));
                 components.filter.components.FilterStore(this, [(csTypes{iType}), '_2'], (fFlowVolume + fAbsorberVolume));
-
-                fDensityAir = 1.2; % at 20°C and 1 atm
-                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', (fFlowVolume*fDensityAir*this.tAtmosphere.fCO2Percent)), fTemperatureFlow, 0.1, this.tAtmosphere.fPressure);
-
-                % The filter and flow phase total masses provided in the
-                % tInitialization struct have to be divided by the number of
-                % cells to obtain the tfMass struct for each phase of each
-                % cell. Currently the assumption here is that each cell has the
-                % same size.
-             	clear tfMassesFlow;
-                csFlowSubstances = fieldnames(cAirHelper{1});
-                for iK = 1:length(csFlowSubstances)
-                    tfMassesFlow.(csFlowSubstances{iK}) = cAirHelper{1}.(csFlowSubstances{iK})/iCellNumber;
-                end
-
+                
                 % Since there are two filters of each type a for loop over the
                 % two filters is used as well
                 for iFilter = 1:2
@@ -384,6 +370,8 @@ classdef CDRA < vsys
                         % Phase names contain the cell number at the end.
                     
                         clear tfMassesAbsorber;
+                        clear tfMassesFlow;
+                        
                         csAbsorberSubstances = fieldnames(tInitialization.(csTypes{iType}).tfMassAbsorber);
                         for iK = 1:length(csAbsorberSubstances)
                             tfMassesAbsorber.(csAbsorberSubstances{iK}) = tInitialization.(csTypes{iType}).tfMassAbsorber.(csAbsorberSubstances{iK})/iCellNumber;
@@ -404,23 +392,53 @@ classdef CDRA < vsys
                         
                         if this.iCycleActive == 1 
                             if ~strcmp(sName, 'Zeolite5A_2')
+                                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), fTemperatureFlow, 0.1, this.tAtmosphere.fPressure);
+                
+                                csFlowSubstances = fieldnames(cAirHelper{1});
+                                for iK = 1:length(csFlowSubstances)
+                                    tfMassesFlow.(csFlowSubstances{iK}) = cAirHelper{1}.(csFlowSubstances{iK})/iCellNumber;
+                                end
+                                
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), fTemperatureAbsorber, fPressure);
+                                oFlowPhase = matter.phases.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow);
                             else
+                                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), this.TargetTemperature, 0.1, 100);
+                
+                                csFlowSubstances = fieldnames(cAirHelper{1});
+                                for iK = 1:length(csFlowSubstances)
+                                    tfMassesFlow.(csFlowSubstances{iK}) = cAirHelper{1}.(csFlowSubstances{iK})/iCellNumber;
+                                end
+                                
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), this.TargetTemperature, fPressure);
+                                oFlowPhase = matter.phases.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), this.TargetTemperature);
                             end
                         else
                             if ~strcmp(sName, 'Zeolite5A_1')
+                                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), fTemperatureFlow, 0.1, this.tAtmosphere.fPressure);
+                
+                                csFlowSubstances = fieldnames(cAirHelper{1});
+                                for iK = 1:length(csFlowSubstances)
+                                    tfMassesFlow.(csFlowSubstances{iK}) = cAirHelper{1}.(csFlowSubstances{iK})/iCellNumber;
+                                end
+                                
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), fTemperatureAbsorber, fPressure);
+                                oFlowPhase = matter.phases.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow);
                             else
+                                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), this.TargetTemperature, 0.1, 100);
+                
+                                csFlowSubstances = fieldnames(cAirHelper{1});
+                                for iK = 1:length(csFlowSubstances)
+                                    tfMassesFlow.(csFlowSubstances{iK}) = cAirHelper{1}.(csFlowSubstances{iK})/iCellNumber;
+                                end
+                                
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), this.TargetTemperature, fPressure);
+                                oFlowPhase = matter.phases.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), this.TargetTemperature);
                             end
                         end
-                        oFlowPhase = matter.phases.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow);
-                        
-                        % An individual adsorption and desorption Exme and P2P is
+                        % An individual orption and desorption Exme and P2P is
                         % required because it is possible that a few substances are
                         % beeing desorbed at the same time as others are beeing
-                        % adsorbed
+                        % adsorbedads
                         matter.procs.exmes.mixture(oFilterPhase, ['Adsorption_',num2str(iCell)]);
                         matter.procs.exmes.mixture(oFilterPhase, ['Desorption_',num2str(iCell)]);
 
