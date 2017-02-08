@@ -226,19 +226,19 @@ classdef CCAA < vsys
             %  Creating the flowpaths between the Components
             %  Creating the flowpath out of this subsystem ('store.exme', {'f2f-processor', 'f2f-processor'}, 'system level port name')
             
-            matter.branch(this, 'TCCV.Port_In', {'Pipe_1'}, 'CCAA_In', 'CCAA_In_FromCabin');                                % Creating the flowpath into this subsystem
-            matter.branch(this, 'TCCV.Port_Out_1', {'CCAA_CHX_1'}, 'CHX.Flow_In', 'TCCV_CHX');
-            matter.branch(this, 'CHX.Flow_Out_Gas', {'Pipe_5'}, 'CCAA_CHX_Air_Out', 'CHX_Cabin');
-            matter.branch(this, 'TCCV.Port_Out_2', {'Pipe_4'}, 'CCAA_TCCV_Air_Out', 'TCCV_Cabin');
-            matter.branch(this, 'CHX.Flow_Out_Liquid', {'Pipe_6'}, 'CCAA_CHX_Condensate_Out', 'Condensate_Out');               % Creating the water flowpath out of this subsystem
-            matter.branch(this, 'CoolantStore.Flow_In_Coolant', {'Pipe_7'}, 'CCAA_CoolantIn', 'Coolant_In');
-            matter.branch(this, 'CoolantStore.Flow_Out_Coolant', {'CCAA_CHX_2'}, 'CCAA_CoolantOut', 'Coolant_Out');
+            matter.branch(this, 'TCCV.Port_In',                     {'Pipe_1'},     'CCAA_In',                  'CCAA_In_FromCabin');	% Creating the flowpath into this subsystem
+            matter.branch(this, 'TCCV.Port_Out_1',                  {'CCAA_CHX_1'}, 'CHX.Flow_In',              'TCCV_CHX');
+            matter.branch(this, 'CHX.Flow_Out_Gas',                 {'Pipe_5'},     'CCAA_CHX_Air_Out',         'CHX_Cabin');
+            matter.branch(this, 'TCCV.Port_Out_2',                  {'Pipe_4'},     'CCAA_TCCV_Air_Out',       	'TCCV_Cabin');
+            matter.branch(this, 'CHX.Flow_Out_Liquid',              {'Pipe_6'},     'CCAA_CHX_Condensate_Out',  'Condensate_Out');      % Creating the water flowpath out of this subsystem
+            matter.branch(this, 'CoolantStore.Flow_In_Coolant',     {'Pipe_7'},     'CCAA_CoolantIn',           'Coolant_In');
+            matter.branch(this, 'CoolantStore.Flow_Out_Coolant',    {'CCAA_CHX_2'}, 'CCAA_CoolantOut',          'Coolant_Out');
             
             % These branches are only necessary if a CDRA is connected to
             % the CCAA
             if ~isempty(this.sCDRA)
-                matter.branch(this, 'CHX.Flow_Out_Gas2', {'Pipe_8'}, 'CCAA_CHX_to_CDRA_Out', 'CHX_CDRA');
-                matter.branch(this, 'TCCV.Port_In2', {'Pipe_2'}, 'CCAA_In_FromCDRA', 'CDRA_TCCV');
+                matter.branch(this, 'CHX.Flow_Out_Gas2',            {'Pipe_8'},     'CCAA_CHX_to_CDRA_Out',     'CHX_CDRA');
+                matter.branch(this, 'TCCV.Port_In2',                {'Pipe_2'},     'CCAA_In_FromCDRA',         'CDRA_TCCV');
             end
         end
              
