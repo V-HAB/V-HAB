@@ -176,7 +176,7 @@ classdef CDRA < vsys
             % ~35g CO2 for each kg of zeolite. Therefore the zeolite mass
             % has to be around 23 to 26 kg. (current calculation results in
             % ~23.5 kg)
-            fCrossSection = (18*15E-3)^2; 
+            fCrossSection = (16*13E-3)^2; 
             
             this.tGeometry.Zeolite5A.fCrossSection       = fCrossSection;
             this.tGeometry.Sylobead.fCrossSection        = fCrossSection;
@@ -223,14 +223,14 @@ classdef CDRA < vsys
             % for each cell (the values can obtained by running the
             % simulation for a longer time without startvalues and set them
             % according to the values once the simulation is repetetive)
-        	tInitialization.Zeolite13x.mfInitialCO2             = [0.06, 0.06, 0.06, 0.06, 0.06];
-        	tInitialization.Zeolite13x.mfInitialH2O             = [0.15, 0.13, 0.08, 0.05,    0];
+        	tInitialization.Zeolite13x.mfInitialCO2             = [   0,    0,    0,    0,    0]; %[0.06, 0.06, 0.06, 0.06, 0.06];
+        	tInitialization.Zeolite13x.mfInitialH2O             = [   0,    0,    0,    0,    0]; %[0.15, 0.13, 0.08, 0.05,    0];
             
         	tInitialization.Sylobead.mfInitialCO2               = [   0,    0,    0,    0,    0];
         	tInitialization.Sylobead.mfInitialH2O               = [   1, 0.75, 0.55,  0.4,  0.2]; % Only set for the bed that just finished absorbing
             
         	tInitialization.Zeolite5A.mfInitialCO2              = [   0,    0,    0,    0,    0];
-        	tInitialization.Zeolite5A.mfInitialH2O              = [0.01, 0.004, 0.002, 0.0005,    0];
+        	tInitialization.Zeolite5A.mfInitialH2O              = [   0,    0,    0,    0,    0]; %[0.01, 0.004, 0.002, 0.0005,    0];
             
             % Sets the cell numbers used for the individual filters
             tInitialization.Zeolite13x.iCellNumber = 5;

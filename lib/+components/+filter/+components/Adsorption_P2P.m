@@ -87,6 +87,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             afCurrentMolsIn     = (afCurrentInFlows ./ this.oMT.afMolarMass);
             arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
             afPP                = arFractions .* this.oIn.oPhase.fPressure;
+            afPP(isnan(afPP))   = this.oIn.oPhase.afPP(isnan(afPP));
             
             % TO DO: make percentage before recalculation adaptive
             if (max(abs(this.afMassOld - afMass) - (1e-2 * this.afMassOld)) > 0) ||...
@@ -141,6 +142,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                         afCurrentMolsIn         = (afCurrentInFlowsNew ./ this.oMT.afMolarMass);
                         arFractions             = afCurrentMolsIn ./ sum(afCurrentMolsIn);
                         afPP                    = arFractions .* this.oIn.oPhase.fPressure;
+                        afPP(isnan(afPP))       = this.oIn.oPhase.afPP(isnan(afPP));
                         iCounter = iCounter + 1;
                     end
                 end

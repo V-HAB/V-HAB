@@ -277,7 +277,7 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotByName(csNames, sTitle, yLabel, sTimeUnit);
             
             csNames = {'Partial Pressure CO2 in Torr'};
-            sTitle = 'Partial Pressure CO2 Habitat'; 
+            sTitle = 'Partial Pressure CO2 Habitat Torr'; 
             yLabel = 'Partial Pressure CO_2 in Torr';
             oPlot.definePlotByName(csNames, sTitle, yLabel, sTimeUnit);
             
