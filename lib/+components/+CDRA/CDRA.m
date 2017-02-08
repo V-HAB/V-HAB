@@ -92,7 +92,7 @@ classdef CDRA < vsys
         fMinimumTimeStep        = 1e-2;
         fMaximumTimeStep        = 10;
         
-        % This variable decide by how much percent the mass in any one cell
+        % This variable decides by how much percent the mass in any one cell
         % is allowed to change within one tick (increasing this does not
         % necessarily speed up the simulation, but you can try)
         rMaxChange              = 0.001;
@@ -214,8 +214,23 @@ classdef CDRA < vsys
         	tInitialization.Sylobead.tfMassAbsorber  =   struct('Sylobead_B125',fMassSylobead);
             tInitialization.Sylobead.fTemperature    =   281.25;
             
-        	tInitialization.Zeolite5A.tfMassAbsorber  =   struct('Zeolite5A',fMassZeolite5A, 'CO2', 0.1);
+        	tInitialization.Zeolite5A.tfMassAbsorber  =   struct('Zeolite5A',fMassZeolite5A);
             tInitialization.Zeolite5A.fTemperature    =   281.25;
+            
+            % Aside from the absorber mass itself the initial values of
+            % absorbed substances (like H2O and CO2) can be set. Since the
+            % loading is not equal over the cells they have to be defined
+            % for each cell (the values can obtained by running the
+            % simulation for a longer time without startvalues and set them
+            % according to the values once the simulation is repetetive)
+        	tInitialization.Zeolite13x.mfInitialCO2             = [0.06, 0.06, 0.06, 0.06, 0.06];
+        	tInitialization.Zeolite13x.mfInitialH2O             = [0.15, 0.13, 0.08, 0.05,    0];
+            
+        	tInitialization.Sylobead.mfInitialCO2               = [   0,    0,    0,    0,    0];
+        	tInitialization.Sylobead.mfInitialH2O               = [   1, 0.75, 0.55,  0.4,  0.2]; % Only set for the bed that just finished absorbing
+            
+        	tInitialization.Zeolite5A.mfInitialCO2              = [   0,    0,    0,    0,    0];
+        	tInitialization.Zeolite5A.mfInitialH2O              = [0.01, 0.004, 0.002, 0.0005,    0];
             
             % Sets the cell numbers used for the individual filters
             tInitialization.Zeolite13x.iCellNumber = 5;
@@ -223,7 +238,7 @@ classdef CDRA < vsys
             tInitialization.Zeolite5A.iCellNumber = 5;
             
             % Values for the mass transfer coefficient can be found in the
-            % paper ICES-2014-268. Here the values for Zeolite5A are used
+            % paper ICES-2014-168. Here the values for Zeolite5A are used
             % assuming that the coefficients for 5A and 5A-RK38 are equal.
             mfMassTransferCoefficient = zeros(1,this.oMT.iSubstances);
             mfMassTransferCoefficient(this.oMT.tiN2I.CO2)   = 0.003;
@@ -323,8 +338,6 @@ classdef CDRA < vsys
                 % divided by the number of cells to obtain the tfMass struct
                 % for each phase of each cell. Currently the assumption here is
                 % that each cell has the same size.
-                clear tfMassesAbsorber;
-                clear tfMassesFlow;
                 fAbsorberVolume         = this.tGeometry.(csTypes{iType}).fAbsorberVolume;
                 fFlowVolume             = this.tGeometry.(csTypes{iType}).fVolumeFlow;
                 iCellNumber             = tInitialization.(csTypes{iType}).iCellNumber;
@@ -349,10 +362,7 @@ classdef CDRA < vsys
                 % cells to obtain the tfMass struct for each phase of each
                 % cell. Currently the assumption here is that each cell has the
                 % same size.
-                csAbsorberSubstances = fieldnames(tInitialization.(csTypes{iType}).tfMassAbsorber);
-                for iK = 1:length(csAbsorberSubstances)
-                    tfMassesAbsorber.(csAbsorberSubstances{iK}) = tInitialization.(csTypes{iType}).tfMassAbsorber.(csAbsorberSubstances{iK})/iCellNumber;
-                end
+             	clear tfMassesFlow;
                 csFlowSubstances = fieldnames(cAirHelper{1});
                 for iK = 1:length(csFlowSubstances)
                     tfMassesFlow.(csFlowSubstances{iK}) = cAirHelper{1}.(csFlowSubstances{iK})/iCellNumber;
@@ -372,8 +382,39 @@ classdef CDRA < vsys
                         % certain substances from the gas phase which is
                         % represented in the flow phases. To better track these the
                         % Phase names contain the cell number at the end.
-                        oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), fTemperatureAbsorber, fPressure);
-
+                    
+                        clear tfMassesAbsorber;
+                        csAbsorberSubstances = fieldnames(tInitialization.(csTypes{iType}).tfMassAbsorber);
+                        for iK = 1:length(csAbsorberSubstances)
+                            tfMassesAbsorber.(csAbsorberSubstances{iK}) = tInitialization.(csTypes{iType}).tfMassAbsorber.(csAbsorberSubstances{iK})/iCellNumber;
+                        end
+                        tfMassesAbsorber.CO2 = tInitialization.(csTypes{iType}).mfInitialCO2(iCell);
+                        % For sylobead the h2o mass is only set for the bed
+                        % that just finished absorbing (as the other bed
+                        % has a mass of zero)
+                        if this.iCycleActive == 1 
+                            if ~strcmp(sName, 'Sylobead_2')
+                                tfMassesAbsorber.H2O = tInitialization.(csTypes{iType}).mfInitialH2O(iCell);
+                            end
+                        else
+                            if ~strcmp(sName, 'Sylobead_1')
+                                tfMassesAbsorber.H2O = tInitialization.(csTypes{iType}).mfInitialH2O(iCell);
+                            end
+                        end
+                        
+                        if this.iCycleActive == 1 
+                            if ~strcmp(sName, 'Zeolite5A_2')
+                                oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), fTemperatureAbsorber, fPressure);
+                            else
+                                oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), this.TargetTemperature, fPressure);
+                            end
+                        else
+                            if ~strcmp(sName, 'Zeolite5A_1')
+                                oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), fTemperatureAbsorber, fPressure);
+                            else
+                                oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), this.TargetTemperature, fPressure);
+                            end
+                        end
                         oFlowPhase = matter.phases.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow);
                         
                         % An individual adsorption and desorption Exme and P2P is
@@ -850,6 +891,8 @@ classdef CDRA < vsys
 %                 this.fFlowrateMain  = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_CDRA.oHandler.fRequestedFlowRate;
             end
             
+            this.calculateThermalProperties()
+            
             %% Cycle Change handling:
             % in case the cycle is switched a number of changes has to be
             % made to the flowrates, which are only necessary ONCE!
@@ -1043,8 +1086,6 @@ classdef CDRA < vsys
                     this.setTimeStep(min([fAdsorptionStep, fDesorptionStep]));
                 end
             end
-            
-            this.calculateThermalProperties()
             
             % since the thermal solver currently only has constant time
             % steps it currently uses the same time step as the filter

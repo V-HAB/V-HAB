@@ -69,49 +69,79 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             afMass          = this.oOut.oPhase.afMass;
             fTemperature    = this.oOut.oPhase.fTemperature;
-            afPP            = this.oIn.oPhase.afPP;
+            % Instead of using the partial pressure of the flow phase, use the
+            % total pressure of the the flow phase but the composition of the
+            % ingoing flow to calculate the partial pressure of the
+            % inflowing matter. Otherwise the partial pressure in the cell
+            % will oscillate because it first has to increase before it can
+            % absorb something
+            afCurrentInFlows = zeros(1,this.oMT.iSubstances);
+            for iExme = 1:this.oIn.oPhase.iProcsEXME
+                if ~this.oIn.oPhase.coProcsEXME{iExme}.bFlowIsAProcP2P
+                    fFlowRate = (this.oIn.oPhase.coProcsEXME{iExme}.iSign * this.oIn.oPhase.coProcsEXME{iExme}.oFlow.fFlowRate);
+                    if fFlowRate > 0
+                        afCurrentInFlows = afCurrentInFlows + (fFlowRate .* this.oIn.oPhase.coProcsEXME{iExme}.oFlow.arPartialMass);
+                    end
+                end
+            end
+            afCurrentMolsIn     = (afCurrentInFlows ./ this.oMT.afMolarMass);
+            arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
+            afPP                = arFractions .* this.oIn.oPhase.fPressure;
             
             % TO DO: make percentage before recalculation adaptive
             if (max(abs(this.afMassOld - afMass) - (1e-2 * this.afMassOld)) > 0) ||...
                 (max(abs(this.afPPOld - afPP)    - (1e-2 * this.afPPOld))   > 0) ||...
                 abs(this.fTemperatureOld - fTemperature) > (1e-2 * this.fTemperatureOld)
                 
-                mfEquilibriumLoading = this.oMT.calculateEquilibriumLoading(this);
+                iCounter = 0;
+                while iCounter < 2
+                    mfEquilibriumLoading = this.oMT.calculateEquilibriumLoading(afMass, afPP, fTemperature);
 
-                mfCurrentLoading = afMass;
-                % the absorber material is not considered loading ;)
-                mfCurrentLoading(this.oMT.abAbsorber) = 0;
+                    mfCurrentLoading = afMass;
+                    % the absorber material is not considered loading ;)
+                    mfCurrentLoading(this.oMT.abAbsorber) = 0;
 
-                % According to RT_BA 13_15 equation 3.31 the change in
-                % loading over time is the (equilibrium loading - actual
-                % loading) times a factor: dq/dt = k(q*-q)
-                %
-                % q here is the current loading which changes over time
-                % q* is the equilibrium loading
-                % q0 is the current loading at the beginning of this step
-                %
-                % This differential equation has the solution: 
-                % q* - (q* - q0)e^(-kt) This can be used to calculate the
-                % new loading for the given timestep and current loading
-                % assuming the equilibrium loading remains constant
-                mfNewLoading = mfEquilibriumLoading - ((mfEquilibriumLoading - mfCurrentLoading).*exp(-this.mfMassTransferCoefficient.*fTimeStep));
-                mfFlowRates = (mfNewLoading - mfCurrentLoading)/fTimeStep;
-                
-                mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
-                mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
-                mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
-                mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
-                
-                fDesorptionFlowRate                             = -sum(mfFlowRatesDesorption);
-                arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
-                arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./fDesorptionFlowRate);
+                    % According to RT_BA 13_15 equation 3.31 the change in
+                    % loading over time is the (equilibrium loading - actual
+                    % loading) times a factor: dq/dt = k(q*-q)
+                    %
+                    % q here is the current loading which changes over time
+                    % q* is the equilibrium loading
+                    % q0 is the current loading at the beginning of this step
+                    %
+                    % This differential equation has the solution: 
+                    % q* - (q* - q0)e^(-kt) This can be used to calculate the
+                    % new loading for the given timestep and current loading
+                    % assuming the equilibrium loading remains constant
+                    mfNewLoading = mfEquilibriumLoading - ((mfEquilibriumLoading - mfCurrentLoading).*exp(-this.mfMassTransferCoefficient.*fTimeStep));
+                    mfFlowRates = (mfNewLoading - mfCurrentLoading)/fTimeStep;
 
-                % Positive values in mfFlowRates mean something is beeing
-                % absorbed and the Absorption Enthalpy is stored with a
-                % negative value if heat is generated. Therefore the overall
-                % result has to be mutliplied with -1
+                    mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
+                    mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
+                    mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
+                    mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
 
-                this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
+                    fDesorptionFlowRate                             = -sum(mfFlowRatesDesorption);
+                    arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
+                    arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./fDesorptionFlowRate);
+                    
+                    % Positive values in mfFlowRates mean something is beeing
+                    % absorbed and the Absorption Enthalpy is stored with a
+                    % negative value if heat is generated. Therefore the overall
+                    % result has to be mutliplied with -1
+
+                    this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
+                    
+                    if fDesorptionFlowRate == 0
+                        break
+                    else
+                        afCurrentInFlowsNew     = afCurrentInFlows - mfFlowRatesDesorption;
+                        afCurrentMolsIn         = (afCurrentInFlowsNew ./ this.oMT.afMolarMass);
+                        arFractions             = afCurrentMolsIn ./ sum(afCurrentMolsIn);
+                        afPP                    = arFractions .* this.oIn.oPhase.fPressure;
+                        iCounter = iCounter + 1;
+                    end
+                end
                 
                 this.afMassOld          = afMass;
                 this.afPPOld            = afPP;
