@@ -545,7 +545,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Execute updateProcessorsAndManipulators between branch solver
             % updates for inflowing and outflowing flows
             if this.iProcsP2Pflow > 0 || this.iManipulators > 0
-                this.oTimer.bindPostTick(@this.updateProcessorsAndManipulators, 1);
+                this.oTimer.bindPostTick(@this.updateProcessorsAndManipulators, 0);
+                this.setBranchesOutdated(true); % true to indicate that only residual branches are set outdated
             end
             
             % Flowrate update binding for OUTFLOWING matter flows.
@@ -1285,9 +1286,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             this.mfTotalFlowsByExme = mfTotalFlows;
             
-            
-            afTotalInOuts   = tools.round.prec(afTotalInOuts,   this.oTimer.iPrecision);
-            mfInflowDetails = tools.round.prec(mfInflowDetails, this.oTimer.iPrecision);
+%             afTotalInOuts   = tools.round.prec(afTotalInOuts,   this.oTimer.iPrecision);
+%             mfInflowDetails = tools.round.prec(mfInflowDetails, this.oTimer.iPrecision);
         end
         
     end
@@ -1370,9 +1370,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
         end
 
-        function setBranchesOutdated(this, sFlowDirection)
+        function setBranchesOutdated(this, bResidual, sFlowDirection)
             
-%             if nargin < 2
+            if nargin < 2
+                bResidual = false;
+            end
+
+%             if nargin < 3
                 sFlowDirection = 'both'; 
 %             end
             
@@ -1391,35 +1395,45 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 
                 % Make sure it's not a p2ps.flow - their update method
                 % is called in updateProcessorsAndManipulators method
-                if isa(oBranch, 'matter.branch')
-                    % If flow direction set, only setOutdated if the
-                    % flow direction is either inwards or outwards
-                    if strcmp(sFlowDirection, 'in')
-                        if oExme.iSign * oExme.oFlow.fFlowRate > 0
-                            % ok
-                        else
-                            continue;
-                        end
-                    elseif strcmp(sFlowDirection, 'out')
-                        if oExme.iSign * oExme.oFlow.fFlowRate <= 0
-                            % ok
-                        else
-                            continue;
-                        end
+                if bResidual
+                    if ~oExme.bFlowIsAProcP2P
+                        isa(oBranch.oHandler, 'solver.matter.residual.branch');
+
+                        % Tell branch to recalculate flow rate (done after
+                        % the current tick, in timer post tick).
+                        oBranch.setOutdated();
                     end
-                    
-                    % We can't directly set this oBranch as outdated if
-                    % it is just connected to an interface, because the
-                    % solver is assigned to the 'leftest' branch.
-                    while ~isempty(oBranch.coBranches{1})
-                        oBranch = oBranch.coBranches{1};
+                else
+                    if isa(oBranch, 'matter.branch')
+                        % If flow direction set, only setOutdated if the
+                        % flow direction is either inwards or outwards
+                        if strcmp(sFlowDirection, 'in')
+                            if oExme.iSign * oExme.oFlow.fFlowRate > 0
+                                % ok
+                            else
+                                continue;
+                            end
+                        elseif strcmp(sFlowDirection, 'out')
+                            if oExme.iSign * oExme.oFlow.fFlowRate <= 0
+                                % ok
+                            else
+                                continue;
+                            end
+                        end
+
+                        % We can't directly set this oBranch as outdated if
+                        % it is just connected to an interface, because the
+                        % solver is assigned to the 'leftest' branch.
+                        while ~isempty(oBranch.coBranches{1})
+                            oBranch = oBranch.coBranches{1};
+                        end
+
+                        %fprintf('%s-%s: setOutdated "%s"\n', this.oStore.sName, this.sName, oBranch.sName);
+
+                        % Tell branch to recalculate flow rate (done after
+                        % the current tick, in timer post tick).
+                        oBranch.setOutdated();
                     end
-                    
-                    %fprintf('%s-%s: setOutdated "%s"\n', this.oStore.sName, this.sName, oBranch.sName);
-                    
-                    % Tell branch to recalculate flow rate (done after
-                    % the current tick, in timer post tick).
-                    oBranch.setOutdated();
                 end
             end % end of: for
             
