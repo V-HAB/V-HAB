@@ -84,8 +84,10 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                     end
                 end
             end
+            afCurrentMols       = (this.oIn.oPhase.afMass./this.oMT.afMolarMass);
             afCurrentMolsIn     = (afCurrentInFlows ./ this.oMT.afMolarMass);
-            arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
+            arFractions         = ((afCurrentMolsIn * fTimeStep) + afCurrentMols) ./ (sum(afCurrentMolsIn) * fTimeStep + sum(afCurrentMols));
+
             afPP                = arFractions .* this.oIn.oPhase.fPressure;
             afPP(isnan(afPP))   = this.oIn.oPhase.afPP(isnan(afPP));
             
@@ -96,11 +98,13 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             if (max(abs(this.afMassOld - afMass) - (1e-2 * this.afMassOld)) > 0) ||...
                 (max(abs(this.afPPOld - afPP)    - (1e-2 * this.afPPOld))   > 0) ||...
                 abs(this.fTemperatureOld - fTemperature) > (1e-2 * this.fTemperatureOld)
+            
+                mfFlowRatesDesorptionPrevious = zeros(3,this.oMT.iSubstances);
                 
                 % Iteration in case of desorption because that would
                 % increase the available partial pressure within the phase
                 iCounter = 0;
-                while iCounter < 2
+                while iCounter < 3
                     mfEquilibriumLoading = this.oMT.calculateEquilibriumLoading(afMass, afPP, fTemperature);
 
                     mfCurrentLoading = afMass;
@@ -126,7 +130,9 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                     mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
                     mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
                     mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
-
+                    
+                    mfFlowRatesDesorption = (mfFlowRatesDesorption + mfFlowRatesDesorptionPrevious(end,:))/2;
+                    
                     fDesorptionFlowRate                             = -sum(mfFlowRatesDesorption);
                     arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
                     arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./fDesorptionFlowRate);
@@ -141,9 +147,12 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                     if fDesorptionFlowRate == 0
                         break
                     else
+                        mfFlowRatesDesorptionPrevious(iCounter+1,:) = mfFlowRatesDesorption;
+                        
                         afCurrentInFlowsNew     = afCurrentInFlows - mfFlowRatesDesorption;
                         afCurrentMolsIn         = (afCurrentInFlowsNew ./ this.oMT.afMolarMass);
-                        arFractions             = afCurrentMolsIn ./ sum(afCurrentMolsIn);
+                        arFractions             = ((afCurrentMolsIn * fTimeStep) + afCurrentMols) ./ (sum(afCurrentMolsIn) * fTimeStep + sum(afCurrentMols));
+
                         afPP                    = arFractions .* this.oIn.oPhase.fPressure;
                         afPP(isnan(afPP))       = this.oIn.oPhase.afPP(isnan(afPP));
                         
@@ -151,7 +160,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                         % otherwise desorption of the last remaining bit of
                         % substance in the absorber is nearly impossible
                         afPP = tools.round.prec(afPP,  3);
-
+                        
                         iCounter = iCounter + 1;
                     end
                 end
