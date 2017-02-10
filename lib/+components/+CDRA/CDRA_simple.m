@@ -324,7 +324,7 @@ classdef CDRA_simple < vsys
             % Branch for flowpath into/out of a subsystem: ('store.exme', {'f2f-processor', 'f2f-processor'}, 'system level port name')
             
             % Cycle one
-            matter.branch(this, 'Filter_13X_1.Flow_In_1', {'Pipe_1'}, 'CDRA_Air_In_1', 'Filter_13x1_In');           % Creating the flowpath into this subsystem
+            matter.branch(this, 'Filter_13X_1.Flow_In_1', {'Pipe_1'}, 'CDRA_Air_In_1', 'Filter13x1_In');           % Creating the flowpath into this subsystem
             matter.branch(this, 'Filter_13X_1.Flow_Out_1', {'Pipe_2', 'Precooler_1'}, 'Filter5A_2.Flow_In', 'Filter13x1_to_Filter5A2');
             
             if this.bVozdukh == 1
@@ -455,7 +455,7 @@ classdef CDRA_simple < vsys
                 end
                
                 % Setting cycle one flow rates
-                this.toBranches.Filter_13x1_In.oHandler.setFlowRate(-this.fFlowrateMain);
+                this.toBranches.Filter13x1_In.oHandler.setFlowRate(-this.fFlowrateMain);
                 this.toBranches.Filter13x1_to_Filter5A2.oHandler.setFlowRate(this.fFlowrateMain - fFlowRate13X_1);
                 %Since the beds go through a pressure swing where they go
                 %from normal pressure to vacuum it is required to refill
@@ -512,7 +512,7 @@ classdef CDRA_simple < vsys
                     this.toProcsF2F.Precooler_2.setActive(true, this.oTimer.fTime)
                     
                     % Setting cycle one flow rates zero
-                    this.toBranches.Filter_13x1_In.oHandler.setFlowRate(0);
+                    this.toBranches.Filter13x1_In.oHandler.setFlowRate(0);
                     this.toBranches.Filter13x1_to_Filter5A2.oHandler.setFlowRate(0);
                     this.toBranches.Filter5A2_to_Filter13x2.oHandler.setFlowRate(0);
                     this.toBranches.Filter13x2_to_CHX.oHandler.setFlowRate(0);
