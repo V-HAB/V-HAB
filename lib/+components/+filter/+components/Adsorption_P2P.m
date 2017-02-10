@@ -89,6 +89,9 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             afPP                = arFractions .* this.oIn.oPhase.fPressure;
             afPP(isnan(afPP))   = this.oIn.oPhase.afPP(isnan(afPP));
             
+            % very small (less than one milli pascal) partial pressures are rounded to zero 
+            afPP = tools.round.prec(afPP,   3);
+            
             % TO DO: make percentage before recalculation adaptive
             if (max(abs(this.afMassOld - afMass) - (1e-2 * this.afMassOld)) > 0) ||...
                 (max(abs(this.afPPOld - afPP)    - (1e-2 * this.afPPOld))   > 0) ||...
@@ -143,6 +146,12 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                         arFractions             = afCurrentMolsIn ./ sum(afCurrentMolsIn);
                         afPP                    = arFractions .* this.oIn.oPhase.fPressure;
                         afPP(isnan(afPP))       = this.oIn.oPhase.afPP(isnan(afPP));
+                        
+                        % very small partial pressures are rounded to zero.
+                        % otherwise desorption of the last remaining bit of
+                        % substance in the absorber is nearly impossible
+                        afPP = tools.round.prec(afPP,  3);
+
                         iCounter = iCounter + 1;
                     end
                 end

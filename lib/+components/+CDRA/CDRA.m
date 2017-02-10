@@ -197,9 +197,9 @@ classdef CDRA < vsys
             this.tGeometry.Sylobead.fAbsorberVolume          =   (1-this.tGeometry.Sylobead.rVoidFraction)          * fCrossSection * this.tGeometry.Sylobead.fLength;
             this.tGeometry.Zeolite5A.fAbsorberVolume         =   (1-this.tGeometry.Zeolite5A.rVoidFraction)         * fCrossSection * this.tGeometry.Zeolite5A.fLength;
             
-            fMassZeolite13x         = this.tGeometry.Zeolite13x.fAbsorberVolume        * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
-            fMassSylobead           = this.tGeometry.Sylobead.fAbsorberVolume          * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
-            fMassZeolite5A          = this.tGeometry.Zeolite5A.fAbsorberVolume         * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
+            fMassZeolite13x         = 0.367 *   this.tGeometry.Zeolite13x.fAbsorberVolume        * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
+            fMassSylobead           =           this.tGeometry.Sylobead.fAbsorberVolume          * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
+            fMassZeolite5A          =           this.tGeometry.Zeolite5A.fAbsorberVolume         * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
             
             % These are the correct estimates for the flow volumes of each
             % bed which are used in the filter adsorber proc for
@@ -697,6 +697,8 @@ classdef CDRA < vsys
             this.tTimeProperties.DesorptionStep = -1;
             this.tTimeProperties.DesorptionThermalLastExec = -10;
             this.tTimeProperties.DesorptionThermalStep = -1;
+            
+            this.tMassNetwork.mfMassDiff = zeros(this.iCells+1,1);
         end           
         
         %% Function to connect the system and subsystem level branches with each other
@@ -960,14 +962,14 @@ classdef CDRA < vsys
                 % second, therefore the calculated mass difference is
                 % directly the required flow rate that has to go into the
                 % phase to reach the desired mass
-                mfMassDiff = (mfPressurePhase - [this.tMassNetwork.aoPhasesCycleOne.fPressure]')./[this.tMassNetwork.aoPhasesCycleOne.fMassToPressure]';
+                this.tMassNetwork.mfMassDiff = (mfPressurePhase - [this.tMassNetwork.aoPhasesCycleOne.fPressure]')./[this.tMassNetwork.aoPhasesCycleOne.fMassToPressure]';
                 
                 % Now the mass difference required in the phases is
                 % translated into massflows for the branches for the next
                 % second
                 mfFlowRate = zeros(this.iCells+1,1);
                 for iBranch = 1:(length(this.tMassNetwork.aoBranchesCycleOne))
-                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleOne(iBranch) * (this.fFlowrateMain + sum(mfMassDiff(iBranch:end))/this.fInitTime);
+                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleOne(iBranch) * (this.fFlowrateMain + sum(this.tMassNetwork.mfMassDiff(iBranch:end))/this.fInitTime);
                     this.tMassNetwork.aoBranchesCycleOne(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
@@ -1030,14 +1032,14 @@ classdef CDRA < vsys
                 % second, therefore the calculated mass difference is
                 % directly the required flow rate that has to go into the
                 % phase to reach the desired mass
-                mfMassDiff = (mfPressurePhase - [this.tMassNetwork.aoPhasesCycleTwo.fPressure]')./[this.tMassNetwork.aoPhasesCycleTwo.fMassToPressure]';
+                this.tMassNetwork.mfMassDiff = (mfPressurePhase - [this.tMassNetwork.aoPhasesCycleTwo.fPressure]')./[this.tMassNetwork.aoPhasesCycleTwo.fMassToPressure]';
                 
                 % Now the mass difference required in the phases is
                 % translated into massflows for the branches for the next
                 % second
                 mfFlowRate = zeros(this.iCells+1,1);
                 for iBranch = 1:(length(this.tMassNetwork.aoBranchesCycleTwo))
-                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleTwo(iBranch) * (this.fFlowrateMain + sum(mfMassDiff(iBranch:end))/this.fInitTime);
+                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleTwo(iBranch) * (this.fFlowrateMain + sum(this.tMassNetwork.mfMassDiff(iBranch:end))/this.fInitTime);
                     this.tMassNetwork.aoBranchesCycleTwo(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
@@ -1065,6 +1067,32 @@ classdef CDRA < vsys
                 aoPhases = this.tMassNetwork.aoPhasesCycleTwo;
                 for iCell = 1:this.iCells
                     aoPhases(iCell).update();
+                end
+                
+                if this.iCycleActive == 1
+                    sCycle = 'One';
+                else
+                    sCycle = 'Two';
+                end
+                
+                % Now the mass difference required in the phases is
+                % translated into massflows for the branches for the next
+                % second
+                aoBranches(:,1) = this.tMassNetwork.(['aoBranchesCycle',sCycle]);
+                mfFlowRate(:,1) = [aoBranches.fFlowRate];
+                
+                aoAbsorber = this.tMassNetwork.(['aoAbsorberCycle',sCycle]);
+                aoAbsorber(1).ManualUpdate(this.fInitTime/this.iInitStep, mfFlowRate(1) .* aoBranches(1).coExmes{2}.oPhase.arPartialMass);
+                aoAbsorber(1).oOut.oPhase.update();
+                    
+                for iAbsorber = 2:length(aoAbsorber)
+                    aoAbsorber(iAbsorber).ManualUpdate(this.fInitTime/this.iInitStep, mfFlowRate(iAbsorber) .* aoAbsorber(iAbsorber).oIn.oPhase.arPartialMass);
+                    aoAbsorber(iAbsorber).oOut.oPhase.update();
+                end
+                
+                for iBranch = 1:(length(mfFlowRate))
+                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleTwo(iBranch) * ((this.fFlowrateMain + sum(this.tMassNetwork.mfMassDiff(iBranch:end))/this.fInitTime) -  - sum(this.tMassNetwork.mfAdsorptionFlowRate(1:iBranch-1)));
+                    aoBranches(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
                 this.updateCCAA();
@@ -1178,8 +1206,8 @@ classdef CDRA < vsys
             % The temperature changes are accounter for by using the mass
             % to pressure variable which accounts for the current phase
             % temperature!.
-            mfCellMass(:,1)   	= [aoPhases.fMass];
-           	mfCellPressure(:,1)	= [aoPhases.fPressure];
+            mfCellMass(:,1)         = [aoPhases.fMass];
+           	mfCellPressure(:,1)     = [aoPhases.fPressure];
             
             % In order to get the flow rate calculation to higher
             % speeds at each cycle change the phases are preset to
@@ -1195,6 +1223,20 @@ classdef CDRA < vsys
             % directly the required flow rate that has to go into the
             % phase to reach the desired mass
             mfMassDiff = (mfPressurePhase - mfCellPressure)./[aoPhases.fMassToPressure]';
+            
+            % if the phase is empty the mass to pressure value will be 0
+            % and the calculation would fail. Instead the ideal gas law is
+            % used in that case. Note that in the future this caluclation
+            % could be used to also predict temperature influences and
+            % increase the speed of the calculation because of better
+            % prediction.
+            % p V = m R T ; m = p V / R T
+            if any(isinf(mfMassDiff)) || any(isnan(mfMassDiff)) 
+                mfCellVolume(:,1)       = [aoPhases.fVolume];
+                mfCellTemperature(:,1)	= [aoPhases.fTemperature];
+                bNAN = (isnan(mfMassDiff)) | (isinf(mfMassDiff));
+                mfMassDiff(bNAN) = ((mfPressurePhase(bNAN) .* mfCellVolume(bNAN)) ./ (287.1 .* mfCellTemperature(bNAN)) - mfCellMass(bNAN));
+            end
             
             % Now the time step can be calculated by using the maximum
             % allowable mass change within one step (Basically the time
@@ -1359,6 +1401,9 @@ classdef CDRA < vsys
             
             for iAbsorber = 1:length(aoAbsorber)
                 aoAbsorber(iAbsorber).ManualUpdate(fTimeStep, zeros(1,this.oMT.iSubstances));
+                % Disable adsorption during the desorption phase, this is
+                % only necessary because the calculation of the branch
+                % flowrates is not able to cope with this
                 if -this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+iAbsorber) < 0
                     aoAbsorber(iAbsorber).setFlowRateToZero();
                     this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+iAbsorber) = 0;
