@@ -288,7 +288,7 @@ classdef CCAA < vsys
             %% Function to connect the system and subsystem level branches with each other
         function setIfFlows(this, sInterface1, sInterface2, sInterface3, sInterface4, sInterface5, sInterface6, sInterface7, sInterface8)
             if nargin == 7
-                % Case of a standaline CCAA (no CDRA connected)
+                % Case of a standalone CCAA (no CDRA connected)
                 this.connectIF('CCAA_In' , sInterface1);
                 this.connectIF('CCAA_CHX_Air_Out' , sInterface2);
                 this.connectIF('CCAA_TCCV_Air_Out' , sInterface3);
