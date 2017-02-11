@@ -100,7 +100,7 @@ classdef Example < vsys
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
-            fCO2Percent = 0.0055;
+            fCO2Percent = 0.00635;
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 97.71, struct('CO2', fCO2Percent),  295, 0.4, 1e5);
                
             % Adding a phase to the store 'Cabin', 100 m^3 air

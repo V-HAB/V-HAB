@@ -131,7 +131,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                     mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
                     mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
                     
-                    mfFlowRatesDesorption = (mfFlowRatesDesorption + mfFlowRatesDesorptionPrevious(end,:))/2;
+                    mfFlowRatesDesorption = (mfFlowRatesDesorption + mfFlowRatesDesorptionPrevious(end,:)) / 2;
                     
                     fDesorptionFlowRate                             = -sum(mfFlowRatesDesorption);
                     arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
@@ -145,6 +145,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                     this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
                     
                     if fDesorptionFlowRate == 0
+                        % If no desorption occurs in the first step there
+                        % will be no desorption at all
                         break
                     else
                         mfFlowRatesDesorptionPrevious(iCounter+1,:) = mfFlowRatesDesorption;

@@ -197,7 +197,7 @@ classdef CDRA < vsys
             this.tGeometry.Sylobead.fAbsorberVolume          =   (1-this.tGeometry.Sylobead.rVoidFraction)          * fCrossSection * this.tGeometry.Sylobead.fLength;
             this.tGeometry.Zeolite5A.fAbsorberVolume         =   (1-this.tGeometry.Zeolite5A.rVoidFraction)         * fCrossSection * this.tGeometry.Zeolite5A.fLength;
             
-            fMassZeolite13x         = 0.367 *   this.tGeometry.Zeolite13x.fAbsorberVolume        * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
+            fMassZeolite13x         = 0.49  *   this.tGeometry.Zeolite13x.fAbsorberVolume        * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
             fMassSylobead           =           this.tGeometry.Sylobead.fAbsorberVolume          * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
             fMassZeolite5A          =           this.tGeometry.Zeolite5A.fAbsorberVolume         * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
             
@@ -1494,6 +1494,7 @@ classdef CDRA < vsys
             % variables for easier access
             mfDensity                  = [aoPhases.fDensity]';
             mfSpecificHeatCapacity     = [aoPhases.fSpecificHeatCapacity]';
+            mfMass                     = [aoPhases.fMass]';
             % Flow speed for desorbing cells is assumed to be zero
             mfFlowSpeed(1:this.iCells) = (abs([aoBranches(1:end-1).fFlowRate]') + abs([aoBranches(2:end).fFlowRate]')./(2*mfDensity(1:this.iCells)));
             mfFlowSpeed(mfDensity == 0) = 0;
@@ -1509,7 +1510,7 @@ classdef CDRA < vsys
             
             if any(mbRecalculate)
                 for iCell = 1:iTotalCells
-                    if mbRecalculate(iCell)
+                    if mbRecalculate(iCell) && mfMass(iCell) > 0
                         if (abs(this.tLastUpdateProps.mfDensity(iCell) - mfDensity(iCell))  > (1e-1 * mfDensity(iCell)))
                             try
                                 this.tLastUpdateProps.mfDynamicViscosity(iCell)     = this.oMT.calculateDynamicViscosity(aoPhases(iCell));
