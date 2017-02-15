@@ -422,10 +422,6 @@ classdef CHX < vsys
                 % Calculating the heat flows for both hx_flow objects
                 fHeatFlow_1 = fMassFlow_1 * fCp_1 * (fTempOut_1 - fEntryTemp_1);
                 fHeatFlow_2 = fMassFlow_2 * fCp_2 * (fTempOut_2 - fEntryTemp_2);
-
-                if isnan(fHeatFlow_1) || isnan(fHeatFlow_2)
-                    keyboard()
-                end
                 
                 % uses the function defined in flowcomps.hx_flow to set the
                 % outlet values
@@ -438,7 +434,9 @@ classdef CHX < vsys
                     this.iFirst_Iteration = int8(0);
                 end
                 %tells the ascociated p2p proc to update
-                if isempty(this.oP2P)
+                try
+                    this.oP2P.update();
+                catch
                     %the condensing heat exchanger requires a CHX_p2p proc
                     %to work properly. Otherwise it will calculate the
                     %phase change but it would not actually happen. To add
@@ -461,7 +459,6 @@ classdef CHX < vsys
                     
                     error('the CHX only works with an additional CHX_p2p proc that should be set as property for the CHX (see comment at this error for more information)')
                 end
-                this.oP2P.update();
                 this.fLastExecution = this.oTimer.fTime;
             end
         end

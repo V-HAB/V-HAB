@@ -456,6 +456,8 @@ classdef CDRA_simple < vsys
                
                 % Setting cycle one flow rates
                 this.toBranches.Filter13x1_In.oHandler.setFlowRate(-this.fFlowrateMain);
+                this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_CDRA.oHandler.setFlowRate(this.fFlowrateMain);
+                
                 this.toBranches.Filter13x1_to_Filter5A2.oHandler.setFlowRate(this.fFlowrateMain - fFlowRate13X_1);
                 %Since the beds go through a pressure swing where they go
                 %from normal pressure to vacuum it is required to refill
@@ -516,13 +518,15 @@ classdef CDRA_simple < vsys
                     this.toBranches.Filter13x1_to_Filter5A2.oHandler.setFlowRate(0);
                     this.toBranches.Filter5A2_to_Filter13x2.oHandler.setFlowRate(0);
                     this.toBranches.Filter13x2_to_CHX.oHandler.setFlowRate(0);
-                    this.toBranches.Filter5A1_to_Vent.oHandler.setFlowRate(0); % Zusatz
+                    this.toBranches.Filter5A1_to_Vent.oHandler.setFlowRate(0);
                     
                     this.fInitialFilterMass = this.toStores.Filter5A_2.aoPhases(1,1).fMass;
                 end
                                 
                 % Setting cycle two flow rates
-                this.toBranches.Filter13x2_In.oHandler.setFlowRate(-this.fFlowrateMain); % Zusatz
+                this.toBranches.Filter13x2_In.oHandler.setFlowRate(-this.fFlowrateMain);
+                this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_CDRA.oHandler.setFlowRate(this.fFlowrateMain);
+                
                 this.toBranches.Filter13x2_to_Filter5A1.oHandler.setFlowRate(this.fFlowrateMain - fFlowRate13X_2);
                 %Since the beds go through a pressure swing where they go
                 %from normal pressure to vacuum it is required to refill

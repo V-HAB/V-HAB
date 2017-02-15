@@ -198,7 +198,4 @@ else
     %also not condense therefore the return here
     return
 end
-if isnan(fOutlet_Temp_Hot_New) || (fCondensateHeatFlow < 0)
-    keyboard()
-end
 end
