@@ -37,9 +37,8 @@ classdef CCAA < vsys
         % According to "International Space Station Carbon Dioxide Removal
         % Assembly Testing" 00ICES-234 James C. Knox (2000) the minmal flow
         % rate for CDRA to remove enough CO2 is 41 kg/hr. The nominal flow
-        % through CDRA is supposed to be 42.7 kg/hr. Factor of 1.13 used to
-        % fit CDRA to test data
-        fCDRA_FlowRate = 1.14 * 1.187e-2;
+        % through CDRA is supposed to be 42.7 kg/hr.
+        fCDRA_FlowRate = 1.187e-2;
         
         % Object for the phase of the module where the CCAA is located. Used
         % to get the current relative humidity and control the valve angles
@@ -195,7 +194,6 @@ classdef CCAA < vsys
             % phase change
             oCCAA_CHX.oP2P =components.HX.CHX_p2p(this.toStores.CHX, 'CondensingHX', 'CHX_PhaseIn.filterport', 'CHX_H2OPhase.filterport', oCCAA_CHX);
 
-            oCCAA_CHX.oP2P.bind('update', @(~) this.recalculateOutlet());
             % Store that contains the coolant passing through the CHX. This
             % store is only necessary because it is not possible to have
             % System Interfaces without a store in between.
@@ -247,8 +245,8 @@ classdef CCAA < vsys
             % Creating the flowpath into this subsystem
             solver.matter.manual.branch(this.toBranches.CCAA_In_FromCabin);
             solver.matter.manual.branch(this.toBranches.TCCV_CHX);
-            solver.matter.manual.branch(this.toBranches.CHX_Cabin);
-            solver.matter.manual.branch(this.toBranches.TCCV_Cabin);
+            solver.matter.residual.branch(this.toBranches.CHX_Cabin);
+            solver.matter.residual.branch(this.toBranches.TCCV_Cabin);
             solver.matter.manual.branch(this.toBranches.Condensate_Out);
             solver.matter.manual.branch(this.toBranches.Coolant_In);
             solver.matter.manual.branch(this.toBranches.Coolant_Out);
@@ -256,25 +254,10 @@ classdef CCAA < vsys
             if ~isempty(this.sCDRA)
                 solver.matter.manual.branch(this.toBranches.CHX_CDRA);
                 
-                solver.matter.manual.branch(this.toBranches.CDRA_TCCV);
-                
-%                 solver.matter.residual.branch(this.toBranches.CDRA_TCCV);
-%                 this.toBranches.CDRA_TCCV.oHandler.setPositiveFlowDirection(false);
+                solver.matter.residual.branch(this.toBranches.CDRA_TCCV);
+                this.toBranches.CDRA_TCCV.oHandler.setPositiveFlowDirection(false);
             end
             
-            %All phases except the human air phase work with a 60s time
-            %step
-%             csStoreNames = fieldnames(this.toStores);
-%             for iStore = 1:length(csStoreNames)
-%                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
-%                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
-%                     oPhase.fFixedTS = 5;
-%                 end
-%             end
-%             oPhase = this.toStores.CHX.toPhases.CHX_PhaseIn;
-%             oPhase.rMaxChange = 1;
-%             oPhase.fMaxStep = 5;
-%             
             if this.bActive == 1
                 %% Setting of initial flow rates
                 %allowed coolant flow is between 600 and 1290 lb/hr but the CHX
@@ -324,12 +307,6 @@ classdef CCAA < vsys
             % Percental Change allowed to Massflow/Pressure/Composition of
             % Flow before CHX is recalculated
             this.fPercentChange = fPercentChange;
-        end
-        function recalculateOutlet(this, ~)
-            % Function used to set the correct outlet flow once the p2p is
-            % updated
-            % Calculates the flow rate of gas exiting the CHX
-            this.toBranches.CHX_Cabin.oHandler.setFlowRate(this.toBranches.TCCV_CHX.oHandler.fRequestedFlowRate - this.toStores.CHX.toProcsP2P.CondensingHX.fFlowRate - this.toBranches.CHX_CDRA.oHandler.fRequestedFlowRate);
         end
     end
     
@@ -429,9 +406,6 @@ classdef CCAA < vsys
                 else
                     this.toBranches.CHX_Cabin.oHandler.setFlowRate(fFlowRateGas);
                 end
-                
-                % Calculates and sets the outlet flows to the cabin
-                this.toBranches.TCCV_Cabin.oHandler.setFlowRate((1-fFlowPercentageCHX)*(fInFlow+fInFlow2));
                 
                 % Condensate is released over a kickvalve every 75 minutes
                 

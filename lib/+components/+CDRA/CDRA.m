@@ -197,7 +197,7 @@ classdef CDRA < vsys
             this.tGeometry.Sylobead.fAbsorberVolume          =   (1-this.tGeometry.Sylobead.rVoidFraction)          * fCrossSection * this.tGeometry.Sylobead.fLength;
             this.tGeometry.Zeolite5A.fAbsorberVolume         =   (1-this.tGeometry.Zeolite5A.rVoidFraction)         * fCrossSection * this.tGeometry.Zeolite5A.fLength;
             
-            fMassZeolite13x         = 0.49  *   this.tGeometry.Zeolite13x.fAbsorberVolume        * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
+            fMassZeolite13x         = 0.43  *   this.tGeometry.Zeolite13x.fAbsorberVolume        * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
             fMassSylobead           =           this.tGeometry.Sylobead.fAbsorberVolume          * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
             fMassZeolite5A          =           this.tGeometry.Zeolite5A.fAbsorberVolume         * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
             
@@ -223,14 +223,14 @@ classdef CDRA < vsys
             % for each cell (the values can obtained by running the
             % simulation for a longer time without startvalues and set them
             % according to the values once the simulation is repetetive)
-        	tInitialization.Zeolite13x.mfInitialCO2             = [   0,    0,    0,    0,    0]; %[0.06, 0.06, 0.06, 0.06, 0.06];
-        	tInitialization.Zeolite13x.mfInitialH2O             = [   0,    0,    0,    0,    0]; %[0.15, 0.13, 0.08, 0.05,    0];
+        	tInitialization.Zeolite13x.mfInitialCO2             = [   0,    0,    0,    0,    0];
+        	tInitialization.Zeolite13x.mfInitialH2O             = [   0,    0,    0,    0,    0];
             
         	tInitialization.Sylobead.mfInitialCO2               = [   0,    0,    0,    0,    0];
-        	tInitialization.Sylobead.mfInitialH2O               = [   1, 0.75, 0.55,  0.4,  0.2]; % Only set for the bed that just finished absorbing
+        	tInitialization.Sylobead.mfInitialH2O               = [ 0.8,  0.1,    0,    0,    0]; % Only set for the bed that just finished absorbing
             
         	tInitialization.Zeolite5A.mfInitialCO2              = [   0,    0,    0,    0,    0];
-        	tInitialization.Zeolite5A.mfInitialH2O              = [   0,    0,    0,    0,    0]; %[0.01, 0.004, 0.002, 0.0005,    0];
+        	tInitialization.Zeolite5A.mfInitialH2O              = [   0,    0,    0,    0,    0];
             
             % Sets the cell numbers used for the individual filters
             tInitialization.Zeolite13x.iCellNumber = 5;
