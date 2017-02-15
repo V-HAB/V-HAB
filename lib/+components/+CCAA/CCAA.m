@@ -94,6 +94,8 @@ classdef CCAA < vsys
                 if nargin > 7
                     this.fCDRA_FlowRate = fCDRA_FlowRate;
                 end
+            else
+                this.fCDRA_FlowRate = 0;
             end
             
             % Loading the flow rate table for the valves
@@ -245,17 +247,19 @@ classdef CCAA < vsys
             % Creating the flowpath into this subsystem
             solver.matter.manual.branch(this.toBranches.CCAA_In_FromCabin);
             solver.matter.residual.branch(this.toBranches.TCCV_CHX);
-            solver.matter.residual.branch(this.toBranches.CHX_Cabin);
             solver.matter.manual.branch(this.toBranches.TCCV_Cabin);
             solver.matter.manual.branch(this.toBranches.Condensate_Out);
             solver.matter.manual.branch(this.toBranches.Coolant_In);
             solver.matter.manual.branch(this.toBranches.Coolant_Out);
             
             if ~isempty(this.sCDRA)
-                solver.matter.manual.branch(this.toBranches.CHX_CDRA);
+                solver.matter.residual.branch(this.toBranches.CHX_CDRA);
+                solver.matter.manual.branch(this.toBranches.CHX_Cabin);
                 
                 solver.matter.residual.branch(this.toBranches.CDRA_TCCV);
                 this.toBranches.CDRA_TCCV.oHandler.setPositiveFlowDirection(false);
+            else
+                solver.matter.residual.branch(this.toBranches.CHX_Cabin);
             end
             
             if this.bActive == 1
@@ -381,6 +385,8 @@ classdef CCAA < vsys
                 fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
                 
                 this.toBranches.TCCV_Cabin.oHandler.setFlowRate((fInFlow+fInFlow2) - fTCCV_To_CHX_FlowRate);
+                
+                this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
                 
                 % Condensate is released over a kickvalve every 75 minutes
                 
