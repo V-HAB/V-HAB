@@ -52,7 +52,7 @@ classdef CDRA < vsys
         
         % Number of steps taken within the initialitation time to built up
         % the pressure
-        iInitStep = 100;                % [-]
+        iInitStep = 250;                % [-]
         
         % Subsystem name for the CCAA that is connected to this CDRA
         sAsscociatedCCAA;
@@ -197,7 +197,7 @@ classdef CDRA < vsys
             this.tGeometry.Sylobead.fAbsorberVolume          =   (1-this.tGeometry.Sylobead.rVoidFraction)          * fCrossSection * this.tGeometry.Sylobead.fLength;
             this.tGeometry.Zeolite5A.fAbsorberVolume         =   (1-this.tGeometry.Zeolite5A.rVoidFraction)         * fCrossSection * this.tGeometry.Zeolite5A.fLength;
             
-            fMassZeolite13x         = 0.31  *   this.tGeometry.Zeolite13x.fAbsorberVolume        * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
+            fMassZeolite13x         = 0.318 *   this.tGeometry.Zeolite13x.fAbsorberVolume        * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
             fMassSylobead           =           this.tGeometry.Sylobead.fAbsorberVolume          * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
             fMassZeolite5A          =           this.tGeometry.Zeolite5A.fAbsorberVolume         * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
             
@@ -1091,7 +1091,7 @@ classdef CDRA < vsys
                 end
                 
                 for iBranch = 1:(length(mfFlowRate))
-                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleTwo(iBranch) * ((this.fFlowrateMain + sum(this.tMassNetwork.mfMassDiff(iBranch:end))/this.fInitTime) -  - sum(this.tMassNetwork.mfAdsorptionFlowRate(1:iBranch-1)));
+                    mfFlowRate(iBranch) = this.tMassNetwork.miNegativesCycleTwo(iBranch) * ((this.fFlowrateMain + sum(this.tMassNetwork.mfMassDiff(iBranch:end))/this.fInitTime) - sum(this.tMassNetwork.mfAdsorptionFlowRate(1:iBranch-1)));
                     aoBranches(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
@@ -1156,8 +1156,6 @@ classdef CDRA < vsys
                 fFlowRate_CDRA_CCAA = this.tMassNetwork.aoBranchesCycleTwo(end).oHandler.fRequestedFlowRate;
             end
             
-            this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_CDRA.oHandler.setFlowRate(fFlowRate_CCAA_CDRA);
-
             fCurrentFlowRate_CHX_Cabin = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_Cabin.oHandler.fRequestedFlowRate;
             fFlowRate_CCAA_Condensate = this.oParent.toChildren.(this.sAsscociatedCCAA).toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
 
@@ -1507,6 +1505,15 @@ classdef CDRA < vsys
             
             if any(mbRecalculate)
                 for iCell = 1:iTotalCells
+                    
+                    % During setup of the flow pressures the heat
+                    % exchange is disabled
+                    if mod(this.oTimer.fTime, this.fCycleTime) < this.fInitTime
+                        oConductor = this.poLinearConductors(this.tThermalNetwork.(['csNodes_Flow_Cycle',sCycle]){iCell,1});
+                        oConductor.setConductivity(0);
+                        continue
+                    end
+                    
                     if mbRecalculate(iCell) && mfMass(iCell) > 0
                         if (abs(this.tLastUpdateProps.mfDensity(iCell) - mfDensity(iCell))  > (1e-1 * mfDensity(iCell)))
                             try
@@ -1575,6 +1582,7 @@ classdef CDRA < vsys
                         % now the calculated coefficients have to be set to the
                         % conductor of each cell
                         oConductor = this.poLinearConductors(this.tThermalNetwork.(['csNodes_Flow_Cycle',sCycle]){iCell,1});
+                        
                         oConductor.setConductivity(mfHeatTransferCoefficient(iCell));
                     end
                 end
