@@ -215,7 +215,7 @@ classdef container < sys
             
             if nargin > 2 && ~isempty(oHeatSource)
                 oCapacity.setHeatSource(oHeatSource);
-            end;
+            end
             
             this.addCapacity(oCapacity);
             
@@ -230,7 +230,7 @@ classdef container < sys
                 this.throw('thermal:container:addCapacity', 'This is no thermal capacity!');
             elseif this.poCapacities.isKey(oCapacity.sName)
                 this.throw('thermal:container:addCapacity', 'Capacity with name "%s" already exists!', oCapacity.sName);
-            end;
+            end
             
             % Mark container as tainted and store capacity.
             this.bIsTainted = true;

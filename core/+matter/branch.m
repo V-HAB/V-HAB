@@ -106,6 +106,10 @@ classdef branch < base & event.source
         % Does the branch need an update of e.g. a flow rate solver? Can be
         % set e.g. through a flow proc that changed some internal state.
         bOutdated = false;
+        
+        
+        % Do we need to trigger the setFlowRate event?
+        bTriggerSetFlowRateCallbackBound = false;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -616,6 +620,18 @@ classdef branch < base & event.source
             %TODO just get the matter properties from the inflowing EXME
             %     and set (arPartialMass, Molar Mass, Heat Capacity)?
         end
+        
+        % Catch 'bind' calls, so we can set a specific boolean property to
+        % true so the .trigger() method will only be called if there are
+        % callbacks registered.
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
+            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
+            
+            % Only do for set
+            if strcmp(sType, 'setFlowRate')
+                this.bTriggerSetFlowRateCallbackBound = true;
+            end
+        end
     end
     
     
@@ -684,7 +700,9 @@ classdef branch < base & event.source
             % Update data in flows
             this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure);
             
-            this.trigger('setFlowRate');
+            if this.bTriggerSetFlowRateCallbackBound
+                this.trigger('setFlowRate');
+            end
         end
     
         

@@ -64,6 +64,11 @@ classdef branch < base & event.source
         % might need another priority to e.g. ensure that first, all other
         % branches update their flow rates.
         iPostTickPriority = -2;
+        
+        
+        % See matter.branch, bTriggerSetFlowRate, for more!
+        bTriggerUpdateCallbackBound = false;
+        bTriggerRegisterUpdateCallbackBound = false;
     end
     
     
@@ -132,6 +137,20 @@ classdef branch < base & event.source
             this.oSyncedSolver = oSolver;
             this.oSyncedSolver.bind('update', @(~) this.syncedUpdateCall());
         end
+        
+        
+        
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
+            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
+            
+            if strcmp(sType, 'update')
+                this.bTriggerUpdateCallbackBound = true;
+            
+            elseif strcmp(sType, 'register_update')
+                this.bTriggerRegisterUpdateCallbackBound = true;
+            
+            end
+        end
     end
     
     methods (Access = private)
@@ -155,7 +174,9 @@ classdef branch < base & event.source
                 this.oBranch.coExmes{iE}.oPhase.massupdate();
             end
             
-            this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
+            if this.bTriggerRegisterUpdateCallbackBound
+                this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
+            end
             
             this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
             this.bRegisteredOutdated = true;
@@ -219,7 +240,11 @@ classdef branch < base & event.source
             %good for. I'm assuming this is only here to call a synced
             %solver? 
             this.bUpdateTrigger = true;
-            this.trigger('update');
+            
+            if this.bTriggerUpdateCallbackBound
+                this.trigger('update');
+            end
+            
             this.bUpdateTrigger = false;
         end
     end
