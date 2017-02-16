@@ -856,7 +856,6 @@ elseif strcmpi(sHX_type, 'ISS CHX')
         [sCondensateFlowRate, fOutlet_Temp_1, ~, fCondensateHeatFlow] = condensation ...
                 (oHX, struct(), fHeat_Capacity_Flow_1, fHeatFlow, fTWall, fOutlet_Temp_1,fEntry_Temp1, oFlow_1);
     else
-        keyboard; %THIS CASE SHOULD NOT OCCUR; FLUID 1 IS THE AIR AND THE AIR HAS TO BE HOTTER THAN THE COOLANT
         fTWall = fEntry_Temp1;
         
         [sCondensateFlowRate, fOutlet_Temp_2, ~, fCondensateHeatFlow] = condensation ...

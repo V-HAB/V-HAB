@@ -1,4 +1,4 @@
-classdef Example < vsys
+classdef Example_simple < vsys
     %EXAMPLE Example simulation for a system with a heat exchanger in V-HAB 2.0
     %   This system has four stores with one phase each. There are two gas
     %   phases and two liquid phases. The gas phases and the liquid phases
@@ -43,7 +43,7 @@ classdef Example < vsys
     end
     
     methods
-        function this = Example(oParent, sName)
+        function this = Example_simple(oParent, sName)
             % Call parent constructor. Third parameter defined how often
             % the .exec() method of this subsystem is called. This can be
             % used to change the system state, e.g. close valves or switch
@@ -81,7 +81,7 @@ classdef Example < vsys
             sCCAA = 'CCAA';
             
             % Adding the subsystem CDRA
-            components.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA);
+            components.CDRA.CDRA_simple(this, 'CDRA', 10, tAtmosphere, sCCAA);
                 
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -92,7 +92,7 @@ classdef Example < vsys
             createMatterStructure@vsys(this);
             %% Gas System
             % Creating a store, volume 1 m^3
-            matter.store(this, 'Cabin', 100);
+            matter.store(this, 'Cabin', 97.71);
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
@@ -167,7 +167,7 @@ classdef Example < vsys
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CCAA_CDRA_Connection, 0.1, struct('CO2', fCO2Percent),  this.fCoolantTemperature, 0, 1e5);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CCAA_CDRA_Connection, 0.1, struct('CO2', fCO2Percent),  282, 0, 1e5);
                
             % Adding a phase to the store - a mixture phase is used because
             % the humidity released from CDRA back into the cabin might be

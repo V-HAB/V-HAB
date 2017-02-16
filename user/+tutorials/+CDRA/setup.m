@@ -12,7 +12,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, bSimpleCDRA) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams) % Constructor function
             
             % Possible to change the constructor paths and params for the
             % monitors
@@ -21,11 +21,8 @@ classdef setup < simulation.infrastructure
             
             this@simulation.infrastructure('Tutorial_CCAA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            if nargin < 3
-                bSimpleCDRA = false;
-            end
             % Creating the root object
-            tutorials.CDRA.systems.Example(this.oSimulationContainer, 'Example', bSimpleCDRA);
+            tutorials.CDRA.systems.Example(this.oSimulationContainer, 'Example');
 
             %% Simulation length
             % Stop when specific time in simulation is reached or after 

@@ -32,28 +32,34 @@ classdef Filter5A_f2f < matter.procs.f2f
                 return
             end
             
+            % instead of calculating the matter properties from the flow
+            % the matter properties from the origin phase are used (no
+            % other component in this branch influences the matter
+            % propterties therefore this is allright)
             if this.aoFlows(1,1).fFlowRate == 0
                 return
             elseif this.aoFlows(1,1).fFlowRate > 0
                 oInFlow = this.aoFlows(1,1);
+                fDensity = this.oBranch.coExmes{1}.oPhase.fDensity;
+                fDynVisc = this.oMT.calculateDynamicViscosity(this.oBranch.coExmes{1}.oPhase);
+                fThermCond = this.oMT.calculateThermalConductivity(this.oBranch.coExmes{1}.oPhase);
             else
                 oInFlow = this.aoFlows(1,2);
+                fDensity = this.oBranch.coExmes{2}.oPhase.fDensity;
+                fDynVisc = this.oMT.calculateDynamicViscosity(this.oBranch.coExmes{2}.oPhase);
+                fThermCond = this.oMT.calculateThermalConductivity(this.oBranch.coExmes{2}.oPhase);
             end
-            fDensity = this.oMT.calculateDensity(oInFlow);
-            fDynVisc = this.oMT.calculateDynamicViscosity(oInFlow);
-            fThermCond = this.oMT.calculateThermalConductivity(oInFlow);
             
             %Assuming that 90% of the area is blocked by zeolite
             fFlowArea = 0.1*0.3048*0.254; % --> 10% * 0.3048m * 0.254m
             
             fFlowSpeed = abs(oInFlow.fFlowRate/(fFlowArea*fDensity));
             
-            %Calculates the heat exchanger coeffcient between the flow and
+            %Calculates the heat exchange coeffcient between the flow and
             %the zeolite. Using the function for the convection at a plate
             %may not be entirely correct, but it is definitly better than
             %the previous calculations using natural convection.
-            fConvection_alpha = convection_plate (1.0922, fFlowSpeed,...
-                         fDynVisc, fDensity, fThermCond, this.oFilter.toPhases.FilteredPhase.fTemperature);
+            fConvection_alpha = convection_plate (1.0922, fFlowSpeed, fDynVisc, fDensity, fThermCond, this.oFilter.toPhases.PhaseIn.fSpecificHeatCapacity);
             
             sFilterP2P = this.oFilter.csProcsP2P{1};
                      

@@ -252,14 +252,13 @@ classdef CCAA < vsys
             solver.matter.manual.branch(this.toBranches.Coolant_In);
             solver.matter.manual.branch(this.toBranches.Coolant_Out);
             
+            solver.matter.residual.branch(this.toBranches.CHX_Cabin);
             if ~isempty(this.sCDRA)
                 solver.matter.residual.branch(this.toBranches.CHX_CDRA);
-                solver.matter.manual.branch(this.toBranches.CHX_Cabin);
+                this.toBranches.CHX_CDRA.oHandler.setPositiveFlowDirection(false);
                 
                 solver.matter.residual.branch(this.toBranches.CDRA_TCCV);
                 this.toBranches.CDRA_TCCV.oHandler.setPositiveFlowDirection(false);
-            else
-                solver.matter.residual.branch(this.toBranches.CHX_Cabin);
             end
             
             if this.bActive == 1
