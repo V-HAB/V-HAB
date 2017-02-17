@@ -337,6 +337,25 @@ classdef CCAA < vsys
             
             fHumidityChange = abs(this.rRelHumidity - this.oAtmosphere.rRelHumidity);
             
+            % Condensate is released over a kickvalve every 75 minutes
+            if mod(this.oTimer.fTime, 75 * 60) <= (1.5*this.fTimeStep)
+                %minus this.fInitialCHXWaterMass because that is the inital
+                %mass in the phase and is therefore not the condensate
+                %generated, also serves to prevent numerical errors in the
+                %simulation that occur if a phase is completly emptied.
+                fFlowRateCondOut = (this.toStores.CHX.toPhases.CHX_H2OPhase.fMass - this.fInitialCHXWaterMass) / 600;
+                if fFlowRateCondOut < 0
+                    fFlowRateCondOut = 0;
+                end
+                this.toBranches.Condensate_Out.oHandler.setFlowRate(fFlowRateCondOut);
+                this.bKickValveAktivated = true;
+                this.fKickValveAktivatedTime = this.oTimer.fTime;
+            end
+            if this.bKickValveAktivated && (this.toStores.CHX.toPhases.CHX_H2OPhase.fMass <= this.fInitialCHXWaterMass)
+                this.toBranches.Condensate_Out.oHandler.setFlowRate(0);
+                this.bKickValveAktivated = false;
+            end
+            
             % If the inlet flow changed by less than 1% and the humidity
             % changed by less than 1% it is not necessary to recalculate
             % the CCAA
@@ -387,25 +406,6 @@ classdef CCAA < vsys
                 
                 this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
                 
-                % Condensate is released over a kickvalve every 75 minutes
-                
-                if mod(this.oTimer.fTime, 75 * 60) <= (1.5*this.fTimeStep)
-                    %minus this.fInitialCHXWaterMass because that is the inital
-                    %mass in the phase and is therefore not the condensate
-                    %generated, also serves to prevent numerical errors in the
-                    %simulation that occur if a phase is completly emptied.
-                    fFlowRateCondOut = (this.toStores.CHX.toPhases.CHX_H2OPhase.fMass - this.fInitialCHXWaterMass) / 60;
-                    if fFlowRateCondOut < 0
-                        fFlowRateCondOut = 0;
-                    end
-                    this.toBranches.Condensate_Out.oHandler.setFlowRate(fFlowRateCondOut);
-                    this.bKickValveAktivated = true;
-                    this.fKickValveAktivatedTime = this.oTimer.fTime;
-                end
-                if this.bKickValveAktivated && (this.toStores.CHX.toPhases.CHX_H2OPhase.fMass <= this.fInitialCHXWaterMass)
-                    this.toBranches.Condensate_Out.oHandler.setFlowRate(0);
-                    this.bKickValveAktivated = false;
-                end
             end
         end
 	end
