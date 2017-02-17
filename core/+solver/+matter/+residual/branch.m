@@ -128,6 +128,8 @@ classdef branch < solver.matter.manual.branch
                 this.fRequestedFlowRate = 0;
                 if this.oBranch.fFlowRate ~= 0
                     update@solver.matter.manual.branch(this);
+                else
+                    this.oBranch.setUpdated();
                 end
                 return
             end
@@ -183,6 +185,8 @@ classdef branch < solver.matter.manual.branch
                         %oBranch.oTimer.bindPostTick(@oBranch.update, iPostTickPriority);
                     end
                 end
+            else
+                this.oBranch.setUpdated();
             end
             this.fResidualFlowRatePrev = fResidualFlowRate;
             
