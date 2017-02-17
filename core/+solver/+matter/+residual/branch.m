@@ -4,6 +4,9 @@ classdef branch < solver.matter.manual.branch
     %
     %TODO
     %   * check if in phase is bSynced, check if added as last solver?
+    %
+    % please note that the residual solver will not work if you create a
+    % loop of several residual solvers!
     
     properties (SetAccess = protected, GetAccess = public)
         % Boolean variable to set if the residual flow rate is calculated
@@ -27,12 +30,32 @@ classdef branch < solver.matter.manual.branch
             this.iPostTickPriority = 1;
             this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
             
-            this.findAdjacentResidualSolvers();
+            this.oBranch.oTimer.bindPostTick(@this.findAdjacentResidualSolvers, -3);
         end
         
         function setPositiveFlowDirection(this, bPositiveFlowDirection)
             this.bPositiveFlowDirection = bPositiveFlowDirection;
-            this.findAdjacentResidualSolvers();
+            this.oBranch.oTimer.bindPostTick(@this.findAdjacentResidualSolvers, -3);
+            
+            % If this command is used all adjacent residual solvers on both
+            % sides also have to update their adjacent residual solvers!
+             for iExme = 1:2
+                oPhase = this.oBranch.coExmes{iExme}.oPhase;
+
+                % Branches and p2p flows - they're also branches!
+                for iE = 1:oPhase.iProcsEXME
+                    oExme   = oPhase.coProcsEXME{iE};
+                    oBranch = oExme.oFlow.oBranch;
+
+                    if oBranch == this.oBranch
+                        continue;
+                    elseif ~oExme.bFlowIsAProcP2P && isa(oBranch.oHandler, 'solver.matter.residual.branch')
+                        
+                        oHandler = oBranch.oHandler;
+                        oBranch.oTimer.bindPostTick(@oHandler.findAdjacentResidualSolvers, -3);
+                    end
+                end
+             end
         end
         
         function setActive(this, bActive)
@@ -90,24 +113,25 @@ classdef branch < solver.matter.manual.branch
                     % wether this is the case
                     this.bMultipleResidualSolvers = true;
                     
-                    % Note that it would be preferable that only the
-                    % residual solvers that are supposed to keep the mass
-                    % in this phase constant are reupdated (as there should be
-                    % only one) but ensuring that this remains the case
-                    % even if the other solver changes the positive flow
-                    % direction of the residual is fairly difficult and
-                    % left for future work ;)
-                    this.aoAdjacentResidualSolver(end+1) = oBranch;
-                    continue
+                    % Only the esidual solver that actually manages the
+                    % mass of the phase into which the flowrates has
+                    % changed is considered adjacent and has to be updated
+                    % again!
+                    if (oExme.iSign == -1 && oBranch.oHandler.bPositiveFlowDirection) || (oExme.iSign == -1 && oBranch.oHandler.bPositiveFlowDirection)
+                        this.aoAdjacentResidualSolver(end+1) = oBranch;
+                    end
                 end
             end
         end
         function update(this)
             if ~this.bActive
                 this.fRequestedFlowRate = 0;
-                update@solver.matter.manual.branch(this);
+                if this.oBranch.fFlowRate ~= 0
+                    update@solver.matter.manual.branch(this);
+                end
                 return
             end
+            
             % CALC GET THE FLOW RATE
             fResidualFlowRate  = 0;
             
@@ -132,29 +156,37 @@ classdef branch < solver.matter.manual.branch
                 
                 fResidualFlowRate = fResidualFlowRate + oExme.iSign * oExme.oFlow.fFlowRate;
             end
-            
-            if this.bMultipleResidualSolvers && (fResidualFlowRate ~= this.fResidualFlowRatePrev)
-                % If there are multiple residual solvers attached to the
-                % same phase as this residual solver, and the flowrate of
-                % this solver has changed, then all the other residual
-                % solvers have to be updated as well. This is necessary to
-                % allow one residual solver to end in a phase (keeping the
-                % mass of the phase attached to it constant) and the next
-                % residual solver keeping the mass of this phase constant
-                iPostTickPriority = 1;
-                for iK = 1:length(this.aoAdjacentResidualSolver)
-                    oBranch = this.aoAdjacentResidualSolver(iK);
-                    oBranch.oTimer.bindPostTick(@oBranch.update, iPostTickPriority);
-                end
-            end
-                    
-            this.fResidualFlowRatePrev = fResidualFlowRate;
-            
+             
             this.fRequestedFlowRate = fResidualFlowRate * iDir;
             
             %fprintf('%i\t(%.7fs)\tBranch %s Residual Solver - set Flow Rate %f\n', this.oBranch.oTimer.iTick, this.oBranch.oTimer.fTime, this.oBranch.sName, this.fRequestedFlowRate);
             
-            update@solver.matter.manual.branch(this);
+            
+            if (fResidualFlowRate ~= this.fResidualFlowRatePrev)
+            
+                update@solver.matter.manual.branch(this);
+                
+                if this.bMultipleResidualSolvers
+                    % If there are multiple residual solvers attached to the
+                    % same phase as this residual solver, and the flowrate of
+                    % this solver has changed, then all the other residual
+                    % solvers have to be updated as well. This is necessary to
+                    % allow one residual solver to end in a phase (keeping the
+                    % mass of the phase attached to it constant) and the next
+                    % residual solver keeping the mass of this phase constant
+                    % iPostTickPriority = 1;
+
+                    for iK = 1:length(this.aoAdjacentResidualSolver)
+
+                        this.aoAdjacentResidualSolver(iK).oHandler.update();
+
+                        %oBranch.oTimer.bindPostTick(@oBranch.update, iPostTickPriority);
+                    end
+                end
+            end
+            this.fResidualFlowRatePrev = fResidualFlowRate;
+            
+            
         end
         end
     
