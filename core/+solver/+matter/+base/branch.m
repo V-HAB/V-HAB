@@ -151,6 +151,13 @@ classdef branch < base & event.source
             
             end
         end
+        
+        function setUpdated(this)
+            % used by the residual solver to tell the branch that the
+            % flowrate has not changed even though the outdated function
+            % has been called.
+         	this.bRegisteredOutdated = false;
+        end
     end
     
     methods (Access = private)

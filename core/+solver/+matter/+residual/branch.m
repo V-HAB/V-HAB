@@ -130,6 +130,7 @@ classdef branch < solver.matter.manual.branch
                     update@solver.matter.manual.branch(this);
                 else
                     this.oBranch.setUpdated();
+                    this.oBranch.oHandler.setUpdated();
                 end
                 return
             end
@@ -176,21 +177,15 @@ classdef branch < solver.matter.manual.branch
                     % allow one residual solver to end in a phase (keeping the
                     % mass of the phase attached to it constant) and the next
                     % residual solver keeping the mass of this phase constant
-                    % iPostTickPriority = 1;
-
                     for iK = 1:length(this.aoAdjacentResidualSolver)
-
                         this.aoAdjacentResidualSolver(iK).oHandler.update();
-
-                        %oBranch.oTimer.bindPostTick(@oBranch.update, iPostTickPriority);
                     end
                 end
             else
                 this.oBranch.setUpdated();
+                this.oBranch.oHandler.setUpdated();
             end
             this.fResidualFlowRatePrev = fResidualFlowRate;
-            
-            
         end
         end
     

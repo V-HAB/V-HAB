@@ -1397,11 +1397,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % is called in updateProcessorsAndManipulators method
                 if bResidual
                     if ~oExme.bFlowIsAProcP2P
-                        isa(oBranch.oHandler, 'solver.matter.residual.branch');
-
-                        % Tell branch to recalculate flow rate (done after
-                        % the current tick, in timer post tick).
-                        oBranch.setOutdated();
+                        if isa(oBranch.oHandler, 'solver.matter.residual.branch')
+                            % Tell branch to recalculate flow rate (done after
+                            % the current tick, in timer post tick).
+                            oBranch.setOutdated();
+                        end
                     end
                 else
                     if isa(oBranch, 'matter.branch')
