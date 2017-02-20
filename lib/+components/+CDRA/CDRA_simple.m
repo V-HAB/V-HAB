@@ -311,41 +311,20 @@ classdef CDRA_simple < vsys
             oF2F_2 = components.CDRA.components.Filter5A_f2f(this, 'Filter5A_2_f2f', this.toStores.Filter5A_2);
             oFilter2.setF2F(oF2F_2)
             
-            %Vozdukh additionally uses heaters to increase the air
-            %temperature before it enters the H2O filter bed that is
-            %currently desorbing. This increases the amount of water that
-            %can be desorbed into the air stream.
-            if this.bVozdukh == 1
-                components.Heater(this, 'Heater_1', 250);
-                components.Heater(this, 'Heater_2', 250);
-            end
-            
             %% Creating the flowpath into, between and out of this subsystem
             % Branch for flowpath into/out of a subsystem: ('store.exme', {'f2f-processor', 'f2f-processor'}, 'system level port name')
             
             % Cycle one
             matter.branch(this, 'Filter_13X_1.Flow_In_1', {'Pipe_1'}, 'CDRA_Air_In_1', 'CDRA_Air_In_1');           % Creating the flowpath into this subsystem
             matter.branch(this, 'Filter_13X_1.Flow_Out_1', {'Pipe_2', 'Precooler_1'}, 'Filter5A_2.Flow_In', 'Filter13x1_to_Filter5A2');
-            
-            if this.bVozdukh == 1
-                matter.branch(this, 'Filter5A_2.Flow_Out_1', {'Filter5A_2_f2f', 'Pipe_3', 'Heater_1'}, 'Filter_13X_2.Flow_In_1', 'Filter5A2_to_Filter13x2');
-            else
-                matter.branch(this, 'Filter5A_2.Flow_Out_1', {'Filter5A_2_f2f', 'Pipe_3'}, 'Filter_13X_2.Flow_In_1', 'Filter5A2_to_Filter13x2');
-            end
-            
+            matter.branch(this, 'Filter5A_2.Flow_Out_1', {'Filter5A_2_f2f', 'Pipe_3'}, 'Filter_13X_2.Flow_In_1', 'Filter5A2_to_Filter13x2');
             matter.branch(this, 'Filter_13X_2.Flow_Out_1', {'Pipe_4'}, 'CDRA_Air_Out_1', 'CDRA_Air_Out_1');     % Air to CDRA1 to CCAA2 connection tank
             matter.branch(this, 'Filter5A_1.Flow_Out_1', {'Pipe_5'}, 'CDRA_Vent_1', 'Filter5A1_to_Vent');                      % CO2 to vacuum
 
             % Cycle two
             matter.branch(this, 'Filter_13X_2.Flow_In_2', {'Pipe_1_2'}, 'CDRA_Air_In_2', 'CDRA_Air_In_2');         % Creating the flowpath into this subsystem
             matter.branch(this, 'Filter_13X_2.Flow_Out_2', {'Pipe_2_2', 'Precooler_2'}, 'Filter5A_1.Flow_In', 'Filter13x2_to_Filter5A1');
-           
-            if this.bVozdukh == 1
-                matter.branch(this, 'Filter5A_1.Flow_Out_2', {'Filter5A_1_f2f', 'Pipe_3_2', 'Heater_2'}, 'Filter_13X_1.Flow_In_2', 'Filter5A1_to_Filter13x1');
-            else
-                matter.branch(this, 'Filter5A_1.Flow_Out_2', {'Filter5A_1_f2f', 'Pipe_3_2'}, 'Filter_13X_1.Flow_In_2', 'Filter5A1_to_Filter13x1');
-            end
-            
+            matter.branch(this, 'Filter5A_1.Flow_Out_2', {'Filter5A_1_f2f', 'Pipe_3_2'}, 'Filter_13X_1.Flow_In_2', 'Filter5A1_to_Filter13x1');
             matter.branch(this, 'Filter_13X_1.Flow_Out_2',{'Pipe_4_2'}, 'CDRA_Air_Out_2', 'CDRA_Air_Out_2');  % Air to CDRA1 to CCAA2 connection tank
             matter.branch(this, 'Filter5A_2.Flow_Out_2', {'Pipe_5_2'}, 'CDRA_Vent_2', 'Filter5A2_to_Vent');                  % CO2 to vacuum
 
