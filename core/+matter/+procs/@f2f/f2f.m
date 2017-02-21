@@ -203,6 +203,17 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             this.aiSign(iIdx)  = iSign;
             %this.pthFlow(iIdx) = thFlow;
         end
+        
+        function updateF2F(this, ~)
+            
+            % Updates the F2F using the solver type as specified by the
+            % branch in which the F2F is located. Called by the setData
+            % dunction of matter/flow in the stream direction within the
+            % branch, during update, after the flowrate of the inflow has
+            % been set
+            this.toSolve.(this.oBranch.oHandler.sSolverType).update();
+            
+        end
     end
     
     

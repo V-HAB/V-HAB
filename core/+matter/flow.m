@@ -625,7 +625,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             for iI = sif(bNeg, iL:-1:1, 1:iL)
                 oThis = aoFlows(iI);
-                
                 % Only set those params if oExme was provided
                 if ~isempty(oExme)
                     oThis.arPartialMass         = arPhasePartialMass;
@@ -645,8 +644,17 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 if iL == 1
                     oThis.fPressure    = fPortPress;
                     oThis.fTemperature = fCurrentTemperature;
+                    % and in that case we can skip all the calculations
+                    % below
+                    return
                 end
                 
+                % updates the f2f located before this flow
+                if bNeg && (iI ~= oThis.oBranch.iFlows)
+                    oThis.oBranch.aoFlowProcs(iI).updateF2F();
+                elseif ~ bNeg && (iI ~= 1)
+                    oThis.oBranch.aoFlowProcs(iI - 1).updateF2F();
+                end
                 
                 % Set temperature based on fHeatFlow in f2fs
                 % First and last Flows directly use the EXMEs value, so
@@ -676,6 +684,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     % Q' = m' * c_p * deltaT
                     %fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / ((oThis.fSpecificHeatCapacity + fOtherCp) / 2);
                     fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / fOtherCp;
+                    
+                    if fCurrentTemperature < 273
+                        keyboard()
+                    end
                     
                     if fCurrentTemperature < 0
                         oThis.throw('setData', 'Illegal temperature value for flow processor ''%s''. Please check the heat flows for all processors in the branch (%s).',...
