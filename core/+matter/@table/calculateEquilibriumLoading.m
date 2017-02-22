@@ -1,4 +1,4 @@
-function mfEquilibriumLoading = calculateEquilibriumLoading(this, varargin)
+function [mfEquilibriumLoading, mfLinearizationConstant] = calculateEquilibriumLoading(this, varargin)
 % Function to calculate the equilibrium loading of absorber material based
 % on the toth equation. The function returns a vector with the length of
 % the substances in the V-HAB matter table (also ordered accordingly) that
@@ -49,29 +49,34 @@ csAbsorbers = this.csSubstances(((afMass ~= 0) .* this.abAbsorber) ~= 0);
 mfEquilibriumLoadingPerAbsorberMolsPerKG = zeros(length(csAbsorbers),this.iSubstances);
 mfEquilibriumLoadingPerAbsorber = zeros(length(csAbsorbers),this.iSubstances);
 
+mfLinearizationConstantPerAbsorberMolsPerKG = zeros(length(csAbsorbers),this.iSubstances);
+mfLinearizationConstantPerAbsorber = zeros(length(csAbsorbers),this.iSubstances);
+
 for iAbsorber = 1:length(csAbsorbers)
     
     switch csAbsorbers{iAbsorber}
         
         case 'Zeolite5A'
-            mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:) = calculateEquilibriumLoading_Zeolite5A(this, afPP, fTemperature);
+            [mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:), mfLinearizationConstantPerAbsorberMolsPerKG(iAbsorber,:)] = calculateEquilibriumLoading_Zeolite5A(this, afPP, fTemperature);
+            
         case 'Zeolite5A_RK38'
-            mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:) = calculateEquilibriumLoading_Zeolite5A_RK38(this, afPP, fTemperature);
+            [mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:), mfLinearizationConstantPerAbsorberMolsPerKG(iAbsorber,:)] = calculateEquilibriumLoading_Zeolite5A_RK38(this, afPP, fTemperature);
             
         case 'Zeolite13x'
-            mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:) = calculateEquilibriumLoading_Zeolite13x(this, afPP, fTemperature);
+            [mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:), mfLinearizationConstantPerAbsorberMolsPerKG(iAbsorber,:)] = calculateEquilibriumLoading_Zeolite13x(this, afPP, fTemperature);
             
         case 'SilicaGel_40'
-            mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:) = calculateEquilibriumLoading_SilicaGel_40(this, afPP, fTemperature);
+            [mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:), mfLinearizationConstantPerAbsorberMolsPerKG(iAbsorber,:)] = calculateEquilibriumLoading_SilicaGel_40(this, afPP, fTemperature);
             
         case 'Sylobead_B125'
-            mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:) = calculateEquilibriumLoading_Sylobead_B125(this, afPP, fTemperature);
+            [mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:), mfLinearizationConstantPerAbsorberMolsPerKG(iAbsorber,:)] = calculateEquilibriumLoading_Sylobead_B125(this, afPP, fTemperature);
             
         otherwise
             error('it seems a new absorber substances was defined without adding the required toth equation function')
     end
     
     mfEquilibriumLoadingPerAbsorber(iAbsorber,:) = (mfEquilibriumLoadingPerAbsorberMolsPerKG(iAbsorber,:).*afMass(this.tiN2I.(csAbsorbers{iAbsorber}))).*this.afMolarMass;
+    mfLinearizationConstantPerAbsorber(iAbsorber,:) = (mfLinearizationConstantPerAbsorberMolsPerKG(iAbsorber,:).*afMass(this.tiN2I.(csAbsorbers{iAbsorber}))).*this.afMolarMass;
     
 end
 
@@ -81,12 +86,13 @@ end
 % a absolute kg value for each substance that can be absorbed and summed
 % up to one vector
 mfEquilibriumLoading = sum(mfEquilibriumLoadingPerAbsorber,1);
+mfLinearizationConstant = sum(mfLinearizationConstantPerAbsorber,1)./length(csAbsorbers);
 end
 
 %% Functions to calculate the Equilibrium loading for each absorber Substance
 % an individual function for each substance is used to allow varying toth
 % equations for each substance to be used
-function [mfQ_equ] = calculateEquilibriumLoading_Zeolite5A(this, afPP, fTemperature)
+function [mfQ_equ, mfLinearizationConstant] = calculateEquilibriumLoading_Zeolite5A(this, afPP, fTemperature)
 % calculating the parameters for the Toth equation according to
 % ICES 2014-168 equations 22,23 and 24
 mf_A = this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_A0.*exp(this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_E/fTemperature);
@@ -104,10 +110,13 @@ mf_t_T = this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_T0 + this.ttxMatt
 % b_oi * q_si   = a_0
 
 % The toth equation itself returns the equilibrium loading in mol/kg
-mfQ_equ = (mf_A .* afPP) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
+mfQ_equ                 = (mf_A .* afPP ) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
+% Constant that linearizes the toth that can be used for calculations (can
+% be multiplied with the pressure to receive a approximation of the toth eq)
+mfLinearizationConstant = (mf_A         ) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
 end
 
-function [mfQ_equ] = calculateEquilibriumLoading_Zeolite5A_RK38(this, afPP, fTemperature)
+function [mfQ_equ, mfLinearizationConstant] = calculateEquilibriumLoading_Zeolite5A_RK38(this, afPP, fTemperature)
 % calculating the parameters for the Toth equation according to
 % ICES 2014-168 equations 22,23 and 24
 mf_A = this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_A0.*exp(this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_E/fTemperature);
@@ -126,8 +135,12 @@ mf_t_T = this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_T0 + this.tt
 
 % The toth equation itself returns the equilibrium loading in mol/kg
 mfQ_equ = (mf_A .* afPP) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
+
+% Constant that linearizes the toth that can be used for calculations (can
+% be multiplied with the pressure to receive a approximation of the toth eq)
+mfLinearizationConstant = (mf_A         ) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
 end
-function [mfQ_equ] = calculateEquilibriumLoading_Zeolite13x(this, afPP, fTemperature)
+function [mfQ_equ, mfLinearizationConstant] = calculateEquilibriumLoading_Zeolite13x(this, afPP, fTemperature)
 % calculating the parameters for the Toth equation according to
 % ICES 2014-168 equations 22,23 and 24
 mf_A = this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_A0.*exp(this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_E/fTemperature);
@@ -146,9 +159,13 @@ mf_t_T = this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_T0 + this.ttxMat
 
 % The toth equation itself returns the equilibrium loading in mol/kg
 mfQ_equ = (mf_A .* afPP) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
+
+% Constant that linearizes the toth that can be used for calculations (can
+% be multiplied with the pressure to receive a approximation of the toth eq)
+mfLinearizationConstant = (mf_A         ) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
 end
 
-function [mfQ_equ] = calculateEquilibriumLoading_SilicaGel_40(this, afPP, fTemperature)
+function [mfQ_equ, mfLinearizationConstant] = calculateEquilibriumLoading_SilicaGel_40(this, afPP, fTemperature)
 % calculating the parameters for the Toth equation according to
 % ICES 2014-168 equations 22,23 and 24
 mf_A = this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_A0.*exp(this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_E/fTemperature);
@@ -167,9 +184,13 @@ mf_t_T = this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_T0 + this.ttxM
 
 % The toth equation itself returns the equilibrium loading in mol/kg
 mfQ_equ = (mf_A .* afPP) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
+
+% Constant that linearizes the toth that can be used for calculations (can
+% be multiplied with the pressure to receive a approximation of the toth eq)
+mfLinearizationConstant = (mf_A         ) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
 end
 
-function [mfQ_equ] = calculateEquilibriumLoading_Sylobead_B125(this, afPP, fTemperature)
+function [mfQ_equ, mfLinearizationConstant] = calculateEquilibriumLoading_Sylobead_B125(this, afPP, fTemperature)
 % calculating the parameters for the Toth equation according to
 % ICES 2014-168 equations 22,23 and 24
 mf_A = this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_A0.*exp(this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_E/fTemperature);
@@ -188,4 +209,8 @@ mf_t_T = this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_T0 + this.ttx
 
 % The toth equation itself returns the equilibrium loading in mol/kg
 mfQ_equ = (mf_A .* afPP) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
+
+% Constant that linearizes the toth that can be used for calculations (can
+% be multiplied with the pressure to receive a approximation of the toth eq)
+mfLinearizationConstant = (mf_A         ) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
 end

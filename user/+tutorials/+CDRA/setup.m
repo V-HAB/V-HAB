@@ -117,6 +117,8 @@ classdef setup < simulation.infrastructure
             csZeolite13x_H2O_Mass = cell(2,5);
             csZeolite13x_CO2_Pressure = cell(2,5);
             csZeolite13x_H2O_Pressure = cell(2,5);
+            csZeolite13x_Flow_Temperature = cell(2,5);
+            csZeolite13x_Absorber_Temperature = cell(2,5);
             
             for iBed = 1:2
                 for iCell = 1:5
@@ -125,6 +127,9 @@ classdef setup < simulation.infrastructure
                     
                      csZeolite13x_H2O_Pressure{iBed,iCell} = ['Flow Pressure H2O Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
                      csZeolite13x_CO2_Pressure{iBed,iCell} = ['Flow Pressure CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
+                     
+                     csZeolite13x_Flow_Temperature{iBed,iCell}      = ['Flow Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
+                     csZeolite13x_Absorber_Temperature{iBed,iCell}  = ['Absorber Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)];
                 end
             end
             
@@ -132,6 +137,8 @@ classdef setup < simulation.infrastructure
             csSylobead_H2O_Mass = cell(2,5);
             csSylobead_CO2_Pressure = cell(2,5);
             csSylobead_H2O_Pressure = cell(2,5);
+            csSylobead_Flow_Temperature = cell(2,5);
+            csSylobead_Absorber_Temperature = cell(2,5);
             
             for iBed = 1:2
                 for iCell = 1:5
@@ -140,6 +147,9 @@ classdef setup < simulation.infrastructure
                     
                      csSylobead_H2O_Pressure{iBed,iCell} = ['Flow Pressure H2O Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
                      csSylobead_CO2_Pressure{iBed,iCell} = ['Flow Pressure CO2 Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
+                     
+                     csSylobead_Flow_Temperature{iBed,iCell}        = ['Flow Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
+                     csSylobead_Absorber_Temperature{iBed,iCell}    = ['Absorber Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)];
                 end
             end
             
@@ -147,6 +157,9 @@ classdef setup < simulation.infrastructure
             csZeolite5A_H2O_Mass = cell(2,5);
             csZeolite5A_CO2_Pressure = cell(2,5);
             csZeolite5A_H2O_Pressure = cell(2,5);
+            csZeolite5A_Flow_Temperature = cell(2,5);
+            csZeolite5A_Absorber_Temperature = cell(2,5);
+            
             for iBed = 1:2
                 for iCell = 1:5
                     csZeolite5A_CO2_Mass{iBed,iCell} = ['Partial Mass CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
@@ -154,6 +167,9 @@ classdef setup < simulation.infrastructure
                     
                     csZeolite5A_H2O_Pressure{iBed,iCell} = ['Flow Pressure H2O Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
                     csZeolite5A_CO2_Pressure{iBed,iCell} = ['Flow Pressure CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
+                    
+                    csZeolite5A_Flow_Temperature{iBed,iCell}        = ['Flow Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
+                    csZeolite5A_Absorber_Temperature{iBed,iCell}    = ['Absorber Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)];
                 end
             end
             
@@ -251,6 +267,48 @@ classdef setup < simulation.infrastructure
             mbPosition = [false,false;false,false;false,true];
             oPlot.definePlotByName(csZeolite5A_CO2_Pressure(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
+            
+            sTitle = 'Absorber Temperatures CDRA'; 
+            yLabel = 'Temperature in K';
+            
+            mbPosition = [true,false;false,false;false,false];
+            oPlot.definePlotByName(csSylobead_Absorber_Temperature(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,true;false,false;false,false];
+            oPlot.definePlotByName(csSylobead_Absorber_Temperature(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;true,false;false,false];
+            oPlot.definePlotByName(csZeolite13x_Absorber_Temperature(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;false,true;false,false];
+            oPlot.definePlotByName(csZeolite13x_Absorber_Temperature(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;false,false;true,false];
+            oPlot.definePlotByName(csZeolite5A_Absorber_Temperature(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;false,false;false,true];
+            oPlot.definePlotByName(csZeolite5A_Absorber_Temperature(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            sTitle = 'Flow Temperatures CDRA'; 
+            yLabel = 'Temperature in K';
+            
+            mbPosition = [true,false;false,false;false,false];
+            oPlot.definePlotByName(csSylobead_Flow_Temperature(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,true;false,false;false,false];
+            oPlot.definePlotByName(csSylobead_Flow_Temperature(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;true,false;false,false];
+            oPlot.definePlotByName(csZeolite13x_Flow_Temperature(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;false,true;false,false];
+            oPlot.definePlotByName(csZeolite13x_Flow_Temperature(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;false,false;true,false];
+            oPlot.definePlotByName(csZeolite5A_Flow_Temperature(1,:), sTitle, yLabel, sTimeUnit, mbPosition);
+            
+            mbPosition = [false,false;false,false;false,true];
+            oPlot.definePlotByName(csZeolite5A_Flow_Temperature(2,:), sTitle, yLabel, sTimeUnit, mbPosition);
             
             
             csNames = {'CDRA CO2 Inlet Flow', 'CDRA CO2 Outlet Flow'};

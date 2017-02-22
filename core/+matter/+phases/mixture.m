@@ -70,7 +70,7 @@ classdef mixture < matter.phase
                 this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
                 this.iFailedHeatCapUpdates = 0;
             catch
-                if this.iFailedHeatCapUpdates <5 
+                if this.iFailedHeatCapUpdates <100 
                     this.iFailedHeatCapUpdates = this.iFailedHeatCapUpdates + 1;
                 else
                     error('you have something in a phase changing state (liquid to gas or similar) for multiple ticks in a row and the matter table cannot calculate this')

@@ -366,7 +366,7 @@ classdef table < base
                 
                 this.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.mfAbsorptionEnthalpy = zeros(1,this.iSubstances);
             end
-            % ALL Parameters according to ICES-2014-168 and AIAA-2013-3455
+            % ALL Parameters according to ICES-2014-168
             
             % Zeolite 5A
             % Unit of the Factor is mol/(kg Pa)
@@ -421,26 +421,24 @@ classdef table < base
             
             
             % Zeolite 13x
-            % Values for 13x were taken from AIAA 2013-3455 because the
-            % newer values resulted in unrealistic CDRA behavior
             % Unit of the Factor is mol/(kg Pa)
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_A0(this.tiN2I.CO2)    = 5.8088E-11;
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_A0(this.tiN2I.H2O)    = 3.63E-9;
+            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_A0(this.tiN2I.CO2)    = 6.509E-6;
+            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_A0(this.tiN2I.H2O)    = 3.634E-9;
             
             % Unit of the Factor is 1/Pa
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_B0(this.tiN2I.CO2)    = 1.017E-11;
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_B0(this.tiN2I.H2O)    = 2.41E-10;
+            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_B0(this.tiN2I.CO2)    = 4.884E-7;
+            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_B0(this.tiN2I.H2O)    = 2.408E-10;
             
             % Unit of the Factor is K
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_E(this.tiN2I.CO2)     = 5810.2;
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_E(this.tiN2I.H2O)     = 6852;
+            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_E(this.tiN2I.CO2)     = 2.991E3;
+            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_E(this.tiN2I.H2O)     = 6.852E3;
             
             % Unit of the Factor is -
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_T0(this.tiN2I.CO2)    = 0.555;
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_T0(this.tiN2I.H2O)    = 0.39;
+            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_T0(this.tiN2I.CO2)    = 7.487E-2;
+            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_T0(this.tiN2I.H2O)    = 3.974E-1;
             
             % Unit of the Factor is K
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_C0(this.tiN2I.CO2)    = -64.65;
+            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_C0(this.tiN2I.CO2)    = 3.805E1;
             this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_C0(this.tiN2I.H2O)    = -4.199;
 
             % Absorption Enthalpy for the different substances in J/mol

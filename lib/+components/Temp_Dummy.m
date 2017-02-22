@@ -11,15 +11,19 @@ classdef Temp_Dummy < matter.procs.f2f
         fDeltaTemp = 0;         % Temperature difference created by the component in [K]
         fDeltaPress = 0;        % Pressure difference created by the component in [Pa]
         bActive = true;         % Must be true so the update function is called from the branch solver
+        fMaxHeatFlow = inf;
         fTemperature;
         
     end
     
     methods
-        function this = Temp_Dummy(oMT, sName, fTemperature)
+        function this = Temp_Dummy(oMT, sName, fTemperature, fMaxHeatFlow)
             this@matter.procs.f2f(oMT, sName);
             
             this.fTemperature = fTemperature;
+            if nargin > 3
+                this.fMaxHeatFlow = fMaxHeatFlow;
+            end
             this.supportSolver('manual', true, @this.updateManualSolver);
         end
         
@@ -37,6 +41,9 @@ classdef Temp_Dummy < matter.procs.f2f
             end
             this.fDeltaTemp = (this.fTemperature - inFlow.fTemperature);
             this.fHeatFlow = (inFlow.fFlowRate*inFlow.fSpecificHeatCapacity)*this.fDeltaTemp;
+            if abs(this.fHeatFlow) > this.fMaxHeatFlow
+                this.fHeatFlow = sign(this.fHeatFlow) * this.fMaxHeatFlow;
+            end
         end
         
         function setActive(this, bActive, ~)

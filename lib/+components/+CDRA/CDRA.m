@@ -95,7 +95,7 @@ classdef CDRA < vsys
         % This variable decides by how much percent the mass in any one cell
         % is allowed to change within one tick (increasing this does not
         % necessarily speed up the simulation, but you can try)
-        rMaxChange              = 0.001;
+        rMaxChange              = 0.01;
         
         % Sturct to store properties from the last recalculation of phases
         % to decide if they have to be recalculated or not
@@ -147,36 +147,7 @@ classdef CDRA < vsys
             %
             % geometrical data:
             % CDRA Adsorber Bed Cross Section
-            % quadratic cross section with ~16 channels of~13mm length according to a presentation at the comsol conference 2015
-            % "Multi-Dimensional Simulation of Flows Inside Polydisperse Packed Beds"
-            % download link https://www.google.de/url?sa=t&rct=j&q=&esrc=s&source=web&cd=6&cad=rja&uact=8&ved=0ahUKEwjwstb2-OfKAhXEoQ4KHdkUAC8QFghGMAU&url=https%3A%2F%2Fwww.comsol.com%2Fconference2015%2Fdownload-presentation%2F29402&usg=AFQjCNERyzJcfMautp6BfFFUERc1FvISNw&bvm=bv.113370389,d.bGg
-            % sorry couldn't find a better one.
-            % However I am a bit unsure if that actually is correct. The
-            % zeolite mass using those value would be ~14 kg thus CDRA
-            % would not be able to take in enough CO2 to actually remove
-            % the CO2 of 6 humans:
-            %
-            % Assuming a human produces ~ 1kg of CO2 per day and CDRA is
-            % sized for 6 humans at 400 Pascal partial pressure of CO2 then
-            % each CDRA has to absorb (1/(24*60))*144*6 = 600g CO2 per
-            % cycle (144 min cycle time, 6 humans). However that does not
-            % yet take into account that CDRA (through the air safe mode
-            % used at the beginning of the desorption) also releases some
-            % of the CO2 back into the cabin. Test data for CDRA
-            % (00ICES-234 'International Space Station Carbon Dioxide
-            % Removal Assembly Testing' James C. Knox) shows that this
-            % release back into the cabin is ~60 Pascal of Partial Pressure
-            % for a Volume of ~100m³. Using the ideal gas law with room
-            % temperature this release of CO2 back into the cabin can be
-            % calculate to about 110g per cycle. This means that the
-            % capacity has to be at least 710g. But the maximum capacity is
-            % hard to reach and it is save to assume that each bed requires
-            % a capacity of ~800g to 900g of CO2 at 400 Pa partial
-            % pressure. At that partial pressure the zeolite capacity is
-            % ~35g CO2 for each kg of zeolite. Therefore the zeolite mass
-            % has to be around 23 to 26 kg. (current calculation results in
-            % ~23.5 kg)
-            fCrossSection = (16*13E-3)^2; 
+            fCrossSection = (0.195)^2;  %value now according to Benni Portners discussion von Jim Knox
             
             this.tGeometry.Zeolite5A.fCrossSection       = fCrossSection;
             this.tGeometry.Sylobead.fCrossSection        = fCrossSection;
@@ -197,9 +168,10 @@ classdef CDRA < vsys
             this.tGeometry.Sylobead.fAbsorberVolume          =   (1-this.tGeometry.Sylobead.rVoidFraction)          * fCrossSection * this.tGeometry.Sylobead.fLength;
             this.tGeometry.Zeolite5A.fAbsorberVolume         =   (1-this.tGeometry.Zeolite5A.rVoidFraction)         * fCrossSection * this.tGeometry.Zeolite5A.fLength;
             
-            fMassZeolite13x         = 0.318 *   this.tGeometry.Zeolite13x.fAbsorberVolume        * this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density;
-            fMassSylobead           =           this.tGeometry.Sylobead.fAbsorberVolume          * this.oMT.ttxMatter.Sylobead_B125.ttxPhases.tSolid.Density;
-            fMassZeolite5A          =           this.tGeometry.Zeolite5A.fAbsorberVolume         * this.oMT.ttxMatter.Zeolite5A_RK38.ttxPhases.tSolid.Density;
+            % From ICES-2015-160
+            fMassZeolite13x     = 5.164;
+            fMassSylobead       = 5.38 + 6.32; %(WS and Sylobead)
+            fMassZeolite5A      = 12.383;
             
             % These are the correct estimates for the flow volumes of each
             % bed which are used in the filter adsorber proc for
@@ -227,7 +199,7 @@ classdef CDRA < vsys
         	tInitialization.Zeolite13x.mfInitialH2O             = [   0,    0,    0,    0,    0];
             
         	tInitialization.Sylobead.mfInitialCO2               = [   0,    0,    0,    0,    0];
-        	tInitialization.Sylobead.mfInitialH2O               = [ 0.8,  0.1,    0,    0,    0]; % Only set for the bed that just finished absorbing
+        	tInitialization.Sylobead.mfInitialH2O               = [   0,    0,    0,    0,    0]; % Only set for the bed that just finished absorbing
             
         	tInitialization.Zeolite5A.mfInitialCO2              = [   0,    0,    0,    0,    0];
         	tInitialization.Zeolite5A.mfInitialH2O              = [   0,    0,    0,    0,    0];
@@ -269,9 +241,9 @@ classdef CDRA < vsys
             % flow rates are not the values of primary interest, but the
             % calculation is necessary to equalize phase masses and
             % pressures for variying temperatures etc.)
-            this.tGeometry.Zeolite13x.fD_Hydraulic           = (4*this.tGeometry.Zeolite13x.fCrossSection/(4*18*13E-3))* this.tGeometry.Zeolite13x.rVoidFraction;
-            this.tGeometry.Sylobead.fD_Hydraulic             = (4*this.tGeometry.Sylobead.fCrossSection/(4*18*13E-3))* this.tGeometry.Sylobead.rVoidFraction;
-            this.tGeometry.Zeolite5A.fD_Hydraulic            = (4*this.tGeometry.Zeolite5A.fCrossSection/(4*18*13E-3))* this.tGeometry.Zeolite13x.rVoidFraction;
+            this.tGeometry.Zeolite13x.fD_Hydraulic           = (4*this.tGeometry.Zeolite13x.fCrossSection/(4*0.195))* this.tGeometry.Zeolite13x.rVoidFraction;
+            this.tGeometry.Sylobead.fD_Hydraulic             = (4*this.tGeometry.Sylobead.fCrossSection/(4*0.195))* this.tGeometry.Sylobead.rVoidFraction;
+            this.tGeometry.Zeolite5A.fD_Hydraulic            = (4*this.tGeometry.Zeolite5A.fCrossSection/(4*0.195))* this.tGeometry.Zeolite13x.rVoidFraction;
             
             % The surface area is required to calculate the thermal
             % exchange between the absorber and the gas flow. It is
@@ -498,7 +470,7 @@ classdef CDRA < vsys
                         % this factor times the mass flow^2 will decide the pressure
                         % loss. In this case the pressure loss will be 1 bar at a
                         % flowrate of 0.01 kg/s
-                        this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell) = 1e8/iCellNumber;
+                        this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell) = 5e7/iCellNumber;
                     
                     end
                     this.tGeometry.(csTypes{iType}).iCellNumber   = iCellNumber;
@@ -520,7 +492,6 @@ classdef CDRA < vsys
             iCellNumber = tInitialization.Sylobead.iCellNumber;
             matter.branch(this, ['Sylobead_1.Outflow_',num2str(iCellNumber)], {}, 'Zeolite13x_1.Inflow_1', 'Sylobead1_to_13x1');
             
-            
             matter.branch(this, 'Sylobead_2.Inflow_1', {}, 'CDRA_Air_In_2', 'CDRA_Air_In_2');
             
             oFlowPhase = this.toStores.Sylobead_2.toPhases.Flow_1;
@@ -530,11 +501,14 @@ classdef CDRA < vsys
             iCellNumber = tInitialization.Sylobead.iCellNumber;
             matter.branch(this, ['Sylobead_2.Outflow_',num2str(iCellNumber)], {}, 'Zeolite13x_2.Inflow_1', 'Sylobead2_to_13x2');
             
-            
             % Interface between 13x and 5A zeolite absorber beds 
             iCellNumber = tInitialization.Zeolite13x.iCellNumber;
-            matter.branch(this, ['Zeolite13x_1.Outflow_',num2str(iCellNumber)], {}, 'Zeolite5A_1.Inflow_1', 'Zeolite13x1_to_5A1');
-            matter.branch(this, ['Zeolite13x_2.Outflow_',num2str(iCellNumber)], {}, 'Zeolite5A_2.Inflow_1', 'Zeolite13x2_to_5A2');
+            
+            components.Temp_Dummy(this, 'PreCooler_5A1', 295, 1000);
+            components.Temp_Dummy(this, 'PreCooler_5A2', 295, 1000);
+            
+            matter.branch(this, ['Zeolite13x_1.Outflow_',num2str(iCellNumber)], {'PreCooler_5A1'}, 'Zeolite5A_1.Inflow_1', 'Zeolite13x1_to_5A1');
+            matter.branch(this, ['Zeolite13x_2.Outflow_',num2str(iCellNumber)], {'PreCooler_5A2'}, 'Zeolite5A_2.Inflow_1', 'Zeolite13x2_to_5A2');
             
             
             oFlowPhase = this.toStores.Zeolite13x_1.toPhases.(['Flow_',num2str(iCellNumber)]);
@@ -872,7 +846,43 @@ classdef CDRA < vsys
            
         end
         function setReferencePhase(this, oPhase)
-                this.oAtmosphere = oPhase;
+            this.oAtmosphere = oPhase;
+            
+            % assumed heat transfer cooefficient between CDRA and
+            % atmosphere: 0.195
+            
+            % Well internal area assumed to be equal to external
+            fArea =     this.tGeometry.Zeolite5A.fCrossSection  * this.tGeometry.Zeolite5A.fLength +...
+                        this.tGeometry.Sylobead.fCrossSection   * this.tGeometry.Sylobead.fLength+...
+                        this.tGeometry.Zeolite13x.fCrossSection * this.tGeometry.Zeolite13x.fLength;
+            
+            fThermalConductivity = this.oMT.calculateThermalConductivity(oPhase);
+            
+            % Assumes 5cm of air and 1cm of AL through which conduction has to take place
+            fTransferCoefficient = (1/((fThermalConductivity / 0.05) + (237 / 0.01)) * fArea) /...
+                (this.tGeometry.Sylobead.iCellNumber + this.tGeometry.Zeolite13x.iCellNumber + this.tGeometry.Zeolite5A.iCellNumber);
+            
+            % adds a boundary node for the atmosphere around CDRA
+            oAtmosphereCapacity = this.addCreateCapacity(oPhase);
+
+            csTypes = {'Zeolite13x', 'Sylobead', 'Zeolite5A'};
+            % Since there are two filters of each type a for loop over the
+            % two filters is used as well
+            for iType = 1:3
+                for iFilter = 1:2
+                    sName = [(csTypes{iType}),'_',num2str(iFilter)];
+                    for iCell = 1:this.tGeometry.(csTypes{iType}).iCellNumber
+
+                        sAbsorberCapacity   = [this.sName,'__',(csTypes{iType}),'_',num2str(iFilter),'__','Absorber_',num2str(iCell)];
+
+                        oCapacityAbsorber = this.poCapacities(sAbsorberCapacity);
+
+                        this.addConductor(thermal.conductors.linear(this, oCapacityAbsorber, oAtmosphereCapacity, fTransferCoefficient, [sName, '_CabinConductor_', num2str(iCell)]));
+                        
+                    end
+                end
+            end
+
         end
         
         function setHeaterPower(this, mfPower)
@@ -1203,6 +1213,10 @@ classdef CDRA < vsys
             % temperature!.
             mfCellMass(:,1)         = [aoPhases.fMass];
            	mfCellPressure(:,1)     = [aoPhases.fPressure];
+           	mfHeatCapacities(:,1)   = [aoPhases.fTotalHeatCapacity];
+            
+            % Uses the ideal gas law to calculate the pressure change from the heat flow: p = (m R / M V) * T
+            mfTemperatureToPressure(:,1) = (this.oMT.Const.fUniversalGas .* mfCellMass) ./([aoPhases.fMolarMass] .* [aoPhases.fVolume])';
             
             % In order to get the flow rate calculation to higher
             % speeds at each cycle change the phases are preset to
@@ -1213,6 +1227,26 @@ classdef CDRA < vsys
             for iCell = 1:length(aoPhases)
                 mfPressurePhase(iCell) = aoPhases(end).fPressure + sum(mfPressureDiff(iCell:end));
             end
+            
+            % Before the mass difference can be calculated the pressure
+            % temperature that results from the heat flows of the
+            % individual phases is first calculated. As a simplification it
+            % is simply assumed that the heat flow in the absorber is the
+            % same as in the flow for this calculation.
+            
+            % One Part of the temperature change in the phases comes from
+            % the thermal energy transported by the mass flows
+            mfMassTransportHeatFlows = abs([aoBranches.fFlowRate] .* [aoPhases.fSpecificHeatCapacity] .* [aoPhases.fTemperature])';
+            
+            % And the remaining part is the heatflow from the adsorption
+            % process. This can be used to calculate a temperature change:
+            mfDetlaTemperature = mfHeatCapacities(1:this.iCells) .* ((this.tThermalNetwork.mfAdsorptionHeatFlow(1:this.iCells)) + (mfMassTransportHeatFlows(1:end-1) - mfMassTransportHeatFlows(2:end)));
+            
+            % Uses the ideal gas law to calculate the pressure change per
+            % second from the thermal aspects in the system
+            mfDeltaPressurePerSecondThermal = zeros(this.iCells+1,1);
+            mfDeltaPressurePerSecondThermal(1:this.iCells) = mfTemperatureToPressure(1:this.iCells) .* mfDetlaTemperature;
+
             % The time step for the cycle change case is set to ONE
             % second, therefore the calculated mass difference is
             % directly the required flow rate that has to go into the
@@ -1244,6 +1278,13 @@ classdef CDRA < vsys
             elseif fTimeStep  <= this.fMinimumTimeStep
                 fTimeStep = this.fMinimumTimeStep;
             end
+            
+            % Now we can calculate the actual pressure difference from
+            % thermal efffects.
+            mfDeltaPressureThermal = (mfDeltaPressurePerSecondThermal .* fTimeStep);
+            
+            % And the impact this has on the mass difference:
+            mfMassDiff = (mfPressurePhase - mfCellPressure + mfDeltaPressureThermal)./[aoPhases.fMassToPressure]';
             
             % Well this actually enforces the percental mass change limit
             % imposed by rMaxChange (as the timestep in this case does not
@@ -1432,20 +1473,22 @@ classdef CDRA < vsys
                 mfPower(this.iCells+1:end) = mfPowerDesorbCells;
                 this.setHeaterPower(mfPower);
             else
+                mfCellTemperature(:,1)     = [this.tMassNetwork.aoAbsorberPhases.fTemperature];
+                mfCellHeatCap(:,1)         = [this.tMassNetwork.aoAbsorberPhases.fSpecificHeatCapacity] .* [this.tMassNetwork.aoAbsorberPhases.fMass];
+
+                mfPowerDesorbCells = this.tThermalNetwork.mfHeaterPower(this.iCells+1:end);
+                
+                mbTempReached = abs(mfCellTemperature - this.TargetTemperature) < 1;
+                mfPowerDesorbCells(mbTempReached) = 0;
+                mfPowerDesorbCells(~mbTempReached) = ((this.TargetTemperature - mfCellTemperature(~mbTempReached)).* mfCellHeatCap(~mbTempReached))/this.fAirSafeTime;
+                % during air safe mode only half of the heater power is
+                % used
+                mfPowerDesorbCells(mfPowerDesorbCells > this.fMaxHeaterPower) = (this.fMaxHeaterPower/this.tGeometry.Zeolite5A.iCellNumber)/2;
                 mfPower = zeros(this.iCells+this.tGeometry.Zeolite5A.iCellNumber,1);
+                mfPower(this.iCells+1:end) = mfPowerDesorbCells;
+                
                 this.setHeaterPower(mfPower);
             end
-%             % timestep set to allow at most 1 K temperature change within
-%             % one step
-%             fTimeStep = min(abs(mfPowerDesorbCells./(mfCellHeatCap.*1)));
-%             
-%             if fTimeStep > this.fMaximumTimeStep
-%                 fTimeStep = this.fMaximumTimeStep;
-%             elseif fTimeStep  <= this.fMinimumTimeStep
-%                 fTimeStep = this.fMinimumTimeStep;
-%             end
-%             this.tTimeProperties.DesorptionThermalStep = fTimeStep;
-%             this.tTimeProperties.DesorptionThermalLastExec = this.oTimer.fTime;
         end
         
         function calculateThermalProperties(this)
@@ -1553,7 +1596,7 @@ classdef CDRA < vsys
                             % In the current calculation the free gas
                             % distance and the radius of the spheres is
                             % identical
-                            fAbsorbentConductivity = 0.12; % TO DO: Get value
+                            fAbsorbentConductivity = 0.12;
                             mfHeatTransferCoefficient(iCell) = 1/((this.tGeometry.mfAbsorbentRadius(iCell)/fAbsorbentConductivity) + (this.tGeometry.mfAbsorbentRadius(iCell)/this.tLastUpdateProps.mfThermalConductivity(iCell))) * this.tGeometry.mfAbsorberSurfaceArea(iCell);
                         end
                         

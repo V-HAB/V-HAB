@@ -86,7 +86,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             end
             afCurrentMols       = (this.oIn.oPhase.afMass./this.oMT.afMolarMass);
             afCurrentMolsIn     = (afCurrentInFlows ./ this.oMT.afMolarMass);
-            arFractions         = ((afCurrentMolsIn * fTimeStep) + afCurrentMols) ./ (sum(afCurrentMolsIn) * fTimeStep + sum(afCurrentMols));
+            
+            arFractions         = (((afCurrentMolsIn) * fTimeStep) + afCurrentMols) ./ (sum(afCurrentMolsIn) * fTimeStep + sum(afCurrentMols));
 
             afPP                = arFractions .* this.oIn.oPhase.fPressure;
             afPP(isnan(afPP))   = this.oIn.oPhase.afPP(isnan(afPP));
@@ -99,18 +100,18 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 (max(abs(this.afPPOld - afPP)    - (1e-2 * this.afPPOld))   > 0) ||...
                 abs(this.fTemperatureOld - fTemperature) > (1e-2 * this.fTemperatureOld)
             
-                mfFlowRatesDesorptionPrevious = zeros(3,this.oMT.iSubstances);
+                mfFlowRatesPrevious = zeros(2,this.oMT.iSubstances);
                 
                 % Iteration in case of desorption because that would
                 % increase the available partial pressure within the phase
                 iCounter = 0;
-                while iCounter < 3
+                while iCounter < 2
                     mfEquilibriumLoading = this.oMT.calculateEquilibriumLoading(afMass, afPP, fTemperature);
 
                     mfCurrentLoading = afMass;
                     % the absorber material is not considered loading ;)
                     mfCurrentLoading(this.oMT.abAbsorber) = 0;
-
+                
                     % According to RT_BA 13_15 equation 3.31 the change in
                     % loading over time is the (equilibrium loading - actual
                     % loading) times a factor: dq/dt = k(q*-q)
@@ -125,48 +126,56 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                     % assuming the equilibrium loading remains constant
                     mfNewLoading = mfEquilibriumLoading - ((mfEquilibriumLoading - mfCurrentLoading).*exp(-this.mfMassTransferCoefficient.*fTimeStep));
                     mfFlowRates = (mfNewLoading - mfCurrentLoading)/fTimeStep;
-
+                    
                     mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
                     mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
                     mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
                     mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
                     
-                    mfFlowRatesDesorption = (mfFlowRatesDesorption + mfFlowRatesDesorptionPrevious(end,:)) / 2;
-                    
                     fDesorptionFlowRate                             = -sum(mfFlowRatesDesorption);
                     arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
                     arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./fDesorptionFlowRate);
                     
-                    % Positive values in mfFlowRates mean something is beeing
-                    % absorbed and the Absorption Enthalpy is stored with a
-                    % negative value if heat is generated. Therefore the overall
-                    % result has to be mutliplied with -1
+                    mfFlowRatesPrevious(iCounter+1,:) = mfFlowRates;
 
-                    this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
+                    afCurrentInFlowsNew     = afCurrentInFlows  - mfFlowRatesDesorption;
+                    % For the outflow only the adsorption is considered as
+                    % outflow because it has to be prioritized over the
+                    % matter transport through branches
                     
-                    if fDesorptionFlowRate == 0
-                        % If no desorption occurs in the first step there
-                        % will be no desorption at all
-                        break
-                    else
-                        mfFlowRatesDesorptionPrevious(iCounter+1,:) = mfFlowRatesDesorption;
-                        
-                        afCurrentInFlowsNew     = afCurrentInFlows - mfFlowRatesDesorption;
-                        afCurrentMolsIn         = (afCurrentInFlowsNew ./ this.oMT.afMolarMass);
-                        arFractions             = ((afCurrentMolsIn * fTimeStep) + afCurrentMols) ./ (sum(afCurrentMolsIn) * fTimeStep + sum(afCurrentMols));
+                    afCurrentMolsIn         = (afCurrentInFlowsNew  ./ this.oMT.afMolarMass);
+                    afCurrentMolsOut        = (mfFlowRatesAdsorption ./ this.oMT.afMolarMass);
+                    
+                    afEffectiveMolsIn       = (afCurrentMolsIn - afCurrentMolsOut);
+                    afEffectiveMolsIn(afEffectiveMolsIn < 0) = 0;
+                    
+                    arFractions             = (((afEffectiveMolsIn) * fTimeStep) + afCurrentMols) ./ (sum(afEffectiveMolsIn) * fTimeStep + sum(afCurrentMols));
 
-                        afPP                    = arFractions .* this.oIn.oPhase.fPressure;
-                        afPP(isnan(afPP))       = this.oIn.oPhase.afPP(isnan(afPP));
-                        
-                        % very small partial pressures are rounded to zero.
-                        % otherwise desorption of the last remaining bit of
-                        % substance in the absorber is nearly impossible
-                        afPP = tools.round.prec(afPP,  3);
-                        
-                        iCounter = iCounter + 1;
-                    end
+                    afPP                    = arFractions .* this.oIn.oPhase.fPressure;
+                    afPP(isnan(afPP))       = this.oIn.oPhase.afPP(isnan(afPP));
+
+                    % very small partial pressures are rounded to zero.
+                    % otherwise desorption of the last remaining bit of
+                    % substance in the absorber is nearly impossible
+                    afPP = tools.round.prec(afPP,  3);
+
+                    iCounter = iCounter + 1;
                 end
                 
+                % Positive values in mfFlowRates mean something is beeing
+                % absorbed and the Absorption Enthalpy is stored with a
+                % negative value if heat is generated. Therefore the overall
+                % result has to be mutliplied with -1
+                
+                mfFlowRates = ((mfFlowRatesPrevious(iCounter,:) + mfFlowRatesPrevious(iCounter-1,:))  / 2);
+                
+                mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
+                mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
+                mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
+                mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
+                    
+                this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
+
                 this.afMassOld          = afMass;
                 this.afPPOld            = afPP;
                 this.fTemperatureOld    = fTemperature;
@@ -195,7 +204,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             mfFlowRates = afPartialFlowRates + mfFlowRatesDesorption;
             
-            this.fAdsorptionHeatFlow = - sum(mfFlowRates.*this.oMT.afMolarMass.*this.mfAbsorptionEnthalpy);
+            this.fAdsorptionHeatFlow = - sum((mfFlowRates ./ this.oMT.afMolarMass) .* this.mfAbsorptionEnthalpy);
             this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
             this.oStore.oContainer.tMassNetwork.mfAdsorptionFlowRate(this.iCell) = sum(mfFlowRates);
         end
