@@ -5,13 +5,17 @@ classdef Temp_Dummy < matter.procs.f2f
     %temperature itself (even if it sets a DeltaTemp), the new solver uses
     %the heat flow instead to keep the temperature constant.
 
+    properties (SetAccess = public, GetAccess = public)
+    
+        fMaxHeatFlow = inf;
+        
+    end
     properties (SetAccess = protected, GetAccess = public)
         fHydrDiam = 1;          % Hydraulic diameter value irrelevant for manual solver
         fHydrLength = 0;        % hydrauloc length, value irrelevant for manual solver
         fDeltaTemp = 0;         % Temperature difference created by the component in [K]
         fDeltaPress = 0;        % Pressure difference created by the component in [Pa]
         bActive = true;         % Must be true so the update function is called from the branch solver
-        fMaxHeatFlow = inf;
         fTemperature;
         
     end

@@ -1370,6 +1370,11 @@ classdef CDRA < vsys
                 mfMassDiff(bMassDiffChange) = 0.1 * mfMassDiffInitial(bMassDiffChange);
             end
             
+            % Now the mass difference required in the phases is
+            % translated into massflows for the branches for the next
+            % second
+            mfMassDiff = mfMassDiff./fTimeStep;
+            
             % First branch has to be handled differently
             iBranch = 1;
             mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))));            
