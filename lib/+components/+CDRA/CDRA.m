@@ -972,7 +972,8 @@ classdef CDRA < vsys
                 % second, therefore the calculated mass difference is
                 % directly the required flow rate that has to go into the
                 % phase to reach the desired mass
-                this.tMassNetwork.mfMassDiff = (mfPressurePhase - [this.tMassNetwork.aoPhasesCycleOne.fPressure]')./[this.tMassNetwork.aoPhasesCycleOne.fMassToPressure]';
+                this.tMassNetwork.mfMassDiff = ((mfPressurePhase .* [this.tMassNetwork.aoPhasesCycleOne.fVolume]') ./ (287.1 .* 295)) - [this.tMassNetwork.aoPhasesCycleOne.fMass]';
+                this.tMassNetwork.mfMassDiff(end) = 0;
                 
                 % Now the mass difference required in the phases is
                 % translated into massflows for the branches for the next
@@ -1042,7 +1043,8 @@ classdef CDRA < vsys
                 % second, therefore the calculated mass difference is
                 % directly the required flow rate that has to go into the
                 % phase to reach the desired mass
-                this.tMassNetwork.mfMassDiff = (mfPressurePhase - [this.tMassNetwork.aoPhasesCycleTwo.fPressure]')./[this.tMassNetwork.aoPhasesCycleTwo.fMassToPressure]';
+                this.tMassNetwork.mfMassDiff = ((mfPressurePhase .* [this.tMassNetwork.aoPhasesCycleTwo.fVolume]') ./ (287.1 .* 295)) - [this.tMassNetwork.aoPhasesCycleTwo.fMass]';
+                this.tMassNetwork.mfMassDiff(end) = 0;
                 
                 % Now the mass difference required in the phases is
                 % translated into massflows for the branches for the next
@@ -1189,7 +1191,7 @@ classdef CDRA < vsys
             % recalculated
             aoBranches  = this.tMassNetwork.(['aoBranchesCycle',sCycle]);
             aoPhases    = this.tMassNetwork.(['aoPhasesCycle',sCycle]);
-            aoAbsorber = this.tMassNetwork.(['aoAbsorberCycle',sCycle])(1:this.iCells);
+            aoAbsorber  = this.tMassNetwork.(['aoAbsorberCycle',sCycle])(1:this.iCells);
             
             % well the phase pressures have not been updated ( the
             % rMaxChange was set to inf) in order to do controlled updates
@@ -1246,7 +1248,7 @@ classdef CDRA < vsys
             % second from the thermal aspects in the system
             mfDeltaPressurePerSecondThermal = zeros(this.iCells+1,1);
             mfDeltaPressurePerSecondThermal(1:this.iCells) = mfTemperatureToPressure(1:this.iCells) .* mfDetlaTemperature;
-
+            
             % The time step for the cycle change case is set to ONE
             % second, therefore the calculated mass difference is
             % directly the required flow rate that has to go into the
@@ -1267,6 +1269,8 @@ classdef CDRA < vsys
                 mfMassDiff(bNAN) = ((mfPressurePhase(bNAN) .* mfCellVolume(bNAN)) ./ (287.1 .* mfCellTemperature(bNAN)) - mfCellMass(bNAN));
             end
             
+            mfMassDiffInitial = mfMassDiff;
+            
             % Now the time step can be calculated by using the maximum
             % allowable mass change within one step (Basically the time
             % step is 1/ Times Max Mass Change. For large mass changes it
@@ -1282,6 +1286,7 @@ classdef CDRA < vsys
             % Now we can calculate the actual pressure difference from
             % thermal efffects.
             mfDeltaPressureThermal = (mfDeltaPressurePerSecondThermal .* fTimeStep);
+            mfDeltaPressureThermal(isnan(mfDeltaPressureThermal)) = 0; % can occur if phase mass is 0
             
             % And the impact this has on the mass difference:
             mfMassDiff = (mfPressurePhase - mfCellPressure + mfDeltaPressureThermal)./[aoPhases.fMassToPressure]';
@@ -1325,6 +1330,44 @@ classdef CDRA < vsys
           	aoAbsorber(1).ManualUpdate(fTimeStep, abs(mfFlowRatesNew(1) .* aoBranches(1).coExmes{2}.oPhase.arPartialMass));
             for iAbsorber = 2:length(aoAbsorber)
                 aoAbsorber(iAbsorber).ManualUpdate(fTimeStep, abs(mfFlowRatesNew(iAbsorber) .* aoPhases(iAbsorber-1).arPartialMass));
+            end
+            
+            % One Part of the temperature change in the phases comes from
+            % the thermal energy transported by the mass flows
+            mfMassTransportHeatFlows = abs(mfFlowRatesNew .* [aoPhases.fSpecificHeatCapacity]' .* [aoPhases.fTemperature]');
+            
+            % And the remaining part is the heatflow from the adsorption
+            % process. This can be used to calculate a temperature change:
+            mfDetlaTemperature = mfHeatCapacities(1:this.iCells) .* ((this.tThermalNetwork.mfAdsorptionHeatFlow(1:this.iCells)) + (mfMassTransportHeatFlows(1:end-1) - mfMassTransportHeatFlows(2:end)));
+            
+            % Uses the ideal gas law to calculate the pressure change per
+            % second from the thermal aspects in the system
+            mfDeltaPressurePerSecondThermal = zeros(this.iCells+1,1);
+            mfDeltaPressurePerSecondThermal(1:this.iCells) = mfTemperatureToPressure(1:this.iCells) .* mfDetlaTemperature;
+            
+            % Now we can calculate the actual pressure difference from
+            % thermal efffects.
+            mfDeltaPressureThermal = (mfDeltaPressurePerSecondThermal .* fTimeStep);
+            mfDeltaPressureThermal(isnan(mfDeltaPressureThermal)) = 0; % can occur if phase mass is 0
+            
+            % And the impact this has on the mass difference:
+            mfMassDiff = (mfPressurePhase - mfCellPressure + mfDeltaPressureThermal)./[aoPhases.fMassToPressure]';
+            
+            bMassDiffChange = sign(mfMassDiff) ~= sign(mfMassDiffInitial);
+            if any(bMassDiffChange)
+                
+                abReduceMassDiff = abs(mfMassDiffInitial) > (this.rMaxChange .* mfCellMass);
+                if any(abReduceMassDiff)
+                    % factor by which the mass change currently exceeds the
+                    % allowed mass change for each cell
+                    mfFactor = abs(mfMassDiffInitial(abReduceMassDiff))./(this.rMaxChange .* mfCellMass(abReduceMassDiff));
+                    % The mass changes all have to be divided with the maximum
+                    % factor, to keep the relative change of mass between the
+                    % cells as intended
+                    mfMassDiffInitial = mfMassDiffInitial./max(mfFactor);
+                end
+            
+                mfMassDiff(bMassDiffChange) = 0.1 * mfMassDiffInitial(bMassDiffChange);
             end
             
             % First branch has to be handled differently
