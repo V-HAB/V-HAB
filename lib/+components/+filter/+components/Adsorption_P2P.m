@@ -15,6 +15,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         fTemperatureOld;
         
         mfAbsorptionEnthalpy;
+        
+        mfFlowRatesProp;
     end
     
    
@@ -37,6 +39,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             this.afPPOld     = zeros(1,this.oMT.iSubstances);
             this.fTemperatureOld = 0;
             
+            this.mfFlowRatesProp = zeros(1,this.oMT.iSubstances);
             
             afMass = this.oOut.oPhase.afMass;
             csAbsorbers = this.oMT.csSubstances(((afMass ~= 0) .* this.oMT.abAbsorber) ~= 0);
@@ -50,10 +53,28 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             this.mfAbsorptionEnthalpy = mfAbsorptionEnthalpyHelper;
         end
             
-        
         function update(~)
-            %Nope nothing happens here, it is manually controlled by the
-            %CDRA solver...
+            
+        end
+        
+        function ManualUpdateFinal(this, ~)
+            
+            mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
+            mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
+            mfFlowRatesAdsorption(this.mfFlowRatesProp > 0) = this.mfFlowRatesProp(this.mfFlowRatesProp > 0);
+            mfFlowRatesDesorption(this.mfFlowRatesProp < 0) = this.mfFlowRatesProp(this.mfFlowRatesProp < 0);
+            
+            fDesorptionFlowRate                             = -sum(mfFlowRatesDesorption);
+            arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
+            arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./fDesorptionFlowRate);
+
+            this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
+            
+            fAdsorptionFlowRate                             = sum(mfFlowRatesAdsorption);
+            arPartialsAdsorption                            = zeros(1,this.oMT.iSubstances);
+            arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./fAdsorptionFlowRate);
+            
+            this.setMatterProperties(fAdsorptionFlowRate, arPartialsAdsorption);
         end
         function setFlowRateToZero(this, ~)
             % OK this is a workaround because within CDRA the flowrate
@@ -94,6 +115,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             % very small (less than one milli pascal) partial pressures are rounded to zero 
             afPP = tools.round.prec(afPP,   3);
+            afPPInitial = afPP;
             
             % TO DO: make percentage before recalculation adaptive
             if (max(abs(this.afMassOld - afMass) - (1e-2 * this.afMassOld)) > 0) ||...
@@ -127,14 +149,11 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                     mfNewLoading = mfEquilibriumLoading - ((mfEquilibriumLoading - mfCurrentLoading).*exp(-this.mfMassTransferCoefficient.*fTimeStep));
                     mfFlowRates = (mfNewLoading - mfCurrentLoading)/fTimeStep;
                     
+                    
                     mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
                     mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
                     mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
                     mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
-                    
-                    fDesorptionFlowRate                             = -sum(mfFlowRatesDesorption);
-                    arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
-                    arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./fDesorptionFlowRate);
                     
                     mfFlowRatesPrevious(iCounter+1,:) = mfFlowRates;
 
@@ -174,10 +193,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
                 mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
                     
-                this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
-
                 this.afMassOld          = afMass;
-                this.afPPOld            = afPP;
+                this.afPPOld            = afPPInitial;
                 this.fTemperatureOld    = fTemperature;
             else
                 mfFlowRatesAdsorption =  this.fFlowRate .* this.arPartialMass;
@@ -193,20 +210,13 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             afPartialFlowRates = fP2P_MassChange./fTimeStep;
             
-            fFlowRate = sum(afPartialFlowRates);
-            if fFlowRate ~= 0
-                arPartials = afPartialFlowRates ./ fFlowRate;
-            else
-                arPartials = zeros(1,this.oMT.iSubstances);
-            end
-            
-            this.setMatterProperties(fFlowRate, arPartials);
-            
             mfFlowRates = afPartialFlowRates + mfFlowRatesDesorption;
             
             this.fAdsorptionHeatFlow = - sum((mfFlowRates ./ this.oMT.afMolarMass) .* this.mfAbsorptionEnthalpy);
             this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
             this.oStore.oContainer.tMassNetwork.mfAdsorptionFlowRate(this.iCell) = sum(mfFlowRates);
+            
+            this.mfFlowRatesProp = mfFlowRates;
         end
     end
 end
