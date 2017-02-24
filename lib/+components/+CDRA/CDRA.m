@@ -16,9 +16,9 @@ classdef CDRA < vsys
         %% Properties
         %The maximum power in watt for the electrical heaters that are used
         %to increase the zeolite temperature during the CO2 scrubbing.
-        % TO DO: didnt find an actual reference so for now using a values
-        % that seems plausible
-        fMaxHeaterPower = 10000;          % [W] 
+        % In ICES-2015-160 the heater power is mentioned to be 480 per
+        % heater string with two heater strings beeing used
+        fMaxHeaterPower = 980;          % [W] 
         
         %Target temperature the zeolite is supposed to reach during the
         %desorption of CO2
