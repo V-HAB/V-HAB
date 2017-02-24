@@ -504,8 +504,8 @@ classdef CDRA < vsys
             % Interface between 13x and 5A zeolite absorber beds 
             iCellNumber = tInitialization.Zeolite13x.iCellNumber;
             
-            components.Temp_Dummy(this, 'PreCooler_5A1', 295, 1000);
-            components.Temp_Dummy(this, 'PreCooler_5A2', 295, 1000);
+            components.Temp_Dummy(this, 'PreCooler_5A1', 285, 1000);
+            components.Temp_Dummy(this, 'PreCooler_5A2', 285, 1000);
             
             matter.branch(this, ['Zeolite13x_1.Outflow_',num2str(iCellNumber)], {'PreCooler_5A1'}, 'Zeolite5A_1.Inflow_1', 'Zeolite13x1_to_5A1');
             matter.branch(this, ['Zeolite13x_2.Outflow_',num2str(iCellNumber)], {'PreCooler_5A2'}, 'Zeolite5A_2.Inflow_1', 'Zeolite13x2_to_5A2');
@@ -1147,10 +1147,12 @@ classdef CDRA < vsys
                 
                 aoAbsorber = this.tMassNetwork.(['aoAbsorberCycle',sCycle]);
                 aoAbsorber(1).ManualUpdate(this.fInitTime/this.iInitStep, mfFlowRate(1) .* aoBranches(1).coExmes{2}.oPhase.arPartialMass);
+             	aoAbsorber(1).ManualUpdateFinal();
                 aoAbsorber(1).oOut.oPhase.update();
                     
                 for iAbsorber = 2:length(aoAbsorber)
                     aoAbsorber(iAbsorber).ManualUpdate(this.fInitTime/this.iInitStep, mfFlowRate(iAbsorber) .* aoAbsorber(iAbsorber).oIn.oPhase.arPartialMass);
+                    aoAbsorber(iAbsorber).ManualUpdateFinal();
                     aoAbsorber(iAbsorber).oOut.oPhase.update();
                 end
                 
@@ -1345,13 +1347,17 @@ classdef CDRA < vsys
                 mfFlowRatesLast = mfFlowRatesNew;
                 fTimeStepLast = fTimeStep;
                 
+                % Now use previous logic to predict the pressure in the
+                % next step and use that information to adapt the cell
+                % pressure difference
+                
                 mfMassDiff = ((mfPressurePhase .* mfCellVolume) ./ (mfGasConstant .*( mfCellTemperature + mfDeltaTemperaturePerSecond * fTimeStep ))) - mfCellMass;
                 mfMassDiff(end) = 0;
                 
-                % In some cases the prediction is off, this ensures that no
-                % constant pressure offset to the intended nominal cell
-                % pressure occurs
-                mfMassDiff(sign(mfMassDiff) ~=  sign(mfMassDiffInitial)) = 0;
+                % In some cases the prediction is off. The initial pressure
+                % difference has to take precedence in this case, but with
+                % a reduced mass difference
+                mfMassDiff(sign(mfMassDiff) ~=  sign(mfMassDiffInitial)) = 0.1 .* mfMassDiffInitial(sign(mfMassDiff) ~=  sign(mfMassDiffInitial));
                 
                 % And calculate a new timestep based on the mass diff that includes temperature changes
                 fTimeStep = (min(1./(abs(mfMassDiff) ./ (this.rMaxChange .* mfCellMass))) + fTimeStepLast) / 2;
@@ -1567,6 +1573,7 @@ classdef CDRA < vsys
                     aoAbsorber(iAbsorber).setFlowRateToZero();
                     this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+iAbsorber) = 0;
                 end
+                aoAbsorber(iAbsorber).ManualUpdateFinal();
             end
 
             mfDesorptionFlowRate = -this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+1:end);
