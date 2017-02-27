@@ -16,7 +16,7 @@ classdef setup < simulation.infrastructure
             
             % Possible to change the constructor paths and params for the
             % monitors
-            ttMonitorConfig = struct();
+            ttMonitorConfig = struct('oLogger', struct('cParams', {{ true }}));
             warning( 'off', 'all')
             
             this@simulation.infrastructure('Tutorial_CCAA', ptConfigParams, tSolverParams, ttMonitorConfig);

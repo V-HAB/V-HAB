@@ -96,127 +96,118 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             % inflowing matter. Otherwise the partial pressure in the cell
             % will oscillate because it first has to increase before it can
             % absorb something
-            afCurrentInFlows = zeros(1,this.oMT.iSubstances);
-            for iExme = 1:this.oIn.oPhase.iProcsEXME
-                if ~this.oIn.oPhase.coProcsEXME{iExme}.bFlowIsAProcP2P
-                    fFlowRate = (this.oIn.oPhase.coProcsEXME{iExme}.iSign * this.oIn.oPhase.coProcsEXME{iExme}.oFlow.fFlowRate);
-                    if fFlowRate > 0
-                        afCurrentInFlows = afCurrentInFlows + (fFlowRate .* this.oIn.oPhase.coProcsEXME{iExme}.oFlow.arPartialMass);
-                    end
-                end
-            end
             afCurrentMols       = (this.oIn.oPhase.afMass./this.oMT.afMolarMass);
-            afCurrentMolsIn     = (afCurrentInFlows ./ this.oMT.afMolarMass);
+            afCurrentMolsIn     = (afInFlow ./ this.oMT.afMolarMass);
             
             arFractions         = (((afCurrentMolsIn) * fTimeStep) + afCurrentMols) ./ (sum(afCurrentMolsIn) * fTimeStep + sum(afCurrentMols));
 
-            afPP                = arFractions .* this.oIn.oPhase.fPressure;
-            afPP(isnan(afPP))   = this.oIn.oPhase.afPP(isnan(afPP));
+            % workaround because the pressure calculation is not perfect at
+            % the moment
+            afPP                = arFractions .* 1e5; %this.oIn.oPhase.fPressure;
             
             % very small (less than one milli pascal) partial pressures are rounded to zero 
             afPP = tools.round.prec(afPP,   3);
-            afPPInitial = afPP;
             
-            % TO DO: make percentage before recalculation adaptive
-            if (max(abs(this.afMassOld - afMass) - (1e-2 * this.afMassOld)) > 0) ||...
-                (max(abs(this.afPPOld - afPP)    - (1e-2 * this.afPPOld))   > 0) ||...
-                abs(this.fTemperatureOld - fTemperature) > (1e-2 * this.fTemperatureOld)
+            [ ~, mfLinearConstant ] = this.oMT.calculateEquilibriumLoading(afMass, afPP, fTemperature);
             
-                mfFlowRatesPrevious = zeros(2,this.oMT.iSubstances);
-                
-                % Iteration in case of desorption because that would
-                % increase the available partial pressure within the phase
-                iCounter = 0;
-                while iCounter < 2
-                    mfEquilibriumLoading = this.oMT.calculateEquilibriumLoading(afMass, afPP, fTemperature);
-
-                    mfCurrentLoading = afMass;
-                    % the absorber material is not considered loading ;)
-                    mfCurrentLoading(this.oMT.abAbsorber) = 0;
-                
-                    % According to RT_BA 13_15 equation 3.31 the change in
-                    % loading over time is the (equilibrium loading - actual
-                    % loading) times a factor: dq/dt = k(q*-q)
-                    %
-                    % q here is the current loading which changes over time
-                    % q* is the equilibrium loading
-                    % q0 is the current loading at the beginning of this step
-                    %
-                    % This differential equation has the solution: 
-                    % q* - (q* - q0)e^(-kt) This can be used to calculate the
-                    % new loading for the given timestep and current loading
-                    % assuming the equilibrium loading remains constant
-                    mfNewLoading = mfEquilibriumLoading - ((mfEquilibriumLoading - mfCurrentLoading).*exp(-this.mfMassTransferCoefficient.*fTimeStep));
-                    mfFlowRates = (mfNewLoading - mfCurrentLoading)/fTimeStep;
-                    
-                    
-                    mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
-                    mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
-                    mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
-                    mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
-                    
-                    mfFlowRatesPrevious(iCounter+1,:) = mfFlowRates;
-
-                    afCurrentInFlowsNew     = afCurrentInFlows  - mfFlowRatesDesorption;
-                    % For the outflow only the adsorption is considered as
-                    % outflow because it has to be prioritized over the
-                    % matter transport through branches
-                    
-                    afCurrentMolsIn         = (afCurrentInFlowsNew  ./ this.oMT.afMolarMass);
-                    afCurrentMolsOut        = (mfFlowRatesAdsorption ./ this.oMT.afMolarMass);
-                    
-                    afEffectiveMolsIn       = (afCurrentMolsIn - afCurrentMolsOut);
-                    afEffectiveMolsIn(afEffectiveMolsIn < 0) = 0;
-                    
-                    arFractions             = (((afEffectiveMolsIn) * fTimeStep) + afCurrentMols) ./ (sum(afEffectiveMolsIn) * fTimeStep + sum(afCurrentMols));
-
-                    afPP                    = arFractions .* this.oIn.oPhase.fPressure;
-                    afPP(isnan(afPP))       = this.oIn.oPhase.afPP(isnan(afPP));
-
-                    % very small partial pressures are rounded to zero.
-                    % otherwise desorption of the last remaining bit of
-                    % substance in the absorber is nearly impossible
-                    afPP = tools.round.prec(afPP,  3);
-
-                    iCounter = iCounter + 1;
-                end
-                
-                % Positive values in mfFlowRates mean something is beeing
-                % absorbed and the Absorption Enthalpy is stored with a
-                % negative value if heat is generated. Therefore the overall
-                % result has to be mutliplied with -1
-                
-                mfFlowRates = ((mfFlowRatesPrevious(iCounter,:) + mfFlowRatesPrevious(iCounter-1,:))  / 2);
-                
-                mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
-                mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
-                mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
-                mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
-                    
-                this.afMassOld          = afMass;
-                this.afPPOld            = afPPInitial;
-                this.fTemperatureOld    = fTemperature;
-            else
-                mfFlowRatesAdsorption =  this.fFlowRate .* this.arPartialMass;
-                mfFlowRatesDesorption = -this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).fFlowRate .* this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).arPartialMass;
+            mfLinearConstant(isnan(mfLinearConstant)) = 0;
+            if all(mfLinearConstant == 0)
+                return
             end
             
-            afAvailableMass = afInFlow.*fTimeStep + this.oIn.oPhase.afMass;
-            afAvailableMass(afAvailableMass < 0) = 0;
+            mfCurrentLoading = afMass;
+            % the absorber material is not considered loading ;)
+            mfCurrentLoading(this.oMT.abAbsorber) = 0;
             
-            fP2P_MassChange = fTimeStep .* mfFlowRatesAdsorption;
+            mfCurrentFlowMass = this.oIn.oPhase.afMass + afInFlow .*fTimeStep;
             
-            fP2P_MassChange(fP2P_MassChange > afAvailableMass) = afAvailableMass(fP2P_MassChange > afAvailableMass);
+            iInternalSteps = 20;
             
-            afPartialFlowRates = fP2P_MassChange./fTimeStep;
+            % Set so the logic will require 200 steps maximum!
+            fMinInternalStep = fTimeStep / iInternalSteps;
             
-            mfFlowRates = afPartialFlowRates + mfFlowRatesDesorption;
+            mfFlowRates         = zeros(iInternalSteps, this.oMT.iSubstances);
+            mfTimeStepInternal  = zeros(iInternalSteps, this.oMT.iSubstances);
+%             fTimeStepInternal = fTimeStep / iInternalSteps;
             
-            this.fAdsorptionHeatFlow = - sum((mfFlowRates ./ this.oMT.afMolarMass) .* this.mfAbsorptionEnthalpy);
+%             for iInternalStep = 1:iInternalSteps
+
+            fExternalTime = this.oTimer.fTime + fTimeStep;
+            fInternalTime = this.oTimer.fTime;
+            iInternalStep = 1;
+            while abs(fInternalTime - fExternalTime) > fMinInternalStep
+                
+%                 fTimeStepInternal = - (0.1 * (mfLinearConstant .* afPP)) ./ (log(mfLinearConstant .* afPP) - mfCurrentLoading);
+%                 if all(fTimeStepInternal == 0)
+%                     % In this case nothing will flow and we can simply use
+%                     % one time step to calculate the P2P
+%                     fTimeStepInternal = fTimeStep;
+%                 end
+%                 fTimeStepInternal = min(fTimeStepInternal(fTimeStepInternal > 0));
+%                 
+%                 if fTimeStepInternal < fMinInternalStep
+%                     fTimeStepInternal = fMinInternalStep;
+%                 elseif (fInternalTime + fTimeStepInternal) > fExternalTime
+%                     fTimeStepInternal = fExternalTime - fInternalTime;
+%                 end
+
+                fTimeStepInternal = fMinInternalStep;
+                
+                % According to RT_BA 13_15 equation 3.31 the change in
+                % loading over time is the (equilibrium loading - actual
+                % loading) times a factor: dq/dt = k(q*-q)
+                %
+                % q here is the current loading which changes over time
+                % q* is the equilibrium loading
+                % q0 is the current loading at the beginning of this step
+                %
+                % This differential equation has the solution: 
+                % q* - (q* - q0)e^(-kt) This can be used to calculate the
+                % new loading for the given timestep and current loading
+                % assuming the equilibrium loading remains constant
+                mfNewLoading = (mfLinearConstant .* afPP) - (((mfLinearConstant .* afPP) - mfCurrentLoading).*exp(-this.mfMassTransferCoefficient.*fTimeStepInternal));
+                mfFlowRates(iInternalStep,:) = (mfNewLoading - mfCurrentLoading)/fTimeStepInternal;
+                
+                mfMassChange = mfFlowRates(iInternalStep,:) .* fTimeStepInternal;
+                mfMassChange(mfCurrentFlowMass < mfMassChange) = mfCurrentFlowMass(mfCurrentFlowMass < mfMassChange);
+                
+                mfAbsorption = zeros(1,this.oMT.iSubstances);
+                mfAbsorption(mfMassChange < 0) = -mfMassChange(mfMassChange < 0);
+                mfMassChange(mfCurrentLoading < mfAbsorption) = -mfCurrentLoading(mfCurrentLoading < mfAbsorption);
+                
+                mfFlowRates(iInternalStep,:) = mfMassChange ./ fTimeStepInternal;
+                
+                mfCurrentLoading    = mfCurrentLoading + mfMassChange;
+                mfCurrentFlowMass   = mfCurrentFlowMass - mfMassChange;
+                afCurrentMols       = (mfCurrentFlowMass ./this.oMT.afMolarMass);
+                
+                afEffectiveMolsIn   = ( - mfFlowRates(iInternalStep,:)) ./ this.oMT.afMolarMass;
+
+                arFractions         = (((afEffectiveMolsIn) * fTimeStepInternal) + afCurrentMols) ./ (sum(afEffectiveMolsIn) * fTimeStepInternal + sum(afCurrentMols));
+                
+                if any(isnan(arFractions))
+                    iInternalStep = iInternalStep + 1;
+                    break
+                else
+                    afPP                = arFractions .* 1e5; %this.oIn.oPhase.fPressure;
+                    afPP(afPP < 0)      = 0;
+                end
+                
+                mfTimeStepInternal(iInternalStep, :) = fTimeStepInternal;
+                fInternalTime = fInternalTime + fTimeStepInternal;
+                iInternalStep = iInternalStep + 1;
+            end
+            iInternalStep = iInternalStep - 1;
+            
+            this.mfFlowRatesProp = sum(mfFlowRates(1:iInternalStep,:) .* mfTimeStepInternal(1:iInternalStep,:),1)./fTimeStep;
+            
+            if any(isnan(this.mfFlowRatesProp))
+                keyboard()
+            end
+            
+            this.fAdsorptionHeatFlow = - sum((this.mfFlowRatesProp ./ this.oMT.afMolarMass) .* this.mfAbsorptionEnthalpy);
             this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
-            this.oStore.oContainer.tMassNetwork.mfAdsorptionFlowRate(this.iCell) = sum(mfFlowRates);
-            
-            this.mfFlowRatesProp = mfFlowRates;
+            this.oStore.oContainer.tMassNetwork.mfAdsorptionFlowRate(this.iCell) = sum(this.mfFlowRatesProp);
         end
     end
 end

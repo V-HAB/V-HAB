@@ -1094,7 +1094,7 @@ classdef CDRA < vsys
                     this.tMassNetwork.aoBranchesCycleTwo(iBranch).oHandler.setFlowRate(mfFlowRate(iBranch));
                 end
                 
-                for iP2P = 1:length(this.tMassNetwork.aoAbsorberCycleOne)
+                for iP2P = 1:length(this.tMassNetwork.aoAbsorberCycleTwo)
                     this.tMassNetwork.aoAbsorberCycleTwo(iP2P).iCell = iP2P;
                 end
                 for iP2P = 1:this.tGeometry.Zeolite5A.iCellNumber
@@ -1146,12 +1146,12 @@ classdef CDRA < vsys
                 mfFlowRate(:,1) = [aoBranches.fFlowRate];
                 
                 aoAbsorber = this.tMassNetwork.(['aoAbsorberCycle',sCycle]);
-                aoAbsorber(1).ManualUpdate(this.fInitTime/this.iInitStep, mfFlowRate(1) .* aoBranches(1).coExmes{2}.oPhase.arPartialMass);
+                aoAbsorber(1).ManualUpdate(this.fInitTime/this.iInitStep, abs(mfFlowRate(1)) .* aoBranches(1).coExmes{2}.oPhase.arPartialMass);
              	aoAbsorber(1).ManualUpdateFinal();
                 aoAbsorber(1).oOut.oPhase.update();
                     
                 for iAbsorber = 2:length(aoAbsorber)
-                    aoAbsorber(iAbsorber).ManualUpdate(this.fInitTime/this.iInitStep, mfFlowRate(iAbsorber) .* aoAbsorber(iAbsorber).oIn.oPhase.arPartialMass);
+                    aoAbsorber(iAbsorber).ManualUpdate(this.fInitTime/this.iInitStep, abs(mfFlowRate(iAbsorber)) .* aoAbsorber(iAbsorber).oIn.oPhase.arPartialMass);
                     aoAbsorber(iAbsorber).ManualUpdateFinal();
                     aoAbsorber(iAbsorber).oOut.oPhase.update();
                 end
@@ -1340,7 +1340,7 @@ classdef CDRA < vsys
             % Iteration to find the correct time step for the final
             % calculation
             iCounter = 0;
-            iMaxLoops = 20; % should have an integer result when divided with 2
+            iMaxLoops = 10; % should have an integer result when divided with 2
             bLastLoop = false;
             while true
                 
@@ -1365,6 +1365,8 @@ classdef CDRA < vsys
                 if fTimeStep > this.fMaximumTimeStep
                     fTimeStep = this.fMaximumTimeStep;
                 elseif fTimeStep  <= this.fMinimumTimeStep
+                    fTimeStepFactor = fTimeStep ./ this.fMinimumTimeStep;
+                    mfMassDiff = mfMassDiff .* fTimeStepFactor;
                     fTimeStep = this.fMinimumTimeStep;
                 end
                 
@@ -1391,8 +1393,7 @@ classdef CDRA < vsys
 
               	% First branch has to be handled differently
                 iBranch = 1;
-                mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))));            
-                aoBranches(iBranch).oHandler.setFlowRate(mfFlowRatesNew(iBranch));
+                mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))));
 
                 for iBranch = 2:length(aoBranches)
                 % The reduction in flow rate from the P2Ps has to be given to
@@ -1405,7 +1406,7 @@ classdef CDRA < vsys
                 % manual update function that is only called here is used for
                 % the P2Ps. It is given the timestep and Inflow to prevent the
                 % P2P from removing more mass than is actually available
-                if (iCounter == 0) || (iCounter == iMaxLoops/2) || bLastLoop
+                if (iCounter == 0) || bLastLoop
                     aoAbsorber(1).ManualUpdate(fTimeStep, abs(mfFlowRatesNew(1) .* aoBranches(1).coExmes{2}.oPhase.arPartialMass));
                     for iAbsorber = 2:length(aoAbsorber)
                         aoAbsorber(iAbsorber).ManualUpdate(fTimeStep, abs(mfFlowRatesNew(iAbsorber) .* aoPhases(iAbsorber-1).arPartialMass));
@@ -1428,6 +1429,7 @@ classdef CDRA < vsys
                     
                     mTemperatureChangeRateFlows =  mTemperatureChangeRate(this.tThermalNetwork.miFlowCellThermalIndices);
                     mTemperatureChangeRateFlows(this.iCells + 1) = 0;
+                    mTemperatureChangeRateFlows(isnan(mTemperatureChangeRateFlows)) = 0;
                 end
                 
                 % One Part of the temperature change in the phases comes from
