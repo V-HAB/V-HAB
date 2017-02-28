@@ -19,7 +19,7 @@ classdef setup < simulation.infrastructure
             ttMonitorConfig = struct('oLogger', struct('cParams', {{ true }}));
             warning( 'off', 'all')
             
-            this@simulation.infrastructure('Tutorial_CCAA', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Tutorial_CDRA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the root object
             tutorials.CDRA.systems.Example(this.oSimulationContainer, 'Example');

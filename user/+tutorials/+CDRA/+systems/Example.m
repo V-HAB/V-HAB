@@ -74,7 +74,7 @@ classdef Example < vsys
             sCDRA = 'CDRA';
             
             % Adding the subsystem CCAA
-            components.CCAA.CCAA(this, 'CCAA', 10, rInitialCHX_Ratio, this.fCoolantTemperature, tAtmosphere, sCDRA);
+            components.CCAA.CCAA(this, 'CCAA', 1, rInitialCHX_Ratio, this.fCoolantTemperature, tAtmosphere, sCDRA);
             
             % name for the asscociated CCAA subsystem, CDRA can only be
             % used together with a CCAA

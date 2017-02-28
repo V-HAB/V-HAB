@@ -89,7 +89,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         function ManualUpdate(this, fTimeStep, afInFlow)
             
             afMass          = this.oOut.oPhase.afMass;
-            fTemperature    = this.oOut.oPhase.fTemperature;
+            fTemperature    = this.oIn.oPhase.fTemperature;
             % Instead of using the partial pressure of the flow phase, use the
             % total pressure of the the flow phase but the composition of the
             % ingoing flow to calculate the partial pressure of the
