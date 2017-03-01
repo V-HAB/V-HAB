@@ -492,28 +492,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
             % We only need to change things if there are any inflows.
             if ~isempty(mfInflowDetails)
-
-                % This phase may currently be empty, so |this.fMass| could
-                % be zero. In this case we'll only use the values of the
-                % incoming flows.
-                if this.fMass > 0
-                    mfAbsoluteMasses         = [afAbsoluteMassesIn; this.fMass];
-                    mfTemperatures           = [afInflowTemperatures; this.fTemperature];
-                    mfSpecificHeatCapacities = [afSpecificInflowHeatCapacities; this.fSpecificHeatCapacity];
-                else
-                    mfAbsoluteMasses         = afInflowMasses;
-                    mfTemperatures           = afInflowTemperatures;
-                    mfSpecificHeatCapacities = afSpecificInflowHeatCapacities;
-                end
-
+                
                 % Calculate inner energy (m * c_p * T) for all masses.
-                mfEnergy = mfAbsoluteMasses .* mfSpecificHeatCapacities .* mfTemperatures;
-
+                mfEnergy = this.fTotalHeatCapacity * this.fTemperature + afAbsoluteMassesIn .* afSpecificInflowHeatCapacities .* afInflowTemperatures;
+                
                 % As can be seen from the explanation given above, we need
                 % the products of all masses and heat capacities in the
                 % denominator of the fraction that calulates the new
                 % temperature.
-                mfEnergyPerKelvin = mfAbsoluteMasses .* mfSpecificHeatCapacities;
+                mfEnergyPerKelvin = this.fTotalHeatCapacity + afAbsoluteMassesIn .* afSpecificInflowHeatCapacities;
 
                 % New temperature
                 %TODO: Investigate if this does what it's supposed to do,

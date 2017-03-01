@@ -90,12 +90,12 @@ classdef CDRA < vsys
         
         % As it sounde, the minimum  and maximum timestep used for the system
         fMinimumTimeStep        = 1e-5;
-        fMaximumTimeStep        = 1;
+        fMaximumTimeStep        = 5;
         
         % This variable decides by how much percent the mass in any one cell
         % is allowed to change within one tick (increasing this does not
         % necessarily speed up the simulation, but you can try)
-        rMaxChange              = 0.001;
+        rMaxChange              = 0.01;
         
         % Sturct to store properties from the last recalculation of phases
         % to decide if they have to be recalculated or not
@@ -1291,14 +1291,12 @@ classdef CDRA < vsys
             % second, therefore the calculated mass difference is
             % directly the required flow rate that has to go into the
             % phase to reach the desired mass
-            mfMassDiff = (mfPressurePhase - mfCellPressure)./[aoPhases.fMassToPressure]';
+            mfMassDiff = ((mfPressurePhase .* mfCellVolume) ./ (mfGasConstant .* mfCellTemperature)) - mfCellMass;
             
-          	if any(isinf(mfMassDiff)) || any(isnan(mfMassDiff)) 
-                bNAN = (isnan(mfMassDiff)) | (isinf(mfMassDiff));
-                mfMassDiff(bNAN) = ((mfPressurePhase(bNAN) .* mfCellVolume(bNAN)) ./ (287.1 .* mfCellTemperature(bNAN)) - mfCellMass(bNAN));
-            end
+            mfMassDiffUnlimited = mfMassDiff;
             
-            mfMassDiffInitial = mfMassDiff;
+            abUnlimited = abs(1 - (mfCellPressure ./ mfPressurePhase)) > 0.2;
+            mfMassDiff(abUnlimited) = 0;
             
             % Now the time step can be calculated by using the maximum
             % allowable mass change within one step (Basically the time
@@ -1344,11 +1342,10 @@ classdef CDRA < vsys
                 mfMassDiff = ((mfPressurePhase .* mfCellVolume) ./ (mfGasConstant .*( mfCellTemperature + mfDeltaTemperaturePerSecond * fTimeStep ))) - mfCellMass;
                 mfMassDiff(end) = 0;
 
-                mfMassDiff(sign(mfMassDiff) ~=  sign(mfMassDiffInitial)) = 0.01 .* mfMassDiffInitial(sign(mfMassDiff) ~=  sign(mfMassDiffInitial));
+                mfMassDiff(sign(mfMassDiff) ~=  sign(mfMassDiffUnlimited)) = 0.01 .* mfMassDiffUnlimited(sign(mfMassDiff) ~=  sign(mfMassDiffUnlimited));
+                mfMassDiff(abUnlimited) = 0;
                 
-                % And calculate a new timestep based on the mass diff that includes temperature changes
-                %fTimeStep = min(abs((this.rMaxChange .* mfCellMass) ./ mfMassDiff));
-                fTimeStep = min(abs((this.rMaxChange .* mfCellPressure) ./ ((mfGasConstant .* mfMassDiff .* mfDeltaTemperaturePerSecond) ./ mfCellVolume)));
+                fTimeStep = min(abs((this.rMaxChange .* mfCellMass) ./ mfMassDiff));
                 
                 if fTimeStep > this.fMaximumTimeStep
                     fTimeStep = this.fMaximumTimeStep;
@@ -1357,6 +1354,8 @@ classdef CDRA < vsys
                     mfMassDiff = mfMassDiff .* fTimeStepFactor;
                     fTimeStep = this.fMinimumTimeStep;
                 end
+                
+                mfMassDiff(abUnlimited) = mfMassDiffUnlimited(abUnlimited);
                 
                 mfFlowRatesNew = zeros(this.iCells+1,1);
 
@@ -1385,6 +1384,8 @@ classdef CDRA < vsys
                     for iCell = 1:this.iCells                             
                         oCapacity = this.poCapacities(this.tThermalNetwork.(['csNodes_Flow_Cycle',sCycle]){iCell,1});
                         oCapacity.oHeatSource.setPower(mfHeatFlow(iCell));
+                        
+                        this.mHeatSourceVector(this.tThermalNetwork.miFlowCellThermalIndices(iCell)) = mfHeatFlow(iCell);
                     end
                     
                  	mTemperatureChangeRate = this.oThermalSolver.calcTemperatureChangeRate(mNodeTemps);
@@ -1575,9 +1576,11 @@ classdef CDRA < vsys
                 this.setHeaterPower(mfPower);
             end
                 
-            for iCell = this.iCells:length(this.tThermalNetwork.mfAdsorptionHeatFlow)                                           
+            for iCell = this.iCells+1:length(this.tThermalNetwork.mfAdsorptionHeatFlow)                                           
                 oCapacity = this.poCapacities(this.tThermalNetwork.(['csNodes_Flow_Cycle',sCycle]){iCell,1});
-                oCapacity.oHeatSource.setPower(this.tThermalNetwork.mfHeaterPower(iCell) + this.tThermalNetwork.mfAdsorptionHeatFlow(iCell));
+                fHeatFlow = this.tThermalNetwork.mfHeaterPower(iCell) + this.tThermalNetwork.mfAdsorptionHeatFlow(iCell);
+                oCapacity.oHeatSource.setPower(fHeatFlow);
+                this.mHeatSourceVector(this.tThermalNetwork.miFlowCellThermalIndices(iCell)) = fHeatFlow;
             end
         end
         function calculateThermalProperties(this)

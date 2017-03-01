@@ -256,7 +256,18 @@ classdef plotter_basic < simulation.monitor
             % used as function input) 
             for iIndex = 1:length(oLogger.tLogValues)
                 for iLogVariable = 1:length(csLogVariables)
-                    if strcmp(oLogger.tLogValues(iIndex).sLabel, csLogVariables{iLogVariable})
+                    if strcmp('Time', csLogVariables{iLogVariable})
+                        % use the time as argument
+                        mfArgument = oLogger.afTime';
+                        cmfArgument{iLogVariable} = mfArgument;
+                        
+                    elseif strcmp('TimeStep', csLogVariables{iLogVariable})
+                        % use time step as argument
+                        mfArgument = zeros(length(oLogger.afTime),1);
+                        mfArgument(2:end) = (oLogger.afTime(2:end) - oLogger.afTime(1:end-1))';
+                    	cmfArgument{iLogVariable} = mfArgument;
+                        
+                    elseif strcmp(oLogger.tLogValues(iIndex).sLabel, csLogVariables{iLogVariable})
 
                        % Stores the logged values for the plot and name
                        % in the struct
@@ -269,6 +280,23 @@ classdef plotter_basic < simulation.monitor
                     end
                 end
             end
+            
+            for iIndex = 1:length(oLogger.tDerivedLogValues)
+                for iLogVariable = 1:length(csLogVariables)
+                    if strcmp(oLogger.tDerivedLogValues(iIndex).sLabel, csLogVariables{iLogVariable})
+
+                       % Stores the logged values for the plot and name
+                       % in the struct
+                       mfArgument = oLogger.mfDerivedLog(:,iIndex);
+
+                       % remove NaNs from the log
+                       mfArgument(isnan(mfArgument)) = [];
+                       
+                       cmfArgument{iLogVariable} = mfArgument;
+                    end
+                end
+            end
+            
             % In order to ensure that these logs are the same length as the
             % "normal" logs, a vector with nans of the same length as the
             % "normal" logs is created

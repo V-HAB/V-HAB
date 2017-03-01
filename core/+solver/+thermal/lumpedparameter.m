@@ -263,7 +263,14 @@ classdef lumpedparameter < base
             % Original logic by Christof Roth.
             
             %mLinearRateMatrices = this.mLinearRateMatrix + this.mFluidFlowRateMatrix;
-
+            
+            % TO DO: Find out why this became necessary
+            mHeatSources = this.oVSys.mHeatSourceVector;
+            mCapacities  = this.oVSys.mCapacityVector;
+            
+            % Build the source rate vector.
+            this.mSourceRateVector = mHeatSources ./ mCapacities;
+            
             mTemperatureChangeRate = this.mSourceRateVector + ...
                 (this.mLinearRateMatrix + this.mFluidFlowRateMatrix) * mCurrentTemperatures + ...
                 this.mRadiationRateMatrix * mCurrentTemperatures.^4;
