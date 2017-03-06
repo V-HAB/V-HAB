@@ -137,21 +137,21 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             iInternalStep = 1;
             while abs(fInternalTime - fExternalTime) > fMinInternalStep
                 
-%                 fTimeStepInternal = - (0.1 * (mfLinearConstant .* afPP)) ./ (log(mfLinearConstant .* afPP) - mfCurrentLoading);
-%                 if all(fTimeStepInternal == 0)
-%                     % In this case nothing will flow and we can simply use
-%                     % one time step to calculate the P2P
-%                     fTimeStepInternal = fTimeStep;
-%                 end
-%                 fTimeStepInternal = min(fTimeStepInternal(fTimeStepInternal > 0));
-%                 
-%                 if fTimeStepInternal < fMinInternalStep
-%                     fTimeStepInternal = fMinInternalStep;
-%                 elseif (fInternalTime + fTimeStepInternal) > fExternalTime
-%                     fTimeStepInternal = fExternalTime - fInternalTime;
-%                 end
+                fTimeStepInternal = abs( (0.2 * (mfLinearConstant .* afPP)) ./ (log(mfLinearConstant .* afPP) - mfCurrentLoading));
+                if all(fTimeStepInternal == 0)
+                    % In this case nothing will flow and we can simply use
+                    % one time step to calculate the P2P
+                    fTimeStepInternal = fTimeStep;
+                end
+                fTimeStepInternal = min(fTimeStepInternal(fTimeStepInternal > 0));
+                
+                if fTimeStepInternal < fMinInternalStep
+                    fTimeStepInternal = fMinInternalStep;
+                elseif (fInternalTime + fTimeStepInternal) > fExternalTime
+                    fTimeStepInternal = fExternalTime - fInternalTime;
+                end
 
-                fTimeStepInternal = fMinInternalStep;
+%                 fTimeStepInternal = fMinInternalStep;
                 
                 % According to RT_BA 13_15 equation 3.31 the change in
                 % loading over time is the (equilibrium loading - actual

@@ -332,6 +332,10 @@ classdef plotter_basic < simulation.monitor
             % I currently have no idea how to make this more performant and
             % since it is only executed once during plotting and not during
             % the simulation itself, this should be fine
+            
+            for iPlot = 1:length(this.tPlotsByName)
+                this.tPlotsByName(iPlot).mLogData = [];
+            end
             for iIndex = 1:length(oLogger.tLogValues)
                 for iPlot = 1:length(this.tPlotsByName)
                     for iName = 1:length(this.tPlotsByName(iPlot).cNames) 

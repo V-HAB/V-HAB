@@ -284,7 +284,15 @@ classdef logger_basic < simulation.monitor
                 % then the simulation restarted, after which the plot is
                 % called a second time. (Might have a dimension mismatch
                 % here) 
-                this.mfDerivedLog(:,iIndex) = mfLogValue;
+                try
+                    this.mfDerivedLog(:,iIndex) = mfLogValue;
+                catch
+                    this.mfDerivedLog = [];
+                    this.mfDerivedLog(:,end+1) = mfLogValue;
+                    this.tDerivedLogValues(end+1).sLabel = sNewLogName;
+                    this.tDerivedLogValues(end).sUnit = sUnit;
+                    this.tDerivedLogValues(end).iIndex = length(this.mfDerivedLog(1,:));
+                end
             end
         end
         

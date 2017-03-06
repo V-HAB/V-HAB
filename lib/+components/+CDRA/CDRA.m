@@ -199,7 +199,8 @@ classdef CDRA < vsys
         	tInitialization.Zeolite13x.mfInitialH2O             = [   0,    0,    0,    0,    0];
             
         	tInitialization.Sylobead.mfInitialCO2               = [   0,    0,    0,    0,    0];
-        	tInitialization.Sylobead.mfInitialH2O               = [   0,    0,    0,    0,    0]; % Only set for the bed that just finished absorbing
+        	tInitialization.Sylobead.mfInitialH2OAbsorb         = [ 0.4, 0.24, 0.13, 0.08, 0.05]; % Only set for the bed that just finished absorbing
+        	tInitialization.Sylobead.mfInitialH2ODesorb         = [0.17, 0.05,    0,    0,    0]; % Only set for the bed that just finished desorbing
             
         	tInitialization.Zeolite5A.mfInitialCO2              = [   0,    0,    0,    0,    0];
         	tInitialization.Zeolite5A.mfInitialH2O              = [   0,    0,    0,    0,    0];
@@ -353,11 +354,19 @@ classdef CDRA < vsys
                         % that just finished absorbing (as the other bed
                         % has a mass of zero)
                         if this.iCycleActive == 1 
-                            if ~strcmp(sName, 'Sylobead_2')
+                            if strcmp(sName, 'Sylobead_1')
+                                tfMassesAbsorber.H2O = tInitialization.(csTypes{iType}).mfInitialH2OAbsorb(iCell);
+                            elseif strcmp(sName, 'Sylobead_2')
+                                tfMassesAbsorber.H2O = tInitialization.(csTypes{iType}).mfInitialH2ODesorb(iCell);
+                            else
                                 tfMassesAbsorber.H2O = tInitialization.(csTypes{iType}).mfInitialH2O(iCell);
                             end
                         else
-                            if ~strcmp(sName, 'Sylobead_1')
+                            if strcmp(sName, 'Sylobead_1')
+                                tfMassesAbsorber.H2O = tInitialization.(csTypes{iType}).mfInitialH2ODesorb(iCell);
+                            elseif strcmp(sName, 'Sylobead_2')
+                                tfMassesAbsorber.H2O = tInitialization.(csTypes{iType}).mfInitialH2OAbsorb(iCell);
+                            else
                                 tfMassesAbsorber.H2O = tInitialization.(csTypes{iType}).mfInitialH2O(iCell);
                             end
                         end
@@ -1517,7 +1526,7 @@ classdef CDRA < vsys
                 this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
             end
 
-            abHighPressure = (mfCellPressure > 100);
+            abHighPressure = (mfCellPressure > 1);
 
             mfMassDiff = zeros(length(aoPhases),1);
             mfMassDiff(abHighPressure) = -mfCellMass(abHighPressure)./(this.fAirSafeTime/2.5);
@@ -1527,11 +1536,11 @@ classdef CDRA < vsys
                 % Disable adsorption during the desorption phase, this is
                 % only necessary because the calculation of the branch
                 % flowrates is not able to cope with this
+                aoAbsorber(iAbsorber).ManualUpdateFinal();
                 if -this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+iAbsorber) < 0
                     aoAbsorber(iAbsorber).setFlowRateToZero();
                     this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+iAbsorber) = 0;
                 end
-                aoAbsorber(iAbsorber).ManualUpdateFinal();
             end
 
             mfDesorptionFlowRate = -this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+1:end);
