@@ -121,7 +121,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             mfCurrentFlowMass = this.oIn.oPhase.afMass + afInFlow .*fTimeStep;
             
-            iInternalSteps = 20;
+            % Maximum number of internal steps, should not be used often
+            iInternalSteps = 200;
             
             % Set so the logic will require 200 steps maximum!
             fMinInternalStep = fTimeStep / iInternalSteps;
@@ -135,9 +136,10 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             fExternalTime = this.oTimer.fTime + fTimeStep;
             fInternalTime = this.oTimer.fTime;
             iInternalStep = 1;
-            while abs(fInternalTime - fExternalTime) > fMinInternalStep
+            while fInternalTime < fExternalTime
                 
-                fTimeStepInternal = abs( (0.2 * (mfLinearConstant .* afPP)) ./ (log(mfLinearConstant .* afPP) - mfCurrentLoading));
+                fTimeStepInternal = abs( log( 1 + (0.2 * mfCurrentLoading ./ ((mfLinearConstant .* afPP) - mfCurrentLoading))) ./ this.mfMassTransferCoefficient );
+                fTimeStepInternal(isnan(fTimeStepInternal)) = 0;
                 if all(fTimeStepInternal == 0)
                     % In this case nothing will flow and we can simply use
                     % one time step to calculate the P2P
@@ -145,13 +147,15 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 end
                 fTimeStepInternal = min(fTimeStepInternal(fTimeStepInternal > 0));
                 
+                if (fInternalTime + fTimeStepInternal) > fExternalTime
+                    fTimeStepInternal = fExternalTime - fInternalTime;
+                end
+                
                 if fTimeStepInternal < fMinInternalStep
                     fTimeStepInternal = fMinInternalStep;
                 elseif (fInternalTime + fTimeStepInternal) > fExternalTime
                     fTimeStepInternal = fExternalTime - fInternalTime;
                 end
-
-%                 fTimeStepInternal = fMinInternalStep;
                 
                 % According to RT_BA 13_15 equation 3.31 the change in
                 % loading over time is the (equilibrium loading - actual
