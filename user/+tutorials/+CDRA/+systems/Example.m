@@ -196,8 +196,8 @@ classdef Example < vsys
             
             % Adding a Temperature Dummy to keep the Cabin at a constant
             % temperature
-            components.Temp_Dummy(this, 'Cabin_TempDummy', 295);
-            components.Temp_Dummy(this, 'Coolant_TempDummy', this.fCoolantTemperature);
+            components.Temp_Dummy(this, 'Cabin_TempDummy', 295, 2000);
+            components.Temp_Dummy(this, 'Coolant_TempDummy', this.fCoolantTemperature, 2000);
             
             matter.branch(this, 'CCAAinput', {}, 'Cabin.Port_ToCCAA');
             matter.branch(this, 'CCAA_CHX_Output', {}, 'Cabin.Port_FromCCAA_CHX');
@@ -364,6 +364,10 @@ classdef Example < vsys
             
             solver.matter.manual.branch(this.toBranches.Coolant_TempControl);
             this.toBranches.Coolant_TempControl.oHandler.setFlowRate(10);
+            
+            this.toStores.CoolantStore.aoPhases(1).fMaxStep = 1;
+            this.toStores.CCAA_CDRA_Connection.aoPhases(1).fMaxStep = 1;
+            this.toStores.CDRA_CCAA_Connection.aoPhases(1).fMaxStep = 1;
             
         end
     end

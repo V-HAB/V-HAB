@@ -123,8 +123,8 @@ classdef setup < simulation.infrastructure
                          csCDRA_CO2_Mass{iType,iBed,iCell}              = ['Partial Mass CO2 ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
                          csCDRA_H2O_Mass{iType,iBed,iCell}              = ['Partial Mass H2O ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
 
-                         csCDRA_CO2_Pressure{iType,iBed,iCell}          = ['Flow Pressure H2O ',    csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
-                         csCDRA_H2O_Pressure{iType,iBed,iCell}          = ['Flow Pressure CO2 ',    csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
+                         csCDRA_CO2_Pressure{iType,iBed,iCell}          = ['Flow Pressure CO2 ',    csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
+                         csCDRA_H2O_Pressure{iType,iBed,iCell}          = ['Flow Pressure H2O ',    csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
 
                          csCDRA_Flow_Temperature{iType,iBed,iCell}      = ['Flow Temperature ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
                          csCDRA_Absorber_Temperature{iType,iBed,iCell}  = ['Absorber Temperature ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
