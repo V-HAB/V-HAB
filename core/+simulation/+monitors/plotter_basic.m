@@ -11,7 +11,7 @@ classdef plotter_basic < simulation.monitor
         % Name of log monitor
         sLogger = 'oLogger';
         
-        tPlots = struct('sTitle', {}, 'aiIdx', {}, 'mbPosition', {}, 'sSubtitle', {}, 'csSigns', {});
+        tPlots = struct('sTitle', {}, 'aiIdx', {}, 'mbPosition', {}, 'sSubtitle', {}, 'csFunctions', {});
     end
     
     methods
@@ -185,7 +185,7 @@ classdef plotter_basic < simulation.monitor
                         % if it is not empty add a new plot, if it is give
                         % a warning
                         if ~isempty(aiIdx)
-                            this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'mbPosition', mbPosition, 'sSubtitle', sSubtitle, 'csSigns', []);
+                            this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'mbPosition', mbPosition, 'sSubtitle', sSubtitle, 'csFunctions', []);
                         else
                             this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
                         end
@@ -203,19 +203,25 @@ classdef plotter_basic < simulation.monitor
                     % by using the label for two variables and a calculation
                     % sign in between (with one space before the sign and one
                     % space after the sign)
+                    csFunctions = cell(1,length(csFilter));
+                    csFilterNew = cell(1,length(csFilter));
                     for iFilter = 1:length(csFilter)
                         % gets the sign positions for the current filter field
                         miSubtractions      = regexp(csFilter{iFilter}, '-');
                         miAdditions         = regexp(csFilter{iFilter}, '+');
                         miMultiplications   = regexp(csFilter{iFilter}, '*');
                         miDivisions         = regexp(csFilter{iFilter}, '/');
+                        miParenthesisOpen   = regexp(csFilter{iFilter}, '(');
+                        miParenthesisClose  = regexp(csFilter{iFilter}, ')');
 
                         % puts all sign positions into one variable and orders
                         % it from lowest to highest position
                         miSigns = miSubtractions;
-                        miSigns(end+1 : end+(length(miAdditions))) = miAdditions;
-                        miSigns(end+1 : end+(length(miMultiplications))) = miMultiplications;
-                        miSigns(end+1 : end+(length(miDivisions))) = miDivisions;
+                        miSigns(end+1 : end+(length(miAdditions)))          = miAdditions;
+                        miSigns(end+1 : end+(length(miMultiplications)))    = miMultiplications;
+                        miSigns(end+1 : end+(length(miDivisions)))          = miDivisions;
+                        miSigns(end+1 : end+(length(miParenthesisOpen)))  	= miParenthesisOpen;
+                        miSigns(end+1 : end+(length(miParenthesisClose)))  	= miParenthesisClose;
                         miSigns = sort(miSigns);
 
                         % if there are signs gets the signs and seperate the
@@ -243,21 +249,71 @@ classdef plotter_basic < simulation.monitor
                                 end
                             end
                             % store the signs for each filter
-                            csSigns{iFilter} = sString(miSigns);
-
+                            csFunctions{iFilter} = sString(miSigns);
+                            
+                            % check the strings for numbers or empty
+                            % strings
+                            mbRemove = false(length(csStrings),1);
+                            
+                            iAddedDigits = 0;
+                            iVariable    = 1;
+                            for iString = 1:length(csStrings)
+                                csStringForCheck = strrep(csStrings{iString},'.','');
+                                if isempty(csStringForCheck)
+                                    % this variable is set to true for all
+                                    % fields that do not contain log
+                                    % variables!
+                                    mbRemove(iString) = true;
+                                elseif isstrprop(csStringForCheck,'digit')
+                                    % this variable is set to true for all
+                                    % fields that do not contain log
+                                    % variables!
+                                    mbRemove(iString) = true;
+                                    
+                                    % constant numbers used in the
+                                    % calculation are added to the csSigns
+                                    % cell array in between the signs where
+                                    % they are located
+                                    A = csFunctions{iFilter}(1:iString+iAddedDigits-1);
+                                    B = csStrings{iString};
+                                    C = csFunctions{iFilter}(iString+iAddedDigits:end);
+                                    
+                                    csFunctions{iFilter} = [A,B,C];
+                                    
+                                    % if multiply constant numbers are used
+                                    % we have to track the added digits!
+                                    iAddedDigits = iAddedDigits + length(csStrings{iString});
+                                else
+                                    % in this case the location actually
+                                    % uses a log value as variable, in this
+                                    % case an x is added to indicate this
+                                    
+                                    A = csFunctions{iFilter}(1:iString+iAddedDigits-1);
+                                    B = [' x', num2str(iVariable), ' '];
+                                    C = csFunctions{iFilter}(iString+iAddedDigits:end);
+                                    
+                                    csFunctions{iFilter} = [A,B,C];
+                                    
+                                    % if multiply constant numbers are used
+                                    % we have to track the added digits!
+                                    iAddedDigits = iAddedDigits + length([' x', num2str(iVariable), ' ']);
+                                    iVariable    = iVariable + 1;
+                                end
+                            end
                             % and store the actual labels for each filter
-                            csFilterNew{iFilter} = csStrings;
+                            csFilterNew{iFilter} = csStrings(~mbRemove);
 
                         else
                             % if no calculations is used the new filter is the
                             % same as the old and the signs are empty
-                            csSigns{iFilter} = [];
+                            csFunctions{iFilter} = [];
                             csFilterNew{iFilter} = csFilter{iFilter};
                         end
                     end
                     % now order the seperated new filter fields into one new
                     % cell array that can be used to get the log values!
                     iCell = 1;
+                    csFilter = cell(1,length(csFilterNew)*length(csFilterNew));
                     for iFilter = 1:length(csFilterNew)
                         for iNewFilter = 1:length(csFilterNew{iFilter})
                             try
@@ -274,15 +330,13 @@ classdef plotter_basic < simulation.monitor
 
                     % the sign cell array will be added to the tPlot struct to
                     % perform the calculations during the actual plotting!
-                
-                    
                     aiIdx = oLogger.find(xDataReference, tFilter);
 
                     % We only add a plot if there will actually be anything to
                     % plot. If there isn't, we tell the user. 
                     if ~isempty(aiIdx)
-                        this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'mbPosition', mbPosition, 'sSubtitle', sSubtitle, 'csSigns', []);
-                        this.tPlots(end).csSigns = csSigns;
+                        this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'mbPosition', mbPosition, 'sSubtitle', sSubtitle, 'csFunctions', []);
+                        this.tPlots(end).csFunctions = csFunctions;
                     else
                         this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
                     end
@@ -450,41 +504,69 @@ classdef plotter_basic < simulation.monitor
                     % performed on the values and create a new data matrix
                     % in case any calculations are performed
                     iCurrentLog = 1;
-                    iCalculations = length(this.tPlots(iPlot).csSigns);
-                    if iCalculations > 0 && ~( isempty(this.tPlots(iPlot).csSigns{1}) && iCalculations == 1)
+                    iCalculations = length(this.tPlots(iPlot).csFunctions);
+                    if iCalculations > 0 && ~( isempty(this.tPlots(iPlot).csFunctions{1}) && iCalculations == 1)
+                        
                         mfDataNew = zeros(length(mfData),iCalculations);
-
+                        
+                        iDataVariable = 1;
                         % loop through the calculations (defined by the
                         % number of entries in the csSigns cell array for
                         % this plot)
                         for iCalculation = 1:iCalculations
 
-                            sSigns = this.tPlots(iPlot).csSigns{iCalculation};
-                            iSigns = length(sSigns);
+                            sFunction = this.tPlots(iPlot).csFunctions{iCalculation};
                             
-                            splitphrases_cell = cell(iSigns + 1);
+                            % the first step is to perform the calculation
+                            % is to find out how many variables exist
+                            iVariables = sum(sFunction == 'x');
+                            csVariables = cell(1,iVariables);
+                            cmfData     = cell(1,iVariables);
                             
-                            % loop through the signs in this calculation
-                            for iSign = 1:iSigns
+                            for iVariable = 1:iVariables
+                                if iVariable == 1
+                                    csVariables{iVariable} = ['x',num2str(iVariable)];
+                                else
+                                    csVariables{iVariable} = [',x',num2str(iVariable)];
+                                end
+                                cmfData{iVariable}     = mfData(:,iDataVariable);
+                                
+                                iDataVariable = iDataVariable + 1;
+                            end
+                            
+                            % we have to replace the multiplication and
+                            % division operators with the element wise
+                            % operators
+                            sFunction = strrep(sFunction,'*','.*');
+                            sFunction = strrep(sFunction,'/','./');
+                            sFunction = strrep(sFunction,'^','.^');
+                            
+                            % Since inline function is supposed to be
+                            % removed we use the anonymus function, where
+                            % the completed handle has to be created as one
+                            % string
+                            str = ['@(',csVariables{:},') ',sFunction];
+                            
+                            % now transform this string into a function
+                            % handle that can be used to calculate the new
+                            % log values
+                            hFunction = str2func(str);
+
+                            mfDataNew(:,iCalculation) = hFunction(cmfData{:});
+                            
+                            % now we try to find a good description for the
+                            % value (taken from the common words of all log
+                            % values!)
+                            splitphrases_cell = cell(iVariables,1);
+                            
+                            % loop through the variables in this calculation
+                            for iVariable = 1:iVariables
                                 
                                 % split the label for this calculation 
-                                splitphrases_cell{iSign}    = regexp(tLogProps(iCurrentLog).sLabel, '\s+', 'split');
-                                splitphrases_cell{iSign+1}  = regexp(tLogProps(iCurrentLog+1).sLabel, '\s+', 'split');
-
-                                switch sSigns(iSign)
-                                    case '+'
-                                        mfDataNew(:,iCalculation) = mfDataNew(:,iCalculation) + mfData(:,iCurrentLog+1);
-                                    case '-'
-                                        mfDataNew(:,iCalculation) = mfDataNew(:,iCalculation) - mfData(:,iCurrentLog+1);
-                                    case '/'
-                                        mfDataNew(:,iCalculation) = mfDataNew(:,iCalculation) ./ mfData(:,iCurrentLog+1);
-                                    case '*'
-                                        mfDataNew(:,iCalculation) = mfDataNew(:,iCalculation) .* mfData(:,iCurrentLog+1);
-                                end
+                                splitphrases_cell{iVariable}    = regexp(tLogProps(iCurrentLog).sLabel, '\s+', 'split');
+                                
                                 iCurrentLog = iCurrentLog + 1;
                             end
-
-                            iCurrentLog = iCurrentLog + 1;
                             
                             mbCommonWords = true(1,length(splitphrases_cell{1}));
                             for iPhrase = 1:(length(splitphrases_cell)-1)

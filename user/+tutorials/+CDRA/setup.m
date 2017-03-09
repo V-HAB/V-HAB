@@ -139,10 +139,10 @@ classdef setup < simulation.infrastructure
             oPlot.definePlot(csCDRA_Flow_Temperature,       'Flow Temperature CDRA');
             oPlot.definePlot(csCDRA_Absorber_Temperature,   'Absorber Temperature CDRA');
             
-            csNames = {'-1 * (CDRA CO2 Inlet Flow 1 + CDRA CO2 Inlet Flow 2 + CDRA CO2 Outlet Flow 1 + CDRA CO2 Outlet Flow 2)'};
+            csNames = {'- 1 * ( CDRA CO2 Inlet Flow 1 + CDRA CO2 Inlet Flow 2 )', 'CDRA CO2 Outlet Flow 1 + CDRA CO2 Outlet Flow 2'};
             oPlot.definePlot(csNames,  'CDRA CO2 Flowrates');
             
-            csNames = {'CDRA H2O Inlet Flow', 'CDRA H2O Outlet Flow'};
+            csNames = {'- 1 * ( CDRA H2O Inlet Flow 1 + CDRA H2O Inlet Flow 2 )', 'CDRA H2O Outlet Flow 1 + CDRA H2O Outlet Flow 2'};
             oPlot.definePlot(csNames, 'CDRA H2O Flowrates');
             
             csNames = {'Condensate Flowrate CHX'};
@@ -151,10 +151,10 @@ classdef setup < simulation.infrastructure
             csNames = {'Partial Pressure CO2'};
             oPlot.definePlot(csNames, 'Partial Pressure CO2 Habitat');
             
-            csNames = {'Partial Pressure CO2 in Torr'};
+            csNames = {'Partial Pressure CO2 / 133.322'};
             oPlot.definePlot(csNames, 'Partial Pressure CO2 Habitat Torr');
             
-            csNames = {'Relative Humidity Cabin'};
+            csNames = {'Relative Humidity Cabin * 100'};
             oPlot.definePlot(csNames, 'Relative Humidity Habitat');
             
         end
