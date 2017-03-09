@@ -89,6 +89,28 @@ classdef plotter_basic < simulation.monitor
             %
             % sSubtitle:    can be used to define titles for the individual
             %               subplots that will be displayed in the figure
+            %
+            % Additional functionalities:
+            %
+            % It is also possible to define plot values including
+            % calculations. For example the following code,
+            % csNames = {'Relative Humidity Cabin * 100'};
+            % oPlot.definePlot(csNames, 'Relative Humidity Habitat');
+            % will multiply the log value with the label 'Relative Humidity
+            % Cabin' with 100 to get the humidity value from 0-1 to 0-100
+            % Another Example:
+            % csNames = {'- 1 * ( CDRA CO2 Inlet Flow 1 + CDRA CO2 Inlet Flow 2 )', 'CDRA CO2 Outlet Flow 1 + CDRA CO2 Outlet Flow 2'};
+            % oPlot.definePlot(csNames,  'CDRA CO2 Flowrates');
+            % Here two indepent values are calculate, one adds the two
+            % inlet flows and multiplies them with -1 resulting in a plot
+            % of the total inlet flow. The second entry of th csNames cell
+            % array adds the two outlet flows resulting in a total outlet
+            % flow. There are no limitations to this functionality
+            % regarding number of possible log values to be used in the
+            % calculations. The limitations currently are that you can only
+            % define one subplot after the other (using mbPosition) and
+            % that there has to be one space between each Symbol (+-*/^) and
+            % each number and each Log Value!
             
             if isfield (xReference, 'xDataReference')
                 xDataReference = xReference.xDataReference;
