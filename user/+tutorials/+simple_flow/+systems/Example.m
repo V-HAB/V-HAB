@@ -46,10 +46,13 @@ classdef Example < vsys
             % Creating a store, volume 1 m^3
             matter.store(this, 'Tank_1', 1);
             
-            tfMasses = struct('N2', 20, 'CO2', 1, 'H2O', 0.01);
+            tfPartialPressure = struct('N2', 8e4, 'CO2', 2e4);
+            tfMasses = matter.helper.phase.create;
             %Adding a phase to the store 'Tank_1', 1 m^3 air at 20 deg C
             oGasPhase = matter.phases.gas(this.toStores.Tank_1, 'FilteredPhase', tfMasses, 10, 293);
-%             oGasPhase = this.toStores.Tank_1.createPhase('air', 1, 293.15);
+            
+            %oGasPhase = this.toStores.Tank_1.createPhase('air', 1, 293.15);
+            oGasPhase = this.toStores.Tank_1.createPhase('gas', 10, tfPartialPressure, 293, 0.5);
             
             % Creating a second store, volume 1 m^3
             matter.store(this, 'Tank_2', 1);

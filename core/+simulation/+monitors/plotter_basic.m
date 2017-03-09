@@ -11,9 +11,7 @@ classdef plotter_basic < simulation.monitor
         % Name of log monitor
         sLogger = 'oLogger';
         
-        tPlots = struct('sTitle', {}, 'aiIdx', {}, 'mbPosition', {}, 'sSubtitle', {});
-        
-        tPlotsByName;
+        tPlots = struct('sTitle', {}, 'aiIdx', {}, 'mbPosition', {}, 'sSubtitle', {}, 'csSigns', {});
     end
     
     methods
@@ -26,40 +24,7 @@ classdef plotter_basic < simulation.monitor
             end
         end
         
-        
-        
         %% Methods to define plots
-        
-        function definePlotByName(this, cNames, sTitle, yLabel, sTimeUnit, mbPosition)
-            % The cNames input should be a cell(array) containing the
-            % custom names for all log parameters that should be put into
-            % this plot
-            %
-            % The sTitle input will define the title of the figure and also
-            % define which plots are put into which figure if subplots are
-            % used. If you want to have multiple plots in the same figure,
-            % use the same title for all the plots that should go into the
-            % same figure. The position of the plots has to be defined by
-            % the mbPosition input (more information below)
-            %
-            % yLabel defines the label of the y-axis
-            %
-            % sTimeUnit defines the unit used for the time. The possible
-            % inputs currently are: 's', 'min', 'h', 'd', 'weeks'
-            
-            % In this function only the struct with the necessary function to
-            % perform the plotting is defined, the plotting itself is
-            % performed in the plot command
-            this.tPlotsByName(end+1).sTitle = sTitle;
-            this.tPlotsByName(end).cNames = cNames;
-            this.tPlotsByName(end).yLabel = yLabel;
-            this.tPlotsByName(end).sTimeUnit = sTimeUnit;
-            if nargin > 5
-                this.tPlotsByName(end).mbPosition = mbPosition;
-            end
-            
-        end
-        
         
         function definePlot(this, xReference, sTitle, mbPosition, sSubtitle)
             % This function is used to define the individual plots that are
@@ -83,7 +48,7 @@ classdef plotter_basic < simulation.monitor
             %                               0 | 0 | 0
             %             and the entry {2,3,:} would contain all values
             %             that are supposed to go into the subplot in row
-            %             two column 3
+            %             two column three
             %
             %  2) Struct: generic use case that can be used to define which
             %             property of the log should be filtered after with
@@ -183,7 +148,12 @@ classdef plotter_basic < simulation.monitor
                 % still have to work for that?
                 
                 mfFieldSize = size(tFilter.(csFields{iField}));
-                csFilter = tFilter.(csFields{iField});
+                
+                if ~iscell(tFilter.(csFields{iField}))
+                    csFilter{1} = tFilter.(csFields{iField});
+                else
+                    csFilter = tFilter.(csFields{iField});
+                end
                 
                 if length(mfFieldSize) == 3
                     % In this case the field contains the information about
@@ -215,7 +185,7 @@ classdef plotter_basic < simulation.monitor
                         % if it is not empty add a new plot, if it is give
                         % a warning
                         if ~isempty(aiIdx)
-                            this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'mbPosition', mbPosition, 'sSubtitle', sSubtitle);
+                            this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'mbPosition', mbPosition, 'sSubtitle', sSubtitle, 'csSigns', []);
                         else
                             this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
                         end
@@ -226,13 +196,93 @@ classdef plotter_basic < simulation.monitor
                     end
                     
                 else
+                    % NOTE Calculations on plots will not work for subplot
+                    % cell assignments
+
+                    % it is possible to use calculations with logged variables
+                    % by using the label for two variables and a calculation
+                    % sign in between (with one space before the sign and one
+                    % space after the sign)
+                    for iFilter = 1:length(csFilter)
+                        % gets the sign positions for the current filter field
+                        miSubtractions      = regexp(csFilter{iFilter}, '-');
+                        miAdditions         = regexp(csFilter{iFilter}, '+');
+                        miMultiplications   = regexp(csFilter{iFilter}, '*');
+                        miDivisions         = regexp(csFilter{iFilter}, '/');
+
+                        % puts all sign positions into one variable and orders
+                        % it from lowest to highest position
+                        miSigns = miSubtractions;
+                        miSigns(end+1 : end+(length(miAdditions))) = miAdditions;
+                        miSigns(end+1 : end+(length(miMultiplications))) = miMultiplications;
+                        miSigns(end+1 : end+(length(miDivisions))) = miDivisions;
+                        miSigns = sort(miSigns);
+
+                        % if there are signs gets the signs and seperate the
+                        % string into several substrings containing the actual
+                        % labels
+                        if ~isempty(miSigns)
+
+                            sString = csFilter{iFilter};
+
+                            csStrings = cell(length(miSigns),1);
+
+                            if length(miSigns) == 1
+                                csStrings{1} = sString(1 : (miSigns(1) -2));
+                                csStrings{1+1} = sString((miSigns(1) +2) : end);
+                            else
+                                for iSign = 1:length(miSigns)
+                                    if iSign == 1
+                                        csStrings{iSign} = sString(1:(miSigns(iSign) -2));
+                                    elseif iSign == length(miSigns)
+                                        csStrings{iSign} = sString((miSigns(iSign-1) +2) : (miSigns(iSign) -2));
+                                        csStrings{iSign+1} = sString((miSigns(iSign) +2) : end);
+                                    else
+                                        csStrings{iSign} = sString((miSigns(iSign-1) +2) : (miSigns(iSign) -2));
+                                    end
+                                end
+                            end
+                            % store the signs for each filter
+                            csSigns{iFilter} = sString(miSigns);
+
+                            % and store the actual labels for each filter
+                            csFilterNew{iFilter} = csStrings;
+
+                        else
+                            % if no calculations is used the new filter is the
+                            % same as the old and the signs are empty
+                            csSigns{iFilter} = [];
+                            csFilterNew{iFilter} = csFilter{iFilter};
+                        end
+                    end
+                    % now order the seperated new filter fields into one new
+                    % cell array that can be used to get the log values!
+                    iCell = 1;
+                    for iFilter = 1:length(csFilterNew)
+                        for iNewFilter = 1:length(csFilterNew{iFilter})
+                            try
+                                csFilter{iCell} = csFilterNew{iFilter}{iNewFilter};
+                            catch
+                                csFilter{iCell} = csFilterNew{iFilter};
+                            end
+                            iCell = iCell + 1;
+                        end
+                    end
+                    % now we can set the seperated fields into the filter
+                    % struct
+                    tFilter.(csFields{iField}) = csFilter;
+
+                    % the sign cell array will be added to the tPlot struct to
+                    % perform the calculations during the actual plotting!
+                
                     
                     aiIdx = oLogger.find(xDataReference, tFilter);
 
                     % We only add a plot if there will actually be anything to
                     % plot. If there isn't, we tell the user. 
                     if ~isempty(aiIdx)
-                        this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'mbPosition', mbPosition, 'sSubtitle', sSubtitle);
+                        this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'mbPosition', mbPosition, 'sSubtitle', sSubtitle, 'csSigns', []);
+                        this.tPlots(end).csSigns = csSigns;
                     else
                         this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
                     end
@@ -395,7 +445,62 @@ classdef plotter_basic < simulation.monitor
                     % First we get the data and the log properties for each
                     % plot
                     [ mfData, tLogProps ] = oLogger.get(this.tPlots(iPlot).aiIdx);
+                    
+                    % Then we check if any calculations have to be
+                    % performed on the values and create a new data matrix
+                    % in case any calculations are performed
+                    iCurrentLog = 1;
+                    iCalculations = length(this.tPlots(iPlot).csSigns);
+                    if iCalculations > 0 && ~( isempty(this.tPlots(iPlot).csSigns{1}) && iCalculations == 1)
+                        mfDataNew = zeros(length(mfData),iCalculations);
 
+                        % loop through the calculations (defined by the
+                        % number of entries in the csSigns cell array for
+                        % this plot)
+                        for iCalculation = 1:iCalculations
+
+                            sSigns = this.tPlots(iPlot).csSigns{iCalculation};
+                            iSigns = length(sSigns);
+                            
+                            splitphrases_cell = cell(iSigns + 1);
+                            
+                            % loop through the signs in this calculation
+                            for iSign = 1:iSigns
+                                
+                                % split the label for this calculation 
+                                splitphrases_cell{iSign}    = regexp(tLogProps(iCurrentLog).sLabel, '\s+', 'split');
+                                splitphrases_cell{iSign+1}  = regexp(tLogProps(iCurrentLog+1).sLabel, '\s+', 'split');
+
+                                switch sSigns(iSign)
+                                    case '+'
+                                        mfDataNew(:,iCalculation) = mfDataNew(:,iCalculation) + mfData(:,iCurrentLog+1);
+                                    case '-'
+                                        mfDataNew(:,iCalculation) = mfDataNew(:,iCalculation) - mfData(:,iCurrentLog+1);
+                                    case '/'
+                                        mfDataNew(:,iCalculation) = mfDataNew(:,iCalculation) ./ mfData(:,iCurrentLog+1);
+                                    case '*'
+                                        mfDataNew(:,iCalculation) = mfDataNew(:,iCalculation) .* mfData(:,iCurrentLog+1);
+                                end
+                                iCurrentLog = iCurrentLog + 1;
+                            end
+
+                            iCurrentLog = iCurrentLog + 1;
+                            
+                            mbCommonWords = true(1,length(splitphrases_cell{1}));
+                            for iPhrase = 1:(length(splitphrases_cell)-1)
+
+                                mbCommon = strcmp(splitphrases_cell{iPhrase}, splitphrases_cell{iPhrase+1});
+
+                                mbCommonWords = ((mbCommonWords + mbCommon) == 2);
+
+                            end
+
+                            tLogProps(iCalculation).sLabel = strjoin(splitphrases_cell{1}(mbCommonWords));
+
+                        end
+                        tLogProps(iCalculations+1:end) = [];
+                        mfData = mfDataNew;
+                    end
                     % For each plot a title of the figure is specified and if
                     % multiple plots are used as subplots the title also serves
                     % as identifier into which figure they should be plotted.
@@ -496,84 +601,6 @@ classdef plotter_basic < simulation.monitor
                     end
                 end
             end
-        end
-        function MathematicOperationOnLog(this, csLogVariables, hFunction, sNewLogName, sUnit)
-            %% Function used to perform mathematical operations on logged values and store them as new derived log value
-            % 
-            % WILL NOT BE ABLE TO PLOT THESE VALUES AT THE MOMENT!! WAITING
-            % FOR SCJO TO EXPLAIN EXISTING LOGIC, then this will likely be
-            % removed. Otherwise I have to think about a way to implement
-            % this so it works with the exisiting ploting logic.
-            %
-            % Requires a function input to describe the desired operation,
-            % and a cell array to describe the log variables in the order
-            % they should be used in the function. For examples please view
-            % the CDRA tutorial
-            
-            oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
-            cmfArgument = cell(length(csLogVariables),1);
-            
-            % First it is necessary to finde the log values from the
-            % variables used in the operation and store them in the
-            % argument cell array (a cell array was necessary because it is 
-            % used as function input) 
-            for iIndex = 1:length(oLogger.tLogValues)
-                for iLogVariable = 1:length(csLogVariables)
-                    if strcmp('Time', csLogVariables{iLogVariable})
-                        % use the time as argument
-                        mfArgument = oLogger.afTime';
-                        cmfArgument{iLogVariable} = mfArgument;
-                        
-                    elseif strcmp('TimeStep', csLogVariables{iLogVariable})
-                        % use time step as argument
-                        mfArgument = zeros(length(oLogger.afTime),1);
-                        mfArgument(2:end) = (oLogger.afTime(2:end) - oLogger.afTime(1:end-1))';
-                    	cmfArgument{iLogVariable} = mfArgument;
-                        
-                    elseif strcmp(oLogger.tLogValues(iIndex).sLabel, csLogVariables{iLogVariable})
-
-                       % Stores the logged values for the plot and name
-                       % in the struct
-                       mfArgument = oLogger.mfLog(:,iIndex);
-
-                       % remove NaNs from the log
-                       mfArgument(isnan(mfArgument)) = [];
-                       
-                       cmfArgument{iLogVariable} = mfArgument;
-                    end
-                end
-            end
-            
-            for iIndex = 1:length(oLogger.tDerivedLogValues)
-                for iLogVariable = 1:length(csLogVariables)
-                    if strcmp(oLogger.tDerivedLogValues(iIndex).sLabel, csLogVariables{iLogVariable})
-
-                       % Stores the logged values for the plot and name
-                       % in the struct
-                       mfArgument = oLogger.mfDerivedLog(:,iIndex);
-
-                       % remove NaNs from the log
-                       mfArgument(isnan(mfArgument)) = [];
-                       
-                       cmfArgument{iLogVariable} = mfArgument;
-                    end
-                end
-            end
-            
-            % In order to ensure that these logs are the same length as the
-            % "normal" logs, a vector with nans of the same length as the
-            % "normal" logs is created
-            mfLogValue = nan(length(oLogger.mfLog(:,1)),1);
-            % Now only the values that actual have a number are overwritten
-            % with values, the rest remains as nans
-            mfLogValue(1:length(mfArgument)) = hFunction(cmfArgument{:});
-            
-            % Since this is the plotter it is not possible to add the value
-            % from here. Instead a function of the logger is called to
-            % store the new log value, together with a name and a unit in
-            % the tDerivedLogValues struct and the mfDerivedLog matrix of
-            % the logger
-            oLogger.add_mfLogValue(sNewLogName, mfLogValue, sUnit)
         end
         
         function clearPlots(this)

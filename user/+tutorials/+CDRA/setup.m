@@ -88,24 +88,18 @@ classdef setup < simulation.infrastructure
             end
             
             % CDRA In
-            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'fFlowRate', 'kg/s', 'CDRA Air Inlet Flow 1');
-            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_2.aoFlows(1)', 'fFlowRate', 'kg/s', 'CDRA Air Inlet Flow 2');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 2');
             
-            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Partialratio 1');
-            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Inlet Partialratio 1');
-            
-            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_2.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Partialratio 2');
-            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_2.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Inlet Partialratio 2');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Inlet Flow 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Inlet Flow 2');
             
             % CDRA Out
-            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_1.aoFlows(1)', 'fFlowRate', 'kg/s', 'CDRA Air Outlet Flow 1');
-            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_2.aoFlows(1)', 'fFlowRate', 'kg/s', 'CDRA Air Outlet Flow 2');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Outlet Flow 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Outlet Flow 2');
             
-            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_1.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Outlet Partialratio 1');
-            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_1.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Outlet Partialratio 1');
-            
-            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_2.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Outlet Partialratio 2');
-            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_2.aoFlows(1)', 'arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Outlet Partialratio 2');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Outlet Flow 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Outlet Flow 2');
             
             %% Define plots
             
@@ -145,7 +139,7 @@ classdef setup < simulation.infrastructure
             oPlot.definePlot(csCDRA_Flow_Temperature,       'Flow Temperature CDRA');
             oPlot.definePlot(csCDRA_Absorber_Temperature,   'Absorber Temperature CDRA');
             
-            csNames = {'CDRA CO2 Inlet Flow', 'CDRA CO2 Outlet Flow'};
+            csNames = {'-1 * (CDRA CO2 Inlet Flow 1 + CDRA CO2 Inlet Flow 2 + CDRA CO2 Outlet Flow 1 + CDRA CO2 Outlet Flow 2)'};
             oPlot.definePlot(csNames,  'CDRA CO2 Flowrates');
             
             csNames = {'CDRA H2O Inlet Flow', 'CDRA H2O Outlet Flow'};
@@ -162,6 +156,7 @@ classdef setup < simulation.infrastructure
             
             csNames = {'Relative Humidity Cabin'};
             oPlot.definePlot(csNames, 'Relative Humidity Habitat');
+            
         end
         
         function plot(this) % Plotting the results
@@ -169,29 +164,29 @@ classdef setup < simulation.infrastructure
             % further information
             close all
             
-            hCDRA_InletCalc = @(x1,x2,x3,x4)(-(x1 .* x2 + x3 .* x4));
-            csLogVariables =  {'CDRA Air Inlet Flow 1','CDRA CO2 Inlet Partialratio 1','CDRA Air Inlet Flow 2','CDRA CO2 Inlet Partialratio 2'};
-            sNewLogName = 'CDRA CO2 Inlet Flow';
-            this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_InletCalc, sNewLogName, 'kg/s');
-            
-            hCDRA_OutletCalc = @(x1,x2,x3,x4)((x1 .* x2 + x3 .* x4));
-            csLogVariables =  {'CDRA Air Outlet Flow 1','CDRA CO2 Outlet Partialratio 1','CDRA Air Outlet Flow 2','CDRA CO2 Outlet Partialratio 2'};
-            sNewLogName = 'CDRA CO2 Outlet Flow';
-            this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_OutletCalc, sNewLogName, 'kg/s');
-            
-            csLogVariables =  {'CDRA Air Inlet Flow 1','CDRA H2O Inlet Partialratio 1','CDRA Air Inlet Flow 2','CDRA H2O Inlet Partialratio 2'};
-            sNewLogName = 'CDRA H2O Inlet Flow';
-            this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_InletCalc, sNewLogName, 'kg/s');
-            
-            csLogVariables =  {'CDRA Air Outlet Flow 1','CDRA H2O Outlet Partialratio 1','CDRA Air Outlet Flow 2','CDRA H2O Outlet Partialratio 2'};
-            sNewLogName = 'CDRA H2O Outlet Flow';
-            this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_OutletCalc, sNewLogName, 'kg/s');
-            
-            hPascalToTorr = @(x1)(x1./133.322368);
-            csLogVariables =  {'Partial Pressure CO2'};
-            sNewLogName = 'Partial Pressure CO2 in Torr';
-            this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hPascalToTorr, sNewLogName, 'Torr');
-            
+%             hCDRA_InletCalc = @(x1,x2,x3,x4)(-(x1 .* x2 + x3 .* x4));
+%             csLogVariables =  {'CDRA Air Inlet Flow 1','CDRA CO2 Inlet Partialratio 1','CDRA Air Inlet Flow 2','CDRA CO2 Inlet Partialratio 2'};
+%             sNewLogName = 'CDRA CO2 Inlet Flow';
+%             this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_InletCalc, sNewLogName, 'kg/s');
+%             
+%             hCDRA_OutletCalc = @(x1,x2,x3,x4)((x1 .* x2 + x3 .* x4));
+%             csLogVariables =  {'CDRA Air Outlet Flow 1','CDRA CO2 Outlet Partialratio 1','CDRA Air Outlet Flow 2','CDRA CO2 Outlet Partialratio 2'};
+%             sNewLogName = 'CDRA CO2 Outlet Flow';
+%             this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_OutletCalc, sNewLogName, 'kg/s');
+%             
+%             csLogVariables =  {'CDRA Air Inlet Flow 1','CDRA H2O Inlet Partialratio 1','CDRA Air Inlet Flow 2','CDRA H2O Inlet Partialratio 2'};
+%             sNewLogName = 'CDRA H2O Inlet Flow';
+%             this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_InletCalc, sNewLogName, 'kg/s');
+%             
+%             csLogVariables =  {'CDRA Air Outlet Flow 1','CDRA H2O Outlet Partialratio 1','CDRA Air Outlet Flow 2','CDRA H2O Outlet Partialratio 2'};
+%             sNewLogName = 'CDRA H2O Outlet Flow';
+%             this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hCDRA_OutletCalc, sNewLogName, 'kg/s');
+%             
+%             hPascalToTorr = @(x1)(x1./133.322368);
+%             csLogVariables =  {'Partial Pressure CO2'};
+%             sNewLogName = 'Partial Pressure CO2 in Torr';
+%             this.toMonitors.oPlotter.MathematicOperationOnLog(csLogVariables, hPascalToTorr, sNewLogName, 'Torr');
+%             
             tParameters.sTimeUnit = 'h';
             
             this.toMonitors.oPlotter.plot(tParameters);

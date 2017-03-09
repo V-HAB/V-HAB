@@ -177,9 +177,6 @@ classdef logger_basic < simulation.monitor
         end
         
         
-        
-        
-        
         function aiIdx = find(this, aiIdx, tFilter)
             % If aiIdx empty - get all!
             
@@ -649,6 +646,8 @@ classdef logger_basic < simulation.monitor
                 oLastSimObj = this.oSimulationInfrastructure; %#ok<NASGU>
                 save(sMat, 'oLastSimObj');
             end
+            
+            
         end
         
         
