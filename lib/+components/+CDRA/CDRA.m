@@ -788,9 +788,9 @@ classdef CDRA < vsys
             
             this.tMassNetwork.aoPhasesCycleOne(end+1,1) = this.toBranches.CDRA_Air_Out_1.coExmes{2}.oPhase;
             
-            for iPhase = 1:length(this.tMassNetwork.aoPhasesCycleOne)
-                this.tMassNetwork.aoPhasesCycleOne(iPhase).oOriginPhase = this.oAtmosphere;
-            end
+%             for iPhase = 1:length(this.tMassNetwork.aoPhasesCycleOne)
+%                 this.tMassNetwork.aoPhasesCycleOne(iPhase).oOriginPhase = this.oAtmosphere;
+%             end
             
             this.tThermalNetwork.csNodes_Absorber_CycleOne  = csNodes_Absorber_CycleOne;
             this.tThermalNetwork.csNodes_Flow_CycleOne      = csNodes_Flow_CycleOne;
@@ -859,9 +859,9 @@ classdef CDRA < vsys
             
             this.tMassNetwork.aoPhasesCycleTwo(end+1,1) = this.toBranches.CDRA_Air_Out_2.coExmes{2}.oPhase;
             
-            for iPhase = 1:length(this.tMassNetwork.aoPhasesCycleTwo)
-                this.tMassNetwork.aoPhasesCycleTwo(iPhase).oOriginPhase = this.oAtmosphere;
-            end
+%             for iPhase = 1:length(this.tMassNetwork.aoPhasesCycleTwo)
+%                 this.tMassNetwork.aoPhasesCycleTwo(iPhase).oOriginPhase = this.oAtmosphere;
+%             end
             
             this.tThermalNetwork.csNodes_Absorber_CycleTwo  = csNodes_Absorber_CycleTwo;
             this.tThermalNetwork.csNodes_Flow_CycleTwo      = csNodes_Flow_CycleTwo;

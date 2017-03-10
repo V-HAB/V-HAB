@@ -11,7 +11,7 @@ classdef plotter_basic < simulation.monitor
         % Name of log monitor
         sLogger = 'oLogger';
         
-        tPlots = struct('sTitle', {}, 'aiIdx', {}, 'mbPosition', {}, 'sSubtitle', {}, 'csFunctions', {});
+        tPlots = struct('sTitle', {}, 'aiIdx', {}, 'txCustom', {}, 'csFunctions', {});
     end
     
     methods
@@ -26,7 +26,7 @@ classdef plotter_basic < simulation.monitor
         
         %% Methods to define plots
         
-        function definePlot(this, xReference, sTitle, mbPosition, sSubtitle)
+        function definePlot(this, xReference, sTitle, txCustom)
             % This function is used to define the individual plots that are
             % created when using the oLastSimObj.plot command. The
             % following inputs can be used for it:
@@ -75,11 +75,17 @@ classdef plotter_basic < simulation.monitor
             %
             %
             % Optional Inputs for subplot functionality:
-            % mbPosition:   boolean matrix that has the intended size
-            %               and shape of the subplots for the overall
-            %               figure (as specified by sTitle) and contains
-            %               one true for the location of this subplot. For
-            %               example this matrix:
+            %
+            % txCustom:    can be used to customize the plot. Has to be a
+            %              struct with the fieldnames that shall be
+            %              customized and the fieldvalues that shall be
+            %              used for the customization. Possible field names
+            %              are:
+            %              - mbPosition: boolean matrix that has the intended 
+            %                size and shape of the subplots for the overall
+            %                figure (as specified by sTitle) and contains
+            %                one true for the location of this subplot. For
+            %                example this matrix:
             %                       0 | 0 | 0 | 0
             %                       0 | 1 | 0 | 0
             %               Will result in a figure with 4 columns and 2
@@ -87,8 +93,22 @@ classdef plotter_basic < simulation.monitor
             %               specific matrix will be in the second row in
             %               the second column
             %
-            % sSubtitle:    can be used to define titles for the individual
-            %               subplots that will be displayed in the figure
+            %              - sXLabel / sYLabel: Set a custom label for the axis
+            %              - sTitle: Set a custom title displayed above the
+            %                figure or subplot
+            %              - csLineStyle: Specify the linestyle for the plot
+            %                see help plot for possible entries. If you
+            %                have more than one line simply specify the
+            %                style for each line as a string in one cell
+            %                value. The first cell will be used for the
+            %                first plot value
+            %              - csLegend: Define cell array containing custom
+            %                legend entries for your plot. First entry is
+            %                used for first plot value
+            %              - miXTicks/ miYTicks: Define the ticks on the Axis by
+            %                providing a matrix with the value for each tick
+            %              - mfXLimits/ mfYLimits: Define the limits on the Axis by
+            %                providing a matrix with the start and end value
             %
             % Additional functionalities:
             %
@@ -119,10 +139,7 @@ classdef plotter_basic < simulation.monitor
             end
             
             if nargin < 4
-                mbPosition = [];
-                sSubtitle  = [];
-            elseif nargin < 5
-                sSubtitle  = [];
+                txCustom  = [];
             end
             
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
@@ -207,10 +224,12 @@ classdef plotter_basic < simulation.monitor
                         % subplot
                         aiIdx = oLogger.find(xDataReference, tFilterPart);
                         
+                        txCustom.mbPosition = mbPosition;
+                        
                         % if it is not empty add a new plot, if it is give
                         % a warning
                         if ~isempty(aiIdx)
-                            this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'mbPosition', mbPosition, 'sSubtitle', sSubtitle, 'csFunctions', []);
+                            this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'txCustom', txCustom, 'csFunctions', []);
                         else
                             this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
                         end
@@ -360,7 +379,7 @@ classdef plotter_basic < simulation.monitor
                     % We only add a plot if there will actually be anything to
                     % plot. If there isn't, we tell the user. 
                     if ~isempty(aiIdx)
-                        this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'mbPosition', mbPosition, 'sSubtitle', sSubtitle, 'csFunctions', []);
+                        this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'txCustom', txCustom, 'csFunctions', []);
                         % before we add the functions to the plot struct we
                         % remove all empty fields
                         mbRemoveFunction = false(1,length(csFunctions));
@@ -638,30 +657,47 @@ classdef plotter_basic < simulation.monitor
                         csFigures{end+1} = figure('name', this.tPlots(iPlot).sTitle);
                         set(0, 'currentfigure', csFigures{end});
                     end
-
-                    % Now we check if the figure is intended as subplot. The
-                    % subplot position is defined by mbPosition which has only
-                    % one boolean true at the intended position of the plot.
-                    % For example the matrix:
-                    % 0 0 0
-                    % 0 1 0
-                    % 0 0 0
-                    % would define the subplot in the middle of a 3x3 field of
-                    % subplots
-                    if isfield(this.tPlots(iPlot), 'mbPosition') && ~isempty(this.tPlots(iPlot).mbPosition)
-                        % The boolean matrix has to be translated into the
-                        % required inputs for the subplot command, which is the
-                        % total row and line number and the number of the
-                        % subplot (which are counted from the top left to right
-                        % in each row and then from top to bottom for several
-                        % rows)
-                        [iNumberRows, iNumberColumns] = size(this.tPlots(iPlot).mbPosition);
-                        [iRow, iColumn] = find(this.tPlots(iPlot).mbPosition);
-                        iPlotNumber = ((iRow - 1)*iNumberColumns) + iColumn;
-                        subplot(iNumberRows,iNumberColumns,iPlotNumber)
+                    
+                    csLineStyle = [];
+                    % Now we chech the txCustom struct for any
+                    % customization options that the user defined that have
+                    % to be done before the plot
+                    if ~isempty(this.tPlots(iPlot).txCustom)
+                        csCustomFields = fieldnames(this.tPlots(iPlot).txCustom);
+                        
+                        for iCustomField = 1:length(csCustomFields)
+                            switch csCustomFields{iCustomField}
+                                % Now we check if the figure is intended as subplot. The
+                                % subplot position is defined by mbPosition which has only
+                                % one boolean true at the intended position of the plot.
+                                % For example the matrix:
+                                % 0 0 0
+                                % 0 1 0
+                                % 0 0 0
+                                % would define the subplot in the middle of a 3x3 field of
+                                % subplots
+                                case 'mbPosition'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.mbPosition)
+                                        % The boolean matrix has to be translated into the
+                                        % required inputs for the subplot command, which is the
+                                        % total row and line number and the number of the
+                                        % subplot (which are counted from the top left to right
+                                        % in each row and then from top to bottom for several
+                                        % rows)
+                                        [iNumberRows, iNumberColumns] = size(this.tPlots(iPlot).txCustom.mbPosition);
+                                        [iRow, iColumn] = find(this.tPlots(iPlot).txCustom.mbPosition);
+                                        iPlotNumber = ((iRow - 1)*iNumberColumns) + iColumn;
+                                        subplot(iNumberRows,iNumberColumns,iPlotNumber)
+                                    end
+                                    
+                                case 'csLineStyle'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.csLineStyle)
+                                        csLineStyle = this.tPlots(iPlot).txCustom.csLineStyle;
+                                    end
+                            end
+                        end
                     end
-                    grid on
-                    hold on
+                    
                     % In order to allow the user to define the desired time
                     % output the actual plotting checks for the sTimeUnit
                     % string and transforms the log (which is always in
@@ -669,29 +705,89 @@ classdef plotter_basic < simulation.monitor
                     % legend entry
                     switch sTimeUnit
                         case 's'
-                            plot((oLogger.afTime), mfData)
-                            xlabel('Time in s')
+                            iDivider = 1;
                         case 'min'
-                            plot((oLogger.afTime./60), mfData)
-                            xlabel('Time in min')
+                            iDivider = 60;
                         case 'h'
-                            plot((oLogger.afTime./3600), mfData)
-                            xlabel('Time in h')
+                            iDivider = 3600;
                         case 'd'
-                            plot((oLogger.afTime./86400), mfData)
-                            xlabel('Time in d')
+                            iDivider = 86400;
                         case 'weeks'
-                            plot((oLogger.afTime./604800), mfData)
-                            xlabel('Time in weeks')
+                            iDivider = 604800;
                     end
                     
-                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
-                    ylabel( sLabelY );
+                    if ~isempty(csLineStyle)
+                        for iLineStyle = 1:length(csLineStyle)
+                            plot((oLogger.afTime./iDivider), mfData(:,iLineStyle), csLineStyle{iLineStyle})
+                            grid on
+                            hold on
+                        end
+                        miSize = size(mfData);
+                        if length(csLineStyle) < miSize(2)
+                            plot((oLogger.afTime./iDivider), mfData(iLineStyle+1:end));
+                            grid on
+                            hold on
+                        end
+                    else
+                        plot((oLogger.afTime./iDivider), mfData)
+                        grid on
+                        hold on
+                    end
                     
+                    % First we set the standard values for the fields:
+                    sLabelX = ['Time in ', sTimeUnit];
+                   	sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
                     csLegend = {};
                     for iP = 1:length(tLogProps)
                         csLegend{end + 1} = [ tLogProps(iP).sLabel ];
                     end
+                    % Now we chech the txCustom struct for any
+                    % customization options that the user defined that have
+                    % to be done after the plot
+                    if ~isempty(this.tPlots(iPlot).txCustom)
+                        csCustomFields = fieldnames(this.tPlots(iPlot).txCustom);
+                        
+                        for iCustomField = 1:length(csCustomFields)
+                            switch csCustomFields{iCustomField}
+                                case 'sXLabel'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.sYLabel)
+                                        sLabelX = this.tPlots(iPlot).txCustom.sXLabel;
+                                    end
+                                case 'sYLabel'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.sYLabel)
+                                        sLabelY = this.tPlots(iPlot).txCustom.sYLabel;
+                                    end
+                                case 'sTitle'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.sTitle)
+                                        title(this.tPlots(iPlot).txCustom.sTitle);
+                                    end
+                                case 'csLegend'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.csLegend)
+                                        csLegend = this.tPlots(iPlot).txCustom.csLegend;
+                                    end
+                                case 'miXTicks'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.miXTicks)
+                                        xticks( this.tPlots(iPlot).txCustom.miXTicks );
+                                    end
+                                case 'miYTicks'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.miYTicks)
+                                        yticks( this.tPlots(iPlot).txCustom.miYTicks );
+                                    end
+                                case 'mfXLimits'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.mfXLimits)
+                                        xlim( this.tPlots(iPlot).txCustom.mfXLimits );
+                                    end
+                                case 'mfYLimits'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.mfYLimits)
+                                        ylim( this.tPlots(iPlot).txCustom.mfYLimits );
+                                    end
+                            end
+                        end
+                    end
+                    
+                    xlabel( sLabelX );
+                    ylabel( sLabelY );
+                    
                     legend(csLegend);
                     
                     if ~bLegendOn

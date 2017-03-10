@@ -144,21 +144,46 @@ classdef setup < simulation.infrastructure
             % help. 
             cNames = {'Flowrate of CO2'};
             sTitle = 'Partial Mass CO2';
-            mbPosition = [ false, false, false;...
-                           true , false, false];
-            oPlot.definePlot(cNames, sTitle, mbPosition);
+            txCustom.mbPosition = [ false, false, false;...
+                                    true , false, false];
+            oPlot.definePlot(cNames, sTitle, txCustom);
             
             cNames = {'Flowrate of CO2'};
             sTitle = 'Partial Mass CO2';
-            mbPosition = [ false, false, true;...
-                           false , false, false];
-            oPlot.definePlot(cNames, sTitle, mbPosition);
+            txCustom.mbPosition = [ false, false, true;...
+                                    false, false, false];
+            oPlot.definePlot(cNames, sTitle, txCustom);
             
             
             % You can also define calculations on the log values
-            cNames = {'133.322 * ( Partial Pressure CO_2 Tank 1 + Partial Pressure CO_2 Tank 2 )'};
+            cNames = {'( Partial Pressure CO_2 Tank 1 + Partial Pressure CO_2 Tank 2 ) / 133.322'};
             sTitle = 'Partial Pressure CO2 total in Torr';
-            oPlot.definePlot(cNames, sTitle);
+            % Because the automatic label generated will not recognize the
+            % unit conversion we define a custom Y Label. You can always
+            % customize your plots by providing a txCustom struct that
+            % contains the fields you want to customize. See the definePlot
+            % comment for more information on customization options.
+            txCustom2.sYLabel = 'Partial Pressure CO2 in Torr';
+            oPlot.definePlot(cNames, sTitle, txCustom2);
+            
+            % Here is an example that uses all possible customization
+            % options. Please remember you do not HAVE to use these, they
+            % just help you get the plot "just right":
+            
+            txCustom.mbPosition = [true, false];
+            txCustom.sXLabel    = 'My X Label';
+            txCustom.sYLabel    = 'My Y Label';
+            txCustom.sTitle     = 'My Title';
+            txCustom.csLineStyle= {'--r', '-.g'};
+            txCustom.csLegend   = {'My Legend 1', 'My Legend 2'};
+            txCustom.miXTicks   = [100, 500, 1050, 2000, 2500, 3000];
+            txCustom.miYTicks   = [1,2,2.2,3,5,6,9,9.9,10];
+            txCustom.mfXLimits  = [1000,3000];
+            txCustom.mfYLimits  = [0,10];
+            
+            cNames = {'( Partial Pressure CO_2 Tank 1 ) / 133.322', '( Partial Pressure CO_2 Tank 2 ) / 133.322'};
+            sTitle = 'Partial Pressure CO2 in Torr';
+            oPlot.definePlot(cNames, sTitle, txCustom);
         end
         
         function plot(this, varargin) % Plotting the results
