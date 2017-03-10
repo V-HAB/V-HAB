@@ -50,11 +50,15 @@ classdef setup < simulation.infrastructure
             
             oPlot = this.toMonitors.oPlotter;
             
-            oPlot.definePlotAllWithFilter('Pa',  'Tank Pressures');
-            oPlot.definePlotAllWithFilter('K',   'Temperatures');
-            oPlot.definePlotAllWithFilter('kg',  'Tank Masses');
-            oPlot.definePlotAllWithFilter('kg/s','Flow Rates');
-            oPlot.definePlotAllWithFilter('W', 'Heat Flows');
+            oPlot.definePlot('Pa',  'Tank Pressures');
+            oPlot.definePlot('K',   'Temperatures');
+            oPlot.definePlot('kg',  'Tank Masses');
+            oPlot.definePlot('kg/s','Flow Rates');
+            oPlot.definePlot('W',   'Heat Flows');
+            
+            
+            oPlot.definePlot({'Condensate Flow Rate'}, 'Condensate Flow Rate');
+            oPlot.definePlot({'Relative Humidity Tank 1', 'Relative Humidity Tank 1'}, 'Relative Humidity');
         end
         
         function plot(this) % Plotting the results
@@ -62,48 +66,12 @@ classdef setup < simulation.infrastructure
             % further information
             close all
           
+            tParameters.sTimeUnit = 'min';
+            
+            this.toMonitors.oPlotter.plot(tParameters);
+            
             this.toMonitors.oPlotter.plot();
             
-            for iIndex = 1:length(this.toMonitors.oLogger.tLogValues)
-                if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Condensate Flow Rate')
-                    iCondensateIndex = iIndex;
-                end
-                if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Relative Humidity Tank 1')
-                    iHumidityTank1 = iIndex;
-                end
-                if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Relative Humidity Tank 2')
-                    iHumidityTank2 = iIndex;
-                end
-            end
-            
-            mLogDataCondensate = this.toMonitors.oLogger.mfLog(:,iCondensateIndex);
-            mLogDataCondensate(isnan(mLogDataCondensate(:,1)),:)=[];
-            
-            mLogDataHumidityTank1= this.toMonitors.oLogger.mfLog(:,iHumidityTank1);
-            mLogDataHumidityTank1(isnan(mLogDataHumidityTank1(:,1)),:)=[];
-            mLogDataHumidityTank1 = mLogDataHumidityTank1.*100;
-            
-            mLogDataHumidityTank2= this.toMonitors.oLogger.mfLog(:,iHumidityTank2);
-            mLogDataHumidityTank2(isnan(mLogDataHumidityTank2(:,1)),:)=[];
-            mLogDataHumidityTank2 = mLogDataHumidityTank2.*100;
-            
-            afTime = this.toMonitors.oLogger.afTime;
-            
-            figure('name', 'Condensate Flowrate')
-            grid on
-            hold on
-            plot((afTime./3600), mLogDataCondensate)
-            xlabel('Time in h')
-            ylabel('Massflow in kg/s')
-            
-            figure('name', 'Relative Humidity')
-            grid on
-            hold on
-            plot((afTime./3600), mLogDataHumidityTank1)
-            plot((afTime./3600), mLogDataHumidityTank2)
-            legend('Tank 1', 'Tank 2')
-            xlabel('Time in h')
-            ylabel('Rel. Humidity in %')
             
         end
         

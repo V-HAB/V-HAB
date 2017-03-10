@@ -188,89 +188,12 @@ classdef setup < simulation.infrastructure
         
         function plot(this, varargin) % Plotting the results
             
-            this.toMonitors.oPlotter.plot(varargin{:});
-            return;
+            % you can specify additional parameters for the plots, for
+            % example you can define the unit for the time axis that should
+            % be used (s, min, h, d, weeks possible)
+            tParameters.sTimeUnit = 'min';
             
-            
-            % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
-            % further information
-            
-            
-            
-%             figure('name', 'Tank Pressures');
-%             hold on;
-%             grid minor;
-%             %plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
-%             plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
-%             legend('Tank 1', 'Tank 2');
-%             ylabel('Pressure in Pa');
-%             xlabel('Time in s');
-            
-
-
-            sPlot = 'Tank Masses';
-            csValues = {
-                'Tutorial_Simple_Flow/Example:s:Tank_1:p:Tank_1_Phase_1.fMass';
-                'Tutorial_Simple_Flow/Example:s:Tank_2:p:Tank_2_Phase_1.fMass';
-            };
-            
-            %%% Default Code START
-            
-            figure('name', sPlot);
-            hold on;
-            grid minor;
-            
-            mfLog    = [];
-            sLabel   = [];
-            sUnit    = [];
-            csLegend = {};
-            
-            for iV = 1:length(csValues)
-                [ axData, tDefinition, sLabel ] = oLog.get(csValues{iV});
-                
-                mfLog = [ mfLog, axData ];
-                csLegend{end + 1} = tDefinition.sName;
-                sUnit = tDefinition.sUnit;
-            end
-            
-            plot(oLog.afTime, mfLog);
-            legend(csLegend);
-            
-            ylabel([ sLabel ' in [' sUnit ']' ]);
-            xlabel('Time in s');
-            
-            %%% Default Code END
-            
-            
-            
-            return;
-            
-            
-            figure('name', 'Tank Temperatures');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 7:8));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Temperature in K');
-            xlabel('Time in s');
-            
-            figure('name', 'Flow Rate');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 6));
-            legend('Branch');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
-            
-            figure('name', 'Time Steps');
-            hold on;
-            grid minor;
-            plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-            legend('Solver');
-            ylabel('Time in [s]');
-            xlabel('Ticks');
-            
-            tools.arrangeWindows();
+            this.toMonitors.oPlotter.plot(tParameters);
         end
         
     end

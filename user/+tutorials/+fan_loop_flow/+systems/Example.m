@@ -35,7 +35,7 @@ classdef Example < vsys
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
             
             % Adding a fan to move the gas
-            components.fan(this, 'Fan', 'setSpeed', 55000, 'Left2Right');
+            components.fan(this, 'Fan', 5500, 'Left2Right');
              
             % Adding a pipe to connect the tanks
             components.pipe(this, 'Pipe_1', 1, 0.02);

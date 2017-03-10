@@ -185,9 +185,6 @@ classdef plotter_basic < simulation.monitor
                 % struct? like mixing unit filter and label filter? And
                 % does the subplot logic using a three dimensional cell
                 % still have to work for that?
-                if ~strcmp(csFields{iField}, 'sLabel')
-                    continue
-                end
                 
                 mfFieldSize = size(tFilter.(csFields{iField}));
                 
@@ -388,7 +385,9 @@ classdef plotter_basic < simulation.monitor
                                 mbRemoveFunction(iFunction) = true;
                             end
                         end
-                        this.tPlots(end).csFunctions = csFunctions(~mbRemoveFunction);
+                        if strcmp(csFields{iField}, 'sLabel')
+                            this.tPlots(end).csFunctions = csFunctions(~mbRemoveFunction);
+                        end
                     else
                         this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
                     end

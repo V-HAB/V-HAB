@@ -39,10 +39,10 @@ classdef setup < simulation.infrastructure
             tiLog = this.toMonitors.oLogger.add('Example', 'flow_props');
             
             %% Plot definition
-            this.toMonitors.oPlotter.definePlotWithFilter(tiLog, 'Pa',   'Pressures')
-            this.toMonitors.oPlotter.definePlotWithFilter(tiLog, 'K',    'Temperatures')
-            this.toMonitors.oPlotter.definePlotWithFilter(tiLog, 'kg',   'Masses')
-            this.toMonitors.oPlotter.definePlotWithFilter(tiLog, 'kg/s', 'Flow Rates')
+            this.toMonitors.oPlotter.definePlot('Pa',   'Pressures')
+            this.toMonitors.oPlotter.definePlot('K',    'Temperatures')
+            this.toMonitors.oPlotter.definePlot('kg',   'Masses')
+            this.toMonitors.oPlotter.definePlot('kg/s', 'Flow Rates')
 
         end
         
