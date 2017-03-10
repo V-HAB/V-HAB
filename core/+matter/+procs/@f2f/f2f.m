@@ -204,14 +204,20 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             %this.pthFlow(iIdx) = thFlow;
         end
         
-        function updateF2F(this, ~)
+        function updateF2F(this, fFlowRate)
             
             % Updates the F2F using the solver type as specified by the
             % branch in which the F2F is located. Called by the setData
             % dunction of matter/flow in the stream direction within the
             % branch, during update, after the flowrate of the inflow has
             % been set
-            this.toSolve.(this.oBranch.oHandler.sSolverType).update();
+            switch this.oBranch.oHandler.sSolverType
+                case 'manual'
+                    this.toSolve.(this.oBranch.oHandler.sSolverType).update();
+                case 'callback'
+                    this.toSolve.(this.oBranch.oHandler.sSolverType).calculateDeltas(fFlowRate);
+            end
+            
             
         end
     end

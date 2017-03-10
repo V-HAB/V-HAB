@@ -651,9 +651,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
                 % updates the f2f located before this flow
                 if bNeg && (iI ~= oThis.oBranch.iFlows)
-                    oThis.oBranch.aoFlowProcs(iI).updateF2F();
+                    oThis.oBranch.aoFlowProcs(iI).updateF2F(oThis.fFlowRate);
                 elseif ~ bNeg && (iI ~= 1)
-                    oThis.oBranch.aoFlowProcs(iI - 1).updateF2F();
+                    oThis.oBranch.aoFlowProcs(iI - 1).updateF2F(oThis.fFlowRate);
                 end
                 
                 % Set temperature based on fHeatFlow in f2fs

@@ -77,58 +77,88 @@ classdef setup < simulation.infrastructure
             
             oLog = this.toMonitors.oLogger;
             
-            tiFlowProps = oLog.add('Example', 'flow_props');
+            oLog.add('Example', 'flow_props');
             
-            % Add single values
-            iPropLogIndex1 = oLog.addValue('Example', 'iChildren',     [],  'Label of Prop');
-            %keyboard();
-            iPropLogIndex2 = oLog.addValue('Example', 'fPipeDiameter', 'm', 'Pipe Diameter');
+            % Aside from using the shortcut helpers like flow_props you can
+            % also specfy the exact value you want to log. For this you
+            % first have to find out the path to the value, which you can
+            % find by double clicking on the oLastSimObj in the workspace
+            % (usually on the right). This will open a window containing
+            % all the properties of the oLastSimObj, in it you can find a
+            % oSimulationContainer and doubleclick it again. Then navigate
+            % toChildren and you will find an Object with the name of your
+            % Simulation. The path up to here does not have to be specified
+            % but everything from the name of your system onward is
+            % required as input for the log path. Simple click through the
+            % system to the value you want to log to find out the correct
+            % path (it will be displayed in the top of the window). In the
+            % definition of the path to the log value you can use these
+            % shorthands: 
+            %   - :s: = toStores
+            %   - :c: = toChildren
             
-            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO_2 Tank 1');
-            oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO_2 Tank 2');
+            % The log is built like this:
+            %
+            %               Path to the object containing the log value     Log Value                       Unit    Label of log value (used for legends and to plot the value) 
+            oLog.addValue('Example:s:Tank_1.aoPhases(1)',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 1');
+            oLog.addValue('Example:s:Tank_2.aoPhases(1)',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 2');
             
-            
+            % it is also possible to define a calculation as log value and
+            % e.g. multiply two values from the object.
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'kg', 'Mass Tank 2');
+            % This can be usefull if you want to log the flowrate of CO2
+            % through a branch that transports air for example
+            
+            oLog.addValue('Example.aoBranches(1).aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Flowrate of CO2');
             
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 1');
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
-            
-%             this.csLog = {
-%                 % System timer
-%                 'oData.oTimer.fTime';                                              % 1
-%                 
-%                 % Logging pressures, masses and the flow rate
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';  % 2
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';  % 4
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
-%                 'toChildren.Example.aoBranches(1).fFlowRate';                      % 6
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fTemp';
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fTemp';     % 8
-% 
-%                 % You can add other parameters here
-%                 };
-            
-
-            oLog.addValue('Example:s:Tank_1.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.H2O)', 'Partial kg', 'Partial Mass Water');
             
             %% Define plots
             
             oPlot = this.toMonitors.oPlotter;
             
+            % you can define plots by using the units as filters
             oPlot.definePlot('Pa', 'Tank Pressures');
             oPlot.definePlot('K', 'Tank Temperatures');
             oPlot.definePlot('kg', 'Tank Masses');
             oPlot.definePlot('kg/s', 'Flow Rates');
             
+            % or you can specify the labels you want to plot
             cNames = {'Partial Pressure CO_2 Tank 1', 'Partial Pressure CO_2 Tank 2'};
             sTitle = 'Partial Pressure CO2';
             oPlot.definePlot(cNames, sTitle);
 
-            cNames = {'Partial Mass CO_2 Tank 1', 'Partial Mass CO_2 Tank 2'};
+            % you can also create subplots within one figure by creating a
+            % three dimensional cell array containing labels. (see define
+            % plot comments for more information on this (for this
+            % calculations on log values are currently not possible)
+            cNames = cell(1,2,2);
+            cNames(1,1,:) = {'Partial Mass CO_2 Tank 1', 'Partial Mass CO_2 Tank 2'};
+            cNames(1,2,:) = {'Partial Mass CO_2 Tank 1', 'Partial Mass CO_2 Tank 2'};
             sTitle = 'Partial Mass CO2';
             oPlot.definePlot(cNames, sTitle);
-
+            
+            % or you can define the subplots individually by using a
+            % mbPosition matrix (also see define plot comments for more
+            % help. 
+            cNames = {'Flowrate of CO2'};
+            sTitle = 'Partial Mass CO2';
+            mbPosition = [ false, false, false;...
+                           true , false, false];
+            oPlot.definePlot(cNames, sTitle, mbPosition);
+            
+            cNames = {'Flowrate of CO2'};
+            sTitle = 'Partial Mass CO2';
+            mbPosition = [ false, false, true;...
+                           false , false, false];
+            oPlot.definePlot(cNames, sTitle, mbPosition);
+            
+            
+            % You can also define calculations on the log values
+            cNames = {'133.322 * ( Partial Pressure CO_2 Tank 1 + Partial Pressure CO_2 Tank 2 )'};
+            sTitle = 'Partial Pressure CO2 total in Torr';
+            oPlot.definePlot(cNames, sTitle);
         end
         
         function plot(this, varargin) % Plotting the results

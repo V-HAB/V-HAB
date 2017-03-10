@@ -168,6 +168,9 @@ classdef plotter_basic < simulation.monitor
                 % struct? like mixing unit filter and label filter? And
                 % does the subplot logic using a three dimensional cell
                 % still have to work for that?
+                if ~strcmp(csFields{iField}, 'sLabel')
+                    continue
+                end
                 
                 mfFieldSize = size(tFilter.(csFields{iField}));
                 
@@ -358,7 +361,15 @@ classdef plotter_basic < simulation.monitor
                     % plot. If there isn't, we tell the user. 
                     if ~isempty(aiIdx)
                         this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'mbPosition', mbPosition, 'sSubtitle', sSubtitle, 'csFunctions', []);
-                        this.tPlots(end).csFunctions = csFunctions;
+                        % before we add the functions to the plot struct we
+                        % remove all empty fields
+                        mbRemoveFunction = false(1,length(csFunctions));
+                        for iFunction = 1:length(csFunctions)
+                            if isempty(csFunctions{iFunction})
+                                mbRemoveFunction(iFunction) = true;
+                            end
+                        end
+                        this.tPlots(end).csFunctions = csFunctions(~mbRemoveFunction);
                     else
                         this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
                     end
@@ -527,7 +538,7 @@ classdef plotter_basic < simulation.monitor
                     % in case any calculations are performed
                     iCurrentLog = 1;
                     iCalculations = length(this.tPlots(iPlot).csFunctions);
-                    if iCalculations > 0 && ~( isempty(this.tPlots(iPlot).csFunctions{1}) && iCalculations == 1)
+                    if iCalculations > 0
                         
                         mfDataNew = zeros(length(mfData),iCalculations);
                         
