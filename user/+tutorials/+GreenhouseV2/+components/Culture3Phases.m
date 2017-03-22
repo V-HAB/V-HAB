@@ -133,9 +133,9 @@ classdef Culture3Phases < vsys
                 this.toStores.(this.txInput.sCultureName), ...          % store containing phase
                 [this.txInput.sCultureName, '_Balance'], ...            % phase name 
                 'solid',...                                             % primary phase of the mixture phase
-                struct('CO2', 0.1, 'O2', 0.1, 'H2O', 0.5,...
-                    ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), 0.1,...
-                    ([this.txPlantParameters.sPlantSpecies, 'InedibleWet']), 0.1), ...
+                struct('CO2', 10, 'O2', 10, 'H2O', 50,...
+                    ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), 10,...
+                    ([this.txPlantParameters.sPlantSpecies, 'InedibleWet']), 10), ...
                 10, ...                                                 % volume    [m^3]
                 293.15, ...                                             % phase temperature [K]
                 101325);
@@ -202,13 +202,10 @@ classdef Culture3Phases < vsys
             this.connectIF('NutrientSupply_FromIF_In', sIF4);
             this.connectIF('Biomass_ToIF_Out', sIF5);
         end
-    end
-    
-    methods (Access = protected)
-        function exec(this, ~)
-            exec@vsys(this);
-            
-            if this.oTimer.iTick == 0
+        function update(this)
+                  
+            fTimeStep = this.oTimer.fTime - this.fLastExec;
+            if fTimeStep <= 0.1
                 return;
             end
             
@@ -276,7 +273,7 @@ classdef Culture3Phases < vsys
                 afMassChange = zeros(1,this.oMT.iSubstances);
                 afMassChange(aiSubstances) =  afCurrentBalanceMass(aiSubstances) - this.afInitialBalanceMass(aiSubstances);
                 
-                afPartialFlowRates = afMassChange./this.fTimeStep;
+                afPartialFlowRates = afMassChange./fTimeStep;
                 
                 afPartialFlowRatesIn = zeros(1,this.oMT.iSubstances);
                 afPartialFlowRatesIn(afPartialFlowRates < 0) = afPartialFlowRates(afPartialFlowRates < 0);
@@ -297,7 +294,13 @@ classdef Culture3Phases < vsys
                 this.toBranches.WaterSupply_In.oHandler.setFlowRate(-this.fWaterConsumptionRate);
                 this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate);
                 
-                this.toStores.(this.txInput.sCultureName).update();
+                this.fLastExec = this.oTimer.fTime;
+        end
+    end
+    
+    methods (Access = protected)
+        function exec(this, ~)
+            exec@vsys(this);
         end
     end
 end

@@ -334,7 +334,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.Atmosphere, ...       % store containing phase
                 'ExcessO2', ...                     % phase name
                 struct(...                          % phase contents    [kg]
-                    'O2', 1e-3), ...
+                    'O2', 1e6), ...
                 1e6, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
@@ -345,7 +345,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.Atmosphere, ...       % store containing phase
                 'ExcessCO2', ...                    % phase name
                 struct(...                          % phase contents    [kg]
-                    'CO2', 1e-3), ...
+                    'CO2', 1e6), ...
                 1e6, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             

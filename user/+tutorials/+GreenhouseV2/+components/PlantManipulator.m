@@ -52,10 +52,9 @@ classdef PlantManipulator < matter.manips.substance.flow
                 afPartialFlows = afPartialFlows - (fError .* arRatios);
             end
             
-            if abs(sum(afPartialFlows)) > 1e-18
-                keyboard()
-            end
             update@matter.manips.substance.flow(this, afPartialFlows);
+            
+            this.oParent.update();
         end
     end
 end
