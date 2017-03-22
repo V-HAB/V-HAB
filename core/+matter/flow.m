@@ -86,10 +86,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % delete
         bInterface = false;
         
-        
-        
-        
-        
         % Re-calculated every tick in setData/seal
         afPartialPressure;
         
@@ -640,9 +636,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % If only one flow, no f2f exists --> set pressure, temp
                 % according to IN exme
                 
-                if isnan(fPortPress)
-                    keyboard()
-                end
                 if iL == 1
                     oThis.fPressure    = fPortPress;
                     oThis.fTemperature = fCurrentTemperature;
@@ -710,9 +703,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % Skip pressure, temperature?
                 if bSkipPT, continue; end;
                 
-                if isnan(fPortPress)
-                    keyboard()
-                end
                 oThis.fPressure = fPortPress;
                 
                 if tools.round.prec(fPortPress, iPrec) < 0

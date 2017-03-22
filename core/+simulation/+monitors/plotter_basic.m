@@ -347,7 +347,7 @@ classdef plotter_basic < simulation.monitor
                         else
                             % if no calculations is used the new filter is the
                             % same as the old and the signs are empty
-                            csFunctions{iFilter} = [];
+                            csFunctions{iFilter} = 'x1';
                             csFilterNew{iFilter} = csFilter{iFilter};
                         end
                     end

@@ -79,9 +79,6 @@ classdef ConstantMassP2P < matter.procs.p2ps.flow
             end
             
             % extract specified substance with desired flow rate
-            if any(isnan(arPartialFlowRates)) || isnan(fFlowRate) || fFlowRate > 1e5 || arPartialFlowRates(29) ~= 0
-                keyboard()
-            end
             this.setMatterProperties(fFlowRate, arPartialFlowRates);
             
             this.fLastExec = this.oTimer.fTime;

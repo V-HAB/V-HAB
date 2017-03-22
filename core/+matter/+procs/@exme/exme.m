@@ -115,7 +115,7 @@ classdef exme < base
             
             
             this.bHasFlow = true;
-            this.bFlowIsAProcP2P = isa(this.oFlow, 'matter.procs.p2ps.flow');
+            this.bFlowIsAProcP2P = isa(this.oFlow, 'matter.procs.p2ps.flow') || isa(this.oFlow, 'matter.procs.p2ps.branch.flow');
             
             
             try
