@@ -45,9 +45,12 @@ classdef PlantManipulator < matter.manips.substance.flow
             
             % to reduce mass erros the current error in mass is spread over
             % the in and outs
-            fError = abs(sum(afPartialFlows));
-            arRatios = afPartialFlows./abs(sum(afPartialFlows));
-            afPartialFlows = afPartialFlows - (fError .* arRatios);
+            fFlowRate = sum(afPartialFlows);
+            if fFlowRate ~= 0
+                fError = abs(sum(afPartialFlows));
+                arRatios = afPartialFlows./abs(sum(afPartialFlows));
+                afPartialFlows = afPartialFlows - (fError .* arRatios);
+            end
             
             if abs(sum(afPartialFlows)) > 1e-18
                 keyboard()
