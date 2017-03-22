@@ -38,8 +38,8 @@ classdef controller < base
         
         function update(this, ~)
             this.bRegisteredOutdated = false;
-            
-            fprintf('[%i] CONTROLLER\n', this.aoBranches(1).oTimer.iTick);
+            % TO DO: why create so many console outputs?
+            % fprintf('[%i] CONTROLLER\n', this.aoBranches(1).oTimer.iTick);
             
             afTotalCoeffs = [ this.aoSolvers.fTotalCoeff ];
             
@@ -150,12 +150,12 @@ classdef controller < base
                         
                         afPressuresNew(iP) = cPressureCalc{iP, 1}(afPressuresNew);
                         
-                        fprintf('CALC PRESSURE %i --> %f  --> org: %f\n', iP, afPressuresNew(iP), aoPhasesDynPressure(iP).fPressure);
+                        % fprintf('CALC PRESSURE %i --> %f  --> org: %f\n', iP, afPressuresNew(iP), aoPhasesDynPressure(iP).fPressure);
                     end
                 end
                 
                 
-                if iIteration > 10,
+                if iIteration > 10
                     keyboard();
                 end
             end

@@ -45,10 +45,10 @@ classdef setup < simulation.infrastructure
             
             oPlot = this.toMonitors.oPlotter;
             
-            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
-            oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
-            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
-            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
+            oPlot.definePlot('Pa', 'Tank Pressures');
+            oPlot.definePlot('K', 'Tank Temperatures');
+            oPlot.definePlot('kg', 'Tank Masses');
+            oPlot.definePlot('kg/s', 'Flow Rates');
             
             
 

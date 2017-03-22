@@ -44,22 +44,10 @@ classdef setup < simulation.infrastructure
                 oLogger.add([this.oSimulationContainer.toChildren.GreenhouseV2.toChildren.(this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI})], 'flow_props');
                 
                 % p2p flowrates
-                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toProcsP2P.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_GasExchange_P2P'], 'fExtractionRate', 'kg/s', 'GasExchange');
-                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toProcsP2P.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_BiomassGrowth_P2P'], 'fExtractionRate', 'kg/s', 'BiomassGrowth');
-                
-                % manipulator flowrates
-                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Balance.toManips.substance'], 'fBalanceFlow', 'kg/s', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' WN Balance Flow']);
-                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Balance.toManips.substance'], 'fWaterFlow', 'kg/s', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' WN Water Flow']);
-                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Balance.toManips.substance'], 'fNutrientFlow', 'kg/s', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' WN Nutrient Flow']);
-                
-                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Phase_1.toManips.substance'], 'fBalanceFlow', 'kg/s', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' GE Balance Flow']);
-                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Phase_1.toManips.substance'], 'fO2Flow', 'kg/s', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' GE O2 Flow']);
-                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Phase_1.toManips.substance'], 'fCO2Flow', 'kg/s', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' GE CO2 Flow']);
-                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Phase_1.toManips.substance'], 'fH2OFlow', 'kg/s', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' GE H2O Flow']);
-                
-                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Plants.toManips.substance'], 'fBalanceFlow', 'kg/s', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' PG Balance Flow']);
-                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Plants.toManips.substance'], 'fEdibleFlow', 'kg/s', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' PG Edible Flow']);
-                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Plants.toManips.substance'], 'fInedibleFlow', 'kg/s', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' PG Inedible Flow']);
+                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toProcsP2P.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_GasExchange_CO2_P2P'], 'fFlowRate', 'kg/s', 'CO2 GasExchange');
+                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toProcsP2P.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_GasExchange_O2_P2P'], 'fFlowRate', 'kg/s',  'O2 GasExchange');
+                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toProcsP2P.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_GasExchange_H2O_P2P'], 'fFlowRate', 'kg/s', 'H2O GasExchange');
+                oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toProcsP2P.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_BiomassGrowth_P2P'], 'fFlowRate', 'kg/s', 'BiomassGrowth');
                 
                 % culture atmosphere cycle phase
                 oLogger.addValue(['GreenhouseV2:c:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ':s:', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '.toPhases.', this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, '_Phase_1'], 'fPressure', 'Pa', [this.oSimulationContainer.toChildren.GreenhouseV2.csCultures{iI}, ' Total Pressure']);
@@ -91,8 +79,8 @@ classdef setup < simulation.infrastructure
             
             % P2P flow rates
 %             oLogger.addValue('GreenhouseV2:s:BiomassSplit.toProcsP2P.EdibleInedible_Split_P2P', 'fExtractionRate', 'kg/s', 'Extraction Rate BiomassSplit');
-            oLogger.addValue('GreenhouseV2:s:Atmosphere.toProcsP2P.ExcessO2_P2P', 'fExtractionRate', 'kg/s', 'Extraction Rate ExcessO2');
-            oLogger.addValue('GreenhouseV2:s:Atmosphere.toProcsP2P.ExcessCO2_P2P', 'fExtractionRate', 'kg/s', 'Extraction Rate ExcessCO2');
+            oLogger.addValue('GreenhouseV2:s:Atmosphere.toProcsP2P.ExcessO2_P2P', 'fFlowRate', 'kg/s', 'Extraction Rate ExcessO2');
+            oLogger.addValue('GreenhouseV2:s:Atmosphere.toProcsP2P.ExcessCO2_P2P', 'fFlowRate', 'kg/s', 'Extraction Rate ExcessCO2');
 %             oLogger.addValue('GreenhouseV2:s:WaterSeparator.toProcsP2P.WaterAbsorber_P2P', 'fExtractionRate', 'kg/s', 'WaterAbsorber');
             
             %
@@ -109,10 +97,10 @@ classdef setup < simulation.infrastructure
             
             oPlot = this.toMonitors.oPlotter;
             
-            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
-            oPlot.definePlotAllWithFilter('K',  'Tank Temperatures');
-            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
-            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
+            oPlot.definePlot('Pa', 'Tank Pressures');
+            oPlot.definePlot('K',  'Tank Temperatures');
+            oPlot.definePlot('kg', 'Tank Masses');
+            oPlot.definePlot('kg/s', 'Flow Rates');
         end
         
         function plot(this)

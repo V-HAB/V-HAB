@@ -24,49 +24,6 @@ classdef setup < simulation.infrastructure
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
             tutorials.liquid_flow.systems.Example(this.oSimulationContainer, 'Example');
-            
-            %% Ignore the contents of this section
-            % Set a veeery high fixed time step - the solver will still be
-            % called by the phase update methods!
-%             oB1.fFixedTS = 10000;
-%             
-%             % Set fixed time steps for all phases, synced. Means that every
-%             % tick each phase and both branches are solved.
-%             % Decrease if flow rates unstable, increase if too slow. If un-
-%             % stable AND too slow, buy a new computer.
-%             aoPhases = this.oRoot.toChildren.Example.toStores.Tank_1.aoPhases;
-%             aoPhases(1).fFixedTS = 0.5;
-%             aoPhases = this.oRoot.toChildren.Example.toStores.Tank_2.aoPhases;
-%             aoPhases(1).fFixedTS = 0.5;
-%             
-            %% Logging
-            
-            oLog = this.toMonitors.oLogger;
-            
-            oLog.add('Example', 'flow_props');
-            
-%             % Creating a cell setting the log items
-%             this.csLog = {
-%                 % System timer
-%                 'oData.oTimer.fTime';                                        % 1
-%                 
-%                 % Add other parameters here
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fPressure';  % 2
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fPressure';  % 4
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
-%                 'toChildren.Example.aoBranches(1).fFlowRate';                % 6
-%                 
-%                 };
-%             
-            %% Define plots
-            
-            oPlot = this.toMonitors.oPlotter;
-            
-            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
-            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
-            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
-            
             %% Simulation length
             % Stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
@@ -74,6 +31,23 @@ classdef setup < simulation.infrastructure
             this.iSimTicks = 600;
             this.bUseTime = true;
 
+        end
+        function configureMonitors(this,~)
+            %% Logging
+            
+            oLog = this.toMonitors.oLogger;
+            
+            oLog.add('Example', 'flow_props');
+            
+            %% Define plots
+            
+            oPlot = this.toMonitors.oPlotter;
+            
+            oPlot.definePlot('Pa', 'Tank Pressures');
+            oPlot.definePlot('kg', 'Tank Masses');
+            oPlot.definePlot('kg/s', 'Flow Rates');
+            
+            
         end
         
         function plot(this) % Plotting the results

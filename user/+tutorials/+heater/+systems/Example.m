@@ -35,14 +35,20 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName, 20);
             
+            eval(this.oRoot.oCfgParams.configCode(this));
+        end
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+            
             % Creating a store, volume 1000 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1000));
+            matter.store(this, 'Tank_1', 1000);
             
             % Adding a phase to the store 'Tank_1', 1000 m^3 air
             oGasPhase = this.toStores.Tank_1.createPhase('air', 2000);
             
             % Creating a second store, volume 1000 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 1000));
+            matter.store(this, 'Tank_2', 1000);
             
             % Adding a phase to the store 'Tank_2', 1000 m^3 air
             oAirPhase = this.toStores.Tank_2.createPhase('air', 1000);
@@ -52,30 +58,30 @@ classdef Example < vsys
             matter.procs.exmes.gas(oAirPhase, 'Port_2');
              
             % Adding a pipe to connect the tanks, length 1 m, diameter 0.1 m
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe', 10, 0.01));
+            components.pipe(this, 'Pipe', 10, 0.01);
             
-            this.oHeater = components.heater(this.oData.oMT, 'Heater');
-            this.addProcF2F(this.oHeater);
+            this.oHeater = components.heater(this, 'Heater');
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            oBranch = this.createBranch('Tank_1.Port_1', {'Pipe','Heater'}, 'Tank_2.Port_2');
-            
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
-            
-            % Add branch to manual solver and set the flow rate
-            this.oBranch = solver.matter.manual.branch(oBranch);
-            this.oBranch.setFlowRate(0.2);
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe','Heater'}, 'Tank_2.Port_2');
             
             % Setting the initial switching time for the heater to 100 s. 
             this.fSwitchTime   = 100;
             
             % Initially, the heater is off. 
-            this.oHeater.setPower(0);
+            this.oHeater.fPower = 0;
             this.bHeaterOn = false;
+            
+        end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            
+            % Add branch to manual solver and set the flow rate
+            this.oBranch = solver.matter.manual.branch(this.aoBranches(1));
+            this.oBranch.setFlowRate(0.2);
             
         end
     end
@@ -92,14 +98,14 @@ classdef Example < vsys
             % time by another 100 s. This way we change the heater status
             % every 100 s. 
              
-            if this.oData.oTimer.fTime > this.fSwitchTime   % Have 100s passed?
+            if this.oTimer.fTime > this.fSwitchTime   % Have 100s passed?
                 if this.bHeaterOn                           % Is the heater currently on? 
                     this.bHeaterOn = false;                 % Turining the heater off
-                    this.oHeater.setPower(0);
+                    this.oHeater.fPower = 0;
                     
                 else
                     this.bHeaterOn = true;                  % Turining the heater on
-                    this.oHeater.setPower(2000);
+                    this.oHeater.fPower = 2000;
                     
                 end
                 

@@ -16,7 +16,7 @@ classdef setup < simulation.infrastructure
             % Possible to change the constructor paths and params for the
             % monitors
             ttMonitorConfig = struct();
-            
+            warning('off','all')
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
             this@simulation.infrastructure('Tutorial_Fan_Loop_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
@@ -37,6 +37,8 @@ classdef setup < simulation.infrastructure
         function configureMonitors(this)
             %% Logging
             tiLog = this.toMonitors.oLogger.add('Example', 'flow_props');
+            
+            this.toMonitors.oLogger.addValue('Example.aoBranches(1).aoFlows(1)', 'fFlowRate', 'kg/s', 'Flowrate');
             
             %% Plot definition
             this.toMonitors.oPlotter.definePlot('Pa',   'Pressures')

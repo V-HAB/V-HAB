@@ -130,6 +130,7 @@ classdef GreenhouseV2 < vsys
 %                 20, ...                             % phase volume      [m^3]
 %                 fTemperatureInit);                  % phase temperature [K]
 
+            this.toStores.Atmosphere.bPreventVolumeOverwrite = true;
             oAtmosphere = this.toStores.Atmosphere.createPhase('air', 20, 293.15, 0.5, 101325);
                   
             %% Water Supply
@@ -160,7 +161,7 @@ classdef GreenhouseV2 < vsys
             
             %% Biomass Edible/Inedible Split Buffer
             
-            matter.store(this, 'BiomassSplit', 1);
+            matter.store(this, 'BiomassSplit', 4);
             
             oBiomassEdibleSplit = matter.phases.liquid(...
                 this.toStores.BiomassSplit, ...     % store containing phase
@@ -326,8 +327,7 @@ classdef GreenhouseV2 < vsys
             matter.procs.exmes.liquid(oWaterWS, 'WaterAbsorber_P2P');
             
             % add water absorber p2p processor
-            tutorials.GreenhouseV2.components.WaterAbsorber(this, this.toStores.WaterSeparator, 'WaterAbsorber_P2P', 'WaterSeparator_Phase_1.WaterAbsorber_P2P', 'WaterWS.WaterAbsorber_P2P');
-            
+            components.P2Ps.ConstantMassP2P(this, this.toStores.WaterSeparator, 'WaterAbsorber_P2P', 'WaterSeparator_Phase_1.WaterAbsorber_P2P', 'WaterWS.WaterAbsorber_P2P', {'H2O'}, 1);
             
             % add O2 an CO2 excess phases and exmes to atmosphere store 
             oExcessO2 = matter.phases.gas(...
@@ -353,21 +353,19 @@ classdef GreenhouseV2 < vsys
             matter.procs.exmes.gas(oAtmosphere, 'ExcessCO2_P2P');
             
             % add excess extraction p2ps
-            tutorials.GreenhouseV2.components.SingleSubstanceExtractor(...
+            components.P2Ps.ManualP2P(...
                 this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
                 'ExcessO2_P2P', ...                         % p2p processor name
                 'Atmosphere_Phase_1.ExcessO2_P2P', ...      % first phase and exme
-                'ExcessO2.ExcessO2_P2P', ...                % second phase and exme
-                'O2');                                      % substance to extract
-            
-            tutorials.GreenhouseV2.components.SingleSubstanceExtractor(...
+                'ExcessO2.ExcessO2_P2P');                   % second phase and exme
+                
+            components.P2Ps.ManualP2P(...
                 this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
                 'ExcessCO2_P2P', ...                        % p2p processor name
                 'Atmosphere_Phase_1.ExcessCO2_P2P', ...     % first phase and exme
-                'ExcessCO2.ExcessCO2_P2P', ...              % second phase and exme
-                'CO2');                                     % substance to extract
+                'ExcessCO2.ExcessCO2_P2P');                 % second phase and exme
             
             % create branches exclusive to this section
             matter.branch(this, 'N2BufferSupply.N2_Out_ToAtmosphere',           {}, 'Atmosphere.N2_In_FromBuffer',                  'N2BufferSupply');
@@ -376,18 +374,13 @@ classdef GreenhouseV2 < vsys
             matter.branch(this, 'Atmosphere.Atmosphere_Out_ToSeparator',        {}, 'WaterSeparator.Atmosphere_In_FromAtmosphere',  'AtmosphereToWS');
             matter.branch(this, 'WaterSeparator.Atmosphere_Out_ToAtmosphere',   {}, 'Atmosphere.Atmosphere_In_FromSeparator',       'AtmosphereFromWS');
        
-            %% Create Biomass Split P2P
-            
-            tutorials.GreenhouseV2.components.BiomassSplit(...
-                this.toStores.BiomassSplit, ...
-                'EdibleInedible_Split_P2P', ...
-                'BiomassEdible.EdibleInedible_Split_P2P', ...
-                'BiomassInedible.EdibleInedible_Split_P2P');
             
             %% Create EXMEs for Culture Connections
             
             % get names and number of grown cultures
             this.csCultures = fieldnames(this.toCultures);
+            
+            csInedibleBiomass = cell(1, length(this.csCultures));
             
             % loop over all cultures to create each required exmes 
             for iI = 1:length(this.csCultures)
@@ -397,7 +390,18 @@ classdef GreenhouseV2 < vsys
                 matter.procs.exmes.liquid(oWaterSupply,         [this.toCultures.(this.csCultures{iI}).sName, '_WaterSupply_Out']);
                 matter.procs.exmes.liquid(oNutrientSupply,      [this.toCultures.(this.csCultures{iI}).sName, '_NutrientSupply_Out']);
                 matter.procs.exmes.liquid(oBiomassEdibleSplit,  [this.toCultures.(this.csCultures{iI}).sName, '_Biomass_In']);
+                
+                csInedibleBiomass{iI} = [this.toCultures.(this.csCultures{iI}).txPlantParameters.sPlantSpecies, 'InedibleWet'];
             end
+            
+            %% Create Biomass Split P2P
+            
+            components.P2Ps.ConstantMassP2P(this, ...
+                this.toStores.BiomassSplit, ...
+                'EdibleInedible_Split_P2P', ...
+                'BiomassEdible.EdibleInedible_Split_P2P', ...
+                'BiomassInedible.EdibleInedible_Split_P2P',...
+                csInedibleBiomass, 1);
             
             %% Create Branches
             
@@ -470,8 +474,8 @@ classdef GreenhouseV2 < vsys
         % add cultures via the following method. will be implemented after
         % new plant model has been validated as inputs etc. have to be
         % adjusted.
-        function this = addCulture(this, sCultureName, sPlantSpecies, fGrowthArea, fEmergeTime, iConsecutiveGenerations, fHarvestTime, fPPFD, fH)
-        end
+%         function this = addCulture(this, sCultureName, sPlantSpecies, fGrowthArea, fEmergeTime, iConsecutiveGenerations, fHarvestTime, fPPFD, fH)
+%         end
     end
     
     methods (Access = protected)
@@ -485,23 +489,18 @@ classdef GreenhouseV2 < vsys
                 return;
             end
             
-%             % output
-%             this.toStores.BiomassEdible.toPhases.BiomassEdible.calculateNutritionalContent();
-            
-            if this.oTimer.fTime >= 1e5
-                keyboard();
-            end
-
             %% O2 Controller
             
             if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afPP(this.oMT.tiN2I.O2) <= 21000
-                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 0;
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
                 this.toBranches.O2BufferSupply.oHandler.setFlowRate(1e-3);
             elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afPP(this.oMT.tiN2I.O2) > 22000
-                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 1e-4;
+                afFlowRate = zeros(1,this.oMT.iSubstances);
+                afFlowRate(this.oMT.tiN2I.O2) = 1e-4;
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.setFlowRate(afFlowRate);
                 this.toBranches.O2BufferSupply.oHandler.setFlowRate(0);
             else
-                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 0;
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
                 this.toBranches.O2BufferSupply.oHandler.setFlowRate(0);
             end
             
@@ -510,13 +509,15 @@ classdef GreenhouseV2 < vsys
             this.fCO2 = this.CalculateCO2Concentration();
             if this.fCO2 >= 1300
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
-                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 1e-4;
+                afFlowRate = zeros(1,this.oMT.iSubstances);
+                afFlowRate(this.oMT.tiN2I.CO2) = 1e-4;
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(afFlowRate);
             elseif this.fCO2 < 330
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate(1e-3);
-                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 0;
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
             else
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
-                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 0;
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
             end
             
             %% Humidity Controller

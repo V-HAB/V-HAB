@@ -367,7 +367,9 @@ classdef plotter_basic < simulation.monitor
                     end
                     % now we can set the seperated fields into the filter
                     % struct
-                    tFilter.(csFields{iField}) = csFilter;
+                    if strcmp(csFields{iField}, 'sLabel')
+                        tFilter.(csFields{iField}) = csFilter;
+                    end
 
                     % the sign cell array will be added to the tPlot struct to
                     % perform the calculations during the actual plotting!
