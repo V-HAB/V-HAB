@@ -460,6 +460,15 @@ classdef GreenhouseV2 < vsys
             this.toBranches.Leakage.oHandler.setFlowRate(1e-5);
             this.toBranches.SplitToEdible.oHandler.setFlowRate(0);
             this.toBranches.SplitToInedible.oHandler.setFlowRate(0);
+
+            % set time steps
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    oPhase.fMaxStep = 60;
+                end
+            end
         end
         
         %% Calculate Atmosphere CO2 Concentration

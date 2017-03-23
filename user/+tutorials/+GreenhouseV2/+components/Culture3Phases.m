@@ -121,7 +121,8 @@ classdef Culture3Phases < vsys
                 [this.txInput.sCultureName, '_Plants'], ...             % phase name 
                 'solid',...                                             % primary phase of the mixture phase
                 struct(...                                              % phase contents    [kg]
-                    ), ...
+                    ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), 1e-3,...
+                    ([this.txPlantParameters.sPlantSpecies, 'InedibleWet']), 1e-3), ...
                 10, ...                                                 % volume    [m^3]
                 293.15, ...                                             % phase temperature [K]
                 101325);                                                
@@ -152,7 +153,7 @@ classdef Culture3Phases < vsys
             %% Create Biomass Growth P2P Processor
             
             % 
-            components.P2Ps.ConstantMassP2P(...
+            tutorials.GreenhouseV2.components.ConstantMassP2P(...
                 this, ...                                                                       % parent system reference
                 this.toStores.(this.txInput.sCultureName), ...                                  % store containing phases
                 [this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...                          % p2p processor name
@@ -191,6 +192,15 @@ classdef Culture3Phases < vsys
             this.toBranches.WaterSupply_In.oHandler.setFlowRate(0);
             this.toBranches.NutrientSupply_In.oHandler.setFlowRate(0);
             this.toBranches.Biomass_Out.oHandler.setFlowRate(0);
+            
+            % set time steps
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    oPhase.fMaxStep = 60;
+                end
+            end
         end
         
         %% Connect Subsystem Interfaces with Parent System
@@ -273,7 +283,21 @@ classdef Culture3Phases < vsys
                 afMassChange = zeros(1,this.oMT.iSubstances);
                 afMassChange(aiSubstances) =  afCurrentBalanceMass(aiSubstances) - this.afInitialBalanceMass(aiSubstances);
                 
-                afPartialFlowRates = afMassChange./fTimeStep;
+                afPartialFlowRates = afMassChange./3600;
+                
+                afPartialFlowRates(this.oMT.tiN2I.O2) = afPartialFlowRates(this.oMT.tiN2I.O2) + this.tfGasExchangeRates.fO2ExchangeRate;
+                afPartialFlowRates(this.oMT.tiN2I.CO2) = afPartialFlowRates(this.oMT.tiN2I.CO2) + this.tfGasExchangeRates.fCO2ExchangeRate;
+                afPartialFlowRates(this.oMT.tiN2I.H2O) = afPartialFlowRates(this.oMT.tiN2I.H2O) + this.tfGasExchangeRates.fTranspirationRate;
+            
+                if afPartialFlowRates(this.oMT.tiN2I.H2O) < 0
+                    afPartialFlowRates(this.oMT.tiN2I.H2O) = 0;
+                end
+                
+                if ~this.bLight && (afPartialFlowRates(this.oMT.tiN2I.CO2) < 0)
+                    afPartialFlowRates(this.oMT.tiN2I.CO2) = 0;
+                elseif this.bLight && (afPartialFlowRates(this.oMT.tiN2I.O2) < 0)
+                    afPartialFlowRates(this.oMT.tiN2I.O2) = 0;
+                end
                 
                 afPartialFlowRatesIn = zeros(1,this.oMT.iSubstances);
                 afPartialFlowRatesIn(afPartialFlowRates < 0) = afPartialFlowRates(afPartialFlowRates < 0);
