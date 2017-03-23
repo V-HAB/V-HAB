@@ -20,9 +20,7 @@ classdef setup < simulation.infrastructure
             warning( 'off', 'all')
             
             this@simulation.infrastructure('Tutorial_CDRA', ptConfigParams, tSolverParams, ttMonitorConfig);
-            
-            this.bPlayFinishSound = true;
-            
+                        
             % Creating the root object
             tutorials.CDRA.systems.Example(this.oSimulationContainer, 'Example');
 

@@ -68,11 +68,11 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
             arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./fDesorptionFlowRate);
 
-            this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
-            
             fAdsorptionFlowRate                             = sum(mfFlowRatesAdsorption);
             arPartialsAdsorption                            = zeros(1,this.oMT.iSubstances);
             arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./fAdsorptionFlowRate);
+            
+            this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
             
             this.setMatterProperties(fAdsorptionFlowRate, arPartialsAdsorption);
         end
@@ -209,8 +209,18 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 keyboard()
             end
             
+            afNewMassFlow       = this.oIn.oPhase.afMass - (this.mfFlowRatesProp * fTimeStep) + afInFlow * fTimeStep;
+            
+            abNegativeFlow = afNewMassFlow < 0;
+            this.mfFlowRatesProp(abNegativeFlow) = (this.oIn.oPhase.afMass(abNegativeFlow) / fTimeStep) + afInFlow(abNegativeFlow);
+            
+            afNewMassAbsorber   = this.oOut.oPhase.afMass + (this.mfFlowRatesProp * fTimeStep);
+            
+            abNegativeAbsorber = afNewMassAbsorber < 0;
+            this.mfFlowRatesProp(abNegativeAbsorber) = (this.oOut.oPhase.afMass(abNegativeAbsorber) / fTimeStep);
+            
             this.fAdsorptionHeatFlow = - sum((this.mfFlowRatesProp ./ this.oMT.afMolarMass) .* this.mfAbsorptionEnthalpy);
-            this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
+            this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = 0.5*this.fAdsorptionHeatFlow; % assumes that 50% of the heat is lost to env.
             this.oStore.oContainer.tMassNetwork.mfAdsorptionFlowRate(this.iCell) = sum(this.mfFlowRatesProp);
         end
     end

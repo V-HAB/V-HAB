@@ -164,6 +164,14 @@ classdef lumpedparameter < base
             % Solve the equation.
             % http://www.mathworks.com/matlabcentral/answers/101581-why-do-i-receive-a-warning-about-integration-tolerance-when-using-the-ode-solver-functions
             % ode45, ode23s, ode15s, ode23tb?
+            
+            % TO DO: Find out why this became necessary
+            mHeatSources = this.oVSys.mHeatSourceVector;
+            mCapacities  = this.oVSys.mCapacityVector;
+            
+            % Build the source rate vector.
+            this.mSourceRateVector = mHeatSources ./ mCapacities;
+            
             [mTimePoints, mSolutionTemps] = ode45(this.calcChangeRate, ...    ode23s
                 [fStepBeginTime, fStepEndTime], mNodeTemps, this.tOdeOptions);
             
@@ -263,13 +271,6 @@ classdef lumpedparameter < base
             % Original logic by Christof Roth.
             
             %mLinearRateMatrices = this.mLinearRateMatrix + this.mFluidFlowRateMatrix;
-            
-            % TO DO: Find out why this became necessary
-            mHeatSources = this.oVSys.mHeatSourceVector;
-            mCapacities  = this.oVSys.mCapacityVector;
-            
-            % Build the source rate vector.
-            this.mSourceRateVector = mHeatSources ./ mCapacities;
             
             mTemperatureChangeRate = this.mSourceRateVector + ...
                 (this.mLinearRateMatrix + this.mFluidFlowRateMatrix) * mCurrentTemperatures + ...

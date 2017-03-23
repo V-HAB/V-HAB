@@ -41,9 +41,15 @@ if length(varargin) == 1
         % this function.
         if varargin{1}.fPressure < 5e5
             fDensity = (varargin{1}.fPressure * varargin{1}.fMolarMass) / (this.Const.fUniversalGas * varargin{1}.fTemperature);
-            % We already have what we want, so no need to execute the rest
-            % of this function.
-            return;
+           
+            if fDensity < 0 || isnan(fDensity)
+                % ideal gas law did not work, use complex calculation
+                clear fDensity
+            else
+           	% We already have what we want, so no need to execute the rest
+            % of this function. 
+                return;
+            end
         end
         
         [ afPartialPressures, ~ ] = this.calculatePartialPressures(varargin{1});
@@ -174,14 +180,14 @@ for iI = 1:length(aiIndices)
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
     tParameters.bUseIsobaricData = true;
-    
+
     % Now we can call the findProperty() method.
     afRho(iI) = this.findProperty(tParameters);
 end
 
 % Sum up the densities multiplied by the partial masses to get the overall density.
 fDensity = sum(afRho .* arPartialMass(aiIndices));
-
+    
 % If none of the substances has a valid density an error is thrown.
 if fDensity < 0 || isnan(fDensity)
     this.throw('calculateDensity','Error in Density calculation!');

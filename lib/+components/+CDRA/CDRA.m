@@ -317,7 +317,7 @@ classdef CDRA < vsys
                 fTemperatureFlow        = tInitialization.(csTypes{iType}).fTemperature;
                 fTemperatureAbsorber    = tInitialization.(csTypes{iType}).fTemperature;
                 fPressure               = this.tAtmosphere.fPressure;
-                fConductance            = tInitialization.(csTypes{iType}).fConductance;
+                fConductance            = tInitialization.(csTypes{iType}).fConductance * (this.tGeometry.(csTypes{iType}).fLength / iCellNumber);
                 mfMassTransferCoefficient = tInitialization.(csTypes{iType}).mfMassTransferCoefficient;
 
                 % Adds two stores (filter stores), containing sylobead
@@ -877,16 +877,19 @@ classdef CDRA < vsys
             % atmosphere: 0.195
             
             % Well internal area assumed to be equal to external
-            fArea5A         =     this.tGeometry.Zeolite5A.fCrossSection  * this.tGeometry.Zeolite5A.fLength;
-            fAreaSylobead   =     this.tGeometry.Sylobead.fCrossSection   * this.tGeometry.Sylobead.fLength;
-            fArea13x        =     this.tGeometry.Zeolite13x.fCrossSection * this.tGeometry.Zeolite13x.fLength;
+            fArea5A         =     this.tGeometry.Zeolite5A.fCrossSection  * this.tGeometry.Zeolite5A.fLength    / this.tGeometry.Zeolite13x.iCellNumber;
+            fAreaSylobead   =     this.tGeometry.Sylobead.fCrossSection   * this.tGeometry.Sylobead.fLength     / this.tGeometry.Sylobead.iCellNumber;
+            fArea13x        =     this.tGeometry.Zeolite13x.fCrossSection * this.tGeometry.Zeolite13x.fLength   / this.tGeometry.Zeolite5A.iCellNumber;
             
             fThermalConductivity = this.oMT.calculateThermalConductivity(oPhase);
             
-            % Assumes 5cm of air and 2 cm of AL through which conduction has to take place
-            mfTransferCoefficient(1)   	= (1/((fThermalConductivity / 0.05) + (237 / 0.02)) * fArea13x)     / this.tGeometry.Zeolite13x.iCellNumber;
-            mfTransferCoefficient(2)    = (1/((fThermalConductivity / 0.05) + (237 / 0.02)) * fAreaSylobead)/ this.tGeometry.Sylobead.iCellNumber;
-            mfTransferCoefficient(3)   	= (1/((fThermalConductivity / 0.05) + (237 / 0.02)) * fArea5A)      / this.tGeometry.Zeolite5A.iCellNumber;
+            % Note: Transfer coefficient for the V-HAB thermal solver has
+            % to be in W/K which means it is U*A or in this case
+            % 1/sum(R_th): With R_th = s/(lambda * A)
+            % Assumes                               0.5 cm of air and                                 1 cm of AL through which conduction has to take place
+            mfTransferCoefficient(1)   	= 1 / ( (0.005/(fThermalConductivity .* fArea13x))       + (0.01/(237 .* fArea13x)) );
+            mfTransferCoefficient(2)    = 1 / ( (0.005/(fThermalConductivity .* fAreaSylobead))  + (0.01/(237 .* fAreaSylobead)) );
+            mfTransferCoefficient(3)   	= 1 / ( (0.005/(fThermalConductivity .* fArea5A))        + (0.01/(237 .* fArea5A)) );
             
             % adds a boundary node for the atmosphere around CDRA
             oAtmosphereCapacity = this.addCreateCapacity(oPhase);
@@ -898,7 +901,12 @@ classdef CDRA < vsys
                 for iFilter = 1:2
                     sName = [(csTypes{iType}),'_',num2str(iFilter)];
                     for iCell = 1:this.tGeometry.(csTypes{iType}).iCellNumber
-
+                        
+                        % Note that absorber and flow capacities are
+                        % treated as one, and the flow is used in all
+                        % instances (the temperature of the absorber is
+                        % then simply set to the same temperature as the
+                        % flow)
                         sAbsorberCapacity   = [this.sName,'__',(csTypes{iType}),'_',num2str(iFilter),'__','Flow_',num2str(iCell)];
 
                         oCapacityAbsorber = this.poCapacities(sAbsorberCapacity);
@@ -1145,12 +1153,12 @@ classdef CDRA < vsys
                 
                 aoAbsorber = this.tMassNetwork.(['aoAbsorberCycle',sCycle]);
                 aoAbsorber(1).ManualUpdate(this.fInitTime/this.iInitStep, abs(mfFlowRate(1)) .* aoBranches(1).coExmes{2}.oPhase.arPartialMass);
-             	aoAbsorber(1).ManualUpdateFinal();
+             	aoAbsorber(1).ManualUpdateFinal(this.fInitTime/this.iInitStep);
                 aoAbsorber(1).oOut.oPhase.update();
                     
                 for iAbsorber = 2:length(aoAbsorber)
                     aoAbsorber(iAbsorber).ManualUpdate(this.fInitTime/this.iInitStep, abs(mfFlowRate(iAbsorber)) .* aoAbsorber(iAbsorber).oIn.oPhase.arPartialMass);
-                    aoAbsorber(iAbsorber).ManualUpdateFinal();
+                    aoAbsorber(iAbsorber).ManualUpdateFinal(this.fInitTime/this.iInitStep);
                     aoAbsorber(iAbsorber).oOut.oPhase.update();
                 end
                 
@@ -1428,7 +1436,7 @@ classdef CDRA < vsys
             end
             
             for iAbsorber = 1:length(aoAbsorber)
-                aoAbsorber(iAbsorber).ManualUpdateFinal();
+                aoAbsorber(iAbsorber).ManualUpdateFinal(fTimeStep);
             end
             
             if any(isnan(mfFlowRatesNew)) || any(isinf(mfFlowRatesNew))
@@ -1536,7 +1544,7 @@ classdef CDRA < vsys
                 % Disable adsorption during the desorption phase, this is
                 % only necessary because the calculation of the branch
                 % flowrates is not able to cope with this
-                aoAbsorber(iAbsorber).ManualUpdateFinal();
+                aoAbsorber(iAbsorber).ManualUpdateFinal(this.tTimeProperties.DesorptionStep);
                 if -this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+iAbsorber) < 0
                     aoAbsorber(iAbsorber).setFlowRateToZero();
                     this.tMassNetwork.mfAdsorptionFlowRate(this.iCells+iAbsorber) = 0;

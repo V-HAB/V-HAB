@@ -355,16 +355,6 @@ classdef CDRA_simple < vsys
             solver.matter.manual.branch(this.toBranches.Filter5A1_AirSafe);
             solver.matter.manual.branch(this.toBranches.Filter5A2_AirSafe);
             
-            % If you want to set a fixed time step for the phase updates
-            % you can outcomment this code and use it to set a defined time
-            % step for all phases within CDRA (or change the rMaxChange)
-%             csStoreNames = fieldnames(this.toStores);
-%             for iStore = 1:length(csStoreNames)
-%                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
-%                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
-%                     oPhase.fFixedTS = 5;
-%                 end
-%             end
         end           
         
         %% Function to connect the system and subsystem level branches with each other

@@ -370,18 +370,21 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % flow.
         function fVolumetricFlowRate = calculateVolumetricFlowRate(this, fFlowRate)
             if nargin < 2
-                if this.fFlowRate
+                if this.fFlowRate ~= 0
                     fVolumetricFlowRate = this.fFlowRate / ...
                                         ( this.fPressure * this.fMolarMass / ...
                                         ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
                 else
                     fVolumetricFlowRate = 0;
                 end
-            else
+            elseif fFlowRate ~= 0
                 fVolumetricFlowRate = fFlowRate / ...
                                     ( this.fPressure * this.fMolarMass / ...
                                     ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
+            else
+                fVolumetricFlowRate = 0;
             end
+            
         end
     end
     

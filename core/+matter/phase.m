@@ -730,11 +730,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 end
                 
                 % For P2P flowrates it is not possible to change the
-                % substances that are transfered through the P2P, therefore
-                % that mass is simply removed from the P2P. Through this
-                % mass is also created in this phase which is removed from
-                % the other substances in this phase and instead added to a
-                % larger origin phase (the atmosphere of the habitat)
+                % substances that are transfered through the P2P to keep the 
+                % mass of the phase from which the P2P extracts mass
+                % constant. Therefore, instead the mass that is added to
+                % the phase to replace the negative mass some of the other
+                % substances in the phase are removed here and instead put
+                % into the origin phase. 
                 fNegativeMassThroughP2P = sum(sum(afNegativeMassByExMe(~mbBranch,:),1));
                 if ~isempty(this.oOriginPhase) && fNegativeMassThroughP2P ~= 0
                     % Weighted contribution of mass removed from this phase
@@ -782,10 +783,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             if any(afMassNew2 < 0)
                 % Well if all this still didn't fix anything the old logic
-                % is used, however a warning is provided
-                % In Case the time step is zero or negative the new
-                % solution to prevent negative masses will not work and
-                % instead the old version is used.
+                % is used
                 abNegative2 = afMassNew2 < 0;
                 this.afMassLost(abNegative2) = this.afMassLost(abNegative2) - afMassNew2(abNegative2);
                 afMassNew2(abNegative2) = 0;
