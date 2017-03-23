@@ -10,8 +10,6 @@ classdef GreenhouseV2 < vsys
         
         csCultures;
         
-        fUpdateFrequency = 3600;   % [s]
-        
         %% Atmosphere Control Paramters
         
         % water separator flowrate (value taken from old plant module)
@@ -23,7 +21,7 @@ classdef GreenhouseV2 < vsys
     
     methods
         function this = GreenhouseV2(oParent, sName)
-            this@vsys(oParent, sName, 3600);
+            this@vsys(oParent, sName, 3600); % Time step set to 1 hour
             
             %% Import Nutrient Data
             
@@ -101,7 +99,7 @@ classdef GreenhouseV2 < vsys
                         this, ...                                   % parent system reference
                         this.ttxPlantParameters.(this.ttxInput.(this.csCultures{iI}).sPlantSpecies), ...
                         this.ttxInput.(this.csCultures{iI}), ...    % input for specific culture
-                        this.fUpdateFrequency);
+                        this.fTimeStep);
             end
         end
         
@@ -327,7 +325,7 @@ classdef GreenhouseV2 < vsys
             matter.procs.exmes.liquid(oWaterWS, 'WaterAbsorber_P2P');
             
             % add water absorber p2p processor
-            components.P2Ps.ConstantMassP2P(this, this.toStores.WaterSeparator, 'WaterAbsorber_P2P', 'WaterSeparator_Phase_1.WaterAbsorber_P2P', 'WaterWS.WaterAbsorber_P2P', {'H2O'}, 1);
+            components.P2Ps.ManualP2P(this, this.toStores.WaterSeparator, 'WaterAbsorber_P2P', 'WaterSeparator_Phase_1.WaterAbsorber_P2P', 'WaterWS.WaterAbsorber_P2P');
             
             % add O2 an CO2 excess phases and exmes to atmosphere store 
             oExcessO2 = matter.phases.gas(...
@@ -486,11 +484,8 @@ classdef GreenhouseV2 < vsys
         % adjusted.
 %         function this = addCulture(this, sCultureName, sPlantSpecies, fGrowthArea, fEmergeTime, iConsecutiveGenerations, fHarvestTime, fPPFD, fH)
 %         end
-    end
-    
-    methods (Access = protected)
-        function exec(this, ~)
-            exec@vsys(this);
+
+        function update(this)
             
             % Atmosphere controllers required for standalone greenhouse. If
             % atmosphere control managed by other (sub)systems comment this
@@ -499,57 +494,128 @@ classdef GreenhouseV2 < vsys
                 return;
             end
             
-            %% O2 Controller
+            fNominalCondensateFlow = 0;
+            fNominalO2Flow = 0;
+            fNominalCO2Flow = 0;
             
-            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afPP(this.oMT.tiN2I.O2) <= 21000
+            % Positive Values are outflows out fo the plants
+            for iCulture = 1:length(this.csCultures)
+                fNominalO2Flow          = fNominalO2Flow            + this.toCultures.(this.csCultures{iCulture}).tfGasExchangeRates.fO2ExchangeRate;
+                fNominalCO2Flow         = fNominalCO2Flow           + this.toCultures.(this.csCultures{iCulture}).tfGasExchangeRates.fCO2ExchangeRate;
+                fNominalCondensateFlow  = fNominalCondensateFlow    + this.toCultures.(this.csCultures{iCulture}).tfGasExchangeRates.fTranspirationRate;
+            end
+            
+            % sets the flowrate of the WS to remove exactly the nominal
+            % water flow currently produced by the plants
+            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.H2O) > 1e-3
+                this.fFlowRateWS = abs(fNominalCondensateFlow) / (0.75 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.H2O));
+            else
+                this.fFlowRateWS = 0;
+            end
+            
+            %% O2 Controller
+            fNominalO2Flow = abs(fNominalO2Flow);
+            fPartialPressureO2 = this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afPP(this.oMT.tiN2I.O2);
+            if fPartialPressureO2 <= 19500
                 this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
-                this.toBranches.O2BufferSupply.oHandler.setFlowRate(1e-3);
-            elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afPP(this.oMT.tiN2I.O2) > 22000
+                this.toBranches.O2BufferSupply.oHandler.setFlowRate(((1e-4 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass) / this.fTimeStep) + fNominalO2Flow);
+
+            elseif fPartialPressureO2 > 23000
                 afFlowRate = zeros(1,this.oMT.iSubstances);
-                afFlowRate(this.oMT.tiN2I.O2) = 1e-4;
+                afFlowRate(this.oMT.tiN2I.O2) = 2 * fNominalO2Flow;
                 this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.setFlowRate(afFlowRate);
                 this.toBranches.O2BufferSupply.oHandler.setFlowRate(0);
+
             else
-                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
+                afFlowRate = zeros(1,this.oMT.iSubstances);
+                afFlowRate(this.oMT.tiN2I.O2) = fNominalO2Flow;
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.setFlowRate(afFlowRate);
                 this.toBranches.O2BufferSupply.oHandler.setFlowRate(0);
             end
             
             %% CO2 Controller
-            
+            fNominalCO2Flow = abs(fNominalCO2Flow);
             this.fCO2 = this.CalculateCO2Concentration();
-            if this.fCO2 >= 1300
+            if this.fCO2 >= 3000
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
                 afFlowRate = zeros(1,this.oMT.iSubstances);
-                afFlowRate(this.oMT.tiN2I.CO2) = 1e-4;
+                afFlowRate(this.oMT.tiN2I.CO2) = 2*fNominalCO2Flow;
                 this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(afFlowRate);
-            elseif this.fCO2 < 330
-                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(1e-3);
-                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
-            else
+                
+                this.setTimeStep(1)
+                
+            elseif this.fCO2 > 2500
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
+                afFlowRate = zeros(1,this.oMT.iSubstances);
+                afFlowRate(this.oMT.tiN2I.CO2) = fNominalCO2Flow;
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(afFlowRate);
+                
+                this.setTimeStep(60)
+                
+            elseif this.fCO2 < 150
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate( ((1e-3 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass) / this.fTimeStep) + 2 * fNominalCO2Flow + 1e-2);
                 this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
+                
+                this.setTimeStep(1)
+                
+            elseif this.fCO2 < 330
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate( ((1e-4 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass) / this.fTimeStep) + 2 * fNominalCO2Flow + 1e-3);
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
+                
+                this.setTimeStep(60)
+                
+            elseif this.fCO2 < 1300
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate( 0.5 * fNominalCO2Flow );
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
+                
+                this.setTimeStep(600)
+                
+            else
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate( fNominalCO2Flow );
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
+                
+                
+                this.setTimeStep(3600)
             end
             
             %% Humidity Controller
-            
+            fNominalCondensateFlow = abs(fNominalCondensateFlow);
             if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.rRelHumidity >= 0.7
                 
                 this.toBranches.AtmosphereToWS.oHandler.setFlowRate(2*this.fFlowRateWS);
-                this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - this.toStores.WaterSeparator.toProcsP2P.WaterAbsorber_P2P.fFlowRate);
+                
+                afFlowRate = zeros(1,this.oMT.iSubstances);
+                afFlowRate(this.oMT.tiN2I.H2O) = 2*fNominalCondensateFlow;
+                this.toStores.WaterSeparator.toProcsP2P.WaterAbsorber_P2P.setFlowRate(afFlowRate)
+                
+                this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(2*this.fFlowRateWS - 2*fNominalCondensateFlow);
                 
             elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.rRelHumidity < 0.4
                 this.toBranches.AtmosphereToWS.oHandler.setFlowRate(0);
                 this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(0);
+                this.toStores.WaterSeparator.toProcsP2P.WaterAbsorber_P2P.setFlowRate(zeros(1,this.oMT.iSubstances))
+                
             else
                 this.toBranches.AtmosphereToWS.oHandler.setFlowRate(this.fFlowRateWS);
-                this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - this.toStores.WaterSeparator.toProcsP2P.WaterAbsorber_P2P.fFlowRate);
+                
+                afFlowRate = zeros(1,this.oMT.iSubstances);
+                afFlowRate(this.oMT.tiN2I.H2O) = fNominalCondensateFlow ;
+                this.toStores.WaterSeparator.toProcsP2P.WaterAbsorber_P2P.setFlowRate(afFlowRate)
+                
+                this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - fNominalCondensateFlow);
             end
             
             %% Pressure Controller
-            
-            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fPressure < 1e5
-                this.toBranches.N2BufferSupply.oHandler.setFlowRate(1e-3);
-            else 
+            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fPressure < 7e4
+                this.toBranches.N2BufferSupply.oHandler.setFlowRate( 20 / this.fTimeStep);
+                
+            elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fPressure < 9e4
+                this.toBranches.N2BufferSupply.oHandler.setFlowRate( (1e-1 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass / this.fTimeStep) + fNominalCondensateFlow + fNominalO2Flow + fNominalCO2Flow);
+               
+          	elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fPressure < 1e5
+                this.toBranches.N2BufferSupply.oHandler.setFlowRate(((1e-2 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass) / this.fTimeStep) + fNominalCondensateFlow + fNominalO2Flow + fNominalCO2Flow);
+                
+            else
                 this.toBranches.N2BufferSupply.oHandler.setFlowRate(0);
             end
             
@@ -557,6 +623,13 @@ classdef GreenhouseV2 < vsys
             
 %             if this.toStores.BiomassSplit.toPhases.BiomassEdible.fMass > 0
 %             end
+        end
+    end
+    
+    methods (Access = protected)
+        function exec(this, ~)
+            exec@vsys(this);
+            this.update();
         end
     end 
 end

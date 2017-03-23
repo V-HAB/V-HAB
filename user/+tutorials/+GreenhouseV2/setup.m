@@ -36,12 +36,14 @@ classdef setup < simulation.infrastructure
             oLogger = this.toMonitors.oLogger;
             
             % general logging parameters, greenhouse system
-            oLogger.add('GreenhouseV2', 'flow_props');
-            oLogger.add('GreenhouseV2', 'thermal_properties');
             csCultures = this.oSimulationContainer.toChildren.GreenhouseV2.csCultures;
             % log culture subsystems
-            for iI = 1:length(csCultures)
-                oLogger.add([this.oSimulationContainer.toChildren.GreenhouseV2.toChildren.(csCultures{iI})], 'flow_props');
+            for iI = 1:length(csCultures)                
+                % Balance Mass
+                oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, ':s:', csCultures{iI}, '.toPhases.', csCultures{iI}, '_Balance'], 'fMass', 'kg', [csCultures{iI}, ' Balance Mass']);
+                
+                % Plant Mass
+                oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, ':s:', csCultures{iI}, '.toPhases.', csCultures{iI}, '_Plants'], 'fMass', 'kg', [csCultures{iI}, ' Plant Mass']);
                 
                 % p2p flowrates
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, ':s:', csCultures{iI}, '.toProcsP2P.', csCultures{iI}, '_BiomassGrowth_P2P'], 'fFlowRate', 'kg/s', [csCultures{iI}, ' BiomassGrowth']);
@@ -68,8 +70,7 @@ classdef setup < simulation.infrastructure
                 % flow rates
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}], 'tfGasExchangeRates.fO2ExchangeRate', 'kg s^-1 m^-2', [csCultures{iI}, ' FlowRate O2']);
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}], 'tfGasExchangeRates.fCO2ExchangeRate', 'kg s^-1 m^-2', [csCultures{iI}, ' FlowRate CO2']);
-                oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}], 'tfGasExchangeRates.fTranspirationRate', 'kg s^-1 m^-2', [csCultures{iI}, ' FlowRate H2O(g)']);
-                oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}], 'fWaterConsumptionRate', 'kg s^-1 m^-2', [csCultures{iI}, ' FlowRate H2O(l)']);
+                oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}], 'tfGasExchangeRates.fTranspirationRate', 'kg s^-1 m^-2', [csCultures{iI}, ' FlowRate H2O']);
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}], 'fNutrientConsumptionRate', 'kg s^-1 m^-2', [csCultures{iI}, ' FlowRate Nutrients']);
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}], 'tfBiomassGrowthRates.fGrowthRateEdible', 'kg s^-1 m^-2', [csCultures{iI}, ' FlowRate Edible']);
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}], 'tfBiomassGrowthRates.fGrowthRateInedible', 'kg s^-1 m^-2', [csCultures{iI}, ' FlowRate Inedible']);
@@ -106,6 +107,8 @@ classdef setup < simulation.infrastructure
             sTitle = 'Partial Pressure CO2';
             oPlot.definePlot(cNames, sTitle);
             
+            cBalanceNames = cell(1,length(csCultures));
+            cPlantNames = cell(1,length(csCultures));
             for iI = 1:length(csCultures)
                 cNames = {[csCultures{iI}, ' BiomassGrowth'],...
                           ['- 1 * ',csCultures{iI}, ' CO2 In Flow - ',csCultures{iI}, ' CO2 Out Flow'],...
@@ -113,7 +116,20 @@ classdef setup < simulation.infrastructure
                           ['- 1 * ',csCultures{iI}, ' H2O In Flow - ',csCultures{iI}, ' H2O Out Flow']};
                 
                 oPlot.definePlot(cNames, ['P2P Flow Rates ', csCultures{iI}]);
+                
+                
+                cNames = {[csCultures{iI}, ' FlowRate O2'], [csCultures{iI}, ' FlowRate CO2'], [csCultures{iI}, ' FlowRate H2O'],...
+                          [csCultures{iI}, ' FlowRate Nutrients'], [csCultures{iI}, ' FlowRate Edible'], [csCultures{iI}, ' FlowRate Inedible']};
+                
+                oPlot.definePlot(cNames, ['Plant Module Flow Rates ', csCultures{iI}]);
+                
+                
+                cBalanceNames{iI} = [csCultures{iI}, ' Balance Mass'];
+                cPlantNames{iI} = [csCultures{iI}, ' Plant Mass'];
             end
+            
+            oPlot.definePlot(cBalanceNames, 'Balance Mass in Cultures');
+            oPlot.definePlot(cPlantNames,   'Plant Mass in Cultures');
             
             oPlot.definePlot('CO2 Concentration','CO2 Concentration');
             

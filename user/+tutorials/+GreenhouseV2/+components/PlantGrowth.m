@@ -15,7 +15,7 @@ function [ oCulture ] = ...
 %             fCO2);                                      % CO2 concentration in ppm
         
     % time of first emergence reached
-    if fSimTime >= oCulture.txInput.fEmergeTime
+    if fSimTime >= oCulture.txInput.fEmergeTime * 86400
         % if first time entering this section (= fallow state until now), 
         % to only change state once
         if oCulture.iState == 4
@@ -31,9 +31,9 @@ function [ oCulture ] = ...
                 % calculate internal time (time since planting) for the
                 % current culture
                 if oCulture.fInternalTime ~= 0    
-                    oCulture.fInternalTime = fSimTime - (oCulture.iInternalGeneration - 1) * oCulture.txInput.fHarvestTime - oCulture.txInput.fEmergeTime;
+                    oCulture.fInternalTime = fSimTime - (oCulture.iInternalGeneration - 1) * oCulture.txInput.fHarvestTime * 86400 - oCulture.txInput.fEmergeTime * 86400;
                 else
-                    oCulture.fInternalTime = fSimTime - (oCulture.iInternalGeneration - 1) * oCulture.txInput.fHarvestTime;                            
+                    oCulture.fInternalTime = fSimTime - (oCulture.iInternalGeneration - 1) * oCulture.txInput.fHarvestTime * 86400;                            
                 end
                 
 %                 % calculate passed time in current lighting condition
@@ -120,7 +120,7 @@ function [ oCulture ] = ...
                 
                 % If internaltime of considered culture's growth cycle
                 % exceeds tE (time at onset of edible biomass)
-                if oCulture.fInternalTime > oCulture.txPlantParameters.fT_E  
+                if oCulture.fInternalTime > oCulture.txPlantParameters.fT_E * 86400
                     % Mass balance of biomass uptake when exceeding tE
                     % TODO: JUST GROWTH RATES! actual growth happens 
                     % inside the plant module exec() function

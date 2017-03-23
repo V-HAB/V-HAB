@@ -211,11 +211,7 @@ classdef Culture3Phases < vsys
             this.connectIF('Biomass_ToIF_Out', sIF5);
         end
         function update(this)
-                  
-            fTimeStep = this.oTimer.fTime - this.fLastExec;
-            if fTimeStep <= 0.1
-                return;
-            end
+            
             
             %% Calculate 8 MMEC Parameters
             
@@ -259,14 +255,16 @@ classdef Culture3Phases < vsys
                     else
                         this.iState = 4;
                     end
+                    
+                    this.fInternalTime = 0;
+                    disp('Harvesting');
+                    
+                    this.toBranches.Biomass_Out.oHandler.setFlowRate(0.1);
+                
                 elseif this.iState == 2
                     %
                     this.toBranches.Biomass_Out.oHandler.setFlowRate(...
-                        this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).fMass / this.oParent.fUpdateFrequency);
-                    
-%                     this.toBranches.Biomass_Out.oHandler.setFlowRate(0.1);
-                
-                    disp('Harvesting');
+                        this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).fMass / this.oParent.fTimeStep);
                 end
                
                 %% Set atmosphere flow rates
@@ -315,6 +313,14 @@ classdef Culture3Phases < vsys
                 
                 this.toBranches.WaterSupply_In.oHandler.setFlowRate(-this.fWaterConsumptionRate);
                 this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate);
+                
+                try
+                    this.oParent.update()
+                catch
+                    % it is recommended to couple the update function of
+                    % the parent, if you have any cross influence between
+                    % the parent update and this update function
+                end
                 
                 this.fLastExec = this.oTimer.fTime;
         end
