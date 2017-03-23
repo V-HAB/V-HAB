@@ -21,6 +21,11 @@ function [ oCulture ] ...
     % HNC ..... Hourly Nutrient Consumption         [g m^-2 h^-1]
     % HWCGR ... Hourly Wet Crop Growth Rate         [g m^-2 h^-1]
 
+    % Other Variables:
+    % tE: Time at Onset of Edible Biomass Formation (UOT)
+	% tQ: Time at Onset of Canopy Senescence (UOT)
+    % tM: Time of maturity
+    
     %% Calculate 6 Out Of 8 Target Parameters
     
     % determine if it is day or night for the current culture
@@ -47,12 +52,12 @@ function [ oCulture ] ...
     % CUE_24 constant for non-legumes, different for legumes
     if oCulture.txPlantParameters.bLegume == 1
         % before time of onset of canopy senescence
-        if oCulture.fInternalTime <= oCulture.txPlantParameters.fT_Q
+        if oCulture.fInternalTime <= oCulture.txPlantParameters.fT_Q * 86400
             fCUE_24 = oCulture.txPlantParameters.fCUE_Max;
             % after time of onset of canopy senescence but before time of
             % crop maturity
-        elseif oCulture.txPlantParameters.fT_Q < oCulture.fInternalTime <= oCulture.txPlantParameters.fT_M
-            fCUE_24 = oCulture.txPlantParameters.fCUE_Max - (oCulture.txPlantParameters.fCUE_Max - oCulture.txPlantParameters.fCUE_Min) * (oCulture.fInternalTime - oCulture.txPlantParameters.fT_Q) * (oCulture.txPlantParameters.fT_M - oCulture.txPlantParameters.fT_Q)^-1;
+        elseif oCulture.txPlantParameters.fT_Q * 86400 < oCulture.fInternalTime <= oCulture.txPlantParameters.fT_M * 86400
+            fCUE_24 = oCulture.txPlantParameters.fCUE_Max - (oCulture.txPlantParameters.fCUE_Max - oCulture.txPlantParameters.fCUE_Min) * (oCulture.fInternalTime - oCulture.txPlantParameters.fT_Q * 86400) * (oCulture.txPlantParameters.fT_M * 86400 - oCulture.txPlantParameters.fT_Q * 86400)^-1;
         end
     % CUE_24 constant for non-legumes
     else
@@ -95,12 +100,12 @@ function [ oCulture ] ...
     % [µmol_Carbon.Fixed * µmol_Absorbed.PPFD)^-1] 
     % CQY description: canopy gross photosynthesis divided by absorbed PAR
     % before time of onset of canopy senescence
-    if oCulture.fInternalTime <= oCulture.txPlantParameters.fT_Q
+    if oCulture.fInternalTime <= oCulture.txPlantParameters.fT_Q * 86400
         fCQY = fCQY_Max;
     % after time of onset of canopy senescence but before time of
      % crop maturity    
-    elseif oCulture.txPlantParameters.fT_Q < oCulture.fInternalTime <= oCulture.txPlantParameters.fT_M
-        fCQY = fCQY_Max - (fCQY_Max - oCulture.txPlantParameters.fCQY_Min) * (oCulture.fInternalTime - oCulture.txPlantParameters.fT_Q) * (oCulture.txPlantParameters.fT_M - oCulture.txPlantParameters.fT_Q)^-1;
+    elseif oCulture.txPlantParameters.fT_Q * 86400 < oCulture.fInternalTime <= oCulture.txPlantParameters.fT_M * 86400
+        fCQY = fCQY_Max - (fCQY_Max - oCulture.txPlantParameters.fCQY_Min) * (oCulture.fInternalTime - oCulture.txPlantParameters.fT_Q * 86400) * (oCulture.txPlantParameters.fT_M * 86400 - oCulture.txPlantParameters.fT_Q * 86400)^-1;
     end
     
     % hourly carbon gain [mol_Carbon m^-2 h^-1]
@@ -115,7 +120,7 @@ function [ oCulture ] ...
     % HWCGR = HCGR * (1 - WBF)^-1 (Eq. 7)
     % if T_E exceeded -> use total water fraction, if not only inedible
     % biomass is produced -> water fraction = 0.9 (BVAD 2015, table 4.98)
-    if oCulture.fInternalTime >= oCulture.txPlantParameters.fT_E
+    if oCulture.fInternalTime >= oCulture.txPlantParameters.fT_E * 86400
         fHWCGR = fHCGR * (1 - oCulture.txPlantParameters.fWBF_Total) ^-1;
     else
         fHWCGR = fHCGR * (1 - 0.9)^-1;
@@ -224,10 +229,10 @@ function [ oCulture ] ...
     % Crop Coefficient development during plant growth
     if oCulture.fInternalTime < fT_A  
         fKC = oCulture.txPlantParameters.fKC_Mid * (oCulture.fInternalTime / fT_A) ^ oCulture.txPlantParameters.fN;
-    elseif (fT_A <= oCulture.fInternalTime) && (oCulture.fInternalTime <= oCulture.txPlantParameters.fT_Q)   
+    elseif (fT_A <= oCulture.fInternalTime) && (oCulture.fInternalTime <= oCulture.txPlantParameters.fT_Q * 86400)   
         fKC = oCulture.txPlantParameters.fKC_Mid;
     else   
-        fKC = oCulture.txPlantParameters.fKC_Mid + ((oCulture.fInternalTime - oCulture.txPlantParameters.fT_Q) / (oCulture.txPlantParameters.fT_M - oCulture.txPlantParameters.fT_Q)) * (oCulture.txPlantParameters.fKC_Late - oCulture.txPlantParameters.fKC_Mid);
+        fKC = oCulture.txPlantParameters.fKC_Mid + ((oCulture.fInternalTime - oCulture.txPlantParameters.fT_Q * 86400) / (oCulture.txPlantParameters.fT_M * 86400 - oCulture.txPlantParameters.fT_Q * 86400)) * (oCulture.txPlantParameters.fKC_Late - oCulture.txPlantParameters.fKC_Mid);
     end
     
     % final Water volume evapotranspiration ET_c in [liter m^-2 s^-1]

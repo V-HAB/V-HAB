@@ -10,7 +10,7 @@ classdef GreenhouseV2 < vsys
         
         csCultures;
         
-        fUpdateFrequency = 60;   % [s]
+        fUpdateFrequency = 3600;   % [s]
         
         %% Atmosphere Control Paramters
         
@@ -23,7 +23,7 @@ classdef GreenhouseV2 < vsys
     
     methods
         function this = GreenhouseV2(oParent, sName)
-            this@vsys(oParent, sName, 60);
+            this@vsys(oParent, sName, 3600);
             
             %% Import Nutrient Data
             
@@ -466,7 +466,8 @@ classdef GreenhouseV2 < vsys
             for iStore = 1:length(csStoreNames)
                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
-                    oPhase.fMaxStep = 60;
+                    oPhase.fMaxStep = this.fTimeStep;
+                    this.toStores.(csStoreNames{iStore}).fDefaultTimeStep = this.fTimeStep;
                 end
             end
         end
@@ -533,24 +534,15 @@ classdef GreenhouseV2 < vsys
             
             if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.rRelHumidity >= 0.7
                 
-                this.toBranches.AtmosphereToWS.oHandler.setFlowRate(this.fFlowRateWS);
+                this.toBranches.AtmosphereToWS.oHandler.setFlowRate(2*this.fFlowRateWS);
+                this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - this.toStores.WaterSeparator.toProcsP2P.WaterAbsorber_P2P.fFlowRate);
                 
-                fPressureAtmosphereWS = this.toStores.WaterSeparator.toPhases.WaterSeparator_Phase_1.fMass * this.toStores.WaterSeparator.toPhases.WaterSeparator_Phase_1.fMassToPressure;
-                
-                if fPressureAtmosphereWS > 1e5
-                    this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS);
-                elseif fPressureAtmosphereWS >= 9e4
-                    this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - 0.00045);
-                else 
-                    this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - 0.0009);
-                end
-                
-                
-                
-%                 this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - this.toStores.WaterSeparator.toProcsP2P.WaterAbsorber_P2P.fFlowRate);
-            else
+            elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.rRelHumidity < 0.4
                 this.toBranches.AtmosphereToWS.oHandler.setFlowRate(0);
                 this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(0);
+            else
+                this.toBranches.AtmosphereToWS.oHandler.setFlowRate(this.fFlowRateWS);
+                this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - this.toStores.WaterSeparator.toProcsP2P.WaterAbsorber_P2P.fFlowRate);
             end
             
             %% Pressure Controller

@@ -70,7 +70,7 @@ classdef ConstantMassP2P < matter.procs.p2ps.flow
             % negative flowrate and another has a positive flowrate the
             % calculation will not work correctly!
             % TO DO: Mabye create a bidirectional p2p
-            afPartialFlowRates = afMassChange./fTimeStep;
+            afPartialFlowRates = afMassChange./36000;
             
             try
                 afPartialFlowRates(this.aiSubstances) = afPartialFlowRates(this.aiSubstances) + this.oIn.oPhase.toManips.substance.afPartialFlows(this.aiSubstances);

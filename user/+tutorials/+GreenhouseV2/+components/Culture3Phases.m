@@ -105,9 +105,6 @@ classdef Culture3Phases < vsys
             createMatterStructure@vsys(this);
             %% Create Store, Phases and Processors
             
-            % write helper for standard plant atmosphere later
-            fVolumeAirCirculation = 1;
-            
             matter.store(this, this.txInput.sCultureName, 20);
             
             % TO DO: Specify volumes of the phases individually!!! and
@@ -198,7 +195,8 @@ classdef Culture3Phases < vsys
             for iStore = 1:length(csStoreNames)
                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
-                    oPhase.fMaxStep = 60;
+                    oPhase.fMaxStep = this.fTimeStep;
+                    this.toStores.(csStoreNames{iStore}).fDefaultTimeStep = this.fTimeStep;
                 end
             end
         end
@@ -252,7 +250,16 @@ classdef Culture3Phases < vsys
                 %% Harvest
             
                 % if current culture state is harvest
-                if this.iState == 2
+                % if phase empty too, increase generation and change status
+                % to growth, or set to fallow 
+                if (this.iState == 2) && (this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).fMass <= 1e-3)
+                    if this.iInternalGeneration < this.txInput.iConsecutiveGenerations
+                        this.iInternalGeneration = this.iInternalGeneration + 1;
+                        this.iState = 1;
+                    else
+                        this.iState = 4;
+                    end
+                elseif this.iState == 2
                     %
                     this.toBranches.Biomass_Out.oHandler.setFlowRate(...
                         this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).fMass / this.oParent.fUpdateFrequency);
@@ -260,15 +267,6 @@ classdef Culture3Phases < vsys
 %                     this.toBranches.Biomass_Out.oHandler.setFlowRate(0.1);
                 
                     disp('Harvesting');
-                % if phase empty too, increase generation and change status
-                % to growth, or set to fallow 
-                elseif (this.iState == 2) && (this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).fMass <= 1e-3)
-                    if this.iInternalGeneration < this.txInput.iConsecutiveGenerations
-                        this.iInternalGeneration = this.iInternalGeneration + 1;
-                        this.iState = 1;
-                    else
-                        this.iState = 4;
-                    end
                 end
                
                 %% Set atmosphere flow rates
@@ -283,7 +281,7 @@ classdef Culture3Phases < vsys
                 afMassChange = zeros(1,this.oMT.iSubstances);
                 afMassChange(aiSubstances) =  afCurrentBalanceMass(aiSubstances) - this.afInitialBalanceMass(aiSubstances);
                 
-                afPartialFlowRates = afMassChange./3600;
+                afPartialFlowRates = afMassChange./36000;
                 
                 afPartialFlowRates(this.oMT.tiN2I.O2) = afPartialFlowRates(this.oMT.tiN2I.O2) + this.tfGasExchangeRates.fO2ExchangeRate;
                 afPartialFlowRates(this.oMT.tiN2I.CO2) = afPartialFlowRates(this.oMT.tiN2I.CO2) + this.tfGasExchangeRates.fCO2ExchangeRate;
