@@ -250,6 +250,10 @@ function [ oCulture ] ...
     % HWC = HTR + HOP + HCO2P + HWCGR - HOC - HCO2C - HNC (Eq. 16)
     fHWC = fHTR + fHOP + fHCO2P + fHWCGR - fHOC - fHCO2C - fHNC;
     
+    % TBD: The HWCGR parameter is a wet crop growth parameter (it therefore
+    % should include biomass). Why is it considered water consumption to
+    % 100% even though it is not completly water?
+    
     %% Write Return Parameter
     
     % attach calculated plant consumsption and production rates to culture 
@@ -264,6 +268,6 @@ function [ oCulture ] ...
     
     % growth rate on dry basis because edible and inedible biomass parts
     % have different water contents
-    oCulture.tfMMECRates.fCGR   = fHCGR     * (1000 * 3600)^-1;
+    oCulture.tfMMECRates.fCGR   = fHCGR     * (1000 * 3600)^-1;  % [g m^-2 h^-1] --> kg/(m² s)
 end
 

@@ -69,6 +69,8 @@ classdef Culture3Phases < vsys
         function this = Culture3Phases(oParent, txPlantParameters, txInput, fUpdateFrequency)
             this@vsys(oParent, txInput.sCultureName, fUpdateFrequency);
             
+            this.oTimer.setMinStep(1e-20);
+            
             this.txPlantParameters = txPlantParameters;
             this.txInput = txInput;
             
