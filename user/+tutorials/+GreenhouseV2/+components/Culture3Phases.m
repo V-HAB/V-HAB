@@ -133,7 +133,7 @@ classdef Culture3Phases < vsys
                 this.toStores.(this.txInput.sCultureName), ...          % store containing phase
                 [this.txInput.sCultureName, '_Balance'], ...            % phase name 
                 'solid',...                                             % primary phase of the mixture phase
-                struct('CO2', 10, 'O2', 10, 'H2O', 50,...
+                struct('CO2', 10, 'O2', 10, 'H2O', 50, 'Nutrients', 1,...
                     ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), 10,...
                     ([this.txPlantParameters.sPlantSpecies, 'InedibleWet']), 10), ...
                 10, ...                                                 % volume    [m^3]
@@ -173,6 +173,17 @@ classdef Culture3Phases < vsys
             matter.branch(this, [this.txInput.sCultureName, '.', this.txInput.sCultureName, '_WaterSupply_In'],             {}, 'WaterSupply_FromIF_In',    'WaterSupply_In');
             matter.branch(this, [this.txInput.sCultureName, '.', this.txInput.sCultureName, '_NutrientSupply_In'],          {}, 'NutrientSupply_FromIF_In', 'NutrientSupply_In');
             matter.branch(this, [this.txInput.sCultureName, '.', this.txInput.sCultureName, '_Biomass_Out'],                {}, 'Biomass_ToIF_Out',         'Biomass_Out');
+            
+            %% Check if user provided sow times, if not generate them
+            % If nothing was specified by the user the culture simply
+            % created the values in a way that each culture is sowed
+            % immediatly after the previous generation is harvested
+            if ~isfield(this.txInput, 'mfSowTime')
+                % if it does not exist we just create it (Note times will
+                % be zero, but that just means that it will occure
+                % immediatly after the previous generation!)
+                this.txInput.mfSowTime = zeros(1,this.txInput.iConsecutiveGenerations);
+            end
         end
         
         function createSolverStructure(this)
@@ -214,6 +225,20 @@ classdef Culture3Phases < vsys
         end
         function update(this)
             
+            %% plant sowing
+            % in the input struct an Array can be defined to decide when
+            % each generation will be sowed (meaning the start time for
+            % plant growth for that generation). If nothing was specified 
+            % by the user the culture simply created the values in a way
+            % that each culture is sowed immediatly after the previous
+            % generation is harvested
+            if (this.oTimer.fTime > this.txInput.mfSowTime(this.iInternalGeneration)) && this.iState == 4
+                this.iState = 1;
+                % to prevent the sowing of one generation to happen
+                % more than once, we just set the time of the sowing to
+                % inf to indicate that this culture was already sowed
+                this.txInput.mfSowTime(this.iInternalGeneration) = inf;
+            end
             
             %% Calculate 8 MMEC Parameters
             
@@ -253,7 +278,7 @@ classdef Culture3Phases < vsys
                 if (this.iState == 2) && (this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).fMass <= 1e-3)
                     if this.iInternalGeneration < this.txInput.iConsecutiveGenerations
                         this.iInternalGeneration = this.iInternalGeneration + 1;
-                        this.iState = 1;
+                        this.iState = 4;
                     else
                         this.iState = 4;
                     end
@@ -314,8 +339,11 @@ classdef Culture3Phases < vsys
                 %setPartialFlowRates
                 
                 this.toBranches.WaterSupply_In.oHandler.setFlowRate(-this.fWaterConsumptionRate);
-                this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate);
-                
+                if this.afInitialBalanceMass(this.oMT.tiN2I.Nutrients) < afCurrentBalanceMass (this.oMT.tiN2I.Nutrients)
+                    this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate*0.99);
+                else
+                    this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate*0.99);
+                end
                 try
                     this.oParent.update()
                 catch

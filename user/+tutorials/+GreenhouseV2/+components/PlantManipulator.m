@@ -24,6 +24,8 @@ classdef PlantManipulator < matter.manips.substance.flow
                 return;
             end
             
+            this.oParent.update();
+            
             afPartialFlows = zeros(1, this.oPhase.oMT.iSubstances);
             
             % for faster reference
@@ -44,16 +46,32 @@ classdef PlantManipulator < matter.manips.substance.flow
             
             % to reduce mass erros the current error in mass is spread over
             % the in and outs
-            fFlowRate = sum(afPartialFlows);
-            if fFlowRate ~= 0
-                fError = abs(sum(afPartialFlows));
-                arRatios = afPartialFlows./abs(fFlowRate);
-                afPartialFlows = afPartialFlows - (0.5*fError .* arRatios);
+            fError = abs(sum(afPartialFlows));
+            if fError ~= 0
+                fPositiveFlowRate = sum(afPartialFlows(afPartialFlows > 0));
+                fNegativeFlowRate = abs(sum(afPartialFlows(afPartialFlows < 0)));
+                
+                if fPositiveFlowRate > fNegativeFlowRate
+                    % reduce the positive flows by the difference:
+                    fDifference = fPositiveFlowRate - fNegativeFlowRate;
+                    arRatios = afPartialFlows(afPartialFlows > 0)./fPositiveFlowRate;
+                    
+                    afPartialFlows(afPartialFlows > 0) = afPartialFlows(afPartialFlows > 0) - fDifference .* arRatios;
+                else
+                    % reduce the negative flows by the difference:
+                    fDifference = fPositiveFlowRate - fNegativeFlowRate;
+                    arRatios = abs(afPartialFlows(afPartialFlows < 0)./fNegativeFlowRate);
+                    
+                    afPartialFlows(afPartialFlows < 0) = afPartialFlows(afPartialFlows < 0) - fDifference .* arRatios;
+                end
             end
             
+            fError = abs(sum(afPartialFlows));
+            if fError > 1e-18
+                keyboard()
+            end
             update@matter.manips.substance.flow(this, afPartialFlows);
             
-            this.oParent.update();
         end
     end
 end

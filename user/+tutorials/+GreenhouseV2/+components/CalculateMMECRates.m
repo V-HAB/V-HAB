@@ -25,7 +25,9 @@ function [ oCulture ] ...
     % tE: Time at Onset of Edible Biomass Formation (UOT)
 	% tQ: Time at Onset of Canopy Senescence (UOT)
     % tM: Time of maturity
-    
+    if fRelativeHumidityAtmosphere > 1
+        fRelativeHumidityAtmosphere = 1;
+    end
     %% Calculate 6 Out Of 8 Target Parameters
     
     % determine if it is day or night for the current culture
@@ -121,9 +123,11 @@ function [ oCulture ] ...
     % if T_E exceeded -> use total water fraction, if not only inedible
     % biomass is produced -> water fraction = 0.9 (BVAD 2015, table 4.98)
     if oCulture.fInternalTime >= oCulture.txPlantParameters.fT_E * 86400
-        fHWCGR = fHCGR * (1 - oCulture.txPlantParameters.fWBF_Total) ^-1;
+        % adjusted because the values calculated here and in the plant
+        % growth function did not match
+        fHWCGR = (fHCGR * oCulture.txPlantParameters.fXFRT) * (oCulture.txPlantParameters.fFBWF_Edible + 1) + (fHCGR * (1 - oCulture.txPlantParameters.fXFRT)) * (oCulture.txPlantParameters.fFBWF_Inedible + 1);
     else
-        fHWCGR = fHCGR * (1 - 0.9)^-1;
+        fHWCGR = fHCGR * (oCulture.txPlantParameters.fFBWF_Inedible + 1);
     end
     
     % hourly oxygen production [g m^-2 h^-1]
@@ -250,10 +254,6 @@ function [ oCulture ] ...
     % HWC = HTR + HOP + HCO2P + HWCGR - HOC - HCO2C - HNC (Eq. 16)
     fHWC = fHTR + fHOP + fHCO2P + fHWCGR - fHOC - fHCO2C - fHNC;
     
-    % TBD: The HWCGR parameter is a wet crop growth parameter (it therefore
-    % should include biomass). Why is it considered water consumption to
-    % 100% even though it is not completly water?
-    
     %% Write Return Parameter
     
     % attach calculated plant consumsption and production rates to culture 
@@ -265,6 +265,7 @@ function [ oCulture ] ...
     oCulture.tfMMECRates.fCO2C  = fHCO2C    * (1000 * 3600)^-1;
     oCulture.tfMMECRates.fCO2P  = fHCO2P    * (1000 * 3600)^-1;
     oCulture.tfMMECRates.fNC    = fHNC      * (1000 * 3600)^-1;
+    oCulture.tfMMECRates.fWCGR  = fHWCGR    * (1000 * 3600)^-1;
     
     % growth rate on dry basis because edible and inedible biomass parts
     % have different water contents
