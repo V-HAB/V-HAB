@@ -21,7 +21,7 @@ classdef GreenhouseV2 < vsys
     
     methods
         function this = GreenhouseV2(oParent, sName)
-            this@vsys(oParent, sName, 3600);
+            this@vsys(oParent, sName, 600);
             
             %% Import Nutrient Data
             
@@ -135,14 +135,14 @@ classdef GreenhouseV2 < vsys
             
             %% Water Supply
             
-            matter.store(this, 'WaterSupply', 20);
+            matter.store(this, 'WaterSupply', 2000);
             
             oWaterSupply = matter.phases.liquid(...
                 this.toStores.WaterSupply, ...      % store containing phase
                 'WaterSupply', ...                  % phase name
                 struct(...                          % phase contents    [kg]
-                    'H2O', 20e3), ...
-                20, ...                             % phase volume      [m^3]
+                    'H2O', 2000e3), ...
+                2000, ...                             % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 fPressureInit);                     % phase pressure    [Pa]
                        
@@ -514,7 +514,7 @@ classdef GreenhouseV2 < vsys
             elseif (fRelativeHumidity < 0.45) || (fPartialPressureO2 < 19000) || (fCO2_Concentration < 300) || (fPressure < 9e4)
                 this.setTimeStep(60);
             else
-                this.setTimeStep(3600);
+                this.setTimeStep(600);
             end
             
             %% O2 Controller

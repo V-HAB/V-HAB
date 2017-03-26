@@ -286,7 +286,7 @@ classdef Culture3Phases < vsys
                     this.fInternalTime = 0;
                     disp('Harvesting');
                     
-                    this.toBranches.Biomass_Out.oHandler.setFlowRate(0.1);
+                    this.toBranches.Biomass_Out.oHandler.setFlowRate(0);
                 
                 elseif this.iState == 2
                     %
