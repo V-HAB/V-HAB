@@ -1,15 +1,8 @@
 classdef flow < matter.flow
-    properties (SetAccess = protected)
-        txSetDataValues;
-    end
+    
     methods
     function this = flow(oBranch)
         this@matter.flow(oBranch);
-        
-        this.txSetDataValues.fFlowRate      = 0;
-        this.txSetDataValues.arPartialMass  = zeros(1,this.oMT.iSubstances);
-        this.txSetDataValues.fTemperature   = 293;
-        this.txSetDataValues.fPressure      = 1e5;
     end
     function setMatterPropertiesBranch(this, afFlowRates)
         

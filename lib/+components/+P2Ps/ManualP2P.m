@@ -25,7 +25,7 @@ classdef ManualP2P < matter.procs.p2ps.flow
         end
         
         function update(~) 
-            % Since the flowrate is set manually now update required, the
+            % Since the flowrate is set manually no update required, the
             % function still has to be here since it is called within V-HAB
         end
         
