@@ -28,19 +28,16 @@ classdef flow < matter.flow
             oPhase = this.oOut.oPhase;
         end
         
-        this.txSetDataValues.fFlowRate      = fFlowRate;
-        this.txSetDataValues.arPartialMass  = arPartialMass;
-        this.txSetDataValues.fTemperature   = oPhase.fTemperature;
-        this.txSetDataValues.fPressure      = oPhase.fPressure;
+        fTemperature   = oPhase.fTemperature;
+        fPressure      = oPhase.fPressure;
+        
+        this.setMatterProperties(fFlowRate, arPartialMass, fTemperature,fPressure);
     end
     end
     methods (Access = protected)
-    function setData(this,~,~,~)
+    function setData(~,~,~,~)
         % overwritten setData function, flow values are set otherwise
         
-        this.setMatterProperties(this.txSetDataValues.fFlowRate, this.txSetDataValues.arPartialMass,...
-            this.txSetDataValues.fTemperature, this.txSetDataValues.fPressure);
-
     end
     end
 end

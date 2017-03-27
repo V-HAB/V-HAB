@@ -1272,9 +1272,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
             % Now sum up in-/outflows over all EXMEs
             afTotalInOuts = sum(mfTotalFlows, 1);
-%             if strcmp(this.sName, 'Sweetpotato1_Balance')
-%                 keyboard()
-%             end
             this.mfTotalFlowsByExme = mfTotalFlows;
             
 %             afTotalInOuts   = tools.round.prec(afTotalInOuts,   this.oTimer.iPrecision);

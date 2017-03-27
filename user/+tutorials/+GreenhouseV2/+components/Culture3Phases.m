@@ -306,7 +306,7 @@ classdef Culture3Phases < vsys
                 afMassChange = zeros(1,this.oMT.iSubstances);
                 afMassChange(aiSubstances) =  afCurrentBalanceMass(aiSubstances) - this.afInitialBalanceMass(aiSubstances);
                 
-                afPartialFlowRates = afMassChange./36000;
+                afPartialFlowRates = afMassChange./3600;
                 
                 afPartialFlowRates(this.oMT.tiN2I.O2) = afPartialFlowRates(this.oMT.tiN2I.O2) + this.tfGasExchangeRates.fO2ExchangeRate;
                 afPartialFlowRates(this.oMT.tiN2I.CO2) = afPartialFlowRates(this.oMT.tiN2I.CO2) + this.tfGasExchangeRates.fCO2ExchangeRate;

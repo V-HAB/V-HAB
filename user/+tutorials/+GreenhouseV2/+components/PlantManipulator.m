@@ -67,7 +67,7 @@ classdef PlantManipulator < matter.manips.substance.flow
             end
             
             fError = abs(sum(afPartialFlows));
-            if fError > 1e-18
+            if fError > 1e-20
                 keyboard()
             end
             update@matter.manips.substance.flow(this, afPartialFlows);
