@@ -24,11 +24,7 @@ function [ oCulture ] = ...
                 
                 % calculate internal time (time since planting) for the
                 % current culture
-                if oCulture.fInternalTime ~= 0    
-                    oCulture.fInternalTime = fSimTime - (oCulture.iInternalGeneration - 1) * oCulture.txInput.fHarvestTime * 86400 - oCulture.txInput.fEmergeTime * 86400;
-                else
-                    oCulture.fInternalTime = fSimTime - (oCulture.iInternalGeneration - 1) * oCulture.txInput.fHarvestTime * 86400;                            
-                end
+                oCulture.fInternalTime = fSimTime - oCulture.fSowTime;
                 
 %                 % calculate passed time in current lighting condition
 %                 if oCulture.fLighTime ~= 0
@@ -171,6 +167,19 @@ function [ oCulture ] = ...
                     for iI = 1:length(csFieldNames)
                         oCulture.tfMMECRates.(csFieldNames{iI}) = 0;
                     end
+                    
+                    % set the resulting flow rates to zero too, small
+                    % structs so no loops
+                    oCulture.fWaterConsumptionRate = 0;
+                    oCulture.fNutrientConsumptionRate = 0;
+                    
+                    oCulture.tfGasExchangeRates.fO2ExchangeRate = 0;
+                    oCulture.tfGasExchangeRates.fCO2ExchangeRate = 0;
+                    oCulture.tfGasExchangeRates.fTranspirationRate = 0;
+                    
+                    oCulture.tfBiomassGrowthRates.fGrowthRateEdible = 0;
+                    oCulture.tfBiomassGrowthRates.fGrowthRateInedible = 0;
+                else
                     
                     % set the resulting flow rates to zero too, small
                     % structs so no loops

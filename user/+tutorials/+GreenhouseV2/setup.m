@@ -35,6 +35,8 @@ classdef setup < simulation.infrastructure
             %% Logging Setup
             oLogger = this.toMonitors.oLogger;
             
+            oLogger.add('GreenhouseV2', 'flow_props');
+            
             % general logging parameters, greenhouse system
             csCultures = this.oSimulationContainer.toChildren.GreenhouseV2.csCultures;
             % log culture subsystems
@@ -74,6 +76,9 @@ classdef setup < simulation.infrastructure
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}], 'fNutrientConsumptionRate', 'kg s^-1 m^-2', [csCultures{iI}, ' FlowRate Nutrients']);
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}], 'tfBiomassGrowthRates.fGrowthRateEdible', 'kg s^-1 m^-2', [csCultures{iI}, ' FlowRate Edible']);
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}], 'tfBiomassGrowthRates.fGrowthRateInedible', 'kg s^-1 m^-2', [csCultures{iI}, ' FlowRate Inedible']);
+                
+                
+                oLogger.add(['GreenhouseV2:c:', csCultures{iI}], 'flow_props');
             end
             
             % P2P flow rates

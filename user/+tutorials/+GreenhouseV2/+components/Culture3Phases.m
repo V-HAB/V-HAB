@@ -23,6 +23,9 @@ classdef Culture3Phases < vsys
         % internal time of plant culture (passed time AFTER planting)
         fInternalTime = 0;          % [s]
         
+        % time at which the current culture was sowed
+        fSowTime =  0;              % [s]
+        
         % TODO: maybe later implement some kind of decay mechanic, already 
         % using a placeholder for it here.
         % using numbers instead of strings for quicker and easier access
@@ -238,6 +241,7 @@ classdef Culture3Phases < vsys
                 % more than once, we just set the time of the sowing to
                 % inf to indicate that this culture was already sowed
                 this.txInput.mfSowTime(this.iInternalGeneration) = inf;
+                this.fSowTime = this.oTimer.fTime;
             end
             
             %% Calculate 8 MMEC Parameters
@@ -286,8 +290,24 @@ classdef Culture3Phases < vsys
                     this.fInternalTime = 0;
                     disp('Harvesting');
                     
+                    % Finishing cleanup, the plant is now in the fallow
+                    % state, all flowrates set to zero. If a follow on
+                    % culture is used they will be reset on the next tick
+                    % once the new culture started.
+                    this.fWaterConsumptionRate = 0;
+                    this.fNutrientConsumptionRate = 0;
+                    this.tfGasExchangeRates.fO2ExchangeRate = 0;
+                    this.tfGasExchangeRates.fCO2ExchangeRate = 0;
+                    this.tfGasExchangeRates.fTranspirationRate = 0;
+                    this.tfBiomassGrowthRates.fGrowthRateEdible = 0;
+                    this.tfBiomassGrowthRates.fGrowthRateInedible = 0;
+                    
                     this.toBranches.Biomass_Out.oHandler.setFlowRate(0);
-                
+                    this.toBranches.WaterSupply_In.oHandler.setFlowRate(0);
+                    this.toBranches.NutrientSupply_In.oHandler.setFlowRate(0);
+                    this.toBranches.Atmosphere_In.oHandler.setFlowRate(zeros(1,this.oMT.iSubstances));
+                    this.toBranches.Atmosphere_Out.oHandler.setFlowRate(zeros(1,this.oMT.iSubstances));
+                    
                 elseif this.iState == 2
                     %
                     this.toBranches.Biomass_Out.oHandler.setFlowRate(...

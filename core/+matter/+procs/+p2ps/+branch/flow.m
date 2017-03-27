@@ -24,7 +24,7 @@ classdef flow < matter.flow
         fTemperature   = oPhase.fTemperature;
         fPressure      = oPhase.fPressure;
         
-        this.setMatterProperties(fFlowRate, arPartialMass, fTemperature,fPressure);
+        this.setMatterProperties(fFlowRate, arPartialMass, fTemperature, fPressure);
     end
     end
     methods (Access = protected)
