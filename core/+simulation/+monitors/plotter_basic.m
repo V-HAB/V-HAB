@@ -347,7 +347,7 @@ classdef plotter_basic < simulation.monitor
                         else
                             % if no calculations is used the new filter is the
                             % same as the old and the signs are empty
-                            csFunctions{iFilter} = [];
+                            csFunctions{iFilter} = 'x1';
                             csFilterNew{iFilter} = csFilter{iFilter};
                         end
                     end
@@ -545,7 +545,7 @@ classdef plotter_basic < simulation.monitor
                 % one figure it is necessary to store all figures in a cell
                 % array to allow later reacces to them
                 csFigures = cell(0,0);
-                
+
                 % Then we loop through all plots that are defined in this way
                 for iPlot = 1:length(this.tPlots)
 
@@ -660,7 +660,6 @@ classdef plotter_basic < simulation.monitor
                     end
                     
                     csLineStyle = [];
-                    
                     % Now we chech the txCustom struct for any
                     % customization options that the user defined that have
                     % to be done before the plot
