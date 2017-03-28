@@ -136,9 +136,9 @@ classdef Culture3Phases < vsys
                 this.toStores.(this.txInput.sCultureName), ...          % store containing phase
                 [this.txInput.sCultureName, '_Balance'], ...            % phase name 
                 'solid',...                                             % primary phase of the mixture phase
-                struct('CO2', 10, 'O2', 10, 'H2O', 50, 'Nutrients', 1,...
-                    ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), 10,...
-                    ([this.txPlantParameters.sPlantSpecies, 'InedibleWet']), 10), ...
+                struct('CO2', 0.1, 'O2', 0.1, 'H2O', 0.5, 'Nutrients', 0.01,...
+                    ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), 0.1,...
+                    ([this.txPlantParameters.sPlantSpecies, 'InedibleWet']), 0.1), ...
                 10, ...                                                 % volume    [m^3]
                 293.15, ...                                             % phase temperature [K]
                 101325);
@@ -155,14 +155,13 @@ classdef Culture3Phases < vsys
             %% Create Biomass Growth P2P Processor
             
             % 
-            tutorials.GreenhouseV2.components.ConstantMassP2P(...
+            components.P2Ps.ManualP2P(...
                 this, ...                                                                       % parent system reference
                 this.toStores.(this.txInput.sCultureName), ...                                  % store containing phases
                 [this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...                          % p2p processor name
                 [oBalance.sName, '.', this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...     % first phase and exme
-                [oPlants.sName, '.', this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...      % second phase and exme
-                {([this.txPlantParameters.sPlantSpecies, 'EdibleWet']),...
-                ([this.txPlantParameters.sPlantSpecies, 'InedibleWet'])}, 1);                                                                    % substance to keep constant and possible directions (0 is both)
+                [oPlants.sName, '.', this.txInput.sCultureName, '_BiomassGrowth_P2P']);         % second phase and exme
+                    
             
             %% Create Substance Conversion Manipulators
             
@@ -313,15 +312,44 @@ classdef Culture3Phases < vsys
                     this.toBranches.Biomass_Out.oHandler.setFlowRate(...
                         this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).fMass / this.oParent.fTimeStep);
                 end
-               
+                
+                %% Set Plant Growth Flow Rates
+                
+                % current masses in the balance phase:
+                afCurrentBalanceMass = this.toStores.(this.sName).toPhases.([this.sName,'_Balance']).afMass;
+                
+                iEdibleWet      = this.oMT.tiN2I.([this.txPlantParameters.sPlantSpecies, 'EdibleWet']);
+                iInedibleWet    = this.oMT.tiN2I.([this.txPlantParameters.sPlantSpecies, 'InedibleWet']);
+                
+                afPartialFlowRatesBiomass = zeros(1,this.oMT.iSubstances);
+                if 0.999*this.afInitialBalanceMass(iEdibleWet) > afCurrentBalanceMass (iEdibleWet)
+                    afPartialFlowRatesBiomass(iEdibleWet) = this.tfBiomassGrowthRates.fGrowthRateEdible * 1.01;
+                    
+                elseif 1.001*this.afInitialBalanceMass(iEdibleWet) < afCurrentBalanceMass (iEdibleWet)
+                    afPartialFlowRatesBiomass(iEdibleWet) = this.tfBiomassGrowthRates.fGrowthRateEdible * 0.99;
+                    
+                else
+                    afPartialFlowRatesBiomass(iEdibleWet) =this.tfBiomassGrowthRates.fGrowthRateEdible;
+                end
+                
+                if 0.999*this.afInitialBalanceMass(iInedibleWet) > afCurrentBalanceMass (iInedibleWet)
+                    afPartialFlowRatesBiomass(iInedibleWet) = this.tfBiomassGrowthRates.fGrowthRateInedible * 1.01;
+                    
+                elseif 1.001*this.afInitialBalanceMass(iInedibleWet) < afCurrentBalanceMass (iInedibleWet)
+                    afPartialFlowRatesBiomass(iInedibleWet) = this.tfBiomassGrowthRates.fGrowthRateInedible * 0.99;
+                    
+                else
+                    afPartialFlowRatesBiomass(iInedibleWet) =this.tfBiomassGrowthRates.fGrowthRateInedible;
+                end
+                
+                this.toStores.(this.sName).toProcsP2P.([this.sName,'_BiomassGrowth_P2P']).setFlowRate(afPartialFlowRatesBiomass);
+                
                 %% Set atmosphere flow rates
                 % one p2p for inflows one for outflows
                 
                 % Substances that are controlled by these branches:
                 aiSubstances = [this.oMT.tiN2I.CO2, this.oMT.tiN2I.H2O, this.oMT.tiN2I.O2];
                 
-                % current masses in the balance phase:
-                afCurrentBalanceMass = this.toStores.(this.sName).toPhases.([this.sName,'_Balance']).afMass;
                 
                 afMassChange = zeros(1,this.oMT.iSubstances);
                 afMassChange(aiSubstances) =  afCurrentBalanceMass(aiSubstances) - this.afInitialBalanceMass(aiSubstances);
@@ -359,10 +387,12 @@ classdef Culture3Phases < vsys
                 %setPartialFlowRates
                 
                 this.toBranches.WaterSupply_In.oHandler.setFlowRate(-this.fWaterConsumptionRate);
-                if this.afInitialBalanceMass(this.oMT.tiN2I.Nutrients) < afCurrentBalanceMass (this.oMT.tiN2I.Nutrients)
-                    this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate*0.99);
+                if 0.999 * this.afInitialBalanceMass(this.oMT.tiN2I.Nutrients) > afCurrentBalanceMass(this.oMT.tiN2I.Nutrients)
+                    this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate * 1.01);
+                elseif 1.001 * this.afInitialBalanceMass(this.oMT.tiN2I.Nutrients) < afCurrentBalanceMass(this.oMT.tiN2I.Nutrients)
+                    this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate * 0.99);
                 else
-                    this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate*0.99);
+                    this.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.fNutrientConsumptionRate);
                 end
                 try
                     this.oParent.update()

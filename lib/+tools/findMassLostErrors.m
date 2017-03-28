@@ -1,4 +1,4 @@
-function [ ] = findMassErrors( oLastSimObj )
+function [ ] = findMassLostErrors( oLastSimObj )
 % FINDMASSBALANCEERRORS displays system, store and phase name for the phases
 % with the highes mass balance errors. Uses oLastSimObj as input
 

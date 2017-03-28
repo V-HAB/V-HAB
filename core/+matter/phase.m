@@ -388,7 +388,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 if bSetBranchesOutdated
                     this.setBranchesOutdated();
                 end
-                
+                % even if no time has passed, in case that the flowrates
+                % have changed the time step has to be set outdated to
+                % allow the setting of the new flowrates
+                this.setOutdatedTS();
                 return;
             end
             this.fMassUpdateTimeStep = fLastStep;

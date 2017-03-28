@@ -192,7 +192,7 @@ classdef infrastructure < base & event.source
 
             % Create the root object for the simulation, referencing the
             % global objects. Also the hierarchy root for the systems.
-            this.oSimulationContainer = simulation.container(this.sName, oTimer, oMT, oCfgParams, tSolverParams);
+            this.oSimulationContainer = simulation.container(this.sName, oTimer, oMT, oCfgParams, tSolverParams, this);
 
             
             

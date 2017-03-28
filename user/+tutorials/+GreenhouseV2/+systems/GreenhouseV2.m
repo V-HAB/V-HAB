@@ -17,12 +17,15 @@ classdef GreenhouseV2 < vsys
         
         %
         fCO2 = 330;
+        
+        fUpdateFrequency;
     end
     
     methods
         function this = GreenhouseV2(oParent, sName)
-            this@vsys(oParent, sName, 600);
+            this@vsys(oParent, sName, 3600);
             
+            this.fUpdateFrequency = this.fTimeStep;
             %% Import Nutrient Data
             
             % import nutirent data from .csv file
@@ -115,7 +118,7 @@ classdef GreenhouseV2 < vsys
             %% Atmosphere
             
             % comment 2e6 if regulation is not needed
-            matter.store(this, 'Atmosphere', 20 + 2e6);
+            matter.store(this, 'Atmosphere', 20);
             
 %             oAtmosphere = matter.phases.gas(...
 %                 this.toStores.Atmosphere, ...       % store containing phase
@@ -135,14 +138,14 @@ classdef GreenhouseV2 < vsys
             
             %% Water Supply
             
-            matter.store(this, 'WaterSupply', 2000);
+            matter.store(this, 'WaterSupply', 100);
             
             oWaterSupply = matter.phases.liquid(...
                 this.toStores.WaterSupply, ...      % store containing phase
                 'WaterSupply', ...                  % phase name
                 struct(...                          % phase contents    [kg]
-                    'H2O', 2000e3), ...
-                2000, ...                             % phase volume      [m^3]
+                    'H2O', 100e3), ...
+                100, ...                             % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 fPressureInit);                     % phase pressure    [Pa]
                        
@@ -226,6 +229,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.LeakageBuffer, ...        % store containing phase
                 'LeakageBuffer', ...                    % phase name
                 struct(...                              % phase contents    [kg]
+                'N2', 1e-3,...
                 'CO2', 1e-3), ...
                 1e3, ...                                % phase volume      [m^3]
                 fTemperatureInit);                      % phase temperature [K]
@@ -322,7 +326,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.Atmosphere, ...       % store containing phase
                 'ExcessO2', ...                     % phase name
                 struct(...                          % phase contents    [kg]
-                    'O2', 1e6), ...
+                    'O2', 1e5), ...
                 1e6, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
@@ -333,7 +337,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.Atmosphere, ...       % store containing phase
                 'ExcessCO2', ...                    % phase name
                 struct(...                          % phase contents    [kg]
-                    'CO2', 1e6), ...
+                    'CO2', 1e5), ...
                 1e6, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
@@ -477,7 +481,7 @@ classdef GreenhouseV2 < vsys
             if ~this.oTimer.fTime
                 return;
             end
-            this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.update();
+            %this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.update();
              
             fNominalCondensateFlow = 0;
             fNominalO2Flow = 0;
@@ -506,15 +510,15 @@ classdef GreenhouseV2 < vsys
             % TBD: Well its just an example system with stupid unrealistic
             % controllers :)
             if (fRelativeHumidity > 0.85) || (fPartialPressureO2 > 23000) || (fCO2_Concentration > 2500)
-                this.setTimeStep(60);
+                this.setTimeStep(this.fUpdateFrequency/100);
             elseif (fRelativeHumidity > 0.7) || (fPartialPressureO2 > 22500) || (fCO2_Concentration > 1500)
-                this.setTimeStep(60);
+                this.setTimeStep(this.fUpdateFrequency/10);
             elseif (fRelativeHumidity < 0.25) || (fPartialPressureO2 < 18000) || (fCO2_Concentration < 150) || (fPressure < 7e4)
-                this.setTimeStep(60);
+                this.setTimeStep(this.fUpdateFrequency/100);
             elseif (fRelativeHumidity < 0.45) || (fPartialPressureO2 < 19000) || (fCO2_Concentration < 300) || (fPressure < 9e4)
-                this.setTimeStep(60);
+                this.setTimeStep(this.fUpdateFrequency/10);
             else
-                this.setTimeStep(600);
+                this.setTimeStep(this.fUpdateFrequency);
             end
             
             %% O2 Controller
@@ -608,7 +612,10 @@ classdef GreenhouseV2 < vsys
             afFlowRate(this.oMT.tiN2I.H2O) = fCondensateFlow;
             this.toBranches.WaterAbsorber.oHandler.setFlowRate(afFlowRate);
 
-
+            % In case the plant module results in mass errors for you try
+            % outcommenting this function, it should help with debugging ;)
+            % tools.findMassBalanceErrors(this.oMT, 1e-20);
+            
             %% Pressure Controller
             if fPressure < 7e4
                 this.toBranches.N2BufferSupply.oHandler.setFlowRate( 20 / this.fTimeStep);

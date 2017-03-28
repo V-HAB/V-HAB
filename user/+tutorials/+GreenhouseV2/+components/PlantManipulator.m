@@ -7,6 +7,9 @@ classdef PlantManipulator < matter.manips.substance.flow
         
         iEdibleWetBiomass;
         iInedibleWetBiomass;
+        
+        fTotalError = 0;
+        fLastExec = 0;
     end
     
     methods
@@ -23,6 +26,12 @@ classdef PlantManipulator < matter.manips.substance.flow
             if this.oTimer.fTime <= 60
                 return;
             end
+            
+            fTimeStep = this.oTimer.fTime - this.fLastExec;
+            
+            fError = sum(this.afPartialFlows);
+            this.fTotalError = this.fTotalError + (fError * fTimeStep);
+            
             
             this.oParent.update();
             
@@ -46,7 +55,7 @@ classdef PlantManipulator < matter.manips.substance.flow
             
             % to reduce mass erros the current error in mass is spread over
             % the in and outs
-            fError = abs(sum(afPartialFlows));
+            fError = sum(afPartialFlows);
             if fError ~= 0
                 fPositiveFlowRate = sum(afPartialFlows(afPartialFlows > 0));
                 fNegativeFlowRate = abs(sum(afPartialFlows(afPartialFlows < 0)));
@@ -66,12 +75,10 @@ classdef PlantManipulator < matter.manips.substance.flow
                 end
             end
             
-            fError = abs(sum(afPartialFlows));
-            if fError > 1e-20
-                keyboard()
-            end
+            
             update@matter.manips.substance.flow(this, afPartialFlows);
             
+            fLastExec = this.oTimer.fTime;
         end
     end
 end
