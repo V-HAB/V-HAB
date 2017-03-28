@@ -1,4 +1,4 @@
-function [ ttxImportNutrientData ] = importNutrientData()
+function [ ttxImportPlantParameters ] = importPlantParameters()
 % this function reads the PlantParameters.csv file
 
     % At first we'll just read the first line of the file, this determines
@@ -8,7 +8,7 @@ function [ ttxImportNutrientData ] = importNutrientData()
     %% Import data from PlantParameters.csv file
     
     % Open the file
-    iFileID = fopen(strrep('user/+tutorials/+GreenhouseV2/+food/+data/NutrientData.csv','/',filesep), 'r');
+    iFileID = fopen(strrep('lib/+components/+PlantModuleV2/+plantparameters/PlantParameters.csv','/',filesep), 'r');
     % Get first row
     csFirstRow = textscan(iFileID, '%s', 1, 'Delimiter', '\n');
     % This is a cell array of cells, so we 'unpack' one level to get the
@@ -146,10 +146,10 @@ function [ ttxImportNutrientData ] = importNutrientData()
     % while density and heat capacity are not constant the values will be
     % saved here to be used as standard values with which e.g. adsorber
     % that contain solids and gases/liquids can be calculated
-    iFirstVariableColumn = find(strcmp(csVariableNames,'iUSDAID'));
+    iFirstVariableColumn = find(strcmp(csVariableNames,'bLegume'));
     
     % Initialize the struct in which all substances are later stored
-    ttxImportNutrientData = struct();
+    ttxImportPlantParameters = struct();
     
     % To improve the matter table performance, by avoinding frequent calls
     % find() to get the column indices, we add a struct with the property
@@ -176,12 +176,12 @@ function [ ttxImportNutrientData ] = importNutrientData()
     for iI = 1:length(csSubstances)
         % Since there can be multiple rows for a substance, we'll check if
         % we already did this one and skip the rest if we did. 
-        if isfield(ttxImportNutrientData,csSubstances{iI})
+        if isfield(ttxImportPlantParameters,csSubstances{iI})
             continue;
         end
         
         % set substancename as fieldname
-        ttxImportNutrientData.(csSubstances{iI}) = [];
+        ttxImportPlantParameters.(csSubstances{iI}) = [];
         
         % select all rows of that substance
         % substances can have more than one phase
@@ -189,16 +189,16 @@ function [ ttxImportNutrientData ] = importNutrientData()
         
         if ~isempty(aiRows)
             % Store all data of current substance in the sub-struct of
-            % ttxImportNutrientData.
+            % ttxImportPlantParameters.
             
             % Store the full name of the substance
-            ttxImportNutrientData.(csSubstances{iI}).sPlantSpecies = csRawData{aiRows(1), 1};
+            ttxImportPlantParameters.(csSubstances{iI}).sPlantSpecies = csRawData{aiRows(1), 1};
          
             
             % go through all phases and save all remaining properties for that specific phase
             for iJ = 1:length(aiRows)
                 for iK = iFirstVariableColumn:iNumberOfColumns
-                    ttxImportNutrientData.(csSubstances{iI}).(csColumnNames{iK}) = csRawData{aiRows(iJ),iK};
+                    ttxImportPlantParameters.(csSubstances{iI}).(csColumnNames{iK}) = csRawData{aiRows(iJ),iK};
                 end
             end
             
@@ -206,12 +206,12 @@ function [ ttxImportNutrientData ] = importNutrientData()
             % will enable interpolation of their properties, we can just
             % set the variable to false here.
             %TODO Might not need this, so commented, remove if sure. 
-            %ttxImportNutrientData.(csSubstances{iI}).bInterpolations = false;
+            %ttxImportPlantParameters.(csSubstances{iI}).bInterpolations = false;
             
             % Finally we add the tColumns and tUnits structs to every 
             % substance
-            ttxImportNutrientData.(csSubstances{iI}).tColumns = tColumns;
-            ttxImportNutrientData.(csSubstances{iI}).tUnits   = tUnits;
+            ttxImportPlantParameters.(csSubstances{iI}).tColumns = tColumns;
+            ttxImportPlantParameters.(csSubstances{iI}).tUnits   = tUnits;
         end
     end
 end

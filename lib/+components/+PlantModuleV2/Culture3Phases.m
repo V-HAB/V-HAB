@@ -165,7 +165,7 @@ classdef Culture3Phases < vsys
             
             %% Create Substance Conversion Manipulators
             
-            tutorials.GreenhouseV2.components.PlantManipulator(this, [this.txInput.sCultureName, '_PlantManipulator'], this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Balance']));
+            components.PlantModuleV2.PlantManipulator(this, [this.txInput.sCultureName, '_PlantManipulator'], this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Balance']));
             
             %% Create Branches
             
@@ -262,7 +262,7 @@ classdef Culture3Phases < vsys
             this.fCO2 = this.oParent.CalculateCO2Concentration();
             
                 [ this ] = ...                                                  % return current culture object
-                tutorials.GreenhouseV2.components.PlantGrowth(...
+                components.PlantModuleV2.PlantGrowth(...
                     this, ...                                               % current culture object
                     this.oTimer.fTime, ...                                  % current simulation time
                     this.oParent.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass * this.oParent.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMassToPressure, ...                 % atmosphere pressure

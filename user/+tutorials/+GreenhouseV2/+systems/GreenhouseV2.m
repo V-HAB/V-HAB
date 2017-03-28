@@ -29,14 +29,12 @@ classdef GreenhouseV2 < vsys
             %% Import Nutrient Data
             
             % import nutirent data from .csv file
-            this.ttxNutrientData = ...
-                tutorials.GreenhouseV2.food.data.importNutrientData();
+            this.ttxNutrientData = components.PlantModuleV2.food.data.importNutrientData();
             
             %% Import Plant Parameters
             
             % import plant parameters from .csv file
-            this.ttxPlantParameters = ...
-                tutorials.GreenhouseV2.plantparameters.importPlantParameters();
+            this.ttxPlantParameters = components.PlantModuleV2.plantparameters.importPlantParameters();
             
             % import coefficient matrices for CQY and T_A
             % save fieldnames to temporary cell array
@@ -46,11 +44,11 @@ classdef GreenhouseV2 < vsys
             for iI = 1:size(csPlantSpecies)
                 % import coefficient matrices for CQY
                 this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_CQY = ...
-                    csvread(['user/+tutorials/+GreenhouseV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_CQY.csv']);
+                    csvread(['lib/+components/+PlantModuleV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_CQY.csv']);
                 
                 % import coefficient matrices for T_A
                 this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_T_A = ...
-                    csvread(['user/+tutorials/+GreenhouseV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_T_A.csv']);
+                    csvread(['lib/+components/+PlantModuleV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_T_A.csv']);
                 
                 %% Additional Required Parameters
                 
@@ -83,7 +81,7 @@ classdef GreenhouseV2 < vsys
             % TODO: find a better way for providing inputs for culture
             % setup. old way will have to do for now, it works at least.
             blubb = load(...
-                strrep('tutorials\+GreenhouseV2\+components\+cultures\CultureInputLSP.mat', '\', filesep));
+                strrep('lib\+components\+PlantModuleV2\+cultures\CultureInputLSP.mat', '\', filesep));
             
             % write to property
             this.ttxInput = blubb.CultureInput;
@@ -98,7 +96,7 @@ classdef GreenhouseV2 < vsys
             for iI = 1:length(this.csCultures)
                 % culture object gets assigned using its culture name 
                 this.toCultures.(this.csCultures{iI}) = ...
-                    tutorials.GreenhouseV2.components.Culture3Phases(...
+                    components.PlantModuleV2.Culture3Phases(...
                         this, ...                                   % parent system reference
                         this.ttxPlantParameters.(this.ttxInput.(this.csCultures{iI}).sPlantSpecies), ...
                         this.ttxInput.(this.csCultures{iI}), ...    % input for specific culture
