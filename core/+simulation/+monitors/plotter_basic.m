@@ -379,23 +379,28 @@ classdef plotter_basic < simulation.monitor
                     % We only add a plot if there will actually be anything to
                     % plot. If there isn't, we tell the user. 
                     if ~isempty(aiIdx)
-                        if length(aiIdx) ~= length(csFilter)
+                        if strcmp(fieldnames(tFilter),'sLabel') && length(aiIdx) ~= length(csFilter)
                             error('it seems the same log value is used several time, this is currently not implemented please define a new plot in the same figure')
+                            
+                        elseif strcmp(fieldnames(tFilter),'sLabel')
+                            
+                            % since the aiIdx will be ordered from lowest index to
+                            % highest index it is necessary to reorder it to get
+                            % the correct variable at the correct location
+                            csCurrentFilterOrder = {oLogger.tLogValues(aiIdx).sLabel};
+                            aiIdxOrdered = zeros(1,length(aiIdx));
+                            for iIndex = 1:length(aiIdx)
+                                for iIndex2 = 1:length(aiIdx)
+                                    if strcmp(csFilter{iIndex}, csCurrentFilterOrder{iIndex2})
+                                        iCurrentIndex = iIndex2;
+                                    end
+                                end
+                                aiIdxOrdered(iIndex) = aiIdx(iCurrentIndex);
+                            end
+                        else
+                            aiIdxOrdered = aiIdx;
                         end
 
-                        % since the aiIdx will be ordered from lowest index to
-                        % highest index it is necessary to reorder it to get
-                        % the correct variable at the correct location
-                        csCurrentFilterOrder = {oLogger.tLogValues(aiIdx).sLabel};
-                        aiIdxOrdered = zeros(1,length(aiIdx));
-                        for iIndex = 1:length(aiIdx)
-                            for iIndex2 = 1:length(aiIdx)
-                                if strcmp(csFilter{iIndex}, csCurrentFilterOrder{iIndex2})
-                                    iCurrentIndex = iIndex2;
-                                end
-                            end
-                            aiIdxOrdered(iIndex) = aiIdx(iCurrentIndex);
-                        end
                     
                         this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdxOrdered, 'txCustom', txCustom, 'csFunctions', []);
                         % before we add the functions to the plot struct we
