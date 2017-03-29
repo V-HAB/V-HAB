@@ -1512,10 +1512,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.afCurrentTotalInOuts = afChange;
             this.mfCurrentInflowDetails = mfDetails;
             
-            % If we have set a fixed time steop for this phase, we can just
+            % If we have set a fixed time step for this phase, we can just
             % continue without doing any calculations.
             if ~isempty(this.fFixedTS)
                 fNewStep = this.fFixedTS;
+                this.bOutdatedTS = false;
             else
                 rMaxChangeFactor = 1;
                 
