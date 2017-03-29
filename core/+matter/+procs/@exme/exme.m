@@ -115,7 +115,7 @@ classdef exme < base
             
             
             this.bHasFlow = true;
-            this.bFlowIsAProcP2P = isa(this.oFlow, 'matter.procs.p2ps.flow');
+            this.bFlowIsAProcP2P = isa(this.oFlow, 'matter.procs.p2ps.flow') || isa(this.oFlow, 'matter.procs.p2ps.branch.flow');
             
             
             try
@@ -159,6 +159,10 @@ classdef exme < base
             fFlowRate  =  this.oFlow.fFlowRate * this.iSign;
             
             
+            arPartials   = this.oFlow.arPartialMass;
+            afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
+            return
+            % TO DO; why can we not just use the flow all the time?
             if this.bFlowIsAProcP2P
                 % This exme is connected to a P2P processor, so we can get
                 % the properties from the connected flow.

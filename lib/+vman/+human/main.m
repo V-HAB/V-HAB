@@ -114,8 +114,11 @@ classdef main < vsys
             
             this.tMealTimes = tMealTimes;
             
-            this.iAsscociatedNodes = iAsscociatedNodes;
-            
+            if nargin >= 6
+                this.iAsscociatedNodes = iAsscociatedNodes;
+            else
+                this.iAsscociatedNodes = 1;
+            end
             % initializes the random factor for the urine and feces:
             rng('shuffle'); % command required to ensure that each human has an individual factor
             

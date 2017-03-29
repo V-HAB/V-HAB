@@ -212,6 +212,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % change before an update of the matter properties (of the whole
         % store) is triggered?
         rMaxChange = 0.25;
+        arMaxChange;
         fMaxStep   = 20;
         fFixedTS;
         
@@ -286,6 +287,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Set matter table / timer shorthands, register phase in MT
             this.oMT    = this.oStore.oMT;
             this.oTimer = this.oStore.oTimer;
+            
+            this.arMaxChange = zeros(1,this.oMT.iSubstances);
             
             this.afMass = this.oMT.addPhase(this);
             
@@ -385,7 +388,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 if bSetBranchesOutdated
                     this.setBranchesOutdated();
                 end
-                
+                % even if no time has passed, in case that the flowrates
+                % have changed the time step has to be set outdated to
+                % allow the setting of the new flowrates
+                this.setOutdatedTS();
                 return;
             end
             this.fMassUpdateTimeStep = fLastStep;
@@ -1267,8 +1273,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
             % Now sum up in-/outflows over all EXMEs
             afTotalInOuts = sum(mfTotalFlows, 1);
-            
-            
             this.mfTotalFlowsByExme = mfTotalFlows;
             
 %             afTotalInOuts   = tools.round.prec(afTotalInOuts,   this.oTimer.iPrecision);
@@ -1506,10 +1510,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.afCurrentTotalInOuts = afChange;
             this.mfCurrentInflowDetails = mfDetails;
             
-            % If we have set a fixed time steop for this phase, we can just
+            % If we have set a fixed time step for this phase, we can just
             % continue without doing any calculations.
             if ~isempty(this.fFixedTS)
                 fNewStep = this.fFixedTS;
+                this.bOutdatedTS = false;
             else
                 rMaxChangeFactor = 1;
                 
@@ -1615,7 +1620,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % phase.
                 rPartialsPerSecond = max(arPartialsChange(~isinf(arPartialsChange)));
                 
-                %CHECK Why would this be empty?
+                %CHECK Why would this be empty? Because abChange can be
+                %false for all entries (no mass is beeing added or removed)
                 if isempty(rPartialsPerSecond), rPartialsPerSecond = 0; end;
 
                 % Calculating the change per second of TOTAL mass.
@@ -1637,11 +1643,21 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % the total mass or the maximum percentage change of one of
                 % the substances' relative masses.
                 fNewStepTotal    = (this.rMaxChange * rMaxChangeFactor - rPreviousChange) / rTotalPerSecond;
+                % Partial mass change compared to total mass
                 fNewStepPartials = (this.rMaxChange * rMaxChangeFactor - max(arPreviousChange)) / rPartialsPerSecond;
+                
+                % Partial mass change compared to partial mass
+                arPartialChangeToPartials = abs(afChange ./ tools.round.prec(this.afMass, this.oTimer.iPrecision));
+                arPartialChangeToPartials(this.afMass == 0) = 0;
+                
+                afNewStepPartialChangeToPartials = (this.arMaxChange * rMaxChangeFactor) ./ arPartialChangeToPartials;
+                afNewStepPartialChangeToPartials(this.arMaxChange == 0) = inf;
+                
+                fNewStepPartialChangeToPartials = min(afNewStepPartialChangeToPartials);
                 
                 % The new time step will be set to the smaller one of these
                 % two candidates.
-                fNewStep = min([ fNewStepTotal fNewStepPartials ]);
+                fNewStep = min([ fNewStepTotal fNewStepPartials fNewStepPartialChangeToPartials]);
                 
                 % The actual minimum time step of the phase is set by the
                 % timer object and its current minimum time step property.

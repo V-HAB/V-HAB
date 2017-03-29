@@ -15,13 +15,7 @@ function [ oCulture ] = ...
 %             fCO2);                                      % CO2 concentration in ppm
         
     % time of first emergence reached
-    if fSimTime >= oCulture.txInput.fEmergeTime
-        % if first time entering this section (= fallow state until now), 
-        % to only change state once
-        if oCulture.iState == 4
-            % set culture state to growth
-            oCulture.iState = 1;
-        end
+    if fSimTime >= oCulture.txInput.fEmergeTime * 86400
         
         % growth if current generation does not exceed maximum 
         if oCulture.iInternalGeneration <= oCulture.txInput.iConsecutiveGenerations
@@ -30,11 +24,7 @@ function [ oCulture ] = ...
                 
                 % calculate internal time (time since planting) for the
                 % current culture
-                if oCulture.fInternalTime ~= 0    
-                    oCulture.fInternalTime = fSimTime - (oCulture.iInternalGeneration - 1) * oCulture.txInput.fHarvestTime - oCulture.txInput.fEmergeTime;
-                else
-                    oCulture.fInternalTime = fSimTime - (oCulture.iInternalGeneration - 1) * oCulture.txInput.fHarvestTime;                            
-                end
+                oCulture.fInternalTime = fSimTime - oCulture.fSowTime;
                 
 %                 % calculate passed time in current lighting condition
 %                 if oCulture.fLighTime ~= 0
@@ -49,7 +39,7 @@ function [ oCulture ] = ...
                     
                     % get the 8 parameters via MMEC and FAO model equations
                     [ oCulture ] = ...
-                        tutorials.GreenhouseV2.components.CalculateMMECRates(...
+                        components.PlantModuleV2.CalculateMMECRates(...
                             oCulture, ...                       % current culture object
                             fPressureAtmosphere, ...            % atmosphere pressure
                             fDensityAtmosphere, ...             % atmosphere density
@@ -64,7 +54,7 @@ function [ oCulture ] = ...
                 elseif (fCO2 > 1300) && (fCO2 < 3000)
                    % get the 8 parameters via MMEC and FAO model equations
                     [ oCulture ] = ...
-                        tutorials.GreenhouseV2.components.CalculateMMECRates(...
+                        components.PlantModuleV2.CalculateMMECRates(...
                             oCulture, ...                               % current culture object
                             fPressureAtmosphere, ...                    % atmosphere pressure
                             fDensityAtmosphere, ...                     % atmosphere density
@@ -79,7 +69,7 @@ function [ oCulture ] = ...
                 elseif (fCO2 < 330) && (fCO2 > 150)
                     % get the 8 parameters via MMEC and FAO model equations
                     [ oCulture ] = ...
-                        tutorials.GreenhouseV2.components.CalculateMMECRates(...
+                        components.PlantModuleV2.CalculateMMECRates(...
                             oCulture, ...                               % current culture object
                             fPressureAtmosphere, ...                    % atmosphere pressure
                             fDensityAtmosphere, ...                     % atmosphere density
@@ -108,41 +98,50 @@ function [ oCulture ] = ...
                 
                 % positive flowrate for plants -> atmosphere (default P2P
                 % direction)
-                oCulture.tfGasExchangeRates.fO2ExchangeRate = (oCulture.tfMMECRates.fOP - oCulture.tfMMECRates.fOC) * oCulture.txInput.fGrowthArea;
-                oCulture.tfGasExchangeRates.fCO2ExchangeRate = (oCulture.tfMMECRates.fCO2P - oCulture.tfMMECRates.fCO2C) * oCulture.txInput.fGrowthArea;
-                oCulture.tfGasExchangeRates.fTranspirationRate = oCulture.tfMMECRates.fTR * oCulture.txInput.fGrowthArea;
+                oCulture.tfGasExchangeRates.fO2ExchangeRate         = (oCulture.tfMMECRates.fOP - oCulture.tfMMECRates.fOC)     * oCulture.txInput.fGrowthArea;
+                oCulture.tfGasExchangeRates.fCO2ExchangeRate        = (oCulture.tfMMECRates.fCO2P - oCulture.tfMMECRates.fCO2C) * oCulture.txInput.fGrowthArea;
+                oCulture.tfGasExchangeRates.fTranspirationRate      = oCulture.tfMMECRates.fTR                                  * oCulture.txInput.fGrowthArea;
                 
-                oCulture.fWaterConsumptionRate = oCulture.tfMMECRates.fWC * oCulture.txInput.fGrowthArea;
+                oCulture.fWaterConsumptionRate                      = oCulture.tfMMECRates.fWC                                  * oCulture.txInput.fGrowthArea;
+                oCulture.fNutrientConsumptionRate                   = oCulture.tfMMECRates.fNC                                  * oCulture.txInput.fGrowthArea;
                 
-                oCulture.fNutrientConsumptionRate = oCulture.tfMMECRates.fNC * oCulture.txInput.fGrowthArea;
+                %fWetCropGrowthRate                                  = oCulture.tfMMECRates.fWCGR                                * oCulture.txInput.fGrowthArea;
                 
                 %% Biomass Growth
+                % oCulture.txPlantParameters.fXFRT:         Edible ratio of dry biomass.
+                % oCulture.txPlantParameters.fFBWF_Edible:  Edible ratio of water in biomass.
                 
                 % If internaltime of considered culture's growth cycle
                 % exceeds tE (time at onset of edible biomass)
-                if oCulture.fInternalTime > oCulture.txPlantParameters.fT_E  
+                if oCulture.fInternalTime >= oCulture.txPlantParameters.fT_E * 86400
                     % Mass balance of biomass uptake when exceeding tE
                     % TODO: JUST GROWTH RATES! actual growth happens 
                     % inside the plant module exec() function
-                    oCulture.tfBiomassGrowthRates.fGrowthRateEdible = ...
-                        oCulture.tfMMECRates.fCGR * oCulture.txPlantParameters.fXFRT * oCulture.txInput.fGrowthArea + ...                                                % edible dry part
-                        oCulture.tfMMECRates.fCGR * oCulture.txPlantParameters.fXFRT * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fFBWF_Edible;           % edible water part
-                        
-                    oCulture.tfBiomassGrowthRates.fGrowthRateInedible = ...
-                        oCulture.tfMMECRates.fCGR * (1 - oCulture.txPlantParameters.fXFRT) * oCulture.txInput.fGrowthArea + ...                                          % inedible dry part
-                        oCulture.tfMMECRates.fCGR * (1 - oCulture.txPlantParameters.fXFRT) * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fFBWF_Inedible;    % inedible water part
-                      
+                    oCulture.tfBiomassGrowthRates.fGrowthRateEdible = (oCulture.tfMMECRates.fCGR * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fXFRT) * (oCulture.txPlantParameters.fFBWF_Edible + 1);
+                    
+                    oCulture.tfBiomassGrowthRates.fGrowthRateInedible = (oCulture.tfMMECRates.fCGR * oCulture.txInput.fGrowthArea * (1 - oCulture.txPlantParameters.fXFRT)) * (oCulture.txPlantParameters.fFBWF_Inedible + 1);
+                    
                     % If tE is not exceeded yet, only inedible biomass is created 
                     % (and therefore contributes to the total crop biomass (TCB) solely)
                 else
                     % Mass balance of biomass uptake before tE
-                    oCulture.tfBiomassGrowthRates.fGrowthRateEdible = 0;                                                                                    
-                        
-                    oCulture.tfBiomassGrowthRates.fGrowthRateInedible = ...
-                        oCulture.tfMMECRates.fCGR * oCulture.txInput.fGrowthArea + ...                                          % inedible dry part
-                        oCulture.tfMMECRates.fCGR * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fFBWF_Inedible;   % inedible water part
+                    oCulture.tfBiomassGrowthRates.fGrowthRateEdible = 0;  
+                    
+                    oCulture.tfBiomassGrowthRates.fGrowthRateInedible = (oCulture.tfMMECRates.fCGR * oCulture.txInput.fGrowthArea * (oCulture.txPlantParameters.fFBWF_Inedible + 1));
+                    
                 end   
             
+%                 if oCulture.fWaterConsumptionRate > 0
+%                     fBalance = oCulture.tfGasExchangeRates.fO2ExchangeRate + oCulture.tfGasExchangeRates.fCO2ExchangeRate + oCulture.tfGasExchangeRates.fTranspirationRate + ...
+%                      (oCulture.tfBiomassGrowthRates.fGrowthRateInedible + oCulture.tfBiomassGrowthRates.fGrowthRateEdible) ...
+%                      - (oCulture.fWaterConsumptionRate + oCulture.fNutrientConsumptionRate);
+%                  
+%                     if abs(fBalance) > 1e-18
+%                         keyboard()
+%                     end
+%                 end
+                
+                
             % harvest time reached -> change state to harvest   
             else
                 % if first time entering this section (= growth state until
@@ -168,6 +167,19 @@ function [ oCulture ] = ...
                     for iI = 1:length(csFieldNames)
                         oCulture.tfMMECRates.(csFieldNames{iI}) = 0;
                     end
+                    
+                    % set the resulting flow rates to zero too, small
+                    % structs so no loops
+                    oCulture.fWaterConsumptionRate = 0;
+                    oCulture.fNutrientConsumptionRate = 0;
+                    
+                    oCulture.tfGasExchangeRates.fO2ExchangeRate = 0;
+                    oCulture.tfGasExchangeRates.fCO2ExchangeRate = 0;
+                    oCulture.tfGasExchangeRates.fTranspirationRate = 0;
+                    
+                    oCulture.tfBiomassGrowthRates.fGrowthRateEdible = 0;
+                    oCulture.tfBiomassGrowthRates.fGrowthRateInedible = 0;
+                else
                     
                     % set the resulting flow rates to zero too, small
                     % structs so no loops

@@ -86,10 +86,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % delete
         bInterface = false;
         
-        
-        
-        
-        
         % Re-calculated every tick in setData/seal
         afPartialPressure;
         
@@ -378,11 +374,13 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     fVolumetricFlowRate = 0;
                 end
             elseif fFlowRate ~= 0
-                fVolumetricFlowRate = fFlowRate / ...
-                                    ( this.fPressure * this.fMolarMass / ...
-                                    ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
-            else
-                fVolumetricFlowRate = 0;
+                if fFlowRate
+                    fVolumetricFlowRate = fFlowRate / ...
+                                        ( this.fPressure * this.fMolarMass / ...
+                                        ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
+                else
+                    fVolumetricFlowRate = 0;
+                end
             end
             
         end
@@ -453,9 +451,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
             this.fFlowRate     = fFlowRate;
             this.arPartialMass = arPartialMass;
             this.fTemperature  = fTemperature;
+            
             this.fPressure     = fPressure;
-            
-            
             
             %CHECK see setData, using the IN exme props!
             if this.fFlowRate >= 0
@@ -608,13 +605,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % the negative direction of the branch (i.e. from right to
             % left).
             if fFlowRate == 0
-                if strcmp(aoFlows(1).oBranch.coExmes{1}.oPhase.sType, 'gas')
-                    fPressureLeft  = aoFlows(1).oBranch.coExmes{1}.oPhase.fMass * aoFlows(1).oBranch.coExmes{1}.oPhase.fMassToPressure;
-                    fPressureRight = aoFlows(1).oBranch.coExmes{2}.oPhase.fMass * aoFlows(1).oBranch.coExmes{2}.oPhase.fMassToPressure;
-                else
-                    fPressureLeft  = aoFlows(1).oBranch.coExmes{1}.oPhase.fPressure;
-                    fPressureRight = aoFlows(1).oBranch.coExmes{2}.oPhase.fPressure;
-                end
+                fPressureLeft  = aoFlows(1).oBranch.coExmes{1}.oPhase.fPressure;
+                fPressureRight = aoFlows(1).oBranch.coExmes{2}.oPhase.fPressure;
                 
                 if fPressureLeft > fPressureRight
                     bNeg = false;
@@ -644,6 +636,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
                 % If only one flow, no f2f exists --> set pressure, temp
                 % according to IN exme
+                
                 if iL == 1
                     oThis.fPressure    = fPortPress;
                     oThis.fTemperature = fCurrentTemperature;

@@ -155,7 +155,7 @@ classdef branch < base & event.source
     end
     
     methods
-        function this = branch(oContainer, sLeft, csProcs, sRight, sCustomName)
+        function this = branch(oContainer, sLeft, csProcs, sRight, sCustomName, bP2P)
             % Can be called with either stores/ports or interface names
             % (all combinations possible). Connections are always done from
             % subsystem to system.
@@ -184,7 +184,7 @@ classdef branch < base & event.source
             end
             this.sName = sTempName;
             
-            if nargin == 5
+            if nargin >= 5
                 this.sCustomName = sCustomName;
             end
             
@@ -205,8 +205,11 @@ classdef branch < base & event.source
   
             else
                 % Create first flow, get matter table from oData (see @sys)
-                oFlow = matter.flow(this);
-                
+                if nargin == 6 && bP2P
+                    oFlow = matter.procs.p2ps.branch.flow(this);
+                else
+                    oFlow = matter.flow(this);
+                end
                 % Add flow to index
                 this.aoFlows(end + 1) = oFlow;
                 

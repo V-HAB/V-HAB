@@ -347,36 +347,62 @@ classdef plotter_basic < simulation.monitor
                         else
                             % if no calculations is used the new filter is the
                             % same as the old and the signs are empty
-                            csFunctions{iFilter} = [];
+                            csFunctions{iFilter} = 'x1';
                             csFilterNew{iFilter} = csFilter{iFilter};
                         end
                     end
                     % now order the seperated new filter fields into one new
                     % cell array that can be used to get the log values!
                     iCell = 1;
-                    csFilter = cell(1,length(csFilterNew)*length(csFilterNew));
+                    csFilter = cell(1,length(csFilterNew));
                     for iFilter = 1:length(csFilterNew)
-                        for iNewFilter = 1:length(csFilterNew{iFilter})
-                            try
+                        if iscell(csFilterNew{iFilter})
+                            for iNewFilter = 1:length(csFilterNew{iFilter})
                                 csFilter{iCell} = csFilterNew{iFilter}{iNewFilter};
-                            catch
-                                csFilter{iCell} = csFilterNew{iFilter};
+                                iCell = iCell + 1;
                             end
+                        else
+                            csFilter{iCell} = csFilterNew{iFilter};
                             iCell = iCell + 1;
                         end
                     end
                     % now we can set the seperated fields into the filter
                     % struct
-                    tFilter.(csFields{iField}) = csFilter;
+                    if strcmp(csFields{iField}, 'sLabel')
+                        tFilter.(csFields{iField}) = csFilter;
+                    end
 
                     % the sign cell array will be added to the tPlot struct to
                     % perform the calculations during the actual plotting!
                     aiIdx = oLogger.find(xDataReference, tFilter);
-
+                    
                     % We only add a plot if there will actually be anything to
                     % plot. If there isn't, we tell the user. 
                     if ~isempty(aiIdx)
-                        this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'txCustom', txCustom, 'csFunctions', []);
+                        if strcmp(fieldnames(tFilter),'sLabel') && length(aiIdx) ~= length(csFilter)
+                            error('it seems the same log value is used several time, this is currently not implemented please define a new plot in the same figure')
+                            
+                        elseif strcmp(fieldnames(tFilter),'sLabel')
+                            
+                            % since the aiIdx will be ordered from lowest index to
+                            % highest index it is necessary to reorder it to get
+                            % the correct variable at the correct location
+                            csCurrentFilterOrder = {oLogger.tLogValues(aiIdx).sLabel};
+                            aiIdxOrdered = zeros(1,length(aiIdx));
+                            for iIndex = 1:length(aiIdx)
+                                for iIndex2 = 1:length(aiIdx)
+                                    if strcmp(csFilter{iIndex}, csCurrentFilterOrder{iIndex2})
+                                        iCurrentIndex = iIndex2;
+                                    end
+                                end
+                                aiIdxOrdered(iIndex) = aiIdx(iCurrentIndex);
+                            end
+                        else
+                            aiIdxOrdered = aiIdx;
+                        end
+
+                    
+                        this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdxOrdered, 'txCustom', txCustom, 'csFunctions', []);
                         % before we add the functions to the plot struct we
                         % remove all empty fields
                         mbRemoveFunction = false(1,length(csFunctions));
@@ -628,7 +654,12 @@ classdef plotter_basic < simulation.monitor
 
                             end
 
-                            tLogProps(iCalculation).sLabel = strjoin(splitphrases_cell{1}(mbCommonWords));
+                            try
+                                tLogProps(iCalculation).sLabel = strjoin(splitphrases_cell{1}(mbCommonWords));
+                            catch
+                                % well just keep the current label (might
+                                % be a calculation
+                            end
 
                         end
                         tLogProps(iCalculations+1:end) = [];

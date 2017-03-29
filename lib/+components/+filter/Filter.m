@@ -91,11 +91,6 @@ classdef Filter < vsys
         % can be changed by using the setHeaterPower function
         fHeaterPower = 0;
         
-        % the object porperty used to store the lumped parameter thermal
-        % solver used to calculate the conductive and convective heat
-        % transfer in this model
-        oThermalSolver;
-        
         % struct that contains information about the property from the last
         % update that is used to decide if recalculations should be made or
         % not
@@ -824,6 +819,12 @@ classdef Filter < vsys
                 this.updateInterCellFlowratesDynamic()
             else
                 this.updateInterCellFlowrates()
+            end
+            
+            csProcsP2P = this.toStores.(this.sName).csProcsP2P;
+            for iProc = 1:length(csProcsP2P)
+                this.toStores.(this.sName).toProcsP2P.(csProcsP2P{iProc}).ManualUpdate(this.fTimeStep, zeros(1,this.oMT.iSubstances));
+                this.toStores.(this.sName).toProcsP2P.(csProcsP2P{iProc}).ManualUpdateFinal();
             end
             
             this.calculateThermalProperties()
