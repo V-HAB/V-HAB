@@ -59,6 +59,11 @@ classdef timer < base
         chPostTick = cell(7, 100);
         
         aiPostTickMax = [ 0, 0, 0, 0, 0, 0, 0 ];
+        
+        % struct used by the findSmallestTimeStep function from the tools
+        % folder (only if activated) to store information on the locations
+        % of the smallest timestep and the tick in which it occured
+        tDebug = struct();
     end
     
     methods
@@ -233,6 +238,29 @@ classdef timer < base
             % this works, don't need find!
             this.afLastExec(abExec) = this.fTime;
             
+            %% Outcommented code that can be added again if you have trouble finding the location of your smallest time step in your system
+            %
+            % If you provide a limit larger than 0, then the report string
+            % telling you in which part of the system your time step was
+            % minimal will be displayed in the command window for all cases
+            % where the smallest time step is smaller or equal than the limit you
+            % provided
+            % Outcomment code from here to the next section to activate the
+            % debugging
+%             fLimit = 0;
+%             csReport = tools.findSmallestTimeStep(this, fLimit);
+%             if mod(this.iTick, 101) == 0
+%                 this.tDebug = struct();
+%                 this.tDebug(mod(this.iTick, 101)+1).csReport    = csReport;
+%                 this.tDebug(mod(this.iTick, 101)+1).iTick       = this.iTick;
+%                 this.tDebug(mod(this.iTick, 101)+1).fTimeStep   = fThisStep;
+%             else
+%                 this.tDebug(mod(this.iTick, 101)+1).csReport    = csReport;
+%                 this.tDebug(mod(this.iTick, 101)+1).iTick       = this.iTick;
+%                 this.tDebug(mod(this.iTick, 101)+1).fTimeStep   = fThisStep;
+%             end
+            
+            %%
             
             % Just to make sure - prio 2 could attach postTick to prio -1
             while any(this.aiPostTickMax ~= 0)

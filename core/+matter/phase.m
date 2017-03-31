@@ -214,6 +214,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         rMaxChange = 0.25;
         arMaxChange;
         fMaxStep   = 20;
+        fMinStep   = 0;
         fFixedTS;
         
         % Maximum factor with which rMaxChange is decreased
@@ -1647,7 +1648,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 fNewStepPartials = (this.rMaxChange * rMaxChangeFactor - max(arPreviousChange)) / rPartialsPerSecond;
                 
                 % Partial mass change compared to partial mass
-                arPartialChangeToPartials = abs(afChange ./ tools.round.prec(this.afMass, this.oTimer.iPrecision));
+                afCurrentMass = this.afMass;
+                afCurrentMass(this.afMass < 1e-8 & this.afMass > 0) = 1e-8;
+                arPartialChangeToPartials = abs(afChange ./ tools.round.prec(afCurrentMass, this.oTimer.iPrecision));
                 arPartialChangeToPartials(this.afMass == 0) = 0;
                 
                 afNewStepPartialChangeToPartials = (this.arMaxChange * rMaxChangeFactor) ./ arPartialChangeToPartials;
@@ -1664,7 +1667,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % To ensure that this will happen, we pre-set the fMinStep
                 % variable to zero, the timer will then use the actual
                 % minimum.
-                fMinStep = 0;
+                % fMinStep = 0; TBD does this make sense?
                 
                 % If our newly calculated time step is larger than the
                 % maximum time step set for this phase, we use this
@@ -1682,8 +1685,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % Why do we have to deal with it in this time step,
                 % additionally causing it to set the minimum time step on
                 % the phase?
-                elseif fNewStep < 0
-                    fNewStep = fMinStep;
+                elseif fNewStep < this.fMinStep
+                    fNewStep = this.fMinStep;
                     %TODO Make this output a lower level debug message.
                     %fprintf('Tick %i, Time %f: Phase %s.%s setting minimum timestep\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, this.sName);
                 end

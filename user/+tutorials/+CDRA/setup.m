@@ -46,42 +46,23 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn', 'fPressure',         'Pa',   'Pressure CHX');
             oLog.addValue('Example:c:CCAA:s:CHX.toProcsP2P.CondensingHX', 'fFlowRate',      'kg/s', 'Condensate Flowrate CHX');
             
-            for iBed = 1:2
-                for iCell = 1:5
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Pressure Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.H2O)', 'Pa', ['Flow Pressure H2O Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.CO2)', 'Pa', ['Flow Pressure CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.CO2)', 'kg', ['Partial Mass CO2 Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite13x_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.H2O)', 'kg', ['Partial Mass H2O Zeolite13x_',num2str(iBed),' Cell ',num2str(iCell)]);
-                end
-            end
-            
-            for iBed = 1:2
-                for iCell = 1:5
-                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Pressure Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.H2O)', 'Pa', ['Flow Pressure H2O Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.CO2)', 'Pa', ['Flow Pressure CO2 Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    
-                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.CO2)', 'kg', ['Partial Mass CO2 Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Sylobead_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.H2O)', 'kg', ['Partial Mass H2O Sylobead_',num2str(iBed),' Cell ',num2str(iCell)]);
-                end
-            end
-            
-            for iBed = 1:2
-                for iCell = 1:5
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fPressure', 'Pa', ['Flow Pressure Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.H2O)', 'Pa', ['Flow Pressure H2O Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'afPP(this.oMT.tiN2I.CO2)', 'Pa', ['Flow Pressure CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Flow_',num2str(iCell)], 'fTemperature', 'K', ['Flow Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'fTemperature', 'K', ['Absorber Temperature Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.CO2)', 'kg', ['Partial Mass CO2 Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
-                    oLog.addValue(['Example:c:CDRA:s:Zeolite5A_',num2str(iBed),'.toPhases.Absorber_',num2str(iCell)], 'afMass(this.oMT.tiN2I.H2O)', 'kg', ['Partial Mass H2O Zeolite5A_',num2str(iBed),' Cell ',num2str(iCell)]);
+            iCellNumber13x = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Zeolite13x.iCellNumber;
+            iCellNumberSylobead = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Sylobead.iCellNumber;
+            iCellNumber5A = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Zeolite5A.iCellNumber;
+            miCellNumber = [iCellNumberSylobead, iCellNumber13x, iCellNumber5A];
+            csType = {'Sylobead_', 'Zeolite13x_', 'Zeolite5A_'};
+            for iType = 1:3
+                for iBed = 1:2
+                    for iCell = 1:miCellNumber(iType)
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Flow_',num2str(iCell)],      'fPressure',                    'Pa',   ['Flow Pressure', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Flow_',num2str(iCell)],      'afPP(this.oMT.tiN2I.H2O)',     'Pa',   ['Flow Pressure H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Flow_',num2str(iCell)],      'afPP(this.oMT.tiN2I.CO2)',     'Pa',   ['Flow Pressure CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Flow_',num2str(iCell)],      'fTemperature',                 'K',    ['Flow Temperature ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Absorber_',num2str(iCell)],  'fTemperature',                 'K',    ['Absorber Temperature ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Absorber_',num2str(iCell)],  'afMass(this.oMT.tiN2I.CO2)',   'kg',   ['Partial Mass CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Absorber_',num2str(iCell)],  'afMass(this.oMT.tiN2I.H2O)',   'kg',   ['Partial Mass H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                    end
                 end
             end
             
@@ -107,17 +88,16 @@ classdef setup < simulation.infrastructure
             oPlot.definePlot('Pa', 'Tank Pressures');
             oPlot.definePlot('kg', 'Tank Masses');
             
-            csCDRA_CO2_Mass             = cell(3,2,5);
-            csCDRA_H2O_Mass             = cell(3,2,5);
-            csCDRA_CO2_Pressure         = cell(3,2,5);
-            csCDRA_H2O_Pressure         = cell(3,2,5);
-            csCDRA_Flow_Temperature     = cell(3,2,5);
-            csCDRA_Absorber_Temperature = cell(3,2,5);
+            csCDRA_CO2_Mass             = cell(3,2,max(miCellNumber));
+            csCDRA_H2O_Mass             = cell(3,2,max(miCellNumber));
+            csCDRA_CO2_Pressure         = cell(3,2,max(miCellNumber));
+            csCDRA_H2O_Pressure         = cell(3,2,max(miCellNumber));
+            csCDRA_Flow_Temperature     = cell(3,2,max(miCellNumber));
+            csCDRA_Absorber_Temperature = cell(3,2,max(miCellNumber));
             
-            csType = {'Sylobead_', 'Zeolite13x_', 'Zeolite5A_'};
             for iType = 1:3
                 for iBed = 1:2
-                    for iCell = 1:5
+                    for iCell = 1:miCellNumber(iType)
                          csCDRA_CO2_Mass{iType,iBed,iCell}              = ['Partial Mass CO2 ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
                          csCDRA_H2O_Mass{iType,iBed,iCell}              = ['Partial Mass H2O ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
 

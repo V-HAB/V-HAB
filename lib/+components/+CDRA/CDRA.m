@@ -206,8 +206,8 @@ classdef CDRA < vsys
         	tInitialization.Zeolite5A.mfInitialH2O              = [   0,    0,    0,    0,    0];
             
             % Sets the cell numbers used for the individual filters
-            tInitialization.Zeolite13x.iCellNumber = 5;
-            tInitialization.Sylobead.iCellNumber = 5;
+            tInitialization.Zeolite13x.iCellNumber = 3;
+            tInitialization.Sylobead.iCellNumber = 3;
             tInitialization.Zeolite5A.iCellNumber = 5;
             
             % Values for the mass transfer coefficient can be found in the
@@ -373,7 +373,7 @@ classdef CDRA < vsys
                         
                         if this.iCycleActive == 1 
                             if ~strcmp(sName, 'Zeolite5A_2')
-                                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), fTemperatureFlow, 0.1, this.tAtmosphere.fPressure);
+                                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), fTemperatureFlow, 0, this.tAtmosphere.fPressure);
                 
                                 csFlowSubstances = fieldnames(cAirHelper{1});
                                 for iK = 1:length(csFlowSubstances)
@@ -383,7 +383,7 @@ classdef CDRA < vsys
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), fTemperatureAbsorber, fPressure);
                                 oFlowPhase = components.CDRA.components.FilterFlowPhase(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow, oFilterPhase.fTotalHeatCapacity);
                             else
-                                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), this.TargetTemperature, 0.1, 100);
+                                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), this.TargetTemperature, 0, 100);
                 
                                 csFlowSubstances = fieldnames(cAirHelper{1});
                                 for iK = 1:length(csFlowSubstances)
@@ -395,7 +395,7 @@ classdef CDRA < vsys
                             end
                         else
                             if ~strcmp(sName, 'Zeolite5A_1')
-                                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), fTemperatureFlow, 0.1, this.tAtmosphere.fPressure);
+                                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), fTemperatureFlow, 0, this.tAtmosphere.fPressure);
                 
                                 csFlowSubstances = fieldnames(cAirHelper{1});
                                 for iK = 1:length(csFlowSubstances)
@@ -405,7 +405,7 @@ classdef CDRA < vsys
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), fTemperatureAbsorber, fPressure);
                                 oFlowPhase = components.CDRA.components.FilterFlowPhase(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow, oFilterPhase.fTotalHeatCapacity);
                             else
-                                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), this.TargetTemperature, 0.1, 100);
+                                cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), this.TargetTemperature, 0, 100);
                 
                                 csFlowSubstances = fieldnames(cAirHelper{1});
                                 for iK = 1:length(csFlowSubstances)
@@ -648,13 +648,24 @@ classdef CDRA < vsys
             for iS = 1:length(csStores)
                 for iP = 1:length(this.toStores.(csStores{iS}).aoPhases)
                     oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
-                    oPhase.rMaxChange = inf;
-                    oPhase.fMaxStep = inf;
+                    if regexp(oPhase.sName, 'Flow')
+                        oPhase.rMaxChange = 0.5;
+%                         oPhase.arMaxChange(this.oMT.tiN2I.H2O) = 0.5;
+%                         oPhase.arMaxChange(this.oMT.tiN2I.CO2) = 0.5;
+                        oPhase.fMaxStep = 3600;
+                        oPhase.fMinStep = 1e-3;
+                    else
+                        oPhase.rMaxChange = 0.5;
+                        oPhase.fMaxStep = 3600;
+                        oPhase.fMinStep = 1e-3;
+                    end
                 end
             end
             oPhase = this.tMassNetwork.aoBranchesCycleOne(1).coExmes{2}.oPhase;
-            oPhase.rMaxChange = inf;
-            oPhase.fMaxStep = inf;
+            oPhase.rMaxChange = 0.5;
+            oPhase.arMaxChange(this.oMT.tiN2I.H2O) = 1;
+            oPhase.arMaxChange(this.oMT.tiN2I.CO2) = 1;
+            oPhase.fMaxStep = 3600;
             
             % adds the lumped parameter thermal solver to calculate the
             % convective and conductive heat transfer
@@ -941,6 +952,7 @@ classdef CDRA < vsys
             % when (and to allow individual parts of the code the be called
             % individually) the necessary calculations for the filter are
             % split up into several subfunctions
+            tools.findSmallestTimeStep(this.oTimer);
             
             if this.bVozdukh == 1
                 % Main flow rate through the Vozdukh (source P.Plötner page 32 "...the amount of processed air is known with circa 27m^3 per hour, ...");
@@ -1248,6 +1260,7 @@ classdef CDRA < vsys
             else
                 sCycle = 'Two';
             end
+            
             %% Adsorption Flow Rate Calculiation
             % here only the flowrates in the current adsorption cycle are
             % recalculated
@@ -1304,32 +1317,22 @@ classdef CDRA < vsys
                 mfPressurePhase(iCell) = aoPhases(end).fPressure + sum(mfPressureDiff(iCell:end));
             end
             
-            % The time step for the cycle change case is set to ONE
-            % second, therefore the calculated mass difference is
-            % directly the required flow rate that has to go into the
-            % phase to reach the desired mass
             mfMassDiff = ((mfPressurePhase .* mfCellVolume) ./ (mfGasConstant .* mfCellTemperature)) - mfCellMass;
-            
-            mfMassDiffUnlimited = mfMassDiff;
-            
-            abUnlimited = abs(1 - (mfCellPressure ./ mfPressurePhase)) > 0.2;
-            mfMassDiff(abUnlimited) = 0;
+            mfMassDiff(end) = 0;
             
             % Now the time step can be calculated by using the maximum
             % allowable mass change within one step (Basically the time
             % step is 1/ Times Max Mass Change. For large mass changes it
             % therefore is small and for small mass changes it is large ;)
-            fTimeStep = min(abs((this.rMaxChange .* mfCellMass) ./ mfMassDiff));
+            fTimeStep = min(abs(this.rMaxChange ./ ((mfMassDiff ./ mfCellMass) - 1)));
+            if fTimeStep > this.fMaximumTimeStep
+                fTimeStep = this.fMaximumTimeStep;
+            elseif fTimeStep  <= this.fMinimumTimeStep
+                fTimeStep = this.fMinimumTimeStep;
+            end
             
-            % Before the mass difference can be calculated the pressure
-            % temperature that results from the heat flows of the
-            % individual phases is first calculated. As a simplification it
-            % is simply assumed that the heat flow in the absorber is the
-            % same as in the flow for this calculation.
-
             % One Part of the temperature change in the phases comes from
             % the thermal energy transported by the mass flows
-            mfFlowRatesNew = [aoBranches.fFlowRate]';
             mfMassTransportHeatFlows = abs([aoBranches.fFlowRate]' .* mfFlowSpecificHeatCapacities .* mfFlowTemperature);
 
             % And the remaining part is the heatflow from the adsorption
@@ -1337,106 +1340,19 @@ classdef CDRA < vsys
             mfDeltaTemperaturePerSecond =  ((this.tThermalNetwork.mfAdsorptionHeatFlow(1:this.iCells)) + (mfMassTransportHeatFlows(1:end-1) - mfMassTransportHeatFlows(2:end))) ./ mfHeatCapacities(1:this.iCells);
             mfDeltaTemperaturePerSecond(this.iCells+1) = 0;
             
-            % Gets node temperatures from thermal solver
-            mNodeTemps = this.getNodeTemperatures();
-            mTemperatureChangeRate = this.oThermalSolver.calcTemperatureChangeRate(mNodeTemps);
-        	mTemperatureChangeRateFlows =  mTemperatureChangeRate(this.tThermalNetwork.miFlowCellThermalIndices(1:this.iCells));
-            mTemperatureChangeRateFlows(this.iCells + 1) = 0;
+            mfMassDiff = ((mfPressurePhase .* mfCellVolume) ./ (mfGasConstant .*( mfCellTemperature + mfDeltaTemperaturePerSecond * fTimeStep ))) - mfCellMass;
+            mfMassDiff(end) = 0;
 
-            % Iteration to find the correct time step for the final
-            % calculation
-            iCounter = 0;
-            iMaxLoops = 10; % should have an integer result when divided with 2
-            bLastLoop = false;
-            while true
-                
-                mfFlowRatesLast = mfFlowRatesNew;
-                
-                % Now use previous logic to predict the pressure in the
-                % next step and use that information to adapt the cell
-                % pressure difference
-                
-                mfMassDiff = ((mfPressurePhase .* mfCellVolume) ./ (mfGasConstant .*( mfCellTemperature + mfDeltaTemperaturePerSecond * fTimeStep ))) - mfCellMass;
-                mfMassDiff(end) = 0;
+            mfFlowRatesNew = zeros(this.iCells+1,1);
 
-                mfMassDiff(sign(mfMassDiff) ~=  sign(mfMassDiffUnlimited)) = 0.01 .* mfMassDiffUnlimited(sign(mfMassDiff) ~=  sign(mfMassDiffUnlimited));
-                mfMassDiff(abUnlimited) = 0;
-                
-                fTimeStep = min(abs((this.rMaxChange .* mfCellMass) ./ mfMassDiff));
-                
-                if fTimeStep > this.fMaximumTimeStep
-                    fTimeStep = this.fMaximumTimeStep;
-                elseif fTimeStep  <= this.fMinimumTimeStep
-                    fTimeStepFactor = fTimeStep ./ this.fMinimumTimeStep;
-                    mfMassDiff = mfMassDiff .* fTimeStepFactor;
-                    fTimeStep = this.fMinimumTimeStep;
-                end
-                
-                mfMassDiff(abUnlimited) = mfMassDiffUnlimited(abUnlimited);
-                
-                mfFlowRatesNew = zeros(this.iCells+1,1);
+            % First branch has to be handled differently
+            iBranch = 1;
+            mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))));
 
-              	% First branch has to be handled differently
-                iBranch = 1;
-                mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))));
-
-                for iBranch = 2:length(aoBranches)
-                % The reduction in flow rate from the P2Ps has to be given to
-                % all the following branches as well
-                    mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))) - sum(this.tMassNetwork.mfAdsorptionFlowRate(1:iBranch-1)));
-                end
-                
-                % In order to ensure that the flow rates considered during this
-                % calculation are also the ones actually used by the P2P a
-                % manual update function that is only called here is used for
-                % the P2Ps. It is given the timestep and Inflow to prevent the
-                % P2P from removing more mass than is actually available
-                if iCounter == 0 || bLastLoop
-                    aoAbsorber(1).ManualUpdate(fTimeStep, abs(mfFlowRatesNew(1) .* aoBranches(1).coExmes{2}.oPhase.arPartialMass));
-                    for iAbsorber = 2:length(aoAbsorber)
-                        aoAbsorber(iAbsorber).ManualUpdate(fTimeStep, abs(mfFlowRatesNew(iAbsorber) .* aoPhases(iAbsorber-1).arPartialMass));
-                    end
-                    
-                    mfHeatFlow	= this.tThermalNetwork.mfAdsorptionHeatFlow + this.tThermalNetwork.mfHeaterPower;
-                    for iCell = 1:this.iCells                             
-                        oCapacity = this.poCapacities(this.tThermalNetwork.(['csNodes_Flow_Cycle',sCycle]){iCell,1});
-                        oCapacity.oHeatSource.setPower(mfHeatFlow(iCell));
-                        
-                        this.mHeatSourceVector(this.tThermalNetwork.miFlowCellThermalIndices(iCell)) = mfHeatFlow(iCell);
-                    end
-                    
-                 	mTemperatureChangeRate = this.oThermalSolver.calcTemperatureChangeRate(mNodeTemps);
-                    
-                    mTemperatureChangeRateFlows =  mTemperatureChangeRate(this.tThermalNetwork.miFlowCellThermalIndices);
-                    mTemperatureChangeRateFlows(this.iCells + 1) = 0;
-                    mTemperatureChangeRateFlows(isnan(mTemperatureChangeRateFlows)) = 0;
-
-                end
-                
-                % One Part of the temperature change in the phases comes from
-                % the thermal energy transported by the mass flows
-                mfMassTransportHeatFlows = abs(mfFlowRatesNew .* mfFlowSpecificHeatCapacities(1:this.iCells+1) .* mfFlowTemperature );
-                
-                % And the remaining part is the heatflow from the adsorption
-                % process. This can be used to calculate a temperature change:
-                mfDeltaTemperaturePerSecond = (mTemperatureChangeRateFlows(1:this.iCells) + (mfMassTransportHeatFlows(1:end-1) - mfMassTransportHeatFlows(2:end))) ./ mfHeatCapacities(1:this.iCells);
-                mfDeltaTemperaturePerSecond(this.iCells+1) = 0;
-                
-                fError = max(abs(mfFlowRatesNew - mfFlowRatesLast));
-                
-                if bLastLoop
-                    break
-                end
-                
-                if (fError < 1e-8) || (iCounter > iMaxLoops)
-                    bLastLoop = true;
-                end
-                
-                iCounter = iCounter + 1;
-            end
-            
-            for iAbsorber = 1:length(aoAbsorber)
-                aoAbsorber(iAbsorber).ManualUpdateFinal(fTimeStep);
+            for iBranch = 2:length(aoBranches)
+            % The reduction in flow rate from the P2Ps has to be given to
+            % all the following branches as well
+                mfFlowRatesNew(iBranch) = this.tMassNetwork.(['miNegativesCycle',sCycle])(iBranch) * (this.fFlowrateMain + (sum(mfMassDiff(iBranch:end))) - sum(this.tMassNetwork.mfAdsorptionFlowRate(1:iBranch-1)));
             end
             
             if any(isnan(mfFlowRatesNew)) || any(isinf(mfFlowRatesNew))
