@@ -42,13 +42,13 @@ classdef setup < simulation.infrastructure
             % log culture subsystems
             for iI = 1:length(csCultures)                
                 % Balance Mass
-                oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, ':s:', csCultures{iI}, '.toPhases.', csCultures{iI}, '_Balance'], 'fMass', 'kg', [csCultures{iI}, ' Balance Mass']);
+                oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, ':s:Plant_Culture.toPhases.Balance'], 'fMass', 'kg', [csCultures{iI}, ' Balance Mass']);
                 
                 % Plant Mass
-                oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, ':s:', csCultures{iI}, '.toPhases.', csCultures{iI}, '_Plants'], 'fMass', 'kg', [csCultures{iI}, ' Plant Mass']);
+                oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, ':s:Plant_Culture.toPhases.Plants'], 'fMass', 'kg', [csCultures{iI}, ' Plant Mass']);
                 
                 % p2p flowrates
-                oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, ':s:', csCultures{iI}, '.toProcsP2P.', csCultures{iI}, '_BiomassGrowth_P2P'], 'fFlowRate', 'kg/s', [csCultures{iI}, ' BiomassGrowth']);
+                oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, ':s:Plant_Culture.toProcsP2P.BiomassGrowth_P2P'], 'fFlowRate', 'kg/s', [csCultures{iI}, ' BiomassGrowth']);
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, '.toBranches.Atmosphere_In.aoFlows(1)'], 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', [csCultures{iI}, ' CO2 In Flow']);
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, '.toBranches.Atmosphere_In.aoFlows(1)'], 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.O2)', 'kg/s', [csCultures{iI},  ' O2 In Flow']);
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, '.toBranches.Atmosphere_In.aoFlows(1)'], 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', [csCultures{iI}, ' H2O In Flow']);

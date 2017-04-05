@@ -110,7 +110,7 @@ classdef Culture3Phases < vsys
             createMatterStructure@vsys(this);
             %% Create Store, Phases and Processors
             
-            matter.store(this, this.txInput.sCultureName, 20);
+            matter.store(this, 'Plant_Culture', 20);
             
             % TO DO: Specify volumes of the phases individually!!! and
             % simply make the store mass the sum of it. Also maybe make a
@@ -119,8 +119,8 @@ classdef Culture3Phases < vsys
             % (basically a storeroom? where you can simply put stuff in)
             
             oPlants = matter.phases.mixture(...
-                this.toStores.(this.txInput.sCultureName), ...          % store containing phase
-                [this.txInput.sCultureName, '_Plants'], ...             % phase name 
+                this.toStores.Plant_Culture, ...                        % store containing phase
+                'Plants', ...                                           % phase name 
                 'solid',...                                             % primary phase of the mixture phase
                 struct(...                                              % phase contents    [kg]
                     ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), 1e-3,...
@@ -129,12 +129,12 @@ classdef Culture3Phases < vsys
                 293.15, ...                                             % phase temperature [K]
                 101325);                                                
             
-            matter.procs.exmes.mixture(oPlants, [this.txInput.sCultureName, '_BiomassGrowth_P2P']);
-            matter.procs.exmes.mixture(oPlants, [this.txInput.sCultureName, '_Biomass_Out']); 
+            matter.procs.exmes.mixture(oPlants, 'BiomassGrowth_P2P');
+            matter.procs.exmes.mixture(oPlants, 'Biomass_Out'); 
             
             oBalance = matter.phases.mixture(...
-                this.toStores.(this.txInput.sCultureName), ...          % store containing phase
-                [this.txInput.sCultureName, '_Balance'], ...            % phase name 
+                this.toStores.Plant_Culture, ...                        % store containing phase
+                'Balance', ...                                          % phase name 
                 'solid',...                                             % primary phase of the mixture phase
                 struct('CO2', 0.1, 'O2', 0.1, 'H2O', 0.5, 'Nutrients', 0.01,...
                     ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), 0.1,...
@@ -145,36 +145,36 @@ classdef Culture3Phases < vsys
             
             this.afInitialBalanceMass = oBalance.afMass;
             
-            matter.procs.exmes.mixture(oBalance, [this.txInput.sCultureName, '_BiomassGrowth_P2P']);
-            matter.procs.exmes.mixture(oBalance, [this.txInput.sCultureName, '_WaterSupply_In']);
-            matter.procs.exmes.mixture(oBalance, [this.txInput.sCultureName, '_NutrientSupply_In']);
+            matter.procs.exmes.mixture(oBalance, 'BiomassGrowth_P2P');
+            matter.procs.exmes.mixture(oBalance, 'WaterSupply_In');
+            matter.procs.exmes.mixture(oBalance, 'NutrientSupply_In');
             
-            matter.procs.exmes.mixture(oBalance, [this.txInput.sCultureName, '_GasExchange_In']);
-            matter.procs.exmes.mixture(oBalance, [this.txInput.sCultureName, '_GasExchange_Out']);
+            matter.procs.exmes.mixture(oBalance, 'GasExchange_In');
+            matter.procs.exmes.mixture(oBalance, 'GasExchange_Out');
             
             %% Create Biomass Growth P2P Processor
             
             % 
             components.P2Ps.ManualP2P(...
-                this, ...                                                                       % parent system reference
-                this.toStores.(this.txInput.sCultureName), ...                                  % store containing phases
-                [this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...                          % p2p processor name
-                [oBalance.sName, '.', this.txInput.sCultureName, '_BiomassGrowth_P2P'], ...     % first phase and exme
-                [oPlants.sName, '.', this.txInput.sCultureName, '_BiomassGrowth_P2P']);         % second phase and exme
+                this, ...                                       % parent system reference
+                this.toStores.Plant_Culture, ...                % store containing phases
+                'BiomassGrowth_P2P', ...                     	% p2p processor name
+                [oBalance.sName, '.BiomassGrowth_P2P'], ...     % first phase and exme
+                [oPlants.sName, '.BiomassGrowth_P2P']);         % second phase and exme
                     
             
             %% Create Substance Conversion Manipulators
             
-            components.PlantModuleV2.PlantManipulator(this, [this.txInput.sCultureName, '_PlantManipulator'], this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Balance']));
+            components.PlantModuleV2.PlantManipulator(this, 'PlantManipulator', this.toStores.Plant_Culture.toPhases.Balance);
             
             %% Create Branches
             
-            matter.branch(this, [this.txInput.sCultureName, '.', this.txInput.sCultureName, '_GasExchange_In'],   {}, 'Atmosphere_FromIF_In',     'Atmosphere_In', true);
-            matter.branch(this, [this.txInput.sCultureName, '.', this.txInput.sCultureName, '_GasExchange_Out'],  {}, 'Atmosphere_ToIF_Out',      'Atmosphere_Out', true);
+            matter.branch(this, 'Plant_Culture.GasExchange_In',             {}, 'Atmosphere_FromIF_In',     'Atmosphere_In', true);
+            matter.branch(this, 'Plant_Culture.GasExchange_Out',            {}, 'Atmosphere_ToIF_Out',      'Atmosphere_Out', true);
             
-            matter.branch(this, [this.txInput.sCultureName, '.', this.txInput.sCultureName, '_WaterSupply_In'],             {}, 'WaterSupply_FromIF_In',    'WaterSupply_In');
-            matter.branch(this, [this.txInput.sCultureName, '.', this.txInput.sCultureName, '_NutrientSupply_In'],          {}, 'NutrientSupply_FromIF_In', 'NutrientSupply_In');
-            matter.branch(this, [this.txInput.sCultureName, '.', this.txInput.sCultureName, '_Biomass_Out'],                {}, 'Biomass_ToIF_Out',         'Biomass_Out');
+            matter.branch(this, 'Plant_Culture.WaterSupply_In',             {}, 'WaterSupply_FromIF_In',    'WaterSupply_In');
+            matter.branch(this, 'Plant_Culture.NutrientSupply_In',          {}, 'NutrientSupply_FromIF_In', 'NutrientSupply_In');
+            matter.branch(this, 'Plant_Culture.Biomass_Out',                {}, 'Biomass_ToIF_Out',         'Biomass_Out');
             
             %% Check if user provided sow times, if not generate them
             % If nothing was specified by the user the culture simply
@@ -278,7 +278,7 @@ classdef Culture3Phases < vsys
                 % if current culture state is harvest
                 % if phase empty too, increase generation and change status
                 % to growth, or set to fallow 
-                if (this.iState == 2) && (this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).fMass <= 1e-3)
+                if (this.iState == 2) && (this.toStores.Plant_Culture.toPhases.Plants.fMass <= 1e-3)
                     if this.iInternalGeneration < this.txInput.iConsecutiveGenerations
                         this.iInternalGeneration = this.iInternalGeneration + 1;
                         this.iState = 4;
@@ -310,13 +310,13 @@ classdef Culture3Phases < vsys
                 elseif this.iState == 2
                     %
                     this.toBranches.Biomass_Out.oHandler.setFlowRate(...
-                        this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Plants']).fMass / this.oParent.fTimeStep);
+                        this.toStores.Plant_Culture.toPhases.Plants.fMass / this.oParent.fTimeStep);
                 end
                 
                 %% Set Plant Growth Flow Rates
                 
                 % current masses in the balance phase:
-                afCurrentBalanceMass = this.toStores.(this.sName).toPhases.([this.sName,'_Balance']).afMass;
+                afCurrentBalanceMass = this.toStores.Plant_Culture.toPhases.Balance.afMass;
                 
                 iEdibleWet      = this.oMT.tiN2I.([this.txPlantParameters.sPlantSpecies, 'EdibleWet']);
                 iInedibleWet    = this.oMT.tiN2I.([this.txPlantParameters.sPlantSpecies, 'InedibleWet']);
@@ -342,7 +342,7 @@ classdef Culture3Phases < vsys
                     afPartialFlowRatesBiomass(iInedibleWet) =this.tfBiomassGrowthRates.fGrowthRateInedible;
                 end
                 
-                this.toStores.(this.sName).toProcsP2P.([this.sName,'_BiomassGrowth_P2P']).setFlowRate(afPartialFlowRatesBiomass);
+                this.toStores.Plant_Culture.toProcsP2P.BiomassGrowth_P2P.setFlowRate(afPartialFlowRatesBiomass);
                 
                 %% Set atmosphere flow rates
                 % one p2p for inflows one for outflows
