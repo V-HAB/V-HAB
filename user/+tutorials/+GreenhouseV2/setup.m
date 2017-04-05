@@ -136,9 +136,9 @@ classdef setup < simulation.infrastructure
             oPlot.definePlot(cBalanceNames, 'Balance Mass in Cultures');
             oPlot.definePlot(cPlantNames,   'Plant Mass in Cultures');
             
-            oPlot.definePlot('CO2 Concentration','CO2 Concentration');
+            oPlot.definePlot({'CO2 Concentration'},'CO2 Concentration');
             
-            oPlot.definePlot('Humidity','Humidity');
+            oPlot.definePlot({'Humidity'},'Humidity');
             
             oPlot.definePlot({'Total Pressure', 'N2 Partial Pressure', 'O2 Partial Pressure', 'CO2 Partial Pressure'},'Atmosphere Pressures');
         end
