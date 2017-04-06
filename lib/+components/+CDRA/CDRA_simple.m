@@ -76,6 +76,8 @@ classdef CDRA_simple < vsys
         oAtmosphere;
         
         tAtmosphere;
+        
+        fInitialTimeStep;
     end
     
     methods
@@ -86,6 +88,7 @@ classdef CDRA_simple < vsys
             
             this.tAtmosphere = tAtmosphere;
         
+            this.fInitialTimeStep = fTimeStep;
             %If the inputs for the subsystem file indicate that this system
             %is Vozdukh the required properties are set. Otherwise the
             %bVozdukh variable is set to 0 to indicate that this is a CDRA.
@@ -288,21 +291,6 @@ classdef CDRA_simple < vsys
             % reinserted into the air stream after the CO2 adsorption would
             % condense resulting in matter table errors
             
-            % Adding two times eight pipes to connect the components
-            % Two sets are necessary to create both cycles
-            components.pipe(this, 'Pipe_1', 1, 0.1);
-            components.pipe(this, 'Pipe_2', 1, 0.1);
-            components.pipe(this, 'Pipe_3', 1, 0.1);
-            components.pipe(this, 'Pipe_4', 1, 0.1);
-            components.pipe(this, 'Pipe_5', 1, 0.1);
-            components.pipe(this, 'Pipe_6', 1, 0.1);
-            components.pipe(this, 'Pipe_1_2', 1, 0.1);
-            components.pipe(this, 'Pipe_2_2', 1, 0.1);
-            components.pipe(this, 'Pipe_3_2', 1, 0.1);
-            components.pipe(this, 'Pipe_4_2', 1, 0.1);
-            components.pipe(this, 'Pipe_5_2', 1, 0.1);
-            components.pipe(this, 'Pipe_6_2', 1, 0.1);
-            
             %Since the zeolite changes in temperature for the desorption
             %process f2f procs are necessary to model the impact of the
             %cold air flowing past the hot zeolite.
@@ -315,23 +303,23 @@ classdef CDRA_simple < vsys
             % Branch for flowpath into/out of a subsystem: ('store.exme', {'f2f-processor', 'f2f-processor'}, 'system level port name')
             
             % Cycle one
-            matter.branch(this, 'Filter_13X_1.Flow_In_1', {'Pipe_1'}, 'CDRA_Air_In_1', 'CDRA_Air_In_1');           % Creating the flowpath into this subsystem
-            matter.branch(this, 'Filter_13X_1.Flow_Out_1', {'Pipe_2', 'Precooler_1'}, 'Filter5A_2.Flow_In', 'Filter13x1_to_Filter5A2');
-            matter.branch(this, 'Filter5A_2.Flow_Out_1', {'Filter5A_2_f2f', 'Pipe_3'}, 'Filter_13X_2.Flow_In_1', 'Filter5A2_to_Filter13x2');
-            matter.branch(this, 'Filter_13X_2.Flow_Out_1', {'Pipe_4'}, 'CDRA_Air_Out_1', 'CDRA_Air_Out_1');     % Air to CDRA1 to CCAA2 connection tank
-            matter.branch(this, 'Filter5A_1.Flow_Out_1', {'Pipe_5'}, 'CDRA_Vent_1', 'Filter5A1_to_Vent');                      % CO2 to vacuum
+            matter.branch(this, 'Filter_13X_1.Flow_In_1',       {},                     'CDRA_Air_In_1',            'CDRA_Air_In_1');           % Creating the flowpath into this subsystem
+            matter.branch(this, 'Filter_13X_1.Flow_Out_1',      {'Precooler_1'},        'Filter5A_2.Flow_In',       'Filter13x1_to_Filter5A2');
+            matter.branch(this, 'Filter5A_2.Flow_Out_1',        {'Filter5A_2_f2f'},     'Filter_13X_2.Flow_In_1',   'Filter5A2_to_Filter13x2');
+            matter.branch(this, 'Filter_13X_2.Flow_Out_1',      {},                     'CDRA_Air_Out_1',           'CDRA_Air_Out_1');     % Air to CDRA1 to CCAA2 connection tank
+            matter.branch(this, 'Filter5A_1.Flow_Out_1',        {},                     'CDRA_Vent_1',              'Filter5A1_to_Vent');                      % CO2 to vacuum
 
             % Cycle two
-            matter.branch(this, 'Filter_13X_2.Flow_In_2', {'Pipe_1_2'}, 'CDRA_Air_In_2', 'CDRA_Air_In_2');         % Creating the flowpath into this subsystem
-            matter.branch(this, 'Filter_13X_2.Flow_Out_2', {'Pipe_2_2', 'Precooler_2'}, 'Filter5A_1.Flow_In', 'Filter13x2_to_Filter5A1');
-            matter.branch(this, 'Filter5A_1.Flow_Out_2', {'Filter5A_1_f2f', 'Pipe_3_2'}, 'Filter_13X_1.Flow_In_2', 'Filter5A1_to_Filter13x1');
-            matter.branch(this, 'Filter_13X_1.Flow_Out_2',{'Pipe_4_2'}, 'CDRA_Air_Out_2', 'CDRA_Air_Out_2');  % Air to CDRA1 to CCAA2 connection tank
-            matter.branch(this, 'Filter5A_2.Flow_Out_2', {'Pipe_5_2'}, 'CDRA_Vent_2', 'Filter5A2_to_Vent');                  % CO2 to vacuum
+            matter.branch(this, 'Filter_13X_2.Flow_In_2',       {},                     'CDRA_Air_In_2',            'CDRA_Air_In_2');         % Creating the flowpath into this subsystem
+            matter.branch(this, 'Filter_13X_2.Flow_Out_2',      {'Precooler_2'},        'Filter5A_1.Flow_In',       'Filter13x2_to_Filter5A1');
+            matter.branch(this, 'Filter5A_1.Flow_Out_2',        {'Filter5A_1_f2f'},     'Filter_13X_1.Flow_In_2',   'Filter5A1_to_Filter13x1');
+            matter.branch(this, 'Filter_13X_1.Flow_Out_2',      {},                     'CDRA_Air_Out_2',           'CDRA_Air_Out_2');  % Air to CDRA1 to CCAA2 connection tank
+            matter.branch(this, 'Filter5A_2.Flow_Out_2',        {},                     'CDRA_Vent_2',              'Filter5A2_to_Vent');                  % CO2 to vacuum
 
             %Branches for the Airsafe functionality that pumps out the air
             %from the absorber bed before it is connected to the vacuum.
-            matter.branch(this, 'Filter5A_1.Flow_Out_AirSafe', {'Pipe_6'}, 'CDRA_AirSafe_1', 'Filter5A1_AirSafe');
-            matter.branch(this, 'Filter5A_2.Flow_Out_AirSafe', {'Pipe_6_2'}, 'CDRA_AirSafe_2', 'Filter5A2_AirSafe');
+            matter.branch(this, 'Filter5A_1.Flow_Out_AirSafe', {},                      'CDRA_AirSafe_1',           'Filter5A1_AirSafe');
+            matter.branch(this, 'Filter5A_2.Flow_Out_AirSafe', {},                      'CDRA_AirSafe_2',           'Filter5A2_AirSafe');
         end
         
         function createSolverStructure(this)
@@ -413,7 +401,7 @@ classdef CDRA_simple < vsys
                     this.toBranches.CDRA_Air_Out_2.oHandler.setActive(false);
                     this.toBranches.Filter5A2_to_Vent.oHandler.setActive(false);
                     
-                    % Setting cycle two flows to active
+                    % Setting cycle one flows to active
                     this.toBranches.Filter13x1_to_Filter5A2.oHandler.setActive(true);
                     this.toBranches.Filter5A2_to_Filter13x2.oHandler.setActive(true);
                     this.toBranches.CDRA_Air_Out_1.oHandler.setActive(true);
@@ -435,9 +423,11 @@ classdef CDRA_simple < vsys
                     %flows out until the bed reaches 1 bar pressure
                     this.toBranches.Filter5A2_to_Filter13x2.oHandler.setActive(false);
                     this.toBranches.CDRA_Air_Out_1.oHandler.setActive(false);
+                    this.setTimeStep(0.1);
                 else
                     this.toBranches.Filter5A2_to_Filter13x2.oHandler.setActive(true);
                     this.toBranches.CDRA_Air_Out_1.oHandler.setActive(true);
+                    this.setTimeStep(this.fInitialTimeStep);
                 end
                 %Desorbing Filter:
                 %The CO2 filter that is not used in the active cycle is
@@ -510,9 +500,11 @@ classdef CDRA_simple < vsys
                     %flows out until the bed reaches 1 bar pressure
                     this.toBranches.Filter5A1_to_Filter13x1.oHandler.setActive(false);
                     this.toBranches.CDRA_Air_Out_2.oHandler.setActive(false);
+                    this.setTimeStep(0.1);
                 else
                     this.toBranches.Filter5A1_to_Filter13x1.oHandler.setActive(true);
                     this.toBranches.CDRA_Air_Out_2.oHandler.setActive(true);
+                    this.setTimeStep(this.fInitialTimeStep);
                 end
                 %Desorbing Filter:
                 %The CO2 filter that is not used in the active cycle is

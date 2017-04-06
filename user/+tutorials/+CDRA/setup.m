@@ -142,6 +142,12 @@ classdef setup < simulation.infrastructure
             % further information
             close all
             
+            try
+                this.toMonitors.oLogger.readDataFromMat;
+            catch
+                disp('no data outputted yet')
+            end
+            
             tParameters.sTimeUnit = 'h';
             
             this.toMonitors.oPlotter.plot(tParameters);
