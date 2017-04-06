@@ -390,8 +390,14 @@ classdef Filter < matter.procs.p2ps.flow
                     
                     %during desorption the capacity is set to 0
                     this.fCapacity = 0;
+                      
+                    fAvailableMassFlow = this.oOut.oPhase.afMass(this.arExtractPartials ~= 0) / fTimeStep;
+
+                    if this.fFlowRateFilter > fAvailableMassFlow
+                        this.fFlowRateFilter = fAvailableMassFlow;
+                    end
             end
-                
+              
             %this sets the actual filter flow rate for the p2p processor
             this.setMatterProperties(this.fFlowRateFilter, this.arExtractPartials);
             

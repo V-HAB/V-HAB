@@ -421,12 +421,13 @@ classdef CDRA_simple < vsys
                     %changed for the initial refill but no data was
                     %available so here it is assumed that just nothing
                     %flows out until the bed reaches 1 bar pressure
-                    this.toBranches.Filter5A2_to_Filter13x2.oHandler.setActive(false);
-                    this.toBranches.CDRA_Air_Out_1.oHandler.setActive(false);
+                    this.toBranches.Filter5A2_to_Filter13x2.oHandler.setAllowedFlowRate(1e-2); % change mass by 10 g/s
+                    this.setTimeStep(0.1);
+                elseif this.toStores.Filter5A_2.aoPhases(1,1).fPressure > 1.5e5
+                    this.toBranches.Filter5A2_to_Filter13x2.oHandler.setAllowedFlowRate(-1e-2); % change mass by 10 g/s
                     this.setTimeStep(0.1);
                 else
-                    this.toBranches.Filter5A2_to_Filter13x2.oHandler.setActive(true);
-                    this.toBranches.CDRA_Air_Out_1.oHandler.setActive(true);
+                    this.toBranches.Filter5A2_to_Filter13x2.oHandler.setAllowedFlowRate(0);
                     this.setTimeStep(this.fInitialTimeStep);
                 end
                 %Desorbing Filter:
@@ -498,12 +499,13 @@ classdef CDRA_simple < vsys
                     %changed for the initial refill but no data was
                     %available so here it is assumed that just nothing
                     %flows out until the bed reaches 1 bar pressure
-                    this.toBranches.Filter5A1_to_Filter13x1.oHandler.setActive(false);
-                    this.toBranches.CDRA_Air_Out_2.oHandler.setActive(false);
+                    this.toBranches.Filter5A1_to_Filter13x1.oHandler.setAllowedFlowRate(1e-2); % change mass by 10 g/s
+                    this.setTimeStep(0.1);
+                elseif this.toStores.Filter5A_1.aoPhases(1,1).fPressure > 1.5e5
+                    this.toBranches.Filter5A1_to_Filter13x1.oHandler.setAllowedFlowRate(-1e-2); % change mass by 10 g/s
                     this.setTimeStep(0.1);
                 else
-                    this.toBranches.Filter5A1_to_Filter13x1.oHandler.setActive(true);
-                    this.toBranches.CDRA_Air_Out_2.oHandler.setActive(true);
+                    this.toBranches.Filter5A1_to_Filter13x1.oHandler.setAllowedFlowRate(0);
                     this.setTimeStep(this.fInitialTimeStep);
                 end
                 %Desorbing Filter:

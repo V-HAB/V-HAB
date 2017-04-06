@@ -59,7 +59,11 @@ classdef Filter5A_f2f < matter.procs.f2f
             %the zeolite. Using the function for the convection at a plate
             %may not be entirely correct, but it is definitly better than
             %the previous calculations using natural convection.
-            fConvection_alpha = convection_plate (1.0922, fFlowSpeed, fDynVisc, fDensity, fThermCond, this.oFilter.toPhases.PhaseIn.fSpecificHeatCapacity);
+            try
+                fConvection_alpha = convection_plate (1.0922, fFlowSpeed, fDynVisc, fDensity, fThermCond, this.oFilter.toPhases.PhaseIn.fSpecificHeatCapacity);
+            catch
+                fConvection_alpha = 2;
+            end
             
             sFilterP2P = this.oFilter.csProcsP2P{1};
                      

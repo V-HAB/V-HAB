@@ -20,6 +20,8 @@ classdef branch < solver.matter.manual.branch
         fResidualFlowRatePrev = 0;
         
         bActive = true;
+        
+        fAllowedFlowRate = 0;
     end
     
     
@@ -60,6 +62,15 @@ classdef branch < solver.matter.manual.branch
         
         function setActive(this, bActive)
             this.bActive = bActive;
+        end
+        
+        
+        function setAllowedFlowRate(this, fFlowRate)
+            % for positive values, the residual solver will allow a mass
+            % increase of the phase for which it is supposed to keep the
+            % mass constant (with the flowrate specified here) for negative
+            % ones it will allow a mass decrease.
+            this.fAllowedFlowRate = fFlowRate;
         end
     end
     
@@ -160,15 +171,17 @@ classdef branch < solver.matter.manual.branch
                 fResidualFlowRate = fResidualFlowRate + oExme.iSign * oExme.oFlow.fFlowRate;
             end
              
-            this.fRequestedFlowRate = fResidualFlowRate * iDir;
+            this.fRequestedFlowRate = (fResidualFlowRate - this.fAllowedFlowRate) * iDir;
             
             %fprintf('%i\t(%.7fs)\tBranch %s Residual Solver - set Flow Rate %f\n', this.oBranch.oTimer.iTick, this.oBranch.oTimer.fTime, this.oBranch.sName, this.fRequestedFlowRate);
             
-            
+            % manual solver update has to be called even if the overall
+            % flowrate did not change, because the composition of the phase
+            % can have changed!
+            update@solver.matter.manual.branch(this);
+                
             if (fResidualFlowRate ~= this.fResidualFlowRatePrev)
             
-                update@solver.matter.manual.branch(this);
-                
                 if this.bMultipleResidualSolvers
                     % If there are multiple residual solvers attached to the
                     % same phase as this residual solver, and the flowrate of
