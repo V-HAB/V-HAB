@@ -343,6 +343,16 @@ classdef CDRA_simple < vsys
             solver.matter.manual.branch(this.toBranches.Filter5A1_AirSafe);
             solver.matter.manual.branch(this.toBranches.Filter5A2_AirSafe);
             
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    %oPhase.fFixedTS = this.fFixedTS;
+                    oPhase.arMaxChange(this.oMT.tiN2I.H2O) = 0.75;
+                    oPhase.arMaxChange(this.oMT.tiN2I.CO2) = 0.75;
+                    oPhase.fMinStep = 0.1;
+                end
+            end
         end           
         
         %% Function to connect the system and subsystem level branches with each other

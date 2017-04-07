@@ -754,9 +754,9 @@ elseif strcmpi(sHX_type, 'ISS CHX')
     %the geometry is the same for both cases and only the ratio of the heat
     %flows is calculate this does not have a great effect on the final result.
     fArea = 1;
-    fD_i = 0.1;
-    fD_o = 0.2;
-    fR_i = 0.04;
+    fD_i = 0.2;
+    fD_o = 0.4;
+    fR_i = 0.08;
     fLength = 1;
     
     %calculates the further needed variables for the heat exchanger from
