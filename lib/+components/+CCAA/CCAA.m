@@ -249,6 +249,11 @@ classdef CCAA < vsys
                 
                 solver.matter.residual.branch(this.toBranches.CDRA_TCCV);
                 this.toBranches.CDRA_TCCV.oHandler.setPositiveFlowDirection(false);
+                
+                if this.fCDRA_FlowRate == 0
+                    this.toBranches.CHX_CDRA.oHandler.setActive(false);
+                    this.toBranches.CDRA_TCCV.oHandler.setActive(false);
+                end
             end
             
             if this.bActive == 1
@@ -314,7 +319,22 @@ classdef CCAA < vsys
                 this.toBranches.TCCV_Cabin.oHandler.setFlowRate(0);
                 this.toBranches.Coolant_In.oHandler.setFlowRate(0); 
                 this.toBranches.Coolant_Out.oHandler.setFlowRate(0);
+                
+                if ~isempty(this.sCDRA)
+                    this.toBranches.CHX_CDRA.oHandler.setActive(false);
+                    this.toBranches.CDRA_TCCV.oHandler.setActive(false);
+                end
                 return
+            else
+                if ~isempty(this.sCDRA)
+                    if this.fCDRA_FlowRate == 0
+                        this.toBranches.CHX_CDRA.oHandler.setActive(false);
+                        this.toBranches.CDRA_TCCV.oHandler.setActive(false);
+                    else
+                        this.toBranches.CHX_CDRA.oHandler.setActive(true);
+                        this.toBranches.CDRA_TCCV.oHandler.setActive(true);
+                    end
+                end
             end
             
             % The CHX data is given for 50 to 450 cfm so the CCAA

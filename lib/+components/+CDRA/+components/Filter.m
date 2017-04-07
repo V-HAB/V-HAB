@@ -239,6 +239,13 @@ classdef Filter < matter.procs.p2ps.flow
                 return
             end
             
+            if this.oStore.oContainer.fFlowrateMain == 0
+                this.fFlowRateFilter = 0;
+                this.arExtractPartials = zeros(1,this.oMT.iSubstances);
+                this.setMatterProperties(this.fFlowRateFilter, this.arExtractPartials);
+                return
+            end
+            
             % gets the current inlet flowrates and their partial mass
             % ratios
             [ afFlowRate, mrPartials ] = this.getInFlows();
