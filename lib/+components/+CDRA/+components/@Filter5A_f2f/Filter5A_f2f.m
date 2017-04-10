@@ -73,30 +73,21 @@ classdef Filter5A_f2f < matter.procs.f2f
             %The temperature difference has to remain within certain limits
             %for high time steps to prevent unphysical behavior
             
-            %if the temperature of the solid phase is higher than the
-            %flow temperature
-            if this.oFilter.toPhases.FilteredPhase.fTemperature >= oInFlow.fTemperature
-                %With the temperature difference the flow temp would
-                %increase the flow temperature above the solid phase
-                %temperature
-                if ((oInFlow.fTemperature + this.fDeltaTemp) > this.oFilter.toPhases.FilteredPhase.fTemperature)
-                    %Then the maximum temperature difference is the
-                    %difference between the solid temperature and the
-                    %flow temperature
-                    this.fDeltaTemp = this.oFilter.toPhases.FilteredPhase.fTemperature-oInFlow.fTemperature;
-                    this.fHeatFlow = this.fDeltaTemp*(oInFlow.fFlowRate*oInFlow.fSpecificHeatCapacity);
-                end
-            else
-                %the solid is colder than the flow and the temperature
-                %difference would decrease the flow temperature below the
-                %solid temperature
-                if ((oInFlow.fTemperature + this.fDeltaTemp) < this.oFilter.toPhases.FilteredPhase.fTemperature)
-                    %Then the maximum temperature difference is the
-                    %difference between the solid temperature and the
-                    %flow temperature
-                    this.fDeltaTemp = this.oFilter.toPhases.FilteredPhase.fTemperature-oInFlow.fTemperature;
-                    this.fHeatFlow = this.fDeltaTemp*(oInFlow.fFlowRate*oInFlow.fSpecificHeatCapacity);
-                end
+            %With the temperature difference the flow temp would
+            %increase the flow temperature above the solid phase
+            %temperature
+            if ((oInFlow.fTemperature + this.fDeltaTemp) > this.oFilter.toPhases.FilteredPhase.fTemperature)
+                %Then the maximum temperature difference is the
+                %difference between the solid temperature and the
+                %flow temperature
+                this.fDeltaTemp = this.oFilter.toPhases.FilteredPhase.fTemperature - oInFlow.fTemperature;
+                this.fHeatFlow = this.fDeltaTemp*(abs(oInFlow.fFlowRate) * oInFlow.fSpecificHeatCapacity);
+            elseif ((oInFlow.fTemperature + this.fDeltaTemp) < this.oFilter.toPhases.FilteredPhase.fTemperature)
+                %Then the maximum temperature difference is the
+                %difference between the solid temperature and the
+                %flow temperature
+                this.fDeltaTemp = this.oFilter.toPhases.FilteredPhase.fTemperature - oInFlow.fTemperature;
+                this.fHeatFlow = this.fDeltaTemp*(abs(oInFlow.fFlowRate) * oInFlow.fSpecificHeatCapacity);
             end
             
             this.fLastExec = this.oBranch.oContainer.oTimer.fTime;
