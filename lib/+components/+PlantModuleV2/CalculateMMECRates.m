@@ -34,7 +34,7 @@ function [ oCulture ] ...
     % TODO: improve later after system is running as it is one (the?)
     % reason photoperiod is linked to planting time and not a more general
     % setting
-    if mod(oCulture.fInternalTime, 1440) < (oCulture.txInput.fH * 60)
+    if mod((oCulture.fInternalTime ), 86400) < (oCulture.txInput.fH * 3600)
         bI = 1;
         
         if oCulture.bLight == 0

@@ -326,14 +326,14 @@ classdef CDRA_simple < vsys
             createSolverStructure@vsys(this);
             
             % Cycle one
-            solver.matter.residual.branch(this.toBranches.CDRA_Air_In_1);
+            solver.matter.manual.branch(this.toBranches.CDRA_Air_In_1);
                 
             solver.matter.residual.branch(this.toBranches.Filter13x1_to_Filter5A2);
             solver.matter.residual.branch(this.toBranches.Filter5A2_to_Filter13x2);
             solver.matter.residual.branch(this.toBranches.CDRA_Air_Out_1);
             solver.matter.residual.branch(this.toBranches.Filter5A1_to_Vent);
             
-            solver.matter.residual.branch(this.toBranches.CDRA_Air_In_2);
+            solver.matter.manual.branch(this.toBranches.CDRA_Air_In_2);
             
             solver.matter.residual.branch(this.toBranches.Filter13x2_to_Filter5A1);
             solver.matter.residual.branch(this.toBranches.Filter5A1_to_Filter13x1);
@@ -348,7 +348,6 @@ classdef CDRA_simple < vsys
                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
                     %oPhase.fFixedTS = this.fFixedTS;
-                    oPhase.arMaxChange(this.oMT.tiN2I.H2O) = 0.75;
                     oPhase.arMaxChange(this.oMT.tiN2I.CO2) = 0.75;
                     oPhase.fMinStep = 0.1;
                 end
@@ -452,11 +451,11 @@ classdef CDRA_simple < vsys
                     %changed for the initial refill but no data was
                     %available so here it is assumed that just nothing
                     %flows out until the bed reaches 1 bar pressure
-                    this.toBranches.Filter5A2_to_Filter13x2.oHandler.setAllowedFlowRate(1e-2 * this.fFlowrateMain); % change mass by 10 g/s
-                    this.setTimeStep(0.1);
+                    this.toBranches.Filter5A2_to_Filter13x2.oHandler.setAllowedFlowRate(1e-1 * this.fFlowrateMain);
+                    this.setTimeStep(1);
                 elseif this.toStores.Filter5A_2.aoPhases(1,1).fPressure > 1.5e5
-                    this.toBranches.Filter5A2_to_Filter13x2.oHandler.setAllowedFlowRate(-1e-2 * this.fFlowrateMain); % change mass by 10 g/s
-                    this.setTimeStep(0.1);
+                    this.toBranches.Filter5A2_to_Filter13x2.oHandler.setAllowedFlowRate(-1e-1 * this.fFlowrateMain);
+                    this.setTimeStep(1);
                 else
                     this.toBranches.Filter5A2_to_Filter13x2.oHandler.setAllowedFlowRate(0);
                     this.setTimeStep(this.fInitialTimeStep);
@@ -531,11 +530,11 @@ classdef CDRA_simple < vsys
                     %changed for the initial refill but no data was
                     %available so here it is assumed that just nothing
                     %flows out until the bed reaches 1 bar pressure
-                    this.toBranches.Filter5A1_to_Filter13x1.oHandler.setAllowedFlowRate(1e-2 * this.fFlowrateMain); % change mass by 10 g/s
-                    this.setTimeStep(0.1);
+                    this.toBranches.Filter5A1_to_Filter13x1.oHandler.setAllowedFlowRate(1e-1 * this.fFlowrateMain);
+                    this.setTimeStep(1);
                 elseif this.toStores.Filter5A_1.aoPhases(1,1).fPressure > 1.5e5
-                    this.toBranches.Filter5A1_to_Filter13x1.oHandler.setAllowedFlowRate(-1e-2 * this.fFlowrateMain); % change mass by 10 g/s
-                    this.setTimeStep(0.1);
+                    this.toBranches.Filter5A1_to_Filter13x1.oHandler.setAllowedFlowRate(-1e-1 * this.fFlowrateMain);
+                    this.setTimeStep(1);
                 else
                     this.toBranches.Filter5A1_to_Filter13x1.oHandler.setAllowedFlowRate(0);
                     this.setTimeStep(this.fInitialTimeStep);

@@ -419,7 +419,7 @@ elseif strcmpi(sHX_type, 'counter plate')
         fHeatFlow_Old = 0;
         iCounter = 0;
         
-        while (abs(fHeatFlow-fHeatFlow_Old) > 1e-8) && iCounter < 1000
+        while iCounter == 0 || (abs(fHeatFlow-fHeatFlow_Old) > 1e-8) && iCounter < 1000
             
             %the effect of condensation on the heat flow is taken into
             %account by increasing the heat capacity flow for the hot fluid
