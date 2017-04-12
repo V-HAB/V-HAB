@@ -21,20 +21,13 @@ function [ oCulture ] ...
     % HNC ..... Hourly Nutrient Consumption         [g m^-2 h^-1]
     % HWCGR ... Hourly Wet Crop Growth Rate         [g m^-2 h^-1]
 
-    % Other Variables:
-    % tE: Time at Onset of Edible Biomass Formation (UOT)
-	% tQ: Time at Onset of Canopy Senescence (UOT)
-    % tM: Time of maturity
-    if fRelativeHumidityAtmosphere > 1
-        fRelativeHumidityAtmosphere = 1;
-    end
     %% Calculate 6 Out Of 8 Target Parameters
     
     % determine if it is day or night for the current culture
     % TODO: improve later after system is running as it is one (the?)
     % reason photoperiod is linked to planting time and not a more general
     % setting
-    if mod((oCulture.fInternalTime ), 86400) < (oCulture.txInput.fH * 3600)
+    if mod(oCulture.fInternalTime, 86400) < (oCulture.txInput.fH * 3600)
         bI = 1;
         
         if oCulture.bLight == 0
@@ -54,12 +47,12 @@ function [ oCulture ] ...
     % CUE_24 constant for non-legumes, different for legumes
     if oCulture.txPlantParameters.bLegume == 1
         % before time of onset of canopy senescence
-        if oCulture.fInternalTime <= oCulture.txPlantParameters.fT_Q * 86400
+        if oCulture.fInternalTime <= (oCulture.txPlantParameters.fT_Q * 86400)
             fCUE_24 = oCulture.txPlantParameters.fCUE_Max;
             % after time of onset of canopy senescence but before time of
             % crop maturity
-        elseif oCulture.txPlantParameters.fT_Q * 86400 < oCulture.fInternalTime <= oCulture.txPlantParameters.fT_M * 86400
-            fCUE_24 = oCulture.txPlantParameters.fCUE_Max - (oCulture.txPlantParameters.fCUE_Max - oCulture.txPlantParameters.fCUE_Min) * (oCulture.fInternalTime - oCulture.txPlantParameters.fT_Q * 86400) * (oCulture.txPlantParameters.fT_M * 86400 - oCulture.txPlantParameters.fT_Q * 86400)^-1;
+        elseif (oCulture.txPlantParameters.fT_Q * 86400) < oCulture.fInternalTime <= (oCulture.txPlantParameters.fT_M * 86400)
+            fCUE_24 = oCulture.txPlantParameters.fCUE_Max - (oCulture.txPlantParameters.fCUE_Max - oCulture.txPlantParameters.fCUE_Min) * ((oCulture.fInternalTime / 86400) - oCulture.txPlantParameters.fT_Q) * (oCulture.txPlantParameters.fT_M - oCulture.txPlantParameters.fT_Q)^-1;
         end
     % CUE_24 constant for non-legumes
     else
@@ -68,17 +61,24 @@ function [ oCulture ] ...
     
     % calculate effective photosynthetic photon flux density (PPFD_E) 
     % [µmol m^-2 s-^1]
-    fPPFD_E = oCulture.txInput.fPPFD * (oCulture.txInput.fH * oCulture.txPlantParameters.fH_0^-1);
+%     fPPFD_E = oCulture.txInput.fPPFD * (oCulture.txInput.fH * oCulture.txPlantParameters.fH_0^-1);
     
     % TODO: is it really necessary? day-night cycle already implemented.
+    
     % calculate time of canopy closure (T_A)
     % calculate maximum canopy qunatum yield (CQY_Max)
     % [µmol_Carbon.Fixed * µmol_Absorbed.PPFD)^-1]
     % source: "Advances in Space Research 34 (2004) 1528–1538"
+%     fT_A = ...
+%         [1/fCO2 1 fCO2 fCO2^2 fCO2^3] * ...                     % row vector for CO2
+%         oCulture.txPlantParameters.mfMatrix_T_A * ...           % coefficient matrix
+%         [1/fPPFD_E; 1; fPPFD_E; fPPFD_E^2; fPPFD_E^3] * ...     % column vector for PPFD
+%         86400;                                                  % T_A needs to be in seconds
+    
     fT_A = ...
         [1/fCO2 1 fCO2 fCO2^2 fCO2^3] * ...                     % row vector for CO2
         oCulture.txPlantParameters.mfMatrix_T_A * ...           % coefficient matrix
-        [1/fPPFD_E; 1; fPPFD_E; fPPFD_E^2; fPPFD_E^3] * ...     % column vector for PPFD
+        [1/oCulture.txInput.fPPFD; 1; oCulture.txInput.fPPFD; oCulture.txInput.fPPFD^2; oCulture.txInput.fPPFD^3] * ...             % column vector for PPFD
         86400;                                                  % T_A needs to be in seconds
     
     % calculate fraction of PPFD absorbed by canopy (A)
@@ -102,55 +102,55 @@ function [ oCulture ] ...
     % [µmol_Carbon.Fixed * µmol_Absorbed.PPFD)^-1] 
     % CQY description: canopy gross photosynthesis divided by absorbed PAR
     % before time of onset of canopy senescence
-    if oCulture.fInternalTime <= oCulture.txPlantParameters.fT_Q * 86400
+    if (oCulture.fInternalTime <= (oCulture.txPlantParameters.fT_Q * 86400))
         fCQY = fCQY_Max;
     % after time of onset of canopy senescence but before time of
      % crop maturity    
-    elseif oCulture.txPlantParameters.fT_Q * 86400 < oCulture.fInternalTime <= oCulture.txPlantParameters.fT_M * 86400
-        fCQY = fCQY_Max - (fCQY_Max - oCulture.txPlantParameters.fCQY_Min) * (oCulture.fInternalTime - oCulture.txPlantParameters.fT_Q * 86400) * (oCulture.txPlantParameters.fT_M * 86400 - oCulture.txPlantParameters.fT_Q * 86400)^-1;
+    elseif (oCulture.txPlantParameters.fT_Q * 86400) < oCulture.fInternalTime <= (oCulture.txPlantParameters.fT_M * 86400)
+        fCQY = fCQY_Max - (fCQY_Max - oCulture.txPlantParameters.fCQY_Min) * ((oCulture.fInternalTime / 86400) - oCulture.txPlantParameters.fT_Q) * (oCulture.txPlantParameters.fT_M - oCulture.txPlantParameters.fT_Q)^-1;
+    else
+        fCQY = 0;
     end
     
     % hourly carbon gain [mol_Carbon m^-2 h^-1]
     % HCG = alpha * CUE_24 * A * CQY * PPFD * I (Eq. 2)
-    fHCG = oCulture.txPlantParameters.fAlpha * fCUE_24 * fA * fCQY * oCulture.txInput.fPPFD * bI;
+    fHCG = oCulture.txPlantParameters.fAlpha * fCUE_24 * fA * fCQY * oCulture.txInput.fPPFD * bI * 3600^-1; % [kg m^-2 s-^1]
     
     % hourly crop growth rate (dry) [g m^-2 h^-1]
     % HCGR = HCG * MW_C * BCF^-1 (Eq. 6)
-    fHCGR = fHCG * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.C) * oCulture.txPlantParameters.fBCF ^-1;
+    fHCGR = fHCG * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.C) * oCulture.txPlantParameters.fBCF ^-1;    % [kg m^-2 s-^1]
     
     % hourly wet crop growth rate [g m^-2 h^-1]
     % HWCGR = HCGR * (1 - WBF)^-1 (Eq. 7)
     % if T_E exceeded -> use total water fraction, if not only inedible
     % biomass is produced -> water fraction = 0.9 (BVAD 2015, table 4.98)
-    if oCulture.fInternalTime >= oCulture.txPlantParameters.fT_E * 86400
-        % adjusted because the values calculated here and in the plant
-        % growth function did not match
-        fHWCGR = (fHCGR * oCulture.txPlantParameters.fXFRT) * (oCulture.txPlantParameters.fFBWF_Edible + 1) + (fHCGR * (1 - oCulture.txPlantParameters.fXFRT)) * (oCulture.txPlantParameters.fFBWF_Inedible + 1);
+    if oCulture.fInternalTime >= (oCulture.txPlantParameters.fT_E * 86400)
+        fHWCGR = fHCGR * (1 - oCulture.txPlantParameters.fWBF_Total) ^-1;   % [kg m^-2 s-^1]
     else
-        fHWCGR = fHCGR * (oCulture.txPlantParameters.fFBWF_Inedible + 1);
+        fHWCGR = fHCGR * (1 - 0.9)^-1;                                      % [kg m^-2 s-^1]
     end
     
     % hourly oxygen production [g m^-2 h^-1]
     % HOP = HCG * CUE_24 ^-1 * OPF * MW_O2 (Eq. 8)
-    fHOP = fHCG * fCUE_24 ^-1 * oCulture.txPlantParameters.fOPF * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2);
+    fHOP = fHCG * fCUE_24 ^-1 * oCulture.txPlantParameters.fOPF * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2);  % [kg m^-2 s-^1]
     
     % hourly oxygen consumption [g m^-2 h^-1]
     % HOC = HCG * I^-1 * (1 - CUE_24) * CUE_24^-1 * OPF * MW_O2 * H * 24^-1
     % (Eq. 9)
-    fHOC = (oCulture.txPlantParameters.fAlpha * fCUE_24 * fA * fCQY * oCulture.txInput.fPPFD) * (1 - fCUE_24) * fCUE_24^-1 * oCulture.txPlantParameters.fOPF * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2) * oCulture.txInput.fH * 24^-1;
+    fHOC = (oCulture.txPlantParameters.fAlpha * fCUE_24 * fA * fCQY * oCulture.txInput.fPPFD * 3600^-1) * (1 - fCUE_24) * fCUE_24^-1 * oCulture.txPlantParameters.fOPF * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2) * oCulture.txInput.fH * 24^-1;   % [kg m^-2 s-^1]
 
     % hourly CO2 consumption [g m^-2 h^-1]
     % HCO2C = HOP * MW_CO2 * MW_O2^-1 (Eq. 14)
-    fHCO2C = fHOP * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.CO2) * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2) ^-1;
+    fHCO2C = fHOP * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.CO2) * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2) ^-1;     % [kg m^-2 s-^1]
     
     % hourly CO2 production [g m^-2 h^-1]
     % HCO2P = HOC * MW_CO2 * MW_O2^-1 (Eq. 15)
-    fHCO2P = fHOC * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.CO2) * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2) ^-1;
+    fHCO2P = fHOC * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.CO2) * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2) ^-1;     % [kg m^-2 s-^1]
     
     % hourly plant macronutirent uptake [g m^-2 h^-1]
     % HNC = HCGR * DRY_fr * NC_fr (Eq. 15.5, has no number, but is listed 
     % between Eq. 15 and Eq. 16))
-    fHNC = fHCGR * oCulture.txPlantParameters.fDRY_Fraction * oCulture.txPlantParameters.fNC_Fraction; 
+    fHNC = fHCGR * oCulture.txPlantParameters.fDRY_Fraction * oCulture.txPlantParameters.fNC_Fraction;  % [kg m^-2 s-^1]
     
     %% Calculate Plant Transpiration
     
@@ -233,10 +233,10 @@ function [ oCulture ] ...
     % Crop Coefficient development during plant growth
     if oCulture.fInternalTime < fT_A  
         fKC = oCulture.txPlantParameters.fKC_Mid * (oCulture.fInternalTime / fT_A) ^ oCulture.txPlantParameters.fN;
-    elseif (fT_A <= oCulture.fInternalTime) && (oCulture.fInternalTime <= oCulture.txPlantParameters.fT_Q * 86400)   
+    elseif (fT_A <= oCulture.fInternalTime) && (oCulture.fInternalTime <= (oCulture.txPlantParameters.fT_Q * 86400))   
         fKC = oCulture.txPlantParameters.fKC_Mid;
     else   
-        fKC = oCulture.txPlantParameters.fKC_Mid + ((oCulture.fInternalTime - oCulture.txPlantParameters.fT_Q * 86400) / (oCulture.txPlantParameters.fT_M * 86400 - oCulture.txPlantParameters.fT_Q * 86400)) * (oCulture.txPlantParameters.fKC_Late - oCulture.txPlantParameters.fKC_Mid);
+        fKC = oCulture.txPlantParameters.fKC_Mid + (((oCulture.fInternalTime / 86400) - oCulture.txPlantParameters.fT_Q) / ((oCulture.txPlantParameters.fT_M) - (oCulture.txPlantParameters.fT_Q))) * (oCulture.txPlantParameters.fKC_Late - oCulture.txPlantParameters.fKC_Mid);
     end
     
     % final Water volume evapotranspiration ET_c in [liter m^-2 s^-1]
@@ -244,7 +244,7 @@ function [ oCulture ] ...
     
     % hourly transpiration rate [g m^-2 h^-1]
     % TODO: model from saad, do last
-    fHTR = fET_C * 3600 * fDensityH2O;
+    fHTR = fET_C * fDensityH2O * 1000^-1;  % [kg m^-2 s^-1]
     
     %% Calculate Water Consumption
     
@@ -252,23 +252,29 @@ function [ oCulture ] ...
     
     % hourly water consumption [g m^-2 h^-1]
     % HWC = HTR + HOP + HCO2P + HWCGR - HOC - HCO2C - HNC (Eq. 16)
-    fHWC = fHTR + fHOP + fHCO2P + fHWCGR - fHOC - fHCO2C - fHNC;
+    fHWC = fHTR + fHOP + fHCO2P + fHWCGR - fHOC - fHCO2C - fHNC;    % [kg m^-2 s^-1]
     
     %% Write Return Parameter
     
     % attach calculated plant consumsption and production rates to culture 
     % object, further handling on the upper level. also convert to SI units
-    oCulture.tfMMECRates.fWC    = fHWC      * (1000 * 3600)^-1;
-    oCulture.tfMMECRates.fTR    = fHTR      * (1000 * 3600)^-1;
-    oCulture.tfMMECRates.fOC    = fHOC      * (1000 * 3600)^-1;
-    oCulture.tfMMECRates.fOP    = fHOP      * (1000 * 3600)^-1;
-    oCulture.tfMMECRates.fCO2C  = fHCO2C    * (1000 * 3600)^-1;
-    oCulture.tfMMECRates.fCO2P  = fHCO2P    * (1000 * 3600)^-1;
-    oCulture.tfMMECRates.fNC    = fHNC      * (1000 * 3600)^-1;
-    oCulture.tfMMECRates.fWCGR  = fHWCGR    * (1000 * 3600)^-1;
+    oCulture.tfMMECRates.fWC    = fHWC;
+    oCulture.tfMMECRates.fTR    = fHTR;
+    oCulture.tfMMECRates.fOC    = fHOC;
+    oCulture.tfMMECRates.fOP    = fHOP;
+    oCulture.tfMMECRates.fCO2C  = fHCO2C;
+    oCulture.tfMMECRates.fCO2P  = fHCO2P;
+    oCulture.tfMMECRates.fNC    = fHNC;
     
     % growth rate on dry basis because edible and inedible biomass parts
     % have different water contents
-    oCulture.tfMMECRates.fCGR   = fHCGR     * (1000 * 3600)^-1;  % [g m^-2 h^-1] --> kg/(m² s)
+    oCulture.tfMMECRates.fCGR   = fHCGR;
+    oCulture.tfMMECRates.fWCGR   = fHWCGR;
+    
+	% For debugging, if the mass balance is no longer correct
+%     fBalance = fHTR + fHOP + fHCO2P + fHWCGR - fHOC - fHCO2C - fHNC - fHWC;
+%     if abs(fBalance) > 1e-10
+%         keyboard()
+%     end
 end
 

@@ -78,7 +78,97 @@ classdef PlantManipulator < matter.manips.substance.flow
             
             update@matter.manips.substance.flow(this, afPartialFlows);
             
-            fLastExec = this.oTimer.fTime;
+            %%
+            
+            %% Set Plant Growth Flow Rates
+
+            % current masses in the balance phase:
+            afCurrentBalanceMass = this.oPhase.afMass;
+            
+            afPartialFlowRatesBiomass = zeros(1,this.oMT.iSubstances);
+            if 0.999*this.oParent.afInitialBalanceMass(this.iEdibleWetBiomass) > afCurrentBalanceMass (this.iEdibleWetBiomass)
+                afPartialFlowRatesBiomass(this.iEdibleWetBiomass) = afPartialFlows(this.iEdibleWetBiomass) * 1.01;
+
+            elseif 1.001*this.oParent.afInitialBalanceMass(this.iEdibleWetBiomass) < afCurrentBalanceMass (this.iEdibleWetBiomass)
+                afPartialFlowRatesBiomass(this.iEdibleWetBiomass) = afPartialFlows(this.iEdibleWetBiomass) * 0.99;
+
+            else
+                afPartialFlowRatesBiomass(this.iEdibleWetBiomass) = afPartialFlows(this.iEdibleWetBiomass);
+            end
+
+            if 0.999*this.oParent.afInitialBalanceMass(this.iInedibleWetBiomass) > afCurrentBalanceMass (this.iInedibleWetBiomass)
+                afPartialFlowRatesBiomass(this.iInedibleWetBiomass) = afPartialFlows(this.iInedibleWetBiomass) * 1.01;
+
+            elseif 1.001*this.oParent.afInitialBalanceMass(this.iInedibleWetBiomass) < afCurrentBalanceMass (this.iInedibleWetBiomass)
+                afPartialFlowRatesBiomass(this.iInedibleWetBiomass) = afPartialFlows(this.iInedibleWetBiomass) * 0.99;
+
+            else
+                afPartialFlowRatesBiomass(this.iInedibleWetBiomass) = afPartialFlows(this.iInedibleWetBiomass);
+            end
+
+            this.oParent.toStores.Plant_Culture.toProcsP2P.BiomassGrowth_P2P.setFlowRate(afPartialFlowRatesBiomass);
+
+            %% Set atmosphere flow rates
+            % one p2p for inflows one for outflows
+
+            % Substances that are controlled by these branches:
+            aiSubstances = [this.oMT.tiN2I.CO2, this.oMT.tiN2I.H2O, this.oMT.tiN2I.O2];
+
+
+            afMassChange = zeros(1,this.oMT.iSubstances);
+            afMassChange(aiSubstances) =  afCurrentBalanceMass(aiSubstances) - this.oParent.afInitialBalanceMass(aiSubstances);
+
+            afPartialFlowRatesGas = afMassChange./3600;
+
+            afPartialFlowRatesGas(this.oMT.tiN2I.O2) = afPartialFlowRatesGas(this.oMT.tiN2I.O2)   + afPartialFlows(this.oMT.tiN2I.O2);
+            afPartialFlowRatesGas(this.oMT.tiN2I.CO2) = afPartialFlowRatesGas(this.oMT.tiN2I.CO2) + afPartialFlows(this.oMT.tiN2I.CO2);
+            afPartialFlowRatesGas(this.oMT.tiN2I.H2O) = afPartialFlowRatesGas(this.oMT.tiN2I.H2O) + this.oParent.tfGasExchangeRates.fTranspirationRate;
+
+            if afPartialFlowRatesGas(this.oMT.tiN2I.H2O) < 0
+                afPartialFlowRatesGas(this.oMT.tiN2I.H2O) = 0;
+            end
+
+            if ~this.oParent.bLight && (afPartialFlowRatesGas(this.oMT.tiN2I.CO2) < 0)
+                afPartialFlowRatesGas(this.oMT.tiN2I.CO2) = 0;
+            elseif this.oParent.bLight && (afPartialFlowRatesGas(this.oMT.tiN2I.O2) < 0)
+                afPartialFlowRatesGas(this.oMT.tiN2I.O2) = 0;
+            end
+
+            afPartialFlowRatesIn = zeros(1,this.oMT.iSubstances);
+            afPartialFlowRatesIn(afPartialFlowRatesGas < 0) = afPartialFlowRatesGas(afPartialFlowRatesGas < 0);
+
+            afPartialFlowRatesOut = zeros(1,this.oMT.iSubstances);
+            afPartialFlowRatesOut(afPartialFlowRatesGas > 0) = afPartialFlowRatesGas(afPartialFlowRatesGas > 0);
+
+            % in flows are negative because it is subsystem if branch!
+            this.oParent.toBranches.Atmosphere_In.oHandler.setFlowRate(afPartialFlowRatesIn);
+            this.oParent.toBranches.Atmosphere_Out.oHandler.setFlowRate(afPartialFlowRatesOut);
+
+
+            %% Set Water and Nutrient branch flow rates
+            if 0.999 * this.oParent.afInitialBalanceMass(this.oMT.tiN2I.H2O) > afCurrentBalanceMass(this.oMT.tiN2I.H2O)
+                this.oParent.toBranches.WaterSupply_In.oHandler.setFlowRate(-this.oParent.fWaterConsumptionRate * 1.01);
+            elseif 1.001 * this.oParent.afInitialBalanceMass(this.oMT.tiN2I.H2O) < afCurrentBalanceMass(this.oMT.tiN2I.H2O)
+                this.oParent.toBranches.WaterSupply_In.oHandler.setFlowRate(-this.oParent.fWaterConsumptionRate * 0.99);
+            else
+                this.oParent.toBranches.WaterSupply_In.oHandler.setFlowRate(-this.oParent.fWaterConsumptionRate);
+            end
+            
+            if 0.999 * this.oParent.afInitialBalanceMass(this.oMT.tiN2I.Nutrients) > afCurrentBalanceMass(this.oMT.tiN2I.Nutrients)
+                this.oParent.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.oParent.fNutrientConsumptionRate * 1.01);
+            elseif 1.001 * this.oParent.afInitialBalanceMass(this.oMT.tiN2I.Nutrients) < afCurrentBalanceMass(this.oMT.tiN2I.Nutrients)
+                this.oParent.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.oParent.fNutrientConsumptionRate * 0.99);
+            else
+                this.oParent.toBranches.NutrientSupply_In.oHandler.setFlowRate(-this.oParent.fNutrientConsumptionRate);
+            end
+            
+            % For debugging, if the mass balance is no longer correct
+%             fBalance = this.oParent.fNutrientConsumptionRate + this.oParent.fWaterConsumptionRate - sum(afPartialFlowRatesBiomass) - sum(afPartialFlowRatesIn) - sum(afPartialFlowRatesOut);
+%             if abs(fBalance) > 1e-10
+%                 keyboard()
+%             end
+            
+            this.fLastExec = this.oTimer.fTime;
         end
     end
 end

@@ -1,0 +1,9 @@
+diff a/lib/+components/+PlantModuleV2/CalculateMMECRates.m b/lib/+components/+PlantModuleV2/CalculateMMECRates.m	(rejected hunks)
+@@ -102,6 +102,7 @@
+     % [�mol_Carbon.Fixed * �mol_Absorbed.PPFD)^-1] 
+     % CQY description: canopy gross photosynthesis divided by absorbed PAR
+     % before time of onset of canopy senescence
++    if (oCulture.fInternalTime <= (oCulture.txPlantParameters.fT_Q * 86400)) %|| strcmp(oCulture.txInput.sPlantSpecies, 'Lettuce') || strcmp(oCulture.txInput.sPlantSpecies, 'Sweetpotato')
+         fCQY = fCQY_Max;
+     % after time of onset of canopy senescence but before time of
+      % crop maturity    

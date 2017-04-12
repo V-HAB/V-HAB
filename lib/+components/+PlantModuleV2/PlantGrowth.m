@@ -117,9 +117,9 @@ function [ oCulture ] = ...
                     % Mass balance of biomass uptake when exceeding tE
                     % TODO: JUST GROWTH RATES! actual growth happens 
                     % inside the plant module exec() function
-                    oCulture.tfBiomassGrowthRates.fGrowthRateEdible = (oCulture.tfMMECRates.fCGR * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fXFRT) * (oCulture.txPlantParameters.fFBWF_Edible + 1);
+                    oCulture.tfBiomassGrowthRates.fGrowthRateEdible = (oCulture.tfMMECRates.fWCGR * oCulture.txInput.fGrowthArea * oCulture.txPlantParameters.fXFRT);
                     
-                    oCulture.tfBiomassGrowthRates.fGrowthRateInedible = (oCulture.tfMMECRates.fCGR * oCulture.txInput.fGrowthArea * (1 - oCulture.txPlantParameters.fXFRT)) * (oCulture.txPlantParameters.fFBWF_Inedible + 1);
+                    oCulture.tfBiomassGrowthRates.fGrowthRateInedible = (oCulture.tfMMECRates.fWCGR * oCulture.txInput.fGrowthArea * (1 - oCulture.txPlantParameters.fXFRT));
                     
                     % If tE is not exceeded yet, only inedible biomass is created 
                     % (and therefore contributes to the total crop biomass (TCB) solely)
@@ -127,10 +127,11 @@ function [ oCulture ] = ...
                     % Mass balance of biomass uptake before tE
                     oCulture.tfBiomassGrowthRates.fGrowthRateEdible = 0;  
                     
-                    oCulture.tfBiomassGrowthRates.fGrowthRateInedible = (oCulture.tfMMECRates.fCGR * oCulture.txInput.fGrowthArea * (oCulture.txPlantParameters.fFBWF_Inedible + 1));
+                    oCulture.tfBiomassGrowthRates.fGrowthRateInedible = (oCulture.tfMMECRates.fWCGR * oCulture.txInput.fGrowthArea);
                     
                 end   
             
+                % For debugging, if the mass balance is no longer correct
 %                 if oCulture.fWaterConsumptionRate > 0
 %                     fBalance = oCulture.tfGasExchangeRates.fO2ExchangeRate + oCulture.tfGasExchangeRates.fCO2ExchangeRate + oCulture.tfGasExchangeRates.fTranspirationRate + ...
 %                      (oCulture.tfBiomassGrowthRates.fGrowthRateInedible + oCulture.tfBiomassGrowthRates.fGrowthRateEdible) ...
