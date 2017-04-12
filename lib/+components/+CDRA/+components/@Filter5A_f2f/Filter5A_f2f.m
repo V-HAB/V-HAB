@@ -12,6 +12,10 @@ classdef Filter5A_f2f < matter.procs.f2f
        
         oFilter;
         
+        % for cycle changes it is possible that the matter properties are
+        % slightly out of bounds for a few ticks, This counter ensures that
+        % at most five ticks in a row failed to recalculate the convection
+        iFailedConvectionCalculationCounter = 0;
         
         fLastExec = 0;
     end
@@ -61,7 +65,12 @@ classdef Filter5A_f2f < matter.procs.f2f
             %the previous calculations using natural convection.
             try
                 fConvection_alpha = convection_plate (1.0922, fFlowSpeed, fDynVisc, fDensity, fThermCond, this.oFilter.toPhases.PhaseIn.fSpecificHeatCapacity);
+                this.iFailedConvectionCalculationCounter = 0;
             catch
+                this.iFailedConvectionCalculationCounter = this.iFailedConvectionCalculationCounter + 1;
+                if this.iFailedConvectionCalculationCounter > 5
+                    error('Calculation of convective heat transfer in simple CDRA failed!')
+                end
                 fConvection_alpha = 2;
             end
             
