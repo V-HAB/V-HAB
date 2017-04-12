@@ -645,16 +645,16 @@ classdef plotter_basic < simulation.monitor
                                 iCurrentLog = iCurrentLog + 1;
                             end
                             
-                            mbCommonWords = true(1,length(splitphrases_cell{1}));
-                            for iPhrase = 1:(length(splitphrases_cell)-1)
-
-                                mbCommon = strcmp(splitphrases_cell{iPhrase}, splitphrases_cell{iPhrase+1});
-
-                                mbCommonWords = ((mbCommonWords + mbCommon) == 2);
-
-                            end
-
                             try
+                                mbCommonWords = true(1,length(splitphrases_cell{1}));
+                                for iPhrase = 1:(length(splitphrases_cell)-1)
+
+                                    mbCommon = strcmp(splitphrases_cell{iPhrase}, splitphrases_cell{iPhrase+1});
+
+                                    mbCommonWords = ((mbCommonWords + mbCommon) == 2);
+
+                                end
+
                                 tLogProps(iCalculation).sLabel = strjoin(splitphrases_cell{1}(mbCommonWords));
                             catch
                                 % well just keep the current label (might
