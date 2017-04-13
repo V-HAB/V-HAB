@@ -170,11 +170,12 @@ function [ oCulture ] ...
     fE_S = (fVaporPressureLight + fVaporPressureDark) / 2 * 1000;
 
     fE_A = fE_S * fRelativeHumidityAtmosphere; %%% relative humidity consant factor in closed environemnts ! simplified equation
-        
-        
+    
     % P_net: net canopy photosynthesis [µmol_Carbon m^2 s]
-    fP_Net = fA * fCQY * oCulture.txInput.fPPFD;                  
+    fP_gross = fA * fCQY * oCulture.txInput.fPPFD;                  
         
+    fP_Net	=   ((24 - oCulture.txInput.fH)/(24) + oCulture.txInput.fH * fCUE_24/24 ) * fP_gross;
+
     % Rate of change of saturation specific humidity with air temperature in [Pa K^-1]
     fD = 1000 * 4098 * 0.6108 * exp(17.27 * fTemperatureAtmosphere / ( fTemperatureAtmosphere + 237.3 )) / (( fTemperatureAtmosphere + 237)^2); 
 

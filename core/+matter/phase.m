@@ -622,7 +622,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     if fCurrentOutFlow == 0
                         mbUseBranch = (mbBranch + (miSign == -1)) == 2;
                         if sum(mbUseBranch) == 0
-                            afNegativeMassByExMe(:,miNegatives(iK))           = ones(length(mbUseBranch),1) .* (afNegativeMass(miNegatives(iK)) ./ length(mbUseBranch));
+                            afNegativeMassByExMe(:,miNegatives(iK))           = zeros(length(mbUseBranch),1) .* (afNegativeMass(miNegatives(iK)) ./ length(mbUseBranch));
                         else
                             afNegativeMassByExMe(mbUseBranch,miNegatives(iK)) = mbUseBranch(mbUseBranch) .* (afNegativeMass(miNegatives(iK)) ./sum(mbUseBranch));
                         end
