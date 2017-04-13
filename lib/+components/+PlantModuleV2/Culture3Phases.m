@@ -212,6 +212,10 @@ classdef Culture3Phases < vsys
                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
                     oPhase.fMaxStep = this.fTimeStep;
                     this.toStores.(csStoreNames{iStore}).fDefaultTimeStep = this.fTimeStep;
+                    
+                    oPhase.arMaxChange(this.oMT.tiN2I.H2O) = 0.5;
+                    oPhase.arMaxChange(this.oMT.tiN2I.CO2) = 0.5;
+                    oPhase.arMaxChange(this.oMT.tiN2I.O2)  = 0.5;
                 end
             end
         end

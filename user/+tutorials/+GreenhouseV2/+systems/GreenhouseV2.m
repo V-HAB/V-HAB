@@ -385,13 +385,14 @@ classdef GreenhouseV2 < vsys
             
             %% Create Biomass Split P2P
             
-            components.P2Ps.ConstantMassP2P(this, ...
+            oConstantP2P = components.P2Ps.ConstantMassP2P(this, ...
                 this.toStores.BiomassSplit, ...
                 'EdibleInedible_Split_P2P', ...
                 'BiomassEdible.EdibleInedible_Split_P2P', ...
                 'BiomassInedible.EdibleInedible_Split_P2P',...
                 csInedibleBiomass, 1);
             
+            oConstantP2P.fTimeStep = 3600;
             %% Create Branches
             
             % create leakage branch
@@ -594,7 +595,7 @@ classdef GreenhouseV2 < vsys
                 fCondensateFlow = 1.01 * fPreviousCondensateFlow;
                 
             elseif fRelativeHumidity < 0.4
-                if this.toStores.WaterSeparator.toPhases.WaterWS.fMass > 1
+                if this.toStores.WaterSeparator.toPhases.WaterWS.fMass > (1/3600 * this.fTimeStep)
                     fCondensateFlow = - 1/3600;
                 else
                     fCondensateFlow = 0;
