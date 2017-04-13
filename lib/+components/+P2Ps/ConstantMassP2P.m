@@ -12,6 +12,9 @@ classdef ConstantMassP2P < matter.procs.p2ps.flow
         % TO DO: the case where two directions would have to be used at the
         % same time is not possible yet!
         iDirection; 
+        % warning for very small time steps the calculation might become
+        % unstable
+        fTimeStep = 60;
     end
     properties (SetAccess = protected, GetAccess = public)
         % parent system reference
@@ -22,7 +25,6 @@ classdef ConstantMassP2P < matter.procs.p2ps.flow
         afConstantMass;
         
         fLastExec = 0;
-        
     end
     
     methods
@@ -44,13 +46,15 @@ classdef ConstantMassP2P < matter.procs.p2ps.flow
             this.iDirection = iDirection;
         end
         
-        function update(this) 
+        function update(this)
             
-            fTimeStep = this.oTimer.fTime - this.fLastExec;
-            if fTimeStep <= 1
+            if (this.oTimer.fTime - this.fLastExec) < this.fTimeStep
+                % ensure that the store (and with it the phase, and with
+                % those the P2Ps) are update at the next intended update
+                % time of this P2P
+                this.oIn.oPhase.oStore.setNextTimeStep((this.fTimeStep - (this.oTimer.fTime - this.fLastExec)));
                 return
             end
-            
             % calculate the difference between the current mass and the
             % constant mass. The calculation results in a higher current
             % mass to have a positive flowrate as outflows are defined as
@@ -70,7 +74,7 @@ classdef ConstantMassP2P < matter.procs.p2ps.flow
             % negative flowrate and another has a positive flowrate the
             % calculation will not work correctly!
             % TO DO: Mabye create a bidirectional p2p
-            afPartialFlowRates = afMassChange./fTimeStep;
+            afPartialFlowRates = afMassChange./this.fTimeStep;
             fFlowRate = sum(afPartialFlowRates);
             if fFlowRate == 0
                 arPartialFlowRates = zeros(1,this.oMT.iSubstances);
@@ -81,6 +85,7 @@ classdef ConstantMassP2P < matter.procs.p2ps.flow
             % extract specified substance with desired flow rate
             this.setMatterProperties(fFlowRate, arPartialFlowRates);
             
+            this.oIn.oPhase.oStore.setNextTimeStep(this.fTimeStep);
             this.fLastExec = this.oTimer.fTime;
         end
         
