@@ -130,6 +130,8 @@ classdef branch < base & event.source
         % update values within the flow objects array
         hSetFlowData;
         
+        hFlowThermalUpdate;
+        
         % If the RIGHT side of the branch is an interface (i.e. i/f to the
         % parent system), store its index on the aoFlows here to make it
         % possible to remove those connections later!
@@ -541,6 +543,67 @@ classdef branch < base & event.source
         end
         
         
+        function setOutdatedThermal(this)
+            % Can be used by phases to request recalculation of the temperatures
+            
+            if this.fFlowRate == 0
+                % nothing flows, nothing has to be updated
+                return
+            end
+            % tries to call the ThermalUpdate function of the F2Fs
+            for iF2F = 1:this.iFlows - 1
+                try
+                    this.aoFlowProcs(iF2F).ThermalUpdate();
+                catch
+                    % do nothing, but f2fs that do not require a thermal
+                    % update cane exist
+                end
+            end
+            
+            % updates only the temperatures and heat capacities of the flows
+            mfHeatFlows = [this.aoFlowProcs(:).fHeatFlow];
+            
+            if this.fFlowRate > 0
+                oPhase = this.coExmes{1}.oPhase;
+                
+                mfTemperatureDifference = mfHeatFlows ./ (oPhase.fSpecificHeatCapacity * abs(this.fFlowRate));
+            
+                mfFlowTemperature = zeros(this.iFlows, 1);
+                mfFlowTemperature(1) = oPhase.fTemperature;
+                this.hFlowThermalUpdate{1}(mfFlowTemperature(1), oPhase.fSpecificHeatCapacity);
+
+                for iFlow = 2:this.iFlows
+                    mfFlowTemperature(iFlow) = mfFlowTemperature(iFlow - 1) + mfTemperatureDifference(iFlow - 1);
+                    this.hFlowThermalUpdate{iFlow}(mfFlowTemperature(iFlow), oPhase.fSpecificHeatCapacity);
+                end
+                
+                % since a temperature change of the branch flow affects the
+                % downstream phase the temperatureupdate for the downstream
+                % phase is also called
+                this.coExmes{2}.oPhase.temperatureupdate();
+            else
+                oPhase = this.coExmes{2}.oPhase;
+                
+                mfTemperatureDifference = mfHeatFlows ./ (oPhase.fSpecificHeatCapacity * abs(this.fFlowRate));
+            
+                mfFlowTemperature    = zeros(this.iFlows, 1);
+                mfFlowTemperature(end) = oPhase.fTemperature;
+                this.hFlowThermalUpdate{end}(mfFlowTemperature(end), oPhase.fSpecificHeatCapacity);
+
+                for iFlow = this.iFlows-1:-1:1
+                    mfFlowTemperature(iFlow) = mfFlowTemperature(iFlow + 1) + mfTemperatureDifference(iFlow + 1);
+                    this.hFlowThermalUpdate{iFlow}(mfFlowTemperature(iFlow), oPhase.fSpecificHeatCapacity);
+                end
+                
+                % since a temperature change of the branch flow affects the
+                % downstream phase the temperatureupdate for the downstream
+                % phase is also called
+                this.coExmes{1}.oPhase.temperatureupdate(false);
+            end
+            if any(isnan(mfFlowTemperature))
+                keyboard()
+            end
+        end
         function setOutdated(this)
             % Can be used by phases or f2f processors to request recalc-
             % ulation of the flow rate, e.g. after some internal parameters
@@ -846,13 +909,13 @@ classdef branch < base & event.source
                 % which allows us to deconnect the flow from the f2f proc
                 % in the "outer" system (supsystem).
                 if this.abIf(2) && (this.iIfFlow == iI)
-                    [ this.hSetFlowData, this.hRemoveIfProc ] = this.aoFlows(iI).seal(true);
+                    [ this.hSetFlowData, this.hRemoveIfProc, this.hFlowThermalUpdate{iI} ] = this.aoFlows(iI).seal(true);
                 
                 % Only need the callback reference once ...
                 elseif iI == 1
-                    this.hSetFlowData = this.aoFlows(iI).seal(false, this);
+                     [ this.hSetFlowData, ~, this.hFlowThermalUpdate{iI} ] = this.aoFlows(iI).seal(false, this);
                 else
-                    this.aoFlows(iI).seal(false, this);
+                     [ this.hSetFlowData, ~, this.hFlowThermalUpdate{iI} ] = this.aoFlows(iI).seal(false, this);
                 end
             end
             

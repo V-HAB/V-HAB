@@ -166,7 +166,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         end
         
         
-        function [ setData, hRemoveIfProc ] = seal(this, bIf, oBranch)
+        function [ setData, hRemoveIfProc, hFlowThermalUpdate ] = seal(this, bIf, oBranch)
             
             if this.bSealed
                 this.throw('seal', 'Already sealed!');
@@ -174,6 +174,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             hRemoveIfProc = [];
             setData = @(oThis, varargin) oThis.setData(varargin{:});
+            hFlowThermalUpdate = @(varargin) this.ThermalUpdate(varargin{:});
             
             this.bSealed = true;
             
@@ -435,7 +436,11 @@ classdef flow < base & matlab.mixin.Heterogeneous
         end
         
         
-        
+        function ThermalUpdate(this, fTemperature, fSpecificHeatCapacity)
+            
+            this.fTemperature  = fTemperature;
+            this.fSpecificHeatCapacity = fSpecificHeatCapacity;
+        end
         
         function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
             % For derived classes of flow, can set the matter properties 
@@ -490,8 +495,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 this.arPartialMassLastMassPropUpdate = this.arPartialMass;
             end
         end
-        
-        
         
         function setData(aoFlows, oExme, fFlowRate, afPressures)
             % Sets flow data on an array of flow objects. If flow rate not

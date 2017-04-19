@@ -168,10 +168,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Last time the phase was updated (??)
         % @type float
         fLastMassUpdate = -10;
+        fLastTemperatureUpdate = 0;
 
         % Time step in last massupdate (???)
         % @type float
         fMassUpdateTimeStep = 0;
+
+        % Time Step for the temperature update of the phase (with regard to
+        % thermal changes only, the temperature update will also be called
+        % within each massupdate!)
+        fTemperatureUpdateTimeStep = inf;
 
         % Current total incoming or (if negative value) outgoing mass flow,
         % for all substances combined. Used to improve pressure estimation
@@ -181,8 +187,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         
         % Storage - preserve those props from .calcTS!
         afCurrentTotalInOuts;
-        mfCurrentInflowDetails;
-        
+        mfCurrentFlowDetails;
+        fCurrentTemperatureChangePerSecond = 0;
 
         % We need to remember when the last call to the update() method
         % was. This is to prevent multiple updates per tick. 
@@ -193,11 +199,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         
     end
 
+    properties (SetAccess = protected, GetAccess = protected)
+        setThermalTimeStep;
+    end
     properties (Access = protected)
 
         % Boolean indicator of an outdated time step
         %TODO rename to bOutdatedTimeStep
         bOutdatedTS = false;
+        bOutdatedThermalTS = true;
         
         % Time when the total heat capacity was last updated. Need to save
         % this information in order to prevent the heat capacity
@@ -216,6 +226,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         fMaxStep   = 20;
         fMinStep   = 0;
         fFixedTS;
+        
+        % Maximum allowed temperature change for the phase within one thermal step in K
+        fMaxTemperatureChange = 5; % K
         
         % Maximum factor with which rMaxChange is decreased
         rHighestMaxChangeDecrease = 0;
@@ -403,20 +416,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %SPEED OPT - value saved in last calculateTimeStep, still valid
             %[ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
             afTotalInOuts = this.afCurrentTotalInOuts;
-            mfInflowDetails = this.mfCurrentInflowDetails;
             
-%             if strcmp(this.oStore.sName, 'Valve_1')
-%                 disp('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
-%                 disp(this.oTimer.fTime);
-%                 disp(find(this.afMass));
-%                 disp(find(this.arPartialMass));
-%                 disp('- cached -');
-%                 disp(find(afTotalInOuts));
-%                 disp('- new -');
-%                 disp(find(this.getTotalMassChange()));
-%                 disp('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
-%             end
-
             % Check manipulator
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
                 % Add the changes from the manipulator to the total inouts
@@ -464,63 +464,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % to massupdate, e.g. by a p2ps.flow, nothing happens!
             this.fLastMassUpdate     = fTime;
             
-            %%%% Now calculate the new temperature of the phase using the
-            % inflowing enthalpies / inner energies
-            % Calculations from here: https://en.wikipedia.org/wiki/Internal_energy
-            %
-            % Logic for deriving new temperature:
-            % Inner Energy
-            %   Q = m * c_p * T
-            %
-            % Total energy, mass:
-            %   Q_t = Q_1 + Q_2 + ...
-            %   m_t = m_1 + m_2 + ...
-            %
-            % Total Heat capacity of the mixture
-            %   c_p,t = (c_p,1*m_1 + c_p,2*m_2 + ...) / (m_1 + m_2 + ...)
-            %
-            %
-            % Temperature from total energy of a mix
-            %   T_t = Q_t / (m_t * c_p,t)
-            %       = (m_1 * c_p,1 * T_1 + m_2 * c_p,2 * T_2 + ...) /
-            %         ((m_1 + m_2 + ...) * (c_p,1*m_1 + ...) / (m_1 + ...))
-            %       = (m_1 * c_p,1 * T_1 + m_2 * c_p,2 * T_2 + ...) /
-            %               (c_p,1*m_1 + c_p,2*m_2 + ...)
-
-            % First we split out the mfInflowDetails matrix to make the
-            % code more readable.
-            afInflowMasses                 = mfInflowDetails(:,1);
-            afInflowTemperatures           = mfInflowDetails(:,2);
-            afSpecificInflowHeatCapacities = mfInflowDetails(:,3);
-
-            % Convert the incoming flow rates to absolute masses that are
-            % added in this timestep.
-            afAbsoluteMassesIn = afInflowMasses * fLastStep;
-
-            % We only need to change things if there are any inflows.
-            if ~isempty(mfInflowDetails)
-                
-                % Calculate inner energy (m * c_p * T) for all masses.
-                mfEnergy = this.fTotalHeatCapacity * this.fTemperature + afAbsoluteMassesIn .* afSpecificInflowHeatCapacities .* afInflowTemperatures;
-                
-                % As can be seen from the explanation given above, we need
-                % the products of all masses and heat capacities in the
-                % denominator of the fraction that calulates the new
-                % temperature.
-                mfEnergyPerKelvin = this.fTotalHeatCapacity + afAbsoluteMassesIn .* afSpecificInflowHeatCapacities;
-
-                % New temperature
-                %TODO: Investigate if this does what it's supposed to do,
-                %      especially in the case of non-zero mass where the
-                %      matrices are Nx2 (N: number of substances). Is the
-                %      temperature calculated correctly? Isn't it better
-                %      (at least for readability), to calculcate the
-                %      current temperature and the one of the incoming
-                %      flows separately and then calculate the new
-                %      weighted temperature from those values?
-                this.fTemperature = sum(mfEnergy) / sum(mfEnergyPerKelvin);
-
-            end
             % Update total mass
             this.fMass = sum(this.afMass);
             if this.fMass > 0
@@ -552,6 +495,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % for all phases of that store)
             this.setOutdatedTS();
             
+            this.temperatureupdate();
             %%%this.trigger('massupdate.post');
         end
 
@@ -1078,37 +1022,63 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     %% Methods for interfacing with thermal system
     methods
 
-        function changeInnerEnergy(this, fEnergyChange)
-            %CHANGEINNERENERGY Change phase temperature via inner energy
-            %   Change the temperature of a phase by adding or removing
-            %   inner energy in |J|.
+        function temperatureupdate(this, bSetBranchesOutdated)
+            % uses the temperature change rate calculated by the
+            % calculateThermalTimeStep function and the last execution
+            % time of this function to change the temperature:
+            if nargin < 2
+                bSetBranchesOutdated = true;
+            end
             
-            % setParameter does .update anyways ... %%%
-%             this.update();
-            %TODO don't do whole update, just set outdated TS - calcTS
-            %     should include temperature change in ts calculations!
+            fThermalTimestep = this.oTimer.fTime - this.fLastTemperatureUpdate;
+            if fThermalTimestep <= 0
+                return
+            end
+            this.fTemperature = this.fTemperature + (this.fCurrentTemperatureChangePerSecond * fThermalTimestep);
             
-            %TODO check ... heat capacity updates every second, so that
-            %     should be ok? As for mass, use a change rate for the heat
-            %     capacity and, with last update time, calculate current
-            %     value?
+            if this.fTemperature < 0
+                this.fTemperature = 0;
+            end
             
-            %fCurrentTotalHeatCapacity = this.getTotalHeatCapacity();
-            fCurrentTotalHeatCapacity = this.fTotalHeatCapacity;
+            this.fLastTemperatureUpdate = this.oTimer.fTime;
             
-            % Calculate temperature change due to change in inner energy.
-            fTempDiff = fEnergyChange / fCurrentTotalHeatCapacity;
+            if bSetBranchesOutdated
+                this.setBranchesOutdated(false, true);
+            end
             
-            % Update temperature property of phase.
-            %this.setParameter('fTemperature', this.fTemperature + fTempDiff);
-            this.fTemperature = this.fTemperature + fTempDiff;
-            
-            % Why would a massupdate be necessary at this location?
-            % Changing the temperature does not change the mass (it changes
-            % the temperature and pressure for the branches, but that is
-            % at best covered indirectly by calling a massupdate here)
-            %this.massupdate();
+            this.setOutdatedThermalTS();
         end
+%         function changeInnerEnergy(this, fEnergyChange)
+%             %CHANGEINNERENERGY Change phase temperature via inner energy
+%             %   Change the temperature of a phase by adding or removing
+%             %   inner energy in |J|.
+%             
+%             % setParameter does .update anyways ... %%%
+% %             this.update();
+%             %TODO don't do whole update, just set outdated TS - calcTS
+%             %     should include temperature change in ts calculations!
+%             
+%             %TODO check ... heat capacity updates every second, so that
+%             %     should be ok? As for mass, use a change rate for the heat
+%             %     capacity and, with last update time, calculate current
+%             %     value?
+%             
+%             %fCurrentTotalHeatCapacity = this.getTotalHeatCapacity();
+%             fCurrentTotalHeatCapacity = this.fTotalHeatCapacity;
+%             
+%             % Calculate temperature change due to change in inner energy.
+%             fTempDiff = fEnergyChange / fCurrentTotalHeatCapacity;
+%             
+%             % Update temperature property of phase.
+%             %this.setParameter('fTemperature', this.fTemperature + fTempDiff);
+%             this.fTemperature = this.fTemperature + fTempDiff;
+%             
+%             % Why would a massupdate be necessary at this location?
+%             % Changing the temperature does not change the mass (it changes
+%             % the temperature and pressure for the branches, but that is
+%             % at best covered indirectly by calling a massupdate here)
+%             %this.massupdate();
+%         end
 
 
         function fTotalHeatCapacity = getTotalHeatCapacity(this)
@@ -1213,7 +1183,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
 
         % Moved to public methods, sometimes external access required
-        function [ afTotalInOuts, mfInflowDetails ] = getTotalMassChange(this)
+        function [ afTotalInOuts, mfFlowDetails ] = getTotalMassChange(this)
             % Get vector with total mass change through all EXME flows in
             % [kg/s].
             %
@@ -1231,11 +1201,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             mfTotalFlows = zeros(this.iProcsEXME, this.oMT.iSubstances);
 
             % Each row: flow rate, temperature, heat capacity
-            mfInflowDetails = zeros(this.iProcsEXME, 3);
+            mfFlowDetails = zeros(this.iProcsEXME, 3);
             
-            % Creating an array to log which of the flows are not in-flows
-            aiOutFlows = ones(this.iProcsEXME, 1);
-
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
                 % The fFlowRate parameter is the flow rate at the exme,
@@ -1255,22 +1222,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % mfTotalFlows matrix.
                 mfTotalFlows(iI, :) = fFlowRate * arFlowPartials;
                 
-                % Only the inflowing exme values are saved to the
-                % mfInflowDetails parameter
-                if fFlowRate > 0
-                    mfInflowDetails(iI,:) = [ fFlowRate, afProperties(1), afProperties(2) ];
-                    
-                    % This flow is an in-flow, so we set the field in the
-                    % array to zero.
-                    aiOutFlows(iI) = 0;
-                end
+                % Saves the flow details for the thermal calculation
+                mfFlowDetails(iI,:) = [ fFlowRate, afProperties(1), afProperties(2) ];
             end
             
-            % Now we delete all of the rows in the mfInflowDetails matrix
-            % that belong to out-flows.
-            if any(aiOutFlows)
-                mfInflowDetails(logical(aiOutFlows),:) = [];
-            end
 
             % Now sum up in-/outflows over all EXMEs
             afTotalInOuts = sum(mfTotalFlows, 1);
@@ -1309,7 +1264,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Max time step
             this.fMaxStep = this.oStore.oContainer.tSolverParams.fMaxTimeStep;
             
-            
+            % Bind the .update method to the timer, with a time step of 0
+            % (i.e. smallest step), will be adapted after each .update
+            this.setThermalTimeStep = this.oTimer.bind(@(~) this.temperatureupdate(), 0);
             
             
             %TODO if rMaxChange < e.g. 0.0001 --> do not decrease further
@@ -1343,7 +1300,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             [ afChange, mfDetails ] = this.getTotalMassChange();
 
             this.afCurrentTotalInOuts = afChange;
-            this.mfCurrentInflowDetails = mfDetails;
+            this.mfCurrentFlowDetails = mfDetails;
             
         end % end of: seal method
 
@@ -1360,15 +1317,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
         end
 
-        function setBranchesOutdated(this, bResidual, sFlowDirection)
+        function setBranchesOutdated(this, bResidual, bThermal)
             
             if nargin < 2
                 bResidual = false;
             end
-
-%             if nargin < 3
-                sFlowDirection = 'both'; 
-%             end
+            if nargin < 3
+                bThermal = false;
+            end
             
             if this.fLastSetOutdated >= this.oTimer.fTime
                 return;
@@ -1395,21 +1351,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     end
                 else
                     if isa(oBranch, 'matter.branch')
-                        % If flow direction set, only setOutdated if the
-                        % flow direction is either inwards or outwards
-                        if strcmp(sFlowDirection, 'in')
-                            if oExme.iSign * oExme.oFlow.fFlowRate > 0
-                                % ok
-                            else
-                                continue;
-                            end
-                        elseif strcmp(sFlowDirection, 'out')
-                            if oExme.iSign * oExme.oFlow.fFlowRate <= 0
-                                % ok
-                            else
-                                continue;
-                            end
-                        end
 
                         % We can't directly set this oBranch as outdated if
                         % it is just connected to an interface, because the
@@ -1422,7 +1363,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
                         % Tell branch to recalculate flow rate (done after
                         % the current tick, in timer post tick).
-                        oBranch.setOutdated();
+                        if bThermal
+                            % for thermal outdates only the outflows have
+                            % to be updated
+                            if (oExme.oFlow.fFlowRate * oExme.iSign) < 0
+                                oBranch.setOutdatedThermal();
+                            end
+                        else
+                            oBranch.setOutdated();
+                        end
                     end
                 end
             end % end of: for
@@ -1509,7 +1458,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % Setting the properties to the current values
             this.afCurrentTotalInOuts = afChange;
-            this.mfCurrentInflowDetails = mfDetails;
+            this.mfCurrentFlowDetails = mfDetails;
             
             % If we have set a fixed time step for this phase, we can just
             % continue without doing any calculations.
@@ -1691,8 +1640,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     %fprintf('Tick %i, Time %f: Phase %s.%s setting minimum timestep\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, this.sName);
                 end
             end
-
-
+            % Since the flowrates (and with them the advective flows) are
+            % changed within this calculate time step function the thermal
+            % time step also has to be recalculated whenever the mass time 
+            % step is recalculated:
+            this.bOutdatedThermalTS = true;
+            % false tells the thermal time step function not to update the
+            % flow details because it has already been done in this
+            % function
+            this.calculateThermalTimeStep(false);
+            
             % Set the time at which the containing store will be updated
             % again. Need to pass on an absolute time, not a time step.
             % Value in store is only updated, if the new update time is
@@ -1706,7 +1663,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Now up to date!
             this.bOutdatedTS = false;
         end
-
+        
         function setOutdatedTS(this)
             if ~this.bOutdatedTS
                 this.bOutdatedTS = true;
@@ -1715,6 +1672,121 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
         end
 
+        function calculateThermalTimeStep(this, bUpdateFlowDetails)
+            
+            % Please view the derivation for equation 7.1 in
+            % "Wärmeübertragung", Polifke for a detailed explanation on the
+            % temperature calculation of an ideally stirred volume with in
+            % and out flows and internal heat sources
+            if nargin == 1
+                bUpdateFlowDetails = true;
+            end
+            
+            if ~this.bOutdatedThermalTS
+                return
+            end
+            % updates the flow details if necessary
+            if bUpdateFlowDetails
+                
+                % Each row: flow rate, temperature, heat capacity
+                mfFlowDetails = zeros(this.iProcsEXME, 3);
+
+                % Get flow rates and partials from EXMEs
+                for iI = 1:this.iProcsEXME
+                    % The fFlowRate parameter is the flow rate at the exme,
+                    % with a negative flow rate being an extraction!
+                    % arFlowPartials is a vector, with the partial mass ratios
+                    % at the exme for each substance. 
+                    % afProperties contains the temperature and heat capacity
+                    % of the exme.
+                    oExme = this.coProcsEXME{iI};
+                    [ fFlowRate, ~, afProperties ] = oExme.getFlowData();
+
+                    % If the flow rate is empty, then the exme is not
+                    % connected, so we can skip it and move on to the next one.
+                    if isempty(fFlowRate), continue; end;
+
+                    % Saves the flow details for the thermal calculation
+                    mfFlowDetails(iI,:) = [ fFlowRate, afProperties(1), afProperties(2) ];
+                end
+                
+                this.mfCurrentFlowDetails = mfFlowDetails;
+            end
+            
+            %% First we calculate the advective heat flows:
+            
+            % this.mfCurrentFlowDetails contains the flow details (FlowRate, Temperature and Specific Heat Capacity)
+            mfAdvectiveHeatFlows = this.mfCurrentFlowDetails(:,1) .* this.mfCurrentFlowDetails(:,2) .* this.mfCurrentFlowDetails(:,3);
+            fAdvectiveHeatFlow = sum(mfAdvectiveHeatFlows);
+            
+            % temperature change (please see "Wärmeübertragung", Polifke equation 7.1 for detailed derivations)
+            % can be calculated by dividing all heat flows with the current
+            % heat capacity. 
+            fInternalHeatFlow = 0;
+            fThermalSolverHeatFlow = 0;
+            this.fCurrentTemperatureChangePerSecond = (fAdvectiveHeatFlow + fInternalHeatFlow + fThermalSolverHeatFlow) / this.fTotalHeatCapacity;
+            
+            % In order to calculate the respective thermal time step the
+            % maximum allowed temperature change is divided with the
+            % temperature change per second
+            fThermalTimeStep = abs(this.fMaxTemperatureChange/this.fCurrentTemperatureChangePerSecond);
+            
+            this.setNextThermalTimeStep(fThermalTimeStep);
+            
+            % since the temperature has changed the specific heat capacity
+            % has to be updated as well
+            this.updateSpecificHeatCapacity()
+
+            this.bOutdatedThermalTS = false;
+        end
+        
+        function setNextThermalTimeStep(this, fTimeStep)
+            % This method is called from the calculateThermalTimeStep
+            % function to set the mass independent temperature update time
+            % for this phase
+            
+            % So we will first get the next execution time based on the
+            % current time step and the last time this store was updated.
+            fCurrentNextExec = this.fLastTemperatureUpdate + this.fTemperatureUpdateTimeStep;
+            
+            % Since the fTimeStep parameter that is passed on by the phase
+            % that called this method is based on the current time, we
+            % calculate the potential new execution time based on the
+            % timer's current time, rather than the last update time for
+            % this store.
+            fNewNextExec     = this.oTimer.fTime + fTimeStep;
+            
+            % Now we can compare the current next execution time and the
+            % potential new execution time. If the new execution time would
+            % be AFTER the current execution time, it means that the phase
+            % that is currently calling this method is faster than a
+            % previous caller. In this case we do nothing and just return.
+            if fCurrentNextExec < fNewNextExec
+                return;
+            end
+            
+            % The new time step is smaller than the old one, so we can
+            % actually set then new timestep. The setTimeStep() method
+            % calls a function in the timer object that will update the
+            % timer values accordingly. This is important because otherwise
+            % the time step updates that happen during post-tick operations
+            % would not be taken into account when the timer calculates the
+            % overall time step during the next tick.
+            this.setThermalTimeStep(fTimeStep, true);
+            
+            % Finally we set this stores fTimeStep property to the new time
+            % step.
+            this.fTemperatureUpdateTimeStep = fTimeStep;
+        end
+        
+        function setOutdatedThermalTS(this)
+            if ~this.bOutdatedThermalTS
+                this.bOutdatedThermalTS = true;
+
+                this.oTimer.bindPostTick(@this.calculateThermalTimeStep, 2);
+            end
+        end
+        
         function setAttribute(this, sAttribute, xValue)
             % Internal method that needs to be copied to every child.
             % Required to enable the phase class to adapt values on the
