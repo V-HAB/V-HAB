@@ -235,7 +235,7 @@ classdef Filter < matter.procs.p2ps.flow
             %calculates the current time step
             fTimeStep = this.oStore.oTimer.fTime - this.fLastExec;
             
-            if fTimeStep <= 0
+            if fTimeStep <= 0.1
                 return
             end
             
@@ -458,8 +458,10 @@ classdef Filter < matter.procs.p2ps.flow
                         fEnergyChange = fMaxTempDiff*this.oOut.oPhase.fTotalHeatCapacity;
                     end
                 end
-                 
-                this.oOut.oPhase.changeInnerEnergy(fEnergyChange);
+                
+                fOverallHeatFlow = fEnergyChange/fTimeStep;
+                
+                this.oOut.oPhase.setInternalHeatFlow(fOverallHeatFlow);
                 
             end
             
