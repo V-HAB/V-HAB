@@ -100,6 +100,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Summation over all time steps of the excess mass that was removed
         % from this phase (positive value means this mass was removed)
         afRemovedExcessMass;
+        
+        % In order to allow the modelling of heat sources within a phase
+        % without having to implement a complete thermal solver this
+        % property can be set using the setInternalHeatFlow function 
+        fInternalHeatFlow = 0;
     end
 
     properties (SetAccess = protected, GetAccess = public)
@@ -198,10 +203,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         fLastSetOutdated = -10;
         
     end
-
-    properties (SetAccess = protected, GetAccess = protected)
-        setThermalTimeStep;
-    end
     properties (Access = protected)
 
         % Boolean indicator of an outdated time step
@@ -227,8 +228,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         fMinStep   = 0;
         fFixedTS;
         
+        % Boolean parameter that can be set to true to keep the phase
+        % temperature constant. Doing so will result in the phase
+        % internally calculating the required heat flow to achieve this and
+        % setting it as the internal heat flow (other internal heat flow
+        % settings will be ignored)
+        bConstantTemperature = false;
+        
         % Maximum allowed temperature change for the phase within one thermal step in K
-        fMaxTemperatureChange = 5; % K
+        fMaxTemperatureChange = 1; % K
         
         % Maximum factor with which rMaxChange is decreased
         rHighestMaxChangeDecrease = 0;
@@ -1046,6 +1054,21 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.setBranchesOutdated(false, true);
             end
             
+            %this.setTemperatureUpdated();
+            
+            this.setOutdatedThermalTS();
+        end
+        
+        function setInternalHeatFlow(this,fInternalHeatFlow)
+            % function used to set the internal heat flow of the phase in
+            % order to model internal heat flows. Should only be used if
+            % not thermal solver is used (in case that a thermal solver is
+            % used you can use it to set internal heat flows for the
+            % phases). This function is only present to allow the modelling
+            % of such heat sources without having to use the complete
+            % thermal solver
+            this.fInternalHeatFlow = fInternalHeatFlow;
+            
             this.setOutdatedThermalTS();
         end
 %         function changeInnerEnergy(this, fEnergyChange)
@@ -1264,10 +1287,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Max time step
             this.fMaxStep = this.oStore.oContainer.tSolverParams.fMaxTimeStep;
             
-            % Bind the .update method to the timer, with a time step of 0
-            % (i.e. smallest step), will be adapted after each .update
-            this.setThermalTimeStep = this.oTimer.bind(@(~) this.temperatureupdate(), 0);
-            
+            % Bind the .checkThermalUpdate function of this phase to the
+            % timer to be executed in every tick (indicated by -1). This
+            % will allow the checkThermalUpdate function to check if a
+            % temperature update for this phase should be executed without
+            % the phase having to register independent update ticks at
+            % seperate times
+            this.oTimer.bind(@(~) this.checkThermalUpdate(), -1);
             
             %TODO if rMaxChange < e.g. 0.0001 --> do not decrease further
             %     but instead increase highestMaxChangeDec?
@@ -1363,14 +1389,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
                         % Tell branch to recalculate flow rate (done after
                         % the current tick, in timer post tick).
-                        if bThermal
-                            % for thermal outdates only the outflows have
-                            % to be updated
-                            if (oExme.oFlow.fFlowRate * oExme.iSign) < 0
-                                oBranch.setOutdatedThermal();
+                        % only the outflows have to be updated, since the
+                        % inflows are independent from the composition of
+                        % this phase
+                      	if (oExme.oFlow.fFlowRate * oExme.iSign) < 0
+                            if bThermal
+                             	oBranch.setOutdatedThermal();
+                            else
+                                oBranch.setOutdated();
                             end
-                        else
-                            oBranch.setOutdated();
                         end
                     end
                 end
@@ -1716,15 +1743,24 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %% First we calculate the advective heat flows:
             
             % this.mfCurrentFlowDetails contains the flow details (FlowRate, Temperature and Specific Heat Capacity)
-            mfAdvectiveHeatFlows = this.mfCurrentFlowDetails(:,1) .* this.mfCurrentFlowDetails(:,2) .* this.mfCurrentFlowDetails(:,3);
+            abInflows = this.mfCurrentFlowDetails(:,1) > 0;
+            mfAdvectiveHeatFlows = this.mfCurrentFlowDetails(abInflows,1) .* (this.mfCurrentFlowDetails(abInflows,2) - this.fTemperature) .* this.mfCurrentFlowDetails(abInflows,3);
             fAdvectiveHeatFlow = sum(mfAdvectiveHeatFlows);
             
+%             if abs(this.mfCurrentFlowDetails(this.mfCurrentFlowDetails(:,1) < 0,2) - this.fTemperature) > 1e-1
+%                 keyboard()
+%             end
             % temperature change (please see "Wärmeübertragung", Polifke equation 7.1 for detailed derivations)
             % can be calculated by dividing all heat flows with the current
             % heat capacity. 
-            fInternalHeatFlow = 0;
             fThermalSolverHeatFlow = 0;
-            this.fCurrentTemperatureChangePerSecond = (fAdvectiveHeatFlow + fInternalHeatFlow + fThermalSolverHeatFlow) / this.fTotalHeatCapacity;
+            % if the phase is supposed to have a constant temperature the
+            % internal heat flow is calculated to result in zero
+            % temperature change
+            if this.bConstantTemperature
+                this.fInternalHeatFlow = - ( fAdvectiveHeatFlow + fThermalSolverHeatFlow);
+            end
+            this.fCurrentTemperatureChangePerSecond = (fAdvectiveHeatFlow + this.fInternalHeatFlow + fThermalSolverHeatFlow) / this.fTotalHeatCapacity;
             
             % In order to calculate the respective thermal time step the
             % maximum allowed temperature change is divided with the
@@ -1739,7 +1775,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
             this.bOutdatedThermalTS = false;
         end
-        
+        function checkThermalUpdate(this)
+            % instead of the temperature update binding its own time steps
+            % to the timer this function is instead set to be executed in
+            % every tick of the timer, and it will execute the temperature
+            % if the next exec time for it has been exceeded (without
+            % having to register new timesteps resulting in completly new
+            % ticks)
+            if (this.oTimer.fTime - (this.fLastTemperatureUpdate + this.fTemperatureUpdateTimeStep)) >= 0
+                this.temperatureupdate();
+            end
+        end
         function setNextThermalTimeStep(this, fTimeStep)
             % This method is called from the calculateThermalTimeStep
             % function to set the mass independent temperature update time
@@ -1748,6 +1794,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % So we will first get the next execution time based on the
             % current time step and the last time this store was updated.
             fCurrentNextExec = this.fLastTemperatureUpdate + this.fTemperatureUpdateTimeStep;
+            
+            % since an update for the store also results in a mass update
+            % etc for the phase (which inlcudes the thermal updates) the
+            % thermal time step only has to be registered if it shall be
+            % executed before the next store exec.
+            fCurrentNextExecStore = this.oStore.fLastUpdate + this.oStore.fTimeStep;
             
             % Since the fTimeStep parameter that is passed on by the phase
             % that called this method is based on the current time, we
@@ -1761,26 +1813,24 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % be AFTER the current execution time, it means that the phase
             % that is currently calling this method is faster than a
             % previous caller. In this case we do nothing and just return.
-            if fCurrentNextExec < fNewNextExec
+            if fCurrentNextExec < fNewNextExec || fCurrentNextExecStore < fNewNextExec
                 return;
             end
-            
             % The new time step is smaller than the old one, so we can
-            % actually set then new timestep. The setTimeStep() method
-            % calls a function in the timer object that will update the
-            % timer values accordingly. This is important because otherwise
-            % the time step updates that happen during post-tick operations
-            % would not be taken into account when the timer calculates the
-            % overall time step during the next tick.
-            this.setThermalTimeStep(fTimeStep, true);
-            
-            % Finally we set this stores fTimeStep property to the new time
-            % step.
+            % actually set the new timestep. Note that it is only set a
+            % property which is then used in the checkThermalUpdate
+            % function together with the last exec of the thermal update to
+            % decide if it has to be reupdated.
             this.fTemperatureUpdateTimeStep = fTimeStep;
         end
         
         function setOutdatedThermalTS(this)
-            if ~this.bOutdatedThermalTS
+            % this function sets the thermal time step to be outdated, but
+            % only if it (or the mass timestep) is not already outdated.
+            % The massupdate includes the temperature updates and therefore
+            % as long as they are triggered the temperature updates do not
+            % have to be triggered addtionally.
+            if ~this.bOutdatedThermalTS && ~ this.bOutdatedTS
                 this.bOutdatedThermalTS = true;
 
                 this.oTimer.bindPostTick(@this.calculateThermalTimeStep, 2);

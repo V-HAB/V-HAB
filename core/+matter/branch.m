@@ -591,7 +591,7 @@ classdef branch < base & event.source
                 this.hFlowThermalUpdate{end}(mfFlowTemperature(end), oPhase.fSpecificHeatCapacity);
 
                 for iFlow = this.iFlows-1:-1:1
-                    mfFlowTemperature(iFlow) = mfFlowTemperature(iFlow + 1) + mfTemperatureDifference(iFlow + 1);
+                    mfFlowTemperature(iFlow) = mfFlowTemperature(iFlow + 1) + mfTemperatureDifference(iFlow);
                     this.hFlowThermalUpdate{iFlow}(mfFlowTemperature(iFlow), oPhase.fSpecificHeatCapacity);
                 end
                 
@@ -600,18 +600,14 @@ classdef branch < base & event.source
                 % phase is also called
                 this.coExmes{1}.oPhase.temperatureupdate(false);
             end
-            if any(isnan(mfFlowTemperature))
-                keyboard()
-            end
         end
         function setOutdated(this)
             % Can be used by phases or f2f processors to request recalc-
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
-            for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.coExmes{iE}.oPhase.massupdate();
-            end
+            iE = sif(this.fFlowRate >= 0, 2, 1);
+            this.coExmes{iE}.oPhase.massupdate();
             
             % Only trigger if not yet set
             %CHECK inactivated here --> solvers and otehr "clients" should
