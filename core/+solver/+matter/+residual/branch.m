@@ -124,11 +124,11 @@ classdef branch < solver.matter.manual.branch
                     % wether this is the case
                     this.bMultipleResidualSolvers = true;
                     
-                    % Only the esidual solver that actually manages the
+                    % Only the residual solver that actually manages the
                     % mass of the phase into which the flowrates has
                     % changed is considered adjacent and has to be updated
                     % again!
-                    if (oExme.iSign == -1 && oBranch.oHandler.bPositiveFlowDirection) || (oExme.iSign == -1 && oBranch.oHandler.bPositiveFlowDirection)
+                    if (oExme.iSign == -1 && oBranch.oHandler.bPositiveFlowDirection) || (oExme.iSign == 1 && ~oBranch.oHandler.bPositiveFlowDirection)
                         this.aoAdjacentResidualSolver(end+1) = oBranch;
                     end
                 end
