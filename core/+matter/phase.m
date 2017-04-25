@@ -105,6 +105,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % without having to implement a complete thermal solver this
         % property can be set using the setInternalHeatFlow function 
         fInternalHeatFlow = 0;
+        
+        % Heat flow als calculated by the thermal solver
+        fThermalSolverHeatFlow = 0;
     end
 
     properties (SetAccess = protected, GetAccess = public)
@@ -1033,7 +1036,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 disp(ttxResults.(csSubstances{iJ}));
             end
         end
-        
     end
 
 
@@ -1069,6 +1071,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.setOutdatedThermalTS();
         end
         
+        function setThermalSolverHeatFlow(this,fThermalSolverHeatFlow)
+            % function used to set the heat flow  calculated by a thermal
+            % solver that is attached to the phase i
+            this.fThermalSolverHeatFlow = fThermalSolverHeatFlow;
+            
+            this.setOutdatedThermalTS();
+        end
         function setInternalHeatFlow(this,fInternalHeatFlow)
             % function used to set the internal heat flow of the phase in
             % order to model internal heat flows. Should only be used if
@@ -1081,37 +1090,38 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             this.setOutdatedThermalTS();
         end
-%         function changeInnerEnergy(this, fEnergyChange)
-%             %CHANGEINNERENERGY Change phase temperature via inner energy
-%             %   Change the temperature of a phase by adding or removing
-%             %   inner energy in |J|.
-%             
-%             % setParameter does .update anyways ... %%%
-% %             this.update();
-%             %TODO don't do whole update, just set outdated TS - calcTS
-%             %     should include temperature change in ts calculations!
-%             
-%             %TODO check ... heat capacity updates every second, so that
-%             %     should be ok? As for mass, use a change rate for the heat
-%             %     capacity and, with last update time, calculate current
-%             %     value?
-%             
-%             %fCurrentTotalHeatCapacity = this.getTotalHeatCapacity();
-%             fCurrentTotalHeatCapacity = this.fTotalHeatCapacity;
-%             
-%             % Calculate temperature change due to change in inner energy.
-%             fTempDiff = fEnergyChange / fCurrentTotalHeatCapacity;
-%             
-%             % Update temperature property of phase.
-%             %this.setParameter('fTemperature', this.fTemperature + fTempDiff);
-%             this.fTemperature = this.fTemperature + fTempDiff;
-%             
-%             % Why would a massupdate be necessary at this location?
-%             % Changing the temperature does not change the mass (it changes
-%             % the temperature and pressure for the branches, but that is
-%             % at best covered indirectly by calling a massupdate here)
-%             %this.massupdate();
-%         end
+        function changeInnerEnergy(this, fEnergyChange)
+            %CHANGEINNERENERGY Change phase temperature via inner energy
+            %   Change the temperature of a phase by adding or removing
+            %   inner energy in |J|.
+            
+            % setParameter does .update anyways ... %%%
+%             this.update();
+            %TODO don't do whole update, just set outdated TS - calcTS
+            %     should include temperature change in ts calculations!
+            
+            %TODO check ... heat capacity updates every second, so that
+            %     should be ok? As for mass, use a change rate for the heat
+            %     capacity and, with last update time, calculate current
+            %     value?
+            
+            %fCurrentTotalHeatCapacity = this.getTotalHeatCapacity();
+            fCurrentTotalHeatCapacity = this.fTotalHeatCapacity;
+            
+            % Calculate temperature change due to change in inner energy.
+            fTempDiff = fEnergyChange / fCurrentTotalHeatCapacity;
+            
+            % Update temperature property of phase.
+            %this.setParameter('fTemperature', this.fTemperature + fTempDiff);
+            this.fTemperature = this.fTemperature + fTempDiff;
+            
+            % Why would a massupdate be necessary at this location?
+            % Changing the temperature does not change the mass (it changes
+            % the temperature and pressure for the branches, but that is
+            % at best covered indirectly by calling a massupdate here)
+            %this.massupdate();
+            this.setOutdatedThermalTS();
+        end
 
 
         function fTotalHeatCapacity = getTotalHeatCapacity(this)
@@ -1763,14 +1773,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % temperature change (please see "Wärmeübertragung", Polifke equation 7.1 for detailed derivations)
             % can be calculated by dividing all heat flows with the current
             % heat capacity. 
-            fThermalSolverHeatFlow = 0;
+            
             % if the phase is supposed to have a constant temperature the
             % internal heat flow is calculated to result in zero
             % temperature change
             if this.bConstantTemperature
-                this.fInternalHeatFlow = - ( fAdvectiveHeatFlow + fThermalSolverHeatFlow);
+                this.fInternalHeatFlow = - ( fAdvectiveHeatFlow + this.fThermalSolverHeatFlow);
             end
-            this.fCurrentTemperatureChangePerSecond = (fAdvectiveHeatFlow + this.fInternalHeatFlow + fThermalSolverHeatFlow) / this.fTotalHeatCapacity;
+            this.fCurrentTemperatureChangePerSecond = (fAdvectiveHeatFlow + this.fInternalHeatFlow + this.fThermalSolverHeatFlow) / this.fTotalHeatCapacity;
             
             % In order to calculate the respective thermal time step the
             % maximum allowed temperature change is divided with the

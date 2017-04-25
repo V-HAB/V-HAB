@@ -190,7 +190,8 @@ classdef lumpedparameter < base
             mNodeHeatChange = this.mNodeCapacities' .* mTotalTempDiff;
             
             % Notify thermal container / nodes about heat energy transfer.
-            this.oVSys.changeNodesInnerEnergy(mNodeHeatChange);
+            %this.oVSys.changeNodesInnerEnergy(mNodeHeatChange);
+            this.oVSys.setNodeHeatFlows(mNodeHeatChange/(fStepEndTime - fStepBeginTime));
             
             % Remember the current (end) time for the next call to this
             % method, where it is used as the start time.
