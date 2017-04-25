@@ -24,14 +24,17 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName);
+            this@vsys(oParent, sName, -1);
             
             % temperature for the coolant passing through the CCAA
-            fCoolantTemperature = 280;
+            fCoolantTemperature = 273.15 + 5.64;
+            %273.15 + 5.61;
             % Struct containg basic atmospheric values for the
             % initialization of the CCAA
-            tAtmosphere.fTemperature = 295;
-            tAtmosphere.fRelHumidity = 0.8;
+            tAtmosphere.fTemperature = 273.15 + 25.78;
+            fDewPoint = 273.15 + 15.01;
+            tAtmosphere.fRelHumidity = this.oMT.calculateVaporPressure(fDewPoint, 'H2O') / this.oMT.calculateVaporPressure(tAtmosphere.fTemperature, 'H2O');
+
             tAtmosphere.fPressure = 101325;
             % name for the asscociated CDRA subsystem, leave empty if CCAA
             % is used as standalone
@@ -126,7 +129,6 @@ classdef Example < vsys
             % exec(ute) function for this system
             % Here it only calls its parent's exec function
             exec@vsys(this);
-            
         end
         
     end

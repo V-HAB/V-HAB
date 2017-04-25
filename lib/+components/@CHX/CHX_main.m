@@ -706,11 +706,13 @@ elseif strcmpi(sHX_type, 'ISS CHX')
     catch
         oFlow_1 = oHX.oF2F_1.aoFlows(1);
     end
-    try
-        oFlow_2 = oHX.oF2F_2.getInFlow(); 
-    catch
-        oFlow_2 = oHX.oF2F_2.aoFlows(1);
-    end
+%     try
+%         oFlow_2 = oHX.oF2F_2.getInFlow(); 
+%     catch
+%         oFlow_2 = oHX.oF2F_2.aoFlows(1);
+%     end
+    
+    fWaterPressure = oFlow_1.oBranch.coExmes{1,1}.oPhase.afPP(oHX.oMT.tiN2I.H2O);
     
     %Instead of a geometry input the ISS CHX uses an effectiness
     %calculation and the mHX input is an interpolation of this effectiness
@@ -720,14 +722,14 @@ elseif strcmpi(sHX_type, 'ISS CHX')
     fA = 4.6543;
     fB = 1435.264;
     fC = -64.848;
-    fDewPoint = ((fB/(fA-log10(oFlow_1.oBranch.coExmes{1,1}.oPhase.afPP(oHX.oMT.tiN2I.H2O)/oFlow_1.fPressure)))-fC);
+    fDewPoint = ((fB/(fA-log10(fWaterPressure/oFlow_1.fPressure)))-fC);
     
     fVolumetricFlowRate = oFlow_1.calculateVolumetricFlowRate(); %[m^3/s]
     
     %The empire strikes back! All values have to converted to imperial
     %units
     fDewPointImp = fDewPoint * 1.8 - 459.67; % [F]
-    fAirInletTempImp = oFlow_1.fTemperature * 1.8 - 459.67; % [F]
+    fAirInletTempImp = Fluid_1.Entry_Temperature * 1.8 - 459.67; % [F]
     fAirInletFlowImp = fVolumetricFlowRate*2118.88; % [cfm] cubic feet per minute
     
     %ensures that values are within their boundaries
@@ -796,6 +798,11 @@ elseif strcmpi(sHX_type, 'ISS CHX')
     %calculates the heat exchange coeffcient fU
     fU = 1/(fArea * (fR_alpha_o + fR_alpha_i + fR_lambda));
     
+    % In order to include the influence of the coolant temperature, a
+    % normal heat exchanger function is calculated and used to compare the
+    % heat transfer for the current coolant temperature and for the nominal
+    % coolant temperature, to calculate a coolant temperature influence
+    % factor
     if fEntry_Temp1 > fEntry_Temp2
         
         fFlowSpeed_Fluid2_Nominal = (600*0.000125997881)/(((pi*(fD_o/2)^2)-(pi*(fD_i/2)^2))*...
@@ -806,64 +813,109 @@ elseif strcmpi(sHX_type, 'ISS CHX')
         fR_alpha_o_Nominal = 1/(fArea * falpha_o_Nominal);
         fU_Nominal = 1/(fArea * (fR_alpha_o_Nominal + fR_alpha_i + fR_lambda));
         
-        fHeat_Capacity_Flow_2_Nominal = abs(600*0.000125997881) * fC_p_Fluid2(1);
-    
         [~, fOutlet_Temp_1_Nominal] = temperature_counterflow ...
-        (fArea, fU_Nominal, fHeat_Capacity_Flow_2_Nominal, fHeat_Capacity_Flow_1,...
+        (fArea, fU_Nominal, fHeat_Capacity_Flow_2, fHeat_Capacity_Flow_1,...
          277.25, fEntry_Temp1);
         [~, fOutlet_Temp_1] = temperature_counterflow ...
         (fArea, fU, fHeat_Capacity_Flow_2, fHeat_Capacity_Flow_1,...
          fEntry_Temp2, fEntry_Temp1);
     else
-        fFlowSpeed_Fluid1_Nominal = (600*0.000125997881)/(pi*(fD_i/2)^2*fDensity_Fluid1(1));
-        falpha_pipe_Nominal = convection_pipe ((2*fR_i), fLength, fFlowSpeed_Fluid1_Nominal,...
-                  fDyn_Visc_Fluid1, fDensity_Fluid1,...
-                  fThermal_Cond_Fluid1, fC_p_Fluid1, 1);  
-        fR_alpha_i_Nominal = 1/(fArea * falpha_pipe_Nominal);
-        fU_Nominal = 1/(fArea * (fR_alpha_o + fR_alpha_i_Nominal + fR_lambda));
-    
-        fHeat_Capacity_Flow_1_Nominal = abs(600*0.000125997881) * fC_p_Fluid1(1);
-        
-        [fOutlet_Temp_1_Nominal, ~] = temperature_counterflow...
-        (fArea, fU_Nominal, fHeat_Capacity_Flow_1_Nominal, fHeat_Capacity_Flow_2,...
-         fEntry_Temp1, 277.25);
-        [fOutlet_Temp_1, ~] = temperature_counterflow...
-        (fArea, fU, fHeat_Capacity_Flow_1, fHeat_Capacity_Flow_2,...
-         fEntry_Temp1, fEntry_Temp2);
+        error('fluid 1 has to be the air, and the air has to be hotter than the coolant')
     end
     fHeatFlowNominal = abs(fHeat_Capacity_Flow_1*(fEntry_Temp1-fOutlet_Temp_1_Nominal));
     fHeatFlowOffNominal = abs(fHeat_Capacity_Flow_1*(fEntry_Temp1-fOutlet_Temp_1));
-    fCoolantInfluenceFactor = fHeatFlowOffNominal/fHeatFlowNominal;
+    fCoolantTemperatureInfluenceFactor = fHeatFlowOffNominal/fHeatFlowNominal;
     
-    rEffectiveness = rEffectiveness*fCoolantInfluenceFactor;
-    
-    fOutlet_Temp_1 = fEntry_Temp1 - rEffectiveness*(fEntry_Temp1-fEntry_Temp2);
-    
-    %in case that condensation does occur this is the lower limit for the
-    %heat flow. In case that nothing condenses it is the actual heat flow
-    fHeatFlow = abs(fHeat_Capacity_Flow_1*(fEntry_Temp1-fOutlet_Temp_1));
-    
-    fOutlet_Temp_2 = fEntry_Temp2 + (fHeatFlow/fHeat_Capacity_Flow_2);
-    
-    %% check for condensation
-    if fEntry_Temp1 > fEntry_Temp2 
-        %for the wall temperature it is assumed that inlet coolant
-        %temperature is the wall temperature because that is the overall
-        %lowest temperature in the system so if no condensation occurs for
-        %that temperature it is impossible for it to occur at all
-        fTWall = fEntry_Temp2;
-    
-        [sCondensateFlowRate, fOutlet_Temp_1, ~, fCondensateHeatFlow] = condensation ...
-                (oHX, struct(), fHeat_Capacity_Flow_1, fHeatFlow, fTWall, fOutlet_Temp_1,fEntry_Temp1, oFlow_1);
-    else
-        fTWall = fEntry_Temp1;
+    % Additionally according to the diploma thesis from Christof roth, a
+    % 18% higher effectiveness is assumed for doubled coolant flows
+    fCoolantFlowCorrectionFactor = (((fMassFlow2 - 0.145) / 0.145) * (0.36));
         
-        [sCondensateFlowRate, fOutlet_Temp_2, ~, fCondensateHeatFlow] = condensation ...
-                (oHX, struct(), fHeat_Capacity_Flow_2, fHeatFlow, fTWall, fOutlet_Temp_2,fEntry_Temp2, oFlow_2);
+    rEffectiveness = (rEffectiveness + fCoolantFlowCorrectionFactor) * fCoolantTemperatureInfluenceFactor;
+    
+    % The effectivness is based on the air side heat capacity flow which
+    % means the heat flow can be calculated using the following equation
+    fHeatFlow = rEffectiveness * fHeat_Capacity_Flow_1 * (fEntry_Temp1 - fEntry_Temp2);
+    
+    % from that the outlet temperature of the air can be calculated. As the
+    % interpolated values are already with respect to condensation, this is
+    % the actual air outlet temperature, but not the actual heat flow (as
+    % it is the heatflow without condensation)
+    fOutlet_Temp_1 = fEntry_Temp1 - fHeatFlow/fHeat_Capacity_Flow_1;
+        
+    %% check for condensation
+    % assumption that air side does not change its temperature while
+    % condensation occurs
+    
+    iIncrements = 10;               % Columns,      Rows
+    mfOutlet_Temp_2         = zeros(iIncrements+1,  iIncrements);
+    mfWaterMassFlow         = zeros(iIncrements,    iIncrements+1);
+    mfCondensateMassFlow    = zeros(iIncrements,    iIncrements);
+    mfCondensateHeatFlow    = zeros(iIncrements,    iIncrements);
+    
+    mfOutlet_Temp_2(:,:)    = fEntry_Temp2;
+    
+    %fWaterMassFlow = fMassFlow1.*oFlow_1.arPartialMass(oHX.oMT.tiN2I.H2O);
+
+    fWaterMassFraction = (fWaterPressure./oFlow_1.fPressure).*(oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)./oFlow_1.fMolarMass);
+    fWaterMassFlow = fMassFlow1 * fWaterMassFraction;
+    mfWaterMassFlow(:,1) = fWaterMassFlow/iIncrements;
+    
+    % factor to represent the changes in coolant to air flow
+    fFactor = ((((falpha_pipe - 24.76)/9.6) + ((7323.9 - falpha_o)/7583.4))) * 0.29;
+    if fFactor > 1
+        fFactor = 1;
+    elseif fFactor < 0
+        fFactor = 0;
     end
+    for iRow = 1:iIncrements % rows are parallel to coolant flow
+        for iColoumn = 1:iIncrements % columns are perpendicular to coolant flow
+            
+            fError = 1;
+            iCounter = 0;
+            while fError > 1e-4 && iCounter < 50
+                % this condensation calculation basically calculates how much heat
+                % the coolant flow can take before no condensation occcurs anymore.
+                % The entry temperature of air is considered to reflect the
+                % temperature difference between the coolant and the actual wall
+                % temperature
+                fTWall = fFactor * fEntry_Temp1 + (1-fFactor) * mfOutlet_Temp_2(iColoumn+1, iRow);
+                mVaporPressureWall = oHX.oMT.calculateVaporPressure(fTWall, 'H2O');
+                
+                fMaxMassFraction = (mVaporPressureWall./oFlow_1.fPressure).*(oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)./oFlow_1.fMolarMass);
+                fMaxPartialMassFlow = (fMassFlow1/iIncrements).*fMaxMassFraction;
+                
+                mfCondensateMassFlow(iColoumn, iRow) = mfWaterMassFlow(iColoumn, iRow) - fMaxPartialMassFlow;
+                % if the maximum allowed water flow is larger than the
+                % current water flow, the values will become negative,
+                % which only indicates that nothing will condense
+                if mfCondensateMassFlow(iColoumn, iRow) < 0
+                    mfCondensateMassFlow(iColoumn, iRow) = 0;
+                end
+
+                mfCondensateHeatFlow(iColoumn, iRow) = mfCondensateMassFlow(iColoumn, iRow) * oHX.mPhaseChangeEnthalpy(oHX.oMT.tiN2I.H2O);
+
+                % condensation occurs before changing the temperature, therefore
+                % only the heatflow from condensation is considered here
+                fOutlet_Temp_2_New = mfOutlet_Temp_2(iColoumn, iRow) + mfCondensateHeatFlow(iColoumn, iRow)/(fHeat_Capacity_Flow_2/iIncrements);
+
+                fError = abs(mfOutlet_Temp_2(iColoumn+1, iRow) - fOutlet_Temp_2_New);
+                mfOutlet_Temp_2(iColoumn+1, iRow) = fOutlet_Temp_2_New;
+                iCounter = iCounter + 1;
+            end
+            mfWaterMassFlow(iColoumn, iRow + 1) = mfWaterMassFlow(iColoumn, iRow) - mfCondensateMassFlow(iColoumn, iRow);
+        end
+    end
+    fCondensateHeatFlow =  sum(sum(mfCondensateHeatFlow));
+    fOutlet_Temp_2 = fEntry_Temp2 + (fHeatFlow + fCondensateHeatFlow)/fHeat_Capacity_Flow_2;
+    fCondensateMassFlow = sum(sum(mfCondensateMassFlow));
+    
+%     disp(['Condensate Flow: ', num2str(fCondensateMassFlow*3600)])
+%     disp(['Air Outlet Temp: ', num2str(fOutlet_Temp_1)])
+%     disp(['Coolant Outlet Temp: ', num2str(fOutlet_Temp_2)])
+%     mesh(mfCondensateMassFlow)
     
     if fCondensateHeatFlow > 0
-        oHX.sCondensateMassFlow = sCondensateFlowRate;
+        oHX.sCondensateMassFlow = struct('H2O', fCondensateMassFlow);
     else
         %if nothing condenses the condensate mass flow in the oHX object
         %has to be set to an empty struct
@@ -871,7 +923,7 @@ elseif strcmpi(sHX_type, 'ISS CHX')
     end
     
     oHX.fTotalCondensateHeatFlow = fCondensateHeatFlow;
-    oHX.fTotalHeatFlow = fHeatFlow;
+    oHX.fTotalHeatFlow = fHeatFlow + fCondensateHeatFlow;
     
     %currently no pressure loss calculation but because the manual solver
     %is used this is not a problem.

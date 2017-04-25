@@ -20,8 +20,14 @@ classdef CCAA < vsys
         fKickValveAktivatedTime = 0;        % Variable used to execute the kick valve
         
         mfCHXAirFlow;                      % Table used to calculate the flow rates of the ARS valve
-        fTCCV_Angle = 37.5;                % opening angle of the TCCV valve, set inititally to the medium value (min is 9° max is 84°)
+        fTCCV_Angle = 40;                % opening angle of the TCCV valve, set inititally to the medium value (min is 9° max is 84°)
         
+        % The CHX data is given for 50 to 450 cfm so the CCAA
+        % should have at least 450 cfm of inlet flow that can enter
+        % the CHX. And 450 cfm are 0.2124 m^3/s
+        % cfm = cubic feet per minute
+        fVolumetricFlowRate = 0.2;
+            
         % relative humidity in the connected module
         rRelHumidity = 0.45;
         
@@ -263,7 +269,7 @@ classdef CCAA < vsys
                 end
             end
             
-            fInFlow = 0.2124*this.oAtmosphere.fDensity;
+            fInFlow = this.fVolumetricFlowRate*this.oAtmosphere.fDensity;
             fError = this.fTemperatureSetPoint - this.oAtmosphere.fTemperature;
             
             if this.fErrorTime == 0
@@ -355,7 +361,7 @@ classdef CCAA < vsys
             this.fTemperatureSetPoint = fTemperature;
             
             
-            fInFlow = 0.2124*this.oAtmosphere.fDensity;
+            fInFlow = this.fVolumetricFlowRate *this.oAtmosphere.fDensity;
             fError = this.fTemperatureSetPoint - this.oAtmosphere.fTemperature;
             
             if this.fErrorTime == 0
@@ -426,7 +432,7 @@ classdef CCAA < vsys
             % should have at least 450 cfm of inlet flow that can enter
             % the CHX. And 450 cfm are 0.2124 m^3/s
             % cfm = cubic feet per minute
-            fInFlow = 0.2124*this.oAtmosphere.fDensity;
+            fInFlow = this.fVolumetricFlowRate*this.oAtmosphere.fDensity;
             
             fPercentalFlowChange = abs((this.toBranches.CCAA_In_FromCabin.fFlowRate + fInFlow)/(this.toBranches.CCAA_In_FromCabin.fFlowRate));
             
