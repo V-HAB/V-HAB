@@ -217,6 +217,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
     end
 
+    properties (SetAccess = protected, GetAccess = protected)
+        setThermalTimeStep;
+    end
+    
     properties (Access = public)
 
         % Limit - how much can the phase mass (total or single substances)
@@ -309,6 +313,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Set matter table / timer shorthands, register phase in MT
             this.oMT    = this.oStore.oMT;
             this.oTimer = this.oStore.oTimer;
+            
+            % binds the temperature update function to the
+            % setThermalTimeStep function to allow the phase to register
+            % its own thermal update in case no global tick is taking place
+            % before
+            % this.setThermalTimeStep = this.oTimer.bind(@(~) this.temperatureupdate(), inf);
             
             this.arMaxChange = zeros(1,this.oMT.iSubstances);
             
@@ -1782,7 +1792,22 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % if the next exec time for it has been exceeded (without
             % having to register new timesteps resulting in completly new
             % ticks)
-            if (this.oTimer.fTime - (this.fLastTemperatureUpdate + this.fTemperatureUpdateTimeStep)) >= 0
+            fNextTemperatureUpdate = this.fLastTemperatureUpdate + this.fTemperatureUpdateTimeStep;
+            % TBD: Decide whether to check here when the next global exec
+            % will take place, and if that is too far off, set a new
+            % temperature update for this phase (use setTimeStep function
+            % of timer, has to be bound to a function property of phase see
+            % store for syntax) This would require this check to be
+            % executed after everything else, only by doing that it would
+            % be possible to ensure that the next global execute time can
+            % be calculated
+            % 
+            % setThermalTimeStep, outcommented but in principle included
+            % to do this
+            
+            % Also updates in case the ticks is slightly before the
+            % intended update
+            if (this.oTimer.fTime - fNextTemperatureUpdate) >= -(0.01 * this.fTemperatureUpdateTimeStep)
                 this.temperatureupdate();
             end
         end
