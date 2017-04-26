@@ -1066,8 +1066,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.setBranchesOutdated(false, true);
             end
             
-            %this.setTemperatureUpdated();
-            
+            % since the temperature has changed the specific heat capacity
+            % has to be updated as well
+            this.updateSpecificHeatCapacity()
+
             this.setOutdatedThermalTS();
         end
         
@@ -1732,8 +1734,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if ~this.bOutdatedThermalTS
                 return
             end
-            % updates the flow details if necessary
-            if bUpdateFlowDetails
+            % updates the flow details if necessary. It can be necessary to
+            % reflect temperature changes as mass changes (flowrate etc)
+            % would have triggered a massupdate, thus already updating the
+            % flowrates. TO DO: Check if implementing another query to
+            % receive only the thermal properties would improve simulation
+            % speed
+            if bUpdateFlowDetails && ~(this.fLastMassUpdate == this.oTimer.fTime)
                 
                 % Each row: flow rate, temperature, heat capacity
                 mfFlowDetails = zeros(this.iProcsEXME, 3);
@@ -1789,10 +1796,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             this.setNextThermalTimeStep(fThermalTimeStep);
             
-            % since the temperature has changed the specific heat capacity
-            % has to be updated as well
-            this.updateSpecificHeatCapacity()
-
             this.bOutdatedThermalTS = false;
         end
         function checkThermalUpdate(this)
