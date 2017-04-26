@@ -29,7 +29,7 @@ if isa(oInput, 'event.timer')
         fLimit = 0;
     end
     % Minimal Time Step is the minimum value in afTimeStep
-    fMinStep = min(oInput.afTimeStep);
+    fMinStep = min(oInput.afTimeStep(oInput.afTimeStep >= 0));
     
     miIndexMinStep = find(oInput.afTimeStep == fMinStep);
     % The time steps in afTimeStep belong to the respective callback within

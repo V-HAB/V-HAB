@@ -54,24 +54,9 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             end
             this.mfAbsorptionEnthalpy = mfAbsorptionEnthalpyHelper;
         end
-        
-        function ManualUpdateFinal(this, ~)
-            
-        end
-        function setFlowRateToZero(this, ~)
-            % OK this is a workaround because within CDRA the flowrate
-            % logic for desorption is not able to handle it if the
-            % absorbers are still absorbing during the intended desorption
-            % time ;)
-            arPartials	= zeros(1,this.oMT.iSubstances);
-            fFlowRate 	= 0;
-            this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fFlowRate, arPartials);
-            this.setMatterProperties(fFlowRate, arPartials);
-        end
-        function ManualUpdate(this, fTimeStep, afInFlow)
-        end
         function update(this,~)
             
+            % TO DO: I need the next execution time here, not the previous!
             fTimeStep = this.oTimer.fTime - this.fLastExec;
             if fTimeStep <= 0
                 return
@@ -165,18 +150,37 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             mfNewFlowMass = (mfCurrentFlowMass + mfCurrentLoading .* (1 - exp(-this.mfMassTransferCoefficient.*fTimeStep)))...
                             ./ (1 + ((mfLinearConstant .* mfGasConstant .* fGasTemperature) / fGasVolume) .* (1 - exp(-this.mfMassTransferCoefficient.*fTimeStep)));
             %
-            % Previous calculation
-            % mfNewLoading = (mfLinearConstant .* afPP) - (((mfLinearConstant .* afPP) - mfCurrentLoading).*exp(-this.mfMassTransferCoefficient.*fTimeStep));
+            % If you want to understand what is happening, set a breakpoint
+            % here and use the following outcommented code to generate a
+            % plotting of the flow mass (of CO2 in this case, change CO2 to
+            % the substance that is beeing absorbed in your case)
+            % Note, that this calculation will never reach completly zero
+            % for the mass of the substance that is beeing absorbed in the
+            % flow, because that is not possible! This holds true even for
+            % extremly large time steps (try changing fTS to see how
+            % different time steps affect the calculation)
+%             iSteps = 100;
+%             fTS = 0.4;
+%             mfFlowMass = zeros(iSteps+1,1);
+%             mfAbsorberMass = zeros(iSteps+1,1);
+%             mfFlowMass(1) = mfCurrentFlowMass(this.oMT.tiN2I.CO2);
+%             mfAbsorberMass(1) = mfCurrentLoading(this.oMT.tiN2I.CO2);
+%             for iStep = 1:iSteps
+%                 mfFlowMass(iStep+1) = (mfFlowMass(iStep) + mfAbsorberMass(iStep) .* (1 - exp(-this.mfMassTransferCoefficient(this.oMT.tiN2I.CO2).*fTS)))...
+%                             ./ (1 + ((mfLinearConstant(this.oMT.tiN2I.CO2) .* mfGasConstant(this.oMT.tiN2I.CO2) .* fGasTemperature) / fGasVolume) .* (1 - exp(-this.mfMassTransferCoefficient(this.oMT.tiN2I.CO2).*fTS)));
+%                 mfAbsorberMass(iStep+1) = mfAbsorberMass(iStep) + (mfFlowMass(iStep) - mfFlowMass(iStep+1));
+%             end
+%             close all
+%             plot(mfFlowMass)
+%             hold on
+%             plot(mfAbsorberMass)
+%             legend('Flow Mass', 'Absorber Mass')
 
             % the mass change for the absorber then obviously has to be the
             % difference between the current and the new flow mass
             mfMassChangeAbsorber = mfCurrentFlowMass - mfNewFlowMass;
             
             this.mfFlowRatesProp = mfMassChangeAbsorber ./ fTimeStep;
-            
-            if any(isnan(this.mfFlowRatesProp))
-                keyboard()
-            end
             
             this.fAdsorptionHeatFlow = - sum((this.mfFlowRatesProp ./ this.oMT.afMolarMass) .* this.mfAbsorptionEnthalpy);
             this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
@@ -199,6 +203,16 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             this.setMatterProperties(fAdsorptionFlowRate, arPartialsAdsorption);
             
+            try
+                % try to set the adsorption heat flow to the thermal
+                % solver, note this requires the parent system to have some
+                % specific properties
+                csCycle = {'One', 'Two'};
+                oCapacity = this.oStore.oContainer.poCapacities(this.oStore.oContainer.tThermalNetwork.(['csNodes_Flow_Cycle',csCycle{this.oStore.oContainer.iCycleActive}]){this.iCell,1});
+                oCapacity.oHeatSource.setPower(this.fAdsorptionHeatFlow);
+            catch
+               % do nothing, no thermal solver heat source attached 
+            end
             this.fLastExec = this.oTimer.fTime;
         end
     end

@@ -71,6 +71,7 @@ classdef branch < solver.matter.manual.branch
             % mass constant (with the flowrate specified here) for negative
             % ones it will allow a mass decrease.
             this.fAllowedFlowRate = fFlowRate;
+            this.update();
         end
     end
     
@@ -128,7 +129,7 @@ classdef branch < solver.matter.manual.branch
                     % mass of the phase into which the flowrates has
                     % changed is considered adjacent and has to be updated
                     % again!
-                    if (oExme.iSign == -1 && oBranch.oHandler.bPositiveFlowDirection) || (oExme.iSign == 1 && ~oBranch.oHandler.bPositiveFlowDirection)
+                    if ((oExme.iSign == -1 && oBranch.oHandler.bPositiveFlowDirection) || (oExme.iSign == 1 && ~oBranch.oHandler.bPositiveFlowDirection)) && oBranch.oHandler.bActive
                         this.aoAdjacentResidualSolver(end+1) = oBranch;
                     end
                 end
@@ -178,7 +179,7 @@ classdef branch < solver.matter.manual.branch
             % manual solver update has to be called even if the overall
             % flowrate did not change, because the composition of the phase
             % can have changed!
-            update@solver.matter.manual.branch(this);
+            update@solver.matter.base.branch(this, this.fRequestedFlowRate);
                 
             if (fResidualFlowRate ~= this.fResidualFlowRatePrev)
             
