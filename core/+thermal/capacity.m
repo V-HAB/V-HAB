@@ -65,6 +65,15 @@ classdef capacity < base
             
         end
         
+        function setThermalSolverHeatFlow(this, fHeatFlow)
+            
+            if this.bBoundary
+                return; % We're done here.
+            end
+            
+            this.oMatterObject.setThermalSolverHeatFlow(fHeatFlow);
+        end
+        
         function changeInnerEnergy(this, fEnergyChange)
             
             this.fEnergyDiff = fEnergyChange;

@@ -313,6 +313,9 @@ classdef CHX < vsys
     
     methods
         
+        function ThermalUpdate(this)
+            this.update();
+        end
         function update(this)
             
             % We skip the very first update because some of the flow rates
@@ -395,8 +398,8 @@ classdef CHX < vsys
                 Fluid_2.Dynamic_Viscosity       = fDynVisc_2;
                 Fluid_2.Density                 = fDensity_2;
                 Fluid_2.Thermal_Conductivity    = fConductivity_2;
-                Fluid_2.Heat_Capacity           = fCp_2;      
-
+                Fluid_2.Heat_Capacity           = fCp_2;
+                
                 %function call for HX_main to get outlet values
                 % as first value the this struct from object HX is given to
                 % the function HX_main

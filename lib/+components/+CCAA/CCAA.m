@@ -13,14 +13,21 @@ classdef CCAA < vsys
         %Variable to decide wether the CCAA is active or not. Used for the
         %Case study to make it easier to switch them on or off
         bActive = true;
+        
     end
     properties
         bKickValveAktivated = 0;            % Variable used to execute the kick valve
         fKickValveAktivatedTime = 0;        % Variable used to execute the kick valve
         
         mfCHXAirFlow;                      % Table used to calculate the flow rates of the ARS valve
-        rTCCV_ratio;                        % Starting opening angle of the TCCV valve 0.025974
+        fTCCV_Angle = 40;                % opening angle of the TCCV valve, set inititally to the medium value (min is 9° max is 84°)
         
+        % The CHX data is given for 50 to 450 cfm so the CCAA
+        % should have at least 450 cfm of inlet flow that can enter
+        % the CHX. And 450 cfm are 0.2124 m^3/s
+        % cfm = cubic feet per minute
+        fVolumetricFlowRate = 0.2;
+            
         % relative humidity in the connected module
         rRelHumidity = 0.45;
         
@@ -64,19 +71,25 @@ classdef CCAA < vsys
         % Percental Change allowed to Massflow/Pressure/Composition of
         % Flow before CHX is recalculated
         fPercentChange = 0.025;
+        
+        % Intended temperature set by the crew in K
+        fTemperatureSetPoint = 295.35;
+        %ICES 2015-27: "...history shows that the crew generally keeps 
+        %the temperature inside the USOS at or above 22.2C (72F)..."
+        %Here assumption that this is the nominal temperature used
+        %throughout ISS 
+        
+        % Time at which the temperature started to deviate from the set
+        % point by more than 0.5 K
+        fErrorTime = 0;
     end
     
     methods 
-        function this = CCAA (oParent, sName, fTimeStep, rTCCV_InitialAngle, fCoolantTemperature, tAtmosphere, sCDRA, fCDRA_FlowRate)
+        function this = CCAA (oParent, sName, fTimeStep, fCoolantTemperature, tAtmosphere, sCDRA, fCDRA_FlowRate)
             % The time step has to be set since the exec function will not
             % be called frequently otherwise
             this@vsys(oParent, sName, fTimeStep);
             
-            % saves the current value for the Temperature Check and Control
-            % Valve angle ratio. That ratio determines how much air is
-            % channeled through the CHX and how much just goes back to the
-            % cabin
-            this.rTCCV_ratio = rTCCV_InitialAngle;
             % CCAA coolant temperature
             this.fCoolantTemperature = fCoolantTemperature;
             % Struct containing basic atmospheric values used in the phase
@@ -89,9 +102,9 @@ classdef CCAA < vsys
             % which normaly contains the subsystem name for the asccoiated
             % CDRA empty. If it is empty it is assumed that this CCAA does
             % not have a CDRA connected to it.
-            if (nargin > 6) && ~isempty(sCDRA)
+            if (nargin > 5) && ~isempty(sCDRA)
                 this.sCDRA = sCDRA;
-                if nargin > 7
+                if nargin > 6
                     this.fCDRA_FlowRate = fCDRA_FlowRate;
                 end
             else
@@ -256,6 +269,43 @@ classdef CCAA < vsys
                 end
             end
             
+            fInFlow = this.fVolumetricFlowRate*this.oAtmosphere.fDensity;
+            fError = this.fTemperatureSetPoint - this.oAtmosphere.fTemperature;
+            
+            if this.fErrorTime == 0
+                this.fErrorTime = this.oTimer.fTime;
+            end
+            % Proportional Part of the control logic:
+            fNew_TCCV_Angle = this.fTCCV_Angle + 3.42 * fError + 0.023 * (this.oTimer.fTime - this.fErrorTime);
+            
+            % limits the TCCV angle
+            if fNew_TCCV_Angle < 9
+                fNew_TCCV_Angle = 9;
+            elseif fNew_TCCV_Angle > 84
+                fNew_TCCV_Angle = 84;
+            end
+            this.fTCCV_Angle = fNew_TCCV_Angle;
+          	%fTCCV_Angle = (this.rTCCV_ratio) * 77 + 3;
+            
+            this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fInFlow);
+
+            if ~isempty(this.sCDRA)
+                fInFlow2 = -this.toBranches.CDRA_TCCV.oHandler.fFlowRate;
+            else
+                fInFlow2 = 0;
+            end
+
+            % Uses the interpolation for the TCCV to calculate the
+            % percentage of flow entering the CHX
+            fFlowPercentageCHX = this.Interpolation(fNew_TCCV_Angle);
+            % Gets the two flow rates exiting the TCCV
+            fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
+
+            this.toBranches.TCCV_Cabin.oHandler.setFlowRate((fInFlow+fInFlow2) - fTCCV_To_CHX_FlowRate);
+
+            this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
+
+            
             if this.bActive == 1
                 %% Setting of initial flow rates
                 %allowed coolant flow is between 600 and 1290 lb/hr but the CHX
@@ -306,6 +356,47 @@ classdef CCAA < vsys
             % Flow before CHX is recalculated
             this.fPercentChange = fPercentChange;
         end
+        
+        function setTemperature(this, fTemperature)
+            this.fTemperatureSetPoint = fTemperature;
+            
+            
+            fInFlow = this.fVolumetricFlowRate *this.oAtmosphere.fDensity;
+            fError = this.fTemperatureSetPoint - this.oAtmosphere.fTemperature;
+            
+            if this.fErrorTime == 0
+                this.fErrorTime = this.oTimer.fTime;
+            end
+            % Proportional Part of the control logic:
+            fNew_TCCV_Angle = this.fTCCV_Angle + 3.42 * fError + 0.023 * (this.oTimer.fTime - this.fErrorTime);
+            
+            % limits the TCCV angle
+            if fNew_TCCV_Angle < 9
+                fNew_TCCV_Angle = 9;
+            elseif fNew_TCCV_Angle > 84
+                fNew_TCCV_Angle = 84;
+            end
+            this.fTCCV_Angle = fNew_TCCV_Angle;
+          	%fTCCV_Angle = (this.rTCCV_ratio) * 77 + 3;
+            
+            this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fInFlow);
+
+            if ~isempty(this.sCDRA)
+                fInFlow2 = -this.toBranches.CDRA_TCCV.oHandler.fFlowRate;
+            else
+                fInFlow2 = 0;
+            end
+
+            % Uses the interpolation for the TCCV to calculate the
+            % percentage of flow entering the CHX
+            fFlowPercentageCHX = this.Interpolation(fNew_TCCV_Angle);
+            % Gets the two flow rates exiting the TCCV
+            fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
+
+            this.toBranches.TCCV_Cabin.oHandler.setFlowRate((fInFlow+fInFlow2) - fTCCV_To_CHX_FlowRate);
+
+            this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
+        end
     end
     
      methods (Access = protected)
@@ -341,7 +432,7 @@ classdef CCAA < vsys
             % should have at least 450 cfm of inlet flow that can enter
             % the CHX. And 450 cfm are 0.2124 m^3/s
             % cfm = cubic feet per minute
-            fInFlow = 0.2124*this.oAtmosphere.fDensity;
+            fInFlow = this.fVolumetricFlowRate*this.oAtmosphere.fDensity;
             
             fPercentalFlowChange = abs((this.toBranches.CCAA_In_FromCabin.fFlowRate + fInFlow)/(this.toBranches.CCAA_In_FromCabin.fFlowRate));
             
@@ -369,7 +460,9 @@ classdef CCAA < vsys
             % If the inlet flow changed by less than 1% and the humidity
             % changed by less than 1% it is not necessary to recalculate
             % the CCAA
-            if (fPercentalFlowChange < 0.01) && (fHumidityChange < 0.01)
+            
+            fError = this.fTemperatureSetPoint - this.oAtmosphere.fTemperature;
+            if (fPercentalFlowChange < 0.01) && (fHumidityChange < 0.01) && (fError < 0.5)
                 return
             end
             
@@ -380,43 +473,50 @@ classdef CCAA < vsys
             %Otherwise the control logic would depend on the time step used
             %in the system
             %Note: A low TCCV angle results in a high flow through the
-            %CHX! Meaning for high humidity the angle has to increase
-            %and vice versa
-            if this.rRelHumidity > 0.45 && this.rTCCV_ratio > 0
-                this.rTCCV_ratio = this.rTCCV_ratio - 0.0256 * this.fTimeStep; 
-            elseif this.rRelHumidity < 0.35 && this.rTCCV_ratio < 1
-                this.rTCCV_ratio = this.rTCCV_ratio + 0.0256 * this.fTimeStep;
+            %CHX!
+            % Furthermore the actual control logic as discussed in the
+            % original thesis by Christof Roth only controls the
+            % temperature and the humidity is only passivly controlled.
+            % Controll logic based on figure 6-14 from DA by Christof Roth
+            
+            if abs(fError) < 0.5
+                this.fErrorTime = 0;
+                return
+            end
+            
+            if this.fErrorTime == 0
+                this.fErrorTime = this.oTimer.fTime;
+            end
+            % Proportional Part of the control logic:
+            fNew_TCCV_Angle = this.fTCCV_Angle + 3.42 * fError + 0.023 * fError * (this.oTimer.fTime - this.fErrorTime);
+            
+            % limits the TCCV angle
+            if fNew_TCCV_Angle < 9
+                fNew_TCCV_Angle = 9;
+            elseif fNew_TCCV_Angle > 84
+                fNew_TCCV_Angle = 84;
+            end
+            this.fTCCV_Angle = fNew_TCCV_Angle;
+          	%fTCCV_Angle = (this.rTCCV_ratio) * 77 + 3;
+            
+            this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fInFlow);
+
+            if ~isempty(this.sCDRA)
+                fInFlow2 = -this.toBranches.CDRA_TCCV.oHandler.fFlowRate;
+            else
+                fInFlow2 = 0;
             end
 
-            if this.rTCCV_ratio > 1
-                this.rTCCV_ratio = 1;
-            elseif this.rTCCV_ratio < 0
-                this.rTCCV_ratio = 0;
-            end
-                
-          	fTCCV_Angle = (this.rTCCV_ratio) * 77 + 3;
-            
-            if this.oTimer.fTime > 5
-                
-                this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fInFlow);
-                
-                if ~isempty(this.sCDRA)
-                    fInFlow2 = -this.toBranches.CDRA_TCCV.oHandler.fFlowRate;
-                else
-                    fInFlow2 = 0;
-                end
-                
-                % Uses the interpolation for the TCCV to calculate the
-                % percentage of flow entering the CHX
-                fFlowPercentageCHX = this.Interpolation(fTCCV_Angle);
-                % Gets the two flow rates exiting the TCCV
-                fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
-                
-                this.toBranches.TCCV_Cabin.oHandler.setFlowRate((fInFlow+fInFlow2) - fTCCV_To_CHX_FlowRate);
-                
-                this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
-                
-            end
+            % Uses the interpolation for the TCCV to calculate the
+            % percentage of flow entering the CHX
+            fFlowPercentageCHX = this.Interpolation(fNew_TCCV_Angle);
+            % Gets the two flow rates exiting the TCCV
+            fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
+
+            this.toBranches.TCCV_Cabin.oHandler.setFlowRate((fInFlow+fInFlow2) - fTCCV_To_CHX_FlowRate);
+
+            this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
+
         end
 	end
 end

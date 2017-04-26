@@ -260,7 +260,13 @@ classdef timer < base
 %                 this.tDebug(mod(this.iTick, 101)+1).fTimeStep   = fThisStep;
 %             end
             
-            %%
+            %% executing post ticks
+            % in order to improve the simulation speed the post tick call
+            % backs are not removed after they have been executed. This may
+            % be confusing since it seems (from looking at chPostTick) that
+            % very many call backs are executed, however only the call
+            % backs of each priority from the indices 1 to aiPostTickMax of
+            % the respective prio are actually executed!
             
             % Just to make sure - prio 2 could attach postTick to prio -1
             while any(this.aiPostTickMax ~= 0)

@@ -123,7 +123,11 @@ classdef dummymatter < matter.store & event.source
             this.fTemperature = this.oPhase.fTemperature;
             
         end
-        
+        function setThermalSolverHeatFlow(this, fHeatFlow)
+            this.oPhase.setThermalSolverHeatFlow(fHeatFlow);
+            this.fTemperature       = this.oPhase.fTemperature;
+            this.fTotalHeatCapacity = this.oPhase.fTotalHeatCapacity;
+        end
         function changeInnerEnergy(this, fEnergyChange)
             % Accepts a change in inner energy in |J| to calculate a
             % temperature change of the store and/or its phase.

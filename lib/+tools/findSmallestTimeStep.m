@@ -39,7 +39,7 @@ if isa(oInput, 'event.timer')
         oCaller = tInfo.workspace{1}.this;
         
         if isa(oCaller, 'matter.phase')
-            csReports{iIndex} = ['In the system ', oCaller.oStore.oContainer.sName, ' in Store ', oCaller.oStore.sName, ' in Phase ', oCaller.sName, ' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oInput.iTick)];
+            csReports{iIndex} = ['In the system ', oCaller.oStore.oContainer.sName, ' in Store ', oCaller.oStore.sName, ' in Phase ', oCaller.sName, ' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oInput.iTick), ' for the function ', tInfo.function];
         
         elseif isa(oCaller, 'matter.store')
             csReports{iIndex} = ['In the system ', oCaller.oContainer.sName, ' in Store ', oCaller.sName, ' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oInput.iTick)];
@@ -55,7 +55,7 @@ if isa(oInput, 'event.timer')
     % if the limit is undercut the program will display the location of the
     % minimal timestep in the command window (if you want to debug, just
     % set a break point in here
-    if fMinStep < fLimit
+    if fMinStep < fLimit && fMinStep > 0
         for iReport = 1:length(csReports)
             disp(csReports{iReport});
         end

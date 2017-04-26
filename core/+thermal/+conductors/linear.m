@@ -25,12 +25,12 @@ classdef linear < thermal.conductor
             
         end
         
-        function setConductivity(this, fConductivity)
-            % Store conductivity.
-            this.fConductivity = fConductivity;
-            
-            this.oVsys.taint();
-        end
+%         function setConductivity(this, fConductivity)
+%             % Store conductivity.
+%             this.fConductivity = fConductivity;
+%             
+%             this.oVsys.taint();
+%         end
         
     end
     

@@ -327,7 +327,22 @@ classdef container < sys
             this.throw('container:removeConductor', 'Conductor with name "%s" does not exist!', sName);
             
         end
-        
+        function setNodeHeatFlows(this, mfHeatFlows)
+            % Loop over all node objects and notify them about the inner
+            % energy change.
+            for sNode = this.piCapacityIndices.keys
+                
+                % Get index of current node.
+                iIndex = this.tiCapacityIndices.(sNode{1}); 
+                
+                % Get the node object.
+                oNode = this.poCapacities(sNode{1});
+                
+                % Notify the node about the energy change.
+                oNode.setThermalSolverHeatFlow(mfHeatFlows(iIndex));
+                
+            end
+        end
         function changeNodesInnerEnergy(this, mEnergyChange)
             
             % Loop over all node objects and notify them about the inner

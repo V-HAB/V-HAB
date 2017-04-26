@@ -49,7 +49,9 @@ classdef Temp_Dummy < matter.procs.f2f
                 this.fHeatFlow = sign(this.fHeatFlow) * this.fMaxHeatFlow;
             end
         end
-        
+        function ThermalUpdate(this)
+            this.updateManualSolver();
+        end
         function setActive(this, bActive, ~)
             this.bActive = bActive;
         end
