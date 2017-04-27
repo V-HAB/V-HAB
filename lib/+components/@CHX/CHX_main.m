@@ -862,8 +862,8 @@ elseif strcmpi(sHX_type, 'ISS CHX')
     
     % factor to represent the changes in coolant to air flow
     fFactor = ((((falpha_pipe - 24.76)/9.6) + ((7323.9 - falpha_o)/7583.4))) * 0.29;
-    if fFactor > 1
-        fFactor = 1;
+    if fFactor > 0.5
+        fFactor = 0.5;
     elseif fFactor < 0
         fFactor = 0;
     end
