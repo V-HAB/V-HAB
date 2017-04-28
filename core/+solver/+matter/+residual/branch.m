@@ -23,7 +23,7 @@ classdef branch < solver.matter.manual.branch
         
         fAllowedFlowRate = 0;
         
-        fLastUpdate = -1;
+        fLastUpdateTime = -1;
     end
     
     
@@ -180,7 +180,7 @@ classdef branch < solver.matter.manual.branch
                 
             if (this.fRequestedFlowRate ~= this.fResidualFlowRatePrev)
                 update@solver.matter.base.branch(this, this.fRequestedFlowRate);
-                this.fLastUpdate = this.oBranch.oTimer.fTime;
+                this.fLastUpdateTime = this.oBranch.oTimer.fTime;
                 if this.bMultipleResidualSolvers
                     % If there are multiple residual solvers attached to the
                     % same phase as this residual solver, and the flowrate of
@@ -207,9 +207,9 @@ classdef branch < solver.matter.manual.branch
                     oPhase = this.oBranch.coExmes{2}.oPhase;
                 end
                 
-                if oPhase.fLastMassUpdate > this.fLastUpdate
+                if oPhase.fLastMassUpdate > this.fLastUpdateTime
                     update@solver.matter.base.branch(this, this.fRequestedFlowRate);
-                    this.fLastUpdate = this.oBranch.oTimer.fTime;
+                    this.fLastUpdateTime = this.oBranch.oTimer.fTime;
                 end
 
                 this.oBranch.setUpdated();
