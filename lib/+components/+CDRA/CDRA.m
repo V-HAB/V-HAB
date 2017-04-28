@@ -1140,14 +1140,12 @@ classdef CDRA < vsys
                 sCycle = 'Two';
             end
             
-            for iPhase = 1:length(this.tMassNetwork.(['aoPhasesCycle', sCycle]))
-               this.tMassNetwork.(['aoPhasesCycle', sCycle])(iPhase).fFixedTS = [];
-            end
             %% Adsorption Flow Rate Calculiation
             % here only the flowrates in the current adsorption cycle are
             % recalculated
             aoBranches  = this.tMassNetwork.(['aoBranchesCycle',sCycle]);
             aoPhases    = this.tMassNetwork.(['aoPhasesCycle',sCycle]);
+            aoAbsorber  = this.tMassNetwork.(['aoAbsorberCycle',sCycle]);
             
             % The logic used to calculate the flow rates is as follows:
             %
@@ -1162,6 +1160,8 @@ classdef CDRA < vsys
             % temperature!.
            	mfCellPressure(:,1)     = [aoPhases.fPressure];
            	mfCellMass(:,1)         = [aoPhases.fMass];
+            mrPartialMasses         = reshape([aoPhases.arPartialMass], this.oMT.iSubstances, [])';
+            mfFlowRates(:,1)        = [aoBranches.fFlowRate];
             
             % In order to get the flow rate calculation to higher
             % speeds at each cycle change the phases are preset to
@@ -1173,17 +1173,7 @@ classdef CDRA < vsys
                 mfPressurePhase(iCell) = aoPhases(end).fPressure + sum(mfPressureDiff(iCell:end));
             end
             mfDeviation = (mfPressurePhase - mfCellPressure) ./ mfPressurePhase;
-            % Now the time step can be calculated by using the maximum
-            % allowable mass change within one step (Basically the time
-            % step is 1/ Times Max Mass Change. For large mass changes it
-            % therefore is small and for small mass changes it is large ;)
-            fTimeStep = min(abs(this.rMaxChange ./ mfDeviation));
-            if fTimeStep > this.fMaximumTimeStep
-                fTimeStep = this.fMaximumTimeStep;
-            elseif fTimeStep  <= this.fMinimumTimeStep
-                fTimeStep = this.fMinimumTimeStep;
-            end
-
+            
             % First branch has to be supply the main flowrate (in case it
             % was changed)
             aoBranches(1).oHandler.setFlowRate(- this.fFlowrateMain);
@@ -1195,6 +1185,44 @@ classdef CDRA < vsys
             % all the following branches as well
                 aoBranches(iBranch).oHandler.setAllowedFlowRate(mfMassChangeRate(iBranch-1));
             end
+            
+            mfPartialFlowRates = mrPartialMasses .* mfFlowRates;
+            mfCellPartialMass = mfCellMass .* mrPartialMasses;
+            
+            arMaxPartialMassChange = zeros(1,this.oMT.iSubstances);
+            arMaxPartialMassChange(this.oMT.tiN2I.CO2) = 0.75;
+            arMaxPartialMassChange(this.oMT.tiN2I.H2O) = 0.75;
+            
+            mfCellPartialMass(mfCellPartialMass < 1e-8 & mfCellPartialMass > 0) = 1e-8;
+            arPartialChangeToPartials = abs(mfPartialFlowRates ./ tools.round.prec(mfCellPartialMass, this.oTimer.iPrecision));
+            arPartialChangeToPartials(mfCellPartialMass == 0) = 0;
+
+            afNewStepPartialChangeToPartials = arMaxPartialMassChange ./ arPartialChangeToPartials;
+            afNewStepPartialChangeToPartials(:,arMaxPartialMassChange == 0) = inf;
+
+            fNewStepPartialChangeToPartials = min(min(afNewStepPartialChangeToPartials));
+            
+            % Now the time step can be calculated by using the maximum
+            % allowable mass change within one step (Basically the time
+            % step is 1/ Times Max Mass Change. For large mass changes it
+            % therefore is small and for small mass changes it is large ;)
+            fTimeStep = min(min(abs(this.rMaxChange ./ mfDeviation)), fNewStepPartialChangeToPartials);
+            
+            if fTimeStep > this.fMaximumTimeStep
+                fTimeStep = this.fMaximumTimeStep;
+            elseif fTimeStep  <= this.fMinimumTimeStep
+                fTimeStep = this.fMinimumTimeStep;
+            end
+            
+            for iPhase = 1:length(aoPhases)
+               aoPhases(iPhase).fFixedTS = fTimeStep;
+            end
+                        
+            % Manual update of the adsorption P2Ps with this time step!
+            for iAbsorber = 1:length(aoAbsorber)
+                aoAbsorber(iAbsorber).ManualUpdate(fTimeStep);
+            end
+            
             % Usefull code for debugging :)
             % Intended new cell masses on next tick, if this is not the
             % case use for debugging ;)
@@ -1212,6 +1240,9 @@ classdef CDRA < vsys
             this.tTimeProperties.AdsorptionLastExec = this.oTimer.fTime;
             this.tTimeProperties.AdsorptionStep = fTimeStep;
             
+            for iPhase = 1:length(aoPhases)
+               aoPhases(iPhase).fFixedTS = [];
+            end
         end
         function updateFlowratesDesorption(this, ~)
             
@@ -1277,6 +1308,10 @@ classdef CDRA < vsys
                     aoBranches(iBranch).oHandler.setAllowedFlowRate(0);
                 end
                 this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
+            end
+            
+            for iPhase = 1:length(aoPhases)
+               aoPhases(iPhase).fFixedTS = this.tTimeProperties.DesorptionStep;
             end
             
             %% Set the heater power for the desorption cells

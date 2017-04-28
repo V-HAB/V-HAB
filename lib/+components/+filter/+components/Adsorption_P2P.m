@@ -1,7 +1,5 @@
 classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
-    
-    
-    
+    % TO DO: Descriptiom, plus comments for properties
     properties
         mfMassTransferCoefficient;
         
@@ -18,9 +16,12 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         
         mfFlowRatesProp;
         
-        fLastExec = 0;
     end
     
+    properties (SetAccess = protected, GetAccess = public)
+        fLastExec = 0;
+        fTimeStep;
+    end
    
     
     methods
@@ -54,13 +55,10 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             end
             this.mfAbsorptionEnthalpy = mfAbsorptionEnthalpyHelper;
         end
-        function update(this,~)
-            
-            % TO DO: I need the next execution time here, not the previous!
-            fTimeStep = this.oTimer.fTime - this.fLastExec;
-            if fTimeStep <= 0
-                return
-            end
+        function update(~)
+        end
+        function ManualUpdate(this, fTimeStep)
+            this.fTimeStep = fTimeStep;
             
             afMass          = this.oOut.oPhase.afMass;
             fTemperature    = this.oIn.oPhase.fTemperature;
@@ -147,8 +145,12 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             %
             % This equation is now used to calculate the new mass of the
             % substance in the gas phase after the time step:
-            mfNewFlowMass = (mfCurrentFlowMass + mfCurrentLoading .* (1 - exp(-this.mfMassTransferCoefficient.*fTimeStep)))...
-                            ./ (1 + ((mfLinearConstant .* mfGasConstant .* fGasTemperature) / fGasVolume) .* (1 - exp(-this.mfMassTransferCoefficient.*fTimeStep)));
+            % Additionally the influence of the inflow mass over this time
+            % is considered by adding the current total in outs of the flow
+            % phase in the calculation (has to be removed from the absorber
+            % mass calculation) % + this.oIn.oPhase.afCurrentTotalInOuts * fTimeStep 
+            mfNewFlowMass = (mfCurrentFlowMass + (this.oIn.oFlow.fFlowRate .* this.oIn.oFlow.arPartialMass) * fTimeStep + mfCurrentLoading .* (1 - exp(-this.mfMassTransferCoefficient.*this.fTimeStep)))...
+                            ./ (1 + ((mfLinearConstant .* mfGasConstant .* fGasTemperature) / fGasVolume) .* (1 - exp(-this.mfMassTransferCoefficient.*this.fTimeStep)));
             %
             % If you want to understand what is happening, set a breakpoint
             % here and use the following outcommented code to generate a
@@ -166,9 +168,9 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
 %             mfFlowMass(1) = mfCurrentFlowMass(this.oMT.tiN2I.CO2);
 %             mfAbsorberMass(1) = mfCurrentLoading(this.oMT.tiN2I.CO2);
 %             for iStep = 1:iSteps
-%                 mfFlowMass(iStep+1) = (mfFlowMass(iStep) + mfAbsorberMass(iStep) .* (1 - exp(-this.mfMassTransferCoefficient(this.oMT.tiN2I.CO2).*fTS)))...
+%                 mfFlowMass(iStep+1) = (mfFlowMass(iStep) + this.oIn.oPhase.afCurrentTotalInOuts(this.oMT.tiN2I.CO2) * fTimeStep + mfAbsorberMass(iStep) .* (1 - exp(-this.mfMassTransferCoefficient(this.oMT.tiN2I.CO2).*fTS)))...
 %                             ./ (1 + ((mfLinearConstant(this.oMT.tiN2I.CO2) .* mfGasConstant(this.oMT.tiN2I.CO2) .* fGasTemperature) / fGasVolume) .* (1 - exp(-this.mfMassTransferCoefficient(this.oMT.tiN2I.CO2).*fTS)));
-%                 mfAbsorberMass(iStep+1) = mfAbsorberMass(iStep) + (mfFlowMass(iStep) - mfFlowMass(iStep+1));
+%                 mfAbsorberMass(iStep+1) = mfAbsorberMass(iStep) + (mfFlowMass(iStep) + (this.oIn.oPhase.afCurrentTotalInOuts(this.oMT.tiN2I.CO2) * fTimeStep) - mfFlowMass(iStep+1));
 %             end
 %             close all
 %             plot(mfFlowMass)
@@ -178,9 +180,10 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
 
             % the mass change for the absorber then obviously has to be the
             % difference between the current and the new flow mass
-            mfMassChangeAbsorber = mfCurrentFlowMass - mfNewFlowMass;
+            mfMassChangeAbsorber = mfCurrentFlowMass + (this.oIn.oFlow.fFlowRate .* this.oIn.oFlow.arPartialMass) * fTimeStep - mfNewFlowMass;
+            mfMassChangeAbsorber(mfLinearConstant == 0) = 0;
             
-            this.mfFlowRatesProp = mfMassChangeAbsorber ./ fTimeStep;
+            this.mfFlowRatesProp = mfMassChangeAbsorber ./ this.fTimeStep;
             
             this.fAdsorptionHeatFlow = - sum((this.mfFlowRatesProp ./ this.oMT.afMolarMass) .* this.mfAbsorptionEnthalpy);
             this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;

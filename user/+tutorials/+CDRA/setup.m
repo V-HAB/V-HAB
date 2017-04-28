@@ -62,6 +62,9 @@ classdef setup < simulation.infrastructure
 
                         oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Absorber_',num2str(iCell)],  'afMass(this.oMT.tiN2I.CO2)',   'kg',   ['Partial Mass CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
                         oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Absorber_',num2str(iCell)],  'afMass(this.oMT.tiN2I.H2O)',   'kg',   ['Partial Mass H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toProcsP2P.AdsorptionProcessor_',num2str(iCell)],  'mfFlowRatesProp(this.oMT.tiN2I.CO2)',   'kg/s',   ['Absorber Flowrate CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toProcsP2P.AdsorptionProcessor_',num2str(iCell)],  'mfFlowRatesProp(this.oMT.tiN2I.H2O)',   'kg/s',   ['Absorber Flowrate H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
                     end
                 end
             end
@@ -94,6 +97,8 @@ classdef setup < simulation.infrastructure
             csCDRA_H2O_Pressure         = cell(3,2,max(miCellNumber));
             csCDRA_Flow_Temperature     = cell(3,2,max(miCellNumber));
             csCDRA_Absorber_Temperature = cell(3,2,max(miCellNumber));
+            csCDRA_Absorber_FlowrateCO2 = cell(3,2,max(miCellNumber));
+            csCDRA_Absorber_FlowrateH2O = cell(3,2,max(miCellNumber));
             
             for iType = 1:3
                 for iBed = 1:2
@@ -106,6 +111,9 @@ classdef setup < simulation.infrastructure
 
                          csCDRA_Flow_Temperature{iType,iBed,iCell}      = ['Flow Temperature ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
                          csCDRA_Absorber_Temperature{iType,iBed,iCell}  = ['Absorber Temperature ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
+                         
+                         csCDRA_Absorber_FlowrateCO2{iType,iBed,iCell}  = ['Absorber Flowrate CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
+                         csCDRA_Absorber_FlowrateH2O{iType,iBed,iCell}  = ['Absorber Flowrate H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)];
                     end
                 end
             end
@@ -116,6 +124,8 @@ classdef setup < simulation.infrastructure
             oPlot.definePlot(csCDRA_H2O_Pressure,           'Partial Pressure H2O CDRA');
             oPlot.definePlot(csCDRA_Flow_Temperature,       'Flow Temperature CDRA');
             oPlot.definePlot(csCDRA_Absorber_Temperature,   'Absorber Temperature CDRA');
+            oPlot.definePlot(csCDRA_Absorber_FlowrateCO2,   'Absorber Flowrate CO2 CDRA');
+            oPlot.definePlot(csCDRA_Absorber_FlowrateH2O,   'Absorber Flowrate H2O CDRA');
             
             csNames = {'- 1 * ( CDRA CO2 Inlet Flow 1 + CDRA CO2 Inlet Flow 2 )', 'CDRA CO2 Outlet Flow 1 + CDRA CO2 Outlet Flow 2'};
             oPlot.definePlot(csNames,  'CDRA CO2 Flowrates');
