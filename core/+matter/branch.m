@@ -750,7 +750,9 @@ classdef branch < base & event.source
             
             % No pressure? Distribute equally.
             if nargin < 3 || isempty(afPressure)
-                fPressureDiff = (this.coExmes{1}.getPortProperties() - this.coExmes{2}.getPortProperties());
+                % TO DO: Why use get port properties, is it really
+                % necessary to include the mass change in this calculation?
+                fPressureDiff = (this.coExmes{1}.oPhase.fPressure - this.coExmes{2}.oPhase.fPressure);
                 
                 % Each flow proc produces the same pressure drop, the sum
                 % being the actual pressure difference.

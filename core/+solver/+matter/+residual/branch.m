@@ -22,6 +22,8 @@ classdef branch < solver.matter.manual.branch
         bActive = true;
         
         fAllowedFlowRate = 0;
+        
+        fLastUpdate = -1;
     end
     
     
@@ -175,14 +177,10 @@ classdef branch < solver.matter.manual.branch
             this.fRequestedFlowRate = (fResidualFlowRate - this.fAllowedFlowRate) * iDir;
             
             %fprintf('%i\t(%.7fs)\tBranch %s Residual Solver - set Flow Rate %f\n', this.oBranch.oTimer.iTick, this.oBranch.oTimer.fTime, this.oBranch.sName, this.fRequestedFlowRate);
-            
-            % manual solver update has to be called even if the overall
-            % flowrate did not change, because the composition of the phase
-            % can have changed!
-            update@solver.matter.base.branch(this, this.fRequestedFlowRate);
                 
-            if (fResidualFlowRate ~= this.fResidualFlowRatePrev)
-            
+            if (this.fRequestedFlowRate ~= this.fResidualFlowRatePrev)
+                update@solver.matter.base.branch(this, this.fRequestedFlowRate);
+                this.fLastUpdate = this.oBranch.oTimer.fTime;
                 if this.bMultipleResidualSolvers
                     % If there are multiple residual solvers attached to the
                     % same phase as this residual solver, and the flowrate of
@@ -196,10 +194,29 @@ classdef branch < solver.matter.manual.branch
                     end
                 end
             else
+                % manual solver update has to be called even if the overall
+                % flowrate did not change, because the composition of the phase
+                % can have changed!
+                if this.fRequestedFlowRate > 0
+                    oPhase = this.oBranch.coExmes{1}.oPhase;
+                elseif this.fRequestedFlowRate == 0
+                    this.oBranch.setUpdated();
+                    this.oBranch.oHandler.setUpdated();
+                    return
+                else
+                    oPhase = this.oBranch.coExmes{2}.oPhase;
+                end
+                
+                if oPhase.fLastMassUpdate > this.fLastUpdate
+                    update@solver.matter.base.branch(this, this.fRequestedFlowRate);
+                    this.fLastUpdate = this.oBranch.oTimer.fTime;
+                end
+
                 this.oBranch.setUpdated();
                 this.oBranch.oHandler.setUpdated();
+                
             end
-            this.fResidualFlowRatePrev = fResidualFlowRate;
+            this.fResidualFlowRatePrev = this.fRequestedFlowRate;
         end
         end
     

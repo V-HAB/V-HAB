@@ -149,7 +149,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             % is considered by adding the current total in outs of the flow
             % phase in the calculation (has to be removed from the absorber
             % mass calculation) % + this.oIn.oPhase.afCurrentTotalInOuts * fTimeStep 
-            mfNewFlowMass = (mfCurrentFlowMass + (this.oIn.oFlow.fFlowRate .* this.oIn.oFlow.arPartialMass) * fTimeStep + mfCurrentLoading .* (1 - exp(-this.mfMassTransferCoefficient.*this.fTimeStep)))...
+            mfNewFlowMass = (mfCurrentFlowMass + mfCurrentLoading .* (1 - exp(-this.mfMassTransferCoefficient.*this.fTimeStep)))...
                             ./ (1 + ((mfLinearConstant .* mfGasConstant .* fGasTemperature) / fGasVolume) .* (1 - exp(-this.mfMassTransferCoefficient.*this.fTimeStep)));
             %
             % If you want to understand what is happening, set a breakpoint
@@ -180,7 +180,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
 
             % the mass change for the absorber then obviously has to be the
             % difference between the current and the new flow mass
-            mfMassChangeAbsorber = mfCurrentFlowMass + (this.oIn.oFlow.fFlowRate .* this.oIn.oFlow.arPartialMass) * fTimeStep - mfNewFlowMass;
+            mfMassChangeAbsorber = mfCurrentFlowMass - mfNewFlowMass;
+            % (this.oIn.oPhase.toProcsEXME.(['Inflow', this.sCell]).oFlow.fFlowRate .* this.oIn.oFlow.arPartialMass) * fTimeStep
             mfMassChangeAbsorber(mfLinearConstant == 0) = 0;
             
             this.mfFlowRatesProp = mfMassChangeAbsorber ./ this.fTimeStep;

@@ -1074,6 +1074,7 @@ classdef CDRA < vsys
                 end
                 aoPhases = this.tMassNetwork.(['aoPhasesCycle', sCycle]);
                 aoBranches =  this.tMassNetwork.(['aoBranchesCycle', sCycle]);
+                aoAbsorber  = this.tMassNetwork.(['aoAbsorberCycle',sCycle]);
                 
                 mfPressureDiff = this.tGeometry.mfFrictionFactor .* (this.oParent.toChildren.(this.sAsscociatedCCAA).fCDRA_FlowRate)^2;
                 mfPressurePhase = zeros(this.iCells+1,1);
@@ -1089,6 +1090,9 @@ classdef CDRA < vsys
                     end
                 end
                 
+                for iAbsorber = 1:length(aoAbsorber)
+                    aoAbsorber(iAbsorber).ManualUpdate(this.fInitTime/this.iInitStep);
+                end
             elseif mod(this.oTimer.fTime, this.fCycleTime) >= this.fInitTime
                 % the flowrate update function is only called if no cycle
                 % change is occuring in this tick!
@@ -1162,6 +1166,7 @@ classdef CDRA < vsys
            	mfCellMass(:,1)         = [aoPhases.fMass];
             mrPartialMasses         = reshape([aoPhases.arPartialMass], this.oMT.iSubstances, [])';
             mfFlowRates(:,1)        = [aoBranches.fFlowRate];
+            mfAbsorberFlows         = reshape([aoAbsorber.mfFlowRatesProp], this.oMT.iSubstances, [])';
             
             % In order to get the flow rate calculation to higher
             % speeds at each cycle change the phases are preset to
@@ -1187,18 +1192,20 @@ classdef CDRA < vsys
             end
             
             mfPartialFlowRates = mrPartialMasses .* mfFlowRates;
+            mfPartialMassChange = mfPartialFlowRates(1:end-1,:) - mfPartialFlowRates(2:end,:) - mfAbsorberFlows;
+            
             mfCellPartialMass = mfCellMass .* mrPartialMasses;
             
-            arMaxPartialMassChange = zeros(1,this.oMT.iSubstances);
-            arMaxPartialMassChange(this.oMT.tiN2I.CO2) = 0.75;
-            arMaxPartialMassChange(this.oMT.tiN2I.H2O) = 0.75;
+            arMaxPartialMassChange = zeros(this.iCells,this.oMT.iSubstances);
+            arMaxPartialMassChange(:,this.oMT.tiN2I.CO2) = 1;
+            arMaxPartialMassChange(:,this.oMT.tiN2I.H2O) = 1;
             
-            mfCellPartialMass(mfCellPartialMass < 1e-8 & mfCellPartialMass > 0) = 1e-8;
-            arPartialChangeToPartials = abs(mfPartialFlowRates ./ tools.round.prec(mfCellPartialMass, this.oTimer.iPrecision));
-            arPartialChangeToPartials(mfCellPartialMass == 0) = 0;
+            mfCellPartialMass(mfCellPartialMass < 1e-5 & mfCellPartialMass > 0) = 1e-5;
+            arPartialChangeToPartials = abs(mfPartialMassChange ./ tools.round.prec(mfCellPartialMass(1:end-1,:), this.oTimer.iPrecision));
+            arPartialChangeToPartials(mfCellPartialMass(1:end-1,:) == 0) = 0;
 
             afNewStepPartialChangeToPartials = arMaxPartialMassChange ./ arPartialChangeToPartials;
-            afNewStepPartialChangeToPartials(:,arMaxPartialMassChange == 0) = inf;
+            afNewStepPartialChangeToPartials(arMaxPartialMassChange == 0) = inf;
 
             fNewStepPartialChangeToPartials = min(min(afNewStepPartialChangeToPartials));
             
@@ -1297,6 +1304,7 @@ classdef CDRA < vsys
                 aoBranches(end+1) = this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]);
                 
                 for iBranch = 1:length(aoBranches)-1
+                    aoBranches(iBranch).oHandler.setActive(true);
                     aoBranches(iBranch).oHandler.setAllowedFlowRate(mfMassChangeRate(iBranch));
                 end
                 aoBranches(end).oHandler.setFlowRate(-sum(mfMassChangeRate));
