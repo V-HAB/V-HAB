@@ -96,6 +96,9 @@ classdef CDRA < vsys
         % is allowed to change within one tick (increasing this does not
         % necessarily speed up the simulation, but you can try)
         rMaxChange              = 0.1;
+        % Defines the maximum partial mass change (e.g. of H2O) within the
+        % numerical calculation of CDRA
+        arMaxPartialMassChange;
         
         % Sturct to store properties from the last recalculation of phases
         % to decide if they have to be recalculated or not
@@ -105,6 +108,7 @@ classdef CDRA < vsys
         % subcalculations and the last execution time of these
         % subcalculations
         tTimeProperties;
+        
     end
     
     methods
@@ -658,13 +662,13 @@ classdef CDRA < vsys
                 for iP = 1:length(this.toStores.(csStores{iS}).aoPhases)
                     oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
                     if regexp(oPhase.sName, 'Flow')
-                        oPhase.rMaxChange = 0.05;
+                        oPhase.rMaxChange = 0.1;
                         oPhase.arMaxChange(this.oMT.tiN2I.H2O) = 1;
                         oPhase.arMaxChange(this.oMT.tiN2I.CO2) = 1;
                         oPhase.fMaxStep = 60;
                         oPhase.fMinStep = 1e-3;
                     else
-                        oPhase.rMaxChange = 0.05;
+                        oPhase.rMaxChange = 0.1;
                         oPhase.fMaxStep = 60;
                         oPhase.fMinStep = 1e-3;
                     end
@@ -676,6 +680,12 @@ classdef CDRA < vsys
             oPhase.arMaxChange(this.oMT.tiN2I.CO2) = 1;
             oPhase.fMaxStep = 60;
             oPhase.fMinStep = 1e-3;
+            
+            
+            % Sets the rMaxChange of the System
+            this.arMaxPartialMassChange = zeros(this.iCells,this.oMT.iSubstances);
+            this.arMaxPartialMassChange(:,this.oMT.tiN2I.CO2) = 0.5;
+            this.arMaxPartialMassChange(:,this.oMT.tiN2I.H2O) = 0.5;
             
             % adds the lumped parameter thermal solver to calculate the
             % convective and conductive heat transfer
@@ -917,9 +927,9 @@ classdef CDRA < vsys
             % to be in W/K which means it is U*A or in this case
             % 1/sum(R_th): With R_th = s/(lambda * A)
             % Assumes                               0.5 cm of air and                                 1 cm of AL through which conduction has to take place
-            mfTransferCoefficient(1)   	= 1 / ( (0.005/(fThermalConductivity .* fArea13x))       + (0.01/(237 .* fArea13x)) );
-            mfTransferCoefficient(2)    = 1 / ( (0.005/(fThermalConductivity .* fAreaSylobead))  + (0.01/(237 .* fAreaSylobead)) );
-            mfTransferCoefficient(3)   	= 1 / ( (0.005/(fThermalConductivity .* fArea5A))        + (0.01/(237 .* fArea5A)) );
+            mfTransferCoefficient(1)   	= 1 / ( (0.1/(fThermalConductivity .* fArea13x))       + (0.01/(237 .* fArea13x)) );
+            mfTransferCoefficient(2)    = 1 / ( (0.1/(fThermalConductivity .* fAreaSylobead))  + (0.01/(237 .* fAreaSylobead)) );
+            mfTransferCoefficient(3)   	= 1 / ( (0.1/(fThermalConductivity .* fArea5A))        + (0.01/(237 .* fArea5A)) );
             
             % adds a boundary node for the atmosphere around CDRA
             oAtmosphereCapacity = this.addCreateCapacity(oPhase);
@@ -1196,16 +1206,13 @@ classdef CDRA < vsys
             
             mfCellPartialMass = mfCellMass .* mrPartialMasses;
             
-            arMaxPartialMassChange = zeros(this.iCells,this.oMT.iSubstances);
-            arMaxPartialMassChange(:,this.oMT.tiN2I.CO2) = 1;
-            arMaxPartialMassChange(:,this.oMT.tiN2I.H2O) = 1;
             
-            mfCellPartialMass(mfCellPartialMass < 1e-5 & mfCellPartialMass > 0) = 1e-5;
+            mfCellPartialMass(mfCellPartialMass < 1e-5) = 1e-5;
             arPartialChangeToPartials = abs(mfPartialMassChange ./ tools.round.prec(mfCellPartialMass(1:end-1,:), this.oTimer.iPrecision));
             arPartialChangeToPartials(mfCellPartialMass(1:end-1,:) == 0) = 0;
 
-            afNewStepPartialChangeToPartials = arMaxPartialMassChange ./ arPartialChangeToPartials;
-            afNewStepPartialChangeToPartials(arMaxPartialMassChange == 0) = inf;
+            afNewStepPartialChangeToPartials = this.arMaxPartialMassChange ./ arPartialChangeToPartials;
+            afNewStepPartialChangeToPartials(this.arMaxPartialMassChange == 0) = inf;
 
             fNewStepPartialChangeToPartials = min(min(afNewStepPartialChangeToPartials));
             

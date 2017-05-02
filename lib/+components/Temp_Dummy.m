@@ -44,7 +44,7 @@ classdef Temp_Dummy < matter.procs.f2f
                 inFlow = this.aoFlows(1);
             end
             this.fDeltaTemp = (this.fTemperature - inFlow.fTemperature);
-            this.fHeatFlow = (inFlow.fFlowRate*inFlow.fSpecificHeatCapacity)*this.fDeltaTemp;
+            this.fHeatFlow = (abs(inFlow.fFlowRate)*inFlow.fSpecificHeatCapacity)*this.fDeltaTemp;
             if abs(this.fHeatFlow) > this.fMaxHeatFlow
                 this.fHeatFlow = sign(this.fHeatFlow) * this.fMaxHeatFlow;
             end

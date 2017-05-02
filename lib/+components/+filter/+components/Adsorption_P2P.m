@@ -16,6 +16,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         
         mfFlowRatesProp;
         
+        mbIgnoreSmallPressures;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -54,6 +55,12 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 mfAbsorptionEnthalpyHelper = mfAbsorptionEnthalpyHelper + rAbsorberMassRatio * this.oMT.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.mfAbsorptionEnthalpy;
             end
             this.mfAbsorptionEnthalpy = mfAbsorptionEnthalpyHelper;
+
+            this.mbIgnoreSmallPressures = false(1,this.oMT.iSubstances);
+            if ~isempty(regexp(this.oIn.oPhase.oStore.sName, 'Zeolite5A', 'once'))
+                this.mbIgnoreSmallPressures(this.oMT.tiN2I.H2O) = true;
+            end
+            
         end
         function update(~)
         end
@@ -78,12 +85,14 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             % the moment
             % afPP                = arFractions .* 1e5; %this.oIn.oPhase.fPressure;
             
-            % test using only the current partial pressure
             afPP = this.oIn.oPhase.afPP;
             
+            afPP((afPP < 2.5) & this.mbIgnoreSmallPressures) = 0;
+
             [ ~, mfLinearConstant ] = this.oMT.calculateEquilibriumLoading(afMass, afPP, fTemperature);
             
             mfLinearConstant(isnan(mfLinearConstant)) = 0;
+            mfLinearConstant(afPP == 0) = 0;
             if all(mfLinearConstant == 0)
                 return
             end
