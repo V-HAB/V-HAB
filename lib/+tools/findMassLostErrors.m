@@ -13,9 +13,12 @@ function [ ] = findMassLostErrors( oLastSimObj )
     
     fExcessMass = sum(sum(reshape([ oLastSimObj.oSimulationContainer.oMT.aoPhases.afExcessMass ], oLastSimObj.oSimulationContainer.oMT.iSubstances, []),2));
     
-    disp(' ')
+    fRemovedExcessMass = sum(sum(reshape([ oLastSimObj.oSimulationContainer.oMT.aoPhases.afRemovedExcessMass ], oLastSimObj.oSimulationContainer.oMT.iSubstances, []),2));
+    
     disp(' ')
     disp(['The excess mass in all phases currently is: ', num2str(fExcessMass),  'kg'])
+    disp(' ')
+    disp(['The total removed excess mass in all phases currently is: ', num2str(fRemovedExcessMass),  'kg'])
     disp(' ')
     disp('The highest mass losses occured in:') 
     for iI = 1:length(miMaxLostIndices)

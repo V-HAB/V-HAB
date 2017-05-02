@@ -1647,7 +1647,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 
                 % Partial mass change compared to partial mass
                 afCurrentMass = this.afMass;
-                afCurrentMass(this.afMass < 1e-8 & this.afMass > 0) = 1e-8;
+                afCurrentMass(this.afMass < 1e-8) = 1e-8;
                 arPartialChangeToPartials = abs(afChange ./ tools.round.prec(afCurrentMass, this.oTimer.iPrecision));
                 arPartialChangeToPartials(this.afMass == 0) = 0;
                 

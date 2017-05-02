@@ -566,16 +566,9 @@ classdef GreenhouseV2 < vsys
             elseif fCO2_Concentration < 330
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate( ((1e-4 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass) / this.fTimeStep) + 2 * fNominalCO2Flow + 1e-3);
                 this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
-                
-            elseif fCO2_Concentration < 1300
+            else
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate( fNominalCO2Flow );
                 this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
-                
-            else
-                this.toBranches.CO2BufferSupply.oHandler.setFlowRate( 0 );
-                afFlowRate = zeros(1,this.oMT.iSubstances);
-                afFlowRate(this.oMT.tiN2I.CO2) = ((1e-3 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.CO2)) / this.fTimeStep + fNominalCO2Flow + 1e-3);
-                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(afFlowRate);
                 
             end
             

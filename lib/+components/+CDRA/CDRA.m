@@ -669,6 +669,8 @@ classdef CDRA < vsys
                         oPhase.fMinStep = 1e-3;
                     else
                         oPhase.rMaxChange = 0.1;
+                        oPhase.arMaxChange(this.oMT.tiN2I.H2O) = 1;
+                        oPhase.arMaxChange(this.oMT.tiN2I.CO2) = 1;
                         oPhase.fMaxStep = 60;
                         oPhase.fMinStep = 1e-3;
                     end
@@ -1071,6 +1073,7 @@ classdef CDRA < vsys
                 
                 for iPhase = 1:length(this.tMassNetwork.(['aoPhasesCycle', sNewCycle]))
                    this.tMassNetwork.(['aoPhasesCycle', sNewCycle])(iPhase).fFixedTS = this.fInitTime/this.iInitStep;
+                   this.tMassNetwork.(['aoAbsorberPhases',sNewCycle])(iPhase).fFixedTS = this.fInitTime/this.iInitStep;
                 end
                 
                 this.iCycleActive = iNewCycle;
@@ -1102,6 +1105,19 @@ classdef CDRA < vsys
                 
                 for iAbsorber = 1:length(aoAbsorber)
                     aoAbsorber(iAbsorber).ManualUpdate(this.fInitTime/this.iInitStep);
+                end
+                
+                if (this.fInitTime - mod(this.oTimer.fTime, this.fCycleTime)) <= (this.fInitTime/this.iInitStep) 
+                    
+                    if this.iCycleActive == 1
+                        sCycle = 'One';
+                    else
+                        sCycle = 'Two';
+                    end
+                    for iPhase = 1:length(this.tMassNetwork.(['aoPhasesCycle', sCycle]))
+                       this.tMassNetwork.(['aoPhasesCycle', sCycle])(iPhase).fFixedTS = [];
+                       this.tMassNetwork.(['aoAbsorberPhases',sCycle])(iPhase).fFixedTS = [];
+                    end
                 end
             elseif mod(this.oTimer.fTime, this.fCycleTime) >= this.fInitTime
                 % the flowrate update function is only called if no cycle
@@ -1177,7 +1193,7 @@ classdef CDRA < vsys
             mrPartialMasses         = reshape([aoPhases.arPartialMass], this.oMT.iSubstances, [])';
             mfFlowRates(:,1)        = [aoBranches.fFlowRate];
             mfAbsorberFlows         = reshape([aoAbsorber.mfFlowRatesProp], this.oMT.iSubstances, [])';
-            
+
             % In order to get the flow rate calculation to higher
             % speeds at each cycle change the phases are preset to
             % contain pressures close to the final pressure (after the
@@ -1201,11 +1217,10 @@ classdef CDRA < vsys
                 aoBranches(iBranch).oHandler.setAllowedFlowRate(mfMassChangeRate(iBranch-1));
             end
             
-            mfPartialFlowRates = mrPartialMasses .* mfFlowRates;
+       	    mfPartialFlowRates = mrPartialMasses .* mfFlowRates;
             mfPartialMassChange = mfPartialFlowRates(1:end-1,:) - mfPartialFlowRates(2:end,:) - mfAbsorberFlows;
             
             mfCellPartialMass = mfCellMass .* mrPartialMasses;
-            
             
             mfCellPartialMass(mfCellPartialMass < 1e-5) = 1e-5;
             arPartialChangeToPartials = abs(mfPartialMassChange ./ tools.round.prec(mfCellPartialMass(1:end-1,:), this.oTimer.iPrecision));
@@ -1221,17 +1236,17 @@ classdef CDRA < vsys
             % step is 1/ Times Max Mass Change. For large mass changes it
             % therefore is small and for small mass changes it is large ;)
             fTimeStep = min(min(abs(this.rMaxChange ./ mfDeviation)), fNewStepPartialChangeToPartials);
-            
+
             if fTimeStep > this.fMaximumTimeStep
                 fTimeStep = this.fMaximumTimeStep;
             elseif fTimeStep  <= this.fMinimumTimeStep
                 fTimeStep = this.fMinimumTimeStep;
             end
             
-            for iPhase = 1:length(aoPhases)
-               aoPhases(iPhase).fFixedTS = fTimeStep;
-            end
-                        
+%             for iPhase = 1:length(aoPhases)
+%                aoPhases(iPhase).fFixedTS = fTimeStep;
+%             end
+
             % Manual update of the adsorption P2Ps with this time step!
             for iAbsorber = 1:length(aoAbsorber)
                 aoAbsorber(iAbsorber).ManualUpdate(fTimeStep);
@@ -1254,9 +1269,6 @@ classdef CDRA < vsys
             this.tTimeProperties.AdsorptionLastExec = this.oTimer.fTime;
             this.tTimeProperties.AdsorptionStep = fTimeStep;
             
-            for iPhase = 1:length(aoPhases)
-               aoPhases(iPhase).fFixedTS = [];
-            end
         end
         function updateFlowratesDesorption(this, ~)
             
