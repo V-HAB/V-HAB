@@ -317,14 +317,6 @@ classdef Culture3Phases < vsys
                         this.toStores.Plant_Culture.toPhases.Plants.fMass / this.oParent.fTimeStep);
                 end
                 
-                try
-                    this.oParent.update()
-                catch
-                    % it is recommended to couple the update function of
-                    % the parent, if you have any cross influence between
-                    % the parent update and this update function
-                end
-                
                 this.fLastExec = this.oTimer.fTime;
         end
     end

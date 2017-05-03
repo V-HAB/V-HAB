@@ -455,6 +455,9 @@ classdef GreenhouseV2 < vsys
             this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arMaxChange(this.oMT.tiN2I.H2O) = 0.05;
             this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arMaxChange(this.oMT.tiN2I.CO2) = 0.05;
             this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arMaxChange(this.oMT.tiN2I.O2)  = 0.05;
+            
+            this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.bind('PostUpdate',@(~)this.update());
+            
         end
         
         %% Calculate Atmosphere CO2 Concentration

@@ -831,7 +831,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
             end
             
-            %%%this.trigger('update.post');
+            this.trigger('PostUpdate');
         end
 
         %% Calculate Nutritional Content 
