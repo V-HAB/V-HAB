@@ -1306,6 +1306,7 @@ classdef CDRA < vsys
 
             aoPhases = this.tMassNetwork.(['aoPhasesCycle',sCycle])(iStartCell:iStartCell+iDesorbCells-1);
             aoBranches = this.tMassNetwork.(['aoBranchesCycle',sCycle])(iStartCell+1:iStartCell+iDesorbCells-1);
+            aoAbsorbers = this.tMassNetwork.(['aoAbsorberCycle',sCycle])(iStartCell:iStartCell+iDesorbCells-1);
             
             mfCellMass(:,1)     = [aoPhases.fMass];
             mfCellPressure(:,1) = [aoPhases.fPressure];
@@ -1322,8 +1323,10 @@ classdef CDRA < vsys
                 this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]).oHandler.setActive(false);
                 aoBranches(end+1) = this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]);
                 
+                
                 for iBranch = 1:length(aoBranches)-1
                     aoBranches(iBranch).oHandler.setActive(true);
+                    aoBranches(iBranch).oHandler.setPositiveFlowDirection(true);
                     aoBranches(iBranch).oHandler.setAllowedFlowRate(mfMassChangeRate(iBranch));
                 end
                 aoBranches(end).oHandler.setFlowRate(-sum(mfMassChangeRate));
@@ -1332,13 +1335,9 @@ classdef CDRA < vsys
                 this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]).oHandler.setActive(true);
                 
                 for iBranch = 1:length(aoBranches)
-                    aoBranches(iBranch).oHandler.setAllowedFlowRate(0);
+                    aoBranches(iBranch).oHandler.setAllowedFlowRate(mfMassChangeRate(iBranch));
                 end
                 this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
-            end
-            
-            for iPhase = 1:length(aoPhases)
-               aoPhases(iPhase).fFixedTS = this.tTimeProperties.DesorptionStep;
             end
             
             %% Set the heater power for the desorption cells
@@ -1356,6 +1355,7 @@ classdef CDRA < vsys
                 mfPowerDesorbCells(mfPowerDesorbCells > this.fMaxHeaterPower) = this.fMaxHeaterPower/this.tGeometry.Zeolite5A.iCellNumber;
                 mfPower = zeros(this.iCells+this.tGeometry.Zeolite5A.iCellNumber,1);
                 mfPower(this.iCells+1:end) = mfPowerDesorbCells;
+                
                 this.setHeaterPower(mfPower);
             else
                 mfCellTemperature(:,1)     = [this.tMassNetwork.aoAbsorberPhases.fTemperature];
@@ -1375,11 +1375,17 @@ classdef CDRA < vsys
                 this.setHeaterPower(mfPower);
             end
                 
-            for iCell = this.iCells+1:length(this.tThermalNetwork.mfAdsorptionHeatFlow)
-                oCapacity = this.poCapacities(this.tThermalNetwork.(['csNodes_Flow_Cycle',sCycle]){iCell,1});
-                fHeatFlow = this.tThermalNetwork.mfHeaterPower(iCell) + this.tThermalNetwork.mfAdsorptionHeatFlow(iCell);
-                oCapacity.oHeatSource.setPower(fHeatFlow);
+%             for iCell = this.iCells+1:length(this.tThermalNetwork.mfAdsorptionHeatFlow)
+%                 oCapacity = this.poCapacities(this.tThermalNetwork.(['csNodes_Flow_Cycle',sCycle]){iCell,1});
+%                 fHeatFlow = this.tThermalNetwork.mfHeaterPower(iCell) + this.tThermalNetwork.mfAdsorptionHeatFlow(iCell);
+%                 oCapacity.oHeatSource.setPower(fHeatFlow);
+%             end
+            
+            for iPhase = 1:length(aoPhases)
+               aoPhases(iPhase).fFixedTS = this.tTimeProperties.DesorptionStep;
+               aoAbsorbers(iPhase).ManualUpdate(this.tTimeProperties.DesorptionStep);
             end
+            
         end
         function calculateThermalProperties(this)
             

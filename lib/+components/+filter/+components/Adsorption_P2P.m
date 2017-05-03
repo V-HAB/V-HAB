@@ -222,7 +222,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % specific properties
                 csCycle = {'One', 'Two'};
                 oCapacity = this.oStore.oContainer.poCapacities(this.oStore.oContainer.tThermalNetwork.(['csNodes_Flow_Cycle',csCycle{this.oStore.oContainer.iCycleActive}]){this.iCell,1});
-                oCapacity.oHeatSource.setPower(this.fAdsorptionHeatFlow);
+                oCapacity.oHeatSource.setPower(this.fAdsorptionHeatFlow + this.oStore.oContainer.tThermalNetwork.mfHeaterPower(this.iCell));
             catch
                % do nothing, no thermal solver heat source attached 
             end

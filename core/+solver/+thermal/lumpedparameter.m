@@ -167,6 +167,20 @@ classdef lumpedparameter < base
             
             % TO DO: Find out why this became necessary
             mHeatSources = this.oVSys.mHeatSourceVector;
+            for sNode = this.oVSys.piCapacityIndices.keys
+                
+                % Get index of current node.
+                iIndex = this.oVSys.tiCapacityIndices.(sNode{1});
+                
+                % Get the node object.
+                oNode = this.oVSys.poCapacities(sNode{1});
+                
+                % Get the heater power of current node and store
+                % the data at the associated index (i.e. position). %%%
+                mHeatSources(iIndex, 1)  = oNode.getHeatPower();
+                
+            end
+            
             mCapacities  = this.oVSys.mCapacityVector;
             
             % Build the source rate vector.
