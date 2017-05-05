@@ -928,10 +928,10 @@ classdef CDRA < vsys
             % Note: Transfer coefficient for the V-HAB thermal solver has
             % to be in W/K which means it is U*A or in this case
             % 1/sum(R_th): With R_th = s/(lambda * A)
-            % Assumes                               0.5 cm of air and                                 1 cm of AL through which conduction has to take place
-            mfTransferCoefficient(1)   	= 1 / ( (0.1/(fThermalConductivity .* fArea13x))       + (0.01/(237 .* fArea13x)) );
-            mfTransferCoefficient(2)    = 1 / ( (0.1/(fThermalConductivity .* fAreaSylobead))  + (0.01/(237 .* fAreaSylobead)) );
-            mfTransferCoefficient(3)   	= 1 / ( (0.1/(fThermalConductivity .* fArea5A))        + (0.01/(237 .* fArea5A)) );
+            % Assumes                            20 cm of air and                                 2 cm of AL                     + 10cm of zeolite, conductivity values from "Thermal Conducivity and melting Point Measurements on Paraffin Zeolite Mixtures" 
+            mfTransferCoefficient(1)   	= 1 / ( (0.2/(fThermalConductivity .* fArea13x))       + (0.02/(237 .* fArea13x))      + (0.1/(0.07 .* fArea13x)));
+            mfTransferCoefficient(2)    = 1 / ( (0.2/(fThermalConductivity .* fAreaSylobead))  + (0.02/(237 .* fAreaSylobead)) + (0.1/(0.07 .* fArea13x))); % asssumed conducitivty of 13x
+            mfTransferCoefficient(3)   	= 1 / ( (0.2/(fThermalConductivity .* fArea5A))        + (0.02/(237 .* fArea5A))       + (0.1/(0.104 .* fArea13x)));
             
             % adds a boundary node for the atmosphere around CDRA
             oAtmosphereCapacity = this.addCreateCapacity(oPhase);
@@ -1343,37 +1343,26 @@ classdef CDRA < vsys
             %% Set the heater power for the desorption cells
             % Check cell temperature of the desorber cells
             
+            mfCellTemperature(:,1)     = [this.tMassNetwork.aoAbsorberPhases.fTemperature];
+            mfCellHeatCap(:,1)         = [this.tMassNetwork.aoAbsorberPhases.fSpecificHeatCapacity] .* [this.tMassNetwork.aoAbsorberPhases.fMass];
+
+            mfPowerDesorbCells = this.tThermalNetwork.mfHeaterPower(this.iCells+1:end);
+
+            mbTempReached = (mfCellTemperature > (this.TargetTemperature - 1));
+            mfPowerDesorbCells(mbTempReached) = 0;
+            mfPowerDesorbCells(~mbTempReached) = ((this.TargetTemperature - mfCellTemperature(~mbTempReached)).* mfCellHeatCap(~mbTempReached))/this.fAirSafeTime;
+                
             if (mod(this.oTimer.fTime, this.fCycleTime)) > this.fAirSafeTime
-                mfCellTemperature(:,1)     = [this.tMassNetwork.aoAbsorberPhases.fTemperature];
-                mfCellHeatCap(:,1)         = [this.tMassNetwork.aoAbsorberPhases.fSpecificHeatCapacity] .* [this.tMassNetwork.aoAbsorberPhases.fMass];
-
-                mfPowerDesorbCells = this.tThermalNetwork.mfHeaterPower(this.iCells+1:end);
-                
-                mbTempReached = abs(mfCellTemperature - this.TargetTemperature) < 1;
-                mfPowerDesorbCells(mbTempReached) = 0;
-                mfPowerDesorbCells(~mbTempReached) = ((this.TargetTemperature - mfCellTemperature(~mbTempReached)).* mfCellHeatCap(~mbTempReached))/this.fAirSafeTime;
                 mfPowerDesorbCells(mfPowerDesorbCells > this.fMaxHeaterPower) = this.fMaxHeaterPower/this.tGeometry.Zeolite5A.iCellNumber;
-                mfPower = zeros(this.iCells+this.tGeometry.Zeolite5A.iCellNumber,1);
-                mfPower(this.iCells+1:end) = mfPowerDesorbCells;
-                
-                this.setHeaterPower(mfPower);
             else
-                mfCellTemperature(:,1)     = [this.tMassNetwork.aoAbsorberPhases.fTemperature];
-                mfCellHeatCap(:,1)         = [this.tMassNetwork.aoAbsorberPhases.fSpecificHeatCapacity] .* [this.tMassNetwork.aoAbsorberPhases.fMass];
-
-                mfPowerDesorbCells = this.tThermalNetwork.mfHeaterPower(this.iCells+1:end);
-                
-                mbTempReached = abs(mfCellTemperature - this.TargetTemperature) < 1;
-                mfPowerDesorbCells(mbTempReached) = 0;
-                mfPowerDesorbCells(~mbTempReached) = ((this.TargetTemperature - mfCellTemperature(~mbTempReached)).* mfCellHeatCap(~mbTempReached))/this.fAirSafeTime;
                 % during air safe mode only half of the heater power is
                 % used
                 mfPowerDesorbCells(mfPowerDesorbCells > this.fMaxHeaterPower) = (this.fMaxHeaterPower/this.tGeometry.Zeolite5A.iCellNumber)/2;
-                mfPower = zeros(this.iCells+this.tGeometry.Zeolite5A.iCellNumber,1);
-                mfPower(this.iCells+1:end) = mfPowerDesorbCells;
-                
-                this.setHeaterPower(mfPower);
             end
+            mfPower = zeros(this.iCells+this.tGeometry.Zeolite5A.iCellNumber,1);
+            mfPower(this.iCells+1:end) = mfPowerDesorbCells;
+
+            this.setHeaterPower(mfPower);
                 
 %             for iCell = this.iCells+1:length(this.tThermalNetwork.mfAdsorptionHeatFlow)
 %                 oCapacity = this.poCapacities(this.tThermalNetwork.(['csNodes_Flow_Cycle',sCycle]){iCell,1});
