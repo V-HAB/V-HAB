@@ -199,7 +199,7 @@ classdef CDRA < vsys
             % for each cell (the values can obtained by running the
             % simulation for a longer time without startvalues and set them
             % according to the values once the simulation is repetetive)
-        	tInitialization.Zeolite13x.mfInitialCO2             = [   0,    0,    0,    0,    0];
+        	tInitialization.Zeolite13x.mfInitialCO2             = [0.01, 0.01, 0.01  0.01, 0.01];
         	tInitialization.Zeolite13x.mfInitialH2O             = [   0,    0,    0,    0,    0];
             
         	tInitialization.Sylobead.mfInitialCO2               = [   0,    0,    0,    0,    0];
@@ -238,7 +238,7 @@ classdef CDRA < vsys
             % accurate
             tInitialization.Zeolite13x.fConductance         = 0.12;
             tInitialization.Sylobead.fConductance           = 0.14;
-            tInitialization.Zeolite5A.fConductance          = 0.12;      
+            tInitialization.Zeolite5A.fConductance          = 0.12;
             
             % The hydraulic diameter is calculated from area and
             % circumfence using the void fraction to reduce it to account
@@ -686,8 +686,8 @@ classdef CDRA < vsys
             
             % Sets the rMaxChange of the System
             this.arMaxPartialMassChange = zeros(this.iCells,this.oMT.iSubstances);
-            this.arMaxPartialMassChange(:,this.oMT.tiN2I.CO2) = 0.5;
-            this.arMaxPartialMassChange(:,this.oMT.tiN2I.H2O) = 0.5;
+            this.arMaxPartialMassChange(:,this.oMT.tiN2I.CO2) = 0.6;
+            this.arMaxPartialMassChange(:,this.oMT.tiN2I.H2O) = 0.6;
             
             % adds the lumped parameter thermal solver to calculate the
             % convective and conductive heat transfer
@@ -1323,28 +1323,36 @@ classdef CDRA < vsys
                 this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]).oHandler.setActive(false);
                 aoBranches(end+1) = this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]);
                 
-                
                 for iBranch = 1:length(aoBranches)-1
-                    aoBranches(iBranch).oHandler.setActive(true);
-                    aoBranches(iBranch).oHandler.setPositiveFlowDirection(true);
+                    if ~aoBranches(iBranch).oHandler.bActive
+                        aoBranches(iBranch).oHandler.setActive(true);
+                    end
+                    if ~aoBranches(iBranch).oHandler.bPositiveFlowDirection
+                        aoBranches(iBranch).oHandler.setPositiveFlowDirection(true);
+                    end
                     aoBranches(iBranch).oHandler.setAllowedFlowRate(mfMassChangeRate(iBranch));
                 end
                 aoBranches(end).oHandler.setFlowRate(-sum(mfMassChangeRate));
             else
                 aoBranches(end+1) = this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]);
-                this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]).oHandler.setActive(true);
+                
+                if ~this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]).oHandler.bActive
+                    this.toBranches.(['CDRA_Vent_',num2str(this.iCycleActive)]).oHandler.setActive(true);
+                end
                 
                 for iBranch = 1:length(aoBranches)
                     aoBranches(iBranch).oHandler.setAllowedFlowRate(mfMassChangeRate(iBranch));
                 end
-                this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
+                if this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).fFlowRate ~= 0
+                    this.toBranches.(['CDRA_AirSafe_',num2str(this.iCycleActive)]).oHandler.setFlowRate(0);
+                end
             end
             
             %% Set the heater power for the desorption cells
             % Check cell temperature of the desorber cells
             
-            mfCellTemperature(:,1)     = [this.tMassNetwork.aoAbsorberPhases.fTemperature];
-            mfCellHeatCap(:,1)         = [this.tMassNetwork.aoAbsorberPhases.fSpecificHeatCapacity] .* [this.tMassNetwork.aoAbsorberPhases.fMass];
+            mfCellTemperature(:,1)     = [aoPhases.fTemperature];
+            mfCellHeatCap(:,1)         = [aoPhases.fTotalHeatCapacity];
 
             mfPowerDesorbCells = this.tThermalNetwork.mfHeaterPower(this.iCells+1:end);
 

@@ -64,6 +64,7 @@ classdef branch < solver.matter.manual.branch
         
         function setActive(this, bActive)
             this.bActive = bActive;
+            this.setPositiveFlowDirection(this.bPositiveFlowDirection);
         end
         
         

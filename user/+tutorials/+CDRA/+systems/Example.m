@@ -365,6 +365,9 @@ classdef Example < vsys
             solver.matter.manual.branch(this.toBranches.Coolant_TempControl);
             this.toBranches.Coolant_TempControl.oHandler.setFlowRate(10);
             
+            this.toStores.Cabin.toPhases.CabinAir.arMaxChange(this.oMT.tiN2I.H2O) = 0.5;
+            this.toStores.Cabin.toPhases.CabinAir.arMaxChange(this.oMT.tiN2I.CO2) = 0.5;
+            
             this.toStores.CoolantStore.aoPhases(1).fMaxStep = 1;
             this.toStores.CCAA_CDRA_Connection.aoPhases(1).fMaxStep = 1;
             this.toStores.CDRA_CCAA_Connection.aoPhases(1).fMaxStep = 1;

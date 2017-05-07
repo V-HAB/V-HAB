@@ -109,11 +109,12 @@ mf_t_T = this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_T0 + this.ttxMatt
 % b_oi          = b_0
 % b_oi * q_si   = a_0
 
-% The toth equation itself returns the equilibrium loading in mol/kg
-mfQ_equ                 = (mf_A .* afPP ) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
 % Constant that linearizes the toth that can be used for calculations (can
 % be multiplied with the pressure to receive a approximation of the toth eq)
 mfLinearizationConstant = (mf_A         ) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
+
+% The toth equation itself returns the equilibrium loading in mol/kg
+mfQ_equ                 = (mfLinearizationConstant .* afPP );
 end
 
 function [mfQ_equ, mfLinearizationConstant] = calculateEquilibriumLoading_Zeolite5A_RK38(this, afPP, fTemperature)
@@ -133,12 +134,12 @@ mf_t_T = this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_T0 + this.tt
 % b_oi          = b_0
 % b_oi * q_si   = a_0
 
-% The toth equation itself returns the equilibrium loading in mol/kg
-mfQ_equ = (mf_A .* afPP) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
-
 % Constant that linearizes the toth that can be used for calculations (can
 % be multiplied with the pressure to receive a approximation of the toth eq)
 mfLinearizationConstant = (mf_A         ) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
+
+% The toth equation itself returns the equilibrium loading in mol/kg
+mfQ_equ                 = (mfLinearizationConstant .* afPP );
 end
 function [mfQ_equ, mfLinearizationConstant] = calculateEquilibriumLoading_Zeolite13x(this, afPP, fTemperature)
 % calculating the parameters for the Toth equation according to
@@ -157,12 +158,12 @@ mf_t_T = this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_T0 + this.ttxMat
 % b_oi          = b_0
 % b_oi * q_si   = a_0
 
-% The toth equation itself returns the equilibrium loading in mol/kg
-mfQ_equ = (mf_A .* afPP) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
-
 % Constant that linearizes the toth that can be used for calculations (can
 % be multiplied with the pressure to receive a approximation of the toth eq)
 mfLinearizationConstant = (mf_A         ) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
+
+% The toth equation itself returns the equilibrium loading in mol/kg
+mfQ_equ                 = (mfLinearizationConstant .* afPP );
 end
 
 function [mfQ_equ, mfLinearizationConstant] = calculateEquilibriumLoading_SilicaGel_40(this, afPP, fTemperature)
@@ -182,12 +183,12 @@ mf_t_T = this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_T0 + this.ttxM
 % b_oi          = b_0
 % b_oi * q_si   = a_0
 
-% The toth equation itself returns the equilibrium loading in mol/kg
-mfQ_equ = (mf_A .* afPP) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
-
 % Constant that linearizes the toth that can be used for calculations (can
 % be multiplied with the pressure to receive a approximation of the toth eq)
 mfLinearizationConstant = (mf_A         ) ./ ((1 + (ones(1,this.iSubstances) .* sum(mf_B .* afPP)).^mf_t_T).^(1./mf_t_T));
+
+% The toth equation itself returns the equilibrium loading in mol/kg
+mfQ_equ                 = (mfLinearizationConstant .* afPP );
 end
 
 function [mfQ_equ, mfLinearizationConstant] = calculateEquilibriumLoading_Sylobead_B125(this, afPP, fTemperature)

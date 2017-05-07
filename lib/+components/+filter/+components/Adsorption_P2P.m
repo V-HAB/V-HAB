@@ -92,10 +92,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             [ ~, mfLinearConstant ] = this.oMT.calculateEquilibriumLoading(afMass, afPP, fTemperature);
             
             mfLinearConstant(isnan(mfLinearConstant)) = 0;
-            mfLinearConstant(afPP == 0) = 0;
-            if all(mfLinearConstant == 0)
-                return
-            end
             
             mfCurrentLoading = afMass;
             % the absorber material is not considered loading ;)
@@ -186,6 +182,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
 %             hold on
 %             plot(mfAbsorberMass)
 %             legend('Flow Mass', 'Absorber Mass')
+            
 
             % the mass change for the absorber then obviously has to be the
             % difference between the current and the new flow mass
