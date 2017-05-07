@@ -1374,13 +1374,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 bThermal = false;
             end
             
-            if this.fLastSetOutdated >= this.oTimer.fTime
-                return;
-            end
-            
-            this.fLastSetOutdated = this.oTimer.fTime;
-            
-            
             % Loop through exmes / flows and set outdated, i.e. request
             % recalculation of flow rate.
             for iE = 1:this.iProcsEXME
