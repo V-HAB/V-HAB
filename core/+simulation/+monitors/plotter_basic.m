@@ -107,21 +107,25 @@ classdef plotter_basic < simulation.monitor
             %                used for first plot value
             %              - miXTicks/ miYTicks: Define the ticks on the Axis by
             %                providing a matrix with the value for each tick
-            %              - mfXLimits/ mfYLimits: Define the limits on the Axis by
+            %              - mfXLimits/ mfYLimits: Define the limits of the Axis by
             %                providing a matrix with the start and end value
             %
             % Additional functionalities:
             %
             % It is also possible to define plot values including
-            % calculations. For example the following code,
-            % csNames = {'Relative Humidity Cabin * 100'};
-            % oPlot.definePlot(csNames, 'Relative Humidity Habitat');
+            % calculations. For example the following code
+            %
+            %   csNames = {'Relative Humidity Cabin * 100'};
+            %   oPlot.definePlot(csNames, 'Relative Humidity Habitat');
+            %
             % will multiply the log value with the label 'Relative Humidity
             % Cabin' with 100 to get the humidity value from 0-1 to 0-100
             % Another Example:
-            % csNames = {'- 1 * ( CDRA CO2 Inlet Flow 1 + CDRA CO2 Inlet Flow 2 )', 'CDRA CO2 Outlet Flow 1 + CDRA CO2 Outlet Flow 2'};
-            % oPlot.definePlot(csNames,  'CDRA CO2 Flowrates');
-            % Here two indepent values are calculate, one adds the two
+            %
+            %   csNames = {'- 1 * ( CDRA CO2 Inlet Flow 1 + CDRA CO2 Inlet Flow 2 )', 'CDRA CO2 Outlet Flow 1 + CDRA CO2 Outlet Flow 2'};
+            %   oPlot.definePlot(csNames,  'CDRA CO2 Flowrates');
+            %
+            % Here two indepent values are calculated, one adds the two
             % inlet flows and multiplies them with -1 resulting in a plot
             % of the total inlet flow. The second entry of th csNames cell
             % array adds the two outlet flows resulting in a total outlet
@@ -448,6 +452,7 @@ classdef plotter_basic < simulation.monitor
             bPlotToolsOn = false;
             bSinglePlot  = false;
             sTimeUnit    = 's';
+            
             if nargin > 1 
                 if isfield(tParameters, 'bLegendOn')
                     bLegendOn = tParameters.bLegendOn;
@@ -665,6 +670,7 @@ classdef plotter_basic < simulation.monitor
                         tLogProps(iCalculations+1:end) = [];
                         mfData = mfDataNew;
                     end
+                    
                     % For each plot a title of the figure is specified and if
                     % multiple plots are used as subplots the title also serves
                     % as identifier into which figure they should be plotted.
