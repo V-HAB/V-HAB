@@ -773,10 +773,11 @@ classdef plotter_basic < simulation.monitor
                     % First we set the standard values for the fields:
                     sLabelX = ['Time in ', sTimeUnit];
                    	sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
-                    csLegend = {};
+                    csLegend = cell(length(tLogProps),1);
                     for iP = 1:length(tLogProps)
-                        csLegend{end + 1} = [ tLogProps(iP).sLabel ];
+                        csLegend{iP} = [ tLogProps(iP).sLabel ];
                     end
+                    
                     % Now we chech the txCustom struct for any
                     % customization options that the user defined that have
                     % to be done after the plot
@@ -878,10 +879,10 @@ classdef plotter_basic < simulation.monitor
             hold(hHandle, 'on');
             grid(hHandle, 'minor');
             
-            csLegend = {};
+            csLegend = cell(length(tLogProps),1);
             
             for iP = 1:length(tLogProps)
-                csLegend{end + 1} = [ tLogProps(iP).sLabel ' [' tLogProps(iP).sUnit ']' ];
+                csLegend{iP} = [ tLogProps(iP).sLabel ' [' tLogProps(iP).sUnit ']' ];
             end
             
             plot(afTime, mfData);
