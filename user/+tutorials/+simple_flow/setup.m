@@ -143,13 +143,13 @@ classdef setup < simulation.infrastructure
             % mbPosition matrix (also see define plot comments for more
             % help. 
             cNames = {'Flowrate of CO2'};
-            sTitle = 'Partial Mass CO2';
+            sTitle = 'Flowrate of CO2';
             txCustom.mbPosition = [ false, false, false;...
                                     true , false, false];
             oPlot.definePlot(cNames, sTitle, txCustom);
             
             cNames = {'Flowrate of CO2'};
-            sTitle = 'Partial Mass CO2';
+            sTitle = 'Flowrate of CO2';
             txCustom.mbPosition = [ false, false, true;...
                                     false, false, false];
             oPlot.definePlot(cNames, sTitle, txCustom);
