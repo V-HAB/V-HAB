@@ -478,62 +478,118 @@ classdef plotter_basic < simulation.monitor
 
             if bSinglePlot
                 %% Code for using a single figure to plot everything
-                % Ignores any subplot information of the individual plots!
                 
-                % TO DO: Action Item scjo, comment and finish functionality
-                % (include sTimeUnit), or should we just remove this? I
-                % mean I do not know a case where it actually makes sense
-                % to use only one figure
+                %TODO Add customization and calculation functionality found
+                %in the non-single plot case. 
+                
+                % FOR NOW: This case ignores any subplot information of the
+                % individual plots!
+                
+                % Creating the figure which will contain all subplots.
                 oFigure = figure();
+                
+                % Doing some math to see how many rows and columns the
+                % figure should have.
                 iGrid   = ceil(sqrt(iPlots));
                 
-                % Rows of grid - can we reduce?
+                % Rows of grid - can we reduce the number of columns?
                 iGridRows = iGrid;
                 iGridCols = iGrid;
 
-                %while iGridCols * (iGridRows - 1) >= iPlots
-                %    iGridRows = iGridRows - 1;
-                %end
                 while (iGridCols - 1) * iGridRows >= iPlots
                     iGridCols = iGridCols - 1;
                 end
+                
+                % Creating a panel for the buttons to undock the individual plots into
+                % separate figures for export.
+                fPanelXSize = 0.065;
+                fPanelYSize = 0.12;
+                oPanel = uipanel('Title','Undock Subplots','FontSize',10,'Position',[ 0 0 fPanelXSize fPanelYSize]);
+                
+                % Doing some math so we get nicely proportioned buttons.
+                fButtonYSize = 1 / iGridRows * 0.9;
+                fButtonXSize = 1 / iGridCols * 0.8;
+                fHorizontalSpaceing = 16 / (iGridCols + 1);
+                fVerticalSpaceing = 10 / (iGridRows + 1);
+                afHorizontal = ( 0:fHorizontalSpaceing:16 ) / 16 - fButtonXSize/2;
+                afHorizontal = afHorizontal(2:end-1);
+                afVertical = ( 0:fVerticalSpaceing:10 ) / 10 - fButtonYSize/2;
+                afVertical = afVertical(2:end-1);
+                afVertical = fliplr(afVertical);
+                
+                % Initializing some variables
+                coButtons = cell(iPlots,1);
+                iSubPlotCounter = 1;
+                
+                % Creating the array of buttons according to the number of
+                % subplots there are and labling them with simple numbers.
+                for iI = 1:iGridRows
+                    for iJ = 1:iGridCols
+                        if iSubPlotCounter <= iPlots
+                            oButton = uicontrol(oPanel,'String',sprintf('%i', iSubPlotCounter));
+                            oButton.Units = 'normalized';
+                            oButton.Position = [afHorizontal(iJ) afVertical(iI) fButtonXSize fButtonYSize];
+                            coButtons{iSubPlotCounter} = oButton;
+                            iSubPlotCounter = iSubPlotCounter + 1;
+                        end
+                    end
+                end
+                
 
-
-                coHandles = {};
-
+                coHandles = cell(iPlots,1);
+            
                 for iP = 1:length(this.tPlots)
-                    %hHandle = subplot(iGridRows, iGridCols, iP);
-                    hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP, 'Spacing', 0.05, 'Padding', this.rPadding, 'Margin', 0.05);
-
+                    % Creating the subplot
+                    hHandle = subplot(iGridRows, iGridCols, iP);
+                    %hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP, 'Spacing', 0.05, 'Padding', this.rPadding, 'Margin', 0.05);
+                    
+                    % Getting the result data from the logger object
                     [ mfData, tLogProps ] = oLogger.get(this.tPlots(iP).aiIdx);
-
-                    %TODO ... well, differently ;)
+                    
+                    % Getting the Y label from the logger object
                     sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
-
+                    
+                    % Actually creating the plot with all of the
+                    % information we have gathered so far.
                     this.generatePlot(hHandle, oLogger.afTime, mfData, tLogProps, sLabelY);
-
+                    
+                    % Setting the title of the subplot
                     title(hHandle, this.tPlots(iP).sTitle);
-
+                    
+                    % If the user set the legend off, we hide it.
                     if ~bLegendOn
                         legend('hide');
                     end
-
-
-                    coHandles{end + 1} = hHandle;
+                    
+                    % Setting the callback to undock this subplot to the
+                    % appropriate button.
+                    coButtons{iP}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, hHandle, legend};
+                    
+                    % Setting the entry in the handles cell. 
+                    coHandles{iP} = hHandle;
                 end
-
+                
+                % If the time plot showing the relationship between ticks
+                % and actual time is turned on, we create it here. 
                 if bTimePlotOn
-                    %hHandle = subplot(iGridRows, iGridCols, iP + 1);
-                    hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP + 1, 'Spacing', 0.05, 'Padding', this.rPadding, 'Margin', 0.05);
+                    % Creating the subplot
+                    hHandle = subplot(iGridRows, iGridCols, iP + 1);
+                    %hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP + 1, 'Spacing', 0.05, 'Padding', this.rPadding, 'Margin', 0.05);
 
-
+                    % Filling the subplot with the graph and modifying its
+                    % properties. 
                     hold(hHandle, 'on');
                     grid(hHandle, 'minor');
                     plot(1:length(oLogger.afTime), oLogger.afTime);
                     xlabel('Ticks');
                     ylabel('Time in s');
                     title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
-
+                    
+                    % Setting the callback to undock this subplot to the
+                    % appropriate button.
+                    coButtons{iPlots}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, hHandle, legend};
+                    
+                    % Setting the entry in the handles cell. 
                     coHandles{end + 1} = hHandle;
                 end
 
@@ -552,18 +608,26 @@ classdef plotter_basic < simulation.monitor
                         set(aoAxes(iI),'FontSize',12);
                     end
                 end
+                
+                % In order for the change in font size to take effect, we
+                % need to call the drawnow method. 
+                drawnow();
 
-                drawnow;
-
-
+                % If the user selected to turn on the plot tools, we turn
+                % them on now. They are off by default. Turing on the plot
+                % tools will automatically maximize the figure. If plot
+                % tools are not turned on, we have to maximize it manually.
                 if bPlotToolsOn
                     plottools(oFigure, 'on');
                 else
                     % Maximize figure
                     set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
                 end
-
+                
+                % Finally we write the coHandles cell to the UserData
+                % struct of the figure in case we need to use them later. 
                 oFigure.UserData = struct('coAxesHandles', { coHandles });
+                
             else
                 %% Code used if several figures should be used to plot the data
                 
