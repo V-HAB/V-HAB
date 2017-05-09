@@ -158,6 +158,7 @@ classdef setup < simulation.infrastructure
             % You can also define calculations on the log values
             cNames = {'( Partial Pressure CO_2 Tank 1 + Partial Pressure CO_2 Tank 2 ) / 133.322'};
             sTitle = 'Partial Pressure CO2 total in Torr';
+            
             % Because the automatic label generated will not recognize the
             % unit conversion we define a custom Y Label. You can always
             % customize your plots by providing a txCustom struct that
@@ -187,8 +188,12 @@ classdef setup < simulation.infrastructure
         end
         
         function plot(this, varargin) % Plotting the results
+            % First we check if the user passed a struct with parameters
+            if ~isempty(varargin)
+                tParameters = varargin{1};
+            end
             
-            % you can specify additional parameters for the plots, for
+            % You can specify additional parameters for the plots, for
             % example you can define the unit for the time axis that should
             % be used (s, min, h, d, weeks possible)
             tParameters.sTimeUnit = 'min';
