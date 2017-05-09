@@ -841,6 +841,9 @@ classdef plotter_basic < simulation.monitor
                     grid on;
                     xlabel('Ticks');
                     ylabel('Time in s');
+                    
+                     % Maximize figure
+                    set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
                 end
                 
                 if bPlotToolsOn
