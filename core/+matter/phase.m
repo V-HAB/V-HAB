@@ -204,14 +204,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     end
 
     properties (Access = public)
-%         %EXPERIMENTAL ... for getMatterProperties, for example, the
-%         % internal afMass is NOT used for arPartials, instead of INFLOWS are
-%         % used, relatively weighted, to calculate the partials.
-%         %TODO if bFlowPhase AND mass is zero --> pressure can be freely set
-%         %     to any value? (multi solver!)
-%         bFlowPhase = false;
-        
-        
         % Limit - how much can the phase mass (total or single substances)
         % change before an update of the matter properties (of the whole
         % store) is triggered?
@@ -373,11 +365,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             fLastStep = fTime - this.fLastMassUpdate;
             
             
-%             fprintf('[%i] massupd %s-%s with bSynced = %i --- execute: %i\n', this.oTimer.iTick, this.oStore.sName, this.sName, this.bSynced, fLastStep > 0);
-%             
-%             if strcmp(this.sName, 'FlowPhase')
-%                 dbstack();
-%             end
             
             % Return if no time has passed
             if fLastStep == 0
@@ -390,18 +377,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 return;
             end
 
-%             fprintf('[%i]\f%s\n', this.oTimer.iTick, this.sName);
-%             fprintf('\f\f%.10f\f\f%.10f\n', this.fMass, this.afMass(this.oMT.tiN2I.O2));
-            
             % Immediately set fLastMassUpdate, so if there's a recursive call
             % to massupdate, e.g. by a p2ps.flow, nothing happens!
             this.fLastMassUpdate     = fTime;
             this.fMassUpdateTimeStep = fLastStep;
             
-            %[ afChange, mfDetails ] = this.getTotalMassChange();
-            %this.afCurrentTotalInOuts = afChange;
-            %this.mfCurrentInflowDetails = mfDetails;
-
             % All in-/outflows in [kg/s] and multiply with curernt time
             % step, also get the inflow rates / temperature / heat capacity
             %SPEED OPT - value saved in last calculateTimeStep, still valid
@@ -409,18 +389,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             afTotalInOuts = this.afCurrentTotalInOuts;
             mfInflowDetails = this.mfCurrentInflowDetails;
             
-%             if strcmp(this.oStore.sName, 'Valve_1')
-%                 disp('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
-%                 disp(this.oTimer.fTime);
-%                 disp(find(this.afMass));
-%                 disp(find(this.arPartialMass));
-%                 disp('- cached -');
-%                 disp(find(afTotalInOuts));
-%                 disp('- new -');
-%                 disp(find(this.getTotalMassChange()));
-%                 disp('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
-%             end
-
             % Check manipulator
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
                 % Add the changes from the manipulator to the total inouts
@@ -430,10 +398,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
             % Cache total mass in/out so the EXMEs can use that
             this.fCurrentTotalMassInOut = sum(afTotalInOuts);
-            
-            
-            afTotalInOutsTMP = afTotalInOuts;
-            afMassTMP        = this.afMass;
             
             
             % Multiply with current time step
@@ -534,60 +498,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             
             
-            fOldMass = this.fMass;
-
             % Update total mass
             this.fMass = sum(this.afMass);
             
-            if strcmp(this.sName, 'XXXXXXFlowPhase')
-                disp('-');
-                disp(any(abNegative));
-                disp('-----');
-                disp(sum(this.getTotalMassChange()));
-                disp(sum(this.afCurrentTotalInOuts));
-                disp('-----');
-                disp(fOldMass);
-                disp(this.fMass);
-                
-                disp('=====================');
-                
-                
-                
-                
-                ccoObjs = {
-                    this.coProcsEXME{1}.oFlow.oBranch.coExmes{1}.oPhase, this.coProcsEXME{1}.oFlow.oBranch.coExmes{1}.oPhase;
-                    this.coProcsEXME{1}.oFlow, this.coProcsEXME{1}.oFlow.oBranch;
-                    this, this;
-                    this.coProcsEXME{2}.oFlow, this.coProcsEXME{2}.oFlow.oBranch;
-                };
-                
-                
-                for iE = 1:size(ccoObjs, 1)
-                    oF = ccoObjs{iE, 1};
-                    oB = ccoObjs{iE, 2};
-                    
-                    %fprintf('[%i] %s\f\f%.6f', this.oTimer.iTick, oB.sName, oF.fFlowRate);
-                    fprintf('[%i] %s', this.oTimer.iTick, pad(oB.sName, 25));
-                    
-                    arPartMass   = oF.arPartialMass(oF.arPartialMass ~= 0);
-                    csSubstances = this.oMT.csI2N(oF.arPartialMass ~= 0);
-                    
-                    for iS = 1:length(csSubstances)
-                        fprintf('\f\f\f%s\f%.15f', csSubstances{iS}, arPartMass(iS));
-                    end
-                    
-                    fprintf('\n');
-                end
-                
-                
-                disp('==========================================');
-                
-                
-                %if sum(this.getTotalMassChange()) > 5*1e-18
-                if abs(fOldMass - this.fMass) > 1e-10
-                    %keyboard();
-                end
-            end
             
             % Trigger branch solver updates in post tick for all branches
             % whose matter is currently flowing INTO the phase
@@ -1283,29 +1196,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % mfDetails contains the flow rate, temperature and heat
             % capacity for each INCOMING flow, not the outflows!
             
-            %%%disp([ 'CALC TIME STEP for phase ' this.sName ]);
-            
             % Change in kg of partial masses per second
             [ afChange, mfDetails ] = this.getTotalMassChange();
             
             
-            
-%             if strcmp(this.oStore.sName, 'Valve_1')
-%                 disp('>>>>>>>>>>>>>>>>>>>>  CALC TS  >>>>>>>>>>>>>>');
-%                 disp(this.oTimer.fTime);
-%                 disp(find(this.afMass));
-%                 disp(find(this.arPartialMass));
-%                 disp('- cached -');
-%                 disp(find(this.afCurrentTotalInOuts));
-%                 disp('- new -');
-%                 disp(find(afChange));
-%                 disp(afChange(afChange ~= 0));
-%                 disp('- new - SUM');
-%                 disp(sum(afChange));
-%                 disp('vs mass');
-%                 disp(this.fMass);
-%                 disp('>>>>>>>>>>>>>>>>>>  /CALC TS  >>>>>>>>>>>>>>>>');
-%             end
             
             % Setting the properties to the current values
             this.afCurrentTotalInOuts = afChange;

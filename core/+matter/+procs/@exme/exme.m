@@ -204,6 +204,9 @@ classdef exme < base
                     %EXPERIMENTAL flow phase - partials is NOT based on
                     % phase contents, but inflows! Calculated in the
                     % previous step, so use branches value!
+                    %TODO instead of FR == 0 check, should we check if the
+                    %  flow rate * the last step is roughly in the area of
+                    %  the stored mass?
                     arPartials   = sif(~this.oPhase.bSynced || this.oFlow.fFlowRate == 0, this.oPhase.arPartialMass, this.oFlow.arPartialMass);
                     afProperties = [ this.oPhase.fTemperature this.oPhase.fSpecificHeatCapacity ];
                 end
@@ -241,6 +244,7 @@ classdef exme < base
             fSpecificHeatCapacity = this.oPhase.fSpecificHeatCapacity;
             
             
+            % Return INFLOW matter properties, not the phase contents props
             if this.oPhase.bSynced
                 mrInPartials  = zeros(this.oPhase.iProcsEXME, this.oMT.iSubstances);
                 afInFlowrates = zeros(this.oPhase.iProcsEXME, 1);
