@@ -11,12 +11,18 @@ classdef Example1 < vsys
         
         aoFilterPhases;
         oAtmosPhase;
+        
+        
+        bManual = false;
     end
     
     methods
         function this = Example1(oParent, sName)
             this@vsys(oParent, sName, 10);
            
+            
+            %this.bManual = true;
+            
             eval(this.oRoot.oCfgParams.configCode(this));
             
         end
@@ -51,6 +57,7 @@ classdef Example1 < vsys
             % format can be 'store.phase' instead of 'store.exme'
             %oBranch_1 = this.createBranch('Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
             %oBranch_2 = this.createBranch('Filter.Out', {'Pipe_3' }, 'Atmos.In');
+            %oBranch_1 = matter.branch(this, 'Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
             oBranch_1 = matter.branch(this, 'Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
             oBranch_2 = matter.branch(this, 'Filter.Out', {'Pipe_3' }, 'Atmos.In');
             
@@ -60,6 +67,33 @@ classdef Example1 < vsys
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
+            
+            
+            if this.bManual
+
+                this.oB1 = solver.matter.manual.branch(this.aoBranches(1));
+                %this.oB2 = solver.matter.residual.branch(this.aoBranches(2));
+                this.oB2 = solver.matter.manual.branch(this.aoBranches(2));
+
+                this.toStores.Filter.toPhases.FlowPhase.bSynced = true;
+
+                %this.toProcsF2F.Fan.switchOff();
+                this.oB1.setFlowRate(0.0005);
+                
+                %this.oB1.bind('update', @this.updateOutFlowRate);
+                this.toStores.Filter.toProcsP2P.filterproc.bind('update', @this.updateOutFlowRate);
+
+
+                this.toStores.Filter.toPhases.FilteredPhase.rMaxChange = 5;
+
+    %             this.toStores.Filter.aoPhases(2).rMaxChange = inf;
+    %             this.toStores.Filter.aoPhases(1).rMaxChange = inf;
+
+                return;
+
+            end
+            
+            
             
             
             
@@ -92,7 +126,7 @@ classdef Example1 < vsys
             % that as soon as the flow rate of one of the solvers changes,
             % the other solvers will also immediately calculate a new FR.
 %             this.aoFilterPhases(1).bSynced = true;
-            this.aoFilterPhases(1).bSynced = false;
+            this.aoFilterPhases(1).bSynced = true;
             
             
             % The phase for the adsorbed matter in the filter store has a
@@ -104,8 +138,32 @@ classdef Example1 < vsys
     
      methods (Access = protected)
         
+        function updateOutFlowRate(this, ~)
+            %disp('ASDASDASDASD');
+            fFlowRateIn   = this.toBranches.Atmos__Out___Filter__In.fFlowRate;
+            fFilteredRate = this.toStores.Filter.toProcsP2P.filterproc.fFlowRate;
+            
+            %disp(num2str(fFlowRateIn - fFilteredRate));
+            this.oB2.setFlowRate(fFlowRateIn - fFilteredRate);
+        end
+         
+        function printStuff(this, varargin)
+            disp('PARTIALS O2');
+            
+            rPartialAtmosO2 = this.toStores.Atmos.toPhases.Atmos_Phase_1.arPartialMass(this.oMT.tiN2I.O2);
+            rPartialBranchO2 = this.toBranches.Atmos__Out___Filter__In.aoFlows(1).arPartialMass(this.oMT.tiN2I.O2);
+            
+            disp(rPartialAtmosO2 - rPartialBranchO2 == 0);
+            
+            if rPartialAtmosO2 ~= rPartialBranchO2
+                keyboard();
+            end
+         end
+         
+         
         function exec(this, ~)
             exec@vsys(this);
+            
             
             
             
@@ -119,11 +177,20 @@ classdef Example1 < vsys
                 %oFan.fSpeedSetpoint = 0;
                 oFan.switchOff();
                 
+                if this.bManual
+                    this.oB1.setFlowRate(0);
+                end
+                
             elseif fTime >= 1250 && ~oFan.bActive % fSpeedSetpoint ~= 40000
                 fprintf('Fan ON at second %f and tick %i\n', fTime, this.oTimer.iTick);
                 
                 %oFan.fSpeedSetpoint = 40000;
                 oFan.switchOn();
+                
+                
+                if this.bManual
+                    this.oB1.setFlowRate(0.0005);
+                end
             end
         end
         
