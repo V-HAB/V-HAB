@@ -72,18 +72,13 @@ classdef Example1 < vsys
             if this.bManual
 
                 this.oB1 = solver.matter.manual.branch(this.aoBranches(1));
-                %this.oB2 = solver.matter.residual.branch(this.aoBranches(2));
-                this.oB2 = solver.matter.manual.branch(this.aoBranches(2));
+                this.oB2 = solver.matter.residual.branch(this.aoBranches(2));
+                %this.oB2 = solver.matter.manual.branch(this.aoBranches(2));
 
                 this.toStores.Filter.toPhases.FlowPhase.bSynced = true;
 
-                %this.toProcsF2F.Fan.switchOff();
                 this.oB1.setFlowRate(0.0005);
                 
-                %this.oB1.bind('update', @this.updateOutFlowRate);
-                this.toStores.Filter.toProcsP2P.filterproc.bind('update', @this.updateOutFlowRate);
-
-
                 this.toStores.Filter.toPhases.FilteredPhase.rMaxChange = 5;
 
     %             this.toStores.Filter.aoPhases(2).rMaxChange = inf;
@@ -138,29 +133,6 @@ classdef Example1 < vsys
     
      methods (Access = protected)
         
-        function updateOutFlowRate(this, ~)
-            %disp('ASDASDASDASD');
-            fFlowRateIn   = this.toBranches.Atmos__Out___Filter__In.fFlowRate;
-            fFilteredRate = this.toStores.Filter.toProcsP2P.filterproc.fFlowRate;
-            
-            %disp(num2str(fFlowRateIn - fFilteredRate));
-            this.oB2.setFlowRate(fFlowRateIn - fFilteredRate);
-        end
-         
-        function printStuff(this, varargin)
-            disp('PARTIALS O2');
-            
-            rPartialAtmosO2 = this.toStores.Atmos.toPhases.Atmos_Phase_1.arPartialMass(this.oMT.tiN2I.O2);
-            rPartialBranchO2 = this.toBranches.Atmos__Out___Filter__In.aoFlows(1).arPartialMass(this.oMT.tiN2I.O2);
-            
-            disp(rPartialAtmosO2 - rPartialBranchO2 == 0);
-            
-            if rPartialAtmosO2 ~= rPartialBranchO2
-                keyboard();
-            end
-         end
-         
-         
         function exec(this, ~)
             exec@vsys(this);
             
