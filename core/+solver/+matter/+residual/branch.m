@@ -20,8 +20,8 @@ classdef branch < solver.matter.manual.branch
         function this = branch(oBranch)
             this@solver.matter.manual.branch(oBranch);
             
-            
-            this.iPostTickPriority = -1;
+            % AFTER p2ps/manips, but BEFORE calcTS of phase!
+            this.iPostTickPriority = 2;
         end
         
         function setPositiveFlowDirection(this, bPositiveFlowDirection)
@@ -35,6 +35,11 @@ classdef branch < solver.matter.manual.branch
     
     methods (Access = protected)
         function update(this)
+            
+            %disp(this.oBranch.oTimer.iTick);
+            %disp('--------- RESIDUAL UPDATE pre ----------------');
+            
+            
             if ~this.bActive
                 this.fRequestedFlowRate = 0;
                 update@solver.matter.manual.branch(this);
@@ -70,7 +75,11 @@ classdef branch < solver.matter.manual.branch
             %fprintf('%i\t(%.7fs)\tBranch %s Residual Solver - set Flow Rate %f\n', this.oBranch.oTimer.iTick, this.oBranch.oTimer.fTime, this.oBranch.sName, this.fRequestedFlowRate);
             
             update@solver.matter.manual.branch(this);
+            
+            
+            
+            %disp('--------- RESIDUAL UPDATE post ----------------');
         end
-        end
+    end
     
 end

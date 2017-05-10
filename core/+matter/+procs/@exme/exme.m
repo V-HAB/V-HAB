@@ -179,6 +179,12 @@ classdef exme < base
                     arPartials   = this.oFlow.arPartialMass;
                     afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
                     
+%                     if this.oFlow.oBranch.coExmes{2} == this
+%                         arPartials   = this.oFlow.oBranch.coExmes{1}.getMatterProperties(); %oPhase.arPartialMass;
+%                     else
+%                         arPartials   = this.oFlow.oBranch.coExmes{2}.getMatterProperties(); %oPhase.arPartialMass;
+%                     end
+                    
                 else 
                     % The flow rate is either zero or negative, which means
                     % matter is flowing out of the phase. In both cases we
@@ -194,7 +200,11 @@ classdef exme < base
                     %     the partial pressure of the filtered species
                     %     at that position and adjust the partial mass
                     %     here accordingly.
-                    arPartials   = this.oPhase.arPartialMass;
+                    %
+                    %EXPERIMENTAL flow phase - partials is NOT based on
+                    % phase contents, but inflows! Calculated in the
+                    % previous step, so use branches value!
+                    arPartials   = sif(~this.oPhase.bSynced || this.oFlow.fFlowRate == 0, this.oPhase.arPartialMass, this.oFlow.arPartialMass);
                     afProperties = [ this.oPhase.fTemperature this.oPhase.fSpecificHeatCapacity ];
                 end
             end
@@ -229,6 +239,63 @@ classdef exme < base
             
             fMolarMass            = this.oPhase.fMolarMass;
             fSpecificHeatCapacity = this.oPhase.fSpecificHeatCapacity;
+            
+            
+            if this.oPhase.bSynced
+                mrInPartials  = zeros(this.oPhase.iProcsEXME, this.oMT.iSubstances);
+                afInFlowrates = zeros(this.oPhase.iProcsEXME, 1);
+
+                % Creating an array to log which of the flows are not in-flows
+                aiOutFlows = ones(this.oPhase.iProcsEXME, 1);
+                
+                
+                % Need to separately collect IN flow rates that are NOT
+                % p2p's! I.e. ignore OUTWARDS p2ps - they depend on INWARDS
+                % flows, so should not be taken into account for the check
+                % if a flow rate exists
+                fInwardsFlowRates = 0;
+                
+                % Get flow rates and partials from EXMEs
+                for iI = 1:this.oPhase.iProcsEXME
+                    [ fFlowRate, arFlowPartials, ~ ] = this.oPhase.coProcsEXME{iI}.getFlowData();
+                    
+                    if fFlowRate > 0 || (this.oPhase.coProcsEXME{iI} ~= this && this.oPhase.coProcsEXME{iI}.bFlowIsAProcP2P)
+                        mrInPartials(iI,:) = arFlowPartials;
+                        afInFlowrates(iI)  = fFlowRate;
+                        aiOutFlows(iI)     = 0;
+                        
+                        
+                        %if ~this.oPhase.coProcsEXME{iI}.bFlowIsAProcP2P
+                        if fFlowRate > 0
+                            fInwardsFlowRates = fInwardsFlowRates + fFlowRate;
+                        end
+                    end
+                end
+
+                % Now we delete all of the rows in the mfInflowDetails matrix
+                % that belong to out-flows.
+                if any(aiOutFlows)
+                    mrInPartials(logical(aiOutFlows),:)  = [];
+                    afInFlowrates(logical(aiOutFlows),:) = [];
+                end
+
+                
+                for iF = 1:length(afInFlowrates)
+                    mrInPartials(iF, :) = mrInPartials(iF, :) .* afInFlowrates(iF);
+                end
+                
+                
+                fTotalInFlowRate = sum(afInFlowrates);
+                afTotalSubstanceInflows = sum(mrInPartials, 1);
+                
+                % Only use the inflow partial masses if there is actually
+                % an inflow of mass.
+                if fInwardsFlowRates ~= 0
+                    arPartialMass = afTotalSubstanceInflows ./ fTotalInFlowRate;
+                end
+                
+                %afFlowRate = afFlowRate .* mrPartials(:, iSpecies);
+            end
         end
     end
     
