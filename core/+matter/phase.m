@@ -1407,12 +1407,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                         % only the outflows have to be updated, since the
                         % inflows are independent from the composition of
                         % this phase
-                      	if (oExme.oFlow.fFlowRate * oExme.iSign) < 0
-                            if bThermal
-                             	oBranch.setOutdatedThermal();
-                            else
-                                oBranch.setOutdated();
-                            end
+                        if bThermal
+                            oBranch.setOutdatedThermal();
+                        else
+                            oBranch.setOutdated();
                         end
                     end
                 end
