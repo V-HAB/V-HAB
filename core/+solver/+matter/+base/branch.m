@@ -178,8 +178,8 @@ classdef branch < base & event.source
                 this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
             end
             
-            this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
             this.bRegisteredOutdated = true;
+            this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
         end
         
         
