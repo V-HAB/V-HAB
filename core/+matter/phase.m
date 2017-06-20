@@ -694,10 +694,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     ttxResults.(this.oMT.csI2N{iI}).AshMass = ttxResults.(this.oMT.csI2N{iI}).DryMass - (ttxResults.(this.oMT.csI2N{iI}).ProteinMass + ttxResults.(this.oMT.csI2N{iI}).LipidMass + ttxResults.(this.oMT.csI2N{iI}).CarbohydrateMass);
 
                     % total and partly energy content [J]
-                    ttxResults.(this.oMT.csI2N{iI}).TotalEnergy = this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fEnergyMass * ttxResults.(this.oMT.csI2N{iI}).Mass;
-                    ttxResults.(this.oMT.csI2N{iI}).ProteinEnergy = ttxResults.(this.oMT.csI2N{iI}).ProteinMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fProteinEnergyFactor;
-                    ttxResults.(this.oMT.csI2N{iI}).LipidEnergy = ttxResults.(this.oMT.csI2N{iI}).ProteinMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fLipidEnergyFactor;
-                    ttxResults.(this.oMT.csI2N{iI}).CarbohydrateEnergy = ttxResults.(this.oMT.csI2N{iI}).ProteinMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCarbohydrateEnergyFactor;
+                    ttxResults.(this.oMT.csI2N{iI}).TotalEnergy         = this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fEnergyMass * ttxResults.(this.oMT.csI2N{iI}).Mass;
+                    ttxResults.(this.oMT.csI2N{iI}).ProteinEnergy       = ttxResults.(this.oMT.csI2N{iI}).ProteinMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fProteinEnergyFactor;
+                    ttxResults.(this.oMT.csI2N{iI}).LipidEnergy         = ttxResults.(this.oMT.csI2N{iI}).LipidMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fLipidEnergyFactor;
+                    ttxResults.(this.oMT.csI2N{iI}).CarbohydrateEnergy  = ttxResults.(this.oMT.csI2N{iI}).CarbohydrateMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCarbohydrateEnergyFactor;
 
                     % Mineral content [kg]
                     ttxResults.(this.oMT.csI2N{iI}).CalciumMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCalciumDMF;
