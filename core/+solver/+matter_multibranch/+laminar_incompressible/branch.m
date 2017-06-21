@@ -31,7 +31,7 @@ classdef branch < base & event.source
         %   * complex: f2f callbacks for dP, fan callback, p2p immediately
         %     called in every iteration for absorption rate (requires
         %     specific method in p2p)
-        sMode = 'simple';
+        sMode = 'complex';
     end
     
     properties (SetAccess = private, GetAccess = protected) %, Transient = true)
