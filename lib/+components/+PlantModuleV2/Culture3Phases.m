@@ -110,7 +110,7 @@ classdef Culture3Phases < vsys
             createMatterStructure@vsys(this);
             %% Create Store, Phases and Processors
             
-            matter.store(this, 'Plant_Culture', 20);
+            matter.store(this, 'Plant_Culture', 10.1);
             
             % TO DO: Specify volumes of the phases individually!!! and
             % simply make the store mass the sum of it. Also maybe make a
@@ -125,7 +125,7 @@ classdef Culture3Phases < vsys
                 struct(...                                              % phase contents    [kg]
                     ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), 1e-3,...
                     ([this.txPlantParameters.sPlantSpecies, 'InedibleWet']), 1e-3), ...
-                10, ...                                                 % volume    [m^3]
+                5, ...                                                 % volume    [m^3]
                 293.15, ...                                             % phase temperature [K]
                 101325);                                                
             
@@ -139,7 +139,7 @@ classdef Culture3Phases < vsys
                 struct('CO2', 0.1, 'O2', 0.1, 'H2O', 0.5, 'Nutrients', 0.01,...
                     ([this.txPlantParameters.sPlantSpecies, 'EdibleWet']), 0.1,...
                     ([this.txPlantParameters.sPlantSpecies, 'InedibleWet']), 0.1), ...
-                10, ...                                                 % volume    [m^3]
+                5, ...                                                 % volume    [m^3]
                 293.15, ...                                             % phase temperature [K]
                 101325);
             
@@ -152,6 +152,14 @@ classdef Culture3Phases < vsys
             matter.procs.exmes.mixture(oBalance, 'GasExchange_In');
             matter.procs.exmes.mixture(oBalance, 'GasExchange_Out');
             
+            oAtmosphere = this.toStores.Plant_Culture.createPhase('air', 0.1, 293.15, 0.5, 101325);
+                  
+            matter.procs.exmes.gas(oAtmosphere, 'Air_From_Greenhouse');
+            matter.procs.exmes.gas(oAtmosphere, 'Air_To_Greenhouse');
+            
+            matter.procs.exmes.gas(oAtmosphere, 'GasExchange_In');
+            matter.procs.exmes.gas(oAtmosphere, 'GasExchange_Out');
+            
             %% Create Biomass Growth P2P Processor
             
             % 
@@ -162,15 +170,26 @@ classdef Culture3Phases < vsys
                 [oBalance.sName, '.BiomassGrowth_P2P'], ...     % first phase and exme
                 [oPlants.sName, '.BiomassGrowth_P2P']);         % second phase and exme
                     
+            components.P2Ps.ManualP2P(...
+                this, ...                                       % parent system reference
+                this.toStores.Plant_Culture, ...                % store containing phases
+                'GasExchange_From_Atmosphere_To_Plants', ...   	% p2p processor name
+                [oAtmosphere.sName, '.GasExchange_Out'], ...     % first phase and exme
+                [oBalance.sName, '.GasExchange_In']);         % second phase and exme
             
+            components.P2Ps.ManualP2P(...
+                this, ...                                       % parent system reference
+                this.toStores.Plant_Culture, ...                % store containing phases
+                'GasExchange_From_Plants_To_Atmosphere', ...   	% p2p processor name
+                [oBalance.sName, '.GasExchange_Out'], ...     % first phase and exme
+                [oAtmosphere.sName, '.GasExchange_In']);         % second phase and exme
             %% Create Substance Conversion Manipulators
-            
             components.PlantModuleV2.PlantManipulator(this, 'PlantManipulator', this.toStores.Plant_Culture.toPhases.Balance);
             
             %% Create Branches
             
-            matter.branch(this, 'Plant_Culture.GasExchange_In',             {}, 'Atmosphere_FromIF_In',     'Atmosphere_In', true);
-            matter.branch(this, 'Plant_Culture.GasExchange_Out',            {}, 'Atmosphere_ToIF_Out',      'Atmosphere_Out', true);
+            matter.branch(this, 'Plant_Culture.Air_From_Greenhouse',        {}, 'Atmosphere_FromIF_In',     'Atmosphere_In');
+            matter.branch(this, 'Plant_Culture.Air_To_Greenhouse',          {}, 'Atmosphere_ToIF_Out',      'Atmosphere_Out');
             
             matter.branch(this, 'Plant_Culture.WaterSupply_In',             {}, 'WaterSupply_FromIF_In',    'WaterSupply_In');
             matter.branch(this, 'Plant_Culture.NutrientSupply_In',          {}, 'NutrientSupply_FromIF_In', 'NutrientSupply_In');
@@ -192,15 +211,14 @@ classdef Culture3Phases < vsys
             createSolverStructure@vsys(this);
             
             % add branches to solvers
-            solver.matter.p2p.branch(this.toBranches.Atmosphere_In);
-            solver.matter.p2p.branch(this.toBranches.Atmosphere_Out);
+            solver.matter.manual.branch(this.toBranches.Atmosphere_In);
+            solver.matter.residual.branch(this.toBranches.Atmosphere_Out);
             solver.matter.manual.branch(this.toBranches.WaterSupply_In);
             solver.matter.manual.branch(this.toBranches.NutrientSupply_In);
             solver.matter.manual.branch(this.toBranches.Biomass_Out);
             
             % initialize flowrates
-            this.toBranches.Atmosphere_In.oHandler.setFlowRate(zeros(1,this.oMT.iSubstances));
-            this.toBranches.Atmosphere_Out.oHandler.setFlowRate(zeros(1,this.oMT.iSubstances));
+            this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
             this.toBranches.WaterSupply_In.oHandler.setFlowRate(0);
             this.toBranches.NutrientSupply_In.oHandler.setFlowRate(0);
             this.toBranches.Biomass_Out.oHandler.setFlowRate(0);
@@ -218,6 +236,7 @@ classdef Culture3Phases < vsys
                     oPhase.arMaxChange(this.oMT.tiN2I.O2)  = 0.5;
                 end
             end
+            this.toStores.Plant_Culture.toPhases.Plant_Culture_Phase_3.bSynced = true;
         end
         
         %% Connect Subsystem Interfaces with Parent System
@@ -308,8 +327,10 @@ classdef Culture3Phases < vsys
                     this.toBranches.Biomass_Out.oHandler.setFlowRate(0);
                     this.toBranches.WaterSupply_In.oHandler.setFlowRate(0);
                     this.toBranches.NutrientSupply_In.oHandler.setFlowRate(0);
-                    this.toBranches.Atmosphere_In.oHandler.setFlowRate(zeros(1,this.oMT.iSubstances));
-                    this.toBranches.Atmosphere_Out.oHandler.setFlowRate(zeros(1,this.oMT.iSubstances));
+                    
+                    %this.toStores.Plant_Culture.toProcsP2P.GasExchange_From_Plants_To_Atmosphere.setFlowRate(zeros(1,this.oMT.iSubstances));
+                    this.toStores.Plant_Culture.toProcsP2P.GasExchange_From_Atmosphere_To_Plants.setFlowRate(zeros(1,this.oMT.iSubstances));
+                    this.toBranches.Atmosphere_In.oHandler.setFlowRate(-0.1);
                     
                 elseif this.iState == 2
                     %

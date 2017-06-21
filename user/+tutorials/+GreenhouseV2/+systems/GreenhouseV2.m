@@ -129,7 +129,7 @@ classdef GreenhouseV2 < vsys
 %                 20, ...                             % phase volume      [m^3]
 %                 fTemperatureInit);                  % phase temperature [K]
 
-            this.toStores.Atmosphere.bPreventVolumeOverwrite = true;
+            %this.toStores.Atmosphere.bPreventVolumeOverwrite = true;
             oAtmosphere = this.toStores.Atmosphere.createPhase('air', 200, 293.15, 0.5, 101325);
                   
             matter.procs.exmes.gas(oAtmosphere, 'WaterAbsorber_P2P');
@@ -258,7 +258,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.N2BufferSupply, ...       % store containing phase
                 'N2BufferSupply', ...                   % phase name
                 struct(...                              % phase contents    [kg]
-                    'N2', 20e3), ...
+                    'N2', 10e2), ...
                 1e3, ...                                % phase volume      [m^3]
                 fTemperatureInit);                      % phase temperature [K]
                 
@@ -275,7 +275,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.CO2BufferSupply, ...      % store containing phase
                 'CO2BufferSupply', ...                  % phase name
                 struct(...                              % phase contents    [kg]
-                    'CO2', 20e3), ...
+                    'CO2', 10e2), ...
                 1e3, ...                                % phase volume      [m^3]
                 fTemperatureInit);                      % phase temperature [K]
                 
@@ -302,11 +302,11 @@ classdef GreenhouseV2 < vsys
             
             
             % add water separator store
-            matter.store(this, 'WaterSeparator', 5);
+%             matter.store(this, 'WaterSeparator', 5);
            
             % add water phase to water separator
             oWaterWS = matter.phases.liquid(...
-                this.toStores.WaterSeparator, ...       % store containing phase
+                this.toStores.Atmosphere, ...       % store containing phase
                 'WaterWS', ...                          % phase name
                 struct(...                              % phase contents    [kg]
                     'H2O', 1e-3), ...
@@ -324,7 +324,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.Atmosphere, ...       % store containing phase
                 'ExcessO2', ...                     % phase name
                 struct(...                          % phase contents    [kg]
-                    'O2', 1e5), ...
+                    'O2', 10), ...
                 1e6, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
@@ -335,7 +335,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.Atmosphere, ...       % store containing phase
                 'ExcessCO2', ...                    % phase name
                 struct(...                          % phase contents    [kg]
-                    'CO2', 1e5), ...
+                    'CO2', 10), ...
                 1e6, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
@@ -357,11 +357,18 @@ classdef GreenhouseV2 < vsys
                 'Atmosphere_Phase_1.ExcessCO2_P2P', ...     % first phase and exme
                 'ExcessCO2.ExcessCO2_P2P');                 % second phase and exme
             
+            components.P2Ps.ManualP2P(...
+                this, ...                                   % parent system reference
+                this.toStores.Atmosphere, ...               % store containing phases
+                'WaterAbsorber_P2P', ...                        % p2p processor name
+                'Atmosphere_Phase_1.WaterAbsorber_P2P', ...     % first phase and exme
+                'WaterWS.WaterAbsorber_P2P');                 % second phase and exme
+            
             % create branches exclusive to this section
             matter.branch(this, 'N2BufferSupply.N2_Out_ToAtmosphere',           {}, 'Atmosphere.N2_In_FromBuffer',                  'N2BufferSupply');
             matter.branch(this, 'CO2BufferSupply.CO2_Out_ToAtmosphere',         {}, 'Atmosphere.CO2_In_FromBuffer',                 'CO2BufferSupply');
             matter.branch(this, 'O2BufferSupply.O2_Out_ToAtmosphere',           {}, 'Atmosphere.O2_In_FromBuffer',                  'O2BufferSupply');
-            matter.branch(this, 'Atmosphere.WaterAbsorber_P2P',                 {}, 'WaterSeparator.WaterAbsorber_P2P',             'WaterAbsorber',    true);
+            %matter.branch(this, 'Atmosphere.WaterAbsorber_P2P',                 {}, 'WaterSeparator.WaterAbsorber_P2P',             'WaterAbsorber',    true);
        
             
             %% Create EXMEs for Culture Connections
@@ -433,7 +440,6 @@ classdef GreenhouseV2 < vsys
             solver.matter.manual.branch(this.toBranches.N2BufferSupply);
             solver.matter.manual.branch(this.toBranches.CO2BufferSupply);
             solver.matter.manual.branch(this.toBranches.O2BufferSupply);
-            solver.matter.p2p.branch(this.toBranches.WaterAbsorber);
             
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
@@ -455,6 +461,7 @@ classdef GreenhouseV2 < vsys
             this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arMaxChange(this.oMT.tiN2I.H2O) = 0.05;
             this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arMaxChange(this.oMT.tiN2I.CO2) = 0.05;
             this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arMaxChange(this.oMT.tiN2I.O2)  = 0.05;
+            this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arMaxChange(this.oMT.tiN2I.N2)  = 0.05;
             
             this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.bind('PostUpdate',@(~)this.update());
             
@@ -582,7 +589,7 @@ classdef GreenhouseV2 < vsys
             
             %% Humidity Controller
             fNominalCondensateFlow = abs(fNominalCondensateFlow) + fH2O_Leakage;
-            fPreviousCondensateFlow = this.toBranches.WaterAbsorber.fFlowRate;
+            fPreviousCondensateFlow = this.toStores.Atmosphere.toProcsP2P.WaterAbsorber_P2P.fFlowRate;
             if fPreviousCondensateFlow == 0 || (fRelativeHumidity > 0.6 && fPreviousCondensateFlow < fNominalCondensateFlow) || (fRelativeHumidity < 0.5 && fPreviousCondensateFlow > fNominalCondensateFlow)
                 fPreviousCondensateFlow = fNominalCondensateFlow;
             end
@@ -596,7 +603,7 @@ classdef GreenhouseV2 < vsys
                 fCondensateFlow = 1.01 * fPreviousCondensateFlow;
                 
             elseif fRelativeHumidity < 0.4
-                if this.toStores.WaterSeparator.toPhases.WaterWS.fMass > (1/3600 * this.fTimeStep)
+                if this.toStores.Atmosphere.toPhases.WaterWS.fMass > (1/3600 * this.fTimeStep)
                     fCondensateFlow = - 1/3600;
                 else
                     fCondensateFlow = 0;
@@ -610,7 +617,7 @@ classdef GreenhouseV2 < vsys
             
             afFlowRate = zeros(1,this.oMT.iSubstances);
             afFlowRate(this.oMT.tiN2I.H2O) = fCondensateFlow;
-            this.toBranches.WaterAbsorber.oHandler.setFlowRate(afFlowRate);
+            this.toStores.Atmosphere.toProcsP2P.WaterAbsorber_P2P.setFlowRate(afFlowRate);
 
             % In case the plant module results in mass errors for you try
             % outcommenting this function, it should help with debugging ;)
@@ -639,7 +646,16 @@ classdef GreenhouseV2 < vsys
     methods (Access = protected)
         function exec(this, ~)
             exec@vsys(this);
-            this.update();
+            
+            % as a second layer of check to prevent the mass from changing
+            % to rapidly here the mass will be predicted and in case it
+            % changes too rapidly the update frequency will be reduced
+            afPredictedMass = this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass + (this.fTimeStep * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afCurrentTotalInOuts);
+            
+            if any(afPredictedMass < 0)
+                this.setTimeStep(this.fUpdateFrequency/10);
+                this.update();
+            end
         end
     end 
 end

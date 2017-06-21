@@ -149,15 +149,15 @@ function [ oCulture ] = ...
                     keyboard()
                 end
                 % For debugging, if the mass balance is no longer correct
-%                 if oCulture.fWaterConsumptionRate > 0
-%                     fBalance = oCulture.tfGasExchangeRates.fO2ExchangeRate + oCulture.tfGasExchangeRates.fCO2ExchangeRate + oCulture.tfGasExchangeRates.fTranspirationRate + ...
-%                      (oCulture.tfBiomassGrowthRates.fGrowthRateInedible + oCulture.tfBiomassGrowthRates.fGrowthRateEdible) ...
-%                      - (oCulture.fWaterConsumptionRate + oCulture.fNutrientConsumptionRate);
-%                  
-%                     if abs(fBalance) > 1e-18
-%                         keyboard()
-%                     end
-%                 end
+                if oCulture.fWaterConsumptionRate > 0
+                    fBalance = oCulture.tfGasExchangeRates.fO2ExchangeRate + oCulture.tfGasExchangeRates.fCO2ExchangeRate + oCulture.tfGasExchangeRates.fTranspirationRate + ...
+                     (oCulture.tfBiomassGrowthRates.fGrowthRateInedible + oCulture.tfBiomassGrowthRates.fGrowthRateEdible) ...
+                     - (oCulture.fWaterConsumptionRate + oCulture.fNutrientConsumptionRate);
+                 
+                    if abs(fBalance) > 1e-18
+                        keyboard()
+                    end
+                end
                 
                 
             % harvest time reached -> change state to harvest   
