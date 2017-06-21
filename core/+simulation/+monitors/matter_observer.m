@@ -73,11 +73,47 @@ classdef matter_observer < simulation.monitor
         
         
         function onFinish(this, ~)
+            % in order to display the correct mass balance it is necessary
+            % to run a massupdate on all phases. Otherwise it is possible
+            % that one phase has already used massupdate (and e.g. mass was
+            % removed) while the other phase into which the mass would be
+            % moved was not updated yet therefore resulting in a mass
+            % difference that is only temporary and not actually an error
+            oInfra = this.oSimulationInfrastructure;
+            oSim   = oInfra.oSimulationContainer;
+            oMT    = oSim.oMT;
+            for iPhase = 1:length(oMT.aoPhases)
+                oMT.aoPhases(iPhase).massupdate();
+            end
+            iIdx = size(this.mfTotalMass, 1) + 1;
+
+            % Total mass: sum over all mass stored in all phases, for each
+            % species separately.
+            this.mfTotalMass(iIdx, :) = sum(reshape([ oMT.aoPhases.afMass ], oMT.iSubstances, []), 2)';
+            
             this.displayMatterBalance();
         end
         
         
         function onPause(this, ~)
+            % in order to display the correct mass balance it is necessary
+            % to run a massupdate on all phases. Otherwise it is possible
+            % that one phase has already used massupdate (and e.g. mass was
+            % removed) while the other phase into which the mass would be
+            % moved was not updated yet therefore resulting in a mass
+            % difference that is only temporary and not actually an error
+            oInfra = this.oSimulationInfrastructure;
+            oSim   = oInfra.oSimulationContainer;
+            oMT    = oSim.oMT;
+            for iPhase = 1:length(oMT.aoPhases)
+                oMT.aoPhases(iPhase).massupdate();
+            end
+            iIdx = size(this.mfTotalMass, 1) + 1;
+
+            % Total mass: sum over all mass stored in all phases, for each
+            % species separately.
+            this.mfTotalMass(iIdx, :) = sum(reshape([ oMT.aoPhases.afMass ], oMT.iSubstances, []), 2)';
+            
             this.displayMatterBalance();
         end
         

@@ -147,11 +147,13 @@ classdef setup < simulation.infrastructure
             txCustom.mbPosition = [ false, false, false;...
                                     true , false, false];
             oPlot.definePlot(cNames, sTitle, txCustom);
+            oPlot.definePlot(cNames, sTitle, txCustom);
             
             cNames = {'Flowrate of CO2'};
             sTitle = 'Flowrate of CO2';
             txCustom.mbPosition = [ false, false, true;...
                                     false, false, false];
+            oPlot.definePlot(cNames, sTitle, txCustom);
             oPlot.definePlot(cNames, sTitle, txCustom);
             
             

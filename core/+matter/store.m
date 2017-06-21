@@ -7,7 +7,9 @@ classdef store < base
     %     to set? should basically immediately derive from store, never
     %     directly be provided, right?
     %   - something like total pressure, if gas phases share a volume?
-    
+    properties (SetAccess = public)
+        bPreventVolumeOverwrite = false;
+    end
     properties (SetAccess = private, GetAccess = public)
         % Phases - mixin arrays, with the base class being matter.phase who
         % is abstract - therefore can't create empty - see matter.table ...
@@ -78,6 +80,7 @@ classdef store < base
         
         fTotalPressureErrorStore = 0;
         iNestedIntervallCounterStore = 0;
+        
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -741,6 +744,9 @@ classdef store < base
         function setVolume(this, fVolume)
             % Change the volume.
             %
+            if this.bPreventVolumeOverwrite
+                return
+            end
             %TODO Event?
             % Trigger 'set.fVolume' -> return values of callbacks say
             % something about the distribution throughout the phases?

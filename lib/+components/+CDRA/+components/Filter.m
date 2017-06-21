@@ -235,7 +235,14 @@ classdef Filter < matter.procs.p2ps.flow
             %calculates the current time step
             fTimeStep = this.oStore.oTimer.fTime - this.fLastExec;
             
-            if fTimeStep <= 0
+            if fTimeStep <= 0.1
+                return
+            end
+            
+            if this.oStore.oContainer.fFlowrateMain == 0
+                this.fFlowRateFilter = 0;
+                this.arExtractPartials = zeros(1,this.oMT.iSubstances);
+                this.setMatterProperties(this.fFlowRateFilter, this.arExtractPartials);
                 return
             end
             
@@ -390,8 +397,14 @@ classdef Filter < matter.procs.p2ps.flow
                     
                     %during desorption the capacity is set to 0
                     this.fCapacity = 0;
+                      
+                    fAvailableMassFlow = this.oOut.oPhase.afMass(this.arExtractPartials ~= 0) / fTimeStep;
+
+                    if this.fFlowRateFilter > fAvailableMassFlow
+                        this.fFlowRateFilter = fAvailableMassFlow;
+                    end
             end
-                
+              
             %this sets the actual filter flow rate for the p2p processor
             this.setMatterProperties(this.fFlowRateFilter, this.arExtractPartials);
             
@@ -445,8 +458,10 @@ classdef Filter < matter.procs.p2ps.flow
                         fEnergyChange = fMaxTempDiff*this.oOut.oPhase.fTotalHeatCapacity;
                     end
                 end
-                 
-                this.oOut.oPhase.changeInnerEnergy(fEnergyChange);
+                
+                fOverallHeatFlow = fEnergyChange/fTimeStep;
+                
+                this.oOut.oPhase.setInternalHeatFlow(fOverallHeatFlow);
                 
             end
             

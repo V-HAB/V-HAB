@@ -44,50 +44,10 @@ classdef setup_cooledBar < simulation.infrastructure
             
             oPlot = this.toMonitors.oPlotter;
             
-            oPlot.definePlotAllWithFilter('K', 'Temperatures');
-            oPlot.definePlotAllWithFilter('J/K', 'Capacities');
-            oPlot.definePlotAllWithFilter('W/K','Conductances');
+            oPlot.definePlot('K', 'Temperatures');
+            oPlot.definePlot('J/K', 'Capacities');
+            oPlot.definePlot('W/K','Conductances');
             
-            %TODO/vhab: This should be done with a method like setLogData?
-%             this.csLog = {
-%                 % System timer
-%                 'oData.oTimer.fTime';
-%                 
-%                 % Solver & node temperatures
-% %                 'toChildren.cooledBar.poCapacities(''Block1'').getTemperature()'; % 2
-%                 'toChildren.cooledBar.toStores.Block1.oPhase.fTemperature'; 
-% %                 'toChildren.cooledBar.poCapacities(''Block2'').getTemperature()'; % 4
-%                 'toChildren.cooledBar.toStores.Block2.oPhase.fTemperature'; 
-% %                 'toChildren.cooledBar.poCapacities(''Block3'').getTemperature()'; % 6
-%                 'toChildren.cooledBar.toStores.Block3.oPhase.fTemperature'; 
-% %                 'toChildren.cooledBar.poCapacities(''Block4'').getTemperature()'; % 8
-%                 'toChildren.cooledBar.toStores.Block4.oPhase.fTemperature';
-% %                 'toChildren.cooledBar.poCapacities(''Block5'').getTemperature()'; % 10
-%                 'toChildren.cooledBar.toStores.Block5.oPhase.fTemperature';
-%                 
-%                 'toChildren.cooledBar.poCapacities(''Env'').getTemperature()'; % 12
-%                 
-%                 'toChildren.cooledBar.toStores.Block1.oPhase.fTotalHeatCapacity';
-%                 'toChildren.cooledBar.toStores.Block2.oPhase.fTotalHeatCapacity';
-%                 'toChildren.cooledBar.toStores.Block3.oPhase.fTotalHeatCapacity';
-%                 'toChildren.cooledBar.toStores.Block4.oPhase.fTotalHeatCapacity';
-%                 'toChildren.cooledBar.toStores.Block5.oPhase.fTotalHeatCapacity';
-%                 
-% %                 'toChildren.cooledBar.poCapacities(''Block1'').getTotalHeatCapacity()'; % 13
-% %                 'toChildren.cooledBar.poCapacities(''Block2'').getTotalHeatCapacity()'; 
-% %                 'toChildren.cooledBar.poCapacities(''Block3'').getTotalHeatCapacity()'; 
-% %                 'toChildren.cooledBar.poCapacities(''Block4'').getTotalHeatCapacity()'; 
-% %                 'toChildren.cooledBar.poCapacities(''Block5'').getTotalHeatCapacity()'; % 17
-%                 
-%                 'toChildren.cooledBar.poLinearConductors(''linear:Block1+Block2'').fConductivity'; % 18
-%                 'toChildren.cooledBar.poLinearConductors(''linear:Block2+Block3'').fConductivity';
-%                 'toChildren.cooledBar.poLinearConductors(''linear:Block3+Block4'').fConductivity';
-%                 'toChildren.cooledBar.poLinearConductors(''linear:Block4+Block5'').fConductivity'; % 21
-%                 
-%                 % Add other parameters here
-%                 
-%             };
-%         
             % Simulate 3600s.
             this.fSimTime = 3600; % [s]
             
@@ -146,17 +106,20 @@ classdef setup_cooledBar < simulation.infrastructure
             hCalcFunc = str2func('thermal.transfers.conductive.calculateConductance');
             
             % Set new conductivities: 
-            poLinC('linear:Block1+Block2').setConductivity( ...
+            poLinC('linear_dynamic:Block1+Block2').setConductivity( ...
                 hCalcFunc(oTSys.calcAlLambda(mMeanTemps(1)), 0.0016, 0.05) ...
             );
-            poLinC('linear:Block2+Block3').setConductivity( ...
+            poLinC('linear_dynamic:Block2+Block3').setConductivity( ...
                 hCalcFunc(oTSys.calcAlLambda(mMeanTemps(2)), 0.0016, 0.05) ...
             );
-            poLinC('linear:Block3+Block4').setConductivity( ...
+            poLinC('linear_dynamic:Block3+Block4').setConductivity( ...
                 hCalcFunc(oTSys.calcAlLambda(mMeanTemps(3)), 0.0016, 0.05) ...
             );
-            poLinC('linear:Block4+Block5').setConductivity( ...
+            poLinC('linear_dynamic:Block4+Block5').setConductivity( ...
                 hCalcFunc(oTSys.calcAlLambda(mMeanTemps(4)), 0.0016, 0.05) ...
+            );
+            poLinC('linear_dynamic:Block5+Block6').setConductivity( ...
+                hCalcFunc(oTSys.calcAlLambda(mMeanTemps(5)), 0.0016, 0.05) ...
             );
             
             % Mark thermal container as tainted. 

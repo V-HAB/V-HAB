@@ -10,8 +10,6 @@ classdef GreenhouseV2 < vsys
         
         csCultures;
         
-        fUpdateFrequency = 60;   % [s]
-        
         %% Atmosphere Control Paramters
         
         % water separator flowrate (value taken from old plant module)
@@ -19,23 +17,24 @@ classdef GreenhouseV2 < vsys
         
         %
         fCO2 = 330;
+        
+        fUpdateFrequency;
     end
     
     methods
         function this = GreenhouseV2(oParent, sName)
-            this@vsys(oParent, sName, 60);
+            this@vsys(oParent, sName, 3600);
             
+            this.fUpdateFrequency = this.fTimeStep;
             %% Import Nutrient Data
             
             % import nutirent data from .csv file
-            this.ttxNutrientData = ...
-                tutorials.GreenhouseV2.food.data.importNutrientData();
+            this.ttxNutrientData = components.PlantModuleV2.food.data.importNutrientData();
             
             %% Import Plant Parameters
             
             % import plant parameters from .csv file
-            this.ttxPlantParameters = ...
-                tutorials.GreenhouseV2.plantparameters.importPlantParameters();
+            this.ttxPlantParameters = components.PlantModuleV2.plantparameters.importPlantParameters();
             
             % import coefficient matrices for CQY and T_A
             % save fieldnames to temporary cell array
@@ -45,11 +44,11 @@ classdef GreenhouseV2 < vsys
             for iI = 1:size(csPlantSpecies)
                 % import coefficient matrices for CQY
                 this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_CQY = ...
-                    csvread(['user/+tutorials/+GreenhouseV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_CQY.csv']);
+                    csvread(['lib/+components/+PlantModuleV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_CQY.csv']);
                 
                 % import coefficient matrices for T_A
                 this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_T_A = ...
-                    csvread(['user/+tutorials/+GreenhouseV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_T_A.csv']);
+                    csvread(['lib/+components/+PlantModuleV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_T_A.csv']);
                 
                 %% Additional Required Parameters
                 
@@ -82,7 +81,7 @@ classdef GreenhouseV2 < vsys
             % TODO: find a better way for providing inputs for culture
             % setup. old way will have to do for now, it works at least.
             blubb = load(...
-                strrep('tutorials\+GreenhouseV2\+components\+cultures\CultureInputLSP.mat', '\', filesep));
+                strrep('lib\+components\+PlantModuleV2\+cultures\CultureInputLSP.mat', '\', filesep));
             
             % write to property
             this.ttxInput = blubb.CultureInput;
@@ -97,11 +96,11 @@ classdef GreenhouseV2 < vsys
             for iI = 1:length(this.csCultures)
                 % culture object gets assigned using its culture name 
                 this.toCultures.(this.csCultures{iI}) = ...
-                    tutorials.GreenhouseV2.components.Culture3Phases(...
+                    components.PlantModuleV2.Culture3Phases(...
                         this, ...                                   % parent system reference
                         this.ttxPlantParameters.(this.ttxInput.(this.csCultures{iI}).sPlantSpecies), ...
                         this.ttxInput.(this.csCultures{iI}), ...    % input for specific culture
-                        this.fUpdateFrequency);
+                        this.fTimeStep);
             end
         end
         
@@ -117,7 +116,7 @@ classdef GreenhouseV2 < vsys
             %% Atmosphere
             
             % comment 2e6 if regulation is not needed
-            matter.store(this, 'Atmosphere', 20 + 2e6);
+            matter.store(this, 'Atmosphere', 200);
             
 %             oAtmosphere = matter.phases.gas(...
 %                 this.toStores.Atmosphere, ...       % store containing phase
@@ -130,18 +129,21 @@ classdef GreenhouseV2 < vsys
 %                 20, ...                             % phase volume      [m^3]
 %                 fTemperatureInit);                  % phase temperature [K]
 
-            oAtmosphere = this.toStores.Atmosphere.createPhase('air', 20, 293.15, 0.5, 101325);
+            this.toStores.Atmosphere.bPreventVolumeOverwrite = true;
+            oAtmosphere = this.toStores.Atmosphere.createPhase('air', 200, 293.15, 0.5, 101325);
                   
+            matter.procs.exmes.gas(oAtmosphere, 'WaterAbsorber_P2P');
+            
             %% Water Supply
             
-            matter.store(this, 'WaterSupply', 20);
+            matter.store(this, 'WaterSupply', 100);
             
             oWaterSupply = matter.phases.liquid(...
                 this.toStores.WaterSupply, ...      % store containing phase
                 'WaterSupply', ...                  % phase name
                 struct(...                          % phase contents    [kg]
-                    'H2O', 20e3), ...
-                20, ...                             % phase volume      [m^3]
+                    'H2O', 100e3), ...
+                100, ...                             % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 fPressureInit);                     % phase pressure    [Pa]
                        
@@ -160,7 +162,7 @@ classdef GreenhouseV2 < vsys
             
             %% Biomass Edible/Inedible Split Buffer
             
-            matter.store(this, 'BiomassSplit', 1);
+            matter.store(this, 'BiomassSplit', 4);
             
             oBiomassEdibleSplit = matter.phases.liquid(...
                 this.toStores.BiomassSplit, ...     % store containing phase
@@ -225,6 +227,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.LeakageBuffer, ...        % store containing phase
                 'LeakageBuffer', ...                    % phase name
                 struct(...                              % phase contents    [kg]
+                'N2', 1e-3,...
                 'CO2', 1e-3), ...
                 1e3, ...                                % phase volume      [m^3]
                 fTemperatureInit);                      % phase temperature [K]
@@ -300,9 +303,6 @@ classdef GreenhouseV2 < vsys
             
             % add water separator store
             matter.store(this, 'WaterSeparator', 5);
-            
-            % add atmosphere phase to water separator
-            oAtmosphereWS = this.toStores.WaterSeparator.createPhase('air', 1, 293.15, 0, 101325);
            
             % add water phase to water separator
             oWaterWS = matter.phases.liquid(...
@@ -315,26 +315,16 @@ classdef GreenhouseV2 < vsys
                 fPressureInit);                         % phase pressure    [Pa]
            
             % add exmes
-            % from and to atmosphere
-            matter.procs.exmes.gas(oAtmosphereWS, 'Atmosphere_In_FromAtmosphere');
-            matter.procs.exmes.gas(oAtmosphereWS, 'Atmosphere_Out_ToAtmosphere');
-            matter.procs.exmes.gas(oAtmosphere, 'Atmosphere_In_FromSeparator');
-            matter.procs.exmes.gas(oAtmosphere, 'Atmosphere_Out_ToSeparator');
             
             % water absorber exmes
-            matter.procs.exmes.gas(oAtmosphereWS, 'WaterAbsorber_P2P');
             matter.procs.exmes.liquid(oWaterWS, 'WaterAbsorber_P2P');
-            
-            % add water absorber p2p processor
-            tutorials.GreenhouseV2.components.WaterAbsorber(this, this.toStores.WaterSeparator, 'WaterAbsorber_P2P', 'WaterSeparator_Phase_1.WaterAbsorber_P2P', 'WaterWS.WaterAbsorber_P2P');
-            
             
             % add O2 an CO2 excess phases and exmes to atmosphere store 
             oExcessO2 = matter.phases.gas(...
                 this.toStores.Atmosphere, ...       % store containing phase
                 'ExcessO2', ...                     % phase name
                 struct(...                          % phase contents    [kg]
-                    'O2', 1e-3), ...
+                    'O2', 1e5), ...
                 1e6, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
@@ -345,7 +335,7 @@ classdef GreenhouseV2 < vsys
                 this.toStores.Atmosphere, ...       % store containing phase
                 'ExcessCO2', ...                    % phase name
                 struct(...                          % phase contents    [kg]
-                    'CO2', 1e-3), ...
+                    'CO2', 1e5), ...
                 1e6, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
@@ -353,41 +343,33 @@ classdef GreenhouseV2 < vsys
             matter.procs.exmes.gas(oAtmosphere, 'ExcessCO2_P2P');
             
             % add excess extraction p2ps
-            tutorials.GreenhouseV2.components.SingleSubstanceExtractor(...
+            components.P2Ps.ManualP2P(...
                 this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
                 'ExcessO2_P2P', ...                         % p2p processor name
                 'Atmosphere_Phase_1.ExcessO2_P2P', ...      % first phase and exme
-                'ExcessO2.ExcessO2_P2P', ...                % second phase and exme
-                'O2');                                      % substance to extract
-            
-            tutorials.GreenhouseV2.components.SingleSubstanceExtractor(...
+                'ExcessO2.ExcessO2_P2P');                   % second phase and exme
+                
+            components.P2Ps.ManualP2P(...
                 this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
                 'ExcessCO2_P2P', ...                        % p2p processor name
                 'Atmosphere_Phase_1.ExcessCO2_P2P', ...     % first phase and exme
-                'ExcessCO2.ExcessCO2_P2P', ...              % second phase and exme
-                'CO2');                                     % substance to extract
+                'ExcessCO2.ExcessCO2_P2P');                 % second phase and exme
             
             % create branches exclusive to this section
             matter.branch(this, 'N2BufferSupply.N2_Out_ToAtmosphere',           {}, 'Atmosphere.N2_In_FromBuffer',                  'N2BufferSupply');
             matter.branch(this, 'CO2BufferSupply.CO2_Out_ToAtmosphere',         {}, 'Atmosphere.CO2_In_FromBuffer',                 'CO2BufferSupply');
             matter.branch(this, 'O2BufferSupply.O2_Out_ToAtmosphere',           {}, 'Atmosphere.O2_In_FromBuffer',                  'O2BufferSupply');
-            matter.branch(this, 'Atmosphere.Atmosphere_Out_ToSeparator',        {}, 'WaterSeparator.Atmosphere_In_FromAtmosphere',  'AtmosphereToWS');
-            matter.branch(this, 'WaterSeparator.Atmosphere_Out_ToAtmosphere',   {}, 'Atmosphere.Atmosphere_In_FromSeparator',       'AtmosphereFromWS');
+            matter.branch(this, 'Atmosphere.WaterAbsorber_P2P',                 {}, 'WaterSeparator.WaterAbsorber_P2P',             'WaterAbsorber',    true);
        
-            %% Create Biomass Split P2P
-            
-            tutorials.GreenhouseV2.components.BiomassSplit(...
-                this.toStores.BiomassSplit, ...
-                'EdibleInedible_Split_P2P', ...
-                'BiomassEdible.EdibleInedible_Split_P2P', ...
-                'BiomassInedible.EdibleInedible_Split_P2P');
             
             %% Create EXMEs for Culture Connections
             
             % get names and number of grown cultures
             this.csCultures = fieldnames(this.toCultures);
+            
+            csInedibleBiomass = cell(1, length(this.csCultures));
             
             % loop over all cultures to create each required exmes 
             for iI = 1:length(this.csCultures)
@@ -397,8 +379,20 @@ classdef GreenhouseV2 < vsys
                 matter.procs.exmes.liquid(oWaterSupply,         [this.toCultures.(this.csCultures{iI}).sName, '_WaterSupply_Out']);
                 matter.procs.exmes.liquid(oNutrientSupply,      [this.toCultures.(this.csCultures{iI}).sName, '_NutrientSupply_Out']);
                 matter.procs.exmes.liquid(oBiomassEdibleSplit,  [this.toCultures.(this.csCultures{iI}).sName, '_Biomass_In']);
+                
+                csInedibleBiomass{iI} = [this.toCultures.(this.csCultures{iI}).txPlantParameters.sPlantSpecies, 'InedibleWet'];
             end
             
+            %% Create Biomass Split P2P
+            
+            oConstantP2P = components.P2Ps.ConstantMassP2P(this, ...
+                this.toStores.BiomassSplit, ...
+                'EdibleInedible_Split_P2P', ...
+                'BiomassEdible.EdibleInedible_Split_P2P', ...
+                'BiomassInedible.EdibleInedible_Split_P2P',...
+                csInedibleBiomass, 1);
+            
+            oConstantP2P.fTimeStep = 3600;
             %% Create Branches
             
             % create leakage branch
@@ -439,14 +433,8 @@ classdef GreenhouseV2 < vsys
             solver.matter.manual.branch(this.toBranches.N2BufferSupply);
             solver.matter.manual.branch(this.toBranches.CO2BufferSupply);
             solver.matter.manual.branch(this.toBranches.O2BufferSupply);
-            solver.matter.manual.branch(this.toBranches.AtmosphereToWS);
-            solver.matter.manual.branch(this.toBranches.AtmosphereFromWS);
+            solver.matter.p2p.branch(this.toBranches.WaterAbsorber);
             
-            this.toBranches.N2BufferSupply.oHandler.setFlowRate(0);
-            this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
-            this.toBranches.O2BufferSupply.oHandler.setFlowRate(0);
-            this.toBranches.AtmosphereToWS.oHandler.setFlowRate(0);
-            this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(0);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             solver.matter.manual.branch(this.toBranches.Leakage);
@@ -454,8 +442,22 @@ classdef GreenhouseV2 < vsys
             solver.matter.manual.branch(this.toBranches.SplitToInedible);
             
             this.toBranches.Leakage.oHandler.setFlowRate(1e-5);
-            this.toBranches.SplitToEdible.oHandler.setFlowRate(0);
-            this.toBranches.SplitToInedible.oHandler.setFlowRate(0);
+
+            % set time steps
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    oPhase.fMaxStep = this.fTimeStep;
+                    this.toStores.(csStoreNames{iStore}).fDefaultTimeStep = this.fTimeStep;
+                end
+            end
+            this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arMaxChange(this.oMT.tiN2I.H2O) = 0.05;
+            this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arMaxChange(this.oMT.tiN2I.CO2) = 0.05;
+            this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arMaxChange(this.oMT.tiN2I.O2)  = 0.05;
+            
+            this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.bind('PostUpdate',@(~)this.update());
+            
         end
         
         %% Calculate Atmosphere CO2 Concentration
@@ -470,13 +472,10 @@ classdef GreenhouseV2 < vsys
         % add cultures via the following method. will be implemented after
         % new plant model has been validated as inputs etc. have to be
         % adjusted.
-        function this = addCulture(this, sCultureName, sPlantSpecies, fGrowthArea, fEmergeTime, iConsecutiveGenerations, fHarvestTime, fPPFD, fH)
-        end
-    end
-    
-    methods (Access = protected)
-        function exec(this, ~)
-            exec@vsys(this);
+%         function this = addCulture(this, sCultureName, sPlantSpecies, fGrowthArea, fEmergeTime, iConsecutiveGenerations, fHarvestTime, fPPFD, fH)
+%         end
+
+        function update(this)
             
             % Atmosphere controllers required for standalone greenhouse. If
             % atmosphere control managed by other (sub)systems comment this
@@ -484,77 +483,163 @@ classdef GreenhouseV2 < vsys
             if ~this.oTimer.fTime
                 return;
             end
+            %this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.update();
+             
+            fNominalCondensateFlow = 0;
+            fNominalO2Flow = 0;
+            fNominalCO2Flow = 0;
             
-%             % output
-%             this.toStores.BiomassEdible.toPhases.BiomassEdible.calculateNutritionalContent();
-            
-            if this.oTimer.fTime >= 1e5
-                keyboard();
+            % Positive Values are outflows out fo the plants
+            for iCulture = 1:length(this.csCultures)
+                fNominalO2Flow          = fNominalO2Flow            + this.toCultures.(this.csCultures{iCulture}).tfGasExchangeRates.fO2ExchangeRate;
+                fNominalCO2Flow         = fNominalCO2Flow           + this.toCultures.(this.csCultures{iCulture}).tfGasExchangeRates.fCO2ExchangeRate;
+                fNominalCondensateFlow  = fNominalCondensateFlow    + this.toCultures.(this.csCultures{iCulture}).tfGasExchangeRates.fTranspirationRate;
             end
-
-            %% O2 Controller
+            fH2O_Leakage = this.toBranches.Leakage.fFlowRate * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.H2O);
+            fCO2_Leakage = this.toBranches.Leakage.fFlowRate * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.CO2);
+            %fO2_Leakage  = this.toBranches.Leakage.fFlowRate * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.O2);
+            fN2_Leakage  = this.toBranches.Leakage.fFlowRate * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.N2);
             
-            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afPP(this.oMT.tiN2I.O2) <= 21000
-                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 0;
-                this.toBranches.O2BufferSupply.oHandler.setFlowRate(1e-3);
-            elseif this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afPP(this.oMT.tiN2I.O2) > 22000
-                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 1e-4;
-                this.toBranches.O2BufferSupply.oHandler.setFlowRate(0);
+            %% Decide on the time step:
+            fPartialPressureO2  = this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afPP(this.oMT.tiN2I.O2);
+            fCO2_Concentration  = this.CalculateCO2Concentration();
+            this.fCO2           = fCO2_Concentration;
+            fRelativeHumidity   = this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.rRelHumidity;
+            fPressure           = this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fPressure;
+            
+            % TBD: Well its just an example system with stupid unrealistic
+            % controllers :)
+            if (fRelativeHumidity > 0.85) || (fPartialPressureO2 > 23000) || (fCO2_Concentration > 2500)
+                this.setTimeStep(this.fUpdateFrequency/100);
+            elseif (fRelativeHumidity > 0.7) || (fPartialPressureO2 > 22500) || (fCO2_Concentration > 1500)
+                this.setTimeStep(this.fUpdateFrequency/10);
+            elseif (fRelativeHumidity < 0.25) || (fPartialPressureO2 < 18000) || (fCO2_Concentration < 150) || (fPressure < 7e4)
+                this.setTimeStep(this.fUpdateFrequency/100);
+            elseif (fRelativeHumidity < 0.45) || (fPartialPressureO2 < 19000) || (fCO2_Concentration < 300) || (fPressure < 9e4)
+                this.setTimeStep(this.fUpdateFrequency/10);
             else
-                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.fExtractionRate = 0;
+                this.setTimeStep(this.fUpdateFrequency);
+            end
+            
+            %% O2 Controller
+            fNominalO2Flow = abs(fNominalO2Flow);
+            if fPartialPressureO2 <= 19500
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
+                this.toBranches.O2BufferSupply.oHandler.setFlowRate(((1e-2 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass) / this.fTimeStep) + fNominalO2Flow);
+
+            elseif fPartialPressureO2 > 23000
+                afFlowRate = zeros(1,this.oMT.iSubstances);
+                afFlowRate(this.oMT.tiN2I.O2) = 2 * fNominalO2Flow + ((1e-2 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.O2)) / this.fTimeStep);
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.setFlowRate(afFlowRate);
+                this.toBranches.O2BufferSupply.oHandler.setFlowRate(0);
+
+            elseif fPartialPressureO2 > 22000
+                afFlowRate = zeros(1,this.oMT.iSubstances);
+                afFlowRate(this.oMT.tiN2I.O2) = 2 * fNominalO2Flow;
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.setFlowRate(afFlowRate);
+                this.toBranches.O2BufferSupply.oHandler.setFlowRate(0);
+                
+            else
+                afFlowRate = zeros(1,this.oMT.iSubstances);
+                afFlowRate(this.oMT.tiN2I.O2) = fNominalO2Flow;
+                this.toStores.Atmosphere.toProcsP2P.ExcessO2_P2P.setFlowRate(afFlowRate);
                 this.toBranches.O2BufferSupply.oHandler.setFlowRate(0);
             end
             
             %% CO2 Controller
-            
-            this.fCO2 = this.CalculateCO2Concentration();
-            if this.fCO2 >= 1300
+            fNominalCO2Flow = abs(fNominalCO2Flow) + fCO2_Leakage;
+            if fCO2_Concentration >= 3000
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
-                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 1e-4;
-            elseif this.fCO2 < 330
-                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(1e-3);
-                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 0;
+                afFlowRate = zeros(1,this.oMT.iSubstances);
+                afFlowRate(this.oMT.tiN2I.CO2) = ((1e-1 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.CO2)) / this.fTimeStep);
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(afFlowRate);
+                
+            elseif fCO2_Concentration > 2500
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
+                afFlowRate = zeros(1,this.oMT.iSubstances);
+                afFlowRate(this.oMT.tiN2I.CO2) = ((1e-2 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.CO2)) / this.fTimeStep);
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(afFlowRate);
+                
+            elseif fCO2_Concentration < 150
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate( ((1e-3 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass) / this.fTimeStep) + 2 * fNominalCO2Flow);
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
+                
+            elseif fCO2_Concentration < 330
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate( ((1e-4 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass) / this.fTimeStep) + 2 * fNominalCO2Flow);
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
+                            
+            elseif fCO2_Concentration < 1300
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate( fNominalCO2Flow );
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(zeros(1,this.oMT.iSubstances));
+                
             else
-                this.toBranches.CO2BufferSupply.oHandler.setFlowRate(0);
-                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.fExtractionRate = 0;
+                this.toBranches.CO2BufferSupply.oHandler.setFlowRate( 0 );
+                afFlowRate = zeros(1,this.oMT.iSubstances);
+                afFlowRate(this.oMT.tiN2I.CO2) = ((1e-3 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.CO2)) / this.fTimeStep + fNominalCO2Flow + 1e-3);
+                this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(afFlowRate);
+                
             end
             
             %% Humidity Controller
-            
-            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.rRelHumidity >= 0.7
-                
-                this.toBranches.AtmosphereToWS.oHandler.setFlowRate(this.fFlowRateWS);
-                
-                fPressureAtmosphereWS = this.toStores.WaterSeparator.toPhases.WaterSeparator_Phase_1.fMass * this.toStores.WaterSeparator.toPhases.WaterSeparator_Phase_1.fMassToPressure;
-                
-                if fPressureAtmosphereWS > 1e5
-                    this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS);
-                elseif fPressureAtmosphereWS >= 9e4
-                    this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - 0.00045);
-                else 
-                    this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - 0.0009);
-                end
-                
-                
-                
-%                 this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(this.fFlowRateWS - this.toStores.WaterSeparator.toProcsP2P.WaterAbsorber_P2P.fFlowRate);
-            else
-                this.toBranches.AtmosphereToWS.oHandler.setFlowRate(0);
-                this.toBranches.AtmosphereFromWS.oHandler.setFlowRate(0);
+            fNominalCondensateFlow = abs(fNominalCondensateFlow) + fH2O_Leakage;
+            fPreviousCondensateFlow = this.toBranches.WaterAbsorber.fFlowRate;
+            if fPreviousCondensateFlow == 0 || (fRelativeHumidity > 0.6 && fPreviousCondensateFlow < fNominalCondensateFlow) || (fRelativeHumidity < 0.5 && fPreviousCondensateFlow > fNominalCondensateFlow)
+                fPreviousCondensateFlow = fNominalCondensateFlow;
             end
+            if fRelativeHumidity >= 0.85
+                fCondensateFlow = 0.25 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.H2O) / this.fTimeStep;
+                
+            elseif fRelativeHumidity >= 0.75
+                fCondensateFlow = 1.1 * fPreviousCondensateFlow;
+                
+            elseif fRelativeHumidity > 0.6
+                fCondensateFlow = 1.01 * fPreviousCondensateFlow;
+                
+            elseif fRelativeHumidity < 0.4
+                if this.toStores.WaterSeparator.toPhases.WaterWS.fMass > (1/3600 * this.fTimeStep)
+                    fCondensateFlow = - 1/3600;
+                else
+                    fCondensateFlow = 0;
+                end
+            elseif fRelativeHumidity < 0.5
+                fCondensateFlow = 0.9 * fPreviousCondensateFlow;
+                
+            else
+                fCondensateFlow = fNominalCondensateFlow;
+            end
+            
+            afFlowRate = zeros(1,this.oMT.iSubstances);
+            afFlowRate(this.oMT.tiN2I.H2O) = fCondensateFlow;
+            this.toBranches.WaterAbsorber.oHandler.setFlowRate(afFlowRate);
+
+            % In case the plant module results in mass errors for you try
+            % outcommenting this function, it should help with debugging ;)
+            % tools.findMassBalanceErrors(this.oMT, 1e-20);
             
             %% Pressure Controller
-            
-            if this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fPressure < 1e5
-                this.toBranches.N2BufferSupply.oHandler.setFlowRate(1e-3);
-            else 
-                this.toBranches.N2BufferSupply.oHandler.setFlowRate(0);
+            if fPressure < 7e4
+                this.toBranches.N2BufferSupply.oHandler.setFlowRate( 20 / this.fTimeStep);
+                
+            elseif fPressure < 9e4
+                this.toBranches.N2BufferSupply.oHandler.setFlowRate( (1e-1 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass / this.fTimeStep) + fNominalCondensateFlow + fNominalO2Flow + fNominalCO2Flow);
+                
+          	elseif fPressure < 1e5
+                this.toBranches.N2BufferSupply.oHandler.setFlowRate(((1e-2 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.fMass) / this.fTimeStep) + fNominalCondensateFlow + fNominalO2Flow + fNominalCO2Flow);
+               
+            else
+                this.toBranches.N2BufferSupply.oHandler.setFlowRate(fN2_Leakage);
             end
-            
             %% Split to Storage
             
 %             if this.toStores.BiomassSplit.toPhases.BiomassEdible.fMass > 0
 %             end
+        end
+    end
+    
+    methods (Access = protected)
+        function exec(this, ~)
+            exec@vsys(this);
+            this.update();
         end
     end 
 end

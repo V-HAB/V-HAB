@@ -61,6 +61,11 @@ classdef timer < base
         aiPostTickMax = [ 0, 0, 0, 0, 0, 0, 0 ];
         
         iCurrentPostTickExecuting = 0;
+        
+        % struct used by the findSmallestTimeStep function from the tools
+        % folder (only if activated) to store information on the locations
+        % of the smallest timestep and the tick in which it occured
+        tDebug = struct();
     end
     
     methods
@@ -159,6 +164,13 @@ classdef timer < base
         
         
         function bindPostTick(this, hCB, iPriority)
+            % This function can be used to define functions that should be
+            % executed after one tick of the system in an order defined by
+            % iPriority. Valid entries for iPriority are -3 to 3 in integer
+            % and go in the order from -3 for the functions executed first
+            % in the posttick to 3 for the functions executed last in the
+            % posttick. hCB should be a function for the callback (hence
+            % hCB) which can be defined for example as @this.update
             if nargin < 3 || isempty(iPriority), iPriority = 0; end;
             
             iPriority = iPriority + 4;
@@ -236,6 +248,35 @@ classdef timer < base
             % this works, don't need find!
             this.afLastExec(abExec) = this.fTime;
             
+            %% Outcommented code that can be added again if you have trouble finding the location of your smallest time step in your system
+            %
+            % If you provide a limit larger than 0, then the report string
+            % telling you in which part of the system your time step was
+            % minimal will be displayed in the command window for all cases
+            % where the smallest time step is smaller or equal than the limit you
+            % provided
+            % Outcomment code from here to the next section to activate the
+            % debugging
+%             fLimit = 0;
+%             csReport = tools.findSmallestTimeStep(this, fLimit);
+%             if mod(this.iTick, 101) == 0
+%                 this.tDebug = struct();
+%                 this.tDebug(mod(this.iTick, 101)+1).csReport    = csReport;
+%                 this.tDebug(mod(this.iTick, 101)+1).iTick       = this.iTick;
+%                 this.tDebug(mod(this.iTick, 101)+1).fTimeStep   = fThisStep;
+%             else
+%                 this.tDebug(mod(this.iTick, 101)+1).csReport    = csReport;
+%                 this.tDebug(mod(this.iTick, 101)+1).iTick       = this.iTick;
+%                 this.tDebug(mod(this.iTick, 101)+1).fTimeStep   = fThisStep;
+%             end
+            
+            %% executing post ticks
+            % in order to improve the simulation speed the post tick call
+            % backs are not removed after they have been executed. This may
+            % be confusing since it seems (from looking at chPostTick) that
+            % very many call backs are executed, however only the call
+            % backs of each priority from the indices 1 to aiPostTickMax of
+            % the respective prio are actually executed!
             
             % Just to make sure - prio 2 could attach postTick to prio -1
             %EXPERIMENTAL updated - now in that case, cb executed directly

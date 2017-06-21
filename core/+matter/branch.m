@@ -130,6 +130,8 @@ classdef branch < base & event.source
         % update values within the flow objects array
         hSetFlowData;
         
+        hFlowThermalUpdate;
+        
         % If the RIGHT side of the branch is an interface (i.e. i/f to the
         % parent system), store its index on the aoFlows here to make it
         % possible to remove those connections later!
@@ -155,7 +157,7 @@ classdef branch < base & event.source
     end
     
     methods
-        function this = branch(oContainer, sLeft, csProcs, sRight, sCustomName)
+        function this = branch(oContainer, sLeft, csProcs, sRight, sCustomName, bP2P)
             % Can be called with either stores/ports or interface names
             % (all combinations possible). Connections are always done from
             % subsystem to system.
@@ -184,7 +186,7 @@ classdef branch < base & event.source
             end
             this.sName = sTempName;
             
-            if nargin == 5
+            if nargin >= 5
                 this.sCustomName = sCustomName;
             end
             
@@ -205,8 +207,11 @@ classdef branch < base & event.source
   
             else
                 % Create first flow, get matter table from oData (see @sys)
-                oFlow = matter.flow(this);
-                
+                if nargin == 6 && bP2P
+                    oFlow = matter.procs.p2ps.branch.flow(this);
+                else
+                    oFlow = matter.flow(this);
+                end
                 % Add flow to index
                 this.aoFlows(end + 1) = oFlow;
                 
@@ -530,17 +535,79 @@ classdef branch < base & event.source
         
         
         
+        function setUpdated(this)
+            % used by the residual solver to tell the branch that the
+            % flowrate has not changed even though the outdated function
+            % has been called.
+            this.bOutdated = false;
+        end
         
         
-        
+        function setOutdatedThermal(this)
+            % Can be used by phases to request recalculation of the temperatures
+            
+            if this.fFlowRate == 0
+                % nothing flows, nothing has to be updated
+                return
+            end
+            % tries to call the ThermalUpdate function of the F2Fs
+            for iF2F = 1:this.iFlows - 1
+                try
+                    this.aoFlowProcs(iF2F).ThermalUpdate();
+                catch
+                    % do nothing, but f2fs that do not require a thermal
+                    % update cane exist
+                end
+            end
+            
+            % updates only the temperatures and heat capacities of the flows
+            mfHeatFlows = [this.aoFlowProcs(:).fHeatFlow];
+            
+            if this.fFlowRate > 0
+                oPhase = this.coExmes{1}.oPhase;
+                
+                mfTemperatureDifference = mfHeatFlows ./ (oPhase.fSpecificHeatCapacity * abs(this.fFlowRate));
+            
+                mfFlowTemperature = zeros(this.iFlows, 1);
+                mfFlowTemperature(1) = oPhase.fTemperature;
+                this.hFlowThermalUpdate{1}(mfFlowTemperature(1), oPhase.fSpecificHeatCapacity);
+
+                for iFlow = 2:this.iFlows
+                    mfFlowTemperature(iFlow) = mfFlowTemperature(iFlow - 1) + mfTemperatureDifference(iFlow - 1);
+                    this.hFlowThermalUpdate{iFlow}(mfFlowTemperature(iFlow), oPhase.fSpecificHeatCapacity);
+                end
+                
+                % since a temperature change of the branch flow affects the
+                % downstream phase the temperatureupdate for the downstream
+                % phase is also called
+                this.coExmes{2}.oPhase.temperatureupdate();
+            else
+                oPhase = this.coExmes{2}.oPhase;
+                
+                mfTemperatureDifference = mfHeatFlows ./ (oPhase.fSpecificHeatCapacity * abs(this.fFlowRate));
+            
+                mfFlowTemperature    = zeros(this.iFlows, 1);
+                mfFlowTemperature(end) = oPhase.fTemperature;
+                this.hFlowThermalUpdate{end}(mfFlowTemperature(end), oPhase.fSpecificHeatCapacity);
+
+                for iFlow = this.iFlows-1:-1:1
+                    mfFlowTemperature(iFlow) = mfFlowTemperature(iFlow + 1) + mfTemperatureDifference(iFlow);
+                    this.hFlowThermalUpdate{iFlow}(mfFlowTemperature(iFlow), oPhase.fSpecificHeatCapacity);
+                end
+                
+                % since a temperature change of the branch flow affects the
+                % downstream phase the temperatureupdate for the downstream
+                % phase is also called
+                this.coExmes{1}.oPhase.temperatureupdate(false);
+            end
+        end
         function setOutdated(this)
             % Can be used by phases or f2f processors to request recalc-
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
-            for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.coExmes{iE}.oPhase.massupdate();
-            end
+            iE = sif(this.fFlowRate >= 0, 2, 1);
+            this.coExmes{iE}.oPhase.massupdate();
             
             % Only trigger if not yet set
             %CHECK inactivated here --> solvers and otehr "clients" should
@@ -621,7 +688,6 @@ classdef branch < base & event.source
             %     and set (arPartialMass, Molar Mass, Heat Capacity)?
         end
         
-        
         % Catch 'bind' calls, so we can set a specific boolean property to
         % true so the .trigger() method will only be called if there are
         % callbacks registered.
@@ -684,7 +750,9 @@ classdef branch < base & event.source
             
             % No pressure? Distribute equally.
             if nargin < 3 || isempty(afPressure)
-                fPressureDiff = (this.coExmes{1}.getPortProperties() - this.coExmes{2}.getPortProperties());
+                % TO DO: Why use get port properties, is it really
+                % necessary to include the mass change in this calculation?
+                fPressureDiff = (this.coExmes{1}.oPhase.fPressure - this.coExmes{2}.oPhase.fPressure);
                 
                 % Each flow proc produces the same pressure drop, the sum
                 % being the actual pressure difference.
@@ -839,13 +907,13 @@ classdef branch < base & event.source
                 % which allows us to deconnect the flow from the f2f proc
                 % in the "outer" system (supsystem).
                 if this.abIf(2) && (this.iIfFlow == iI)
-                    [ this.hSetFlowData, this.hRemoveIfProc ] = this.aoFlows(iI).seal(true);
+                    [ this.hSetFlowData, this.hRemoveIfProc, this.hFlowThermalUpdate{iI} ] = this.aoFlows(iI).seal(true);
                 
                 % Only need the callback reference once ...
                 elseif iI == 1
-                    this.hSetFlowData = this.aoFlows(iI).seal(false, this);
+                     [ this.hSetFlowData, ~, this.hFlowThermalUpdate{iI} ] = this.aoFlows(iI).seal(false, this);
                 else
-                    this.aoFlows(iI).seal(false, this);
+                     [ this.hSetFlowData, ~, this.hFlowThermalUpdate{iI} ] = this.aoFlows(iI).seal(false, this);
                 end
             end
             

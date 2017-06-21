@@ -35,6 +35,7 @@ classdef logger_basic < simulation.monitor
         %              means that e.g. 'this.oMT.tiN2I.O2' can be used.
         % sName: if empty, will be generated from sExpression
         tLogValues = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {}, 'sObjUuid', {}, 'iIndex', {});%, 'iIndex', {});
+        tDerivedLogValues = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {}, 'sObjUuid', {}, 'iIndex', {});%, 'iIndex', {});
         
         % Shortcut to the paths of variables to log
         csPaths;
@@ -47,6 +48,7 @@ classdef logger_basic < simulation.monitor
         afTime;
         
         % Logged data
+        mfDerivedLog;
         mfLog;
         aiLog;
         
@@ -175,9 +177,6 @@ classdef logger_basic < simulation.monitor
         end
         
         
-        
-        
-        
         function aiIdx = find(this, aiIdx, tFilter)
             % If aiIdx empty - get all!
             
@@ -247,7 +246,52 @@ classdef logger_basic < simulation.monitor
         end
         
         
-        
+        function add_mfLogValue(this,sNewLogName, mfLogValue, sUnit)
+            % This function is used by the plotter when mathematical
+            % operations are performed on different log values to create
+            % new derived log values. These new derived log values are
+            % stored in the logger by this function by adding them to the
+            % tDerivedLogValues struct and the mfDerivedLog matric. The two
+            % new properties "derived" were created to enable the advanceTo
+            % function of a finished or paused simulation to operate
+            % normally
+            
+            % Checks if the derived log already exists, in which case it
+            % should not be created as a new log again, but the previous
+            % values should be overwritten.
+            bLogExists = false;
+            for iLogIndex = 1:length(this.tDerivedLogValues)
+                if strcmp(this.tDerivedLogValues(iLogIndex).sLabel, sNewLogName)
+                    bLogExists = true;
+                    iIndex = iLogIndex;
+                end
+            end
+            
+            % If the log does not exists already a new entry is created,
+            % storing the name of the log value and the unit as the well as
+            % the actual entries
+            if ~bLogExists
+                this.mfDerivedLog(:,end+1) = mfLogValue;
+                this.tDerivedLogValues(end+1).sLabel = sNewLogName;
+                this.tDerivedLogValues(end).sUnit = sUnit;
+                this.tDerivedLogValues(end).iIndex = length(this.mfDerivedLog(1,:));
+            else
+                % TO DO: Check if this works, if a simulation was paused,
+                % the plot command was used and derived logs created and
+                % then the simulation restarted, after which the plot is
+                % called a second time. (Might have a dimension mismatch
+                % here) 
+                try
+                    this.mfDerivedLog(:,iIndex) = mfLogValue;
+                catch
+                    this.mfDerivedLog = [];
+                    this.mfDerivedLog(:,end+1) = mfLogValue;
+                    this.tDerivedLogValues(end+1).sLabel = sNewLogName;
+                    this.tDerivedLogValues(end).sUnit = sUnit;
+                    this.tDerivedLogValues(end).iIndex = length(this.mfDerivedLog(1,:));
+                end
+            end
+        end
         
         function readDataFromMat(this)
             if ~this.bDumpToMat
@@ -602,6 +646,8 @@ classdef logger_basic < simulation.monitor
                 oLastSimObj = this.oSimulationInfrastructure; %#ok<NASGU>
                 save(sMat, 'oLastSimObj');
             end
+            
+            
         end
         
         

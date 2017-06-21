@@ -86,10 +86,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % delete
         bInterface = false;
         
-        
-        
-        
-        
         % Re-calculated every tick in setData/seal
         afPartialPressure;
         
@@ -170,7 +166,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         end
         
         
-        function [ setData, hRemoveIfProc ] = seal(this, bIf, oBranch)
+        function [ setData, hRemoveIfProc, hFlowThermalUpdate ] = seal(this, bIf, oBranch)
             
             if this.bSealed
                 this.throw('seal', 'Already sealed!');
@@ -178,6 +174,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             hRemoveIfProc = [];
             setData = @(oThis, varargin) oThis.setData(varargin{:});
+            hFlowThermalUpdate = @(varargin) this.ThermalUpdate(varargin{:});
             
             this.bSealed = true;
             
@@ -370,18 +367,23 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % flow.
         function fVolumetricFlowRate = calculateVolumetricFlowRate(this, fFlowRate)
             if nargin < 2
-                if this.fFlowRate
+                if this.fFlowRate ~= 0
                     fVolumetricFlowRate = this.fFlowRate / ...
                                         ( this.fPressure * this.fMolarMass / ...
                                         ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
                 else
                     fVolumetricFlowRate = 0;
                 end
-            else
-                fVolumetricFlowRate = fFlowRate / ...
-                                    ( this.fPressure * this.fMolarMass / ...
-                                    ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
+            elseif fFlowRate ~= 0
+                if fFlowRate
+                    fVolumetricFlowRate = fFlowRate / ...
+                                        ( this.fPressure * this.fMolarMass / ...
+                                        ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
+                else
+                    fVolumetricFlowRate = 0;
+                end
             end
+            
         end
     end
     
@@ -434,7 +436,11 @@ classdef flow < base & matlab.mixin.Heterogeneous
         end
         
         
-        
+        function ThermalUpdate(this, fTemperature, fSpecificHeatCapacity)
+            
+            this.fTemperature  = fTemperature;
+            this.fSpecificHeatCapacity = fSpecificHeatCapacity;
+        end
         
         function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
             % For derived classes of flow, can set the matter properties 
@@ -450,9 +456,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
             this.fFlowRate     = fFlowRate;
             this.arPartialMass = arPartialMass;
             this.fTemperature  = fTemperature;
+            
             this.fPressure     = fPressure;
-            
-            
             
             %CHECK see setData, using the IN exme props!
             if this.fFlowRate >= 0
@@ -490,8 +495,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 this.arPartialMassLastMassPropUpdate = this.arPartialMass;
             end
         end
-        
-        
         
         function setData(aoFlows, oExme, fFlowRate, afPressures)
             % Sets flow data on an array of flow objects. If flow rate not
@@ -563,6 +566,14 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 fPhaseSpecificHeatCapacity = 0;
                 afPressures                = zeros(1, length(afPressures));
             end
+            if nargin >= 5
+                % Only used by resolve negative masses to set the correct
+                % partial mass ratios without a negative mass occuring by
+                % this flow. (Molar Mass and heat capacity should be affect
+                % only very little by the small mass change this results
+                % in, and are therefore not changed)
+                arPhasePartialMass = arPartials;
+            end
             
             iL = length(aoFlows);
             
@@ -597,13 +608,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % the negative direction of the branch (i.e. from right to
             % left).
             if fFlowRate == 0
-                if strcmp(aoFlows(1).oBranch.coExmes{1}.oPhase.sType, 'gas')
-                    fPressureLeft  = aoFlows(1).oBranch.coExmes{1}.oPhase.fMass * aoFlows(1).oBranch.coExmes{1}.oPhase.fMassToPressure;
-                    fPressureRight = aoFlows(1).oBranch.coExmes{2}.oPhase.fMass * aoFlows(1).oBranch.coExmes{2}.oPhase.fMassToPressure;
-                else
-                    fPressureLeft  = aoFlows(1).oBranch.coExmes{1}.oPhase.fPressure;
-                    fPressureRight = aoFlows(1).oBranch.coExmes{2}.oPhase.fPressure;
-                end
+                fPressureLeft  = aoFlows(1).oBranch.coExmes{1}.oPhase.fPressure;
+                fPressureRight = aoFlows(1).oBranch.coExmes{2}.oPhase.fPressure;
                 
                 if fPressureLeft > fPressureRight
                     bNeg = false;
@@ -617,7 +623,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             for iI = sif(bNeg, iL:-1:1, 1:iL)
                 oThis = aoFlows(iI);
-                
                 % Only set those params if oExme was provided
                 if ~isempty(oExme)
                     oThis.arPartialMass         = arPhasePartialMass;
@@ -634,11 +639,21 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
                 % If only one flow, no f2f exists --> set pressure, temp
                 % according to IN exme
+                
                 if iL == 1
                     oThis.fPressure    = fPortPress;
                     oThis.fTemperature = fCurrentTemperature;
+                    % and in that case we can skip all the calculations
+                    % below
+                    return
                 end
                 
+                % updates the f2f located before this flow
+                if bNeg && (iI ~= oThis.oBranch.iFlows)
+                    oThis.oBranch.aoFlowProcs(iI).updateF2F(oThis.fFlowRate);
+                elseif ~ bNeg && (iI ~= 1)
+                    oThis.oBranch.aoFlowProcs(iI - 1).updateF2F(oThis.fFlowRate);
+                end
                 
                 % Set temperature based on fHeatFlow in f2fs
                 % First and last Flows directly use the EXMEs value, so

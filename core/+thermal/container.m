@@ -2,6 +2,25 @@ classdef container < sys
     %CONTAINER A collection of thermal capacities
     %   Detailed explanation goes here
         
+    
+    % TO DO: is this solver actually finished and working? It contains so
+    % many TO DOs and very little explanation and I had to add the taint
+    % function to the heat source setPower function. However the taint
+    % function also seems far from beeing finished. So the question is, is
+    % the solver actually in a usable state? 
+    %
+    % Also I am bit unsure on what the intended use of bIsTainted is. The
+    % explanation in the properties says it should execute if
+    % capacities/conductors are removed, which would result in basic
+    % changes to the thermal node network. However the heatsource vectors
+    % also only update if bIsTainted is set to true but this should
+    % actually be a dynamic property that can change often, and changing
+    % the heat source value does not impact the actual nodal structure of
+    % the thermal network so it seems a bit overkill to handle it the same
+    % way as reconstructing the whole thermal network. To be honest though
+    % I didn't work through the whole solver so maybe I am off, just my 2
+    % cents when I used the thermal stuff for the first time (from puda ;)
+    
     properties (SetAccess = protected, GetAccess = public)
         
         % State properties
@@ -22,7 +41,7 @@ classdef container < sys
         poLinearConductors;    % A Map of associated |thermal.conductors.linear| objects.
         poFluidicConductors;   % A Map of associated |thermal.conductors.fluidic| objects.
         poRadiativeConductors; % A Map of associated |thermal.conductors.radiative| objects.
-        
+
         % Matrices
         mCapacityVector   = [];
         mHeatSourceVector = [];
@@ -200,6 +219,8 @@ classdef container < sys
             
             this.addCapacity(oCapacity);
             
+            % Ihr solltet eure Kommentare noch mit tag versehen damit man
+            % weis wer wen gerade basht (Gruß puda ;)
         end
         
         function addCapacity(this, oCapacity)
@@ -278,7 +299,6 @@ classdef container < sys
             % the handle object seems to be updated nonetheless. But better
             % not trust MATLAB's quirks and rather be safe than sorry.
             this.(sConductorMap) = poConductors;
-            
         end
         
         function removeConductor(this, sName)
@@ -307,7 +327,22 @@ classdef container < sys
             this.throw('container:removeConductor', 'Conductor with name "%s" does not exist!', sName);
             
         end
-        
+        function setNodeHeatFlows(this, mfHeatFlows)
+            % Loop over all node objects and notify them about the inner
+            % energy change.
+            for sNode = this.piCapacityIndices.keys
+                
+                % Get index of current node.
+                iIndex = this.tiCapacityIndices.(sNode{1}); 
+                
+                % Get the node object.
+                oNode = this.poCapacities(sNode{1});
+                
+                % Notify the node about the energy change.
+                oNode.setThermalSolverHeatFlow(mfHeatFlows(iIndex));
+                
+            end
+        end
         function changeNodesInnerEnergy(this, mEnergyChange)
             
             % Loop over all node objects and notify them about the inner
@@ -507,7 +542,6 @@ classdef container < sys
                 mConductorMatrix(iCounter, :) = [double(iIndexLeft), double(iIndexRight), fConductance];
                 
             end
-            
         end
         
         function exec(this, varargin)

@@ -16,6 +16,9 @@ classdef container < systems.root
         % @type object
         oCfgParams;
         
+        % Infrastructure Object for the simulation
+        oInfrastructure;
+        
         % Global solver tuning parameters
         % @type object
         tSolverParams = struct(...
@@ -42,13 +45,13 @@ classdef container < systems.root
     end
     
     methods
-        function this = container(sName, oTimer, oMT, oCfgParams, tSolverParams)
+        function this = container(sName, oTimer, oMT, oCfgParams, tSolverParams, oInfra)
             this@systems.root(sName);
             
             this.oTimer     = oTimer;
             this.oMT        = oMT;
             this.oCfgParams = oCfgParams;
-            
+            this.oInfrastructure = oInfra;
             if nargin >= 5
                 this.tSolverParams = tools.struct.mergeStructs(this.tSolverParams, tSolverParams);
             end

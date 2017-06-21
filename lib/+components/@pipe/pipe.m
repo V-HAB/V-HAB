@@ -58,7 +58,7 @@ classdef pipe < matter.procs.f2f
             
             this.supportSolver('hydraulic', fDiameter, fLength);
             this.supportSolver('callback',  @this.solverDeltas);
-            this.supportSolver('manual', false);
+            this.supportSolver('manual', true, @this.update);
             this.supportSolver('coefficient',  @this.calculatePressureDropCoefficient);
 
             if nargin >= 5

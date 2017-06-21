@@ -7,9 +7,12 @@ classdef heatsource < base & event.source
     %   post-tick. This thermal solver update is however only triggered, if
     %   the change in power is greater than one milliwatt. This is to
     %   prevent too frequent updates, which take a long time. 
+    %   to even be able to access it (puda)
     
     properties (SetAccess = protected)
         sName;
+        
+        oVsys;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -31,7 +34,8 @@ classdef heatsource < base & event.source
     
     methods
         
-        function this = heatsource(sIdentifier, fPower)
+        function this = heatsource(oVsys, sIdentifier, fPower)
+            this.oVsys = oVsys;
             this.sName  = sIdentifier;
             
             if nargin > 1

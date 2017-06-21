@@ -7,7 +7,7 @@
 %fDyn_Visc              = dynamic viscosity of the fluid in kg/(m s)
 %fDensity               = density of the fluid in kg/m³
 %fThermal_Conductivity  = thermal conductivity of the fluid in W/(m K)
-%fC_p                   = heat capacity of the fluid in J/K
+%fC_p                   = specific heat capacity of the fluid in J/kg K
 %
 %Influence of the temperature dependancy of the material values can be
 %accounted for by using the average temperature between inlet and outlet

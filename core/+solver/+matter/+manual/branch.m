@@ -41,28 +41,28 @@ classdef branch < solver.matter.base.branch
             
             update@solver.matter.base.branch(this, this.fRequestedFlowRate);
             
-            % Checking if there are any active processors in the branch,
-            % if yes, update them.
-            if ~isempty(this.oBranch.aoFlowProcs)
-            
-                % Checking if there are any active processors in the branch,
-                % if yes, update them.
-                abActiveProcs = zeros(1, length(this.oBranch.aoFlowProcs));
-                for iI=1:length(this.oBranch.aoFlowProcs)
-                    if isfield(this.oBranch.aoFlowProcs(iI).toSolve, 'manual')
-                        abActiveProcs(iI) = this.oBranch.aoFlowProcs(iI).toSolve.manual.bActive;
-                    else
-                        abActiveProcs(iI) = false;
-                    end
-                end
-    
-                for iI = 1:length(abActiveProcs)
-                    if abActiveProcs(iI)
-                        this.oBranch.aoFlowProcs(iI).toSolve.manual.update();
-                    end
-                end
-                
-            end
+%             % Checking if there are any active processors in the branch,
+%             % if yes, update them.
+%             if ~isempty(this.oBranch.aoFlowProcs)
+%             
+%                 % Checking if there are any active processors in the branch,
+%                 % if yes, update them.
+%                 abActiveProcs = zeros(1, length(this.oBranch.aoFlowProcs));
+%                 for iI=1:length(this.oBranch.aoFlowProcs)
+%                     if isfield(this.oBranch.aoFlowProcs(iI).toSolve, 'manual')
+%                         abActiveProcs(iI) = this.oBranch.aoFlowProcs(iI).toSolve.manual.bActive;
+%                     else
+%                         abActiveProcs(iI) = false;
+%                     end
+%                 end
+%     
+%                 for iI = 1:length(abActiveProcs)
+%                     if abActiveProcs(iI)
+%                         this.oBranch.aoFlowProcs(iI).toSolve.manual.update();
+%                     end
+%                 end
+%                 
+%             end
         end
     end
 end

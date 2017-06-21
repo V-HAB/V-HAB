@@ -40,7 +40,10 @@ classdef gas < matter.phase
         % Relative humidity in the phase, see this.update() for details on
         % the calculation.
         rRelHumidity
-    
+        
+        % Counter to check how many ticks in a row the humidity has been
+        % above 1
+        iCondensationCounter = 0;
     end
     
     
@@ -67,6 +70,8 @@ classdef gas < matter.phase
             this.fMassToPressure = this.calculatePressureCoefficient();
             this.fPressure = this.fMass * this.fMassToPressure;
             this.fPressureLastHeatCapacityUpdate = this.fPressure;
+            
+            [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
         end
         
         
@@ -138,6 +143,7 @@ classdef gas < matter.phase
             else
                 this.fPressure = 0;
             end
+            
         end
         
         function [ afPartialPressures ] = getPartialPressures(this)
@@ -191,17 +197,59 @@ classdef gas < matter.phase
                (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
                (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
 
-                % Actually updating the specific heat capacity
-                this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
+                % Well if the humidity is above 1 the matter table will
+                % usually crash. If this is only the case because the
+                % pressure update occurs after the mass update and the
+                % recalculation of the partial pressures this will fix it.
+                % Otherwise the logic will use the previous values but at
+                % most for 5 Ticks. If it is longer than that an error will
+                % be given to tell the user that condensation occurs in one
+                % of the phases. This was implemented because in a system
+                % that regulates the humidity/partial pressure of H2O it is
+                % necessary for the phase to have the high value in at
+                % least one tick for the regulation to kick in. The
+                % humidity currently can change by more than 100% within
+                % one tick, and therefore it is necessary to give
+                % regulating p2ps or other components time to react to the
+                % increase in humidity
+                if this.rRelHumidity > 1
+                    [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
+                    try
+                        % Actually updating the specific heat capacity  
+                        this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
+                        this.iCondensationCounter                 = 0;
                 
-                % Setting the properties for the next check
-                this.fPressureLastHeatCapacityUpdate     = this.fPressure;
-                this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
-                this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
-                
+                        % Setting the properties for the next check
+                        this.fPressureLastHeatCapacityUpdate     = this.fPressure;
+                        this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
+                        this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+                    catch
+                        % The upate failed and the old value will be kept,
+                        % but a counter will be used to check that this
+                        % does not occur too often
+                        this.iCondensationCounter = this.iCondensationCounter + 1;
+                        
+                        % Enforce update on next tick!
+                        this.fPressureLastHeatCapacityUpdate     = -1;
+                        this.fTemperatureLastHeatCapacityUpdate  = -1;
+                        this.arPartialMassLastHeatCapacityUpdate = -1;
+                        
+                        if this.iCondensationCounter > 5
+                            error(['In the system ',this.oStore.oContainer.sName,' within the store ',this.oStore.sName,' in the phase ',this.sName,' condensation is occuring which prevents the matter table from recalculating the matter properties'])
+                        end
+                    end
+                else
+                    % Actually updating the specific heat capacity  
+                    this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
+                    this.iCondensationCounter                 = 0;
+
+                    % Setting the properties for the next check
+                    this.fPressureLastHeatCapacityUpdate     = this.fPressure;
+                    this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
+                    this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+                end
             end
         end
-
     end
     
     

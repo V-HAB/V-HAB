@@ -56,6 +56,9 @@ classdef hx_flow < matter.procs.f2f
             
         function updateManualSolver(this)
             this.fFlowRate = this.oBranch.fFlowRate;
+            
+            % Updating the parent HX system, this will update both the
+            % fDeltaPressure and fHeatFlow property of this processor.
             this.oHXParent.update();
 
         end

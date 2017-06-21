@@ -94,6 +94,11 @@ classdef table < base
         % defined in the matter table and contains the entry true for each
         % substance that can absorb something else
         abAbsorber;
+        
+        % property for the tool findMassBalanceErrors to write the names of
+        % all the locations where mass errors were detected. This is then
+        % used to autocreate break points at the relevant locations
+        tMassErrorHelper;
     end
     
     properties %DELETE THESE WHEN READY
@@ -512,6 +517,13 @@ classdef table < base
             % matter table and the data has been saved for future use.
             % Let the simulations begin!
             
+        end
+        function setMassErrorNames(this,sName)
+            % function called by the tool findMassBalanceErrors to set the
+            % names of the phases/branches/manips in which mass errors were
+            % detected to autocreate breakpoints that stop at the locations
+            % of interest to debug it
+            this.tMassErrorHelper.csMassErrorNames{end+1} = sName;
         end
     end
     

@@ -41,12 +41,18 @@ if length(varargin) == 1
         % this function.
         if varargin{1}.fPressure < 5e5
             fDensity = (varargin{1}.fPressure * varargin{1}.fMolarMass) / (this.Const.fUniversalGas * varargin{1}.fTemperature);
-            % We already have what we want, so no need to execute the rest
-            % of this function.
-            return;
+           
+            if fDensity < 0 || isnan(fDensity)
+                % ideal gas law did not work, use complex calculation
+                clear fDensity
+            else
+           	% We already have what we want, so no need to execute the rest
+            % of this function. 
+                return;
+            end
         end
         
-        [ afPartialPressures, ~ ] = this.calculatePartialPressures(varargin{1});
+        afPartialPressures = this.calculatePartialPressures(varargin{1});
         
     elseif strcmp(sMatterState, 'liquid')
         % For liquids the density has to be calculated from the matter
@@ -157,6 +163,12 @@ if ~strcmp(sMatterState, 'mixture')
     aiPhase = tiP2N.(sMatterState)*ones(1,this.iSubstances);
 end
 
+% If determine phase yield anything besides integer this
+% basically means a phase change is occuring at the moment.
+% Currently this can only be covered by a simplified
+% rounding operation
+aiPhase = round(aiPhase);
+
 for iI = 1:length(aiIndices)
     % Generating the paramter struct that findProperty() requires.
     tParameters = struct();
@@ -168,14 +180,14 @@ for iI = 1:length(aiIndices)
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
     tParameters.bUseIsobaricData = true;
-    
+
     % Now we can call the findProperty() method.
     afRho(iI) = this.findProperty(tParameters);
 end
 
 % Sum up the densities multiplied by the partial masses to get the overall density.
 fDensity = sum(afRho .* arPartialMass(aiIndices));
-
+    
 % If none of the substances has a valid density an error is thrown.
 if fDensity < 0 || isnan(fDensity)
     this.throw('calculateDensity','Error in Density calculation!');

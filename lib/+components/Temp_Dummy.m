@@ -5,6 +5,11 @@ classdef Temp_Dummy < matter.procs.f2f
     %temperature itself (even if it sets a DeltaTemp), the new solver uses
     %the heat flow instead to keep the temperature constant.
 
+    properties (SetAccess = public, GetAccess = public)
+    
+        fMaxHeatFlow = inf;
+        
+    end
     properties (SetAccess = protected, GetAccess = public)
         fHydrDiam = 1;          % Hydraulic diameter value irrelevant for manual solver
         fHydrLength = 0;        % hydrauloc length, value irrelevant for manual solver
@@ -16,10 +21,13 @@ classdef Temp_Dummy < matter.procs.f2f
     end
     
     methods
-        function this = Temp_Dummy(oMT, sName, fTemperature)
+        function this = Temp_Dummy(oMT, sName, fTemperature, fMaxHeatFlow)
             this@matter.procs.f2f(oMT, sName);
             
             this.fTemperature = fTemperature;
+            if nargin > 3
+                this.fMaxHeatFlow = fMaxHeatFlow;
+            end
             this.supportSolver('manual', true, @this.updateManualSolver);
         end
         
@@ -36,9 +44,14 @@ classdef Temp_Dummy < matter.procs.f2f
                 inFlow = this.aoFlows(1);
             end
             this.fDeltaTemp = (this.fTemperature - inFlow.fTemperature);
-            this.fHeatFlow = (inFlow.fFlowRate*inFlow.fSpecificHeatCapacity)*this.fDeltaTemp;
+            this.fHeatFlow = (abs(inFlow.fFlowRate)*inFlow.fSpecificHeatCapacity)*this.fDeltaTemp;
+            if abs(this.fHeatFlow) > this.fMaxHeatFlow
+                this.fHeatFlow = sign(this.fHeatFlow) * this.fMaxHeatFlow;
+            end
         end
-        
+        function ThermalUpdate(this)
+            this.updateManualSolver();
+        end
         function setActive(this, bActive, ~)
             this.bActive = bActive;
         end

@@ -32,13 +32,13 @@ classdef setup < simulation.infrastructure
             %Define Plots
             oPlot = this.toMonitors.oPlotter;
             
-            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
-            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
-            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
+            oPlot.definePlot('Pa', 'Tank Pressures');
+            oPlot.definePlot('kg', 'Tank Masses');
+            oPlot.definePlot('kg/s', 'Flow Rates');
                 
             
             % Sim time [s]
-            this.fSimTime = 30;
+            this.fSimTime = 300;
         end
         
          function plot(this) % Plotting the results

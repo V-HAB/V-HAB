@@ -249,6 +249,9 @@ classdef HX < vsys
     
     methods
         
+        function ThermalUpdate(this)
+            this.update();
+        end
         function update(this)
             
             % We skip the very first update because some of the flow rates

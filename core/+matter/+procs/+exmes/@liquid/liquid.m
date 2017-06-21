@@ -25,31 +25,34 @@ classdef liquid < matter.procs.exme
             
             if nargin == 3
                 this.fAcceleration = fAcceleration;
+                
+                % This calculation only makes sense if there is gravity 
+                tTankGeomParams = this.oPhase.oStore.tGeometryParameters;
+                fVolumeTank = this.oPhase.oStore.fVolume;
+                fVolumeLiquid = this.oPhase.fVolume;
+
+                if strcmpi(tTankGeomParams.Shape, 'box')
+                    fAreaTank = tTankGeomParams.Area;
+                    fHeightExMe = tTankGeomParams.HeightExMe;
+
+                    fHeightTank = fVolumeTank/fAreaTank;
+                    if fHeightTank < fHeightExMe
+                        error('the height of the exme is larger than the height of the tank')
+                    end
+
+                    fLiquidLevelTank = fVolumeLiquid/fAreaTank;
+
+                    if (fLiquidLevelTank-fHeightExMe) >= 0
+                        this.fLiquidLevel = fLiquidLevelTank-fHeightExMe;
+                    end
+                else
+                    error('check the name for store geometry')
+                end
+                
             else
                 this.fAcceleration = 0;
             end
             
-            tTankGeomParams = this.oPhase.oStore.tGeometryParameters;
-            fVolumeTank = this.oPhase.oStore.fVolume;
-            fVolumeLiquid = this.oPhase.fVolume;
-            
-            if strcmpi(tTankGeomParams.Shape, 'box')
-                fAreaTank = tTankGeomParams.Area;
-                fHeightExMe = tTankGeomParams.HeightExMe;
-                
-                fHeightTank = fVolumeTank/fAreaTank;
-                if fHeightTank < fHeightExMe
-                    error('the height of the exme is larger than the height of the tank')
-                end
-                
-                fLiquidLevelTank = fVolumeLiquid/fAreaTank;
-                
-                if (fLiquidLevelTank-fHeightExMe) >= 0
-                    this.fLiquidLevel = fLiquidLevelTank-fHeightExMe;
-                end
-           	else
-                error('check the name for store geometry')
-            end
             
             %calculates the pressure at the exme by using the inherent tank
             %pressure for 0g and adding the pressure which is created by
@@ -85,22 +88,24 @@ classdef liquid < matter.procs.exme
             this.fTemperature = this.oPhase.fTemperature;
             fDensityLiquid = fMassTank/fVolumeLiquid;
             
-            if strcmp(tTankGeomParams.Shape, 'box') || strcmp(tTankGeomParams.Shape,'Box')
-                fAreaTank = tTankGeomParams.Area;
-                fHeightExMe = tTankGeomParams.HeightExMe;
-                
-                fHeightTank = fVolumeTank/fAreaTank;
-                if fHeightTank < fHeightExMe
-                    error('the height of the exme is larger than the height of the tank')
+            if this.fAcceleration ~= 0
+                if strcmp(tTankGeomParams.Shape, 'box') || strcmp(tTankGeomParams.Shape,'Box')
+                    fAreaTank = tTankGeomParams.Area;
+                    fHeightExMe = tTankGeomParams.HeightExMe;
+
+                    fHeightTank = fVolumeTank/fAreaTank;
+                    if fHeightTank < fHeightExMe
+                        error('the height of the exme is larger than the height of the tank')
+                    end
+
+                    fLiquidLevelTank = fVolumeLiquid/fAreaTank;
+
+                    if (fLiquidLevelTank-fHeightExMe) >= 0
+                        this.fLiquidLevel = fLiquidLevelTank-fHeightExMe;
+                    end
+                else
+                    error('check the name for store geometry')
                 end
-                
-                fLiquidLevelTank = fVolumeLiquid/fAreaTank;
-                
-                if (fLiquidLevelTank-fHeightExMe) >= 0
-                    this.fLiquidLevel = fLiquidLevelTank-fHeightExMe;
-                end
-            else
-                error('check the name for store geometry')
             end
             
             %calculates the pressure at the exme by using the inherent tank
