@@ -192,6 +192,9 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             this.mfFlowRatesProp = mfMassChangeAbsorber ./ this.fTimeStep;
             
+            % exothermic reaction have a negative enthalpy by definition,
+            % therefore we have to multiply the equation with -1 to have a
+            % positive heat flow for positive flowrates
             this.fAdsorptionHeatFlow = - sum((this.mfFlowRatesProp ./ this.oMT.afMolarMass) .* this.mfAbsorptionEnthalpy);
             this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
             this.oStore.oContainer.tMassNetwork.mfAdsorptionFlowRate(this.iCell) = sum(this.mfFlowRatesProp);
