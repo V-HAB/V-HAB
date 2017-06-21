@@ -382,6 +382,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 else
                     fVolumetricFlowRate = 0;
                 end
+            else
+                fVolumetricFlowRate = 0;
             end
             
         end

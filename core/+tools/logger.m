@@ -1,4 +1,4 @@
-classdef logger < base & event.source
+classdef logger < event.source
     %LOGGER Summary of this class goes here
     %   Detailed explanation goes here
     

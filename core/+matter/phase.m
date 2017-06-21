@@ -506,10 +506,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % to massupdate, e.g. by a p2ps.flow, nothing happens!
             this.fLastMassUpdate     = fTime;
                 
-                this.out(1, 1, 'temperature', 'New temperature: %fK', { this.fTemperature });
-                this.out(1, 2, 'temperature', 'Total inner energy: %f\tEnergy per Kelvin: %f', { sum(mfEnergy), sum(mfEnergyPerKelvin) });
-
-            
+            this.out(1, 1, 'temperature', 'New temperature: %fK', { this.fTemperature });
+%             this.out(1, 2, 'temperature', 'Total inner energy: %f\tEnergy per Kelvin: %f', { sum(mfEnergy), sum(mfEnergyPerKelvin) });
             
             % Update total mass
             this.fMass = sum(this.afMass);

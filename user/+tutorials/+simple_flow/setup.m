@@ -119,9 +119,7 @@ classdef setup < simulation.infrastructure
             % e.g. multiply two values from the object.
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'kg', 'Mass Tank 2');
             % This can be usefull if you want to log the flowrate of CO2
-            % through a branch that transports air for example
-            oPlot.definePlot([ iTempIdx1, iTempIdx2 ], 'Flow Temperatures');
-            
+            % through a branch that transports air for example            
             oLog.addValue('Example.aoBranches(1).aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Flowrate of CO2');
             
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 1');
