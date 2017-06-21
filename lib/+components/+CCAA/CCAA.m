@@ -45,7 +45,7 @@ classdef CCAA < vsys
         % Assembly Testing" 00ICES-234 James C. Knox (2000) the minmal flow
         % rate for CDRA to remove enough CO2 is 41 kg/hr. The nominal flow
         % through CDRA is supposed to be 42.7 kg/hr.
-        fCDRA_FlowRate = 1.22e-2;
+        fCDRA_FlowRate = 1.187e-2;
         
         % Object for the phase of the module where the CCAA is located. Used
         % to get the current relative humidity and control the valve angles

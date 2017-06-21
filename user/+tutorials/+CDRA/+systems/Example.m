@@ -161,6 +161,7 @@ classdef Example < vsys
             oVentedPhase = matter.phases.gas(this.toStores.Vented, 'VentedMass', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             matter.procs.exmes.gas(oVentedPhase, 'Port_1');
             matter.procs.exmes.gas(oVentedPhase, 'Port_2');
+            oVentedPhase.bConstantTemperature = true;
             
             % creates a store to connect the CCAA and the CDRA
             matter.store(this, 'CCAA_CDRA_Connection', 0.1);

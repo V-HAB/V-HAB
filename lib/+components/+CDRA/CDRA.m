@@ -18,7 +18,7 @@ classdef CDRA < vsys
         %to increase the zeolite temperature during the CO2 scrubbing.
         % In ICES-2015-160 the heater power is mentioned to be 480 per
         % heater string with two heater strings beeing used
-        fMaxHeaterPower = 980;          % [W] 
+        fMaxHeaterPower = 960;          % [W] 
         
         %Target temperature the zeolite is supposed to reach during the
         %desorption of CO2
@@ -184,13 +184,19 @@ classdef CDRA < vsys
             this.tGeometry.Sylobead.fVolumeFlow            =        (this.tGeometry.Sylobead.fCrossSection  	* this.tGeometry.Sylobead.fLength        * this.tGeometry.Sylobead.rVoidFraction);
             this.tGeometry.Zeolite5A.fVolumeFlow           =        (this.tGeometry.Zeolite5A.fCrossSection  	* this.tGeometry.Zeolite5A.fLength       * this.tGeometry.Zeolite5A.rVoidFraction);
             
-        	tInitialization.Zeolite13x.tfMassAbsorber  =   struct('Zeolite13x',fMassZeolite13x);
+            % it is assumed that the structure of CDRA consists of mainly
+            % aluminium and in total has 5 kg of al, per absorber bed that
+            % is added to the absorber mass for additional thermal capacity
+            % based on their length
+            fAluminiumMass13x = 2 * (this.tGeometry.Zeolite13x.fLength / (this.tGeometry.Zeolite13x.fLength + this.tGeometry.Sylobead.fLength));
+            
+        	tInitialization.Zeolite13x.tfMassAbsorber  =   struct('Zeolite13x',fMassZeolite13x, 'Al', fAluminiumMass13x);
             tInitialization.Zeolite13x.fTemperature    =   281.25;
             
-        	tInitialization.Sylobead.tfMassAbsorber  =   struct('Sylobead_B125',fMassSylobead);
+        	tInitialization.Sylobead.tfMassAbsorber  =   struct('Sylobead_B125',fMassSylobead, 'Al', 2 - fAluminiumMass13x);
             tInitialization.Sylobead.fTemperature    =   281.25;
             
-        	tInitialization.Zeolite5A.tfMassAbsorber  =   struct('Zeolite5A',fMassZeolite5A);
+        	tInitialization.Zeolite5A.tfMassAbsorber  =   struct('Zeolite5A',fMassZeolite5A, 'Al', 2);
             tInitialization.Zeolite5A.fTemperature    =   281.25;
             
             % Aside from the absorber mass itself the initial values of
@@ -199,20 +205,20 @@ classdef CDRA < vsys
             % for each cell (the values can obtained by running the
             % simulation for a longer time without startvalues and set them
             % according to the values once the simulation is repetetive)
-        	tInitialization.Zeolite13x.mfInitialCO2             = [0.01, 0.01, 0.01  0.01, 0.01];
-        	tInitialization.Zeolite13x.mfInitialH2O             = [   0,    0,    0,    0,    0];
+        	tInitialization.Zeolite13x.mfInitialCO2             = [0.01,  0.01,  0.01,  0.01,  0.01,  0.01,  0.01,  0.01,  0.01,  0.01];
+        	tInitialization.Zeolite13x.mfInitialH2O             = [0.06, 0.018, 0.005,     0,     0,     0,     0,     0,     0,     0];
             
-        	tInitialization.Sylobead.mfInitialCO2               = [   0,    0,    0,    0,    0];
-        	tInitialization.Sylobead.mfInitialH2OAbsorb         = [ 0.4, 0.24, 0.13, 0.08, 0.05]; % Only set for the bed that just finished absorbing
-        	tInitialization.Sylobead.mfInitialH2ODesorb         = [0.17, 0.05,    0,    0,    0]; % Only set for the bed that just finished desorbing
+        	tInitialization.Sylobead.mfInitialCO2               = [   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0];
+        	tInitialization.Sylobead.mfInitialH2OAbsorb         = [ 0.4, 0.24, 0.13, 0.08, 0.05,    0,    0,    0,    0,    0,    0]; % Only set for the bed that just finished absorbing
+        	tInitialization.Sylobead.mfInitialH2ODesorb         = [0.17, 0.05,    0,    0,    0,    0,    0,    0,    0,    0,    0]; % Only set for the bed that just finished desorbing
             
-        	tInitialization.Zeolite5A.mfInitialCO2              = [   0,    0,    0,    0,    0];
-        	tInitialization.Zeolite5A.mfInitialH2O              = [   0,    0,    0,    0,    0];
+        	tInitialization.Zeolite5A.mfInitialCO2              = [   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0];
+        	tInitialization.Zeolite5A.mfInitialH2O              = [   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0];
             
             % Sets the cell numbers used for the individual filters
-            tInitialization.Zeolite13x.iCellNumber = 3;
-            tInitialization.Sylobead.iCellNumber = 3;
-            tInitialization.Zeolite5A.iCellNumber = 5;
+            tInitialization.Zeolite13x.iCellNumber  = 5;
+            tInitialization.Sylobead.iCellNumber    = 5;
+            tInitialization.Zeolite5A.iCellNumber   = 5;
             
             % Values for the mass transfer coefficient can be found in the
             % paper ICES-2014-168. Here the values for Zeolite5A are used
@@ -229,16 +235,10 @@ classdef CDRA < vsys
             
             % The thermal conductivity of zeolite, has to be used to
             % generate the nodal network for the thermal solver
-            % Thermal conductivity values were taken from technical data
-            % sheet of grace.com for sylobeads and zeolites
-            % https://grace.com/general-industrial/en-us/Documents/sylobead_br_E_2010_f100222_web.pdf
-            % 
-            % mention in any papers that these values depend a lot on the
-            % structure/size of the beads etc, so the values are not
-            % accurate
-            tInitialization.Zeolite13x.fConductance         = 0.12;
-            tInitialization.Sylobead.fConductance           = 0.14;
-            tInitialization.Zeolite5A.fConductance          = 0.12;
+            % Thermal conductivity values were taken from ICES 2014-168
+            tInitialization.Zeolite13x.fConductance         = 0.147;
+            tInitialization.Sylobead.fConductance           = 0.151;
+            tInitialization.Zeolite5A.fConductance          = 0.152;
             
             % The hydraulic diameter is calculated from area and
             % circumfence using the void fraction to reduce it to account
@@ -928,10 +928,10 @@ classdef CDRA < vsys
             % Note: Transfer coefficient for the V-HAB thermal solver has
             % to be in W/K which means it is U*A or in this case
             % 1/sum(R_th): With R_th = s/(lambda * A)
-            % Assumes                            20 cm of air and                                 2 cm of AL                     + 10cm of zeolite, conductivity values from "Thermal Conducivity and melting Point Measurements on Paraffin Zeolite Mixtures" 
-            mfTransferCoefficient(1)   	= 1 / ( (0.2/(fThermalConductivity .* fArea13x))       + (0.02/(237 .* fArea13x))      + (0.1/(0.07 .* fArea13x)));
-            mfTransferCoefficient(2)    = 1 / ( (0.2/(fThermalConductivity .* fAreaSylobead))  + (0.02/(237 .* fAreaSylobead)) + (0.1/(0.07 .* fArea13x))); % asssumed conducitivty of 13x
-            mfTransferCoefficient(3)   	= 1 / ( (0.2/(fThermalConductivity .* fArea5A))        + (0.02/(237 .* fArea5A))       + (0.1/(0.104 .* fArea13x)));
+            % Assumes                            50 cm of air and                                 10 cm of AL                     + 10cm of zeolite, conductivity values from ICES 2014-168 
+            mfTransferCoefficient(1)   	= 1 / ( (0.5/(fThermalConductivity .* fArea13x))       + (0.1/(237 .* fArea13x))      + (0.1/(0.147 .* fArea13x)));
+            mfTransferCoefficient(2)    = 1 / ( (0.5/(fThermalConductivity .* fAreaSylobead))  + (0.1/(237 .* fAreaSylobead)) + (0.1/(0.151 .* fAreaSylobead))); % asssumed conducitivty of 13x
+            mfTransferCoefficient(3)   	= 1 / ( (0.5/(fThermalConductivity .* fArea5A))        + (0.1/(237 .* fArea5A))       + (0.1/(0.152 .* fArea5A)));
             
             % adds a boundary node for the atmosphere around CDRA
             oAtmosphereCapacity = this.addCreateCapacity(oPhase);
@@ -1294,12 +1294,14 @@ classdef CDRA < vsys
             % phase is low enough the calculation can switch to a simpler
             % calculation that just keeps the phase masses constant.
             
+            
             if this.iCycleActive == 1
                 sCycle = 'Two';
             else
                 sCycle = 'One';
             end
             this.tTimeProperties.DesorptionLastExec = this.oTimer.fTime;
+            this.tTimeProperties.DesorptionStep = this.tTimeProperties.AdsorptionStep; % currently desorption is using the same time step as adsorption
             
             iDesorbCells = this.tGeometry.Zeolite5A.iCellNumber;
             iStartCell = 1+(this.tGeometry.Sylobead.iCellNumber + this.tGeometry.Zeolite13x.iCellNumber);
@@ -1365,20 +1367,11 @@ classdef CDRA < vsys
             else
                 % during air safe mode only half of the heater power is
                 % used
-                mfPowerDesorbCells(mfPowerDesorbCells > this.fMaxHeaterPower) = (this.fMaxHeaterPower/this.tGeometry.Zeolite5A.iCellNumber)/2;
+                mfPowerDesorbCells(mfPowerDesorbCells > this.fMaxHeaterPower/2) = (this.fMaxHeaterPower/this.tGeometry.Zeolite5A.iCellNumber)/2;
             end
-            mfPower = zeros(this.iCells+this.tGeometry.Zeolite5A.iCellNumber,1);
-            mfPower(this.iCells+1:end) = mfPowerDesorbCells;
 
-            this.setHeaterPower(mfPower);
-                
-%             for iCell = this.iCells+1:length(this.tThermalNetwork.mfAdsorptionHeatFlow)
-%                 oCapacity = this.poCapacities(this.tThermalNetwork.(['csNodes_Flow_Cycle',sCycle]){iCell,1});
-%                 fHeatFlow = this.tThermalNetwork.mfHeaterPower(iCell) + this.tThermalNetwork.mfAdsorptionHeatFlow(iCell);
-%                 oCapacity.oHeatSource.setPower(fHeatFlow);
-%             end
-            
             for iPhase = 1:length(aoPhases)
+               aoPhases(iPhase).setInternalHeatFlow(mfPowerDesorbCells(iPhase));
                aoPhases(iPhase).fFixedTS = this.tTimeProperties.DesorptionStep;
                aoAbsorbers(iPhase).ManualUpdate(this.tTimeProperties.DesorptionStep);
             end

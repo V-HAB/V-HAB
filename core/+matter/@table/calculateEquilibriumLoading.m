@@ -120,8 +120,8 @@ end
 function [mfQ_equ, mfLinearizationConstant] = calculateEquilibriumLoading_Zeolite5A_RK38(this, afPP, fTemperature)
 % calculating the parameters for the Toth equation according to
 % ICES 2014-168 equations 22,23 and 24
-mf_A = this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_A0.*exp(this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_E/fTemperature);
-mf_B = this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_B0.*exp(this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_E/fTemperature);
+mf_A   = this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_A0.* exp(this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_E/fTemperature);
+mf_B   = this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_B0.* exp(this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_E/fTemperature);
 mf_t_T = this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_T0 + this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_C0/fTemperature;
 
 % Toth equation from ICES 2014-168 equation 21 but it was adapted for
