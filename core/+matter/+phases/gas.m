@@ -196,7 +196,14 @@ classdef gas < matter.phase
                (abs(this.fPressureLastHeatCapacityUpdate - this.fPressure) > 100) ||...
                (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
                (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
-
+                
+                this.out(1, 1, 'name', '%s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName });
+                
+                this.out(1, 2, 'last', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
+                this.out(1, 2, 'last', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
+                this.out(1, 2, 'last', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
+                this.out(1, 2, 'last', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
+                
                 % Well if the humidity is above 1 the matter table will
                 % usually crash. If this is only the case because the
                 % pressure update occurs after the mass update and the
@@ -247,6 +254,11 @@ classdef gas < matter.phase
                     this.fPressureLastHeatCapacityUpdate     = this.fPressure;
                     this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
                     this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+                    this.out(1, 2, 'curr', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
+                    this.out(1, 2, 'curr', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
+                    this.out(1, 2, 'curr', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
+                    this.out(1, 2, 'curr', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
+
                 end
             end
         end

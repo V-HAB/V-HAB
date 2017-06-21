@@ -43,6 +43,11 @@ classdef Example < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
+            % Atmos - Capacity
+            matter.store(this, 'Atmos', 100);
+            this.toStores.Atmos.createPhase('air', 'hell', 100, 300);
+            
+            
             % Creating a store, volume 1 m^3
             matter.store(this, 'Tank_1', 10);
             
@@ -112,6 +117,18 @@ classdef Example < vsys
         end
         
         
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            
+            oCapa = this.addCreateCapacity(this.toStores.Atmos.toPhases.hell);
+            oProc = this.toProcsF2F.Pipe;
+            fArea = oProc.fLength * pi * (oProc.fDiameter / 2)^2;
+            
+            %TODO debug - if included, time step stuck at min
+            %thermal.f2f_wrapper(oProc, oCapa, 1, fArea);
+        end
+        
+        
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
@@ -131,6 +148,7 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
+            this.out(2, 1, 'exec', 'Exec vsys %s', { this.sName });
         end
         
      end

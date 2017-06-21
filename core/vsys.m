@@ -76,9 +76,13 @@ classdef vsys < matter.container & thermal.container & electrical.container & sy
     methods (Access = protected)
         
         function exec(this, ~)
+            this.out(2, 1, 'exec', 'vsys.exec system "%s"', { this.sName });
+            
             exec@systems.timed(this);
             
             if this.bExecuteContainer
+                this.out(2, 2, 'exec', 'Calling the matter/thermal container exec methods (should that happen??)');
+                
                 exec@matter.container(this, this.fLastTimeStep);
                 exec@thermal.container(this, this.fLastTimeStep);
                 exec@electrical.container(this, this.fLastTimeStep);

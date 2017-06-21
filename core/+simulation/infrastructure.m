@@ -39,6 +39,7 @@ classdef infrastructure < base & event.source
         % and end of each simulation. This is mainly for cases when V-HAB
         % is being called by TherMoS every simulated second and we want to
         % minimize clutter on the console.
+        %TODO move to simulation.infrastructure.monitors.console_output
         bSuppressConsoleOutput = false;
         
         % Sometimes it may be helpful for the user to receive an acoustic
@@ -70,6 +71,12 @@ classdef infrastructure < base & event.source
         % @type string
         sCreated = '';
         
+        
+        % Was everything initialized, e.g. create*Structure, event
+        % init_post was sent etc?
+        bInitialized = false;
+        
+        
         %TODO-RESTRUCTURING see sStorageName
 % %         % String for disk storage
 % %         sStorageDir;
@@ -91,13 +98,13 @@ classdef infrastructure < base & event.source
     properties (SetAccess = private, GetAccess = public)
         % Default monitors
         ttMonitorCfg = struct(...
+            ... % Logs the simulation process in the console - params are major, minor tick
+            'oConsoleOutput', struct('sClass', 'simulation.monitors.console_output', 'cParams', {{ 100, 10 }}), ...
             ... % Logs specific simulation values, can be specified throug helpers
             ... % First param is bDumpToMat --> active?
             'oLogger', struct('sClass', 'simulation.monitors.logger_basic', 'cParams', {{ false }}), ...
             ... % Post-processing - show plots
             'oPlotter', struct('sClass', 'simulation.monitors.plotter_basic'), ...   'simulation.monitors.plotgrid_with_tree'), ...
-            ... % Logs the simulation process in the console - params are major, minor tick
-            'oConsoleOutput', struct('sClass', 'simulation.monitors.console_output', 'cParams', {{ 100, 10 }}), ...
             ... % Allows to e.g. pause the simulation
             'oExecutionControl', struct('sClass', 'simulation.monitors.execution_control'), ...
             ... % Logs mass loss/gain, TODO warn if too much mass loss / gain
@@ -155,6 +162,22 @@ classdef infrastructure < base & event.source
                         this.ttMonitorCfg.(csMonitors{iM}).sClass = tMonitors.(csMonitors{iM});
                     end
                 end
+            end
+            
+            
+            
+            %%% Create monitors
+            csMonitors = fieldnames(this.ttMonitorCfg);
+            
+            for iM = 1:length(csMonitors)
+                cParams = {};
+                monitorConstructor = str2func(this.ttMonitorCfg.(csMonitors{iM}).sClass);
+                
+                if isfield(this.ttMonitorCfg.(csMonitors{iM}), 'cParams')
+                    cParams = this.ttMonitorCfg.(csMonitors{iM}).cParams;
+                end
+                
+                this.toMonitors.(csMonitors{iM}) = monitorConstructor(this, cParams{:});
             end
             
             
@@ -219,20 +242,7 @@ classdef infrastructure < base & event.source
 % %             this.mfLostMass  = zeros(0, this.oData.oMT.iSubstances);
         
             
-
-            % Create monitors
-            csMonitors = fieldnames(this.ttMonitorCfg);
-            
-            for iM = 1:length(csMonitors)
-                cParams = {};
-                monitorConstructor = str2func(this.ttMonitorCfg.(csMonitors{iM}).sClass);
-                
-                if isfield(this.ttMonitorCfg.(csMonitors{iM}), 'cParams')
-                    cParams = this.ttMonitorCfg.(csMonitors{iM}).cParams;
-                end
-                
-                this.toMonitors.(csMonitors{iM}) = monitorConstructor(this, cParams{:});
-            end
+        
             
             % Bind the playFinishSound() method to the 'finished' event.
             this.bind('finish', @(~) this.playFinishSound());
@@ -240,6 +250,14 @@ classdef infrastructure < base & event.source
         
             % Pre Init
             this.trigger('init_pre');
+            % Now the child class constructor will run. After that is
+            % finished, the initialize() method (that also sends init_post)
+            % will have to be called explicitly (e.g. from vhab.sim) or in
+            % .run() below (if first tick).
+            %TODO make sure that sims are always created through vhab.sim()
+            %     because if .init is not called directly, we might get
+            %     issues with e.g. the debugger/logger not being able to
+            %     sort out which object belong to which simulation obj?
         end
         
         
@@ -247,57 +265,74 @@ classdef infrastructure < base & event.source
             % Do stuff like: add log propertis, define plots, ...
         end
         
+        
+        function initialize(this)
+            if this.bInitialized
+                return;
+            end
+            
+            iPhases = 0;
+            iBranches = 0;
+            
+            % Construct matter, solvers, ...
+            oRoot = this.oSimulationContainer;
+        
+            disp('Assembling Simulation Model...')
+            hTimer = tic();
+            
+            for iC = 1:length(oRoot.csChildren)
+                sChild = oRoot.csChildren{iC};
+                oChild = oRoot.toChildren.(sChild);
+                
+                if ismethod(oChild,'createMatterStructure')
+                    oChild.createMatterStructure();
+                end
+
+                % Seal matter things - do we need something like that
+                % for thermal/electrical?
+                oChild.seal();
+
+                
+                if ismethod(oChild,'createThermalStructure')
+                    oChild.createThermalStructure();
+                end
+                
+                if ismethod(oChild,'createElectricalStructure')
+                    oChild.createElectricalStructure();
+                end
+                
+                oChild.createSolverStructure();
+                
+                %TODO Might have to add something like this here
+                %if ismethod(oChild,'createDomainInterfaces')
+                %   oChild.createDomainInterfaces();
+                %end
+                    
+                    iPhases = iPhases + oChild.iPhases;
+                    iBranches = iBranches + oChild.iBranches;
+            end
+            
+            disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
+                disp(['Model contains ', num2str(iBranches), ' Branches and ', num2str(iPhases), ' Phases.'])
+            
+            this.bInitialized = true;
+
+            % Setup monitors
+            this.configureMonitors();
+            
+            % Trigger event so e.g. monitors can react
+            this.trigger('init_post');
+        end
+        
+        
         function run(this)
             % Run until tick/time (depending on bUseTime)
             % iSimTicks/fSimTime reached - directly set attributes to
             % influence behaviour
             
-            iPhases = 0;
-            iBranches = 0;
             
-            if this.oSimulationContainer.oTimer.iTick == -1
-                % Construct matter, solvers, ...
-                oRoot = this.oSimulationContainer;
-            
-                disp('Assembling Simulation Model...')
-                hTimer = tic();
-                
-                for iC = 1:length(oRoot.csChildren)
-                    sChild = oRoot.csChildren{iC};
-                    oChild = oRoot.toChildren.(sChild);
-                    
-                    if ismethod(oChild,'createMatterStructure')
-                        oChild.createMatterStructure();
-                    end
-                    
-                    if ismethod(oChild,'createThermalStructure')
-                        oChild.createThermalStructure();
-                    end
-                    
-                    if ismethod(oChild,'createElectricalStructure')
-                        oChild.createElectricalStructure();
-                    end
-                    
-                    oChild.seal();
-                    oChild.createSolverStructure();
-                    
-                    %TODO Might have to add something like this here
-                    %if ismethod(oChild,'createDomainInterfaces')
-                    %   oChild.createDomainInterfaces();
-                    %end
-                    
-                    iPhases = iPhases + oChild.iPhases;
-                    iBranches = iBranches + oChild.iBranches;
-                end
-                
-                disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
-                disp(['Model contains ', num2str(iBranches), ' Branches and ', num2str(iPhases), ' Phases.'])
-                
-                % Setup monitors
-                this.configureMonitors();
-                
-                % Trigger event so e.g. monitors can react
-                this.trigger('init_post');
+            if this.oSimulationContainer.oTimer.iTick == -1 && ~this.bInitialized
+                this.initialize();
             end
             
             % Only output this, if we want to and the first time this is
@@ -544,7 +579,15 @@ classdef infrastructure < base & event.source
                 sound(afSampleData, afSampleRate);
             end
         end
-
+        
+        
+        function delete(this)
+            csMonitors = fieldnames(this.toMonitors);
+            
+            for iM = 1:length(csMonitors)
+                delete(this.toMonitors.(csMonitors{iM}));
+            end
+        end
     end
     
     

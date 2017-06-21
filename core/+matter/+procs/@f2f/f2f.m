@@ -119,7 +119,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         
         
         function setHeatFlowObject(this, oHeatFlow, iSign)
-            if ~isempty(this.oHeatFlow)
+            if ~isempty(this.oHeatFlowObject)
                 this.throw('setHeatFlowObject', 'Already one heat flow set!');
             end
             
@@ -225,9 +225,13 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     
     methods (Access = protected)
         function updateFromHeatFlowObject(this, ~)
-            this.fHeatFlow = this.oHeatFlowObject * this.iHeatFlowDirection;
+            this.fHeatFlow = this.oHeatFlowObject.fPower * this.iHeatFlowDirection;
             
-            this.oBranch.setOutdated();
+            % On first call (during construction), .seal not yet done so
+            % branch unknown. But no outdated needed.
+            if ~isempty(this.oBranch)
+                this.oBranch.setOutdated();
+            end
         end
         
         function supportSolver(this, sType, varargin)

@@ -12,7 +12,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, fSimTime) % Constructor function
             
             % vhab.exec always passes in ptConfigParams, tSolverParams
             % If not provided, set to empty containers.Map/struct
@@ -48,7 +48,7 @@ classdef setup < simulation.infrastructure
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            tutorials.simple_flow.systems.Example(this.oSimulationContainer, 'Example');
+            oSys = tutorials.simple_flow.systems.Example(this.oSimulationContainer, 'Example');
             
             % This is an alternative to providing the ttMonitorConfig above
             %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
@@ -57,11 +57,19 @@ classdef setup < simulation.infrastructure
             
             
             
+            %solver.thermal.lumpedparameter(oSys);
+            
+            
 
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
             this.fSimTime = 3600 * 1; % In seconds
+            
+            if nargin >= 3 && ~isempty(fSimTime)
+                this.fSimTime = fSimTime;
+            end
+            
             this.iSimTicks = 1500;
             this.bUseTime = true;
         end
@@ -97,6 +105,10 @@ classdef setup < simulation.infrastructure
             %   - :s: = toStores
             %   - :c: = toChildren
             
+            iTempIdx1 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(1)', 'fTemperature', 'K', 'Flow Temperature - Left');
+            iTempIdx2 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(2)', 'fTemperature', 'K', 'Flow Temperature - Right');
+            
+            
             % The log is built like this:
             %
             %               Path to the object containing the log value     Log Value                       Unit    Label of log value (used for legends and to plot the value) 
@@ -108,6 +120,7 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'kg', 'Mass Tank 2');
             % This can be usefull if you want to log the flowrate of CO2
             % through a branch that transports air for example
+            oPlot.definePlot([ iTempIdx1, iTempIdx2 ], 'Flow Temperatures');
             
             oLog.addValue('Example.aoBranches(1).aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Flowrate of CO2');
             

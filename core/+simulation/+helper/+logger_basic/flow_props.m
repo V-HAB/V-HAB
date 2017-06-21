@@ -28,9 +28,10 @@ for iS = 1:length(csStores)
         
         % Mass, Pressure, Temperature
         tLogProps(iV).sObjectPath = sPhasePath;
-        tLogProps(iV).sExpression = 'fMass';
+        %tLogProps(iV).sExpression = 'fMass';
+        tLogProps(iV).sExpression = 'this.fMass + this.fCurrentTotalMassInOut * (this.oTimer.fTime - this.fLastMassUpdate)';
         tLogProps(iV).sLabel = [ 'Phase Mass (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
-        %tLogProps(end).sUnit = 'kg';
+        tLogProps(end).sUnit = 'kg'; % the auto-convert is only for fMass directly, not for the calculation above
         
         
         iV = iV + 1;
@@ -47,7 +48,8 @@ for iS = 1:length(csStores)
             case 'liquid'
                 tLogProps(iV).sExpression = 'fPressure';
             case 'gas'
-                tLogProps(iV).sExpression = 'this.fMass * this.fMassToPressure';
+                %tLogProps(iV).sExpression = 'this.fMass * this.fMassToPressure';
+                tLogProps(iV).sExpression = 'this.fMassToPressure * (this.fMass + this.fCurrentTotalMassInOut * (this.oTimer.fTime - this.fLastMassUpdate))';
             case 'absorber'
                 continue;
             case 'mixture'
@@ -55,7 +57,7 @@ for iS = 1:length(csStores)
         end
         tLogProps(iV).sObjectPath = sPhasePath;
         tLogProps(iV).sLabel = [ 'Phase Pressure (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
-        %tLogProps(end).sUnit = 'Pa';
+        tLogProps(end).sUnit = 'Pa'; % the auto-convert is only for fMass directly, not for the calculation above
         
         iV = iV + 1;
     end
