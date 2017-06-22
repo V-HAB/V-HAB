@@ -262,9 +262,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         arPartialMassLastHeatCapacityUpdate;
         
         % Mass that has to be removed on next mass update
-        afExcessMass;
         mfTotalFlowsByExme;
-        oOriginPhase;
     end
 
     properties (SetAccess = private, GetAccess = public)
@@ -327,8 +325,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.afMass = this.oMT.addPhase(this);
             
             % Preset masses
-            this.afRemovedExcessMass = zeros(1, this.oMT.iSubstances);
-            this.afExcessMass = zeros(1, this.oMT.iSubstances);
             this.afMass = zeros(1, this.oMT.iSubstances);
             this.arPartialMass = zeros(1, this.oMT.iSubstances);
             this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
@@ -464,9 +460,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % resulted in a negative mass for the other phase
             
             afMassNew =  this.afMass + afTotalInOuts;
-            afMassNew = afMassNew - this.afExcessMass;
-            this.afRemovedExcessMass = this.afRemovedExcessMass + this.afExcessMass;
-            this.afExcessMass = zeros(1,this.oMT.iSubstances);
             
             % Now we check if any of the masses has become negative. This
             % can happen for two reasons, the first is just MATLAB rounding
