@@ -8,6 +8,10 @@ classdef logger_basic < simulation.monitor
     %
     %   check if sim already running (set bSealed in onInitPost) -> not
     %   possible to add additional log values!
+    %
+    %   find(): besides aiIdx, allow passing in path(s) to different
+    %       systems or other objects, and only properties logged for these are
+    %       returned? [e.g. plot all [W] for HX 1, 2 and 3]
     
     properties (GetAccess = public, Constant = true)
         % Loops through keys, comparison only with length of key
@@ -35,6 +39,10 @@ classdef logger_basic < simulation.monitor
         %              means that e.g. 'this.oMT.tiN2I.O2' can be used.
         % sName: if empty, will be generated from sExpression
         tLogValues = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {}, 'sObjUuid', {}, 'iIndex', {});%, 'iIndex', {});
+        tDerivedLogValues = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {}, 'sObjUuid', {}, 'iIndex', {});%, 'iIndex', {});
+        
+        tVirtualValues = struct('sExpression', {}, 'calculationHandle', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {});
+        
         
         % Shortcut to the paths of variables to log
         csPaths;
@@ -47,6 +55,7 @@ classdef logger_basic < simulation.monitor
         afTime;
         
         % Logged data
+        mfDerivedLog;
         mfLog;
         aiLog;
         
@@ -175,7 +184,85 @@ classdef logger_basic < simulation.monitor
         end
         
         
+        function iIdx = addVirtualValue(this, sExpression, sUnit, sLabel, sName)
+            %TODO-addVirtVal
+            
+            % Expression needs to be valid Matlab code. Log values can be
+            % addressed using the name provided to addValue. Alternatively,
+            % they can be addressed using their labels, however, the value
+            % then has to be enclosed by " - e.g. '1 + "my label"'
+            %
+            % Important: the expression has to be 'vector' compatible, as
+            % the calculation is done only ONCE for all ticks! This means,
+            % if you want to divide value_a by value_b, DO NOT WRITE:
+            %   'value_a / value_b'             <-- WRONG!
+            % BUT INSTEAD:
+            %   'value_a ./ value_b'
+            % See the Matlab documentation for vector operations.
+            %
+            %
+            % All kinds of auto-generation of label, name etc done in
+            % addValue - not done here! Expression, unit and label are
+            % REQUIRED values; if name omitted, generated from label.
+            %
+            %
+            %NOTE virtual values themselves are not available in subsequent
+            %     calls to addVirtualValue - this could be implemented, but
+            %     a check would have to exist that calculates required virt
+            %     values on the fly!
+            
+            
+            % negative idx
+            % store in separate tVirtProps
+            % add sExpression as anonymous fct handle - names already
+            % replaced with this.mfLog(:, XX)
+            % in .get(), check for negative indices - calculate!
+            
+            csNames   = { this.tLogValues.sName };
+            csLabels  = { this.tLogValues.sLabel };
+            aiIndices = [ this.tLogValues.iIndex ];
+            sParsed   = sExpression;
+            
+            for iN = 1:length(csNames)
+                sParsed = strrep(sParsed, csNames{iN}, sprintf('mfLog(:, %i)', aiIndices(iN)));
+                sParsed = strrep(sParsed, [ '"' csLabels{iN} '"' ], sprintf('mfLog(:, %i)', aiIndices(iN)));
+            end
+            
+            
+            funcHandle = [];
+            
+            try
+                funcHandle = eval([ '@(mfLog) ' sParsed ]);
+            catch oErr
+                assignin('base', 'oLastErr', oErr);
+                
+                this.throw('addVirtualValue', 'Invalid expression. Original expression was: "%s", which was converted to: "%s"\nThere seems to be a Matlab error during eval: "%s"', sExpression, sParsed, oErr.message);
+            end
+            
+            
+            if nargin < 5 || isempty(sName)
+                sName = regexprep(sLabel, '[^a-zA-Z0-9]', '_');
+            end
+            
+            % Do not check for tLogValues names - they always take
+            % precedence anyways
+            if ~isempty(find(strcmp(sName, { this.tVirtualValues.sName }), 1, 'first')) 
+                this.throw('addVirtualValue', 'The name "%s" is already in use!', sName);
+            end
+            
+            
+            
+            this.tVirtualValues(end + 1) = struct(...
+                'sExpression', sExpression, ...
+                'calculationHandle', funcHandle, ...
+                'sName', sName, ...
+                'sUnit', sUnit, ...
+                'sLabel', sLabel ...
+            );
         
+        
+            iIdx = -1 * length(this.tVirtualValues);
+        end
         
         
         function aiIdx = find(this, aiIdx, tFilter)
@@ -183,6 +270,56 @@ classdef logger_basic < simulation.monitor
             
             if nargin < 2 || isempty(aiIdx)
                 aiIdx = 1:length(this.tLogValues);
+                
+            % Get by name or title - translate csIdx to aiIdx
+            % Not done via filters, represents a pre-selection just as if
+            % aiIdx would have been passed in!
+            elseif iscell(aiIdx)
+                %TODO-addVirtVal
+                iLen  = length(aiIdx);
+                csIdx = aiIdx;
+                aiIdx = nan(1, iLen);
+                
+                csNames  = { this.tLogValues.sName };
+                csLabels = { this.tLogValues.sLabel };
+                
+                csVirtualNames  = { this.tVirtualValues.sName };
+                csVirtualLabels = { this.tVirtualValues.sLabel };
+                
+                for iI = 1:iLen
+                    if isnumeric(csIdx{iI})
+                        aiIdx(iI) = csIdx{iI};
+                        
+                        continue;
+                    end
+                    
+                    
+                    % Name?
+                    iIdx = find(strcmp(csNames, csIdx{iI}), 1, 'first');
+                    
+                    % Virtual Value - name?
+                    if isempty(iIdx)
+                        iIdx = -1 * find(strcmp(csVirtualNames, csIdx{iI}), 1, 'first');
+                    end
+                    
+                    % Find by label?
+                    if isempty(iIdx)
+                        iIdx = find(strcmp(csLabels, csIdx{iI}(2:(end - 1))), 1, 'first');
+                    end
+                    
+                    % Find by virtual label?
+                    if isempty(iIdx)
+                        iIdx = -1 * find(strcmp(csVirtualLabels, csIdx{iI}(2:(end - 1))), 1, 'first');
+                    end
+                    
+                    
+                    
+                    if isempty(iIdx)
+                        this.throw('find', 'Cannot find log value! String given: >>%s<< (if you were searching by label, pass in the label name enclosed by ", i.e. { ''"%s"'' })', csIdx{iI}, csIdx{iI});
+                    end
+                    
+                    aiIdx(iI) = iIdx;
+                end
             end
             
             if isempty(aiIdx)
@@ -237,17 +374,111 @@ classdef logger_basic < simulation.monitor
         
         
         
-        function [ mxData, tConfig ] = get(this, aiIdx)
+        function [ aafData, tConfig ] = get(this, aiIdx)
             % Need to truncate mfLog to iTick - preallocation!
             %iTick = this.oSimulationInfrastructure.oSimulationContainer.oTimer.iTick + 1;
             iTick = length(this.afTime);
+            
+            % Pre-filter log values for virtuals
+            % Matlab should be smart enough to optimize that
+            aafLogTmp = this.mfLog(1:iTick, :);
+            aafData   = nan(size(aafLogTmp, 1), length(aiIdx));
+            tConfig   = [];
+            
+            
+            for iI = 1:length(aiIdx)
+                iIdx = aiIdx(iI);
+                
+                if iIdx < 0
+                    tConf  = this.tVirtualValues(-1 * iIdx);
+                    
+                    % Preset some values present in logValues but not here
+                    tConf.sObjUuid    = [];
+                    tConf.sObjectPath = [];
+                    tConf.iIndex      = iIdx;
+                    
+                    
+                    % And calculate stuff!
+                    afData = tConf.calculationHandle(aafLogTmp);
+                    
+                    % Remove field, not in tLogValues
+                    tConf = rmfield(tConf, 'calculationHandle');
+                else
+                    afData = aafLogTmp(:, iIdx);
+                    tConf  = this.tLogValues(iIdx);
+                end
+                
+                aafData(:, iI) = afData;
+                
+                if iI == 1
+                    tConfig = tConf;
+                else
+                    tConfig(iI) = tConf;
+                end
+            end
+            
+            
+            return;
+            
+            %TODO-addVirtVal check aiIdx for negative values
+            %       calculate those values
+            %       merge logged and virtual values into mxData, tConfig
+            %           -> tConfig: set iIndex, sObjUuid etc to [] for virt
+            
+            %aiLogged  = aiIdx(aiIdx > 0);
+            %aiVirtual = aiIdx(aiIdx < 0);
             
             mxData  = this.mfLog(1:iTick, aiIdx);
             tConfig = this.tLogValues(aiIdx);
         end
         
         
-        
+        function add_mfLogValue(this,sNewLogName, mfLogValue, sUnit)
+            % This function is used by the plotter when mathematical
+            % operations are performed on different log values to create
+            % new derived log values. These new derived log values are
+            % stored in the logger by this function by adding them to the
+            % tDerivedLogValues struct and the mfDerivedLog matric. The two
+            % new properties "derived" were created to enable the advanceTo
+            % function of a finished or paused simulation to operate
+            % normally
+            
+            % Checks if the derived log already exists, in which case it
+            % should not be created as a new log again, but the previous
+            % values should be overwritten.
+            bLogExists = false;
+            for iLogIndex = 1:length(this.tDerivedLogValues)
+                if strcmp(this.tDerivedLogValues(iLogIndex).sLabel, sNewLogName)
+                    bLogExists = true;
+                    iIndex = iLogIndex;
+                end
+            end
+            
+            % If the log does not exists already a new entry is created,
+            % storing the name of the log value and the unit as the well as
+            % the actual entries
+            if ~bLogExists
+                this.mfDerivedLog(:,end+1) = mfLogValue;
+                this.tDerivedLogValues(end+1).sLabel = sNewLogName;
+                this.tDerivedLogValues(end).sUnit = sUnit;
+                this.tDerivedLogValues(end).iIndex = length(this.mfDerivedLog(1,:));
+            else
+                % TO DO: Check if this works, if a simulation was paused,
+                % the plot command was used and derived logs created and
+                % then the simulation restarted, after which the plot is
+                % called a second time. (Might have a dimension mismatch
+                % here) 
+                try
+                    this.mfDerivedLog(:,iIndex) = mfLogValue;
+                catch
+                    this.mfDerivedLog = [];
+                    this.mfDerivedLog(:,end+1) = mfLogValue;
+                    this.tDerivedLogValues(end+1).sLabel = sNewLogName;
+                    this.tDerivedLogValues(end).sUnit = sUnit;
+                    this.tDerivedLogValues(end).iIndex = length(this.mfDerivedLog(1,:));
+                end
+            end
+        end
         
         function readDataFromMat(this)
             if ~this.bDumpToMat
@@ -602,6 +833,8 @@ classdef logger_basic < simulation.monitor
                 oLastSimObj = this.oSimulationInfrastructure; %#ok<NASGU>
                 save(sMat, 'oLastSimObj');
             end
+            
+            
         end
         
         
