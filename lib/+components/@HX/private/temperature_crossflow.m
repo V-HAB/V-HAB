@@ -61,11 +61,13 @@ if fN_Rows == 0
     %defines two symbolic functions for the dimensionless temperatures
     %over the variables Xi and Eta
     syms yTheta_2(yXi,yEta) yTheta_1(yXi,yEta)
-
+    
     %preallocation of the vector Phi_n and Variable_1
-    yPhi_n = sym(zeros(fSummands,1));
-    yVariable_1 = sym(zeros(fSummands,1));
+    yPhi_n      = zeros(fSummands,1);
+    yVariable_1 = zeros(fSummands,1);
 
+    yPhi_n      = sym(yPhi_n);
+    yVariable_1 = sym(yVariable_1);
     %calculation of the summands Phi_1 to Phi_s used to solve the integral
     %equation for the temperature field
     for fk = 1:fSummands
@@ -85,6 +87,8 @@ if fN_Rows == 0
     
     end
 
+    %TO DO: could be possible to do this without sym and not for every
+    %point in the HX and without using a integral.
     %function definition for the dimensionless temperature of fluid 2
     yTheta_2(yXi, yEta) = exp(-fNTU_2*yEta)+sum(yPhi_n);
     %Equation from source [2], equation (20)
@@ -130,9 +134,9 @@ else
     
     %preallocation of the values used to calculate the sums used in 
     %the equation for the outlet temperature of fluid 2
-    yVariable_1 = sym(zeros((fN_Rows-1),1));
-    yVariable_2 = sym(zeros(fN_Rows,1));
-    yVariable_3 = sym(zeros(fN_Rows,1));
+    yVariable_1 = zeros((fN_Rows-1),1);
+    yVariable_2 = zeros(fN_Rows,1);
+    yVariable_3 = zeros(fN_Rows,1);
     
     %definition of the equation for the average outlet temperature of 
     %fluid 2 according to [5] page 78 equation 4.151
@@ -153,9 +157,6 @@ else
                 
             end
             
-            %converts Variable_3 to double
-            yVariable_3 = double(yVariable_3);
-            
             %calculates the second sum from m=0 to p which contains the
             %first sum saved in yVariable_3
             yVariable_2((fm+1),1) = factorial(fp)/(factorial(fm)*...
@@ -164,17 +165,11 @@ else
             
         end
         
-        %converts Variable_2 into double
-        yVariable_2 = double(yVariable_2);
-
         %saves each Variable_2 which is calculated for every p into the 
         %vector Variable_1 to calculate the third sum from p=1 to (n-1)
         yVariable_1(fp,1) = yVariable_2;
         
     end
-    
-    %converts Variable_1 into double
-    yVariable_1 = double(yVariable_1);
     
     %calculates the outlet temperature of fluid 2 using the sum over
     %yVariable_3
@@ -188,6 +183,9 @@ else
     fOutlet_Temp_1 =fEntry_Temp_1 - (fHeat_Cap_Flow_2/fHeat_Cap_Flow_1)*...
                     (fOutlet_Temp_2 - fEntry_Temp_2);
     %Equation from "Wärmeübertragung" Polifke page 176 equation (8.9)
+    if isnan(fOutlet_Temp_1) ||  isnan(fOutlet_Temp_2)
+        keyboard()
+    end
     
     
 end
