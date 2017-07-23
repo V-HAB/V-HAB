@@ -475,7 +475,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % TO DO: Decide if this logic should be kept or if an error
                 % should be thrown in case the mass error becomes too large
                 
-                this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
+                this.afMassLost(abNegative) = this.afMassLost(abNegative) - afMassNew(abNegative);
+                
+                this.afMass = afMassNew;
                 this.afMass(abNegative) = 0;
                 
                 this.out(tools.logger.NOTICE, 1, 'negative-mass', 'Got negative mass, added to mass lost.', {}); % directly follows message above, so don't output name

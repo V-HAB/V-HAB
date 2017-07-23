@@ -7,7 +7,7 @@ function [ ] = findMassLostErrors( oLastSimObj )
 
     fMassLost_in_Phases = sum(afMassLost_in_Phases);
 
-    miMaxLostIndices = find(fMassLost_in_Phases == max(fMassLost_in_Phases));
+    miMaxLostIndices = find(abs(fMassLost_in_Phases) == max(abs(fMassLost_in_Phases)));
 
     aoPhases = oLastSimObj.oSimulationContainer.oMT.aoPhases;
     
