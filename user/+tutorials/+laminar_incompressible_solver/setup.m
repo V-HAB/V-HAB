@@ -61,7 +61,7 @@ classdef setup < simulation.infrastructure
 % %             oConsOut.addIdentFilter('total-fr');
 % %             oConsOut.addIdentFilter('negative-mass');
             
-% %             oConsOut.addTypeToFilter('matter.phases.gas_pressure_manual');
+% %             oConsOut.addTypeToFilter('matter.phases.gas_flow_node');
             %%
             
             

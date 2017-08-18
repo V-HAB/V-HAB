@@ -52,11 +52,11 @@ classdef controller < base
             %keyboard();
             
             % Phases with dynamic pressure
-            aoPhasesDynPressure   = matter.phases.gas_pressure_manual.empty(0);
+            aoPhasesDynPressure   = matter.phases.gas_flow_node.empty(0);
             
             for iB = 1:length(this.aoBranches)
                 for iE = 1:2
-                    if isa(this.aoBranches(iB).coExmes{iE}.oPhase, 'matter.phases.gas_pressure_manual')
+                    if isa(this.aoBranches(iB).coExmes{iE}.oPhase, 'matter.phases.gas_flow_node')
                         oP = this.aoBranches(iB).coExmes{iE}.oPhase;
                         
                         if ~any(aoPhasesDynPressure == oP)
@@ -89,7 +89,7 @@ classdef controller < base
                     oOtherPhase  = oExme.oFlow.oBranch.coExmes{iOtherPhase}.oPhase;
                     afCoeffs(iE) = oExme.oFlow.oBranch.oHandler.fTotalCoeff;
                     
-                    if isa(oOtherPhase, 'matter.phases.gas_pressure_manual')
+                    if isa(oOtherPhase, 'matter.phases.gas_flow_node')
                         %aiManual(end + 1) = find(aoPhasesDynPressure == oOtherPhase, 'first');
                         aiManual(iE) = find(aoPhasesDynPressure == oOtherPhase, 'first');
                         

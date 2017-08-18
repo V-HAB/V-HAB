@@ -170,7 +170,7 @@ classdef branch < base & event.source
                     
                     % Variable pressure phase - add to reference map if not
                     % present yet, generate index for matrix column
-                    if isa(oP, 'matter.phases.gas_pressure_manual')
+                    if isa(oP, 'matter.phases.gas_flow_node')
                         if ~this.poVariablePressurePhases.isKey(oP.sUUID)
 
                             this.poVariablePressurePhases(oP.sUUID) = oP;
@@ -836,7 +836,7 @@ classdef branch < base & event.source
             for iR = 1:length(this.csObjUuidsToColIndex)
                 oObj = this.poColIndexToObj(iR);
                 
-                if isa(oObj, 'matter.phases.gas_pressure_manual')
+                if isa(oObj, 'matter.phases.gas_flow_now')
                     oObj.setPressure(afResults(iR));
                     
                     

@@ -55,7 +55,7 @@ classdef Example_313 < vsys
                 
                 matter.store(this, sN, tS.fVolume);
                 cParams = matter.helper.phase.create.N2Atmosphere(this, this.toStores.(sN).fVolume);
-                matter.phases.gas_pressure_manual(this.toStores.(sN), 'flow', cParams{:});
+                matter.phases.gas_flow_node(this.toStores.(sN), 'flow', cParams{:});
                 
                 for iE = 1:length(tS.csExmes)
                     matter.procs.exmes.gas(this.toStores.(sN).aoPhases(1), tS.csExmes{iE});
@@ -64,7 +64,7 @@ classdef Example_313 < vsys
             end
             
             %cParams = matter.helper.phase.create.N2Atmosphere(this, this.toStores.BedA.fVolume);
-            %matter.phases.gas_pressure_manual(this.toStores.BedA, 'adsorbed', cParams{:});
+            %matter.phases.gas_flow_node(this.toStores.BedA, 'adsorbed', cParams{:});
             
             %matter.procs.exmes.gas(this.toStores.BedA.aoPhases(2), 'To_Vacuum_Ads');
             

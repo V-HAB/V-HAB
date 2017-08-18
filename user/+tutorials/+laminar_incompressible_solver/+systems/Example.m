@@ -46,7 +46,7 @@ classdef Example < vsys
             
             matter.store(this, 'Valve_1', 1e-6);
             cParams = matter.helper.phase.create.air(this, this.toStores.Valve_1.fVolume);
-            matter.phases.gas_pressure_manual(this.toStores.Valve_1, 'flow', cParams{:});
+            matter.phases.gas_flow_node(this.toStores.Valve_1, 'flow', cParams{:});
             matter.procs.exmes.gas(this.toStores.Valve_1.aoPhases(1), 'In'); 
             matter.procs.exmes.gas(this.toStores.Valve_1.aoPhases(1), 'Out'); 
             
@@ -54,7 +54,7 @@ classdef Example < vsys
             
             matter.store(this, 'Filter', 1e-1);
             cParams = matter.helper.phase.create.air(this, this.toStores.Filter.fVolume);
-            matter.phases.gas_pressure_manual(this.toStores.Filter, 'flow', cParams{:});
+            matter.phases.gas_flow_node(this.toStores.Filter, 'flow', cParams{:});
             matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'In');
             matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'Out');
             matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'Filtered');
@@ -75,7 +75,7 @@ classdef Example < vsys
             
             matter.store(this, 'Valve_2', 1e-6);
             cParams = matter.helper.phase.create.air(this, this.toStores.Valve_2.fVolume);
-            matter.phases.gas_pressure_manual(this.toStores.Valve_2, 'flow', cParams{:});
+            matter.phases.gas_flow_node(this.toStores.Valve_2, 'flow', cParams{:});
             matter.procs.exmes.gas(this.toStores.Valve_2.aoPhases(1), 'In'); 
             matter.procs.exmes.gas(this.toStores.Valve_2.aoPhases(1), 'Out'); 
             
