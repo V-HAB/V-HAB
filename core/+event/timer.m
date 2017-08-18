@@ -258,6 +258,30 @@ classdef timer < base
             this.fTime = this.fTime + fThisStep;
             this.iTick = this.iTick + 1;
             
+            
+            %% Outcommented code that can be added again if you have trouble finding the location of your smallest time step in your system
+            %
+            % If you provide a limit larger than 0, then the report string
+            % telling you in which part of the system your time step was
+            % minimal will be displayed in the command window for all cases
+            % where the smallest time step is smaller or equal than the limit you
+            % provided
+            % Outcomment code from here to the next section to activate the
+            % debugging
+%             fLimit = 0;
+%             csReport = tools.findSmallestTimeStep(this, fLimit);
+%             if mod(this.iTick, 101) == 0
+%                 this.tDebug = struct();
+%                 this.tDebug(mod(this.iTick, 101)+1).csReport    = csReport;
+%                 this.tDebug(mod(this.iTick, 101)+1).iTick       = this.iTick;
+%                 this.tDebug(mod(this.iTick, 101)+1).fTimeStep   = fThisStep;
+%             else
+%                 this.tDebug(mod(this.iTick, 101)+1).csReport    = csReport;
+%                 this.tDebug(mod(this.iTick, 101)+1).iTick       = this.iTick;
+%                 this.tDebug(mod(this.iTick, 101)+1).fTimeStep   = fThisStep;
+%             end
+            
+            
             % Find all cb's indices whose last exec + time step <= fTime
             % Dependent systems have -1 as time step - therefore this
             % should always be true!
@@ -288,28 +312,6 @@ classdef timer < base
             % Update last execution time - see above, abExec is logical, so
             % this works, don't need find!
             this.afLastExec(abExec) = this.fTime;
-            
-            %% Outcommented code that can be added again if you have trouble finding the location of your smallest time step in your system
-            %
-            % If you provide a limit larger than 0, then the report string
-            % telling you in which part of the system your time step was
-            % minimal will be displayed in the command window for all cases
-            % where the smallest time step is smaller or equal than the limit you
-            % provided
-            % Outcomment code from here to the next section to activate the
-            % debugging
-%             fLimit = 0;
-%             csReport = tools.findSmallestTimeStep(this, fLimit);
-%             if mod(this.iTick, 101) == 0
-%                 this.tDebug = struct();
-%                 this.tDebug(mod(this.iTick, 101)+1).csReport    = csReport;
-%                 this.tDebug(mod(this.iTick, 101)+1).iTick       = this.iTick;
-%                 this.tDebug(mod(this.iTick, 101)+1).fTimeStep   = fThisStep;
-%             else
-%                 this.tDebug(mod(this.iTick, 101)+1).csReport    = csReport;
-%                 this.tDebug(mod(this.iTick, 101)+1).iTick       = this.iTick;
-%                 this.tDebug(mod(this.iTick, 101)+1).fTimeStep   = fThisStep;
-%             end
             
             %% executing post ticks
             % in order to improve the simulation speed the post tick call

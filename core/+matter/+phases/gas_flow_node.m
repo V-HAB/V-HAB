@@ -33,7 +33,7 @@ classdef gas_flow_node < matter.phases.gas
             this.fInitialMass = this.fMass;
             
             if this.fMass > 0
-                %this.throw('gas_pressure_manual', 'cannot have mass!');
+                %this.throw('gas_flow_node', 'cannot have mass!');
             end
         end
         
@@ -80,8 +80,14 @@ classdef gas_flow_node < matter.phases.gas
             
             %this.rMaxChange = 0.01;%0.00001;%inf;
             
-            %this.rMaxChange = 0.1 ^ this.oTimer.iPrecision;
-            this.rMaxChange = 0;
+            % TO DO (puda):
+            % Setting this to zero would result in a NaN time step in the
+            % phase time step calculation even if no mass change occurs.
+            % However setting it something different then zero could allow
+            % mass changes in the flow nodes, where no mass changes can be
+            % allowed!
+            this.rMaxChange = 0.1 ^ this.oTimer.iPrecision;
+            %this.rMaxChange = 0;
             %this.rMaxChange = 0.0000001;
             %this.rMaxChange = inf;
             this.bSynced    = true;

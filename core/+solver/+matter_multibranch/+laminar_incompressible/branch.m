@@ -211,6 +211,9 @@ classdef branch < base & event.source
             % afBoundaryConditions is the B vector mostly with the boundary
             % node pressures (later also fan pressure deltas)
             
+            % TO DO (puda): It would be great to include an explanation of
+            % the generated matrices, which entries are what.
+            
             % Average density
             afDensities = nan(1, length(this.csBoundaryPhases));
             
@@ -275,6 +278,10 @@ classdef branch < base & event.source
                     % positive or negative - as we do not have active
                     % components, the pressure difference determines the
                     % flow direction! Yay!
+                    % TO DO: Comment from puda: Why not define the initial
+                    % direction based on the inital pressure difference
+                    % between boundary nodes? Actually it seems to me like
+                    % this is already the case here
                     fFlowRate = this.afFlowRates(iB);
                     
                     %TODO round somewhere? In between iterations?
@@ -538,7 +545,7 @@ classdef branch < base & event.source
                 
                 
                 if oP.iProcsP2Pflow > 0
-                    % No go through all p2ps, get their flow rates based on the
+                    % Now go through all p2ps, get their flow rates based on the
                     % flow rates from the previous iteration (or time step).
 
                     % Generate flow rates array!
@@ -741,6 +748,74 @@ classdef branch < base & event.source
                 %hT = tic();
                 warning('off','all');
                 
+                % TO DO: Comment from puda
+                % What are these results? pressures and flowrates mixed?
+                % can we get an explanation of this operation? As far as I
+                % understood it aafPhasePressureAndFlowRates contain
+                % flowrates and pressures. This operation would solve the
+                % linear system of equation where
+                % aafPhasePressuresAndFlowRates * X = afBoundaryConditions
+                % but what are the X, are they the flowrates? This cannot
+                % be because in the example I viewed there were only 4
+                % branches. Where can I find the information about which
+                % row and which column refers to what?
+                
+                % Example: In the tutorial case this was the matrix:
+%                 aafPhasePressuresAndFlowRates =
+% 
+%    1.0e+04 *
+% 
+%    -0.0001   -1.0890         0         0         0         0         0
+%     0.0001         0   -0.0001   -1.0890         0         0         0
+%          0         0    0.0001         0   -0.0001   -1.0890         0
+%          0         0         0         0    0.0001         0   -1.0890
+%          0         0         0    0.0001         0   -0.0001         0
+%          0    0.0001         0   -0.0001         0         0         0
+%          0         0         0         0         0    0.0001   -0.0001
+%               
+% and 
+% afBoundaryConditions =
+% 
+%      -100200
+%            0
+%            0
+%       100000
+%            0
+%            0
+%            0
+%
+% now basically this would translate into the following system of
+% equations: (1.089e4 will be written as 1e4
+%
+% - x1 - 1e4 x2                                             = -100200   (I)
+% + x1      	-  x3 - 1e4 x4                              = 0         (II)
+%               +  x3               - x5 -  1e4 x6          = 0         (III)
+%                                   + x5 -         - 1e4 x7 = 100000    (IV)
+%                     +     x4           -      x6          = 0         (V)
+%      +     x2      -      x4                              = 0         (VI)
+%                                        +      x6 -     x7 = 0         (VII)
+%
+% According to this.poColIndexToObj the columns represent the following
+% objects: (phases are gas flow nodes)
+%   x1 ,  x2   ,  x3  ,   x4  ,   x5 ,   x6  ,  x7
+% phase, branch, phase, branch, phase, branch, branch
+%
+% Therefoe there are three types of equations within this system:
+%
+% Equation (I) is -BoundaryPress + Pressure - C*m_dot = 0 
+% which is the condition that the pressure difference in the branch has to
+% be equal to the pressure difference between the two boundaries
+%
+% Equations (II) and (III) represent the same condition just not between a
+% boundary and gas flow node, but between two gas flow nodes
+%
+% Equation (IV) is BoundaryPress - Pressure + C*m_dot, which is the same as
+% Eqation I just with a different sign (as it is the boundary conditions
+% from the other side)
+%
+% Equations (V) (VI) and (VII) mean that these flowrates have to sum up to zero
+% 
+
                 afResults = aafPhasePressuresAndFlowRates \ afBoundaryConditions;
                 sLastWarn = lastwarn;
                 
@@ -816,6 +891,40 @@ classdef branch < base & event.source
             end
             
             this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { iIteration });
+            
+            % TO DO (puda): I think there is also another error that
+            % should be considered, mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions
+            % which is basically the error of this individual solution,
+            % In the tutorials the flowrates did not actually reach 0,
+            % which therefore lead to small mass changes in the branches.
+            % Either we have to find a way to solve these here and achieve
+            % an mfError vector as defined above which is 0, or we have to
+            % find a way to prevent these small errors from affecting the
+            % gas flow node calculations
+            % Specifically the last set of equation which enforces that the
+            % sum of flowrates for the variable pressure phases has to be
+            % zero has to be absolutely enforced. 
+            mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions;
+            iStartZeroSumEquations = length(mfError) - length(this.csVariablePressurePhases)+1;
+            iCounter = 0;
+            while any(mfError(iStartZeroSumEquations:end)) && iCounter < 500
+                mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions;
+
+                for iK = iStartZeroSumEquations:length(mfError)
+                    if (aafPhasePressuresAndFlowRates(iK,:) * afResults) ~= 0
+                        for iR = 1:length(mfError)
+                            if aafPhasePressuresAndFlowRates(iK,iR) ~= 0
+                                oObj = this.poColIndexToObj(iR);
+
+                                iB = find(this.aoBranches == oObj, 1);
+                                this.afFlowRates(iB) = this.afFlowRates(iB) - aafPhasePressuresAndFlowRates(iK,iR) * mfError(iK)/2;
+                                afResults(iR) = this.afFlowRates(iB);
+                            end
+                        end
+                    end
+                end
+                iCounter = iCounter + 1;
+            end
             
             for iR = 1:length(this.csObjUuidsToColIndex)
                 oObj = this.poColIndexToObj(iR);
