@@ -97,10 +97,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % @type float
         fTotalHeatCapacity = 0; % [J/(K*kg)]
         
-        % Summation over all time steps of the excess mass that was removed
-        % from this phase (positive value means this mass was removed)
-        afRemovedExcessMass;
-        
         % In order to allow the modelling of heat sources within a phase
         % without having to implement a complete thermal solver this
         % property can be set using the setInternalHeatFlow function 
@@ -260,9 +256,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         fPressureLastHeatCapacityUpdate    = 0;
         fTemperatureLastHeatCapacityUpdate = 0;
         arPartialMassLastHeatCapacityUpdate;
-        
-        % Mass that has to be removed on next mass update
-        mfTotalFlowsByExme;
     end
 
     properties (SetAccess = private, GetAccess = public)
