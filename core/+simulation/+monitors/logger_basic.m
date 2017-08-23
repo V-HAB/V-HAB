@@ -9,7 +9,7 @@ classdef logger_basic < simulation.monitor
     %   check if sim already running (set bSealed in onInitPost) -> not
     %   possible to add additional log values!
     %
-    %   find(): besides aiIdx, allow passing in path(s) to different
+    %   find(): besides aiIndex, allow passing in path(s) to different
     %       systems or other objects, and only properties logged for these are
     %       returned? [e.g. plot all [W] for HX 1, 2 and 3]
     
@@ -37,8 +37,11 @@ classdef logger_basic < simulation.monitor
         %              with 'this.' if not present, afterwards all 'this.'
         %              strings will be replaced with the object path. This
         %              means that e.g. 'this.oMT.tiN2I.O2' can be used.
-        % sName: if empty, will be generated from sExpression
+        % sName:       if empty, will be generated from sExpression
         tLogValues = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {}, 'sObjUuid', {}, 'iIndex', {});%, 'iIndex', {});
+        
+        %QUESTION What are these derived values? Are they the same as the
+        % virtual value?
         tDerivedLogValues = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {}, 'sObjUuid', {}, 'iIndex', {});%, 'iIndex', {});
         
         tVirtualValues = struct('sExpression', {}, 'calculationHandle', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {});
@@ -167,7 +170,7 @@ classdef logger_basic < simulation.monitor
         
         
         function iIdx = addValue(this, sObjectPath, sExpression, sUnit, sLabel, sName)
-            % sObjPath and sExp have to be provided.
+            % sObjectPath and sExpression have to be provided.
             % Unit, label will be guessed, name auto-added.
             
             tProp = struct('sObjectPath', [], 'sExpression', [], 'sName', [], 'sUnit', [], 'sLabel', []);
@@ -175,16 +178,16 @@ classdef logger_basic < simulation.monitor
             tProp.sObjectPath = simulation.helper.paths.convertShorthandToFullPath(sObjectPath);
             tProp.sExpression = sExpression;
             
-            if nargin >= 4 && ~isempty(sUnit),  tProp.sUnit  = sUnit;  end;
-            if nargin >= 5 && ~isempty(sLabel), tProp.sLabel = sLabel; end;
-            if nargin >= 6 && ~isempty(sName),  tProp.sName  = sName;  end;
+            if nargin >= 4 && ~isempty(sUnit),  tProp.sUnit  = sUnit;  end
+            if nargin >= 5 && ~isempty(sLabel), tProp.sLabel = sLabel; end
+            if nargin >= 6 && ~isempty(sName),  tProp.sName  = sName;  end
             
             
             iIdx = this.addValueToLog(tProp);
         end
         
         
-        function iIdx = addVirtualValue(this, sExpression, sUnit, sLabel, sName)
+        function iIndex = addVirtualValue(this, sExpression, sUnit, sLabel, sName)
             %TODO-addVirtVal
             
             % Expression needs to be valid Matlab code. Log values can be
@@ -261,24 +264,24 @@ classdef logger_basic < simulation.monitor
             );
         
         
-            iIdx = -1 * length(this.tVirtualValues);
+            iIndex = -1 * length(this.tVirtualValues);
         end
         
         
-        function aiIdx = find(this, aiIdx, tFilter)
-            % If aiIdx empty - get all!
+        function aiIndex = find(this, aiIndex, tFilter)
+            % If aiIndex empty - get all!
             
-            if nargin < 2 || isempty(aiIdx)
-                aiIdx = 1:length(this.tLogValues);
+            if nargin < 2 || isempty(aiIndex)
+                aiIndex = 1:length(this.tLogValues);
                 
-            % Get by name or title - translate csIdx to aiIdx
+            % Get by name or title - translate csIndex to aiIndex
             % Not done via filters, represents a pre-selection just as if
             % aiIdx would have been passed in!
-            elseif iscell(aiIdx)
+            elseif iscell(aiIndex)
                 %TODO-addVirtVal
-                iLen  = length(aiIdx);
-                csIdx = aiIdx;
-                aiIdx = nan(1, iLen);
+                iLength  = length(aiIndex);
+                csIndex = aiIndex;
+                aiIndex = nan(1, iLength);
                 
                 csNames  = { this.tLogValues.sName };
                 csLabels = { this.tLogValues.sLabel };
@@ -286,52 +289,52 @@ classdef logger_basic < simulation.monitor
                 csVirtualNames  = { this.tVirtualValues.sName };
                 csVirtualLabels = { this.tVirtualValues.sLabel };
                 
-                for iI = 1:iLen
-                    if isnumeric(csIdx{iI})
-                        aiIdx(iI) = csIdx{iI};
+                for iI = 1:iLength
+                    if isnumeric(csIndex{iI})
+                        aiIndex(iI) = csIndex{iI};
                         
                         continue;
                     end
                     
                     
                     % Name?
-                    iIdx = find(strcmp(csNames, csIdx{iI}), 1, 'first');
+                    iIndex = find(strcmp(csNames, csIndex{iI}), 1, 'first');
                     
                     % Virtual Value - name?
-                    if isempty(iIdx)
-                        iIdx = -1 * find(strcmp(csVirtualNames, csIdx{iI}), 1, 'first');
+                    if isempty(iIndex)
+                        iIndex = -1 * find(strcmp(csVirtualNames, csIndex{iI}), 1, 'first');
                     end
                     
                     % Find by label?
-                    if isempty(iIdx)
-                        iIdx = find(strcmp(csLabels, csIdx{iI}(2:(end - 1))), 1, 'first');
+                    if isempty(iIndex)
+                        iIndex = find(strcmp(csLabels, csIndex{iI}(2:(end - 1))), 1, 'first');
                     end
                     
                     % Find by virtual label?
-                    if isempty(iIdx)
-                        iIdx = -1 * find(strcmp(csVirtualLabels, csIdx{iI}(2:(end - 1))), 1, 'first');
+                    if isempty(iIndex)
+                        iIndex = -1 * find(strcmp(csVirtualLabels, csIndex{iI}(2:(end - 1))), 1, 'first');
                     end
                     
                     
                     
-                    if isempty(iIdx)
-                        this.throw('find', 'Cannot find log value! String given: >>%s<< (if you were searching by label, pass in the label name enclosed by ", i.e. { ''"%s"'' })', csIdx{iI}, csIdx{iI});
+                    if isempty(iIndex)
+                        this.throw('find', 'Cannot find log value! String given: >>%s<< (if you were searching by label, pass in the label name enclosed by ", i.e. { ''"%s"'' })', csIndex{iI}, csIndex{iI});
                     end
                     
-                    aiIdx(iI) = iIdx;
+                    aiIndex(iI) = iIndex;
                 end
             end
             
-            if isempty(aiIdx)
+            if isempty(aiIndex)
                 return;
             end
             
-            %sPath = simulation.helper.paths.convertShorthandToFullPath(sPath);
-            %iIdx  = find(strcmp({ this.tLogValues.sPath }, sPath), 1, 'first');
+            %sPath   = simulation.helper.paths.convertShorthandToFullPath(sPath);
+            %iIndex  = find(strcmp({ this.tLogValues.sPath }, sPath), 1, 'first');
             
             if nargin >= 3 && ~isempty(tFilter) && isstruct(tFilter)
                 csFilters     = fieldnames(tFilter);
-                abDeleteFinal = false(length(aiIdx), 1);
+                abDeleteFinal = false(length(aiIndex), 1);
                 
                 for iF = 1:length(csFilters)
                     sFilter = csFilters{iF};
@@ -351,7 +354,7 @@ classdef logger_basic < simulation.monitor
                     %}
                     
                     if iscell(xsValue)
-                        csLogValues = { this.tLogValues(aiIdx).(sFilter) }';
+                        csLogValues = { this.tLogValues(aiIndex).(sFilter) }';
                         abNoDelete  = false(length(csLogValues), 1);
                         
                         for iV = 1:length(xsValue)
@@ -360,21 +363,21 @@ classdef logger_basic < simulation.monitor
                         
                         abDelete = ~abNoDelete;
                     else
-                        abDelete = ~strcmp({ this.tLogValues(aiIdx).(sFilter) }', xsValue);
+                        abDelete = ~strcmp({ this.tLogValues(aiIndex).(sFilter) }', xsValue);
                     end
                     
                     %aiIdx(abDelete) = [];
                     abDeleteFinal = abDeleteFinal | abDelete;
                 end
                 
-                aiIdx(abDeleteFinal) = [];
+                aiIndex(abDeleteFinal) = [];
             end
         end
         
         
         
         
-        function [ aafData, tConfig ] = get(this, aiIdx)
+        function [ aafData, tConfig ] = get(this, aiIndexes)
             % Need to truncate mfLog to iTick - preallocation!
             %iTick = this.oSimulationInfrastructure.oSimulationContainer.oTimer.iTick + 1;
             iTick = length(this.afTime);
@@ -382,20 +385,19 @@ classdef logger_basic < simulation.monitor
             % Pre-filter log values for virtuals
             % Matlab should be smart enough to optimize that
             aafLogTmp = this.mfLog(1:iTick, :);
-            aafData   = nan(size(aafLogTmp, 1), length(aiIdx));
-            tConfig   = [];
+            aafData   = nan(size(aafLogTmp, 1), length(aiIndexes));
             
             
-            for iI = 1:length(aiIdx)
-                iIdx = aiIdx(iI);
+            for iI = 1:length(aiIndexes)
+                iIndex = aiIndexes(iI);
                 
-                if iIdx < 0
-                    tConf  = this.tVirtualValues(-1 * iIdx);
+                if iIndex < 0
+                    tConf  = this.tVirtualValues(-1 * iIndex);
                     
                     % Preset some values present in logValues but not here
                     tConf.sObjUuid    = [];
                     tConf.sObjectPath = [];
-                    tConf.iIndex      = iIdx;
+                    tConf.iIndex      = iIndex;
                     
                     
                     % And calculate stuff!
@@ -404,8 +406,8 @@ classdef logger_basic < simulation.monitor
                     % Remove field, not in tLogValues
                     tConf = rmfield(tConf, 'calculationHandle');
                 else
-                    afData = aafLogTmp(:, iIdx);
-                    tConf  = this.tLogValues(iIdx);
+                    afData = aafLogTmp(:, iIndex);
+                    tConf  = this.tLogValues(iIndex);
                 end
                 
                 aafData(:, iI) = afData;
@@ -420,15 +422,15 @@ classdef logger_basic < simulation.monitor
             
             return;
             
-            %TODO-addVirtVal check aiIdx for negative values
+            %TODO-addVirtVal check aiIndexes for negative values
             %       calculate those values
             %       merge logged and virtual values into mxData, tConfig
             %           -> tConfig: set iIndex, sObjUuid etc to [] for virt
             
-            %aiLogged  = aiIdx(aiIdx > 0);
-            %aiVirtual = aiIdx(aiIdx < 0);
+            %aiLogged  = aiIndexes(aiIndexes > 0);
+            %aiVirtual = aiIndexes(aiIndexes < 0);
             
-            mxData  = this.mfLog(1:iTick, aiIdx);
+            mxData  = this.mfLog(1:iTick, aiIdx); %#ok<UNRCH>
             tConfig = this.tLogValues(aiIdx);
         end
         
