@@ -268,108 +268,175 @@ classdef logger_basic < simulation.monitor
         end
         
         
-        function aiIndex = find(this, aiIndex, tFilter)
-            % If aiIndex empty - get all!
+        function aiIndex = find(this, cxItems, tFilter)
+            % This method returns an array of integers for the items that
+            % are contained in the cxItems variable. This variable can
+            % either be empty or a cell. The cell can contain either
+            % integers representing the index of the item within the log
+            % matrix, strings representing the lable of the item or strings
+            % representing the name of the item. This method will detect
+            % which one it is and extract the index accordingly. 
+            % Using the tFilter input argument, the selection of items can
+            % be reduced by providing a struct containing filter criteria.
+            % These can be any values of the fields of the tLogValues
+            % struct, however it is mostly used to filter by unit (key
+            % 'sUnit') or a specific system or object (key 'sObjectPath').
             
-            if nargin < 2 || isempty(aiIndex)
+            %% Getting Indexes
+            
+            % If cxItems is empty we'll just get all items in the log and
+            % return them.
+            if nargin < 2 || isempty(cxItems)
                 aiIndex = 1:length(this.tLogValues);
                 
-            % Get by name or title - translate csIndex to aiIndex
-            % Not done via filters, represents a pre-selection just as if
-            % aiIdx would have been passed in!
-            elseif iscell(aiIndex)
-                %TODO-addVirtVal
-                iLength  = length(aiIndex);
-                csIndex = aiIndex;
+            elseif iscell(cxItems)
+                % If csItems is a cell, we now translate all of the items
+                % in the cell to indexes that are then returned via
+                % aiIndex.
+                % This is done prior to the application of any filters,
+                % because it represents a pre-selection, just as if an
+                % array of integers had been passed in directly.
+                
+                % Initializing some variables
+                iLength  = length(cxItems);
                 aiIndex = nan(1, iLength);
                 
+                % Getting the names and lables of all items in the current
+                % log object.
                 csNames  = { this.tLogValues.sName };
                 csLabels = { this.tLogValues.sLabel };
                 
+                % Getting the names and lables of all virtual items in the
+                % current log object.
                 csVirtualNames  = { this.tVirtualValues.sName };
                 csVirtualLabels = { this.tVirtualValues.sLabel };
                 
+                
+                % Now we'll loop through all of the items of cxItems and
+                % translate them to integers representing their index in
+                % the log array. 
                 for iI = 1:iLength
-                    if isnumeric(csIndex{iI})
-                        aiIndex(iI) = csIndex{iI};
+                    % If the item is an integer, then we can just write it
+                    % directly to aiIndex and continue on with the next
+                    % item. 
+                    if isnumeric(cxItems{iI})
+                        aiIndex(iI) = cxItems{iI};
                         
                         continue;
                     end
                     
+                    % Since the current item is a string, we now have to
+                    % search through the four cells containing all of the
+                    % names and lables of all items in the log until we
+                    % find it. 
                     
-                    % Name?
-                    iIndex = find(strcmp(csNames, csIndex{iI}), 1, 'first');
+                    % First, we'll try the cell with the item names
+                    iIndex = find(strcmp(csNames, cxItems{iI}), 1, 'first');
                     
-                    % Virtual Value - name?
+                    % If the previous search returned nothing, we'll try
+                    % the virtual values.
                     if isempty(iIndex)
-                        iIndex = -1 * find(strcmp(csVirtualNames, csIndex{iI}), 1, 'first');
+                        iIndex = -1 * find(strcmp(csVirtualNames, cxItems{iI}), 1, 'first');
                     end
                     
-                    % Find by label?
+                    % If the previous search returned nothing, we'll try
+                    % the labels.
                     if isempty(iIndex)
-                        iIndex = find(strcmp(csLabels, csIndex{iI}(2:(end - 1))), 1, 'first');
+                        iIndex = find(strcmp(csLabels, cxItems{iI}(2:(end - 1))), 1, 'first');
                     end
                     
-                    % Find by virtual label?
+                    % If the previous search returned nothing, we'll try
+                    % the virtual labels.
                     if isempty(iIndex)
-                        iIndex = -1 * find(strcmp(csVirtualLabels, csIndex{iI}(2:(end - 1))), 1, 'first');
+                        iIndex = -1 * find(strcmp(csVirtualLabels, cxItems{iI}(2:(end - 1))), 1, 'first');
                     end
                     
                     
-                    
+                    % If we still haven't found anything, there is no item
+                    % in the log with this name or lable, so we abort and
+                    % tell the user. 
                     if isempty(iIndex)
-                        this.throw('find', 'Cannot find log value! String given: >>%s<< (if you were searching by label, pass in the label name enclosed by ", i.e. { ''"%s"'' })', csIndex{iI}, csIndex{iI});
+                        this.throw('find', 'Cannot find log value! String given: >>%s<< (if you were searching by label, pass in the label name enclosed by ", i.e. { ''"%s"'' })', cxItems{iI}, cxItems{iI});
                     end
                     
+                    % We can now write the found index to the return
+                    % variable. 
                     aiIndex(iI) = iIndex;
                 end
             end
             
+            % If there is nothing to be logged, we also tell the user and
+            % return.
             if isempty(aiIndex)
+                this.out(4, 1, 'Nothing found in log.');
                 return;
             end
             
-            %sPath   = simulation.helper.paths.convertShorthandToFullPath(sPath);
-            %iIndex  = find(strcmp({ this.tLogValues.sPath }, sPath), 1, 'first');
+            %% Applying Filters
             
+            % Now that we have our aiIndex array, we have to check if there
+            % are any filters to be applied and if yes, do so. 
             if nargin >= 3 && ~isempty(tFilter) && isstruct(tFilter)
+                % The field names of the tFilter variable must correspond
+                % to field names in the tLogValues struct. 
                 csFilters     = fieldnames(tFilter);
+                
+                % Initializing a boolean array that indicates which items
+                % are to be deleted from aiIndex.
                 abDeleteFinal = false(length(aiIndex), 1);
                 
+                % Now we loop through all of the filters to figure out,
+                % which items to delete. 
                 for iF = 1:length(csFilters)
+                    % Initializing some local variables for the current
+                    % filter. sFilter is the field name in the tLogValues
+                    % struct and xsValue is the value that shall be
+                    % filtered. This variable can be a string or a struct.
+                    % An example would be a filter for units 'W' and 'K',
+                    % so the resulting values would only be power and
+                    % temperature values. 
                     sFilter = csFilters{iF};
                     xsValue = tFilter.(sFilter);
                     
-                    %{
-                    abDelete = false(length(aiIdx), 1);
-                    
-                    for iI = length(aiIdx):-1:1
-                        if ~strcmp(this.tLogValues(aiIdx(iI)).(sFilter), sValue)
-                            %aiIdx(iI) = [];
-                            abDelete(iI) = true;
-                            
-                            %iI = iI - 1;
-                        end
-                    end
-                    %}
-                    
+                    % If xsValue is a cell, we have to extract all items in
+                    % it and do a separate search for each of them. 
                     if iscell(xsValue)
+                        % First we'll get the values from each item in the
+                        % tLogValues struct in the according field.
                         csLogValues = { this.tLogValues(aiIndex).(sFilter) }';
+                        
+                        % Now we're creating a boolean array of false
+                        % values with the same length.
                         abNoDelete  = false(length(csLogValues), 1);
                         
+                        % Looping throuhg the different filter criteria.
                         for iV = 1:length(xsValue)
+                            % Using the 'or' operator and a string
+                            % comparison between the log values and the
+                            % filter values, we can change the values in
+                            % the boolean array to true that we want to
+                            % filter. 
                             abNoDelete = abNoDelete | strcmp(csLogValues, xsValue{iV});
                         end
                         
+                        % As this array will be used to delete items from
+                        % the aiIndex array, we have to negate it. 
                         abDelete = ~abNoDelete;
                     else
+                        % If there is only one value for this filter, we
+                        % can write the negated string comparison directly
+                        % to the abDelete boolean array.
                         abDelete = ~strcmp({ this.tLogValues(aiIndex).(sFilter) }', xsValue);
                     end
                     
-                    %aiIdx(abDelete) = [];
+                    % Now we use the 'or' operator again to update the
+                    % abDeleteFinal boolean array with the values to be
+                    % deleted for the current filter. 
                     abDeleteFinal = abDeleteFinal | abDelete;
                 end
                 
+                % Finally, we remove all unwanted items from the aiIndex
+                % array.
                 aiIndex(abDeleteFinal) = [];
             end
         end
@@ -377,107 +444,77 @@ classdef logger_basic < simulation.monitor
         
         
         
-        function [ aafData, tConfig ] = get(this, aiIndexes)
-            % Need to truncate mfLog to iTick - preallocation!
-            %iTick = this.oSimulationInfrastructure.oSimulationContainer.oTimer.iTick + 1;
+        function [ aafData, atConfiguration ] = get(this, aiIndexes)
+            % This method gets the actual logged data from the mfLog
+            % property in addition to the configuration data struct and
+            % returns both in arrays. The aiIndex input parameters is an
+            % array of integers representing the log item's indexes in the
+            % mfLog matrix. 
+            
+            % First we need get the actual last tick of the simulation.
+            % That is not logged anywhere and the only indication of how
+            % log we have run is the length of the afTime property. We need
+            % the last tick so we can truncate the mfLog data, because it
+            % is preallocated, meaning there are most likely hundreds of
+            % rows filled with NaNs at the end, that would mess up
+            % everything.
             iTick = length(this.afTime);
-            
-            % Pre-filter log values for virtuals
-            % Matlab should be smart enough to optimize that
             aafLogTmp = this.mfLog(1:iTick, :);
-            aafData   = nan(size(aafLogTmp, 1), length(aiIndexes));
             
+            % We now initialize our return array with NaNs
+            aafData = nan(size(aafLogTmp, 1), length(aiIndexes));
             
+            % Going through each of the indexes being queried and getting
+            % the information
             for iI = 1:length(aiIndexes)
+                % For easier reading we get the current index into a local
+                % variable.
                 iIndex = aiIndexes(iI);
                 
+                % If the index is smaller than zero, this indicates that we
+                % are dealing with a virtual value; one that was not logged
+                % directly, but calculated from other logged values. We
+                % have to do some additional stuff here. 
                 if iIndex < 0
-                    tConf  = this.tVirtualValues(-1 * iIndex);
+                    % First we can get the configuration struct from the
+                    % tVirtualValues property.
+                    tConfiguration  = this.tVirtualValues(-1 * iIndex);
                     
-                    % Preset some values present in logValues but not here
-                    tConf.sObjUuid    = [];
-                    tConf.sObjectPath = [];
-                    tConf.iIndex      = iIndex;
+                    % Now we have to preset some values in tConfiguration
+                    % that are present in regularly logged values but not
+                    % virtual ones. 
+                    tConfiguration.sObjUuid    = [];
+                    tConfiguration.sObjectPath = [];
+                    tConfiguration.iIndex      = iIndex;
                     
                     
-                    % And calculate stuff!
-                    afData = tConf.calculationHandle(aafLogTmp);
+                    % Using the function handle stored with the virtual
+                    % value we now perform the calculations that are to be
+                    % made here. 
+                    afData = tConfiguration.calculationHandle(aafLogTmp);
                     
-                    % Remove field, not in tLogValues
-                    tConf = rmfield(tConf, 'calculationHandle');
+                    % Finally, to be equal to a normally logged value, we
+                    % remove field containing the function handle.
+                    tConfiguration = rmfield(tConfiguration, 'calculationHandle');
                 else
+                    % The current index is not a virtual value so we can
+                    % just copy the data from the log matrix and the
+                    % tLogValues property.
                     afData = aafLogTmp(:, iIndex);
-                    tConf  = this.tLogValues(iIndex);
+                    tConfiguration  = this.tLogValues(iIndex);
                 end
                 
+                % Copying the data from the current index into the return
+                % variable. 
                 aafData(:, iI) = afData;
                 
+                % If this is the first loop iteration, we initialize the
+                % return variable for the configuration data here. If it a
+                % following iteration, we append the array. 
                 if iI == 1
-                    tConfig = tConf;
+                    atConfiguration = tConfiguration;
                 else
-                    tConfig(iI) = tConf;
-                end
-            end
-            
-            
-            return;
-            
-            %TODO-addVirtVal check aiIndexes for negative values
-            %       calculate those values
-            %       merge logged and virtual values into mxData, tConfig
-            %           -> tConfig: set iIndex, sObjUuid etc to [] for virt
-            
-            %aiLogged  = aiIndexes(aiIndexes > 0);
-            %aiVirtual = aiIndexes(aiIndexes < 0);
-            
-            mxData  = this.mfLog(1:iTick, aiIdx); %#ok<UNRCH>
-            tConfig = this.tLogValues(aiIdx);
-        end
-        
-        
-        function add_mfLogValue(this,sNewLogName, mfLogValue, sUnit)
-            % This function is used by the plotter when mathematical
-            % operations are performed on different log values to create
-            % new derived log values. These new derived log values are
-            % stored in the logger by this function by adding them to the
-            % tDerivedLogValues struct and the mfDerivedLog matric. The two
-            % new properties "derived" were created to enable the advanceTo
-            % function of a finished or paused simulation to operate
-            % normally
-            
-            % Checks if the derived log already exists, in which case it
-            % should not be created as a new log again, but the previous
-            % values should be overwritten.
-            bLogExists = false;
-            for iLogIndex = 1:length(this.tDerivedLogValues)
-                if strcmp(this.tDerivedLogValues(iLogIndex).sLabel, sNewLogName)
-                    bLogExists = true;
-                    iIndex = iLogIndex;
-                end
-            end
-            
-            % If the log does not exists already a new entry is created,
-            % storing the name of the log value and the unit as the well as
-            % the actual entries
-            if ~bLogExists
-                this.mfDerivedLog(:,end+1) = mfLogValue;
-                this.tDerivedLogValues(end+1).sLabel = sNewLogName;
-                this.tDerivedLogValues(end).sUnit = sUnit;
-                this.tDerivedLogValues(end).iIndex = length(this.mfDerivedLog(1,:));
-            else
-                % TO DO: Check if this works, if a simulation was paused,
-                % the plot command was used and derived logs created and
-                % then the simulation restarted, after which the plot is
-                % called a second time. (Might have a dimension mismatch
-                % here) 
-                try
-                    this.mfDerivedLog(:,iIndex) = mfLogValue;
-                catch
-                    this.mfDerivedLog = [];
-                    this.mfDerivedLog(:,end+1) = mfLogValue;
-                    this.tDerivedLogValues(end+1).sLabel = sNewLogName;
-                    this.tDerivedLogValues(end).sUnit = sUnit;
-                    this.tDerivedLogValues(end).iIndex = length(this.mfDerivedLog(1,:));
+                    atConfiguration(iI) = tConfiguration;
                 end
             end
         end
