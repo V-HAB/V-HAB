@@ -84,6 +84,8 @@ classdef setup < simulation.infrastructure
             % when you are done modelling and ready to run a simulation. 
             
             oLog = this.toMonitors.oLogger;
+%             this.toMonitors.oConsoleOutput.setLogOn();
+%             this.toMonitors.oConsoleOutput.setLevel(5);
             
             oLog.add('Example', 'flow_props');
             
@@ -127,9 +129,9 @@ classdef setup < simulation.infrastructure
             
             
             
-            oLog.addVirtualValue('fr_co2 * 1000', 'g/s', 'CO2 Flowrate', 'co2_fr_grams');
-            oLog.addVirtualValue('flow_temp_left - 273.15', 'C', 'Temperature Left in Celsius');
-            oLog.addVirtualValue('mod(flow_temp_right .^ 2, 10) ./ "Partial Mass CO_2 Tank 2"', '-', 'Nonsense');
+            iIndex_1 = oLog.addVirtualValue('fr_co2 * 1000', 'g/s', 'CO_2 Flowrate', 'co2_fr_grams');
+            iIndex_2 = oLog.addVirtualValue('flow_temp_left - 273.15', '°C', 'Temperature Left in Celsius');
+            iIndex_3 = oLog.addVirtualValue('mod(flow_temp_right .^ 2, 10) ./ "Partial Mass CO_2 Tank 2"', '-', 'Nonsense');
             
             
             
@@ -137,89 +139,143 @@ classdef setup < simulation.infrastructure
             
             oPlot = this.toMonitors.oPlotter;
             
-            % you can define plots by using the units as filters
-            oPlot.definePlot('Pa', 'Tank Pressures');
-            oPlot.definePlot('K', 'Tank Temperatures');
-            oPlot.definePlot('kg', 'Tank Masses');
-            oPlot.definePlot('kg/s', 'Flow Rates');
             
-            % or you can specify the labels you want to plot
-            cNames = {'Partial Pressure CO_2 Tank 1', 'Partial Pressure CO_2 Tank 2'};
-            sTitle = 'Partial Pressure CO2';
-            oPlot.definePlot(cNames, sTitle);
+            cxPlotValues1 = { '"CO_2 Flowrate"', iIndex_2, 'Nonsense' };
+            csPlotValues2 = { '"Partial Pressure CO_2 Tank 1"', '"Partial Pressure CO_2 Tank 1"'};
+            csPlotValues3 = { 'flow_temp_left', 'flow_temp_right' };
+            
+            %TODO Implement getByTitles() and getByFilter() in logger_basic
+            %cPlotValues2 = oLog.getByTitles({ 'Titel 1', 'Titel 2' });
+            %cPlotValues3 = oLog.getByFilter('My/Sys/Path/*', struct('sUnit', 'kg'));
+            
+            % tPlotOptions has field names that correspond to the
+            % properties of axes objects in MATLAB. The values given here
+            % are directly set on the axes object once it is created. To
+            % adhere to the V-HAB variable naming convention, the field
+            % names can still include the prefixes to signal the data type,
+            % for example 'csNames'. The lower case letters at the
+            % beginning of the string will then be stripped by the define
+            % plot method.
+            %
+            % There are a few additional fields that tPlotOptions can have
+            % that do not correspond to the properties of the axes object.
+            % One field can contain another struct called tLineOptions.
+            % This struct can contain settings for the individual line
+            % objects of the plot, like markers, line styles and colors.
+            % Again, the field names must have the same names as the
+            % properties of the line objects. If there are multiple lines
+            % in a plot, the values in the struct must be contained in
+            % cells with the values in the same order as the lines. If no
+            % information is given here, the MATLAB default values are
+            % used. 
+            %
+            % With the sTimeUnit field the user can determine the unit of
+            % time for of each plot. The default is seconds, but minutes,
+            % hours, days, weeks, months and years are also possible. The
+            % sTimeScale field is a string and can contain exactly these
+            % words.
+            %
+            % If the user chooses to have two y axes, we need to provide an
+            % opportunity to customize that as well. For this the
+            % tRightYAxesOptions field exists. It can have the same entries
+            % as the tPlotOptions struct, so field names that correspond to
+            % the properties of axes object. 
+            % 
+            % The bLegend field determines if the legend of the axes is
+            % visible or not. The default is visible. 
+            
+            tPlotOptions = struct('csUnitOverride', {{ {'g/s','°C'},{'-'} }});
+            cPlots{1,1} = oPlot.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
+            
+            tPlotOptions.tLineOptions = struct('csColor', {'g','y'});
+            cPlots{1,2} = oPlot.definePlot(csPlotValues2, 'CO_2 Partial Pressures', tPlotOptions);
+            
+            tPlotOptions = struct('sTimeUnit','hours');
+            cPlots{2,1} = oPlot.definePlot(csPlotValues3, 'Temperatures', tPlotOptions);
+            
+            
+            % tFigureOptions includes turing on or off the plottools (off
+            % by default), including or excluding the time plot (off by
+            % default). Otherwise it can contain any fields that correspond
+            % to the properties of the MATLAB figure object. 
+            
+            tFigureOptions = struct('bTimePlot', true, 'bPlotTools', false);
+            oPlot.defineFigure(cPlots, 'Test Figure Title', tFigureOptions);
 
-            % you can also create subplots within one figure by creating a
-            % three dimensional cell array containing labels. (see define
-            % plot comments for more information on this (for this
-            % calculations on log values are currently not possible)
-            cNames = cell(1,2,2);
-            cNames(1,1,:) = {'Partial Mass CO_2 Tank 1', 'Partial Mass CO_2 Tank 2'};
-            cNames(1,2,:) = {'Partial Mass CO_2 Tank 1', 'Partial Mass CO_2 Tank 2'};
-            sTitle = 'Partial Mass CO2';
-            oPlot.definePlot(cNames, sTitle);
             
-            % or you can define the subplots individually by using a
-            % mbPosition matrix (also see define plot comments for more
-            % help. 
-            cNames = {'Flowrate of CO2'};
-            sTitle = 'Flowrate of CO2';
-            txCustom.mbPosition = [ false, false, false;...
-                                    true , false, false];
-            oPlot.definePlot(cNames, sTitle, txCustom);
-            oPlot.definePlot(cNames, sTitle, txCustom);
-            
-            cNames = {'Flowrate of CO2'};
-            sTitle = 'Flowrate of CO2';
-            txCustom.mbPosition = [ false, false, true;...
-                                    false, false, false];
-            oPlot.definePlot(cNames, sTitle, txCustom);
-            oPlot.definePlot(cNames, sTitle, txCustom);
-            
-            
-            % You can also define calculations on the log values
-            cNames = {'( Partial Pressure CO_2 Tank 1 + Partial Pressure CO_2 Tank 2 ) / 133.322'};
-            sTitle = 'Partial Pressure CO2 total in Torr';
-            
-            % Because the automatic label generated will not recognize the
-            % unit conversion we define a custom Y Label. You can always
-            % customize your plots by providing a txCustom struct that
-            % contains the fields you want to customize. See the definePlot
-            % comment for more information on customization options.
-            txCustom2.sYLabel = 'Partial Pressure CO2 in Torr';
-            oPlot.definePlot(cNames, sTitle, txCustom2);
-            
-            % Here is an example that uses all possible customization
-            % options. Please remember you do not HAVE to use these, they
-            % just help you get the plot "just right":
-            
-            txCustom.mbPosition = [true, false];
-            txCustom.sXLabel    = 'My X Label';
-            txCustom.sYLabel    = 'My Y Label';
-            txCustom.sTitle     = 'My Title';
-            txCustom.csLineStyle= {'--r', '-.g'};
-            txCustom.csLegend   = {'My Legend 1', 'My Legend 2'};
-            txCustom.miXTicks   = [100, 500, 1050, 2000, 2500, 3000];
-            txCustom.miYTicks   = [1,2,2.2,3,5,6,9,9.9,10];
-            txCustom.mfXLimits  = [1000,3000];
-            txCustom.mfYLimits  = [0,10];
-            
-            cNames = {'( Partial Pressure CO_2 Tank 1 ) / 133.322', '( Partial Pressure CO_2 Tank 2 ) / 133.322'};
-            sTitle = 'Partial Pressure CO2 in Torr';
-            oPlot.definePlot(cNames, sTitle, txCustom);
+%             % you can define plots by using the units as filters
+%             oPlot.definePlot('Pa', 'Tank Pressures');
+%             oPlot.definePlot('K', 'Tank Temperatures');
+%             oPlot.definePlot('kg', 'Tank Masses');
+%             oPlot.definePlot('kg/s', 'Flow Rates');
+%             
+%             % or you can specify the labels you want to plot
+%             cNames = {'Partial Pressure CO_2 Tank 1', 'Partial Pressure CO_2 Tank 2'};
+%             sTitle = 'Partial Pressure CO2';
+%             oPlot.definePlot(cNames, sTitle);
+% 
+%             % you can also create subplots within one figure by creating a
+%             % three dimensional cell array containing labels. (see define
+%             % plot comments for more information on this (for this
+%             % calculations on log values are currently not possible)
+%             cNames = cell(1,2,2);
+%             cNames(1,1,:) = {'Partial Mass CO_2 Tank 1', 'Partial Mass CO_2 Tank 2'};
+%             cNames(1,2,:) = {'Partial Mass CO_2 Tank 1', 'Partial Mass CO_2 Tank 2'};
+%             sTitle = 'Partial Mass CO2';
+%             oPlot.definePlot(cNames, sTitle);
+%             
+%             % or you can define the subplots individually by using a
+%             % mbPosition matrix (also see define plot comments for more
+%             % help. 
+%             cNames = {'Flowrate of CO2'};
+%             sTitle = 'Flowrate of CO2';
+%             txCustom.mbPosition = [ false, false, false;...
+%                                     true , false, false];
+%             oPlot.definePlot(cNames, sTitle, txCustom);
+%             oPlot.definePlot(cNames, sTitle, txCustom);
+%             
+%             cNames = {'Flowrate of CO2'};
+%             sTitle = 'Flowrate of CO2';
+%             txCustom.mbPosition = [ false, false, true;...
+%                                     false, false, false];
+%             oPlot.definePlot(cNames, sTitle, txCustom);
+%             oPlot.definePlot(cNames, sTitle, txCustom);
+%             
+%             
+%             % You can also define calculations on the log values
+%             cNames = {'( Partial Pressure CO_2 Tank 1 + Partial Pressure CO_2 Tank 2 ) / 133.322'};
+%             sTitle = 'Partial Pressure CO2 total in Torr';
+%             
+%             % Because the automatic label generated will not recognize the
+%             % unit conversion we define a custom Y Label. You can always
+%             % customize your plots by providing a txCustom struct that
+%             % contains the fields you want to customize. See the definePlot
+%             % comment for more information on customization options.
+%             txCustom2.sYLabel = 'Partial Pressure CO2 in Torr';
+%             oPlot.definePlot(cNames, sTitle, txCustom2);
+%             
+%             % Here is an example that uses all possible customization
+%             % options. Please remember you do not HAVE to use these, they
+%             % just help you get the plot "just right":
+%             
+%             txCustom.mbPosition = [true, false];
+%             txCustom.sXLabel    = 'My X Label';
+%             txCustom.sYLabel    = 'My Y Label';
+%             txCustom.sTitle     = 'My Title';
+%             txCustom.csLineStyle= {'--r', '-.g'};
+%             txCustom.csLegend   = {'My Legend 1', 'My Legend 2'};
+%             txCustom.miXTicks   = [100, 500, 1050, 2000, 2500, 3000];
+%             txCustom.miYTicks   = [1,2,2.2,3,5,6,9,9.9,10];
+%             txCustom.mfXLimits  = [1000,3000];
+%             txCustom.mfYLimits  = [0,10];
+%             
+%             cNames = {'( Partial Pressure CO_2 Tank 1 ) / 133.322', '( Partial Pressure CO_2 Tank 2 ) / 133.322'};
+%             sTitle = 'Partial Pressure CO2 in Torr';
+%             oPlot.definePlot(cNames, sTitle, txCustom);
         end
         
-        function plot(this, varargin) % Plotting the results
-            % First we check if the user passed a struct with parameters
-            if ~isempty(varargin)
-                tParameters = varargin{1};
-            end
-            
-            % You can specify additional parameters for the plots, for
-            % example you can define the unit for the time axis that should
-            % be used (s, min, h, d, weeks possible)
-            tParameters.sTimeUnit = 'min';
-            
-            this.toMonitors.oPlotter.plot(tParameters);
+        function plot(this) % Plotting the results
+            this.toMonitors.oPlotter.plot();
         end
         
     end

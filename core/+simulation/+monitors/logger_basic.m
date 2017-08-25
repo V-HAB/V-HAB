@@ -22,8 +22,8 @@ classdef logger_basic < simulation.monitor
         );
         
         poUnitsToLabels = containers.Map(...
-            { 's',    'kg',   'kg/s',      'K',           'Pa',       'J/K',                 'J/kgK',                  'W/K',          'W',     'F',        'Ohm',        'H',           'A',       'V',       'C',      'mol/kg',        'ppm',           '%',       'Ah',     '-'}, ...
-            { 'Time', 'Mass', 'Flow Rate', 'Temperature', 'Pressure', 'Total Heat Capacity', 'Specific Heat Capacity', 'Conductivity', 'Power', 'Capacity', 'Resistance', 'Inductivity', 'Current', 'Voltage', 'Charge', 'Concentration', 'Concentration', 'Percent', 'Charge', '' } ...
+            { 's',    'kg',   'kg/s',      'g/s',       'K',           '°C',          'Pa',       'J/K',                 'J/kgK',                  'W/K',          'W',     'F',        'Ohm',        'H',           'A',       'V',       'C',      'mol/kg',        'ppm',           '%',       'Ah',     '-'}, ...
+            { 'Time', 'Mass', 'Flow Rate', 'Flow Rate', 'Temperature', 'Temperature', 'Pressure', 'Total Heat Capacity', 'Specific Heat Capacity', 'Conductivity', 'Power', 'Capacity', 'Resistance', 'Inductivity', 'Current', 'Voltage', 'Charge', 'Concentration', 'Concentration', 'Percent', 'Charge', '' } ...
         );
     end
     
@@ -937,5 +937,7 @@ classdef logger_basic < simulation.monitor
             oLastSimObj = this.oSimulationInfrastructure; %#ok<NASGU>
             save(sMat, 'oLastSimObj');
         end
+        
+        
     end
 end
