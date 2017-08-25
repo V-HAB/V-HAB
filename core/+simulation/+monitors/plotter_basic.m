@@ -11,9 +11,9 @@ classdef plotter_basic < simulation.monitor
         % Name of log monitor
         sLogger = 'oLogger';
         
-        tPlots = struct('sTitle', {}, 'aiIdx', {});
+        tPlots = struct('sTitle', {}, 'aiIdx', {}, 'txCustom', {}, 'csFunctions', {});
         
-        tPlotsByName;
+        tFigures = struct('sTitle', {}, 'ctPlots', struct(), 'tFigureOptions', struct());
     end
     
     methods
@@ -26,37 +26,189 @@ classdef plotter_basic < simulation.monitor
             end
         end
         
-        
-        
-        %% Methods to define plots
-        
-        function definePlotByName(this, cNames, sTitle, yLabel)
+        function tPlot = definePlot(this, cxPlotValues, sTitle, tPlotOptions)
+            % This method returns a struct containing all information
+            % necessary to generate a single plot, which corresponds to an
+            % axes object in MATLAB. 
             
-            % In this function only the struct with the necessary function to
-            % perform the plotting is defined, the plotting itself is
-            % performed in the plot command
-            this.tPlotsByName(end+1).sTitle = sTitle;
-            this.tPlotsByName(end).cNames = cNames;
-            this.tPlotsByName(end).yLabel = yLabel;
+            % For easier reading we get a reference to the logger object of
+            % this plotter. 
+            oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
+            
+            % Get indexes of each item in cxPlotValues 
+            aiIndexes = oLogger.find(cxPlotValues);
+            
+            % A plot can only have two y axes, one on the left and one on
+            % the right. If cxPlotValues contains values in one or two
+            % units, then one is displayed on the left axis and the other
+            % on the right automatically. If cxPlotValues contains values
+            % in more than two units, it needs to be defined, which values
+            % and units are displayed on each axis. The following code gets
+            % the number of units and if it is larger than two, throws an
+            % error prompting the user to define the csUnitOverride field
+            % in the tPlotOptions struct, unless it is already defined, of
+            % course. 
+            
+            % Getting the result data from the logger object
+            [ iNumberOfUnits, csUniqueUnits ] = oLogger.getNumberOfUnits(aiIndexes);
+            
+            % If it turns out the number of units is larger than two and
+            % the csUnitOverride field is not defined, we throw an error,
+            % otherwise we just save the number of units for later. 
+            if iNumberOfUnits > 2 && nargin == 4 && ~(isfield(tPlotOptions, 'csUnitOverride'))
+                this.throw('definePlot',['The plot you have defined (%s) contains more than two units. \n',...
+                                         'You can either reduce the number of units to two, or include \n',...
+                                         'a field ''csUnitOverride'' in the tPlotOptions struct that \n',...
+                                         'contains the unit(s) you wish to use.'],...
+                                         sTitle);
+            else
+                tPlotOptions.iNumberOfUnits = iNumberOfUnits;
+                tPlotOptions.csUniqueUnits  = csUniqueUnits;
+            end
+            
+            % Now we just return the plot information in a struct
+            % containing all of the necessary information.
+            tPlot = struct('sTitle', sTitle, 'aiIndexes', aiIndexes, 'tPlotOptions', tPlotOptions);
+        end
+        
+        function defineFigure(this, ctPlots, sTitle, tFigureOptions)
+            % This method creates an entry in the tFigures struct property
+            % containing a struct with all information necessary to create
+            % a complete MATLAB figure. 
+            
+            % For better identification of the individual figures within
+            % the struct, we want to set a title. This title can either be
+            % set using the second input parameter, or as a field within
+            % the tFigureOptions struct. 
+            if isfield(tFigureOptions, 'sTitle') || isempty(sTitle)
+                sTitle = tFigureOptions.sTitle;
+            end
+            
+            % We already have all we need, so we can add another entry to
+            % the tFigures struct. 
+            this.tFigures(end+1) = struct('sTitle', sTitle, 'ctPlots', {ctPlots}, 'tFigureOptions', tFigureOptions);
             
         end
         
-        function definePlot(this, xDataReference, sTitle)
-            this.definePlotWithFilter(xDataReference, [], sTitle);
+        function definePlot_old(this, xReference, sTitle, txCustom)
+            % This function is used to define the individual plots that are
+            % created when using the oLastSimObj.plot command. The
+            % following inputs can be used for it:
+            %
+            % xReference: For this field three possible inputs exist:
+            %  1)   Cell: can be a one dimensional cell array containing
+            %             the Labels (custom names) as specified by the
+            %             user for all values that shall be plotted into
+            %             this plot. Can use mbPosition to define a subplot
+            %             position.
+            %             Alternativly can be a three dimensional cell
+            %             array, where the first two dimensions define the
+            %             matrix of subplots used for the overall figure
+            %             and the third dimension contains the strings with
+            %             the labels to the log values for the respective
+            %             subplot. For example a cell(2,3,5) would create a
+            %             subplot matrix:
+            %                               0 | 0 | 0
+            %                               0 | 0 | 0
+            %             and the entry {2,3,:} would contain all values
+            %             that are supposed to go into the subplot in row
+            %             two column three
+            %
+            %  2) Struct: generic use case that can be used to define which
+            %             property of the log should be filtered after with
+            %             the fieldnames of the struct, and defining the
+            %             values that will be plotted with the field
+            %             values. For example 
+            %             xReference.sLabel = {'Label 1', 'Label 2'} 
+            %             will filter for labels and plot 'Label 1' and 'Label 2'
+            %             Possible fieldnames are:
+            %             sLabel, sUnit, sObjectPath, sExpression, sName,
+            %             sObjUuid, iIndex
+            %
+            %             Alternativly provide a fieldname called
+            %             xDataReference to set the xDataReference For
+            %             units it can also just be a string (TO DO: scjo,
+            %             explain correct usage of xDataReference!)
+            %
+            %  3) String: if a string is provided directly it should
+            %             reference a unit and will plot all values that
+            %             have this unit
+            % 
+            % sTitle:   string that defines the title for the figure. If only
+            %           one overall figure is used, it is the title of the subplot
+            %
+            %
+            % Optional Inputs for subplot functionality:
+            %
+            % txCustom:    can be used to customize the plot. Has to be a
+            %              struct with the fieldnames that shall be
+            %              customized and the fieldvalues that shall be
+            %              used for the customization. Possible field names
+            %              are:
+            %              - mbPosition: boolean matrix that has the intended 
+            %                size and shape of the subplots for the overall
+            %                figure (as specified by sTitle) and contains
+            %                one true for the location of this subplot. For
+            %                example this matrix:
+            %                       0 | 0 | 0 | 0
+            %                       0 | 1 | 0 | 0
+            %               Will result in a figure with 4 columns and 2
+            %               rows of subplots and the plot define with this
+            %               specific matrix will be in the second row in
+            %               the second column
+            %
+            %              - sXLabel / sYLabel: Set a custom label for the axis
+            %              - sTitle: Set a custom title displayed above the
+            %                figure or subplot
+            %              - csLineStyle: Specify the linestyle for the plot
+            %                see help plot for possible entries. If you
+            %                have more than one line simply specify the
+            %                style for each line as a string in one cell
+            %                value. The first cell will be used for the
+            %                first plot value
+            %              - csLegend: Define cell array containing custom
+            %                legend entries for your plot. First entry is
+            %                used for first plot value
+            %              - miXTicks/ miYTicks: Define the ticks on the Axis by
+            %                providing a matrix with the value for each tick
+            %              - mfXLimits/ mfYLimits: Define the limits of the Axis by
+            %                providing a matrix with the start and end value
+            %
+            % Additional functionalities:
+            %
+            % It is also possible to define plot values including
+            % calculations. For example the following code
+            %
+            %   csNames = {'Relative Humidity Cabin * 100'};
+            %   oPlot.definePlot(csNames, 'Relative Humidity Habitat');
+            %
+            % will multiply the log value with the label 'Relative Humidity
+            % Cabin' with 100 to get the humidity value from 0-1 to 0-100
+            % Another Example:
+            %
+            %   csNames = {'- 1 * ( CDRA CO2 Inlet Flow 1 + CDRA CO2 Inlet Flow 2 )', 'CDRA CO2 Outlet Flow 1 + CDRA CO2 Outlet Flow 2'};
+            %   oPlot.definePlot(csNames,  'CDRA CO2 Flowrates');
+            %
+            % Here two indepent values are calculated, one adds the two
+            % inlet flows and multiplies them with -1 resulting in a plot
+            % of the total inlet flow. The second entry of th csNames cell
+            % array adds the two outlet flows resulting in a total outlet
+            % flow. There are no limitations to this functionality
+            % regarding number of possible log values to be used in the
+            % calculations. The limitations currently are that you can only
+            % define one subplot after the other (using mbPosition) and
+            % that there has to be one space between each Symbol (+-*/^) and
+            % each number and each Log Value!
             
+            if isfield (xReference, 'xDataReference')
+                xDataReference = xReference.xDataReference;
+            else
+                xDataReference = false;
+            end
             
-        end
-        
-        
-        function definePlotAllWithFilter(this, sFilter, sTitle)
-            % xDataReference false --> get all values!
-            this.definePlotWithFilter(false, sFilter, sTitle);
-        end
-        
-        
-        function definePlotWithFilter(this, xDataReference, sFilter, sTitle)
-            % xDataReference can be either integer array or (recursive)
-            % struct with integers.
+            if nargin < 4
+                txCustom  = [];
+            end
             
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             
@@ -74,53 +226,631 @@ classdef plotter_basic < simulation.monitor
                 
             end
             
-            % Filter is by unit
             tFilter = struct();
             
-            if nargin >= 3 && ~isempty(sFilter)
-                if isstruct(sFilter)
-                    tFilter = sFilter;
+            if nargin >= 3 && ~isempty(xReference)
+                if isstruct(xReference)
+                    % generic case: a struct was supplied where the field
+                    % name specifies after which field of the log struct is
+                    % filtered (for example label or unit)
+                    tFilter = xReference;
+                elseif iscell(xReference)
+                    % case plot by name, where a cell array containing the
+                    % strings for the log values that shall be ploted are
+                    % contained
+                    tFilter.sLabel = xReference;
                 else
-                    tFilter.sUnit = sFilter;
+                    % if it is neither a struct nor a cell, it should be a
+                    % string containing the unit which should be ploted
+                    % (e.g. 'K')
+                    tFilter.sUnit = xReference;
                 end
             end
             
-            
-            aiIdx = oLogger.find(xDataReference, tFilter);
-            
-            % We only add a plot if there will actually be anything to
-            % plot. If there isn't, we tell the user. 
-            if ~isempty(aiIdx)
-                this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx);
-            else
-                this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
+            csFields = fieldnames(tFilter);
+            for iField = 1:length(csFields)
+                % TO DO: Can there be more than one field to the filter
+                % struct? like mixing unit filter and label filter? And
+                % does the subplot logic using a three dimensional cell
+                % still have to work for that?
+                
+                mfFieldSize = size(tFilter.(csFields{iField}));
+                
+                if ~iscell(tFilter.(csFields{iField}))
+                    csFilter{1} = tFilter.(csFields{iField});
+                else
+                    csFilter = tFilter.(csFields{iField});
+                end
+                
+                if length(mfFieldSize) == 3
+                    % In this case the field contains the information about
+                    % the subplot position for the individual components
+                    % and we have to create the mbPosition value and make
+                    % individual plots out of this information
+                    
+                    iPlots = mfFieldSize(1) * mfFieldSize(2);
+                    mbPosition = false(mfFieldSize(1) , mfFieldSize(2));
+                    
+                    for iPlot = 1:iPlots
+                        % decides the position of the subplot based on the
+                        % first two sizes of the cell array
+                        iRow    = ceil(iPlot / mfFieldSize(2));
+                        iColumn = iPlot - (mfFieldSize(2) * (iRow - 1));
+                        
+                        % sets the current position of the subplot to true
+                        mbPosition(iRow,iColumn) = true;
+                        
+                        % uses only the part of the filter that defines the
+                        % current subplot for a partial fitler struct
+                        tFilterPart.(csFields{iField}) = csFilter(iRow,iColumn,:);
+                        
+                        % gets the indices of the log values (referencing
+                        % to mfLog in the oLogger object) for the current
+                        % subplot
+                        aiIdx = oLogger.find(xDataReference, tFilterPart);
+                        
+                        txCustom.mbPosition = mbPosition;
+                        
+                        % if it is not empty add a new plot, if it is give
+                        % a warning
+                        if ~isempty(aiIdx)
+                            this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdx, 'txCustom', txCustom, 'csFunctions', []);
+                        else
+                            this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
+                        end
+                        
+                        % set all position to 0 again to prepare for the
+                        % next subplot
+                        mbPosition = false(mfFieldSize(1) , mfFieldSize(2));
+                    end
+                    
+                else
+                    % NOTE Calculations on plots will not work for subplot
+                    % cell assignments
+
+                    % it is possible to use calculations with logged variables
+                    % by using the label for two variables and a calculation
+                    % sign in between (with one space before the sign and one
+                    % space after the sign)
+                    csFunctions = cell(1,length(csFilter));
+                    csFilterNew = cell(1,length(csFilter));
+                    for iFilter = 1:length(csFilter)
+                        % gets the sign positions for the current filter field
+                        miSubtractions      = regexp(csFilter{iFilter}, '-');
+                        miAdditions         = regexp(csFilter{iFilter}, '+');
+                        miMultiplications   = regexp(csFilter{iFilter}, '*');
+                        miDivisions         = regexp(csFilter{iFilter}, '/');
+                        miParenthesisOpen   = regexp(csFilter{iFilter}, '(');
+                        miParenthesisClose  = regexp(csFilter{iFilter}, ')');
+
+                        % puts all sign positions into one variable and orders
+                        % it from lowest to highest position
+                        miSigns = miSubtractions;
+                        miSigns(end+1 : end+(length(miAdditions)))          = miAdditions;
+                        miSigns(end+1 : end+(length(miMultiplications)))    = miMultiplications;
+                        miSigns(end+1 : end+(length(miDivisions)))          = miDivisions;
+                        miSigns(end+1 : end+(length(miParenthesisOpen)))  	= miParenthesisOpen;
+                        miSigns(end+1 : end+(length(miParenthesisClose)))  	= miParenthesisClose;
+                        miSigns = sort(miSigns);
+
+                        % if there are signs gets the signs and seperate the
+                        % string into several substrings containing the actual
+                        % labels
+                        if ~isempty(miSigns)
+
+                            sString = csFilter{iFilter};
+
+                            csStrings = cell(length(miSigns),1);
+
+                            if length(miSigns) == 1
+                                csStrings{1} = sString(1 : (miSigns(1) -2));
+                                csStrings{1+1} = sString((miSigns(1) +2) : end);
+                            else
+                                for iSign = 1:length(miSigns)
+                                    if iSign == 1
+                                        csStrings{iSign} = sString(1:(miSigns(iSign) -2));
+                                    elseif iSign == length(miSigns)
+                                        csStrings{iSign} = sString((miSigns(iSign-1) +2) : (miSigns(iSign) -2));
+                                        csStrings{iSign+1} = sString((miSigns(iSign) +2) : end);
+                                    else
+                                        csStrings{iSign} = sString((miSigns(iSign-1) +2) : (miSigns(iSign) -2));
+                                    end
+                                end
+                            end
+                            % store the signs for each filter
+                            csFunctions{iFilter} = sString(miSigns);
+                            
+                            % check the strings for numbers or empty
+                            % strings
+                            mbRemove = false(length(csStrings),1);
+                            
+                            iAddedDigits = 0;
+                            iVariable    = 1;
+                            for iString = 1:length(csStrings)
+                                csStringForCheck = strrep(csStrings{iString},'.','');
+                                if isempty(csStringForCheck)
+                                    % this variable is set to true for all
+                                    % fields that do not contain log
+                                    % variables!
+                                    mbRemove(iString) = true;
+                                elseif isstrprop(csStringForCheck,'digit')
+                                    % this variable is set to true for all
+                                    % fields that do not contain log
+                                    % variables!
+                                    mbRemove(iString) = true;
+                                    
+                                    % constant numbers used in the
+                                    % calculation are added to the csSigns
+                                    % cell array in between the signs where
+                                    % they are located
+                                    A = csFunctions{iFilter}(1:iString+iAddedDigits-1);
+                                    B = csStrings{iString};
+                                    C = csFunctions{iFilter}(iString+iAddedDigits:end);
+                                    
+                                    csFunctions{iFilter} = [A,B,C];
+                                    
+                                    % if multiply constant numbers are used
+                                    % we have to track the added digits!
+                                    iAddedDigits = iAddedDigits + length(csStrings{iString});
+                                else
+                                    % in this case the location actually
+                                    % uses a log value as variable, in this
+                                    % case an x is added to indicate this
+                                    
+                                    A = csFunctions{iFilter}(1:iString+iAddedDigits-1);
+                                    B = [' x', num2str(iVariable), ' '];
+                                    C = csFunctions{iFilter}(iString+iAddedDigits:end);
+                                    
+                                    csFunctions{iFilter} = [A,B,C];
+                                    
+                                    % if multiply constant numbers are used
+                                    % we have to track the added digits!
+                                    iAddedDigits = iAddedDigits + length([' x', num2str(iVariable), ' ']);
+                                    iVariable    = iVariable + 1;
+                                end
+                            end
+                            % and store the actual labels for each filter
+                            csFilterNew{iFilter} = csStrings(~mbRemove);
+
+                        else
+                            % if no calculations is used the new filter is the
+                            % same as the old and the signs are empty
+                            csFunctions{iFilter} = 'x1';
+                            csFilterNew{iFilter} = csFilter{iFilter};
+                        end
+                    end
+                    % now order the seperated new filter fields into one new
+                    % cell array that can be used to get the log values!
+                    iCell = 1;
+                    csFilter = cell(1,length(csFilterNew));
+                    for iFilter = 1:length(csFilterNew)
+                        if iscell(csFilterNew{iFilter})
+                            for iNewFilter = 1:length(csFilterNew{iFilter})
+                                csFilter{iCell} = csFilterNew{iFilter}{iNewFilter};
+                                iCell = iCell + 1;
+                            end
+                        else
+                            csFilter{iCell} = csFilterNew{iFilter};
+                            iCell = iCell + 1;
+                        end
+                    end
+                    % now we can set the seperated fields into the filter
+                    % struct
+                    if strcmp(csFields{iField}, 'sLabel')
+                        tFilter.(csFields{iField}) = csFilter;
+                    end
+
+                    % the sign cell array will be added to the tPlot struct to
+                    % perform the calculations during the actual plotting!
+                    aiIdx = oLogger.find(xDataReference, tFilter);
+                    
+                    % We only add a plot if there will actually be anything to
+                    % plot. If there isn't, we tell the user. 
+                    if ~isempty(aiIdx)
+                        if strcmp(fieldnames(tFilter),'sLabel') && length(aiIdx) ~= length(csFilter)
+                            error('it seems the same log value is used several time, this is currently not implemented please define a new plot in the same figure')
+                            
+                        elseif strcmp(fieldnames(tFilter),'sLabel')
+                            
+                            % since the aiIdx will be ordered from lowest index to
+                            % highest index it is necessary to reorder it to get
+                            % the correct variable at the correct location
+                            csCurrentFilterOrder = {oLogger.tLogValues(aiIdx).sLabel};
+                            aiIdxOrdered = zeros(1,length(aiIdx));
+                            for iIndex = 1:length(aiIdx)
+                                for iIndex2 = 1:length(aiIdx)
+                                    if strcmp(csFilter{iIndex}, csCurrentFilterOrder{iIndex2})
+                                        iCurrentIndex = iIndex2;
+                                    end
+                                end
+                                aiIdxOrdered(iIndex) = aiIdx(iCurrentIndex);
+                            end
+                        else
+                            aiIdxOrdered = aiIdx;
+                        end
+
+                    
+                        this.tPlots(end + 1) = struct('sTitle', sTitle, 'aiIdx', aiIdxOrdered, 'txCustom', txCustom, 'csFunctions', []);
+                        % before we add the functions to the plot struct we
+                        % remove all empty fields
+                        mbRemoveFunction = false(1,length(csFunctions));
+                        for iFunction = 1:length(csFunctions)
+                            if isempty(csFunctions{iFunction})
+                                mbRemoveFunction(iFunction) = true;
+                            end
+                        end
+                        if strcmp(csFields{iField}, 'sLabel')
+                            this.tPlots(end).csFunctions = csFunctions(~mbRemoveFunction);
+                        end
+                    else
+                        this.warn('plotter_basic', 'There are no %s to plot. Subplot will not be added to figure.', sTitle);
+                    end
+
+                end
             end
             
-            
-            return;
-            
-            [ mfLogData, tLogProps ] = oLogger.get(xDataReference, tFilter);
-            
-            
-            disp('=========================== PLOT =====================');
-            disp(xDataReference);
-            disp(sFilter);
-            
-            for iS = 1:length(tLogProps)
-                disp('---------');
-                disp(tLogProps(iS));
-            end
         end
         
         
         
         
         %% Default plot method
-        function plot(this, tParameters)
+        
+        function plot(this)
+            % If the tFigures property is empty, we generate a default plot
+            % with the createDefaultPlot() method. This is implemented to
+            % enable new users to quickly see their simulation results
+            % without having to mess around with all of the plotting tools.
+            if isempty(this.tFigures)
+                this.createDefaultPlot();
+            end
             
+            % We'll need access to all of the logged data, of course, so to
+            % make the code more readable we'll create a local variable
+            % with a reference to the logger object here. 
+            oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
+            
+            % Now we have a filled tFigures struct so we can loop through
+            % figures and create them. 
+            for iFigure = 1:length(this.tFigures)
+                % Before we start, we need to get some info for the current
+                % figure.
+                
+                % Getting the number of rows and columns in the figure
+                [ iRows, iColumns ] = size(this.tFigures(iFigure).ctPlots);
+                
+                % Getting the overall number of plots in the figure
+                iNumberOfPlots  = numel(find(~cellfun(@isempty,this.tFigures(iFigure).ctPlots)));
+                
+                % The user may have selected to show the time vs. ticks
+                % plot in this figure. If there are multiple plots in this
+                % figure, we need to check if we can add the time plot to
+                % the figure without interfering with the order of plots
+                % the user has defined. We do this by checking, if there is
+                % an empty spot on the grid of figures. If that is the
+                % case, we can just put it there. If there is no empty
+                % spot, we will create an extra figure, just containing the
+                % time plot. 
+                if isfield(this.tFigures(iFigure).tFigureOptions, 'bTimePlot') && this.tFigures(iFigure).tFigureOptions.bTimePlot == true
+                    bTimePlot = true;
+                    if (iRows * iColumns == iNumberOfPlots)
+                        bTimePlotExtraFigure = true;
+                    else
+                        bTimePlotExtraFigure = false;
+                        
+                        % If we can add the time plot to the empty spot in
+                        % the figure, we need to increase the number of
+                        % plots by one. 
+                        iNumberOfPlots = iNumberOfPlots + 1;
+                    end
+                else
+                    bTimePlot = false;
+                end
+                
+                % The last thing we need to do before we can start is creat
+                % the figure that will contain all subplots.
+                oFigure = figure();
+                
+                
+                %% Undock subplots panel
+                % Creating a panel for the buttons to undock the individual
+                % plots into separate figures for export.
+                fPanelXSize = 0.065;
+                fPanelYSize = 0.12;
+                oPanel = uipanel('Title','Undock Subplots','FontSize',10,'Position',[ 0 0 fPanelXSize fPanelYSize]);
+                
+                % Doing some math so we get nicely proportioned buttons.
+                fButtonYSize = 1 / iRows * 0.9;
+                fButtonXSize = 1 / iColumns * 0.8;
+                fHorizontalSpaceing = 16 / (iColumns + 1);
+                fVerticalSpaceing = 10 / (iRows + 1);
+                afHorizontal = ( 0:fHorizontalSpaceing:16 ) / 16 - fButtonXSize/2;
+                afHorizontal = afHorizontal(2:end-1);
+                afVertical = ( 0:fVerticalSpaceing:10 ) / 10 - fButtonYSize/2;
+                afVertical = afVertical(2:end-1);
+                afVertical = fliplr(afVertical);
+                
+                % Initializing some variables
+                coButtons = cell(iNumberOfPlots,1);
+                iSubPlotCounter = 1;
+                
+                % Creating the array of buttons according to the number of
+                % subplots there are and labling them with simple numbers.
+                for iI = 1:iRows
+                    for iJ = 1:iColumns
+                        if iSubPlotCounter <= iNumberOfPlots
+                            oButton = uicontrol(oPanel,'String',sprintf('%i', iSubPlotCounter));
+                            oButton.Units = 'normalized';
+                            oButton.Position = [afHorizontal(iJ) afVertical(iI) fButtonXSize fButtonYSize];
+                            coButtons{iSubPlotCounter} = oButton;
+                            iSubPlotCounter = iSubPlotCounter + 1;
+                        end
+                    end
+                end
+                
+                % We may need to use the handles to the individual plots
+                % later on, so we create a cell to hold them. After it is
+                % filled, we write it to the UserData property of the
+                % figure. 
+                coAxesHandles = cell(iNumberOfPlots,1);
+                
+                %% Creating the individual plots
+                % Loop through the individual subplots, exluding the time
+                % plot, if it is in the same figure
+                for iPlot = 1:(iNumberOfPlots - sif(bTimePlot && ~bTimePlotExtraFigure, 1, 0))
+                    % Creating the subplot
+                    hHandle = subplot(iRows, iColumns, iPlot);
+                    
+                    % See if we need two y axes
+                    if this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions.iNumberOfUnits > 1
+                        bTwoYAxes = true;
+                    else
+                        bTwoYAxes = false;
+                    end
+                    
+                    % Create plots with only left y axes
+                    if bTwoYAxes == false
+                        % Getting the result data from the logger object
+                        [ mfData, tLogProps ] = oLogger.get(this.tFigures(iFigure).ctPlots{iPlot}.aiIndexes);
+                        
+                        % Getting the Y label from the logger object
+                        sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                        
+                        % If the user selected to change the unit of time
+                        % by which this plot is created, we have to adjust
+                        % the afTime array. 
+                        [ afTime, sTimeUnit ] = this.adjustTime(oLogger.afTime, this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions);
+                        
+                        % Now we can actually create the plot with all of the
+                        % information we have gathered so far.
+                        this.generatePlot(hHandle, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
+                        
+                        % Setting the title of the plot
+                        title(hHandle, this.tFigures(iFigure).ctPlots{iPlot}.sTitle);
+                    else
+                        % Create plots with left and right y axes
+                        
+                        % See if there is a field 'csUnitOverride', if yes,
+                        % this means there are at least three units
+                        % present. 
+                        if isfield(this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions, 'csUnitOverride')
+                            csUnitOverride = this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions.csUnitOverride;
+                            if length(csUnitOverride) > 1
+                                csLeftUnits  = csUnitOverride{1};
+                                csRightUnits = csUnitOverride{2};
+                                if length(csUnitOverride) > 2
+                                    this.throw('plot','Your csUnitOverride cell contains too many values. It should only contain two cells with the units for the left and right y axes.');
+                                end
+                            else
+                                switch csUnitOverride
+                                    case 'all left'
+                                        csLeftUnits  = this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions.csUniqueUnits;
+                                        csRightUnits = {};
+                                        
+                                    case 'all right'
+                                        csLeftUnits  = {};
+                                        csRightUnits = this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions.csUniqueUnits;
+                                        
+                                    case 'even split'
+                                        this.throw('plot','The ''even split'' option for the csUnitOverride setting has not yet been implemented.');
+                                        
+                                    otherwise
+                                        this.throw('plot','The value you have entered for csUnitOverride is illegal. Please check plotter_basic.m for all options for this setting.');
+                                end
+                            end
+                        else
+                            % There are only two units present and
+                            % csUnitOverride is not set, so there are only
+                            % two units. We saved those in the
+                            % csUniqueUnits cell, so we can just use them
+                            % from there. 
+                            csLeftUnits  = this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions.csUniqueUnits{1};
+                            csRightUnits = this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions.csUniqueUnits{2};
+                        end
+                        
+                        aiIndexes = this.tFigures(iFigure).ctPlots{iPlot}.aiIndexes;
+                        [ ~, tLogProps ] = oLogger.get(aiIndexes);
+                        iNumberOfLogItems = length(tLogProps);
+                        abLeftIndexes  = false(iNumberOfLogItems, 1);
+                        abRightIndexes = false(iNumberOfLogItems, 1);
+                        for iI = 1:iNumberOfLogItems
+                            abLeftIndexes(iI)  = any(strcmp(csLeftUnits,  tLogProps(iI).sUnit));
+                            abRightIndexes(iI) = any(strcmp(csRightUnits, tLogProps(iI).sUnit));
+                        end
+                        
+                        aiLeftIndexes  = aiIndexes(abLeftIndexes);
+                        aiRightIndexes = aiIndexes(abRightIndexes);
+                        
+                        % Getting the result data from the logger object
+                        [ mfData, tLogProps ] = oLogger.get(aiLeftIndexes);
+                        
+                        % If the user selected to change the unit of time
+                        % by which this plot is created, we have to adjust
+                        % the afTime array. 
+                        [ afTime, sTimeUnit ] = this.adjustTime(oLogger.afTime, this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions);
+                        
+                        % Getting the Y label from the logger object
+                        sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                        
+                        % Actually creating the plot with all of the
+                        % information we have gathered so far.
+                        this.generatePlot(hHandle, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
+                        
+                        % Setting the title of the plot
+                        title(hHandle, this.tFigures(iFigure).ctPlots{iPlot}.sTitle);
+                        
+                        if any(abRightIndexes)
+                            % Getting the result data from the logger object
+                            [ mfData, tLogProps ] = oLogger.get(aiRightIndexes);
+                            
+                            % Getting the Y label from the logger object
+                            sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                            
+                            % Actually creating the plot with all of the
+                            % information we have gathered so far.
+                            this.generateRightYAxisPlot(afTime, mfData, tLogProps, sLabelY);
+                        end
+                    end
+                    
+                    % Setting the callback to undock this subplot to the
+                    % appropriate button.
+                    coButtons{iPlot}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, hHandle, legend};
+                    
+                    % Setting the entry in the handles cell. 
+                    coAxesHandles{iPlot} = hHandle;
+                    
+                    %% Process the individual plot options
+                    
+                    % Process the line options struct, if there is one. 
+                    if isfield(this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions, 'tLineOptions')
+                        for iI = 1:length(hHandle.Children)
+                            this.parseObjectOptions(hHandle.Children(iI), this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions.tLineOptions(iI));
+                        end
+                    end
+                    
+                    % Process all of our custom plot options.
+                    % bLegend
+                    if isfield(this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions, 'bLegend') && this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions.bLegend == false
+                        hHandle.Legend.Visible = 'off';
+                    end
+                    
+                    % tRightYAxesOptions
+                    if isfield(this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions, 'tRightYAxesOptions')
+                        yyaxis('right');
+                        oAxes = gca;
+                        this.parseObjectOptions(oAxes, this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions.tRightYAxesOptions);
+                        yyaxis('left');
+                    end
+                    
+                    % Process all of the items in tPlotOptions that
+                    % actually correspond to properties of the axes object.
+                    this.parseObjectOptions(hHandle, this.tFigures(iFigure).ctPlots{iPlot}.tPlotOptions);
+                end
+                
+                %% Process the individual figure options
+                
+                set(oFigure, 'name', this.tFigures(iFigure).sTitle);
+                
+                % If time plot is on, create it here. If the time plot gets
+                % an extra figure, give it the name of the current figure
+                % plus some post-fix. 
+                if bTimePlot
+                    if bTimePlotExtraFigure
+                        oTimePlotFigure = figure();
+                        oPlot = plot(1:length(oLogger.afTime), oLogger.afTime);
+                        xlabel('Ticks');
+                        ylabel('Time in s');
+                        title(oPlot, 'Evolution of Simulation Time vs. Simulation Ticks');
+                        legend('hide')
+                        set(oTimePlotFigure, 'name', [ 'Time Plot for ' this.oSimulationInfrastructure.sName ' - (' this.oSimulationInfrastructure.sCreated ')' ]');
+                        set(groot,'CurrentFigure',oFigure);
+                    else
+                        % Creating the subplot
+                        hHandle = subplot(iRows, iColumns, iPlot+1);
+                        
+                        % Filling the subplot with the graph and modifying its
+                        % properties.
+                        hold(hHandle, 'on');
+                        grid(hHandle, 'minor');
+                        plot(1:length(oLogger.afTime), oLogger.afTime);
+                        xlabel('Ticks');
+                        ylabel('Time in s');
+                        title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
+                        legend('hide')
+                        
+                        % Setting the callback to undock this subplot to the
+                        % appropriate button.
+                        coButtons{iPlot+1}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, hHandle, legend};
+                        
+                        % Setting the entry in the handles cell.
+                        coAxesHandles{end + 1} = hHandle; %#ok<AGROW>
+                        
+                    end
+                    
+                end
+                
+                % Process all of the items in tFigureOptions that
+                % actually correspond to properties of the figure object.
+                this.parseObjectOptions(oFigure, this.tFigures(iFigure).tFigureOptions);
+                
+                
+                % On Macs, the default screen resolution is 72 ppi. Since 
+                % MATLAB 2015b, this can no longer be changed by the user. On 
+                % Windows this number is 96 ppi. The reason this is done in the 
+                % first place is to make the fonts larger for better screen 
+                % viewing. So now we have to do the workaround of setting the 
+                % figure's font size higher. Default is 8 (or 10?), we want it
+                % to be at 12.
+                if ismac
+                    aoAxes  = findall(oFigure, 'Type', 'axes');
+                    for iI = 1:length(aoAxes)
+                        set(aoAxes(iI),'FontSize',12);
+                    end
+                end
+                
+                % In order for the change in font size to take effect, we
+                % need to call the drawnow method. 
+                drawnow();
+
+                % If the user selected to turn on the plot tools, we turn
+                % them on now. They are off by default. Turing on the plot
+                % tools will automatically maximize the figure. If plot
+                % tools are not turned on, we have to maximize it manually.
+                if isfield(this.tFigures(iFigure).tFigureOptions, 'bPlotTools') && this.tFigures(iFigure).tFigureOptions.bPlotTools == true
+                    plottools(oFigure, 'on');
+                else
+                    % Maximize figure
+                    set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
+                end
+                
+                % Finally we write the coHandles cell to the UserData
+                % struct of the figure in case we need to use them later. 
+                oFigure.UserData = struct('coAxesHandles', { coAxesHandles });
+                
+            end
+        end
+        
+        function plot_old(this, tParameters)
+            % The plot command can be provided with a struct containing
+            % several parameters as fields. The field names have to be as
+            % follows in order to work:
+            %
+            % .bLegend:     can be true or false, deciding if the legend
+            %               (description for each line) should be included
+            % .bTimePlotOn: can be true or false decides wether the
+            %               simulation time over tick plot will be displayed
+            % .bPlotToolsOn: can be true or false, decides if the plots 
+            %               will be opened with or without plot tools active
+            % .bSinglePlot: can be true or false, for true all defined
+            %               plots will be put into a single figure
+            % .sTimeUnit:   string that contains the unit that should be
+            %               used for the time axis (x axis). Can be:
+            %               's', 'min, 'h', 'd', 'weeks'
             bLegendOn    = true;
             bTimePlotOn  = true;
             bPlotToolsOn = false;
+            bSinglePlot  = false;
+            sTimeUnit    = 's';
             
             if nargin > 1 
                 if isfield(tParameters, 'bLegendOn')
@@ -132,133 +862,497 @@ classdef plotter_basic < simulation.monitor
                 if isfield(tParameters, 'bPlotToolsOn')
                     bPlotToolsOn = tParameters.bPlotToolsOn;
                 end
+                
+                if isfield(tParameters, 'bSinglePlot')
+                    bSinglePlot = tParameters.bSinglePlot;
+                end
+                if isfield(tParameters, 'sTimeUnit')
+                    sTimeUnit = tParameters.sTimeUnit;
+                end
             end
             
             oInfra  = this.oSimulationInfrastructure;
-            oFigure = figure();
             iPlots  = length(this.tPlots) + sif(bTimePlotOn,1,0);
-            iGrid   = ceil(sqrt(iPlots));
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
-            
-            % Rows of grid - can we reduce?
-            iGridRows = iGrid;
-            iGridCols = iGrid;
-            
-            %while iGridCols * (iGridRows - 1) >= iPlots
-            %    iGridRows = iGridRows - 1;
-            %end
-            while (iGridCols - 1) * iGridRows >= iPlots
-                iGridCols = iGridCols - 1;
-            end
-            
-            
-            coHandles = {};
-            
-            for iP = 1:length(this.tPlots)
-                %hHandle = subplot(iGridRows, iGridCols, iP);
-                hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP, 'Spacing', 0.05, 'Padding', this.rPadding, 'Margin', 0.05);
+
+            if bSinglePlot
+                %% Code for using a single figure to plot everything
                 
-                [ mfData, tLogProps ] = oLogger.get(this.tPlots(iP).aiIdx);
+                %TODO Add customization and calculation functionality found
+                %in the non-single plot case. 
                 
-                %TODO ... well, differently ;)
-                sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                % FOR NOW: This case ignores any subplot information of the
+                % individual plots!
                 
-                this.generatePlot(hHandle, oLogger.afTime, mfData, tLogProps, sLabelY);
+                % Creating the figure which will contain all subplots.
+                oFigure = figure();
                 
-                title(hHandle, this.tPlots(iP).sTitle);
+                % Doing some math to see how many rows and columns the
+                % figure should have.
+                iGrid   = ceil(sqrt(iPlots));
                 
-                if ~bLegendOn
-                    legend('hide');
+                % Rows of grid - can we reduce the number of columns?
+                iGridRows = iGrid;
+                iGridCols = iGrid;
+
+                while (iGridCols - 1) * iGridRows >= iPlots
+                    iGridCols = iGridCols - 1;
                 end
                 
+                % Creating a panel for the buttons to undock the individual plots into
+                % separate figures for export.
+                fPanelXSize = 0.065;
+                fPanelYSize = 0.12;
+                oPanel = uipanel('Title','Undock Subplots','FontSize',10,'Position',[ 0 0 fPanelXSize fPanelYSize]);
                 
-                coHandles{end + 1} = hHandle;
-            end
-            
-            if bTimePlotOn
-                %hHandle = subplot(iGridRows, iGridCols, iP + 1);
-                hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP + 1, 'Spacing', 0.05, 'Padding', this.rPadding, 'Margin', 0.05);
+                % Doing some math so we get nicely proportioned buttons.
+                fButtonYSize = 1 / iGridRows * 0.9;
+                fButtonXSize = 1 / iGridCols * 0.8;
+                fHorizontalSpaceing = 16 / (iGridCols + 1);
+                fVerticalSpaceing = 10 / (iGridRows + 1);
+                afHorizontal = ( 0:fHorizontalSpaceing:16 ) / 16 - fButtonXSize/2;
+                afHorizontal = afHorizontal(2:end-1);
+                afVertical = ( 0:fVerticalSpaceing:10 ) / 10 - fButtonYSize/2;
+                afVertical = afVertical(2:end-1);
+                afVertical = fliplr(afVertical);
                 
+                % Initializing some variables
+                coButtons = cell(iPlots,1);
+                iSubPlotCounter = 1;
                 
-                hold(hHandle, 'on');
-                grid(hHandle, 'minor');
-                plot(1:length(oLogger.afTime), oLogger.afTime);
-                xlabel('Ticks');
-                ylabel('Time in s');
-                title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
-                
-                coHandles{end + 1} = hHandle;
-            end
-            
-            set(oFigure, 'name', [ oInfra.sName ' - (' oInfra.sCreated ')' ]);
-                        
-            % On Macs, the default screen resolution is 72 ppi. Since 
-            % MATLAB 2015b, this can no longer be changed by the user. On 
-            % Windows this number is 96 ppi. The reason this is done in the 
-            % first place is to make the fonts larger for better screen 
-            % viewing. So now we have to do the workaround of setting the 
-            % figure's font size higher. Default is 8 (or 10?), we want it
-            % to be at 12.
-            if ismac
-                aoAxes  = findall(oFigure, 'Type', 'axes');
-                for iI = 1:length(aoAxes)
-                    set(aoAxes(iI),'FontSize',12);
-                end
-            end
-
-            drawnow;
-            
-            
-            if bPlotToolsOn
-                plottools(oFigure, 'on');
-            else
-                % Maximize figure
-                set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
-            end
-            
-            oFigure.UserData = struct('coAxesHandles', { coHandles });
-            
-            
-            
-            %% Define Plot by Name
-            
-            for iIndex = 1:length(oLogger.tLogValues)
-                for iPlot = 1:length(this.tPlotsByName)
-                    for iName = 1:length(this.tPlotsByName(iPlot).cNames) 
-                        if strcmp(oLogger.tLogValues(iIndex).sLabel, this.tPlotsByName(iPlot).cNames{iName})
-
-                           % Stores the logged values for the plot and name
-                           % in the struct
-                           mfLog = oLogger.mfLog(:,iIndex);
-
-                           % remove NaNs from the log
-                           mfLog(isnan(mfLog)) = [];
-
-                           this.tPlotsByName(iPlot).mLogData(:,iName) = mfLog;
+                % Creating the array of buttons according to the number of
+                % subplots there are and labling them with simple numbers.
+                for iI = 1:iGridRows
+                    for iJ = 1:iGridCols
+                        if iSubPlotCounter <= iPlots
+                            oButton = uicontrol(oPanel,'String',sprintf('%i', iSubPlotCounter));
+                            oButton.Units = 'normalized';
+                            oButton.Position = [afHorizontal(iJ) afVertical(iI) fButtonXSize fButtonYSize];
+                            coButtons{iSubPlotCounter} = oButton;
+                            iSubPlotCounter = iSubPlotCounter + 1;
                         end
                     end
                 end
-            end
-            
-            for iPlot = 1:length(this.tPlotsByName)
-            
-                figure('name', this.tPlotsByName(iPlot).sTitle)
-                grid on
-                hold on
-                for iName = 1:length(this.tPlotsByName(iPlot).cNames) 
-                    plot((oLogger.afTime./3600), this.tPlotsByName(iPlot).mLogData(:,iName))
-                end
-                xlabel('Time in h')
-                ylabel( this.tPlotsByName(iPlot).yLabel)
-                legend(this.tPlotsByName(iPlot).cNames)
                 
-            end
+
+                coHandles = cell(iPlots,1);
             
+                for iP = 1:length(this.tPlots)
+                    % Creating the subplot
+                    hHandle = subplot(iGridRows, iGridCols, iP);
+                    %hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP, 'Spacing', 0.05, 'Padding', this.rPadding, 'Margin', 0.05);
+                    
+                    % Getting the result data from the logger object
+                    [ mfData, tLogProps ] = oLogger.get(this.tPlots(iP).aiIdx);
+                    
+                    % Getting the Y label from the logger object
+                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                    
+                    % Actually creating the plot with all of the
+                    % information we have gathered so far.
+                    this.generatePlot(hHandle, oLogger.afTime, mfData, tLogProps, sLabelY);
+                    
+                    % Setting the title of the subplot
+                    title(hHandle, this.tPlots(iP).sTitle);
+                    
+                    % If the user set the legend off, we hide it.
+                    if ~bLegendOn
+                        legend('hide');
+                    end
+                    
+                    % Setting the callback to undock this subplot to the
+                    % appropriate button.
+                    coButtons{iP}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, hHandle, legend};
+                    
+                    % Setting the entry in the handles cell. 
+                    coHandles{iP} = hHandle;
+                end
+                
+                % If the time plot showing the relationship between ticks
+                % and actual time is turned on, we create it here. 
+                if bTimePlotOn
+                    % Creating the subplot
+                    hHandle = subplot(iGridRows, iGridCols, iP + 1);
+                    %hHandle = simulation.helper.plotter_basic.subaxis(iGridRows, iGridCols, iP + 1, 'Spacing', 0.05, 'Padding', this.rPadding, 'Margin', 0.05);
+
+                    % Filling the subplot with the graph and modifying its
+                    % properties. 
+                    hold(hHandle, 'on');
+                    grid(hHandle, 'minor');
+                    plot(1:length(oLogger.afTime), oLogger.afTime);
+                    xlabel('Ticks');
+                    ylabel('Time in s');
+                    title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
+                    
+                    % Setting the callback to undock this subplot to the
+                    % appropriate button.
+                    coButtons{iPlots}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, hHandle, legend};
+                    
+                    % Setting the entry in the handles cell. 
+                    coHandles{end + 1} = hHandle;
+                end
+
+                set(oFigure, 'name', [ oInfra.sName ' - (' oInfra.sCreated ')' ]);
+
+                % On Macs, the default screen resolution is 72 ppi. Since 
+                % MATLAB 2015b, this can no longer be changed by the user. On 
+                % Windows this number is 96 ppi. The reason this is done in the 
+                % first place is to make the fonts larger for better screen 
+                % viewing. So now we have to do the workaround of setting the 
+                % figure's font size higher. Default is 8 (or 10?), we want it
+                % to be at 12.
+                if ismac
+                    aoAxes  = findall(oFigure, 'Type', 'axes');
+                    for iI = 1:length(aoAxes)
+                        set(aoAxes(iI),'FontSize',12);
+                    end
+                end
+                
+                % In order for the change in font size to take effect, we
+                % need to call the drawnow method. 
+                drawnow();
+
+                % If the user selected to turn on the plot tools, we turn
+                % them on now. They are off by default. Turing on the plot
+                % tools will automatically maximize the figure. If plot
+                % tools are not turned on, we have to maximize it manually.
+                if bPlotToolsOn
+                    plottools(oFigure, 'on');
+                else
+                    % Maximize figure
+                    set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
+                end
+                
+                % Finally we write the coHandles cell to the UserData
+                % struct of the figure in case we need to use them later. 
+                oFigure.UserData = struct('coAxesHandles', { coHandles });
+                
+            else
+                %% Code used if several figures should be used to plot the data
+                
+                % Now the log values and plots are correctly asscociated and
+                % the actual plotting can start. 
+
+                % In order to allow multiple plots to be set as subplots for
+                % one figure it is necessary to store all figures in a cell
+                % array to allow later reacces to them
+                csFigures = cell(0,0);
+
+                % Then we loop through all plots that are defined in this way
+                for iPlot = 1:length(this.tPlots)
+
+                    % First we get the data and the log properties for each
+                    % plot
+                    [ mfData, tLogProps ] = oLogger.get(this.tPlots(iPlot).aiIdx);
+                    
+                    % Then we check if any calculations have to be
+                    % performed on the values and create a new data matrix
+                    % in case any calculations are performed
+                    iCurrentLog = 1;
+                    iCalculations = length(this.tPlots(iPlot).csFunctions);
+                    if iCalculations > 0
+                        
+                        mfDataNew = zeros(length(mfData),iCalculations);
+                        
+                        iDataVariable = 1;
+                        % loop through the calculations (defined by the
+                        % number of entries in the csSigns cell array for
+                        % this plot)
+                        for iCalculation = 1:iCalculations
+
+                            sFunction = this.tPlots(iPlot).csFunctions{iCalculation};
+                            
+                            % the first step is to perform the calculation
+                            % is to find out how many variables exist
+                            iVariables = sum(sFunction == 'x');
+                            csVariables = cell(1,iVariables);
+                            cmfData     = cell(1,iVariables);
+                            
+                            for iVariable = 1:iVariables
+                                if iVariable == 1
+                                    csVariables{iVariable} = ['x',num2str(iVariable)];
+                                else
+                                    csVariables{iVariable} = [',x',num2str(iVariable)];
+                                end
+                                cmfData{iVariable}     = mfData(:,iDataVariable);
+                                
+                                iDataVariable = iDataVariable + 1;
+                            end
+                            
+                            % we have to replace the multiplication and
+                            % division operators with the element wise
+                            % operators
+                            sFunction = strrep(sFunction,'*','.*');
+                            sFunction = strrep(sFunction,'/','./');
+                            sFunction = strrep(sFunction,'^','.^');
+                            
+                            % Since inline function is supposed to be
+                            % removed we use the anonymus function, where
+                            % the completed handle has to be created as one
+                            % string
+                            str = ['@(',csVariables{:},') ',sFunction];
+                            
+                            % now transform this string into a function
+                            % handle that can be used to calculate the new
+                            % log values
+                            hFunction = str2func(str);
+
+                            mfDataNew(:,iCalculation) = hFunction(cmfData{:});
+                            
+                            % now we try to find a good description for the
+                            % value (taken from the common words of all log
+                            % values!)
+                            splitphrases_cell = cell(iVariables,1);
+                            
+                            % loop through the variables in this calculation
+                            for iVariable = 1:iVariables
+                                
+                                % split the label for this calculation 
+                                splitphrases_cell{iVariable}    = regexp(tLogProps(iCurrentLog).sLabel, '\s+', 'split');
+                                
+                                iCurrentLog = iCurrentLog + 1;
+                            end
+                            
+                            try
+                                mbCommonWords = true(1,length(splitphrases_cell{1}));
+                                for iPhrase = 1:(length(splitphrases_cell)-1)
+
+                                    mbCommon = strcmp(splitphrases_cell{iPhrase}, splitphrases_cell{iPhrase+1});
+
+                                    mbCommonWords = ((mbCommonWords + mbCommon) == 2);
+
+                                end
+
+                                tLogProps(iCalculation).sLabel = strjoin(splitphrases_cell{1}(mbCommonWords));
+                            catch
+                                % well just keep the current label (might
+                                % be a calculation
+                            end
+
+                        end
+                        tLogProps(iCalculations+1:end) = [];
+                        mfData = mfDataNew;
+                    end
+                    
+                    % For each plot a title of the figure is specified and if
+                    % multiple plots are used as subplots the title also serves
+                    % as identifier into which figure they should be plotted.
+                    % This loop checks if the figure for this plot already
+                    % exists
+                    bFoundFigure = false;
+                    for iFigure = 1:length(csFigures)
+                        if strcmp(csFigures{iFigure}.Name, this.tPlots(iPlot).sTitle)
+                            % and if it does exist we set the already existing
+                            % figure as current figure
+                            set(0, 'currentfigure', csFigures{iFigure});
+                            bFoundFigure = true;
+                            break
+                        end
+                    end
+
+                    % If the figure was not found a new figure has to be
+                    % created and stored in the cell array
+                    if ~bFoundFigure
+                        csFigures{end+1} = figure('name', this.tPlots(iPlot).sTitle);
+                        set(0, 'currentfigure', csFigures{end});
+                    end
+                    
+                    csLineStyle = [];
+                    % Now we chech the txCustom struct for any
+                    % customization options that the user defined that have
+                    % to be done before the plot
+                    if ~isempty(this.tPlots(iPlot).txCustom)
+                        csCustomFields = fieldnames(this.tPlots(iPlot).txCustom);
+                        
+                        for iCustomField = 1:length(csCustomFields)
+                            switch csCustomFields{iCustomField}
+                                % Now we check if the figure is intended as subplot. The
+                                % subplot position is defined by mbPosition which has only
+                                % one boolean true at the intended position of the plot.
+                                % For example the matrix:
+                                % 0 0 0
+                                % 0 1 0
+                                % 0 0 0
+                                % would define the subplot in the middle of a 3x3 field of
+                                % subplots
+                                case 'mbPosition'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.mbPosition)
+                                        % The boolean matrix has to be translated into the
+                                        % required inputs for the subplot command, which is the
+                                        % total row and line number and the number of the
+                                        % subplot (which are counted from the top left to right
+                                        % in each row and then from top to bottom for several
+                                        % rows)
+                                        [iNumberRows, iNumberColumns] = size(this.tPlots(iPlot).txCustom.mbPosition);
+                                        [iRow, iColumn] = find(this.tPlots(iPlot).txCustom.mbPosition);
+                                        iPlotNumber = ((iRow - 1)*iNumberColumns) + iColumn;
+                                        subplot(iNumberRows,iNumberColumns,iPlotNumber)
+                                    end
+                                    
+                                case 'csLineStyle'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.csLineStyle)
+                                        csLineStyle = this.tPlots(iPlot).txCustom.csLineStyle;
+                                    end
+                            end
+                        end
+                    end
+                    
+                    % In order to allow the user to define the desired time
+                    % output the actual plotting checks for the sTimeUnit
+                    % string and transforms the log (which is always in
+                    % seconds) into the desired time unit and sets the correct
+                    % legend entry
+                    switch sTimeUnit
+                        case 's'
+                            iDivider = 1;
+                        case 'min'
+                            iDivider = 60;
+                        case 'h'
+                            iDivider = 3600;
+                        case 'd'
+                            iDivider = 86400;
+                        case 'weeks'
+                            iDivider = 604800;
+                    end
+                    
+                    if ~isempty(csLineStyle)
+                        for iLineStyle = 1:length(csLineStyle)
+                            plot((oLogger.afTime./iDivider), mfData(:,iLineStyle), csLineStyle{iLineStyle})
+                            grid on
+                            hold on
+                        end
+                        miSize = size(mfData);
+                        if length(csLineStyle) < miSize(2)
+                            plot((oLogger.afTime./iDivider), mfData(iLineStyle+1:end));
+                            grid on
+                            hold on
+                        end
+                    else
+                        plot((oLogger.afTime./iDivider), mfData)
+                        grid on
+                        hold on
+                    end
+                    
+                    % First we set the standard values for the fields:
+                    sLabelX = ['Time in ', sTimeUnit];
+                   	sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                    csLegend = cell(length(tLogProps),1);
+                    for iP = 1:length(tLogProps)
+                        csLegend{iP} = [ tLogProps(iP).sLabel ];
+                    end
+                    
+                    % Now we chech the txCustom struct for any
+                    % customization options that the user defined that have
+                    % to be done after the plot
+                    if ~isempty(this.tPlots(iPlot).txCustom)
+                        csCustomFields = fieldnames(this.tPlots(iPlot).txCustom);
+                        
+                        for iCustomField = 1:length(csCustomFields)
+                            switch csCustomFields{iCustomField}
+                                case 'sXLabel'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.sYLabel)
+                                        sLabelX = this.tPlots(iPlot).txCustom.sXLabel;
+                                    end
+                                case 'sYLabel'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.sYLabel)
+                                        sLabelY = this.tPlots(iPlot).txCustom.sYLabel;
+                                    end
+                                case 'sTitle'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.sTitle)
+                                        title(this.tPlots(iPlot).txCustom.sTitle);
+                                    end
+                                case 'csLegend'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.csLegend)
+                                        csLegend = this.tPlots(iPlot).txCustom.csLegend;
+                                    end
+                                case 'miXTicks'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.miXTicks)
+                                        xticks( this.tPlots(iPlot).txCustom.miXTicks );
+                                    end
+                                case 'miYTicks'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.miYTicks)
+                                        yticks( this.tPlots(iPlot).txCustom.miYTicks );
+                                    end
+                                case 'mfXLimits'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.mfXLimits)
+                                        xlim( this.tPlots(iPlot).txCustom.mfXLimits );
+                                    end
+                                case 'mfYLimits'
+                                    if ~isempty(this.tPlots(iPlot).txCustom.mfYLimits)
+                                        ylim( this.tPlots(iPlot).txCustom.mfYLimits );
+                                    end
+                            end
+                        end
+                    end
+                    
+                    xlabel( sLabelX );
+                    ylabel( sLabelY );
+                    
+                    legend(csLegend);
+                    
+                    if ~bLegendOn
+                        legend('hide');
+                    end
+                    
+                    % Maximize figure
+                    set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
+                end
+                
+                if bTimePlotOn
+                    figure('name', 'Timeplot');
+                    plot(1:length(oLogger.afTime), oLogger.afTime);
+                    grid on;
+                    xlabel('Ticks');
+                    ylabel('Time in s');
+                    
+                     % Maximize figure
+                    set(gcf, 'units','normalized','OuterPosition', [0 0 1 1]);
+                end
+                
+                if bPlotToolsOn
+                    for iFigure = 1:length(csFigures)
+                        plottools(csFigures{iFigure}, 'on');
+                    end
+                end
+            end
         end
         
         function clearPlots(this)
             this.tPlots = struct('sTitle', {}, 'aiIdx', {});
         end
+        
+        function [ afTime, sTimeUnit ] = adjustTime(this, afTime, tPlotOptions)
+            % The user may have set the unit of time to something else than
+            % seconds. If so we have to make some adjustments here.
+            if isfield(tPlotOptions, 'sTimeUnit')
+                switch tPlotOptions.sTimeUnit
+                    case 'seconds'
+                        sTimeUnit = 's';
+                        afTime = afTime;
+                    case 'minutes'
+                        sTimeUnit = 'min';
+                        afTime = afTime ./ 60;
+                    case 'hours'
+                        sTimeUnit = 'h';
+                        afTime = afTime ./ 3600;
+                    case 'days'
+                        sTimeUnit = 'days';
+                        afTime = afTime ./ 86400;
+                    case 'weeks'
+                        sTimeUnit = 'weeks';
+                        afTime = afTime ./ 604800;
+                    case 'years'
+                        sTimeUnit = 'years';
+                        afTime = afTime ./ 31536000; % Value calculated using 365 days.
+                    otherwise
+                        this.throw('plot', 'The unit of time you have selected is illegal. This string can only be: seconds, minutes, hours, days, weeks or years.');
+                end
+            else
+                sTimeUnit = 's';
+            end
+        end
+        
+        
     end
     
     
@@ -269,6 +1363,8 @@ classdef plotter_basic < simulation.monitor
             for iP = 1:length(tLogProps)
                 if poUnitsToLabels.isKey(tLogProps(iP).sUnit) && ~isempty(poUnitsToLabels(tLogProps(iP).sUnit))
                     pbLabels([ poUnitsToLabels(tLogProps(iP).sUnit) ' [' tLogProps(iP).sUnit ']' ]) = true;
+                elseif ~strcmp(tLogProps(iP).sUnit,'-')
+                    error('Unknown unit ''%s''. Please edit the poExpressionToUnit and poUnitsToLabels properties of logger_basic.m to include it.', tLogProps(iP).sUnit);
                 end
             end
             
@@ -276,30 +1372,60 @@ classdef plotter_basic < simulation.monitor
         end
         
         
-        function generatePlot(hHandle, afTime, mfData, tLogProps, sLabelY)
-            %TODO
-            % * y-axis - if all units the same, plot unit there, else plot
-            %   in legend!
+        function generatePlot(hHandle, afTime, mfData, tLogProps, sLabelY, sTimeUnit)
             
             hold(hHandle, 'on');
             grid(hHandle, 'minor');
             
-            csLegend = {};
+            csLegend = cell(length(tLogProps),1);
             
             for iP = 1:length(tLogProps)
-                csLegend{end + 1} = [ tLogProps(iP).sLabel ' [' tLogProps(iP).sUnit ']' ];
+                csLegend{iP} = [ tLogProps(iP).sLabel ' [' tLogProps(iP).sUnit ']' ];
             end
             
             plot(afTime, mfData);
             legend(csLegend, 'Interpreter', 'none');
             
             ylabel(sLabelY);
-            xlabel('Time in s');
-            
-            %%% Default Code END
+            xlabel(['Time in ',sTimeUnit]);
+        
         end
         
+        function generateRightYAxisPlot(afTime, mfData, tLogProps, sLabelY)
+            
+            iNumberOfItems = length(tLogProps);
+            
+            csOldLegend = get(legend, 'String');
+            
+            csNewLegend = [ csOldLegend, cell(iNumberOfItems,1)];
+            
+            
+            for iP = 1:iNumberOfItems
+                csNewLegend{length(csOldLegend)+iP} = [ tLogProps(iP).sLabel ' [' tLogProps(iP).sUnit ']' ];
+            end
+            
+            yyaxis('right');
+            
+            plot(afTime, mfData);
+            legend(csNewLegend, 'Interpreter', 'none');
+            set(gca, 'YColor', [0 0 0]);
+            
+            ylabel(sLabelY);
+            
+            yyaxis('left');
         
+        end
+        
+        function parseObjectOptions(oObject, tOptions)
+            csOptions = fieldnames(tOptions);
+            csObjectOptions = cellfun(@(x) x(regexp(x,'[A-Z]'):end), csOptions, 'UniformOutput', false);
+            
+            for iI = 1:length(csOptions)
+                if isprop(oObject,csObjectOptions{iI})
+                    oObject.(csObjectOptions{iI}) = tOptions.(csOptions{iI});
+                end
+            end
+        end
         
         function aiIdx = getIndicesFromStruct(tData)
             csKeys = fieldnames(tData);

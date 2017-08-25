@@ -591,6 +591,37 @@ classdef logger_basic < simulation.monitor
             this.mfLog      = mfLogNew;
             this.afTime     = afTimeNew;
         end
+        
+        function [ iNumberOfUnits, csUniqueUnits ] = getNumberOfUnits(this, aiIndexes)
+            % This function determines the number of units in a single plot
+            % and returns the value as an integer.
+            
+            % Initializing a cell that can hold all of the unit strings.
+            csUnits = cell(length(aiIndexes),1);
+            
+            % Going through each of the indexes being queried and getting
+            % the information
+            for iI = 1:length(aiIndexes)
+                % For easier reading we get the current index into a local
+                % variable.
+                iIndex = aiIndexes(iI);
+                
+                % If the index is smaller than zero, this indicates that we
+                % are dealing with a virtual value; one that was not logged
+                % directly, but calculated from other logged values. We
+                % have to get the units from somewhere else then. 
+                if iIndex < 0
+                    csUnits{iI} = this.tVirtualValues(-1 * iIndex).sUnit;
+                else
+                    csUnits{iI}  = this.tLogValues(iIndex).sUnit;
+                end
+            end
+            
+            % Now we can just get the number of unique entries in the cell
+            % and we have what we came for!
+            csUniqueUnits  = unique(csUnits);
+            iNumberOfUnits = length(csUniqueUnits);
+        end
     end
     
     
