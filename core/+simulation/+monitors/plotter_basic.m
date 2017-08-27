@@ -182,39 +182,47 @@ classdef plotter_basic < simulation.monitor
                 oFigure = figure();
                 
                 
-                %% Undock subplots panel
-                % Creating a panel for the buttons to undock the individual
-                % plots into separate figures for export.
-                fPanelYSize = 0.12;
-                fPanelXSize = 0.065;
-                oPanel = uipanel('Title','Undock Subplots','FontSize',10,'Position',[ 0 0 fPanelXSize fPanelYSize]);
+                %% Undock subplots panel or save button
                 
-                % Doing some math so we get nicely proportioned buttons.
-                fButtonYSize = (14 - (iRows    - 1)) / iRows    / 16;
-                fButtonXSize = (14 - (iColumns - 1)) / iColumns / 16;
-                fHorizontalSpaceing = fButtonXSize + 1/16;
-                fVerticalSpaceing   = fButtonYSize + 1/16;
-                afHorizontal = ( 0:fHorizontalSpaceing:1 ) - fButtonXSize;
-                afHorizontal = afHorizontal(2:end);
-                afVertical = ( 0:fVerticalSpaceing:1 ) - fButtonYSize;
-                afVertical = afVertical(2:end);
-                afVertical = fliplr(afVertical);
-                
-                
-                % Initializing some variables
-                coButtons = cell(iNumberOfPlots,1);
-                iSubPlotCounter = 1;
-                
-                % Creating the array of buttons according to the number of
-                % subplots there are and labling them with simple numbers.
-                for iI = 1:iRows
-                    for iJ = 1:iColumns
-                        if iSubPlotCounter <= iNumberOfPlots
-                            oButton = uicontrol(oPanel,'String',sprintf('%i', iSubPlotCounter));
-                            oButton.Units = 'normalized';
-                            oButton.Position = [afHorizontal(iJ) afVertical(iI) fButtonXSize fButtonYSize];
-                            coButtons{iSubPlotCounter} = oButton;
-                            iSubPlotCounter = iSubPlotCounter + 1;
+                if iNumberOfPlots == 1
+                    oButton = uicontrol(oFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
+                    oButton.Callback = @simulation.helper.plotter_basic.saveFigureAs;
+                else
+                    % Creating a panel for the buttons to undock the
+                    % individual plots into separate figures for export.
+                    fPanelYSize = 0.12;
+                    fPanelXSize = 0.065;
+                    oPanel = uipanel('Title','Undock Subplots','FontSize',10,'Position',[ 0 0 fPanelXSize fPanelYSize]);
+                    
+                    % Doing some math so we get nicely proportioned
+                    % buttons.
+                    fButtonYSize = (14 - (iRows    - 1)) / iRows    / 16;
+                    fButtonXSize = (14 - (iColumns - 1)) / iColumns / 16;
+                    fHorizontalSpaceing = fButtonXSize + 1/16;
+                    fVerticalSpaceing   = fButtonYSize + 1/16;
+                    afHorizontal = ( 0:fHorizontalSpaceing:1 ) - fButtonXSize;
+                    afHorizontal = afHorizontal(2:end);
+                    afVertical = ( 0:fVerticalSpaceing:1 ) - fButtonYSize;
+                    afVertical = afVertical(2:end);
+                    afVertical = fliplr(afVertical);
+                    
+                    
+                    % Initializing some variables
+                    coButtons = cell(iNumberOfPlots,1);
+                    iSubPlotCounter = 1;
+                    
+                    % Creating the array of buttons according to the number
+                    % of subplots there are and labling them with simple
+                    % numbers.
+                    for iI = 1:iRows
+                        for iJ = 1:iColumns
+                            if iSubPlotCounter <= iNumberOfPlots
+                                oButton = uicontrol(oPanel,'String',sprintf('%i', iSubPlotCounter));
+                                oButton.Units = 'normalized';
+                                oButton.Position = [afHorizontal(iJ) afVertical(iI) fButtonXSize fButtonYSize];
+                                coButtons{iSubPlotCounter} = oButton;
+                                iSubPlotCounter = iSubPlotCounter + 1;
+                            end
                         end
                     end
                 end
@@ -222,7 +230,7 @@ classdef plotter_basic < simulation.monitor
                 % We may need to use the handles to the individual plots
                 % later on, so we create a cell to hold them. After it is
                 % filled, we write it to the UserData property of the
-                % figure. 
+                % figure.
                 coAxesHandles = cell(iNumberOfPlots,1);
                 
                 %% Creating the individual plots
@@ -372,8 +380,12 @@ classdef plotter_basic < simulation.monitor
                     end
                     
                     % Setting the callback to undock this subplot to the
-                    % appropriate button.
-                    coButtons{iPlot}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, hHandle, legend};
+                    % appropriate button, but only if there is more than
+                    % one plot in this figure. If there is only one plot,
+                    % we have already created a save button.
+                    if iNumberOfPlots > 1
+                        coButtons{iPlot}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, hHandle, legend};
+                    end
                     
                     % Setting the entry in the handles cell. 
                     coAxesHandles{iPlot} = hHandle;
