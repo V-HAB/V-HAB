@@ -33,6 +33,10 @@ classdef plotter_basic < simulation.monitor
             % this plotter. 
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             
+            if ischar(cxPlotValues)
+                this.throw('definePlot', 'You have entered the plot value (%s) as a character array. It must be a cell. Enclose your string with curly brackets.', cxPlotValues);
+            end
+            
             % Get indexes of each item in cxPlotValues 
             aiIndexes = oLogger.find(cxPlotValues);
             
@@ -577,7 +581,11 @@ classdef plotter_basic < simulation.monitor
             
             for iI = 1:length(csOptions)
                 if isprop(oObject,csObjectOptions{iI})
-                    oObject.(csObjectOptions{iI}) = tOptions.(csOptions{iI});
+                    if isa(oObject.(csObjectOptions{iI}),'matlab.graphics.primitive.Text') && ischar(tOptions.(csOptions{iI}))
+                        oObject.(csObjectOptions{iI}).String = tOptions.(csOptions{iI});
+                    else
+                        oObject.(csObjectOptions{iI}) = tOptions.(csOptions{iI});
+                    end
                 end
             end
         end
