@@ -185,13 +185,13 @@ classdef setup < simulation.infrastructure
             % visible or not. The default is visible. 
             
             tPlotOptions = struct('csUnitOverride', {{ {'g/s','°C'},{'-'} }});
-            cPlots{1,1} = oPlot.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
+            coPlots{1,1} = oPlot.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
             
             tPlotOptions.tLineOptions = struct('csColor', {'g','y'});
-            cPlots{1,2} = oPlot.definePlot(csPlotValues2, 'CO_2 Partial Pressures', tPlotOptions);
+            coPlots{1,2} = oPlot.definePlot(csPlotValues2, 'CO_2 Partial Pressures', tPlotOptions);
             
             tPlotOptions = struct('sTimeUnit','hours');
-            cPlots{2,1} = oPlot.definePlot(csPlotValues3, 'Temperatures', tPlotOptions);
+            coPlots{2,1} = oPlot.definePlot(csPlotValues3, 'Temperatures', tPlotOptions);
             
             
             % tFigureOptions includes turing on or off the plottools (off
@@ -200,7 +200,7 @@ classdef setup < simulation.infrastructure
             % to the properties of the MATLAB figure object. 
             
             tFigureOptions = struct('bTimePlot', true, 'bPlotTools', false);
-            oPlot.defineFigure(cPlots, 'Test Figure Title', tFigureOptions);
+            oPlot.defineFigure(coPlots, 'Test Figure Title', tFigureOptions);
 
             
 %             % you can define plots by using the units as filters
