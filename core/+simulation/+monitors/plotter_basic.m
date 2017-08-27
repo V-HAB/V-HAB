@@ -57,7 +57,7 @@ classdef plotter_basic < simulation.monitor
             % If it turns out the number of units is larger than two and
             % the csUnitOverride field is not defined, we throw an error,
             % otherwise we just save the number of units for later. 
-            if iNumberOfUnits > 2 && nargin == 4 && ~(isfield(tPlotOptions, 'csUnitOverride'))
+            if iNumberOfUnits > 2 && nargin == 4 && ~(isfield(tPlotOptions, 'csUnitOverride')) && ~(isfield(tPlotOptions, 'sAlternativeXAxisValue'))
                 this.throw('definePlot',['The plot you have defined (%s) contains more than two units. \n',...
                                          'You can either reduce the number of units to two, or include \n',...
                                          'a field ''csUnitOverride'' in the tPlotOptions struct that \n',...
@@ -66,6 +66,10 @@ classdef plotter_basic < simulation.monitor
             else
                 tPlotOptions.iNumberOfUnits = iNumberOfUnits;
                 tPlotOptions.csUniqueUnits  = csUniqueUnits;
+            end
+            
+            if nargin == 4 && isfield(tPlotOptions, 'sAlternativeXAxisValue')
+                tPlotOptions.iAlternativeXAxisIndex = oLogger.find({tPlotOptions.sAlternativeXAxisValue});
             end
             
             % Now we just return the plot object, containing all of the
@@ -235,8 +239,16 @@ classdef plotter_basic < simulation.monitor
                         bTwoYAxes = false;
                     end
                     
+                    % See if this is a plot with an alternate x axis
+                    % instead of time
+                    if isfield(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions, 'iAlternativeXAxisIndex')
+                        bAlternativeXAxis = true;
+                    else
+                        bAlternativeXAxis = false;
+                    end
+                    
                     % Create plots with only left y axes
-                    if bTwoYAxes == false
+                    if bTwoYAxes == false && bAlternativeXAxis == false
                         % Getting the result data from the logger object
                         [ mfData, tLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes);
                         
@@ -254,7 +266,7 @@ classdef plotter_basic < simulation.monitor
                         
                         % Setting the title of the plot
                         title(hHandle, this.coFigures{iFigure}.coPlots{iPlot}.sTitle);
-                    else
+                    elseif bTwoYAxes == true && bAlternativeXAxis == false
                         % Create plots with left and right y axes
                         
                         % See if there is a field 'csUnitOverride', if yes,
@@ -337,6 +349,26 @@ classdef plotter_basic < simulation.monitor
                             % information we have gathered so far.
                             this.generateRightYAxisPlot(afTime, mfData, tLogProps, sLabelY);
                         end
+                        
+                    elseif bAlternativeXAxis == true
+                        % Getting the y axis data
+                        [ mfYData, tYLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes);
+                        
+                        % Getting the Y label from the logger object
+                        sLabelY = this.getLabel(oLogger.poUnitsToLabels, tYLogProps);
+                        
+                        % Getting the x axis data
+                        [ afXData, tXLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.iAlternativeXAxisIndex);
+                        
+                        % Getting the X label from the logger object
+                        sLabelX = this.getLabel(oLogger.poUnitsToLabels, tXLogProps);
+                        
+                        % Now we can actually create the plot with all of the
+                        % information we have gathered so far.
+                        this.generatePlotWithAlternativeXAxis(hHandle, afXData, mfYData, tYLogProps, sLabelY, sLabelX);
+                        
+                        % Setting the title of the plot
+                        title(hHandle, this.coFigures{iFigure}.coPlots{iPlot}.sTitle);
                     end
                     
                     % Setting the callback to undock this subplot to the
@@ -572,6 +604,25 @@ classdef plotter_basic < simulation.monitor
             ylabel(sLabelY);
             
             yyaxis('left');
+        
+        end
+        
+        function generatePlotWithAlternativeXAxis(hHandle, afXData, mfYData, tLogProps, sLabelY, sLabelX)
+            
+            hold(hHandle, 'on');
+            grid(hHandle, 'minor');
+            
+            csLegend = cell(length(tLogProps),1);
+            
+            for iP = 1:length(tLogProps)
+                csLegend{iP} = [ tLogProps(iP).sLabel ' [' tLogProps(iP).sUnit ']' ];
+            end
+            
+            plot(afXData, mfYData);
+            legend(csLegend, 'Interpreter', 'none');
+            
+            ylabel(sLabelY);
+            xlabel(sLabelX);
         
         end
         
