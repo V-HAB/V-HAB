@@ -87,7 +87,7 @@ classdef setup < simulation.infrastructure
 %             this.toMonitors.oConsoleOutput.setLogOn();
 %             this.toMonitors.oConsoleOutput.setLevel(5);
             
-            oLog.add('Example', 'flow_props');
+            %oLog.add('Example', 'flow_props');
             
             % Aside from using the shortcut helpers like flow_props you can
             % also specfy the exact value you want to log. For this you
@@ -127,7 +127,8 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 1');
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
             
-            
+            oLog.addValue('Example.toBranches.Branch', 'fFlowRate', 'kg/s', 'Branch Flow Rate');
+            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'fPressure', 'Pa', 'Tank 1 Pressure');
             
             iIndex_1 = oLog.addVirtualValue('fr_co2 * 1000', 'g/s', 'CO_2 Flowrate', 'co2_fr_grams');
             iIndex_2 = oLog.addVirtualValue('flow_temp_left - 273.15', '°C', 'Temperature Left in Celsius');
@@ -184,24 +185,27 @@ classdef setup < simulation.infrastructure
             % The bLegend field determines if the legend of the axes is
             % visible or not. The default is visible. 
             
-            tPlotOptions = struct('csUnitOverride', {{ {'g/s','°C'},{'-'} }});
-            coPlots{1,1} = oPlot.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
-            
-            tPlotOptions.tLineOptions = struct('csColor', {'g','y'});
-            coPlots{1,2} = oPlot.definePlot(csPlotValues2, 'CO_2 Partial Pressures', tPlotOptions);
-            
-            tPlotOptions = struct('sTimeUnit','hours');
-            coPlots{2,1} = oPlot.definePlot(csPlotValues3, 'Temperatures', tPlotOptions);
-            
+%             tPlotOptions = struct('csUnitOverride', {{ {'g/s','°C'},{'-'} }});
+%             coPlots{1,1} = oPlot.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
+%             
+%             tPlotOptions.tLineOptions = struct('csColor', {'g','y'});
+%             coPlots{1,2} = oPlot.definePlot(csPlotValues2, 'CO_2 Partial Pressures', tPlotOptions);
+%             
+%             tPlotOptions = struct('sTimeUnit','hours');
+%             coPlots{2,1} = oPlot.definePlot(csPlotValues3, 'Temperatures', tPlotOptions);
+%             
             
             % tFigureOptions includes turing on or off the plottools (off
             % by default), including or excluding the time plot (off by
             % default). Otherwise it can contain any fields that correspond
             % to the properties of the MATLAB figure object. 
             
-            tFigureOptions = struct('bTimePlot', true, 'bPlotTools', false);
-            oPlot.defineFigure(coPlots, 'Test Figure Title', tFigureOptions);
+%             tFigureOptions = struct('bTimePlot', true, 'bPlotTools', false);
+%             oPlot.defineFigure(coPlots, 'Test Figure Title', tFigureOptions);
 
+            tPlotOptions = struct('sAlternativeXAxisValue', '"Branch Flow Rate"', 'sXLabel', 'Main Branch Flow Rate in [kg/s]');
+            coPlots{1,1} = oPlot.definePlot({'"Tank 1 Pressure"'}, 'Pressure vs. Flow Rate', tPlotOptions);
+            oPlot.defineFigure(coPlots, 'Pressure vs. Flow Rate');
             
 %             % you can define plots by using the units as filters
 %             oPlot.definePlot('Pa', 'Tank Pressures');
