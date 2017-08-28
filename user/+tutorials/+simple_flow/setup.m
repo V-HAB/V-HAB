@@ -185,26 +185,27 @@ classdef setup < simulation.infrastructure
             % The bLegend field determines if the legend of the axes is
             % visible or not. The default is visible. 
             
-%             tPlotOptions = struct('csUnitOverride', {{ {'g/s','°C'},{'-'} }});
-%             coPlots{1,1} = oPlot.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
-%             
-%             tPlotOptions.tLineOptions = struct('csColor', {'g','y'});
-%             coPlots{1,2} = oPlot.definePlot(csPlotValues2, 'CO_2 Partial Pressures', tPlotOptions);
-%             
-%             tPlotOptions = struct('sTimeUnit','hours');
-%             coPlots{2,1} = oPlot.definePlot(csPlotValues3, 'Temperatures', tPlotOptions);
-%             
+            %tPlotOptions = struct('csUnitOverride', {{ 'all left' }});
+            tPlotOptions = struct('csUnitOverride', {{ {'°C'}, {'g/s'} }});
+            coPlots{1,1} = oPlot.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
+            
+            tPlotOptions.tLineOptions = struct('csColor', {'g','y'});
+            coPlots{1,2} = oPlot.definePlot(csPlotValues2, 'CO_2 Partial Pressures', tPlotOptions);
+            
+            tPlotOptions = struct('sTimeUnit','hours');
+            coPlots{2,1} = oPlot.definePlot(csPlotValues3, 'Temperatures', tPlotOptions);
+            
             
             % tFigureOptions includes turing on or off the plottools (off
             % by default), including or excluding the time plot (off by
             % default). Otherwise it can contain any fields that correspond
             % to the properties of the MATLAB figure object. 
             
-%             tFigureOptions = struct('bTimePlot', true, 'bPlotTools', false);
-%             oPlot.defineFigure(coPlots, 'Test Figure Title', tFigureOptions);
-
-            tPlotOptions = struct('sAlternativeXAxisValue', '"Branch Flow Rate"', 'sXLabel', 'Main Branch Flow Rate in [kg/s]');
-            coPlots{1,1} = oPlot.definePlot({'"Tank 1 Pressure"'}, 'Pressure vs. Flow Rate', tPlotOptions);
+            tFigureOptions = struct('bTimePlot', true, 'bPlotTools', false);
+            oPlot.defineFigure(coPlots, 'Test Figure Title', tFigureOptions);
+            
+            tPlotOptions = struct('sAlternativeXAxisValue', '"Branch Flow Rate"', 'sXLabel', 'Main Branch Flow Rate in [kg/s]', 'fTimeInterval',10);
+            coPlots = {oPlot.definePlot({'"Tank 1 Pressure"'}, 'Pressure vs. Flow Rate', tPlotOptions)};
             oPlot.defineFigure(coPlots, 'Pressure vs. Flow Rate');
             
 %             % you can define plots by using the units as filters
