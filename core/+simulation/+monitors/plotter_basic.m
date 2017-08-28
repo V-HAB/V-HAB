@@ -29,13 +29,17 @@ classdef plotter_basic < simulation.monitor
             % necessary to generate a single plot, which corresponds to an
             % axes object in MATLAB. 
             
+            if ischar(cxPlotValues)
+                this.throw('definePlot', 'Error in the definition of plot ''%s''. You have entered the plot value (%s) as a character array. It must be a cell. Enclose your string with curly brackets (''{...}'').', sTitle, cxPlotValues);
+            end
+            
+            if nargin < 4
+                tPlotOptions = struct();
+            end
+            
             % For easier reading we get a reference to the logger object of
             % this plotter. 
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
-            
-            if ischar(cxPlotValues)
-                this.throw('definePlot', 'You have entered the plot value (%s) as a character array. It must be a cell. Enclose your string with curly brackets.', cxPlotValues);
-            end
             
             % Get indexes of each item in cxPlotValues 
             aiIndexes = oLogger.find(cxPlotValues);
@@ -57,7 +61,7 @@ classdef plotter_basic < simulation.monitor
             % If it turns out the number of units is larger than two and
             % the csUnitOverride field is not defined, we throw an error,
             % otherwise we just save the number of units for later. 
-            if iNumberOfUnits > 2 && nargin == 4 && ~(isfield(tPlotOptions, 'csUnitOverride')) && ~(isfield(tPlotOptions, 'sAlternativeXAxisValue'))
+            if iNumberOfUnits > 2 && ~(isfield(tPlotOptions, 'csUnitOverride')) && ~(isfield(tPlotOptions, 'sAlternativeXAxisValue'))
                 this.throw('definePlot',['The plot you have defined (%s) contains more than two units. \n',...
                                          'You can either reduce the number of units to two, or include \n',...
                                          'a field ''csUnitOverride'' in the tPlotOptions struct that \n',...
@@ -134,6 +138,12 @@ classdef plotter_basic < simulation.monitor
                     this.throw('plot', 'In the definition of plot ''%s'' you have set both the iTickInterval and fTimeInterval parameters. You can only set one of them.', sTitle);
             end
             
+            %TEMPORARY Until the functionality is implemented in the plot()
+            % method we need to throw this error. 
+            if isfield(tPlotOptions, 'iAlternativeXAxisIndex') && iNumberOfUnits > 2
+                this.throw('definePlot', 'Error in the definition of plot ''%s''. It is currently not supported to plot two values with different units against a third value other than time.', sTitle);
+            end
+            
             % Now we just return the plot object, containing all of the
             % necessary information.
             oPlot = simulation.monitors.plot(sTitle, aiIndexes, tPlotOptions);
@@ -151,6 +161,8 @@ classdef plotter_basic < simulation.monitor
                 this.throw('defineFigure', 'The figure name you have selected (%s) is the name of an existing figure. Please use a different name.', sName);
             end
             
+            if nargin < 4 || isempty(tFigureOptions)
+                tFigureOptions = struct();
             end
             
             % We now have all we need, so we can add another entry to the
