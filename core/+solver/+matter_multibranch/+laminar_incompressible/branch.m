@@ -945,7 +945,7 @@ classdef branch < base & event.source
             for iR = 1:length(this.csObjUuidsToColIndex)
                 oObj = this.poColIndexToObj(iR);
                 
-                if isa(oObj, 'matter.phases.gas_flow_now')
+                if isa(oObj, 'matter.phases.gas_flow_node')
                     oObj.setPressure(afResults(iR));
                     
                     
