@@ -68,8 +68,70 @@ classdef plotter_basic < simulation.monitor
                 tPlotOptions.csUniqueUnits  = csUniqueUnits;
             end
             
-            if nargin == 4 && isfield(tPlotOptions, 'sAlternativeXAxisValue')
+            if isfield(tPlotOptions, 'csUnitOverride') 
+                if length(tPlotOptions.csUnitOverride) > 2
+                    this.throw('definePlot','Error in the definition of plot ''%s''. Your csUnitOverride cell contains too many values. It should only contain two cells with the units for the left and right y axes.', sTitle);
+                end
+                
+                if length(tPlotOptions.csUnitOverride) == 1 
+                    if ischar(tPlotOptions.csUnitOverride)
+                        this.throw('definePlot', 'Error in the definition of plot ''%s''. You have entered the value of csUnitOverride (%s) as a character array. It must be a cell. Enclose your string with two curly brackets (''{{...}}'').', sTitle, tPlotOptions.csUnitOverride);
+                    end
+                    
+                    if ~any(strcmp({'all left'}, tPlotOptions.csUnitOverride))
+                        this.throw('definePlot','Error in the definition of plot ''%s''. Your csUnitOverride cell contains an illegal value (%s). It can only be ''all left'' or ''all right''.', sTitle, tPlotOptions.csUnitOverride);
+                    end
+                end
+                
+                if isempty(tPlotOptions.csUnitOverride{1})
+                    this.throw('definePlot', 'Error in the definition of plot ''%s''. You must have at least one unit on the left side defined in the csUnitOverride cell.', sTitle);
+                end
+            end
+            
+            if isfield(tPlotOptions, 'sAlternativeXAxisValue')
                 tPlotOptions.iAlternativeXAxisIndex = oLogger.find({tPlotOptions.sAlternativeXAxisValue});
+            end
+            
+            % By default, the data from all simulation ticks is displayed
+            % in each figure. The user can select a different interval of
+            % ticks or a time interval at which the data will be displayed
+            % by setting either the iTickInterval or fTimeInterval field in
+            % the tPlotOptions struct. The information given there is
+            % parsed in the following.
+            
+            % First we get the entries in the tPlotOptions struct, if they
+            % exist.
+            bTick = isfield(tPlotOptions, 'iTickInterval');
+            bTime = isfield(tPlotOptions, 'fTimeInterval');
+            
+            % Now we decide what to do.
+            switch (bTick + bTime)
+                case 0
+                    % Both fields are not set, so we go to the default: all
+                    % ticks are shown.
+                    tPlotOptions.sIntervalMode = 'Tick';
+                    tPlotOptions.fInterval = 1;
+                case 1
+                    % Depending if the tick or time field was set, we set
+                    % the sIntervalMode and fInterval parameters. When
+                    % we're done we remove the initial interval fields to
+                    % avoid confusion.
+                    if bTick
+                        tPlotOptions.sIntervalMode = 'Tick';
+                        tPlotOptions.fInterval = tPlotOptions.iTickInterval;
+                        tPlotOptions = rmfield(tPlotOptions, 'iTickInterval');
+                    end
+                    
+                    if bTime
+                        tPlotOptions.sIntervalMode = 'Time';
+                        tPlotOptions.fInterval = tPlotOptions.fTimeInterval;
+                        tPlotOptions = rmfield(tPlotOptions, 'fTimeInterval');
+                    end
+                    
+                case 2
+                    % The user has set both fields, so we let him or her
+                    % know that that is illegal.
+                    this.throw('plot', 'In the definition of plot ''%s'' you have set both the iTickInterval and fTimeInterval parameters. You can only set one of them.', sTitle);
             end
             
             % Now we just return the plot object, containing all of the
@@ -229,11 +291,15 @@ classdef plotter_basic < simulation.monitor
                 % Loop through the individual subplots, exluding the time
                 % plot, if it is in the same figure
                 for iPlot = 1:(iNumberOfPlots - sif(bTimePlot && ~bTimePlotExtraFigure, 1, 0))
-                    % Creating the subplot
-                    hHandle = subplot(iRows, iColumns, iPlot);
+                    % Creating the empty subplot
+                    oPlot = subplot(iRows, iColumns, iPlot);
+                    
+                    % For better code readability, we create a local
+                    % variable for the plot options struct.
+                    tPlotOptions = this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions;
                     
                     % See if we need two y axes
-                    if this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.iNumberOfUnits > 1
+                    if tPlotOptions.iNumberOfUnits > 1
                         bTwoYAxes = true;
                     else
                         bTwoYAxes = false;
@@ -241,24 +307,16 @@ classdef plotter_basic < simulation.monitor
                     
                     % See if this is a plot with an alternate x axis
                     % instead of time
-                    if isfield(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions, 'iAlternativeXAxisIndex')
+                    if isfield(tPlotOptions, 'iAlternativeXAxisIndex')
                         bAlternativeXAxis = true;
                     else
                         bAlternativeXAxis = false;
                     end
                     
-                    % See if the user wants to use a tick interval other
-                    % than 1.
-                    if isfield(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions, 'iTickInterval')
-                        iTickInterval = this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.iTickInterval;
-                    else
-                        iTickInterval = 1;
-                    end
-                    
                     % Create plots with only left y axes
                     if bTwoYAxes == false && bAlternativeXAxis == false
                         % Getting the result data from the logger object
-                        [ mfData, afTime, tLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes, iTickInterval);
+                        [ mfData, afTime, tLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
                         
                         % Getting the Y label from the logger object
                         sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
@@ -266,41 +324,32 @@ classdef plotter_basic < simulation.monitor
                         % If the user selected to change the unit of time
                         % by which this plot is created, we have to adjust
                         % the afTime array. 
-                        [ afTime, sTimeUnit ] = this.adjustTime(afTime, this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions);
+                        [ afTime, sTimeUnit ] = this.adjustTime(afTime, tPlotOptions);
                         
                         % Now we can actually create the plot with all of the
                         % information we have gathered so far.
-                        this.generatePlot(hHandle, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
+                        this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
                         
                         % Setting the title of the plot
-                        title(hHandle, this.coFigures{iFigure}.coPlots{iPlot}.sTitle);
+                        title(oPlot, this.coFigures{iFigure}.coPlots{iPlot}.sTitle);
+                        
                     elseif bTwoYAxes == true && bAlternativeXAxis == false
                         % Create plots with left and right y axes
                         
                         % See if there is a field 'csUnitOverride', if yes,
                         % this means there are at least three units
                         % present. 
-                        if isfield(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions, 'csUnitOverride')
-                            csUnitOverride = this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.csUnitOverride;
-                            if length(csUnitOverride) > 1
+                        if isfield(tPlotOptions, 'csUnitOverride')
+                            csUnitOverride = tPlotOptions.csUnitOverride;
+                            if length(csUnitOverride) == 2
                                 csLeftUnits  = csUnitOverride{1};
                                 csRightUnits = csUnitOverride{2};
-                                if length(csUnitOverride) > 2
-                                    this.throw('plot','Your csUnitOverride cell contains too many values. It should only contain two cells with the units for the left and right y axes.');
-                                end
-                            else
-                                switch csUnitOverride
+                            elseif length(csUnitOverride) == 1
+                                switch csUnitOverride{1}
                                     case 'all left'
-                                        csLeftUnits  = this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.csUniqueUnits;
+                                        csLeftUnits  = tPlotOptions.csUniqueUnits;
                                         csRightUnits = {};
-                                        
-                                    case 'all right'
-                                        csLeftUnits  = {};
-                                        csRightUnits = this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.csUniqueUnits;
-                                        
-                                    case 'even split'
-                                        this.throw('plot','The ''even split'' option for the csUnitOverride setting has not yet been implemented.');
-                                        
+                                    
                                     otherwise
                                         this.throw('plot','The value you have entered for csUnitOverride is illegal. Please check plotter_basic.m for all options for this setting.');
                                 end
@@ -311,8 +360,8 @@ classdef plotter_basic < simulation.monitor
                             % two units. We saved those in the
                             % csUniqueUnits cell, so we can just use them
                             % from there. 
-                            csLeftUnits  = this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.csUniqueUnits{1};
-                            csRightUnits = this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.csUniqueUnits{2};
+                            csLeftUnits  = tPlotOptions.csUniqueUnits{1};
+                            csRightUnits = tPlotOptions.csUniqueUnits{2};
                         end
                         
                         aiIndexes = this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes;
@@ -329,26 +378,26 @@ classdef plotter_basic < simulation.monitor
                         aiRightIndexes = aiIndexes(abRightIndexes);
                         
                         % Getting the result data from the logger object
-                        [ mfData, afTime, tLogProps ] = oLogger.get(aiLeftIndexes, iTickInterval);
+                        [ mfData, afTime, tLogProps ] = oLogger.get(aiLeftIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
                         
                         % If the user selected to change the unit of time
                         % by which this plot is created, we have to adjust
                         % the afTime array. 
-                        [ afTime, sTimeUnit ] = this.adjustTime(afTime, this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions);
+                        [ afTime, sTimeUnit ] = this.adjustTime(afTime, tPlotOptions);
                         
                         % Getting the Y label from the logger object
                         sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
                         
                         % Actually creating the plot with all of the
                         % information we have gathered so far.
-                        this.generatePlot(hHandle, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
+                        this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
                         
                         % Setting the title of the plot
-                        title(hHandle, this.coFigures{iFigure}.coPlots{iPlot}.sTitle);
+                        title(oPlot, this.coFigures{iFigure}.coPlots{iPlot}.sTitle);
                         
                         if any(abRightIndexes)
                             % Getting the result data from the logger object
-                            [ mfData, afTime, tLogProps ] = oLogger.get(aiRightIndexes, iTickInterval);
+                            [ mfData, afTime, tLogProps ] = oLogger.get(aiRightIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
                             
                             % Getting the Y label from the logger object
                             sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
@@ -360,23 +409,23 @@ classdef plotter_basic < simulation.monitor
                         
                     elseif bAlternativeXAxis == true
                         % Getting the y axis data
-                        [ mfYData, ~, tYLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes, iTickInterval);
+                        [ mfYData, ~, tYLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
                         
                         % Getting the Y label from the logger object
                         sLabelY = this.getLabel(oLogger.poUnitsToLabels, tYLogProps);
                         
                         % Getting the x axis data
-                        [ afXData, ~, tXLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.iAlternativeXAxisIndex, iTickInterval);
+                        [ afXData, ~, tXLogProps ] = oLogger.get(tPlotOptions.iAlternativeXAxisIndex, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
                         
                         % Getting the X label from the logger object
                         sLabelX = this.getLabel(oLogger.poUnitsToLabels, tXLogProps);
                         
                         % Now we can actually create the plot with all of the
                         % information we have gathered so far.
-                        this.generatePlotWithAlternativeXAxis(hHandle, afXData, mfYData, tYLogProps, sLabelY, sLabelX);
+                        this.generatePlotWithAlternativeXAxis(oPlot, afXData, mfYData, tYLogProps, sLabelY, sLabelX);
                         
                         % Setting the title of the plot
-                        title(hHandle, this.coFigures{iFigure}.coPlots{iPlot}.sTitle);
+                        title(oPlot, this.coFigures{iFigure}.coPlots{iPlot}.sTitle);
                     end
                     
                     % Setting the callback to undock this subplot to the
@@ -384,38 +433,38 @@ classdef plotter_basic < simulation.monitor
                     % one plot in this figure. If there is only one plot,
                     % we have already created a save button.
                     if iNumberOfPlots > 1
-                        coButtons{iPlot}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, hHandle, legend};
+                        coButtons{iPlot}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, oPlot, legend};
                     end
                     
                     % Setting the entry in the handles cell. 
-                    coAxesHandles{iPlot} = hHandle;
+                    coAxesHandles{iPlot} = oPlot;
                     
                     %% Process the individual plot options
                     
                     % Process the line options struct, if there is one. 
                     if isfield(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions, 'tLineOptions')
-                        for iI = 1:length(hHandle.Children)
-                            this.parseObjectOptions(hHandle.Children(iI), this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.tLineOptions(iI));
+                        for iI = 1:length(oPlot.Children)
+                            this.parseObjectOptions(oPlot.Children(iI), tPlotOptions.tLineOptions(iI));
                         end
                     end
                     
                     % Process all of our custom plot options.
                     % bLegend
-                    if isfield(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions, 'bLegend') && this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.bLegend == false
-                        hHandle.Legend.Visible = 'off';
+                    if isfield(tPlotOptions, 'bLegend') && tPlotOptions.bLegend == false
+                        oPlot.Legend.Visible = 'off';
                     end
                     
                     % tRightYAxesOptions
-                    if isfield(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions, 'tRightYAxesOptions')
+                    if isfield(tPlotOptions, 'tRightYAxesOptions')
                         yyaxis('right');
                         oAxes = gca;
-                        this.parseObjectOptions(oAxes, this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.tRightYAxesOptions);
+                        this.parseObjectOptions(oAxes, tPlotOptions.tRightYAxesOptions);
                         yyaxis('left');
                     end
                     
                     % Process all of the items in tPlotOptions that
                     % actually correspond to properties of the axes object.
-                    this.parseObjectOptions(hHandle, this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions);
+                    this.parseObjectOptions(oPlot, tPlotOptions);
                 end
                 
                 %% Process the individual figure options
@@ -426,7 +475,7 @@ classdef plotter_basic < simulation.monitor
                 % an extra figure, give it the name of the current figure
                 % plus some post-fix. 
                 if bTimePlot
-                    if iTickInterval > 1
+                    if strcmp(tPlotOptions.sIntervalMode, 'Tick') && tPlotOptions.fInterval > 1
                         aiTicks = 1:iTickInterval:length(oLogger.afTime);
                         afTime = oLogger.afTime(aiTicks);
                     else
@@ -445,24 +494,24 @@ classdef plotter_basic < simulation.monitor
                         set(groot, 'CurrentFigure', oFigure);
                     else
                         % Creating the subplot
-                        hHandle = subplot(iRows, iColumns, iPlot+1);
+                        oPlot = subplot(iRows, iColumns, iPlot+1);
                         
                         % Filling the subplot with the graph and modifying its
                         % properties.
-                        hold(hHandle, 'on');
-                        grid(hHandle, 'minor');
+                        hold(oPlot, 'on');
+                        grid(oPlot, 'minor');
                         plot(aiTicks, afTime);
                         xlabel('Ticks');
                         ylabel('Time in s');
-                        title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
+                        title(oPlot, 'Evolution of Simulation Time vs. Simulation Ticks');
                         legend('hide')
                         
                         % Setting the callback to undock this subplot to the
                         % appropriate button.
-                        coButtons{iPlot+1}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, hHandle, legend};
+                        coButtons{iPlot+1}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, oPlot, legend};
                         
                         % Setting the entry in the handles cell.
-                        coAxesHandles{end + 1} = hHandle; %#ok<AGROW>
+                        coAxesHandles{end + 1} = oPlot; %#ok<AGROW>
                         
                     end
                     
@@ -583,10 +632,10 @@ classdef plotter_basic < simulation.monitor
         end
         
         
-        function generatePlot(hHandle, afTime, mfData, tLogProps, sLabelY, sTimeUnit)
+        function generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit)
+            hold(oPlot, 'on');
             
-            hold(hHandle, 'on');
-            grid(hHandle, 'minor');
+            grid(oPlot, 'minor');
             
             csLegend = cell(length(tLogProps),1);
             
@@ -627,11 +676,11 @@ classdef plotter_basic < simulation.monitor
         
         end
         
-        function generatePlotWithAlternativeXAxis(hHandle, afXData, mfYData, tLogProps, sLabelY, sLabelX)
+        function generatePlotWithAlternativeXAxis(oPlot, afXData, mfYData, tLogProps, sLabelY, sLabelX)
             
-            hold(hHandle, 'on');
-            grid(hHandle, 'minor');
+            hold(oPlot, 'on');
             
+            grid(oPlot, 'minor');
             csLegend = cell(length(tLogProps),1);
             
             for iP = 1:length(tLogProps)

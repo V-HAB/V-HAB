@@ -444,7 +444,7 @@ classdef logger_basic < simulation.monitor
         
         
         
-        function [ aafData, afTime, atConfiguration ] = get(this, aiIndexes, iTickInterval)
+        function [ aafData, afTime, atConfiguration ] = get(this, aiIndexes, sIntervalMode, fIntervalValue)
             % This method gets the actual logged data from the mfLog
             % property in addition to the configuration data struct and
             % returns both in arrays. The aiIndex input parameters is an
@@ -518,9 +518,30 @@ classdef logger_basic < simulation.monitor
                 end
             end
             
-            if nargin > 2 && iTickInterval > 1
+            if nargin > 2
                 abDeleteData = true(1,iTick);
-                abDeleteData(1:iTickInterval:iTick) = false;
+                switch sIntervalMode
+                    case 'Tick'
+                        if fIntervalValue > 1
+                            abDeleteData(1:fIntervalValue:iTick) = false;
+                        else
+                            abDeleteData = false(1,iTick);
+                        end
+                    case 'Time'
+                        fTime = 0;
+                        
+                        for iI = 1:iTick
+                            if this.afTime(iI) >= fTime
+                                abDeleteData(iI) = false;
+                                
+                                fTime = fTime + fIntervalValue;
+                            end
+                        end
+                        
+                    otherwise
+                        this.throw('get','The plotting interval mode you have provided (%s) is unknown. Can either be ''Tick'' or ''Time''.', sIntervalMode);
+                end
+                
                 aafData(abDeleteData,:) = [];
                 afTime = this.afTime(~abDeleteData);
             else
