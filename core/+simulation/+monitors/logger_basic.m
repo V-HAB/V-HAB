@@ -444,7 +444,7 @@ classdef logger_basic < simulation.monitor
         
         
         
-        function [ aafData, atConfiguration ] = get(this, aiIndexes)
+        function [ aafData, afTime, atConfiguration ] = get(this, aiIndexes, iTickInterval)
             % This method gets the actual logged data from the mfLog
             % property in addition to the configuration data struct and
             % returns both in arrays. The aiIndex input parameters is an
@@ -516,6 +516,15 @@ classdef logger_basic < simulation.monitor
                 else
                     atConfiguration(iI) = tConfiguration;
                 end
+            end
+            
+            if nargin > 2 && iTickInterval > 1
+                abDeleteData = true(1,iTick);
+                abDeleteData(1:iTickInterval:iTick) = false;
+                aafData(abDeleteData,:) = [];
+                afTime = this.afTime(~abDeleteData);
+            else
+                afTime = this.afTime;
             end
         end
         

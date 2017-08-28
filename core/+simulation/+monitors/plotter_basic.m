@@ -255,10 +255,18 @@ classdef plotter_basic < simulation.monitor
                         bAlternativeXAxis = false;
                     end
                     
+                    % See if the user wants to use a tick interval other
+                    % than 1.
+                    if isfield(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions, 'iTickInterval')
+                        iTickInterval = this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.iTickInterval;
+                    else
+                        iTickInterval = 1;
+                    end
+                    
                     % Create plots with only left y axes
                     if bTwoYAxes == false && bAlternativeXAxis == false
                         % Getting the result data from the logger object
-                        [ mfData, tLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes);
+                        [ mfData, afTime, tLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes, iTickInterval);
                         
                         % Getting the Y label from the logger object
                         sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
@@ -266,7 +274,7 @@ classdef plotter_basic < simulation.monitor
                         % If the user selected to change the unit of time
                         % by which this plot is created, we have to adjust
                         % the afTime array. 
-                        [ afTime, sTimeUnit ] = this.adjustTime(oLogger.afTime, this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions);
+                        [ afTime, sTimeUnit ] = this.adjustTime(afTime, this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions);
                         
                         % Now we can actually create the plot with all of the
                         % information we have gathered so far.
@@ -316,7 +324,7 @@ classdef plotter_basic < simulation.monitor
                         end
                         
                         aiIndexes = this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes;
-                        [ ~, tLogProps ] = oLogger.get(aiIndexes);
+                        [ ~, ~, tLogProps ] = oLogger.get(aiIndexes);
                         iNumberOfLogItems = length(tLogProps);
                         abLeftIndexes  = false(iNumberOfLogItems, 1);
                         abRightIndexes = false(iNumberOfLogItems, 1);
@@ -329,12 +337,12 @@ classdef plotter_basic < simulation.monitor
                         aiRightIndexes = aiIndexes(abRightIndexes);
                         
                         % Getting the result data from the logger object
-                        [ mfData, tLogProps ] = oLogger.get(aiLeftIndexes);
+                        [ mfData, afTime, tLogProps ] = oLogger.get(aiLeftIndexes, iTickInterval);
                         
                         % If the user selected to change the unit of time
                         % by which this plot is created, we have to adjust
                         % the afTime array. 
-                        [ afTime, sTimeUnit ] = this.adjustTime(oLogger.afTime, this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions);
+                        [ afTime, sTimeUnit ] = this.adjustTime(afTime, this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions);
                         
                         % Getting the Y label from the logger object
                         sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
@@ -348,7 +356,7 @@ classdef plotter_basic < simulation.monitor
                         
                         if any(abRightIndexes)
                             % Getting the result data from the logger object
-                            [ mfData, tLogProps ] = oLogger.get(aiRightIndexes);
+                            [ mfData, afTime, tLogProps ] = oLogger.get(aiRightIndexes, iTickInterval);
                             
                             % Getting the Y label from the logger object
                             sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
@@ -360,13 +368,13 @@ classdef plotter_basic < simulation.monitor
                         
                     elseif bAlternativeXAxis == true
                         % Getting the y axis data
-                        [ mfYData, tYLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes);
+                        [ mfYData, ~, tYLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes, iTickInterval);
                         
                         % Getting the Y label from the logger object
                         sLabelY = this.getLabel(oLogger.poUnitsToLabels, tYLogProps);
                         
                         % Getting the x axis data
-                        [ afXData, tXLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.iAlternativeXAxisIndex);
+                        [ afXData, ~, tXLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions.iAlternativeXAxisIndex, iTickInterval);
                         
                         % Getting the X label from the logger object
                         sLabelX = this.getLabel(oLogger.poUnitsToLabels, tXLogProps);
@@ -426,9 +434,17 @@ classdef plotter_basic < simulation.monitor
                 % an extra figure, give it the name of the current figure
                 % plus some post-fix. 
                 if bTimePlot
+                    if iTickInterval > 1
+                        aiTicks = 1:iTickInterval:length(oLogger.afTime);
+                        afTime = oLogger.afTime(aiTicks);
+                    else
+                        aiTicks = 1:1:length(oLogger.afTime);
+                        afTime = oLogger.afTime;
+                    end
+                    
                     if bTimePlotExtraFigure
                         oTimePlotFigure = figure();
-                        plot(1:length(oLogger.afTime), oLogger.afTime);
+                        plot(aiTicks, afTime);
                         grid(gca, 'minor');
                         xlabel('Ticks');
                         ylabel('Time in s');
@@ -443,7 +459,7 @@ classdef plotter_basic < simulation.monitor
                         % properties.
                         hold(hHandle, 'on');
                         grid(hHandle, 'minor');
-                        plot(1:length(oLogger.afTime), oLogger.afTime);
+                        plot(aiTicks, afTime);
                         xlabel('Ticks');
                         ylabel('Time in s');
                         title(hHandle, 'Evolution of Simulation Time vs. Simulation Ticks');
