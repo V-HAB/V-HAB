@@ -3,7 +3,7 @@ classdef figure < handle
     %   Detailed explanation goes here
     
      properties (SetAccess = protected, GetAccess = public)
-        sTitle;
+        sName;
         coPlots;
         
     end
@@ -13,8 +13,8 @@ classdef figure < handle
     end
     
     methods
-        function this = figure(sTitle, coPlots, tFigureOptions)
-            this.sTitle = sTitle;
+        function this = figure(sName, coPlots, tFigureOptions)
+            this.sName = sName;
             this.coPlots = coPlots;
             if nargin > 2
                 this.tFigureOptions = tFigureOptions;

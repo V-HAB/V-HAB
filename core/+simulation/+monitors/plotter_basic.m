@@ -77,38 +77,30 @@ classdef plotter_basic < simulation.monitor
             oPlot = simulation.monitors.plot(sTitle, aiIndexes, tPlotOptions);
         end
         
-        function defineFigure(this, coPlots, sTitle, tFigureOptions)
+        function defineFigure(this, coPlots, sName, tFigureOptions)
             % This method creates an entry in the coFigures cell property
             % containing an object with all information necessary to create
             % a complete MATLAB figure. 
             
-            % For better identification of the individual figures within
-            % the struct, we want to set a title. This title can either be
-            % set using the second input parameter, or as a field within
-            % the tFigureOptions struct. 
-            if nargin > 3
-                if isfield(tFigureOptions, 'sTitle') || isempty(sTitle)
-                    sTitle = tFigureOptions.sTitle;
-                end
-            else
-                tFigureOptions = struct();
-            end
-            
+            % Figures are identified by their name. So first we need to
+            % check if there isn't another figure with the same name. 
             csExistingFigureNames = this.getFigureNames();
-            if any(strcmp(csExistingFigureNames, sTitle))
-                this.throw('defineFigure', 'The figure title you have selected (%s) is the title of an existing figure. Please use a different name.', sTitle);
+            if any(strcmp(csExistingFigureNames, sName))
+                this.throw('defineFigure', 'The figure name you have selected (%s) is the name of an existing figure. Please use a different name.', sName);
             end
             
-            % We already have all we need, so we can add another entry to
-            % the coFigures cell. 
-            this.coFigures{end+1} = simulation.monitors.figure(sTitle, coPlots, tFigureOptions);
+            end
+            
+            % We now have all we need, so we can add another entry to the
+            % coFigures cell.
+            this.coFigures{end+1} = simulation.monitors.figure(sName, coPlots, tFigureOptions);
            
         end
         
-        function removeFigure(this, sTitle)
+        function removeFigure(this, sName)
             csFigureNames = this.getFigureNames();
             
-            abFoundFigures = strcmp(csFigureNames, sTitle);
+            abFoundFigures = strcmp(csFigureNames, sName);
             if any(abFoundFigures)
                 this.coFigures(abFoundFigures) = [];
             end
@@ -120,7 +112,7 @@ classdef plotter_basic < simulation.monitor
             iNumberOfFigures = length(this.coFigures);
             csFigureNames = cell(iNumberOfFigures, 1);
             for iI = 1:iNumberOfFigures
-                csFigureNames{iI} = this.coFigures{iI}.sTitle;
+                csFigureNames{iI} = this.coFigures{iI}.sName;
             end
         end
         
@@ -428,7 +420,7 @@ classdef plotter_basic < simulation.monitor
                 
                 %% Process the individual figure options
                 
-                set(oFigure, 'name', this.coFigures{iFigure}.sTitle);
+                set(oFigure, 'name', this.coFigures{iFigure}.sName);
                 
                 % If time plot is on, create it here. If the time plot gets
                 % an extra figure, give it the name of the current figure
@@ -567,8 +559,8 @@ classdef plotter_basic < simulation.monitor
             end
             
             tFigureOptions = struct('bTimePlot', true);
-            sTitle = [ this.oSimulationInfrastructure.sName ' - (' this.oSimulationInfrastructure.sCreated ')' ];
-            this.coFigures{end+1} = simulation.monitors.figure(sTitle, coPlots, tFigureOptions);
+            sName = [ this.oSimulationInfrastructure.sName ' - (' this.oSimulationInfrastructure.sCreated ')' ];
+            this.coFigures{end+1} = simulation.monitors.figure(sName, coPlots, tFigureOptions);
         end
         
         
