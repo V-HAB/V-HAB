@@ -630,17 +630,18 @@ classdef plotter_basic < simulation.monitor
     
     methods (Static)
         function sLabel = getLabel(poUnitsToLabels, tLogProps)
-            pbLabels = containers.Map();
+            
+            csLabels = cell(length(tLogProps), 1);
             
             for iP = 1:length(tLogProps)
                 if poUnitsToLabels.isKey(tLogProps(iP).sUnit) && ~isempty(poUnitsToLabels(tLogProps(iP).sUnit))
-                    pbLabels([ poUnitsToLabels(tLogProps(iP).sUnit) ' [' tLogProps(iP).sUnit ']' ]) = true;
+                    csLabels{iP} = [ poUnitsToLabels(tLogProps(iP).sUnit) ' [' tLogProps(iP).sUnit ']' ];
                 elseif ~strcmp(tLogProps(iP).sUnit,'-')
                     error('Unknown unit ''%s''. Please edit the poExpressionToUnit and poUnitsToLabels properties of logger_basic.m to include it.', tLogProps(iP).sUnit);
                 end
             end
             
-            sLabel = strjoin(pbLabels.keys(), ' / ');
+            sLabel = strjoin(unique(csLabels(~cellfun(@isempty, csLabels))), ' / ');
         end
         
         
