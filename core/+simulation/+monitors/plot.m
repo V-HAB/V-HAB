@@ -50,6 +50,20 @@ classdef plot < handle
         %
         % The bLegend field determines if the legend of the axes is visible
         % or not. The default is visible.
+        %
+        % A plot can only have two y axes, one on the left and one on the
+        % right. If the plot values defined by the aiIndexes property
+        % contain values in one or two units, then one is displayed on the
+        % left axis and the other on the right automatically by the
+        % plotter. If aiIndexes contains values in more than two units,
+        % it needs to be defined, which values and units are displayed on
+        % each axis. This can be done by including a field called
+        % csUnitOverride. It is a cell containing two further cells, which
+        % in turn include the unit strings for the left and right side
+        % (left side in the first cell, right side in the second).
+        % Alternatively it can contain only one cell in a cell containing
+        % the string 'all left'. This will force all units to be displayed
+        % on the left side. 
         tPlotOptions;
     end
     
