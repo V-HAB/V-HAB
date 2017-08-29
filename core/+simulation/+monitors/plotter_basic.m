@@ -333,8 +333,7 @@ classdef plotter_basic < simulation.monitor
                 % buttons. 
                 
                 % If there is only one plot in the figure, we just create a
-                % small save button in the bottom left corner, as is done
-                % in the undocked plots. 
+                % small save button in the bottom left corner.
                 if iNumberOfPlots == 1
                     oButton = uicontrol(oFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
                     oButton.Callback = @simulation.helper.plotter_basic.saveFigureAs;
@@ -347,6 +346,11 @@ classdef plotter_basic < simulation.monitor
                     fPanelYSize = 0.12;
                     fPanelXSize = 0.065;
                     oPanel = uipanel('Title','Undock Subplots','FontSize',10,'Position',[ 0 0 fPanelXSize fPanelYSize]);
+                    
+                    % Since the user may want to save the entire figure to
+                    % a file, we create a save button above the panel.
+                    oButton = uicontrol(oFigure,'String','Save Figure','FontSize',10,'Units','normalized','Position',[ 0 fPanelYSize fPanelXSize 0.03]);
+                    oButton.Callback = @simulation.helper.plotter_basic.saveFigureAs;
                     
                     % Doing some math so we get nicely proportioned
                     % buttons. The basic idea behind all of it is that the
