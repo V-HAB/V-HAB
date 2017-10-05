@@ -86,12 +86,17 @@ classdef matter_observer < simulation.monitor
             oSim = this.oSimulationInfrastructure.oSimulationContainer;
             
             % in order to display the correct mass balance it is necessary
-            % to account for the not yet calculated mass changes in the
-            % phases (that is not matter that is lost, the update simply
-            % has not been executed yet)
+            % to add the mass that has to be added/removed since the last
+            % massupdate of each phase. Otherwise it is possible that one
+            % phase has already used massupdate (and e.g. mass was removed)
+            % while the other phase into which the mass would be moved was
+            % not updated yet therefore resulting in a mass difference that
+            % is only temporary and not actually an error
+
             oMT    = oSim.oMT;
             
-            mfMassError = zeros(length(oMT.aoPhases),oMT.iSubstances);
+            mfMassError         = zeros(length(oMT.aoPhases), oMT.iSubstances);
+            
             for iPhase = 1:length(oMT.aoPhases)
                 fTimeSinceLastMassUpdate = oSim.oTimer.fTime - oMT.aoPhases(iPhase).fLastMassUpdate;
                 if fTimeSinceLastMassUpdate ~= 0
