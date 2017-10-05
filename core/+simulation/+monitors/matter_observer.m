@@ -85,12 +85,25 @@ classdef matter_observer < simulation.monitor
         function displayMatterBalance(this)
             oSim = this.oSimulationInfrastructure.oSimulationContainer;
             
+            % in order to display the correct mass balance it is necessary
+            % to account for the not yet calculated mass changes in the
+            % phases (that is not matter that is lost, the update simply
+            % has not been executed yet)
+            oMT    = oSim.oMT;
+            
+            mfMassError = zeros(length(oMT.aoPhases),oMT.iSubstances);
+            for iPhase = 1:length(oMT.aoPhases)
+                fTimeSinceLastMassUpdate = oSim.oTimer.fTime - oMT.aoPhases(iPhase).fLastMassUpdate;
+                if fTimeSinceLastMassUpdate ~= 0
+                    mfMassError(iPhase,:) = oMT.aoPhases(iPhase).afCurrentTotalInOuts * fTimeSinceLastMassUpdate;
+                end
+            end
             
             % DISP balance
             fprintf('+------------------- MATTER BALANCE -------------------+\n');
             
             disp([ '| Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
-            disp([ '| Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :))) 'kg' ]);
+            disp([ '| Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :) + sum(mfMassError,1))) 'kg' ]);
             %fBalance = sum(this.fBalance);
             
             %TODO accuracy from time step!
