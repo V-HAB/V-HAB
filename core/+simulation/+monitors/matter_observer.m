@@ -104,11 +104,13 @@ classdef matter_observer < simulation.monitor
                 end
             end
             
+            mfTotalFinalMass = this.mfTotalMass(end, :) + sum(mfMassError,1);
+            
             % DISP balance
             fprintf('+------------------- MATTER BALANCE -------------------+\n');
             
             disp([ '| Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
-            disp([ '| Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :) + sum(mfMassError,1))) 'kg' ]);
+            disp([ '| Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(mfTotalFinalMass)) 'kg' ]);
             %fBalance = sum(this.fBalance);
             
             %TODO accuracy from time step!
