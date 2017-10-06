@@ -93,7 +93,7 @@ classdef X50Membrane < matter.procs.p2ps.flow
             
             % Calculating the mean saturation pressure inside the hollow
             % fibers in [Pa]
-            fSaturationVaporPressure = this.oMT.calculateWaterSaturationVaporPressure(fMeanTemperature);
+            fSaturationVaporPressure = this.oMT.calculateVaporPressure(fMeanTemperature, 'H2O');
             
             % Calculating the mean molecular free path and the Knudsen
             % number in [m]
