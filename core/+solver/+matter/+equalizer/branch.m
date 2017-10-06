@@ -59,7 +59,7 @@ classdef branch < solver.matter.base.branch
             
             if (length(varargin) >= 3) && ~isempty(varargin{3}), fInitialFlowRate = varargin{3}; end;
             
-            this@solver.matter.base.branch(oBranch, fInitialFlowRate);
+            this@solver.matter.base.branch(oBranch, fInitialFlowRate, 'manual');
             
             % Two params given, both scalars --> fMaxFlowRate/fMaxPressDiff
             if (length(varargin) == 2) && isscalar(varargin{1}) && isscalar(varargin{2})
