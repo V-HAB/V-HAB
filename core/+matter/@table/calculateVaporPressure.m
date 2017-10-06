@@ -92,8 +92,8 @@ for iRange = 1:length(tfAntoineParameters.(sSubstance))
         fB = 0;
         fC = 0;
         
-    elseif (fTemperature < tfAntoineParameters.(sSubstance).Range(iRange).mfLimits(1)) &&...
-            (fTemperature > tfAntoineParameters.(sSubstance).Range(iRange).mfLimits(2))
+    elseif (fTemperature >= tfAntoineParameters.(sSubstance).Range(iRange).mfLimits(1)) &&...
+            (fTemperature <= tfAntoineParameters.(sSubstance).Range(iRange).mfLimits(2))
         % In between the limits the respective antoine parameters from the
         % NIST chemistry webbook for the respective substance are used
         fA = tfAntoineParameters.(sSubstance).Range(iRange).fA;
