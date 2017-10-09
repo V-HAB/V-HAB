@@ -1,14 +1,38 @@
 function [ ] = findMassBalanceErrors( oInput, fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints )
-% a helper function that can be used within any part of the V-HAB code, it
-% just has to be supplied the matter table object. It will display the
-% location of mass balance errors (in case any occur for the ticks where the
-% function is executed) or at least it tries to find them. There is no
-% guarantee that it will always find these errors!
+% This function identifies locations in the simulation where mass balance
+% errors occur (if possible) and at least provides the Tick and the
+% substance for which a mass balance Issue was identified. Mass balance
+% issues arise if the positive and negative flowrates for a substance do
+% not sum up to zero over the complete simulation. Matter changes from
+% manipulators are respected in this check as the only location where one
+% substance can change into another substance. 
 %
-% The accuracy input can be set to define from which value onward mass
-% errors will be regarded. For example for a value of 0 it will regard any
-% change as error for a value of 1e-15 it will only consider mass changes
-% of more than 1e-15 kg/s as errors
+% Mass balance differs from the mass lost value as mass lost occurs
+% whenever a substance within a phase reaches a value of less than 0. Mass
+% balance on the other hand occurs if the flowrates do not sum up to zero
+% over the whole vsys.
+%
+% The only required input is the oMT object. Or, if you only want to check
+% the balance for one phase, a phase object.
+% 
+% Optional inputs:
+% fAccuracy:    This values defines the size of the mass balance error
+%               befor information about it is provided by this tool. For
+%               Example if the value is 1e-6 the mass balance error has to
+%               be larger than 1e-6 kg/s for information about it to be
+%               displayed.
+%
+% fMaxMassBalanceDifference:    can be set if you want your simulation to
+%                               stop in case you exceed a certain total
+%                               error in the mass balance. E.g. if the
+%                               value is 1 [kg] then the simulation will
+%                               pause once the total mass balance error is
+%                               larger than 1 kg
+%
+% bSetBreakPoints:  This function is a bit experimental, but if you set the
+%                   value to true the function will try to automaticall set
+%                   breakpoints at the locations within V-HAB where the
+%                   mass balance error orginiates.
     
     if nargin < 2
         fAccuracy = 0;
