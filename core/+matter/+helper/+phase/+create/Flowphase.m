@@ -31,7 +31,7 @@ tfMass = struct(...
 % Check relative humidity - add?
 % See http://en.wikipedia.org/wiki/Vapor_pressure
 if rRH > 0
-    fSatPressure = 6.11213 * exp(17.62 * fTemperature / (243.12 + fTemperature)) * 100;
+    fSatPressure = this.oMT.calculateVaporPressure(fTemperature, 'H2O');
     
     % Pressure to absolute mass - pV = nRT -> p is saturation pressure
     tfMass.H2O = fSatPressure * fMolarMassH2O / fRm / fTemperature * fVolume;
