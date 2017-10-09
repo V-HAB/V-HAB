@@ -241,7 +241,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Fixed (constant) time step in seconds, if this property is set
         % all other time step properties will be ignored and the set time
         % step will be used
-        fFixedTS;
+        fFixedTimeStep;
         
         % Maximum factor with which rMaxChange is decreased
         rHighestMaxChangeDecrease = 0;
@@ -637,9 +637,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %               mass of the phase (one entry for every
             %               substance, zero represents substances that are
             %               not of interest to the user)
+            % trSubstanceMaxChange: Alterantive Input instead of
+            %               arMaxChange that contains a struct reference
+            %               for the maximum allowed partial mass change.
+            %               For example tTimeStepProperties.trSubstanceMaxChange = struct('H2O', 0.0001, 'CO2', 0.01)
             % fMaxStep:     Maximum time step in seconds
             % fMinStep:     Minimum time step in seconds
-            % fFixedTS:     Fixed (constant) time step in seconds, if this
+            % fFixedTimeStep:     Fixed (constant) time step in seconds, if this
             %               property is set all other time step properties
             %               will be ignored and the set time step will be
             %               used
@@ -650,7 +654,26 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             csFieldNames = fieldnames(tTimeStepProperties);
             
-            csPossibleFieldNames = {'rMaxChange', 'arMaxChange', 'fMaxStep', 'fMinStep', 'fFixedTS'};
+            csPossibleFieldNames = {'rMaxChange', 'arMaxChange', 'fMaxStep', 'fMinStep', 'fFixedTimeStep'};
+            
+            % In case the struct reference for the partial mass change is
+            % used the arMaxChange vector for the internal calculations has
+            % to be created based on the provided struct
+            if any(strcmp(csFieldNames, 'trSubstanceMaxChange'))
+                csSubstances = fieldnames(tTimeStepProperties.trSubstanceMaxChange);
+                arMaxChangeTemp = zeros(1,this.oMT.iSubstances);
+                for iSubstance = 1:length(csSubstances)
+                    arMaxChangeTemp(this.oMT.tiN2I.(csSubstances{iSubstance})) = tTimeStepProperties.trSubstanceMaxChange.(csSubstances{iSubstance});
+                end
+                tTimeStepProperties.arMaxChange = arMaxChangeTemp;
+                % removes the struct field as it has now been replaced by
+                % the arMaxChange vector
+                tTimeStepProperties = rmfield(tTimeStepProperties, 'trSubstanceMaxChange');
+                % It is necessary to redefine the csFieldNames variable
+                % because a new field has been created and another removed
+                csFieldNames = fieldnames(tTimeStepProperties);
+            end
+            
             
             for iProp = 1:length(csFieldNames)
                 % If the current properties is any of the defined possible
@@ -1318,8 +1341,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % If we have set a fixed time steop for this phase, we can just
             % continue without doing any calculations.
-            if ~isempty(this.fFixedTS)
-                fNewStep = this.fFixedTS;
+            if ~isempty(this.fFixedTimeStep)
+                fNewStep = this.fFixedTimeStep;
             else
                 rMaxChangeFactor = 1;
                 
