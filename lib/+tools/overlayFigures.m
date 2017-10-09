@@ -1,4 +1,4 @@
-function [  ] = OverlayFigures( csFigures )
+function [  ] = overlayFigures( csFigures )
 % This is a function that can be used to overlay multiple figures (e.g.
 % from a case study) into one figure, provided they have some common time
 % frame and the same layout of subplots. Some common time frame means that
