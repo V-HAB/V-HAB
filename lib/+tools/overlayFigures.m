@@ -1,7 +1,11 @@
 function [  ] = OverlayFigures( csFigures )
 % This is a function that can be used to overlay multiple figures (e.g.
 % from a case study) into one figure, provided they have some common time
-% frame and the same layout of subplots
+% frame and the same layout of subplots. Some common time frame means that
+% the function will determine the time frame the different plots share and
+% only plot the time frame that is available in all plots. E.g. if one plot
+% is from 0h to 21h and another from 20h to 40h then the plot will only be
+% for the time frame from 20h to 21h.
 %
 % The input has to be a string to the save path for each figure (you can
 % find this string easily if you drag and drop the figure into the matlab
