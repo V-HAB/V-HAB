@@ -1,8 +1,14 @@
-function fDewPoint = convertHumidityToDewpoint(oMT, varargin)
-% this function can be given a gas phase as input parameter (oMT is
-% automatically supplied, because it is a matter table function) or the
-% relative humidity and temperature to convert the humidity into the dew
-% point (only works for water)
+function fDewPoint = convertHumidityToDewpoint(this, varargin)
+% this function converts a relative humidity value (0 to 1) into dewpoint [K]
+%
+% The function can be provided with a gas phase as input parameter in which
+% case it will automatically take the required parameters from the object.
+% Alternativly it can be provided with the following input parameters in
+% that order:
+%
+% rRelativeHumidity     Relative Humidity between 0 and 1 [-]
+% fTemperature          Temperature of the gas for which the dewpoint shall
+%                       be calculated in [K]
 %
 % Note, if you want to convert a dew point into a humidity use the
 % calculateVaporPressure function for the dew point temperature (and H2O),
@@ -11,16 +17,19 @@ function fDewPoint = convertHumidityToDewpoint(oMT, varargin)
 % pressure of Water). By then dividing the partial pressure and the vapor
 % pressure you obtain the humidity:
 % rRelHumidity = oMT.calculateVaporPressure(fDewPoint, 'H2O') / oMT.calculateVaporPressure(fTemperature, 'H2O');
+% Since the dew point is not a value used in Matlab no function for this is
+% provided, however this explanation was included since dewpoints are often
+% used in literature
 
 if length(varargin) == 1
     oPhase = varargin{1};
     fTemperature      = oPhase.fTemperature;
-    fPartialPressure  = oPhase.afPP(oPhase.oMT.tiN2I.H2O);
+    fPartialPressure  = oPhase.afPP(this.tiN2I.H2O);
 else
     rRelativeHumidity = varargin{1};
     fTemperature  = varargin{2};
     
-    fPartialPressure = rRelativeHumidity * oMT.calculateVaporPressure(fTemperature, 'H2O');
+    fPartialPressure = rRelativeHumidity * this.calculateVaporPressure(fTemperature, 'H2O');
 end
 % Values for antoine equation from nist chemistry webbook
 if fTemperature >= 255.9 && fTemperature < 379
