@@ -650,8 +650,29 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             csFieldNames = fieldnames(tTimeStepProperties);
             
+            csPossibleFieldNames = {'rMaxChange', 'arMaxChange', 'fMaxStep', 'fMinStep', 'fFixedTS'};
+            
             for iProp = 1:length(csFieldNames)
-                this.(csFieldNames{iProp}) = tTimeStepProperties.(csFieldNames{iProp});
+                % If the current properties is any of the defined possible
+                % properties the function will overwrite the value,
+                % otherwise it will throw an error
+                if any(strcmp(csFieldNames{iProp}, csPossibleFieldNames))
+                    % checks the type of the input to ensure that the
+                    % correct type is used.
+                    xProperty = tTimeStepProperties.(csFieldNames{iProp});
+                    if strcmp(csFieldNames{iProp}, 'arMaxChange')
+                        if ~isfloat(xProperty) || (length(xProperty) ~= this.oMT.iSubstances)
+                            error('The arMaxChange value provided to the setTimeStepProperties function is not defined correctly. It either has the wrong length or is not a float')
+                        end
+                    else
+                        if ~isfloat(xProperty)
+                            error(['The ', csFieldNames{iProp},' value provided to the setTimeStepProperties function is not defined correctly as it is not a float'])
+                        end
+                    end
+                    this.(csFieldNames{iProp}) = tTimeStepProperties.(csFieldNames{iProp});
+                else
+                    error(['The function setTimeStepProperties was provided the unknown input parameter: ', csFieldNames{iProp}, ' please view the help of the function for possible input parameters']);
+                end
             end
             
             % In case that partial mass changes are of interest set the
@@ -662,6 +683,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             else
                 this.bHasSubstanceSpecificMaxChangeValues = false;
             end
+            
+            % Since the time step properties have changed, the time step
+            % has to be recalculated, which is performed in the post tick
+            % operations through this call.
+            this.bind('postTick', @(~) this.calculateTimeStep());
         end
         
         %% Calculate Nutritional Content 
