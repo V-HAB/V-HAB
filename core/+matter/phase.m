@@ -652,14 +652,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % as described here to this function for the values that you
             % want to set
             
-            csFieldNames = fieldnames(tTimeStepProperties);
-            
             csPossibleFieldNames = {'rMaxChange', 'arMaxChange', 'fMaxStep', 'fMinStep', 'fFixedTimeStep'};
             
             % In case the struct reference for the partial mass change is
             % used the arMaxChange vector for the internal calculations has
             % to be created based on the provided struct
-            if any(strcmp(csFieldNames, 'trSubstanceMaxChange'))
+            if isfield(tTimeStepProperties, 'trSubstanceMaxChange')
                 csSubstances = fieldnames(tTimeStepProperties.trSubstanceMaxChange);
                 arMaxChangeTemp = zeros(1,this.oMT.iSubstances);
                 for iSubstance = 1:length(csSubstances)
@@ -669,34 +667,37 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % removes the struct field as it has now been replaced by
                 % the arMaxChange vector
                 tTimeStepProperties = rmfield(tTimeStepProperties, 'trSubstanceMaxChange');
-                % It is necessary to redefine the csFieldNames variable
-                % because a new field has been created and another removed
-                csFieldNames = fieldnames(tTimeStepProperties);
             end
             
+            % Gets the fieldnames of the struct to easier loop through them
+            csFieldNames = fieldnames(tTimeStepProperties);
             
             for iProp = 1:length(csFieldNames)
+                sField = csFieldNames{iProp};
+
                 % If the current properties is any of the defined possible
                 % properties the function will overwrite the value,
                 % otherwise it will throw an error
-                if any(strcmp(csFieldNames{iProp}, csPossibleFieldNames))
-                    % checks the type of the input to ensure that the
-                    % correct type is used.
-                    xProperty = tTimeStepProperties.(csFieldNames{iProp});
-                    if strcmp(csFieldNames{iProp}, 'arMaxChange')
-                        if ~isfloat(xProperty) || (length(xProperty) ~= this.oMT.iSubstances)
-                            error('The arMaxChange value provided to the setTimeStepProperties function is not defined correctly. It either has the wrong length or is not a float')
-                        end
-                    else
-                        if ~isfloat(xProperty)
-                            error(['The ', csFieldNames{iProp},' value provided to the setTimeStepProperties function is not defined correctly as it is not a float'])
-                        end
-                    end
-                    this.(csFieldNames{iProp}) = tTimeStepProperties.(csFieldNames{iProp});
-                else
-                    error(['The function setTimeStepProperties was provided the unknown input parameter: ', csFieldNames{iProp}, ' please view the help of the function for possible input parameters']);
+                if ~any(strcmp(sField, csPossibleFieldNames))
+                    error(['The function setTimeStepProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters']);
                 end
+                
+
+                % checks the type of the input to ensure that the
+                % correct type is used.
+                xProperty = tTimeStepProperties.(sField);
+
+                if ~isfloat(xProperty)
+                    error(['The ', sField,' value provided to the setTimeStepProperties function is not defined correctly as it is not a (scalar, or vector of) float']);
+                end
+
+                if strcmp(sField, 'arMaxChange') && (length(xProperty) ~= this.oMT.iSubstances)
+                    error('The arMaxChange value provided to the setTimeStepProperties function is not defined correctly. It has the wrong length');
+                end
+
+                this.(sField) = tTimeStepProperties.(sField);
             end
+
             
             % In case that partial mass changes are of interest set the
             % boolean to true to activate these calculations, otherwise set
@@ -710,7 +711,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Since the time step properties have changed, the time step
             % has to be recalculated, which is performed in the post tick
             % operations through this call.
-            this.bind('postTick', @(~) this.calculateTimeStep());
+            this.setOutdatedTS();
         end
         
         %% Calculate Nutritional Content 
