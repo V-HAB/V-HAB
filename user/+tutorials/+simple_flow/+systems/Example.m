@@ -23,7 +23,7 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName, 30);
+            this@vsys(oParent, sName, 1);
             
             % Make the system configurable
 %             disp(this);
@@ -77,7 +77,7 @@ classdef Example < vsys
             % Now that the system is sealed, we can add the branch to a
             % specific solver. In this case we will use the iterative
             % solver. 
-            oIt1 = solver.matter.iterative.branch(this.aoBranches(1));
+            oIt1 = solver.matter.manual.branch(this.aoBranches(1));
             
             %oIt1.iDampFR = 5;
         end
@@ -89,6 +89,18 @@ classdef Example < vsys
             % exec(ute) function for this system
             % Here it only calls its parent's exec function
             exec@vsys(this);
+            
+            if this.oTimer.fTime < 300
+                this.aoBranches(1).oHandler.setFlowRate(1e-3);
+            elseif this.oTimer.fTime < 900
+                this.aoBranches(1).oHandler.setVolumetricFlowRate(1e-3);
+            else
+                this.aoBranches(1).oHandler.setFlowRate(0);
+            end
+            
+            if this.oTimer.fTime >= 1000 && this.oTimer.fTime < 1001
+                this.aoBranches(1).oHandler.setMassTransfer(0.1, 5);
+            end
         end
         
      end
