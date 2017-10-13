@@ -16,6 +16,7 @@ classdef branch < solver.matter.base.branch
 
     properties (SetAccess = protected, GetAccess = public)
         fRequestedFlowRate = 0;
+        fRequestedVolumetricFlowRate;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -52,6 +53,7 @@ classdef branch < solver.matter.base.branch
             end
             
             this.fRequestedFlowRate = fFlowRate;
+            this.fRequestedVolumetricFlowRate = [];
             
             this.fTimeStep = inf;
             
@@ -70,13 +72,7 @@ classdef branch < solver.matter.base.branch
                 return
             end
             
-            if fVolumetricFlowRate >= 0
-                fDensity = this.oBranch.coExmes{1}.oPhase.fDensity;
-            else
-                fDensity = this.oBranch.coExmes{2}.oPhase.fDensity;
-            end
-            
-            this.fRequestedFlowRate = fVolumetricFlowRate * fDensity;
+            this.fRequestedVolumetricFlowRate = fVolumetricFlowRate;
             
             this.fTimeStep = inf;
             
@@ -106,6 +102,7 @@ classdef branch < solver.matter.base.branch
             this.fMassTransferStartTime = this.oBranch.oTimer.fTime;
             
             this.fRequestedFlowRate = fMass / fTime;
+            this.fRequestedVolumetricFlowRate = [];
             
             this.setTimeStep(this.fTimeStep, true);
             
@@ -129,6 +126,20 @@ classdef branch < solver.matter.base.branch
                 
                 this.fTimeStep = inf;
                 this.setTimeStep(this.fTimeStep);
+            elseif ~isempty(this.fRequestedVolumetricFlowRate)
+                
+                if this.fRequestedVolumetricFlowRate >= 0
+                    fDensity = this.oBranch.coExmes{1}.oPhase.fDensity;
+                else
+                    fDensity = this.oBranch.coExmes{2}.oPhase.fDensity;
+                end
+
+                this.fRequestedFlowRate = this.fRequestedVolumetricFlowRate *  fDensity;
+                
+                this.fTimeStep = inf;
+
+                this.setTimeStep(this.fTimeStep);
+            
             end
             
             update@solver.matter.base.branch(this, this.fRequestedFlowRate);
