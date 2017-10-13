@@ -107,7 +107,7 @@ classdef branch < solver.matter.base.branch
             
             this.fRequestedFlowRate = fMass / fTime;
             
-            this.setTimeStep(this.fTimeStep);
+            this.setTimeStep(this.fTimeStep, true);
             
             this.registerUpdate();
         end
