@@ -369,20 +369,36 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % based on the current state of the matter flowing through the
         % flow.
         function fVolumetricFlowRate = calculateVolumetricFlowRate(this, fFlowRate)
-            if nargin < 2
-                if this.fFlowRate
-                    fVolumetricFlowRate = this.fFlowRate / ...
-                                        ( this.fPressure * this.fMolarMass / ...
-                                        ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
-                else
-                    fVolumetricFlowRate = 0;
-                end
-            else
+            % If no flowrate is provided to the function call (the usual
+            % use case) the flowrate of the current flow object is used to
+            % calculate the volumetric flowrate 
+            if nargin < 2 || isempty(fFlowRate)
+                fFlowRate = this.fFlowRate;
+            end
+            
+            if fFlowRate ~= 0
+                % Uses the ideal gas law to calculate the density of the
+                % flow and from the density the volumetric flowrate. In non
+                % ideal case, or for liquid flows, this calculation is
+                % therefore not correct and should not be used! If a
+                % non-ideal or liquid case becomes necessary it should be
+                % discussed if this calculation can be moved to the matter
+                % table and use the calculateDensity function of the matter
+                % table.
                 fVolumetricFlowRate = fFlowRate / ...
                                     ( this.fPressure * this.fMolarMass / ...
                                     ( this.oMT.Const.fUniversalGas * this.fTemperature  ) );
+            else
+                % In some cases the pressure/temperature or other values
+                % for the flows are not "valid" if the flowrate is zero and
+                % therefore the volumetric flowrate is directly set to zero
+                % to ensure that a volumetric flowrate of zero is returned
+                % (otherwise NaN values are possible, e.g. for a pressure
+                % of 0).
+                fVolumetricFlowRate = 0;
             end
         end
+
     end
     
 
