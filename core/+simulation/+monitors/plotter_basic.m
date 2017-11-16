@@ -1042,7 +1042,7 @@ classdef plotter_basic < simulation.monitor
             csOldLegend = get(legend, 'String');
             
             % Allocating additional cell items for the new legend entries.
-            csNewLegend = [ csOldLegend, cell(iNumberOfItems,1)];
+            csNewLegend = [ csOldLegend; cell(iNumberOfItems,1)];
             
             % Looping through the properties of each log item and
             % extracting the information for the legend entry.
