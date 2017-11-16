@@ -659,8 +659,96 @@ classdef plotter_basic < simulation.monitor
                     
                     % Process the line options struct, if there is one. 
                     if isfield(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions, 'tLineOptions')
+                        % This is a little more complex because we want to
+                        % have nice names and labels for all the things,
+                        % but in the log structs we need names and labels
+                        % that can be used as field names, i.e. without
+                        % spaces and special characters. This means we have
+                        % two pieces of information we need to extract
+                        % first, before we can start processing: The
+                        % display names, which MATLAB uses to identify a
+                        % line, and the log names, which we used in the
+                        % logger to identify individual plots. 
+                        
+                        % First we get the number of log items in this
+                        % plot.
+                        iNumberOfItems = length(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes);
+                        
+                        % Now we can initialize our two cells. 
+                        csDisplayNames = cell(iNumberOfItems, 1);
+                        csLogItemNames = cell(iNumberOfItems, 1);
+                        
+                        % Now we can extract the log item names as they are
+                        % in the tLogValues and tVirtualValues structs in
+                        % the logger.
+                        for iI = 1:iNumberOfItems
+                            % Getting the current item's index
+                            iIndex = this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes(iI);
+                            
+                            % We need to check, if this is a virtual value
+                            % or a "real" one and then we can get the
+                            % label, unit and name of the item. 
+                            if iIndex > 0
+                                sLabel = oLogger.tLogValues(iIndex).sLabel;
+                                sUnit  = oLogger.tLogValues(iIndex).sUnit;
+                                
+                                csLogItemNames{iI} = oLogger.tLogValues(iIndex).sName;
+                            else
+                                sLabel = oLogger.tVirtualValues(iIndex * (-1)).sLabel;
+                                sUnit  = oLogger.tVirtualValues(iIndex * (-1)).sUnit;
+                                
+                                csLogItemNames{iI} = oLogger.tVirtualValues(iIndex * (-1)).sName;
+                            end
+                            
+                            csDisplayNames{iI} = [sLabel,' [',sUnit,']'];
+                        end
+                            
+                        % Now that we have all the information we need, we
+                        % can go ahead and actually make the modifications
+                        % to the plot. 
+                        % Going through all lines in the plot.
                         for iI = 1:length(oPlot.Children)
-                            this.parseObjectOptions(oPlot.Children(iI), tPlotOptions.tLineOptions(iI));
+                            % Now we through the individual log items in
+                            % our csDisplayNames cell to match them to the
+                            % child objects of the plot object.
+                            for iJ = 1:iNumberOfItems
+                                if strcmp(oPlot.Children(iI).DisplayName, csDisplayNames{iJ})
+                                    % We have a match, now we check if
+                                    % there are line options for that item.
+                                    if isfield(tPlotOptions.tLineOptions, csLogItemNames{iJ})
+                                        % There are options, so we parse
+                                        % the object options from our
+                                        % tLineOptions struct. 
+                                        this.parseObjectOptions(oPlot.Children(iI), tPlotOptions.tLineOptions.(csLogItemNames{iJ}));
+                                        
+                                        % There can only be one match, so
+                                        % there is no reason to continue
+                                        % this loop. 
+                                        break;
+                                    end
+                                end
+                            end
+                        end
+                        
+                        % Since the oPlot.Children array only returns the
+                        % child objects of the left y axis, we need to do
+                        % the same thing we just did on the right y axis,
+                        % if there is one. 
+                        %QUESTION How do you make this better, how do you
+                        %re-use the code I already programmed above?
+                        if bTwoYAxes
+                            yyaxis('right');
+                            for iI = 1:length(oPlot.Children)
+                                for iJ = 1:iNumberOfItems
+                                    if strcmp(oPlot.Children(iI).DisplayName, csDisplayNames{iJ})
+                                        if isfield(tPlotOptions.tLineOptions, csLogItemNames{iJ})
+                                            this.parseObjectOptions(oPlot.Children(iI), tPlotOptions.tLineOptions.(csLogItemNames{iJ}));
+                                            break;
+                                        end
+                                    end
+                                end
+                            end
+                            yyaxis('left');
                         end
                     end
                     
@@ -901,7 +989,6 @@ classdef plotter_basic < simulation.monitor
             % cell using a forward slash to separate them.
             sLabel = strjoin(unique(csLabels(~cellfun(@isempty, csLabels))), ' / ');
         end
-        
         
         function generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit)
             % This method generates the actual visible plots within the
