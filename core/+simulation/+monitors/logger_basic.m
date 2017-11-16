@@ -242,23 +242,53 @@ classdef logger_basic < simulation.monitor
                 sName = regexprep(sLabel, '[^a-zA-Z0-9]', '_');
             end
             
-            % Do not check for tLogValues names - they always take
-            % precedence anyways
-            if ~isempty(find(strcmp(sName, { this.tVirtualValues.sName }), 1, 'first')) 
+            % Creating a struct with all of the information of the log
+            % item.
+            tLogItem = struct(...
+                              'sExpression', sExpression, ...
+                              'calculationHandle', funcHandle, ...
+                              'sName', sName, ...
+                              'sUnit', sUnit, ...
+                              'sLabel', sLabel ...
+                              );
+                          
+            % We need to check the tLogValues field names so we don't have
+            % a conflict. BUT, since this method can also be called during
+            % post-processing, if this is just a repeat call to add the
+            % same value to the log, we can skip the error. 
+            iFoundIndex = find(strcmp(sName, { this.tVirtualValues.sName }), 1, 'first');
+            if ~isempty(iFoundIndex)
+                % So at least the same name is used here. Now we have to
+                % find out, if the new and old log items are the same.
+                % Unfortunately, MATLAB cannot compare anonymous function
+                % handles, so before we can make the comparison, we have to
+                % convert the function handles in both structs to strings. 
+                tNewLogItem = tLogItem;
+                tNewLogItem.calculationHandle = func2str(tNewLogItem.calculationHandle);
+                tOldLogItem = this.tVirtualValues(iFoundIndex);
+                tOldLogItem.calculationHandle = func2str(tOldLogItem.calculationHandle);
+                % Now we can finally compare the new and existing log
+                % items. 
+                if isequal(tNewLogItem, tOldLogItem)
+                    % They are equal, so we just set the index to the one
+                    % we found and return it. 
+                    iIndex = -1 * iFoundIndex;
+                    return;
+                end
+                
+                % The values to be logged are not equal to existing ones,
+                % so someone is actually trying to add a new log item with
+                % a name that is already in use. That's not possible, so we
+                % fail here and let the user know why. 
                 this.throw('addVirtualValue', 'The name "%s" is already in use!', sName);
             end
             
             
-            
-            this.tVirtualValues(end + 1) = struct(...
-                'sExpression', sExpression, ...
-                'calculationHandle', funcHandle, ...
-                'sName', sName, ...
-                'sUnit', sUnit, ...
-                'sLabel', sLabel ...
-            );
+            % Everything checks out now, so we can add the new log item to
+            % the end of the tVirtualValues struct.
+            this.tVirtualValues(end + 1) = tLogItem;
         
-        
+            % Returning the negative index. 
             iIndex = -1 * length(this.tVirtualValues);
         end
         
