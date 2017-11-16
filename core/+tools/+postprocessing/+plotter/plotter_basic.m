@@ -1,4 +1,4 @@
-classdef plotter_basic < simulation.monitor
+classdef plotter_basic < handle
     %PLOTTER_BASIC Default plotter class for V-HAB simulations
     %   The object instantiated from this class contains a cell of objects
     %   that are used to create user-defined figures using data from the
@@ -16,15 +16,15 @@ classdef plotter_basic < simulation.monitor
         % A cell of objects representing the individual figures to be
         % created by this plotter.
         coFigures = cell.empty(1,0);
+        
+        oSimulationInfrastructure;
     end
     
     methods
         function this = plotter_basic(oSimulationInfrastructure, sLogger)
             % Constructor method for this class.
             
-            % Passing the simulation infrastructure object to the parent
-            % class.
-            this@simulation.monitor(oSimulationInfrastructure);
+            this.oSimulationInfrastructure = oSimulationInfrastructure;
             
             % If the name of the logger object is provided here, we write
             % it to the object's properties, otherwise it will have to be
@@ -184,7 +184,7 @@ classdef plotter_basic < simulation.monitor
             
             % Now we just return the plot object, containing all of the
             % necessary information.
-            oPlot = simulation.monitors.plot(sTitle, aiIndexes, tPlotOptions);
+            oPlot = tools.postprocessing.plotter.plot(sTitle, aiIndexes, tPlotOptions);
         end
         
         function defineFigure(this, coPlots, sName, tFigureOptions)
@@ -208,7 +208,7 @@ classdef plotter_basic < simulation.monitor
             
             % We now have all we need, so we can add another entry to the
             % coFigures cell.
-            this.coFigures{end+1} = simulation.monitors.figure(sName, coPlots, tFigureOptions);
+            this.coFigures{end+1} = tools.postprocessing.plotter.figure(sName, coPlots, tFigureOptions);
            
         end
         
@@ -944,14 +944,14 @@ classdef plotter_basic < simulation.monitor
                 % Now we can create the plot object and write it to the
                 % coPlots cell.
                 tPlotOptions.csUniqueUnits  = csUnits{iI};
-                coPlots{iI} = simulation.monitors.plot(csTitles{iI}, aiIndexes, tPlotOptions);
+                coPlots{iI} = tools.postprocessing.plotter.plot(csTitles{iI}, aiIndexes, tPlotOptions);
             end
             
             % Finally we create one figure object, turn on the time plot
             % and write it to the coFigures property of this plotter. 
             tFigureOptions = struct('bTimePlot', true);
             sName = [ this.oSimulationInfrastructure.sName ' - (' this.oSimulationInfrastructure.sCreated ')' ];
-            this.coFigures{end+1} = simulation.monitors.figure(sName, coPlots, tFigureOptions);
+            this.coFigures{end+1} = tools.postprocessing.plotter.figure(sName, coPlots, tFigureOptions);
         end
         
         

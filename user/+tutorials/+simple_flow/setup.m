@@ -9,6 +9,7 @@ classdef setup < simulation.infrastructure
     %   - provide methods for plotting the results
     
     properties
+        tiLogIndexes = struct();
     end
     
     methods
@@ -87,7 +88,7 @@ classdef setup < simulation.infrastructure
 %             this.toMonitors.oConsoleOutput.setLogOn();
 %             this.toMonitors.oConsoleOutput.setLevel(5);
             
-            %oLog.add('Example', 'flow_props');
+            oLog.add('Example', 'flow_props');
             
             % Aside from using the shortcut helpers like flow_props you can
             % also specfy the exact value you want to log. For this you
@@ -107,15 +108,15 @@ classdef setup < simulation.infrastructure
             %   - :s: = toStores
             %   - :c: = toChildren
             
-            iTempIdx1 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(1)', 'fTemperature', 'K', 'Flow Temperature - Left', 'flow_temp_left');
-            iTempIdx2 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(2)', 'fTemperature', 'K', 'Flow Temperature - Right', 'flow_temp_right');
+            this.tiLogIndexes.iTempIdx1 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(1)', 'fTemperature', 'K', 'Flow Temperature - Left', 'flow_temp_left');
+            this.tiLogIndexes.iTempIdx2 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(2)', 'fTemperature', 'K', 'Flow Temperature - Right', 'flow_temp_right');
             
             
             % The log is built like this:
             %
             %               Path to the object containing the log value     Log Value                       Unit    Label of log value (used for legends and to plot the value) 
-            oLog.addValue('Example:s:Tank_1.aoPhases(1)',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 1');
-            oLog.addValue('Example:s:Tank_2.aoPhases(1)',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 2');
+            oLog.addValue('Example:s:Tank_1.aoPhases(1)',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 1', 'ppCO2_Tank1');
+            oLog.addValue('Example:s:Tank_2.aoPhases(1)',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 2', 'ppCO2_Tank2');
             
             % it is also possible to define a calculation as log value and
             % e.g. multiply two values from the object.
@@ -130,19 +131,20 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example.toBranches.Branch', 'fFlowRate', 'kg/s', 'Branch Flow Rate');
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'fPressure', 'Pa', 'Tank 1 Pressure');
             
-            iIndex_1 = oLog.addVirtualValue('fr_co2 * 1000', 'g/s', 'CO_2 Flowrate', 'co2_fr_grams');
-            iIndex_2 = oLog.addVirtualValue('flow_temp_left - 273.15', '°C', 'Temperature Left in Celsius');
-            iIndex_3 = oLog.addVirtualValue('mod(flow_temp_right .^ 2, 10) ./ "Partial Mass CO_2 Tank 2"', '-', 'Nonsense');
-            
-            
+            this.tiLogIndexes.iIndex_1 = oLog.addVirtualValue('fr_co2 * 1000', 'g/s', 'CO_2 Flowrate', 'co2_fr_grams');
+            this.tiLogIndexes.iIndex_2 = oLog.addVirtualValue('flow_temp_left - 273.15', '°C', 'Temperature Left in Celsius');
+            this.tiLogIndexes.iIndex_3 = oLog.addVirtualValue('mod(flow_temp_right .^ 2, 10) ./ "Partial Mass CO_2 Tank 2"', '-', 'Nonsense');
+                                                
+        end
+        
+        function plot(this) % Plotting the results
             
             %% Define plots
             
-            oPlot = this.toMonitors.oPlotter;
+            oPlotter = plot@simulation.infrastructure(this);
             
-            
-            cxPlotValues1 = { '"CO_2 Flowrate"', iIndex_2, 'Nonsense' };
-            csPlotValues2 = { '"Partial Pressure CO_2 Tank 1"', '"Partial Pressure CO_2 Tank 1"'};
+            cxPlotValues1 = { '"CO_2 Flowrate"', this.tiLogIndexes.iIndex_2, 'Nonsense' };
+            csPlotValues2 = { '"Partial Pressure CO_2 Tank 1"', '"Partial Pressure CO_2 Tank 2"'};
             csPlotValues3 = { 'flow_temp_left', 'flow_temp_right' };
             
             %TODO Implement getByTitles() and getByFilter() in logger_basic
@@ -186,14 +188,17 @@ classdef setup < simulation.infrastructure
             % visible or not. The default is visible. 
             
             %tPlotOptions = struct('csUnitOverride', {{ 'all left' }});
-            tPlotOptions = struct('csUnitOverride', {{ {'°C'}, {'g/s'} }});
-            coPlots{1,1} = oPlot.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
+            tPlotOptions = struct('csUnitOverride', {{ {'°C'}, {'g/s','-'} }});
+            tPlotOptions.tLineOptions.('fr_co2').csColor = 'g';
+            tPlotOptions.tLineOptions.('Nonsense').csColor = 'y';
+            coPlots{1,1} = oPlotter.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
             
-            tPlotOptions.tLineOptions = struct('csColor', {'g','y'});
-            coPlots{1,2} = oPlot.definePlot(csPlotValues2, 'CO_2 Partial Pressures', tPlotOptions);
+            tPlotOptions.tLineOptions.('ppCO2_Tank1').csColor = 'g';
+            tPlotOptions.tLineOptions.('ppCO2_Tank2').csColor = 'y';
+            coPlots{1,2} = oPlotter.definePlot(csPlotValues2, 'CO_2 Partial Pressures', tPlotOptions);
             
             tPlotOptions = struct('sTimeUnit','hours');
-            coPlots{2,1} = oPlot.definePlot(csPlotValues3, 'Temperatures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csPlotValues3, 'Temperatures', tPlotOptions);
             
             
             % tFigureOptions includes turing on or off the plottools (off
@@ -202,12 +207,12 @@ classdef setup < simulation.infrastructure
             % to the properties of the MATLAB figure object. 
             
             tFigureOptions = struct('bTimePlot', true, 'bPlotTools', false);
-            oPlot.defineFigure(coPlots, 'Test Figure Title', tFigureOptions);
+            oPlotter.defineFigure(coPlots, 'Test Figure Title', tFigureOptions);
             
-            tPlotOptions = struct('sAlternativeXAxisValue', '"Branch Flow Rate"', 'sXLabel', 'Main Branch Flow Rate in [kg/s]', 'fTimeInterval',10);
-            coPlots = {oPlot.definePlot({'"Tank 1 Pressure"'}, 'Pressure vs. Flow Rate', tPlotOptions)};
-            oPlot.defineFigure(coPlots, 'Pressure vs. Flow Rate');
-            
+%             tPlotOptions = struct('sAlternativeXAxisValue', '"Branch Flow Rate"', 'sXLabel', 'Main Branch Flow Rate in [kg/s]', 'fTimeInterval',10);
+%             coPlots = {oPlot.definePlot({'"Tank 1 Pressure"'}, 'Pressure vs. Flow Rate', tPlotOptions)};
+%             oPlot.defineFigure(coPlots, 'Pressure vs. Flow Rate');
+%             
 %             % you can define plots by using the units as filters
 %             oPlot.definePlot('Pa', 'Tank Pressures');
 %             oPlot.definePlot('K', 'Tank Temperatures');
@@ -277,10 +282,8 @@ classdef setup < simulation.infrastructure
 %             cNames = {'( Partial Pressure CO_2 Tank 1 ) / 133.322', '( Partial Pressure CO_2 Tank 2 ) / 133.322'};
 %             sTitle = 'Partial Pressure CO2 in Torr';
 %             oPlot.definePlot(cNames, sTitle, txCustom);
-        end
-        
-        function plot(this) % Plotting the results
-            this.toMonitors.oPlotter.plot();
+
+            oPlotter.plot();
         end
         
     end
