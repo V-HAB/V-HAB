@@ -70,25 +70,35 @@ classdef plotter_basic < base
             % units, then one is displayed on the left axis and the other
             % on the right automatically. If cxPlotValues contains values
             % in more than two units, it needs to be defined, which values
-            % and units are displayed on each axis. The following code gets
-            % the number of units and if it is larger than two, throws an
-            % error prompting the user to define the csUnitOverride field
-            % in the tPlotOptions struct, unless it is already defined, of
-            % course.
+            % and units are displayed on each axis. By default, all values
+            % are displayed on a dimensionless y axis on the left side. The
+            % user can, however, define the csUnitOverride field in the
+            % tPlotOptions struct, where each axis can be defined
+            % individually. 
             
             % Getting the number of units and their strings from the logger
             % object
             [ iNumberOfUnits, csUniqueUnits ] = oLogger.getNumberOfUnits(aiIndexes);
             
-            % If it turns out the number of units is larger than two and
-            % the csUnitOverride field is not defined, we throw an error,
-            % otherwise we just save the number of units for later. 
+            % If the number of units is larger than two and nothing else is
+            % defined, we will set the csUnitOverride cell to the default
+            % option ('all left) and create an entry in the tPlotOptions
+            % struct for the dimensionless '[-]' label of that axis. This
+            % also means that for all plotting purposes, there is only one
+            % unit, so we have to set that field accordingly as well.
+            % Otherwise we just save the number of units for later.
+            % Note that we're also checking the sAlternativeXAxisValue
+            % flield here, since that will also add another separate unit.
             if iNumberOfUnits > 2 && ~(isfield(tPlotOptions, 'csUnitOverride')) && ~(isfield(tPlotOptions, 'sAlternativeXAxisValue'))
-                this.throw('definePlot',['The plot you have defined (%s) contains more than two units. \n',...
-                                         'You can either reduce the number of units to two, or include \n',...
-                                         'a field ''csUnitOverride'' in the tPlotOptions struct that \n',...
-                                         'contains the unit(s) you wish to use.'],...
-                                         sTitle);
+                tPlotOptions.csUnitOverride = {'all left'};
+                tPlotOptions.YLabel = '[-]';
+                tPlotOptions.iNumberOfUnits = 1;
+                
+                % This is pretty weird, so we'll tell the user what's going
+                % on. 
+                this.warn('definePlot',['During the creation of plot "%s", you have chosen to plot values with three or more units. ', ...
+                                        'The plot will have a dimensionless y axis for all plotted values. If you wish to change this, ', ...
+                                        'please define the csUnitOverride cell as described in tools/+posprocessing/+plotter/plot.m.'], sTitle);
             else
                 tPlotOptions.iNumberOfUnits = iNumberOfUnits;
                 tPlotOptions.csUniqueUnits  = csUniqueUnits;

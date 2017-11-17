@@ -63,7 +63,9 @@ classdef plot < handle
         % (left side in the first cell, right side in the second).
         % Alternatively it can contain only one cell in a cell containing
         % the string 'all left'. This will force all units to be displayed
-        % on the left side. 
+        % on the left side. This is also the default behavior, if more than
+        % two units are to be displayed. The y axis is then set
+        % dimensionless.
         tPlotOptions;
     end
     
