@@ -750,6 +750,23 @@ classdef logger_basic < simulation.monitor
                 if any(aiExpressionMatches)
                     iIndex = this.tLogValues(aiObjMatches(aiExpressionMatches(1))).iIndex;
                     
+                    % It may be the case, that the existing item was
+                    % entered into the log via an automatic helper. This
+                    % means, that the label was created automatically and
+                    % are not very legible. Also the sName field may be
+                    % empty. If the user has provided new values for these
+                    % two fields, we overwrite them and publish a warning,
+                    % so the user knows what's going on.
+                    if ~strcmp(this.tLogValues(aiObjMatches(aiExpressionMatches(1))).sLabel, tLogProp.sLabel) && ~isempty(tLogProp.sLabel)
+                        this.warn('addValueToLog', 'Overwriting log item label from "%s" to "%s".', this.tLogValues(aiObjMatches(aiExpressionMatches(1))).sLabel, tLogProp.sLabel);
+                        this.tLogValues(aiObjMatches(aiExpressionMatches(1))).sLabel = tLogProp.sLabel;
+                    end
+                    
+                    if ~strcmp(this.tLogValues(aiObjMatches(aiExpressionMatches(1))).sName, tLogProp.sName) && ~isempty(tLogProp.sName)
+                        this.warn('addValueToLog', 'Overwriting log item name from "%s" to "%s".', this.tLogValues(aiObjMatches(aiExpressionMatches(1))).sName, tLogProp.sName);
+                        this.tLogValues(aiObjMatches(aiExpressionMatches(1))).sName = tLogProp.sName;
+                    end
+                    
                     return;
                 end
             end
