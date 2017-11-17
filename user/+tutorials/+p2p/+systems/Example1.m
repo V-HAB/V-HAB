@@ -11,12 +11,18 @@ classdef Example1 < vsys
         
         aoFilterPhases;
         oAtmosPhase;
+        
+        
+        bManual = false;
     end
     
     methods
         function this = Example1(oParent, sName)
             this@vsys(oParent, sName, 10);
            
+            
+            %this.bManual = true;
+            
             eval(this.oRoot.oCfgParams.configCode(this));
             
         end
@@ -51,6 +57,7 @@ classdef Example1 < vsys
             % format can be 'store.phase' instead of 'store.exme'
             %oBranch_1 = this.createBranch('Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
             %oBranch_2 = this.createBranch('Filter.Out', {'Pipe_3' }, 'Atmos.In');
+            %oBranch_1 = matter.branch(this, 'Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
             oBranch_1 = matter.branch(this, 'Atmos.Out', { 'Pipe_1', 'Fan', 'Pipe_2' }, 'Filter.In');
             oBranch_2 = matter.branch(this, 'Filter.Out', {'Pipe_3' }, 'Atmos.In');
             
@@ -60,6 +67,28 @@ classdef Example1 < vsys
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
+            
+            
+            if this.bManual
+
+                this.oB1 = solver.matter.manual.branch(this.aoBranches(1));
+                this.oB2 = solver.matter.residual.branch(this.aoBranches(2));
+                %this.oB2 = solver.matter.manual.branch(this.aoBranches(2));
+
+                this.toStores.Filter.toPhases.FlowPhase.bSynced = true;
+
+                this.oB1.setFlowRate(0.0005);
+                
+                this.toStores.Filter.toPhases.FilteredPhase.rMaxChange = 5;
+
+    %             this.toStores.Filter.aoPhases(2).rMaxChange = inf;
+    %             this.toStores.Filter.aoPhases(1).rMaxChange = inf;
+
+                return;
+
+            end
+            
+            
             
             
             
@@ -92,7 +121,7 @@ classdef Example1 < vsys
             % that as soon as the flow rate of one of the solvers changes,
             % the other solvers will also immediately calculate a new FR.
 %             this.aoFilterPhases(1).bSynced = true;
-            this.aoFilterPhases(1).bSynced = false;
+            this.aoFilterPhases(1).bSynced = true;
             
             
             % The phase for the adsorbed matter in the filter store has a
@@ -109,6 +138,7 @@ classdef Example1 < vsys
             
             
             
+            
             fTime = this.oTimer.fTime;
             oFan  = this.toProcsF2F.Fan;
             
@@ -119,11 +149,20 @@ classdef Example1 < vsys
                 %oFan.fSpeedSetpoint = 0;
                 oFan.switchOff();
                 
+                if this.bManual
+                    this.oB1.setFlowRate(0);
+                end
+                
             elseif fTime >= 1250 && ~oFan.bActive % fSpeedSetpoint ~= 40000
                 fprintf('Fan ON at second %f and tick %i\n', fTime, this.oTimer.iTick);
                 
                 %oFan.fSpeedSetpoint = 40000;
                 oFan.switchOn();
+                
+                
+                if this.bManual
+                    this.oB1.setFlowRate(0.0005);
+                end
             end
         end
         

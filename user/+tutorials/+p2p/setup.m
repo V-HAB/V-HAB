@@ -116,6 +116,10 @@ classdef setup < simulation.infrastructure
             this@simulation.infrastructure('Tutorial_p2p', ptConfigParams, tSolverParams, ttMonitorCfg);
             
             
+            
+            %this.oSimulationContainer.oTimer.setMinStep(1e-12);
+            
+            
             % Creating the 'Example' system as a child of the root system
             % of this simulation.
             oExample = tutorials.p2p.systems.Example1(this.oSimulationContainer, 'Example');
@@ -137,7 +141,8 @@ classdef setup < simulation.infrastructure
             this.bUseTime = true;
             
             
-            
+%             this.bUseTime = false;
+%             this.iSimTicks = 300;
             
             % Solver Tuning see Example -> createSolverStructure
             
@@ -286,6 +291,17 @@ classdef setup < simulation.infrastructure
             %plot(oLogger.afTime, mfLog(:, [ this.tiLog.M2P_Atmos this.tiLog.M2P_Filter ]) .* mfLog(:, [ this.tiLog.M_Atmos this.tiLog.M_Filter ]));
             legend('Atmos', 'Filter Flow');
             ylabel('Pressure in Pa');
+            xlabel('Time in s');
+            
+            
+            figure('name', 'Tank Masses');
+            hold on;
+            grid minor;
+            plot(oLogger.afTime, mfLog(:, [ 3 4 5 ]));
+            legend('Atmos', 'Filter Flow', 'Filtered');
+%             plot(oLogger.afTime, mfLog(:, [ 4 ]));
+%             legend('Filter Flow');
+            ylabel('Mass in kg');
             xlabel('Time in s');
 
             

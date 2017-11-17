@@ -62,6 +62,8 @@ classdef timer < base
         chPostTick = cell(7, 100);
         
         aiPostTickMax = [ 0, 0, 0, 0, 0, 0, 0 ];
+        
+        iCurrentPostTickExecuting = 0;
     end
     
     methods
@@ -186,6 +188,14 @@ classdef timer < base
             
             iPriority = iPriority + 4;
             
+            % Post-Tick currently running and already at higher prio?
+            %   -> directly execute!
+            if this.iCurrentPostTickExecuting > iPriority
+                hCB();
+                
+                return;
+            end
+            
             %this.chPostTick{end + 1} = hCB;
             this.aiPostTickMax(iPriority) = this.aiPostTickMax(iPriority) + 1;
             this.chPostTick{iPriority, this.aiPostTickMax(iPriority)} = hCB;
@@ -276,11 +286,15 @@ classdef timer < base
             end
             
             % Just to make sure - prio 2 could attach postTick to prio -1
-            while any(this.aiPostTickMax ~= 0)
+            %EXPERIMENTAL updated - now in that case, cb executed directly
+            %  and not added to queue
+            %while any(this.aiPostTickMax ~= 0)
                 % Prios from -3, -2, -1, 0, 1, 2, 3
                 for iP = 1:7
                     % Post-tick stack
                     iPostTick = 1;
+                    
+                    this.iCurrentPostTickExecuting = iP;
 
                     % iPostTickMax can change in interation!
                     while iPostTick <= this.aiPostTickMax(iP)
@@ -293,7 +307,9 @@ classdef timer < base
 
                     this.aiPostTickMax(iP) = 0;
                 end
-            end
+                
+                this.iCurrentPostTickExecuting = 0;
+            %end
             
             % check for bRun -> if true, execute this.step() again!
             if this.bRun

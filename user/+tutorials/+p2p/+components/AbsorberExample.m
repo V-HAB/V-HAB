@@ -1,4 +1,4 @@
-classdef AbsorberExample < matter.procs.p2ps.flow
+classdef AbsorberExample < matter.procs.p2ps.flow & event.source
     %ABSORBEREXAMPLE An example for a p2p processor implementation
     %   The actual logic behind the absorbtion behavior is not based on any
     %   specific physical system. It is just implemented in a way to
@@ -55,6 +55,10 @@ classdef AbsorberExample < matter.procs.p2ps.flow
         end
         
         function update(this)
+            
+            %disp(this.oStore.oTimer.iTick);
+            %disp('--------- P2P UPDATE pre ----------------');
+            
             % Called whenever a flow rate changes. The two EXMES (oIn/oOut)
             % have an oPhase attribute that allows us to get the phases on
             % the left/right side.
@@ -85,6 +89,7 @@ classdef AbsorberExample < matter.procs.p2ps.flow
             % Nothing flows in, so nothing absorbed ...
             if isempty(afFlowRate)
                 this.setMatterProperties(0, this.arExtractPartials);
+                this.trigger('update', 0);
                 
                 return;
             end
@@ -107,16 +112,25 @@ classdef AbsorberExample < matter.procs.p2ps.flow
             % the flow rate accordingly
             fFlowRate = rAdsorp * sum(afFlowRate);
             
-            
-            
             % Test ...
-            %fFlowRate = 0;
+%             if this.oIn.oPhase.oTimer.iTick > 30
+%                 fFlowRate = 1e-5;
+%             else
+%                 fFlowRate = 0;
+%             end
+            
+            %%%disp([ 'UPDATE p2p: ' this.sName ' to ' num2str(fFlowRate) ]);
             
             % Set the new flow rate. If the second parameter (partial
             % masses to extract) is not provided, the partial masses from
             % the phase itself are used (i.e. extracting all species
             % equally).
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
+            
+            
+            this.trigger('update', fFlowRate);
+            
+            %disp('--------- P2P UPDATE post ----------------');
         end
     end
     

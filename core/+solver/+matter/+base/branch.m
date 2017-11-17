@@ -190,8 +190,8 @@ classdef branch < base & event.source
 
             if ~base.oLog.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end;
             
-            this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
             this.bRegisteredOutdated = true;
+            this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
         end
         
         
