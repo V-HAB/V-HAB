@@ -286,13 +286,13 @@ classdef infrastructure < base & event.source
                 if ismethod(oChild,'createMatterStructure')
                     oChild.createMatterStructure();
                     
+                    % Seal matter things - do we need something like that
+                    % for thermal/electrical?
+                    oChild.seal();
+                    
                     iPhases = iPhases + oChild.iPhases;
                     iBranches = iBranches + oChild.iBranches;
                 end
-
-                % Seal matter things - do we need something like that
-                % for thermal/electrical?
-                oChild.seal();
 
                 
                 if ismethod(oChild,'createThermalStructure')
