@@ -52,7 +52,7 @@ classdef f2f_wrapper < base & event.source
             oFlowToFlowProcessor.setHeatFlowObject(oHeatSource, -1);
             
             
-            this.oFlowProcessor.oBranch.bind('setFlowRate', this.updateHeatFlow);
+            this.oFlowProcessor.oBranch.bind('setFlowRate', @this.updateHeatFlow);
             
             
             this.warn('constructor', 'untested!');
@@ -77,10 +77,20 @@ classdef f2f_wrapper < base & event.source
         function updateHeatFlow(this, ~)
             % Give someone a chance to update e.g. fAlpha based on the flow
             % velocity etc.
-            this.trigger('update', struct('oInFlow', this.oFlowProcessor.getInFlow(), 'fFlowRate', this.oFlowProcessor.oBranch.fFlowRate));
+            this.trigger('update', struct('oInFlow', this.getProcInFlow(), 'fFlowRate', this.oFlowProcessor.oBranch.fFlowRate));
             
             this.recalculateHeatFlow();
         end
+        
+        
+        function oFlow = getProcInFlow(this)
+            if this.oFlowProcessor.oBranch.fFlowRate < 0
+                oFlow = this.oFlowProcessor.aoFlows(2);
+            else
+                oFlow = this.oFlowProcessor.aoFlows(1);
+            end
+        end
+        
         
         function recalculateHeatFlow(this)
             % Get temperatures from capacity, f2f
@@ -97,7 +107,7 @@ classdef f2f_wrapper < base & event.source
             
             
             fTempCapa = this.oCapacity.oMatterObject.fTemperature;
-            fTempFlow = this.oFlowProcessor.getInFlow().fTemperature;
+            fTempFlow = this.getProcInFlow().fTemperature;
             
             
             if this.oFlowProcessor.oBranch.fFlowRate == 0
@@ -107,6 +117,13 @@ classdef f2f_wrapper < base & event.source
             end
             
             this.oFlowProcessor.oHeatFlowObject.setPower(this.fHeatFlow);
+            
+            
+            %NOW:
+            %   * this.out --> calculated area etc
+            %   * TEST: shorter pipe - less transfer!
+            %   * T FR change: flow temp change, phase temp change rate EQ
+            %   * T change alpha during run - phase temp chagne rate CHANGE
             
             
             %TODO taint thermal container!

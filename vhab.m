@@ -31,6 +31,11 @@ classdef vhab
             simConstructor = str2func(sSimulation);
             oSim           = simConstructor(varargin{:});
             
+            
+            % Now call .initialize() which wraps everything up. Very
+            % important if e.g. several sim objs should be created before
+            % running one of them (e.g. logging would get mixed up!)
+            oSim.initialize();
         end
         
         
@@ -40,7 +45,6 @@ classdef vhab
             end
             
             
-            
             % If an old simulation obj exists in the base workspace, remove
             % that explicitly just to make sure ...
             try
@@ -48,6 +52,12 @@ classdef vhab
                 delete(oSim);
             end
             
+            
+            % FLUSH serializers / loggers
+            % Only required if we're already initialized
+            if exist('base') > 0
+                base.flush();
+            end
             
             
             disp('Clearing MATLAB classes...');

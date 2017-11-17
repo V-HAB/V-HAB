@@ -128,9 +128,7 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
             oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
             
-            oPlot.definePlot([ iTempIdx1, iTempIdx2 ], 'Flow Temperatures');
-
-            % Manually defined plots
+<<<<<<< HEAD
             cNames = {'Partial Pressure CO_2 Tank 1', 'Partial Pressure CO_2 Tank 2'};
             sTitle = 'Partial Pressure CO2';
             yLabel = 'Partial Pressure CO2 in Pa';
@@ -140,6 +138,10 @@ classdef setup < simulation.infrastructure
             sTitle = 'Partial Mass CO2';
             yLabel = 'Partial Mass CO2 in kg';
             oPlot.definePlotByName(cNames, sTitle, yLabel);
+=======
+            oPlot.definePlot([ iTempIdx1, iTempIdx2 ], 'Flow Temperatures');
+            
+>>>>>>> origin/WIP_premerge-merged
 
         end
         

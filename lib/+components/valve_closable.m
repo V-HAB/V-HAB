@@ -23,10 +23,14 @@ classdef valve_closable < matter.procs.f2f
 %         fDeltaTemp = 0;
 %     end    
     methods
-        function  this = valve_closable(sName, fFlowCoefficient)
-            this@matter.procs.f2f(sName);
+        function  this = valve_closable(oContainer, sName, fFlowCoefficient, bOpen)
+            this@matter.procs.f2f(oContainer, sName);
             
             this.fFlowCoefficient   = fFlowCoefficient;
+            
+            if nargin >= 4 && ~isempty(bOpen) && islogical(bOpen)
+                this.bOpen = ~~bOpen;
+            end
             
             this.supportSolver('callback',  @this.solverDeltas);
             this.supportSolver('manual', false);
@@ -36,7 +40,7 @@ classdef valve_closable < matter.procs.f2f
         
         
         function fDropCoefficient = calculatePressureDropCoefficient(this, ~)
-            fDropCoefficient = sif(this.bOpen, 0, inf);
+            fDropCoefficient = sif(this.bOpen, 0, uint64(18446744073709551615));%inf);
         end
         
         

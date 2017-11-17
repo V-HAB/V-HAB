@@ -82,7 +82,7 @@ classdef Example_4 < vsys
             this.toStores.Store.aoPhases(1).coProcsEXME{2}.fPortPressure = fPressure;
             
             
-            solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches);
+            solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches, 'complex');
         end
     end
     

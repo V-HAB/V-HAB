@@ -2,10 +2,13 @@ classdef monitor < base & event.source
     %MONITOR Summary of this class goes here
     %   Detailed explanation goes here
     
-    properties (SetAccess = private, GetAccess = protected)
+    properties (SetAccess = private, GetAccess = public)
         % Sim infra with oSimulationRoot etc
         oSimulationInfrastructure;
-        
+    end
+    
+    
+    properties (SetAccess = private, GetAccess = protected)
         % Event name to method name
         tsEvents = struct(...
             'init_pre', 'onInitPre', ...

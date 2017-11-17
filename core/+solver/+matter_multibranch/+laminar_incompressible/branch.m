@@ -32,6 +32,10 @@ classdef branch < base & event.source
         %     called in every iteration for absorption rate (requires
         %     specific method in p2p)
         sMode = 'simple';
+        
+        
+        
+        iLastWarn = -1000;
     end
     
     properties (SetAccess = private, GetAccess = protected) %, Transient = true)
@@ -85,11 +89,15 @@ classdef branch < base & event.source
         
         % Last values of caclulated flow rates.
         afFlowRates;
+        
+        % Temporary - active flow f2f procs - pressure rise (or drop)
+        afTmpPressureRise;
     end
     
     
     properties (SetAccess = protected, GetAccess = public)
         iPostTickPriority = -1;
+        iPostTickPriorityReUpdate = 2;
     end
     
     
@@ -112,6 +120,9 @@ classdef branch < base & event.source
             this.iBranches  = length(this.aoBranches);
             this.oMT        = this.aoBranches(1).oMT;
             this.oTimer     = this.aoBranches(1).oTimer;
+            
+            % Preset
+            this.afTmpPressureRise = zeros(1, this.iBranches);
             
             %this.aoSolverProps = solver.matter.base.type.(this.sSolverType).empty(0, size(this.oBranch.aoFlowProcs, 2));
 
@@ -208,6 +219,9 @@ classdef branch < base & event.source
             end
             
             fDensity = mean(afDensities);
+            %fDensity = 1.225;
+            
+            if ~base.oLog.bOff, this.out(1, 3, 'props', 'Mean density: %f', { fDensity }); end;
             
             
             this.afPressureDropCoeffsSum = nan(1, this.iBranches);
@@ -229,11 +243,31 @@ classdef branch < base & event.source
                 oB   = this.aoBranches(iB);
                 
                 
+                % If we have a branch with one, active component -->
+                % special treatment (no coefficient - get pressure rise
+                % based on previous iteration flow rate - add total value
+                % as boundary condition (so iteration checks convergence)
+                bActiveBranch = false;
                 
+                if (oB.iFlowProcs == 1) && isa(oB.aoFlowProcs(1), 'components.fan')
+                    
+                    for iP = 1:2
+                        if this.poBoundaryPhases.isKey(oB.coExmes{iP}.oPhase.sUUID)
+                            this.throw('generateMatrices', 'Active f2f proc (fan component) - both sides need to be variable pressure phases!');
+                        end
+                    end
+                    
+                    bActiveBranch = true;
+                end
+                
+                
+                if bActiveBranch
+                    fCoeffFlowRate = 0;
+                    
                 %TODO in case of complex solver, this.afPressDropCoeffSums
                 %     is relative to mass flow rate, in other case relative
                 %     to volumetric flow rate. Stupid.
-                if strcmp(this.sMode, 'complex')
+                elseif strcmp(this.sMode, 'complex')
                     % dP = Coeff * FR.
                     
                     % If flow rate is zero, use minTs as initial flow rate.
@@ -290,6 +324,8 @@ classdef branch < base & event.source
                     fCoeffFlowRate = this.afPressureDropCoeffsSum(iB) / fDensity;
                 end
                 
+                if ~base.oLog.bOff, this.out(1, 3, 'props', 'Branch %s: Flow Coeff %f', { oB.sName, fCoeffFlowRate}); end;
+                
                 
                 % Set flow coeff
                 iCol = this.piObjUuidsToColIndex(oB.sUUID);
@@ -319,6 +355,10 @@ classdef branch < base & event.source
                         afBoundaryConditions(iRow) = afBoundaryConditions(iRow) ...
                                                     - iSign * oE.getPortProperties(); %oP.fPressure;
                         
+                        
+                        
+                        if ~base.oLog.bOff, this.out(1, 3, 'props', 'Phase %s-%s: Pressure %f', { oP.oStore.sName, oP.sName, oE.getPortProperties() }); end;
+                        
                     else
                         iCol = this.piObjUuidsToColIndex(oP.sUUID);
                         
@@ -328,6 +368,35 @@ classdef branch < base & event.source
                     
                     % Multiplication not really necessary, only two loops
                     iSign = -1 * iSign;
+                end
+                
+                
+                % Active component? Get pressure rise based on last
+                % iteration flow rate - add to boundary condition!
+                if bActiveBranch
+                    fFlowRate   = this.afFlowRates(iB);
+                    oProcSolver = oB.aoFlowProcs(1).toSolve.(this.sSolverType);
+                    
+                    % calDeltas returns POSITIVE value for pressure DROP!
+                    fPressureRise = -1 * oProcSolver.calculateDeltas(fFlowRate);
+                    
+                    % No flow, most likely?
+                    if fPressureRise == 0
+                        this.afTmpPressureRise(iB) = 0;
+                        
+                    % DROP!
+                    elseif fPressureRise < 0
+                        this.afTmpPressureRise(iB) = 0;
+                        
+                    else
+                        fPressureRise = (this.afTmpPressureRise(iB) * 33 + fPressureRise) / 34;
+                        
+                        this.afTmpPressureRise(iB) = fPressureRise;
+                    end
+                    
+                    % Boundary condition must be zero, can't have active
+                    % component if one side is a fixed, BC phase.
+                    afBoundaryConditions(iRow) = -1 * fPressureRise;
                 end
             end
             
@@ -356,28 +425,30 @@ classdef branch < base & event.source
                 %   necessarily the case! Check oP == oP2p.oIn!
                 %TODO also: just adsorption, doesn't work for p2p that
                 %     dumps mass into the VPP
-                arRatiosFiltered = zeros(1, oP.iProcsEXME);
+% % %           ~~~~~~~~~~~~~~ INACTIVE P2P COEFF VERSION ~~~~~~~~~~~~~~~~~
+% % %                 arRatiosFiltered = zeros(1, oP.iProcsEXME);
+% % %                 
+% % % %                 aoE = [ oP.coProcsEXME{:} ]; aoF = [ aoE.oFlow ]; aoB = [ aoF.oBranch ];
+% % % %                 disp(oP.oStore.sName);
+% % % %                 
+% % % %                 for iF = 1:length(aoF)
+% % % %                     find(aoF(iF).arPartialMass)
+% % % %                     this.oMT.csSubstances(find(aoF(iF).arPartialMass))
+% % % %                 end
+% % %                 
+% % %                 if oP.iProcsP2Pflow > 0
+% % % %                     if this.oTimer.fTime >= 39
+% % % %                         disp('39s');
+% % % %                     end
+% % %                     
+% % %                     arRatiosFiltered = oP.coProcsP2Pflow{1}.calculateFilterRates();
+% % %                     
+% % % %                     if this.oTimer.fTime >= 39
+% % % %                         fprintf('[%i|%fs] %s-%s\n', this.oTimer.iTick, this.oTimer.fTime, oP.oStore.sName, oP.sName);
+% % % %                         disp(arRatiosFiltered);
+% % % %                     end
+% % %                 end
                 
-%                 aoE = [ oP.coProcsEXME{:} ]; aoF = [ aoE.oFlow ]; aoB = [ aoF.oBranch ];
-%                 disp(oP.oStore.sName);
-%                 
-%                 for iF = 1:length(aoF)
-%                     find(aoF(iF).arPartialMass)
-%                     this.oMT.csSubstances(find(aoF(iF).arPartialMass))
-%                 end
-                
-                if oP.iProcsP2Pflow > 0
-%                     if this.oTimer.fTime >= 39
-%                         disp('39s');
-%                     end
-                    
-                    arRatiosFiltered = oP.coProcsP2Pflow{1}.calculateFilterRates();
-                    
-%                     if this.oTimer.fTime >= 39
-%                         fprintf('[%i|%fs] %s-%s\n', this.oTimer.iTick, this.oTimer.fTime, oP.oStore.sName, oP.sName);
-%                         disp(arRatiosFiltered);
-%                     end
-                end
                 
                 
                 % Connected branches - col indices in matrix
@@ -420,57 +491,139 @@ classdef branch < base & event.source
                         iAdded = iAdded + 1;
                         
                         
-                        
-                        % Do we have a p2p filter rate for this inflow?
-                        if arRatiosFiltered(iB) > 0
-                            bPosPressDiff = oB.coExmes{1}.getPortProperties() > oB.coExmes{2}.getPortProperties();
-                            bNegPressDiff = oB.coExmes{1}.getPortProperties() < oB.coExmes{2}.getPortProperties();
-                            
-                            %TODO for initial, no pressure differences etc
-                            %     available ... right now, iteration done
-                            %     twice to ensure correct results.
-                            bInflow = ...
-                                (bPosPressDiff && (iSign == 1)) || ...
-                                (bNegPressDiff && (iSign == -1));
-                            
-                            
-%                             if this.oTimer.fTime >= 60
-%                                 fprintf('Branch %i: %i inflow? (%f)\n', iB, bInflow, arRatiosFiltered(iB));
-%                             end
-                            
-                            
-                            if bInflow
-                                % Ok, so part of the inflowing rates are
-                                % filtered, for example normally:
-                                % FR_1 + FR_2  + FR_3 = 0
-                                % (assuming phase ins on 'right' side of
-                                % all branches)
-                                % With a p2 adsorption (assuming 1/3 are
-                                % positive values, i.e. inflows):
-                                % FR_1 + FR_2 + FR_3 = 0.3*FR_1 + 0.1*FR_3
-                                %
-                                % Therefore: iSign * (100% - filter rate);
-                                aafPhasePressuresAndFlowRates(iRow, iCol) = iSign * (1 - arRatiosFiltered(iB));
-                                
-                                iAdded = iAdded + 1;
-                            end
-                        
-                            
-                        else
-%                             if this.oTimer.fTime >= 60
-%                                 fprintf('Branch %i: p2p partial NOT gt 0: %f\n', iB, arRatiosFiltered(iB));
-%                             end
-                        end
+% % %           ~~~~~~~~~~~~~~ INACTIVE P2P COEFF VERSION ~~~~~~~~~~~~~~~~~
+% % %                         % Do we have a p2p filter rate for this inflow?
+% % %                         if arRatiosFiltered(iB) > 0
+% % %                             bPosPressDiff = oB.coExmes{1}.getPortProperties() > oB.coExmes{2}.getPortProperties();
+% % %                             bNegPressDiff = oB.coExmes{1}.getPortProperties() < oB.coExmes{2}.getPortProperties();
+% % %                             
+% % %                             %TODO for initial, no pressure differences etc
+% % %                             %     available ... right now, iteration done
+% % %                             %     twice to ensure correct results.
+% % %                             bInflow = ...
+% % %                                 (bPosPressDiff && (iSign == 1)) || ...
+% % %                                 (bNegPressDiff && (iSign == -1));
+% % %                             
+% % %                             
+% % % %                             if this.oTimer.fTime >= 60
+% % % %                                 fprintf('Branch %i: %i inflow? (%f)\n', iB, bInflow, arRatiosFiltered(iB));
+% % % %                             end
+% % %                             
+% % %                             
+% % %                             if bInflow
+% % %                                 % Ok, so part of the inflowing rates are
+% % %                                 % filtered, for example normally:
+% % %                                 % FR_1 + FR_2  + FR_3 = 0
+% % %                                 % (assuming phase ins on 'right' side of
+% % %                                 % all branches)
+% % %                                 % With a p2 adsorption (assuming 1/3 are
+% % %                                 % positive values, i.e. inflows):
+% % %                                 % FR_1 + FR_2 + FR_3 = 0.3*FR_1 + 0.1*FR_3
+% % %                                 %
+% % %                                 % Therefore: iSign * (100% - filter rate);
+% % %                                 aafPhasePressuresAndFlowRates(iRow, iCol) = iSign * (1 - arRatiosFiltered(iB));
+% % %                                 
+% % %                                 iAdded = iAdded + 1;
+% % %                             end
+% % %                         
+% % %                             
+% % %                         else
+% % % %                             if this.oTimer.fTime >= 60
+% % % %                                 fprintf('Branch %i: p2p partial NOT gt 0: %f\n', iB, arRatiosFiltered(iB));
+% % % %                             end
+% % %                         end
                         
                     end
                 end
                 
                 
+                if oP.iProcsP2Pflow > 0
+                    % No go through all p2ps, get their flow rates based on the
+                    % flow rates from the previous iteration (or time step).
+
+                    % Generate flow rates array!
+                    afInFlowRates = zeros(0);
+                    aarInPartials = zeros(0, this.oMT.iSubstances);
+
+                    %keyboard();
+                    for iB = 1:oP.iProcsEXME
+                        oProcExme = oP.coProcsEXME{iB};
+                        oBranch   = oProcExme.oFlow.oBranch;
+
+                        if isa(oProcExme.oFlow, 'matter.procs.p2p')
+                            continue;
+                        end
+
+
+                        % Manual
+                        if ~this.piObjUuidsToColIndex.isKey(oBranch.sUUID)
+                            [ fFlowRate, arFlowPartials, ~ ] = oProcExme.getFlowData();
+
+                        % Dynamically solved branch - get CURRENT flow rate
+                        % (last iteration), not last time step flow rate!!
+                        else
+
+                            % Find branch index
+                            iBranchIdx = find(this.aoBranches == oBranch, 1);
+
+                            fFlowRate = oProcExme.iSign * this.afFlowRates(iBranchIdx);
+
+
+                            %[ ~, arFlowPartials, ~ ] = oProcExme.getFlowData(fFlowRate);
+                            arFlowPartials = oProcExme.oFlow.arPartialMass;
+                        end
+
+                        % Only for INflows
+                        if fFlowRate > 0
+                            afInFlowRates(end + 1, 1) = fFlowRate;
+                            aarInPartials(end + 1, :) = arFlowPartials;
+                        end
+
+
+
+
+
+                        % Get flow rate for this branch from this.afFlowRates
+                        % If manual solver, get from oBranch!
+                        %
+                        % Check sign (oP == coExmes{1}.oPhase?)
+                        % use flow rate AND partials! Partials by calling
+                        % getFlowData, but then setting the own flow rate
+                    end
+
+                    for iProcP2p = 1:oP.iProcsP2Pflow
+                        oProcP2p = oP.coProcsP2Pflow{iProcP2p};
+
+                        if oProcP2p.oIn.oPhase ~= oP
+                            continue;
+                        end
+
+
+                        [ fFlowRateP2p, ~ ] = oProcP2p.calculateFilterRate(afInFlowRates, aarInPartials);
+
+                        % We only care about p2ps whose IN phase is the current
+                        % variable presusre phase here. So therefore, a
+                        % positive flow rate means an OUTflow!
+                        fFrSum = fFrSum + fFlowRateP2p;
+
+                        %disp('multi branch: TODO make sure that in the SAME tick, the according p2p / phases are updated so the new p2p flow rate, based on the new multi branch solver flow rates, are used! And that they are equal! Really equal!');
+                    end
+                end
+                
+                
+                
                 % If unsolved branch as BC, one solved branch is
                 % sufficient.
-                % If no branch added, don't add bc flow rate.
-                if fFrSum ~= 0 && iAdded >= 1
-                    afBoundaryConditions(iRow) = fFrSum;
+                % If no branch added, don't add bc flow rate. This is a VPP
+                % so that would only be valid if the inflow is zero! And
+                % that does not really make sense.
+                %TODO throw an error if fFrSum ~= 0 and iAdded == 0?
+                if fFrSum ~= 0
+                    if iAdded >= 1
+                        afBoundaryConditions(iRow) = fFrSum;
+                    else
+                        this.throw('generateMatrices', 'BC flows (manual solver or p2p) but no variable, solved branches connected!');
+                    end
                 end
                 % Remove everything 
 %                 elseif iAdded < 2 && fFrSum == 0
@@ -508,6 +661,9 @@ classdef branch < base & event.source
         
         
         function registerUpdate(this, ~)
+            
+            if ~base.oLog.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end;
+            
             if this.bRegisteredOutdated
                 return;
             end
@@ -521,6 +677,7 @@ classdef branch < base & event.source
             end
             
             this.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
+            this.oTimer.bindPostTick(@this.reUpdate, this.iPostTickPriorityReUpdate);
         end
         
         
@@ -531,6 +688,10 @@ classdef branch < base & event.source
             this.fLastUpdate         = this.oTimer.fTime;
             this.bRegisteredOutdated = false;
             
+            if ~base.oLog.bOff
+                this.out(1, 1, 'update', 'Update multi flow rate solver');
+                this.out(1, 2, 'update', 'B %s\t', { this.aoBranches.sName });
+            end
             
             for iB = 1:this.iBranches
                 this.afFlowRates(iB) = this.aoBranches(iB).fFlowRate;
@@ -553,13 +714,21 @@ classdef branch < base & event.source
             
             % Only iterate for the complex solving mechanism
             %rErrorMax = 0.01;
-            rErrorMax = sif(strcmp(this.sMode, 'complex'), 0.01, inf);
+            %rErrorMax = sif(strcmp(this.sMode, 'complex'), 0.001, inf);
+            rErrorMax  = sif(strcmp(this.sMode, 'complex'), 0.001, 0);
+            %rErrorMax  = sif(strcmp(this.sMode, 'complex'), 0.1 ^ this.oTimer.iPrecision, 0);
+            iIteration = 0;
+            
+            afBoundaryConditions = [];
             
             % The initial flow rates are all zero, so initial rError below
             % will be inf -> that's good, e.g. the p2ps need a correct set
             % of flow rate directions to be included in equations!
-            while abs(rError) >= rErrorMax
-                afPrevFrs = this.afFlowRates;
+            while abs(rError) > rErrorMax %|| iIteration < 5
+                afPrevFrs  = this.afFlowRates;
+                iIteration = iIteration + 1;
+                
+                afPrevBoundaryConditions = afBoundaryConditions;
                 
                 % Regenerates matrices, gets coeffs from flow procs
                 [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = this.generateMatrices();
@@ -570,7 +739,21 @@ classdef branch < base & event.source
 
                 % Solve
                 %hT = tic();
+                warning('off','all');
+                
                 afResults = aafPhasePressuresAndFlowRates \ afBoundaryConditions;
+                sLastWarn = lastwarn;
+                
+                warning('on','all');
+                
+                if ~isempty(sLastWarn) && ~isempty(strfind(sLastWarn, 'badly scaled'))
+                    if (this.oTimer.iTick - this.iLastWarn) >= 100
+                        warning(sLastWarn);
+                        
+                        this.iLastWarn = this.oTimer.iTick;
+                    end
+                end
+                
                 %toc(hT);
 
                 %disp(afResults);
@@ -587,7 +770,12 @@ classdef branch < base & event.source
 
                     if isa(oObj, 'matter.branch')
                         iB = find(this.aoBranches == oObj, 1);
-                        this.afFlowRates(iB) = afResults(iR);
+                        
+                        if iIteration == 1 || ~strcmp(this.sMode, 'complex')
+                            this.afFlowRates(iB) = afResults(iR);
+                        else
+                            this.afFlowRates(iB) = (this.afFlowRates(iB) * 3 + afResults(iR)) / 4;
+                        end
                     end
                 end
                 
@@ -595,7 +783,48 @@ classdef branch < base & event.source
                 
                 %this.afFlowRates = tools.round.prec(this.afFlowRates, this.oTimer.iPrecision);
                 
-                rError = max(abs(this.afFlowRates ./ afPrevFrs) - 1);
+                iPrecision = this.oTimer.iPrecision;
+                afFrsDiff  = tools.round.prec(abs(this.afFlowRates - afPrevFrs), iPrecision);
+                
+                %rError = max(abs(this.afFlowRates ./ afPrevFrs) - 1);
+                rError = max(afFrsDiff ./ afPrevFrs);
+                %rError = tools.round.prec(max(afFrsDiff ./ afPrevFrs), iPrecision);
+                
+                
+                % Boundary conditions (= p2p and others) changing? Continue
+                % iteration!
+                % Also enforces at least two iterations ... ok? BS?
+                afBcChange = [ 0 ];
+                
+                if ~isempty(afPrevBoundaryConditions)
+                    %afBcChange = tools.round.prec(afPrevBoundaryConditions - afBoundaryConditions, iPrecision);
+                    afBcChange = tools.round.prec(afPrevBoundaryConditions - afBoundaryConditions, 4);
+                end
+                
+                if isempty(afPrevBoundaryConditions) || ~all(afBcChange == 0) % ~all(afPrevBoundaryConditions == afBoundaryConditions)
+                    if ~base.oLog.bOff, this.out(1, 2, 'changing-boundary-conditions', 'Boundary conditions changing (p2p!), iteration %i', { iIteration }); end;
+                    rError = inf;
+                end
+                
+                
+                if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { iIteration, rError }); end;
+                
+                if iIteration > 200
+                    %keyboard();
+                    this.throw('update', 'too many iterations, error %.12f', rError);
+                end
+            end
+            
+            if ~base.oLog.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { iIteration }); end;
+            
+            for iR = 1:length(this.csObjUuidsToColIndex)
+                oObj = this.poColIndexToObj(iR);
+
+                if isa(oObj, 'matter.branch')
+                    iB = find(this.aoBranches == oObj, 1);
+                    
+                    if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(iB) }); end;
+                end
             end
             
             
@@ -614,6 +843,8 @@ classdef branch < base & event.source
                 elseif isa(oObj, 'matter.branch')
                     iB = find(this.aoBranches == oObj, 1);
                     
+                    %TODO get pressure drop distribution (depends on total
+                    %     pressure drop and drop coeffs!)
                     %this.chSetBranchFlowRate{iB}(afResults(iR), []);
                     this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), []);
                 end
@@ -628,6 +859,20 @@ classdef branch < base & event.source
             %TODO check total flow rates for each phase, vs. total flow
             %     rates for all connected phases -> calculate time required
             %     for the phases to equalize in mass --> max TS
+        end
+        
+        function reUpdate(this)
+            % Just re-set flow rates again so branches update from IN phase
+            for iR = 1:length(this.csObjUuidsToColIndex)
+                oObj = this.poColIndexToObj(iR);
+                
+                if isa(oObj, 'matter.branch')
+                    iB = find(this.aoBranches == oObj, 1);
+                    
+                    this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), []);
+                end
+            end
+            
         end
     end
 end

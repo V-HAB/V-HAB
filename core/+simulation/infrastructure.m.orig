@@ -242,9 +242,26 @@ classdef infrastructure < base & event.source
 % %             this.mfLostMass  = zeros(0, this.oData.oMT.iSubstances);
         
             
+<<<<<<< HEAD
+
+            % Create monitors
+            csMonitors = fieldnames(this.ttMonitorCfg);
+            
+            for iM = 1:length(csMonitors)
+                cParams = {};
+                monitorConstructor = str2func(this.ttMonitorCfg.(csMonitors{iM}).sClass);
+                
+                if isfield(this.ttMonitorCfg.(csMonitors{iM}), 'cParams')
+                    cParams = this.ttMonitorCfg.(csMonitors{iM}).cParams;
+                end
+                
+                this.toMonitors.(csMonitors{iM}) = monitorConstructor(this, cParams{:});
+            end
             
             % Bind the playFinishSound() method to the 'finished' event.
             this.bind('finish', @(~) this.playFinishSound());
+=======
+>>>>>>> origin/WIP_premerge-merged
         
         
             % Pre Init
@@ -283,11 +300,37 @@ classdef infrastructure < base & event.source
                 sChild = oRoot.csChildren{iC};
                 oChild = oRoot.toChildren.(sChild);
                 
-                if ismethod(oChild,'createMatterStructure')
-                    oChild.createMatterStructure();
+<<<<<<< HEAD
+                for iC = 1:length(oRoot.csChildren)
+                    sChild = oRoot.csChildren{iC};
+                    oChild = oRoot.toChildren.(sChild);
+                    
+                    if ismethod(oChild,'createMatterStructure')
+                        oChild.createMatterStructure();
+                    end
+                    
+                    if ismethod(oChild,'createThermalStructure')
+                        oChild.createThermalStructure();
+                    end
+                    
+                    if ismethod(oChild,'createElectricalStructure')
+                        oChild.createElectricalStructure();
+                    end
+                    
+                    oChild.seal();
+                    oChild.createSolverStructure();
+                    
+                    %TODO Might have to add something like this here
+                    %if ismethod(oChild,'createDomainInterfaces')
+                    %   oChild.createDomainInterfaces();
+                    %end
                     
                     iPhases = iPhases + oChild.iPhases;
                     iBranches = iBranches + oChild.iBranches;
+=======
+                if ismethod(oChild,'createMatterStructure')
+                    oChild.createMatterStructure();
+>>>>>>> origin/WIP_premerge-merged
                 end
 
                 % Seal matter things - do we need something like that
@@ -295,10 +338,14 @@ classdef infrastructure < base & event.source
                 oChild.seal();
 
                 
+<<<<<<< HEAD
+                disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
+                disp(['Model contains ', num2str(iBranches), ' Branches and ', num2str(iPhases), ' Phases.'])
+=======
                 if ismethod(oChild,'createThermalStructure')
                     oChild.createThermalStructure();
                 end
-                
+>>>>>>> origin/WIP_premerge-merged
                 
                 if ismethod(oChild,'createElectricalStructure')
                     oChild.createElectricalStructure();
@@ -312,8 +359,7 @@ classdef infrastructure < base & event.source
                 %end
             end
             
-            disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!']);
-            disp(['Model contains ', num2str(iBranches), ' Branches and ', num2str(iPhases), ' Phases.'])
+            disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
             
             this.bInitialized = true;
 
@@ -571,6 +617,7 @@ classdef infrastructure < base & event.source
 
         end
         
+<<<<<<< HEAD
         function playFinishSound(this)
             if this.bPlayFinishSound
                 % Loading the data for the finishing sound
@@ -579,7 +626,8 @@ classdef infrastructure < base & event.source
                 sound(afSampleData, afSampleRate);
             end
         end
-        
+
+=======
         
         function delete(this)
             csMonitors = fieldnames(this.toMonitors);
@@ -588,6 +636,7 @@ classdef infrastructure < base & event.source
                 delete(this.toMonitors.(csMonitors{iM}));
             end
         end
+>>>>>>> origin/WIP_premerge-merged
     end
     
     
@@ -603,4 +652,3 @@ classdef infrastructure < base & event.source
     end
 end
 
-	

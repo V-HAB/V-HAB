@@ -42,6 +42,9 @@ classdef timer < base
         % Last execution time for each callback
         afLastExec = [];
         
+        % Optional payload for each callback.
+        ctPayload = {};
+        
         % Time steps == -1 --> execute when timer executes, NOT in global
         % time step (0 would mean global timestep, leading to the timer
         % being required to execute every global TS. If -1, and the
@@ -127,8 +130,29 @@ classdef timer < base
         end
         
         
-        function [ setTimeStep, unbind ] = bind(this, callBack, fTimeStep)
+        function [ setTimeStep, unbind ] = bind(this, callBack, fTimeStep, tPayload)
             % Bind a callback
+            
+            % Payload?
+            tPayloadDef = struct('oSrcObj', [], 'sMethod', [], 'sDescription', [], 'cAdditional', {{}});
+            
+            if nargin >= 4 && isstruct(tPayload)
+                csFields = fieldnames(tPayloadDef);
+                
+                for iF = 1:length(csFields)
+                    if ~isfield(tPayload, csFields{iF}), continue; end;
+                    
+                    tPayloadDef.(csFields{iF}) = tPayload.(csFields{iF});
+                end
+            else
+                % At least some info?
+                try %#ok<TRYNC>
+                    tPayloadDef.oSrcObj = evalin('caller', 'this');
+                end
+                
+                tPayloadDef.sMethod = func2str(callBack);
+            end
+            
             
             % Get index for new callback
             iIdx = length(this.afTimeStep) + 1;
@@ -136,6 +160,7 @@ classdef timer < base
             % Callback and last execution time
             this.cCallBacks{iIdx} = callBack;
             this.afLastExec(iIdx) = -inf; % preset with -inf -> always execute in first exec!
+            this.ctPayload{iIdx}  = tPayloadDef;
             
             % Time step - provided or use the global
             if nargin >= 3, this.afTimeStep(iIdx) = fTimeStep;
@@ -176,6 +201,7 @@ classdef timer < base
             this.cCallBacks(iCB) = [];
             this.afTimeStep(iCB) = [];
             this.afLastExec(iCB) = [];
+            this.ctPayload(iCB)  = [];
         end
         
         function run(this)
@@ -214,11 +240,28 @@ classdef timer < base
             % Dependent systems have -1 as time step - therefore this
             % should always be true!
             abExec = (this.afLastExec + this.afTimeStep) <= this.fTime;
+            %abExec = (this.afLastExec + this.afTimeStep) <= (this.fTime + fThisStep - this.fMinimumTimeStep);
             aiExec  = find(abExec);
             
             % Execute callbacks
             for iE = 1:length(aiExec)
                 this.cCallBacks{aiExec(iE)}(this);
+                
+                if ~base.oLog.bOff
+                    tPayload = this.ctPayload{aiExec(iE)};
+
+                    this.out(1, 1, 'exec', 'Exec callback %i: %s', { aiExec(iE) func2str(this.cCallBacks{aiExec(iE)}) });
+
+                    if isempty(tPayload.oSrcObj)
+                        this.out(1, 2, 'run', 'Payload - Method Name: %s, Bind Decsription: %s', { tPayload.sMethod, tPayload.sDescription });
+                    else
+                        this.out(1, 2, 'payload', '** Payload **');
+                        this.out(1, 2, 'payload', 'Method Name: %s', { tPayload.sMethod });
+                        this.out(1, 2, 'payload', 'Source Obj Entity %s', { tPayload.oSrcObj.sEntity });
+                        this.out(1, 3, 'payload', 'Src Obj UUID %s', { tPayload.oSrcObj.sUUID });
+                        this.out(1, 3, 'payload', 'Bind Description: "%s"', { tPayload.sDescription });
+                    end
+                end
             end
             
             
@@ -226,6 +269,11 @@ classdef timer < base
             % this works, don't need find!
             this.afLastExec(abExec) = this.fTime;
             
+            
+            if ~base.oLog.bOff
+                this.out(1, 1, 'post-tick', 'Running post-tick tasks!');
+                this.out(1, 2, 'post-tick-num', 'Amount of cbs: %i\t', { this.aiPostTickMax });
+            end
             
             % Just to make sure - prio 2 could attach postTick to prio -1
             while any(this.aiPostTickMax ~= 0)

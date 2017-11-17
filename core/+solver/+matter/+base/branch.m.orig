@@ -130,19 +130,20 @@ classdef branch < base & event.source
         end
         
         
-%         function syncToSolver(this, oSolver)
-%             % 
-%             %
-%             %TODO
-%             % Allow several synced solvers!!
-%             
-%             if ~isempty(this.oSyncedSolver)
-%                 this.throw('syncToSolver', 'Cannot set another synced solver');
-%             end
-%             
-%             this.oSyncedSolver = oSolver;
-%             this.oSyncedSolver.bind('update', @(~) this.syncedUpdateCall());
-%         end
+<<<<<<< HEAD
+        function syncToSolver(this, oSolver)
+            % 
+            %
+            %TODO
+            % Allow several synced solvers!!
+            
+            if ~isempty(this.oSyncedSolver)
+                this.throw('syncToSolver', 'Cannot set another synced solver');
+            end
+            
+            this.oSyncedSolver = oSolver;
+            this.oSyncedSolver.bind('update', @(~) this.syncedUpdateCall());
+        end
         
         
         
@@ -157,6 +158,21 @@ classdef branch < base & event.source
             
             end
         end
+=======
+%         function syncToSolver(this, oSolver)
+%             % 
+%             %
+%             %TODO
+%             % Allow several synced solvers!!
+%             
+%             if ~isempty(this.oSyncedSolver)
+%                 this.throw('syncToSolver', 'Cannot set another synced solver');
+%             end
+%             
+%             this.oSyncedSolver = oSolver;
+%             this.oSyncedSolver.bind('update', @(~) this.syncedUpdateCall());
+%         end
+>>>>>>> origin/WIP_premerge-merged
     end
     
     methods (Access = private)
@@ -176,6 +192,7 @@ classdef branch < base & event.source
     methods (Access = protected)
         
         function registerUpdate(this, ~)
+<<<<<<< HEAD
             if this.bRegisteredOutdated
                 return;
             end
@@ -187,9 +204,18 @@ classdef branch < base & event.source
             if this.bTriggerRegisterUpdateCallbackBound
                 this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
             end
+            
+=======
+            %CHECK-160514
+            %if this.bRegisteredOutdated, return; end;
+            if this.bRegisteredOutdated, return; end;
 
+            this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
+            
             if ~base.oLog.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end;
             
+            %keyboard();
+>>>>>>> origin/WIP_premerge-merged
             this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
             this.bRegisteredOutdated = true;
         end

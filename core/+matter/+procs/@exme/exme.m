@@ -131,7 +131,7 @@ classdef exme < base
         
         
         
-        function [ fFlowRate, arPartials, afProperties ] = getFlowData(this)
+        function [ fFlowRate, arPartials, afProperties ] = getFlowData(this, fFlowRate)
             % Return the flow rate, plus the according partial mass
             % ratios. Depends on flow direction and flow type: if a p2p
             % flow processor is connected, getting the arPartials from
@@ -156,7 +156,11 @@ classdef exme < base
             % The flow rate property of the flow is unsigned, so we have to
             % add it again by multiplying with the iSign property of this
             % exme. 
-            fFlowRate  =  this.oFlow.fFlowRate * this.iSign;
+            if nargin >= 2 && ~isempty(fFlowRate)
+                fFlowRate  =  fFlowRate * this.iSign;
+            else
+                fFlowRate  =  this.oFlow.fFlowRate * this.iSign;
+            end
             
             
             if this.bFlowIsAProcP2P

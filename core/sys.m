@@ -38,6 +38,8 @@ classdef sys < base & event.source
     
     methods
         function this = sys(oParent, sName)
+            this@base();
+            
             % Construct the sys object
             %
             % sys parameters:

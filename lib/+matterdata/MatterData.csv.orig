@@ -352,3 +352,10 @@ BiomassBalance,BiomassBalance,solid,0.02307,,,804,1860,,,
 BiomassBalance,BiomassBalance,liquid,0.02307,,,804,1860,,,
 BiomassBalance,BiomassBalance,gas,0.0140067,63.15,77.35,1.17,1042,,0.12,
 Nutrients,Nutriens,liquid,0.02307,,,804,1860,,,
+<<<<<<< HEAD
+CH4N2O,Urea,liquid,0.0600553,,,1320,1545.076,,,
+NH4OH,AmmoniumHydroxide,liquid,0.03504,,,880,2458.23,,,
+HNO3,NitricAcid,liquid,0.0630128,,,1512.9,1737.74,,,
+HNO2,NitrousAcid,liquid,0.0470134,,,1000,969.94,,,,
+=======
+>>>>>>> origin/WIP_premerge-merged
