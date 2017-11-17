@@ -7,245 +7,104 @@ function fVaporPressure = calculateVaporPressure(~, fTemperature, sSubstance)
     
 %first it is necessary to decide for which substance the vapor pressure
 %should be calculated
-switch sSubstance
-    case 'CH4'
-    %Anotine Equation Parameters
-    if fTemperature < 90.99
-        %Methan is  a liquid at this temperature
-        fVaporPressure = 0;
-    elseif fTemperature >= 90.99 && fTemperature < 189.99
-        %parameters for the vapor pressure calculation
-        fA = 3.9895;
-        fB = 443.028;
-        fC = -0.49;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-    else
-        %Methan is a gas at this temperature
-        fVaporPressure = inf;
-    end
-    case 'H2'
-    %Anotine Equation Parameters
-    if fTemperature < 21.01
-        %Hydrogen is  a liquid at this temperature
-        fVaporPressure = 0;
-    elseif fTemperature >= 21.01 && fTemperature < 32.27
-        %parameters for the vapor pressure calculation
-        fA = 3.54314;
-        fB = 99.395;
-        fC = 7.726;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-    else
-        %Hydrogen is a gas at this temperature
-        fVaporPressure = inf;
-    end
-    case 'O2'
-    %Anotine Equation Parameters
-    if fTemperature < 54.36
-        %liquid at this temperature
-        fVaporPressure = 0;
-    elseif fTemperature >= 54.36 && fTemperature < 154.33
-        %parameters for the vapor pressure calculation
-        fA = 3.9523;
-        fB = 340.024;
-        fC = -4.144;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-    else
-        %gas at this temperature
-        fVaporPressure = inf;
-    end
-    case 'H2O'
-    %Anotine Equation Parameters
-    if fTemperature < 255.9
-        %Water is  a liquid at this temperature
-        fVaporPressure = 0;
-    elseif fTemperature >= 255.9 && fTemperature < 379
-        %parameters for the vapor pressure calculation
-        fA = 4.6543;
-        fB = 1435.264;
-        fC = -64.848;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-    elseif fTemperature >= 379 && fTemperature < 573
-        %parameters for the vapor pressure calculation
-        fA = 3.55959;
-        fB = 643.748;
-        fC = -198.043;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-    else
-        %Water is a gas at this temperature
-        fVaporPressure = inf;
-    end
-    case 'CO2' 
-    %Anotine Equation Parameters
-    if fTemperature < 154.26
-        %Carbondioxid is  a liquid at this temperature
-        fVaporPressure = 0;
-    elseif fTemperature >= 154.26 && fTemperature < 195.89
-        %parameters for the vapor pressure calculation
-        fA = 6.81228;
-        fB = 1301.679;
-        fC = -3.494;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-    else
-        %Carbondioxid is a gas at this temperature
-        fVaporPressure = inf;
-    end
-    case 'NH3' 
-    %Anotine Equation Parameters
-    if fTemperature < 164
-        %Carbondioxid is  a liquid at this temperature
-        fVaporPressure = 0;
-    elseif fTemperature >= 164 && fTemperature < 239.6
-        %parameters for the vapor pressure calculation
-        fA = 3.18757;
-        fB = 596.713;
-        fC = -80.78;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-  	elseif fTemperature >= 239.6 && fTemperature < 371.5
-        %parameters for the vapor pressure calculation
-        fA = 4.86886;
-        fB = 1113.928;
-        fC = -10.409;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-    else
-        %Carbondioxid is a gas at this temperature
-        fVaporPressure = inf;
-    end
-    case 'CO' 
-    %for CO there were no Antoine Equation Parameters on the nist website.
-    %Therefore only the boiling point is used as deciding instance
-    if fTemperature < 81.63
-        %CO is  a liquid at this temperature
-        fVaporPressure = 0;
-    else
-        %CO is a gas at this temperature
-        fVaporPressure = inf;
-    end
-    case 'N2' 
-    %for CO there were no Antoine Equation Parameters on the nist website.
-    %Therefore only the boiling point is used as deciding instance
-    if fTemperature < 64.14
-        %liquid at this temperature
-        fVaporPressure = 0;
-    elseif fTemperature >= 63.14 && fTemperature < 126
-        %parameters for the vapor pressure calculation
-        fA = 3.7362;
-        fB = 264.651;
-        fC = -6.788;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-    else
-        %gas at this temperature
-        fVaporPressure = inf;
-    end
-    case 'Ar'
-    %Anotine Equation Parameters
-    if fTemperature < 83.78
-        %liquid at this temperature
-        fVaporPressure = 0;
-    elseif fTemperature >= 83.78 && fTemperature < 150.72
-        %parameters for the vapor pressure calculation
-        fA = 3.29555;
-        fB = 215.24;
-        fC = -22.233;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5;
-    else
-        %gas at this temperature
-        fVaporPressure = inf;
-    end    
-%%
-%possible trace contaminants but they are not in the normal matter table
-%yet
 
-    case 'C3H6O'
-    %Anotine Equation Parameters
-    if fTemperature < 259.16
-        %liquid at this temperature
-        fVaporPressure = 0;
-    elseif fTemperature >= 259.16 && fTemperature < 507.6
-        %parameters for the vapor pressure calculation
-        fA = 4.42448;
-        fB = 1312.253;
-        fC = -32.445;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-    else
-        %gas at this temperature
-        fVaporPressure = inf;
-    end    
-    case 'CH2CL2'
-    %Anotine Equation Parameters
-    if fTemperature < 233
-        %liquid at this temperature
-        fVaporPressure = 0;
-    elseif fTemperature >= 233 && fTemperature < 313
-        %parameters for the vapor pressure calculation
-        fA = 4.53691;
-        fB = 1327.016;
-        fC = -20.474;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-    else
-        %gas at this temperature
-        fVaporPressure = inf;
-    end   
-    case 'CH4O'
-    %Anotine Equation Parameters
-    if fTemperature < 288.1
-        %liquid at this temperature
-        fVaporPressure = 0;
-    elseif fTemperature >= 288.1 && fTemperature < 353.3
-        %parameters for the vapor pressure calculation
-        fA = 5.20409;
-        fB = 1569.613;
-        fC = -34.846;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-	elseif fTemperature >= 353.3 && fTemperature < 512.63
-        %parameters for the vapor pressure calculation
-        fA = 5.15853;
-        fB = 1569.613;
-        fC = -34.846;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-    else
-        %gas at this temperature
-        fVaporPressure = inf;
-    end   
-    case 'C8H10'
-    %Anotine Equation Parameters
-    if fTemperature < 273
-        %liquid at this temperature
-        fVaporPressure = 0;
-    elseif fTemperature >= 273 && fTemperature < 332.4
-        %parameters for the vapor pressure calculation
-        fA = 5.09199;
-        fB = 1996.545;
-        fC = -14.772;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-	elseif fTemperature >= 332.4 && fTemperature < 413.19
-        %parameters for the vapor pressure calculation
-        fA = 4.13607;
-        fB = 1463.218;
-        fC = -57.991;
-        %Antoine Equation
-        fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-    else
-        %gas at this temperature
-        fVaporPressure = inf;
-    end   
-    otherwise
-    error('the calculation for the substance %s is not available. Please visit http://webbook.nist.gov/chemistry/ and add the calculation to this file', sSubstance);
+tfAntoineParameters = struct();
+
+% Antoine parameters for CH4
+tfAntoineParameters.CH4.Range(1).mfLimits = [90.99, 189.99];
+tfAntoineParameters.CH4.Range(1).fA = 3.9895;
+tfAntoineParameters.CH4.Range(1).fB = 443.028;
+tfAntoineParameters.CH4.Range(1).fC = -0.49;
+
+% Antoine parameters for H2
+tfAntoineParameters.H2.Range(1).mfLimits = [21.01, 32.27];
+tfAntoineParameters.H2.Range(1).fA = 3.54314;
+tfAntoineParameters.H2.Range(1).fB = 99.395;
+tfAntoineParameters.H2.Range(1).fC = 7.726;
+
+% Antoine parameters for O2
+tfAntoineParameters.O2.Range(1).mfLimits = [54.36, 154.33];
+tfAntoineParameters.O2.Range(1).fA = 3.9523;
+tfAntoineParameters.O2.Range(1).fB = 340.024;
+tfAntoineParameters.O2.Range(1).fC = -4.144;
+
+% Antoine parameters for H2O
+tfAntoineParameters.H2O.Range(1).mfLimits = [255.9, 379];
+tfAntoineParameters.H2O.Range(1).fA = 4.6543;
+tfAntoineParameters.H2O.Range(1).fB = 1435.264;
+tfAntoineParameters.H2O.Range(1).fC = -64.848;
+
+tfAntoineParameters.H2O.Range(2).mfLimits = [379, 573];
+tfAntoineParameters.H2O.Range(2).fA = 3.55959;
+tfAntoineParameters.H2O.Range(2).fB = 643.748;
+tfAntoineParameters.H2O.Range(2).fC = -198.043;
+
+% Antoine parameters for CO2
+tfAntoineParameters.CO2.Range(1).mfLimits = [154.26, 195.89];
+tfAntoineParameters.CO2.Range(1).fA = 6.81228;
+tfAntoineParameters.CO2.Range(1).fB = 1301.679;
+tfAntoineParameters.CO2.Range(1).fC = -3.494;
+
+% Antoine parameters for NH3
+tfAntoineParameters.NH3.Range(1).mfLimits = [164, 239.6];
+tfAntoineParameters.NH3.Range(1).fA = 3.18757;
+tfAntoineParameters.NH3.Range(1).fB = 596.713;
+tfAntoineParameters.NH3.Range(1).fC = -80.78;
+
+tfAntoineParameters.NH3.Range(2).mfLimits = [239.6, 371.5];
+tfAntoineParameters.NH3.Range(2).fA = 4.86886;
+tfAntoineParameters.NH3.Range(2).fB = 1113.928;
+tfAntoineParameters.NH3.Range(2).fC = -10.409;
+
+% Antoine parameters for CO
+tfAntoineParameters.CO.Range(1).mfLimits = [81.63];
+
+% Antoine parameters for N2
+tfAntoineParameters.N2.Range(1).mfLimits = [63.14, 126];
+tfAntoineParameters.N2.Range(1).fA = 3.7362;
+tfAntoineParameters.N2.Range(1).fB = 264.651;
+tfAntoineParameters.N2.Range(1).fC = -6.788;
+
+% Antoine parameters for Ar
+tfAntoineParameters.Ar.Range(1).mfLimits = [83.78, 150.72];
+tfAntoineParameters.Ar.Range(1).fA = 3.29555;
+tfAntoineParameters.Ar.Range(1).fB = 215.24;
+tfAntoineParameters.Ar.Range(1).fC = -22.233;
+
+
+for iRange = 1:length(tfAntoineParameters.(sSubstance))
+    
+    mfLimits = [tfAntoineParameters.(sSubstance).Range(:).mfLimits];
+    
+    if fTemperature < mfLimits(1)
+        % For temperature below the limits the substance is liquid and the
+        % vapor pressure is 0. This is represented by the following antoine
+        % parameters
+        fA = 0;
+        fB = inf;
+        fC = 0;
+        
+    elseif fTemperature > mfLimits(end)
+        % For temperature above the limits the substance is gaseous and the
+        % vapor pressure is inf. This is represented by the following antoine
+        % parameters
+        fA = inf;
+        fB = 0;
+        fC = 0;
+        
+    elseif (fTemperature >= tfAntoineParameters.(sSubstance).Range(iRange).mfLimits(1)) &&...
+            (fTemperature <= tfAntoineParameters.(sSubstance).Range(iRange).mfLimits(2))
+        % In between the limits the respective antoine parameters from the
+        % NIST chemistry webbook for the respective substance are used
+        fA = tfAntoineParameters.(sSubstance).Range(iRange).fA;
+        fB = tfAntoineParameters.(sSubstance).Range(iRange).fB;
+        fC = tfAntoineParameters.(sSubstance).Range(iRange).fC;
+    end
+    
 end
+
+% Antoine Equation
+fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
 
 end
 
