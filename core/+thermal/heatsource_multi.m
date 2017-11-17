@@ -12,8 +12,8 @@ classdef heatsource_multi < thermal.heatsource
     
     methods
         
-        function this = heatsource_multi(varargin)
-            this@thermal.heatsource(varargin{:});
+        function this = heatsource_multi(sIdentifier)
+            this@thermal.heatsource(sIdentifier, 0);
             
             this.aoHeatSources = thermal.heatsource.empty();
         end
@@ -22,6 +22,8 @@ classdef heatsource_multi < thermal.heatsource
             this.aoHeatSources(end + 1) = oHeatSource;
             
             oHeatSource.bind('update', @this.updatePower);
+            
+            this.updatePower();
         end
         
         function setPower(this, ~)

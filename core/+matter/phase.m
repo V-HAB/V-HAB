@@ -161,6 +161,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % @types object
         toManips = struct('volume', [], 'temperature', [], 'substance', []);
         iManipulators = 0;
+        
+        
+        
+        % Multi-heat-source to allow temperature changes - also used by the
+        % thermal solver.
+        oMultiHeatSource;
+        bMultiHeatSourceAdded = false;
+        
+        
 
         % Last time the phase was updated (??)
         % @type float
@@ -632,34 +641,29 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
     %% Methods for interfacing with thermal system
     methods
-
-        function changeInnerEnergy(this, fEnergyChange)
-            %CHANGEINNERENERGY Change phase temperature via inner energy
-            %   Change the temperature of a phase by adding or removing
-            %   inner energy in |J|.
+        
+        function addHeatSource(this, oHeatSource)
+            % Add a heat source to this phase object. The power set to this
+            % heat source will be included in the temperature calculations
+            % in massupdate.
+            %
+            % Parameter oHeatSource: will be added to a local heat source.
+            % Positive power means temperature RISE.
             
-            % setParameter does .update anyways ... %%%
-%             this.update();
-            %TODO don't do whole update, just set outdated TS - calcTS
-            %     should include temperature change in ts calculations!
+            if ~this.bMultiHeatSourceAdded
+                this.bMultiHeatSourceAdded = true;
+                
+                this.oMultiHeatSource = thermal.heatsource_multi([ 'heatsource_multi_' this.sName ]);
+                
+                %CHECK we should probably include some 'light' massupdate
+                %      version: no need to update manips/p2ps, and branches
+                %      could probably also do a reduced work program.
+                this.oMultiHeatSource.bind('update', @() this.masssupdate());
+            end
             
-            %TODO check ... heat capacity updates every second, so that
-            %     should be ok? As for mass, use a change rate for the heat
-            %     capacity and, with last update time, calculate current
-            %     value?
-            
-            %fCurrentTotalHeatCapacity = this.getTotalHeatCapacity();
-            fCurrentTotalHeatCapacity = this.fTotalHeatCapacity;
-            
-            % Calculate temperature change due to change in inner energy.
-            fTempDiff = fEnergyChange / fCurrentTotalHeatCapacity;
-            
-            % Update temperature property of phase.
-            %this.setParameter('fTemperature', this.fTemperature + fTempDiff);
-            this.fTemperature = this.fTemperature + fTempDiff;
-            
-            this.massupdate();
+            this.oMultiHeatSource.addHeatSource(oHeatSource);
         end
+        
 
 
         function fTotalHeatCapacity = getTotalHeatCapacity(this)
