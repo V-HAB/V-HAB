@@ -987,10 +987,12 @@ classdef plotter_basic < base
                 % has the format <Label> [<Unit>]
                 if poUnitsToLabels.isKey(tLogProps(iP).sUnit) && ~isempty(poUnitsToLabels(tLogProps(iP).sUnit))
                     csLabels{iP} = [ poUnitsToLabels(tLogProps(iP).sUnit) ' [' tLogProps(iP).sUnit ']' ];
-                elseif ~strcmp(tLogProps(iP).sUnit,'-')
+                elseif strcmp(tLogProps(iP).sUnit,'-')
+                    % The only exeption is the "no unit" unit '-'.
+                    csLabels{iP} = '[-]';
+                else
                     % If there is no entry in the units to labels map we
-                    % throw an error. The only exeption is the "no unit"
-                    % unit '-'. 
+                    % throw an error. 
                     error('Unknown unit ''%s''. Please edit the poExpressionToUnit and poUnitsToLabels properties of logger_basic.m to include it.', tLogProps(iP).sUnit);
                 end
             end
