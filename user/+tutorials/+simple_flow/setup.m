@@ -120,15 +120,15 @@ classdef setup < simulation.infrastructure
             
             % it is also possible to define a calculation as log value and
             % e.g. multiply two values from the object.
-            oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'kg', 'Mass Tank 2');
+            oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'kg', 'Pressure Tank 2');
             % This can be usefull if you want to log the flowrate of CO2
             % through a branch that transports air for example            
             oLog.addValue('Example.aoBranches(1).aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Flowrate of CO2', 'fr_co2');
             
-            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 1');
+            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg');
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
             
-            oLog.addValue('Example.toBranches.Branch', 'fFlowRate', 'kg/s', 'Branch Flow Rate');
+            oLog.addValue('Example.toBranches.Branch', 'fFlowRate', 'kg/s', 'Branch Flow Rate', 'branch_FR');
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'fPressure', 'Pa', 'Tank 1 Pressure');
             
             this.tiLogIndexes.iIndex_1 = oLog.addVirtualValue('fr_co2 * 1000', 'g/s', 'CO_2 Flowrate', 'co2_fr_grams');
@@ -209,79 +209,10 @@ classdef setup < simulation.infrastructure
             tFigureOptions = struct('bTimePlot', true, 'bPlotTools', false);
             oPlotter.defineFigure(coPlots, 'Test Figure Title', tFigureOptions);
             
-%             tPlotOptions = struct('sAlternativeXAxisValue', '"Branch Flow Rate"', 'sXLabel', 'Main Branch Flow Rate in [kg/s]', 'fTimeInterval',10);
-%             coPlots = {oPlot.definePlot({'"Tank 1 Pressure"'}, 'Pressure vs. Flow Rate', tPlotOptions)};
-%             oPlot.defineFigure(coPlots, 'Pressure vs. Flow Rate');
-%             
-%             % you can define plots by using the units as filters
-%             oPlot.definePlot('Pa', 'Tank Pressures');
-%             oPlot.definePlot('K', 'Tank Temperatures');
-%             oPlot.definePlot('kg', 'Tank Masses');
-%             oPlot.definePlot('kg/s', 'Flow Rates');
-%             
-%             % or you can specify the labels you want to plot
-%             cNames = {'Partial Pressure CO_2 Tank 1', 'Partial Pressure CO_2 Tank 2'};
-%             sTitle = 'Partial Pressure CO2';
-%             oPlot.definePlot(cNames, sTitle);
-% 
-%             % you can also create subplots within one figure by creating a
-%             % three dimensional cell array containing labels. (see define
-%             % plot comments for more information on this (for this
-%             % calculations on log values are currently not possible)
-%             cNames = cell(1,2,2);
-%             cNames(1,1,:) = {'Partial Mass CO_2 Tank 1', 'Partial Mass CO_2 Tank 2'};
-%             cNames(1,2,:) = {'Partial Mass CO_2 Tank 1', 'Partial Mass CO_2 Tank 2'};
-%             sTitle = 'Partial Mass CO2';
-%             oPlot.definePlot(cNames, sTitle);
-%             
-%             % or you can define the subplots individually by using a
-%             % mbPosition matrix (also see define plot comments for more
-%             % help. 
-%             cNames = {'Flowrate of CO2'};
-%             sTitle = 'Flowrate of CO2';
-%             txCustom.mbPosition = [ false, false, false;...
-%                                     true , false, false];
-%             oPlot.definePlot(cNames, sTitle, txCustom);
-%             oPlot.definePlot(cNames, sTitle, txCustom);
-%             
-%             cNames = {'Flowrate of CO2'};
-%             sTitle = 'Flowrate of CO2';
-%             txCustom.mbPosition = [ false, false, true;...
-%                                     false, false, false];
-%             oPlot.definePlot(cNames, sTitle, txCustom);
-%             oPlot.definePlot(cNames, sTitle, txCustom);
-%             
-%             
-%             % You can also define calculations on the log values
-%             cNames = {'( Partial Pressure CO_2 Tank 1 + Partial Pressure CO_2 Tank 2 ) / 133.322'};
-%             sTitle = 'Partial Pressure CO2 total in Torr';
-%             
-%             % Because the automatic label generated will not recognize the
-%             % unit conversion we define a custom Y Label. You can always
-%             % customize your plots by providing a txCustom struct that
-%             % contains the fields you want to customize. See the definePlot
-%             % comment for more information on customization options.
-%             txCustom2.sYLabel = 'Partial Pressure CO2 in Torr';
-%             oPlot.definePlot(cNames, sTitle, txCustom2);
-%             
-%             % Here is an example that uses all possible customization
-%             % options. Please remember you do not HAVE to use these, they
-%             % just help you get the plot "just right":
-%             
-%             txCustom.mbPosition = [true, false];
-%             txCustom.sXLabel    = 'My X Label';
-%             txCustom.sYLabel    = 'My Y Label';
-%             txCustom.sTitle     = 'My Title';
-%             txCustom.csLineStyle= {'--r', '-.g'};
-%             txCustom.csLegend   = {'My Legend 1', 'My Legend 2'};
-%             txCustom.miXTicks   = [100, 500, 1050, 2000, 2500, 3000];
-%             txCustom.miYTicks   = [1,2,2.2,3,5,6,9,9.9,10];
-%             txCustom.mfXLimits  = [1000,3000];
-%             txCustom.mfYLimits  = [0,10];
-%             
-%             cNames = {'( Partial Pressure CO_2 Tank 1 ) / 133.322', '( Partial Pressure CO_2 Tank 2 ) / 133.322'};
-%             sTitle = 'Partial Pressure CO2 in Torr';
-%             oPlot.definePlot(cNames, sTitle, txCustom);
+            tPlotOptions = struct('sAlternativeXAxisValue', '"Branch Flow Rate"', 'sXLabel', 'Main Branch Flow Rate in [kg/s]', 'fTimeInterval',10);
+            coPlots = {oPlotter.definePlot({'"Tank 1 Pressure"'}, 'Pressure vs. Flow Rate', tPlotOptions)};
+            oPlotter.defineFigure(coPlots, 'Pressure vs. Flow Rate');
+            
 
             oPlotter.plot();
         end
