@@ -43,14 +43,14 @@ classdef heatsource < base & event.source
         function setPower(this, fPower)
             % We only need to trigger an update of the whole thermal solver
             % if the power has actually changed by more than one milliwatt.
-            if this.fPower ~= fPower && abs(this.fPower - fPower) > 1e-3
+            if ~isempty(this.hTriggerSolverUpdate) && this.fPower ~= fPower && abs(this.fPower - fPower) > 1e-3
                 this.hTriggerSolverUpdate();
             end
             
             fPowerOld   = this.fPower;
             this.fPower = fPower;
             
-            if this.this.bTriggerUpdateCallbackBound
+            if this.bTriggerUpdateCallbackBound
                 this.trigger('update', struct('fPowerOld', fPowerOld, 'fPower', fPower));
             end
         end

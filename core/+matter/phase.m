@@ -525,10 +525,23 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 %      weighted temperature from those values?
                 this.fTemperature = sum(mfEnergy) / sum(mfEnergyPerKelvin);
                 
+                
                 if ~base.oLog.bOff
                     this.out(1, 1, 'temperature', 'New temperature: %fK', { this.fTemperature });
                     this.out(1, 2, 'temperature', 'Total inner energy: %f\tEnergy per Kelvin: %f', { sum(mfEnergy), sum(mfEnergyPerKelvin) });
                 end
+            end
+            
+            
+            % Now add the temperature change through heat sources, in
+            % case heat sources are connected
+            if this.bMultiHeatSourceAdded
+                fTotalEnergyChange = this.oMultiHeatSource.fPower * fLastStep;
+
+                % We can use the old heat capacity - because this
+                % temperature change covers the LAST tick!
+                fTemperatureChange = fTotalEnergyChange / this.fTotalHeatCapacity;
+                this.fTemperature  = this.fTemperature + fTemperatureChange;
             end
             
             
@@ -658,7 +671,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 %CHECK we should probably include some 'light' massupdate
                 %      version: no need to update manips/p2ps, and branches
                 %      could probably also do a reduced work program.
-                this.oMultiHeatSource.bind('update', @() this.masssupdate());
+                this.oMultiHeatSource.bind('update', @(oEvt) this.massupdate());
             end
             
             this.oMultiHeatSource.addHeatSource(oHeatSource);

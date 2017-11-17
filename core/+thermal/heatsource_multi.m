@@ -33,9 +33,9 @@ classdef heatsource_multi < thermal.heatsource
     
     methods (Access = protected)
         function updatePower(this, ~)
-            this.fPower  = sum([ this.aoHeatSources(iSource).fPower ]);
+            this.fPower  = sum([ this.aoHeatSources.fPower ]);
             
-            this.trigger('update', fPower);
+            this.trigger('update', this.fPower);
             
             %TODO trigger a thermal solver update? How to do that?
             %     in case the thermal solver did change the heat source
