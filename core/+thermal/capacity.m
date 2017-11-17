@@ -194,7 +194,7 @@ classdef capacity < base
             % changeInnerEnergy() method. 
             
             % Getting the matter object's total heat capacity in [J/K]
-            fTotalHeatCapacity = this.oMatterObject.getTotalHeatCapacity();
+            fTotalHeatCapacity = this.oMatterObject.fTotalHeatCapacity; %getTotalHeatCapacity();
             
             % Getting the matter object's temperature in [K]
             fCurrentTemperature = this.oMatterObject.fTemperature;

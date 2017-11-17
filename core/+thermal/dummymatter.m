@@ -202,7 +202,8 @@ classdef dummymatter < matter.store & event.source
 %             if this.fTotalHeatCapacity ~= -1
 %                fHeatCapacity = this.fTotalHeatCapacity;
 %             else
-                fHeatCapacity = this.oPhase.getTotalHeatCapacity();
+                %fHeatCapacity = this.oPhase.getTotalHeatCapacity();
+                fHeatCapacity = this.oPhase.fTotalHeatCapacity;
 %             end
             
         end
