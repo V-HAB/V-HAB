@@ -21,12 +21,9 @@ classdef heatsource < base & event.source
         % whenever the power of this heat source is updated. 
         hTriggerSolverUpdate;
         
-        % A boolean variable indicating if this heat source is connected to
-        % a matter object directly, or via a multiple heat source object
-        % (heatsource_multi.m). 
-        bPartOfMultiHeatSource = false;
-        
-        oMultiHeatSource;
+        % Performance hack - only .trigger() if .bind() happened. Replaces
+        % the specific multi heat source handling.
+        bTriggerUpdateCallbackBound = false;
     end
     
     methods
@@ -46,28 +43,31 @@ classdef heatsource < base & event.source
                 this.hTriggerSolverUpdate();
             end
             
-            this.fPower  = fPower;
+            fPowerOld   = this.fPower;
+            this.fPower = fPower;
             
-            if this.bPartOfMultiHeatSource
-                this.oMultiHeatSource.updatePower();
+            if this.this.bTriggerUpdateCallbackBound
+                this.trigger('update', struct('fPowerOld', fPowerOld, 'fPower', fPower));
             end
         end
         
-        function fPower = getPower(this)
-            this.warn('getPower', 'Access fPower directly!');
-            
-            fPower = this.fPower;
-        end
-        
+        % SCJO: @OLCL is this so much faster than using .trigger('update')?
         function setUpdateCallBack(this, oThermalSolver)
             this.hTriggerSolverUpdate = @oThermalSolver.registerUpdate;
         end
         
-        function setMultiHeatSource(this, oMultiHeatSource)
-            this.bPartOfMultiHeatSource = true;
-            this.oMultiHeatSource = oMultiHeatSource;
-        end
         
+        % Catch 'bind' calls, so we can set a specific boolean property to
+        % true so the .trigger() method will only be called if there are
+        % callbacks registered.
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
+            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
+            
+            % Only do for set
+            if strcmp(sType, 'update')
+                this.bTriggerUpdateCallbackBound = true;
+            end
+        end
     end
     
 end
