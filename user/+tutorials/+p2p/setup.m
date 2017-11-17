@@ -14,7 +14,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams)
+        function this = setup(ptConfigParams, tSolverParams, fSimTime)
             
             %if nargin < 1 || isempty(tOpt), tOpt = struct(); end;
             
@@ -107,12 +107,17 @@ classdef setup < simulation.infrastructure
             
             
             % Params for the monitor logger -> dump to mat!
-            ttMonitorCfg = struct('oLogger', struct('cParams', {{ true, 100 }}));
+            ttMonitorCfg = struct();
+            %ttMonitorCfg = struct('oLogger', struct('cParams', {{ true, 100 }}));
             
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
             this@simulation.infrastructure('Tutorial_p2p', ptConfigParams, tSolverParams, ttMonitorCfg);
+            
+            
+            
+            %this.oSimulationContainer.oTimer.setMinStep(1e-12);
             
             
             % Creating the 'Example' system as a child of the root system
@@ -125,24 +130,81 @@ classdef setup < simulation.infrastructure
             % Simulation length - stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
             this.fSimTime = 5000 * 1;
+            
+            if nargin >= 3 && ~isempty(fSimTime)
+                this.fSimTime = fSimTime;
+            end
+            
+            
             %this.fSimTime = 1700;
-            this.iSimTicks = 600;
+            this.iSimTicks = 3000;
             this.bUseTime = true;
             
             
-            
+%             this.bUseTime = false;
+%             this.iSimTicks = 300;
             
             % Solver Tuning see Example -> createSolverStructure
             
             
             
+            % Register callback for debug state
+            %   -> dependent, i.e. no 'own' time step, just exec each tick
+            this.oSimulationContainer.oTimer.bind(@this.switchDebugState, -1, struct('sMethod', 'switchDebugState', 'sDescription', 'setup - logdbg ctrl fct'));
             
+        end
+        
+        
+        
+        function switchDebugState(this, oTimer)
+            
+            %return;
+            
+            iTick  = oTimer.iTick;
+            oOut   = this.toMonitors.oConsoleOutput;
+            
+            if iTick == 1015
+                oOut.setLogOn();
+                
+            elseif iTick == 1020
+                oOut.addIdentFilter('update');
+            
+            elseif iTick == 1030
+                oOut.resetIdentFilters();
+                oOut.toggleShowStack();
+            
+            elseif iTick == 1035
+                oOut.toggleShowStack();
+            
+            elseif iTick == 1040
+                oOut.setVerbosity(3);
+            
+            elseif iTick == 1045
+                oOut.setVerbosity(1);
+            
+            elseif iTick == 1050
+                oOut.setLevel(2);
+            
+            elseif iTick == 1055
+                oOut.setLogOff();
+            end
+            
+            
+            %TODO e.g. set level/verbosity, filter by some identifiers to
+            %     show some specific behaviour.
+            %     get objs uuids via this.oSimCont.toChildren.(...)
+            %           -> filter by those UUIDs, e.g. just one phase debug
         end
         
         
         
         function configureMonitors(this)
             
+            
+            %this.oSimulationContainer.oTimer.setMinStep(1e-12);
+            
+            
+            %this.toMonitors.oConsoleOutput.setLogOn().setLevel(3);
             
             %% Logging
             % Creating a cell setting the log items. You need to know the
@@ -229,6 +291,17 @@ classdef setup < simulation.infrastructure
             %plot(oLogger.afTime, mfLog(:, [ this.tiLog.M2P_Atmos this.tiLog.M2P_Filter ]) .* mfLog(:, [ this.tiLog.M_Atmos this.tiLog.M_Filter ]));
             legend('Atmos', 'Filter Flow');
             ylabel('Pressure in Pa');
+            xlabel('Time in s');
+            
+            
+            figure('name', 'Tank Masses');
+            hold on;
+            grid minor;
+            plot(oLogger.afTime, mfLog(:, [ 3 4 5 ]));
+            legend('Atmos', 'Filter Flow', 'Filtered');
+%             plot(oLogger.afTime, mfLog(:, [ 4 ]));
+%             legend('Filter Flow');
+            ylabel('Mass in kg');
             xlabel('Time in s');
 
             

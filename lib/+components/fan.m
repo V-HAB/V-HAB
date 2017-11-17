@@ -159,6 +159,8 @@ classdef fan < matter.procs.f2f
                 this.fHeatFlow = 0;
                 
                 fDeltaPressure = 0;
+                this.fDeltaPressure = fDeltaPressure;
+                
                 return;
             end
             

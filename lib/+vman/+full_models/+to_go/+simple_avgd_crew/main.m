@@ -47,6 +47,19 @@ classdef main < vsys
             this.fVentilation    = fCrewSize * this.fVentilation;
             
             
+            
+            
+            eval(this.oRoot.oCfgParams.configCode(this));
+            
+            
+            
+        end
+        
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+            
+            
             %% Create matter flow 'infrastructure'
             
             % Create store representing the Lung, add 0.001m3 to the lung
@@ -90,6 +103,12 @@ classdef main < vsys
             this.createBranch('Lung.outlet', {}, 'Outlet');
             
             
+        end
+        
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            
             %% Add solvers, initialize flow rates and finish
             this.oLungFlowrate = solver.matter.manual.branch(this.aoBranches(1));
             
@@ -97,7 +116,7 @@ classdef main < vsys
             if fCrewSize > 0
                 % Max. flow rate 100L (SLM, 0.02) for 0.1bar diff ... whyever.
                 oSolverEq = solver.matter.equalizer.branch(this.aoBranches(2), this.fVentilation * 2.5, 10000);
-                oSolverEq.iDampFR = 5;
+% % %                 oSolverEq.iDampFR = 5;
                 %oBranchOut = solver.matter.manual.branch(this.aoBranches(2));
                 %oBranchOut.setFlowRate(this.fVentilation - this.fOxygenRequired);
                 
@@ -116,7 +135,6 @@ classdef main < vsys
             end
             
             
-            this.seal();
         end
         
         

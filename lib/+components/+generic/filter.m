@@ -27,7 +27,7 @@ classdef filter < matter.procs.p2ps.flow
         
         
         % Exponent for characeristics (e.g. 0 -> no reduction through
-        % loaded bed, 1 = linear,2 exponential etc.)
+        % loaded bed, 1 = linear, 2 exponential etc.)
         fCharacteristics = 1;
     end
     
@@ -58,7 +58,7 @@ classdef filter < matter.procs.p2ps.flow
         end
         
         
-        function arFilterRates = calculateFilterRates(this, sPhase)
+        function arFilterRates = calculateFilterRatesXXX(this, sPhase)
             % Calculates the ratio of filtered flow rate (by adsorption,
             % absorption, ...) for each connected branch.
             %
@@ -103,10 +103,21 @@ classdef filter < matter.procs.p2ps.flow
             
             
             arFilterRates = tools.round.prec(arFilterRates, this.oIn.oTimer.iPrecision);
+            
+            %disp(arFilterRates(arFilterRates ~= 0));
         end
         
         
-        function update(this)
+        
+        
+        
+        function [ fFlowRate, arExtractPartials ] = calculateFilterRate(this, afFlowRate, mrPartials)
+            %disp('>>>>');
+            %disp(mrPartials);
+            %disp('<<<<');
+            arExtractPartials = this.arExtractPartials;
+            %arExtractPartials = mrPartials;
+            
             % Called whenever a flow rate changes. The two EXMES (oIn/oOut)
             % have an oPhase attribute that allows us to get the phases on
             % the left/right side.
@@ -128,15 +139,11 @@ classdef filter < matter.procs.p2ps.flow
             % Test ...
             %this.rLoad = 0;
             
-            % Get all positive (i.e. inflowing) flow rates and the
-            % according partial masses. Flow rates are a row vector,
-            % partials are a matrix - each row represents one flow, the
-            % columns represent the different substances.
-            [ afFlowRate, mrPartials ] = this.getInFlows();
             
             % Nothing flows in, so nothing absorbed ...
             if isempty(afFlowRate)
-                this.setMatterProperties(0, this.arExtractPartials);
+                fFlowRate = 0;
+                %this.setMatterProperties(0, this.arExtractPartials);
                 
                 return;
             end
@@ -146,6 +153,7 @@ classdef filter < matter.procs.p2ps.flow
             % representing exactly the amount of the mass of the according
             % species flowing into the filter.
             afFlowRate = afFlowRate .* mrPartials(:, iSpecies);
+            %%COMMENT
             
             
             if this.fCharacteristics > 0
@@ -162,7 +170,23 @@ classdef filter < matter.procs.p2ps.flow
             
             
             % ROUND
-            fFlowRate = tools.round.prec(fFlowRate, this.oIn.oTimer.iPrecision);
+            %fFlowRate = tools.round.prec(fFlowRate, this.oIn.oTimer.iPrecision);
+            
+            if ~base.oLog.bOff
+                this.out(1, 1, 'calc-fr', 'p2p calc flowrate of %s, ads rate %f is: %.34f', { this.sName, rAdsorp, fFlowRate });
+                this.out(1, 2, 'calc-fr', '%.16f\t', { afFlowRate });
+            end
+        end
+        
+        function update(this)
+            
+            if ~base.oLog.bOff, this.out(1, 1, 'set-fr', 'p2p update flowrate of %s', { this.sName }); end;
+            %keyboard();
+            [ afFlowRate, aarPartials ] = this.getInFlows();
+            
+            
+            [ fFlowRate, arExtractPartialsTmp ] = this.calculateFilterRate(afFlowRate, aarPartials);
+            
             
             % Test ...
             %fFlowRate = 0;

@@ -5,6 +5,8 @@ classdef flow < matter.procs.p2p
     %   - getInFlows, or overall logic for amount / type of EXMEs etc
     %   - if no arPartials provided - instead of the one from the phase,
     %     just use the old one?
+    %   - getInFlows - ONLY for 'in' phase? Definition that p2p can ONLY
+    %     depend on the inflow properties of the oIn phase??
     
     
     properties (SetAccess = protected, GetAccess = protected)

@@ -12,7 +12,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, fSimTime) % Constructor function
             
             % vhab.exec always passes in ptConfigParams, tSolverParams
             % If not provided, set to empty containers.Map/struct
@@ -48,7 +48,7 @@ classdef setup < simulation.infrastructure
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            tutorials.simple_flow.systems.Example(this.oSimulationContainer, 'Example');
+            oSys = tutorials.simple_flow.systems.Example(this.oSimulationContainer, 'Example');
             
             % This is an alternative to providing the ttMonitorConfig above
             %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
@@ -57,11 +57,19 @@ classdef setup < simulation.infrastructure
             
             
             
+            %solver.thermal.lumpedparameter(oSys);
+            
+            
 
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
             this.fSimTime = 3600 * 1; % In seconds
+            
+            if nargin >= 3 && ~isempty(fSimTime)
+                this.fSimTime = fSimTime;
+            end
+            
             this.iSimTicks = 1500;
             this.bUseTime = true;
         end
@@ -90,6 +98,10 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 1');
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
             
+            iTempIdx1 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(1)', 'fTemperature', 'K', 'Flow Temperature - Left');
+            iTempIdx2 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(2)', 'fTemperature', 'K', 'Flow Temperature - Right');
+            
+            
 %             this.csLog = {
 %                 % System timer
 %                 'oData.oTimer.fTime';                                              % 1
@@ -116,6 +128,9 @@ classdef setup < simulation.infrastructure
             oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
             oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
             
+            oPlot.definePlot([ iTempIdx1, iTempIdx2 ], 'Flow Temperatures');
+
+            % Manually defined plots
             cNames = {'Partial Pressure CO_2 Tank 1', 'Partial Pressure CO_2 Tank 2'};
             sTitle = 'Partial Pressure CO2';
             yLabel = 'Partial Pressure CO2 in Pa';
