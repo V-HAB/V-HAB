@@ -92,7 +92,7 @@ classdef logger < event.source % base % &
         
         
         function flush(this)
-            if isempty(this), return; end;
+            if isempty(this) || ~isvalid(this), return; end;
             
             this.bOff = true;
             

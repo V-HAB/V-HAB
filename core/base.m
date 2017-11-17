@@ -102,7 +102,7 @@ classdef base < handle
             
             
             base.oLog.flush();
-            delete(base.oLog);
+            %delete(base.oLog);
         end
         
         
