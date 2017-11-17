@@ -1,4 +1,4 @@
-classdef plotter_basic < handle
+classdef plotter_basic < base
     %PLOTTER_BASIC Default plotter class for V-HAB simulations
     %   The object instantiated from this class contains a cell of objects
     %   that are used to create user-defined figures using data from the
