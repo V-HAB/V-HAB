@@ -38,6 +38,23 @@ classdef plotter_basic < base
             % This method returns an object containing all information
             % necessary to generate a single plot, which corresponds to an
             % axes object in MATLAB. 
+            %
+            % definePlot() requires the following input arguments:
+            % - cxPlotValues    This is a cell array containing all items
+            %                   that are to be plotted. The items can be
+            %                   referenced by name, label or index.
+            %                   Reference types can be mixed. 
+            % - sTitle          The title of the plot as string. This is
+            %                   mandatory since the title is used to
+            %                   identify the plot being created in all user
+            %                   dialogs. 
+            %
+            % definePlot() accepts the following optional arguments:
+            % - tPlotOptions    This is a struct with which the user can
+            %                   modify most aspects of the plot. For a full
+            %                   description of the possible fields that can
+            %                   be contained in tPlotOptions, please refer
+            %                   to the plot.m class file. 
             
             % Before we do anything, we check if the input values have been
             % passed on correctly. One thing that is easily forgotten are
@@ -201,6 +218,28 @@ classdef plotter_basic < base
             % This method creates an entry in the coFigures cell property
             % containing an object with all information necessary to create
             % a complete MATLAB figure. 
+            %
+            % defineFigure() requires the following input arguments:
+            % - coPlots         This is a cell array containing plot
+            %                   objects as created by the definePlot()
+            %                   method of this class. The arrangement of
+            %                   the plot objects within the cell
+            %                   corresponds to the arrangement of the
+            %                   subplots within the figure. For example, a
+            %                   2x2 cell array with four plots, will then
+            %                   create a 2x2 plot grid. 
+            % - sName           The name of the figure as string. This is
+            %                   mandatory since the name is used to uniqely
+            %                   identify the figure being created. An error
+            %                   is thrown if a figure with the same name
+            %                   already exists.
+            %
+            % defineFigure() accepts the following optional arguments:
+            % - tFigureOptions  This is a struct with which the user can
+            %                   modify most aspects of the figure. For a
+            %                   full description of the possible fields
+            %                   that can be contained in tPlotOptions,
+            %                   please refer to the figure.m class file.
             
             % Figures are identified by their name. So first we need to
             % check if there isn't another figure with the same name. 
