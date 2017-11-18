@@ -39,8 +39,8 @@ classdef plot < handle
         %
         % With the sTimeUnit field the user can determine the unit of time
         % for of each plot. The default is seconds, but minutes, hours,
-        % days, weeks, months and years are also possible. The sTimeUnit
-        % field is a string and can contain exactly these words.
+        % days, weeks, and years (365 days) are also possible. The
+        % sTimeUnit field is a string and can contain exactly these words.
         %
         % If the user chooses to have two y axes, we need to provide an
         % opportunity to customize that as well. For this the
