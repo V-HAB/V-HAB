@@ -48,12 +48,14 @@ classdef Pump_and_Heater_Circle < vsys
             
             % Adding phases to the store 'Tank_1'
             oWaterPhase1 = this.toStores.Tank_1.createPhase('water', 0.005, 293, 3*10^5);
-%             oAirPhase1   = this.toStores.Tank_1.createPhase('air', 0.005, 293, 3*10^5);
-            oWaterPhase1.rMaxChange = 0.000001;
+
+            tTimeStepProperties.rMaxChange = 0.000001;
+            oWaterPhase1.setTimeStepProperties(tTimeStepProperties);
+            
             % Adding phases to the store 'Tank_2'
             oWaterPhase2 = this.toStores.Tank_2.createPhase('water', 0.005, 293, 3*10^5);
-%             oAirPhase2   = this.toStores.Tank_2.createPhase('air', 0.005, 293, 3*10^5);
-            oWaterPhase2.rMaxChange = 0.000001;
+            
+            oWaterPhase2.setTimeStepProperties(tTimeStepProperties);
             
             % Adding extract/merge processors to the phases
             matter.procs.exmes.liquid(oWaterPhase1, 'Port_1' );

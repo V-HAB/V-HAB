@@ -79,7 +79,8 @@ classdef Example1 < vsys
 
                 this.oB1.setFlowRate(0.0005);
                 
-                this.toStores.Filter.toPhases.FilteredPhase.rMaxChange = 5;
+                tTimeStepProperties.rMaxChange = 10;
+                this.toStores.Filter.toPhases.FilteredPhase.setTimeStepProperties(tTimeStepProperties);
 
     %             this.toStores.Filter.aoPhases(2).rMaxChange = inf;
     %             this.toStores.Filter.aoPhases(1).rMaxChange = inf;
@@ -127,7 +128,9 @@ classdef Example1 < vsys
             % The phase for the adsorbed matter in the filter store has a
             % small rMaxChange (small volume) but is not really important
             % for the solving process, so increase rMaxChange manually.
-            this.aoFilterPhases(2).rMaxChange = 5;
+            
+            tTimeStepProperties.rMaxChange = 5;
+            this.aoFilterPhases(2).setTimeStepProperties(tTimeStepProperties);
         end
     end
     

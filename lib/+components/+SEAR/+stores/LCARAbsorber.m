@@ -61,7 +61,10 @@ classdef LCARAbsorber < matter.store
                                         1,...
                                         tParameters.fInitialTemperature);   
             oFlow.bSynced  = true;
-            oFlow.fFixedTS = 2;
+            
+            tTimeStepProperties.fFixedTimeStep = 2;
+            oFlow.setTimeStepProperties(tTimeStepProperties);
+            
      
 
             %% Add Absorbent Phase (LiCl Solution)
@@ -86,7 +89,9 @@ classdef LCARAbsorber < matter.store
                                         ); 
             
             oAbsorberPhase.bSynced  = true;
-            oAbsorberPhase.fFixedTS = 2;
+            
+            tTimeStepProperties.fFixedTimeStep = 2;
+            oAbsorberPhase.setTimeStepProperties(tTimeStepProperties);
             
             %% Exmes attached to phases
             

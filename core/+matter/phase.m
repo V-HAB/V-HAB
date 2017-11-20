@@ -204,16 +204,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     end
 
     properties (Access = public)
-        % Limit - how much can the phase mass (total or single substances)
-        % change before an update of the matter properties (of the whole
-        % store) is triggered?
-        rMaxChange = 0.25;
-        fMaxStep   = 20;
-        fFixedTS;
-        
-        % Maximum factor with which rMaxChange is decreased
-        rHighestMaxChangeDecrease = 0;
-
         % If true, massupdate triggers all branches to re-calculate their
         % flow rates. Use when volumes of phase compared to flow rates are
         % small!
@@ -231,7 +221,31 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     end
 
     properties (SetAccess = private, GetAccess = public)
+        
+        
+        % Maximum allowed percentage change in the total mass of the phase
+        rMaxChange = 0.25;
+        % Maximum allowed percentage change in the partial mass of the
+        % phase (one entry for every substance, zero represents substances
+        % that are not of interest to the user)
+        arMaxChange;
+        % boolean to decide if any values for arMaxChange are set, if not
+        % this is false and the respective calculations are skipped to save
+        % calculation time
+        bHasSubstanceSpecificMaxChangeValues = false;
+        % Maximum time step in seconds
+        fMaxStep   = 20;
+        % Minimum time step in seconds
+        fMinStep   = 0;
+        % Fixed (constant) time step in seconds, if this property is set
+        % all other time step properties will be ignored and the set time
+        % step will be used
+        fFixedTimeStep;
+        
+        % Maximum factor with which rMaxChange is decreased
+        rHighestMaxChangeDecrease = 0;
 
+        
         % Masses in phase at last update.
         fMassLastUpdate;
         afMassLastUpdate;
@@ -627,6 +641,94 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %%%this.trigger('update.post');
         end
 
+        %% Setting of time step properties
+        function setTimeStepProperties(this, tTimeStepProperties)
+            % currently the possible time step properties that can be set
+            % by the user are:
+            %
+            % rMaxChange:   Maximum allowed percentage change in the total
+            %               mass of the phase
+            % arMaxChange:  Maximum allowed percentage change in the partial
+            %               mass of the phase (one entry for every
+            %               substance, zero represents substances that are
+            %               not of interest to the user)
+            % trSubstanceMaxChange: Alterantive Input instead of
+            %               arMaxChange that contains a struct reference
+            %               for the maximum allowed partial mass change.
+            %               For example tTimeStepProperties.trSubstanceMaxChange = struct('H2O', 0.0001, 'CO2', 0.01)
+            % fMaxStep:     Maximum time step in seconds
+            % fMinStep:     Minimum time step in seconds
+            % fFixedTimeStep:     Fixed (constant) time step in seconds, if this
+            %               property is set all other time step properties
+            %               will be ignored and the set time step will be
+            %               used
+            %
+            % In order to define these provide a struct with the fieldnames
+            % as described here to this function for the values that you
+            % want to set
+            
+            csPossibleFieldNames = {'rMaxChange', 'arMaxChange', 'fMaxStep', 'fMinStep', 'fFixedTimeStep'};
+            
+            % In case the struct reference for the partial mass change is
+            % used the arMaxChange vector for the internal calculations has
+            % to be created based on the provided struct
+            if isfield(tTimeStepProperties, 'trSubstanceMaxChange')
+                csSubstances = fieldnames(tTimeStepProperties.trSubstanceMaxChange);
+                arMaxChangeTemp = zeros(1,this.oMT.iSubstances);
+                for iSubstance = 1:length(csSubstances)
+                    arMaxChangeTemp(this.oMT.tiN2I.(csSubstances{iSubstance})) = tTimeStepProperties.trSubstanceMaxChange.(csSubstances{iSubstance});
+                end
+                tTimeStepProperties.arMaxChange = arMaxChangeTemp;
+                % removes the struct field as it has now been replaced by
+                % the arMaxChange vector
+                tTimeStepProperties = rmfield(tTimeStepProperties, 'trSubstanceMaxChange');
+            end
+            
+            % Gets the fieldnames of the struct to easier loop through them
+            csFieldNames = fieldnames(tTimeStepProperties);
+            
+            for iProp = 1:length(csFieldNames)
+                sField = csFieldNames{iProp};
+
+                % If the current properties is any of the defined possible
+                % properties the function will overwrite the value,
+                % otherwise it will throw an error
+                if ~any(strcmp(sField, csPossibleFieldNames))
+                    error(['The function setTimeStepProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters']);
+                end
+                
+
+                % checks the type of the input to ensure that the
+                % correct type is used.
+                xProperty = tTimeStepProperties.(sField);
+
+                if ~isfloat(xProperty)
+                    error(['The ', sField,' value provided to the setTimeStepProperties function is not defined correctly as it is not a (scalar, or vector of) float']);
+                end
+
+                if strcmp(sField, 'arMaxChange') && (length(xProperty) ~= this.oMT.iSubstances)
+                    error('The arMaxChange value provided to the setTimeStepProperties function is not defined correctly. It has the wrong length');
+                end
+
+                this.(sField) = tTimeStepProperties.(sField);
+            end
+
+            
+            % In case that partial mass changes are of interest set the
+            % boolean to true to activate these calculations, otherwise set
+            % to false to skip them and save calculation time
+            if ~isempty(this.arMaxChange) && any(this.arMaxChange)
+                this.bHasSubstanceSpecificMaxChangeValues = true;
+            else
+                this.bHasSubstanceSpecificMaxChangeValues = false;
+            end
+            
+            % Since the time step properties have changed, the time step
+            % has to be recalculated, which is performed in the post tick
+            % operations through this call.
+            this.setOutdatedTS();
+        end
+        
         %% Calculate Nutritional Content 
         
         %SCJO - what ... hmmm ... NO! Definitely does NOT belong here!!!
@@ -1241,8 +1343,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % If we have set a fixed time steop for this phase, we can just
             % continue without doing any calculations.
-            if ~isempty(this.fFixedTS)
-                fNewStep = this.fFixedTS;
+            if ~isempty(this.fFixedTimeStep)
+                fNewStep = this.fFixedTimeStep;
             else
                 rMaxChangeFactor = 1;
                 
@@ -1385,6 +1487,47 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     rTotalPerSecond = abs(fChange / this.fMass);
                 end
                 
+                %% Partial mass change compared to partial mas
+                % note that rPartialsPerSecond from the calculation is the
+                % partial mass change compared to the total mass, while
+                % this calculation is the partial mass change compared to
+                % the respective partial mass. This second calculation
+                % therefore is more restrictive and is normally deactivated
+                % but can be activated by setting any value of the
+                % arMaxChange property to something other than zero
+                if this.bHasSubstanceSpecificMaxChangeValues 
+                    afCurrentMass = this.afMass;
+
+                    % Partial masses that are smaller than the minimal time
+                    % step are rounded to the minimal time step to prevent
+                    % extremly small partial masses from delaying the
+                    % simulation (otherwise the timestep will go asymptotically
+                    % towards zero the smaller the partial mass becomes)
+                    afCurrentMass(this.afMass < this.oTimer.iPrecision) = this.oTimer.iPrecision;
+                    arPartialChangeToPartials = abs(afChange ./ tools.round.prec(afCurrentMass, this.oTimer.iPrecision));
+                    % Values where the partial mass is zero are set to zero,
+                    % otherwise the value for these is NaN or Inf
+                    arPartialChangeToPartials(this.afMass == 0) = 0;
+
+                    afNewStepPartialChangeToPartials = (this.arMaxChange * rMaxChangeFactor) ./ arPartialChangeToPartials;
+                    
+                    % Values where the arMaxChange value is zero are not of
+                    % interest for the user and are therefore set to inf
+                    % time steps (setting a max change of zero does not
+                    % make sense in any situation where I am actually
+                    % interest in the change of the substance, therefore
+                    % this logic was chosen)
+                    afNewStepPartialChangeToPartials(this.arMaxChange == 0) = inf;
+
+                    % The new timestep from this logic is the smallest of
+                    % all partial mass change time steps
+                    fNewStepPartialChangeToPartials = min(afNewStepPartialChangeToPartials);
+                else
+                    % If the logic is deactivate (arMaxChange is empty or
+                    % every entry is 0) then the timestep from this
+                    % calculation is infinite.
+                    fNewStepPartialChangeToPartials = inf;
+                end
                 
                 %% Calculating the new time step
 
@@ -1396,18 +1539,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 
                 % The new time step will be set to the smaller one of these
                 % two candidates.
-                fNewStep = min([ fNewStepTotal fNewStepPartials ]);
-                
+                fNewStep = min([ fNewStepTotal fNewStepPartials fNewStepPartialChangeToPartials]);
+
                 if fNewStep < 0
                     if ~base.oLog.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end;
                 end
-                
-                % The actual minimum time step of the phase is set by the
-                % timer object and its current minimum time step property.
-                % To ensure that this will happen, we pre-set the fMinStep
-                % variable to zero, the timer will then use the actual
-                % minimum.
-                fMinStep = 0;
                 
                 % If our newly calculated time step is larger than the
                 % maximum time step set for this phase, we use this
@@ -1417,16 +1553,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     %TODO Make this output a lower level debug message.
                     %fprintf('\nTick %i, Time %f: Phase %s setting maximum timestep of %f\n', this.oTimer.iTick, this.oTimer.fTime, this.sName, this.fMaxStep);
                     
-                % If the time step is smaller than zero, then the previous
-                % change was so large, that it made the numerator of the
-                % time step calculation negative. 
-                % This is weird, the previous change was very large,
-                % shouldn't the time step have been made small enough then?
-                % Why do we have to deal with it in this time step,
-                % additionally causing it to set the minimum time step on
-                % the phase?
-                elseif fNewStep < 0
-                    fNewStep = fMinStep;
+                % If the time step is smaller than the set minimal time
+                % step for the phase the minimal time step is used
+                % (standard case is that fMinStep is 0, but the user can
+                % set it to a different value)
+                elseif fNewStep < this.fMinStep
+                    fNewStep = this.fMinStep;
                     %TODO Make this output a lower level debug message.
                     %fprintf('Tick %i, Time %f: Phase %s.%s setting minimum timestep\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, this.sName);
                 end

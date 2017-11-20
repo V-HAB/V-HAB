@@ -217,8 +217,9 @@ classdef filter < matter.store
             % Fixed Time Step
             if exist('fFixedTimeStep','var')
             % Adding fixed time steps for the filter
-                this.toPhases.FlowPhase.fFixedTS     = fFixedTimeStep;
-                this.toPhases.FilteredPhase.fFixedTS = fFixedTimeStep;
+                tTimeStepProperties.fFixedTimeStep = fFixedTimeStep;
+                this.toPhases.FlowPhase.setTimeStepProperties(tTimeStepProperties);
+                this.toPhases.FilteredPhase.setTimeStepProperties(tTimeStepProperties);
             end
             
             % Create the according exmes - default for the external

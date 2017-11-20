@@ -204,7 +204,9 @@ classdef Example < vsys
                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
                     if ~strcmp(this.toStores.(csStoreNames{iStore}).aoPhases(iPhase).sName, 'CabinAir')
                         oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
-                        oPhase.rMaxChange = 10;
+                        
+                        tTimeStepProperties.rMaxChange = 10;
+                        oPhase.setTimeStepProperties(tTimeStepProperties);
                     end
                 end
             end

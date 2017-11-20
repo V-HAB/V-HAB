@@ -1305,11 +1305,10 @@ classdef branch_liquid < solver.matter.base.branch
                 this.setTimeStep(fTimeStep);
                 
             	%tells the phases when to update
-                oPhase1 = this.oBranch.coExmes{1, 1}.oPhase;
-                oPhase1.fFixedTS = fTimeStep;
-                oPhase2 = this.oBranch.coExmes{2, 1}.oPhase;
-                oPhase2.fFixedTS = fTimeStep;
-
+                tTimeStepProperties.fFixedTimeStep = fTimeStep;
+                this.oBranch.coExmes{1, 1}.oPhase.setTimeStepProperties(tTimeStepProperties);
+                this.oBranch.coExmes{2, 1}.oPhase.setTimeStepProperties(tTimeStepProperties);
+                
                 %calls the update for the base branch using the newly
                 %calculated mass flow
                 %branch(this, fFlowRate, afPressures, afTemperatures)

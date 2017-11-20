@@ -122,8 +122,8 @@ classdef Example < vsys
             %this.toStores.Filter.aoPhases(2).rMaxChange = 0.15;
             %this.toStores.Filter.aoPhases(2).rMaxChange = 0.01;
             
-            
-            this.toStores.Filter.aoPhases(2).rMaxChange = 5;
+            tTimeStepProperties.rMaxChange = 5;
+            this.toStores.Filter.aoPhases(2).setTimeStepProperties(tTimeStepProperties)
             %this.toStores.Filter.aoPhases(2).rMaxChange = 0.01;
             % Hack
             %this.toStores.Filter.aoPhases(2).setVolume(10000);

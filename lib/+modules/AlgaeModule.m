@@ -174,10 +174,11 @@ classdef AlgaeModule < vsys
             
             
             aoPhases = this.toStores.FilterAlgaeReactor.aoPhases;
-            aoPhases(1).fFixedTS = 15;
-            aoPhases(2).fFixedTS = 15;
-            aoPhases(3).fFixedTS = 15;
-            %
+            
+            tTimeStepProperties.fFixedTimeStep = 15;
+            aoPhases(1).setTimeStepProperties(tTimeStepProperties);
+            aoPhases(2).setTimeStepProperties(tTimeStepProperties);
+            aoPhases(3).setTimeStepProperties(tTimeStepProperties);
             
         end
         function setIfFlows(this, sInlet, sOutlet, sOutlet2, sOutlet3, sInlet2)

@@ -302,28 +302,19 @@ classdef AlgaeModuleExample < vsys
 %             this.oBranchWaterPump.setFlowRate(0);
             
 %            setting the fixed timesteps for the phases:
-            aoPhases = this.toStores.crew_module.aoPhases;
-            aoPhases(1).fFixedTS = 30;
-            aoPhases = this.toStores.PotableWaterTank.aoPhases;
-            aoPhases(1).fFixedTS = 30;
-            aoPhases = this.toStores.Food_Storage.aoPhases;
-            aoPhases(1).fFixedTS = 30;
-            aoPhases = this.toStores.Inedible_Biomass.aoPhases;
-            aoPhases(1).fFixedTS = 30;
-            aoPhases = this.toStores.NutrientTank.aoPhases;
-            aoPhases(1).fFixedTS = 30;
-            aoPhases = this.toStores.Deadlock.aoPhases;
-            aoPhases(1).fFixedTS = 30;
-            aoPhases = this.toStores.Inedible_Biomass.aoPhases;
-            aoPhases(1).fFixedTS = 30;
-            aoPhases = this.toStores.InedibleBiomassH2O.aoPhases;
-            aoPhases(1).fFixedTS = 30;
-            aoPhases = this.toStores.HygieneWaterTank.aoPhases;
-            aoPhases(1).fFixedTS = 30;
-            aoPhases = this.toStores.N2_buffer_tank.aoPhases;
-            aoPhases(1).fFixedTS = 30;
-            aoPhases = this.toStores.H2O2Tank.aoPhases;
-            aoPhases(1).fFixedTS = 30;
+
+            tTimeStepProperties.fFixedTimeStep = 15;
+            
+            this.toStores.crew_module.aoPhases(1).setTimeStepProperties(tTimeStepProperties);
+            this.toStores.PotableWaterTank.aoPhases(1).setTimeStepProperties(tTimeStepProperties);
+            this.toStores.Food_Storage.aoPhases(1).setTimeStepProperties(tTimeStepProperties);
+            this.toStores.Inedible_Biomass.aoPhases(1).setTimeStepProperties(tTimeStepProperties);
+            this.toStores.NutrientTank.aoPhases(1).setTimeStepProperties(tTimeStepProperties);
+            this.toStores.Deadlock.aoPhases(1).setTimeStepProperties(tTimeStepProperties);
+            this.toStores.InedibleBiomassH2O.aoPhases(1).setTimeStepProperties(tTimeStepProperties);
+            this.toStores.HygieneWaterTank.aoPhases(1).setTimeStepProperties(tTimeStepProperties);
+            this.toStores.N2_buffer_tank.aoPhases(1).setTimeStepProperties(tTimeStepProperties);
+            this.toStores.H2O2Tank.aoPhases(1).setTimeStepProperties(tTimeStepProperties);
         end
     end
     

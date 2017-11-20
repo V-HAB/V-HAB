@@ -32,6 +32,9 @@ classdef gas_pressure_manual < matter.phases.gas
             
             this.fInitialMass = this.fMass;
             
+            tTimeStepProperties.rMaxChange = 0;
+            this.setTimeStepProperties(tTimeStepProperties)
+            
             if this.fMass > 0
                 %this.throw('gas_pressure_manual', 'cannot have mass!');
             end
@@ -81,7 +84,6 @@ classdef gas_pressure_manual < matter.phases.gas
             %this.rMaxChange = 0.01;%0.00001;%inf;
             
             %this.rMaxChange = 0.1 ^ this.oTimer.iPrecision;
-            this.rMaxChange = 0;
             %this.rMaxChange = 0.0000001;
             %this.rMaxChange = inf;
             this.bSynced    = true;

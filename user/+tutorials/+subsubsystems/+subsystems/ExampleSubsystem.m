@@ -62,7 +62,9 @@ classdef ExampleSubsystem < vsys
             % We are not really interested in the pressure, heat capacity
             % etc. of the filtered phase, so we don't need to re-calculate
             % it often. So we set a large maximum change. 
-            oFilterBedPhase.rMaxChange = 0.5;
+            
+            tTimeStepProperties.rMaxChange = 0.5;
+            oFilterBedPhase.setTimeStepProperties(tTimeStepProperties);
 
         end
         

@@ -63,7 +63,9 @@ classdef SEAR < vsys
                                         20,...
                                         293.15);       
             oVapor.bSynced  = true;
-            oVapor.fFixedTS = 2;
+            
+            tTimeStepProperties.fFixedTimeStep = 2;
+            oVapor.setTimeStepProperties(tTimeStepProperties);
                       
             % Special Exme to maintain constant pressure and temperature at Exme OUT
             components.SEAR.special.const_temp_press_exme(oVapor, 'Out', 2300, 293.15);
@@ -77,7 +79,8 @@ classdef SEAR < vsys
             oAir = this.toStores.Environment.createPhase('air', 10, [], [], 101325);
             
             oAir.bSynced  = true;
-            oAir.fFixedTS = 2;
+            tTimeStepProperties.fFixedTimeStep = 2;
+            oAir.setTimeStepProperties(tTimeStepProperties);
             
             % Adding a constant pressure exme to maintain vacuum/environment conditions
             % In_1 for Venting Valve

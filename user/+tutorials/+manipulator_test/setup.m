@@ -33,26 +33,10 @@ classdef setup < simulation
             aoPhases = this.oRoot.toChildren.Example.toStores.Transformer.aoPhases;
             % Flow Phase
             aoPhases(1).bSynced    = true;
-            aoPhases(1).fMaxStep   = 10;
-            aoPhases(1).rMaxChange = 0.005;
-%             aoPhases(1).fFixedTS   = 1;
             
-            % Phases in the main system
-%             fMaxStep = 1;
-            rMaxChange = 0.01;
-            fFixedTS = 1;
-            
-            aoPhases = this.oRoot.toChildren.Example.toStores.Tank_1.aoPhases;
-%             aoPhases(1).fMaxStep   = fMaxStep;
-%             aoPhases(1).rMaxChange = rMaxChange;
-%             aoPhases(1).fFixedTS   = fFixedTS;
-            
-            aoPhases = this.oRoot.toChildren.Example.toStores.Tank_2.aoPhases;
-%             aoPhases(1).fMaxStep   = fMaxStep;
-%             aoPhases(1).rMaxChange = rMaxChange;
-%             aoPhases(1).fFixedTS   = fFixedTS;
-            
-            
+            tTimeStepProperties.fMaxStep = 10;
+            tTimeStepProperties.rMaxChange = 0.005;
+            aoPhases(1).setTimeStepProperties(tTimeStepProperties);
             
             %% Logging
             % Creating a cell setting the log items
