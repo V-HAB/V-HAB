@@ -193,7 +193,7 @@ classdef Culture3Phases < vsys
             matter.procs.exmes.mixture(oBalance, 'GasExchange_In');
             matter.procs.exmes.mixture(oBalance, 'GasExchange_Out');
             
-            oAtmospherePhase = this.toStores.Plant_Culture.createPhase('air', 0.1, 293.15, 0.5, 101325);
+            oAtmospherePhase = this.toStores.Plant_Culture.createPhase('air', 'PlantAtmosphere', 0.1, 293.15, 0.5, 101325);
                   
             matter.procs.exmes.gas(oAtmospherePhase, 'Air_From_Greenhouse');
             matter.procs.exmes.gas(oAtmospherePhase, 'Air_To_Greenhouse');
@@ -201,7 +201,8 @@ classdef Culture3Phases < vsys
             matter.procs.exmes.gas(oAtmospherePhase, 'GasExchange_In');
             matter.procs.exmes.gas(oAtmospherePhase, 'GasExchange_Out');
             
-
+            oAtmospherePhase.bSynced = true;
+            
             %% Create Biomass Growth P2P Processor
             
             %
@@ -289,7 +290,7 @@ classdef Culture3Phases < vsys
                 end
             end
             
-            this.toStores.Plant_Culture.toPhases.Plant_Culture_Phase_3.bSynced = true;
+            this.toStores.Plant_Culture.toPhases.PlantAtmosphere.bSynced = true;
         end
         
         %% Connect Subsystem Interfaces with Parent System

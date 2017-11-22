@@ -256,7 +256,7 @@ classdef GreenhouseV2 < vsys
             % well as O2 and CO2 extraction
             
             % add N2 buffer store
-            matter.store(this, 'N2BufferSupply', 1e3);
+            matter.store(this, 'N2BufferSupply', 20e3);
             
             % add phase to N2 buffer store
             oN2BufferSupply = matter.phases.gas(...
@@ -264,7 +264,7 @@ classdef GreenhouseV2 < vsys
                 'N2BufferSupply', ...                   % phase name
                 struct(...                              % phase contents    [kg]
                     'N2', 20e3), ...
-                1e3, ...                                % phase volume      [m^3]
+                20e3, ...                                % phase volume      [m^3]
                 fTemperatureInit);                      % phase temperature [K]
                 
             % add exmes
@@ -273,7 +273,7 @@ classdef GreenhouseV2 < vsys
             
             
             % add CO2 buffer store
-            matter.store(this, 'CO2BufferSupply', 1e3);
+            matter.store(this, 'CO2BufferSupply', 20e3);
             
             % add phase to N2 buffer store
             oCO2BufferSupply = matter.phases.gas(...
@@ -281,7 +281,7 @@ classdef GreenhouseV2 < vsys
                 'CO2BufferSupply', ...                  % phase name
                 struct(...                              % phase contents    [kg]
                     'CO2', 20e3), ...
-                1e3, ...                                % phase volume      [m^3]
+                20e3, ...                                % phase volume      [m^3]
                 fTemperatureInit);                      % phase temperature [K]
                 
             % add exmes
@@ -290,7 +290,7 @@ classdef GreenhouseV2 < vsys
             
             
             % add O2 buffer Store
-             matter.store(this, 'O2BufferSupply', 1e3);
+             matter.store(this, 'O2BufferSupply', 20e3);
             
             % add phase to N2 buffer store
             oO2BufferSupply = matter.phases.gas(...
@@ -298,7 +298,7 @@ classdef GreenhouseV2 < vsys
                 'O2BufferSupply', ...                   % phase name
                 struct(...                              % phase contents    [kg]
                     'O2', 20e3), ...
-                1e3, ...                                % phase volume      [m^3]
+                20e3, ...                                % phase volume      [m^3]
                 fTemperatureInit);                      % phase temperature [K]
                 
             % add exmes
@@ -329,8 +329,8 @@ classdef GreenhouseV2 < vsys
                 this.toStores.Atmosphere, ...       % store containing phase
                 'ExcessO2', ...                     % phase name
                 struct(...                          % phase contents    [kg]
-                    'O2', 1e5), ...
-                1e6, ...                            % phase volume      [m^3]
+                    'O2', 20), ...
+                200, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
             matter.procs.exmes.gas(oExcessO2, 'ExcessO2_P2P');
@@ -340,8 +340,8 @@ classdef GreenhouseV2 < vsys
                 this.toStores.Atmosphere, ...       % store containing phase
                 'ExcessCO2', ...                    % phase name
                 struct(...                          % phase contents    [kg]
-                    'CO2', 1e5), ...
-                1e6, ...                            % phase volume      [m^3]
+                    'CO2', 20), ...
+                200, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
             matter.procs.exmes.gas(oExcessCO2, 'ExcessCO2_P2P');
@@ -595,7 +595,7 @@ classdef GreenhouseV2 < vsys
             else
                 this.toBranches.CO2BufferSupply.oHandler.setFlowRate( 0 );
                 afFlowRate = zeros(1,this.oMT.iSubstances);
-                afFlowRate(this.oMT.tiN2I.CO2) = ((1e-3 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.CO2)) / this.fTimeStep + fNominalCO2Flow + 1e-3);
+                afFlowRate(this.oMT.tiN2I.CO2) = ((1e-3 * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass(this.oMT.tiN2I.CO2)) / this.fTimeStep + fNominalCO2Flow);
                 this.toStores.Atmosphere.toProcsP2P.ExcessCO2_P2P.setFlowRate(afFlowRate);
                 
             end

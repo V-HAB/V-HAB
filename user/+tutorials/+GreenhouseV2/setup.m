@@ -47,6 +47,9 @@ classdef setup < simulation.infrastructure
                 % Plant Mass
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, ':s:Plant_Culture.toPhases.Plants'], 'fMass', 'kg', [csCultures{iI}, ' Plant Mass']);
                 
+                % Plant Atmosphere Mass
+                oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, ':s:Plant_Culture.toPhases.PlantAtmosphere'], 'fMass', 'kg', [csCultures{iI}, ' Plant Atmosphere Mass']);
+                
                 % p2p flowrates
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, ':s:Plant_Culture.toProcsP2P.BiomassGrowth_P2P'], 'fFlowRate', 'kg/s', [csCultures{iI}, ' BiomassGrowth']);
                 oLogger.addValue(['GreenhouseV2:c:', csCultures{iI}, '.toBranches.Atmosphere_In.aoFlows(1)'], 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', [csCultures{iI}, ' CO2 In Flow']);
@@ -100,10 +103,14 @@ classdef setup < simulation.infrastructure
             
             oPlot = this.toMonitors.oPlotter;
             
-            oPlot.definePlot('Pa', 'Tank Pressures');
-            oPlot.definePlot('K',  'Tank Temperatures');
-            oPlot.definePlot('kg', 'Tank Masses');
-            oPlot.definePlot('kg/s', 'Flow Rates');
+            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
+            oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
+            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
+            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
+%             oPlot.definePlot('Pa', 'Tank Pressures');
+%             oPlot.definePlot('K',  'Tank Temperatures');
+%             oPlot.definePlot('kg', 'Tank Masses');
+%             oPlot.definePlot('kg/s', 'Flow Rates');
             
             % or you can specify the labels you want to plot
             cNames = {'Partial Pressure CO_2 Tank 1', 'Partial Pressure CO_2 Tank 2'};
