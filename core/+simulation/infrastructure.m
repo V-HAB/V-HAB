@@ -103,8 +103,6 @@ classdef infrastructure < base & event.source
             ... % Logs specific simulation values, can be specified throug helpers
             ... % First param is bDumpToMat --> active?
             'oLogger', struct('sClass', 'simulation.monitors.logger_basic', 'cParams', {{ false }}), ...
-            ... % Post-processing - show plots
-            'oPlotter', struct('sClass', 'simulation.monitors.plotter_basic'), ...   'simulation.monitors.plotgrid_with_tree'), ...
             ... % Allows to e.g. pause the simulation
             'oExecutionControl', struct('sClass', 'simulation.monitors.execution_control'), ...
             ... % Logs mass loss/gain, TODO warn if too much mass loss / gain
@@ -263,6 +261,15 @@ classdef infrastructure < base & event.source
         function configureMonitors(this)
             % Do stuff like: add log propertis, define plots, ...
         end
+        
+        function oPlotter = plot(this, sLogger)
+            if nargin >= 2
+                oPlotter = tools.postprocessing.plotter.plotter_basic(this, sLogger);
+            else
+                oPlotter = tools.postprocessing.plotter.plotter_basic(this);
+            end
+        end
+
         
         
         function initialize(this)
