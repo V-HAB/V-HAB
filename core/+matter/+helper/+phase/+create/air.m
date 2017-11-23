@@ -26,7 +26,7 @@ if nargin < 5 || isempty(fPressure),    fPressure    = matter.table.Standard.Pre
 
 if rRH
     % Calculation of the saturation vapour pressure
-    fSaturationVapourPressure = this.oMT.calculateVaporPressure(fTemperature, 'H2O');
+    fSaturationVapourPressure = oStore.oMT.calculateVaporPressure(fTemperature, 'H2O');
     
     % calculate vapour pressure [Pa]
     fVapourPressure = rRH * fSaturationVapourPressure; 

@@ -51,7 +51,7 @@ if ~this.ttxMatter.(sSubstance).bIndividualFile
     for k = 1:length(csPossiblePhase)
         csPossiblePhase{k} = strrep(csPossiblePhase{k},'t','');
     end
-    miPhase = find(strcmp(csPhase, csPossiblePhase));
+    miPhase = find(strcmp(csPhase, csPossiblePhase{1}));
     
     return
 end
