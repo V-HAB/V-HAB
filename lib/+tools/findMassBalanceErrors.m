@@ -129,24 +129,15 @@ function [ ] = findMassBalanceErrors( oInput, fAccuracy, fMaxMassBalanceDifferen
     afCurrentMassBalance = zeros(1, oMT.iSubstances);
     if length(aoPhases) > 1
         for iPhase = 1:length(aoPhases)
-            if ~isempty(aoPhases(iPhase).toManips.substance)
-                oManip = aoPhases(iPhase).toManips.substance;
-                if ~isempty(oManip.afPartialFlows)
-                    % a positive Manipulator flowrate is a generation of
-                    % that substance in the phase. To correctly represent
-                    % that in the mass balance of the substances the
-                    % manipulator flowrates have to subtracted (they will
-                    % be added by the afCurrentTotalInOuts again)
-                    afCurrentMassBalance = afCurrentMassBalance - oManip.afPartialFlows;
-                end
-            end
+            % Manips are not included in the afCurrentTotalInOuts value,
+            % the mass balance for those is calculated individually
             afCurrentMassBalance = afCurrentMassBalance + aoPhases(iPhase).afCurrentTotalInOuts;
         end
     end
     
-    if any(abs(afCurrentMassBalance)) > fAccuracy
-        iSubstances = afCurrentMassBalance ~= 0;
-        sSubstancesStringWithSpaces = strjoin({oMT.csI2N{iSubstances}}, ', ');
+    if any(abs(afCurrentMassBalance) > fAccuracy)
+        miSubstances = abs(afCurrentMassBalance) > fAccuracy;
+        sSubstancesStringWithSpaces = strjoin({oMT.csI2N{miSubstances}}, ', ');
         disp(['An overall mass balance issue was detected in tick ', num2str(aoPhases(1).oTimer.iTick), ' for the substances: ', sSubstancesStringWithSpaces]);
     end
     
