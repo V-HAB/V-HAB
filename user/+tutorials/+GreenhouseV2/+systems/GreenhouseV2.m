@@ -1,69 +1,71 @@
 classdef GreenhouseV2 < vsys
     properties
-        ttxInput;
+        % Concentration of CO2 in PPM
+        fCO2 = 330; %PPM
         
-        toCultures;
-        
+        % Cell array containing the names of all plant cultures
         csCultures;
         
-        %% Atmosphere Control Paramters
-        
-        % water separator flowrate (value taken from old plant module)
-        fFlowRateWS = 0.065;
-        
-        %
-        fCO2 = 330;
-        
-        fUpdateFrequency;
+        % Maximum Time Step allowed for this system
+        fMaxTimeStep = 3600;
     end
     
     methods
         function this = GreenhouseV2(oParent, sName)
             this@vsys(oParent, sName, 3600);
             
-            this.fUpdateFrequency = this.fTimeStep;
-            
             %% Set Culture Setup Inputs
-                        
-            tInput.Lettuce.sCultureName     = 'Lettuce';
-            tInput.Lettuce.sPlantSpecies    = 'Lettuce';
-            % Information on the assumed planting density for the model can
-            % be found in lib/+components/*PlantModuleV2/+plantparameters/PlantParameters.csv
-            tInput.Lettuce.fGrowthArea      = 5; % m?
-            tInput.Lettuce.fHarvestTime     = 30; % days
-            tInput.Lettuce.fEmergeTime      = 0; % days
-            tInput.Lettuce.fPPFD            = 330; % micromol/m?s
-            % Photoperiod in hours
-            tInput.Lettuce.fPhotoperiod     = 17; % h
-            tInput.Lettuce.iConsecutiveGenerations      = 5; % days
             
-            tInput.Sweetpotato.sCultureName     = 'Sweetpotato';
-            tInput.Sweetpotato.sPlantSpecies    = 'Sweetpotato';
-            tInput.Sweetpotato.fGrowthArea      = 5; % m?
-            tInput.Sweetpotato.fHarvestTime     = 120; % days
-            tInput.Sweetpotato.fEmergeTime      = 0; % days
-            tInput.Sweetpotato.fPPFD            = 330; % micromol/m?s
-            % Photoperiod in hours
-            tInput.Sweetpotato.fPhotoperiod     = 17; % h
-            tInput.Sweetpotato.iConsecutiveGenerations      = 5; % days
+            % Custom name you want to give this specific culture, select a 
+            % name that is easy for you to identify
+            tInput(1).sCultureName     = 'MyLettuceCulture';
+            % Name of the plant species, has to fit the names defined in 
+            % lib/+components/*PlantModuleV2/+plantparameters/PlantParameters.csv
+            tInput(1).sPlantSpecies    = 'Lettuce';
+            % The growth area defines how many plants are used in the
+            % culture. Please note that depending on your application you
+            % have to set the area to represent the number of plants (see
+            % the plant density parameter in lib/+components/*PlantModuleV2/+plantparameters/PlantParameters.csv
+            % for information on that parameter) and not the actual area.
+            % The area depends on the density of plants and can vary by
+            % some degree! (for very high density shadowing effects will
+            % come into effect)
+            tInput(1).fGrowthArea      = 5; % m^2
+            % time after which the plants are harvested
+            tInput(1).fHarvestTime     = 30; % days
+            % The time after which the first part of the plant can be seen
+            tInput(1).fEmergeTime      = 0; % days
+            % Particle Photon Flux Density, which is ony value to define
+            % the intensity of the light the plants receive
+            tInput(1).fPPFD            = 330; % micromol/m^2s
+            % Photoperiod in hours (time per day that the plants receive
+            % light)
+            tInput(1).fPhotoperiod     = 17; % h
+            % This parameter defines how many generations of this culture
+            % are planted in succession
+            tInput(1).iConsecutiveGenerations      = 5; % days
             
-            % write to property
-            this.ttxInput = tInput;
+            % Additional cultures can be added here by adding more fields
+            % to the tInput struct (because we loop over them below).
+            % Otherwise you can simply create individual input structs and
+            % define the PlantCulture.m multiple times without a loop
+            tInput(2).sCultureName     = 'MySweetpotatoCulture';
+            tInput(2).sPlantSpecies    = 'Sweetpotato';
+            tInput(2).fGrowthArea      = 5; % m^2
+            tInput(2).fHarvestTime     = 120; % days
+            tInput(2).fEmergeTime      = 0; % days
+            tInput(2).fPPFD            = 330; % micromol/m^2s
+            tInput(2).fPhotoperiod     = 17; % h
+            tInput(2).iConsecutiveGenerations      = 5; % days
             
             %% Create Culture Objects
             
-            % write culture names into cell array to be accessed within
-            % loop
-            this.csCultures = fieldnames(this.ttxInput);
-            
             % loop over total cultures amount
-            for iI = 1:length(this.csCultures)
-                % culture object gets assigned using its culture name 
-                this.toCultures.(this.csCultures{iI}) = ...
-                    components.PlantModuleV2.PlantCulture(...
-                        this, ...                                   % parent system reference
-                        this.ttxInput.(this.csCultures{iI}), ...    % input for specific culture
-                        this.fTimeStep);
+            for iCulture = 1:length(tInput)
+                components.PlantModuleV2.PlantCulture(...
+                        this, ...                   % parent system reference
+                        tInput(iCulture), ...       % input for specific culture
+                        this.fTimeStep);            % Time step initially used for this culture in [s]
             end
         end
         
@@ -81,24 +83,20 @@ classdef GreenhouseV2 < vsys
             % comment 2e6 if regulation is not needed
             matter.store(this, 'Atmosphere', 200);
             
-%             oAtmosphere = matter.phases.gas(...
-%                 this.toStores.Atmosphere, ...       % store containing phase
-%                 'Atmosphere', ...                   % phase name
-%                 struct(...                          % phase contents    [kg]
-%                     'N2',   1, ...
-%                     'O2',   0.27, ...
-%                     'CO2',  0.05, ...
-%                     'H2O',  0.05), ...
-%                 20, ...                             % phase volume      [m^3]
-%                 fTemperatureInit);                  % phase temperature [K]
-
             % this.toStores.Atmosphere.bPreventVolumeOverwrite = true;
             oAtmosphere = this.toStores.Atmosphere.createPhase('air', 200, 293.15, 0.5, 101325);
             
-            for iI = 1:length(this.csCultures)
+            % Go through the children and set the reference atmosphere for
+            % the plants
+            csPlantCultures = {};
+            for iChild = 1:length(this.csChildren)
                 % culture object gets assigned using its culture name 
-                this.toCultures.(this.csCultures{iI}).setReferenceAtmosphere(oAtmosphere);
+                if isa(this.toChildren.(this.csChildren{iChild}), 'components.PlantModuleV2.PlantCulture')
+                    this.toChildren.(this.csChildren{iChild}).setReferenceAtmosphere(oAtmosphere);
+                    csPlantCultures{length(csPlantCultures)+1} = this.csChildren{iChild};
+                end
             end
+            this.csCultures = csPlantCultures;
             
             matter.procs.exmes.gas(oAtmosphere, 'WaterAbsorber_P2P');
             
@@ -342,21 +340,18 @@ classdef GreenhouseV2 < vsys
             
             %% Create EXMEs for Culture Connections
             
-            % get names and number of grown cultures
-            this.csCultures = fieldnames(this.toCultures);
-            
-            csInedibleBiomass = cell(1, length(this.csCultures));
+            csInedibleBiomass = cell(1, length(csPlantCultures));
             
             % loop over all cultures to create each required exmes 
-            for iI = 1:length(this.csCultures)
+            for iI = 1:length(csPlantCultures)
                 % subsystem interfaces
-                matter.procs.exmes.gas(oAtmosphere,             [this.toCultures.(this.csCultures{iI}).sName, '_AtmosphereCirculation_Out']);
-                matter.procs.exmes.gas(oAtmosphere,             [this.toCultures.(this.csCultures{iI}).sName, '_AtmosphereCirculation_In']);
-                matter.procs.exmes.liquid(oWaterSupply,         [this.toCultures.(this.csCultures{iI}).sName, '_WaterSupply_Out']);
-                matter.procs.exmes.liquid(oNutrientSupply,      [this.toCultures.(this.csCultures{iI}).sName, '_NutrientSupply_Out']);
-                matter.procs.exmes.liquid(oBiomassEdibleSplit,  [this.toCultures.(this.csCultures{iI}).sName, '_Biomass_In']);
+                matter.procs.exmes.gas(oAtmosphere,             [this.toChildren.(csPlantCultures{iI}).sName, '_AtmosphereCirculation_Out']);
+                matter.procs.exmes.gas(oAtmosphere,             [this.toChildren.(csPlantCultures{iI}).sName, '_AtmosphereCirculation_In']);
+                matter.procs.exmes.liquid(oWaterSupply,         [this.toChildren.(csPlantCultures{iI}).sName, '_WaterSupply_Out']);
+                matter.procs.exmes.liquid(oNutrientSupply,      [this.toChildren.(csPlantCultures{iI}).sName, '_NutrientSupply_Out']);
+                matter.procs.exmes.liquid(oBiomassEdibleSplit,  [this.toChildren.(csPlantCultures{iI}).sName, '_Biomass_In']);
                 
-                csInedibleBiomass{iI} = [this.toCultures.(this.csCultures{iI}).txPlantParameters.sPlantSpecies, 'InedibleWet'];
+                csInedibleBiomass{iI} = [this.toChildren.(csPlantCultures{iI}).txPlantParameters.sPlantSpecies, 'InedibleWet'];
             end
             
             %% Create Biomass Split P2P
@@ -380,23 +375,23 @@ classdef GreenhouseV2 < vsys
             matter.branch(this, 'BiomassSplit.BiomassInedible_Out_ToStorage',   {}, 'BiomassInedible.BiomassInedible_In_FromSplit', 'SplitToInedible');
             
             % create subsystem branches, 5 per culture object
-            for  iI = 1:length(this.csCultures)
-                matter.branch(this, [this.toCultures.(this.csCultures{iI}).sName, '_Atmosphere_ToIF_Out'],      {}, ['Atmosphere.',     this.toCultures.(this.csCultures{iI}).sName, '_AtmosphereCirculation_Out']);
-                matter.branch(this, [this.toCultures.(this.csCultures{iI}).sName, '_Atmosphere_FromIF_In'],     {}, ['Atmosphere.',     this.toCultures.(this.csCultures{iI}).sName, '_AtmosphereCirculation_In']);
-                matter.branch(this, [this.toCultures.(this.csCultures{iI}).sName, '_WaterSupply_ToIF_Out'],     {}, ['WaterSupply.',    this.toCultures.(this.csCultures{iI}).sName, '_WaterSupply_Out']);
-                matter.branch(this, [this.toCultures.(this.csCultures{iI}).sName, '_NutrientSupply_ToIF_Out'],  {}, ['NutrientSupply.', this.toCultures.(this.csCultures{iI}).sName, '_NutrientSupply_Out']);
-                matter.branch(this, [this.toCultures.(this.csCultures{iI}).sName, '_Biomass_FromIF_In'],        {}, ['BiomassSplit.',   this.toCultures.(this.csCultures{iI}).sName, '_Biomass_In']);
+            for  iI = 1:length(csPlantCultures)
+                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_Atmosphere_ToIF_Out'],      {}, ['Atmosphere.',     this.toChildren.(csPlantCultures{iI}).sName, '_AtmosphereCirculation_Out']);
+                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_Atmosphere_FromIF_In'],     {}, ['Atmosphere.',     this.toChildren.(csPlantCultures{iI}).sName, '_AtmosphereCirculation_In']);
+                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_WaterSupply_ToIF_Out'],     {}, ['WaterSupply.',    this.toChildren.(csPlantCultures{iI}).sName, '_WaterSupply_Out']);
+                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_NutrientSupply_ToIF_Out'],  {}, ['NutrientSupply.', this.toChildren.(csPlantCultures{iI}).sName, '_NutrientSupply_Out']);
+                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_Biomass_FromIF_In'],        {}, ['BiomassSplit.',   this.toChildren.(csPlantCultures{iI}).sName, '_Biomass_In']);
             end
             
             %% Connect Interfaces
             
-            for iI = 1:length(this.csCultures)
-                this.toCultures.(this.csCultures{iI}).setIfFlows(...
-                    [this.toCultures.(this.csCultures{iI}).sName, '_Atmosphere_ToIF_Out'], ...
-                    [this.toCultures.(this.csCultures{iI}).sName ,'_Atmosphere_FromIF_In'], ...
-                    [this.toCultures.(this.csCultures{iI}).sName ,'_WaterSupply_ToIF_Out'], ...
-                    [this.toCultures.(this.csCultures{iI}).sName ,'_NutrientSupply_ToIF_Out'], ...
-                    [this.toCultures.(this.csCultures{iI}).sName ,'_Biomass_FromIF_In']);
+            for iI = 1:length(csPlantCultures)
+                this.toChildren.(csPlantCultures{iI}).setIfFlows(...
+                    [this.toChildren.(csPlantCultures{iI}).sName, '_Atmosphere_ToIF_Out'], ...
+                    [this.toChildren.(csPlantCultures{iI}).sName ,'_Atmosphere_FromIF_In'], ...
+                    [this.toChildren.(csPlantCultures{iI}).sName ,'_WaterSupply_ToIF_Out'], ...
+                    [this.toChildren.(csPlantCultures{iI}).sName ,'_NutrientSupply_ToIF_Out'], ...
+                    [this.toChildren.(csPlantCultures{iI}).sName ,'_Biomass_FromIF_In']);
             end
         end
         
@@ -474,9 +469,9 @@ classdef GreenhouseV2 < vsys
             
             % Positive Values are outflows out fo the plants
             for iCulture = 1:length(this.csCultures)
-                fNominalO2Flow          = fNominalO2Flow            + this.toCultures.(this.csCultures{iCulture}).tfGasExchangeRates.fO2ExchangeRate;
-                fNominalCO2Flow         = fNominalCO2Flow           + this.toCultures.(this.csCultures{iCulture}).tfGasExchangeRates.fCO2ExchangeRate;
-                fNominalCondensateFlow  = fNominalCondensateFlow    + this.toCultures.(this.csCultures{iCulture}).tfGasExchangeRates.fTranspirationRate;
+                fNominalO2Flow          = fNominalO2Flow            + this.toChildren.(this.csCultures{iCulture}).tfGasExchangeRates.fO2ExchangeRate;
+                fNominalCO2Flow         = fNominalCO2Flow           + this.toChildren.(this.csCultures{iCulture}).tfGasExchangeRates.fCO2ExchangeRate;
+                fNominalCondensateFlow  = fNominalCondensateFlow    + this.toChildren.(this.csCultures{iCulture}).tfGasExchangeRates.fTranspirationRate;
             end
             fH2O_Leakage = this.toBranches.Leakage.fFlowRate * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.H2O);
             fCO2_Leakage = this.toBranches.Leakage.fFlowRate * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.arPartialMass(this.oMT.tiN2I.CO2);
@@ -493,15 +488,15 @@ classdef GreenhouseV2 < vsys
             % TBD: Well its just an example system with stupid unrealistic
             % controllers :)
             if (fRelativeHumidity > 0.85) || (fPartialPressureO2 > 23000) || (fCO2_Concentration > 2500)
-                this.setTimeStep(this.fUpdateFrequency/100);
+                this.setTimeStep(this.fMaxTimeStep/100);
             elseif (fRelativeHumidity > 0.7) || (fPartialPressureO2 > 22500) || (fCO2_Concentration > 1500)
-                this.setTimeStep(this.fUpdateFrequency/10);
+                this.setTimeStep(this.fMaxTimeStep/10);
             elseif (fRelativeHumidity < 0.25) || (fPartialPressureO2 < 18000) || (fCO2_Concentration < 150) || (fPressure < 7e4)
-                this.setTimeStep(this.fUpdateFrequency/100);
+                this.setTimeStep(this.fMaxTimeStep/100);
             elseif (fRelativeHumidity < 0.45) || (fPartialPressureO2 < 19000) || (fCO2_Concentration < 300) || (fPressure < 9e4)
-                this.setTimeStep(this.fUpdateFrequency/10);
+                this.setTimeStep(this.fMaxTimeStep/10);
             else
-                this.setTimeStep(this.fUpdateFrequency);
+                this.setTimeStep(this.fMaxTimeStep);
             end
             
             %% O2 Controller
@@ -632,7 +627,7 @@ classdef GreenhouseV2 < vsys
             afPredictedMass = this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afMass + (this.fTimeStep * this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.afCurrentTotalInOuts);
             
             if any(afPredictedMass < 0)
-                this.setTimeStep(this.fUpdateFrequency/10);
+                this.setTimeStep(this.fTimeStep/10);
                 this.update();
             else
                 this.update();

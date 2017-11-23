@@ -37,8 +37,16 @@ classdef setup < simulation.infrastructure
             
             oLogger.add('GreenhouseV2', 'flow_props');
             
-            % general logging parameters, greenhouse system
-            csCultures = this.oSimulationContainer.toChildren.GreenhouseV2.csCultures;
+            % Find the plant cultures to log
+            csCultures = {};
+            oGreenhouseV2 = this.oSimulationContainer.toChildren.GreenhouseV2;
+            for iChild = 1:length(this.oSimulationContainer.toChildren.GreenhouseV2.csChildren)
+                % culture object gets assigned using its culture name 
+                if isa(oGreenhouseV2.toChildren.(oGreenhouseV2.csChildren{iChild}), 'components.PlantModuleV2.PlantCulture')
+                    csCultures{length(csCultures)+1} = oGreenhouseV2.csChildren{iChild};
+                end
+            end
+            
             % log culture subsystems
             for iI = 1:length(csCultures)                
                 % Balance Mass
