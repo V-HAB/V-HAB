@@ -1,4 +1,4 @@
-classdef Culture3Phases < vsys
+classdef PlantCulture < vsys
     % This class is used in creating the culture objects. It provides the
     % phase for plant growth, adds a p2p processor which is automatically
     % connected to biomass buffer store, two exmes and corresponding p2p
@@ -92,7 +92,7 @@ classdef Culture3Phases < vsys
     end
     
     methods
-        function this = Culture3Phases(oParent, txPlantParameters, txInput, fUpdateFrequency, fPlantTimeInit)
+        function this = PlantCulture(oParent, txInput, fUpdateFrequency, fPlantTimeInit)
             this@vsys(oParent, txInput.sCultureName, fUpdateFrequency);
             
             
@@ -104,9 +104,8 @@ classdef Culture3Phases < vsys
             
             this.oTimer.setMinStep(1e-20);
             
-            this.txPlantParameters = txPlantParameters;
+            this.txPlantParameters = components.PlantModuleV2.plantparameters.importPlantParameters(txInput.sPlantSpecies);
             this.txInput = txInput;
-            
             
             % the flowrates set here are all used in the manipulator
             % attached to the balance phase. Through this manipulator the
@@ -135,6 +134,8 @@ classdef Culture3Phases < vsys
             this.tfMMECRates.fCO2P = 0;
             this.tfMMECRates.fNC = 0;
             this.tfMMECRates.fCGR = 0;
+            
+            
         end
         
         function createMatterStructure(this)

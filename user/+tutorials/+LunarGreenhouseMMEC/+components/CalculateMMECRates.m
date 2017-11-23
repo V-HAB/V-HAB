@@ -27,7 +27,7 @@ function [ oCulture ] ...
     % TODO: improve later after system is running as it is one (the?)
     % reason photoperiod is linked to planting time and not a more general
     % setting
-    if mod(oCulture.fInternalTime, 1440) < (oCulture.txInput.fH * 60)
+    if mod(oCulture.fInternalTime, 1440) < (oCulture.txInput.fPhotoperiod * 60)
         bI = 1;
     else
         bI = 0;
@@ -51,7 +51,7 @@ function [ oCulture ] ...
     
     % calculate effective photosynthetic photon flux density (PPFD_E) 
     % [µmol m^-2 s-^1]
-    fPPFD_E = oCulture.txInput.fPPFD * (oCulture.txInput.fH * oCulture.txPlantParameters.fH_0^-1);
+    fPPFD_E = oCulture.txInput.fPPFD * (oCulture.txInput.fPhotoperiod * oCulture.txPlantParameters.fH_0^-1);
     
     % calculate time of canopy closure (T_A)
     % calculate maximum canopy qunatum yield (CQY_Max)
@@ -116,7 +116,7 @@ function [ oCulture ] ...
     % hourly oxygen consumption [g m^-2 h^-1]
     % HOC = HCG * I^-1 * (1 - CUE_24) * CUE_24^-1 * OPF * MW_O2 * H * 24^-1
     % (Eq. 9)
-    fHOC = (oCulture.txPlantParameters.fAlpha * fCUE_24 * fA * fCQY * oCulture.txInput.fPPFD) * (1 - fCUE_24) * fCUE_24^-1 * oCulture.txPlantParameters.fOPF * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2) * oCulture.txInput.fH * 24^-1;
+    fHOC = (oCulture.txPlantParameters.fAlpha * fCUE_24 * fA * fCQY * oCulture.txInput.fPPFD) * (1 - fCUE_24) * fCUE_24^-1 * oCulture.txPlantParameters.fOPF * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2) * oCulture.txInput.fPhotoperiod * 24^-1;
 
     % hourly CO2 consumption [g m^-2 h^-1]
     % HCO2C = HOP * MW_CO2 * MW_O2^-1 (Eq. 14)

@@ -27,7 +27,7 @@ function [ oCulture ] ...
     % TODO: improve later after system is running as it is one (the?)
     % reason photoperiod is linked to planting time and not a more general
     % setting
-    if mod(oCulture.fInternalTime, 86400) < (oCulture.txInput.fH * 3600)
+    if mod(oCulture.fInternalTime, 86400) < (oCulture.txInput.fPhotoperiod * 3600)
         bI = 1;
         
         if oCulture.bLight == 0
@@ -61,7 +61,7 @@ function [ oCulture ] ...
     
     % calculate effective photosynthetic photon flux density (PPFD_E) 
     % [µmol m^-2 s-^1]
-%     fPPFD_E = oCulture.txInput.fPPFD * (oCulture.txInput.fH * oCulture.txPlantParameters.fH_0^-1);
+%     fPPFD_E = oCulture.txInput.fPPFD * (oCulture.txInput.fPhotoperiod * oCulture.txPlantParameters.fH_0^-1);
     
     % TODO: is it really necessary? day-night cycle already implemented.
     
@@ -137,7 +137,7 @@ function [ oCulture ] ...
     % hourly oxygen consumption [g m^-2 h^-1]
     % HOC = HCG * I^-1 * (1 - CUE_24) * CUE_24^-1 * OPF * MW_O2 * H * 24^-1
     % (Eq. 9)
-    fHOC = (oCulture.txPlantParameters.fAlpha * fCUE_24 * fA * fCQY * oCulture.txInput.fPPFD * 3600^-1) * (1 - fCUE_24) * fCUE_24^-1 * oCulture.txPlantParameters.fOPF * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2) * oCulture.txInput.fH * 24^-1;   % [kg m^-2 s-^1]
+    fHOC = (oCulture.txPlantParameters.fAlpha * fCUE_24 * fA * fCQY * oCulture.txInput.fPPFD * 3600^-1) * (1 - fCUE_24) * fCUE_24^-1 * oCulture.txPlantParameters.fOPF * oCulture.oMT.afMolarMass(oCulture.oMT.tiN2I.O2) * oCulture.txInput.fPhotoperiod * 24^-1;   % [kg m^-2 s-^1]
 
     % hourly CO2 consumption [g m^-2 h^-1]
     % HCO2C = HOP * MW_CO2 * MW_O2^-1 (Eq. 14)
@@ -174,7 +174,7 @@ function [ oCulture ] ...
     % P_net: net canopy photosynthesis [µmol_Carbon m^2 s]
     fP_gross = fA * fCQY * oCulture.txInput.fPPFD;                  
         
-    fP_Net	=   ((24 - oCulture.txInput.fH)/(24) + oCulture.txInput.fH * fCUE_24/24 ) * fP_gross;
+    fP_Net	=   ((24 - oCulture.txInput.fPhotoperiod)/(24) + oCulture.txInput.fPhotoperiod * fCUE_24/24 ) * fP_gross;
 
     % Rate of change of saturation specific humidity with air temperature in [Pa K^-1]
     fD = 1000 * 4098 * 0.6108 * exp(17.27 * oCulture.txPlantParameters.fTemperatureLight / ( oCulture.txPlantParameters.fTemperatureLight + 237.3 )) / (( oCulture.txPlantParameters.fTemperatureLight + 237)^2); 
@@ -245,7 +245,7 @@ function [ oCulture ] ...
     
     % hourly transpiration rate [g m^-2 h^-1]
     % TODO: model from saad, do last
-    fHTR = fET_C * fDensityH2O * 1000^-1 * (oCulture.txInput.fH /24);  % [kg m^-2 s^-1]
+    fHTR = fET_C * fDensityH2O * 1000^-1 * (oCulture.txInput.fPhotoperiod /24);  % [kg m^-2 s^-1]
     
     %% Calculate Water Consumption
     

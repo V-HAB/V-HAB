@@ -1,9 +1,5 @@
 classdef GreenhouseV2 < vsys
     properties
-        ttxNutrientData;
-        
-        ttxPlantParameters;
-        
         ttxInput;
         
         toCultures;
@@ -26,65 +22,33 @@ classdef GreenhouseV2 < vsys
             this@vsys(oParent, sName, 3600);
             
             this.fUpdateFrequency = this.fTimeStep;
-            %% Import Nutrient Data
             
-            % import nutirent data from .csv file
-            this.ttxNutrientData = components.PlantModuleV2.food.data.importNutrientData();
+            %% Set Culture Setup Inputs
+                        
+            tInput.Lettuce.sCultureName     = 'Lettuce';
+            tInput.Lettuce.sPlantSpecies    = 'Lettuce';
+            % Information on the assumed planting density for the model can
+            % be found in lib/+components/*PlantModuleV2/+plantparameters/PlantParameters.csv
+            tInput.Lettuce.fGrowthArea      = 5; % m?
+            tInput.Lettuce.fHarvestTime     = 30; % days
+            tInput.Lettuce.fEmergeTime      = 0; % days
+            tInput.Lettuce.fPPFD            = 330; % micromol/m?s
+            % Photoperiod in hours
+            tInput.Lettuce.fPhotoperiod     = 17; % h
+            tInput.Lettuce.iConsecutiveGenerations      = 5; % days
             
-            %% Import Plant Parameters
-            
-            % import plant parameters from .csv file
-            this.ttxPlantParameters = components.PlantModuleV2.plantparameters.importPlantParameters();
-            
-            % import coefficient matrices for CQY and T_A
-            % save fieldnames to temporary cell array
-            csPlantSpecies = fieldnames(this.ttxPlantParameters);
-            
-            % loop over entries in cell array (= number of plant species)
-            for iI = 1:size(csPlantSpecies)
-                % import coefficient matrices for CQY
-                this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_CQY = ...
-                    csvread(['lib/+components/+PlantModuleV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_CQY.csv']);
-                
-                % import coefficient matrices for T_A
-                this.ttxPlantParameters.(csPlantSpecies{iI}).mfMatrix_T_A = ...
-                    csvread(['lib/+components/+PlantModuleV2/+plantparameters/', csPlantSpecies{iI}, '_Coefficient_Matrix_T_A.csv']);
-                
-                %% Additional Required Parameters
-                
-                % Unit conversion factor. not a true "plant" parameter per
-                % se but needed in the MMEC calculations so it will be part 
-                % of ttxPlantParameters.
-                % [s h^-1 mol µmol^-1]
-                this.ttxPlantParameters.(csPlantSpecies{iI}).fAlpha = 0.0036;
-                
-                % fresh basis water factor FBWF_Edible = WBF * (1 - WBF)^-1
-                % for edible biomass
-                % [fluid mass over dry mass]
-                this.ttxPlantParameters.(csPlantSpecies{iI}).fFBWF_Edible = ...
-                    this.ttxPlantParameters.(csPlantSpecies{iI}).fWBF * ...
-                    (1 - this.ttxPlantParameters.(csPlantSpecies{iI}).fWBF)^-1;
-                
-                % fresh basis water factor for inedible biomass
-                % FBWF_Inedible. since inedible biomass water content is
-                % always assumed to be 90% this factor equals 9 for all
-                % species
-                % [fluid mass over dry mass]
-                this.ttxPlantParameters.(csPlantSpecies{iI}).fFBWF_Inedible = 9;
-            end
-            
-            %% Import Culture Setup Inputs
-            
-            % temporary variable to shorten property structure (to get
-            % layout ttxInput.cultureXYZ.blablubb instead of
-            % ttxInput.CultureInput.cultureXYZ.blablubb). 
-            % TODO: find a better way for providing inputs for culture
-            % setup. old way will have to do for now, it works at least.
-            blubb = load(...
-                strrep('lib\+components\+PlantModuleV2\+cultures\CultureInputLSP.mat', '\', filesep));
+            tInput.Sweetpotato.sCultureName     = 'Sweetpotato';
+            tInput.Sweetpotato.sPlantSpecies    = 'Sweetpotato';
+            tInput.Sweetpotato.fGrowthArea      = 5; % m?
+            tInput.Sweetpotato.fHarvestTime     = 120; % days
+            tInput.Sweetpotato.fEmergeTime      = 0; % days
+            tInput.Sweetpotato.fPPFD            = 330; % micromol/m?s
+            % Photoperiod in hours
+            tInput.Sweetpotato.fPhotoperiod     = 17; % h
+            tInput.Sweetpotato.iConsecutiveGenerations      = 5; % days
             
             % write to property
-            this.ttxInput = blubb.CultureInput;
+            this.ttxInput = tInput;
             
             %% Create Culture Objects
             
@@ -96,9 +60,8 @@ classdef GreenhouseV2 < vsys
             for iI = 1:length(this.csCultures)
                 % culture object gets assigned using its culture name 
                 this.toCultures.(this.csCultures{iI}) = ...
-                    components.PlantModuleV2.Culture3Phases(...
+                    components.PlantModuleV2.PlantCulture(...
                         this, ...                                   % parent system reference
-                        this.ttxPlantParameters.(this.ttxInput.(this.csCultures{iI}).sPlantSpecies), ...
                         this.ttxInput.(this.csCultures{iI}), ...    % input for specific culture
                         this.fTimeStep);
             end
