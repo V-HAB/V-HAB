@@ -9,6 +9,7 @@ classdef PlantManipulator < matter.manips.substance.flow
         iInedibleWetBiomass;
         
         fTotalError = 0;
+        afTotalTransformedMass;
         fLastExec = 0;
     end
     
@@ -19,6 +20,9 @@ classdef PlantManipulator < matter.manips.substance.flow
             this.oParent = oParent;
             this.iEdibleWetBiomass = this.oMT.tiN2I.([this.oParent.txPlantParameters.sPlantSpecies, 'EdibleWet']);
             this.iInedibleWetBiomass = this.oMT.tiN2I.([this.oParent.txPlantParameters.sPlantSpecies, 'InedibleWet']);
+            
+            this.afTotalTransformedMass = zeros(1,this.oMT.iSubstances);
+            this.afPartialFlows = zeros(1,this.oMT.iSubstances);
         end
         
         function update(this)
@@ -31,6 +35,7 @@ classdef PlantManipulator < matter.manips.substance.flow
             
             fError = sum(this.afPartialFlows);
             this.fTotalError = this.fTotalError + (fError * fTimeStep);
+            this.afTotalTransformedMass = this.afTotalTransformedMass + (this.afPartialFlows * fTimeStep);
             
             
             this.oParent.update();
@@ -119,7 +124,9 @@ classdef PlantManipulator < matter.manips.substance.flow
             fBalanceCulture = oCulture.tfGasExchangeRates.fO2ExchangeRate + oCulture.tfGasExchangeRates.fCO2ExchangeRate + oCulture.tfGasExchangeRates.fTranspirationRate + ...
                      (oCulture.tfBiomassGrowthRates.fGrowthRateInedible + oCulture.tfBiomassGrowthRates.fGrowthRateEdible) ...
                      - (oCulture.fWaterConsumptionRate + oCulture.fNutrientConsumptionRate);
-            
+            if abs(fBalanceCulture) > 1e-10
+                keyboard()
+            end
             
             this.fLastExec = this.oTimer.fTime;
         end

@@ -345,33 +345,7 @@ classdef PlantCulture < vsys
             this.fCO2 = this.oParent.CalculateCO2Concentration();
             
             %% Calculate 8 MMEC Parameters
-            
-            % calculate density of liquid H2O, required for transpiration
-            tH2O.sSubstance = 'H2O';
-            tH2O.sProperty = 'Density';
-            tH2O.sFirstDepName = 'Pressure';
-            %             tH2O.fFirstDepValue = this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fPressure;
-            tH2O.fFirstDepValue = this.oAtmosphere.fPressure;
-            tH2O.sSecondDepName = 'Temperature';
-            %             tH2O.fSecondDepValue = this.toStores.(this.txInput.sCultureName).toPhases.([this.txInput.sCultureName, '_Phase_1']).fTemperature;
-            tH2O.fSecondDepValue = this.oAtmosphere.fTemperature;
-            tH2O.sPhaseType = 'liquid';
-            
-            fDensityH2O = this.oMT.findProperty(tH2O);
-            
-            [ this ] = ...                                                  % return current culture object
-                components.PlantModuleV2.PlantGrowth(...
-                this, ...                                               % current culture object
-                this.fPlantTime, ...                                  % current simulation time of Plants
-                this.oAtmosphere.fMass * this.oAtmosphere.fMassToPressure, ...                 % atmosphere pressure
-                this.oAtmosphere.fDensity, ...                  % atmosphere density
-                this.oAtmosphere.fTemperature, ...              % atmosphere temperature
-                this.oAtmosphere.rRelHumidity, ...              % atmosphere relative humidity
-                this.oAtmosphere.fSpecificHeatCapacity, ...     % atmosphere heat capacity
-                fDensityH2O, ...                                        % density of liquid water under atmosphere conditions
-                this.fCO2);                                             % CO2 concentration in ppm
-            
-            
+            [ this ] =  components.PlantModuleV2.PlantGrowth(this, this.fPlantTime);
             
             %% Harvest
             

@@ -1,6 +1,6 @@
 function [ oCulture ] ...
     = CalculateMMECRates(...
-        oCulture, fPressureAtmosphere, fDensityAtmosphere, fTemperatureAtmosphere, fRelativeHumidityAtmosphere, fHeatCapacityAtmosphere, fDensityH2O, fCO2)
+        oCulture, fPressureAtmosphere, fDensityAtmosphere, fRelativeHumidityAtmosphere, fHeatCapacityAtmosphere, fDensityH2O, fCO2)
     
     %% WARNING!! -- FILE CONTENT NOT IN SI UNITS!!! %%%%%%%%%%%%%%%%%%%%%%%
     

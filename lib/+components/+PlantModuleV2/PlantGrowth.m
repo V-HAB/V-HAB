@@ -1,10 +1,24 @@
-function [ oCulture ] = ...
-    PlantGrowth(...
-        oCulture, fSimTime, fPressureAtmosphere,...
-        fDensityAtmosphere, fTemperatureAtmosphere,...
-        fRelativeHumidityAtmosphere, fHeatCapacityAtmosphere, ...
-        fDensityH2O, fCO2)
+function [ oCulture ] =  PlantGrowth( oCulture, fSimTime)
 
+    % gets some required parameters for the calculation from the culture
+    % object
+    fDensityAtmosphere              = oCulture.oAtmosphere.fDensity;
+    fPressureAtmosphere             = oCulture.oAtmosphere.fMass * oCulture.oAtmosphere.fMassToPressure;
+    fRelativeHumidityAtmosphere     = oCulture.oAtmosphere.rRelHumidity;
+    fHeatCapacityAtmosphere         = oCulture.oAtmosphere.fSpecificHeatCapacity;
+    fCO2                            = oCulture.fCO2;
+    
+    % calculate density of liquid H2O, required for transpiration
+    tH2O.sSubstance         = 'H2O';
+    tH2O.sProperty          = 'Density';
+    tH2O.sFirstDepName      = 'Pressure';
+    tH2O.fFirstDepValue     = oCulture.oAtmosphere.fPressure;
+    tH2O.sSecondDepName     = 'Temperature';
+    tH2O.fSecondDepValue    = oCulture.oAtmosphere.fTemperature;
+    tH2O.sPhaseType         = 'liquid';
+
+    fDensityH2O = oCulture.oMT.findProperty(tH2O);
+    
     % growth if current generation does not exceed maximum 
     if oCulture.iInternalGeneration <= oCulture.txInput.iConsecutiveGenerations
         % growth if time since planting is lower than harvest time
@@ -24,7 +38,6 @@ function [ oCulture ] = ...
                         oCulture, ...                       % current culture object
                         fPressureAtmosphere, ...            % atmosphere pressure
                         fDensityAtmosphere, ...             % atmosphere density
-                        fTemperatureAtmosphere, ...         % atmosphere temperature
                         fRelativeHumidityAtmosphere, ...    % atmosphere relative humidity
                         fHeatCapacityAtmosphere, ...        % atmosphere heat capacity
                         fDensityH2O, ...                    % density of liquid water under atmosphere conditions
@@ -39,7 +52,6 @@ function [ oCulture ] = ...
                         oCulture, ...                               % current culture object
                         fPressureAtmosphere, ...                    % atmosphere pressure
                         fDensityAtmosphere, ...                     % atmosphere density
-                        fTemperatureAtmosphere, ...                 % atmosphere temperature
                         fRelativeHumidityAtmosphere, ...            % atmosphere relative humidity
                         fHeatCapacityAtmosphere, ...                % atmosphere heat capacity
                         fDensityH2O, ...                            % density of liquid water under atmosphere conditions
@@ -54,7 +66,6 @@ function [ oCulture ] = ...
                         oCulture, ...                               % current culture object
                         fPressureAtmosphere, ...                    % atmosphere pressure
                         fDensityAtmosphere, ...                     % atmosphere density
-                        fTemperatureAtmosphere, ...                 % atmosphere temperature
                         fRelativeHumidityAtmosphere, ...            % atmosphere relative humidity
                         fHeatCapacityAtmosphere, ...                % atmosphere heat capacity
                         fDensityH2O, ...                            % density of liquid water under atmosphere conditions
@@ -181,7 +192,7 @@ function [ oCulture ] = ...
          (oCulture.tfBiomassGrowthRates.fGrowthRateInedible + oCulture.tfBiomassGrowthRates.fGrowthRateEdible) ...
          - (oCulture.fWaterConsumptionRate + oCulture.fNutrientConsumptionRate);
 
-        if abs(fBalance) > 1e-18
+        if abs(fBalance) > 1e-10
             keyboard()
         end
     end
