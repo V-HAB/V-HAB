@@ -120,11 +120,12 @@ classdef setup < simulation.infrastructure
             
             % it is also possible to define a calculation as log value and
             % e.g. multiply two values from the object.
+            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'kg', 'Pressure Tank 1');
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'kg', 'Pressure Tank 2');
             % This can be usefull if you want to log the flowrate of CO2
             % through a branch that transports air for example            
             oLog.addValue('Example.aoBranches(1).aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Flowrate of CO2', 'fr_co2');
-            
+               
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg');
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
             
@@ -140,7 +141,7 @@ classdef setup < simulation.infrastructure
         function plot(this) % Plotting the results
             
             %% Define plots
-            
+            close all
             oPlotter = plot@simulation.infrastructure(this);
             
             cxPlotValues1 = { '"CO_2 Flowrate"', this.tiLogIndexes.iIndex_2, 'Nonsense' };
@@ -214,6 +215,12 @@ classdef setup < simulation.infrastructure
             oPlotter.defineFigure(coPlots, 'Pressure vs. Flow Rate');
             
 
+            tPlotOptions = struct('sTimeUnit','hours');
+            coPlots = {};
+            coPlots{1,1} = oPlotter.definePlot({'"Branch Flow Rate"'}, 'Flow Rate', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({'"Pressure Tank 1"', '"Pressure Tank 2"'}, 'Pressures', tPlotOptions);
+            oPlotter.defineFigure(coPlots, 'Flow Rate');
+            
             oPlotter.plot();
         end
         

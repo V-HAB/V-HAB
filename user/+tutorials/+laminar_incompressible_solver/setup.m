@@ -25,7 +25,7 @@ classdef setup < simulation.infrastructure
             %% Simulation length
             
             if nargin < 3 || isempty(fSimTime)
-                fSimTime = 3600 * 1;
+                fSimTime = 3600 * 5;
             end
             
             if fSimTime < 0
@@ -76,30 +76,41 @@ classdef setup < simulation.infrastructure
             
             oLog = this.toMonitors.oLogger;
             
-            oLog.add('Example', 'flow_props');
+            oLog.addValue('Example.toStores.Valve_1.toPhases.flow',             'fPressure',    'Pa', 'Valve1 Pressure');
+            oLog.addValue('Example.toStores.Filter.toPhases.flow',              'fPressure',    'Pa', 'Filter Pressure');
+            oLog.addValue('Example.toStores.Valve_2.toPhases.flow',             'fPressure',    'Pa', 'Valve2 Pressure');
+            oLog.addValue('Example.toStores.Store.toPhases.Store_Phase_1',      'fPressure',    'Pa', 'Store Pressure');
+            oLog.addValue('Example.toStores.Vacuum.toPhases.Vacuum_Phase_1',	'fPressure',    'Pa', 'Vacuum Pressure');
             
             
+            oLog.addValue('Example.toBranches.Store__Port_Out___Valve_1__In',       'fFlowRate',    'kg/s', 'Store to Valve1 Flow Rate');
+            oLog.addValue('Example.toBranches.Valve_1__Out___Filter__In',           'fFlowRate',    'kg/s', 'Valve1 to Filter Flow Rate');
+            oLog.addValue('Example.toBranches.Filter__Out___Valve_2__In',           'fFlowRate',    'kg/s', 'Filter to Valve2 Flow Rate');
+            oLog.addValue('Example.toBranches.Valve_2__Out___Vacuum__Port_2',       'fFlowRate',    'kg/s', 'Valve2 to Vacuum Flow Rate');
+            oLog.addValue('Example.toBranches.Filter__Filtered___Vacuum__Port_1',   'fFlowRate',    'kg/s', 'Filter to Vacuum Flow Rate');
             
-
-            %% Define plots
+            %oLog.add('Example', 'flow_props');
             
-            oPlot = this.toMonitors.oPlotter;
-            
-            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
-            %oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
-            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
-            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
-            
-            
-
         end
         
         function plot(this) % Plotting the results
             
-            this.toMonitors.oPlotter.plot();
+            %% Define Plots
             
-            return;
-            %tools.arrangeWindows();
+            close all
+            oPlotter = plot@simulation.infrastructure(this);
+            
+            csPressures = {'"Valve1 Pressure"', '"Filter Pressure"', '"Valve2 Pressure"', '"Store Pressure"', '"Vacuum Pressure"'};
+            csFlowRates = {'"Store to Valve1 Flow Rate"', '"Valve1 to Filter Flow Rate"', '"Filter to Valve2 Flow Rate"', '"Valve2 to Vacuum Flow Rate"', '"Filter to Vacuum Flow Rate"'};
+            
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
+            
+            coPlots{1,1} = oPlotter.definePlot(csPressures,   'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csFlowRates,   'Flow Rates', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
+            
+            oPlotter.plot();
         end
         
     end

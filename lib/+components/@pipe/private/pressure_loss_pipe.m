@@ -21,10 +21,6 @@
 %These should be saved in the function values as vectors with the first
 %entry beeing the material value for T_m and the second value for T_w
 %
-%for example for temperature dependant material values the inputs could be
-%fDyn_Visc      = [21.9 ; 22.7]kg/(m s)
-%fDensity       = [0.93; 0.88]kg/m³
-%
 %with the return parameter
 %
 %fDelta_Pressure = pressure loss in N/m²
@@ -37,26 +33,41 @@
 function [fDelta_Pressure] = pressure_loss_pipe (fD_Hydraulic, fLength,...
                             fFlowSpeed, fDyn_Visc, fDensity, fRoughness, fConfig, fD_o)
 
+
 %the source "Wärmeübertragung" Polifke will from now on be defined as [1]
-%the source "VDI Wärmeatlas" will from now on be defined as [9]
-    
+%the source "VDI Wärmeatlas" 11. Auflage will from now on be defined as [9]
+
+%% Transitions between laminar, trubulent and developed roughness flow
+% see [9] page 1225 Abbildung 1 for a graphical representation of the flow areas
+%
+% Laminar flow calculations can be used for Re < 2320 and a roughness K of
+% less than 0.07mm ([9] page 1223). These can use the Hagen Poisselle
+% Equation  (Equation 3 or 4 from [9] page 1223)
+%
+% Turbulent flow is actually a transition area, which lies between laminar
+% and developed roughness flow. The transition region to developed
+% roughness flow depends on the Re and the relative roughness, which is
+% K divided with the hydraulic diameter. The colebrook equation can be used
+% for the turbulent flow area ([9] page 1224 equation 10). The transition
+% to developed roughness flow will use a conservative linear boundary which
+% uses the colebrook equation in some regions where developed roughness
+% flow is already present. This is not an issue since the colebrook
+% equation is a more accurate representation and would transition to the
+% equation for developed roughness flow. The coolebrook equation however is
+% implicit and therefore requires much more computational resources.
+%
+% Developed roughness flow can then use the simpler equation from [9] page
+% 1224 equation 9 again
+
 if nargin == 5
     fRoughness = 0;
     fConfig = 0;
 elseif nargin == 6
     fConfig = 0;
 end
-%decides wether temperature dependancy should also be accounted for
-if length(fDyn_Visc) == 2 && fConfig == 0
-    fConfig = 3;
-elseif length(fDyn_Visc) == 2 && fConfig == 1;
-    fConfig = 4;
-elseif length(fDyn_Visc) == 2 && fConfig == 2;
-    fConfig = 5;
-end
 
 %Definition of the kinematic viscosity
-fKin_Visc_m = fDyn_Visc(1)/fDensity(1);
+fKin_Visc_m = fDyn_Visc/fDensity;
 
 %Definition of the Reynolds number according to [1] page 232 equation
 %(10.30)
@@ -67,19 +78,19 @@ fRe = (fFlowSpeed * fD_Hydraulic) / fKin_Visc_m;
 if fRoughness == 0
     %%
     %laminar flow
-    if fRe < 3000
+    if (fRe < 2320) && (fRoughness < 7e-5) % check roughness limit
         %definition of the friction factor according to [9] section Lab
         %equation (4) for a round pipe
-        if fConfig == 0 || fConfig == 3
+        if fConfig == 0
             fFriction_Factor = 64/fRe;
         %definition of the friction factor according to [9] section Lab
         %equation (14) for a square pipe
-        elseif fConfig == 1 || fConfig == 4
+        elseif fConfig == 1
             fFriction_Factor = 0.89*64/fRe;
         %definition of the friction factor according to [9] section Lab
         %equation (14) for an annular passage using an interpolation for the
         %shape factor
-        elseif fConfig == 2 || fConfig ==5
+        elseif fConfig == 2
             %calculation of the outer diameter of the inner tube from the
             %hydraulic diameter
             fD_i = fD_o - fD_Hydraulic;
@@ -124,15 +135,22 @@ if fRoughness == 0
     end
 %%
 %calculation in case of rough pipes
-else
+elseif 3000 <= fRe && fRe < 100000
+
     %definition of the friction factor according to [9] section Lab
     %equation (9)
     %this equation is applicable for developed roughness flow
     fFriction_Factor = (1/(2*log10(fD_Hydraulic/fRoughness)+1.14))^2; 
     
-    %for turbulent flow there is a more accurate equation but because it is
-    %implicit it will not be used ( [9] section Lab
-    %equation (10))
+else
+    % The colebrook equation is used for all other cases, which is the
+    % transition area between the laminar and the developed roughness
+    % flow. However, even if some other case is caught by this
+    % equation, it is not an issue as it is the most accurate one and
+    % can also be used for the developed roughness flow
+    % Source: [9] page 1224 Equation 10
+    fFriction_Factor = colebrook(fRe,fRelativeRoughness);
+
 end
     
 %definition of the pressure loss according to [9] section Lab
