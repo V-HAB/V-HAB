@@ -1503,7 +1503,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     % extremly small partial masses from delaying the
                     % simulation (otherwise the timestep will go asymptotically
                     % towards zero the smaller the partial mass becomes)
-                    afCurrentMass(this.afMass < this.oTimer.iPrecision) = this.oTimer.iPrecision;
+                    afCurrentMass(this.afMass < 10^(-this.oTimer.iPrecision)) = 10^(-this.oTimer.iPrecision);
                     arPartialChangeToPartials = abs(afChange ./ tools.round.prec(afCurrentMass, this.oTimer.iPrecision));
                     % Values where the partial mass is zero are set to zero,
                     % otherwise the value for these is NaN or Inf
