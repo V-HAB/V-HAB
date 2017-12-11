@@ -1,5 +1,5 @@
-function [sCondensateFlowRateCell, fOutlet_Temp_Hot_New, acCondensateNames, fCondensateHeatFlow] = condensation ...
-         (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_Hot, fHeatFlow, fTwall, fOutlet_Temp_Hot, fEntry_Temp_Hot, oFlow_Hot, iIncrements)
+function [sCondensableFlowRateCell, fOutlet_Temp_Hot_New, acCondensateNames, fCondensateHeatFlow] = condensation ...
+         (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_Hot, fHeatFlow, fTwall, fOutlet_Temp_Hot, fEntry_Temp_Hot, oFlow_Hot, iIncrements)
      
 %condensation is a function that calculates what substance condenses in the
 %heat exchanger, how much mass flow of condensate is generated and what the
@@ -9,30 +9,33 @@ function [sCondensateFlowRateCell, fOutlet_Temp_Hot_New, acCondensateNames, fCon
 %values are explained in the following section.
 %
 %the input values for this function are 
-%(oHX, sCondensateFlowRate, fHeat_Capacity_Flow_Hot, fHeatFlow, fTwall, fOutlet_Temp_Hot, fEntry_Temp_Hot, oFlow_Hot, fBoundaryFlowRatio)
+%(oHX, sCondensableFlowRate, fHeat_Capacity_Flow_Hot, fHeatFlow, fTwall, fOutlet_Temp_Hot, fEntry_Temp_Hot, oFlow_Hot, fBoundaryFlowRatio)
 %	oHX: has to be a condensing heat exchanger object )it is automatically
 %        defined in the CHX_main function.
-%   sCondensateFlowRate: a struct containing the condensate mass flow rates
-%                        for the substances that have condense so far in
-%                        the heat exchanger
+%   sCondensableFlowRate: a struct containing the AVAILABLE mass of
+%   condensate for each substance, therefore the values in here represent
+%   the maximum amount of condensate that can be produced
+%
 %   the other input variables should be clear from their naming alone. It
 %   is only important to realise that they are all for the hotter fluid
 %   which is cooled down because this is where condensation takes place
      
 if nargin < 9
     iIncrements = 1;
+elseif iIncrements <= 0
+    error('less than 1 increment is not possible for the condensation calculation, please check the inputs');    
 end
 
 %in case that the flow for which the condensation function is called is
 %already a liquid nothing happens
 if (oFlow_Hot.fFlowRate >= 0) && strcmp(oFlow_Hot.oBranch.coExmes{1,1}.oPhase.sType , 'liquid')
-    sCondensateFlowRateCell =struct();
+    sCondensableFlowRateCell =struct();
     fOutlet_Temp_Hot_New = fOutlet_Temp_Hot;
     acCondensateNames = '';
     fCondensateHeatFlow = 0;
     return
 elseif (oFlow_Hot.fFlowRate < 0) && strcmp(oFlow_Hot.oBranch.coExmes{2,1}.oPhase.sType , 'liquid')
-    sCondensateFlowRateCell =struct();
+    sCondensableFlowRateCell =struct();
     fOutlet_Temp_Hot_New = fOutlet_Temp_Hot;
     acCondensateNames = '';
     fCondensateHeatFlow = 0;
@@ -49,16 +52,19 @@ acSubstanceNamesFlow = oFlow_Hot.oMT.csSubstances(oFlow_Hot.arPartialMass ~= 0);
 mVaporPressures = zeros(length(acSubstanceNamesFlow),1);
 mMolarMassSubstance = zeros(length(acSubstanceNamesFlow),1);
 mPartialMass = zeros(length(acSubstanceNamesFlow),1);
+mCondensableMassFlow = zeros(length(acSubstanceNamesFlow),1);
 
 fFlowRate = abs(oFlow_Hot.fFlowRate)/iIncrements;
 fPressure = oFlow_Hot.fPressure;
 fMolarMassFlow = oFlow_Hot.fMolarMass;
 
 for n = 1: length(acSubstanceNamesFlow)
-    mVaporPressures(n) = calcVaporPressure(fTwall, acSubstanceNamesFlow{n});
+    mVaporPressures(n) = oHX.oMT.calculateVaporPressure(fTwall, acSubstanceNamesFlow{n});
     
     mMolarMassSubstance(n) = oFlow_Hot.oMT.afMolarMass(oFlow_Hot.oMT.tiN2I.(acSubstanceNamesFlow{n}));
     mPartialMass(n) = oFlow_Hot.arPartialMass(oFlow_Hot.oMT.tiN2I.(acSubstanceNamesFlow{n}));
+    
+    mCondensableMassFlow(n) = afCondensableFlowRate(oFlow_Hot.oMT.tiN2I.(acSubstanceNamesFlow{n}));
 end
 
 %Note the factors to split the flow into boundary flow and core flow are
@@ -68,7 +74,7 @@ mMaxMassFraction = (mVaporPressures./fPressure).*(mMolarMassSubstance./fMolarMas
 mMaxMassFlow = fFlowRate.*mMaxMassFraction;
 mMassFlow = fFlowRate.*mPartialMass;
     
-mMaxCondensateMassFlow = mMassFlow-mMaxMassFlow;
+mMaxCondensateMassFlow = mCondensableMassFlow - mMaxMassFlow;
 
 fCoreHeatFlowTotal = 0;
 %%
@@ -100,7 +106,7 @@ if max(mMaxCondensateMassFlow) > 0
     mVaporPressuresCore = zeros(length(acSubstanceNamesFlow),1);
     
     for n = 1: length(acSubstanceNamesFlow)
-        mVaporPressuresCore(n) = calcVaporPressure(fOutlet_Temp_Hot, acSubstanceNamesFlow{n});
+        mVaporPressuresCore(n) = oHX.oMT.calculateVaporPressure(fOutlet_Temp_Hot, acSubstanceNamesFlow{n});
     end
     
     mMaxMassFractionCore = (mVaporPressuresCore./fPressure).*(mMolarMassSubstance./fMolarMassFlow);
@@ -108,12 +114,12 @@ if max(mMaxCondensateMassFlow) > 0
     
     %calculates the flow rate for each substance in the boundary flow that
     %can condense, assuming that 5% of the flow are boundary flow.
-    mCondenseableFlowRateBoundary = (mMassFlow*0.05)-(mMaxMassFlow*0.05);
+    mCondenseableFlowRateBoundary = (mCondensableMassFlow*0.05)-(mMaxMassFlow*0.05);
     mCondenseableFlowRateBoundary(mCondenseableFlowRateBoundary < 0) = 0;
     
     %calculates the flow rate for each substance in the core flow that can
     %condense
-    mCondenseableFlowRateCore = (mMassFlow-mCondenseableFlowRateBoundary)-(mMaxMassFlowCore);
+    mCondenseableFlowRateCore = (mCondensableMassFlow-mCondenseableFlowRateBoundary)-(mMaxMassFlowCore);
     mCondenseableFlowRateCore(mCondenseableFlowRateCore < 0) = 0;
     
     %by adding the two values from above the overall condenseable flow rate
@@ -146,38 +152,25 @@ if max(mMaxCondensateMassFlow) > 0
     %now it is necessary to discern between the different species that
     %condensate
     for l = 1:length(acCondensateNames)
-        if isfield (sCondensateFlowRate, acCondensateNames{l})
-            fAlreadyCondensedFlowRate = abs(sCondensateFlowRate.(acCondensateNames{l}));
+        %gets the maximum condensed mass flow over this 
+        %increment of the heat exchanger
+        fMaxCondensateFlowRate = fHeatFlow/sPhaseChangeEnthalpy.(acCondensateNames{l});
+        %now if thet flow rate is larger or equal to the
+        %flowrate of the condensing substance in the
+        %boundary layer the temperature of the core will
+        %remain the same
+        if sCondenseableFlowRate.(acCondensateNames{l}) >= fMaxCondensateFlowRate
+            sCoreHeatFlow.(acCondensateNames{l}) = 0;
+            sCondensableFlowRateCell.(acCondensateNames{l}) = fMaxCondensateFlowRate;
+            
         else
-            fAlreadyCondensedFlowRate = 0;
-        end
-        if sCondenseableFlowRate.(acCondensateNames{l}) > fAlreadyCondensedFlowRate
-            %gets the maximum condensed mass flow over this 
-            %increment of the heat exchanger
-            fMaxCondensateFlowRate = fHeatFlow/sPhaseChangeEnthalpy.(acCondensateNames{l});
-            %now if thet flow rate is larger or equal to the
-            %flowrate of the condensing substance in the
-            %boundary layer the temperature of the core will
-            %remain the same
-            if (sCondenseableFlowRate.(acCondensateNames{l})-abs(fAlreadyCondensedFlowRate)) >= fMaxCondensateFlowRate
-                sCoreHeatFlow.(acCondensateNames{l}) = 0;
-                sCondensateFlowRateCell.(acCondensateNames{l}) = fMaxCondensateFlowRate;
-            else
-                %if that is not the case the actual condensate
-                %heatflow has to be calculated
-                fCondensateHeatFlow = (sCondenseableFlowRate.(acCondensateNames{l})-abs(sum(fAlreadyCondensedFlowRate)))*sPhaseChangeEnthalpy.(acCondensateNames{l});
-                sCoreHeatFlow.(acCondensateNames{l}) = sHeatFlow.(acCondensateNames{l}) - fCondensateHeatFlow;
-                
-                sCondensateFlowRateCell.(acCondensateNames{l}) = (sCondenseableFlowRate.(acCondensateNames{l})-abs(sum(fAlreadyCondensedFlowRate)));
-            end
-        else
-            %since everything that can condense has already done so
-            %without condensation the outlet temp remains the same
-            sCondensateFlowRateCell.(acCondensateNames{l}) = 0;
-            sCoreHeatFlow.(acCondensateNames{l}) = sHeatFlow.(acCondensateNames{k});
+            %if that is not the case the actual condensate
+            %heatflow has to be calculated
+            fCondensateHeatFlow = sCondenseableFlowRate.(acCondensateNames{l})*sPhaseChangeEnthalpy.(acCondensateNames{l});
+            sCoreHeatFlow.(acCondensateNames{l}) = sHeatFlow.(acCondensateNames{l}) - fCondensateHeatFlow;
+            sCondensableFlowRateCell.(acCondensateNames{l}) = sCondenseableFlowRate.(acCondensateNames{l});
         end
     end
-    
     
     %the individual heatflows that are left for the core are summed up to a
     %new total heat flow into the core
@@ -187,18 +180,14 @@ if max(mMaxCondensateMassFlow) > 0
     fOutlet_Temp_Hot_New = (-fCoreHeatFlowTotal/fHeat_Capacity_Flow_Hot)+fEntry_Temp_Hot;
     
     fCondensateHeatFlow = fHeatFlow-fCoreHeatFlowTotal;
-    
 else
     %without condensation the outlet temp remains the same
-    sCondensateFlowRateCell.Condensation = 0;
+    sCondensableFlowRateCell.Condensation = 0;
     fOutlet_Temp_Hot_New = fOutlet_Temp_Hot;
     acCondensateNames = '';
     fCondensateHeatFlow =  0;
     %if there is no condensation in the boundary flow the core flow will 
     %also not condense therefore the return here
     return
-end
-if isnan(fOutlet_Temp_Hot_New) || (fCondensateHeatFlow < 0)
-    keyboard()
 end
 end

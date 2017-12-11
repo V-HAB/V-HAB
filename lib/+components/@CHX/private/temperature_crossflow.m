@@ -61,11 +61,13 @@ if fN_Rows == 0
     %defines two symbolic functions for the dimensionless temperatures
     %over the variables Xi and Eta
     syms yTheta_2(yXi,yEta) yTheta_1(yXi,yEta)
-
+    
     %preallocation of the vector Phi_n and Variable_1
-    yPhi_n = zeros(fSummands,1);
+    yPhi_n      = zeros(fSummands,1);
     yVariable_1 = zeros(fSummands,1);
 
+    yPhi_n      = sym(yPhi_n);
+    yVariable_1 = sym(yVariable_1);
     %calculation of the summands Phi_1 to Phi_s used to solve the integral
     %equation for the temperature field
     for fk = 1:fSummands
