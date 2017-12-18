@@ -265,8 +265,8 @@ classdef PlantCulture < vsys
             solver.matter.manual.branch(this.toBranches.NutrientSupply_In);
             solver.matter.manual.branch(this.toBranches.Biomass_Out);
             
-            % initialize flowrates            
-            this.toBranches.Atmosphere_In.oHandler.setFlowRate(0);
+            % initialize flowrates
+            this.toBranches.Atmosphere_In.oHandler.setFlowRate(-0.1);
             
             this.toBranches.WaterSupply_In.oHandler.setFlowRate(0);
             this.toBranches.NutrientSupply_In.oHandler.setFlowRate(0);
@@ -380,7 +380,6 @@ classdef PlantCulture < vsys
                 this.toBranches.NutrientSupply_In.oHandler.setFlowRate(0);
                 
                 this.toStores.Plant_Culture.toProcsP2P.GasExchange_From_Atmosphere_To_Plants.setFlowRate(zeros(1,this.oMT.iSubstances));
-                this.toBranches.Atmosphere_In.oHandler.setFlowRate(-0.1);
 
                 
             elseif this.iState == 2
