@@ -41,7 +41,7 @@ classdef Example < vsys
             sCDRA = [];
             
             % Adding the subsystem CCAA
-            components.CCAA.CCAA(this, 'CCAA', 5, rInitialCHX_Ratio, fCoolantTemperature, tAtmosphere, sCDRA);
+            components.CCAA.CCAA(this, 'CCAA', 5, fCoolantTemperature, tAtmosphere, sCDRA);
             
             eval(this.oRoot.oCfgParams.configCode(this));
             

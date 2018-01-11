@@ -19,10 +19,10 @@ classdef setup < simulation.infrastructure
             ttMonitorConfig = struct();
             warning( 'off', 'all')
             
-            this@simulation.infrastructure('Tutorial_CCAA', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Tutorial_CDRA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             if nargin < 3
-                bSimpleCDRA = false;
+                bSimpleCDRA = true;
             end
             % Creating the root object
             tutorials.CDRA.systems.Example(this.oSimulationContainer, 'Example', bSimpleCDRA);
@@ -103,21 +103,6 @@ classdef setup < simulation.infrastructure
             oLog.add('Example:c:CDRA', 'flow_props');
             oLog.add('Example:c:CDRA', 'thermal_properties');
             
-            %% Define plots
-            
-            oPlot = this.toMonitors.oPlotter;
-            
-            oPlot.definePlotAllWithFilter('Pa',  'Tank Pressures');
-            oPlot.definePlotAllWithFilter('K',   'Temperatures');
-            oPlot.definePlotAllWithFilter('kg',  'Tank Masses');
-            oPlot.definePlotAllWithFilter('kg/s','Flow Rates');
-            oPlot.definePlotAllWithFilter('P2P 13x kg/s','Flow Rates');
-            oPlot.definePlotAllWithFilter('Adsorbed kg 13x','Adsorbed Masses 13x');
-            oPlot.definePlotAllWithFilter('P2P SG kg/s','Flow Rates');
-            oPlot.definePlotAllWithFilter('Adsorbed kg Sylobead','Adsorbed Masses Sylobead');
-            oPlot.definePlotAllWithFilter('Adsorbed kg 5A','Adsorbed Masses 5A');
-            oPlot.definePlotAllWithFilter('Condensed kg/s','Condensate Mass Flow');
-            
         end
         
         function plot(this) % Plotting the results
@@ -125,7 +110,19 @@ classdef setup < simulation.infrastructure
             % further information
             close all
           
-            this.toMonitors.oPlotter.plot();
+            % TO DO: adapt to new plotting logic 
+%             oPlotter = plot@simulation.infrastructure(this);
+%             
+%             oPlotter.definePlotAllWithFilter('Pa',  'Tank Pressures');
+%             oPlotter.definePlotAllWithFilter('K',   'Temperatures');
+%             oPlotter.definePlotAllWithFilter('kg',  'Tank Masses');
+%             oPlotter.definePlotAllWithFilter('kg/s','Flow Rates');
+%             oPlotter.definePlotAllWithFilter('P2P 13x kg/s','Flow Rates');
+%             oPlotter.definePlotAllWithFilter('Adsorbed kg 13x','Adsorbed Masses 13x');
+%             oPlotter.definePlotAllWithFilter('P2P SG kg/s','Flow Rates');
+%             oPlotter.definePlotAllWithFilter('Adsorbed kg Sylobead','Adsorbed Masses Sylobead');
+%             oPlotter.definePlotAllWithFilter('Adsorbed kg 5A','Adsorbed Masses 5A');
+%             oPlotter.definePlotAllWithFilter('Condensed kg/s','Condensate Mass Flow');
             
             if isa(this.oSimulationContainer.toChildren.Example.toChildren.CDRA, 'components.CDRA.CDRA')
                 for iIndex = 1:length(this.toMonitors.oLogger.tLogValues)

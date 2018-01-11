@@ -85,7 +85,7 @@ classdef CCAA < vsys
     end
     
     methods 
-        function this = CCAA (oParent, sName, fTimeStep, rTCCV_InitialAngle, fCoolantTemperature, tAtmosphere, sCDRA, fCDRA_FlowRate)
+        function this = CCAA (oParent, sName, fTimeStep, fCoolantTemperature, tAtmosphere, sCDRA, fCDRA_FlowRate)
             % The time step has to be set since the exec function will not
             % be called frequently otherwise
             this@vsys(oParent, sName, fTimeStep);

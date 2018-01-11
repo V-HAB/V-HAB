@@ -384,7 +384,9 @@ classdef CDRA_simple < vsys
             for iStore = 1:length(csStoreNames)
                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
-                    oPhase.fFixedTS = 5;
+                    
+                    tTimeStepProperties.fFixedTimeStep = 5;
+                    oPhase. setTimeStepProperties(tTimeStepProperties);
                 end
             end
         end           
