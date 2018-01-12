@@ -105,7 +105,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
         % Length of the last time step (??)
         fTimeStep;
-
+        
+        % Do we need to trigger the massupdate/update events? These
+        % properties were implement to improve simulation speed for cases
+        % where these triggers are not used
+        bTriggerSetMassUpdateCallbackBound = false;
+        bTriggerSetUpdateCallbackBound = false;
     end
 
     properties (SetAccess = private, GetAccess = public)
@@ -565,7 +570,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.setOutdatedTS();
             
             
-            %%%this.trigger('massupdate.post');
+            if this.bTriggerSetMassUpdateCallbackBound
+            	this.trigger('massupdate_post');
+            end
         end
 
         function this = update(this)
@@ -638,7 +645,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
             end
             
-            %%%this.trigger('update.post');
+            if this.bTriggerSetUpdateCallbackBound
+            	this.trigger('update_post');
+            end
         end
 
         %% Setting of time step properties
@@ -933,6 +942,20 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
         end
         
+        % Catch 'bind' calls, so we can set a specific boolean property to
+        % true so the .trigger() method will only be called if there are
+        % callbacks registered.
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
+            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
+            
+            % Only do for set
+            if strcmp(sType, 'massupdate_post')
+                this.bTriggerSetMassUpdateCallbackBound = true;
+            end
+            if strcmp(sType, 'update_post')
+                this.bTriggerSetUpdateCallbackBound = true;
+            end
+        end
     end
 
 

@@ -434,7 +434,7 @@ classdef GreenhouseV2 < vsys
             
             this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.setTimeStepProperties(tTimeStepProperties);
 
-            this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.bind('PostUpdate',@(~)this.update());
+            this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.bind('massupdate_post',@(~)this.update());
             
         end
         
