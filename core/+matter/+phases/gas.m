@@ -171,6 +171,8 @@ classdef gas < matter.phase
         end
         
         function updateSpecificHeatCapacity(this)
+            
+            keyboard();
             % When a phase was empty and is being filled with matter again,
             % it may be a couple of ticks until the phase.update() method
             % is called, which updates the phase's specific heat capacity.

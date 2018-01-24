@@ -122,6 +122,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Timer object
         oTimer;
 
+        % Capacity object
+        oCapacity;
+        
         % User-defined name of phase
         % @type string
         %TODO: rename to |sIdent|??
@@ -204,11 +207,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Boolean indicator of an outdated time step
         %TODO rename to bOutdatedTimeStep
         bOutdatedTS = false;
-        
-        % Time when the total heat capacity was last updated. Need to save
-        % this information in order to prevent the heat capacity
-        % calculation to be performed multiple times per timestep.
-        fLastTotalHeatCapacityUpdate = 0;
 
     end
 
@@ -338,28 +336,27 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 else               this.arPartialMass = this.afMass; % afMass is just zeros
                 end
 
-                % Handle temperature
-                this.fTemperature = fTemperature;
             else
                 % Set this to zero to handle empty phases
                 this.fMass = 0;
-                % No mass - no temp
-                this.fTemperature = 0;
-
                 % Partials also to zeros
                 this.arPartialMass = this.afMass;
             end
 
             this.fMolarMass            = this.oMT.calculateMolarMass(this.afMass);
-            
-            % Now update the matter properties
-            this.updateSpecificHeatCapacity();
-            this.fTotalHeatCapacity    = this.fSpecificHeatCapacity * this.fMass;
-                
+             
             % Mass
             this.fMass = sum(this.afMass);
             this.afMassLost = zeros(1, this.oMT.iSubstances);
 
+            % add a thermal capacity to this phase to handle thermal
+            % calculations 
+            this.oCapacity = thermal.capacity(this, fTemperature);
+            
+            % Now update the matter properties
+            this.oCapacity.updateSpecificHeatCapacity();
+            this.fTotalHeatCapacity    = this.fSpecificHeatCapacity * this.fMass;
+               
             % Preset the cached masses (see calculateTimeStep)
             this.fMassLastUpdate  = 0;
             this.afMassLastUpdate = zeros(1, this.oMT.iSubstances);
@@ -470,95 +467,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
 
 
-            %%%% Now calculate the new temperature of the phase using the
-            % inflowing enthalpies / inner energies
-            % Calculations from here: https://en.wikipedia.org/wiki/Internal_energy
-            %
-            % Logic for deriving new temperature:
-            % Inner Energy
-            %   Q = m * c_p * T
-            %
-            % Total energy, mass:
-            %   Q_t = Q_1 + Q_2 + ...
-            %   m_t = m_1 + m_2 + ...
-            %
-            % Total Heat capacity of the mixture
-            %   c_p,t = (c_p,1*m_1 + c_p,2*m_2 + ...) / (m_1 + m_2 + ...)
-            %
-            %
-            % Temperature from total energy of a mix
-            %   T_t = Q_t / (m_t * c_p,t)
-            %       = (m_1 * c_p,1 * T_1 + m_2 * c_p,2 * T_2 + ...) /
-            %         ((m_1 + m_2 + ...) * (c_p,1*m_1 + ...) / (m_1 + ...))
-            %       = (m_1 * c_p,1 * T_1 + m_2 * c_p,2 * T_2 + ...) /
-            %               (c_p,1*m_1 + c_p,2*m_2 + ...)
-
-            % First we split out the mfInflowDetails matrix to make the
-            % code more readable.
-            afInflowMasses                 = mfInflowDetails(:,1);
-            afInflowTemperatures           = mfInflowDetails(:,2);
-            afSpecificInflowHeatCapacities = mfInflowDetails(:,3);
-
-            % Convert the incoming flow rates to absolute masses that are
-            % added in this timestep.
-            afAbsoluteMassesIn = afInflowMasses * fLastStep;
-
-            % We only need to change things if there are any inflows.
-            if ~isempty(mfInflowDetails)
-
-                % This phase may currently be empty, so |this.fMass| could
-                % be zero. In this case we'll only use the values of the
-                % incoming flows.
-                if this.fMass > 0
-                    mfAbsoluteMasses         = [afAbsoluteMassesIn; this.fMass];
-                    mfTemperatures           = [afInflowTemperatures; this.fTemperature];
-                    mfSpecificHeatCapacities = [afSpecificInflowHeatCapacities; this.fSpecificHeatCapacity];
-                else
-                    mfAbsoluteMasses         = afInflowMasses;
-                    mfTemperatures           = afInflowTemperatures;
-                    mfSpecificHeatCapacities = afSpecificInflowHeatCapacities;
-                end
-
-                % Calculate inner energy (m * c_p * T) for all masses.
-                mfEnergy = mfAbsoluteMasses .* mfSpecificHeatCapacities .* mfTemperatures;
-
-                % As can be seen from the explanation given above, we need
-                % the products of all masses and heat capacities in the
-                % denominator of the fraction that calulates the new
-                % temperature.
-                mfEnergyPerKelvin = mfAbsoluteMasses .* mfSpecificHeatCapacities;
-
-                % New temperature
-                %TODO: Investigate if this does what it's supposed to do,
-                %      especially in the case of non-zero mass where the
-                %      matrices are Nx2 (N: number of substances). Is the
-                %      temperature calculated correctly? Isn't it better
-                %      (at least for readability), to calculcate the
-                %      current temperature and the one of the incoming
-                %      flows separately and then calculate the new
-                %      weighted temperature from those values?
-                this.fTemperature = sum(mfEnergy) / sum(mfEnergyPerKelvin);
-                
-                
-                if ~base.oLog.bOff
-                    this.out(1, 1, 'temperature', 'New temperature: %fK', { this.fTemperature });
-                    this.out(1, 2, 'temperature', 'Total inner energy: %f\tEnergy per Kelvin: %f', { sum(mfEnergy), sum(mfEnergyPerKelvin) });
-                end
-            end
-            
-            
-            % Now add the temperature change through heat sources, in
-            % case heat sources are connected
-            if this.bMultiHeatSourceAdded
-                fTotalEnergyChange = this.oMultiHeatSource.fPower * fLastStep;
-
-                % We can use the old heat capacity - because this
-                % temperature change covers the LAST tick!
-                fTemperatureChange = fTotalEnergyChange / this.fTotalHeatCapacity;
-                this.fTemperature  = this.fTemperature + fTemperatureChange;
-            end
-            
-            
+            %%%% Now calculate the new total heat capacity for the
+            %%%% asscociated capacity
+            this.oCapacity.setTotalHeatCapacity(this.fMass * this.fSpecificHeatCapacity);
             
             % Update total mass
             this.fMass = sum(this.afMass);
@@ -609,6 +520,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Pass true as a parameter so massupd calls setBranchesOutdated
             % even if the bSynced attribute is not true
             this.massupdate(true);
+            this.oCapacity.updateTemperature();
 
             % Cache current fMass / afMass so they represent the values at
             % the last phase update. Needed in phase time step calculation.
@@ -648,21 +560,25 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % Our checks have concluded, that we have to recalculate
                 % the specific heat capacity for this phase. To do that, we
                 % call a phase type specific method. 
-                this.updateSpecificHeatCapacity()
-                
-                % The total heat capacity is just the product of the
-                % specific heat capacity and the total mass of this phase.
-                this.fTotalHeatCapacity = this.fSpecificHeatCapacity * this.fMass;
-                
-                % Finally, we update the last update property with the
-                % current time, so we can use it the next time this method
-                % is called.
-                this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
+                this.oCapacity.updateSpecificHeatCapacity();
             end
             
             %%%this.trigger('update.post');
         end
         
+        function setTemperature(this, oCaller, fTemperature)
+            % This function can only be called from the ascociated capacity
+            % (TO DO: Implement the check) and ensure that the temperature
+            % calculated in the thermal capacity is identical to the phase
+            % temperature (by using a set function in the capacity that
+            % always calls this function as well)
+            if ~isa(oCaller, 'thermal.capacity')
+                this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by capacity objects. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
+            end
+                
+            this.fTemperature = fTemperature;
+            
+        end
         %% Setting of time step properties
         function setTimeStepProperties(this, tTimeStepProperties)
             % currently the possible time step properties that can be set
@@ -755,38 +671,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
 
     %% Methods for interfacing with thermal system
-    methods
         
-        function addHeatSource(this, oHeatSource)
-            % Add a heat source to this phase object. The power set to this
-            % heat source will be included in the temperature calculations
-            % in massupdate.
-            %
-            % Parameter oHeatSource: will be added to a local heat source.
-            % Positive power means temperature RISE.
-            
-            if ~this.bMultiHeatSourceAdded
-                this.bMultiHeatSourceAdded = true;
-                
-                this.oMultiHeatSource = thermal.heatsource_multi([ 'heatsource_multi_' this.sName ]);
-                
-                %CHECK we should probably include some 'light' massupdate
-                %      version: no need to update manips/p2ps, and branches
-                %      could probably also do a reduced work program.
-                this.oMultiHeatSource.bind('update', @(oEvt) this.massupdate());
-            end
-            
-            this.oMultiHeatSource.addHeatSource(oHeatSource);
-        end
-        
-    end
-    
-    methods (Abstract)
-        % This method has to be implemented by all child classes.
-        updateSpecificHeatCapacity(this)
-    end
-
-
     %% Methods for handling manipulators
     methods
 
@@ -824,6 +709,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     % the store's bSealed attr, so nothing can be changed later.
     methods
 
+        % TBD: Do we still want this?
         function addProcEXME(this, oProcEXME)
             % Adds a exme proc, i.e. a port. Returns a function handle to
             % the this.setAttribute method (actually the one of the derived

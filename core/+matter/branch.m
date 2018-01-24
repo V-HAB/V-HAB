@@ -317,6 +317,9 @@ classdef branch < base & event.source
             
             this.iFlows     = length(this.aoFlows);
             this.iFlowProcs = length(this.aoFlowProcs);
+            
+            %% Construct asscociated thermal branch
+            keyboard()
         end
         
         

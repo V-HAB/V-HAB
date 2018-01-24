@@ -1,0 +1,169 @@
+classdef branch < base & event.source
+    % Thermal base branch class definition. Here all basic properties and
+    % methodes that all thermal branches require are defined
+    
+    properties (SetAccess = protected)
+        
+        % The thermal conductivity of the branch
+        fConductivity; % [W/K] or [W/K^4] depending on the child class
+        
+        % Reference to the system containing this thermal branch
+        oContainer;
+        % Reference to the matter table
+        oMT;
+        % Reference to the timer
+        oTimer;
+        
+        % Cell Array containg the names of the thermal extract merge
+        % processors of this branch
+        csNames;
+        
+        % Generically generated name of the branch
+        sName;
+        
+        % User defined name of the branch
+        sCustomName;
+        
+        % Object array containing a reference to the conductor objects
+        % inside this branch
+        aoConductors;
+        
+        coExmes;
+        
+        % boolean value to check if the branch is already set for update
+        bOutdated = false;
+    end
+    
+    methods
+        
+        function this = branch(oContainer, sLeft, csProcs, sRight, sCustomName)
+            % The thermal branch uses the same definition as the matter
+            % branch, just with thermal object. A matter phase with the
+            % respective thermal exme is rerquire as interface on both the
+            % left and right side and multiple conductors of the same type
+            % (Advective, Conduction/Convective, Radiative) can be defined
+            % in csProcs (similar to f2f procs on the matter side)
+            %
+            % Can be called with either stores/ports or interface names
+            % (all combinations possible). Connections are always done from
+            % subsystem to system.
+            
+            % Reference to the matter.container and some shorthand refs.
+            this.oContainer = oContainer;
+            this.oMT        = oContainer.oRoot.oMT;
+            this.oTimer     = oContainer.oRoot.oTimer;
+            
+            this.csNames    = strrep({ sLeft; sRight }, '.', '__');
+            sTempName      = [ this.csNames{1} '___' this.csNames{2} ];
+            
+            % We need to jump through some hoops because the
+            % maximum field name length of MATLAB is only 63
+            % characters, so we delete the rest of the actual
+            % branch name... 
+            % namelengthmax is the MATLAB variable that stores the
+            % maximum name length, so in case it changes in the
+            % future, we don't have to change this code!
+            if length(sTempName) > namelengthmax
+                sTempName = sTempName(1:namelengthmax);
+            end
+            this.sName = sTempName;
+            
+            if nargin == 5
+                this.sCustomName = sCustomName;
+            end
+            
+            % Interface on left side?
+            if isempty(strfind(sLeft, '.'))
+                this.abIf(1) = true;
+                
+                % Checking if the interface name is already present in this
+                % system. Only do this if there any branches at all, of course. 
+                if ~isempty(this.oContainer.aoThermalBranches) && any(strcmp(subsref([ this.oContainer.aoThermalBranches.csNames ], struct('type', '()', 'subs', {{ 1, ':' }})), sLeft))
+                    this.throw('branch', 'An interface called ''%s'' already exists in ''%s''! Please choose a different name.', sLeft, this.oContainer.sName);
+                end
+            else
+                % Split to store name / port name
+                [ sStore, sPort ] = strtok(sLeft, '.');
+                
+                % Get store name from parent
+                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end;
+                
+                % Get EXME port/proc ...
+                oPort = this.oContainer.toStores.(sStore).getThermalPort(sPort(2:end));
+                
+                this.coExmes{1} = oPort;
+            end
+            
+            
+            % Loop through conductor procs
+            for iI = 1:length(csProcs)
+                sProc = csProcs{iI};
+                
+                if ~isfield(this.oContainer.toProcsConductors, sProc)
+                    this.throw('branch', 'Conductor %s not found on system this branch belongs to!', sProc);
+                end
+                
+                this.aoConductors(end + 1) = this.oContainer.toProcsConductors.(sProc);
+            end
+            
+            %%%% HANDLE RIGHT SIDE
+            
+            % Interface on right side?
+            if isempty(strfind(sRight, '.'))
+                
+                this.abIf(2) = true;
+                this.iIfFlow = length(this.aoFlows);
+                
+                % Checking if the interface name is already present in this
+                % system. Only do this if there any branches at all, of course. 
+                if ~isempty(this.oContainer.aoThermalBranches) && any(strcmp(subsref([ this.oContainer.aoThermalBranches.csNames ], struct('type', '()', 'subs', {{ 2, ':' }})), sRight))
+                    this.throw('branch', 'An interface called ''%s'' already exists in ''%s''! Please choose a different name.', sRight, this.oContainer.sName);
+                end
+            else
+                % Split to store name / port name
+                [ sStore, sPort ] = strtok(sRight, '.');
+                
+                % Get store name from parent
+                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end;
+                
+                % Get EXME port/proc ...
+                oPort = this.oContainer.toStores.(sStore).getThermalPort(sPort(2:end));
+                
+                this.coExmes{2} = oPort;
+            end
+            
+            % Adding the branch to our matter.container
+            this.oContainer.addThermalBranch(this); % TO DO: Write this function
+            
+            this.iConductors = length(this.aoConductors);
+            
+            % Add the branch to the exmes of this branch
+            this.coExmes{1}.addBranch(this);
+            this.coExmes{2}.addBranch(this);
+        end
+        
+        function setOutdated(this)
+            % Can be used by phases or conductors processors to request recalc-
+            % ulation of the flow rate, e.g. after some internal parameters
+            % changed.
+            
+            for iE = sif(this.fHeatFlow >= 0, 1:2, 2:-1:1)
+                this.coExmes{iE}.oCapacity.temperatureupdate();
+            end
+            
+            % Only trigger if not yet set
+            %CHECK inactivated here --> solvers and other "clients" should
+            %      check themselves!
+            if ~this.bOutdated
+                this.bOutdated = true;
+
+                % Trigger outdated so e.g. the branch solver can register a
+                % postTick callback on the timer to recalc flow rate.
+                this.trigger('outdated');
+            end
+        end
+    end
+    
+    methods (Access = protected)
+    end
+end

@@ -1,349 +1,369 @@
 classdef capacity < base
     %CAPACITY An object that holds thermal energy
-    %   This is a wrapper class for querying properties of matter objects.
-    
-    % TODO: 
-    %   - support (F2F) PROCs / EXMEs? or do it in transfers.convective?
-    %     and/or with child classes for: matter, flow, energy source
-    %   - get adjacent / connected nodes (from transfers)
-    
-    % ALTERNATE NAMES: node
-    % ANALOGOUS TO: matter.store / matter.phase ??
+    % created automatically with a phase and performs all thermal
+    % calculations for the respective phase
         
     properties (SetAccess = protected) %, Abstract)
         
         % Object properties
         
+        fTemperature;
+        
         sName; % This object's name.
         
+        % Associated objects
+        oPhase;
+        aoHeatSource;
+        toHeatSources;
+        
+        aoExmes;
+        toProcsEXME;
+        
+        oMT;
+        oTimer;
         
         % Internal properties
         
-        % Associated objects
-        sMatterClass;  % The class of the associated matter object, e.g. phase, store, or dummy.
-        oMatterObject; % A matter object representing this capacity.
-        oHeatSource; % = struct('fPower', 0);   % A heatsource object attached to this capacity.
+        % TO DO: When should this property be updated? heat flows thta are
+        % mass based are calculated as heat flows, the timestep is
+        % calclated assuming a constant heat capacity. Either the heat
+        % capacity is updated after each thermal step/ each mass step or at
+        % the overall phase update (probably the best option as the mass
+        % change is limited for this anyway)
+        % Alternativly the advective flows have to be update whenever the
+        % mass changes anyway, therefore calculating the increase in
+        % thermal capacity could be performed linear --> still neglecting
+        % temperature dependency of capacity
+        % TO prevent energy from beeing created/destroyed when the capacity
+        % changes the new temperature could be calculated, however this is
+        % difficult if heat flows are used
+        fTotalHeatCapacity;
+        fSpecificHeatCapacity;
         
+        % Property to store the current overall heat flow of this capacity
+        % (positive values increase the temperature, negative values
+        % decrease it)
+        fCurrentHeatFlow;
         
-        % Overloaded properties of associated objects
+        %% Numerical properties
+        % current (thermal) timestep enforced by this capacity
+        fTimeStep;
         
-        % Overloading oMatterObject properties.
-        %fTemperature = -1;
-        %fOverloadedTotalHeatCapacity = -1;
+        % last time at which the temperature was updated
+        fLastTemperatureUpdate = 0;
         
-        bBoundary = false;
+        % This time step is the one used internally by the
+        % updateTemperature method. It can be smaller than the fTimeStep
+        % property because the updateTemperature methode can also be called
+        % by branches for example. See the updateMatter methode of phase.m
+        % for further reference
+        fTemperatureUpdateTimeStep;
         
+        % maximum allowed temperature change in percent. A value of 0.5%
+        % means that for a temperature of 293 K the maximum temperature
+        % change is 1.47 K
+        rMaxChange = 0.005;
         
-        % Local values, copied from ref objs
-%         fTemperature = 0;
-%         fTotalHeatCapacity = inf;
-%         fHeatPower = 0;
-    end
-    
-    properties (SetAccess = protected) %, Transient)
-        %%TODO These properties should be transient. That requires a static
-        % method (loadobj) to be implemented in this class, so when the
-        % simulation is re-loaded from a .mat file, the properties are
-        % reset to their proper values.
+        bOutdatedTS = false;
         
-        fEnergyDiff = 0; %FIXUP: for logging only
+        % Values to decide if the specific heat capacity requires an update
+        fPressureLastHeatCapacityUpdate;
+        fTemperatureLastHeatCapacityUpdate;
+        arPartialMassLastHeatCapacityUpdate;
         
     end
     
     methods
         
-        function this = capacity(sIdentifier, oMatterObject)
+        function this = capacity(oPhase, fTemperature)
             %CAPACITY Create new thermal capacity object
-            %   Create a new capacity with a name and associated matter
-            %   instance.
-            
-            % Set name of capacity.
-            this.sName = sIdentifier;
+            %   Create a new capacity with a name and associated phase
+            %   object. Capacities are generated automatically together
+            %   with phases and all thermal calculations are performed here
             
             % Set associated objects.
-            this.setMatterObject(oMatterObject);
+            this.oPhase = oPhase;
+            this.oMT = oPhase.oMT;
+            this.oTimer = oPhase.oTimer;
             
-        end
-        
-        function changeInnerEnergy(this, fEnergyChange)
+            % Note, only during the constructor this is done without the
+            % set function, as the values have to be set once for the
+            % energy balance calculation in the set functions
+            this.fSpecificHeatCapacity  = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
+            this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
             
-            this.fEnergyDiff = fEnergyChange;
+            % sets the temperature of this capacity and the asscociated
+            % phase
+            this.setTemperature(fTemperature);
             
-            if isnan(fEnergyChange) && ~this.bBoundary
-                
-% % %                 oMain = this.oMatterObject.oStore.oContainer.oRoot.toChildren.thermal_layer;
-% % %                 oNode = oMain.toChildren.arm_left.toChildren.lower.toChildren.node_2;
-% % %                 
-% % %                 fprintf('MET %f, TEMP ENV %f, ALPHA %f, VASO %f\n', oMain.fMetabolicLoad, oMain.fInitialTemperatureModule, oNode.fAlphaSkinToAir, oNode.rInitialBloodFlowDistribution);
-                
-                
-%                 if this.fOverloadedTotalHeatCapacity ~= Inf
-                    this.warn('thermal:capacity:changeInnerEnergy', 'Received NaN energy change but node "%s" has a finite capacity.', this.sName);
-%                 end
-                return; % Skip the rest.
-            end
+            % Set name of capacity.
+            this.sName = oPhase.sName;
             
-            % If heat capacity is overloaded, do not pass the heat change
-            % along to the matter object but overload the temperature.
-            %if this.fOverloadedTotalHeatCapacity ~= -1
-            if this.bBoundary
-%                 fNewTemp = this.getTemperature() + fEnergyChange / this.getTotalHeatCapacity();
-%                 this.setTemperature(fNewTemp, true); % Overload temperature.
-                return; % We're done here.
-            end
-            
-            % Forward call to matter object.
-            this.oMatterObject.changeInnerEnergy(fEnergyChange);
-            
-            
-            %%%
-%             this.updateLocalHeatPower();
-%             this.updateLocalTotalHeatCapacity();
-%             this.updateLocalTemperature();
         end
         
         function setHeatSource(this, oHeatSource)
-            % Set the heat source object of this capacity. 
+            % Set the heat source object of this capacity.
             
             % Is oHeatSource an instance of thermal.heatsource?
             if ~isa(oHeatSource, 'thermal.heatsource')
                 this.throw('capacity:setHeatSource', 'This is no heat source!');
-            elseif ~isempty(this.oHeatSource)
-                this.throw('capacity:setHeatSource', 'Heat source already set. Maybe its a ''multiple'' heat source, so additional heat sources can be added to that one!');
+            elseif any(find(this.aoHeatSource, oHeatSource)) % TO DO: Check for name
+                this.throw('capacity:setHeatSource', 'A heat source of this name was already set');
             end
             
             % Store heat source object instance.
-            this.oHeatSource = oHeatSource;
-            
-            
-            %%%
-%             this.oHeatSource.bind('update', @this.updateLocalHeatPower);
-%             this.updateLocalHeatPower();
+            this.aoHeatSource(end+1) = oHeatSource;
         end
         
-%         function overloadTotalHeatCapacity(this, fTotalHeatCapacity, ~) %bOverload)
-%             % Overload the heat capacity of the associated matter object.
-%             % (Always overload if this function is called.)
-%             
-%             this.fOverloadedTotalHeatCapacity = fTotalHeatCapacity;
-%             
-%         end
-        
-        function fTotalHeatCapacity = getTotalHeatCapacity(this)%, bForceMatterRead)
+        function updateSpecificHeatCapacity(this)
             
-            %%%this.warn('getTotalHeatCapacity', 'Access fTotalHeatCapacity directly!');
+            % When a phase was empty and is being filled with matter again,
+            % it may be a couple of ticks until the phase.update() method
+            % is called, which updates the phase's specific heat capacity.
+            % Other objects, for instance matter.flow, may require the
+            % correct value for the heat capacity as soon as there is
+            % matter in the phase. In this case, these objects can call
+            % this function, that will update the fSpecificHeatCapacity
+            % property of the phase.
             
-            % Get the heat capacity of the associated matter object OR the
-            % overloaded property set by the capacity if |bForceMatterRead|
-            % is not set or false. 
-            
-%             % Set the default value of the second parameter to |false|.
-%             if nargin < 2
-%                 bForceMatterRead = false;
-%             end
-            
-            % Was the heat capacity overloaded and is it ok to return the
-            % overloaded capacity? ...
-%             if this.fOverloadedTotalHeatCapacity ~= -1 && ~bForceMatterRead
-%                 % ... then return the overloaded capacity.
-%                 fHeatCapacity = this.fOverloadedTotalHeatCapacity;
-%             else
-                % Otherwise load the capacity from the associated matter
-                % object.
-%                 fHeatCapacity = this.oMatterObject.getTotalHeatCapacity();
-%             end
-            if this.bBoundary
-                fTotalHeatCapacity = Inf;
-            else
-                fTotalHeatCapacity = this.oMatterObject.fTotalHeatCapacity; %getTotalHeatCapacity();
+            % In order to reduce the amount of times the matter
+            % calculation is executed it is checked here if the pressure
+            % and/or temperature have changed significantly enough to
+            % justify a recalculation
+            % TO DO: Make limits adaptive
+            if (this.oTimer.iTick <= 0) ||... %necessary to prevent the phase intialization from crashing the remaining checks
+               (abs(this.fPressureLastHeatCapacityUpdate - this.oPhase.fPressure) > 100) ||...
+               (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
+               (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.oPhase.arPartialMass)) > 0.01)
+                
+           
+                if ~base.oLog.bOff
+                    this.out(1, 1, 'name', '%s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName });
+
+                    this.out(1, 2, 'last', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
+                    this.out(1, 2, 'last', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
+                    this.out(1, 2, 'last', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
+                    this.out(1, 2, 'last', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
+                end
+                
+                % Actually updating the specific heat capacity
+                this.setSpecificHeatCapacity(this.oMT.calculateSpecificHeatCapacity(this.oPhase));
+                
+                % Setting the properties for the next check
+                this.fPressureLastHeatCapacityUpdate     = this.oPhase.fPressure;
+                this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
+                this.arPartialMassLastHeatCapacityUpdate = this.oPhase.arPartialMass;
+                
+                
+                if ~base.oLog.bOff
+                    this.out(1, 2, 'curr', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
+                    this.out(1, 2, 'curr', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
+                    this.out(1, 2, 'curr', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
+                    this.out(1, 2, 'curr', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
+                end
             end
-            
         end
         
-        function fHeaterPower = getHeatPower(this)
+        function setTotalHeatCapacity(this, fTotalHeatCapacity)
+            % Set the total heat capacity of this phase and ensure a closed
+            % energy balance while doing this. The total heat capacity
+            % changes when mass is moved from one phase to another. The
+            % thermal energy is moved by the thermal branches, but as the
+            % mass moves seperatly it is necessary to ensure that no energy
+            % is created or destroyed. Note this is a separate function
+            % from the specific heat capacity as this operation does not
+            % require matter table calls. (as calculating a new specific
+            % heat capacity would require)
+            fInnerEnergyBefore = this.fTotalHeatCapacity * this.fTemperature;
             
-            %%%this.warn('getHeatPower', 'Access fHeatPower directly!');
+            this.setTemperature( fInnerEnergyBefore / fTotalHeatCapacity );
             
-            if ~isempty(this.oHeatSource) && isvalid(this.oHeatSource)
-                % Get current power of heat source.
-                %fHeaterPower = this.oHeatSource.getPower();
-                fHeaterPower = this.oHeatSource.fPower;
-            else
-                % Without an attached heat source, the heater power is 
-                % |0 W|.
-                fHeaterPower = 0;
+            this.fTotalHeatCapacity = fTotalHeatCapacity;
+        end
+        
+        function setSpecificHeatCapacity(this, fSpecificHeatCapacity)
+            % Set the specific heat capacity (and while doing this also the
+            % total heat capacity) of this phase and ensure a closed energy
+            % balance while doing this. The specific heat capacity changes
+            % when the matter property is recalculated in the matter table,
+            % as it is temperature (and pressure) dependent
+            fInnerEnergyBefore = this.fTotalHeatCapacity * this.fTemperature;
+            
+            this.fTotalHeatCapacity = (this.oPhase.fMass * fSpecificHeatCapacity);
+            
+            this.setTemperature( fInnerEnergyBefore / this.fTotalHeatCapacity );
+            
+            this.fSpecificHeatCapacity = fSpecificHeatCapacity;
+        end
+        
+        function addProcEXME(this, oProcEXME)
+            % Adds a exme proc, i.e. a port. 
+            
+            if this.oPhase.oStore.bSealed
+                this.throw('addProcEXME', 'The store to which this capacity belongs is sealed, so no ports can be added any more.');
             end
-            
-        end
-        
-        function setTemperature(this, fNewTemperature)
-            
-            % You can obviously only do this for boundary nodes. Otherwise
-            % the whole thermal solver would be pointless
-            if ~this.bBoundary
-                this.throw('capacity:setTemperature','You cannot set the temperature for %s because it is not a boundary node.',this.sName);
+
+            if ~isa(oProcEXME, 'thermal.procs.exme')
+                this.throw('addProcEXME', 'Provided object ~isa thermal.procs.exme');
+            elseif ~isempty(oProcEXME.oCapacity)
+                this.throw('addProcEXME', 'Processor has already a Capacity set as parent.');
+            elseif isfield(this.toProcsEXME, oProcEXME.sName)
+                this.throw('addProcEXME', 'Proc %s already exists.', oProcEXME.sName);
             end
+
+            this.toProcsEXME.(oProcEXME.sName) = oProcEXME;
             
-            % To actually change the temperature, we'll get the actual heat
-            % capacity of the matter object this capacity is associated
-            % with. This is usually an ignored value (see
-            % this.getTotalHeatCapacity()). But the matter object will
-            % have a mass and therefore a heat capacity. So we get that,
-            % calculate the necessary change in inner energy required to
-            % achieve the desired temperature change and call the
-            % changeInnerEnergy() method. 
-            
-            % Getting the matter object's total heat capacity in [J/K]
-            fTotalHeatCapacity = this.oMatterObject.fTotalHeatCapacity; %getTotalHeatCapacity();
-            
-            % Getting the matter object's temperature in [K]
-            fCurrentTemperature = this.oMatterObject.fTemperature;
-            
-            % Calculating the necessary change in inner energy in [J]
-            fEnergyChange = fTotalHeatCapacity * (fNewTemperature - fCurrentTemperature);
-            
-            this.oMatterObject.changeInnerEnergy(fEnergyChange);
-            
+            this.aoExmes(end+1) = oProcEXME;
         end
         
-        function fTemperature = getTemperature(this)%, bForceMatterRead)
+        function addHeatSource(this, oHeatSource)
+            % Add a heat source to this capacity object. The power set to this
+            % heat source will be included in the temperature calculations.
+            %
+            % Parameter oHeatSource: will be added to a local heat source.
+            % Positive power means temperature RISE.
             
-            %%%this.warn('getTemperature', 'Access fTemperature directly!');
+            if this.oPhase.oStore.bSealed
+                this.throw('addHeatSource', 'The store to which this capacity belongs is sealed, so no heat sources can be added any more.');
+            end
+
+            if ~isa(oHeatSource, 'thermal.heatsource')
+                this.throw('addHeatSource', 'Provided object ~isa thermal.heatsource');
+            elseif ~isempty(oHeatSource.oCapacity)
+                this.throw('addHeatSource', 'Heat source has already a Capacity set as parent.');
+            elseif isfield(this.toHeatSources, oHeatSource.sName)
+                this.throw('addHeatSource', 'Heat source %s already exists.', oHeatSource.sName);
+            end
+
+            this.toHeatSources.(oHeatSource.sName) = oHeatSource;
             
-            % Get the current temperature of the associated matter object
-            % OR the overloaded property set by the capacity if
-            % |bForceMatterRead| is not set or false. 
-            
-            % Set the default value of the second parameter to |false|.
-%             if nargin < 2
-%                 bForceMatterRead = false;
-%             end
-            
-            % Was the heat capacity overloaded and is it ok to return the
-            % overloaded capacity? ...
-%             if this.fTemperature ~= -1 && ~bForceMatterRead
-%                 % ... then return the overloaded capacity.
-%                 fTemperature = this.fTemperature;
-%             else
-                % Otherwise load the capacity from the associated matter
-                % object.
-                %TODO: fix bottleneck
-                %try
-                %    fTemperature = this.oMatterObject.getTemperature();
-                %catch
-                    fTemperature = this.oMatterObject.fTemperature;
-                %end
-%             end
-            
+            this.aoHeatSource(end+1) = oHeatSource;
         end
         
-        function makeBoundaryNode(this)
-            this.bBoundary = true;
+        function setOutdatedTS(this)
+            
+            if ~this.bOutdatedTS
+                this.bOutdatedTS = true;
+
+                this.oTimer.bindPostTick(@this.calculateTimeStep, 3);
+            end
         end
-        
     end
     
     methods (Access = protected)
-        % The following methods may require a call to |this.updateState()| 
-        % after invocation to propagate the object's properties to the 
-        % thermal object instance.
+        function updateTemperature(this, bSetBranchesOutdated)
+            % use fCurrentHeatFlow to calculate the temperature change
+            % since the last execution fLastTemperatureUpdate
+            
+            fTime     = this.oTimer.fTime;
+            fLastStep = fTime - this.fLastMassUpdate;
+            
+            % Return if no time has passed
+            if fLastStep == 0
+                
+                if ~base.oLog.bOff, this.out(2, 1, 'skip', 'Skipping massupdate in %s-%s-%s\tset branches outdated? %i', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, bSetBranchesOutdated }); end;
+                
+                %NOTE need that in case .exec sets flow rate in manual branch triggering massupdate,
+                %     and later in that tick phase does .update -> branches won't be set outdated!
+                if bSetBranchesOutdated
+                    this.setBranchesOutdated();
+                end
+                
+                return;
+            end
+            this.fLastTemperatureUpdate     = fTime;
+            this.fTemperatureUpdateTimeStep = fLastStep;
+            
+            fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * this.fTemperatureUpdateTimeStep);
+            
+            this.setTemperature(fTemperatureNew);
+            
+            % Trigger branch solver updates in post tick for all branches
+            % whose heatflow is currently flowing INTO the capacity
+            if bSetBranchesOutdated % TO DO: do we need bySynced on thermal side as well?
+                this.setBranchesOutdated();
+            end
+            % Capacity sets new time step (registered with parent store, used
+            % for all phases of that store)
+            this.setOutdatedTS();
+        end
         
-        function setMatterObject(this, oMatterObject)
-            % Check the associated matter object of this capacity and run
-            % the "class of matter"-specific loader method.
-            
-            % TODO: flow processors?
-            
-            if isa(oMatterObject, 'thermal.dummymatter')
-                
-                this.sMatterClass = 'dummy';
-                this.loadDummyCapacity(oMatterObject);
-                
-            elseif isa(oMatterObject, 'matter.phase')
-                
-                this.sMatterClass = 'phase';
-                this.loadPhaseCapacity(oMatterObject);
-                
-            elseif isa(oMatterObject, 'matter.store')
-                
-                this.sMatterClass = 'store';
-                this.loadStoreCapacity(oMatterObject);
-                
-            else
-                
-                % fall through: fail
-                this.throw('capacity:setMatterObject', 'Invalid object provided, should be an instance of |matter.phase| or |matter.store|!');
-                
+        function setTemperature(this, fTemperature)
+            % Internal function of the capacity object to set the
+            % temperature. This is used to ensure that the capacity
+            % temperature and phase temperature are always set at the same
+            % time. Note that only the capacity is allowed to set
+            % temperature values
+            this.fTemperature = fTemperature;
+            this.oPhase.setTemperature(this, fTemperature);
+        end
+        
+        function calculateTimeStep(this,~)
+            % This function performs the following calculation steps
+            % - Loop through all thermal exmes of the capacity and get 
+            %   their heat flows
+            % - Loop through all heat sources and get their heat flows
+            % - Store the overall heat flow in the fCurrentHeatFlow property
+            % - calculate the allowed time step based on the phase
+            %   temperature max change
+            fSourceHeatFlow = 0;
+            for iSource = 1:length(this.aoHeatSource)
+                fSourceHeatFlow = fSourceHeatFlow + this.aoHeatSource(iSource).fHeatFlow;
             end
             
+            fExmeHeatFlow = 0;
+            for iExme = 1:length(this.aoExmes)
+                fExmeHeatFlow = fExmeHeatFlow + (this.aoExmes(iExme).iSign * this.aoExmes(iExme).oBranch.fHeatFlow);
+            end
+            
+            this.fCurrentHeatFlow = fExmeHeatFlow + fSourceHeatFlow;
+            
+            % If we have set a fixed time step for the phase, we can just
+            % continue without doing any calculations as the fixed step is
+            % also used for the capacity
+            if ~isempty(this.oPhase.fFixedTimeStep)
+                fNewStep = this.oPhase.fFixedTimeStep;
+            else
+                
+                rTemperatureChangePerSecond = (this.fCurrentHeatFlow / this.fTotalHeatCapacity) / this.fTemperature;
+                
+                fNewStep = this.rMaxChange / rTemperatureChangePerSecond;
+                
+                if fNewStep < 0
+                    if ~base.oLog.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end;
+                end
+                
+                % If our newly calculated time step is larger than the
+                % maximum time step set for this phase, we use this
+                % instead.
+                if fNewStep > this.oPhase.fMaxStep
+                    fNewStep = this.oPhase.fMaxStep;
+                    %TODO Make this output a lower level debug message.
+                    %fprintf('\nTick %i, Time %f: Phase %s setting maximum timestep of %f\n', this.oTimer.iTick, this.oTimer.fTime, this.sName, this.fMaxStep);
+                    
+                % If the time step is smaller than the set minimal time
+                % step for the phase the minimal time step is used
+                % (standard case is that fMinStep is 0, but the user can
+                % set it to a different value)
+                elseif fNewStep < this.oPhase.fMinStep
+                    fNewStep = this.oPhase.fMinStep;
+                    %TODO Make this output a lower level debug message.
+                    %fprintf('Tick %i, Time %f: Phase %s.%s setting minimum timestep\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, this.sName);
+                end
+            end
+            
+            % Set the time at which the containing store will be updated
+            % again. Need to pass on an absolute time, not a time step.
+            % Value in store is only updated, if the new update time is
+            % earlier than the currently set next update time.
+            %this.oStore.setNextUpdateTime(this.fLastMassUpdate + fNewStep);
+            this.oStore.setNextTimeStep(fNewStep);
+
+            % Cache - e.g. for logging purposes
+            this.fTimeStep = fNewStep;
+
+            % Now up to date!
+            this.bOutdatedTS = false;
         end
-        
-        function loadPhaseCapacity(this, oMatterPhase)
-            % This method is called from |this.setMatterObject| when the
-            % matter object is an instance of |matter.phase|.
-            %TODO: do some initialization here?
-            
-            this.oMatterObject = oMatterPhase;
-            
-            % If boundary node, total heat capacity will remain inf
-            %%%
-%             if ~this.bBoundary
-%                 this.oMatterObject.bind('update.post', @this.updateLocalTotalHeatCapacity);
-%                 this.updateLocalTotalHeatCapacity();
-%             end
-%             
-%             this.oMatterObject.bind('massupdate.post', @this.updateLocalTemperature);
-%             this.updateLocalTemperature();
-            
-        end
-        
-        function loadStoreCapacity(this, oMatterStore)
-            % This method is called from |this.setMatterObject| when the
-            % matter object is an instance of |matter.store|.
-            %TODO: do some initialization here?
-            
-            this.oMatterObject = oMatterStore;
-            
-            this.warn('capacity:loadStoreCapacity', 'Using stores as capacity objects may fail (e.g. no |changeInnerEnergy| method).');
-            
-        end
-        
-        function loadDummyCapacity(this, oDummyMatter)
-            % This method is called from |this.setMatterObject| when the
-            % matter object is an instance of |thermal.dummymatter|.
-            %TODO: do some initialization here?
-            
-            this.oMatterObject = oDummyMatter;
-            
-            %%%
-%             if ~this.bBoundary
-%                 this.oMatterObject.bind('update', @this.updateLocalTotalHeatCapacity);
-%                 this.updateLocalTotalHeatCapacity();
-%             end
-%             
-%             this.oMatterObject.bind('update', @this.updateLocalTemperature);
-%             this.updateLocalTemperature();
-            
-        end
-        
-        % TODO: createFromFlow() ??
-        
-        
-        %%%
-%         function updateLocalHeatPower(this, ~)
-%             if ~isempty(this.oHeatSource) && isvalid(this.oHeatSource)
-%                 % Get current power of heat source.
-%                 this.fHeatPower = this.oHeatSource.fPower;
-%             end
-%         end
-%         
-%         function updateLocalTotalHeatCapacity(this, ~)
-%             this.fTotalHeatCapacity = this.oMatterObject.fTotalHeatCapacity;
-%         end
-%         
-%         function updateLocalTemperature(this, ~)
-%             this.fTemperature = this.oMatterObject.fTemperature;
-%         end
     end
-    
 end
