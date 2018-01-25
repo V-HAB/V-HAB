@@ -7,6 +7,8 @@ classdef branch < base & event.source
         % The thermal conductivity of the branch
         fConductivity; % [W/K] or [W/K^4] depending on the child class
         
+        fHeatFlow = 0;
+        
         % Reference to the system containing this thermal branch
         oContainer;
         % Reference to the matter table
@@ -24,14 +26,26 @@ classdef branch < base & event.source
         % User defined name of the branch
         sCustomName;
         
+        % Interfaces left/right?
+        abIf = [ false; false ];
+        
         % Object array containing a reference to the conductor objects
         % inside this branch
-        aoConductors;
+        coConductors;
+        iConductors;
         
         coExmes;
         
+        % Connected branches on the left (index 1, branch in subsystem) or
+        % the right (index 2, branch in supsystem) side?
+        % @type cell
+        % @types object
+        coBranches = { matter.branch.empty(1, 0); matter.branch.empty(1, 0) };
+        
         % boolean value to check if the branch is already set for update
         bOutdated = false;
+        
+        bSealed = false;
     end
     
     methods
@@ -50,8 +64,8 @@ classdef branch < base & event.source
             
             % Reference to the matter.container and some shorthand refs.
             this.oContainer = oContainer;
-            this.oMT        = oContainer.oRoot.oMT;
-            this.oTimer     = oContainer.oRoot.oTimer;
+            this.oMT        = oContainer.oMT;
+            this.oTimer     = oContainer.oTimer;
             
             this.csNames    = strrep({ sLeft; sRight }, '.', '__');
             sTempName      = [ this.csNames{1} '___' this.csNames{2} ];
@@ -99,11 +113,11 @@ classdef branch < base & event.source
             for iI = 1:length(csProcs)
                 sProc = csProcs{iI};
                 
-                if ~isfield(this.oContainer.toProcsConductors, sProc)
+                if ~isfield(this.oContainer.toProcsConductor, sProc)
                     this.throw('branch', 'Conductor %s not found on system this branch belongs to!', sProc);
                 end
                 
-                this.aoConductors(end + 1) = this.oContainer.toProcsConductors.(sProc);
+                this.coConductors{end + 1} = this.oContainer.toProcsConductor.(sProc);
             end
             
             %%%% HANDLE RIGHT SIDE
@@ -133,9 +147,9 @@ classdef branch < base & event.source
             end
             
             % Adding the branch to our matter.container
-            this.oContainer.addThermalBranch(this); % TO DO: Write this function
+            this.oContainer.addThermalBranch(this);
             
-            this.iConductors = length(this.aoConductors);
+            this.iConductors = length(this.coConductors);
             
             % Add the branch to the exmes of this branch
             this.coExmes{1}.addBranch(this);
@@ -148,7 +162,7 @@ classdef branch < base & event.source
             % changed.
             
             for iE = sif(this.fHeatFlow >= 0, 1:2, 2:-1:1)
-                this.coExmes{iE}.oCapacity.temperatureupdate();
+                this.coExmes{iE}.oCapacity.updateTemperature();
             end
             
             % Only trigger if not yet set
@@ -165,5 +179,37 @@ classdef branch < base & event.source
     end
     
     methods (Access = protected)
+    end
+    methods (Sealed = true)
+        function seal(this)
+            % Seal aoFlows, get FR func handle
+            
+            if this.bSealed
+                this.throw('seal', 'Already sealed');
+            end
+%             TO DO: implement subsystem interface branches for thermal
+%             system
+%             for iI = 1:length(this.aoFlows)
+%                 % If last flow and right interface, provide true as param,
+%                 % which means that the .seal() returns a remove callback
+%                 % which allows us to deconnect the flow from the f2f proc
+%                 % in the "outer" system (supsystem).
+%                 if this.abIf(2) && (this.iIfFlow == iI)
+%                     [ this.hSetFlowData, this.hRemoveIfProc ] = this.aoFlows(iI).seal(true);
+%                 
+%                 % Only need the callback reference once ...
+%                 elseif iI == 1
+%                     this.hSetFlowData = this.aoFlows(iI).seal(false, this);
+%                 else
+%                     this.aoFlows(iI).seal(false, this);
+%                 end
+%             end
+            
+            for iI = 1:length(this.coConductors)
+                this.coConductors{iI}.seal(this);
+            end
+            
+            this.bSealed = true;
+        end
     end
 end

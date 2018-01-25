@@ -49,6 +49,8 @@ classdef exme < base
             this.oMT    = oCapacity.oMT;
             this.oTimer = oCapacity.oTimer;
             
+            oCapacity.addProcEXME(this);
+            
             this.oCapacity = oCapacity;
             
         end
@@ -68,8 +70,11 @@ classdef exme < base
             
             this.oBranch = oBranch;
             
-            this.iSign = find(oBranch.coExmes, this);
-            error('finish the function above');
+            if oBranch.coExmes{1} == this
+                this.iSign = 1;
+            else
+                this.iSign = -1;
+            end
             
             this.bHasBranch = true;
         end

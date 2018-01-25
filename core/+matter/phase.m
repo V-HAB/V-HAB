@@ -88,14 +88,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Molar mass of mixture in phase
         % @type float
         fMolarMass;    % [kg/mol]
-
-        % Specific heat capacity of mixture in phase
-        % @type float
-        fSpecificHeatCapacity = 0; % [J/(K*kg)]
-        
-        % Total heat capacity of mixture in phase
-        % @type float
-        fTotalHeatCapacity = 0; % [J/(K*kg)]
         
     end
 
@@ -216,8 +208,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % small!
         bSynced = false;
         
-        % How often should the heat capacity be re-calculated?
-        fMinimalTimeBetweenHeatCapacityUpdates = 1;
         
         % Properties to decide when the specific heat capacity has to be
         % recalculated
@@ -355,7 +345,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % Now update the matter properties
             this.oCapacity.updateSpecificHeatCapacity();
-            this.fTotalHeatCapacity    = this.fSpecificHeatCapacity * this.fMass;
                
             % Preset the cached masses (see calculateTimeStep)
             this.fMassLastUpdate  = 0;
@@ -469,7 +458,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
             %%%% Now calculate the new total heat capacity for the
             %%%% asscociated capacity
-            this.oCapacity.setTotalHeatCapacity(this.fMass * this.fSpecificHeatCapacity);
+            this.oCapacity.setTotalHeatCapacity(this.fMass * this.oCapacity.fSpecificHeatCapacity);
             
             % Update total mass
             this.fMass = sum(this.afMass);
@@ -520,7 +509,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Pass true as a parameter so massupd calls setBranchesOutdated
             % even if the bSynced attribute is not true
             this.massupdate(true);
-            this.oCapacity.updateTemperature();
+            this.oCapacity.updateTemperature(true);
 
             % Cache current fMass / afMass so they represent the values at
             % the last phase update. Needed in phase time step calculation.
@@ -548,9 +537,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % the minimal time difference between calculations, as
             % specified in the fMinimalTimeBetweenHeatCapacityUpdates
             % property, has passed. So we'll also include that here!
-            if ~isempty(this.fMinimalTimeBetweenHeatCapacityUpdates) && (this.oTimer.fTime >= (this.fLastTotalHeatCapacityUpdate + this.fMinimalTimeBetweenHeatCapacityUpdates))
+            if ~isempty(this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates) && (this.oTimer.fTime >= (this.oCapacity.fLastTotalHeatCapacityUpdate + this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates))
                 bRecalculate = true;
-            elseif isempty(this.fMinimalTimeBetweenHeatCapacityUpdates) && ~(this.oTimer.fTime == this.fLastTotalHeatCapacityUpdate)
+            elseif isempty(this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates) && ~(this.oTimer.fTime == this.oCapacity.fLastTotalHeatCapacityUpdate)
                 bRecalculate = true;
             else
                 bRecalculate = false;

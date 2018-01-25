@@ -212,7 +212,7 @@ classdef exme < base
                     %  flow rate * the last step is roughly in the area of
                     %  the stored mass?
                     arPartials   = sif(~this.oPhase.bSynced || this.oFlow.fFlowRate == 0, this.oPhase.arPartialMass, this.oFlow.arPartialMass);
-                    afProperties = [ this.oPhase.fTemperature this.oPhase.fSpecificHeatCapacity ];
+                    afProperties = [ this.oPhase.fTemperature this.oPhase.oCapacity.fSpecificHeatCapacity ];
                 end
             end
         end
@@ -245,7 +245,7 @@ classdef exme < base
             arPartialMass = this.oPhase.arPartialMass;
             
             fMolarMass            = this.oPhase.fMolarMass;
-            fSpecificHeatCapacity = this.oPhase.fSpecificHeatCapacity;
+            fSpecificHeatCapacity = this.oPhase.oCapacity.fSpecificHeatCapacity;
             
             
             % Return INFLOW matter properties, not the phase contents props

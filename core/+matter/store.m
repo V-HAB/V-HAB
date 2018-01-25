@@ -637,6 +637,25 @@ classdef store < base
             
             oProc = this.aoPhases(iIdx).toProcsEXME.(sPort);
         end
+        function oProc = getThermalPort(this, sPort)
+            % Check all capacities to find thermal port
+            % TO DO: basically identical functionality to getPort, which
+            % has to do to make it way better
+            iIdx = [];
+            for iI = 1:length(this.aoPhases)
+                if isfield(this.aoPhases(iI).oCapacity.toProcsEXME, sPort)
+                    iIdx = iI;
+
+                    break;
+                end
+            end
+            
+            if isempty(iIdx) || ~isfield(this.aoPhases(iIdx).oCapacity.toProcsEXME, sPort)
+                this.throw('getPort', 'Port %s could not be found', sPort);
+            end
+            
+            oProc = this.aoPhases(iIdx).oCapacity.toProcsEXME.(sPort);
+        end
         
         function this = addPhase(this, oPhase)
             % Adds a phase to a store. If phase already has a store set,

@@ -18,32 +18,25 @@ classdef capacity < base
         
         aoExmes;
         toProcsEXME;
+        iProcsEXME = 0;
         
         oMT;
         oTimer;
         
         % Internal properties
         
-        % TO DO: When should this property be updated? heat flows thta are
-        % mass based are calculated as heat flows, the timestep is
-        % calclated assuming a constant heat capacity. Either the heat
-        % capacity is updated after each thermal step/ each mass step or at
-        % the overall phase update (probably the best option as the mass
-        % change is limited for this anyway)
-        % Alternativly the advective flows have to be update whenever the
-        % mass changes anyway, therefore calculating the increase in
-        % thermal capacity could be performed linear --> still neglecting
-        % temperature dependency of capacity
-        % TO prevent energy from beeing created/destroyed when the capacity
-        % changes the new temperature could be calculated, however this is
-        % difficult if heat flows are used
-        fTotalHeatCapacity;
-        fSpecificHeatCapacity;
+        % Specific heat capacity of mixture in phase
+        % @type float
+        fSpecificHeatCapacity = 0; % [J/(K*kg)]
+        
+        % Total heat capacity of mixture in phase
+        % @type float
+        fTotalHeatCapacity = 0; % [J/(K*kg)]
         
         % Property to store the current overall heat flow of this capacity
         % (positive values increase the temperature, negative values
         % decrease it)
-        fCurrentHeatFlow;
+        fCurrentHeatFlow = 0;
         
         %% Numerical properties
         % current (thermal) timestep enforced by this capacity
@@ -65,6 +58,13 @@ classdef capacity < base
         rMaxChange = 0.005;
         
         bOutdatedTS = false;
+        
+        fLastSetOutdated = -1;
+        
+        fLastTotalHeatCapacityUpdate = 0;
+        
+        % How often should the heat capacity be re-calculated?
+        fMinimalTimeBetweenHeatCapacityUpdates = 1;
         
         % Values to decide if the specific heat capacity requires an update
         fPressureLastHeatCapacityUpdate;
@@ -179,6 +179,8 @@ classdef capacity < base
             this.setTemperature( fInnerEnergyBefore / fTotalHeatCapacity );
             
             this.fTotalHeatCapacity = fTotalHeatCapacity;
+            
+            this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
         end
         
         function setSpecificHeatCapacity(this, fSpecificHeatCapacity)
@@ -213,7 +215,13 @@ classdef capacity < base
 
             this.toProcsEXME.(oProcEXME.sName) = oProcEXME;
             
-            this.aoExmes(end+1) = oProcEXME;
+            if isempty(this.aoExmes)
+                this.aoExmes = oProcEXME;
+            else
+                this.aoExmes(end+1) = oProcEXME;
+            end
+            
+            this.iProcsEXME = this.iProcsEXME + 1;
         end
         
         function addHeatSource(this, oHeatSource)
@@ -248,15 +256,16 @@ classdef capacity < base
                 this.oTimer.bindPostTick(@this.calculateTimeStep, 3);
             end
         end
-    end
-    
-    methods (Access = protected)
+        
         function updateTemperature(this, bSetBranchesOutdated)
             % use fCurrentHeatFlow to calculate the temperature change
             % since the last execution fLastTemperatureUpdate
             
+            if nargin < 2
+                bSetBranchesOutdated = false;
+            end
             fTime     = this.oTimer.fTime;
-            fLastStep = fTime - this.fLastMassUpdate;
+            fLastStep = fTime - this.fLastTemperatureUpdate;
             
             % Return if no time has passed
             if fLastStep == 0
@@ -288,12 +297,18 @@ classdef capacity < base
             this.setOutdatedTS();
         end
         
+    end
+    
+    methods (Access = protected)
         function setTemperature(this, fTemperature)
             % Internal function of the capacity object to set the
             % temperature. This is used to ensure that the capacity
             % temperature and phase temperature are always set at the same
             % time. Note that only the capacity is allowed to set
             % temperature values
+            if isempty(fTemperature)
+                keyboard()
+            end
             this.fTemperature = fTemperature;
             this.oPhase.setTemperature(this, fTemperature);
         end
@@ -317,6 +332,10 @@ classdef capacity < base
             end
             
             this.fCurrentHeatFlow = fExmeHeatFlow + fSourceHeatFlow;
+            
+            if isempty(this.fCurrentHeatFlow)
+                keyboard()
+            end
             
             % If we have set a fixed time step for the phase, we can just
             % continue without doing any calculations as the fixed step is
@@ -357,7 +376,7 @@ classdef capacity < base
             % Value in store is only updated, if the new update time is
             % earlier than the currently set next update time.
             %this.oStore.setNextUpdateTime(this.fLastMassUpdate + fNewStep);
-            this.oStore.setNextTimeStep(fNewStep);
+            this.oPhase.oStore.setNextTimeStep(fNewStep);
 
             % Cache - e.g. for logging purposes
             this.fTimeStep = fNewStep;
@@ -365,5 +384,42 @@ classdef capacity < base
             % Now up to date!
             this.bOutdatedTS = false;
         end
+        
+        function setBranchesOutdated(this, ~)
+            
+            if this.fLastSetOutdated >= this.oTimer.fTime
+                return;
+            end
+            
+            this.fLastSetOutdated = this.oTimer.fTime;
+            
+            
+            % Loop through exmes / flows and set outdated, i.e. request
+            % recalculation of flow rate.
+            for iE = 1:this.iProcsEXME
+                oExme   = this.aoExmes(iE);
+                oBranch = oExme.oBranch;
+                
+                % Make sure it's not a p2ps.flow - their update method
+                % is called in updateProcessorsAndManipulators method
+                if isa(oBranch, 'thermal.branch')
+                    
+                    % We can't directly set this oBranch as outdated if
+                    % it is just connected to an interface, because the
+                    % solver is assigned to the 'leftest' branch.
+                    while ~isempty(oBranch.coBranches{1})
+                        oBranch = oBranch.coBranches{1};
+                    end
+                    
+                    %fprintf('%s-%s: setOutdated "%s"\n', this.oStore.sName, this.sName, oBranch.sName);
+                    
+                    % Tell branch to recalculate flow rate (done after
+                    % the current tick, in timer post tick).
+                    oBranch.setOutdated();
+                end
+            end % end of: for
+            
+        end % end of: setBranchesOutdated method
+
     end
 end

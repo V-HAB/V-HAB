@@ -217,7 +217,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 if oPhase.fMass ~= 0
                     this.arPartialMass = oPhase.arPartialMass;
                     this.fMolarMass    = oPhase.fMolarMass;
-                    this.fSpecificHeatCapacity = oPhase.fSpecificHeatCapacity;
+                    this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
                     
                     this.afPartialPressure = this.calculatePartialPressures();
                 end
@@ -566,8 +566,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     %TODO move the following warning to a lower level debug
                     %output once this is implemented
                     aoFlows(1).warn('setData', 'Updating specific heat capacity for phase %s %s.', oExme.oPhase.oStore.sName, oExme.oPhase.sName);
-                    oExme.oPhase.updateSpecificHeatCapacity();
-                    fPhaseSpecificHeatCapacity = oExme.oPhase.fSpecificHeatCapacity;
+                    oExme.oPhase.oCapacity.updateSpecificHeatCapacity();
+                    fPhaseSpecificHeatCapacity = oExme.oPhase.oCapacity.fSpecificHeatCapacity;
                 end
 
             

@@ -319,7 +319,29 @@ classdef branch < base & event.source
             this.iFlowProcs = length(this.aoFlowProcs);
             
             %% Construct asscociated thermal branch
-            keyboard()
+            % Create the respective thermal interfaces for the thermal
+            % branch
+            % Split to store name / port name
+            [ sStore, sPort ] = strtok(sLeft, '.');
+            % Get EXME port/proc ...
+            oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
+
+            thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
+            
+            % Split to store name / port name
+            [ sStore, sPort ] = strtok(sRight, '.');
+            % Get EXME port/proc ...
+            oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
+            thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
+            
+            for iProc = 1:length(csProcs)
+                thermal.procs.conductors.fluidic(this.oContainer, csProcs{iProc});
+            end
+            
+            if nargin < 5
+                sCustomName = [];
+            end
+            thermal.branch(this.oContainer, sLeft, csProcs, sRight, sCustomName);
         end
         
         

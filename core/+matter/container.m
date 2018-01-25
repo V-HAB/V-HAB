@@ -31,6 +31,8 @@ classdef container < sys
         iBranches = 0;
         iPhases = 0;
         
+        oThermalContainer;
+        
         % Sealed?
         bMatterSealed = false;
     end
