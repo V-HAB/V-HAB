@@ -28,6 +28,18 @@ classdef exme < base
         % positive iSign, while the right exme has a negative iSign
         iSign;
         
+        % In the thermal network the exmes have a heat flow property
+        % because thermal energy that is transported massbound always is in
+        % the direction of the mass transfer. The heatflow only respects
+        % the energy change that comes from the temperature difference of
+        % that transfer, and is only added to the respective exme of the
+        % receiving side. Therefore, in the thermal network the two exmes
+        % of a branch do not necessarily have the same heat flow (only for
+        % massbound transfer). The reduction/increase in thermal energy
+        % from increasing or decreasing mass is handled by the total heat
+        % capacity change
+        fHeatFlow = 0;
+        
         bHasBranch = false;
     end
     
@@ -77,6 +89,13 @@ classdef exme < base
             end
             
             this.bHasBranch = true;
+        end
+        
+        function setHeatFlow(this, fHeatFlow)
+            
+            % TO DO: limit acces to this function to only the solver branch
+            % of the respective branch
+            this.fHeatFlow = fHeatFlow;
         end
     end
 end

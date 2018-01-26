@@ -165,18 +165,20 @@ classdef capacity < base
         end
         
         function setTotalHeatCapacity(this, fTotalHeatCapacity)
-            % Set the total heat capacity of this phase and ensure a closed
-            % energy balance while doing this. The total heat capacity
-            % changes when mass is moved from one phase to another. The
-            % thermal energy is moved by the thermal branches, but as the
-            % mass moves seperatly it is necessary to ensure that no energy
-            % is created or destroyed. Note this is a separate function
-            % from the specific heat capacity as this operation does not
-            % require matter table calls. (as calculating a new specific
-            % heat capacity would require)
-            fInnerEnergyBefore = this.fTotalHeatCapacity * this.fTemperature;
-            
-            this.setTemperature( fInnerEnergyBefore / fTotalHeatCapacity );
+            % it may seem strange at first that the total heat capacity is
+            % overwritten without changing the temperature, however as a
+            % change in total heat capacity (and not specific) comes from
+            % mass changes in the phase, the thermal energy is actually
+            % transported somewhere else in the form of mass. The thermal
+            % solver calculates the heat flow asscociated with that
+            % transfer, and therefore the inner energy can be simply
+            % overwritten, which is basically what occurs when overwritting
+            % the total heat capacity here.
+            %
+            % Think of it like this, if  masses of identical temperature
+            % are moved between container no temperature change occurs. And
+            % this basically what happens here as the difference in
+            % temperature is already handled in the thermal branch
             
             this.fTotalHeatCapacity = fTotalHeatCapacity;
             
@@ -328,7 +330,7 @@ classdef capacity < base
             
             fExmeHeatFlow = 0;
             for iExme = 1:length(this.aoExmes)
-                fExmeHeatFlow = fExmeHeatFlow + (this.aoExmes(iExme).iSign * this.aoExmes(iExme).oBranch.fHeatFlow);
+                fExmeHeatFlow = fExmeHeatFlow + (this.aoExmes(iExme).iSign * this.aoExmes(iExme).fHeatFlow);
             end
             
             this.fCurrentHeatFlow = fExmeHeatFlow + fSourceHeatFlow;

@@ -399,6 +399,10 @@ classdef flow < base & matlab.mixin.Heterogeneous
             end
         end
 
+        function setTemperature(this, fTemperature)
+            % TO DO: limit acces to respective thermal solver
+            this.fTemperature = fTemperature;
+        end
     end
     
 
@@ -537,10 +541,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % exme (if FR provided)
             if nargin >= 3 && ~isempty(oExme)
                 %TODO get exme from this.oBranch, depending on fFlowRate?
-                [ fPortPress, fCurrentTemperature ] = oExme.getPortProperties();
+                [ fPortPress, ~ ] = oExme.getPortProperties();
             else
                 fPortPress = 0;
-                fCurrentTemperature  = 0;
             end
             
             % Get matter properties of the phase
@@ -652,55 +655,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % according to IN exme
                 if iL == 1
                     oThis.fPressure    = fPortPress;
-                    oThis.fTemperature = fCurrentTemperature;
                 end
-                
-                
-                % Set temperature based on fHeatFlow in f2fs
-                % First and last Flows directly use the EXMEs value, so
-                % no f2f in between - just set port temperatures directly
-                %TODO if flow rate is zero, what to do? Something HAS to
-                %     heat up ... heating up in the branch should basically
-                %     lead to a flow rate, right?
-                if abs(fFlowRate) > 0
-                    if ~bNeg && (iI > 1)
-                        fHeatFlow = oThis.oIn.fHeatFlow;
-
-                        %NOTE at the moment, one heat capacity throughout all
-                        %     flows in the branch. However, at some point, 
-                        %     might be replaced with e.g. pressure dep. value?
-                        fOtherCp  = aoFlows(iI - 1).fSpecificHeatCapacity;
-
-                    elseif bNeg && (iI < iL)
-                        fHeatFlow = oThis.oOut.fHeatFlow;
-                        fOtherCp  = aoFlows(iI + 1).fSpecificHeatCapacity;
-
-                    else
-                        fHeatFlow = 0;
-                        fOtherCp  = oThis.fSpecificHeatCapacity;
-                    end
-
-                    % So following this equation:
-                    % Q' = m' * c_p * deltaT
-                    %fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / ((oThis.fSpecificHeatCapacity + fOtherCp) / 2);
-                    fCurrentTemperature = fCurrentTemperature + fHeatFlow / abs(fFlowRate) / fOtherCp;
-                    
-                    if fCurrentTemperature < 0
-                        oThis.throw('setData', 'Illegal temperature value for flow processor ''%s''. Please check the heat flows for all processors in the branch (%s).',...
-                            oThis.oIn.sName, oThis.oBranch.sName);
-                    end
-                end
-                
-                if isnan(fCurrentTemperature)
-                    warning(['On branch: %s\n',...
-                             '         Temperature of connected phase (%s_%s) is NaN.\n',...
-                             '         Using standard temperature instead.\n',...
-                             '         Reason could be empty phase.'],...
-                             oThis.oBranch.sName, oExme.oPhase.oStore.sName, oExme.oPhase.sName);
-                    fCurrentTemperature = oThis.oMT.Standard.Temperature;
-                end
-                
-                oThis.fTemperature = fCurrentTemperature;
                 
                 
                 

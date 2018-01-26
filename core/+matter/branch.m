@@ -335,7 +335,7 @@ classdef branch < base & event.source
             thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
             
             for iProc = 1:length(csProcs)
-                thermal.procs.conductors.fluidic(this.oContainer, csProcs{iProc});
+                thermal.procs.conductors.fluidic(this.oContainer, csProcs{iProc}, this);
             end
             
             if nargin < 5

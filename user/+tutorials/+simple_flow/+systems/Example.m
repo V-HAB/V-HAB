@@ -96,6 +96,8 @@ classdef Example < vsys
             % solver. 
             oIt1 = solver.matter.iterative.branch(this.aoBranches(1));
             
+            solver.thermal.basic_fluidic.branch(this.aoThermalBranches(1), this.aoBranches(1));
+            
             %oIt1.iDampFR = 5;
         end
     end

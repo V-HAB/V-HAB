@@ -9,6 +9,8 @@ classdef branch < base & event.source
         
         fHeatFlow = 0;
         
+        afTemperatures;
+        
         % Reference to the system containing this thermal branch
         oContainer;
         % Reference to the matter table
@@ -46,11 +48,17 @@ classdef branch < base & event.source
         bOutdated = false;
         
         bSealed = false;
+        
+        % Solver object responsible for the calculations in this branch
+        oHandler;
+        
+        % boolean to decide if event should be triggered or not
+        bTriggersetHeatFlowCallbackBound = false;
     end
     
     methods
         
-        function this = branch(oContainer, sLeft, csProcs, sRight, sCustomName)
+        function this = branch(oContainer, sLeft, csProcs, sRight, sCustomName, oMassBranch)
             % The thermal branch uses the same definition as the matter
             % branch, just with thermal object. A matter phase with the
             % respective thermal exme is rerquire as interface on both the
@@ -82,12 +90,17 @@ classdef branch < base & event.source
             end
             this.sName = sTempName;
             
-            if nargin == 5
+            if nargin >= 5
                 this.sCustomName = sCustomName;
             end
             
+            if nargin >= 6
+                this.oMassBranch = oMassBranch;
+            end
+            
+            
             % Interface on left side?
-            if isempty(strfind(sLeft, '.'))
+            if ~contains(sLeft, '.')
                 this.abIf(1) = true;
                 
                 % Checking if the interface name is already present in this
@@ -123,7 +136,7 @@ classdef branch < base & event.source
             %%%% HANDLE RIGHT SIDE
             
             % Interface on right side?
-            if isempty(strfind(sRight, '.'))
+            if ~contains(sRight, '.')
                 
                 this.abIf(2) = true;
                 this.iIfFlow = length(this.aoFlows);
@@ -176,9 +189,59 @@ classdef branch < base & event.source
                 this.trigger('outdated');
             end
         end
+        
+        
+        function setHeatFlow = registerHandlerHeatFlow(this, oHandler)
+            % Only one handler can be registered
+            %   and gets a fct handle to the internal setHeatFlow method.
+            %   One solver obj per branch, atm no possibility for de-
+            %   connect that one.
+            %TODO Later, either check if solver obj is
+            %     deleted and if yes, allow new one; or some sealed methods
+            %     and private attrs on the basic branch solver class, and
+            %     on setFRhandler, the branch solver provides fct callback
+            %     to release the solver -> deletes the stored fct handle to
+            %     the setHeatFlow method of the branch. The branch calls
+            %     this fct before setting a new solver.
+            
+            if ~isempty(this.oHandler)
+                this.throw('registerHandlerFR', 'Can only set one handler!');
+            end
+            
+            this.oHandler = oHandler;
+            
+            setHeatFlow   = @this.setHeatFlow;
+            %setHeatFlow   = @(varargin) this.setHeatFlow(varargin{:});
+        end
+        
     end
     
     methods (Access = protected)
+        
+        function setHeatFlow(this, fHeatFlow, afTemperatures)
+            
+            if this.abIf(1), this.throw('setHeatFlow', 'Left side is interface, can''t set flowrate on this branch object'); end
+            
+            
+            this.fHeatFlow = fHeatFlow;
+            
+            % Connected capacities have to do a temperature update before we
+            % set the new heat flow - so the thermal energy for the LAST
+            % time step, with the old flow, is actually moved from tank to
+            % tank.
+            for iE = sif(this.fHeatFlow >= 0, 1:2, 2:-1:1)
+                this.coExmes{iE}.oCapacity.updateTemperature();
+            end
+            
+            
+            this.bOutdated = false;
+            
+            this.afTemperatures = afTemperatures;
+            
+            if this.bTriggersetHeatFlowCallbackBound
+                this.trigger('setHeatFlow');
+            end
+        end
     end
     methods (Sealed = true)
         function seal(this)

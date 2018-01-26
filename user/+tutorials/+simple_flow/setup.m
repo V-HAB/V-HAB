@@ -128,6 +128,9 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg');
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
             
+            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'fTemperature', 'K', 'Temperature Tank 1');
+            oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'fTemperature', 'K', 'Temperature Tank 2');
+            
             oLog.addValue('Example.toBranches.Branch', 'fFlowRate', 'kg/s', 'Branch Flow Rate', 'branch_FR');
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'fPressure', 'Pa', 'Tank 1 Pressure');
             
@@ -212,6 +215,12 @@ classdef setup < simulation.infrastructure
             tPlotOptions = struct('sAlternativeXAxisValue', '"Branch Flow Rate"', 'sXLabel', 'Main Branch Flow Rate in [kg/s]', 'fTimeInterval',10);
             coPlots = {oPlotter.definePlot({'"Tank 1 Pressure"'}, 'Pressure vs. Flow Rate', tPlotOptions)};
             oPlotter.defineFigure(coPlots, 'Pressure vs. Flow Rate');
+            
+            
+            tPlotOptions = struct('sTimeUnit','hours');
+            coPlots = {oPlotter.definePlot({'"Temperature Tank 1"', '"Temperature Tank 2"'}, 'Temperatures', tPlotOptions)};
+            oPlotter.defineFigure(coPlots, 'Tank Temperatures');
+            
             
 
             oPlotter.plot();
