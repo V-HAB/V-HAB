@@ -43,7 +43,7 @@ classdef capacity < base
         fTimeStep;
         
         % last time at which the temperature was updated
-        fLastTemperatureUpdate = 0;
+        fLastTemperatureUpdate = -10;
         
         % This time step is the one used internally by the
         % updateTemperature method. It can be smaller than the fTimeStep
@@ -282,10 +282,11 @@ classdef capacity < base
                 
                 return;
             end
+            
+            fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * fLastStep);
+            
             this.fLastTemperatureUpdate     = fTime;
             this.fTemperatureUpdateTimeStep = fLastStep;
-            
-            fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * this.fTemperatureUpdateTimeStep);
             
             this.setTemperature(fTemperatureNew);
             
@@ -308,9 +309,6 @@ classdef capacity < base
             % temperature and phase temperature are always set at the same
             % time. Note that only the capacity is allowed to set
             % temperature values
-            if isempty(fTemperature)
-                keyboard()
-            end
             this.fTemperature = fTemperature;
             this.oPhase.setTemperature(this, fTemperature);
         end
@@ -334,10 +332,6 @@ classdef capacity < base
             end
             
             this.fCurrentHeatFlow = fExmeHeatFlow + fSourceHeatFlow;
-            
-            if isempty(this.fCurrentHeatFlow)
-                keyboard()
-            end
             
             % If we have set a fixed time step for the phase, we can just
             % continue without doing any calculations as the fixed step is

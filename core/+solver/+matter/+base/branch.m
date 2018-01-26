@@ -167,6 +167,7 @@ classdef branch < base & event.source
                 this.oBranch.coExmes{iE}.oPhase.massupdate();
             end
             
+            this.oBranch.oThermalBranch.setOutdated();
             %CHECK-160514
             %this.update();
             this.registerUpdate();
@@ -180,6 +181,9 @@ classdef branch < base & event.source
                 return;
             end
             
+            % TO DO: why is this necessary when the calling function
+            % (execute update) already performs this? (and the function
+            % triggerign execute update also performs it
             for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
                 this.oBranch.coExmes{iE}.oPhase.massupdate();
             end

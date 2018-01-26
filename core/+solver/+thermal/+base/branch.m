@@ -133,10 +133,6 @@ classdef branch < base & event.source
                 return;
             end
             
-            for iE = sif(this.oBranch.fHeatFlow >= 0, 1:2, 2:-1:1)
-                this.oBranch.coExmes{iE}.oCapacity.updateTemperature();
-            end
-            
             if this.bTriggerRegisterUpdateCallbackBound
                 this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
             end

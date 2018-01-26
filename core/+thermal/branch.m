@@ -174,10 +174,6 @@ classdef branch < base & event.source
             % ulation of the flow rate, e.g. after some internal parameters
             % changed.
             
-            for iE = sif(this.fHeatFlow >= 0, 1:2, 2:-1:1)
-                this.coExmes{iE}.oCapacity.updateTemperature();
-            end
-            
             % Only trigger if not yet set
             %CHECK inactivated here --> solvers and other "clients" should
             %      check themselves!
@@ -223,8 +219,6 @@ classdef branch < base & event.source
             if this.abIf(1), this.throw('setHeatFlow', 'Left side is interface, can''t set flowrate on this branch object'); end
             
             
-            this.fHeatFlow = fHeatFlow;
-            
             % Connected capacities have to do a temperature update before we
             % set the new heat flow - so the thermal energy for the LAST
             % time step, with the old flow, is actually moved from tank to
@@ -232,6 +226,8 @@ classdef branch < base & event.source
             for iE = sif(this.fHeatFlow >= 0, 1:2, 2:-1:1)
                 this.coExmes{iE}.oCapacity.updateTemperature();
             end
+            
+            this.fHeatFlow = fHeatFlow;
             
             
             this.bOutdated = false;
