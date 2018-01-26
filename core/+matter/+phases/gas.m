@@ -56,6 +56,7 @@ classdef gas < matter.phase
             %TODO
             %   - not all params required, use defaults?
             %   - volume from store ...?
+            
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             % Get volume from 
@@ -170,6 +171,22 @@ classdef gas < matter.phase
 
         end
         
+        function setTemperature(this, oCaller, fTemperature)
+            % This function can only be called from the ascociated capacity
+            % (TO DO: Implement the check) and ensure that the temperature
+            % calculated in the thermal capacity is identical to the phase
+            % temperature (by using a set function in the capacity that
+            % always calls this function as well)
+            if ~isa(oCaller, 'thermal.capacity')
+                this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by capacity objects. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
+            end
+                
+            this.fTemperature = fTemperature;
+            
+            if ~isempty(this.fVolume)
+                this.fMassToPressure = this.calculatePressureCoefficient();
+            end
+        end
     end
     
     

@@ -36,7 +36,7 @@ classdef setup < simulation.infrastructure
             
             % Possible to change the constructor paths and params for the
             % monitors
-            ttMonitorConfig = struct();
+            ttMonitorConfig = struct('oTimeStepObserver', struct('sClass', 'simulation.monitors.timestep_observer', 'cParams', {{ 0 }}));
             
             %%%ttMonitorConfig.oConsoleOutput = struct('cParams', {{ 50 5 }});
             
@@ -88,8 +88,6 @@ classdef setup < simulation.infrastructure
 %             this.toMonitors.oConsoleOutput.setLogOn();
 %             this.toMonitors.oConsoleOutput.setLevel(5);
             
-            oLog.add('Example', 'flow_props');
-            
             % Aside from using the shortcut helpers like flow_props you can
             % also specfy the exact value you want to log. For this you
             % first have to find out the path to the value, which you can
@@ -120,7 +118,7 @@ classdef setup < simulation.infrastructure
             
             % it is also possible to define a calculation as log value and
             % e.g. multiply two values from the object.
-            oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'kg', 'Pressure Tank 2');
+            
             % This can be usefull if you want to log the flowrate of CO2
             % through a branch that transports air for example            
             oLog.addValue('Example.aoBranches(1).aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Flowrate of CO2', 'fr_co2');
@@ -131,16 +129,15 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'fTemperature', 'K', 'Temperature Phase 1');
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'fTemperature', 'K', 'Temperature Phase 2');
             
-            oLog.addValue('Example:s:Tank_1.aoPhases(1).oCapacity', 'fTemperature', 'K', 'Temperature Capacity 1');
-            oLog.addValue('Example:s:Tank_2.aoPhases(1).oCapacity', 'fTemperature', 'K', 'Temperature Capacity 2');
+            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 1');
+            oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 2');
             
             oLog.addValue('Example.toBranches.Branch', 'fFlowRate', 'kg/s', 'Branch Flow Rate', 'branch_FR');
-            oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'fPressure', 'Pa', 'Tank 1 Pressure');
             
             this.tiLogIndexes.iIndex_1 = oLog.addVirtualValue('fr_co2 * 1000', 'g/s', 'CO_2 Flowrate', 'co2_fr_grams');
             this.tiLogIndexes.iIndex_2 = oLog.addVirtualValue('flow_temp_left - 273.15', '°C', 'Temperature Left in Celsius');
             this.tiLogIndexes.iIndex_3 = oLog.addVirtualValue('mod(flow_temp_right .^ 2, 10) ./ "Partial Mass CO_2 Tank 2"', '-', 'Nonsense');
-                                                
+            
         end
         
         function plot(this) % Plotting the results
@@ -216,14 +213,16 @@ classdef setup < simulation.infrastructure
             oPlotter.defineFigure(coPlots, 'Test Figure Title', tFigureOptions);
             
             tPlotOptions = struct('sAlternativeXAxisValue', '"Branch Flow Rate"', 'sXLabel', 'Main Branch Flow Rate in [kg/s]', 'fTimeInterval',10);
-            coPlots = {oPlotter.definePlot({'"Tank 1 Pressure"'}, 'Pressure vs. Flow Rate', tPlotOptions)};
+            coPlots = {oPlotter.definePlot({'"Pressure Phase 1"'}, 'Pressure vs. Flow Rate', tPlotOptions)};
             oPlotter.defineFigure(coPlots, 'Pressure vs. Flow Rate');
             
             
             tPlotOptions = struct('sTimeUnit','hours');
-            coPlots = {oPlotter.definePlot({'"Temperature Phase 1"', '"Temperature Phase 2"', '"Temperature Capacity 1"', '"Temperature Capacity 2"'}, 'Temperatures', tPlotOptions)};
+            coPlots = [];
+            coPlots{1,1} = oPlotter.definePlot({'"Temperature Phase 1"', '"Temperature Phase 2"'}, 'Temperatures', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({'"Pressure Phase 1"', '"Pressure Phase 2"'}, 'Pressure', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({'"Branch Flow Rate"'}, 'Flowrate', tPlotOptions);
             oPlotter.defineFigure(coPlots, 'Tank Temperatures');
-            
             
 
             oPlotter.plot();

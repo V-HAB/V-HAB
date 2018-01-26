@@ -63,7 +63,11 @@ classdef branch < solver.thermal.base.branch
                     this.oMassBranch.aoFlows(iFlow).setTemperature(afTemperatures(iFlow));
                 end
                 
-                update@solver.thermal.base.branch(this, this.afSolverHeatFlow, afTemperatures);
+                this.afSolverHeatFlow = [0, 0];
+                this.oBranch.coExmes{1}.setHeatFlow(this.afSolverHeatFlow(1));
+                this.oBranch.coExmes{2}.setHeatFlow(this.afSolverHeatFlow(2));
+                
+                update@solver.thermal.base.branch(this, 0, afTemperatures);
                 return
             end
             
