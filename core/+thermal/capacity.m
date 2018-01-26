@@ -300,6 +300,54 @@ classdef capacity < base
             this.setOutdatedTS();
         end
         
+        %% Setting of time step properties
+        function setTimeStepProperties(this, tTimeStepProperties)
+            % currently the possible time step properties that can be set
+            % by the user are:
+            %
+            % rMaxChange:   Maximum allowed percentage change in the total
+            %               temperature of the capacity
+            %
+            % In order to define these provide a struct with the fieldnames
+            % as described here to this function for the values that you
+            % want to set
+            
+            csPossibleFieldNames = {'rMaxChange'};
+            
+            % Gets the fieldnames of the struct to easier loop through them
+            csFieldNames = fieldnames(tTimeStepProperties);
+            
+            for iProp = 1:length(csFieldNames)
+                sField = csFieldNames{iProp};
+
+                % If the current properties is any of the defined possible
+                % properties the function will overwrite the value,
+                % otherwise it will throw an error
+                if ~any(strcmp(sField, csPossibleFieldNames))
+                    error(['The function setTimeStepProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters']);
+                end
+                
+
+                % checks the type of the input to ensure that the
+                % correct type is used.
+                xProperty = tTimeStepProperties.(sField);
+
+                if ~isfloat(xProperty)
+                    error(['The ', sField,' value provided to the setTimeStepProperties function is not defined correctly as it is not a (scalar, or vector of) float']);
+                end
+
+                if strcmp(sField, 'arMaxChange') && (length(xProperty) ~= this.oMT.iSubstances)
+                    error('The arMaxChange value provided to the setTimeStepProperties function is not defined correctly. It has the wrong length');
+                end
+
+                this.(sField) = tTimeStepProperties.(sField);
+            end
+
+            % Since the time step properties have changed, the time step
+            % has to be recalculated, which is performed in the post tick
+            % operations through this call.
+            this.setOutdatedTS();
+        end
     end
     
     methods (Access = protected)
