@@ -482,7 +482,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             end
             
             %[ ~, this.fMolarMass, this.fSpecificHeatCapacity ] = oExme.getMatterProperties();
-            this.fSpecificHeatCapacity = oPhase.fSpecificHeatCapacity;
+            this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
             this.fMolarMass            = oPhase.fMolarMass;
             
             

@@ -25,6 +25,8 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName, 1);
             
+            tutorials.thermal_test.subsystems.ExampleSubsystem(this, 'SubSystem');
+            
             % Make the system configurable
 %             disp(this);
 %             disp('------------');
@@ -78,6 +80,28 @@ classdef Example < vsys
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
             matter.branch(this, 'Tank_1.Port_1', {'Pipe'}, 'Tank_2.Port_2', 'Branch');
             
+            
+            matter.procs.exmes.gas(oAirPhase, 'Port_IF_Out');
+            matter.procs.exmes.gas(oAirPhase, 'Port_IF_In');
+            
+            
+            components.pipe(this, 'Pipe1', 1, 0.005);
+            components.pipe(this, 'Pipe2', 1, 0.005);
+            
+            % Creating the flowpath (=branch) into a subsystem
+            % Input parameter format is always: 
+            % 'Interface port name', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
+            matter.branch(this, 'SubsystemInput', {'Pipe1'}, 'Tank_2.Port_IF_Out');
+            
+            % Creating the flowpath (=branch) out of a subsystem
+            % Input parameter format is always: 
+            % 'Interface port name', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
+            matter.branch(this, 'SubsystemOutput', {'Pipe2'}, 'Tank_2.Port_IF_In');
+            
+            % Now we need to connect the subsystem with the top level system (this one). This is
+            % done by a method provided by the subsystem.
+            this.toChildren.SubSystem.setIfFlows('SubsystemInput', 'SubsystemOutput');
+            
         end
         
         
@@ -100,6 +124,9 @@ classdef Example < vsys
             
             thermal.procs.exme(oCapacityTank_1, 'Conductor_1');
             thermal.procs.exme(oCapacityTank_2, 'Conductor_2');
+            
+            thermal.procs.exme(oCapacityTank_2, 'Port_Thermal_IF_In');
+            thermal.procs.exme(oCapacityTank_2, 'Port_Thermal_IF_Out');
             
             fEpsilon        = 0.8;
             fSightFactor    = 1;
@@ -126,7 +153,15 @@ classdef Example < vsys
             thermal.branch(this, 'Space.Radiator_1', {'Radiator_Conductor'}, 'Tank_2.Radiator_2', 'Radiator');
             thermal.branch(this, 'Tank_1.Conductor_1', {'Material_Conductor'}, 'Tank_2.Conductor_2', 'Pipe_Material_Conductor');
             
+            fMaterialConductivity = (fPipeMaterialArea * fThermalConductivityCopper)/0.5;
             
+            thermal.procs.conductors.conduction(this, 'Material_Conductor1', fMaterialConductivity);
+            thermal.procs.conductors.conduction(this, 'Material_Conductor2', fMaterialConductivity);
+            
+            thermal.branch(this, 'Conduction_From_Subsystem', {'Material_Conductor1'}, 'Tank_2.Port_Thermal_IF_In');
+            thermal.branch(this, 'Conduction_To_Subsystem',   {'Material_Conductor2'}, 'Tank_2.Port_Thermal_IF_Out');
+            
+            this.toChildren.SubSystem.setIfThermal('Conduction_To_Subsystem', 'Conduction_From_Subsystem');
         end
         
         

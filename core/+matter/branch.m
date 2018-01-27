@@ -326,17 +326,29 @@ classdef branch < base & event.source
             % Create the respective thermal interfaces for the thermal
             % branch
             % Split to store name / port name
+            % TO DO: make nicer
             [ sStore, sPort ] = strtok(sLeft, '.');
             % Get EXME port/proc ...
-            oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
-
-            thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
+            if isempty(sPort)
+                % in this case an interface is used, and the interfase
+                % should be used in the thermal branch definition as well
+                % therefore we do nothing here
+            else
+                oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
+                thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
+            end
             
             % Split to store name / port name
             [ sStore, sPort ] = strtok(sRight, '.');
             % Get EXME port/proc ...
-            oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
-            thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
+            if isempty(sPort)
+                % in this case an interface is used, and the interfase
+                % should be used in the thermal branch definition as well
+                % therefore we do nothing here
+            else
+                oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
+                thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
+            end
             
             for iProc = 1:length(csProcs)
                 thermal.procs.conductors.fluidic(this.oContainer, csProcs{iProc}, this);

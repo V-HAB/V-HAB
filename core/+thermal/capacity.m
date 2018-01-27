@@ -3,6 +3,12 @@ classdef capacity < base
     % created automatically with a phase and performs all thermal
     % calculations for the respective phase
         
+    properties (Access = public)
+        % If true, updateTemperature triggers all branches to re-calculate their
+        % heat flows. Use when thermal capacity is small compared to heat
+        % flows
+        bSynced = false;
+    end
     properties (SetAccess = protected) %, Abstract)
         
         % Object properties
@@ -309,7 +315,7 @@ classdef capacity < base
             
             % Trigger branch solver updates in post tick for all branches
             % whose heatflow is currently flowing INTO the capacity
-            if bSetBranchesOutdated % TO DO: do we need bySynced on thermal side as well?
+            if this.bSynced || bSetBranchesOutdated
                 this.setBranchesOutdated();
             end
             % Capacity sets new time step (registered with parent store, used

@@ -7,6 +7,10 @@ classdef fluidic < thermal.procs.conductor
         fConductivity = 0; % Thermal conductivity of connection in [W/K].
         
         oMassBranch;
+        
+        bRadiative  = false;
+        bConvective = false;
+        bConductive = false;
     end
     
     methods
@@ -17,6 +21,8 @@ classdef fluidic < thermal.procs.conductor
             this@thermal.procs.conductor(oContainer, sName);
             
             this.oMassBranch = oMassBranch;
+            
+            
         end
         
         function fConductivity = update(this, ~)
@@ -38,6 +44,13 @@ classdef fluidic < thermal.procs.conductor
             
             fConductivity = this.fConductivity;
         end
+        
+        
+        function updateConnectMatterBranch(this, oMassBranch)
+            % TO DO: limit acces to container
+            this.oMassBranch = oMassBranch;
+        end
+            
     end
     
 end
