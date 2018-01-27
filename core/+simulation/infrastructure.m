@@ -295,7 +295,7 @@ classdef infrastructure < base & event.source
                     
                     % Seal matter things - do we need something like that
                     % for thermal/electrical?
-                    oChild.seal();
+                    oChild.sealMatterStructure();
                     
                     iPhases = iPhases + oChild.iPhases;
                     iBranches = iBranches + oChild.iBranches;
@@ -304,11 +304,15 @@ classdef infrastructure < base & event.source
                 
                 if ismethod(oChild,'createThermalStructure')
                     oChild.createThermalStructure();
+                    
+                    oChild.sealThermalStructure();
                 end
                 
                 
                 if ismethod(oChild,'createElectricalStructure')
                     oChild.createElectricalStructure();
+                    
+                    oChild.sealElectricalStructure();
                 end
                 
                 oChild.createSolverStructure();

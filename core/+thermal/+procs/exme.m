@@ -70,8 +70,8 @@ classdef exme < base
         function addBranch(this, oBranch)
             % 
             
-            if this.oCapacity.oPhase.oStore.bSealed
-                this.throw('addBranch', 'The store to which this processors phase belongs is sealed, so no ports can be added any more.');
+            if this.oCapacity.oPhase.oStore.oContainer.bThermalSealed
+                this.throw('addBranch', 'The container to which this processors phase belongs is sealed, so no ports can be added any more.');
                 
             elseif ~isempty(this.oBranch)
                 this.throw('addBranch', 'There is already a branch connected to this exme! You have to create another one.');
@@ -83,9 +83,9 @@ classdef exme < base
             this.oBranch = oBranch;
             
             if oBranch.coExmes{1} == this
-                this.iSign = 1;
-            else
                 this.iSign = -1;
+            else
+                this.iSign = 1;
             end
             
             this.bHasBranch = true;

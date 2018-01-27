@@ -1,21 +1,23 @@
-classdef convective < thermal.conductors.linear
+classdef convective < thermal.procs.conductor
     %CONVECTIVE Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
         fHeatTransferCoeff;
         fArea;
+        
+        
+        bRadiative  = false;
+        bConvective = true;
+        bConductive = false;
     end
     
     methods
         
-        function this = convective(oLeftCapacity, oRightCapacity, fHeatTransferCoeff, fArea)
+        function this = convective(oContainer, sName, fHeatTransferCoeff, fArea)
             
-            calcFunc = str2func([mfilename('class'), '.calculateConductance']);
-            conductanceValue = calcFunc(fHeatTransferCoeff, fArea);
             
-            sIdentifier = ['convective:', oLeftCapacity.sName, '+', oRightCapacity.sName];
-            this@thermal.conductors.linear(oLeftCapacity, oRightCapacity, conductanceValue, sIdentifier);
+            this@thermal.procs.conductor(oContainer, sName);
             
             
             this.fHeatTransferCoeff = fHeatTransferCoeff;
@@ -23,7 +25,7 @@ classdef convective < thermal.conductors.linear
         end
         
         
-        
+        % TO DO:
         function updateThermalProperties(this, fHeatTransferCoeff, fArea)
             
             if nargin >= 2 && ~isempty(fHeatTransferCoeff)

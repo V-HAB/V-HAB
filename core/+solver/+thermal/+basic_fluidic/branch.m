@@ -38,7 +38,7 @@ classdef branch < solver.thermal.base.branch
                 afConductivity(iConductor) = this.oBranch.coConductors{iConductor}.fConductivity;
             end
             
-            fDeltaTemperature = this.oBranch.coExmes{1}.oCapacity.fTemperature - this.oBranch.coExmes{2}.oCapacity.fTemperature;
+            fDeltaTemperature = this.oBranch.coExmes{2}.oCapacity.fTemperature - this.oBranch.coExmes{1}.oCapacity.fTemperature;
             
 
             % Currently for mass bound heat transfer it is not possible to
@@ -77,10 +77,12 @@ classdef branch < solver.thermal.base.branch
                 afTemperatures(1) = this.oBranch.coExmes{1}.oCapacity.fTemperature; %temperature of the first flow
                 iDirection = 1;
                 iFlowProcShifter = -1;
+                iExme = 2;
             else
                 afTemperatures(end) = this.oBranch.coExmes{2}.oCapacity.fTemperature; %temperature of the first flow
                 iDirection = -1;
                 iFlowProcShifter = 0;
+                iExme = 1;
             end
             
             % for the flows we solve the temperatures in a downstream order
@@ -108,14 +110,23 @@ classdef branch < solver.thermal.base.branch
                 
             end
             
-            iE = sif(this.oMassBranch.fFlowRate >= 0, 2, 1);
-            
             % for matter bound heat transfer only the side receiving the
             % mass receives the heat flow, the energy change on the other
             % side is handled by changing the total heat capacity
             this.afSolverHeatFlow = [0, 0];
-            this.afSolverHeatFlow(iE) = fHeatFlow + sum(afF2F_HeatFlows);
-            
+            if iExme == 1
+                this.afSolverHeatFlow(iExme) = fHeatFlow + sum(afF2F_HeatFlows);
+            else
+                % for a positive flow rate (iExme == 2) the heat is
+                % added/subtracted from the right phase. The calculation
+                % for the fHeatFlow included this assumption, but the F2F
+                % heat sources only tell us if it gets colder or warmer
+                % with their sign. For this case an increase in temperature
+                % is represented by a negative heat flow because the exme
+                % also has a negative sign --> we have to subtract the f2f
+                % heat flows
+                this.afSolverHeatFlow(iExme) = fHeatFlow - sum(afF2F_HeatFlows);
+            end
             
             % If the mass transfer is matter bound the heat flow is only
             % added to the phase receiving the mass but not subtracted from

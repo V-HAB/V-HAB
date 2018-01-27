@@ -131,8 +131,10 @@ classdef capacity < base
             % and/or temperature have changed significantly enough to
             % justify a recalculation
             % TO DO: Make limits adaptive
-            if (this.oTimer.iTick <= 0) ||... %necessary to prevent the phase intialization from crashing the remaining checks
-               (abs(this.fPressureLastHeatCapacityUpdate - this.oPhase.fPressure) > 100) ||...
+            if (this.oTimer.iTick <= 0)
+                return
+            end
+            if (abs(this.fPressureLastHeatCapacityUpdate - this.oPhase.fPressure) > 100) ||...
                (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
                (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.oPhase.arPartialMass)) > 0.01)
                 
@@ -203,8 +205,8 @@ classdef capacity < base
         function addProcEXME(this, oProcEXME)
             % Adds a exme proc, i.e. a port. 
             
-            if this.oPhase.oStore.bSealed
-                this.throw('addProcEXME', 'The store to which this capacity belongs is sealed, so no ports can be added any more.');
+            if this.oPhase.oStore.oContainer.bThermalSealed
+                this.throw('addProcEXME', 'The container to which this capacity belongs is sealed, so no ports can be added any more.');
             end
 
             if ~isa(oProcEXME, 'thermal.procs.exme')
@@ -233,8 +235,8 @@ classdef capacity < base
             % Parameter oHeatSource: will be added to a local heat source.
             % Positive power means temperature RISE.
             
-            if this.oPhase.oStore.bSealed
-                this.throw('addHeatSource', 'The store to which this capacity belongs is sealed, so no heat sources can be added any more.');
+            if this.oPhase.oStore.oContainer.bThermalSealed
+                this.throw('addHeatSource', 'The container to which this capacity belongs is sealed, so no heat sources can be added any more.');
             end
 
             if ~isa(oHeatSource, 'thermal.heatsource')
@@ -247,7 +249,13 @@ classdef capacity < base
 
             this.toHeatSources.(oHeatSource.sName) = oHeatSource;
             
-            this.aoHeatSource(end+1) = oHeatSource;
+            oHeatSource.setCapacity(this);
+            
+            if isempty(this.aoHeatSource)
+                this.aoHeatSource = oHeatSource;
+            else
+                this.aoHeatSource(end+1) = oHeatSource;
+            end
         end
         
         function setOutdatedTS(this)
@@ -283,11 +291,20 @@ classdef capacity < base
                 return;
             end
             
+            % to ensure that we calculate the new energy with the correct
+            % total heat capacity, a massupdate is executed first (if this
+            % was not done anyway already)
+            this.oPhase.massupdate();
+            
+            % Now we calculate the new temperature
             fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * fLastStep);
             
             this.fLastTemperatureUpdate     = fTime;
             this.fTemperatureUpdateTimeStep = fLastStep;
             
+            % The temperature is not set directly, because we want to
+            % ensure that the phase and capacity have the exact same
+            % temperature at all times
             this.setTemperature(fTemperatureNew);
             
             % Trigger branch solver updates in post tick for all branches
@@ -388,7 +405,7 @@ classdef capacity < base
                 fNewStep = this.oPhase.fFixedTimeStep;
             else
                 
-                rTemperatureChangePerSecond = (this.fCurrentHeatFlow / this.fTotalHeatCapacity) / this.fTemperature;
+                rTemperatureChangePerSecond = abs((this.fCurrentHeatFlow / this.fTotalHeatCapacity) / this.fTemperature);
                 
                 fNewStep = this.rMaxChange / rTemperatureChangePerSecond;
                 
