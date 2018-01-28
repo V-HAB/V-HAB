@@ -10,26 +10,26 @@ classdef branch < solver.thermal.base.branch
         
         afSolverHeatFlow = [0, 0];
         
-        % If the thermal solver transports heat by mass transport a
-        % corresponding matter branch must be asscociated with the thermal
-        % branch
-        oMassBranch;
+        bP2P = false;
     end
     
     
     methods
-        function this = branch(oBranch, oMassBranch)
+        function this = branch(oBranch)
             this@solver.thermal.base.branch(oBranch, 'basic');
             
-            this.oMassBranch = oMassBranch;
+            if ~isa(this.oBranch.coConductors{1}.oMassBranch, 'matter.branch')
+                this.bP2P = true;
+            end
             
             this.update();
+            
         end
-        
     end
     
     methods (Access = protected)
         function update(this)
+            
             
             afConductivity = zeros(1,this.oBranch.iConductors);
             
@@ -38,6 +38,7 @@ classdef branch < solver.thermal.base.branch
                 afConductivity(iConductor) = this.oBranch.coConductors{iConductor}.fConductivity;
             end
             
+            oMassBranch = this.oBranch.coConductors{1}.oMassBranch;
             fDeltaTemperature = this.oBranch.coExmes{2}.oCapacity.fTemperature - this.oBranch.coExmes{1}.oCapacity.fTemperature;
             
 
@@ -52,15 +53,24 @@ classdef branch < solver.thermal.base.branch
             
             fHeatFlow = fConductivity * (fDeltaTemperature);
             
-            iFlowProcs      = this.oMassBranch.iFlowProcs;
+            try
+                iFlowProcs      = oMassBranch.iFlowProcs;
+            catch
+                % in this case we have a p2p
+                iFlowProcs = 0;
+            end
             
             if fConductivity == 0
                 this.afSolverHeatFlow = [0, 0];
                 
                 afTemperatures = ones(1,iFlowProcs + 1) * this.oBranch.coExmes{1}.oCapacity.fTemperature;
                 
-                for iFlow = 1: iFlowProcs+1
-                    this.oMassBranch.aoFlows(iFlow).setTemperature(afTemperatures(iFlow));
+                if this.bP2P
+                    oMassBranch.setTemperature(afTemperatures(1));
+                else
+                    for iFlow = 1: iFlowProcs+1
+                        oMassBranch.aoFlows(iFlow).setTemperature(afTemperatures(iFlow));
+                    end
                 end
                 
                 this.afSolverHeatFlow = [0, 0];
@@ -73,7 +83,7 @@ classdef branch < solver.thermal.base.branch
             
             afTemperatures  = zeros(1,iFlowProcs + 1); % there is one more flow than f2f procs
             afF2F_HeatFlows = zeros(1,iFlowProcs);
-            if this.oMassBranch.fFlowRate >= 0
+            if oMassBranch.fFlowRate >= 0
                 afTemperatures(1) = this.oBranch.coExmes{1}.oCapacity.fTemperature; %temperature of the first flow
                 iDirection = 1;
                 iFlowProcShifter = -1;
@@ -94,22 +104,26 @@ classdef branch < solver.thermal.base.branch
             % afF2F_HeatFlows(2) = heatflow of first f2f, updated after
             % first temperature is known and therefore before the second
             % flow temperature is set
-            for iFlow = sif(this.oMassBranch.fFlowRate >= 0, 2:(iFlowProcs + 1), (iFlowProcs):-1:1)
-                try
-                    this.oMassBranch.aoFlowProcs(iFlow - iDirection).updateThermal();
-                catch
-                    % thermally not active f2f
-                end
-                % The thermal energy from the f2f before this flow is added
-                % to the overall heat flow
-                afF2F_HeatFlows(iFlow) = this.oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).fHeatFlow;
-                
-                afTemperatures(iFlow) = afTemperatures(iFlow - iDirection) + ((fHeatFlow + afF2F_HeatFlows (iFlow)) / fConductivity);
-                
-                this.oMassBranch.aoFlows(iFlow).setTemperature(afTemperatures(iFlow))
-                
-            end
             
+            if this.bP2P
+                oMassBranch.setTemperature(afTemperatures(1));
+            else
+                for iFlow = sif(oMassBranch.fFlowRate >= 0, 2:(iFlowProcs + 1), (iFlowProcs):-1:1)
+                    try
+                        oMassBranch.aoFlowProcs(iFlow - iDirection).updateThermal();
+                    catch
+                        % thermally not active f2f
+                    end
+                    % The thermal energy from the f2f before this flow is added
+                    % to the overall heat flow
+                    afF2F_HeatFlows(iFlow) = oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).fHeatFlow;
+
+                    afTemperatures(iFlow) = afTemperatures(iFlow - iDirection) + ((fHeatFlow + afF2F_HeatFlows (iFlow)) / fConductivity);
+
+                    oMassBranch.aoFlows(iFlow).setTemperature(afTemperatures(iFlow))
+
+                end
+            end
             % for matter bound heat transfer only the side receiving the
             % mass receives the heat flow, the energy change on the other
             % side is handled by changing the total heat capacity
@@ -125,7 +139,7 @@ classdef branch < solver.thermal.base.branch
                 % is represented by a negative heat flow because the exme
                 % also has a negative sign --> we have to subtract the f2f
                 % heat flows
-                this.afSolverHeatFlow(iExme) = fHeatFlow - sum(afF2F_HeatFlows);
+                this.afSolverHeatFlow(iExme) = - fHeatFlow - sum(afF2F_HeatFlows);
             end
             
             % If the mass transfer is matter bound the heat flow is only

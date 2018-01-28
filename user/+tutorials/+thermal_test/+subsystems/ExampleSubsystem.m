@@ -83,9 +83,9 @@ classdef ExampleSubsystem < vsys
             oManual.setFlowRate(0.1);
             
             solver.matter.residual.branch(this.aoBranches(2));
-            
-            solver.thermal.basic_fluidic.branch(this.aoThermalBranches(1), this.aoBranches(1));
-            solver.thermal.basic_fluidic.branch(this.aoThermalBranches(2), this.aoBranches(2));
+            %, this.toBranches.(this.aoThermalBranches(1).sName
+            solver.thermal.basic_fluidic.branch(this.aoThermalBranches(1));
+            solver.thermal.basic_fluidic.branch(this.aoThermalBranches(2));
             
             solver.thermal.basic.branch(this.toThermalBranches.Pipe_Material_Conductor_In);
             solver.thermal.basic.branch(this.toThermalBranches.Pipe_Material_Conductor_Out);
@@ -114,6 +114,8 @@ classdef ExampleSubsystem < vsys
             
             tTimeStepProperties.rMaxChange = 0.0001;
             oFilterFlowPhase.oCapacity.setTimeStepProperties(tTimeStepProperties);
+            
+            this.setThermalSolvers();
 
         end
         

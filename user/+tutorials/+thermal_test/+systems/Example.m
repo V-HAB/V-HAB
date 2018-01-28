@@ -173,7 +173,7 @@ classdef Example < vsys
             % solver. 
             oIt1 = solver.matter.iterative.branch(this.aoBranches(1));
             
-            solver.thermal.basic_fluidic.branch(this.aoThermalBranches(1), this.aoBranches(1));
+            solver.thermal.basic_fluidic.branch(this.aoThermalBranches(1));
             
             solver.thermal.basic.branch(this.toThermalBranches.Radiator);
             solver.thermal.basic.branch(this.toThermalBranches.Pipe_Material_Conductor);

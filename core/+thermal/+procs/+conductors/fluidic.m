@@ -46,7 +46,7 @@ classdef fluidic < thermal.procs.conductor
         end
         
         
-        function updateConnectMatterBranch(this, oMassBranch)
+        function updateConnectedMatterBranch(this, oMassBranch)
             % TO DO: limit acces to container
             this.oMassBranch = oMassBranch;
         end

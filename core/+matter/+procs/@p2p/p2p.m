@@ -7,6 +7,8 @@ classdef p2p < matter.flow
     
     properties (SetAccess = protected, GetAccess = public)
         fLastUpdate = -1;
+        
+        oThermalBranch;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -74,6 +76,20 @@ classdef p2p < matter.flow
             oStore.aoPhases(iPhaseIn ).toProcsEXME.(sPortIn(2:end) ).addFlow(this);
             oStore.aoPhases(iPhaseOut).toProcsEXME.(sPortOut(2:end)).addFlow(this);
             
+            %% Construct asscociated thermal branch
+            % Create the respective thermal interfaces for the thermal
+            % branch
+            % Split to store name / port name
+            % TO DO: make nicer
+            oPort = this.oStore.getPort(sPortIn(2:end));
+            thermal.procs.exme(oPort.oPhase.oCapacity, sPortIn(2:end));
+            
+            oPort = this.oStore.getPort(sPortOut(2:end));
+            thermal.procs.exme(oPort.oPhase.oCapacity, sPortOut(2:end));
+            
+            thermal.procs.conductors.fluidic(this.oStore.oContainer, this.sName, this);
+            
+            this.oThermalBranch = thermal.branch(this.oStore.oContainer, [this.oStore.sName,  sPortIn] , {this.sName}, [this.oStore.sName,  sPortOut], this.sName);
         end
     end
     

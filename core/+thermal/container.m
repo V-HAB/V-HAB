@@ -176,9 +176,25 @@ classdef container < sys
             end
             
             this.iThermalBranches = this.iThermalBranches + length(this.aoThermalBranches);
-            
+           
             this.bThermalSealed = true;
         end
+        
+        function setThermalSolvers(this, ~)
+            % automatically assing solver for branches which do not yet
+            % have a handler
+            for iBranch = 1:this.iThermalBranches
+                if isempty(this.aoThermalBranches(iBranch).oHandler)
+                    
+                    if isa(this.aoThermalBranches(iBranch).coConductors{1}, 'thermal.procs.conductors.fluidic')
+                         solver.thermal.basic_fluidic.branch(this.aoThermalBranches(iBranch));
+                    else
+                         solver.thermal.basic.branch(this.aoThermalBranches(iBranch));
+                    end
+                end
+            end
+        end
+            
     end
     
     % Changed --> allow external access, e.g. scheduler needs to be able to

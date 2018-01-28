@@ -488,9 +488,9 @@ classdef branch < base & event.source
                     for iConductor = 1:this.iConductors
                         try
                             if ~isempty(this.sCustomName)
-                                this.coConductors{iConductor}.updateConnectMatterBranch(this.oContainer.toBranches.(this.sCustomName));
+                                this.coConductors{iConductor}.updateConnectedMatterBranch(this.oContainer.toBranches.(this.sCustomName));
                             else
-                                this.coConductors{iConductor}.updateConnectMatterBranch(this.oContainer.toBranches.(this.sName));
+                                this.coConductors{iConductor}.updateConnectedMatterBranch(this.oContainer.toBranches.(this.sName));
                             end
                         catch
                             % well have to see if the non fluidic

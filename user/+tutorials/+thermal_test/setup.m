@@ -149,6 +149,7 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:SubSystem.toThermalBranches.Outlet',       'fHeatFlow', 'W', 'Subsystem Outlet Heat Flow');
             
             
+            oLog.addValue('Example:c:SubSystem.toThermalBranches.filterproc',                   'fHeatFlow', 'W', 'Subsystem Adsorption Mass Heat Flow');
             oLog.addValue('Example:c:SubSystem.toThermalBranches.Pipe_Material_Conductor_In',   'fHeatFlow', 'W', 'Subsystem Conduction Inlet Heat Flow');
             oLog.addValue('Example:c:SubSystem.toThermalBranches.Pipe_Material_Conductor_Out',	'fHeatFlow', 'W', 'Subsystem Conduction Outlet Heat Flow');
             oLog.addValue('Example:c:SubSystem.toThermalBranches.Convective_Branch',            'fHeatFlow', 'W', 'Subsystem Convective Heat Flow');
@@ -169,7 +170,8 @@ classdef setup < simulation.infrastructure
             coPlots{1,2} = oPlotter.definePlot({'"Pressure Phase 1"', '"Pressure Phase 2"', '"Pressure Filter Flow"'}, 'Pressure', tPlotOptions);
             coPlots{2,1} = oPlotter.definePlot({'"Branch Flow Rate"', '"Subsystem Inlet Flow Rate"', '"Subsystem Outlet Flow Rate"'}, 'Flowrate', tPlotOptions);
             coPlots{2,2} = oPlotter.definePlot({'"Branch Heat Flow"', '"Radiator Heat Flow"', '"Pipe Conductor Heat Flow"', '"Subsystem Inlet Heat Flow"',...
-                '"Subsystem Outlet Heat Flow"', '"Subsystem Conduction Inlet Heat Flow"', '"Subsystem Conduction Outlet Heat Flow"', '"Subsystem Convective Heat Flow"', '"Phase 1 Heat Source Heat Flow"'}, 'Heat Flows', tPlotOptions);
+                '"Subsystem Outlet Heat Flow"', '"Subsystem Conduction Inlet Heat Flow"', '"Subsystem Conduction Outlet Heat Flow"',...
+                '"Subsystem Convective Heat Flow"', '"Phase 1 Heat Source Heat Flow"', '"Subsystem Adsorption Mass Heat Flow"'}, 'Heat Flows', tPlotOptions);
             oPlotter.defineFigure(coPlots, 'Thermal Values and Flowrates');
             
             oPlotter.plot();
