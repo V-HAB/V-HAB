@@ -209,6 +209,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % small!
         bSynced = false;
         
+        % For very small phases, bFlow can be set to true. With that, the
+        % outflowing matter properties will be set to the sum of the
+        % inflowing matter, taking p2ps/manip.substance into account. Also,
+        % properties like molar mass and heat capacity are calculated on 
+        % the fly.
+        bFlow = false;
+        
+        
         % How often should the heat capacity be re-calculated?
         fMinimalTimeBetweenHeatCapacityUpdates = 1;
         
