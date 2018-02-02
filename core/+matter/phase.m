@@ -214,6 +214,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % inflowing matter, taking p2ps/manip.substance into account. Also,
         % properties like molar mass and heat capacity are calculated on 
         % the fly.
+        % NOTE this is experimental and was not tested in all possible confi-
+        %      gurations, e.g. when using p2ps and a substance manipulator.
+        %      Also, as various properties are calculated on the fly, there
+        %      might be situations where this is slower.
         bFlow = false;
         
         
