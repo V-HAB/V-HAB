@@ -805,6 +805,12 @@ classdef plotter_basic < base
                     % bLegend
                     if isfield(tPlotOptions, 'bLegend') && tPlotOptions.bLegend == false
                         oPlot.Legend.Visible = 'off';
+                        
+                        % Since we run the tPlotOptions struct through the
+                        % parseObjectOptions() method later, we need to
+                        % remove this field from the tPlotOptions struct so
+                        % it is not processed twice.
+                        tPlotOptions = rmfield(tPlotOptions, 'bLegend');
                     end
                     
                     % tRightYAxesOptions
@@ -813,6 +819,12 @@ classdef plotter_basic < base
                         oAxes = gca;
                         this.parseObjectOptions(oAxes, tPlotOptions.tRightYAxesOptions);
                         yyaxis('left');
+                        
+                        % Since we run the tPlotOptions struct through the
+                        % parseObjectOptions() method later, we need to
+                        % remove this field from the tPlotOptions struct so
+                        % it is not processed twice.
+                        tPlotOptions = rmfield(tPlotOptions, 'tRightYAxesOptions');
                     end
                     
                     % Process all of the items in tPlotOptions that
