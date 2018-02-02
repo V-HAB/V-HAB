@@ -129,13 +129,18 @@ classdef store < base
             this.oMT    = this.oContainer.oRoot.oMT;
             this.oTimer = this.oContainer.oRoot.oTimer;
             
-            
-            if nargin >= 3
+            % A store with no volume does not make sense, so we catch this
+            % if the user entered an illegal value by accident here. 
+            if fVolume <= 0
+                this.throw('store','The store %s cannot have a volume of zero or less. Only positive, non-zero values are allowed.', sName);
+            else
                 this.fVolume = fVolume;
             end
+
             if nargin >= 4
                 this.bIsIncompressible = bIsIncompressible;
             end
+            
             if nargin >= 5
                 this.tGeometryParameters = tGeometryParams;
             end
