@@ -951,8 +951,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Only do for set
             if strcmp(sType, 'massupdate_post')
                 this.bTriggerSetMassUpdateCallbackBound = true;
-            end
-            if strcmp(sType, 'update_post')
+            elseif strcmp(sType, 'update_post')
                 this.bTriggerSetUpdateCallbackBound = true;
             end
         end
