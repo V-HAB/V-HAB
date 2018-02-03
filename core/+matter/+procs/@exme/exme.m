@@ -316,8 +316,8 @@ classdef exme < base
                     afManipPartialsIn  = this.oPhase.toManips.substance.afPartialFlows;
                     afManipPartialsOut = this.oPhase.toManips.substance.afPartialFlows;
                     
-                    afManipPartialsIn (afManipPartialsIn  > 0) = 0;
-                    afManipPartialsOut(afManipPartialsOut < 0) = 0;
+                    afManipPartialsIn (afManipPartialsIn  < 0) = 0;
+                    afManipPartialsOut(afManipPartialsOut > 0) = 0;
                     
                     
                     afInFlowrates(end + 1) = sum(afManipPartialsIn);
