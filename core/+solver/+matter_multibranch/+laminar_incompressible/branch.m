@@ -916,28 +916,30 @@ classdef branch < base & event.source
             % Specifically the last set of equation which enforces that the
             % sum of flowrates for the variable pressure phases has to be
             % zero has to be absolutely enforced. 
-            mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions;
-            mfErrorInitial = mfError;
-            iStartZeroSumEquations = length(mfError) - length(this.csVariablePressurePhases)+1;
-            iCounter = 0;
-            while any(mfError(iStartZeroSumEquations:end)) && iCounter < 500
-                mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions;
-
-                for iK = iStartZeroSumEquations:length(mfError)
-                    if (aafPhasePressuresAndFlowRates(iK,:) * afResults) ~= 0
-                        for iR = 1:length(mfError)
-                            if aafPhasePressuresAndFlowRates(iK,iR) ~= 0
-                                oObj = this.poColIndexToObj(iR);
-
-                                iB = find(this.aoBranches == oObj, 1);
-                                this.afFlowRates(iB) = this.afFlowRates(iB) - aafPhasePressuresAndFlowRates(iK,iR) * mfError(iK)/2;
-                                afResults(iR) = this.afFlowRates(iB);
-                            end
-                        end
-                    end
-                end
-                iCounter = iCounter + 1;
-            end
+%             mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions;
+%             mfErrorInitial = mfError;
+%             iStartZeroSumEquations = length(mfError) - length(this.csVariablePressurePhases)+1;
+%             iCounter = 0;
+%             while any(mfError(iStartZeroSumEquations:end)) && iCounter < 500
+%                 mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions;
+% 
+%                 for iK = iStartZeroSumEquations:length(mfError)
+%                     if (aafPhasePressuresAndFlowRates(iK,:) * afResults) ~= 0
+%                         for iR = 1:length(mfError)
+%                             if aafPhasePressuresAndFlowRates(iK,iR) ~= 0
+%                                 oObj = this.poColIndexToObj(iR);
+% 
+%                                 iB = find(this.aoBranches == oObj, 1);
+%                                 %                                                                                               Number of branches represented in the sum, the error is equally distributed
+%                                 this.afFlowRates(iB) = this.afFlowRates(iB) - aafPhasePressuresAndFlowRates(iK,iR) * mfError(iK)/(sum(abs(aafPhasePressuresAndFlowRates(iK,:))));
+%                                 
+%                                 afResults(iR) = this.afFlowRates(iB);
+%                             end
+%                         end
+%                     end
+%                 end
+%                 iCounter = iCounter + 1;
+%             end
             
             %% Example time step limitation
             % Note not finished, just to showcase the effect of limitation
@@ -965,7 +967,7 @@ classdef branch < base & event.source
                afMaxTimeStep(iBranch) = abs((fPressureLeft-fPressureRight)/(fAverageMassToPressure * this.afFlowRates(iBranch)));
                
             end
-            this.setTimeStep(min(afMaxTimeStep));
+            %this.setTimeStep(min(afMaxTimeStep));
             %TODO done iterating if converged!
             
             

@@ -94,12 +94,12 @@ classdef Example < vsys
             % Now that the system is sealed, we can add the branch to a
             % specific solver. In this case we will use the iterative
             % solver. 
-%             oIt1 = solver.matter.iterative.branch(this.aoBranches(1));
+            % oIt1 = solver.matter.iterative.branch(this.aoBranches(1));
             solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches(1), 'complex');
             
-%             tTimeProps.rMaxChange = 0.01;
-%             this.toStores.Tank_1.toPhases.Tank_1_Phase_1.setTimeStepProperties(tTimeProps);
-%             this.toStores.Tank_2.toPhases.Tank_2_Phase_1.setTimeStepProperties(tTimeProps);
+            tTimeProps.rMaxChange = 0.001;
+            this.toStores.Tank_1.toPhases.Tank_1_Phase_1.setTimeStepProperties(tTimeProps);
+            this.toStores.Tank_2.toPhases.Tank_2_Phase_1.setTimeStepProperties(tTimeProps);
             %oIt1.iDampFR = 5;
         end
     end

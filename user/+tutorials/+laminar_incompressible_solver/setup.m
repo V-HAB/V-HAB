@@ -76,20 +76,16 @@ classdef setup < simulation.infrastructure
             
             oLog = this.toMonitors.oLogger;
             
-            oLog.addValue('Example.toStores.Valve_1.toPhases.flow',             'fPressure',    'Pa', 'Valve1 Pressure');
-            oLog.addValue('Example.toStores.Filter.toPhases.flow',              'fPressure',    'Pa', 'Filter Pressure');
-            oLog.addValue('Example.toStores.Valve_2.toPhases.flow',             'fPressure',    'Pa', 'Valve2 Pressure');
-            oLog.addValue('Example.toStores.Store.toPhases.Store_Phase_1',      'fPressure',    'Pa', 'Store Pressure');
-            oLog.addValue('Example.toStores.Vacuum.toPhases.Vacuum_Phase_1',	'fPressure',    'Pa', 'Vacuum Pressure');
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            for iStore = 1:length(csStores)
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+            end
             
-            
-            oLog.addValue('Example.toBranches.Store__Port_Out___Valve_1__In',       'fFlowRate',    'kg/s', 'Store to Valve1 Flow Rate');
-            oLog.addValue('Example.toBranches.Valve_1__Out___Filter__In',           'fFlowRate',    'kg/s', 'Valve1 to Filter Flow Rate');
-            oLog.addValue('Example.toBranches.Filter__Out___Valve_2__In',           'fFlowRate',    'kg/s', 'Filter to Valve2 Flow Rate');
-            oLog.addValue('Example.toBranches.Valve_2__Out___Vacuum__Port_2',       'fFlowRate',    'kg/s', 'Valve2 to Vacuum Flow Rate');
-            oLog.addValue('Example.toBranches.Filter__Filtered___Vacuum__Port_1',   'fFlowRate',    'kg/s', 'Filter to Vacuum Flow Rate');
-            
-            %oLog.add('Example', 'flow_props');
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
             
         end
         
@@ -100,14 +96,27 @@ classdef setup < simulation.infrastructure
             close all
             oPlotter = plot@simulation.infrastructure(this);
             
-            csPressures = {'"Valve1 Pressure"', '"Filter Pressure"', '"Valve2 Pressure"', '"Store Pressure"', '"Vacuum Pressure"'};
-            csFlowRates = {'"Store to Valve1 Flow Rate"', '"Valve1 to Filter Flow Rate"', '"Filter to Valve2 Flow Rate"', '"Valve2 to Vacuum Flow Rate"', '"Filter to Vacuum Flow Rate"'};
+            
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
             
             tPlotOptions.sTimeUnit = 'seconds';
             tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
-            
-            coPlots{1,1} = oPlotter.definePlot(csPressures,   'Pressures', tPlotOptions);
-            coPlots{2,1} = oPlotter.definePlot(csFlowRates,   'Flow Rates', tPlotOptions);
+
+            coPlots{1,1} = oPlotter.definePlot(csPressures,     'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
             oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
             
             oPlotter.plot();
