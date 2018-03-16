@@ -4,6 +4,10 @@ function [  ] = findSmallestTimeStep( oInput )
     % the component with the smallest timestep in the last 100 ticks.
     % Simply call it after finishing or pausing a simulation by typing
     % tools.findSmallestTimeStep(oLastSimObj) in your command window.
+    % To activate the monitor add:
+    % ttMonitorConfig = struct('oTimeStepObserver', struct('cParams', {{ 0 }}))
+    % In the setup file instead of the usual empty ttMonitorConfig, or add
+    % it to existing ttMonitorConfig you use
     
     try 
         oTimeStepObserver = oInput.toMonitors.oTimeStepObserver;
