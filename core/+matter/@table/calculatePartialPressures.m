@@ -42,6 +42,12 @@ if length(varargin) == 1
     elseif bIsaMatterFlow
         %afPartialPressures = varargin{1}.getPartialPressures();
         afPartialPressures = varargin{1}.afPartialPressure;
+        afMass = varargin{1}.arPartialMass;
+        try
+            afPartsPerMillion = (afMass .* varargin{1}.fMolarMass) ./ (this.afMolarMass .* varargin{1}.fMass) * 1e6;
+        catch
+            afPartsPerMillion = (afMass .* this.calculateMolarMass(afMass)) ./ (this.afMolarMass .* sum(afMass)) * 1e6;
+        end
         return;
     end
     
