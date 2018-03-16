@@ -175,9 +175,12 @@ classdef container < sys
                 end
             end
             
-            this.iThermalBranches = this.iThermalBranches + length(this.aoThermalBranches);
+            this.iThermalBranches = length(this.aoThermalBranches);
            
             this.bThermalSealed = true;
+            
+            this.trigger('ThermalSeal_post');
+            
         end
         
         function setThermalSolvers(this, ~)
@@ -306,14 +309,14 @@ classdef container < sys
             if ~isempty(this.aoThermalBranches)
                 % First we get the 2xN matrix for all the branches in the
                 % container.
-                mbIf = subsref([this.aoBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
+                mbIf = subsref([this.aoThermalBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
                 
                 % Using the element-wise AND operator '&' we delete only the
-                % branches with abIf = [1; 1].
+                % branches with abIf = [1; 0].
                 % First we create a helper array.
-                aoBranchStubs = this.aoThermalBranches(mbIf(1,:) & mbIf(2,:));
+                aoBranchStubs = this.aoThermalBranches(mbIf(1,:) & ~mbIf(2,:));
                 % Now we delete the branches from the aoBranches property.
-                this.aoThermalBranches(mbIf(1,:) & mbIf(2,:)) = [];
+                this.aoThermalBranches(mbIf(1,:) & ~mbIf(2,:)) = [];
                 % Now, using the helper array, we delete the fields from
                 % the toBranches struct.
                 for iI = 1:length(aoBranchStubs)

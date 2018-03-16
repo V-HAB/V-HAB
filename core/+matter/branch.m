@@ -350,8 +350,20 @@ classdef branch < base & event.source
                 thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
             end
             
-            for iProc = 1:length(csProcs)
-                thermal.procs.conductors.fluidic(this.oContainer, csProcs{iProc}, this);
+            if length(csProcs) >= 1
+                for iProc = 1:length(csProcs)
+                    thermal.procs.conductors.fluidic(this.oContainer, csProcs{iProc}, this);
+                end
+            else
+                % branches without a f2f can exist (e.g. manual branches)
+                % however for the thermal branch we always require at least
+                % one conductor
+                if ~isempty(this.sCustomName)
+                    csProcs{1} = [this.sCustomName, '_Conductor'];
+                else
+                    csProcs{1} = [this.sName, '_Conductor'];
+                end
+                thermal.procs.conductors.fluidic(this.oContainer, csProcs{1}, this);
             end
             
             if nargin < 5

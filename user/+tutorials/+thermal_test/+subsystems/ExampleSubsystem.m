@@ -125,9 +125,6 @@ classdef ExampleSubsystem < vsys
             
             this.connectIF('Inlet',  sInlet);
             this.connectIF('Outlet', sOutlet);
-            
-            this.connectThermalIF('Inlet',  sInlet);
-            this.connectThermalIF('Outlet', sOutlet);
         end
         
         function setIfThermal(this, sInlet, sOutlet)

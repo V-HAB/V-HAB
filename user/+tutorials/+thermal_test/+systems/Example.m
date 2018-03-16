@@ -52,6 +52,7 @@ classdef Example < vsys
             tfPartialPressure   = struct('N2', 5);
             fTemperature        = 3;
             rRelativeHumidity   = 0;
+
             this.toStores.Space.createPhase('gas', 'vacuum',  fVolume, tfPartialPressure, fTemperature, rRelativeHumidity);
             
             
@@ -168,19 +169,13 @@ classdef Example < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            % Now that the system is sealed, we can add the branch to a
-            % specific solver. In this case we will use the iterative
-            % solver. 
-            oIt1 = solver.matter.iterative.branch(this.aoBranches(1));
-            
-            solver.thermal.basic_fluidic.branch(this.aoThermalBranches(1));
-            
-            solver.thermal.basic.branch(this.toThermalBranches.Radiator);
-            solver.thermal.basic.branch(this.toThermalBranches.Pipe_Material_Conductor);
+            solver.matter.iterative.branch(this.toBranches.Branch);
             
             tTimeStepProperties.rMaxChange = 0.001;
             this.toStores.Tank_1.aoPhases(1).oCapacity.setTimeStepProperties(tTimeStepProperties);
             %oIt1.iDampFR = 5;
+            
+            this.setThermalSolvers();
         end
     end
     

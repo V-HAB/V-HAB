@@ -464,6 +464,9 @@ classdef container < sys
                 % ... trigger event if anyone wants to know
                 this.trigger('branch.connected', iLocalBranch);
             end
+            
+            % every matter interface has a respective thermal interface
+            this.connectThermalIF(sLocalInterface, sParentInterface);
         end
         
         function disconnectIF(this, sLocalInterface)

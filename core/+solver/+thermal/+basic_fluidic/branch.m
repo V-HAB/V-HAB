@@ -20,8 +20,11 @@ classdef branch < solver.thermal.base.branch
             
             if ~isa(this.oBranch.coConductors{1}.oMassBranch, 'matter.branch')
                 this.bP2P = true;
+            else
+                this.oBranch.coConductors{1}.oMassBranch.bind('update',@(~)this.update());
             end
             
+           
             this.update();
             
         end
@@ -39,7 +42,7 @@ classdef branch < solver.thermal.base.branch
             end
             
             oMassBranch = this.oBranch.coConductors{1}.oMassBranch;
-            fDeltaTemperature = this.oBranch.coExmes{2}.oCapacity.fTemperature - this.oBranch.coExmes{1}.oCapacity.fTemperature;
+            fDeltaTemperature = this.oBranch.coExmes{1}.oCapacity.fTemperature - this.oBranch.coExmes{2}.oCapacity.fTemperature;
             
 
             % Currently for mass bound heat transfer it is not possible to
@@ -85,11 +88,13 @@ classdef branch < solver.thermal.base.branch
             afF2F_HeatFlows = zeros(1,iFlowProcs);
             if oMassBranch.fFlowRate >= 0
                 afTemperatures(1) = this.oBranch.coExmes{1}.oCapacity.fTemperature; %temperature of the first flow
+                iFirstFlow = 1;
                 iDirection = 1;
                 iFlowProcShifter = -1;
                 iExme = 2;
             else
                 afTemperatures(end) = this.oBranch.coExmes{2}.oCapacity.fTemperature; %temperature of the first flow
+                iFirstFlow = iFlowProcs + 1;
                 iDirection = -1;
                 iFlowProcShifter = 0;
                 iExme = 1;
@@ -108,6 +113,8 @@ classdef branch < solver.thermal.base.branch
             if this.bP2P
                 oMassBranch.setTemperature(afTemperatures(1));
             else
+                oMassBranch.aoFlows(iFirstFlow).setTemperature(afTemperatures(iFirstFlow));
+                 
                 for iFlow = sif(oMassBranch.fFlowRate >= 0, 2:(iFlowProcs + 1), (iFlowProcs):-1:1)
                     try
                         oMassBranch.aoFlowProcs(iFlow - iDirection).updateThermal();
@@ -116,9 +123,9 @@ classdef branch < solver.thermal.base.branch
                     end
                     % The thermal energy from the f2f before this flow is added
                     % to the overall heat flow
-                    afF2F_HeatFlows(iFlow) = oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).fHeatFlow;
+                    afF2F_HeatFlows(iFlow + iFlowProcShifter) = oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).fHeatFlow;
 
-                    afTemperatures(iFlow) = afTemperatures(iFlow - iDirection) + ((fHeatFlow + afF2F_HeatFlows (iFlow)) / fConductivity);
+                    afTemperatures(iFlow) = afTemperatures(iFlow - iDirection) + (afF2F_HeatFlows (iFlow + iFlowProcShifter) / fConductivity);
 
                     oMassBranch.aoFlows(iFlow).setTemperature(afTemperatures(iFlow))
 
@@ -129,17 +136,9 @@ classdef branch < solver.thermal.base.branch
             % side is handled by changing the total heat capacity
             this.afSolverHeatFlow = [0, 0];
             if iExme == 1
-                this.afSolverHeatFlow(iExme) = fHeatFlow + sum(afF2F_HeatFlows);
+                this.afSolverHeatFlow(iExme) = fHeatFlow - sum(afF2F_HeatFlows);
             else
-                % for a positive flow rate (iExme == 2) the heat is
-                % added/subtracted from the right phase. The calculation
-                % for the fHeatFlow included this assumption, but the F2F
-                % heat sources only tell us if it gets colder or warmer
-                % with their sign. For this case an increase in temperature
-                % is represented by a negative heat flow because the exme
-                % also has a negative sign --> we have to subtract the f2f
-                % heat flows
-                this.afSolverHeatFlow(iExme) = - fHeatFlow - sum(afF2F_HeatFlows);
+                this.afSolverHeatFlow(iExme) = fHeatFlow + sum(afF2F_HeatFlows);
             end
             
             % If the mass transfer is matter bound the heat flow is only
@@ -154,6 +153,9 @@ classdef branch < solver.thermal.base.branch
             this.oBranch.coExmes{2}.setHeatFlow(this.afSolverHeatFlow(2));
             
             fHeatFlow = this.afSolverHeatFlow(this.afSolverHeatFlow ~= 0);
+            if isempty(fHeatFlow)
+                fHeatFlow = 0;
+            end
              
             update@solver.thermal.base.branch(this, fHeatFlow, afTemperatures);
             

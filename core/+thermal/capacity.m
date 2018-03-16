@@ -1,4 +1,4 @@
-classdef capacity < base
+classdef capacity < base & event.source
     %CAPACITY An object that holds thermal energy
     % created automatically with a phase and performs all thermal
     % calculations for the respective phase
@@ -77,6 +77,11 @@ classdef capacity < base
         fTemperatureLastHeatCapacityUpdate;
         arPartialMassLastHeatCapacityUpdate;
         
+        % Do we need to trigger the massupdate/update events? These
+        % properties were implement to improve simulation speed for cases
+        % where these triggers are not used
+        bTriggerSetCalculateHeatsourcePreCallbackBound = false;
+        bTriggerSetUpdateTemperaturePostCallbackBound = false;
     end
     
     methods
@@ -92,33 +97,30 @@ classdef capacity < base
             this.oMT = oPhase.oMT;
             this.oTimer = oPhase.oTimer;
             
-            % Note, only during the constructor this is done without the
-            % set function, as the values have to be set once for the
-            % energy balance calculation in the set functions
-            this.fSpecificHeatCapacity  = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
-            this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
-            
             % sets the temperature of this capacity and the asscociated
             % phase
             this.setTemperature(fTemperature);
             
+            % We need properties that are only defined in the specific
+            % phase definition and are not available at the time this
+            % constructor is called to set the specific heat capacity.
+            try
+                this.fSpecificHeatCapacity  = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
+                this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
+            catch
+                % just use dummy values in case the previous try did not
+                % work, the really correct ones will be calculated before
+                % the sim starts in the init_post triggered function
+                this.fSpecificHeatCapacity  = 1000;
+                this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
+            end
+            
+            this.oPhase.oStore.oContainer.bind('ThermalSeal_post',@(~)this.setInitialHeatCapacity());
+            
+            
             % Set name of capacity.
             this.sName = oPhase.sName;
             
-        end
-        
-        function setHeatSource(this, oHeatSource)
-            % Set the heat source object of this capacity.
-            
-            % Is oHeatSource an instance of thermal.heatsource?
-            if ~isa(oHeatSource, 'thermal.heatsource')
-                this.throw('capacity:setHeatSource', 'This is no heat source!');
-            elseif any(find(this.aoHeatSource, oHeatSource)) % TO DO: Check for name
-                this.throw('capacity:setHeatSource', 'A heat source of this name was already set');
-            end
-            
-            % Store heat source object instance.
-            this.aoHeatSource(end+1) = oHeatSource;
         end
         
         function updateSpecificHeatCapacity(this)
@@ -318,9 +320,15 @@ classdef capacity < base
             if this.bSynced || bSetBranchesOutdated
                 this.setBranchesOutdated();
             end
+            
             % Capacity sets new time step (registered with parent store, used
             % for all phases of that store)
             this.setOutdatedTS();
+            
+            if this.bTriggerSetUpdateTemperaturePostCallbackBound
+            	this.trigger('updateTemperature_post');
+            end
+            
         end
         
         %% Setting of time step properties
@@ -371,6 +379,22 @@ classdef capacity < base
             % operations through this call.
             this.setOutdatedTS();
         end
+        
+        
+        % Catch 'bind' calls, so we can set a specific boolean property to
+        % true so the .trigger() method will only be called if there are
+        % callbacks registered.
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
+            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
+            
+            % Only do for set
+            if strcmp(sType, 'calculateHeatsource_pre')
+                this.bTriggerSetCalculateHeatsourcePreCallbackBound = true;
+            end
+            if strcmp(sType, 'updateTemperature_post')
+                this.bTriggerSetUpdateTemperaturePostCallbackBound = true;
+            end
+        end
     end
     
     methods (Access = protected)
@@ -384,6 +408,11 @@ classdef capacity < base
             this.oPhase.setTemperature(this, fTemperature);
         end
         
+        function setInitialHeatCapacity(this,~)
+            this.fSpecificHeatCapacity  = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
+            this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
+        end
+        
         function calculateTimeStep(this,~)
             % This function performs the following calculation steps
             % - Loop through all thermal exmes of the capacity and get 
@@ -392,14 +421,19 @@ classdef capacity < base
             % - Store the overall heat flow in the fCurrentHeatFlow property
             % - calculate the allowed time step based on the phase
             %   temperature max change
-            fSourceHeatFlow = 0;
-            for iSource = 1:length(this.aoHeatSource)
-                fSourceHeatFlow = fSourceHeatFlow + this.aoHeatSource(iSource).fHeatFlow;
-            end
             
             fExmeHeatFlow = 0;
             for iExme = 1:length(this.aoExmes)
                 fExmeHeatFlow = fExmeHeatFlow + (this.aoExmes(iExme).iSign * this.aoExmes(iExme).fHeatFlow);
+            end
+            
+            if this.bTriggerSetCalculateHeatsourcePreCallbackBound
+            	this.trigger('calculateHeatsource_pre');
+            end
+            
+            fSourceHeatFlow = 0;
+            for iSource = 1:length(this.aoHeatSource)
+                fSourceHeatFlow = fSourceHeatFlow + this.aoHeatSource(iSource).fHeatFlow;
             end
             
             this.fCurrentHeatFlow = fExmeHeatFlow + fSourceHeatFlow;

@@ -40,7 +40,7 @@ classdef fluidic < thermal.procs.conductor
             end
                 
             fSpecificHeatCapacity = this.oThermalBranch.coExmes{iExme}.oCapacity.fSpecificHeatCapacity;
-            this.fConductivity = this.oMassBranch.fFlowRate * fSpecificHeatCapacity;
+            this.fConductivity = abs(this.oMassBranch.fFlowRate * fSpecificHeatCapacity);
             
             fConductivity = this.fConductivity;
         end
