@@ -207,7 +207,7 @@ classdef PlantCulture < vsys
             matter.procs.exmes.gas(oAtmospherePhase, 'GasExchange_In');
             matter.procs.exmes.gas(oAtmospherePhase, 'GasExchange_Out');
             
-            oAtmospherePhase.bSynced = true;
+            oAtmospherePhase.bFlow = true;
             
             %% Create Biomass Growth P2P Processor
             
@@ -296,7 +296,7 @@ classdef PlantCulture < vsys
                 end
             end
             
-            this.toStores.Plant_Culture.toPhases.PlantAtmosphere.bSynced = true;
+            this.toStores.Plant_Culture.toPhases.PlantAtmosphere.bFlow = true;
         end
         
         %% Connect Subsystem Interfaces with Parent System
