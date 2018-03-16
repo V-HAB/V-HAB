@@ -192,6 +192,7 @@ classdef setup < simulation.infrastructure
             tPlotOptions = struct('csUnitOverride', {{ {'°C'}, {'g/s','-'} }});
             tPlotOptions.tLineOptions.('fr_co2').csColor = 'g';
             tPlotOptions.tLineOptions.('Nonsense').csColor = 'y';
+            tPlotOptions.bLegend = false;
             coPlots{1,1} = oPlotter.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
             
             tPlotOptions.tLineOptions.('ppCO2_Tank1').csColor = 'g';

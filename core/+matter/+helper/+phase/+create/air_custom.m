@@ -50,7 +50,7 @@ if nargin < 5 || isempty(rRH),          rRH          = 0;      end;
 if nargin < 6 || isempty(fPressure),    fPressure    = 101325; end;
 
 % Calculation of the saturation vapour pressure
-fSaturationVapourPressure = this.oMT.calculateVaporPressure(fTemperature, 'H2O');
+fSaturationVapourPressure = oStore.oMT.calculateVaporPressure(fTemperature, 'H2O');
 
 % calculate vapour pressure [Pa]
 fVapourPressure = rRH * fSaturationVapourPressure; 

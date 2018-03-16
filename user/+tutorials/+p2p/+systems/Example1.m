@@ -124,6 +124,12 @@ classdef Example1 < vsys
 %             this.aoFilterPhases(1).bSynced = true;
             this.aoFilterPhases(1).bSynced = true;
             
+            % Resulting matter composition of inflows and p2ps will be
+            % given to the outflows, as this phase is very small and the
+            % filter flowPhase contents do not really matter, this helps to
+            % reduce rounding errors.
+            this.aoFilterPhases(1).bFlow = true;
+            
             
             % The phase for the adsorbed matter in the filter store has a
             % small rMaxChange (small volume) but is not really important

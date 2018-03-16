@@ -57,9 +57,6 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName, 60);
             
-            % Initial ratio for amount of flow that is channeled through the
-            % CHX
-            rInitialCHX_Ratio = 0.21;
             % temperature for the coolant passing through the CCAA
             this.fCoolantTemperature = 277.55;
             % Struct containg basic atmospheric values for the
@@ -74,7 +71,7 @@ classdef Example < vsys
             sCDRA = 'CDRA';
             
             % Adding the subsystem CCAA
-            components.CCAA.CCAA(this, 'CCAA', 10, rInitialCHX_Ratio, this.fCoolantTemperature, tAtmosphere, sCDRA);
+            components.CCAA.CCAA(this, 'CCAA', 10, this.fCoolantTemperature, tAtmosphere, sCDRA);
             
             % name for the asscociated CCAA subsystem, CDRA can only be
             % used together with a CCAA
