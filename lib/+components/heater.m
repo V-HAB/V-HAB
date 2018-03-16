@@ -33,8 +33,13 @@ classdef heater < matter.procs.f2f
         function fDeltaPress = solverDeltas(this, ~)
             this.fHeatFlow = this.fPower * this.rEfficiency;
             fDeltaPress = 0;
-        
         end
+        
+        function setPower(this, fPower)
+            this.fPower = fPower;
+            this.fHeatFlow = this.fPower * this.rEfficiency;
+        end
+        
     end
     
 end
