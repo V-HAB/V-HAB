@@ -564,6 +564,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if this.bSynced || bSetBranchesOutdated
                 %%%this.setBranchesOutdated('in');
                 this.setBranchesOutdated();
+                this.setBranchesOutdated('both', true); % true to indicate that only residual branches are set outdated
             end
             
             % Execute updateProcessorsAndManipulators between branch solver
@@ -1253,11 +1254,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
         end
 
-        function setBranchesOutdated(this, sFlowDirection)
+        function setBranchesOutdated(this, sFlowDirection, bResidual)
             
 %             if nargin < 2
                 sFlowDirection = 'both'; 
 %             end
+            
+            if nargin < 3
+                bResidual = false;
+            end
             
             if this.fLastSetOutdated >= this.oTimer.fTime
                 return;
@@ -1274,7 +1279,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 
                 % Make sure it's not a p2ps.flow - their update method
                 % is called in updateProcessorsAndManipulators method
-                if isa(oBranch, 'matter.branch')
+                if bResidual
+                    if ~oExme.bFlowIsAProcP2P
+                        if isa(oBranch.oHandler, 'solver.matter.residual.branch')
+                            % Tell branch to recalculate flow rate (done after
+                            % the current tick, in timer post tick).
+                            oBranch.setOutdated();
+                        end
+                    end
+                elseif isa(oBranch, 'matter.branch')
                     % If flow direction set, only setOutdated if the
                     % flow direction is either inwards or outwards
                     if strcmp(sFlowDirection, 'in')
@@ -1307,7 +1320,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end % end of: for
             
         end % end of: setBranchesOutdated method
-
+        
         function updateProcessorsAndManipulators(this)
             % Update the p2p flow and manip processors
 
