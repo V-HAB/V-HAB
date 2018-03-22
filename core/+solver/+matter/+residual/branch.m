@@ -183,6 +183,18 @@ classdef branch < solver.matter.manual.branch
                 this.updateFlowProcs();
                 this.fLastUpdateTime = this.oBranch.oTimer.fTime;
                 
+                if this.bMultipleResidualSolvers
+                    % If there are multiple residual solvers attached to the
+                    % same phase as this residual solver, and the flowrate of
+                    % this solver has changed, then all the other residual
+                    % solvers have to be updated as well. This is necessary to
+                    % allow one residual solver to end in a phase (keeping the
+                    % mass of the phase attached to it constant) and the next
+                    % residual solver keeping the mass of this phase constant
+                    for iK = 1:length(this.aoAdjacentResidualSolver)
+                        this.aoAdjacentResidualSolver(iK).oHandler.update();
+                    end
+                end
                 
             else
                 % manual solver update has to be called even if the overall
