@@ -183,24 +183,16 @@ classdef branch < solver.matter.manual.branch
                 this.updateFlowProcs();
                 this.fLastUpdateTime = this.oBranch.oTimer.fTime;
                 
+                
             else
                 % manual solver update has to be called even if the overall
                 % flowrate did not change, because the composition of the phase
                 % can have changed!
-                if this.fRequestedFlowRate >= 0
-                    oPhase = this.oBranch.coExmes{1}.oPhase;
-                else
-                    oPhase = this.oBranch.coExmes{2}.oPhase;
-                end
-                
-                if oPhase.fLastMassUpdate > this.fLastUpdateTime
-                    update@solver.matter.base.branch(this, this.fRequestedFlowRate);
-                    this.updateFlowProcs();
-           
-                    this.fLastUpdateTime = this.oBranch.oTimer.fTime;
-                end
-                
+                update@solver.matter.base.branch(this, this.fRequestedFlowRate);
+                this.updateFlowProcs();
+                this.fLastUpdateTime = this.oBranch.oTimer.fTime;
             end
+            
             this.fResidualFlowRatePrev = this.fRequestedFlowRate;
         end
         
