@@ -8,8 +8,8 @@ classdef setup < simulation.infrastructure
             
             if nargin < 4 || isempty(iNr), iNr = 0; end;
             
-            
-            this@simulation.infrastructure('Tutorial_Solver_LaminarIncompressible', ptConfigParams, tSolverParams);
+            ttMonitorConfig = struct();%struct('oTimeStepObserver', struct('cParams', {{ 0 }}));
+            this@simulation.infrastructure('Tutorial_Solver_LaminarIncompressible', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             
             if iNr == 0

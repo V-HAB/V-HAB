@@ -948,28 +948,52 @@ classdef branch < base & event.source
             % Now check for the maximum allowable time step with the
             % current flow rate (the pressure differences in the branches
             % are not allowed to change their sign within one tick)
-            afMaxTimeStep = ones(1,length(this.aoBranches)) * inf;
-            for iBranch = 1:length(this.aoBranches)
-               % TO DO: implement check for active components and include
-               % them in the calculation, also manual flowrates etc
-               fMassLeft            = this.aoBranches(1).coExmes{1}.oPhase.fMass;
-               fMassToPressureLeft  = this.aoBranches(1).coExmes{1}.oPhase.fMassToPressure;
-               fMassRight           = this.aoBranches(1).coExmes{2}.oPhase.fMass;
-               fMassToPressureRight = this.aoBranches(1).coExmes{2}.oPhase.fMassToPressure;
-               
-               fPressureLeft = fMassLeft * fMassToPressureLeft;
-               fPressureRight = fMassRight * fMassToPressureRight;
-               
-               fAverageMassToPressure = (fMassToPressureLeft + fMassToPressureRight)/2;
-               
-               % For active component implementation add them to pressure
-               % difference here!
-               afMaxTimeStep(iBranch) = abs((fPressureLeft-fPressureRight)/(fAverageMassToPressure * this.afFlowRates(iBranch)));
-               
-            end
-            %this.setTimeStep(min(afMaxTimeStep));
-            %TODO done iterating if converged!
+            afMaxTimeStep = ones(1,this.poBoundaryPhases.Count) * inf;
             
+            mfTotalMassChangeBoundary   = zeros(this.poBoundaryPhases.Count,1);
+            mfMassBoundary              = zeros(this.poBoundaryPhases.Count,1);
+            mfMassToPressureBoundary    = zeros(this.poBoundaryPhases.Count,1);
+            
+            for iBoundaryPhase = 1:this.poBoundaryPhases.Count
+                oBoundary = this.poBoundaryPhases(this.csBoundaryPhases{iBoundaryPhase});
+                
+                mfMassBoundary(iBoundaryPhase)              = oBoundary.fMass;
+                mfMassToPressureBoundary(iBoundaryPhase)    = oBoundary.fMassToPressure;
+                
+                for iExme = 1:length(oBoundary.coProcsEXME)
+                    iBranch = find(this.aoBranches == oBoundary.coProcsEXME{iExme}.oFlow.oBranch,1);
+                    
+                    if ~isempty(iBranch)
+                        mfTotalMassChangeBoundary(iBoundaryPhase) = mfTotalMassChangeBoundary(iBoundaryPhase) + (oBoundary.coProcsEXME{iExme}.iSign * this.afFlowRates(iBranch));
+                    else
+                        % in this case it is not a multi branch but for
+                        % example a manual branch which is simply assumed
+                        % to be a boundary condition and constant
+                        mfTotalMassChangeBoundary(iBoundaryPhase) = mfTotalMassChangeBoundary(iBoundaryPhase) + (oBoundary.coProcsEXME{iExme}.iSign * oBoundary.coProcsEXME{iExme}.oFlow.fFlowRate);
+                    end
+                end
+            end
+            
+            for iBoundaryLeft = 1:this.poBoundaryPhases.Count
+                for iBoundaryRight = 1:this.poBoundaryPhases.Count
+                    if iBoundaryLeft == iBoundaryRight
+                        continue
+                    else
+                        fPressureDifference = (mfMassBoundary(iBoundaryLeft) * mfMassToPressureBoundary(iBoundaryLeft) - mfMassBoundary(iBoundaryRight) * mfMassToPressureBoundary(iBoundaryRight));
+                        fAverageMassToPressure = (mfMassToPressureBoundary(iBoundaryLeft) + mfMassToPressureBoundary(iBoundaryRight))/2;
+                    end
+                    
+                    afMaxTimeStep(iBoundaryLeft) = abs(fPressureDifference/(fAverageMassToPressure * mfTotalMassChangeBoundary(iBoundaryLeft)));
+                end
+            end
+            % Negative timesteps mean we are already past the
+            % equalization and are moving away from it (because of
+            % manual flows or active components) Therefore negative
+            % values do not have to be considered further. 0 Means
+            % we have reached equalization, therefore this can also
+            % be ignored for max time step condition
+            afMaxTimeStep(afMaxTimeStep <= 0) = inf;
+            this.setTimeStep(min(afMaxTimeStep));
             
             % Ok now go through results - variable pressure phase pressures
             % and branch flow rates - and set!

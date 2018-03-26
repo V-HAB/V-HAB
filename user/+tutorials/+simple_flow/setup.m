@@ -108,8 +108,8 @@ classdef setup < simulation.infrastructure
             %   - :s: = toStores
             %   - :c: = toChildren
             
-            this.tiLogIndexes.iTempIdx1 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(1)', 'fTemperature', 'K', 'Flow Temperature - Left', 'flow_temp_left');
-            this.tiLogIndexes.iTempIdx2 = oLog.addValue('Example.toProcsF2F.Pipe.aoFlows(2)', 'fTemperature', 'K', 'Flow Temperature - Right', 'flow_temp_right');
+            this.tiLogIndexes.iTempIdx1 = oLog.addValue('Example.toProcsF2F.Pipe1.aoFlows(1)', 'fTemperature', 'K', 'Flow Temperature - Left', 'flow_temp_left');
+            this.tiLogIndexes.iTempIdx2 = oLog.addValue('Example.toProcsF2F.Pipe1.aoFlows(2)', 'fTemperature', 'K', 'Flow Temperature - Right', 'flow_temp_right');
             
             
             % The log is built like this:
@@ -129,7 +129,7 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg');
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
             
-            oLog.addValue('Example.toBranches.Branch', 'fFlowRate', 'kg/s', 'Branch Flow Rate', 'branch_FR');
+            oLog.addValue('Example.toBranches.Branch1', 'fFlowRate', 'kg/s', 'Branch Flow Rate', 'branch_FR');
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'fPressure', 'Pa', 'Tank 1 Pressure');
             
             this.tiLogIndexes.iIndex_1 = oLog.addVirtualValue('fr_co2 * 1000', 'g/s', 'CO_2 Flowrate', 'co2_fr_grams');
