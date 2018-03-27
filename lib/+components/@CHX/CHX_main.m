@@ -185,14 +185,14 @@ if strcmpi(sHX_type, 'counter annular passage')
         %that temperature it is impossible for it to occur at all
         fTWall = fEntry_Temp2;
     
-        afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+        afCondensableFlowRate = oFlow_1.arPartialMass .* fMassFlow1;
         
         [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
                 (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_1, fHeatFlow, fTWall, fOutlet_Temp_1,fEntry_Temp1, oFlow_1);
     else
         fTWall = fEntry_Temp1;
         
-        afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
+        afCondensableFlowRate = oFlow_2.arPartialMass .* fMassFlow2;
         
         [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
                 (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_2, fHeatFlow, fTWall, fOutlet_Temp_2,fEntry_Temp2, oFlow_2);
@@ -387,14 +387,14 @@ elseif strcmpi(sHX_type, 'counter plate')
         %that temperature it is impossible for it to occur at all
         fTWall = fEntry_Temp2;
     
-        afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+        afCondensableFlowRate = oFlow_1.arPartialMass .* fMassFlow1;
         
         [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
                 (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_1, fHeatFlow, fTWall, fOutlet_Temp_1,fEntry_Temp1, oFlow_1);
     else
         fTWall = fEntry_Temp1;
         
-        afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
+        afCondensableFlowRate = oFlow_2.arPartialMass .* fMassFlow2;
         
         [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
                 (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_2, fHeatFlow, fTWall, fOutlet_Temp_2,fEntry_Temp2, oFlow_2);
@@ -416,7 +416,7 @@ elseif strcmpi(sHX_type, 'counter plate')
             fHeatCapacityFlowCold = fHeat_Capacity_Flow_2;
             oFlowHot = oFlow_1;
             
-            afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+            afCondensableFlowRate = oFlow_1.arPartialMass .* fMassFlow1;
         else
             fEntryTempHot = fEntry_Temp2;
             fOutletTempHot_Normal =  fOutlet_Temp_2;
@@ -426,7 +426,7 @@ elseif strcmpi(sHX_type, 'counter plate')
             fHeatCapacityFlowCold = fHeat_Capacity_Flow_1;
             oFlowHot = oFlow_2;
             
-            afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
+            afCondensableFlowRate = oFlow_2.arPartialMass .* fMassFlow2;
         end
         fHeatFlow_Old = 0;
         iCounter = 0;
@@ -573,14 +573,14 @@ elseif strcmpi(sHX_type, 'shuttle CHX')
         %that temperature it is impossible for it to occur at all
         fTWall = fEntry_Temp2;
     
-        afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+        afCondensableFlowRate = oFlow_1.arPartialMass .* fMassFlow1;
         
         [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
                 (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_1, fHeatFlow, fTWall, fOutlet_Temp_1,fEntry_Temp1, oFlow_1);
     else
         fTWall = fEntry_Temp1;
         
-        afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
+        afCondensableFlowRate = oFlow_2.arPartialMass .* fMassFlow2;
         
         [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
                 (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_2, fHeatFlow, fTWall, fOutlet_Temp_2,fEntry_Temp2, oFlow_2);
@@ -1181,7 +1181,7 @@ elseif strcmpi(sHX_type, 'parallel annular passage')
         %just some changed values
         if fEntry_Temp1 > fEntry_Temp2
             
-            afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+            afCondensableFlowRate = oFlow_1.arPartialMass .* fMassFlow1;
 
             for k = 1:iIncrements
                 %for the first component the actual entry temperatures of
@@ -1239,7 +1239,7 @@ elseif strcmpi(sHX_type, 'parallel annular passage')
         else
             %% same as previous section just with some switches values
             
-            afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
+            afCondensableFlowRate = oFlow_2.arPartialMass .* fMassFlow2;
             %therefore no comment here
             for k = 1:iIncrements
                 if k == 1
@@ -1392,7 +1392,7 @@ elseif strcmpi(sHX_type, 'parallel plate')
         %just some changed values
         if fEntry_Temp1 > fEntry_Temp2
             
-            afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+            afCondensableFlowRate = oFlow_1.arPartialMass .* fMassFlow1;
             
             for k = 1:iIncrements
                 %for the first component the actual entry temperatures of
@@ -1453,7 +1453,7 @@ elseif strcmpi(sHX_type, 'parallel plate')
             %% same as previous section just with some switches values
             %therefore no comment here
             
-            afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
+            afCondensableFlowRate = oFlow_2.arPartialMass .* fMassFlow2;
             
             for k = 1:iIncrements
                 if k == 1
@@ -1625,7 +1625,7 @@ elseif strcmpi(sHX_type, 'parallel pipe bundle')
         %just some changed values
         if fEntry_Temp1 > fEntry_Temp2
             
-            afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+            afCondensableFlowRate = oFlow_1.arPartialMass .* fMassFlow1;
             
             for k = 1:iIncrements
                 %for the first component the actual entry temperatures of
@@ -1685,7 +1685,7 @@ elseif strcmpi(sHX_type, 'parallel pipe bundle')
             %% same as previous section just with some switches values
             %therefore no comment here
             
-            afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
+            afCondensableFlowRate = oFlow_2.arPartialMass .* fMassFlow2;
             
             for k = 1:iIncrements
                 if k == 1
@@ -1994,10 +1994,10 @@ elseif strcmpi(sHX_type, 'cross')
         % Calculates the total flowrate of water in the CHX hot flow:
         % TO DO: Fix for substances other than water
         if fEntry_Temp1 >= fEntry_Temp2
-            fTotalHumidityFlowRate = oFlow_1.fFlowRate * oFlow_1.arPartialMass(oHX.oMT.tiN2I.H2O);
+            fTotalHumidityFlowRate = fMassFlow1 * oFlow_1.arPartialMass(oHX.oMT.tiN2I.H2O);
             mfPartialHumidityFlowRate = ones(1,fN_Row_Increments) * fTotalHumidityFlowRate/fN_Row_Increments;
         else
-            fTotalHumidityFlowRate = oFlow_2.fFlowRate * oFlow_2.arPartialMass(oHX.oMT.tiN2I.H2O);
+            fTotalHumidityFlowRate = fMassFlow2 * oFlow_2.arPartialMass(oHX.oMT.tiN2I.H2O);
             mfPartialHumidityFlowRate = ones(iIncrements,1) * fTotalHumidityFlowRate/iIncrements;
         end
         

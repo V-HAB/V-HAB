@@ -30,7 +30,7 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName);
+            this@vsys(oParent, sName, 1);
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -172,10 +172,10 @@ classdef Example < vsys
             oB3 = solver.matter.manual.branch(this.aoBranches(3));
             oB4 = solver.matter.manual.branch(this.aoBranches(4));
             
-            oB1.setFlowRate(0.1);
-            oB2.setFlowRate(0.1);
-            oB3.setFlowRate(0.1);
-            oB4.setFlowRate(0.1);
+            oB1.setFlowRate(1);
+            oB2.setFlowRate(1);
+            oB3.setFlowRate(1);
+            oB4.setFlowRate(1);
             
             this.toProcsF2F.Air_Heater.setPower(10);
             this.toProcsF2F.Water_Heater.setPower(-10);
@@ -202,9 +202,20 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
+            if this.oTimer.fTime > 10
+                for iBranch = 1:length(this.aoBranches)
+                    
+                    this.aoBranches(iBranch).oHandler.setFlowRate(0.001);
+                    
+                end
+            else
+                for iBranch = 1:length(this.aoBranches)
+                    
+                    this.aoBranches(iBranch).oHandler.setFlowRate(1);
+                    
+                end
+            end
         end
-        
     end
-    
 end
 
