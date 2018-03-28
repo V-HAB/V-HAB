@@ -87,6 +87,7 @@ classdef gas_flow_node < matter.phases.gas
             %this.rMaxChange = 0.0000001;
             %this.rMaxChange = inf;
             this.bSynced    = true;
+            this.bFlow      = true;
             
             
             %this.rMaxChange = 0.5;

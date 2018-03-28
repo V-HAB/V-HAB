@@ -33,7 +33,7 @@ classdef branch < base & event.source
         %     specific method in p2p)
         sMode = 'simple';
         
-        
+        fMinimumTimeStep = 1e-3;
         
         iLastWarn = -1000;
     end
@@ -948,7 +948,7 @@ classdef branch < base & event.source
             % Now check for the maximum allowable time step with the
             % current flow rate (the pressure differences in the branches
             % are not allowed to change their sign within one tick)
-            afMaxTimeStep = ones(1,this.poBoundaryPhases.Count) * inf;
+            afMaxTimeStep = ones(this.poBoundaryPhases.Count, this.poBoundaryPhases.Count) * inf;
             
             mfTotalMassChangeBoundary   = zeros(this.poBoundaryPhases.Count,1);
             mfMassBoundary              = zeros(this.poBoundaryPhases.Count,1);
@@ -983,7 +983,7 @@ classdef branch < base & event.source
                         fAverageMassToPressure = (mfMassToPressureBoundary(iBoundaryLeft) + mfMassToPressureBoundary(iBoundaryRight))/2;
                     end
                     
-                    afMaxTimeStep(iBoundaryLeft) = abs(fPressureDifference/(fAverageMassToPressure * mfTotalMassChangeBoundary(iBoundaryLeft)));
+                    afMaxTimeStep(iBoundaryLeft, iBoundaryRight) = abs(fPressureDifference/(fAverageMassToPressure * (mfTotalMassChangeBoundary(iBoundaryLeft) - mfTotalMassChangeBoundary(iBoundaryRight))));
                 end
             end
             % Negative timesteps mean we are already past the
@@ -993,14 +993,18 @@ classdef branch < base & event.source
             % we have reached equalization, therefore this can also
             % be ignored for max time step condition
             afMaxTimeStep(afMaxTimeStep <= 0) = inf;
-            this.setTimeStep(min(afMaxTimeStep));
+            fTimeStep = min(min(afMaxTimeStep));
+            if fTimeStep < this.fMinimumTimeStep
+                fTimeStep = this.fMinimumTimeStep;
+            end
+            this.setTimeStep(fTimeStep);
             
             % Ok now go through results - variable pressure phase pressures
             % and branch flow rates - and set!
             for iR = 1:length(this.csObjUuidsToColIndex)
                 oObj = this.poColIndexToObj(iR);
                 
-                if isa(oObj, 'matter.phases.gas_flow_now')
+                if isa(oObj, 'matter.phases.gas_flow_node')
                     oObj.setPressure(afResults(iR));
                     
                     
