@@ -4,7 +4,7 @@ classdef Example_2 < vsys
     
     properties (SetAccess = protected, GetAccess = public)
         fPipeLength   = 1.5;
-        fPipeDiameter = 0.005;
+        fPipeDiameter = 0.05;
         
     end
     
