@@ -106,10 +106,15 @@ classdef Example < vsys
             %% Heat Exchanger
             % Some configurating variables
             sHX_type = 'cross';       % Heat exchanger type
-            
             %Geometry = [fN_Rows, fN_Pipes, fD_i, fD_o, fLength, fs_1, fs_2, fconfig
             Geometry = [3, 12, 0.05, 0.055, 0.5, 0.15, 0.15, 0];
             % --> see the HX file for information on the inputs for the different HX types
+            
+            
+%             sHX_type = 'parallel plate'; 
+%             % Geometry = [fBroadness, fHeight_1, fHeight_2, fLength, fThickness]
+%             Geometry = [1, 0.01, 0.01, 2, 0.001];
+            
             
             Conductivity = 15;                          % Conductivity of the Heat exchanger solid material
             
@@ -119,7 +124,7 @@ classdef Example < vsys
             
             % Defines when the CHX should be recalculated: 
             fTempChangeToRecalc = 0.1;        % If any inlet temperature changes by more than 1 K
-            fPercentChangeToRecalc = 0.25;  % If any inlet flowrate or composition changes by more than 0.25%
+            fPercentChangeToRecalc = 0.05;  % If any inlet flowrate or composition changes by more than 0.25%
             
             % defines the heat exchanged object using the previously created properties
             % (oParent, sName, mHX, sHX_type, iIncrements, fHX_TC, fTempChangeToRecalc, fPercentChangeToRecalc)
@@ -149,51 +154,44 @@ classdef Example < vsys
             % exchanger
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            matter.branch(this, 'Tank_1.Port_1', {'Fan_1', 'Pipe1', 'CondensingHeatExchanger_2', 'Pipe2'}, 'Tank_2.Port_2');
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe1', 'CondensingHeatExchanger_2', 'Pipe2'}, 'Tank_2.Port_2');
             matter.branch(this, 'Tank_2.Port_4', {'Pipe5', 'Air_Heater'}, 'Tank_1.Port_3');
             
             % Creating the flow path between the two water tanks via the 
             % heat exchanger
-            matter.branch(this, 'Tank_3.Port_5', {'Fan_2', 'Pipe3', 'CondensingHeatExchanger_1', 'Pipe4'}, 'Tank_4.Port_6');
+            matter.branch(this, 'Tank_3.Port_5', {'Pipe3', 'CondensingHeatExchanger_1', 'Pipe4'}, 'Tank_4.Port_6');
             matter.branch(this, 'Tank_4.Port_8', {'Pipe6', 'Water_Heater'}, 'Tank_3.Port_7');
             
         end
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
+            % Creating the solver branches.
+            oB1 = solver.matter.manual.branch(this.aoBranches(1));
+            oB2 = solver.matter.manual.branch(this.aoBranches(2));
+            oB3 = solver.matter.manual.branch(this.aoBranches(3));
+            oB4 = solver.matter.manual.branch(this.aoBranches(4));
             
-            for iI = 1:length(this.aoBranches)
-                solver.matter.incompressible_liquid.branch_incompressible_liquid(this.aoBranches(iI));
-            end
-
-            iIncompBranches = length(this.aoBranches);
-            %This matrix defines which branches form an interdependant
-            %loop. For each loop the matrix contains one columns that has
-            %the branch number within this loop as row entries. This is
-            %required for the steady state calculation to set viable steady
-            %state flowrates that allow high time steps.
-            mLoopBranches = [1,3;2,4];
-            %System Solver Inputs:
-            %(oSystem, fMinTimeStep, fMaxTimeStep, fMaxProcentualFlowSpeedChange, iPartialSteps, iLastSystemBranch, fSteadyStateTimeStep, fSteadyStateAcceleration, mLoopBranches)  
-            this.oSystemSolver = solver.matter.incompressible_liquid.system_incompressible_liquid(this, 1e-2, 5, 1e-2, 100, iIncompBranches, 5, 5, mLoopBranches);
-           
-            
-            
-%             % Creating the solver branches.
-%             oB1 = solver.matter.manual.branch(this.aoBranches(1));
-%             oB2 = solver.matter.manual.branch(this.aoBranches(2));
-%             oB3 = solver.matter.manual.branch(this.aoBranches(3));
-%             oB4 = solver.matter.manual.branch(this.aoBranches(4));
-%             
-%             % Now we set the flow rate in the manual solver branches to a
-%             % slow 10 grams per second.
-%             oB1.setFlowRate(0.01);
-%             oB2.setFlowRate(0.01);
-%             oB3.setFlowRate(0.01);
-%             oB4.setFlowRate(0.01);
+            oB1.setFlowRate(0.1);
+            oB2.setFlowRate(0.1);
+            oB3.setFlowRate(0.1);
+            oB4.setFlowRate(0.1);
             
             this.toProcsF2F.Air_Heater.setPower(10);
             this.toProcsF2F.Water_Heater.setPower(-10);
+            
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    
+                    arMaxChange = zeros(1,this.oMT.iSubstances);
+                    arMaxChange(this.oMT.tiN2I.H2O) = 0.001;
+                    tTimeStepProperties.arMaxChange = arMaxChange;
+                    
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
         end
     end
     

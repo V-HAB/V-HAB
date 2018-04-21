@@ -93,13 +93,18 @@ classdef PlantCulture < vsys
     
     methods
         function this = PlantCulture(oParent, txInput, fUpdateFrequency, fPlantTimeInit)
+            % In order to initialize the plant culture at a specific later
+            % time you have to provide the value of that time in
+            % fPlantTimeInit in seconds and the txInput struct requires the
+            % additional field mfPlantMassInit which is vector with the
+            % first entry as edible biomass in kg and the second entry as
+            % inedible biomass in kg, at the time of plant initialization
             this@vsys(oParent, txInput.sCultureName, fUpdateFrequency);
             
-            
-            if (nargin > 4) 
-                 this.fPlantTimeInit = fPlantTimeInit;
+            if (nargin >= 4)
+                this.fPlantTimeInit = fPlantTimeInit;
             else
-              this.fPlantTimeInit = 0;
+                this.fPlantTimeInit = 0;
             end
             
             this.oTimer.setMinStep(1e-20);
@@ -202,7 +207,7 @@ classdef PlantCulture < vsys
             matter.procs.exmes.gas(oAtmospherePhase, 'GasExchange_In');
             matter.procs.exmes.gas(oAtmospherePhase, 'GasExchange_Out');
             
-            oAtmospherePhase.bSynced = true;
+            oAtmospherePhase.bFlow = true;
             
             %% Create Biomass Growth P2P Processor
             
@@ -291,7 +296,7 @@ classdef PlantCulture < vsys
                 end
             end
             
-            this.toStores.Plant_Culture.toPhases.PlantAtmosphere.bSynced = true;
+            this.toStores.Plant_Culture.toPhases.PlantAtmosphere.bFlow = true;
         end
         
         %% Connect Subsystem Interfaces with Parent System

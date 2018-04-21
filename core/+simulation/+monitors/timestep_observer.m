@@ -26,7 +26,11 @@ classdef timestep_observer < simulation.monitor
         function this = timestep_observer(oSimulationInfrastructure, fLimit)
             this@simulation.monitor(oSimulationInfrastructure, { 'tick_post' });
             
-            this.fLimit = fLimit;
+            if nargin >= 2
+                this.fLimit = fLimit;
+            else
+                this.fLimit = 0;
+            end
         end
     end
     

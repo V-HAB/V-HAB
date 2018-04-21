@@ -72,7 +72,7 @@ tfAntoineParameters.Ar.Range(1).fB = 215.24;
 tfAntoineParameters.Ar.Range(1).fC = -22.233;
 
 
-for iRange = 1:length(tfAntoineParameters.(sSubstance))
+for iRange = 1:length(tfAntoineParameters.(sSubstance).Range)
     
     mfLimits = [tfAntoineParameters.(sSubstance).Range(:).mfLimits];
     

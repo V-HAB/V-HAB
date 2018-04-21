@@ -185,13 +185,17 @@ if strcmpi(sHX_type, 'counter annular passage')
         %that temperature it is impossible for it to occur at all
         fTWall = fEntry_Temp2;
     
+        afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+        
         [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
-                (oHX, struct(), fHeat_Capacity_Flow_1, fHeatFlow, fTWall, fOutlet_Temp_1,fEntry_Temp1, oFlow_1);
+                (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_1, fHeatFlow, fTWall, fOutlet_Temp_1,fEntry_Temp1, oFlow_1);
     else
         fTWall = fEntry_Temp1;
         
+        afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
+        
         [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
-                (oHX, struct(), fHeat_Capacity_Flow_2, fHeatFlow, fTWall, fOutlet_Temp_2,fEntry_Temp2, oFlow_2);
+                (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_2, fHeatFlow, fTWall, fOutlet_Temp_2,fEntry_Temp2, oFlow_2);
     end
     
     %now the iterative condensation calculation is only executed if
@@ -383,13 +387,17 @@ elseif strcmpi(sHX_type, 'counter plate')
         %that temperature it is impossible for it to occur at all
         fTWall = fEntry_Temp2;
     
+        afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+        
         [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
-                (oHX, struct(), fHeat_Capacity_Flow_1, fHeatFlow, fTWall, fOutlet_Temp_1,fEntry_Temp1, oFlow_1);
+                (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_1, fHeatFlow, fTWall, fOutlet_Temp_1,fEntry_Temp1, oFlow_1);
     else
         fTWall = fEntry_Temp1;
         
+        afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
+        
         [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
-                (oHX, struct(), fHeat_Capacity_Flow_2, fHeatFlow, fTWall, fOutlet_Temp_2,fEntry_Temp2, oFlow_2);
+                (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_2, fHeatFlow, fTWall, fOutlet_Temp_2,fEntry_Temp2, oFlow_2);
     end
     
     %now the iterative condensation calculation is only executed if
@@ -407,6 +415,8 @@ elseif strcmpi(sHX_type, 'counter plate')
             fHeatCapacityFlowHot = fHeat_Capacity_Flow_1;
             fHeatCapacityFlowCold = fHeat_Capacity_Flow_2;
             oFlowHot = oFlow_1;
+            
+            afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
         else
             fEntryTempHot = fEntry_Temp2;
             fOutletTempHot_Normal =  fOutlet_Temp_2;
@@ -415,6 +425,8 @@ elseif strcmpi(sHX_type, 'counter plate')
             fHeatCapacityFlowHot = fHeat_Capacity_Flow_2;
             fHeatCapacityFlowCold = fHeat_Capacity_Flow_1;
             oFlowHot = oFlow_2;
+            
+            afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
         end
         fHeatFlow_Old = 0;
         iCounter = 0;
@@ -441,7 +453,7 @@ elseif strcmpi(sHX_type, 'counter plate')
             fHeatFlow_Old = fHeatFlow;
             fHeatFlow = (fHeatCapacityFlowHot+fPhaseChangeHeatCapacityFlow)*(fEntryTempHot-fOutletTempHot_New);
 
-            [sCondensateFlowRate, ~,~,fCondensateHeatFlow] = condensation(oHX, struct(), fHeatCapacityFlowHot, fHeatFlow, fTWall,...
+            [sCondensateFlowRate, ~,~,fCondensateHeatFlow] = condensation(oHX, afCondensableFlowRate, fHeatCapacityFlowHot, fHeatFlow, fTWall,...
                 fOutletTempHot_Normal,fEntryTempHot, oFlowHot);
 
             iCounter = iCounter+1;
@@ -561,13 +573,17 @@ elseif strcmpi(sHX_type, 'shuttle CHX')
         %that temperature it is impossible for it to occur at all
         fTWall = fEntry_Temp2;
     
+        afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+        
         [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
-                (oHX, struct(), fHeat_Capacity_Flow_1, fHeatFlow, fTWall, fOutlet_Temp_1,fEntry_Temp1, oFlow_1);
+                (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_1, fHeatFlow, fTWall, fOutlet_Temp_1,fEntry_Temp1, oFlow_1);
     else
         fTWall = fEntry_Temp1;
         
+        afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
+        
         [sCondensateFlowRate, ~, ~, fCondensateHeatFlow] = condensation ...
-                (oHX, struct(), fHeat_Capacity_Flow_2, fHeatFlow, fTWall, fOutlet_Temp_2,fEntry_Temp2, oFlow_2);
+                (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_2, fHeatFlow, fTWall, fOutlet_Temp_2,fEntry_Temp2, oFlow_2);
     end
     
     %now the iterative condensation calculation is only executed if
@@ -712,7 +728,7 @@ elseif strcmpi(sHX_type, 'ISS CHX')
 %         oFlow_2 = oHX.oF2F_2.aoFlows(1);
 %     end
     
-    fWaterPressure = oFlow_1.oBranch.coExmes{1,1}.oPhase.afPP(oHX.oMT.tiN2I.H2O);
+    fWaterPressure = oFlow_1.afPartialPressure(oHX.oMT.tiN2I.H2O);
     
     %Instead of a geometry input the ISS CHX uses an effectiness
     %calculation and the mHX input is an interpolation of this effectiness
@@ -827,8 +843,9 @@ elseif strcmpi(sHX_type, 'ISS CHX')
     fCoolantTemperatureInfluenceFactor = fHeatFlowOffNominal/fHeatFlowNominal;
     
     % Additionally according to the diploma thesis from Christof roth, a
-    % 18% higher effectiveness is assumed for doubled coolant flows
-    fCoolantFlowCorrectionFactor = (((fMassFlow2 - 0.145) / 0.145) * (0.36));
+    % 18% higher effectiveness is assumed for doubled coolant flows.
+    % However reverification showed better results for 9%
+    fCoolantFlowCorrectionFactor = (((fMassFlow2 - 0.0756) / 0.0756) * (0.09));
         
     rEffectiveness = (rEffectiveness + fCoolantFlowCorrectionFactor) * fCoolantTemperatureInfluenceFactor;
     
@@ -847,26 +864,30 @@ elseif strcmpi(sHX_type, 'ISS CHX')
     % condensation occurs
     
     iIncrements = 10;               % Columns,      Rows
+    mfOutlet_Temp_1         = zeros(iIncrements,    iIncrements+1);
     mfOutlet_Temp_2         = zeros(iIncrements+1,  iIncrements);
     mfWaterMassFlow         = zeros(iIncrements,    iIncrements+1);
     mfCondensateMassFlow    = zeros(iIncrements,    iIncrements);
     mfCondensateHeatFlow    = zeros(iIncrements,    iIncrements);
     
+    mfOutlet_Temp_1(:,:)    = fEntry_Temp1;
     mfOutlet_Temp_2(:,:)    = fEntry_Temp2;
     
     %fWaterMassFlow = fMassFlow1.*oFlow_1.arPartialMass(oHX.oMT.tiN2I.H2O);
 
-    fWaterMassFraction = (fWaterPressure./oFlow_1.fPressure).*(oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)./oFlow_1.fMolarMass);
+    fWaterMassFraction = oFlow_1.arPartialMass(oHX.oMT.tiN2I.H2O); %(fWaterPressure./oFlow_1.fPressure).*(oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)./oFlow_1.fMolarMass);
     fWaterMassFlow = fMassFlow1 * fWaterMassFraction;
     mfWaterMassFlow(:,1) = fWaterMassFlow/iIncrements;
     
     % factor to represent the changes in coolant to air flow
-    fFactor = ((((falpha_pipe - 24.76)/9.6) + ((7323.9 - falpha_o)/7583.4))) * 0.29;
+    fFactor = 0.1 + (300* (fEntry_Temp2/278.79 - 1)) - (((fMassFlow2 - 0.0756) / 0.0756) * (0.36));
+    
     if fFactor > 0.5
         fFactor = 0.5;
     elseif fFactor < 0
         fFactor = 0;
     end
+    
     
     % The boundary flow ratio specifies how much of the air flow is assumed
     % to be in the boundary flow, which is assumed to have coolant
@@ -899,7 +920,7 @@ elseif strcmpi(sHX_type, 'ISS CHX')
                     fCondensateMassFlowBoundary = 0;
                 end
                 
-                fTWall = fFactor * fEntry_Temp1 + (1-fFactor) * mfOutlet_Temp_2(iColoumn, iRow);
+                fTWall = fFactor * mfOutlet_Temp_1(iColoumn, iRow) + (1-fFactor) * mfOutlet_Temp_2(iColoumn, iRow);
                 fVaporPressureWall = oHX.oMT.calculateVaporPressure(fTWall, 'H2O');
                 fMaxMassFraction = (fVaporPressureWall./oFlow_1.fPressure).*(oHX.oMT.afMolarMass(oHX.oMT.tiN2I.H2O)./oFlow_1.fMolarMass);
                 
@@ -919,10 +940,13 @@ elseif strcmpi(sHX_type, 'ISS CHX')
 
                 % condensation occurs before changing the temperature, therefore
                 % only the heatflow from condensation is considered here
-                fOutlet_Temp_2_New = mfOutlet_Temp_2(iColoumn, iRow) + mfCondensateHeatFlow(iColoumn, iRow)/(fHeat_Capacity_Flow_2/iIncrements);
+                fOutlet_Temp_2_New = mfOutlet_Temp_2(iColoumn, iRow) + (mfCondensateHeatFlow(iColoumn, iRow) + fHeatFlow/(iIncrements^2))/(fHeat_Capacity_Flow_2/iIncrements);
 
                 fError = abs(mfOutlet_Temp_2(iColoumn+1, iRow) - fOutlet_Temp_2_New);
                 mfOutlet_Temp_2(iColoumn+1, iRow) = fOutlet_Temp_2_New;
+                
+                mfOutlet_Temp_1(iColoumn, iRow+1) =  mfOutlet_Temp_1(iColoumn, iRow) - (fHeatFlow/(iIncrements^2))/(fHeat_Capacity_Flow_1/iIncrements);
+                
                 iCounter = iCounter + 1;
             end
             mfWaterMassFlow(iColoumn, iRow + 1) = mfWaterMassFlow(iColoumn, iRow) - mfCondensateMassFlow(iColoumn, iRow);
@@ -1150,12 +1174,15 @@ elseif strcmpi(sHX_type, 'parallel annular passage')
         mOutlet_Temp_2 = zeros(iIncrements,1);
         mOutlet_Temp_1 = zeros(iIncrements,1);
         acCondensateNames = cell(iIncrements);
-        sCondensateFlowRate = struct();
+        
         
         %unfortunatly there is no way around checking which flow is
         %beeing cooled down and implement the calculation twice with
         %just some changed values
         if fEntry_Temp1 > fEntry_Temp2
+            
+            afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+
             for k = 1:iIncrements
                 %for the first component the actual entry temperatures of
                 %the heat exchanger are used, for everything else the
@@ -1170,13 +1197,13 @@ elseif strcmpi(sHX_type, 'parallel annular passage')
                     %that is the deciding factor for condensation
                     fHeatFlow_Old = fHeat_Capacity_Flow_1*(fEntry_Temp1-mOutlet_Temp_1(k));
                     %wall temp
-                    fTwall = (fR_alpha_o + fR_lambda)*fHeatFlow_Old+(fEntry_Temp2+mOutlet_Temp_2(k))/2;
+                    fTwall = (fR_alpha_o + fR_lambda)*abs(fHeatFlow_Old)+(fEntry_Temp2+mOutlet_Temp_2(k))/2;
                     %now uses the condensation function to calculate a
                     %struct containing the condensate names as fields and
                     %the condensate mass flows as field values and also
                     %calculates the new outlet temperature
                     [sCondensateFlowRateCell, mOutlet_Temp_1(k), acCondensateNames{k}] = condensation ...
-                            (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_1, fHeatFlow_Old, fTwall, mOutlet_Temp_1(k),fEntry_Temp1, oFlow_1);
+                            (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_1, fHeatFlow_Old, fTwall, mOutlet_Temp_1(k),fEntry_Temp1, oFlow_1);
                 else
                     [mOutlet_Temp_2(k), mOutlet_Temp_1(k)] = temperature_parallelflow...
                     (fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_2, fHeat_Capacity_Flow_1,...
@@ -1184,16 +1211,23 @@ elseif strcmpi(sHX_type, 'parallel annular passage')
                     %wall temp calculation
                     fHeatFlow_Old = fHeat_Capacity_Flow_1*(mOutlet_Temp_1(k-1)-mOutlet_Temp_1(k));
                     %wall temp
-                    fTwall = (fR_alpha_o + fR_lambda)*fHeatFlow_Old+(mOutlet_Temp_2(k-1)+mOutlet_Temp_2(k))/2;
+                    fTwall = (fR_alpha_o + fR_lambda)*abs(fHeatFlow_Old)+(mOutlet_Temp_2(k-1)+mOutlet_Temp_2(k))/2;
                     %now uses the condensation function to calculate a
                     %struct containing the condensate names as fields and
                     %the condensate mass flows as field values and also
                     %calculates the new outlet temperature
                     [sCondensateFlowRateCell, mOutlet_Temp_1(k), acCondensateNames{k}] = condensation ...
-                            (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_1, fHeatFlow_Old, fTwall, mOutlet_Temp_1(k), mOutlet_Temp_1(k-1), oFlow_1);
+                            (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_1, fHeatFlow_Old, fTwall, mOutlet_Temp_1(k), mOutlet_Temp_1(k-1), oFlow_1);
                 end
                 
+                % Reduce the condensable flowrate by the already condensed
+                % flow
                 acCondensateNamesCell = acCondensateNames{k};
+                for n = 1:length(acCondensateNamesCell)
+                    afCondensableFlowRate(oHX.oMT.tiN2I.(acCondensateNamesCell{n})) = afCondensableFlowRate(oHX.oMT.tiN2I.(acCondensateNamesCell{n})) - sCondensateFlowRateCell.(acCondensateNamesCell{n});
+                end
+                
+                % Add the condensate flow to the current condensation flow
                 for n = 1:length(acCondensateNamesCell)
                     if isfield(sCondensateFlowRate, acCondensateNames{n})
                         sCondensateFlowRate.(acCondensateNamesCell{n}) = sCondensateFlowRate.(acCondensateNamesCell{n})+sCondensateFlowRateCell.(acCondensateNamesCell{n});
@@ -1204,6 +1238,8 @@ elseif strcmpi(sHX_type, 'parallel annular passage')
             end
         else
             %% same as previous section just with some switches values
+            
+            afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
             %therefore no comment here
             for k = 1:iIncrements
                 if k == 1
@@ -1211,22 +1247,29 @@ elseif strcmpi(sHX_type, 'parallel annular passage')
                     (fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_1, fHeat_Capacity_Flow_2,...
                      fEntry_Temp1, fEntry_Temp2);
                     fHeatFlow_Old = fHeat_Capacity_Flow_1*(fEntry_Temp1-mOutlet_Temp_1(k));
-                    fTwall = (fR_alpha_i + fR_lambda)*fHeatFlow_Old+(fEntry_Temp1+mOutlet_Temp_1(k))/2;
+                    fTwall = (fR_alpha_i + fR_lambda)*abs(fHeatFlow_Old)+(fEntry_Temp1+mOutlet_Temp_1(k))/2;
                     
                     [sCondensateFlowRateCell, mOutlet_Temp_2(k), acCondensateNames{k}] = condensation ...
-                            (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_2, fHeatFlow_Old, fTwall, mOutlet_Temp_2(k),fEntry_Temp2, oFlow_2);
+                            (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_2, fHeatFlow_Old, fTwall, mOutlet_Temp_2(k),fEntry_Temp2, oFlow_2);
                 else
                     [mOutlet_Temp_1(k), mOutlet_Temp_2(k)] = temperature_parallelflow...
                     (fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_1, fHeat_Capacity_Flow_2,...
                      mOutlet_Temp_1(k-1), mOutlet_Temp_2(k-1));
                     fHeatFlow_Old = fHeat_Capacity_Flow_1*(mOutlet_Temp_1(k-1)-mOutlet_Temp_1(k));
-                    fTwall = (fR_alpha_i + fR_lambda)*fHeatFlow_Old+(mOutlet_Temp_1(k-1)+mOutlet_Temp_1(k))/2;
+                    fTwall = (fR_alpha_i + fR_lambda)*abs(fHeatFlow_Old)+(mOutlet_Temp_1(k-1)+mOutlet_Temp_1(k))/2;
                     
                     [sCondensateFlowRateCell, mOutlet_Temp_2(k), acCondensateNames{k}] = condensation ...
-                            (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_2, fHeatFlow_Old, fTwall, mOutlet_Temp_2(k),mOutlet_Temp_2(k-1), oFlow_2);
+                            (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_2, fHeatFlow_Old, fTwall, mOutlet_Temp_2(k),mOutlet_Temp_2(k-1), oFlow_2);
                 end
                 
+                % Reduce the condensable flowrate by the already condensed
+                % flow
                 acCondensateNamesCell = acCondensateNames{k};
+                for n = 1:length(acCondensateNamesCell)
+                    afCondensableFlowRate(oHX.oMT.tiN2I.(acCondensateNamesCell{n})) = afCondensableFlowRate(oHX.oMT.tiN2I.(acCondensateNamesCell{n})) - sCondensateFlowRateCell.(acCondensateNamesCell{n});
+                end
+                
+                % Add the condensate flow to the current condensation flow
                 for n = 1:length(acCondensateNamesCell)
                     if isfield(sCondensateFlowRate, acCondensateNames{n})
                         sCondensateFlowRate.(acCondensateNamesCell{n}) = sCondensateFlowRate.(acCondensateNamesCell{n})+sCondensateFlowRateCell.(acCondensateNamesCell{n});
@@ -1342,12 +1385,15 @@ elseif strcmpi(sHX_type, 'parallel plate')
         %to bottom the different temperatures inside the heat exchanger
         mOutlet_Temp_2 = zeros(iIncrements,1);
         mOutlet_Temp_1 = zeros(iIncrements,1);
-        acCondensateNames = cell(iIncrements);
+        acCondensateNames = cell(iIncrements,1);
         sCondensateFlowRate = struct();
         %unfortunatly there is no way around checking which flow is
         %beeing cooled down and implement the calculation twice with
         %just some changed values
         if fEntry_Temp1 > fEntry_Temp2
+            
+            afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+            
             for k = 1:iIncrements
                 %for the first component the actual entry temperatures of
                 %the heat exchanger are used, for everything else the
@@ -1362,14 +1408,14 @@ elseif strcmpi(sHX_type, 'parallel plate')
                     %that is the deciding factor for condensation
                     fHeatFlow_Old = fHeat_Capacity_Flow_1*(fEntry_Temp1-mOutlet_Temp_1(k));
                     %wall temp
-                    fTwall = (fR_alpha_i + fR_lambda)*fHeatFlow_Old+(fEntry_Temp2+mOutlet_Temp_2(k))/2;
+                    fTwall = fEntry_Temp2;
                     
                     %now uses the condensation function to calculate a
                     %struct containing the condensate names as fields and
                     %the condensate mass flows as field values and also
                     %calculates the new outlet temperature
                     [sCondensateFlowRateCell, mOutlet_Temp_1(k), acCondensateNames{k}] = condensation ...
-                            (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_1, fHeatFlow_Old, fTwall, mOutlet_Temp_1(k),fEntry_Temp1, oFlow_1);
+                            (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_1, fHeatFlow_Old, fTwall, mOutlet_Temp_1(k),fEntry_Temp1, oFlow_1);
                 else
                     [mOutlet_Temp_2(k), mOutlet_Temp_1(k)] = temperature_parallelflow...
                     (fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_2, fHeat_Capacity_Flow_1,...
@@ -1377,17 +1423,24 @@ elseif strcmpi(sHX_type, 'parallel plate')
                     %wall temp calculation
                     fHeatFlow_Old = fHeat_Capacity_Flow_1*(mOutlet_Temp_1(k-1)-mOutlet_Temp_1(k));
                     %wall temp
-                    fTwall = (fR_alpha_i + fR_lambda)*fHeatFlow_Old+(mOutlet_Temp_2(k-1)+mOutlet_Temp_2(k))/2;
+                    fTwall = mOutlet_Temp_2(k-1);
                     
                     %now uses the condensation function to calculate a
                     %struct containing the condensate names as fields and
                     %the condensate mass flows as field values and also
                     %calculates the new outlet temperature
                     [sCondensateFlowRateCell, mOutlet_Temp_1(k), acCondensateNames{k}] = condensation ...
-                            (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_1, fHeatFlow_Old, fTwall, mOutlet_Temp_1(k),mOutlet_Temp_1(k-1), oFlow_1);
+                            (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_1, fHeatFlow_Old, fTwall, mOutlet_Temp_1(k),mOutlet_Temp_1(k-1), oFlow_1);
                 end
                 
+                % Reduce the condensable flowrate by the already condensed
+                % flow
                 acCondensateNamesCell = acCondensateNames{k};
+                for n = 1:length(acCondensateNamesCell)
+                    afCondensableFlowRate(oHX.oMT.tiN2I.(acCondensateNamesCell{n})) = afCondensableFlowRate(oHX.oMT.tiN2I.(acCondensateNamesCell{n})) - sCondensateFlowRateCell.(acCondensateNamesCell{n});
+                end
+                
+                % Add the condensate flow to the current condensation flow
                 for n = 1:length(acCondensateNamesCell)
                     if isfield(sCondensateFlowRate, acCondensateNames{n})
                         sCondensateFlowRate.(acCondensateNamesCell{n}) = sCondensateFlowRate.(acCondensateNamesCell{n})+sCondensateFlowRateCell.(acCondensateNamesCell{n});
@@ -1399,28 +1452,38 @@ elseif strcmpi(sHX_type, 'parallel plate')
         else
             %% same as previous section just with some switches values
             %therefore no comment here
+            
+            afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
+            
             for k = 1:iIncrements
                 if k == 1
                     [mOutlet_Temp_1(k), mOutlet_Temp_2(k)] = temperature_parallelflow...
                     (fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_1, fHeat_Capacity_Flow_2,...
                      fEntry_Temp1, fEntry_Temp2);
                     fHeatFlow_Old = fHeat_Capacity_Flow_1*(fEntry_Temp1-mOutlet_Temp_1(k));
-                    fTwall = (fR_alpha_o + fR_lambda)*fHeatFlow_Old+(fEntry_Temp1+mOutlet_Temp_1(k))/2;
+                    fTwall = (fR_alpha_i + fR_lambda)*abs(fHeatFlow_Old)+(fEntry_Temp1+mOutlet_Temp_1(k))/2;
                     
                     [sCondensateFlowRateCell, mOutlet_Temp_2(k), acCondensateNames{k}] = condensation ...
-                            (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_2, fHeatFlow_Old, fTwall, mOutlet_Temp_2(k),fEntry_Temp2, oFlow_2);
+                            (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_2, fHeatFlow_Old, fTwall, mOutlet_Temp_2(k),fEntry_Temp2, oFlow_2);
                 else
                     [mOutlet_Temp_1(k), mOutlet_Temp_2(k)] = temperature_parallelflow...
                     (fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_1, fHeat_Capacity_Flow_2,...
                      mOutlet_Temp_1(k-1), mOutlet_Temp_2(k-1));
                     fHeatFlow_Old = fHeat_Capacity_Flow_1*(mOutlet_Temp_1(k-1)-mOutlet_Temp_1(k));
-                    fTwall = (fR_alpha_o + fR_lambda)*fHeatFlow_Old+(mOutlet_Temp_1(k-1)+mOutlet_Temp_1(k))/2;
+                    fTwall = (fR_alpha_i + fR_lambda)*abs(fHeatFlow_Old)+(mOutlet_Temp_1(k-1)+mOutlet_Temp_1(k))/2;
                     
                     [sCondensateFlowRateCell, mOutlet_Temp_2(k), acCondensateNames{k}] = condensation ...
-                            (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_2, fHeatFlow_Old, fTwall, mOutlet_Temp_2(k),mOutlet_Temp_2(k-1), oFlow_2);
+                            (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_2, fHeatFlow_Old, fTwall, mOutlet_Temp_2(k),mOutlet_Temp_2(k-1), oFlow_2);
                 end
                 
+                % Reduce the condensable flowrate by the already condensed
+                % flow
                 acCondensateNamesCell = acCondensateNames{k};
+                for n = 1:length(acCondensateNamesCell)
+                    afCondensableFlowRate(oHX.oMT.tiN2I.(acCondensateNamesCell{n})) = afCondensableFlowRate(oHX.oMT.tiN2I.(acCondensateNamesCell{n})) - sCondensateFlowRateCell.(acCondensateNamesCell{n});
+                end
+                
+                % Add the condensate flow to the current condensation flow
                 for n = 1:length(acCondensateNamesCell)
                     if isfield(sCondensateFlowRate, acCondensateNames{n})
                         sCondensateFlowRate.(acCondensateNamesCell{n}) = sCondensateFlowRate.(acCondensateNamesCell{n})+sCondensateFlowRateCell.(acCondensateNamesCell{n});
@@ -1561,6 +1624,9 @@ elseif strcmpi(sHX_type, 'parallel pipe bundle')
         %beeing cooled down and implement the calculation twice with
         %just some changed values
         if fEntry_Temp1 > fEntry_Temp2
+            
+            afCondensableFlowRate = oFlow_1.arPartialMass .* oFlow_1.fFlowRate;
+            
             for k = 1:iIncrements
                 %for the first component the actual entry temperatures of
                 %the heat exchanger are used, for everything else the
@@ -1575,14 +1641,14 @@ elseif strcmpi(sHX_type, 'parallel pipe bundle')
                     %that is the deciding factor for condensation
                     fHeatFlow_Old = fHeat_Capacity_Flow_1*(fEntry_Temp1-mOutlet_Temp_1(k));
                     %wall temp
-                    fTwall = (fR_alpha_o + fR_lambda)*fHeatFlow_Old+(fEntry_Temp2+mOutlet_Temp_2(k))/2;
+                    fTwall = (fR_alpha_o + fR_lambda)*abs(fHeatFlow_Old)+(fEntry_Temp2+mOutlet_Temp_2(k))/2;
                     
                     %now uses the condensation function to calculate a
                     %struct containing the condensate names as fields and
                     %the condensate mass flows as field values and also
                     %calculates the new outlet temperature
                     [sCondensateFlowRateCell, mOutlet_Temp_1(k), acCondensateNames{k}] = condensation ...
-                            (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_1, fHeatFlow_Old, fTwall, mOutlet_Temp_1(k),fEntry_Temp1, oFlow_1);
+                            (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_1, fHeatFlow_Old, fTwall, mOutlet_Temp_1(k),fEntry_Temp1, oFlow_1);
                 else
                     [mOutlet_Temp_2(k), mOutlet_Temp_1(k)] = temperature_parallelflow...
                     (fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_2, fHeat_Capacity_Flow_1,...
@@ -1590,16 +1656,23 @@ elseif strcmpi(sHX_type, 'parallel pipe bundle')
                     %wall temp calculation
                     fHeatFlow_Old = fHeat_Capacity_Flow_1*(mOutlet_Temp_1(k-1)-mOutlet_Temp_1(k));
                     %wall temp
-                    fTwall = (fR_alpha_o + fR_lambda)*fHeatFlow_Old+(mOutlet_Temp_2(k-1)+mOutlet_Temp_2(k))/2;
+                    fTwall = (fR_alpha_o + fR_lambda)*abs(fHeatFlow_Old)+(mOutlet_Temp_2(k-1)+mOutlet_Temp_2(k))/2;
                     
                     %now uses the condensation function to calculate a
                     %struct containing the condensate names as fields and
                     %the condensate mass flows as field values and also
                     %calculates the new outlet temperature
                     [sCondensateFlowRateCell, mOutlet_Temp_1(k), acCondensateNames{k}] = condensation ...
-                            (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_1, fHeatFlow_Old, fTwall, mOutlet_Temp_1(k),mOutlet_Temp_1(k-1), oFlow_1);
+                            (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_1, fHeatFlow_Old, fTwall, mOutlet_Temp_1(k),mOutlet_Temp_1(k-1), oFlow_1);
                 end
+                % Reduce the condensable flowrate by the already condensed
+                % flow
                 acCondensateNamesCell = acCondensateNames{k};
+                for n = 1:length(acCondensateNamesCell)
+                    afCondensableFlowRate(oHX.oMT.tiN2I.(acCondensateNamesCell{n})) = afCondensableFlowRate(oHX.oMT.tiN2I.(acCondensateNamesCell{n})) - sCondensateFlowRateCell.(acCondensateNamesCell{n});
+                end
+                
+                % Add the condensate flow to the current condensation flow
                 for n = 1:length(acCondensateNamesCell)
                     if isfield(sCondensateFlowRate, acCondensateNames{n})
                         sCondensateFlowRate.(acCondensateNamesCell{n}) = sCondensateFlowRate.(acCondensateNamesCell{n})+sCondensateFlowRateCell.(acCondensateNamesCell{n});
@@ -1611,35 +1684,45 @@ elseif strcmpi(sHX_type, 'parallel pipe bundle')
         else
             %% same as previous section just with some switches values
             %therefore no comment here
+            
+            afCondensableFlowRate = oFlow_2.arPartialMass .* oFlow_2.fFlowRate;
+            
             for k = 1:iIncrements
                 if k == 1
                     [mOutlet_Temp_1(k), mOutlet_Temp_2(k)] = temperature_parallelflow...
                     (fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_1, fHeat_Capacity_Flow_2,...
                      fEntry_Temp1, fEntry_Temp2);
                     fHeatFlow_Old = fHeat_Capacity_Flow_1*(fEntry_Temp1-mOutlet_Temp_1(k));
-                    fTwall = (fR_alpha_i + fR_lambda)*fHeatFlow_Old+(fEntry_Temp1+mOutlet_Temp_1(k))/2;
+                    fTwall = (fR_alpha_i + fR_lambda)*abs(fHeatFlow_Old)+(fEntry_Temp1+mOutlet_Temp_1(k))/2;
                     
                     [sCondensateFlowRateCell, mOutlet_Temp_2(k), acCondensateNames{k}] = condensation ...
-                            (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_2, fHeatFlow_Old, fTwall, mOutlet_Temp_2(k),fEntry_Temp2, oFlow_2);
+                            (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_2, fHeatFlow_Old, fTwall, mOutlet_Temp_2(k),fEntry_Temp2, oFlow_2);
                 else
                     [mOutlet_Temp_1(k), mOutlet_Temp_2(k)] = temperature_parallelflow...
                     (fIncrementalArea, fIncrementalU, fHeat_Capacity_Flow_1, fHeat_Capacity_Flow_2,...
                      mOutlet_Temp_1(k-1), mOutlet_Temp_2(k-1));
                     fHeatFlow_Old = fHeat_Capacity_Flow_1*(mOutlet_Temp_1(k-1)-mOutlet_Temp_1(k));
-                    fTwall = (fR_alpha_i + fR_lambda)*fHeatFlow_Old+(mOutlet_Temp_1(k-1)+mOutlet_Temp_1(k))/2;
+                    fTwall = (fR_alpha_i + fR_lambda)*abs(fHeatFlow_Old)+(mOutlet_Temp_1(k-1)+mOutlet_Temp_1(k))/2;
                     
                     [sCondensateFlowRateCell, mOutlet_Temp_2(k), acCondensateNames{k}] = condensation ...
-                            (oHX, sCondensateFlowRate, fHeat_Capacity_Flow_2, fHeatFlow_Old, fTwall, mOutlet_Temp_2(k),mOutlet_Temp_2(k-1), oFlow_2);
+                            (oHX, afCondensableFlowRate, fHeat_Capacity_Flow_2, fHeatFlow_Old, fTwall, mOutlet_Temp_2(k),mOutlet_Temp_2(k-1), oFlow_2);
                 end
                 
+                % Reduce the condensable flowrate by the already condensed
+                % flow
                 acCondensateNamesCell = acCondensateNames{k};
+                for n = 1:length(acCondensateNamesCell)
+                    afCondensableFlowRate(oHX.oMT.tiN2I.(acCondensateNamesCell{n})) = afCondensableFlowRate(oHX.oMT.tiN2I.(acCondensateNamesCell{n})) - sCondensateFlowRateCell.(acCondensateNamesCell{n});
+                end
+                
+                % Add the condensate flow to the current condensation flow
                 for n = 1:length(acCondensateNamesCell)
                     if isfield(sCondensateFlowRate, acCondensateNames{n})
                         sCondensateFlowRate.(acCondensateNamesCell{n}) = sCondensateFlowRate.(acCondensateNamesCell{n})+sCondensateFlowRateCell.(acCondensateNamesCell{n});
                     else
                         sCondensateFlowRate.(acCondensateNamesCell{n}) = sCondensateFlowRateCell.(acCondensateNamesCell{n});
                     end
-                end             
+                end         
             end
         end
         %%

@@ -20,6 +20,8 @@ function [sCondensableFlowRateCell, fOutlet_Temp_Hot_New, acCondensateNames, fCo
 %   is only important to realise that they are all for the hotter fluid
 %   which is cooled down because this is where condensation takes place
      
+fHeatFlow = abs(fHeatFlow);
+
 if nargin < 9
     iIncrements = 1;
 elseif iIncrements <= 0
