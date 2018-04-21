@@ -56,6 +56,9 @@ classdef timestep_observer < simulation.monitor
                 if isa(oCaller, 'matter.phase')
                     csReports{iIndex} = ['In the system ', oCaller.oStore.oContainer.sName, ' in Store ', oCaller.oStore.sName, ' in Phase ', oCaller.sName, ' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oTimer.iTick), ' for the function ', tInfo.function];
 
+                elseif isa(oCaller, 'thermal.capacity')
+                    csReports{iIndex} = ['In the system ', oCaller.oPhase.oStore.oContainer.sName, ' in Store ', oCaller.oPhase.oStore.sName, ' in Capacity ', oCaller.sName, ' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oTimer.iTick), ' for the function ', tInfo.function];
+                    
                 elseif isa(oCaller, 'matter.store')
                     csReports{iIndex} = ['In the system ', oCaller.oContainer.sName, ' in Store ', oCaller.sName, ' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oTimer.iTick)];
 
@@ -64,9 +67,17 @@ classdef timestep_observer < simulation.monitor
 
                 elseif isa(oCaller, 'solver.thermal.lumpedparameter')
                     csReports{iIndex} = ['The lumped parameter thermal solver in the system ', oCaller.oVSys.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(oTimer.iTick)];
+                
+                elseif isa(oCaller, 'solver.matter.iterative.branch')
+                    csReports{iIndex} = ['The iterative matter solver in the system ', oCaller.oBranch.oContainer.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(oTimer.iTick)];
+                end
+                    
+                if isempty(csReports{iIndex})
+                    warning('you came accros an unknown object that binds time steps, please check the oCaller object and add it to the list above with a report string to enable debugging')
                 end
             end
     
+            
             % if the limit is undercut the program will display the location of the
             % minimal timestep in the command window, only used if the user
             % specified a limit!

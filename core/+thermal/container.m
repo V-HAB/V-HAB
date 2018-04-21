@@ -3,37 +3,31 @@ classdef container < sys
     %   Detailed explanation goes here
         
     properties (SetAccess = protected, GetAccess = public)
+        % TO DO: add stores here as well? toStores = struct();
         
-        % State properties
+        % Branches stored as mixin (?) array, so e.g. all flow rates can be
+        % extracted with [ this.aoBranches.fFlowRate ] @type array @types
+        % object
+        aoThermalBranches = thermal.branch.empty();
         
-        % Set this to true by calling |taint()| when e.g. adding or
-        % removing capacities, conductors, etc. This will mark current
-        % thermal matrices as invalid and forces regenerating them.
-        bIsTainted = false; % Has the container structure been altered and needs regenerating its intermediary representation?
+        % Processors - also stored in the branch they belong to, but might
+        % be helpfull to access them here through their name to e.g.
+        % execute some methods (close valve, switch off fan, ...)
+        toProcsConductor = struct();
         
+        % Cached names
+        csConductors;
         
-        % Internal properties
+        % Reference to the branches, by name
+        toThermalBranches = struct();
         
-        poCapacities;      % A map of associated |thermal.capacity| objects
-        piCapacityIndices; % Map a capacity to an index.
-        tiCapacityIndices; % A struct linking capacities to their indexes
+        iThermalBranches = 0;
+        iCapacities = 0;
         
-        % Thermal connections
-        poLinearConductors;    % A Map of associated |thermal.conductors.linear| objects.
-        poFluidicConductors;   % A Map of associated |thermal.conductors.fluidic| objects.
-        poRadiativeConductors; % A Map of associated |thermal.conductors.radiative| objects.
+        oMatterContainer;
         
-        % Matrices
-        mCapacityVector   = [];
-        mHeatSourceVector = [];
-        mLinearConductance    = [];
-        mFluidicConductance   = [];
-        mRadiativeConductance = [];
-        
-        % A reference to the solver object that handles this thermal
-        % container.
-        oThermalSolver;
-                
+        % Sealed?
+        bThermalSealed = false;
     end
     
     methods
@@ -47,16 +41,7 @@ classdef container < sys
             % some data from the parent. 
             this@sys(oParent, sName);
             
-            % Re-initialize some properties because MATLAB may not do it.
-            this.poCapacities          = containers.Map();
-            this.piCapacityIndices     = containers.Map();
-            this.tiCapacityIndices     = struct();
-            this.poLinearConductors    = containers.Map();
-            this.poFluidicConductors   = containers.Map();
-            this.poRadiativeConductors = containers.Map();
-            
         end
-        
         
         function createThermalStructure(this)
             % Call in child elems
@@ -67,462 +52,317 @@ classdef container < sys
                 
                 this.toChildren.(sChild).createThermalStructure();
             end
-            
         end
         
-        
-        
-        
-        %TODO: make a |getThermalNetwork| method that resets |bIsTainted|
-        %      and returns pretty much all thermal maps so most of the
-        %      stuff below can move to the solver. Should probably create
-        %      copies of the maps. Maybe call it |getThermalNetworkSnapshot|?
-        function generateThermalMatrices(this)
-            % Update internal matrices with the current state of the
-            % container. Make sure to only run this before or after a
-            % simulation step otherwise you'll overwrite any calculations
-            % made during this run. 
-            %TODO: This should all probably move to the thermal solver!?
-            %TODO: remove heat sources here since they can be reloaded
-            %      every time by the solver
+        function this = addProcConductor(this, oConductor)
+            % Adds a conductor.
             
-            % Get the number of available nodes.
-            iNodes = this.poCapacities.length;
-            
-            % We need at least a node to be specified otherwise we cannot
-            % do anything. 
-            if iNodes < 1
-                
-                % Reset the index map.
-                this.piCapacityIndices = containers.Map();
-                this.tiCapacityIndices = struct();
-                
-                % Reset the internal matrices.
-                this.mCapacityVector       = [];
-                this.mHeatSourceVector     = [];
-                this.mLinearConductance    = [];
-                this.mFluidicConductance   = [];
-                this.mRadiativeConductance = [];
-                
-                % Mark this container as clean.
-                this.bIsTainted = false;
-                
-                return; % Return early.
-                
+            if this.bThermalSealed
+                this.throw('addProcConductor', 'The container is sealed, so no conductors can be added any more.');
             end
             
-            % Associate an index to every capacity, preserving the order of
-            % the |poCapacities| map.
-            this.piCapacityIndices = containers.Map(this.poCapacities.keys, uint32(1:iNodes));
             
-            ciIndexes = cell(1,iNodes);
-            for iI = 1:iNodes
-                ciIndexes{iI} = iI; 
-            end
-            this.tiCapacityIndices = cell2struct(ciIndexes, this.poCapacities.keys, 2);
+            if ~isa(oConductor, 'thermal.procs.conductor')
+                this.throw('addProcConductor', 'Provided object ~isa thermal.procs.conductor');
+                
+            elseif isfield(this.toProcsConductor, oConductor.sName)
+                this.throw('addProcConductor', 'Conductor %s already exists.', oConductor.sName);
+                
+            elseif this ~= oConductor.oContainer
+                this.throw('addProcConductor', 'Conductor does not have this vsys set as a container!');
             
-            % Generate the capacity and heat source matrices:
-            
-            % Pre-allocate capacity and heat source vectors.
-            mCapacitances = zeros(iNodes, 1);
-            mHeatSources  = zeros(iNodes, 1);
-            
-            % Loop over all node objects and get their capacities and 
-            % attached heat sources.
-            for sNode = this.piCapacityIndices.keys
-                
-                % Get index of current node.
-                iIndex = this.tiCapacityIndices.(sNode{1});
-                
-                % Get the node object.
-                oNode = this.poCapacities(sNode{1});
-                
-                % Get capacity and heater power of current node and store
-                % the data at the associated index (i.e. position). %%%
-                mCapacitances(iIndex, 1) = oNode.getTotalHeatCapacity();
-                mHeatSources(iIndex, 1)  = oNode.getHeatPower();
-                
             end
             
-            % Store generated capacity and heat source matrices.
-            this.mCapacityVector   = mCapacitances;
-            this.mHeatSourceVector = mHeatSources;
-            
-            % Generate and store the conductor matrices.
-            this.mLinearConductance    = this.generateConductorMatrixFromObjects(this.poLinearConductors.values);
-            this.mFluidicConductance   = this.generateConductorMatrixFromObjects(this.poFluidicConductors.values);
-            this.mRadiativeConductance = this.generateConductorMatrixFromObjects(this.poRadiativeConductors.values);
-            
-            % Mark this container as clean.
-            this.bIsTainted = false;
-            
+            this.toProcsConductor.(oConductor.sName) = oConductor;
         end
         
-        function oCapacity = addCreateCapacity(this, oMatter, oHeatSource)
-            % Create a capacity, (optionally) add a heat source, and add
-            % the capacity to the container. This is a shortcut method that
-            % fuses |oCapacity = thermal.capacity|,
-            % |oCapacity.setHeatSource|, and
-            % |container.addCapacity(oCapacity)|.
+        function this = addThermalBranch(this, oThermalBranch)
+            % add a thermal branch to the system and check if a branch of
+            % the same name already exists on the system
+            if this.bThermalSealed
+                this.throw('addThermalBranch', 'Can''t create branches any more, sealed.');
+                
+            elseif ~isa(oThermalBranch, 'thermal.branch')
+                this.throw('addThermalBranch', 'Provided branch is not a thermal.branch and does not inherit from thermal.branch');
+                
+            elseif isfield(this.toThermalBranches, oThermalBranch.sName)
+                this.throw('addBranch', 'Branch with name "%s" alreay exists!', oThermalBranch.sName);
+                
+            end
             
-            
-            
-            %TODO needs to be that detailed for now, as only one tsys
-            %     possible -> capacity names might overlap otherweise.
-            sPrefix = char.empty();
-            
-            if isa(oMatter, 'thermal.dummymatter') || isa(oMatter, 'matter.store')
-                oSystem = oMatter.oContainer;
-                sStoreName = '';
-            elseif isa(oMatter, 'matter.phase')
-                oSystem = oMatter.oStore.oContainer;
-                sStoreName = [ oMatter.oStore.sName, '__' ];
+            this.aoThermalBranches(end + 1, 1)     = oThermalBranch;
+            if ~isempty(oThermalBranch.sCustomName)
+                if isfield(this.toThermalBranches, oThermalBranch.sCustomName)
+                    error('A thermal branch with this custom name already exists')
+                else
+                    this.toThermalBranches.(oThermalBranch.sCustomName) = oThermalBranch;
+                end
             else
-                this.throw('container:addCreateCapacity', 'Invalid object provided (%s), should be an instance of |matter.phase| or |matter.store|!', oMatter.sName);
+                this.toThermalBranches.(oThermalBranch.sName) = oThermalBranch;
             end
-            
-            while ~isa(oSystem.oParent, 'simulation.container')
-                sPrefix = strcat('_', oSystem.sName, sPrefix);
-                oSystem = oSystem.oParent;
-            end
-            
-            if ~isempty(sPrefix)
-                sPrefix = strcat(sPrefix(2:end), '__');
-            end
-            
-            sName     = [ sPrefix, sStoreName, oMatter.sName ];
-            oCapacity = thermal.capacity(sName, oMatter);
-            
-            
-            if nargin > 2 && ~isempty(oHeatSource)
-                oCapacity.setHeatSource(oHeatSource);
-            end
-            
-            this.addCapacity(oCapacity);
-            
         end
         
-        function addCapacity(this, oCapacity)
-            % Add a capacity to the thermal container.
-            
-            if ~isa(oCapacity, 'thermal.capacity')
-                this.throw('thermal:container:addCapacity', 'This is no thermal capacity!');
-            elseif this.poCapacities.isKey(oCapacity.sName)
-                this.throw('thermal:container:addCapacity', 'Capacity with name "%s" already exists!', oCapacity.sName);
+        function sealThermalStructure(this, ~)
+            if this.bThermalSealed
+                this.throw('sealThermalStructure', 'Already sealed');
             end
             
-            % Mark container as tainted and store capacity.
-            this.bIsTainted = true;
-            this.poCapacities(oCapacity.sName) = oCapacity;
+            csChildren = fieldnames(this.toChildren);
             
-            
-            %TODO addCapacity, HeatSource, Conductor: call oObj.setContainer(this) on new element, so within those elements, thermal container can be referenced to e.g. do this.oContainer.taint()
-        end
-        
-        function removeCapacity(this, sName)
-            
-            oCapacity = this.poCapacities(sName);
-            
-            % Mark container as tainted.
-            this.bIsTainted = true;
-            
-            this.poCapacities.remove(sName);
-            
-            for entry = {this.poLinearConductors, ...
-                    this.poFluidicConductors, this.poRadiativeConductors}
+            for iC = 1:length(csChildren)
+                sChild = csChildren{iC};
                 
-                poConductorsMap = entry{1};
-                coConductors = poConductorsMap.values();
-                mRemove = cellfun(@(o) o.isConnectedTo(oCapacity), coConductors);
-                csRemove = cellfun(@(o) o.sName, coConductors(mRemove), 'UniformOutput', false);
-                poConductorsMap.remove(csRemove);
+                this.toChildren.(sChild).sealThermalStructure();
                 
+                this.iThermalBranches = this.iThermalBranches + length(this.toChildren.(sChild).toThermalBranches);
             end
             
-        end
-        
-        function addConductor(this, oConductor)
-            % Add a conductor between any two capacities to the thermal
-            % container.
+            this.csConductors = fieldnames(this.toProcsConductor);
             
-            % Check if |oConductor| is an instance of a known conductor,
-            % and load the appropriate property.
-            if isa(oConductor, 'thermal.conductors.linear')
-                sType = 'Linear';
-            elseif isa(oConductor, 'thermal.conductors.fluidic')
-                sType = 'Fluidic';
-            elseif isa(oConductor, 'thermal.conductors.radiative')
-                sType = 'Radiative';
-            else
-                this.throw('container:addConductor', 'This is no recognized conductor!');
-            end
+            % Now we seal off all of the branches. Some of them may be
+            % interface branches to subsystems. These leftover stubs of
+            % branches are no longer needed and can be deleted. These stubs
+            % will have an abIf property that looks like this: [1; 0]
+            % meaning their left side is an interface while their right
+            % side is connected to an exme processor. If the branch is a
+            % subsystem interface branch to a supersystem, abIf = [0; 1].
+            % If the branch is a pass-through branch from a subsystem to a
+            % supersystem via an intermediate system, abIf = [1; 1]. So we
+            % only want to delete if abIf = [1; 0].
             
-            % Get the property name.
-            sConductorMap = ['po', sType, 'Conductors'];
-            
-            % Get conductor map.
-            poConductors = this.(sConductorMap);
-            
-            if poConductors.isKey(oConductor.sName)
-                this.throw('container:addConductor', '%s conductor with name "%s" already exists!', sType, oConductor.sName);
-            end
-            
-            %TODO: check if connected capacities are already registered
-            %TODO: make connected capacities aware of the conductor object?
-            
-            % Mark container as tainted and store conductor in the map.
-            this.bIsTainted = true;
-            poConductors(oConductor.sName) = oConductor;
-            
-            % Set conductor property. This may actually not be needed since
-            % the handle object seems to be updated nonetheless. But better
-            % not trust MATLAB's quirks and rather be safe than sorry.
-            this.(sConductorMap) = poConductors;
-            
-        end
-        
-        function removeConductor(this, sName)
-            
-            for entry = {this.poLinearConductors, ...
-                    this.poFluidicConductors, this.poRadiativeConductors}
-                
-                poConductorsMap = entry{1};
-                
-                if poConductorsMap.isKey(sName)
-                    
-                    % Mark container as tainted.
-                    this.bIsTainted = true;
-                    
-                    % Remove conductor. 
-                    poConductorsMap.remove(sName);
-                    
-                    %TODO: handle different types of conductors with same name?
-                    return; % We're done here.
-                    
+            % Of course, we only have to do this, if there are any branches
+            % in the container at all. In some cases, there can be 
+            % subsystems with no branches. The heat exchanger component is 
+            % an example. It only provides two processors. So we check for 
+            % existin branches first. 
+            if ~isempty(this.aoThermalBranches)
+                % Now we can get the 2xN matrix for all the branches in the
+                % container.
+                mbIf = subsref([this.aoThermalBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
+                % Using the element-wise AND operator '&' we delete only the
+                % branches with abIf = [1; 0].
+                % First we create a helper array.
+                aoBranchStubs = this.aoThermalBranches(mbIf(1,:) & ~mbIf(2,:));
+                % Now we delete the branches from the aoBranches property.
+                this.aoThermalBranches(mbIf(1,:) & ~mbIf(2,:)) = [];
+                % Now, using the helper array, we delete the fields from
+                % the toBranches struct.
+                for iI = 1:length(aoBranchStubs)
+                    if ~isempty(aoBranchStubs(iI).sCustomName)
+                        this.toThermalBranches = rmfield(this.toThermalBranches, aoBranchStubs(iI).sCustomName);
+                    else
+                        this.toThermalBranches = rmfield(this.toThermalBranches, aoBranchStubs(iI).sName);
+                    end
                 end
                 
-            end
-            
-            % Conductor was not found, so throw here.
-            this.throw('container:removeConductor', 'Conductor with name "%s" does not exist!', sName);
-            
-        end
-        
-        function changeNodesInnerEnergy(this, mEnergyChange)
-            
-            % Loop over all node objects and notify them about the inner
-            % energy change.
-            for sNode = this.piCapacityIndices.keys
+                for iI = 1:length(this.aoThermalBranches)
+                    % So now the stubs are deleted and the pass-through are
+                    % already sealed, so we only have to seal the non-interface
+                    % branches and the
+                    if sum(this.aoThermalBranches(iI).abIf) <= 1
+                        this.aoThermalBranches(iI).seal();
+                    end
+                end
                 
-                % Get index of current node.
-                iIndex = this.tiCapacityIndices.(sNode{1}); 
-                
-                % Get the node object.
-                oNode = this.poCapacities(sNode{1});
-                
-                % Notify the node about the energy change.
-                oNode.changeInnerEnergy(mEnergyChange(iIndex));
-                
-            end
-            
-        end
-        
-        function mTemperatures = getNodeTemperatures(this)
-            % Get the temperatures of currently active nodes, i.e. the
-            % nodes that were previously selected during the generation
-            % step. 
-            
-            % Get the number of available nodes.
-            iNodes = this.piCapacityIndices.length;
-            
-            % Pre-allocate vector.
-            mTemperatures = zeros(iNodes, 1);
-            
-            % Loop over all node objects and get their current
-            % temperatures.
-            for sNode = this.piCapacityIndices.keys
-                
-                % Get index of current node.
-                iIndex = this.tiCapacityIndices.(sNode{1});
-                
-                % Get the node object.
-                oNode = this.poCapacities(sNode{1});
-                
-                % Get capacity and heater power of current node and store
-                % the data at the associated index (i.e. position).
-                mTemperatures(iIndex, 1) = oNode.oMatterObject.fTemperature;
-                
-            end
-            
-        end
-        
-        function setNodeTemperatures(this, mNewTemperatures)
-            
-            this.warn('thermal:container:setNodeTemperatures', 'DEPRECATED method: The node temperature should not be set directly. Use "changeNodesInnerEnergy" instead.');
-            
-            % Loop over all node objects and set their new temperatures.
-            for sNode = this.piCapacityIndices.keys
-                
-                % Get index of current node.
-                iIndex = this.tiCapacityIndices.(sNode{1});
-                
-                % Get the node object.
-                oNode = this.poCapacities(sNode{1});
-                
-                % Set the new temperature of the node.
-                oNode.setTemperature(mNewTemperatures(iIndex));
-                
-            end
-            
-        end
-        
-        function taint(this)
-            % Mark the container as tainted so before the next solver run,
-            % the matrices will be regenerated.
-            
-            this.bIsTainted = true;
-            
-        end
-        
-        %TODO: the following is not needed when the matrix generation stuff
-        % is done in the solver (see TODO above)
-        %TODO2: taint() method - empty the matrices to ensure that no one
-        %       accesses old values, then remove those get* methods!
-        function mCapacities = getCapacitances(this)
-            
-            if this.bIsTainted
-                this.warn('thermal:container:getCapacitances', 'Container was changed, this might not return the expected results.');
-            end
-            mCapacities = this.mCapacityVector;
-            
-        end
-        
-        function mHeatSourceVector = getHeatSources(this)
-            
-            if this.bIsTainted
-                this.warn('thermal:container:getHeatSources', 'container was changed, this might not return the expected results.');
-            end
-            mHeatSourceVector = this.mHeatSourceVector;
-            
-        end
-        
-        function mLinearConductance = getLinearConductors(this)
-            
-            if this.bIsTainted
-                this.warn('thermal:container:getLinearConductors', 'container was changed, this might not return the expected results.');
-            end
-            mLinearConductance = this.mLinearConductance;
-            
-        end
-        
-        function mRadiativeConductance = getRadiativeConductors(this)
-            
-            if this.bIsTainted
-                this.warn('thermal:container:getRadiativeConductors', 'container was changed, this might not return the expected results.');
-            end
-            mRadiativeConductance = this.mRadiativeConductance;
-            
-        end
-        
-        function mFluidicConductance = getFluidicConductors(this)
-            
-            if this.bIsTainted
-                this.warn('thermal:container:getFluidicConductors', 'container was changed, this might not return the expected results.');
-            end
-            mFluidicConductance = this.mFluidicConductance;
-            
-        end
-        
-        function setThermalSolver(this, oThermalSolver)
-            this.oThermalSolver = oThermalSolver;
-        end
-        
-        function sealThermalStructure(this)
-            % We need all of the heat source updates to trigger to the
-            % update() method of the thermal solver to make sure, that all
-            % of the heat flow rates are updated, if something changes
-            % between the regular solver calls.
-            
-            csKeys = this.poCapacities.keys;
-            for iI = 1:size(this.poCapacities)
-                if ~isempty(this.poCapacities(csKeys{iI}).oHeatSource)
-                    if isa(this.poCapacities(csKeys{iI}).oHeatSource, 'vhp_thermal.lib.thermal.heatsource_multi')
-                        for iJ = 1:length(this.poCapacities(csKeys{iI}).oHeatSource.aoHeatSources)
-                            oHeatSource = this.poCapacities(csKeys{iI}).oHeatSource.aoHeatSources(iJ);
-                            oHeatSource.setUpdateCallBack(this.oThermalSolver);
-                        end
-                    else
-                        oHeatSource = this.poCapacities(csKeys{iI}).oHeatSource;
-                        oHeatSource.setUpdateCallBack(this.oThermalSolver);
+                % Now that we've taken care of all the branches in this
+                % container, we also no longer need the pass-through branches
+                % on the subsystems beneath us. So we go through all of them
+                % and call a removal method.
+                if this.iChildren > 0
+                    for iI = 1:this.iChildren
+                        this.toChildren.(this.csChildren{iI}).removePassThroughThermalBranches();
                     end
                 end
             end
-
+            
+            this.iThermalBranches = length(this.aoThermalBranches);
+           
+            this.bThermalSealed = true;
+            
+            this.trigger('ThermalSeal_post');
+            
         end
         
+        function setThermalSolvers(this, ~)
+            % automatically assing solver for branches which do not yet
+            % have a handler
+            for iBranch = 1:this.iThermalBranches
+                if isempty(this.aoThermalBranches(iBranch).oHandler)
+                    
+                    if isa(this.aoThermalBranches(iBranch).coConductors{1}, 'thermal.procs.conductors.fluidic')
+                         solver.thermal.basic_fluidic.branch(this.aoThermalBranches(iBranch));
+                    else
+                         solver.thermal.basic.branch(this.aoThermalBranches(iBranch));
+                    end
+                end
+            end
+        end
+            
     end
     
-    methods (Access = protected)
+    % Changed --> allow external access, e.g. scheduler needs to be able to
+    % change the IFs ... or the Sub-System need to implement methods for
+    % that, e.g. Human.goToFridge(sFridgeName) --> the human executes
+    % this.connectIF('foodPort', sFridgeName) -> the galley/kitchen system
+    % has to be already set as parent to human. Fridge would be a subsystem
+    % of the according galley, an an interface branch already connected
+    % from the fridge 'store' to the gally (door!). Human can connect to
+    % that and get food.
+    methods (Access = public, Sealed = true)
         
-        function mConductorMatrix = generateConductorMatrixFromObjects(this, coConductors)
+        function connectThermalIF(this, sLocalInterface, sParentInterface)
+            % Connect two branches, first (local) branch needs right side
+            % interface, second (parent system) branch needs left side
+            % interface.
+            %
+            % Find local branch, check for right side IF, then find parent
+            % sys branch and check left side (abIFs)
             
-            % Get the number of available conductors.
-            iConductors = size(coConductors, 2);
+            % Get cell with branch end names, 2nd row is right names (the
+            % csNames is two rows, one col with left/right name --> get
+            % from several branches, col vectors appended to 2xN matrix)
+            csLocalIfs   = [ this.aoThermalBranches.csNames ];
+            iLocalBranch = find(strcmp(csLocalIfs(2, :), sLocalInterface), 1);
             
-            % Pre-allocate conductor matrix.
-            mConductorMatrix = zeros(iConductors, 3);
-            
-            % Initialize counter.
-            iCounter = 0;
-            
-            % Loop over all conductor objects and get the indices of their
-            % connected capacities. 
-            %TODO: This may not do what you expected because theoretically
-            % |coCapacities| may have a different ordering than
-            % |this.piCapacityIndices|. However since we *just* created the
-            % latter, we can reasonably assume their keys and ordering are
-            % equal. This may not be the case if this function is called in
-            % a different context than in |this.generateThermalMatrices()|.
-            % This method should probably be rewritten to be "failsafe".
-            for oConductor = coConductors
-                
-                % Increment counter. 
-                iCounter = iCounter + 1;
-                
-                % Get the names of the connected nodes.
-                sNameLeft  = oConductor{1}.oLeft.sName;
-                sNameRight = oConductor{1}.oRight.sName;
-                
-                % Get the indices of the connected nodes. 
-                iIndexLeft  = this.tiCapacityIndices.(sNameLeft);
-                iIndexRight = this.tiCapacityIndices.(sNameRight);
-                
-                % Get the value of conductance. 
-                fConductance = oConductor{1}.fConductivity;
-                
-                % Put it all in the matrix. Make sure the conductivity
-                % value is not rounded; this is a bad workaround and needed
-                % as long as all this stuff is in the container and not the
-                % solver where it belongs.
-                mConductorMatrix(iCounter, :) = [double(iIndexLeft), double(iIndexRight), fConductance];
-                
+            if isempty(iLocalBranch)
+                this.throw('connectIF', 'Local interface %s not found', sLocalInterface);
             end
             
-        end
-        
-        function exec(this, varargin)
-            % TODO: 
-            %  - build a matrix if container is tainted
-            %  - run solver
+            oBranch = this.aoThermalBranches(iLocalBranch);
             
-            if (this.bIsTainted) 
-                this.warn('thermal:container:exec', 'Container was changed, this might not do what is expected.');
-                %this.generateThermalMatrices();
+            if ~oBranch.abIf(2)
+                this.throw('connectIF', 'Branch doesn''t have an interface on the right side (connected to store).');
             end
             
+            % If already connected, throws a ball (xkcd.com/1188)
+            oBranch.connectTo(sParentInterface);
+            
+            % If this branch is connected to a store on the left side, and
+            % the right phase is set (which means that the newly connected
+            % branch on the suPsystem or one of the following branches is
+            % connected to a store!) ...
+            
+            %DONE In following method?
+%             %TODO bind/trigger events to make sure reconnecting of branches
+%             %     is possible during simulation, see disconnectIF etc!
+%             %     -> register on oBranch branch.connected if that one
+%             %        get's reconnected!
+            
+            if ~oBranch.abIf(1) && ~isempty(oBranch.coExmes{2})
+                % ... trigger event if anyone wants to know
+                this.trigger('branch.connected', iLocalBranch);
+            end
         end
         
+        function disconnectThermalIF(this, sLocalInterface)
+            iLocalBranch = find(strcmp({ this.aoBranches.sNameLeft }, sLocalInterface), 1);
+            
+            if isempty(iLocalBranch)
+                this.throw('connectIF', 'Local interface %s not found', sLocalInterface);
+            end
+            
+            oBranch = this.aoBranches(iLocalBranch);
+            
+            if ~oBranch.abIfs(2)
+                this.throw('connectIF', 'Branch doesn''t have an interface on the right side (connected to store).');
+            end
+            
+            %TODO See above, handle events for disconnect during sim
+            %bTrigger = ~oBranch.abIfs(1) && ~isempty(oBranch.coPhases{2});
+            bTrigger = ~oBranch.abIfs(1) && ~isempty(oBranch.coExmes{2});
+            
+            oBranch.disconnect();
+            
+            % Do the trigger after the actual disconnect
+            if bTrigger
+                this.trigger('branch.disconnected', iLocalBranch);
+            end
+        end
+        
+        function removePassThroughThermalBranches(this)
+            % If a branch is a pass-through branch from a subsystem to a
+            % supersystem via an intermediate system, abIf = [1; 1]. So we
+            % just find all branches with an abIf like that and delete
+            % them.
+            
+            % We should, however, only do this, if this method is called by
+            % the supersystem. So before we do anything, we'll check if
+            % this system is already sealed. If yes, we'll just return
+            % without doing anything.
+            
+            %TODO insert a low level warning here, once the debug output
+            %system is implemented. It might be usefull to alert the user
+            %that someone is trying to delete the pass-through branches
+            %here, although that should happen later. Template for the
+            %warning message inserted below.
+            
+            if ~this.bSealed
+                %this.throw('container.seal','The pass-through branches on %s cannot be deleted yet. First the container must be sealed.',this.sName);
+                return;
+            end
+            
+            % Of course, we only have to do this, if there are any branches
+            % in the container at all. In some cases, there can be 
+            % subsystems with no branches. The heat exchanger component is 
+            % an example. It only provides two processors. So we check for 
+            % existin branches first. 
+            if ~isempty(this.aoThermalBranches)
+                % First we get the 2xN matrix for all the branches in the
+                % container.
+                mbIf = subsref([this.aoThermalBranches.abIf], struct('type','()','subs',{{ 1:2, ':' }}));
+                
+                % Using the element-wise AND operator '&' we delete only the
+                % branches with abIf = [1; 0].
+                % First we create a helper array.
+                aoBranchStubs = this.aoThermalBranches(mbIf(1,:) & ~mbIf(2,:));
+                % Now we delete the branches from the aoBranches property.
+                this.aoThermalBranches(mbIf(1,:) & ~mbIf(2,:)) = [];
+                % Now, using the helper array, we delete the fields from
+                % the toBranches struct.
+                for iI = 1:length(aoBranchStubs)
+                    % We need to jump through some hoops because the
+                    % maximum field name length of MATLAB is only 63
+                    % characters, so we delete the rest of the actual
+                    % branch name... 
+                    % namelengthmax is the MATLAB variable that stores the
+                    % maximum name length, so in case it changes in the
+                    % future, we don't have to change this code!
+                    sName = aoBranchStubs(iI).sName;
+                    if length(sName) > namelengthmax
+                        sName = sName(1:namelengthmax);
+                    end
+                    this.toThermalBranches = rmfield(this.toThermalBranches, sName);
+                end
+            end
+        end
+        
+        function updateThermalBranchNames(this, oBranch, sOldName)
+            % First we make sure, that the calling branch is actually a
+            % branch in this container. 
+            if any(this.aoThermalBranches == oBranch)
+                % We need to jump through some hoops because the maximum
+                % field name length of MATLAB is only 63 characters, so we 
+                % delete the rest of the actual branch name...
+                % namelengthmax is the MATLAB variable that stores the 
+                % maximum name length, so in case it changes in the future, 
+                % we don't have to change this code!
+                if length(sOldName) > namelengthmax
+                    sOldName = sOldName(1:namelengthmax);
+                end
+                this.toThermalBranches = rmfield(this.toThermalBranches, sOldName);
+                % Now we'll add the branch to the struct again, but with
+                % its new name. 
+                if ~isempty(oBranch.sCustomName)
+                    this.toThermalBranches.(oBranch.sCustomName) = oBranch;
+                else
+                    this.toThermalBranches.(oBranch.sName) = oBranch;
+                end
+            else
+                % In case the calling branch is not in this container, we
+                % throw an error message.
+                this.throw('container:updateThermalBranchNames','The provided branch does not exist in this thermal container.');
+            end
+        end
     end
-    
 end
 

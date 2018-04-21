@@ -79,9 +79,9 @@ classdef Example < vsys
         function createThermalStructure(this)
             createThermalStructure@vsys(this);
             
-            oCapa = this.addCreateCapacity(this.toStores.Atmos.toPhases.hell);
-            oProc = this.toProcsF2F.Pipe;
-            fArea = oProc.fLength * pi * (oProc.fDiameter / 2)^2;
+%             oCapa = this.addCreateCapacity(this.toStores.Atmos.toPhases.hell);
+%             oProc = this.toProcsF2F.Pipe;
+%             fArea = oProc.fLength * pi * (oProc.fDiameter / 2)^2;
             
             %TODO debug - if included, time step stuck at min
             %thermal.f2f_wrapper(oProc, oCapa, 1, fArea);
@@ -95,6 +95,8 @@ classdef Example < vsys
             % specific solver. In this case we will use the iterative
             % solver. 
             oIt1 = solver.matter.iterative.branch(this.aoBranches(1));
+            
+            this.setThermalSolvers();
             
             %oIt1.iDampFR = 5;
         end

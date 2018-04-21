@@ -1,23 +1,14 @@
 classdef branch < base & event.source
     %BRANCH Basic solver branch class
-    %   This is the base class for all matter flow solvers in V-HAB, all
+    %   This is the base class for all thermal flow solvers in V-HAB, all
     %   other solver branch classes inherit from this class. 
     %
-    %TODO
-    %   - fFlowRate protected, not prive, and add setter?
-    %   - check - setTimeStep means solver .update() method is executed by the
-    %     timer during the 'normal' update call for e.g. phases etc.
-    %     If a phase triggers an solver .update, that happens in the post tick
-    %     loop.
-    %     Any problems with that? Possible that solver called multiple times at
-    %     a tick - shouldn't be a problem right?
-
     properties (SetAccess = private, GetAccess = private)
         %TODO how to serialize function handles? Do differently in the
         %     first place, e.g. with some internal 'passphrase' that is
         %     generated and returned on registerHandlerFR and checked on
         %     setFlowRate?
-        setBranchFR;
+        setBranchHeatFlow;
     end
     
     properties (SetAccess = private, GetAccess = protected)
@@ -27,7 +18,7 @@ classdef branch < base & event.source
     
     properties (SetAccess = private, GetAccess = public)
         oBranch;
-        fFlowRate = 0;
+        fHeatFlow = 0;
         
         fLastUpdate = -10;
         
@@ -63,7 +54,7 @@ classdef branch < base & event.source
         % Update method is bound to this post tick priority. Some solvers
         % might need another priority to e.g. ensure that first, all other
         % branches update their flow rates.
-        iPostTickPriority = -2;
+        iPostTickPriority = -1;
         
         
         % See matter.branch, bTriggerSetFlowRate, for more!
@@ -73,7 +64,7 @@ classdef branch < base & event.source
     
     
     methods
-        function this = branch(oBranch, fInitialFlowRate, sSolverType)
+        function this = branch(oBranch, sSolverType)
             
             if isempty(oBranch.coExmes{1}) || isempty(oBranch.coExmes{2})
                 this.throw('branch:constructor',['The interface branch %s is not properly connected.\n',...
@@ -86,63 +77,25 @@ classdef branch < base & event.source
             if nargin >= 3 && ~isempty(sSolverType)
                 this.sSolverType = sSolverType;
                 
-                % Cache the solver objects for quick access later
-                %TODO re-cache if e.g. branch re-connected to another IF!
-                this.aoSolverProps = solver.matter.base.type.(this.sSolverType).empty(0, size(this.oBranch.aoFlowProcs, 2));
-                
-                for iP = 1:length(this.oBranch.aoFlowProcs)
-                    if ~isfield(this.oBranch.aoFlowProcs(iP).toSolve, this.sSolverType)
-                        this.throw('branch:constructor', 'F2F processor ''%s'' does not support the %s solving method!', this.oBranch.aoFlowProcs(iP).sName, this.sSolverType);
-                    end
-
-                    this.aoSolverProps(iP) = this.oBranch.aoFlowProcs(iP).toSolve.(this.sSolverType);
-                end
             end
             
-            
-            
             % Branch allows only one solver to take control
-            this.setBranchFR = this.oBranch.registerHandlerFR(this);
-            
-            % Use branches container timer reference to bind for time step
-            %CHECK nope, Infinity, right?
-            %this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.update(), inf);
-            %this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.registerUpdate(), inf);
+            this.setBranchHeatFlow = this.oBranch.registerHandlerHeatFlow(this);
             
             %TODO check - which one?
             %this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.registerUpdate(), inf);
             this.setTimeStep = this.oBranch.oTimer.bind(@this.executeUpdate, inf, struct(...
                 'sMethod', 'executeUpdate', ...
-                'sDescription', 'ExecuteUpdate in solver which does massupdate and then registers .update in post tick!', ...
+                'sDescription', 'ExecuteUpdate in solver which does updateTemperature and then registers .update in post tick!', ...
                 'oSrcObj', this ...
             ));
             
-            % Initial flow rate?
-            if (nargin >= 2) && ~isempty(fInitialFlowRate)
-                this.fFlowRate = fInitialFlowRate;
-            end
-            
             % If the branch triggers the 'outdated' event, need to
-            % re-calculate the flow rate!
+            % re-calculate the heat flow!
             %CHECK-160514
             %this.oBranch.bind('outdated', @this.registerUpdate);
             this.oBranch.bind('outdated', @this.executeUpdate);
         end
-        
-        
-%         function syncToSolver(this, oSolver)
-%             % 
-%             %
-%             %TODO
-%             % Allow several synced solvers!!
-%             
-%             if ~isempty(this.oSyncedSolver)
-%                 this.throw('syncToSolver', 'Cannot set another synced solver');
-%             end
-%             
-%             this.oSyncedSolver = oSolver;
-%             this.oSyncedSolver.bind('update', @(~) this.syncedUpdateCall());
-%         end
         
         
         
@@ -161,13 +114,12 @@ classdef branch < base & event.source
     
     methods (Access = private)
         function executeUpdate(this, ~)
-            if ~base.oLog.bOff, this.out(1, 1, 'executeUpdate', 'Call massupdate on both branches, depending on flow rate %f', { this.oBranch.fFlowRate }); end;
+            if ~base.oLog.bOff, this.out(1, 1, 'executeUpdate', 'Call updateTemperature on both branches, depending on flow rate %f', { this.oBranch.fHeatFlow }); end
             
-            for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.oBranch.coExmes{iE}.oPhase.massupdate();
+            for iE = sif(this.oBranch.fHeatFlow >= 0, 1:2, 2:-1:1)
+                this.oBranch.coExmes{iE}.oCapacity.updateTemperature();
             end
             
-            this.oBranch.oThermalBranch.setOutdated();
             %CHECK-160514
             %this.update();
             this.registerUpdate();
@@ -179,13 +131,6 @@ classdef branch < base & event.source
         function registerUpdate(this, ~)
             if this.bRegisteredOutdated
                 return;
-            end
-            
-            % TO DO: why is this necessary when the calling function
-            % (execute update) already performs this? (and the function
-            % triggerign execute update also performs it
-            for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.oBranch.coExmes{iE}.oPhase.massupdate();
             end
             
             if this.bTriggerRegisterUpdateCallbackBound
@@ -206,23 +151,13 @@ classdef branch < base & event.source
             end
         end
         
-        function update(this, fFlowRate, afPressures)
+        function update(this, fHeatFlow, afTemperatures)
             % Inherited class can overload .update and write this.fFlowRate
             % and subsequently CALL THE PARENT METHOD by
             % update@solver.matter.base.branch(this);
-            % (??)
             
-            %TODO 13
-            %   - names of solver packates? matter/basic/...?
-            %   - also afPressures, afTemperatures for setBranchFR?
-            %   - some solvers need possibility to preset flows with the
-            %       molar mass, ..
-            %       => NOT NOW! Solver just uses old values, and has to
-            %       make sure that a short time step (0!!) is set when the
-            %       flow rate direction changed!!
-            %       -> setFlowRate automatically updates all!
             
-            if ~base.oLog.bOff, this.out(1, 1, 'update', 'Setting flow rate %f for branch %s', { fFlowRate, this.oBranch.sName }); end;
+            if ~base.oLog.bOff, this.out(1, 1, 'update', 'Setting heat flow %f for branch %s', { fHeatFlow, this.oBranch.sName }); end
             
             this.fLastUpdate = this.oBranch.oTimer.fTime;
             
@@ -231,28 +166,30 @@ classdef branch < base & event.source
                 % If mass in inflowing tank is smaller than the precision
                 % of the simulation, set flow rate and delta pressures to
                 % zero
-                oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
+                oIn = this.oBranch.coExmes{sif(fHeatFlow >= 0, 1, 2)}.oCapacity.oPhase;
 
                 if tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
-                    fFlowRate = 0;
-                    afPressures = zeros(1, this.oBranch.iFlowProcs);
+                    fHeatFlow = 0;
+                    afTemperatures = zeros(1, this.oBranch.iConductors);
                 end
 
-                this.fFlowRate = fFlowRate;
+                this.fHeatFlow = fHeatFlow;
 
             end
             
             this.bRegisteredOutdated = false;
             
-            % No pressure given? Just make sure we have the variable
-            % 'afPressures' set, the parent class knows what to do. In this
-            % case it will distribute the pressure drops equally onto all 
-            % flows.
+            % No temperatures given? Just make sure we have the variable
+            % 'afPressures' set, the parent class knows what to do. Note
+            % that this is only allowed if now matter bound mass transfer
+            % occurs
             if nargin < 3
-                afPressures = [];
+                afTemperatures = [];
             end
             
-            this.setBranchFR(this.fFlowRate, afPressures);
+            this.fHeatFlow = fHeatFlow;
+            
+            this.setBranchHeatFlow(this.fHeatFlow, afTemperatures);
             
             %TODO Add a comment here to tell the user what this is actually
             %good for. I'm assuming this is only here to call a synced

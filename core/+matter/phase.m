@@ -88,14 +88,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Molar mass of mixture in phase
         % @type float
         fMolarMass;    % [kg/mol]
-
-        % Specific heat capacity of mixture in phase
-        % @type float
-        fSpecificHeatCapacity = 0; % [J/(K*kg)]
-        
-        % Total heat capacity of mixture in phase
-        % @type float
-        fTotalHeatCapacity = 0; % [J/(K*kg)]
         
     end
 
@@ -127,6 +119,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Timer object
         oTimer;
 
+        % Capacity object
+        oCapacity;
+        
         % User-defined name of phase
         % @type string
         %TODO: rename to |sIdent|??
@@ -166,6 +161,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % @types object
         toManips = struct('volume', [], 'temperature', [], 'substance', []);
         iManipulators = 0;
+        
+        
+        
+        % Multi-heat-source to allow temperature changes - also used by the
+        % thermal solver.
+        oMultiHeatSource;
+        bMultiHeatSourceAdded = false;
+        
+        
 
         % Last time the phase was updated (??)
         % @type float
@@ -200,11 +204,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Boolean indicator of an outdated time step
         %TODO rename to bOutdatedTimeStep
         bOutdatedTS = false;
-        
-        % Time when the total heat capacity was last updated. Need to save
-        % this information in order to prevent the heat capacity
-        % calculation to be performed multiple times per timestep.
-        fLastTotalHeatCapacityUpdate = 0;
 
     end
 
@@ -226,8 +225,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         bFlow = false;
         
         
-        % How often should the heat capacity be re-calculated?
-        fMinimalTimeBetweenHeatCapacityUpdates = 1;
         
         % Properties to decide when the specific heat capacity has to be
         % recalculated
@@ -347,28 +344,26 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 else               this.arPartialMass = this.afMass; % afMass is just zeros
                 end
 
-                % Handle temperature
-                this.fTemperature = fTemperature;
             else
                 % Set this to zero to handle empty phases
                 this.fMass = 0;
-                % No mass - no temp
-                this.fTemperature = 0;
-
                 % Partials also to zeros
                 this.arPartialMass = this.afMass;
             end
 
             this.fMolarMass            = this.oMT.calculateMolarMass(this.afMass);
-            
-            % Now update the matter properties
-            this.updateSpecificHeatCapacity();
-            this.fTotalHeatCapacity    = this.fSpecificHeatCapacity * this.fMass;
-                
+             
             % Mass
             this.fMass = sum(this.afMass);
             this.afMassLost = zeros(1, this.oMT.iSubstances);
 
+            % add a thermal capacity to this phase to handle thermal
+            % calculations 
+            this.oCapacity = thermal.capacity(this, fTemperature);
+            
+            % Now update the matter properties
+            this.oCapacity.updateSpecificHeatCapacity();
+               
             % Preset the cached masses (see calculateTimeStep)
             this.fMassLastUpdate  = 0;
             this.afMassLastUpdate = zeros(1, this.oMT.iSubstances);
@@ -479,82 +474,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
 
 
-            %%%% Now calculate the new temperature of the phase using the
-            % inflowing enthalpies / inner energies
-            % Calculations from here: https://en.wikipedia.org/wiki/Internal_energy
-            %
-            % Logic for deriving new temperature:
-            % Inner Energy
-            %   Q = m * c_p * T
-            %
-            % Total energy, mass:
-            %   Q_t = Q_1 + Q_2 + ...
-            %   m_t = m_1 + m_2 + ...
-            %
-            % Total Heat capacity of the mixture
-            %   c_p,t = (c_p,1*m_1 + c_p,2*m_2 + ...) / (m_1 + m_2 + ...)
-            %
-            %
-            % Temperature from total energy of a mix
-            %   T_t = Q_t / (m_t * c_p,t)
-            %       = (m_1 * c_p,1 * T_1 + m_2 * c_p,2 * T_2 + ...) /
-            %         ((m_1 + m_2 + ...) * (c_p,1*m_1 + ...) / (m_1 + ...))
-            %       = (m_1 * c_p,1 * T_1 + m_2 * c_p,2 * T_2 + ...) /
-            %               (c_p,1*m_1 + c_p,2*m_2 + ...)
-
-            % First we split out the mfInflowDetails matrix to make the
-            % code more readable.
-            afInflowMasses                 = mfInflowDetails(:,1);
-            afInflowTemperatures           = mfInflowDetails(:,2);
-            afSpecificInflowHeatCapacities = mfInflowDetails(:,3);
-
-            % Convert the incoming flow rates to absolute masses that are
-            % added in this timestep.
-            afAbsoluteMassesIn = afInflowMasses * fLastStep;
-
-            % We only need to change things if there are any inflows.
-            if ~isempty(mfInflowDetails)
-
-                % This phase may currently be empty, so |this.fMass| could
-                % be zero. In this case we'll only use the values of the
-                % incoming flows.
-                if this.fMass > 0
-                    mfAbsoluteMasses         = [afAbsoluteMassesIn; this.fMass];
-                    mfTemperatures           = [afInflowTemperatures; this.fTemperature];
-                    mfSpecificHeatCapacities = [afSpecificInflowHeatCapacities; this.fSpecificHeatCapacity];
-                else
-                    mfAbsoluteMasses         = afInflowMasses;
-                    mfTemperatures           = afInflowTemperatures;
-                    mfSpecificHeatCapacities = afSpecificInflowHeatCapacities;
-                end
-
-                % Calculate inner energy (m * c_p * T) for all masses.
-                mfEnergy = mfAbsoluteMasses .* mfSpecificHeatCapacities .* mfTemperatures;
-
-                % As can be seen from the explanation given above, we need
-                % the products of all masses and heat capacities in the
-                % denominator of the fraction that calulates the new
-                % temperature.
-                mfEnergyPerKelvin = mfAbsoluteMasses .* mfSpecificHeatCapacities;
-
-                % New temperature
-                %TODO: Investigate if this does what it's supposed to do,
-                %      especially in the case of non-zero mass where the
-                %      matrices are Nx2 (N: number of substances). Is the
-                %      temperature calculated correctly? Isn't it better
-                %      (at least for readability), to calculcate the
-                %      current temperature and the one of the incoming
-                %      flows separately and then calculate the new
-                %      weighted temperature from those values?
-                this.fTemperature = sum(mfEnergy) / sum(mfEnergyPerKelvin);
-                
-                if ~base.oLog.bOff
-                    this.out(1, 1, 'temperature', 'New temperature: %fK', { this.fTemperature });
-                    this.out(1, 2, 'temperature', 'Total inner energy: %f\tEnergy per Kelvin: %f', { sum(mfEnergy), sum(mfEnergyPerKelvin) });
-                end
-            end
-            
-            
+            %%%% Now calculate the new total heat capacity for the
+            %%%% asscociated capacity
+            this.oCapacity.setTotalHeatCapacity(this.fMass * this.oCapacity.fSpecificHeatCapacity);
             
             % Update total mass
             this.fMass = sum(this.afMass);
@@ -608,6 +530,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Pass true as a parameter so massupd calls setBranchesOutdated
             % even if the bSynced attribute is not true
             this.massupdate(true);
+            this.oCapacity.updateTemperature(true);
 
             % Cache current fMass / afMass so they represent the values at
             % the last phase update. Needed in phase time step calculation.
@@ -635,9 +558,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % the minimal time difference between calculations, as
             % specified in the fMinimalTimeBetweenHeatCapacityUpdates
             % property, has passed. So we'll also include that here!
-            if ~isempty(this.fMinimalTimeBetweenHeatCapacityUpdates) && (this.oTimer.fTime >= (this.fLastTotalHeatCapacityUpdate + this.fMinimalTimeBetweenHeatCapacityUpdates))
+            if ~isempty(this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates) && (this.oTimer.fTime >= (this.oCapacity.fLastTotalHeatCapacityUpdate + this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates))
                 bRecalculate = true;
-            elseif isempty(this.fMinimalTimeBetweenHeatCapacityUpdates) && ~(this.oTimer.fTime == this.fLastTotalHeatCapacityUpdate)
+            elseif isempty(this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates) && ~(this.oTimer.fTime == this.oCapacity.fLastTotalHeatCapacityUpdate)
                 bRecalculate = true;
             else
                 bRecalculate = false;
@@ -647,23 +570,27 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % Our checks have concluded, that we have to recalculate
                 % the specific heat capacity for this phase. To do that, we
                 % call a phase type specific method. 
-                this.updateSpecificHeatCapacity()
-                
-                % The total heat capacity is just the product of the
-                % specific heat capacity and the total mass of this phase.
-                this.fTotalHeatCapacity = this.fSpecificHeatCapacity * this.fMass;
-                
-                % Finally, we update the last update property with the
-                % current time, so we can use it the next time this method
-                % is called.
-                this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
+                this.oCapacity.updateSpecificHeatCapacity();
             end
             
             if this.bTriggerSetUpdateCallbackBound
             	this.trigger('update_post');
             end
         end
-
+        
+        function setTemperature(this, oCaller, fTemperature)
+            % This function can only be called from the ascociated capacity
+            % (TO DO: Implement the check) and ensure that the temperature
+            % calculated in the thermal capacity is identical to the phase
+            % temperature (by using a set function in the capacity that
+            % always calls this function as well)
+            if ~isa(oCaller, 'thermal.capacity')
+                this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by capacity objects. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
+            end
+                
+            this.fTemperature = fTemperature;
+            
+        end
         %% Setting of time step properties
         function setTimeStepProperties(this, tTimeStepProperties)
             % currently the possible time step properties that can be set
@@ -752,210 +679,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.setOutdatedTS();
         end
         
-        %% Calculate Nutritional Content 
-        
-        %SCJO - what ... hmmm ... NO! Definitely does NOT belong here!!!
-        function [ ttxResults ] = calculateNutritionalContent(this)
-            
-            %% Initialize
-            
-            % temporary struct
-            ttxResults = struct();
-            
-            % Initialize totals
-            ttxResults.EdibleTotal.Substance = 'Total';
-            ttxResults.EdibleTotal.Mass = 0;
-            ttxResults.EdibleTotal.DryMass = 0;
-                        
-            ttxResults.EdibleTotal.ProteinMass = 0;
-            ttxResults.EdibleTotal.LipidMass = 0;
-            ttxResults.EdibleTotal.CarbohydrateMass = 0;
-            ttxResults.EdibleTotal.AshMass = 0;
-                        
-            ttxResults.EdibleTotal.TotalEnergy = 0;
-            ttxResults.EdibleTotal.ProteinEnergy = 0;
-            ttxResults.EdibleTotal.LipidEnergy = 0;
-            ttxResults.EdibleTotal.CarbohydrateEnergy = 0;
-                        
-            ttxResults.EdibleTotal.CalciumMass = 0;
-            ttxResults.EdibleTotal.IronMass = 0;
-            ttxResults.EdibleTotal.MagnesiumMass = 0;
-            ttxResults.EdibleTotal.PhosphorusMass = 0;
-            ttxResults.EdibleTotal.PotassiumMass = 0;
-            ttxResults.EdibleTotal.SodiumMass = 0;
-            ttxResults.EdibleTotal.ZincMass = 0;
-            ttxResults.EdibleTotal.CopperMass = 0;
-            ttxResults.EdibleTotal.ManganeseMass = 0;
-            ttxResults.EdibleTotal.SeleniumMass = 0;
-            ttxResults.EdibleTotal.FluorideMass = 0;
-                        
-            ttxResults.EdibleTotal.VitaminCMass = 0;
-            ttxResults.EdibleTotal.ThiaminMass = 0;
-            ttxResults.EdibleTotal.RiboflavinMass = 0;
-            ttxResults.EdibleTotal.NiacinMass = 0;
-            ttxResults.EdibleTotal.PantothenicAcidMass = 0;
-            ttxResults.EdibleTotal.VitaminB6Mass = 0;
-            ttxResults.EdibleTotal.FolateMass = 0;
-            ttxResults.EdibleTotal.VitaminB12Mass = 0;
-            ttxResults.EdibleTotal.VitaminAMass = 0;
-            ttxResults.EdibleTotal.VitaminEMass = 0;
-            ttxResults.EdibleTotal.VitaminDMass = 0;
-            ttxResults.EdibleTotal.VitaminKMass = 0;
-            
-            ttxResults.EdibleTotal.TryptophanMass = 0;
-            ttxResults.EdibleTotal.ThreonineMass = 0;
-            ttxResults.EdibleTotal.IsoleucineMass = 0;
-            ttxResults.EdibleTotal.LeucineMass = 0;
-            ttxResults.EdibleTotal.LysineMass = 0;
-            ttxResults.EdibleTotal.MethionineMass = 0;
-            ttxResults.EdibleTotal.CystineMass = 0;
-            ttxResults.EdibleTotal.PhenylalanineMass = 0;
-            ttxResults.EdibleTotal.TyrosineMass = 0;
-            ttxResults.EdibleTotal.ValineMass = 0;
-            ttxResults.EdibleTotal.HistidineMass = 0;
-            
-            %% Calculate
-            
-            % check contained substances if nutritional data available
-            for iI = 1:(this.oMT.iSubstances)
-                if this.afMass(iI) ~= 0
-                    % check for all currently available edible substances 
-                    if isfield(this.oMT.ttxMatter.(this.oMT.csI2N{iI}), 'txNutrientData')     
-                        
-                        % substance name
-                        ttxResults.(this.oMT.csI2N{iI}).Substance = this.oMT.csI2N{iI};
-                        
-                        % substance mass and dry mass [kg]
-                        ttxResults.(this.oMT.csI2N{iI}).Mass = this.afMass(iI);
-                        ttxResults.(this.oMT.csI2N{iI}).DryMass = this.afMass(iI) * (1 - this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fWaterMass);
-                        
-                        % protein, lipid, carbohydrate and ash content [kg]
-                        ttxResults.(this.oMT.csI2N{iI}).ProteinMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fProteinDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).LipidMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fLipidDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).CarbohydrateMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCarbohydrateDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).AshMass = ttxResults.(this.oMT.csI2N{iI}).DryMass - (ttxResults.(this.oMT.csI2N{iI}).ProteinMass + ttxResults.(this.oMT.csI2N{iI}).LipidMass + ttxResults.(this.oMT.csI2N{iI}).CarbohydrateMass);
-                        
-                        % total and partly energy content [J]
-                        ttxResults.(this.oMT.csI2N{iI}).TotalEnergy = this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fEnergyMass * ttxResults.(this.oMT.csI2N{iI}).Mass;
-                        ttxResults.(this.oMT.csI2N{iI}).ProteinEnergy = ttxResults.(this.oMT.csI2N{iI}).ProteinMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fProteinEnergyFactor;
-                        ttxResults.(this.oMT.csI2N{iI}).LipidEnergy = ttxResults.(this.oMT.csI2N{iI}).ProteinMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fLipidEnergyFactor;
-                        ttxResults.(this.oMT.csI2N{iI}).CarbohydrateEnergy = ttxResults.(this.oMT.csI2N{iI}).ProteinMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCarbohydrateEnergyFactor;
-                        
-                        % Mineral content [kg]
-                        ttxResults.(this.oMT.csI2N{iI}).CalciumMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCalciumDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).IronMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fIronDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).MagnesiumMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fMagnesiumDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).PhosphorusMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fPhosphorusDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).PotassiumMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fPotassiumDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).SodiumMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fSodiumDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).ZincMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fZincDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).CopperMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCopperDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).ManganeseMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fManganeseDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).SeleniumMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fSeleniumDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).FluorideMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fFluorideDMF;
-                        
-                        % Vitamin content [kg]
-                        ttxResults.(this.oMT.csI2N{iI}).VitaminCMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminCDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).ThiaminMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fThiaminDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).RiboflavinMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fRiboflavinDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).NiacinMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fNiacinDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).PantothenicAcidMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fPantothenicAcidDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).VitaminB6Mass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminB6DMF;
-                        ttxResults.(this.oMT.csI2N{iI}).FolateMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fFolateDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).VitaminB12Mass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminB12DMF;
-                        ttxResults.(this.oMT.csI2N{iI}).VitaminAMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminADMF;
-                        ttxResults.(this.oMT.csI2N{iI}).VitaminEMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminEDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).VitaminDMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminDDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).VitaminKMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fVitaminKDMF;
-                        
-                        % Amino Acid content [kg]
-                        ttxResults.(this.oMT.csI2N{iI}).TryptophanMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fTryptophanDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).ThreonineMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fThreonineDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).IsoleucineMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fIsoleucineDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).LeucineMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fLeucineDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).LysineMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fLysineDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).MethionineMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fMethionineDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).CystineMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fCystineDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).PhenylalanineMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fPhenylalanineDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).TyrosineMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fTyrosineDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).ValineMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fValineDMF;
-                        ttxResults.(this.oMT.csI2N{iI}).HistidineMass = ttxResults.(this.oMT.csI2N{iI}).DryMass * this.oMT.ttxMatter.(this.oMT.csI2N{iI}).txNutrientData.fHistidineDMF;
-                        
-                        %% Total Edible Substance Content
-                        
-                        ttxResults.EdibleTotal.Mass = ttxResults.EdibleTotal.Mass + ttxResults.(this.oMT.csI2N{iI}).Mass;
-                        ttxResults.EdibleTotal.DryMass = ttxResults.EdibleTotal.DryMass + ttxResults.(this.oMT.csI2N{iI}).DryMass;
-                        
-                        ttxResults.EdibleTotal.ProteinMass = ttxResults.EdibleTotal.ProteinMass + ttxResults.(this.oMT.csI2N{iI}).ProteinMass;
-                        ttxResults.EdibleTotal.LipidMass = ttxResults.EdibleTotal.LipidMass + ttxResults.(this.oMT.csI2N{iI}).LipidMass;
-                        ttxResults.EdibleTotal.CarbohydrateMass = ttxResults.EdibleTotal.CarbohydrateMass + ttxResults.(this.oMT.csI2N{iI}).CarbohydrateMass;
-                        ttxResults.EdibleTotal.AshMass = ttxResults.EdibleTotal.AshMass + ttxResults.(this.oMT.csI2N{iI}).AshMass;
-                        
-                        ttxResults.EdibleTotal.TotalEnergy = ttxResults.EdibleTotal.TotalEnergy + ttxResults.(this.oMT.csI2N{iI}).TotalEnergy;
-                        ttxResults.EdibleTotal.ProteinEnergy = ttxResults.EdibleTotal.ProteinEnergy + ttxResults.(this.oMT.csI2N{iI}).ProteinEnergy;
-                        ttxResults.EdibleTotal.LipidEnergy = ttxResults.EdibleTotal.LipidEnergy + ttxResults.(this.oMT.csI2N{iI}).LipidEnergy;
-                        ttxResults.EdibleTotal.CarbohydrateEnergy = ttxResults.EdibleTotal.CarbohydrateEnergy + ttxResults.(this.oMT.csI2N{iI}).CarbohydrateEnergy;
-                        
-                        ttxResults.EdibleTotal.CalciumMass = ttxResults.EdibleTotal.CalciumMass + ttxResults.(this.oMT.csI2N{iI}).CalciumMass;
-                        ttxResults.EdibleTotal.IronMass = ttxResults.EdibleTotal.IronMass + ttxResults.(this.oMT.csI2N{iI}).IronMass;
-                        ttxResults.EdibleTotal.MagnesiumMass = ttxResults.EdibleTotal.MagnesiumMass + ttxResults.(this.oMT.csI2N{iI}).MagnesiumMass;
-                        ttxResults.EdibleTotal.PhosphorusMass = ttxResults.EdibleTotal.PhosphorusMass + ttxResults.(this.oMT.csI2N{iI}).PhosphorusMass;
-                        ttxResults.EdibleTotal.PotassiumMass = ttxResults.EdibleTotal.PotassiumMass + ttxResults.(this.oMT.csI2N{iI}).PotassiumMass;
-                        ttxResults.EdibleTotal.SodiumMass = ttxResults.EdibleTotal.SodiumMass + ttxResults.(this.oMT.csI2N{iI}).SodiumMass;
-                        ttxResults.EdibleTotal.ZincMass = ttxResults.EdibleTotal.ZincMass + ttxResults.(this.oMT.csI2N{iI}).ZincMass;
-                        ttxResults.EdibleTotal.CopperMass = ttxResults.EdibleTotal.CopperMass + ttxResults.(this.oMT.csI2N{iI}).DryMass;
-                        ttxResults.EdibleTotal.ManganeseMass = ttxResults.EdibleTotal.ManganeseMass + ttxResults.(this.oMT.csI2N{iI}).ManganeseMass;
-                        ttxResults.EdibleTotal.SeleniumMass = ttxResults.EdibleTotal.SeleniumMass + ttxResults.(this.oMT.csI2N{iI}).SeleniumMass;
-                        ttxResults.EdibleTotal.FluorideMass = ttxResults.EdibleTotal.FluorideMass + ttxResults.(this.oMT.csI2N{iI}).FluorideMass;
-                        
-                        ttxResults.EdibleTotal.VitaminCMass = ttxResults.EdibleTotal.VitaminCMass + ttxResults.(this.oMT.csI2N{iI}).VitaminCMass;
-                        ttxResults.EdibleTotal.ThiaminMass = ttxResults.EdibleTotal.ThiaminMass + ttxResults.(this.oMT.csI2N{iI}).ThiaminMass;
-                        ttxResults.EdibleTotal.RiboflavinMass = ttxResults.EdibleTotal.RiboflavinMass + ttxResults.(this.oMT.csI2N{iI}).RiboflavinMass;
-                        ttxResults.EdibleTotal.NiacinMass = ttxResults.EdibleTotal.NiacinMass + ttxResults.(this.oMT.csI2N{iI}).NiacinMass;
-                        ttxResults.EdibleTotal.PantothenicAcidMass = ttxResults.EdibleTotal.PantothenicAcidMass + ttxResults.(this.oMT.csI2N{iI}).PantothenicAcidMass;
-                        ttxResults.EdibleTotal.VitaminB6Mass = ttxResults.EdibleTotal.VitaminB6Mass + ttxResults.(this.oMT.csI2N{iI}).VitaminB6Mass;
-                        ttxResults.EdibleTotal.FolateMass = ttxResults.EdibleTotal.FolateMass + ttxResults.(this.oMT.csI2N{iI}).FolateMass;
-                        ttxResults.EdibleTotal.VitaminB12Mass = ttxResults.EdibleTotal.VitaminB12Mass + ttxResults.(this.oMT.csI2N{iI}).VitaminB12Mass;
-                        ttxResults.EdibleTotal.VitaminAMass = ttxResults.EdibleTotal.VitaminAMass + ttxResults.(this.oMT.csI2N{iI}).VitaminAMass;
-                        ttxResults.EdibleTotal.VitaminEMass = ttxResults.EdibleTotal.VitaminEMass + ttxResults.(this.oMT.csI2N{iI}).VitaminEMass;
-                        ttxResults.EdibleTotal.VitaminDMass = ttxResults.EdibleTotal.VitaminDMass + ttxResults.(this.oMT.csI2N{iI}).VitaminDMass;
-                        ttxResults.EdibleTotal.VitaminKMass = ttxResults.EdibleTotal.VitaminKMass + ttxResults.(this.oMT.csI2N{iI}).VitaminKMass;
-                        
-                        ttxResults.EdibleTotal.TryptophanMass = ttxResults.EdibleTotal.TryptophanMass + ttxResults.(this.oMT.csI2N{iI}).TryptophanMass;
-                        ttxResults.EdibleTotal.ThreonineMass = ttxResults.EdibleTotal.ThreonineMass + ttxResults.(this.oMT.csI2N{iI}).ThreonineMass;
-                        ttxResults.EdibleTotal.IsoleucineMass = ttxResults.EdibleTotal.IsoleucineMass + ttxResults.(this.oMT.csI2N{iI}).IsoleucineMass;
-                        ttxResults.EdibleTotal.LeucineMass = ttxResults.EdibleTotal.LeucineMass + ttxResults.(this.oMT.csI2N{iI}).LeucineMass;
-                        ttxResults.EdibleTotal.LysineMass = ttxResults.EdibleTotal.LysineMass + ttxResults.(this.oMT.csI2N{iI}).LysineMass;
-                        ttxResults.EdibleTotal.MethionineMass = ttxResults.EdibleTotal.MethionineMass + ttxResults.(this.oMT.csI2N{iI}).MethionineMass;
-                        ttxResults.EdibleTotal.CystineMass = ttxResults.EdibleTotal.CystineMass + ttxResults.(this.oMT.csI2N{iI}).CystineMass;
-                        ttxResults.EdibleTotal.PhenylalanineMass = ttxResults.EdibleTotal.PhenylalanineMass + ttxResults.(this.oMT.csI2N{iI}).PhenylalanineMass;
-                        ttxResults.EdibleTotal.TyrosineMass = ttxResults.EdibleTotal.TyrosineMass + ttxResults.(this.oMT.csI2N{iI}).TyrosineMass;
-                        ttxResults.EdibleTotal.ValineMass = ttxResults.EdibleTotal.ValineMass + ttxResults.(this.oMT.csI2N{iI}).ValineMass;
-                        ttxResults.EdibleTotal.HistidineMass = ttxResults.EdibleTotal.HistidineMass + ttxResults.(this.oMT.csI2N{iI}).HistidineMass;
-                        
-                    % if not an edible substance
-                    else
-                        % substance name
-                        ttxResults.(this.oMT.csI2N{iI}).Substance = this.oMT.csI2N{iI};
-                        
-                        % substance mass and dry mass [kg]
-                        ttxResults.(this.oMT.csI2N{iI}).Mass = this.afMass(iI);
-                    end
-                    
-                else
-%                     keyboard();
-                end
-            end
-            
-            % log number of entries in ttxResults for indexed access
-            csSubstances = fieldnames(ttxResults);
-            
-            % display struct contents
-            for iJ = 1:length(csSubstances)
-                disp(ttxResults.(csSubstances{iJ}));
-            end
-        end
-        
         % Catch 'bind' calls, so we can set a specific boolean property to
         % true so the .trigger() method will only be called if there are
         % callbacks registered.
@@ -973,77 +696,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
 
     %% Methods for interfacing with thermal system
-    methods
-
-        function changeInnerEnergy(this, fEnergyChange)
-            %CHANGEINNERENERGY Change phase temperature via inner energy
-            %   Change the temperature of a phase by adding or removing
-            %   inner energy in |J|.
-            
-            % setParameter does .update anyways ... %%%
-%             this.update();
-            %TODO don't do whole update, just set outdated TS - calcTS
-            %     should include temperature change in ts calculations!
-            
-            %TODO check ... heat capacity updates every second, so that
-            %     should be ok? As for mass, use a change rate for the heat
-            %     capacity and, with last update time, calculate current
-            %     value?
-            
-            %fCurrentTotalHeatCapacity = this.getTotalHeatCapacity();
-            fCurrentTotalHeatCapacity = this.fTotalHeatCapacity;
-            
-            % Calculate temperature change due to change in inner energy.
-            fTempDiff = fEnergyChange / fCurrentTotalHeatCapacity;
-            
-            % Update temperature property of phase.
-            %this.setParameter('fTemperature', this.fTemperature + fTempDiff);
-            this.fTemperature = this.fTemperature + fTempDiff;
-            
-            this.massupdate();
-        end
-
-
-        function fTotalHeatCapacity = getTotalHeatCapacity(this)
-            % Returns the total heat capacity of the phase. 
-            
-            this.warn('getTotalHeatCapacity', 'Use oPhase.fSpecificHeatCapacity * oPhase.fMass!');
-            
-            % We'll only calculate this again, if it has been at least one
-            % second since the last update. This is to reduce the
-            % computational load and may be removed in the future,
-            % especially if the calculateSpecificHeatCapactiy() method and
-            % the findProperty() method of the matter table have been
-            % substantially accelerated.
-            % One second is also the fixed timestep of the thermal solver. 
-            %
-            % Could that not be written as:
-            % this.oTimer.fTime < (this.fLastTotalHeatCapacityUpdate + ...
-            %                  this.fMinimalTimeBetweenHeatCapacityUpdates)
-            % It feels like that is more readable ...
-            if isempty(this.fLastTotalHeatCapacityUpdate) || (this.oTimer.fTime - this.fLastTotalHeatCapacityUpdate < this.fMinimalTimeBetweenHeatCapacityUpdates)
-                fTotalHeatCapacity = this.fTotalHeatCapacity;
-            else
-                this.updateSpecificHeatCapacity();
-                
-                fTotalHeatCapacity = this.fSpecificHeatCapacity * this.fMass;
-            
-                % Save total heat capacity as a property for faster logging.
-                this.fTotalHeatCapacity = fTotalHeatCapacity;
-                
-                this.fLastTotalHeatCapacityUpdate = this.oTimer.fTime;
-            end
-            
-        end
         
-    end
-    
-    methods (Abstract)
-        % This method has to be implemented by all child classes.
-        updateSpecificHeatCapacity(this)
-    end
-
-
     %% Methods for handling manipulators
     methods
 
@@ -1081,6 +734,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     % the store's bSealed attr, so nothing can be changed later.
     methods
 
+        % TBD: Do we still want this?
         function addProcEXME(this, oProcEXME)
             % Adds a exme proc, i.e. a port. Returns a function handle to
             % the this.setAttribute method (actually the one of the derived

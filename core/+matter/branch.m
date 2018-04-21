@@ -123,6 +123,10 @@ classdef branch < base & event.source
         
         % Flow rate handler - only one can be set!
         oHandler;
+        
+        % Thermal branch which solves the thermal energy transport of this
+        % matter branch
+        oThermalBranch;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -317,6 +321,55 @@ classdef branch < base & event.source
             
             this.iFlows     = length(this.aoFlows);
             this.iFlowProcs = length(this.aoFlowProcs);
+            
+            %% Construct asscociated thermal branch
+            % Create the respective thermal interfaces for the thermal
+            % branch
+            % Split to store name / port name
+            % TO DO: make nicer
+            [ sStore, sPort ] = strtok(sLeft, '.');
+            % Get EXME port/proc ...
+            if isempty(sPort)
+                % in this case an interface is used, and the interfase
+                % should be used in the thermal branch definition as well
+                % therefore we do nothing here
+            else
+                oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
+                thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
+            end
+            
+            % Split to store name / port name
+            [ sStore, sPort ] = strtok(sRight, '.');
+            % Get EXME port/proc ...
+            if isempty(sPort)
+                % in this case an interface is used, and the interfase
+                % should be used in the thermal branch definition as well
+                % therefore we do nothing here
+            else
+                oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
+                thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
+            end
+            
+            if length(csProcs) >= 1
+                for iProc = 1:length(csProcs)
+                    thermal.procs.conductors.fluidic(this.oContainer, csProcs{iProc}, this);
+                end
+            else
+                % branches without a f2f can exist (e.g. manual branches)
+                % however for the thermal branch we always require at least
+                % one conductor
+                if ~isempty(this.sCustomName)
+                    csProcs{1} = [this.sCustomName, '_Conductor'];
+                else
+                    csProcs{1} = [this.sName, '_Conductor'];
+                end
+                thermal.procs.conductors.fluidic(this.oContainer, csProcs{1}, this);
+            end
+            
+            if nargin < 5
+                sCustomName = [];
+            end
+            this.oThermalBranch = thermal.branch(this.oContainer, sLeft, csProcs, sRight, sCustomName);
         end
         
         
@@ -538,10 +591,16 @@ classdef branch < base & event.source
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
+            % TO DO: Question, why is this necessary when the solver base
+            % branch in the function bound to the trigger from this
+            % function also performs it?
             for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
                 this.coExmes{iE}.oPhase.massupdate();
             end
             
+            % If the flowrate changed, the thermal branch also has to be
+            % recalculated
+            this.oThermalBranch.setOutdated();
             % Only trigger if not yet set
             %CHECK inactivated here --> solvers and otehr "clients" should
             %      check themselves!

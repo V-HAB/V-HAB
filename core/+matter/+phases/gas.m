@@ -56,6 +56,7 @@ classdef gas < matter.phase
             %TODO
             %   - not all params required, use defaults?
             %   - volume from store ...?
+            
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             % Get volume from 
@@ -170,54 +171,22 @@ classdef gas < matter.phase
 
         end
         
-        function updateSpecificHeatCapacity(this)
-            % When a phase was empty and is being filled with matter again,
-            % it may be a couple of ticks until the phase.update() method
-            % is called, which updates the phase's specific heat capacity.
-            % Other objects, for instance matter.flow, may require the
-            % correct value for the heat capacity as soon as there is
-            % matter in the phase. In this case, these objects can call
-            % this function, that will update the fSpecificHeatCapacity
-            % property of the phase.
+        function setTemperature(this, oCaller, fTemperature)
+            % This function can only be called from the ascociated capacity
+            % (TO DO: Implement the check) and ensure that the temperature
+            % calculated in the thermal capacity is identical to the phase
+            % temperature (by using a set function in the capacity that
+            % always calls this function as well)
+            if ~isa(oCaller, 'thermal.capacity')
+                this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by capacity objects. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
+            end
+                
+            this.fTemperature = fTemperature;
             
-            % In order to reduce the amount of times the matter
-            % calculation is executed it is checked here if the pressure
-            % and/or temperature have changed significantly enough to
-            % justify a recalculation
-            % TO DO: Make limits adaptive
-            if (this.oTimer.iTick <= 0) ||... %necessary to prevent the phase intialization from crashing the remaining checks
-               (abs(this.fPressureLastHeatCapacityUpdate - this.fPressure) > 100) ||...
-               (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
-               (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
-                
-           
-                if ~base.oLog.bOff
-                    this.out(1, 1, 'name', '%s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName });
-
-                    this.out(1, 2, 'last', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
-                    this.out(1, 2, 'last', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
-                    this.out(1, 2, 'last', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
-                    this.out(1, 2, 'last', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
-                end
-                
-                % Actually updating the specific heat capacity
-                this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
-                
-                % Setting the properties for the next check
-                this.fPressureLastHeatCapacityUpdate     = this.fPressure;
-                this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
-                this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
-                
-                
-                if ~base.oLog.bOff
-                    this.out(1, 2, 'curr', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
-                    this.out(1, 2, 'curr', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
-                    this.out(1, 2, 'curr', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
-                    this.out(1, 2, 'curr', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
-                end
+            if ~isempty(this.fVolume)
+                this.fMassToPressure = this.calculatePressureCoefficient();
             end
         end
-
     end
     
     

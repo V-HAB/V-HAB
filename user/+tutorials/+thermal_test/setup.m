@@ -45,11 +45,11 @@ classdef setup < simulation.infrastructure
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Simple_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Tutorial_Thermal_Test', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            oSys = tutorials.simple_flow.systems.Example(this.oSimulationContainer, 'Example');
+            oSys = tutorials.thermal_test.systems.Example(this.oSimulationContainer, 'Example');
             
             % This is an alternative to providing the ttMonitorConfig above
             %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
@@ -128,15 +128,33 @@ classdef setup < simulation.infrastructure
             
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'fTemperature', 'K', 'Temperature Phase 1');
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'fTemperature', 'K', 'Temperature Phase 2');
+            oLog.addValue('Example:s:Space.aoPhases(1)',  'fTemperature', 'K', 'Temperature Space');
+            
+            oLog.addValue('Example:c:SubSystem:s:Filter.toPhases.FlowPhase',        'fTemperature', 'K', 'Temperature Filter Flow');
+            oLog.addValue('Example:c:SubSystem:s:Filter.toPhases.FlowPhase',        'fPressure',    'Pa','Pressure Filter Flow');
+            oLog.addValue('Example:c:SubSystem:s:Filter.toPhases.FilteredPhase',    'fTemperature', 'K', 'Temperature Filter Absorbed');
             
             oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 1');
             oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 2');
             
             oLog.addValue('Example.toBranches.Branch', 'fFlowRate', 'kg/s', 'Branch Flow Rate', 'branch_FR');
+            oLog.addValue('Example:c:SubSystem.toBranches.Inlet', 'fFlowRate', 'kg/s', 'Subsystem Inlet Flow Rate');
+            oLog.addValue('Example:c:SubSystem.toBranches.Outlet', 'fFlowRate', 'kg/s', 'Subsystem Outlet Flow Rate');
             
-            this.tiLogIndexes.iIndex_1 = oLog.addVirtualValue('fr_co2 * 1000', 'g/s', 'CO_2 Flowrate', 'co2_fr_grams');
-            this.tiLogIndexes.iIndex_2 = oLog.addVirtualValue('flow_temp_left - 273.15', '°C', 'Temperature Left in Celsius');
-            this.tiLogIndexes.iIndex_3 = oLog.addVirtualValue('mod(flow_temp_right .^ 2, 10) ./ "Partial Mass CO_2 Tank 2"', '-', 'Nonsense');
+            
+            oLog.addValue('Example.toThermalBranches.Branch',                   'fHeatFlow', 'W', 'Branch Heat Flow');
+            oLog.addValue('Example.toThermalBranches.Radiator',                 'fHeatFlow', 'W', 'Radiator Heat Flow');
+            oLog.addValue('Example.toThermalBranches.Pipe_Material_Conductor',	'fHeatFlow', 'W', 'Pipe Conductor Heat Flow');
+            oLog.addValue('Example:c:SubSystem.toThermalBranches.Inlet',        'fHeatFlow', 'W', 'Subsystem Inlet Heat Flow');
+            oLog.addValue('Example:c:SubSystem.toThermalBranches.Outlet',       'fHeatFlow', 'W', 'Subsystem Outlet Heat Flow');
+            
+            
+            oLog.addValue('Example:c:SubSystem.toThermalBranches.filterproc',                   'fHeatFlow', 'W', 'Subsystem Adsorption Mass Heat Flow');
+            oLog.addValue('Example:c:SubSystem.toThermalBranches.Pipe_Material_Conductor_In',   'fHeatFlow', 'W', 'Subsystem Conduction Inlet Heat Flow');
+            oLog.addValue('Example:c:SubSystem.toThermalBranches.Pipe_Material_Conductor_Out',	'fHeatFlow', 'W', 'Subsystem Conduction Outlet Heat Flow');
+            oLog.addValue('Example:c:SubSystem.toThermalBranches.Convective_Branch',            'fHeatFlow', 'W', 'Subsystem Convective Heat Flow');
+            
+            oLog.addValue('Example:s:Tank_1.toPhases.Tank_1_Phase_1.oCapacity.toHeatSources.Heater', 'fHeatFlow', 'W', 'Phase 1 Heat Source Heat Flow');
             
         end
         
@@ -146,86 +164,16 @@ classdef setup < simulation.infrastructure
             
             oPlotter = plot@simulation.infrastructure(this);
             
-            cxPlotValues1 = { '"CO_2 Flowrate"', this.tiLogIndexes.iIndex_2, 'Nonsense' };
-            csPlotValues2 = { '"Partial Pressure CO_2 Tank 1"', '"Partial Pressure CO_2 Tank 2"'};
-            csPlotValues3 = { 'flow_temp_left', 'flow_temp_right' };
-            
-            %TODO Implement getByTitles() and getByFilter() in logger_basic
-            %cPlotValues2 = oLog.getByTitles({ 'Titel 1', 'Titel 2' });
-            %cPlotValues3 = oLog.getByFilter('My/Sys/Path/*', struct('sUnit', 'kg'));
-            
-            % tPlotOptions has field names that correspond to the
-            % properties of axes objects in MATLAB. The values given here
-            % are directly set on the axes object once it is created. To
-            % adhere to the V-HAB variable naming convention, the field
-            % names can still include the prefixes to signal the data type,
-            % for example 'csNames'. The lower case letters at the
-            % beginning of the string will then be stripped by the define
-            % plot method.
-            %
-            % There are a few additional fields that tPlotOptions can have
-            % that do not correspond to the properties of the axes object.
-            % One field can contain another struct called tLineOptions.
-            % This struct can contain settings for the individual line
-            % objects of the plot, like markers, line styles and colors.
-            % Again, the field names must have the same names as the
-            % properties of the line objects. If there are multiple lines
-            % in a plot, the values in the struct must be contained in
-            % cells with the values in the same order as the lines. If no
-            % information is given here, the MATLAB default values are
-            % used. 
-            %
-            % With the sTimeUnit field the user can determine the unit of
-            % time for of each plot. The default is seconds, but minutes,
-            % hours, days, weeks, months and years are also possible. The
-            % sTimeScale field is a string and can contain exactly these
-            % words.
-            %
-            % If the user chooses to have two y axes, we need to provide an
-            % opportunity to customize that as well. For this the
-            % tRightYAxesOptions field exists. It can have the same entries
-            % as the tPlotOptions struct, so field names that correspond to
-            % the properties of axes object. 
-            % 
-            % The bLegend field determines if the legend of the axes is
-            % visible or not. The default is visible. 
-            
-            %tPlotOptions = struct('csUnitOverride', {{ 'all left' }});
-            tPlotOptions = struct('csUnitOverride', {{ {'°C'}, {'g/s','-'} }});
-            tPlotOptions.tLineOptions.('fr_co2').csColor = 'g';
-            tPlotOptions.tLineOptions.('Nonsense').csColor = 'y';
-            tPlotOptions.bLegend = false;
-            coPlots{1,1} = oPlotter.definePlot(cxPlotValues1, 'Bullshit', tPlotOptions);
-            
-            tPlotOptions.tLineOptions.('ppCO2_Tank1').csColor = 'g';
-            tPlotOptions.tLineOptions.('ppCO2_Tank2').csColor = 'y';
-            coPlots{1,2} = oPlotter.definePlot(csPlotValues2, 'CO_2 Partial Pressures', tPlotOptions);
-            
-            tPlotOptions = struct('sTimeUnit','hours');
-            coPlots{2,1} = oPlotter.definePlot(csPlotValues3, 'Temperatures', tPlotOptions);
-            
-            
-            % tFigureOptions includes turing on or off the plottools (off
-            % by default), including or excluding the time plot (off by
-            % default). Otherwise it can contain any fields that correspond
-            % to the properties of the MATLAB figure object. 
-            
-            tFigureOptions = struct('bTimePlot', true, 'bPlotTools', false);
-            oPlotter.defineFigure(coPlots, 'Test Figure Title', tFigureOptions);
-            
-            tPlotOptions = struct('sAlternativeXAxisValue', '"Branch Flow Rate"', 'sXLabel', 'Main Branch Flow Rate in [kg/s]', 'fTimeInterval',10);
-            coPlots = {oPlotter.definePlot({'"Pressure Phase 1"'}, 'Pressure vs. Flow Rate', tPlotOptions)};
-            oPlotter.defineFigure(coPlots, 'Pressure vs. Flow Rate');
-            
-            
             tPlotOptions = struct('sTimeUnit','hours');
             coPlots = [];
-            coPlots{1,1} = oPlotter.definePlot({'"Temperature Phase 1"', '"Temperature Phase 2"'}, 'Temperatures', tPlotOptions);
-            coPlots{1,2} = oPlotter.definePlot({'"Pressure Phase 1"', '"Pressure Phase 2"'}, 'Pressure', tPlotOptions);
-            coPlots{2,1} = oPlotter.definePlot({'"Branch Flow Rate"'}, 'Flowrate', tPlotOptions);
-            oPlotter.defineFigure(coPlots, 'Tank Temperatures');
+            coPlots{1,1} = oPlotter.definePlot({'"Temperature Phase 1"', '"Temperature Phase 2"', '"Temperature Space"', '"Temperature Filter Flow"', '"Temperature Filter Absorbed"'}, 'Temperatures', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({'"Pressure Phase 1"', '"Pressure Phase 2"', '"Pressure Filter Flow"'}, 'Pressure', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({'"Branch Flow Rate"', '"Subsystem Inlet Flow Rate"', '"Subsystem Outlet Flow Rate"'}, 'Flowrate', tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot({'"Branch Heat Flow"', '"Radiator Heat Flow"', '"Pipe Conductor Heat Flow"', '"Subsystem Inlet Heat Flow"',...
+                '"Subsystem Outlet Heat Flow"', '"Subsystem Conduction Inlet Heat Flow"', '"Subsystem Conduction Outlet Heat Flow"',...
+                '"Subsystem Convective Heat Flow"', '"Phase 1 Heat Source Heat Flow"', '"Subsystem Adsorption Mass Heat Flow"'}, 'Heat Flows', tPlotOptions);
+            oPlotter.defineFigure(coPlots, 'Thermal Values and Flowrates');
             
-
             oPlotter.plot();
         end
         
