@@ -1,4 +1,4 @@
-classdef gas_pressure_manual < matter.phases.gas
+classdef gas_flow_node < matter.phases.gas
     %GAS_VIRTUAL Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -26,7 +26,7 @@ classdef gas_pressure_manual < matter.phases.gas
     end
     
     methods
-        function this = gas_pressure_manual(oStore, sName, varargin)
+        function this = gas_flow_node(oStore, sName, varargin)
             this@matter.phases.gas(oStore, sName, varargin{:});
             %this@matter.phases.gas(oStore, sName, struct(), [], 0);%varargin{:});
             
@@ -87,6 +87,7 @@ classdef gas_pressure_manual < matter.phases.gas
             %this.rMaxChange = 0.0000001;
             %this.rMaxChange = inf;
             this.bSynced    = true;
+            this.bFlow      = true;
             
             
             %this.rMaxChange = 0.5;

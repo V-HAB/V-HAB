@@ -33,7 +33,7 @@ classdef branch < base & event.source
         %     specific method in p2p)
         sMode = 'simple';
         
-        
+        fMinimumTimeStep = 1e-3;
         
         iLastWarn = -1000;
     end
@@ -170,7 +170,7 @@ classdef branch < base & event.source
                     
                     % Variable pressure phase - add to reference map if not
                     % present yet, generate index for matrix column
-                    if isa(oP, 'matter.phases.gas_pressure_manual')
+                    if isa(oP, 'matter.phases.gas_flow_node')
                         if ~this.poVariablePressurePhases.isKey(oP.sUUID)
 
                             this.poVariablePressurePhases(oP.sUUID) = oP;
@@ -720,10 +720,26 @@ classdef branch < base & event.source
             iIteration = 0;
             
             afBoundaryConditions = [];
+            % For an additional steady state solver there are basically two
+            % cases: A loop with an active component generating a pressure
+            % difference and a loop without such a component that only
+            % equalizes the pressures. To decide whether the steady state
+            % has been reached we can calculate the steady state condition
+            % initially using the steady state solver, and then compare the
+            % calculated solution to this steady state solution
+            % --> Include mechanic to identify the individual components in
+            % the current system of equations (active components, pressure
+            % losses, phase pressures etc). The the steady state solver can
+            % see what the final pressure difference should be in a loop
+            % (zero without active component, active component pressure
+            % changes with active component). The next step would be to set
+            % flowrates for equalizing branches to zero (done here) and to
+            % iterate the active component branches 
             
             % The initial flow rates are all zero, so initial rError below
             % will be inf -> that's good, e.g. the p2ps need a correct set
             % of flow rate directions to be included in equations!
+            afInitialFlowRates = this.afFlowRates;
             while abs(rError) > rErrorMax %|| iIteration < 5
                 afPrevFrs  = this.afFlowRates;
                 iIteration = iIteration + 1;
@@ -740,7 +756,70 @@ classdef branch < base & event.source
                 % Solve
                 %hT = tic();
                 warning('off','all');
+                % TO DO: Comment from puda
+                % Some comments from me, if I misunderstood anything please
+                % correct. This operation would solve the linear system of
+                % equation where aafPhasePressuresAndFlowRates * X =
+                % afBoundaryConditions but what are the X, are they the
+                % flowrates? This cannot be because in the example I viewed
+                % there were only 4 branches.
                 
+                % Example: In the tutorial case this was the matrix:
+%                 aafPhasePressuresAndFlowRates =
+% 
+%    1.0e+04 *
+% 
+%    -0.0001   -1.0890         0         0         0         0         0
+%     0.0001         0   -0.0001   -1.0890         0         0         0
+%          0         0    0.0001         0   -0.0001   -1.0890         0
+%          0         0         0         0    0.0001         0   -1.0890
+%          0         0         0    0.0001         0   -0.0001         0
+%          0    0.0001         0   -0.0001         0         0         0
+%          0         0         0         0         0    0.0001   -0.0001
+%               
+% and 
+% afBoundaryConditions =
+% 
+%      -100200
+%            0
+%            0
+%       100000
+%            0
+%            0
+%            0
+%
+% now basically this would translate into the following system of
+% equations: (1.089e4 will be written as 1e4
+%
+% - x1 - 1e4 x2                                             = -100200   (I)
+% + x1          -  x3 - 1e4 x4                              = 0         (II)
+%               +  x3               - x5 -  1e4 x6          = 0         (III)
+%                                   + x5 -         - 1e4 x7 = 100000    (IV)
+%                     +     x4           -      x6          = 0         (V)
+%      +     x2      -      x4                              = 0         (VI)
+%                                        +      x6 -     x7 = 0         (VII)
+%
+% According to this.poColIndexToObj the columns represent the following
+% objects: (phases are gas flow nodes)
+%   x1 ,  x2   ,  x3  ,   x4  ,   x5 ,   x6  ,  x7
+% phase, branch, phase, branch, phase, branch, branch
+%
+% Therefoe there are three types of equations within this system:
+%
+% Equation (I) is -BoundaryPress + Pressure - C*m_dot = 0 
+% which is the condition that the pressure difference in the branch has to
+% be equal to the pressure difference between the two boundaries
+%
+% Equations (II) and (III) represent the same condition just not between a
+% boundary and gas flow node, but between two gas flow nodes
+%
+% Equation (IV) is BoundaryPress - Pressure + C*m_dot, which is the same as
+% Eqation I just with a different sign (as it is the boundary conditions
+% from the other side)
+%
+% Equations (V) (VI) and (VII) mean that these flowrates have to sum up to zero
+% 
+
                 afResults = aafPhasePressuresAndFlowRates \ afBoundaryConditions;
                 sLastWarn = lastwarn;
                 
@@ -778,8 +857,6 @@ classdef branch < base & event.source
                         end
                     end
                 end
-                
-                
                 
                 %this.afFlowRates = tools.round.prec(this.afFlowRates, this.oTimer.iPrecision);
                 
@@ -827,16 +904,107 @@ classdef branch < base & event.source
                 end
             end
             
+            % TO DO (puda): I think there is also another error that
+            % should be considered, mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions
+            % which is basically the error of this individual solution,
+            % In the tutorials the flowrates did not actually reach 0,
+            % which therefore lead to small mass changes in the branches.
+            % Either we have to find a way to solve these here and achieve
+            % an mfError vector as defined above which is 0, or we have to
+            % find a way to prevent these small errors from affecting the
+            % gas flow node calculations
+            % Specifically the last set of equation which enforces that the
+            % sum of flowrates for the variable pressure phases has to be
+            % zero has to be absolutely enforced. 
+%             mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions;
+%             mfErrorInitial = mfError;
+%             iStartZeroSumEquations = length(mfError) - length(this.csVariablePressurePhases)+1;
+%             iCounter = 0;
+%             while any(mfError(iStartZeroSumEquations:end)) && iCounter < 500
+%                 mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions;
+% 
+%                 for iK = iStartZeroSumEquations:length(mfError)
+%                     if (aafPhasePressuresAndFlowRates(iK,:) * afResults) ~= 0
+%                         for iR = 1:length(mfError)
+%                             if aafPhasePressuresAndFlowRates(iK,iR) ~= 0
+%                                 oObj = this.poColIndexToObj(iR);
+% 
+%                                 iB = find(this.aoBranches == oObj, 1);
+%                                 %                                                                                               Number of branches represented in the sum, the error is equally distributed
+%                                 this.afFlowRates(iB) = this.afFlowRates(iB) - aafPhasePressuresAndFlowRates(iK,iR) * mfError(iK)/(sum(abs(aafPhasePressuresAndFlowRates(iK,:))));
+%                                 
+%                                 afResults(iR) = this.afFlowRates(iB);
+%                             end
+%                         end
+%                     end
+%                 end
+%                 iCounter = iCounter + 1;
+%             end
             
-            %TODO done iterating if converged!
+            %% Example time step limitation
+            % Note not finished, just to showcase the effect of limitation
+            % for time steps:
+            %
+            % Now check for the maximum allowable time step with the
+            % current flow rate (the pressure differences in the branches
+            % are not allowed to change their sign within one tick)
+            afMaxTimeStep = ones(this.poBoundaryPhases.Count, this.poBoundaryPhases.Count) * inf;
             
+            mfTotalMassChangeBoundary   = zeros(this.poBoundaryPhases.Count,1);
+            mfMassBoundary              = zeros(this.poBoundaryPhases.Count,1);
+            mfMassToPressureBoundary    = zeros(this.poBoundaryPhases.Count,1);
+            
+            for iBoundaryPhase = 1:this.poBoundaryPhases.Count
+                oBoundary = this.poBoundaryPhases(this.csBoundaryPhases{iBoundaryPhase});
+                
+                mfMassBoundary(iBoundaryPhase)              = oBoundary.fMass;
+                mfMassToPressureBoundary(iBoundaryPhase)    = oBoundary.fMassToPressure;
+                
+                for iExme = 1:length(oBoundary.coProcsEXME)
+                    iBranch = find(this.aoBranches == oBoundary.coProcsEXME{iExme}.oFlow.oBranch,1);
+                    
+                    if ~isempty(iBranch)
+                        mfTotalMassChangeBoundary(iBoundaryPhase) = mfTotalMassChangeBoundary(iBoundaryPhase) + (oBoundary.coProcsEXME{iExme}.iSign * this.afFlowRates(iBranch));
+                    else
+                        % in this case it is not a multi branch but for
+                        % example a manual branch which is simply assumed
+                        % to be a boundary condition and constant
+                        mfTotalMassChangeBoundary(iBoundaryPhase) = mfTotalMassChangeBoundary(iBoundaryPhase) + (oBoundary.coProcsEXME{iExme}.iSign * oBoundary.coProcsEXME{iExme}.oFlow.fFlowRate);
+                    end
+                end
+            end
+            
+            for iBoundaryLeft = 1:this.poBoundaryPhases.Count
+                for iBoundaryRight = 1:this.poBoundaryPhases.Count
+                    if iBoundaryLeft == iBoundaryRight
+                        continue
+                    else
+                        fPressureDifference = (mfMassBoundary(iBoundaryLeft) * mfMassToPressureBoundary(iBoundaryLeft) - mfMassBoundary(iBoundaryRight) * mfMassToPressureBoundary(iBoundaryRight));
+                        fAverageMassToPressure = (mfMassToPressureBoundary(iBoundaryLeft) + mfMassToPressureBoundary(iBoundaryRight))/2;
+                    end
+                    
+                    afMaxTimeStep(iBoundaryLeft, iBoundaryRight) = abs(fPressureDifference/(fAverageMassToPressure * (mfTotalMassChangeBoundary(iBoundaryLeft) - mfTotalMassChangeBoundary(iBoundaryRight))));
+                end
+            end
+            % Negative timesteps mean we are already past the
+            % equalization and are moving away from it (because of
+            % manual flows or active components) Therefore negative
+            % values do not have to be considered further. 0 Means
+            % we have reached equalization, therefore this can also
+            % be ignored for max time step condition
+            afMaxTimeStep(afMaxTimeStep <= 0) = inf;
+            fTimeStep = min(min(afMaxTimeStep));
+            if fTimeStep < this.fMinimumTimeStep
+                fTimeStep = this.fMinimumTimeStep;
+            end
+            this.setTimeStep(fTimeStep);
             
             % Ok now go through results - variable pressure phase pressures
             % and branch flow rates - and set!
             for iR = 1:length(this.csObjUuidsToColIndex)
                 oObj = this.poColIndexToObj(iR);
                 
-                if isa(oObj, 'matter.phases.gas_pressure_manual')
+                if isa(oObj, 'matter.phases.gas_flow_node')
                     oObj.setPressure(afResults(iR));
                     
                     

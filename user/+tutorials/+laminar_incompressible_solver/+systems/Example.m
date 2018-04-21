@@ -4,7 +4,7 @@ classdef Example < vsys
     
     properties (SetAccess = protected, GetAccess = public)
         fPipeLength   = 1.5;
-        fPipeDiameter = 0.0254/0.84; %%
+        fPipeDiameter = 0.005; %% for 3/5 mm overflow of warnings
         
         oManual;
     end
@@ -23,30 +23,30 @@ classdef Example < vsys
             
             
             
-            matter.store(this, 'Vacuum', 10000);
-            this.toStores.Vacuum.createPhase('air', 0.001 * 10000);
+            matter.store(this, 'Vacuum', 1);
+            this.toStores.Vacuum.createPhase('air',  1);
             matter.procs.exmes.gas(this.toStores.Vacuum.aoPhases(1), 'Port_1');
             %%%
             %matter.procs.exmes.gas(this.toStores.Vacuum.aoPhases(1), 'Port_2');
             
             %%special.matter.const_press_exme(this.toStores.Vacuum.aoPhases(1), 'Port_2', 0);
-            special.matter.const_press_exme(this.toStores.Vacuum.aoPhases(1), 'Port_2', 1e5);
+            matter.procs.exmes.gas(this.toStores.Vacuum.aoPhases(1), 'Port_2');
             
             
             
             
-            matter.store(this, 'Store', 1000);
+            matter.store(this, 'Store', 1);
             this.toStores.Store.createPhase('air', this.toStores.Store.fVolume);
             %%%special.matter.const_press_exme(this.toStores.Store.aoPhases(1), 'Port_Out', 600 + this.toStores.Store.aoPhases(1).fPressure);
             %%%special.matter.const_press_exme(this.toStores.Store.aoPhases(1), 'Port_Rtn', this.toStores.Store.aoPhases(1).fPressure);
             
             %%matter.procs.exmes.gas(this.toStores.Store.aoPhases(1), 'Port_Out');
-            special.matter.const_press_exme(this.toStores.Store.aoPhases(1), 'Port_Out', 1e5+200);
+            matter.procs.exmes.gas(this.toStores.Store.aoPhases(1), 'Port_Out');
             
             
             matter.store(this, 'Valve_1', 1e-6);
             cParams = matter.helper.phase.create.air(this, this.toStores.Valve_1.fVolume);
-            matter.phases.gas_pressure_manual(this.toStores.Valve_1, 'flow', cParams{:});
+            matter.phases.gas_flow_node(this.toStores.Valve_1, 'flow', cParams{:});
             matter.procs.exmes.gas(this.toStores.Valve_1.aoPhases(1), 'In'); 
             matter.procs.exmes.gas(this.toStores.Valve_1.aoPhases(1), 'Out'); 
             
@@ -54,7 +54,7 @@ classdef Example < vsys
             
             matter.store(this, 'Filter', 1e-1);
             cParams = matter.helper.phase.create.air(this, this.toStores.Filter.fVolume);
-            matter.phases.gas_pressure_manual(this.toStores.Filter, 'flow', cParams{:});
+            matter.phases.gas_flow_node(this.toStores.Filter, 'flow', cParams{:});
             matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'In');
             matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'Out');
             matter.procs.exmes.gas(this.toStores.Filter.aoPhases(1), 'Filtered');
@@ -75,20 +75,20 @@ classdef Example < vsys
             
             matter.store(this, 'Valve_2', 1e-6);
             cParams = matter.helper.phase.create.air(this, this.toStores.Valve_2.fVolume);
-            matter.phases.gas_pressure_manual(this.toStores.Valve_2, 'flow', cParams{:});
+            matter.phases.gas_flow_node(this.toStores.Valve_2, 'flow', cParams{:});
             matter.procs.exmes.gas(this.toStores.Valve_2.aoPhases(1), 'In'); 
             matter.procs.exmes.gas(this.toStores.Valve_2.aoPhases(1), 'Out'); 
             
+            fRoughness = 0;% 0.002;
             
-            
-            components.pipe(this, 'Pipe_Store_Valve1_1',  this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_Store_Valve1_2',  this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_Valve1_Filter_1', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_Valve1_Filter_2', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_Filter_Valve2_1', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_Filter_Valve2_2', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_Valve2_Store_1',  this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_Valve2_Store_2',  this.fPipeLength, this.fPipeDiameter);
+            components.pipe(this, 'Pipe_Store_Valve1_1',  this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.pipe(this, 'Pipe_Store_Valve1_2',  this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.pipe(this, 'Pipe_Valve1_Filter_1', this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.pipe(this, 'Pipe_Valve1_Filter_2', this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.pipe(this, 'Pipe_Filter_Valve2_1', this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.pipe(this, 'Pipe_Filter_Valve2_2', this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.pipe(this, 'Pipe_Valve2_Store_1',  this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.pipe(this, 'Pipe_Valve2_Store_2',  this.fPipeLength, this.fPipeDiameter, fRoughness);
             
             
             matter.branch(this, 'Store.Port_Out', { 'Pipe_Store_Valve1_1',  'Pipe_Store_Valve1_2'  }, 'Valve_1.In');
@@ -117,13 +117,14 @@ classdef Example < vsys
             %%%this.toStores.Store.aoPhases(1).coProcsEXME{2}.fPortPressure = fPressure;
             %%%
             
-            
-            %this.toStores.Store.aoPhases(1).rMaxChange  = 0.05;
+            tProps.rMaxChange = 0.01;
+            this.toStores.Store.aoPhases(1).setTimeStepProperties(tProps);
+            this.toStores.Vacuum.aoPhases(1).setTimeStepProperties(tProps);
             %this.toStores.Filter.aoPhases(2).rMaxChange = 0.15;
             %this.toStores.Filter.aoPhases(2).rMaxChange = 0.01;
             
-            tTimeStepProperties.rMaxChange = 5;
-            this.toStores.Filter.aoPhases(2).setTimeStepProperties(tTimeStepProperties)
+            
+            %this.toStores.Filter.aoPhases(2).rMaxChange = 5;
             %this.toStores.Filter.aoPhases(2).rMaxChange = 0.01;
             % Hack
             %this.toStores.Filter.aoPhases(2).setVolume(10000);
@@ -135,7 +136,7 @@ classdef Example < vsys
             
             this.oManual = solver.matter.manual.branch(this.aoBranches(5));
             
-%             this.oManual.setFlowRate(0.01);
+            this.oManual.setFlowRate(0.01);
         end
     end
     
