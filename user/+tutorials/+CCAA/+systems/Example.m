@@ -66,8 +66,6 @@ classdef Example < vsys
             matter.procs.exmes.gas(oCabinPhase, 'Port_1');
             matter.procs.exmes.gas(oCabinPhase, 'Port_2');
             matter.procs.exmes.gas(oCabinPhase, 'Port_3');
-            matter.procs.exmes.gas(oCabinPhase, 'Port_4');
-            matter.procs.exmes.gas(oCabinPhase, 'Port_5');
             
             % For the CCAA to function properly the cabin phase to which
             % the CCAA is attached has to be set as reference
@@ -86,8 +84,6 @@ classdef Example < vsys
             
             matter.procs.exmes.liquid(oCoolantPhase, 'Port_1');
             matter.procs.exmes.liquid(oCoolantPhase, 'Port_2');
-            matter.procs.exmes.liquid(oCoolantPhase, 'Port_3');
-            matter.procs.exmes.liquid(oCoolantPhase, 'Port_4');
             
             % Store to gather the condensate from CCAA
             matter.store(this, 'CondensateStore', 1);
@@ -102,10 +98,13 @@ classdef Example < vsys
             
             matter.procs.exmes.liquid(oCondensatePhase, 'Port_1');
             
-            % Adding a Temperature Dummy to keep the Cabin at a constant
-            % temperature
-            components.Temp_Dummy(this, 'Cabin_TempDummy', 295);
-            components.Temp_Dummy(this, 'Coolant_TempDummy', 280.15);
+            % Adding heat sources to keep the cabin and coolant water at a
+            % constant temperature
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
+            oCabinPhase.oCapacity.addHeatSource(oHeatSource);
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
+            oCoolantPhase.oCapacity.addHeatSource(oHeatSource);
             
             matter.branch(this, 'CCAAinput', {}, 'Cabin.Port_1');
             matter.branch(this, 'CCAA_CHX_Output', {}, 'Cabin.Port_2');
@@ -115,9 +114,6 @@ classdef Example < vsys
             matter.branch(this, 'CCAA_CoolantOutput', {}, 'CoolantStore.Port_2');
             
             
-            matter.branch(this, 'Cabin.Port_4', {'Cabin_TempDummy'}, 'Cabin.Port_5', 'Cabin_TempControl');
-            matter.branch(this, 'CoolantStore.Port_3', {'Coolant_TempDummy'}, 'CoolantStore.Port_4', 'Coolant_TempControl');
-            
             % now the interfaces between this system and the CCAA subsystem
             % are defined
             this.toChildren.CCAA.setIfFlows('CCAAinput', 'CCAA_CHX_Output', 'CCAA_TCCV_Output', 'CCAA_CondensateOutput', 'CCAA_CoolantInput', 'CCAA_CoolantOutput');
@@ -126,12 +122,8 @@ classdef Example < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            solver.matter.manual.branch(this.toBranches.Cabin_TempControl);
-            this.toBranches.Cabin_TempControl.oHandler.setFlowRate(10);
-            
-            solver.matter.manual.branch(this.toBranches.Coolant_TempControl);
-            this.toBranches.Coolant_TempControl.oHandler.setFlowRate(1);
-            
+            %% Assign thermal solvers
+            this.setThermalSolvers();
         end
     end
     

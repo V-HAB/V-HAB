@@ -107,8 +107,6 @@ classdef Example < vsys
             matter.procs.exmes.gas(oCabinPhase, 'Port_ToCCAA');
             matter.procs.exmes.gas(oCabinPhase, 'Port_FromCCAA_CHX');
             matter.procs.exmes.gas(oCabinPhase, 'Port_FromCCAA_TCCV');
-            matter.procs.exmes.gas(oCabinPhase, 'Port_TempControlIn');
-            matter.procs.exmes.gas(oCabinPhase, 'Port_TempControlOut');
             matter.procs.exmes.gas(oCabinPhase, 'Port_FromCDRAAirSafe1');
             matter.procs.exmes.gas(oCabinPhase, 'Port_FromCDRAAirSafe2');
             %Human Exmes
@@ -134,8 +132,6 @@ classdef Example < vsys
             
             matter.procs.exmes.liquid(oCoolantPhase, 'Port_1');
             matter.procs.exmes.liquid(oCoolantPhase, 'Port_2');
-            matter.procs.exmes.liquid(oCoolantPhase, 'Port_3');
-            matter.procs.exmes.liquid(oCoolantPhase, 'Port_4');
             
             % Store to gather the condensate from CCAA
             matter.store(this, 'CondensateStore', 1);
@@ -174,6 +170,7 @@ classdef Example < vsys
             matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
+            oConnectionPhase.bFlow = true;
             
             % creates a store to connect the CCAA and the CDRA
             matter.store(this, 'CDRA_CCAA_Connection', 0.1);
@@ -183,15 +180,19 @@ classdef Example < vsys
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 0.2, struct('CO2', fCO2Percent),  295, 0, 1e5);
                
             % Adding a phase to the store
-             oConnectionPhase = matter.phases.gas(this.toStores.CDRA_CCAA_Connection, 'ConnectionPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            oConnectionPhase = matter.phases.gas(this.toStores.CDRA_CCAA_Connection, 'ConnectionPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
+            oConnectionPhase.bFlow = true;
             
-            % Adding a Temperature Dummy to keep the Cabin at a constant
-            % temperature
-            components.Temp_Dummy(this, 'Cabin_TempDummy', 295);
-            components.Temp_Dummy(this, 'Coolant_TempDummy', this.fCoolantTemperature);
+            % Adding heat sources to keep the cabin and coolant water at a
+            % constant temperature
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
+            oCabinPhase.oCapacity.addHeatSource(oHeatSource);
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
+            oCoolantPhase.oCapacity.addHeatSource(oHeatSource);
             
             matter.branch(this, 'CCAAinput', {}, 'Cabin.Port_ToCCAA');
             matter.branch(this, 'CCAA_CHX_Output', {}, 'Cabin.Port_FromCCAA_CHX');
@@ -210,9 +211,6 @@ classdef Example < vsys
             matter.branch(this, 'CDRA_Airsafe2', {}, 'Cabin.Port_FromCDRAAirSafe2');
             matter.branch(this, 'CDRA_Vent1', {}, 'Vented.Port_1');
             matter.branch(this, 'CDRA_Vent2', {}, 'Vented.Port_2');
-            
-            matter.branch(this, 'Cabin.Port_TempControlIn', {'Cabin_TempDummy'}, 'Cabin.Port_TempControlOut', 'Cabin_TempControl');
-            matter.branch(this, 'CoolantStore.Port_3', {'Coolant_TempDummy'}, 'CoolantStore.Port_4', 'Coolant_TempControl');
             
             % now the interfaces between this system and the CCAA subsystem
             % are defined
@@ -353,12 +351,8 @@ classdef Example < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            solver.matter.manual.branch(this.toBranches.Cabin_TempControl);
-            this.toBranches.Cabin_TempControl.oHandler.setFlowRate(10);
-            
-            solver.matter.manual.branch(this.toBranches.Coolant_TempControl);
-            this.toBranches.Coolant_TempControl.oHandler.setFlowRate(1);
-            
+            %% Assign thermal solvers
+            this.setThermalSolvers();
         end
     end
     

@@ -39,7 +39,7 @@ classdef Example < vsys
             
             % Syncing the phase, this makes solver branch updating smoother
             % and prevents instabilities.
-            oAir.bSynced = true;
+            oAir.bFlow = true;
                         
             % Creating a H2O store to simulate metabolic rates
             matter.store(this, 'H2OStore', 10);

@@ -201,13 +201,33 @@ classdef capacity < base & event.source
             % balance while doing this. The specific heat capacity changes
             % when the matter property is recalculated in the matter table,
             % as it is temperature (and pressure) dependent
-            fInnerEnergyBefore = this.fTotalHeatCapacity * this.fTemperature;
-            
-            this.fTotalHeatCapacity = (this.oPhase.fMass * fSpecificHeatCapacity);
-            
-            this.setTemperature( fInnerEnergyBefore / this.fTotalHeatCapacity );
-            
-            this.fSpecificHeatCapacity = fSpecificHeatCapacity;
+            if this.oPhase.bFlow
+                mfFlowRate              = zeros(1,this.iProcsEXME);
+                mfSpecificHeatCapacity  = zeros(1,this.iProcsEXME);
+                for iExme = 1:this.iProcsEXME
+                    if isa(this.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
+                        fFlowRate = this.aoExmes(iExme).oBranch.coConductors{1}.oMassBranch.fFlowRate * this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).iSign;
+                        
+                        if fFlowRate > 0
+                            mfFlowRate(iExme) = fFlowRate;
+                            mfSpecificHeatCapacity(iExme) = this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).oFlow.fSpecificHeatCapacity;
+                        end
+                    end
+                end
+                
+                if sum(mfFlowRate) ~= 0
+                    this.fSpecificHeatCapacity  = sum(mfFlowRate .* mfSpecificHeatCapacity) / sum(mfFlowRate);
+                end
+            else
+                fInnerEnergyBefore = this.fTotalHeatCapacity * this.fTemperature;
+
+                this.fTotalHeatCapacity = (this.oPhase.fMass * fSpecificHeatCapacity);
+
+                this.setTemperature( fInnerEnergyBefore / this.fTotalHeatCapacity );
+
+                this.fSpecificHeatCapacity = fSpecificHeatCapacity;
+            end
+               
         end
         
         function addProcEXME(this, oProcEXME)
@@ -304,8 +324,45 @@ classdef capacity < base & event.source
             % was not done anyway already)
             this.oPhase.massupdate();
             
-            % Now we calculate the new temperature
-            fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * fLastStep);
+            % in case that the phase is considered only a flowthrough phase
+            % with 0 mass (and therefore also 0 capacity by itself) the
+            % temperature calculation must be adapted to reflect this
+            % correctly
+            if this.oPhase.bFlow
+                mfFlowRate              = zeros(1,this.iProcsEXME);
+                mfSpecificHeatCapacity  = zeros(1,this.iProcsEXME);
+                mfTemperature           = zeros(1,this.iProcsEXME);
+                for iExme = 1:this.iProcsEXME
+                    if isa(this.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
+                        fFlowRate = this.aoExmes(iExme).oBranch.coConductors{1}.oMassBranch.fFlowRate * this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).iSign;
+                        
+                        if fFlowRate > 0
+                            mfFlowRate(iExme) = fFlowRate;
+                            mfSpecificHeatCapacity(iExme) = this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).oFlow.fSpecificHeatCapacity;
+                            mfTemperature(iExme) = this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).oFlow.fTemperature;
+                        end
+                    end
+                end
+                
+                fOverallHeatCapacityFlow = sum(mfFlowRate .* mfSpecificHeatCapacity);
+                if sum(mfFlowRate) == 0
+                    % if nothing flows into the phase, it maintains the
+                    % previous temperature
+                    fTemperatureNew = this.fTemperature;
+                else
+                    
+                    fSourceHeatFlow = 0;
+                    for iSource = 1:length(this.aoHeatSource)
+                        fSourceHeatFlow = fSourceHeatFlow + this.aoHeatSource(iSource).fHeatFlow;
+                    end
+                    
+                    fTemperatureNew = (sum(mfFlowRate .* mfSpecificHeatCapacity .* mfTemperature) / fOverallHeatCapacityFlow) + fSourceHeatFlow/fOverallHeatCapacityFlow;
+                end
+            else
+                % Now we calculate the new temperature
+                fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * fLastStep);
+
+            end
             
             this.fLastTemperatureUpdate     = fTime;
             this.fTemperatureUpdateTimeStep = fLastStep;

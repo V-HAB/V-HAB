@@ -63,7 +63,7 @@ classdef Filter < matter.procs.p2ps.flow
                 this.fAirSafeTime = fAirSafeTime;
             end
             
-            if strcmp(this.sType, 'Filter_5A')
+            if strcmp(this.sType, 'Filter5A')
                 %Filter 5A absorbs CO2 so the value for CO2 is set to one
                 this.arExtractPartials = zeros(1, this.oMT.iSubstances);
                 this.arExtractPartials(this.oMT.tiN2I.CO2) = 1;
@@ -235,7 +235,14 @@ classdef Filter < matter.procs.p2ps.flow
             %calculates the current time step
             fTimeStep = this.oStore.oTimer.fTime - this.fLastExec;
             
-            if fTimeStep <= 0
+            if fTimeStep <= 0.1
+                return
+            end
+            
+            if this.oStore.oContainer.fFlowrateMain == 0
+                this.fFlowRateFilter = 0;
+                this.arExtractPartials = zeros(1,this.oMT.iSubstances);
+                this.setMatterProperties(this.fFlowRateFilter, this.arExtractPartials);
                 return
             end
             
@@ -254,7 +261,7 @@ classdef Filter < matter.procs.p2ps.flow
             switch this.sFilterMode
                 case 'absorb'
 
-                    if strcmp(this.sType, 'Filter_5A')
+                    if strcmp(this.sType, 'Filter5A')
                         fPPCO2 = this.oIn.oPhase.afPP(this.oMT.tiN2I.CO2);
 
                         % Capacity calculation
@@ -390,8 +397,21 @@ classdef Filter < matter.procs.p2ps.flow
                     
                     %during desorption the capacity is set to 0
                     this.fCapacity = 0;
+                      
+                    fAvailableMassFlow = this.oOut.oPhase.afMass(this.arExtractPartials ~= 0) / fTimeStep;
+
+                    if this.fFlowRateFilter > fAvailableMassFlow
+                        this.fFlowRateFilter = fAvailableMassFlow;
+                    end
             end
-                
+            
+            [ afInFlowrates, mrInPartials ] = this.getInFlows();
+            afInFlows = sum(afInFlowrates .* mrInPartials,1);
+            
+            if afInFlows(this.oMT.tiN2I.CO2) < (this.fFlowRateFilter .* this.arExtractPartials(this.oMT.tiN2I.CO2))
+                this.fFlowRateFilter = afInFlows(this.oMT.tiN2I.CO2);
+            end
+            
             %this sets the actual filter flow rate for the p2p processor
             this.setMatterProperties(this.fFlowRateFilter, this.arExtractPartials);
             
@@ -401,7 +421,7 @@ classdef Filter < matter.procs.p2ps.flow
             % cooling of the mass flowing through the filter. This
             % calculation derives the overall heat flow for this case and
             % sets the energy change to the phase
-            if strcmp(this.sType, 'Filter_5A')
+            if strcmp(this.sType, 'Filter5A')
                 %The heat flow from the heaters is saved as property to
                 %this proc while the heat flow between the zeolite and the 
                 %flow is saved in the filter f2f proc. For the temperature
@@ -411,42 +431,7 @@ classdef Filter < matter.procs.p2ps.flow
                 
                 fOverallHeatFlow = this.fHeatFlow - this.oF2F.fHeatFlow;
                 
-                fEnergyChange = fOverallHeatFlow*fTimeStep;
-                
-                %To prevent too large timesteps from setting physical
-                %impossible values the overall heat flow has to stay within
-                %certain limits
-                fTempDiff = fEnergyChange / this.oOut.oPhase.fTotalHeatCapacity;
-                
-                if this.oF2F.aoFlows(1).fFlowRate >= 0
-                    oInFlow = this.oF2F.aoFlows(1);
-                else
-                    oInFlow = this.oF2F.aoFlows(2);
-                end
-                
-                %if the temperature of the solid phase is higher than the
-                %flow temperature
-                if this.oOut.oPhase.fTemperature >= oInFlow.fTemperature
-                    %With the temperature difference the solid temp would
-                    %fall below the flow temp
-                    if ((this.oOut.oPhase.fTemperature + fTempDiff) < oInFlow.fTemperature)
-                        %Then the maximum temperature difference is the
-                        %difference between the solid temperature and the
-                        %flow temperature
-                        fMaxTempDiff = oInFlow.fTemperature-this.oOut.oPhase.fTemperature;
-                        fEnergyChange = fMaxTempDiff*this.oOut.oPhase.fTotalHeatCapacity;
-                    end
-                else
-                    if ((this.oOut.oPhase.fTemperature + fTempDiff) > oInFlow.fTemperature)
-                        %Then the maximum temperature difference is the
-                        %difference between the solid temperature and the
-                        %flow temperature
-                        fMaxTempDiff = oInFlow.fTemperature-this.oOut.oPhase.fTemperature;
-                        fEnergyChange = fMaxTempDiff*this.oOut.oPhase.fTotalHeatCapacity;
-                    end
-                end
-                 
-                this.oOut.oPhase.changeInnerEnergy(fEnergyChange);
+                this.oOut.oPhase.oCapacity.toHeatSources.AbsorberHeatSource.setHeatFlow(fOverallHeatFlow);
                 
             end
             

@@ -105,7 +105,44 @@ classdef gas < matter.phase
             % Check for volume not empty, when called from constructor
             %TODO see above, generally support empty volume? Treat a zero
             %     and an empty ([]) volume differently?
-            if ~isempty(this.fVolume)
+            if this.bFlow && this.oTimer.iTick > 0
+                % to ensure that flow phases set the correct values and do
+                % not confuse the user, a seperate calculation for them is
+                % necessary
+                afPartialMassFlow_P2P   = zeros(this.iProcsEXME, this.oMT.iSubstances);
+                afPP_In                 = zeros(this.iProcsEXME, this.oMT.iSubstances);
+                afPartialMassFlow_In    = zeros(this.iProcsEXME, this.oMT.iSubstances);
+                
+                for iExme = 1:this.iProcsEXME
+                    if this.coProcsEXME{iExme}.bFlowIsAProcP2P
+                        afPartialMassFlow_P2P(iExme,:)      = this.coProcsEXME{iExme}.oFlow.arPartialMass .* (this.coProcsEXME{iExme}.iSign * this.coProcsEXME{iExme}.oFlow.fFlowRate);
+                    else
+                        
+                        fFlowRate = this.coProcsEXME{iExme}.iSign * this.coProcsEXME{iExme}.oFlow.fFlowRate;
+                        if fFlowRate > 0
+                            afPP_In(iExme,:)                = this.oMT.calculatePartialPressures(this.coProcsEXME{iExme}.oFlow);
+                            afPartialMassFlow_In(iExme,:)   = this.coProcsEXME{iExme}.oFlow.arPartialMass .* fFlowRate;
+                        end
+                    end
+                end
+                
+                afPartialPressure = sum(afPP_In .* afPartialMassFlow_In, 1) ./ sum(afPartialMassFlow_In,1);
+                afPartialPressure = afPartialPressure .* ((sum(afPartialMassFlow_P2P,1) + sum(afPartialMassFlow_In,1)) ./ sum(afPartialMassFlow_In,1));
+                
+                afPartialPressure(isnan(afPartialPressure)) = 0;
+                afPartialPressure(afPartialPressure < 0 ) = 0;
+                this.afPP = afPartialPressure;
+                
+                if this.afPP(this.oMT.tiN2I.H2O)
+                    % calculate saturation vapour pressure [Pa];
+                    fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
+                    % calculate relative humidity
+                    this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
+                else
+                    this.rRelHumidity = 0;
+                end
+                
+            elseif ~isempty(this.fVolume)
                 this.fMassToPressure = this.calculatePressureCoefficient();
                 
                 this.fPressure = this.fMass * this.fMassToPressure;

@@ -165,6 +165,9 @@ classdef CCAA < vsys
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.TCCV, 1, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, this.tAtmosphere.fPressure);
             oAir = matter.phases.gas(this.toStores.TCCV, 'TCCV_PhaseGas', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
+            oAir.bFlow      = true;
+            oAir.bSynced    = true;
+            
             matter.procs.exmes.gas(oAir, 'Port_In');
             % This proc is only required if the CCAA has a CDRA connected to it
             if ~isempty(this.sCDRA)
@@ -182,8 +185,12 @@ classdef CCAA < vsys
             % has trouble correctly calculating small volumes
             matter.store(this, 'CHX', 2);
             % Input phase
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CHX, 1, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, 0, this.tAtmosphere.fPressure);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CHX, 1, struct('CO2', fCO2Percent), this.fCoolantTemperature, 0, this.tAtmosphere.fPressure);
             oInput = matter.phases.gas(this.toStores.CHX, 'CHX_PhaseIn',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            
+            oInput.bFlow    = true;
+            oInput.bSynced	= true;
+            
             % H2O phase
             cWaterHelper = matter.helper.phase.create.water(this.toStores.CHX, 1, this.fCoolantTemperature, fPressure);
             oH2O = matter.phases.liquid(this.toStores.CHX, 'CHX_H2OPhase', cWaterHelper{1}, cWaterHelper{2}, cWaterHelper{3}, cWaterHelper{4});
@@ -195,8 +202,8 @@ classdef CCAA < vsys
             if ~isempty(this.sCDRA)
                 matter.procs.exmes.gas(oInput, 'Flow_Out_Gas2');
             end
-            matter.procs.exmes.gas(oInput, 'filterport');
-            matter.procs.exmes.liquid(oH2O, 'filterport');
+            matter.procs.exmes.gas(oInput, 'filterport_Gas');
+            matter.procs.exmes.liquid(oH2O, 'filterport_Liquid');
             matter.procs.exmes.liquid(oH2O, 'Flow_Out_Liquid');
             
             % Creating the CHX
@@ -207,7 +214,7 @@ classdef CCAA < vsys
             
             % adds the P2P proc for the CHX that takes care of the actual
             % phase change
-            oCCAA_CHX.oP2P =components.HX.CHX_p2p(this.toStores.CHX, 'CondensingHX', 'CHX_PhaseIn.filterport', 'CHX_H2OPhase.filterport', oCCAA_CHX);
+            oCCAA_CHX.oP2P =components.HX.CHX_p2p(this.toStores.CHX, 'CondensingHX', 'CHX_PhaseIn.filterport_Gas', 'CHX_H2OPhase.filterport_Liquid', oCCAA_CHX);
 
             % Store that contains the coolant passing through the CHX. This
             % store is only necessary because it is not possible to have
@@ -257,14 +264,12 @@ classdef CCAA < vsys
             
             solver.matter.residual.branch(this.toBranches.CHX_Cabin);
             if ~isempty(this.sCDRA)
-                solver.matter.residual.branch(this.toBranches.CHX_CDRA);
-                this.toBranches.CHX_CDRA.oHandler.setPositiveFlowDirection(false);
+                solver.matter.manual.branch(this.toBranches.CHX_CDRA);
                 
                 solver.matter.residual.branch(this.toBranches.CDRA_TCCV);
                 this.toBranches.CDRA_TCCV.oHandler.setPositiveFlowDirection(false);
                 
                 if this.fCDRA_FlowRate == 0
-                    this.toBranches.CHX_CDRA.oHandler.setActive(false);
                     this.toBranches.CDRA_TCCV.oHandler.setActive(false);
                 end
             end
@@ -305,12 +310,6 @@ classdef CCAA < vsys
 
             this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
 
-            arMaxChange = zeros(1,this.oMT.iSubstances);
-            arMaxChange(this.oMT.tiN2I.H2O) = 0.05;
-            arMaxChange(this.oMT.tiN2I.CO2) = 0.05;
-            tTimeStepProperties.arMaxChange = arMaxChange;
-            this.toStores.TCCV.toPhases.TCCV_PhaseGas.setTimeStepProperties(tTimeStepProperties);
-            this.toStores.CHX.toPhases.CHX_PhaseIn.setTimeStepProperties(tTimeStepProperties);
             
             if this.bActive == 1
                 %% Setting of initial flow rates
@@ -320,6 +319,26 @@ classdef CCAA < vsys
                 this.toBranches.Coolant_In.oHandler.setFlowRate(-0.0755987283); %600 lb/hr
                 this.toBranches.Coolant_Out.oHandler.setFlowRate(0.0755987283); %600 lb/hr
             end
+            
+            % Set time step properties
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    
+                    arMaxChange = zeros(1,this.oMT.iSubstances);
+                    arMaxChange(this.oMT.tiN2I.Ar) = 0.75;
+                    arMaxChange(this.oMT.tiN2I.O2) = 0.75;
+                    arMaxChange(this.oMT.tiN2I.N2) = 0.75;
+                    arMaxChange(this.oMT.tiN2I.H2O) = 0.05;
+                    arMaxChange(this.oMT.tiN2I.CO2) = 0.75;
+                    tTimeStepProperties.arMaxChange = arMaxChange;
+                    
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
+            
+            this.setThermalSolvers();
         end           
         
             %% Function to connect the system and subsystem level branches with each other
@@ -418,17 +437,14 @@ classdef CCAA < vsys
                 this.toBranches.Coolant_Out.oHandler.setFlowRate(0);
                 
                 if ~isempty(this.sCDRA)
-                    this.toBranches.CHX_CDRA.oHandler.setActive(false);
                     this.toBranches.CDRA_TCCV.oHandler.setActive(false);
                 end
                 return
             else
                 if ~isempty(this.sCDRA)
                     if this.fCDRA_FlowRate == 0
-                        this.toBranches.CHX_CDRA.oHandler.setActive(false);
                         this.toBranches.CDRA_TCCV.oHandler.setActive(false);
                     else
-                        this.toBranches.CHX_CDRA.oHandler.setActive(true);
                         this.toBranches.CDRA_TCCV.oHandler.setActive(true);
                     end
                 end
@@ -519,9 +535,17 @@ classdef CCAA < vsys
             % Gets the two flow rates exiting the TCCV
             fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
 
-            this.toBranches.TCCV_Cabin.oHandler.setFlowRate((fInFlow+fInFlow2) - fTCCV_To_CHX_FlowRate);
-
-            this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
+            if (fInFlow+fInFlow2) > fTCCV_To_CHX_FlowRate
+                this.toBranches.TCCV_Cabin.oHandler.setFlowRate((fInFlow+fInFlow2) - fTCCV_To_CHX_FlowRate);
+            else
+                this.toBranches.TCCV_Cabin.oHandler.setFlowRate(0);
+            end
+            
+            if (fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate) > 0
+                this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
+            else
+                 this.toBranches.CHX_Cabin.oHandler.setFlowRate(0);
+            end
 
         end
 	end
