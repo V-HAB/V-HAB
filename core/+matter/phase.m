@@ -253,7 +253,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Maximum time step in seconds
         fMaxStep   = 20;
         % Minimum time step in seconds
-        fMinStep   = 0;
+        fMinStep;
         % Fixed (constant) time step in seconds, if this property is set
         % all other time step properties will be ignored and the set time
         % step will be used
@@ -316,6 +316,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.afMass = zeros(1, this.oMT.iSubstances);
             this.arPartialMass = zeros(1, this.oMT.iSubstances);
             this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
+            this.fMinStep = this.oTimer.fMinimumTimeStep;
             
             % Mass provided?
             if (nargin >= 3) && ~isempty(tfMass) && ~isempty(fieldnames(tfMass))
