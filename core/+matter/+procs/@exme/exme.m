@@ -353,7 +353,14 @@ classdef exme < base
                         afPP ...
                     );
                     
-                    
+                    % if the p2p removed more mass flow than is entering
+                    % the flow node, negative partial mass values can be
+                    % generated. Should we simply set the value to 0 in
+                    % that case? It would allow the p2p to generate mass.
+                    % Otherwise is it possible to set the p2p flowrate to a
+                    % value that prevents negative masses from occuring
+                    % (maximum value for partial p2p flowrate is equal to
+                    % inflow rate)?
                     arPartialMass = afTotalSubstanceInflows ./ fTotalInFlowRate;
                     fMolarMass    = this.oMT.calculateMolarMass(afTotalSubstanceInflows);
                     fSpecificHeatCapacity = fSpecificHeatCapacityNew;
