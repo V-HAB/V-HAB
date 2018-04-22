@@ -101,6 +101,11 @@ classdef PlantCulture < vsys
             % inedible biomass in kg, at the time of plant initialization
             this@vsys(oParent, txInput.sCultureName, fUpdateFrequency);
             
+            % just to let old definitions operate without requiring rework
+            if isfield(txInput, 'fH')
+                txInput.fPhotoperiod = txInput.fH;
+            end
+            
             if (nargin >= 4)
                 this.fPlantTimeInit = fPlantTimeInit;
             else
@@ -297,6 +302,8 @@ classdef PlantCulture < vsys
             end
             
             this.toStores.Plant_Culture.toPhases.PlantAtmosphere.bFlow = true;
+            %% Assign thermal solvers
+            this.setThermalSolvers();
         end
         
         %% Connect Subsystem Interfaces with Parent System
@@ -411,6 +418,7 @@ classdef PlantCulture < vsys
     methods (Access = protected)
         function exec(this, ~)
             exec@vsys(this);
+            this.update();
         end
     end
 end
