@@ -73,6 +73,13 @@ classdef timestep_observer < simulation.monitor
                     
                 elseif isa(oCaller, 'solver.matter.interval.branch')
                     csReports{iIndex} = ['The interval matter solver in the system ', oCaller.oBranch.oContainer.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(oTimer.iTick)];
+                   
+                elseif isa(oCaller, 'solver.matter.linear.branch')
+                    csReports{iIndex} = ['The linear matter solver in the system ', oCaller.oBranch.oContainer.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(oTimer.iTick)];
+                   
+                elseif isa(oCaller, 'solver.matter_multibranch.laminar_incompressible.branch')
+                    csReports{iIndex} = ['The multibranch matter solver in the system ', oCaller.aoBranches(1).oContainer.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(oTimer.iTick)];
+                
                 end
                     
                 if isempty(csReports{iIndex})

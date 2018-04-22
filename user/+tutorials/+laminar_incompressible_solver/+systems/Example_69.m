@@ -140,6 +140,7 @@ classdef Example_69 < vsys
             %this.oManual = solver.matter.manual.branch(this.aoBranches(5));
             
 %             this.oManual.setFlowRate(0.01);
+            this.setThermalSolvers();
         end
     end
     

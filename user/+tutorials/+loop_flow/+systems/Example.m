@@ -20,8 +20,12 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName);
             
+        end
+            
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
             % Creating a store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1));
+            matter.store(this, 'Tank_1', 1);
             
             % Adding a phase to the store 'Tank_1', 1 m^3 air
             oGasPhase = this.toStores.Tank_1.createPhase('air', 1);
@@ -31,25 +35,27 @@ classdef Example < vsys
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
             
             % Adding a fan to move the gas
-            this.addProcF2F(components.fan(this.oData.oMT, 'Fan', 'setSpeed', 55000, 'Left2Right'));
+            components.fan(this, 'Fan', 55000, 'Left2Right');
              
             % Adding a pipe to connect the tanks
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 1, 0.1));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 1, 0.1));
+            components.pipe(this, 'Pipe_1', 1, 0.1);
+            components.pipe(this, 'Pipe_2', 1, 0.1);
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            oBranch = this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2'}, 'Tank_1.Port_2');
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2'}, 'Tank_1.Port_2');
             
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
-            
+        end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
             % Now that the system is sealed, we can add the branch to a
             % specific solver. In this case we will use the linear
             % solver. 
-            solver.matter.linear.branch(oBranch);
+            solver.matter.interval.branch(this.aoBranches(1));
+            
+            this.setThermalSolvers();
         end
     end
     

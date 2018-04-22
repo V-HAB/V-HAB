@@ -83,6 +83,7 @@ classdef Example_4 < vsys
             
             
             solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches, 'complex');
+            this.setThermalSolvers();
         end
     end
     

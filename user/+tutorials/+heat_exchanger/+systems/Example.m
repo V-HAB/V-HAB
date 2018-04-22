@@ -126,6 +126,7 @@ classdef Example < vsys
             oB3.setFlowRate(0.01);
             oB4.setFlowRate(0.01);
             
+            this.setThermalSolvers();
         end
     end
     

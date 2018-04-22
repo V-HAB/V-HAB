@@ -29,37 +29,57 @@ classdef setup < simulation.infrastructure
             this.fSimTime = 3600 * 10; % In seconds
             this.bUseTime = true;
         end
-        
+       
         function configureMonitors(this)
             
             %% Logging
             oLog = this.toMonitors.oLogger;
             
-            oLog.add('Example', 'flow_props');
-            oLog.add('Example', 'thermal_properties');
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            for iStore = 1:length(csStores)
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+            end
             
-            oLog.addValue('Example', 'toProcsF2F.HeatExchanger_1.fHeatFlow', 'W', 'Heat Flow');
-            oLog.addValue('Example', 'toProcsF2F.HeatExchanger_2.fHeatFlow', 'W', 'Heat Flow');
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
             
-            %% Define plots
-            
-            oPlot = this.toMonitors.oPlotter;
-            
-            oPlot.definePlotAllWithFilter('Pa',  'Tank Pressures');
-            oPlot.definePlotAllWithFilter('K',   'Temperatures');
-            oPlot.definePlotAllWithFilter('kg',  'Tank Masses');
-            oPlot.definePlotAllWithFilter('kg/s','Flow Rates');
-            oPlot.definePlotAllWithFilter('W', 'Heat Flows');
+            oLog.addValue('Example', 'toProcsF2F.HeatExchanger_1.fHeatFlow', 'W', 'Heat Flow Air');
+            oLog.addValue('Example', 'toProcsF2F.HeatExchanger_2.fHeatFlow', 'W', 'Heat Flow Coolant');
         end
         
         function plot(this) % Plotting the results
-            % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
-            % further information
+            
+            %% Define Plots
+            
             close all
-          
-            this.toMonitors.oPlotter.plot();
+            oPlotter = plot@simulation.infrastructure(this);
+            
+            
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
+            
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
+
+            coPlots{1,1} = oPlotter.definePlot({'"Heat Flow Air"', '"Heat Flow Coolant"'}, 'Heat Flows');
+            coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
+            
+            oPlotter.plot();
         end
-        
     end
     
 end

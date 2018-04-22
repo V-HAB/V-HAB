@@ -227,6 +227,7 @@ classdef Example_313 < vsys
             
             
             
+            this.setThermalSolvers();
             
         end
     end

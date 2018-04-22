@@ -107,19 +107,6 @@ classdef Example_2 < vsys
             
         end
         
-        
-        function createThermalStructure(this)
-            createThermalStructure@vsys(this);
-            
-            oCapa = this.addCreateCapacity(this.toStores.Atmos.toPhases.hell);
-            oProc = this.toProcsF2F.Pipe1;
-            fArea = oProc.fLength * pi * (oProc.fDiameter / 2)^2;
-            
-            %TODO debug - if included, time step stuck at min
-            %thermal.f2f_wrapper(oProc, oCapa, 1, fArea);
-        end
-        
-        
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
@@ -133,6 +120,8 @@ classdef Example_2 < vsys
             this.toStores.Tank_1.toPhases.CabinAir.setTimeStepProperties(tTimeProps);
             this.toStores.Tank_2.toPhases.CabinAir.setTimeStepProperties(tTimeProps);
             %oIt1.iDampFR = 5;
+            
+            this.setThermalSolvers();
         end
     end
     

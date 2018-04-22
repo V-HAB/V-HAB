@@ -186,17 +186,8 @@ classdef Example_5 < vsys
             
             
             solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches, 'complex');
-            return;
             
-            
-            % Set CPE pressures from phase
-            fPressure = this.toStores.Store.aoPhases(1).fPressure;
-            
-            this.toStores.Store.aoPhases(1).coProcsEXME{1}.fPortPressure = fPressure + 600;
-            this.toStores.Store.aoPhases(1).coProcsEXME{2}.fPortPressure = fPressure;
-            
-            
-            solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches);
+            this.setThermalSolvers();
         end
     end
     

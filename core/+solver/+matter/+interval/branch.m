@@ -308,9 +308,25 @@ classdef branch < solver.matter.base.branch
             
             fTargetPressureDifference = fPressureDifference + (sign(fFlowRate) * sum(afDeltaP(afDeltaP < 0)));
             
-            fMassToPressure = max(oLeft.fMassToPressure, oRight.fMassToPressure);
-            fTimeStepLeft = abs(fTargetPressureDifference/(fMassToPressure * fNewMassChangeLeft));
-            fTimeStepRight = abs(fTargetPressureDifference/(fMassToPressure * fNewMassChangeRight));
+            try
+                fMassToPressure = max(oLeft.fMassToPressure, oRight.fMassToPressure);
+                fTimeStepLeft = abs(fTargetPressureDifference/(fMassToPressure * fNewMassChangeLeft));
+                fTimeStepRight = abs(fTargetPressureDifference/(fMassToPressure * fNewMassChangeRight));
+            catch
+                if isa(oLeft, 'matter.phase.gas')
+                    fTimeStepLeft = abs(fTargetPressureDifference/(oLeft.fMassToPressure * fNewMassChangeLeft));
+                    fTimeStepRight = 20;
+                    
+                elseif isa(oRight, 'matter.phase.gas')
+                    fTimeStepRight = abs(fTargetPressureDifference/(oRight.fMassToPressure * fNewMassChangeRight));
+                    fTimeStepLeft  = 20;
+                else
+                    % we do yet have a good calculation for liquid/solid
+                    % pressures
+                    fTimeStepRight = 20;
+                    fTimeStepLeft  = 20;
+                end
+            end
             
             fTimeStep = min(fTimeStepLeft, fTimeStepRight);
             

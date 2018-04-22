@@ -34,6 +34,11 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName, 1);
             
+        end
+            
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+            
             % Creating a store
             matter.store(this, 'Tank_1', 1);
             
@@ -73,21 +78,23 @@ classdef Example < vsys
             this.oPump = this.toProcsF2F.Pump;
             
             % Adding pipes to connect the components
-            components.pipe(this, 'Pipe_1', 1, 0.1);
-            components.pipe(this, 'Pipe_2', 1, 0.1);
+            components.pipe(this, 'Pipe_1', 1, 0.1, 2e-3);
+            components.pipe(this, 'Pipe_2', 1, 0.1, 2e-3);
             
             % Creating the flowpath between the components
-            oBranch = matter.branch(this, 'Tank_1.Port_1', {'Pipe_1', 'Pump', 'Pipe_2'}, 'Tank_2.Port_2');
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe_1', 'Pump', 'Pipe_2'}, 'Tank_2.Port_2');
             
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
             
+        end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
             % Now that the system is sealed, we can add the branch to a
             % specific solver. In this case we will use the linear
             % solver. 
-            solver.matter.linear.branch(oBranch);
+            solver.matter.interval.branch(this.aoBranches(1));
                         
+            this.setThermalSolvers();
         end
     end
     

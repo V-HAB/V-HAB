@@ -88,6 +88,8 @@ classdef Example < vsys
             solver.matter.linearized.branch(this.aoBranches(3));
             
             solver.matter.linearized.controller(this.aoBranches);
+            
+            this.setThermalSolvers();
         end
     end
     
