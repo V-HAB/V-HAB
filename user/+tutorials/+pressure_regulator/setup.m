@@ -30,9 +30,6 @@ classdef setup < simulation.infrastructure
             %% Logging
             oLog = this.toMonitors.oLogger;
             
-            tiLog = oLog.add('SuitSystem', 'flow_props');
-            tiLog = oLog.add('SuitSystem/Regulator', 'flow_props');
-            
             tiLog.Valves.Diameter.Valve1 = oLog.addValue('SuitSystem/Regulator.toProcsF2F.FirstStageValve', 'fHydrDiam', 'm', 'First Stage Valve Hydraulic Diameter');
             tiLog.Valves.Diameter.Valve2 = oLog.addValue('SuitSystem/Regulator.toProcsF2F.SecondStageValve', 'fHydrDiam', 'm', 'Second Stage Valve Hydraulic Diameter');
             
@@ -51,183 +48,55 @@ classdef setup < simulation.infrastructure
                 tiLog.Valves.Position.PPRV = oLog.addValue('SuitSystem.toProcsF2F.ValvePPRV', 'afSSM_VectorXNew(2)', 'm', 'PPRV Position');
                 
                 tiLog.Valves.Speed.PPRV = oLog.addValue('SuitSystem.toProcsF2F.ValvePPRV', 'afSSM_VectorXNew(1)', 'm', 'PPRV Speed');
-                
             end
             
-            %% Defining plots
-            oPlot = this.toMonitors.oPlotter;
+            csStores = fieldnames(this.oSimulationContainer.toChildren.SuitSystem.toStores);
+            for iStore = 1:length(csStores)
+                oLog.addValue(['SuitSystem.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['SuitSystem.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+            end
             
-            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
-            %oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
-            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
-            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
-            
-            oPlot.definePlot(tiLog.Valves.Diameter, 'Valve Diameters');
-            oPlot.definePlot(tiLog.Valves.Position, 'Valve Positions');
-            oPlot.definePlot(tiLog.Valves.Speed,    'Valve Speeds');
-            oPlot.definePlot(tiLog.Valves.Setpoint, 'Valve Setpoints');
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.SuitSystem.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLog.addValue(['SuitSystem.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
             
         end
         
-        % plot results
-        function plot(this)
-            this.toMonitors.oPlotter.plot();
-            return;
+        function plot(this) % Plotting the results
             
-%             if this.oSimulationContainer.toChildren.SuitSystem.bPPRVExists
-%             close all
-%             
-%             figure('name', 'Tank Pressures');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [2 4 6 8 21]));
-%             legend('O2 Tank', 'InterStage', 'Suit Tank', 'Buffer Tank', 'Environment Reference');
-%             ylabel('Pressure in [Pa]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Tank Masses');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [3 5 7 9]));
-%             legend('O2 Tank', 'InterStage', 'Suit Tank', 'Buffer Tank');
-%             ylabel('Mass in [kg]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Flow Rate');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), [(this.mfLog(:, 10) * -1) this.mfLog(:, [11 12 23])]);
-%             legend('O2Tank - InterStage', 'InterStage - SuitTank',  'Suit Leakage', 'PPRV FlowRate');
-%             ylabel('flow rate [kg/s]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Time Steps');
-%             hold on;
-%             grid minor;
-%             plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-%             legend('Solver');
-%             ylabel('Time in [s]');
-%             xlabel('Ticks');
-% 
-%             figure('name', 'Hydraulic Diameter');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [13 14 24]));
-%             legend('HydrDiam Valve1', 'HydrDiam Valve2', 'HydrDiam PPRV');
-%             ylabel('HydrDiam in [m]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Valve Dislocation');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [15 16 25]));
-%             legend('Position Valve1', 'Position Valve2', 'Position PPRV');
-%             ylabel('Position in [m]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Valve Speed');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [17 18 26]));
-%             legend('Speed Valve1', 'Speed Valve2', 'Speed PPRV');
-%             ylabel('Speed in [m/s]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Valve Setpoint');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [19 20]));
-%             legend('Setpoint Valve1', 'Setpoint Valve2');
-%             ylabel('Setpoint Position in [m]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Environment Reference');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [21 22]));
-%             legend('Pressure ER', 'Pressure EB');
-%             ylabel('Pressure in [Pa], Mass in [kg]');
-%             xlabel('Time in [s]');
-%             
-%             tools.arrangeWindows();
-%             
-%             else
-%                 close all
-%             
-%             figure('name', 'Tank Pressures');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [2 4 6 8 21]));
-%             legend('O2 Tank', 'InterStage', 'Suit Tank', 'Buffer Tank', 'Environment Reference');
-%             ylabel('Pressure in [Pa]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Tank Masses');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [3 5 7 9]));
-%             legend('O2 Tank', 'InterStage', 'Suit Tank', 'Buffer Tank');
-%             ylabel('Mass in [kg]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Flow Rate');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), [(this.mfLog(:, 10) * -1) this.mfLog(:, [11 12])]);
-%             legend('O2Tank - InterStage', 'InterStage - SuitTank',  'Suit Leakage');
-%             ylabel('flow rate [kg/s]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Time Steps');
-%             hold on;
-%             grid minor;
-%             plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-%             legend('Solver');
-%             ylabel('Time in [s]');
-%             xlabel('Ticks');
-% 
-%             figure('name', 'Hydraulic Diameter');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [13 14]));
-%             legend('HydrDiam Valve1', 'HydrDiam Valve2');
-%             ylabel('HydrDiam in [m]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Valve Dislocation');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [15 16]));
-%             legend('Position Valve1', 'Position Valve2');
-%             ylabel('Position in [m]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Valve Speed');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [17 18]));
-%             legend('Speed Valve1', 'Speed Valve2');
-%             ylabel('Speed in [m/s]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Valve Setpoint');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [19 20]));
-%             legend('Setpoint Valve1', 'Setpoint Valve2');
-%             ylabel('Setpoint Position in [m]');
-%             xlabel('Time in [s]');
-%             
-%             figure('name', 'Environment Reference');
-%             hold on;
-%             grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, [21 22]));
-%             legend('Pressure ER', 'Pressure EB');
-%             ylabel('Pressure in [Pa], Mass in [kg]');
-%             xlabel('Time in [s]');
-%             
-%             tools.arrangeWindows();
-%             end
+            %% Define Plots
+            
+            close all
+            oPlotter = plot@simulation.infrastructure(this);
+            
+            
+            csStores = fieldnames(this.oSimulationContainer.toChildren.SuitSystem.toStores);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.SuitSystem.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
+            
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
+
+            coPlots{1,1} = oPlotter.definePlot(csPressures,     'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
+            
+            oPlotter.plot();
         end
+        
     end
+    
 end
+

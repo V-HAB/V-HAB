@@ -247,6 +247,7 @@ classdef RCA < vsys
             this.toStores.Bed_B.toPhases.FlowPhase.bSynced           = true;
             this.toStores.Merger.toPhases.Merger_Phase_1.bSynced     = true;
 
+            this.setThermalSolvers();
         end
     end
     

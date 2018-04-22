@@ -87,9 +87,24 @@ classdef p2p < matter.flow
             oPort = this.oStore.getPort(sPortOut(2:end));
             thermal.procs.exme(oPort.oPhase.oCapacity, sPortOut(2:end));
             
-            thermal.procs.conductors.fluidic(this.oStore.oContainer, this.sName, this);
+            try
+                thermal.procs.conductors.fluidic(this.oStore.oContainer, this.sName, this);
+                sCustomName = this.sName;
+            catch
+                bError = true;
+                iCounter = 2;
+                while bError == true
+                    try
+                        thermal.procs.conductors.fluidic(this.oStore.oContainer, [this.sName, '_', num2str(iCounter)], this);
+                        bError = false;
+                    catch
+                        iCounter = iCounter + 1;
+                    end
+                end
+                sCustomName = [this.sName, '_', num2str(iCounter)];
+            end
             
-            this.oThermalBranch = thermal.branch(this.oStore.oContainer, [this.oStore.sName,  sPortIn] , {this.sName}, [this.oStore.sName,  sPortOut], this.sName);
+            this.oThermalBranch = thermal.branch(this.oStore.oContainer, [this.oStore.sName,  sPortIn] , {sCustomName}, [this.oStore.sName,  sPortOut], sCustomName);
         end
     end
     

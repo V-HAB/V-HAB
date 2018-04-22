@@ -101,8 +101,8 @@ classdef Example < vsys
             this.toManualBranches.N2.setFlowRate(0);
             % H2O injection rate
             this.toManualBranches.H2O.setFlowRate(0);
-
             
+            this.setThermalSolvers();
         end
         
     end

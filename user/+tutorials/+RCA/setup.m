@@ -25,15 +25,19 @@ classdef setup < simulation.infrastructure
             this@simulation.infrastructure('RCA_Development_Simulation', ptConfigParams, tSolverParams, ttMonitorConfig);
 
             % Creating a Test object
-            tutorials.RCA.systems.Example(this.oSimulationContainer, 'Test');          
+            tutorials.RCA.systems.Example(this.oSimulationContainer, 'Test');      
+            
+            % Simulation length - stop when specific time in sim is reached
+            % or after specific amount of ticks (bUseTime true/false).
+            this.fSimTime  = 3600; % In seconds
+            this.iSimTicks = 1100;
+            this.bUseTime  = true;  
         end
         
         function configureMonitors(this)
             %% Logging
             oLogger = this.toMonitors.oLogger;
             
-            tiLog.Parent                                 = oLogger.add('Test', 'flow_props');
-            tiLog.RCA                                    = oLogger.add('Test/RCA', 'flow_props');
             tiLog.RCA_Beds.A_sorp                        = oLogger.addValue('Test.toChildren.RCA.toStores.Bed_A.toProcsP2P.SorptionProcessor', 'fFlowRate_ads', 'kg/s', 'Adsorption Flow Rate Bed A');
             tiLog.RCA_Beds.B_sorp                        = oLogger.addValue('Test.toChildren.RCA.toStores.Bed_B.toProcsP2P.SorptionProcessor', 'fFlowRate_ads', 'kg/s', 'Adsorption Flow Rate Bed B');
             tiLog.RCA_CO2_Values.SplitterPartialMass     = oLogger.addValue('Test/RCA:s:Splitter:p:Splitter_Phase_1', 'arPartialMass(this.oMT.tiN2I.CO2)', '-', 'Splitter CO2 Partial Mass');
@@ -45,36 +49,50 @@ classdef setup < simulation.infrastructure
             tiLog.RCA_CO2_Values.BedAFlowPartialPressure = oLogger.addValue('Test/RCA:s:Bed_A:p:FlowPhase', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Bed A Flow Phase CO2 Partial Pressure');
             tiLog.RCA_CO2_Values.BedBFlowPartialPressure = oLogger.addValue('Test/RCA:s:Bed_B:p:FlowPhase', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Bed B Flow Phase CO2 Partial Pressure');
             
-            %% Plot definition
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Test.toStores);
+            for iStore = 1:length(csStores)
+                oLogger.addValue(['Test.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLogger.addValue(['Test.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+            end
             
-            oPlot = this.toMonitors.oPlotter;
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Test.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLogger.addValue(['Test.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
             
-            oPlot.definePlotWithFilter(tiLog.Parent,   'Pa', 'PLSS Pressures');
-%             oPlot.definePlotWithFilter(tiLog.Parent,    'K', 'PLSS Temperatures');
-            oPlot.definePlotWithFilter(tiLog.Parent,   'kg', 'PLSS Tank Masses');
-            oPlot.definePlotWithFilter(tiLog.Parent, 'kg/s', 'PLSS Flow Rates');
-            
-            oPlot.definePlotWithFilter(tiLog.RCA,   'Pa', 'RCA Pressures');
-%             oPlot.definePlotWithFilter(tiLog.RCA,    'K', 'RCA Temperatures');
-            oPlot.definePlotWithFilter(tiLog.RCA,   'kg', 'RCA Tank Masses');
-            oPlot.definePlotWithFilter(tiLog.RCA, 'kg/s', 'RCA Flow Rates');
-            
-            oPlot.definePlot(tiLog.RCA_Beds, 'Adsorption Flow Rates');
-
-            oPlot.definePlotWithFilter(tiLog.RCA_CO2_Values, '-',  'RCA CO2 Partial Masses');
-            oPlot.definePlotWithFilter(tiLog.RCA_CO2_Values, 'Pa', 'RCA CO2 Partial Pressures');
-
-            % Simulation length - stop when specific time in sim is reached
-            % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime  = 3600; % In seconds
-            this.iSimTicks = 1100;
-            this.bUseTime  = true;
-
         end
         
-        function plot(this, varargin)
-            this.toMonitors.oPlotter.plot(varargin{:});
+        function plot(this) % Plotting the results
             
+            %% Define Plots
+            
+            close all
+            oPlotter = plot@simulation.infrastructure(this);
+            
+            
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Test.toStores);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Test.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
+            
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
+
+            coPlots{1,1} = oPlotter.definePlot(csPressures,     'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
+            
+            oPlotter.plot();
         end
         
     end
