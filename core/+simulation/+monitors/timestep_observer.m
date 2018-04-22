@@ -70,6 +70,9 @@ classdef timestep_observer < simulation.monitor
                 
                 elseif isa(oCaller, 'solver.matter.iterative.branch')
                     csReports{iIndex} = ['The iterative matter solver in the system ', oCaller.oBranch.oContainer.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(oTimer.iTick)];
+                    
+                elseif isa(oCaller, 'solver.matter.interval.branch')
+                    csReports{iIndex} = ['The interval matter solver in the system ', oCaller.oBranch.oContainer.sName, ' used a minimal time step of ', num2str(fMinStep), ' seconds in Simulation Tick ', num2str(oTimer.iTick)];
                 end
                     
                 if isempty(csReports{iIndex})

@@ -15,7 +15,7 @@ classdef branch < solver.matter.base.branch
         % Actual time between flow rate calculations
         fTimeStep = 0;
         
-        fMaxError       = 1;    % Maximum allowed error in the solution in Pa
+        fMaxError       = 1e-8; % Maximum allowed error in the solution in Pa
         iMaxIterations  = 500;  % Maximum allowed iterations
     end
     methods
@@ -63,6 +63,8 @@ classdef branch < solver.matter.base.branch
             % pressures as well as delta temperatures.
             [ fFlowRate, afDeltaP ] = this.solveFlowRate();
             
+            this.calculateTimeStep(fFlowRate, afDeltaP);
+            
             % See base branch, same check here - if input phase nearly
             % empty, just set flow rate to zero
             oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
@@ -79,6 +81,48 @@ classdef branch < solver.matter.base.branch
     
     
     methods (Access = public)
+        
+        function setSolverProperties(this, tSolverProperties)
+            % currently the possible time step properties that can be set
+            % by the user are:
+            %
+            % fMaxError:    Maximum Error of the solution in Pa, also
+            %               decides when the solver should be recalculated
+            %               in case the boundary conditions have changed
+            % iMaxIterations: Sets the maximum value for iterations, if it
+            %                 is exceed the solver throws an error
+            %
+            % In order to define these provide a struct with the fieldnames
+            % as described here to this function for the values that you
+            % want to set
+            
+            csPossibleFieldNames = {'fMaxError', 'iMaxIterations'};
+            
+            % Gets the fieldnames of the struct to easier loop through them
+            csFieldNames = fieldnames(tSolverProperties);
+            
+            for iProp = 1:length(csFieldNames)
+                sField = csFieldNames{iProp};
+
+                % If the current properties is any of the defined possible
+                % properties the function will overwrite the value,
+                % otherwise it will throw an error
+                if ~any(strcmp(sField, csPossibleFieldNames))
+                    error(['The function setSolverProperties was provided the unknown input parameter: ', sField, ' please view the help of the function for possible input parameters']);
+                end
+                
+
+                % checks the type of the input to ensure that the
+                % correct type is used.
+                xProperty = tSolverProperties.(sField);
+
+                if ~isfloat(xProperty)
+                    error(['The ', sField,' value provided to the setSolverProperties function is not defined correctly as it is not a (scalar, or vector of) float']);
+                end
+                
+                this.(sField) = tSolverProperties.(sField);
+            end
+        end
         
         %% Solve branch
         function [ fFlowRate, afDeltaP ] = solveFlowRate(this)
@@ -245,6 +289,35 @@ classdef branch < solver.matter.base.branch
             end
             fPressureDrop   =  sum(mfData(mfData > 0));
             fError          =  abs(fPressureDifference + fPressureRise) - abs(fPressureDrop);
+        end
+        
+        function [fTimeStep] = calculateTimeStep(this, fFlowRate, afDeltaP)
+            
+            oLeft   = this.oBranch.coExmes{1}.oPhase;
+            oRight  = this.oBranch.coExmes{2}.oPhase;
+            
+            fNewMassChangeLeft = oLeft.fCurrentTotalMassInOut + this.fFlowRate - fFlowRate;
+            fNewMassChangeRight = oRight.fCurrentTotalMassInOut - this.fFlowRate + fFlowRate;
+            
+            
+            [ fPressureLeft,  ~ ] = this.oBranch.coExmes{1}.getPortProperties();
+            [ fPressureRight, ~ ] = this.oBranch.coExmes{2}.getPortProperties();
+            
+            fPressureDifference = fPressureLeft - fPressureRight;
+            
+            fTargetPressureDifference = fPressureDifference + (sign(fFlowRate) * sum(afDeltaP(afDeltaP < 0)));
+            
+            fMassToPressure = max(oLeft.fMassToPressure, oRight.fMassToPressure);
+            fTimeStepLeft = abs(fTargetPressureDifference/(fMassToPressure * fNewMassChangeLeft));
+            fTimeStepRight = abs(fTargetPressureDifference/(fMassToPressure * fNewMassChangeRight));
+            
+            fTimeStep = min(fTimeStepLeft, fTimeStepRight);
+            
+            % to assure stability we do not use the maximum possible time
+            % step
+            fTimeStep = 0.75 * fTimeStep;
+            
+            this.setTimeStep(fTimeStep);
         end
     end
 end
