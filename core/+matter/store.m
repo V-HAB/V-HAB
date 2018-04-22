@@ -829,9 +829,15 @@ classdef store < base
             
             % Set remaining volume for each phase - see above, need to
             % calculate an absolute pressure from all gas/plasma phases?
-            for iI = 1:this.iPhases
-                if ~any(strcmp(csVolPhases, this.aoPhases(iI).sType))
-                    this.aoPhases(iI).setVolume(fVolume);
+            % TO DO: Currently this is only performed if only one gas phase
+            % exists. We require a better logic for this or workarounds for
+            % stores with discretized cells and therefore multiple gas
+            % phases
+            if iPhasesSet == 1
+                for iI = 1:this.iPhases
+                    if ~any(strcmp(csVolPhases, this.aoPhases(iI).sType))
+                        this.aoPhases(iI).setVolume(fVolume);
+                    end
                 end
             end
         end
