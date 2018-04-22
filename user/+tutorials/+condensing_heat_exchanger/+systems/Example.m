@@ -192,6 +192,8 @@ classdef Example < vsys
                     oPhase.setTimeStepProperties(tTimeStepProperties);
                 end
             end
+            
+            this.setThermalSolvers();
         end
     end
     

@@ -69,6 +69,7 @@ classdef Example < vsys
             % the iterative solver. 
             solver.matter.iterative.branch(this.aoBranches(1));
             
+            this.setThermalSolvers();
         end
     end
     
