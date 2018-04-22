@@ -22,9 +22,12 @@ classdef Example < vsys
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
             this@vsys(oParent, sName, 30);
+        end
             
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
             % Creating a store - volume 10m3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 10));
+            matter.store(this, 'Tank_1', 10);
              
             % Create normal air (standard atmosphere) for 20m3. Will
             % have ~twice the pressure of the standard atmosphere, because 
@@ -36,7 +39,7 @@ classdef Example < vsys
             
             
             % Creating a store - right side.
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 10));
+            matter.store(this, 'Tank_2', 10);
             
             % Create normal air (standard atmosphere) for 10m3. Here the 
             % tank and phase volume are the same, so the pressure will be
@@ -50,18 +53,46 @@ classdef Example < vsys
             % Create the reactor. See the according files, just an example
             % for an implementation - copy to your own directory and change
             % as needed.
-            this.addStore(tutorials.manipulator.subsystems.Reactor(this.oData.oMT, 'Reactor'));
+            fReactorVolume = 1;
+            matter.store(this, 'Reactor', 1);
+            
+            % Creating two phases, on for the flow, one for the filter
+            oFlowPhase     = this.toStores.Reactor.createPhase('air', 'FlowPhase',     fReactorVolume/2);
+            oFilteredPhase = this.toStores.Reactor.createPhase('air', 'FilteredPhase', fReactorVolume/2);
+
+                        % Create the according exmes
+            % In- and Outlet for the flow phase
+            matter.procs.exmes.gas(oFlowPhase,     'Inlet');
+            matter.procs.exmes.gas(oFlowPhase,     'Outlet');
+            % Each phase gets one exme for connection to the p2p proc. 
+            matter.procs.exmes.gas(oFlowPhase,     'FilterPortIn');
+            matter.procs.exmes.gas(oFilteredPhase, 'FilterPortOut');
+            
+            % Creating the manipulator
+            tutorials.manipulator.components.DummyBoschProcess('DummyBoschProcess', oFlowPhase);
+            
+            % Createing the p2p processor.
+            % Parameter: name, from, to, substance, capacity
+            tutorials.manipulator.components.AbsorberExample(this, this.toStores.Reactor, 'FilterProc', 'FlowPhase.FilterPortIn', 'FilteredPhase.FilterPortOut', 'C', inf);
+
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 0.5, 0.005));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 0.5, 0.005));
+            components.pipe(this, 'Pipe_1', 0.5, 0.005);
+            components.pipe(this, 'Pipe_2', 0.5, 0.005);
             
             % Creating the flowpath between the components
-            this.createBranch('Tank_1.Outlet',  { 'Pipe_1' }, 'Reactor.Inlet');
-            this.createBranch('Reactor.Outlet', { 'Pipe_2' }, 'Tank_2.Inlet');
+            matter.branch(this, 'Tank_1.Outlet',  { 'Pipe_1' }, 'Reactor.Inlet');
+            matter.branch(this, 'Reactor.Outlet', { 'Pipe_2' }, 'Tank_2.Inlet');
             
-            % Seal - systems always have to do that!
-            this.seal();
+        end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            
+            solver.matter.interval.branch(this.aoBranches(1));
+            solver.matter.interval.branch(this.aoBranches(2));
+            
+            this.setThermalSolvers();
         end
     end
     

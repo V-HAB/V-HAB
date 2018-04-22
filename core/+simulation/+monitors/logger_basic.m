@@ -938,11 +938,11 @@ classdef logger_basic < simulation.monitor
                     [ 'this.oSimulationInfrastructure.oSimulationContainer.toChildren.' this.tLogValues(iL).sObjectPath '.' ] ...
                     );
                 
-                try
-                    [~] = eval(this.csPaths{iL});
-                catch oError
-                    this.throw('\n\nSomething went wrong while logging ''%s'' on ''%s''. \nMATLAB provided the following error message:\n%s\n', this.tLogValues(iL).sExpression, this.tLogValues(iL).sObjectPath, oError.message);
-                end
+%                 try
+%                     [~] = eval(this.csPaths{iL});
+%                 catch oError
+%                     this.throw('\n\nSomething went wrong while logging ''%s'' on ''%s''. \nMATLAB provided the following error message:\n%s\n', this.tLogValues(iL).sExpression, this.tLogValues(iL).sObjectPath, oError.message);
+%                 end
             
                 %tLogProp.sExpression = strrep(tLogProp.sExpression, 'this.', [ tLogProp.sObjectPath '.' ]);
             end
