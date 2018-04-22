@@ -85,6 +85,7 @@ classdef Example1 < vsys
     %             this.toStores.Filter.aoPhases(2).rMaxChange = inf;
     %             this.toStores.Filter.aoPhases(1).rMaxChange = inf;
 
+                this.setThermalSolvers();
                 return;
 
             end
@@ -137,6 +138,8 @@ classdef Example1 < vsys
             
             tTimeStepProperties.rMaxChange = 5;
             this.aoFilterPhases(2).setTimeStepProperties(tTimeStepProperties);
+            
+            this.setThermalSolvers();
         end
     end
     

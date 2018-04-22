@@ -13,7 +13,7 @@ classdef Example2 < vsys
             this@vsys(oParent, sName, 60);
             
             % Creating a store, volume 10m^3
-            this.addStore(matter.store(this.oData.oMT, 'Atmos', 10));
+            matter.store(this, 'Atmos', 10);
             
             % Creating normal air (standard atmosphere) for 20m^3. Will
             % have 2 bar of pressure because the store is actually smaller.
@@ -23,7 +23,7 @@ classdef Example2 < vsys
             matter.procs.exmes.gas(oAir, 'Out');
             
             % Creating a second store 
-            this.addStore(matter.store(this.oData.oMT, 'Atmos2', 10));
+            matter.store(this, 'Atmos2', 10);
             
             % Better usage of air helper than above - provide the correct
             % volume, then empty values for temperature and humidity (so
@@ -37,20 +37,49 @@ classdef Example2 < vsys
             % Create the filter. See the according files, just an example
             % for an implementation - copy to your own directory and change
             % as needed.
-            this.addStore(tutorials.p2p.components.Filter(this.oData.oMT, 'Filter', 0.1));
+            fFilterVolume = 1;
+            matter.store(this, 'Filter', fFilterVolume);
+            oFlow = this.toStores.Filter.createPhase('air', 'FlowPhase', fFilterVolume/ 2, 293.15);
+            
+            oFiltered = matter.phases.gas(this.toStores.Filter, ...
+                          'FilteredPhase', ... Phase name
+                          struct(), ... Phase contents
+                          fFilterVolume / 2, ... Phase volume
+                          293.15); % Phase temperature 
+            
+            % Create the according exmes - default for the external
+            % connections, i.e. the air stream that should be filtered. The
+            % filterports are internal ones for the p2p processor to use.
+            matter.procs.exmes.gas(oFlow,       'In');
+            matter.procs.exmes.gas(oFlow,       'In_P2P');
+            matter.procs.exmes.gas(oFiltered,  	'Out');
+            matter.procs.exmes.gas(oFiltered,  	'Out_P2P');
+            
+            % Creating the p2p processor
+            % Input parameters: name, flow phase name, absorber phase name, 
+            % species to be filtered, filter capacity
+            fSubstance = 'O2';
+            fCapacity = 0.1;
+            tutorials.p2p.components.AbsorberExample(this.toStores.Filter, 'filterproc', 'FlowPhase.In_P2P', 'FilteredPhase.Out_P2P', fSubstance, fCapacity);
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 0.5, 0.01));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 0.5, 0.01));
+            components.pipe(this, 'Pipe_1', 0.5, 0.01);
+            components.pipe(this, 'Pipe_2', 0.5, 0.01);
             
             % Creating the flowpath between the components
-            this.createBranch('Atmos.Out',  { 'Pipe_1' }, 'Filter.In');
-            this.createBranch('Filter.Out', { 'Pipe_2' }, 'Atmos2.In');
+            matter.branch(this, 'Atmos.Out',  { 'Pipe_1' }, 'Filter.In');
+            matter.branch(this, 'Filter.Out', { 'Pipe_2' }, 'Atmos2.In');
+        end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            % In the create solver structure function the solver for the
+            % different branches can be assigned. In this case we will use
+            % the iterative solver. 
+            solver.matter.interval.branch(this.aoBranches(1));
+            solver.matter.interval.branch(this.aoBranches(2));
             
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
-            
+            this.setThermalSolvers();
         end
     end
     

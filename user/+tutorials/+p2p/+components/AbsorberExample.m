@@ -125,6 +125,12 @@ classdef AbsorberExample < matter.procs.p2ps.flow & event.source
             % masses to extract) is not provided, the partial masses from
             % the phase itself are used (i.e. extracting all species
             % equally).
+            if fFlowRate < 0
+                fMassChangeSinceUpdate = this.oOut.oPhase.afCurrentTotalInOuts(iSpecies) * (this.oTimer.fTime - this.oOut.oPhase.fLastMassUpdate);
+                fTimeStep = abs((this.oOut.oPhase.afMass(iSpecies) + fMassChangeSinceUpdate) / fFlowRate);
+                this.oOut.oPhase.oStore.setNextTimeStep(fTimeStep);
+            end
+            
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
             
             

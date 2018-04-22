@@ -309,7 +309,7 @@ classdef capacity < base & event.source
             % Return if no time has passed
             if fLastStep == 0
                 
-                if ~base.oLog.bOff, this.out(2, 1, 'skip', 'Skipping massupdate in %s-%s-%s\tset branches outdated? %i', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, bSetBranchesOutdated }); end;
+                if ~base.oLog.bOff, this.out(2, 1, 'skip', 'Skipping temperatureupdate in %s-%s-%s\tset branches outdated? %i', { this.oPhase.oStore.oContainer.sName, this.oPhase.oStore.sName, this.sName, bSetBranchesOutdated }); end;
                 
                 %NOTE need that in case .exec sets flow rate in manual branch triggering massupdate,
                 %     and later in that tick phase does .update -> branches won't be set outdated!
@@ -502,6 +502,10 @@ classdef capacity < base & event.source
             if ~isempty(this.oPhase.fFixedTimeStep)
                 fNewStep = this.oPhase.fFixedTimeStep;
             else
+                
+                if this.fTotalHeatCapacity == 0 || this.fTemperature == 0
+                    return
+                end
                 
                 rTemperatureChangePerSecond = abs((this.fCurrentHeatFlow / this.fTotalHeatCapacity) / this.fTemperature);
                 
