@@ -227,8 +227,9 @@ classdef branch < solver.matter.base.branch
             end
             
             fNewError = fError;
+            fIntervallSize = fUpperBoundary - fLowerBoundary;
             
-            while (abs(fNewError) > this.fMaxError)  && iCounter < this.iMaxIterations
+            while (abs(fNewError) > this.fMaxError) && fIntervallSize > this.fMaxError  && iCounter < this.iMaxIterations
                 
                 % we split the initial intervall down in the middle
                 fIntervallSize = fUpperBoundary - fLowerBoundary;
@@ -258,7 +259,7 @@ classdef branch < solver.matter.base.branch
                this.throw('solveBranch', 'Too many iterations during nested interval solution');
             end
             
-            fFlowRate   = iDir * fNewFlowRate;
+            fFlowRate   = iDir * (fUpperBoundary + fLowerBoundary)/2;
             afDeltaP    = mfData(:, 1);
         end
     end

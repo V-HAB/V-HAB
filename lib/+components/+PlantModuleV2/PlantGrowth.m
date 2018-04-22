@@ -5,7 +5,7 @@ function [ oCulture ] =  PlantGrowth( oCulture, fSimTime)
     fDensityAtmosphere              = oCulture.oAtmosphere.fDensity;
     fPressureAtmosphere             = oCulture.oAtmosphere.fMass * oCulture.oAtmosphere.fMassToPressure;
     fRelativeHumidityAtmosphere     = oCulture.oAtmosphere.rRelHumidity;
-    fHeatCapacityAtmosphere         = oCulture.oAtmosphere.fSpecificHeatCapacity;
+    fHeatCapacityAtmosphere         = oCulture.oAtmosphere.oCapacity.fSpecificHeatCapacity;
     fCO2                            = oCulture.fCO2;
     
     % calculate density of liquid H2O, required for transpiration

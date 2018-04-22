@@ -94,7 +94,7 @@ classdef Example < vsys
             % Now that the system is sealed, we can add the branch to a
             % specific solver. In this case we will use the iterative
             % solver. 
-            oIt1 = solver.matter.iterative.branch(this.aoBranches(1));
+            oIt1 = solver.matter.interval.branch(this.aoBranches(1));
             
             this.setThermalSolvers();
             

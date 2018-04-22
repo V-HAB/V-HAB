@@ -176,7 +176,7 @@ classdef PlantCulture < vsys
                 293.15, ...                                             % phase temperature [K]
                 101325);
             
-            matter.procs.exmes.mixture(oPlants, 'BiomassGrowth_P2P');
+            matter.procs.exmes.mixture(oPlants, 'BiomassGrowth_P2P_In');
             matter.procs.exmes.mixture(oPlants, 'Biomass_Out');
             
             oBalance = matter.phases.mixture(...
@@ -192,20 +192,20 @@ classdef PlantCulture < vsys
             
             this.afInitialBalanceMass = oBalance.afMass;
             
-            matter.procs.exmes.mixture(oBalance, 'BiomassGrowth_P2P');
+            matter.procs.exmes.mixture(oBalance, 'BiomassGrowth_P2P_Out');
             matter.procs.exmes.mixture(oBalance, 'WaterSupply_In');
             matter.procs.exmes.mixture(oBalance, 'NutrientSupply_In');
             
-            matter.procs.exmes.mixture(oBalance, 'GasExchange_In');
-            matter.procs.exmes.mixture(oBalance, 'GasExchange_Out');
+            matter.procs.exmes.mixture(oBalance, 'GasExchange1_In');
+            matter.procs.exmes.mixture(oBalance, 'GasExchange2_Out');
             
             oAtmospherePhase = this.toStores.Plant_Culture.createPhase('air', 'PlantAtmosphere', 0.1, 293.15, 0.5, 101325);
                   
             matter.procs.exmes.gas(oAtmospherePhase, 'Air_From_Greenhouse');
             matter.procs.exmes.gas(oAtmospherePhase, 'Air_To_Greenhouse');
             
-            matter.procs.exmes.gas(oAtmospherePhase, 'GasExchange_In');
-            matter.procs.exmes.gas(oAtmospherePhase, 'GasExchange_Out');
+            matter.procs.exmes.gas(oAtmospherePhase, 'GasExchange2_In');
+            matter.procs.exmes.gas(oAtmospherePhase, 'GasExchange1_Out');
             
             oAtmospherePhase.bFlow = true;
             
@@ -216,22 +216,22 @@ classdef PlantCulture < vsys
                 this, ...                                       % parent system reference
                 this.toStores.Plant_Culture, ...                % store containing phases
                 'BiomassGrowth_P2P', ...                     	% p2p processor name
-                [oBalance.sName, '.BiomassGrowth_P2P'], ...     % first phase and exme
-                [oPlants.sName, '.BiomassGrowth_P2P']);         % second phase and exme
+                [oBalance.sName, '.BiomassGrowth_P2P_Out'], ...     % first phase and exme
+                [oPlants.sName, '.BiomassGrowth_P2P_In']);         % second phase and exme
             
             components.P2Ps.ManualP2P(...
                 this, ...                                       % parent system reference
                 this.toStores.Plant_Culture, ...                % store containing phases
                 'GasExchange_From_Atmosphere_To_Plants', ...       % p2p processor name
-                [oAtmospherePhase.sName, '.GasExchange_Out'], ...     % first phase and exme
-                [oBalance.sName, '.GasExchange_In']);         % second phase and exme
+                [oAtmospherePhase.sName, '.GasExchange1_Out'], ...     % first phase and exme
+                [oBalance.sName, '.GasExchange1_In']);         % second phase and exme
             
             components.P2Ps.ManualP2P(...
                 this, ...                                       % parent system reference
                 this.toStores.Plant_Culture, ...                % store containing phases
                 'GasExchange_From_Plants_To_Atmosphere', ...       % p2p processor name
-                [oBalance.sName, '.GasExchange_Out'], ...     % first phase and exme
-                [oAtmospherePhase.sName, '.GasExchange_In']);         % second phase and exme
+                [oBalance.sName, '.GasExchange2_Out'], ...     % first phase and exme
+                [oAtmospherePhase.sName, '.GasExchange2_In']);         % second phase and exme
 
             %% Create Substance Conversion Manipulators
             

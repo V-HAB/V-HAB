@@ -98,7 +98,7 @@ classdef GreenhouseV2 < vsys
             end
             this.csCultures = csPlantCultures;
             
-            matter.procs.exmes.gas(oAtmosphere, 'WaterAbsorber_P2P');
+            matter.procs.exmes.gas(oAtmosphere, 'WaterAbsorber_P2P_Out');
             
             %% Water Supply
             
@@ -140,7 +140,7 @@ classdef GreenhouseV2 < vsys
                 101325);
             
             matter.procs.exmes.liquid(oBiomassEdibleSplit, 'BiomassEdible_Out_ToStorage');
-            matter.procs.exmes.liquid(oBiomassEdibleSplit, 'EdibleInedible_Split_P2P');
+            matter.procs.exmes.liquid(oBiomassEdibleSplit, 'EdibleInedible_Split_P2P_Out');
             
             oBiomassInedibleSplit = matter.phases.liquid(...
                 this.toStores.BiomassSplit, ...     % store containing phase
@@ -152,7 +152,7 @@ classdef GreenhouseV2 < vsys
                 101325);
 
             matter.procs.exmes.liquid(oBiomassInedibleSplit, 'BiomassInedible_Out_ToStorage');
-            matter.procs.exmes.liquid(oBiomassInedibleSplit, 'EdibleInedible_Split_P2P');
+            matter.procs.exmes.liquid(oBiomassInedibleSplit, 'EdibleInedible_Split_P2P_In');
             
             %% Biomass Storage
             
@@ -283,7 +283,7 @@ classdef GreenhouseV2 < vsys
             % add exmes
             
             % water absorber exmes
-            matter.procs.exmes.liquid(oWaterWS, 'WaterAbsorber_P2P');
+            matter.procs.exmes.liquid(oWaterWS, 'WaterAbsorber_P2P_In');
             
             % add O2 an CO2 excess phases and exmes to atmosphere store 
             oExcessO2 = matter.phases.gas(...
@@ -294,8 +294,8 @@ classdef GreenhouseV2 < vsys
                 200, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
-            matter.procs.exmes.gas(oExcessO2, 'ExcessO2_P2P');
-            matter.procs.exmes.gas(oAtmosphere, 'ExcessO2_P2P');
+            matter.procs.exmes.gas(oExcessO2, 'ExcessO2_P2P_In');
+            matter.procs.exmes.gas(oAtmosphere, 'ExcessO2_P2P_Out');
             
             oExcessCO2 = matter.phases.gas(...
                 this.toStores.Atmosphere, ...       % store containing phase
@@ -305,30 +305,30 @@ classdef GreenhouseV2 < vsys
                 200, ...                            % phase volume      [m^3]
                 fTemperatureInit);                  % phase temperature [K]
             
-            matter.procs.exmes.gas(oExcessCO2, 'ExcessCO2_P2P');
-            matter.procs.exmes.gas(oAtmosphere, 'ExcessCO2_P2P');
+            matter.procs.exmes.gas(oExcessCO2, 'ExcessCO2_P2P_In');
+            matter.procs.exmes.gas(oAtmosphere, 'ExcessCO2_P2P_Out');
             
             % add excess extraction p2ps
             components.P2Ps.ManualP2P(...
                 this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
                 'ExcessO2_P2P', ...                         % p2p processor name
-                'Atmosphere_Phase_1.ExcessO2_P2P', ...      % first phase and exme
-                'ExcessO2.ExcessO2_P2P');                   % second phase and exme
+                'Atmosphere_Phase_1.ExcessO2_P2P_Out', ... 	% first phase and exme
+                'ExcessO2.ExcessO2_P2P_In');               	% second phase and exme
                 
             components.P2Ps.ManualP2P(...
                 this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
                 'ExcessCO2_P2P', ...                        % p2p processor name
-                'Atmosphere_Phase_1.ExcessCO2_P2P', ...     % first phase and exme
-                'ExcessCO2.ExcessCO2_P2P');                 % second phase and exme
+                'Atmosphere_Phase_1.ExcessCO2_P2P_Out', ...	% first phase and exme
+                'ExcessCO2.ExcessCO2_P2P_In');             	% second phase and exme
                         
             components.P2Ps.ManualP2P(...
                 this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
-                'WaterAbsorber_P2P', ...                        % p2p processor name
-                'Atmosphere_Phase_1.WaterAbsorber_P2P', ...     % first phase and exme
-                'WaterWS.WaterAbsorber_P2P');                 % second phase and exme
+                'WaterAbsorber_P2P', ...                 	% p2p processor name
+                'Atmosphere_Phase_1.WaterAbsorber_P2P_Out', ...	% first phase and exme
+                'WaterWS.WaterAbsorber_P2P_In');           	% second phase and exme
             
 
             % create branches exclusive to this section
@@ -359,8 +359,8 @@ classdef GreenhouseV2 < vsys
             oConstantP2P = components.P2Ps.ConstantMassP2P(this, ...
                 this.toStores.BiomassSplit, ...
                 'EdibleInedible_Split_P2P', ...
-                'BiomassEdible.EdibleInedible_Split_P2P', ...
-                'BiomassInedible.EdibleInedible_Split_P2P',...
+                'BiomassEdible.EdibleInedible_Split_P2P_Out', ...
+                'BiomassInedible.EdibleInedible_Split_P2P_In',...
                 csInedibleBiomass, 1);
             
             oConstantP2P.fTimeStep = 3600;
@@ -376,11 +376,11 @@ classdef GreenhouseV2 < vsys
             
             % create subsystem branches, 5 per culture object
             for  iI = 1:length(csPlantCultures)
-                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_Atmosphere_ToIF_Out'],      {}, ['Atmosphere.',     this.toChildren.(csPlantCultures{iI}).sName, '_AtmosphereCirculation_Out']);
-                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_Atmosphere_FromIF_In'],     {}, ['Atmosphere.',     this.toChildren.(csPlantCultures{iI}).sName, '_AtmosphereCirculation_In']);
-                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_WaterSupply_ToIF_Out'],     {}, ['WaterSupply.',    this.toChildren.(csPlantCultures{iI}).sName, '_WaterSupply_Out']);
-                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_NutrientSupply_ToIF_Out'],  {}, ['NutrientSupply.', this.toChildren.(csPlantCultures{iI}).sName, '_NutrientSupply_Out']);
-                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_Biomass_FromIF_In'],        {}, ['BiomassSplit.',   this.toChildren.(csPlantCultures{iI}).sName, '_Biomass_In']);
+                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_Atmosphere_ToIF_Out'],      {}, ['Atmosphere.',     this.toChildren.(csPlantCultures{iI}).sName, '_AtmosphereCirculation_Out'],     [this.toChildren.(csPlantCultures{iI}).sName, '_Atmosphere_Circulation_In']);
+                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_Atmosphere_FromIF_In'],     {}, ['Atmosphere.',     this.toChildren.(csPlantCultures{iI}).sName, '_AtmosphereCirculation_In'],      [this.toChildren.(csPlantCultures{iI}).sName, '_Atmosphere_Circulation_Out']);
+                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_WaterSupply_ToIF_Out'],     {}, ['WaterSupply.',    this.toChildren.(csPlantCultures{iI}).sName, '_WaterSupply_Out'],               [this.toChildren.(csPlantCultures{iI}).sName, '_WaterSupply']);
+                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_NutrientSupply_ToIF_Out'],  {}, ['NutrientSupply.', this.toChildren.(csPlantCultures{iI}).sName, '_NutrientSupply_Out'],            [this.toChildren.(csPlantCultures{iI}).sName, '_NutrientSupply']);
+                matter.branch(this, [this.toChildren.(csPlantCultures{iI}).sName, '_Biomass_FromIF_In'],        {}, ['BiomassSplit.',   this.toChildren.(csPlantCultures{iI}).sName, '_Biomass_In'],                    [this.toChildren.(csPlantCultures{iI}).sName, '_BiomassOut']);
             end
             
             %% Connect Interfaces
@@ -436,6 +436,7 @@ classdef GreenhouseV2 < vsys
 
             this.toStores.Atmosphere.toPhases.Atmosphere_Phase_1.bind('massupdate_post',@(~)this.update());
             
+            this.setThermalSolvers();
         end
         
         %% Calculate Atmosphere CO2 Concentration
