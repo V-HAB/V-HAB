@@ -325,6 +325,7 @@ classdef capacity < base & event.source
             % was not done anyway already)
             this.oPhase.massupdate();
             
+            
             % in case that the phase is considered only a flowthrough phase
             % with 0 mass (and therefore also 0 capacity by itself) the
             % temperature calculation must be adapted to reflect this
@@ -360,8 +361,12 @@ classdef capacity < base & event.source
                     fTemperatureNew = (sum(mfFlowRate .* mfSpecificHeatCapacity .* mfTemperature) / fOverallHeatCapacityFlow) + fSourceHeatFlow/fOverallHeatCapacityFlow;
                 end
             else
-                % Now we calculate the new temperature
-                fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * fLastStep);
+                if this.fTotalHeatCapacity == 0
+                    fTemperatureNew = 0;
+                else
+                    % Now we calculate the new temperature
+                    fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * fLastStep);
+                end
 
             end
             

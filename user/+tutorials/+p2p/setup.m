@@ -221,7 +221,7 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Atmos.aoPhases(1)', 'afMass(this.oMT.tiN2I.O2)',   'kg',       'O_2 Mass in Atmosphere');
             oLog.addValue('Example:s:Filter.aoPhases(2)', 'afMass(this.oMT.tiN2I.O2)',  'kg',       'O_2 Mass in Filter');
             
-            oLog.addValue('Example:s:Filter.oProc', 'fFlowRate',                        'kg/s',  	'P2P Filter Flow Rate');
+            oLog.addValue('Example:s:Filter.toProcsP2P.filterproc', 'fFlowRate',                        'kg/s',  	'P2P Filter Flow Rate');
             
         end
         

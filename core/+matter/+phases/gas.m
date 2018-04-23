@@ -71,6 +71,15 @@ classdef gas < matter.phase
             
             
             [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
+            
+            if this.afPP(this.oMT.tiN2I.H2O)
+                % calculate saturation vapour pressure [Pa];
+                fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
+                % calculate relative humidity
+                this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
+            else
+                this.rRelHumidity = 0;
+            end
         end
         
         
