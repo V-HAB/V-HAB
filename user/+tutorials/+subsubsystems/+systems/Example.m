@@ -119,6 +119,7 @@ classdef Example < vsys
             % specific properties for rMaxChange etc, possibly depending on
             % this.tSolverProperties.XXX
             % OR this.oRoot.tSolverProperties !!!
+            this.setThermalSolvers();
         end
     end
     

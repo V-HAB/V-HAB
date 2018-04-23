@@ -172,6 +172,14 @@ classdef branch < solver.matter.base.branch
                 fFlowRate   = iDir * fFlowRate;
                 afDeltaP    = mfData(:, 1);
                 return
+            elseif any(isinf(mfData(mfData>0)))
+                % an infinite pressure drop occurs e.g. if a valve closes
+                % to ensure that nothing flows through. Therefore, do not
+                % iterate but simply set flowrate to 0
+                fFlowRate   = iDir * fFlowRate;
+                mfData(isinf(mfData)) = 0;
+                afDeltaP    = mfData(:, 1);
+                return
             else
                 % Initial guesses for the other side of the intervall
                 fSecondError = fError;

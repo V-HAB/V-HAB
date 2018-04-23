@@ -188,11 +188,15 @@ classdef container < sys
             % have a handler
             for iBranch = 1:this.iThermalBranches
                 if isempty(this.aoThermalBranches(iBranch).oHandler)
-                    
-                    if isa(this.aoThermalBranches(iBranch).coConductors{1}, 'thermal.procs.conductors.fluidic')
-                         solver.thermal.basic_fluidic.branch(this.aoThermalBranches(iBranch));
-                    else
-                         solver.thermal.basic.branch(this.aoThermalBranches(iBranch));
+                    % If the exmes are still empty the branch is a pass
+                    % through branch from a subsystem of this system to a
+                    % suprasystem and is defined correctly at another time
+                    if ~isempty(this.aoThermalBranches(iBranch).coExmes)
+                        if isa(this.aoThermalBranches(iBranch).coConductors{1}, 'thermal.procs.conductors.fluidic')
+                             solver.thermal.basic_fluidic.branch(this.aoThermalBranches(iBranch));
+                        else
+                             solver.thermal.basic.branch(this.aoThermalBranches(iBranch));
+                        end
                     end
                 end
             end

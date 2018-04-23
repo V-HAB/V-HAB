@@ -86,10 +86,10 @@ classdef Example < vsys
             
             
             for iB = 1:(length(this.afStoreVolumes) - 1)
-                solver.matter.iterative.branch(this.aoBranches(iB));
+                solver.matter.interval.branch(this.aoBranches(iB));
             end
             
-            
+            this.setThermalSolvers();
         end
     end
     

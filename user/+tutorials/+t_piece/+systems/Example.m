@@ -108,9 +108,9 @@ classdef Example < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            this.coSolvers{1} = solver.matter.iterative.branch(this.aoBranches(1));
-            this.coSolvers{2} = solver.matter.iterative.branch(this.aoBranches(2));
-            this.coSolvers{3} = solver.matter.iterative.branch(this.aoBranches(3));
+            this.coSolvers{1} = solver.matter.interval.branch(this.aoBranches(1));
+            this.coSolvers{2} = solver.matter.interval.branch(this.aoBranches(2));
+            this.coSolvers{3} = solver.matter.interval.branch(this.aoBranches(3));
             
 %             this.coSolvers{1}.iDampFR = 15;
 %             this.coSolvers{2}.iDampFR = 15;
@@ -120,6 +120,8 @@ classdef Example < vsys
 %             this.coSolvers{1} = solver.matter.linear.branch(this.aoBranches(1));
 %             this.coSolvers{2} = solver.matter.linear.branch(this.aoBranches(2));
 %             this.coSolvers{3} = solver.matter.linear.branch(this.aoBranches(3));
+
+            this.setThermalSolvers();
         end
     end
     

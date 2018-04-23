@@ -26,7 +26,7 @@ classdef MiddleSystem < vsys
             
             matter.branch(this, 'FromSubOut', {'Pipe3'}, 'ToSupIn');
             
-            matter.branch(this, 'FromSubIn', {}, 'ToSupOut');
+            matter.branch(this, 'FromSubIn', {'Pipe4'}, 'ToSupOut');
             
             this.toChildren.SubSystem.setIfFlows('FromSubIn', 'FromSubOut');
             
@@ -35,6 +35,7 @@ classdef MiddleSystem < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
+            this.setThermalSolvers();
         end
         
         function setIfFlows(this, sToSupIn, sToSupOut)
