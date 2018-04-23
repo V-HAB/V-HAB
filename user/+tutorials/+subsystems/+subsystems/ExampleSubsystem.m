@@ -42,8 +42,8 @@ classdef ExampleSubsystem < vsys
             
             % Create the solver instances. Generally, this can be done here
             % or directly within the vsys (after the .seal() command).
-            solver.matter.iterative.branch(this.aoBranches(1));
-            solver.matter.iterative.branch(this.aoBranches(2));
+            solver.matter.interval.branch(this.aoBranches(1));
+            solver.matter.interval.branch(this.aoBranches(2));
             
             
             
@@ -65,6 +65,7 @@ classdef ExampleSubsystem < vsys
             tTimeStepProperties.rMaxChange = 0.5;
             oFilterBedPhase.setTimeStepProperties(tTimeStepProperties);
 
+            this.setThermalSolvers();
         end
         
         function setIfFlows(this, sInlet, sOutlet)

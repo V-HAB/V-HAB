@@ -1,4 +1,7 @@
 classdef setup < simulation.infrastructure
+    %%
+    % CURRENTLY NOT FUNCTIONAL TUTORIAL!
+    %
     %SETUP This class is used to setup a simulation
     %   There should always be a setup file present for each project. It is
     %   used for the following:
@@ -80,29 +83,52 @@ classdef setup < simulation.infrastructure
             tiLog.PowerRatio = oLogger.addValue('SEAR/LCARSystem:s:LCARAbsorber.oProc', 'rPowerRatio','-', '(LCAR Power)/(SWME Power)');
 
             
+            csStores = fieldnames(this.oSimulationContainer.toChildren.SEAR.toStores);
+            for iStore = 1:length(csStores)
+                oLogger.addValue(['SEAR.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLogger.addValue(['SEAR.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.SEAR.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLogger.addValue(['SEAR.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
+            
+        end
+        
+        function plot(this, varargin) % Plotting the results
+            
             %% Define Plots
-            oPlot = this.toMonitors.oPlotter;
             
-            oPlot.definePlot(tiLog.FlowRates,             'Flow Rates');
-            oPlot.definePlot(tiLog.Masses.AbsorberPhase,  'Tank Masses');
-            oPlot.definePlot(tiLog.AbsorptionRates,       'Rates of Absorption');
-            oPlot.definePlot(tiLog.AbsorbentMassFraction, 'Absorbent Mass Fraction');
-            oPlot.definePlot(tiLog.VaporPressure,         'Vapor pressure at phase boundary');
-            oPlot.definePlot(tiLog.Temperatures,          'Temperatures'); 
-            oPlot.definePlot(tiLog.Equilibrium,           'Equilibrium State');
-            oPlot.definePlot(tiLog.RadPower,              'Radiated Heat Flow, Absorber Cooling Power, SWME Cooling Power');
-            oPlot.definePlot(tiLog.RadFlow,               'Radiated Heat Flow');
-            oPlot.definePlot(tiLog.PowerRatio,            'Power Ratio');
+            close all
+            oPlotter = plot@simulation.infrastructure(this);
             
-        end
-        
-        
-        function plot(this, varargin)
             
-            this.toMonitors.oPlotter.plot(varargin{:});
+            csStores = fieldnames(this.oSimulationContainer.toChildren.SEAR.toStores);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
             
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.SEAR.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
+            
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
 
+            coPlots{1,1} = oPlotter.definePlot(csPressures,     'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
+            
+            oPlotter.plot();
         end
+        
     end
     
 end

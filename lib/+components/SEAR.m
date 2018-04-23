@@ -41,6 +41,9 @@ classdef SEAR < vsys
             this@vsys(oParent, sName, -1);
             
             %% LCAR Subsystem
+            if nargin < 3
+                tParameters = [];
+            end
             
             % Adding the subsystem
             components.SEAR.subsystems.LCARSystem(this, 'LCARSystem', tParameters);
@@ -125,7 +128,8 @@ classdef SEAR < vsys
             % Add solvers to branches
             this.oIVValveSWME    = solver.matter.manual.branch(this.toBranches.IVV__In___SWME__Out);
             this.oIVValveEnviron = solver.matter.manual.branch(this.toBranches.Environment__In_1___IVV__Out_2); 
-
+            
+            this.setThermalSolvers();
             
         end
     end
