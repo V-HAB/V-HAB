@@ -1,4 +1,4 @@
-classdef O2_Reactor < matter.manips.substance.stationary
+classdef O2_Reactor < matter.manips.substance.flow
     %SOMEABSORBEREXAMPLE Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -9,7 +9,7 @@ classdef O2_Reactor < matter.manips.substance.stationary
     
     methods
         function this = O2_Reactor(sName, oPhase, fHarvest)
-            this@matter.manips.substance.stationary(sName, oPhase);
+            this@matter.manips.substance.flow(sName, oPhase);
             this.fHarvest=fHarvest;
         end
         
@@ -19,7 +19,9 @@ classdef O2_Reactor < matter.manips.substance.stationary
             
             
             %
-            afFRs      = this.getTotalMasses();
+            [afInFlows, arInFlowsPartials]      = this.getInFlows();
+            
+            afFRs = sum(afInFlows .* arInFlowsPartials, 1);
             
             arPartials  = zeros(1, this.oPhase.oMT.iSubstances);
             
@@ -51,9 +53,11 @@ classdef O2_Reactor < matter.manips.substance.stationary
 %             arPartials(tiN2I.O)  = fO;
             
             
+            if sum(arPartials) > 1e-10
+                keyboard()
+            end
             
-            
-            update@matter.manips.substance.stationary(this, arPartials);
+            update@matter.manips.substance.flow(this, arPartials);
         end
     end
     
