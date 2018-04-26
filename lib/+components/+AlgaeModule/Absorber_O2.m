@@ -73,10 +73,10 @@ classdef Absorber_O2 < matter.procs.p2ps.flow
             % according partial masses. Flow rates are a row vector,
             % partials are a matrix - each row represents one flow, the
             % columns represent the different species.
-            [ afFlowRate, mrPartials ] = this.getInFlows();
+            afPartialFlowRate = this.getPartialInFlows();
             
             % Nothing flows in, so nothing absorbed ...
-            if isempty(afFlowRate)
+            if isempty(afPartialFlowRate)
                 this.setMatterProperties(0, this.arExtractPartials);
                 
                 return;
@@ -86,12 +86,12 @@ classdef Absorber_O2 < matter.procs.p2ps.flow
             % of the species extracted. Then we have several flow rates,
             % representing exactly the amount of the mass of the according
             % species flowing into the filter.
-            afFlowRate = afFlowRate .* mrPartials(:, iSubstances);
+            afPartialFlowRate = afPartialFlowRate(:, iSubstances);
             
             %keyboard();
             % Sum up flow rates and use the load of the filter to reduce 
             % the flow rate accordingly
-            fFlowRate = (1 - this.rLoad) * sum(afFlowRate)*(1-this.fHarvest);
+            fFlowRate = (1 - this.rLoad) * sum(afPartialFlowRate)*(1-this.fHarvest);
             
             % Test ...
             %fFlowRate = 0;
