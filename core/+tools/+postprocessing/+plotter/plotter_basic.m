@@ -896,7 +896,7 @@ classdef plotter_basic < base
                         set(groot, 'CurrentFigure', oFigure);
                     else
                         % Creating the subplot
-                        oPlot = subplot(iRows, iColumns, iPlot+1);
+                        oPlot = subplot(iRows, iColumns, iNumberOfPlots);
                         
                         % Filling the subplot with the graph and modifying its
                         % properties.
@@ -910,7 +910,7 @@ classdef plotter_basic < base
                         
                         % Setting the callback to undock this subplot to the
                         % appropriate button.
-                        coButtons{iPlot+1}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, oPlot, legend};
+                        coButtons{iNumberOfPlots}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, oPlot, legend};
                         
                         % Setting the entry in the handles cell.
                         % MATLAB will give us a warning here, saying that
