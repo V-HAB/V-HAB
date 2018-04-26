@@ -484,7 +484,14 @@ classdef plotter_basic < base
                 % decrease the number of plots by one, because the time
                 % plot is not contained in coPlots and that would lead to
                 % an 'index exceeds matrix dimensions' error.
-                for iPlot = 1:(iNumberOfPlots - sif(bTimePlot && ~bTimePlotExtraFigure, 1, 0))
+                for iPlot = 1:numel(this.coFigures{iFigure}.coPlots)
+                    
+                    if isempty(this.coFigures{iFigure}.coPlots{iPlot})
+                        % Loop can reach empty plots first and in this case
+                        % has to skip one iteration until the maximum
+                        continue
+                    end
+                    
                     % Creating the empty subplot
                     oPlot = subplot(iRows, iColumns, iPlot);
                     
@@ -522,7 +529,11 @@ classdef plotter_basic < base
                         [ mfData, afTime, tLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
                         
                         % Getting the Y label from the logger object
-                        sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                        if isfield(tPlotOptions, 'yLabel')
+                            sLabelY = tPlotOptions.yLabel;
+                        else
+                            sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                        end
                         
                         % If the user selected to change the unit of time
                         % by which this plot is created, we have to adjust
@@ -637,7 +648,11 @@ classdef plotter_basic < base
                         
                         % Getting the Y label for the right side from the
                         % logger object
-                        sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                        if isfield(tPlotOptions, 'yLabel')
+                            sLabelY = tPlotOptions.yLabel;
+                        else
+                            sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                        end
                         
                         % Actually creating the plot with all of the
                         % information we have gathered so far.
@@ -659,7 +674,11 @@ classdef plotter_basic < base
                             
                             % Getting the Y label for the right side from
                             % the logger object
-                            sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                            if isfield(tPlotOptions, 'yLabel')
+                                sLabelY = tPlotOptions.yLabel;
+                            else
+                                sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                            end
                             
                             % Using a specialized version of the
                             % generatePlot() method we used for the left
@@ -676,7 +695,11 @@ classdef plotter_basic < base
                         [ mfYData, ~, tYLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
                         
                         % Getting the Y label from the logger object
-                        sLabelY = this.getLabel(oLogger.poUnitsToLabels, tYLogProps);
+                        if isfield(tPlotOptions, 'yLabel')
+                            sLabelY = tPlotOptions.yLabel;
+                        else
+                            sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                        end
                         
                         % Getting the x axis data
                         [ afXData, ~, tXLogProps ] = oLogger.get(tPlotOptions.iAlternativeXAxisIndex, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
