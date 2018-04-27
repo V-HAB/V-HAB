@@ -75,64 +75,62 @@ fRe = (fFlowSpeed * fD_Hydraulic) / fKin_Visc_m;
 
 %%
 %calculation for technical smooth pipes
-if fRoughness == 0
-    %%
-    %laminar flow
-    if (fRe < 2320) && (fRoughness < 7e-5) % check roughness limit
-        %definition of the friction factor according to [9] section Lab
-        %equation (4) for a round pipe
-        if fConfig == 0
-            fFriction_Factor = 64/fRe;
-        %definition of the friction factor according to [9] section Lab
-        %equation (14) for a square pipe
-        elseif fConfig == 1
-            fFriction_Factor = 0.89*64/fRe;
-        %definition of the friction factor according to [9] section Lab
-        %equation (14) for an annular passage using an interpolation for the
-        %shape factor
-        elseif fConfig == 2
-            %calculation of the outer diameter of the inner tube from the
-            %hydraulic diameter
-            fD_i = fD_o - fD_Hydraulic;
-            %interpolation for the shape factor of an annular passage
-            if 1 < (fD_o/fD_i) && (fD_o/fD_i) < 2
-                fFriction_Factor = 1.5*64/fRe;
-            elseif 2 <= (fD_o/fD_i) && (fD_o/fD_i) < 9
-                fFriction_Factor =(1.5+(1.4-1.5)/(9-2)*((fD_o/fD_i)-2))*64/fRe;
-            elseif 9 <= (fD_o/fD_i) && (fD_o/fD_i) < 40
-                fFriction_Factor=(1.4+(1.3-1.4)/(40-9)*((fD_o/fD_i)-9))*64/fRe;
-            elseif 40 <= (fD_o/fD_i) && (fD_o/fD_i) < 100
-                fFriction_Factor = (1.3+(1.25-1.3)/(100-40)*((fD_o/fD_i)-40))...
-                                    *64/fRe;
-            else
-                error('no interpolation for values of fD_o/fD_i larger than 100 in pressure_loss_pipe')
-            end
-        end
-    elseif 3000 <= fRe && fRe < 100000
-        %definition of the friction factor according to [9] section Lab
-        %equation (5)
-        fFriction_Factor = 0.3164/nthroot(fRe,4);
-    elseif 100000 <= fRe && fRe < 10^6
-        %definition of the friction factor according to [9] section Lab
-        %equation (6)
-        fFriction_Factor = (1.8*log10(fRe)-1.5)^(-2);
-
-    %the equation for Re > 10^6 is approximate since the accurate equation
-    %is implicit and would take more calculation time.  The accurate one
-    %would be equation (7) from the same source.
+%%
+%laminar flow
+if (fRe < 2320) % check roughness limit
     %definition of the friction factor according to [9] section Lab
-    %equation (7a)
-    elseif fRe > 10^6
-        fFriction_Factor = (1/(1.819*log10(fRe)-1.64))^2;
-        
-    %in case that no possible solution is found the programm returns the values
-    %of Reynolds and Prandtlnumber as well as some key data to simplify
-    %debugging for the user    
-    else
-        string = sprintf(' Reynolds number is out of bounds. \n Reynolds is valid for Re < 10^6. The value is %d \n the flow speed is: %d \n the kinematic viscosity is %d', fRe, fFlowSpeed, fKin_Visc_m);
-        disp(string)
-        error('Reynolds number out of boundaries')    
+    %equation (4) for a round pipe
+    if fConfig == 0
+        fFriction_Factor = 64/fRe;
+    %definition of the friction factor according to [9] section Lab
+    %equation (14) for a square pipe
+    elseif fConfig == 1
+        fFriction_Factor = 0.89*64/fRe;
+    %definition of the friction factor according to [9] section Lab
+    %equation (14) for an annular passage using an interpolation for the
+    %shape factor
+    elseif fConfig == 2
+        %calculation of the outer diameter of the inner tube from the
+        %hydraulic diameter
+        fD_i = fD_o - fD_Hydraulic;
+        %interpolation for the shape factor of an annular passage
+        if 1 < (fD_o/fD_i) && (fD_o/fD_i) < 2
+            fFriction_Factor = 1.5*64/fRe;
+        elseif 2 <= (fD_o/fD_i) && (fD_o/fD_i) < 9
+            fFriction_Factor =(1.5+(1.4-1.5)/(9-2)*((fD_o/fD_i)-2))*64/fRe;
+        elseif 9 <= (fD_o/fD_i) && (fD_o/fD_i) < 40
+            fFriction_Factor=(1.4+(1.3-1.4)/(40-9)*((fD_o/fD_i)-9))*64/fRe;
+        elseif 40 <= (fD_o/fD_i) && (fD_o/fD_i) < 100
+            fFriction_Factor = (1.3+(1.25-1.3)/(100-40)*((fD_o/fD_i)-40))...
+                                *64/fRe;
+        else
+            error('no interpolation for values of fD_o/fD_i larger than 100 in pressure_loss_pipe')
+        end
     end
+elseif fRoughness == 0 && 3000 <= fRe && fRe < 100000
+    %definition of the friction factor according to [9] section Lab
+    %equation (5)
+    fFriction_Factor = 0.3164/nthroot(fRe,4);
+elseif fRoughness == 0 && 100000 <= fRe && fRe < 10^6
+    %definition of the friction factor according to [9] section Lab
+    %equation (6)
+    fFriction_Factor = (1.8*log10(fRe)-1.5)^(-2);
+
+%the equation for Re > 10^6 is approximate since the accurate equation
+%is implicit and would take more calculation time.  The accurate one
+%would be equation (7) from the same source.
+%definition of the friction factor according to [9] section Lab
+%equation (7a)
+elseif fRoughness == 0 && fRe > 10^6
+    fFriction_Factor = (1/(1.819*log10(fRe)-1.64))^2;
+
+%in case that no possible solution is found the programm returns the values
+%of Reynolds and Prandtlnumber as well as some key data to simplify
+%debugging for the user    
+elseif fRoughness == 0
+    string = sprintf(' Reynolds number is out of bounds. \n Reynolds is valid for Re < 10^6. The value is %d \n the flow speed is: %d \n the kinematic viscosity is %d', fRe, fFlowSpeed, fKin_Visc_m);
+    disp(string)
+    error('Reynolds number out of boundaries')    
 %%
 %calculation in case of rough pipes
 elseif 3000 <= fRe && fRe < 100000
@@ -149,7 +147,7 @@ else
     % equation, it is not an issue as it is the most accurate one and
     % can also be used for the developed roughness flow
     % Source: [9] page 1224 Equation 10
-    fFriction_Factor = colebrook(fRe,fRelativeRoughness);
+    fFriction_Factor = colebrook(fRe,fRoughness/fD_Hydraulic);
 
 end
     

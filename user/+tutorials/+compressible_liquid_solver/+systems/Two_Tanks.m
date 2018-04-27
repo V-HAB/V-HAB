@@ -3,8 +3,6 @@ classdef Two_Tanks < vsys
     %   This class creates blubb
     
     properties
-        aoLiquidBranch;
-        oDefinition;
     end
     
     methods
@@ -22,11 +20,15 @@ classdef Two_Tanks < vsys
             % well!).
             this@vsys(oParent, sName, 60);
             
+        end
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
             % Creating a store
-            this.addStore(matter.store(this, 'Tank_1', 1, 0));
+            matter.store(this, 'Tank_1', 1, 0);
             
             % Creating a second store
-            this.addStore(matter.store(this, 'Tank_2', 1, 0));
+            matter.store(this, 'Tank_2', 1, 0);
             
             oWaterPhase1 = this.toStores.Tank_1.createPhase('water', 1, 293, 2*10^5);
             %oAirPhase1 = this.toStores.Tank_1.createPhase('air', 0.5, 293, 0, 2*10^5);
@@ -40,24 +42,32 @@ classdef Two_Tanks < vsys
             matter.procs.exmes.liquid(oWaterPhase2, 'Port_2');
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe('Pipe_1', 1.0, 0.1, 0.0002));
+            components.pipe(this, 'Pipe_1', 1.0, 0.01, 0.002);
             
-            this.createBranch('Tank_1.Port_1', {'Pipe_1'}, 'Tank_2.Port_2');
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe_1'}, 'Tank_2.Port_2');
 
-            
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
         end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            
+            %for branch liquid the second entry is the number of cells used
+            %to calculate the branches
+            %branch_liquid(oBranch, iCells, fPressureResidual, fMassFlowResidual, fCourantNumber, sCourantAdaption)
+            sCourantAdaption = struct( 'bAdaption', 0,'fIncreaseFactor', 1.001, 'iTicksBetweenIncrease', 100, 'iInitialTicks', 10000, 'fMaxCourantNumber', 1);
+            solver.matter.fdm_liquid.branch_liquid(this.aoBranches(1), 10, 10^-5, 0, 1, sCourantAdaption);
+            
+        end
+        
     end
     
-     methods (Access = protected)
+    methods (Access = protected)
         
         function exec(this, ~)
             exec@vsys(this);
         end
         
-     end
+    end
     
 end
 
