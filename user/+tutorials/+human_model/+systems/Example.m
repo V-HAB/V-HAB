@@ -11,73 +11,75 @@ classdef Example < vsys
     
     methods
         function this = Example(oParent, sName)
-            % Call parent constructor. Third parameter defined how often
-            % the .exec() method of this subsystem is called. This can be
-            % used to change the system state, e.g. close valves or switch
-            % on/off components.
-            % Values can be: 0-inf for interval in [s] (zero means with
-            % lowest time step set for the timer). -1 means with every TICK
-            % of the timer, which is determined by the smallest time step
-            % of any of the systems. Providing a logical false (def) means
-            % the .exec method is called when the oParent.exec() is
-            % executed (see this .exec() method - always call exec@vsys as
-            % well!).
             this@vsys(oParent, sName, -1);
             
-            %% sleep events
-            %sleep from 00:22:00 to 01:06:00
-            sEventSleep = struct();
-            sEventSleep.State = 'sleep';
-            sEventSleep.Start =    16*3600; 
-            sEventSleep.End =      24*3600;
-            sEventSleep.Started = false;
-            sEventSleep.Ended = false;
-            sEventSleep.bRepeat = true;
+            %% crew planer
+            % Since the crew schedule follows the same pattern every day,
+            % it was changed to a loop. Thereby, longer mission durations
+            % can easily be set just by changing the iLengthOfMission
+            % parameter. Currently, 10 days are set. If the number is
+            % higher tan the actual simulation time, this does not make any
+            % difference. If it is too short, the impact of the humans
+            % stops somewhen during the simulation time and the simulation
+            % is not usable. So make sure to ajust the parameter properly.         
             
-            %workout
-            sEventExercise1 = struct();
-            sEventExercise1.State = 'exercise015';
-            sEventExercise1.Start =    3*3600; 
-            sEventExercise1.End =      4*3600;
-            sEventExercise1.Started = false;
-            sEventExercise1.Ended = false;
-            sEventExercise1.bRepeat = true;
+            %Number of CrewMember goes here:
+            iNumberOfCrewMembers = 1;
             
-            sEventExercise2 = struct();
-            sEventExercise2.State = 'exercise015';
-            sEventExercise2.Start =    6*3600; 
-            sEventExercise2.End =      7*3600;
-            sEventExercise2.Started = false;
-            sEventExercise2.Ended = false;
-            sEventExercise2.bRepeat = true;
+            % Number of days that events shall be planned goes here:
+            iLengthOfMission = 10; % [d]
             
-            sEventExercise3 = struct();
-            sEventExercise3.State = 'exercise015';
-            sEventExercise3.Start =    9*3600; 
-            sEventExercise3.End =      10*3600;
-            sEventExercise3.Started = false;
-            sEventExercise3.Ended = false;
-            sEventExercise3.bRepeat = true;
+            ctEvents = cell(iLengthOfMission, 2, iNumberOfCrewMembers);
             
-            tCrewPlaner.cMetabolism{1,1} = sEventExercise1;
-            tCrewPlaner.cMetabolism{1,2} = sEventSleep;
-            
-            tCrewPlaner.cMetabolism{2,1} = sEventExercise2;
-            tCrewPlaner.cMetabolism{2,2} = sEventSleep;
-            
-            tCrewPlaner.cMetabolism{3,1} = sEventExercise3;
-            tCrewPlaner.cMetabolism{3,2} = sEventSleep;
-            
-            tCrewPlaner2.cMetabolism{1,1} = sEventExercise2;
-            tCrewPlaner2.cMetabolism{1,2} = sEventSleep;
+            %% Nominal Operation
             
             tMealTimes.Breakfast = 0*3600;
             tMealTimes.Lunch = 6*3600;
             tMealTimes.Dinner = 15*3600;
             
-            % Or to let it simulate only one human, in which case the
-            % restroom events are based on internal calculations
-            vman.human.main(this, 'One_Human', 1, tCrewPlaner2, tMealTimes);
+            for iDay = 1:iLengthOfMission
+                
+                for iCrewMember = 1:iNumberOfCrewMembers
+                    
+                    if iCrewMember == 1 || iCrewMember == 4
+                        ctEvents{iDay, 1, iCrewMember}.State = 'exercise015';
+                        ctEvents{iDay, 1, iCrewMember}.Start = ((iDay-1) * 24 +  1) * 3600;
+                        ctEvents{iDay, 1, iCrewMember}.End = ((iDay-1) * 24 +  2) * 3600;
+                        ctEvents{iDay, 1, iCrewMember}.Started = false;
+                        ctEvents{iDay, 1, iCrewMember}.Ended = false;
+                        
+                    elseif iCrewMember==2 || iCrewMember ==5
+                        ctEvents{iDay, 1, iCrewMember}.State = 'exercise015';
+                        ctEvents{iDay, 1, iCrewMember}.Start = ((iDay-1) * 24 +  5) * 3600;
+                        ctEvents{iDay, 1, iCrewMember}.End = ((iDay-1) * 24 +  6) * 3600;
+                        ctEvents{iDay, 1, iCrewMember}.Started = false;
+                        ctEvents{iDay, 1, iCrewMember}.Ended = false;
+                        
+                    elseif iCrewMember ==3 || iCrewMember == 6
+                        ctEvents{iDay, 1, iCrewMember}.State = 'exercise015';
+                        ctEvents{iDay, 1, iCrewMember}.Start = ((iDay-1) * 24 +  9) * 3600;
+                        ctEvents{iDay, 1, iCrewMember}.End = ((iDay-1) * 24 +  10) * 3600;
+                        ctEvents{iDay, 1, iCrewMember}.Started = false;
+                        ctEvents{iDay, 1, iCrewMember}.Ended = false;
+                    end
+                    
+                    ctEvents{iDay, 2, iCrewMember}.State = 'sleep';
+                    ctEvents{iDay, 2, iCrewMember}.Start =   ((iDay-1) * 24 +  14) * 3600;
+                    ctEvents{iDay, 2, iCrewMember}.End =     ((iDay-1) * 24 +  22) * 3600;
+                    ctEvents{iDay, 2, iCrewMember}.Started = false;
+                    ctEvents{iDay, 2, iCrewMember}.Ended = false;
+                end
+            end
+            
+            for iCrewMember = 1:iNumberOfCrewMembers
+                
+                txCrewPlaner.ctEvents = ctEvents{:, :, iCrewMember};
+                txCrewPlaner.tMealTimes = tMealTimes;
+                
+                components.Human(this, ['Human_', num2str(iCrewMember)], true, 28, 84.5, 1.84, txCrewPlaner);
+                
+                clear txCrewPlaner;
+            end
             
             % Also if the simulation for the habitat uses discretization
             % itr is necessary for each human subsystem to represent only
@@ -116,48 +118,17 @@ classdef Example < vsys
             matter.store(this, 'PotableWaterStorage', 1);
             
             oPotableWaterPhase = matter.phases.liquid(this.toStores.PotableWaterStorage, 'PotableWater', struct('H2O', 100), 1, 295, 101325);
-            matter.procs.exmes.liquid(oPotableWaterPhase, 'PotableWaterDrinkingOut');
-            matter.procs.exmes.liquid(oPotableWaterPhase, 'PotableWaterFoodPrepOut');
+            matter.procs.exmes.liquid(oPotableWaterPhase, 'DrinkingOut');
             
             % Creates a store for the dry food storage
             % Dry Food Storage
-            tfMasses = struct('C', 20);
+            tfMasses = struct('Food', 20);
             fSolidVolume = this.oMT.calculateSolidVolume(tfMasses, 295, true);
             
-            matter.store(this, 'DryFoodStorage', fSolidVolume);
-            oDryFoodPhase = matter.phases.solid(this.toStores.DryFoodStorage, 'DryFood', tfMasses, [], 295); 
+            matter.store(this, 'FoodStorage', fSolidVolume);
+            oFoodPhase = matter.phases.solid(this.toStores.FoodStorage, 'Food', tfMasses, [], 295); 
             
-            matter.procs.exmes.solid(oDryFoodPhase, 'DryFoodOut');
-            
-            % Creates a store for the dry food preperation (dry food and
-            % water are combined to create edible food)
-            % Food Preperation
-            tfMasses = struct('C', 0.1);
-            fSolidVolume = this.oMT.calculateSolidVolume(tfMasses, 295, true);
-            
-            matter.store(this, 'FoodPreperation', fSolidVolume + 1e-4);
-            oPreparedFoodPhase = matter.phases.solid(this.toStores.FoodPreperation, 'PreparedFood',  tfMasses, [], 295);
-            
-            this.fInitialFoodPrepMass = oPreparedFoodPhase.fMass;
-            
-            matter.procs.exmes.solid(oPreparedFoodPhase, 'DryFoodIn');
-            matter.procs.exmes.solid(oPreparedFoodPhase, 'H2O_In');
-            matter.procs.exmes.solid(oPreparedFoodPhase, 'PreparedFoodOut');
-            % if plants or fresh food are also used an additional EXME
-            % could be used to put that food into the preperation store
-            
-            % since the food preperation basically takes water and dry food
-            % and creates food, the food preperation store requires two
-            % phases, one solid and one liquid and a p2p proc to move the
-            % liquid potable water into the solid phase
-            oFoodPreperationWater = matter.phases.liquid(this.toStores.FoodPreperation, 'PotableWater', struct('H2O', 0.1), 1e-4, 295, 101325);
-            
-            matter.procs.exmes.liquid(oFoodPreperationWater, 'PotableWaterIn');
-            matter.procs.exmes.liquid(oFoodPreperationWater, 'H2O_Out');
-            
-            % assumes that 1/3 of the dry food mass has to be added in
-            % water for preperation
-            tutorials.human_model.components.Food_H2O_Addition(this.toStores.FoodPreperation, 'FoodPrepP2P', 'PotableWater.H2O_Out', 'PreparedFood.H2O_In');
+            matter.procs.exmes.solid(oFoodPhase, 'FoodOut');
             
             % Creates a store for the urine
             matter.store(this, 'UrineStorage', 1e-4);
@@ -166,25 +137,21 @@ classdef Example < vsys
             matter.procs.exmes.liquid(oUrinePhase, 'Urine_In');
             
             % Creates a store for the feces storage
-            tfMasses = struct('C', 1);
-            fSolidVolume = this.oMT.calculateSolidVolume(tfMasses, 295, true);
+            tfMasses = struct();
             
-            matter.store(this, 'FecesStorage', fSolidVolume);
+            matter.store(this, 'FecesStorage', 1);
             oFecesPhase = matter.phases.solid(this.toStores.FecesStorage, 'Feces', tfMasses, [], 295); 
             
             matter.procs.exmes.solid(oFecesPhase, 'Feces_In');
             
-            matter.branch(this, 'DryFoodStorage.DryFoodOut', {}, 'FoodPreperation.DryFoodIn', 'DryFood_To_Preperation');
-            matter.branch(this, 'FoodPreperation.PotableWaterIn', {}, 'PotableWaterStorage.PotableWaterFoodPrepOut', 'PotableWater_For_FoodPrep');
+            matter.branch(this, 'Air_Out',          {}, 'Cabin.AirOut');
+            matter.branch(this, 'Air_In',           {}, 'Cabin.AirIn');
+            matter.branch(this, 'Solid_Food',       {}, 'FoodStorage.FoodOut');
+            matter.branch(this, 'Feces',            {}, 'FecesStorage.Feces_In');
+            matter.branch(this, 'PotableWater',     {}, 'PotableWaterStorage.DrinkingOut');
+            matter.branch(this, 'Urine',            {}, 'UrineStorage.Urine_In');
             
-            matter.branch(this, 'Air_Out', {}, 'Cabin.AirOut');
-            matter.branch(this, 'Air_In', {}, 'Cabin.AirIn');
-            matter.branch(this, 'Solid_Food_Out', {}, 'FoodPreperation.PreparedFoodOut');
-            matter.branch(this, 'Feces_In', {}, 'FecesStorage.Feces_In');
-            matter.branch(this, 'Liquid_Food_Out', {}, 'PotableWaterStorage.PotableWaterDrinkingOut');
-            matter.branch(this, 'Urine_In', {}, 'UrineStorage.Urine_In');
-            
-            this.toChildren.One_Human.setIfFlows('Air_Out', 'Air_In', 'Solid_Food_Out', 'Feces_In', 'Liquid_Food_Out', 'Urine_In');
+            this.toChildren.Human_1.setIfFlows('Air_Out', 'Air_In', 'PotableWater', 'Solid_Food', 'Feces', 'Urine');
             
         end
         
@@ -192,47 +159,6 @@ classdef Example < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            solver.matter.residual.branch(this.toBranches.PotableWater_For_FoodPrep);
-            
-            solver.matter.manual.branch(this.toBranches.DryFood_To_Preperation);
-            
-            
-            %All phases except the human air phase work with a 60s time
-            %step
-            csStoreNames = fieldnames(this.toStores);
-            for iStore = 1:length(csStoreNames)
-                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
-                    if ~strcmp(this.toStores.(csStoreNames{iStore}).aoPhases(iPhase).sName, 'CabinAir')
-                        oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
-                        
-                        tTimeStepProperties.rMaxChange = 10;
-                        oPhase.setTimeStepProperties(tTimeStepProperties);
-                    end
-                end
-            end
-        end
-        function requestFood(this, sHumanModelName, tEvent)
-            % start preparing food for the crew member that requested food.
-            % Then once the food is prepared give it to the crew member
-            if isempty(this.tCurrentFoodRequest)
-                this.tCurrentFoodRequest.sHumanModelName = sHumanModelName;
-                this.tCurrentFoodRequest.tEvent = tEvent;
-            else
-                % if the food processor is currently busy schedule the
-                % event and execute it once the preperator is finished
-                tFoodRequest.sHumanModelName = sHumanModelName;
-                tFoodRequest.tEvent = tEvent;
-                this.cScheduledFoodRequest{end+1} = tFoodRequest;
-                % to remove event: cScheduledFoodRequestTest =
-                % cScheduledFoodRequest(2:end) and then just always execute
-                % the first elemt from the schedule
-            end
-            
-        end
-        function deleteFoodRequest(this,~)
-            if ~isempty(this.tCurrentFoodRequest)
-                this.tCurrentFoodRequest = [];
-            end
         end
     end
     
@@ -243,43 +169,6 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
-            %% food preperation
-            if ~isempty(this.tCurrentFoodRequest)
-                if ~isfield(this.tCurrentFoodRequest, 'fStartTime')
-                    this.tCurrentFoodRequest.fStartTime = this.oTimer.fTime;
-                
-                    % Assuming that food preperation takes 2 minutes, and
-                    % that the food contains 42% water and 58% solids
-                    fDryFoodFlowRate = 0.58 * this.tCurrentFoodRequest.tEvent.fConsumption/(this.fFoodPrepTime);
-                    fWaterForFoodFlowRate = 0.42 * this.tCurrentFoodRequest.tEvent.fConsumption/(this.fFoodPrepTime);
-
-                    this.toBranches.DryFood_To_Preperation.oHandler.setFlowRate(fDryFoodFlowRate);
-                    
-                    this.toStores.FoodPreperation.toProcsP2P.FoodPrepP2P.setFlowRate( fWaterForFoodFlowRate );
-                    
-                    this.setTimeStep(1);
-                    
-                elseif ((this.oTimer.fTime - this.tCurrentFoodRequest.fStartTime) >= this.fFoodPrepTime) && (this.toChildren.(this.tCurrentFoodRequest.sHumanModelName).fEatStartTime == inf)
-                    % food preperation is finished:
-                    this.toBranches.DryFood_To_Preperation.oHandler.setFlowRate(0);
-                    % it is assumed that the end product of food contains 0.42%
-                    % water. That means for each kg of dry food 0.724 kg of water
-                    % have to be added
-                    this.toStores.FoodPreperation.toProcsP2P.FoodPrepP2P.setFlowRate(0);
-                    
-                    % And the human who requested the food eats it:
-                    this.toChildren.(this.tCurrentFoodRequest.sHumanModelName).consumeFood(this.toStores.FoodPreperation.toPhases.PreparedFood.fMass - this.fInitialFoodPrepMass);
-                    
-                    this.setTimeStep(-1);
-                end
-                
-            elseif ~isempty(this.cScheduledFoodRequest)
-                % if currently no food is prepared but another event is in
-                % the scheduler it will be set as current event and is then
-                % deleted from the scheduler
-                this.tCurrentFoodRequest = this.cScheduledFoodRequest{1};
-                this.cScheduledFoodRequest = this.cScheduledFoodRequest(2:end);
-            end
         end
      end
     

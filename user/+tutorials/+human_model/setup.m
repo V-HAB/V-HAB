@@ -1,12 +1,4 @@
 classdef setup < simulation.infrastructure
-    %SETUP This class is used to setup a simulation
-    %   There should always be a setup file present for each project. It is
-    %   used for the following:
-    %   - instantiate the root object
-    %   - register branches to their appropriate solvers
-    %   - determine which items are logged
-    %   - set the simulation duration
-    %   - provide methods for plotting the results
     
     properties
     end
@@ -14,50 +6,11 @@ classdef setup < simulation.infrastructure
     methods
         function this = setup(ptConfigParams, tSolverParams) % Constructor function
             
-            % vhab.exec always passes in ptConfigParams, tSolverParams
-            % If not provided, set to empty containers.Map/struct
-            % Can be passed to vhab.exec:
-            %
-            % ptCfgParams = containers.Map();
-            % ptCfgParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
-            % vhab.exec('tutorials.simple_flow.setup', ptCfgParams);
-            
-            
-            % By Path - will overwrite (by definition) CTOR value, even 
-            % though the CTOR value is set afterwards!
-            %%%ptConfigParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
-            
-            
-            % By constructor
-            %%%ptConfigParams('tutorials.simple_flow.systems.Example') = struct('fPipeLength', 5, 'fPressureDifference', 2);
-            
-            
-            
-            % Possible to change the constructor paths and params for the
-            % monitors
             ttMonitorConfig = struct();
+            this@simulation.infrastructure('Tutorial_Human_1_Model', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            %%%ttMonitorConfig.oConsoleOutput = struct('cParams', {{ 50 5 }});
-            
-            %tSolverParams.rUpdateFrequency = 0.1;
-            %tSolverParams.rHighestMaxChangeDecrease = 100;
-            
-            % First we call the parent constructor and tell it the name of
-            % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Human_Model', ptConfigParams, tSolverParams, ttMonitorConfig);
-            
-            % Creating the 'Example' system as a child of the root system
-            % of this simulation. 
             tutorials.human_model.systems.Example(this.oSimulationContainer, 'Example');
             
-            % This is an alternative to providing the ttMonitorConfig above
-            %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
-            
-            
-            
-            
-            
-
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
@@ -67,150 +20,85 @@ classdef setup < simulation.infrastructure
         end
         
         
-        
         function configureMonitors(this)
             
             %% Logging
-            % Creating a cell setting the log items. You need to know the
-            % exact structure of your model to set log items, so do this
-            % when you are done modelling and ready to run a simulation. 
-            
             oLog = this.toMonitors.oLogger;
             
-            oLog.add('Example', 'flow_props');
-            
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity', '-', 'Relative Humidity Cabin');
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)', 'P_Pa', 'Partial Pressure CO2 Cabin');
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.O2)', 'P_Pa', 'Partial Pressure O2 Cabin');
-            
-%             oLog.add('Example:c:Three_Humans', 'flow_props');
-
-%             oLog.addValue('Example:c:Three_Humans:s:Human.toPhases.Air', 'rRelHumidity', '-', 'Relative Humidity Human');
-%             oLog.addValue('Example:c:Three_Humans:s:Human.toPhases.Air', 'afPP(this.oMT.tiN2I.CO2)', 'P_Pa', 'Partial Pressure CO2 Human');
-%             oLog.addValue('Example:c:Three_Humans:s:Human.toPhases.Air', 'afPP(this.oMT.tiN2I.O2)', 'P_Pa', 'Partial Pressure O2 Human');
-            
-            
-            oLog.add('Example:c:One_Human', 'flow_props');
-            
-            oLog.addValue('Example:c:One_Human:s:Human.toPhases.Air', 'rRelHumidity', '-', 'Relative Humidity Human');
-            oLog.addValue('Example:c:One_Human:s:Human.toPhases.Air', 'afPP(this.oMT.tiN2I.CO2)', 'P_Pa', 'Partial Pressure CO2 Human');
-            oLog.addValue('Example:c:One_Human:s:Human.toPhases.Air', 'afPP(this.oMT.tiN2I.O2)', 'P_Pa', 'Partial Pressure O2 Human');
-            
-            oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood', 'afMass(this.oMT.tiN2I.C)', 'P_kg', 'Partial Mass Dry Solid Food');
-            oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood', 'afMass(this.oMT.tiN2I.H2O)', 'P_kg', 'Partial Mass H2O in Solid Food');
-            
-             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.C)', 'Manip_kg/s', 'Digestion C Flow Rate');
-             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.H2O)', 'Manip_kg/s', 'Digestion Water Flow Rate');
-             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.Feces)', 'Manip_kg/s', 'Digestion Feces Flow Rate');
-             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.UrineSolids)', 'Manip_kg/s', 'Digestion UrineSolids Flow Rate');
-             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.Waste)', 'Manip_kg/s', 'Digestion Waste Flow Rate');
-            
-            %% Define plots
-            
-            oPlot = this.toMonitors.oPlotter;
-            
-            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
-            oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
-            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
-            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
-            
-            oPlot.definePlotAllWithFilter('P_Pa', 'Partial Pressures in Cabin');
-            oPlot.definePlotAllWithFilter('-', 'Relative Humidity in Cabin');
-            oPlot.definePlotAllWithFilter('P_kg', 'Partial Masses in human');
-            
-            oPlot.definePlotAllWithFilter('Manip_kg/s', 'Digestion Flow Rates');
-            
-
-        end
-        
-        function plot(this) % Plotting the results
-            
-            this.toMonitors.oPlotter.plot();
-            return;
-            
-            
-            % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
-            % further information
-            
-            
-            
-%             figure('name', 'Tank Pressures');
-%             hold on;
-%             grid minor;
-%             %plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
-%             plot(this.mfLog(:,1), this.mfLog(:, [2 4]) .* this.mfLog(:, [3 5]));
-%             legend('Tank 1', 'Tank 2');
-%             ylabel('Pressure in Pa');
-%             xlabel('Time in s');
-            
-
-
-            sPlot = 'Tank Masses';
-            csValues = {
-                'Tutorial_Simple_Flow/Example:s:Tank_1:p:Tank_1_Phase_1.fMass';
-                'Tutorial_Simple_Flow/Example:s:Tank_2:p:Tank_2_Phase_1.fMass';
-            };
-            
-            %%% Default Code START
-            
-            figure('name', sPlot);
-            hold on;
-            grid minor;
-            
-            mfLog    = [];
-            sLabel   = [];
-            sUnit    = [];
-            csLegend = {};
-            
-            for iV = 1:length(csValues)
-                [ axData, tDefinition, sLabel ] = oLog.get(csValues{iV});
-                
-                mfLog = [ mfLog, axData ];
-                csLegend{end + 1} = tDefinition.sName;
-                sUnit = tDefinition.sUnit;
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            for iStore = 1:length(csStores)
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
             end
             
-            plot(oLog.afTime, mfLog);
-            legend(csLegend);
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
             
-            ylabel([ sLabel ' in [' sUnit ']' ]);
-            xlabel('Time in s');
+            csStoresHuman_1 = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.Human_1.toStores);
+            for iStore = 1:length(csStoresHuman_1)
+                oLog.addValue(['Example:c:Human_1.toStores.', csStoresHuman_1{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStoresHuman_1{iStore}, ' Pressure']);
+                oLog.addValue(['Example:c:Human_1.toStores.', csStoresHuman_1{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStoresHuman_1{iStore}, ' Temperature']);
+            end
             
-            %%% Default Code END
+            csBranchesHuman_1 = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.Human_1.toBranches);
+            for iBranch = 1:length(csBranchesHuman_1)
+                oLog.addValue(['Example:c:Human_1.toBranches.', csBranchesHuman_1{iBranch}],             'fFlowRate',    'kg/s', [csBranchesHuman_1{iBranch}, ' Flowrate']);
+            end
             
             
             
-            return;
+        end
+        
+        function plot(this, varargin) % Plotting the results
+            
+            %% Define Plots
+            
+            close all
+            oPlotter = plot@simulation.infrastructure(this);
             
             
-            figure('name', 'Tank Temperatures');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 7:8));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Temperature in K');
-            xlabel('Time in s');
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
             
-            figure('name', 'Flow Rate');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 6));
-            legend('Branch');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
             
-            figure('name', 'Time Steps');
-            hold on;
-            grid minor;
-            plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-            legend('Solver');
-            ylabel('Time in [s]');
-            xlabel('Ticks');
             
-            tools.arrangeWindows();
+            csStoresHuman_1 = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.Human_1.toStores);
+            csPressuresHuman_1 = cell(length(csStoresHuman_1),1);
+            csTemperaturesHuman_1 = cell(length(csStoresHuman_1),1);
+            for iStore = 1:length(csStoresHuman_1)
+                csPressuresHuman_1{iStore} = ['"', csStoresHuman_1{iStore}, ' Pressure"'];
+                csTemperaturesHuman_1{iStore} = ['"', csStoresHuman_1{iStore}, ' Temperature"'];
+            end
+            
+            csBranchesHuman_1 = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.Human_1.toBranches);
+            csFlowRatesHuman_1 = cell(length(csBranchesHuman_1),1);
+            for iBranch = 1:length(csBranchesHuman_1)
+                csFlowRatesHuman_1{iBranch} = ['"', csBranchesHuman_1{iBranch}, ' Flowrate"'];
+            end
+            
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
+
+            coPlots{1,1} = oPlotter.definePlot({csPressures{:}, csPressuresHuman_1{:}},     'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({csFlowRates{:}, csFlowRatesHuman_1{:}},     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({csTemperatures{:}, csTemperaturesHuman_1{:}},  'Temperatures', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
+            
+            oPlotter.plot();
         end
         
     end
     
 end
-

@@ -289,8 +289,13 @@ classdef table < base
             
             % loop over all edible substances
             for iJ = 1:length(this.csEdibleSubstances)
-                if strcmp(this.csEdibleSubstances{iJ}, this.csSubstances{this.tiN2I.(this.csEdibleSubstances{iJ})})
-                    this.ttxMatter.(this.csEdibleSubstances{iJ}).txNutrientData = this.ttxNutrientData.(this.csEdibleSubstances{iJ});
+                try
+                    if strcmp(this.csEdibleSubstances{iJ}, this.csSubstances{this.tiN2I.(this.csEdibleSubstances{iJ})})
+                        this.ttxMatter.(this.csEdibleSubstances{iJ}).txNutrientData = this.ttxNutrientData.(this.csEdibleSubstances{iJ});
+                    end
+                catch
+                    % substance not represented in matter table, but not an
+                    % issue as long as this food type is not used in sim
                 end
             end
             
