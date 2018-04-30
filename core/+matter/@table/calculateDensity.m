@@ -4,8 +4,8 @@ function fDensity = calculateDensity(this, varargin)
 %   flowing through the flow object. This is done by adding the single
 %   substance densities at the current temperature and pressure and
 %   weighing them with their mass fraction. Can use either a phase object
-%   as input parameter or the phase type (sType) and the masses array
 %   (afMass). Optionally temperature and partial pressures can be passed as
+%   as input parameter or the phase type (sType) and the masses array
 %   third and fourth parameters, respectively.
 %
 %   Examples: fDensity = calculateDensity(oFlow);
@@ -134,7 +134,7 @@ else
         end
         
         if any(strcmp(sMatterState, {'gas'}))
-            [ afPartialPressures, ~ ] = this.calculatePartialPressures(sMatterState, afMass, fPressure);
+            [ afPartialPressures, ~ ] = this.calculatePartialPressures(sMatterState, afMass, fPressure, fTemperature);
         else
             afPartialPressures = ones(1, this.iSubstances) * this.Standard.Pressure;
         end
@@ -174,7 +174,15 @@ for iI = 1:length(aiIndices)
 end
 
 % Sum up the densities multiplied by the partial masses to get the overall density.
-fDensity = sum(afRho .* arPartialMass(aiIndices));
+if strcmp(sMatterState, 'gas')
+    % for gases the density is calculated for the partial pressure of each
+    % substance, and therefore is the partial density of the substance. The
+    % overal density therefore must be calculated as the sum of each
+    % partial density
+    fDensity = sum(afRho);
+else
+    fDensity = sum(afRho .* arPartialMass(aiIndices));
+end
 
 % If none of the substances has a valid density an error is thrown.
 if fDensity < 0 || isnan(fDensity)

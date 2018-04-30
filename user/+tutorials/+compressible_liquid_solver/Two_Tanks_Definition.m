@@ -50,7 +50,7 @@ classdef Two_Tanks_Definition < simulation.infrastructure
             for iCell = 1:iCellNumber
                 
                 oLog.addValue('Two_Tanks.aoBranches(1).oHandler',	['this.mPressureOld(', num2str(iCell), ')'],    'Pa',       ['Pressure Cell ', num2str(iCell)]);
-                oLog.addValue('Two_Tanks.aoBranches(1).oHandler',	['this.mFlowSpeedOld(', num2str(iCell), ')'],  	'kg/s',     ['Flowrate Cell ', num2str(iCell)]);
+                oLog.addValue('Two_Tanks.aoBranches(1).oHandler',	['this.mFlowSpeedOld(', num2str(iCell), ')'],  	'm/s',      ['Flowspeed Cell ', num2str(iCell)]);
                 oLog.addValue('Two_Tanks.aoBranches(1).oHandler',	['this.mDensityOld(', num2str(iCell), ')'],     'kg/m^3',    ['Density Cell ', num2str(iCell)]);
                 oLog.addValue('Two_Tanks.aoBranches(1).oHandler',	['this.mTemperatureOld(', num2str(iCell), ')'], 'K',        ['Temperature Cell ', num2str(iCell)]);
                 oLog.addValue('Two_Tanks.aoBranches(1).oHandler',	['this.mPressureLoss(', num2str(iCell), ')'],   'Pa',       ['Pressure Loss Cell ', num2str(iCell)]);
@@ -101,14 +101,14 @@ classdef Two_Tanks_Definition < simulation.infrastructure
             
             for iCell = 1:iCellNumber
                 csCellPressures{iCell}      = ['"Pressure Cell ', num2str(iCell) ,'"'];
-                csCellFlowRates{iCell}      = ['"Flowrate Cell ', num2str(iCell) ,'"'];
+                csCellFlowRates{iCell}      = ['"Flowspeed Cell ', num2str(iCell) ,'"'];
                 csCellDensities{iCell}      = ['"Density Cell ', num2str(iCell) ,'"'];
                 csCellTemperatures{iCell}   = ['"Temperature Cell ', num2str(iCell) ,'"'];
                 csCellPressureLosses{iCell} = ['"Pressure Loss Cell ', num2str(iCell) ,'"'];
             end
             
             coPlots{1,1} = oPlotter.definePlot(csCellPressures,       'Pressures', tPlotOptions);
-            coPlots{2,1} = oPlotter.definePlot(csCellFlowRates,       'Flow Rates', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csCellFlowRates,       'Flow Speeds', tPlotOptions);
             coPlots{1,2} = oPlotter.definePlot(csCellTemperatures,    'Temperatures', tPlotOptions);
             coPlots{2,2} = oPlotter.definePlot(csCellPressureLosses,  'Pressure Losses', tPlotOptions);
             coPlots{3,1} = oPlotter.definePlot(csCellDensities,       'Densities', tPlotOptions);

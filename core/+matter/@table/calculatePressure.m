@@ -167,7 +167,14 @@ switch sMatterState
         %
         %
         
-        error('Not yet implemented sorry')
+        if length(find(arPartialMass)) == 1
+            % pure liquid case, continue with calculation
+            afPartialDensity = arPartialMass.*fDensity;
+            aiPhase = ones(1,this.iSubstances) .* 2;
+            aiLiquidIndices = [];
+        else
+            error('Not yet implemented sorry')
+        end
     case 'gas'
         % gases behave as if each component of the gas mixture is alone in
         % the total gas volume and therefore the partial density is the
