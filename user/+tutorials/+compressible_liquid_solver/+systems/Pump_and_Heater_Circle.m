@@ -89,6 +89,7 @@ classdef Pump_and_Heater_Circle < vsys
             solver.matter.fdm_liquid.branch_liquid(this.aoBranches(1), 4, 0, 0, 0.1, sCourantAdaption);
             solver.matter.fdm_liquid.branch_liquid(this.aoBranches(2), 3, 0, 0, 1, sCourantAdaption);
             
+            this.setThermalSolvers();
         end
     end
     

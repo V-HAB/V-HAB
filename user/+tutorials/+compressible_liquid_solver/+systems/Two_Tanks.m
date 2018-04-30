@@ -57,6 +57,7 @@ classdef Two_Tanks < vsys
             sCourantAdaption = struct( 'bAdaption', 0,'fIncreaseFactor', 1.001, 'iTicksBetweenIncrease', 100, 'iInitialTicks', 10000, 'fMaxCourantNumber', 1);
             solver.matter.fdm_liquid.branch_liquid(this.aoBranches(1), 10, 10^-5, 0, 1, sCourantAdaption);
             
+            this.setThermalSolvers();
         end
         
     end
