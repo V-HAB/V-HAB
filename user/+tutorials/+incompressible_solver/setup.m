@@ -22,30 +22,58 @@ classdef setup < simulation.infrastructure
             tutorials.incompressible_solver.systems.Incompressible_System(this.oSimulationContainer, 'Incompressible_System', 0);
         end
            
-        
-        function configureMonitors(this) 
-            %Logging
+        function configureMonitors(this)
+            
+            %% Logging
             oLog = this.toMonitors.oLogger;
             
-            tiFlowProps = oLog.add('Incompressible_System', 'flow_props');
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Incompressible_System.toStores);
+            for iStore = 1:length(csStores)
+                oLog.addValue(['Incompressible_System.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['Incompressible_System.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+            end
             
-            %Define Plots
-            oPlot = this.toMonitors.oPlotter;
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Incompressible_System.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLog.addValue(['Incompressible_System.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
             
-            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
-            oPlot.definePlotAllWithFilter('kg', 'Tank Masses');
-            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
-                
-            
-            % Sim time [s]
-            this.fSimTime = 30;
         end
         
-         function plot(this) % Plotting the results
-            % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
-            % further information
-            this.toMonitors.oPlotter.plot();
+        function plot(this, varargin) % Plotting the results
+            
+            %% Define Plots
+            
+            close all
+            oPlotter = plot@simulation.infrastructure(this);
+            
+            
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Incompressible_System.toStores);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Incompressible_System.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
+            
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
+
+            coPlots{1,1} = oPlotter.definePlot(csPressures,     'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
+            
+            oPlotter.plot();
         end
+        
     end
+    
 end
 

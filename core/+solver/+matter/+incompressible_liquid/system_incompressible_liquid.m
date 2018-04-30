@@ -1130,7 +1130,9 @@ classdef system_incompressible_liquid
             %normale phase time step calculation is used
             if isprop(this.oSystem, 'aoPhases')
                 for k = 1:length(this.oSystem.aoPhases)
-                    this.oSystem.aoPhases(k).fFixedTS = this.fTimeStepSystem;
+                    
+                    tTimeStepProperties.fFixedTimeStep = this.fTimeStepSystem;
+                    this.oSystem.aoPhases(k).setTimeStepProperties(tTimeStepProperties);
                 end
             end
             %writes the object with its new values into the system. Warning
