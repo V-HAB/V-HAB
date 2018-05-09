@@ -22,18 +22,6 @@ classdef FoodConverter < matter.manips.substance.flow
         
         function update(this, ~)
             
-            %% Calculates the mass error for this manipulator
-            this.setTimeStep(this.fTimeStep, true);
-            
-            txResults = this.oMT.calculateNutritionalContent(this.oIn.oPhase);
-            
-            keyboard();
-            
-            
-            %% sets the flowrate values
-            update@matter.manips.substance.flow(this, afFlowRates);
-            
-            this.fLastExec = this.oTimer.fTime;
         end
     end
 end

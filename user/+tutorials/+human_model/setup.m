@@ -27,7 +27,7 @@ classdef setup < simulation.infrastructure
             
             csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
             for iStore = 1:length(csStores)
-                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fPressure',	'Pa', [csStores{iStore}, ' Pressure']);
                 oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
             end
             
@@ -38,7 +38,7 @@ classdef setup < simulation.infrastructure
             
             csStoresHuman_1 = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.Human_1.toStores);
             for iStore = 1:length(csStoresHuman_1)
-                oLog.addValue(['Example:c:Human_1.toStores.', csStoresHuman_1{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStoresHuman_1{iStore}, ' Pressure']);
+                oLog.addValue(['Example:c:Human_1.toStores.', csStoresHuman_1{iStore}, '.aoPhases(1)'],	'fPressure',	'Pa', [csStoresHuman_1{iStore}, ' Pressure']);
                 oLog.addValue(['Example:c:Human_1.toStores.', csStoresHuman_1{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStoresHuman_1{iStore}, ' Temperature']);
             end
             
@@ -47,7 +47,22 @@ classdef setup < simulation.infrastructure
                 oLog.addValue(['Example:c:Human_1.toBranches.', csBranchesHuman_1{iBranch}],             'fFlowRate',    'kg/s', [csBranchesHuman_1{iBranch}, ' Flowrate']);
             end
             
+            oLog.addValue('Example:c:Human_1', 'fVO2_current',              '-', 'VO2');
+            oLog.addValue('Example:c:Human_1', 'fCurrentEnergyDemand',      'W', 'Current Energy Demand');
             
+            oLog.addValue('Example:c:Human_1', 'fOxygenDemand',                 'kg/s', 'Oxygen Consumption');
+            oLog.addValue('Example:c:Human_1', 'fCO2Production',                'kg/s', 'CO_2 Production');
+            oLog.addValue('Example:c:Human_1', 'fRespiratoryCoefficient',       '-',    'Respiratory Coefficient');
+            
+            
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.O2)',          'kg',    'Internal O_2 Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.CO2)',         'kg',    'Internal CO_2 Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.H2O)',         'kg',    'Internal H_2O Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C4H5ON)',      'kg',    'Internal Protein Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C16H32O2)',    'kg',    'Internal Fat Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C6H12O6)',     'kg',    'Internal Carbohydrate Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C42H69O13N5)', 'kg',    'Internal Feces Solid Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C2H6O2N2)',    'kg',    'Internal Urine Solid Mass');
             
         end
         
@@ -95,6 +110,15 @@ classdef setup < simulation.infrastructure
             coPlots{2,1} = oPlotter.definePlot({csFlowRates{:}, csFlowRatesHuman_1{:}},     'Flow Rates', tPlotOptions);
             coPlots{1,2} = oPlotter.definePlot({csTemperatures{:}, csTemperaturesHuman_1{:}},  'Temperatures', tPlotOptions);
             oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
+            
+            csHumansPhaseMassses = {'"Internal O_2 Mass"', '"Internal CO_2 Mass"', '"Internal H_2O Mass"', '"Internal Protein Mass"',  '"Internal Fat Mass"',...
+                                    '"Internal Carbohydrate Mass"', '"Internal Feces Solid Mass"', '"Internal Urine Solid Mass"'};
+            
+            coPlots{1,1} = oPlotter.definePlot(csHumansPhaseMassses,     'Internal Human Masses', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({'"Current Energy Demand"'},     'Energy Demand', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({'"Oxygen Consumption"', '"CO_2 Production"'},  'Oxygen and CO2 flowrates', tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot({'"Respiratory Coefficient"'},  'Respiratory Coefficient', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Human Model Plots', tFigureOptions);
             
             oPlotter.plot();
         end

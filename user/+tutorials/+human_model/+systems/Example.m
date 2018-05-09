@@ -37,43 +37,52 @@ classdef Example < vsys
             tMealTimes.Lunch = 6*3600;
             tMealTimes.Dinner = 15*3600;
             
-            for iDay = 1:iLengthOfMission
+            for iCrewMember = 1:iNumberOfCrewMembers
                 
-                for iCrewMember = 1:iNumberOfCrewMembers
-                    
+                iEvent = 1;
+                
+                for iDay = 1:iLengthOfMission
                     if iCrewMember == 1 || iCrewMember == 4
-                        ctEvents{iDay, 1, iCrewMember}.State = 'exercise015';
-                        ctEvents{iDay, 1, iCrewMember}.Start = ((iDay-1) * 24 +  1) * 3600;
-                        ctEvents{iDay, 1, iCrewMember}.End = ((iDay-1) * 24 +  2) * 3600;
-                        ctEvents{iDay, 1, iCrewMember}.Started = false;
-                        ctEvents{iDay, 1, iCrewMember}.Ended = false;
+                        
+                        ctEvents{iEvent, iCrewMember}.State = 1;
+                        ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  1) * 3600;
+                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  2) * 3600;
+                        ctEvents{iEvent, iCrewMember}.Started = false;
+                        ctEvents{iEvent, iCrewMember}.Ended = false;
+                        ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
                         
                     elseif iCrewMember==2 || iCrewMember ==5
-                        ctEvents{iDay, 1, iCrewMember}.State = 'exercise015';
-                        ctEvents{iDay, 1, iCrewMember}.Start = ((iDay-1) * 24 +  5) * 3600;
-                        ctEvents{iDay, 1, iCrewMember}.End = ((iDay-1) * 24 +  6) * 3600;
-                        ctEvents{iDay, 1, iCrewMember}.Started = false;
-                        ctEvents{iDay, 1, iCrewMember}.Ended = false;
+                        ctEvents{iEvent, iCrewMember}.State = 1;
+                        ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  5) * 3600;
+                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  6) * 3600;
+                        ctEvents{iEvent, iCrewMember}.Started = false;
+                        ctEvents{iEvent, iCrewMember}.Ended = false;
+                        ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
                         
                     elseif iCrewMember ==3 || iCrewMember == 6
-                        ctEvents{iDay, 1, iCrewMember}.State = 'exercise015';
-                        ctEvents{iDay, 1, iCrewMember}.Start = ((iDay-1) * 24 +  9) * 3600;
-                        ctEvents{iDay, 1, iCrewMember}.End = ((iDay-1) * 24 +  10) * 3600;
-                        ctEvents{iDay, 1, iCrewMember}.Started = false;
-                        ctEvents{iDay, 1, iCrewMember}.Ended = false;
+                        ctEvents{iEvent, iCrewMember}.State = 1;
+                        ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  9) * 3600;
+                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  10) * 3600;
+                        ctEvents{iEvent, iCrewMember}.Started = false;
+                        ctEvents{iEvent, iCrewMember}.Ended = false;
+                        ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
                     end
                     
-                    ctEvents{iDay, 2, iCrewMember}.State = 'sleep';
-                    ctEvents{iDay, 2, iCrewMember}.Start =   ((iDay-1) * 24 +  14) * 3600;
-                    ctEvents{iDay, 2, iCrewMember}.End =     ((iDay-1) * 24 +  22) * 3600;
-                    ctEvents{iDay, 2, iCrewMember}.Started = false;
-                    ctEvents{iDay, 2, iCrewMember}.Ended = false;
+                    iEvent = iEvent + 1;
+                    
+                    ctEvents{iEvent, iCrewMember}.State = 0;
+                    ctEvents{iEvent, iCrewMember}.Start =   ((iDay-1) * 24 +  14) * 3600;
+                    ctEvents{iEvent, iCrewMember}.End =     ((iDay-1) * 24 +  22) * 3600;
+                    ctEvents{iEvent, iCrewMember}.Started = false;
+                    ctEvents{iEvent, iCrewMember}.Ended = false;
+                    
+                    iEvent = iEvent + 1;
                 end
             end
             
             for iCrewMember = 1:iNumberOfCrewMembers
                 
-                txCrewPlaner.ctEvents = ctEvents{:, :, iCrewMember};
+                txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);
                 txCrewPlaner.tMealTimes = tMealTimes;
                 
                 components.Human(this, ['Human_', num2str(iCrewMember)], true, 28, 84.5, 1.84, txCrewPlaner);
@@ -131,18 +140,16 @@ classdef Example < vsys
             matter.procs.exmes.solid(oFoodPhase, 'FoodOut');
             
             % Creates a store for the urine
-            matter.store(this, 'UrineStorage', 1e-4);
+            matter.store(this, 'UrineStorage', 1);
             
-            oUrinePhase = matter.phases.liquid(this.toStores.UrineStorage, 'Urine', struct('H2O', 0.1), 1e-4, 295, 101325);
-            matter.procs.exmes.liquid(oUrinePhase, 'Urine_In');
+            oUrinePhase = matter.phases.mixture(this.toStores.UrineStorage, 'Urine', 'liquid', struct('C2H6O2N2', 0.059, 'H2O', 1.6), 1, 295, 101325); 
+            matter.procs.exmes.mixture(oUrinePhase, 'Urine_In');
             
-            % Creates a store for the feces storage
-            tfMasses = struct();
-            
+            % Creates a store for the feces storage            
             matter.store(this, 'FecesStorage', 1);
-            oFecesPhase = matter.phases.solid(this.toStores.FecesStorage, 'Feces', tfMasses, [], 295); 
+            oFecesPhase = matter.phases.mixture(this.toStores.FecesStorage, 'Feces', 'solid', struct('C42H69O13N5', 0.032, 'H2O', 0.1), 1, 295, 101325); 
             
-            matter.procs.exmes.solid(oFecesPhase, 'Feces_In');
+            matter.procs.exmes.mixture(oFecesPhase, 'Feces_In');
             
             matter.branch(this, 'Air_Out',          {}, 'Cabin.AirOut');
             matter.branch(this, 'Air_In',           {}, 'Cabin.AirIn');

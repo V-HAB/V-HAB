@@ -8,6 +8,10 @@ classdef ManualManipulator < matter.manips.substance.flow
         % parent system reference
         oParent;
         
+        afManualFlowRates;
+        
+        fLastExec = 0;
+        
         fTotalError = 0;
     end
     
@@ -16,6 +20,8 @@ classdef ManualManipulator < matter.manips.substance.flow
             this@matter.manips.substance.flow(sName, oPhase);
 
             this.oParent = oParent;
+            
+            this.afManualFlowRates = zeros(1,this.oMT.iSubstances);
         end
         
         function setFlowRate(this, afFlowRates)
@@ -49,20 +55,20 @@ classdef ManualManipulator < matter.manips.substance.flow
                 error('The Manual Manipulator was not provided with a flowrate vector that adds up to zero!')
             end
             
-            this.update(afFlowRates)
+            this.afManualFlowRates = afFlowRates;
+            
+            this.update()
         end
-    end
-    
-    methods (Access = protected)
-        function update(this, afFlowRates)
+        
+        function update(this, ~)
             
             %% Calculates the mass error for this manipulator
             fTimeStep = this.oTimer.fTime - this.fLastExec;
-            fError = sum(afFlowRates);
+            fError = sum(this.afManualFlowRates);
             this.fTotalError = this.fTotalError + (fError * fTimeStep);
             
             %% sets the flowrate values
-            update@matter.manips.substance.flow(this, afFlowRates);
+            update@matter.manips.substance.flow(this, this.afManualFlowRates);
             
             this.fLastExec = this.oTimer.fTime;
         end

@@ -33,7 +33,7 @@ classdef DigestionSimulator < matter.manips.substance.flow
         function update(this)
             % Takes data from the crew
             
-            afPartialFlows= zeros(1, this.oPhase.oMT.iSubstances);
+            afPartialFlowRates = zeros(1, this.oPhase.oMT.iSubstances);
             
             % for debugging purposes we store the total mass error this
             % manipulator produced from numerical errors
