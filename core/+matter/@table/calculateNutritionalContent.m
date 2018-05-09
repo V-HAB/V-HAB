@@ -63,7 +63,7 @@ function [ ttxResults ] = calculateNutritionalContent(this, oPhase)
     for iI = 1:(this.iSubstances)
         if oPhase.afMass(iI) ~= 0
             % check for all currently available edible substances 
-            if isfield(this.ttxNutrientData, this.ttxMatter.(this.csI2N{iI}))     
+            if isfield(this.ttxNutrientData, this.csI2N{iI})
 
                 % substance name
                 ttxResults.(this.csI2N{iI}).Substance = this.csI2N{iI};

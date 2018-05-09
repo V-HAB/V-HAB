@@ -57,6 +57,9 @@ classdef Human < vsys
         
         iEvent = 1;
         
+        requestFood;
+        oFoodBranch;
+        
         %% Variables just for plotting 
         fOxygenDemandNominal;
         fOxygenDemandSleep;
@@ -354,16 +357,19 @@ classdef Human < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            solver.matter.manual.branch(this.toBranches.Food_In);
             solver.matter.manual.branch(this.toBranches.Potable_Water_In);
             solver.matter.manual.branch(this.toBranches.Feces_Out);
             solver.matter.manual.branch(this.toBranches.Urine_Out);
-            solver.matter.manual.branch(this.toBranches.Air_In);    
+            solver.matter.manual.branch(this.toBranches.Air_In);
             solver.matter.residual.branch(this.toBranches.Air_Out);
             
+            if ~isempty(this.requestFood)
+                solver.matter.residual.branch(this.toBranches.Food_In);
+            end
+                
             this.setThermalSolvers();
             
-            this.setState(0);
+            this.setState(1);
         end
         
         function setIfFlows(this, varargin)
@@ -379,6 +385,9 @@ classdef Human < vsys
             
         end
         
+        function bindRequestFoodFunction(this, requestFood)
+            this.requestFood = requestFood;
+        end
 
     end
    
@@ -427,37 +436,39 @@ classdef Human < vsys
             % this handles the different events and defined in the crew
             % schedule (like sleep, exercise etc)
             
-            if (this.oTimer.fTime >= this.txCrewPlaner.ctEvents{this.iEvent}.Start) && (this.txCrewPlaner.ctEvents{this.iEvent}.Started == 0)
+            if (this.oTimer.fTime >= this.txCrewPlaner.ctEvents{this.iEvent}.Start) && ~this.txCrewPlaner.ctEvents{this.iEvent}.Started
                 
                 this.txCrewPlaner.ctEvents{this.iEvent}.Started = true;
                 
                 this.setState(this.txCrewPlaner.ctEvents{this.iEvent}.State);
                 
-                if this.oTimer.fTime >= this.txCrewPlaner.ctEvents{this.iEvent}.End && ~(this.txCrewPlaner.ctEvents{this.iEvent}.Ended)
-                    
-                    this.txCrewPlaner.ctEvents{this.iEvent}.Ended = true;
-                    
-                    % Checks if the initialised event was an excercise, if
-                    % so the human does not go to nominal state, but into a
-                    % recovery state
-                    if this.txCrewPlaner.ctEvents{this.iEvent}.State == 1
-                        this.setState(4);
-                    else
-                        this.setState(1);
-                    end
-                    this.iEvent = this.iEvent + 1;
-                end
             end
             
+            if this.oTimer.fTime >= this.txCrewPlaner.ctEvents{this.iEvent}.End && ~this.txCrewPlaner.ctEvents{this.iEvent}.Ended
+
+                this.txCrewPlaner.ctEvents{this.iEvent}.Ended = true;
+
+                % Checks if the initialised event was an excercise, if
+                % so the human does not go to nominal state, but into a
+                % recovery state
+                if this.txCrewPlaner.ctEvents{this.iEvent}.State == 2
+                    this.setState(4);
+                else
+                    this.setState(1);
+                end
+                this.iEvent = this.iEvent + 1;
+            end
+                
             % Automatically move the crew member to the next state in case
             % of excerise or recovery states
-            if this.iState == 2 && (this.oTimer.fTime - this.fStartTimeState) > 900
+            if this.iState == 2 && (this.oTimer.fTime - this.fStateStartTime) > 900
                 this.setState(3);
                 
-            elseif this.iState >= 4 && (this.oTimer.fTime - this.fStartTimeState) > 900
-                this.setState(this.iState + 1);
-                if this.iState == 8
+            elseif this.iState >= 4 && (this.oTimer.fTime - this.fStateStartTime) > 900
+                if (this.iState + 1) == 8
                     this.setState(1);
+                else
+                    this.setState(this.iState + 1);
                 end
             end
             
@@ -645,7 +656,9 @@ classdef Human < vsys
                     this.txCrewPlaner.tMealTimes.Breakfast = this.txCrewPlaner.tMealTimes.Breakfast + 86400;
 
                     fEnergyDemand = 0.2 * this.fBasicFoodEnergyDemand + this.fAdditionalFoodEnergyDemand;
-                    % this.oParent.demandFood(fEnergyDemand);
+                    
+                    this.requestFood(fEnergyDemand, 5*60);
+                    
                     this.fAdditionalFoodEnergyDemand = 0;
                     
                 elseif this.oTimer.fTime >= this.txCrewPlaner.tMealTimes.Lunch
@@ -654,7 +667,9 @@ classdef Human < vsys
                     this.txCrewPlaner.tMealTimes.Lunch = this.txCrewPlaner.tMealTimes.Lunch + 86400;
 
                     fEnergyDemand = 0.5 * this.fBasicFoodEnergyDemand + this.fAdditionalFoodEnergyDemand;
-                    % this.oParent.demandFood(fEnergyDemand);
+                    
+                    this.requestFood(fEnergyDemand, 10*60);
+                    
                     this.fAdditionalFoodEnergyDemand = 0;
                     
                 elseif this.oTimer.fTime >= this.txCrewPlaner.tMealTimes.Dinner
@@ -663,7 +678,9 @@ classdef Human < vsys
                     this.txCrewPlaner.tMealTimes.Dinner = this.txCrewPlaner.tMealTimes.Dinner + 86400;
 
                     fEnergyDemand = 0.3 * this.fBasicFoodEnergyDemand + this.fAdditionalFoodEnergyDemand;
-                    % this.oParent.demandFood(fEnergyDemand);
+                    
+                    this.requestFood(fEnergyDemand, 5*60);
+                    
                     this.fAdditionalFoodEnergyDemand = 0;
                 end
             end

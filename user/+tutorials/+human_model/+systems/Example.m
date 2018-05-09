@@ -44,7 +44,7 @@ classdef Example < vsys
                 for iDay = 1:iLengthOfMission
                     if iCrewMember == 1 || iCrewMember == 4
                         
-                        ctEvents{iEvent, iCrewMember}.State = 1;
+                        ctEvents{iEvent, iCrewMember}.State = 2;
                         ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  1) * 3600;
                         ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  2) * 3600;
                         ctEvents{iEvent, iCrewMember}.Started = false;
@@ -52,7 +52,7 @@ classdef Example < vsys
                         ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
                         
                     elseif iCrewMember==2 || iCrewMember ==5
-                        ctEvents{iEvent, iCrewMember}.State = 1;
+                        ctEvents{iEvent, iCrewMember}.State = 2;
                         ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  5) * 3600;
                         ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  6) * 3600;
                         ctEvents{iEvent, iCrewMember}.Started = false;
@@ -60,7 +60,7 @@ classdef Example < vsys
                         ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
                         
                     elseif iCrewMember ==3 || iCrewMember == 6
-                        ctEvents{iEvent, iCrewMember}.State = 1;
+                        ctEvents{iEvent, iCrewMember}.State = 2;
                         ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  9) * 3600;
                         ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  10) * 3600;
                         ctEvents{iEvent, iCrewMember}.Started = false;
@@ -129,16 +129,6 @@ classdef Example < vsys
             oPotableWaterPhase = matter.phases.liquid(this.toStores.PotableWaterStorage, 'PotableWater', struct('H2O', 100), 1, 295, 101325);
             matter.procs.exmes.liquid(oPotableWaterPhase, 'DrinkingOut');
             
-            % Creates a store for the dry food storage
-            % Dry Food Storage
-            tfMasses = struct('Food', 20);
-            fSolidVolume = this.oMT.calculateSolidVolume(tfMasses, 295, true);
-            
-            matter.store(this, 'FoodStorage', fSolidVolume);
-            oFoodPhase = matter.phases.solid(this.toStores.FoodStorage, 'Food', tfMasses, [], 295); 
-            
-            matter.procs.exmes.solid(oFoodPhase, 'FoodOut');
-            
             % Creates a store for the urine
             matter.store(this, 'UrineStorage', 1);
             
@@ -153,10 +143,16 @@ classdef Example < vsys
             
             matter.branch(this, 'Air_Out',          {}, 'Cabin.AirOut');
             matter.branch(this, 'Air_In',           {}, 'Cabin.AirIn');
-            matter.branch(this, 'Solid_Food',       {}, 'FoodStorage.FoodOut');
             matter.branch(this, 'Feces',            {}, 'FecesStorage.Feces_In');
             matter.branch(this, 'PotableWater',     {}, 'PotableWaterStorage.DrinkingOut');
             matter.branch(this, 'Urine',            {}, 'UrineStorage.Urine_In');
+            
+            % Adds a food store to the system
+            tfFood = struct('Food', 100, 'CarrotsEdibleWet', 10);
+            oFoodStore = components.FoodStore(this, 'FoodStore', 100, tfFood);
+            
+            requestFood = oFoodStore.registerHuman('Solid_Food');
+            this.toChildren.Human_1.bindRequestFoodFunction(requestFood);
             
             this.toChildren.Human_1.setIfFlows('Air_Out', 'Air_In', 'PotableWater', 'Solid_Food', 'Feces', 'Urine');
             

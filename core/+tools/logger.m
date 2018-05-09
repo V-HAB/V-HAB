@@ -94,6 +94,7 @@ classdef logger < event.source % base % &
         function flush(this)
             if isempty(this) || ~isvalid(this), return; end;
             
+            warning('off', 'all')
             this.bOff = true;
             
             this.chCallbacks = {};
@@ -104,6 +105,8 @@ classdef logger < event.source % base % &
             
             this.bCollect    = false;
             this.tCollection = struct('oObj', {}, 'iLevel', {}, 'iVerbosity', {}, 'sIdentifier', {}, 'sMessage', {}, 'cParams', {});
+            
+            warning('on', 'all')
         end
         
         
