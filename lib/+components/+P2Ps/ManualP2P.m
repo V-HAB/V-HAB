@@ -36,7 +36,7 @@ classdef ManualP2P < matter.procs.p2ps.flow
                 this.oIn.oPhase.oStore.setNextTimeStep(fTimeStep);
             end
             
-            if this.bMassTransferActive && (this.fMassTransferStartTime + this.fMassTransferTime) >= this.oTimer.fTime
+            if this.bMassTransferActive && this.oTimer.fTime >= (this.fMassTransferStartTime + this.fMassTransferTime)
                 
                 arPartialFlowRates = zeros(1,this.oMT.iSubstances);
                 fFlowRate = 0;
@@ -101,7 +101,7 @@ classdef ManualP2P < matter.procs.p2ps.flow
             this.oIn.oPhase.oStore.setNextTimeStep(fTime);
             
             % extract specified substance with desired flow rate
-            this.setMatterProperties(fFlowRate, this.afFlowRates);
+            this.setMatterProperties(fFlowRate, arPartialFlowRates);
         end
     end
 end

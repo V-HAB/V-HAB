@@ -233,7 +233,7 @@ classdef branch < base & event.source
                 % zero
                 oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
 
-                if tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
+                if ~oIn.bFlow && tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
                     fFlowRate = 0;
                     afPressures = zeros(1, this.oBranch.iFlowProcs);
                 end

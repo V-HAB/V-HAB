@@ -568,7 +568,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 if fPhaseSpecificHeatCapacity == 0 && oExme.oPhase.fMass ~= 0
                     %TODO move the following warning to a lower level debug
                     %output once this is implemented
-                    aoFlows(1).warn('setData', 'Updating specific heat capacity for phase %s %s.', oExme.oPhase.oStore.sName, oExme.oPhase.sName);
+                    % aoFlows(1).warn('setData', 'Updating specific heat capacity for phase %s %s.', oExme.oPhase.oStore.sName, oExme.oPhase.sName);
                     oExme.oPhase.oCapacity.updateSpecificHeatCapacity();
                     fPhaseSpecificHeatCapacity = oExme.oPhase.oCapacity.fSpecificHeatCapacity;
                 end

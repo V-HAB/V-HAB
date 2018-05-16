@@ -85,10 +85,18 @@ classdef Human < vsys
             
             % "Chapter 3: Calculation Of The Energy Content Of Foods – Energy
             % Conversion Factors". Food and Agriculture Organization of the
-            % United Nations.
-            this.tfEnergyContent.Fat          = 37 * 10^6; % J/kg
-            this.tfEnergyContent.Protein      = 17 * 10^6; % J/kg
-            this.tfEnergyContent.Carbohydrate = 17 * 10^6; % J/kg
+            % United Nations. 
+            % Protein:          17 * 10^6; % J/kg
+            % Fat:              37 * 10^6; % J/kg
+            % Carbohydrates:    17 * 10^6; % J/kg
+            %
+            % However, the values in the calculate Nutritional Content 
+            % function, which is based on American data, divergeses
+            % TO DO: Find a good solution for this, if this is changed, the
+            % calculateNutritionalContent function also has to be changed
+            this.tfEnergyContent.Fat          = 37 * 10^6;
+            this.tfEnergyContent.Protein      = 17 * 10^6;
+            this.tfEnergyContent.Carbohydrate = 17 * 10^6;
             
             % boolean is the easiest way to differentiate between male and
             % female, calculate the basic energy demand
@@ -299,7 +307,7 @@ classdef Human < vsys
             % edible (tomatoes, wheat etc.) this converter will break into
             % down into the basic components (proteins, fat, carbohydrates,
             % water)
-            components.human.FoodConverter('FoodConverter', oStomachPhase, 60);
+            components.Manips.ManualManipulator(this, 'FoodConverter', oStomachPhase);
             
             % airphase helper
             % defined co2 level and relative humidity
@@ -364,8 +372,13 @@ classdef Human < vsys
             solver.matter.residual.branch(this.toBranches.Air_Out);
             
             if ~isempty(this.requestFood)
-                solver.matter.residual.branch(this.toBranches.Food_In);
+                oResidual = solver.matter.residual.branch(this.toBranches.Food_In);
+                oResidual.setPositiveFlowDirection(false);
             end
+            
+            tTimeStepProperties.fFixedTimeStep = 20;
+            
+            this.toStores.Human.toPhases.Stomach.setTimeStepProperties(tTimeStepProperties);
                 
             this.setThermalSolvers();
             
@@ -553,6 +566,44 @@ classdef Human < vsys
                 this.fVO2_current = (this.fOxygenDemandNominal / this.oMT.afMolarMass(this.oMT.tiN2I.O2)) * 22.4 * 1000 * 60 / this.fHumanMass;
             end
             
+            %% Food Conversion
+            oStomachPhase = this.toStores.Human.toPhases.Stomach;
+            txResults = this.oMT.calculateNutritionalContent(oStomachPhase);
+            
+            csFood = fieldnames(txResults);
+            
+            csFood = csFood(~strcmp(csFood, 'EdibleTotal'));
+                        
+            afFoodConversionFlowRates = zeros(1,this.oMT.iSubstances);
+            for iFood = 1:length(csFood)
+                sFood = csFood{iFood};
+                % The simplified human model does not account for other
+                % components of the food aside from Protein, Fat, Carbohdyrates
+                % and Ash (which represents the mass that remains if the
+                % food would be burned, it represents all minerals in the
+                % food which are necessary nutrients but are not part of
+                % the energy balance)
+                fWaterMass = txResults.(sFood).Mass - txResults.(sFood).DryMass;
+                
+                afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) = afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) + txResults.(sFood).CarbohydrateMass / this.fTimeStep;
+                afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2) = afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2) + txResults.(sFood).LipidMass / this.fTimeStep;
+                afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON) = afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON) + txResults.(sFood).ProteinMass / this.fTimeStep;
+                
+                % Ash is represented as Carbon
+                afFoodConversionFlowRates(this.oMT.tiN2I.C) = afFoodConversionFlowRates(this.oMT.tiN2I.C) + txResults.(sFood).AshMass / this.fTimeStep;
+                
+                afFoodConversionFlowRates(this.oMT.tiN2I.H2O) = afFoodConversionFlowRates(this.oMT.tiN2I.H2O) + fWaterMass / this.fTimeStep;
+                
+                afFoodConversionFlowRates(this.oMT.tiN2I.(sFood)) = - txResults.(sFood).Mass / this.fTimeStep;
+            end
+            
+            oStomachPhase.toManips.substance.setFlowRate(afFoodConversionFlowRates);
+            
+            afP2PFoodFlowRate = afFoodConversionFlowRates;
+            afP2PFoodFlowRate(afP2PFoodFlowRate < 0) = 0;
+            
+            this.toStores.Human.toProcsP2P.Food_P2P.setFlowRate(afP2PFoodFlowRate);
+            
             %% Digestion
             
             % the current energy demand is now calculated based on the
@@ -562,7 +613,7 @@ classdef Human < vsys
             % this equation calculates the additional energy demand the
             % human has because of exercising
             if this.iState == 2 || this.iState == 3
-                this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + ((this.fOxygenDemand - this.fOxygenDemandNominal) * fTimeStep * this.fCaloricValueOxygen);
+                this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + ((this.fOxygenDemand - this.fOxygenDemandNominal) * this.fTimeStep * this.fCaloricValueOxygen);
             end
             
             tfMassConsumption.Fat             = (this.fCurrentEnergyDemand * tfPercent.Fat) / this.tfEnergyContent.Fat;
@@ -604,6 +655,20 @@ classdef Human < vsys
             afManipulatorFlowRates(this.oMT.tiN2I.C4H5ON)     	= - (tfMassConsumption.Protein      + tfMassConsumptionFeces.Protein);
             afManipulatorFlowRates(this.oMT.tiN2I.C6H12O6)    	= - (tfMassConsumption.Carbohydrate + tfMassConsumptionFeces.Carbohydrate);
             afManipulatorFlowRates(this.oMT.tiN2I.O2)           = -  this.fOxygenDemand;
+            
+            % TO DO: The issue here is that the composition of the food
+            % does not have to respect the mass composition of protein fat
+            % and carbohydrates here, therefore the additional energy
+            % demand will not exactly replace the respective masses lost
+            % through the feces. This requires a different request function
+            % that allows the human to request a specific substance. Or the
+            % mass for the feces is taken from the remaining mass which is
+            % not yet accounted for (ash)
+            fEnergyEquivalentFeces = tfMassConsumptionFeces.Fat * this.tfEnergyContent.Fat + ...
+                                     tfMassConsumptionFeces.Protein * this.tfEnergyContent.Protein + ...
+                                     tfMassConsumptionFeces.Carbohydrate * this.tfEnergyContent.Carbohydrate;
+            
+            this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + (fEnergyEquivalentFeces * this.fTimeStep);
             
             %% Setting of P2P and Manip flowrates
             this.toStores.Human.toPhases.HumanPhase.update();

@@ -80,9 +80,21 @@ function [ ttxResults ] = calculateNutritionalContent(this, oPhase)
 
                 % total and partly energy content [J]
                 ttxResults.(this.csI2N{iI}).TotalEnergy = this.ttxNutrientData.(this.csI2N{iI}).fEnergyMass * ttxResults.(this.csI2N{iI}).Mass;
-                ttxResults.(this.csI2N{iI}).ProteinEnergy = ttxResults.(this.csI2N{iI}).ProteinMass * this.ttxNutrientData.(this.csI2N{iI}).fProteinEnergyFactor;
-                ttxResults.(this.csI2N{iI}).LipidEnergy = ttxResults.(this.csI2N{iI}).ProteinMass * this.ttxNutrientData.(this.csI2N{iI}).fLipidEnergyFactor;
-                ttxResults.(this.csI2N{iI}).CarbohydrateEnergy = ttxResults.(this.csI2N{iI}).ProteinMass * this.ttxNutrientData.(this.csI2N{iI}).fCarbohydrateEnergyFactor;
+                
+                % "Chapter 3: Calculation Of The Energy Content Of Foods – Energy
+                % Conversion Factors". Food and Agriculture Organization of the
+                % United Nations. 
+                % Protein:          17 * 10^6; % J/kg
+                % Fat:              37 * 10^6; % J/kg
+                % Carbohydrates:    17 * 10^6; % J/kg
+                %
+                % However, the values in the calculate Nutritional Content 
+                % function, which is based on American data, divergeses
+                % TO DO: find a better solution for this, if this is
+                % changed, the lib human model must also be changed!
+                ttxResults.(this.csI2N{iI}).ProteinEnergy = ttxResults.(this.csI2N{iI}).ProteinMass * 17 * 10^6; % this.ttxNutrientData.(this.csI2N{iI}).fProteinEnergyFactor;
+                ttxResults.(this.csI2N{iI}).LipidEnergy = ttxResults.(this.csI2N{iI}).LipidMass * 37 * 10^6; % this.ttxNutrientData.(this.csI2N{iI}).fLipidEnergyFactor;
+                ttxResults.(this.csI2N{iI}).CarbohydrateEnergy = ttxResults.(this.csI2N{iI}).CarbohydrateMass * 17 * 10^6; %this.ttxNutrientData.(this.csI2N{iI}).fCarbohydrateEnergyFactor;
 
                 % Mineral content [kg]
                 ttxResults.(this.csI2N{iI}).CalciumMass = ttxResults.(this.csI2N{iI}).DryMass * this.ttxNutrientData.(this.csI2N{iI}).fCalciumDMF;
@@ -176,13 +188,8 @@ function [ ttxResults ] = calculateNutritionalContent(this, oPhase)
                 ttxResults.EdibleTotal.ValineMass = ttxResults.EdibleTotal.ValineMass + ttxResults.(this.csI2N{iI}).ValineMass;
                 ttxResults.EdibleTotal.HistidineMass = ttxResults.EdibleTotal.HistidineMass + ttxResults.(this.csI2N{iI}).HistidineMass;
 
-            % if not an edible substance
-            else
-                % substance name
-                ttxResults.(this.csI2N{iI}).Substance = this.csI2N{iI};
-
-                % substance mass and dry mass [kg]
-                ttxResults.(this.csI2N{iI}).Mass = oPhase.afMass(iI);
+            % if not an edible substance nothing it added to the result
+            % struct
             end
         end
     end
