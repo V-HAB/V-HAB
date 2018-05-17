@@ -110,19 +110,18 @@ classdef Human < vsys
                 this.fBasicFoodEnergyDemand = 10^6 * (354 - 6.91 * fAge + 1.25*(9.36 * fHumanMass + 726 * fHumanHeight))/(0.238853*10^3);
             end
             
+            % Since the feces are also modelled as a chemical reaction that
+            % consumes fat, protein and carbohydrate, the basic food demand
+            % (which is also used to calculate the current O2 consumption
+            % of the human) is adapted. Since the energy demand above is
+            % the overall, it includes the consumption of feces, that value
+            % is later on added again in a way that it does not impact O2
+            % and CO2 (as that would lead to an imbalance in the masses)
             fMolarFlowFeces = this.fFecesSolidProduction / this.oMT.afMolarMass(this.oMT.tiN2I.C42H69O13N5);
             tfMassConsumptionFeces.Fat          =     fMolarFlowFeces * this.oMT.afMolarMass(this.oMT.tiN2I.C16H32O2);
             tfMassConsumptionFeces.Protein      = 5 * fMolarFlowFeces * this.oMT.afMolarMass(this.oMT.tiN2I.C4H5ON);
             tfMassConsumptionFeces.Carbohydrate =     fMolarFlowFeces * this.oMT.afMolarMass(this.oMT.tiN2I.C6H12O6);
             
-            % TO DO: The issue here is that the composition of the food
-            % does not have to respect the mass composition of protein fat
-            % and carbohydrates here, therefore the additional energy
-            % demand will not exactly replace the respective masses lost
-            % through the feces. This requires a different request function
-            % that allows the human to request a specific substance. Or the
-            % mass for the feces is taken from the remaining mass which is
-            % not yet accounted for (ash)
             tfEnergyEquivalentFeces.Fat             = tfMassConsumptionFeces.Fat * this.tfEnergyContent.Fat;
             tfEnergyEquivalentFeces.Protein         = tfMassConsumptionFeces.Protein * this.tfEnergyContent.Protein;
             tfEnergyEquivalentFeces.Carbohydrate    = tfMassConsumptionFeces.Carbohydrate * this.tfEnergyContent.Carbohydrate;
@@ -435,8 +434,11 @@ classdef Human < vsys
             afHumidityP2PFlowRates(this.oMT.tiN2I.H2O) = this.tHumanMetabolicValues.(this.csStates{iState + 1}).fWaterVapor + this.tHumanMetabolicValues.(this.csStates{iState + 1}).fSweat;
             this.toStores.Human.toProcsP2P.CrewHumidityProduction.setFlowRate(afHumidityP2PFlowRates);
             
-            % TO DO: find dynamic way to calculate humand thermal heat
-            % release simply
+            % TO DO: find dynamic way to calculate human thermal heat
+            % release simply and a beater way to introduce that heat into
+            % the habitat. Currently the air the human breathes out is
+            % heated up, but that results in unrealistically high air
+            % temperatures
             this.toStores.Human.toPhases.Air.oCapacity.toHeatSources.Heater.setHeatFlow(this.tHumanMetabolicValues.(this.csStates{iState + 1}).fDryHeat)
             
         end
@@ -594,6 +596,8 @@ classdef Human < vsys
             csFood = csFood(~strcmp(csFood, 'EdibleTotal'));
                         
             afFoodConversionFlowRates = zeros(1,this.oMT.iSubstances);
+            
+            fFoodConversionTimeStep = this.fTimeStep * 2;
             for iFood = 1:length(csFood)
                 sFood = csFood{iFood};
                 % The simplified human model does not account for other
@@ -604,16 +608,16 @@ classdef Human < vsys
                 % the energy balance)
                 fWaterMass = txResults.(sFood).Mass - txResults.(sFood).DryMass;
                 
-                afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) = afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) + txResults.(sFood).CarbohydrateMass / this.fTimeStep;
-                afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2) = afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2) + txResults.(sFood).LipidMass / this.fTimeStep;
-                afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON) = afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON) + txResults.(sFood).ProteinMass / this.fTimeStep;
+                afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) = afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) + txResults.(sFood).CarbohydrateMass / fFoodConversionTimeStep;
+                afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2) = afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2) + txResults.(sFood).LipidMass / fFoodConversionTimeStep;
+                afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON) = afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON) + txResults.(sFood).ProteinMass / fFoodConversionTimeStep;
                 
                 % Ash is represented as Carbon
-                afFoodConversionFlowRates(this.oMT.tiN2I.C) = afFoodConversionFlowRates(this.oMT.tiN2I.C) + txResults.(sFood).AshMass / this.fTimeStep;
+                afFoodConversionFlowRates(this.oMT.tiN2I.C) = afFoodConversionFlowRates(this.oMT.tiN2I.C) + txResults.(sFood).AshMass / fFoodConversionTimeStep;
                 
-                afFoodConversionFlowRates(this.oMT.tiN2I.H2O) = afFoodConversionFlowRates(this.oMT.tiN2I.H2O) + fWaterMass / this.fTimeStep;
+                afFoodConversionFlowRates(this.oMT.tiN2I.H2O) = afFoodConversionFlowRates(this.oMT.tiN2I.H2O) + fWaterMass / fFoodConversionTimeStep;
                 
-                afFoodConversionFlowRates(this.oMT.tiN2I.(sFood)) = - txResults.(sFood).Mass / this.fTimeStep;
+                afFoodConversionFlowRates(this.oMT.tiN2I.(sFood)) = - txResults.(sFood).Mass / fFoodConversionTimeStep;
             end
             
             oStomachPhase.toManips.substance.setFlowRate(afFoodConversionFlowRates);
@@ -635,7 +639,6 @@ classdef Human < vsys
                 this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + ((this.fOxygenDemand - this.fOxygenDemandNominal) * this.fTimeStep * this.fCaloricValueOxygen);
             end
             
-            
             % Feces composition is assumed to 50% protein, 25%
             % carbohydrates and 25% fat according to "MASS BALANCES FOR A
             % BIOLOGICAL LIFE SUPPORT SYSTEM SIMULATION MODEL", Tyler Volk
@@ -648,21 +651,22 @@ classdef Human < vsys
             tfMassConsumptionFeces.Protein      = 5 * fMolarFlowFeces * this.oMT.afMolarMass(this.oMT.tiN2I.C4H5ON);
             tfMassConsumptionFeces.Carbohydrate =     fMolarFlowFeces * this.oMT.afMolarMass(this.oMT.tiN2I.C6H12O6);
             
-            % TO DO: The issue here is that the composition of the food
-            % does not have to respect the mass composition of protein fat
-            % and carbohydrates here, therefore the additional energy
-            % demand will not exactly replace the respective masses lost
-            % through the feces. This requires a different request function
-            % that allows the human to request a specific substance. Or the
-            % mass for the feces is taken from the remaining mass which is
-            % not yet accounted for (ash)
+            % calculates the energy equivalency of the feces production
             tfEnergyEquivalentFeces.Fat             = tfMassConsumptionFeces.Fat * this.tfEnergyContent.Fat;
             tfEnergyEquivalentFeces.Protein         = tfMassConsumptionFeces.Protein * this.tfEnergyContent.Protein;
             tfEnergyEquivalentFeces.Carbohydrate    = tfMassConsumptionFeces.Carbohydrate * this.tfEnergyContent.Carbohydrate;
             fEnergyEquivalenFecesTotal = (tfEnergyEquivalentFeces.Fat + tfEnergyEquivalentFeces.Protein + tfEnergyEquivalentFeces.Carbohydrate);
             
+            % the mass for the feces production also has to be replenished
+            % by food --> added as additional energy demand
             this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + fEnergyEquivalenFecesTotal * this.fTimeStep;
             
+            % since the consumption of fat, protein and carbohydrates for
+            % the feces does not respect the current energy composition of
+            % the food, the energy demand of each of the basic nutrients is
+            % adapted to ensure that overall (food and feces consumption)
+            % the current percentual energy composition of the food is
+            % respected
             tfTotalCurrentEnergyConsumption.Fat          = (this.fCurrentEnergyDemand * tfPercent.Fat)          + (tfPercent.Fat           * fEnergyEquivalenFecesTotal - tfEnergyEquivalentFeces.Fat);
             tfTotalCurrentEnergyConsumption.Protein      = (this.fCurrentEnergyDemand * tfPercent.Protein)      + (tfPercent.Protein       * fEnergyEquivalenFecesTotal - tfEnergyEquivalentFeces.Protein);
             tfTotalCurrentEnergyConsumption.Carbohydrate = (this.fCurrentEnergyDemand * tfPercent.Carbohydrate) + (tfPercent.Carbohydrate  * fEnergyEquivalenFecesTotal - tfEnergyEquivalentFeces.Carbohydrate);

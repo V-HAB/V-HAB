@@ -90,11 +90,6 @@ classdef Example < vsys
                 clear txCrewPlaner;
             end
             
-            % Also if the simulation for the habitat uses discretization
-            % itr is necessary for each human subsystem to represent only
-            % one human (because otherwise the impact of the human on the
-            % atmosphere would be incorrect since all humans would share
-            % one lung)
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
