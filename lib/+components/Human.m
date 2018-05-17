@@ -110,6 +110,26 @@ classdef Human < vsys
                 this.fBasicFoodEnergyDemand = 10^6 * (354 - 6.91 * fAge + 1.25*(9.36 * fHumanMass + 726 * fHumanHeight))/(0.238853*10^3);
             end
             
+            fMolarFlowFeces = this.fFecesSolidProduction / this.oMT.afMolarMass(this.oMT.tiN2I.C42H69O13N5);
+            tfMassConsumptionFeces.Fat          =     fMolarFlowFeces * this.oMT.afMolarMass(this.oMT.tiN2I.C16H32O2);
+            tfMassConsumptionFeces.Protein      = 5 * fMolarFlowFeces * this.oMT.afMolarMass(this.oMT.tiN2I.C4H5ON);
+            tfMassConsumptionFeces.Carbohydrate =     fMolarFlowFeces * this.oMT.afMolarMass(this.oMT.tiN2I.C6H12O6);
+            
+            % TO DO: The issue here is that the composition of the food
+            % does not have to respect the mass composition of protein fat
+            % and carbohydrates here, therefore the additional energy
+            % demand will not exactly replace the respective masses lost
+            % through the feces. This requires a different request function
+            % that allows the human to request a specific substance. Or the
+            % mass for the feces is taken from the remaining mass which is
+            % not yet accounted for (ash)
+            tfEnergyEquivalentFeces.Fat             = tfMassConsumptionFeces.Fat * this.tfEnergyContent.Fat;
+            tfEnergyEquivalentFeces.Protein         = tfMassConsumptionFeces.Protein * this.tfEnergyContent.Protein;
+            tfEnergyEquivalentFeces.Carbohydrate    = tfMassConsumptionFeces.Carbohydrate * this.tfEnergyContent.Carbohydrate;
+            fEnergyEquivalenFecesTotal = (tfEnergyEquivalentFeces.Fat + tfEnergyEquivalentFeces.Protein + tfEnergyEquivalentFeces.Carbohydrate);
+            
+            this.fBasicFoodEnergyDemand = this.fBasicFoodEnergyDemand - (fEnergyEquivalenFecesTotal * 86400);
+            
             % Based on the basic food demand and the current respiratory
             % coefficient the digestion manipulator can calculate the
             % current oxygen demand and co2 production. To calculate the
@@ -424,7 +444,6 @@ classdef Human < vsys
         function exec(this, ~)
             exec@vsys(this);
             
-            fTimeStep = this.oTimer.fTime - this.fLastExec;
             this.fLastExec = this.oTimer.fTime;
             
             %% Restroom
@@ -616,22 +635,6 @@ classdef Human < vsys
                 this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + ((this.fOxygenDemand - this.fOxygenDemandNominal) * this.fTimeStep * this.fCaloricValueOxygen);
             end
             
-            tfMassConsumption.Fat             = (this.fCurrentEnergyDemand * tfPercent.Fat) / this.tfEnergyContent.Fat;
-            tfMassConsumption.Protein         = (this.fCurrentEnergyDemand * tfPercent.Protein) / this.tfEnergyContent.Protein;
-            tfMassConsumption.Carbohydrate    = (this.fCurrentEnergyDemand * tfPercent.Carbohydrate) / this.tfEnergyContent.Carbohydrate;
-            
-            tfMolarConsumption.Fat            = tfMassConsumption.Fat / this.oMT.afMolarMass(this.oMT.tiN2I.C16H32O2);
-            tfMolarConsumption.Protein        = tfMassConsumption.Protein / this.oMT.afMolarMass(this.oMT.tiN2I.C4H5ON);
-            tfMolarConsumption.Carbohydrate   = tfMassConsumption.Carbohydrate / this.oMT.afMolarMass(this.oMT.tiN2I.C6H12O6);
-            
-            % C16H32O2 (fats)          + 23 O2     =    16 CO2 + 16H20
-            % 2 C4H5ON  (protein)      + 7  O2     =    C2H6O2N2 (urine solids) + 6 CO2 + 2H2O 
-            % C6H12O6 (carbohydrates)  + 6  O2     =    6 CO2 + 6 H2O
-            this.fCO2Production             = this.oMT.afMolarMass(this.oMT.tiN2I.CO2)      * (tfMolarConsumption.Fat * 16 + tfMolarConsumption.Protein * 3 + tfMolarConsumption.Carbohydrate * 6);
-            this.fMetabolicWaterProduction  = this.oMT.afMolarMass(this.oMT.tiN2I.H2O)      * (tfMolarConsumption.Fat * 16 + tfMolarConsumption.Protein     + tfMolarConsumption.Carbohydrate * 6);
-            this.fUrineSolidsProduction     = this.oMT.afMolarMass(this.oMT.tiN2I.C2H6O2N2) *  tfMolarConsumption.Protein * 0.5;
-            
-            % fO2ConsCheck = this.oMT.afMolarMass(this.oMT.tiN2I.O2)      * (tfMolarConsumption.Fat * 23 + tfMolarConsumption.Protein * 3.5 + tfMolarConsumption.Carbohydrate * 6);
             
             % Feces composition is assumed to 50% protein, 25%
             % carbohydrates and 25% fat according to "MASS BALANCES FOR A
@@ -645,6 +648,42 @@ classdef Human < vsys
             tfMassConsumptionFeces.Protein      = 5 * fMolarFlowFeces * this.oMT.afMolarMass(this.oMT.tiN2I.C4H5ON);
             tfMassConsumptionFeces.Carbohydrate =     fMolarFlowFeces * this.oMT.afMolarMass(this.oMT.tiN2I.C6H12O6);
             
+            % TO DO: The issue here is that the composition of the food
+            % does not have to respect the mass composition of protein fat
+            % and carbohydrates here, therefore the additional energy
+            % demand will not exactly replace the respective masses lost
+            % through the feces. This requires a different request function
+            % that allows the human to request a specific substance. Or the
+            % mass for the feces is taken from the remaining mass which is
+            % not yet accounted for (ash)
+            tfEnergyEquivalentFeces.Fat             = tfMassConsumptionFeces.Fat * this.tfEnergyContent.Fat;
+            tfEnergyEquivalentFeces.Protein         = tfMassConsumptionFeces.Protein * this.tfEnergyContent.Protein;
+            tfEnergyEquivalentFeces.Carbohydrate    = tfMassConsumptionFeces.Carbohydrate * this.tfEnergyContent.Carbohydrate;
+            fEnergyEquivalenFecesTotal = (tfEnergyEquivalentFeces.Fat + tfEnergyEquivalentFeces.Protein + tfEnergyEquivalentFeces.Carbohydrate);
+            
+            this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + fEnergyEquivalenFecesTotal * this.fTimeStep;
+            
+            tfTotalCurrentEnergyConsumption.Fat          = (this.fCurrentEnergyDemand * tfPercent.Fat)          + (tfPercent.Fat           * fEnergyEquivalenFecesTotal - tfEnergyEquivalentFeces.Fat);
+            tfTotalCurrentEnergyConsumption.Protein      = (this.fCurrentEnergyDemand * tfPercent.Protein)      + (tfPercent.Protein       * fEnergyEquivalenFecesTotal - tfEnergyEquivalentFeces.Protein);
+            tfTotalCurrentEnergyConsumption.Carbohydrate = (this.fCurrentEnergyDemand * tfPercent.Carbohydrate) + (tfPercent.Carbohydrate  * fEnergyEquivalenFecesTotal - tfEnergyEquivalentFeces.Carbohydrate);
+            
+            tfMassConsumption.Fat             = tfTotalCurrentEnergyConsumption.Fat          / this.tfEnergyContent.Fat;
+            tfMassConsumption.Protein         = tfTotalCurrentEnergyConsumption.Protein      / this.tfEnergyContent.Protein;
+            tfMassConsumption.Carbohydrate    = tfTotalCurrentEnergyConsumption.Carbohydrate / this.tfEnergyContent.Carbohydrate;
+            
+            tfMolarConsumption.Fat            = tfMassConsumption.Fat           / this.oMT.afMolarMass(this.oMT.tiN2I.C16H32O2);
+            tfMolarConsumption.Protein        = tfMassConsumption.Protein       / this.oMT.afMolarMass(this.oMT.tiN2I.C4H5ON);
+            tfMolarConsumption.Carbohydrate   = tfMassConsumption.Carbohydrate  / this.oMT.afMolarMass(this.oMT.tiN2I.C6H12O6);
+            
+            % C16H32O2 (fats)          + 23 O2     =    16 CO2 + 16H20
+            % 2 C4H5ON  (protein)      + 7  O2     =    C2H6O2N2 (urine solids) + 6 CO2 + 2H2O 
+            % C6H12O6 (carbohydrates)  + 6  O2     =    6 CO2 + 6 H2O
+            this.fCO2Production             = this.oMT.afMolarMass(this.oMT.tiN2I.CO2)      * (tfMolarConsumption.Fat * 16 + tfMolarConsumption.Protein * 3 + tfMolarConsumption.Carbohydrate * 6);
+            this.fMetabolicWaterProduction  = this.oMT.afMolarMass(this.oMT.tiN2I.H2O)      * (tfMolarConsumption.Fat * 16 + tfMolarConsumption.Protein     + tfMolarConsumption.Carbohydrate * 6);
+            this.fUrineSolidsProduction     = this.oMT.afMolarMass(this.oMT.tiN2I.C2H6O2N2) *  tfMolarConsumption.Protein * 0.5;
+            
+            % fO2ConsCheck = this.oMT.afMolarMass(this.oMT.tiN2I.O2)      * (tfMolarConsumption.Fat * 23 + tfMolarConsumption.Protein * 3.5 + tfMolarConsumption.Carbohydrate * 6);
+            
             afManipulatorFlowRates = zeros(1,this.oMT.iSubstances);
             afManipulatorFlowRates(this.oMT.tiN2I.C42H69O13N5)  = this.fFecesSolidProduction;
             afManipulatorFlowRates(this.oMT.tiN2I.C2H6O2N2)     = this.fUrineSolidsProduction;
@@ -655,20 +694,6 @@ classdef Human < vsys
             afManipulatorFlowRates(this.oMT.tiN2I.C4H5ON)     	= - (tfMassConsumption.Protein      + tfMassConsumptionFeces.Protein);
             afManipulatorFlowRates(this.oMT.tiN2I.C6H12O6)    	= - (tfMassConsumption.Carbohydrate + tfMassConsumptionFeces.Carbohydrate);
             afManipulatorFlowRates(this.oMT.tiN2I.O2)           = -  this.fOxygenDemand;
-            
-            % TO DO: The issue here is that the composition of the food
-            % does not have to respect the mass composition of protein fat
-            % and carbohydrates here, therefore the additional energy
-            % demand will not exactly replace the respective masses lost
-            % through the feces. This requires a different request function
-            % that allows the human to request a specific substance. Or the
-            % mass for the feces is taken from the remaining mass which is
-            % not yet accounted for (ash)
-            fEnergyEquivalentFeces = tfMassConsumptionFeces.Fat * this.tfEnergyContent.Fat + ...
-                                     tfMassConsumptionFeces.Protein * this.tfEnergyContent.Protein + ...
-                                     tfMassConsumptionFeces.Carbohydrate * this.tfEnergyContent.Carbohydrate;
-            
-            this.fAdditionalFoodEnergyDemand = this.fAdditionalFoodEnergyDemand + (fEnergyEquivalentFeces * this.fTimeStep);
             
             %% Setting of P2P and Manip flowrates
             this.toStores.Human.toPhases.HumanPhase.update();
