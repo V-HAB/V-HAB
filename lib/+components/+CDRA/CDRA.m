@@ -321,7 +321,6 @@ classdef CDRA < vsys
                 fTemperatureFlow        = tInitialization.(csTypes{iType}).fTemperature;
                 fTemperatureAbsorber    = tInitialization.(csTypes{iType}).fTemperature;
                 fPressure               = this.tAtmosphere.fPressure;
-                fConductance            = tInitialization.(csTypes{iType}).fConductance * (this.tGeometry.(csTypes{iType}).fLength / iCellNumber);
                 mfMassTransferCoefficient = tInitialization.(csTypes{iType}).mfMassTransferCoefficient;
 
                 % Adds two stores (filter stores), containing sylobead
@@ -335,10 +334,6 @@ classdef CDRA < vsys
                 % two filters is used as well
                 for iFilter = 1:2
                     sName               = [(csTypes{iType}),'_',num2str(iFilter)];
-                    % Now the phases, exmes, p2ps and branches and thermal
-                    % representation for the filter model can be created. A for
-                    % loop is used to allow any number of cells from 2 upwards.
-                    moCapacity = cell(iCellNumber,2);
 
                     for iCell = 1:iCellNumber
                         % The absorber phases contain the material that removes
@@ -385,7 +380,7 @@ classdef CDRA < vsys
                                 end
                                 
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), fTemperatureAbsorber, fPressure);
-                                oFlowPhase = components.CDRA.components.FilterFlowPhase(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow, oFilterPhase.fTotalHeatCapacity);
+                                oFlowPhase = matter.phases.gas_flow_node(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow);
                             else
                                 cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), this.TargetTemperature, 0, 100);
                 
@@ -395,7 +390,7 @@ classdef CDRA < vsys
                                 end
                                 
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), this.TargetTemperature, fPressure);
-                                oFlowPhase = components.CDRA.components.FilterFlowPhase(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), this.TargetTemperature, oFilterPhase.fTotalHeatCapacity);
+                                oFlowPhase =  matter.phases.gas_flow_node(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), this.TargetTemperature);
                             end
                         else
                             if ~strcmp(sName, 'Zeolite5A_1')
@@ -407,7 +402,7 @@ classdef CDRA < vsys
                                 end
                                 
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), fTemperatureAbsorber, fPressure);
-                                oFlowPhase = components.CDRA.components.FilterFlowPhase(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow, oFilterPhase.fTotalHeatCapacity);
+                                oFlowPhase =  matter.phases.gas_flow_node(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow, oFilterPhase.fTotalHeatCapacity);
                             else
                                 cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), this.TargetTemperature, 0, 100);
                 
@@ -417,7 +412,7 @@ classdef CDRA < vsys
                                 end
                                 
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), this.TargetTemperature, fPressure);
-                                oFlowPhase = components.CDRA.components.FilterFlowPhase(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), this.TargetTemperature, oFilterPhase.fTotalHeatCapacity);
+                                oFlowPhase =  matter.phases.gas_flow_node(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), this.TargetTemperature, oFilterPhase.fTotalHeatCapacity);
                             end
                         end
                         % An individual orption and desorption Exme and P2P is
@@ -434,14 +429,6 @@ classdef CDRA < vsys
                         matter.procs.exmes.gas(oFlowPhase, ['Inflow_',num2str(iCell)]);
                         matter.procs.exmes.gas(oFlowPhase, ['Outflow_',num2str(iCell)]);
 
-                        % in order to correctly create the thermal interface a heat
-                        % source is added to each of the phases
-                        oHeatSource = thermal.heatsource(this, ['AbsorberHeatSource_',num2str(iCell)], 0);
-                        moCapacity{iCell,1} = this.addCreateCapacity(oFilterPhase, oHeatSource);
-
-                        oHeatSource = thermal.heatsource(this, ['FlowHeatSource_',num2str(iCell)], 0);
-                        moCapacity{iCell,2} = this.addCreateCapacity(oFlowPhase, oHeatSource);
-
                         % adding two P2P processors, one for desorption and one for
                         % adsorption. Two independent P2Ps are required because it
                         % is possible that one substance is currently absorber
@@ -449,7 +436,10 @@ classdef CDRA < vsys
                         % flow directions that can occur at the same time.
                         components.filter.components.Desorption_P2P(this.toStores.(sName), ['DesorptionProcessor_',num2str(iCell)], ['Absorber_',num2str(iCell),'.Desorption_',num2str(iCell)], ['Flow_',num2str(iCell),'.Desorption_',num2str(iCell)]);
                         components.filter.components.Adsorption_P2P(this.toStores.(sName), ['AdsorptionProcessor_',num2str(iCell)], ['Flow_',num2str(iCell),'.Adsorption_',num2str(iCell)], ['Absorber_',num2str(iCell),'.Adsorption_',num2str(iCell)], mfMassTransferCoefficient);
-
+                        
+                        sPipeName = ['Pipe_', sName, '_', num2str(iCell)];
+                        components.pipe(this, sPipeName, 0.01, 0.02, 2e-3);
+                        
                         % Each cell is connected to the next cell by a branch, the
                         % first and last cell also have the inlet and outlet branch
                         % attached that connects the filter to the parent system
@@ -458,17 +448,10 @@ classdef CDRA < vsys
                         % the currently generated filter are created here!
                         if iCell == 1
                             %
-                        elseif iCell == iCellNumber
-                            % branch between the current and the previous cell
-                            matter.branch(this, [sName,'.','Outflow_',num2str(iCell-1)], {}, [sName,'.','Inflow_',num2str(iCell)], [sName, 'Flow',num2str(iCell-1),'toFlow',num2str(iCell)]);
-
                         else
                             % branch between the current and the previous cell
-                            matter.branch(this, [sName,'.','Outflow_',num2str(iCell-1)], {}, [sName,'.','Inflow_',num2str(iCell)], [sName, 'Flow',num2str(iCell-1),'toFlow',num2str(iCell)]);
-                            % Create and add linear conductors between each cell
-                            % absorber material to reflect the thermal conductance
-                            % of the absorber material
-                            this.addConductor(thermal.conductors.linear(this, moCapacity{iCell-1,2}, moCapacity{iCell,2}, fConductance));
+                            matter.branch(this, [sName,'.','Outflow_',num2str(iCell-1)], {sPipeName}, [sName,'.','Inflow_',num2str(iCell)], [sName, 'Flow',num2str(iCell-1),'toFlow',num2str(iCell)]);
+                            
                         end
                         
                         % this factor times the mass flow^2 will decide the pressure
@@ -623,21 +606,54 @@ classdef CDRA < vsys
             % Connection Branch
             this.tMassNetwork.aoBranchesCycleTwo(end+1,1) = this.toBranches.CDRA_Air_Out_2;
             
-            % initializes the adsorption heat flow property
-            iThermalCells = this.iCells+tInitialization.Zeolite5A.iCellNumber;
-            this.tThermalNetwork.mfAdsorptionHeatFlow 	= zeros(iThermalCells,1);
-            this.tMassNetwork.mfAdsorptionFlowRate      = zeros(iThermalCells,1);
-            this.tThermalNetwork.mfHeaterPower          = zeros(iThermalCells,1);
-            
-            this.tLastUpdateProps.mfDensity              = zeros(iThermalCells,1);
-            this.tLastUpdateProps.mfFlowSpeed            = zeros(iThermalCells,1);
-            this.tLastUpdateProps.mfSpecificHeatCapacity = zeros(iThermalCells,1);
-
-            this.tLastUpdateProps.mfDynamicViscosity     = zeros(iThermalCells,1);
-            this.tLastUpdateProps.mfThermalConductivity  = zeros(iThermalCells,1);
-            
-            this.tThermalNetwork.miRecalcFailed          = zeros(iThermalCells,1);
         end
+        
+        function createThermalStructure(this)
+            createThermalStructure@vsys(this);
+            
+            csTypes = {'Zeolite13x', 'Sylobead', 'Zeolite5A'};
+            for iType = 1:3
+                
+                iCellNumber             = tInitialization.(csTypes{iType}).iCellNumber;
+                fConductance            = tInitialization.(csTypes{iType}).fConductance * (this.tGeometry.(csTypes{iType}).fLength / iCellNumber);
+                fFilterMaterialArea     = this.tGeometry.(csTypes{iType}).fCrossSection * this.tGeometry.(csTypes{iType}).rVoidFraction;
+                fMaterialConductivity   = (fFilterMaterialArea * fConductance)/(this.tGeometry.Zeolite5A.fLength/iCellNumber);
+
+                for iFilter = 1:2
+                    sName               = [(csTypes{iType}),'_',num2str(iFilter)];
+                    
+                    for iCell = 1:iCellNumber
+                        oAbsorberPhase  = this.toStores.(sName).toPhases.(['Absorber_',num2str(iCell)]);
+                        oFlowPhase      = this.toStores.(sName).toPhases.(['Flow_',num2str(iCell)]);
+                        
+                        % in order to correctly create the thermal interface a heat
+                        % source is added to each of the phases
+                        oHeatSourceAbsorber = thermal.heatsource(['AbsorberHeatSource_',num2str(iCell)], 0);
+                        oAbsorberPhase.oCapacity.addHeatSource(oHeatSourceAbsorber);
+                        
+                        oHeatSourceFlow = thermal.heatsource(['FlowHeatSource_',num2str(iCell)], 0);
+                        oFlowPhase.oCapacity.addHeatSource(oHeatSourceFlow);
+                        
+                    end
+                    
+                    for iCell = 1:iCellNumber-1
+                        oAbsorberPhase1      = this.toStores.(sName).toPhases.(['Absorber_',num2str(iCell)]);
+                        oAbsorberPhase2      = this.toStores.(sName).toPhases.(['Absorber_',num2str(iCell+1)]);
+                        
+                        sPort1 = ['Conduction_', num2str(iCell)];
+                        thermal.procs.exme(oAbsorberPhase1.oCapacity, sPort1);
+                        sPort2 = ['Conduction_', num2str(iCell+1)];
+                        thermal.procs.exme(oAbsorberPhase2.oCapacity, sPort2);
+                        
+                        sConductorName = [sName, '_Material_Conductor_', num2str(iCell), '_', num2str(iCell+1)];
+                        thermal.procs.conductors.conduction(this, sConductorName, fMaterialConductivity);
+                        
+                        thermal.branch(this, [sName,'.', sPort1], {sConductorName}, [sName,'.', sPort2], [sName, '_Conduction_Cell_', num2str(iCell), '_to_Cell_', num2str(iCell+1)]);
+                    end
+                end
+            end
+        end
+        
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
@@ -646,15 +662,19 @@ classdef CDRA < vsys
             
             % Only the air in flows are manual branches, they will be used
             % to set the primary flowrate through CDRA
+            iMultiBranch = 1;
             for iB = 1:length(csBranches)
                 if regexp(csBranches{iB}, 'CDRA_Air_In')
                     solver.matter.manual.branch(this.toBranches.(csBranches{iB}));
                 elseif regexp(csBranches{iB}, 'CDRA_AirSafe')
                     solver.matter.manual.branch(this.toBranches.(csBranches{iB}));
                 else
-                    solver.matter.residual.branch(this.toBranches.(csBranches{iB}));
+                    aoMultiSolverBranches(iMultiBranch) = this.toBranches.(csBranches{iB});
+                    iMultiBranch = iMultiBranch + 1;
                 end
             end
+            
+            solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranches(:), 'complex');
             
             csStores = fieldnames(this.toStores);
             % sets numerical properties for the phases of CDRA
@@ -662,11 +682,11 @@ classdef CDRA < vsys
                 for iP = 1:length(this.toStores.(csStores{iS}).aoPhases)
                     oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
                     if regexp(oPhase.sName, 'Flow')
-                        oPhase.rMaxChange = 0.1;
-                        oPhase.arMaxChange(this.oMT.tiN2I.H2O) = 1;
-                        oPhase.arMaxChange(this.oMT.tiN2I.CO2) = 1;
-                        oPhase.fMaxStep = 60;
-                        oPhase.fMinStep = 1e-3;
+%                         oPhase.rMaxChange = 0.1;
+%                         oPhase.arMaxChange(this.oMT.tiN2I.H2O) = 1;
+%                         oPhase.arMaxChange(this.oMT.tiN2I.CO2) = 1;
+%                         oPhase.fMaxStep = 60;
+%                         oPhase.fMinStep = 1e-3;
                     else
                         oPhase.rMaxChange = 0.1;
                         oPhase.arMaxChange(this.oMT.tiN2I.H2O) = 1;
@@ -688,14 +708,6 @@ classdef CDRA < vsys
             this.arMaxPartialMassChange = zeros(this.iCells,this.oMT.iSubstances);
             this.arMaxPartialMassChange(:,this.oMT.tiN2I.CO2) = 0.6;
             this.arMaxPartialMassChange(:,this.oMT.tiN2I.H2O) = 0.6;
-            
-            % adds the lumped parameter thermal solver to calculate the
-            % convective and conductive heat transfer
-            this.oThermalSolver = solver.thermal.lumpedparameter(this);
-            
-            % sets the minimum time step that can be used by the thermal
-            % solver
-            this.oThermalSolver.fMinimumTimeStep = 0.01;
             
             this.tTimeProperties.AdsorptionLastExec = -10;
             this.tTimeProperties.AdsorptionStep = -1;
@@ -730,190 +742,16 @@ classdef CDRA < vsys
                 error('CDRA Subsystem was given a wrong number of interfaces')
             end
             
-            %% Additional to the branches the phases are also stored in an array according to the order of the flow within the CDRA
-            % Cycle One
-            mfFrictionFactor        = zeros(this.iCells,1);
-            mfLength                = zeros(this.iCells,1);
-            mfAbsorberSurfaceArea   = zeros(this.iCells,1);
-            mfD_Hydraulic           = zeros(this.iCells,1);
-            
-            csNodes_Absorber_CycleOne       = cell(this.iCells + this.tGeometry.Zeolite5A.iCellNumber,1);
-            csConductors_Flow_CycleOne      = cell(this.iCells + this.tGeometry.Zeolite5A.iCellNumber,1);
-            csNodes_Absorber_CycleTwo       = cell(this.iCells + this.tGeometry.Zeolite5A.iCellNumber,1);
-            csConductors_Flow_CycleTwo      = cell(this.iCells + this.tGeometry.Zeolite5A.iCellNumber,1);
-            
-            csNodes_Flow_CycleOne     = cell(this.iCells + this.tGeometry.Zeolite5A.iCellNumber,1);
-            csNodes_Flow_CycleTwo     = cell(this.iCells + this.tGeometry.Zeolite5A.iCellNumber,1);
-            
-            for iCell = 1:this.tGeometry.Sylobead.iCellNumber
-                this.tMassNetwork.aoPhasesCycleOne(end+1,1)   = this.toStores.Sylobead_1.toPhases.(['Flow_',num2str(iCell)]);
-                this.tMassNetwork.aoAbsorberCycleOne(end+1,1) = this.toStores.Sylobead_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iCell)]);
-                mfFrictionFactor(length(this.tMassNetwork.aoPhasesCycleOne),1)   = this.tGeometry.Sylobead.mfFrictionFactor(iCell);
-                
-                mfLength(length(this.tMassNetwork.aoPhasesCycleOne),1)               = this.tGeometry.Sylobead.fLength/this.tGeometry.Sylobead.iCellNumber;
-                mfAbsorberSurfaceArea(length(this.tMassNetwork.aoPhasesCycleOne),1)  = this.tGeometry.Sylobead.fAbsorberSurfaceArea/this.tGeometry.Sylobead.iCellNumber;
-                mfD_Hydraulic(length(this.tMassNetwork.aoPhasesCycleOne),1)          = this.tGeometry.Sylobead.fD_Hydraulic;
-                
-                csNodes_Absorber_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1} = [this.sName ,'__Sylobead_1__Absorber_',num2str(iCell)];
-                csNodes_Flow_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1}     = [this.sName ,'__Sylobead_1__Flow_',num2str(iCell)];
-                csConductors_Flow_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1} = ['Sylobead_1ConvectiveConductor_', num2str(iCell)];
-                
-            end
-                
-            for iCell = 1:this.tGeometry.Zeolite13x.iCellNumber
-                this.tMassNetwork.aoPhasesCycleOne(end+1,1) = this.toStores.Zeolite13x_1.toPhases.(['Flow_',num2str(iCell)]);
-                this.tMassNetwork.aoAbsorberCycleOne(end+1,1) = this.toStores.Zeolite13x_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iCell)]);
-                mfFrictionFactor(length(this.tMassNetwork.aoPhasesCycleOne),1)   = this.tGeometry.Zeolite13x.mfFrictionFactor(iCell);
-                
-                mfLength(length(this.tMassNetwork.aoPhasesCycleOne),1)                = this.tGeometry.Zeolite13x.fLength/this.tGeometry.Zeolite13x.iCellNumber;
-                mfAbsorberSurfaceArea(length(this.tMassNetwork.aoPhasesCycleOne),1)   = this.tGeometry.Zeolite13x.fAbsorberSurfaceArea/this.tGeometry.Zeolite13x.iCellNumber;
-                mfD_Hydraulic(length(this.tMassNetwork.aoPhasesCycleOne),1)           = this.tGeometry.Zeolite13x.fD_Hydraulic;
-                
-                csNodes_Absorber_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1} = [this.sName ,'__Zeolite13x_1__Absorber_',num2str(iCell)];
-                csNodes_Flow_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1}     = [this.sName ,'__Zeolite13x_1__Flow_',num2str(iCell)];
-                
-                csConductors_Flow_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1} = ['Zeolite13x_1ConvectiveConductor_', num2str(iCell)];
-                
-            end
-            
-            for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
-                this.tMassNetwork.aoPhasesCycleOne(end+1,1) = this.toStores.Zeolite5A_1.toPhases.(['Flow_',num2str(iCell)]);
-                this.tMassNetwork.aoAbsorberCycleOne(end+1,1) = this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iCell)]);
-                mfFrictionFactor(length(this.tMassNetwork.aoPhasesCycleOne),1)   = this.tGeometry.Zeolite5A.mfFrictionFactor(iCell);
-                
-                mfLength(length(this.tMassNetwork.aoPhasesCycleOne),1)                = this.tGeometry.Zeolite5A.fLength/this.tGeometry.Zeolite5A.iCellNumber;
-                mfAbsorberSurfaceArea(length(this.tMassNetwork.aoPhasesCycleOne),1)   = this.tGeometry.Zeolite5A.fAbsorberSurfaceArea/this.tGeometry.Zeolite5A.iCellNumber;
-                mfD_Hydraulic(length(this.tMassNetwork.aoPhasesCycleOne),1)     	  = this.tGeometry.Zeolite5A.fD_Hydraulic;
-                
-                csNodes_Absorber_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1} = [this.sName ,'__Zeolite5A_1__Absorber_',num2str(iCell)];
-                csNodes_Flow_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1}     = [this.sName ,'__Zeolite5A_1__Flow_',num2str(iCell)];
-                
-                csConductors_Flow_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1} = ['Zeolite5A_1ConvectiveConductor_', num2str(iCell)];
-            end
-            
-            for iCell = this.tGeometry.Zeolite13x.iCellNumber:-1:1
-                this.tMassNetwork.aoPhasesCycleOne(end+1,1) = this.toStores.Zeolite13x_2.toPhases.(['Flow_',num2str(iCell)]);
-                this.tMassNetwork.aoAbsorberCycleOne(end+1,1) = this.toStores.Zeolite13x_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iCell)]);
-                mfFrictionFactor(length(this.tMassNetwork.aoPhasesCycleOne),1)   = this.tGeometry.Zeolite13x.mfFrictionFactor(iCell);
-                
-                mfLength(length(this.tMassNetwork.aoPhasesCycleOne),1)              = this.tGeometry.Zeolite13x.fLength/this.tGeometry.Zeolite13x.iCellNumber;
-                mfAbsorberSurfaceArea(length(this.tMassNetwork.aoPhasesCycleOne),1) = this.tGeometry.Zeolite13x.fAbsorberSurfaceArea/this.tGeometry.Zeolite13x.iCellNumber;
-                mfD_Hydraulic(length(this.tMassNetwork.aoPhasesCycleOne),1)    	 = this.tGeometry.Zeolite13x.fD_Hydraulic;
-                
-                csNodes_Absorber_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1} = [this.sName ,'__Zeolite13x_2__Absorber_',num2str(iCell)];
-                csNodes_Flow_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1}     = [this.sName ,'__Zeolite13x_2__Flow_',num2str(iCell)];
-                
-                csConductors_Flow_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1} = ['Zeolite13x_2ConvectiveConductor_', num2str(iCell)];
-            end
-            
-            for iCell = this.tGeometry.Sylobead.iCellNumber:-1:1
-                this.tMassNetwork.aoPhasesCycleOne(end+1,1) = this.toStores.Sylobead_2.toPhases.(['Flow_',num2str(iCell)]);
-                this.tMassNetwork.aoAbsorberCycleOne(end+1,1) = this.toStores.Sylobead_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iCell)]);
-                mfFrictionFactor(length(this.tMassNetwork.aoPhasesCycleOne),1)   = this.tGeometry.Sylobead.mfFrictionFactor(iCell);
-                
-                mfLength(length(this.tMassNetwork.aoPhasesCycleOne),1)              = this.tGeometry.Sylobead.fLength/this.tGeometry.Sylobead.iCellNumber;
-                mfAbsorberSurfaceArea(length(this.tMassNetwork.aoPhasesCycleOne),1) = this.tGeometry.Sylobead.fAbsorberSurfaceArea/this.tGeometry.Sylobead.iCellNumber;
-                mfD_Hydraulic(length(this.tMassNetwork.aoPhasesCycleOne),1)    	 = this.tGeometry.Sylobead.fD_Hydraulic;
-                
-                csNodes_Absorber_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1} = [this.sName ,'__Sylobead_2__Absorber_',num2str(iCell)];
-                csNodes_Flow_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1}     = [this.sName ,'__Sylobead_2__Flow_',num2str(iCell)];
-                
-                csConductors_Flow_CycleOne{length(this.tMassNetwork.aoPhasesCycleOne),1} = ['Sylobead_2ConvectiveConductor_', num2str(iCell)];
-            end
-            
-            for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
-                csNodes_Absorber_CycleOne{this.iCells + iCell,1} = [this.sName ,'__Zeolite5A_2__Absorber_',num2str(iCell)];
-                csNodes_Flow_CycleOne{this.iCells + iCell,1} = [this.sName ,'__Zeolite5A_2__Flow_',num2str(iCell)];
-                csConductors_Flow_CycleOne{this.iCells + iCell,1} = ['Zeolite5A_2ConvectiveConductor_', num2str(iCell)];
-                mfAbsorberSurfaceArea(this.iCells + iCell,1) = this.tGeometry.Sylobead.fAbsorberSurfaceArea/this.tGeometry.Sylobead.iCellNumber;
-            end
-            
-            this.tMassNetwork.aoPhasesCycleOne(end+1,1) = this.toBranches.CDRA_Air_Out_1.coExmes{2}.oPhase;
-            
-%             for iPhase = 1:length(this.tMassNetwork.aoPhasesCycleOne)
-%                 this.tMassNetwork.aoPhasesCycleOne(iPhase).oOriginPhase = this.oAtmosphere;
-%             end
-            
-            this.tThermalNetwork.csNodes_Absorber_CycleOne  = csNodes_Absorber_CycleOne;
-            this.tThermalNetwork.csNodes_Flow_CycleOne      = csNodes_Flow_CycleOne;
-            this.tThermalNetwork.csConductors_Flow_CycleOne = csConductors_Flow_CycleOne;
-            
-            this.tGeometry.mfLength                 = mfLength;
-            this.tGeometry.mfAbsorberSurfaceArea    = mfAbsorberSurfaceArea;
-            this.tGeometry.mfD_Hydraulic            = mfD_Hydraulic;
-            
-            % Cycle Two
-            for iCell = 1:this.tGeometry.Sylobead.iCellNumber
-                this.tMassNetwork.aoPhasesCycleTwo(end+1,1) = this.toStores.Sylobead_2.toPhases.(['Flow_',num2str(iCell)]);
-                this.tMassNetwork.aoAbsorberCycleTwo(end+1,1) = this.toStores.Sylobead_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iCell)]);
-                
-                csNodes_Absorber_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1} = [this.sName ,'__Sylobead_2__Absorber_',num2str(iCell)];
-                csNodes_Flow_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1}     = [this.sName ,'__Sylobead_2__Flow_',num2str(iCell)];
-                
-                csConductors_Flow_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1} = ['Sylobead_2ConvectiveConductor_', num2str(iCell)];
-            end
-            
-            for iCell = 1:this.tGeometry.Zeolite13x.iCellNumber
-                this.tMassNetwork.aoPhasesCycleTwo(end+1,1) = this.toStores.Zeolite13x_2.toPhases.(['Flow_',num2str(iCell)]);
-                this.tMassNetwork.aoAbsorberCycleTwo(end+1,1) = this.toStores.Zeolite13x_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iCell)]);
-                
-                csNodes_Absorber_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1} = [this.sName ,'__Zeolite13x_2__Absorber_',num2str(iCell)];
-                csNodes_Flow_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1}     = [this.sName ,'__Zeolite13x_2__Flow_',num2str(iCell)];
-                
-                csConductors_Flow_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1} = ['Zeolite13x_2ConvectiveConductor_', num2str(iCell)];
-            end
-            
-            for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
-                this.tMassNetwork.aoPhasesCycleTwo(end+1,1) = this.toStores.Zeolite5A_2.toPhases.(['Flow_',num2str(iCell)]);
-                this.tMassNetwork.aoAbsorberCycleTwo(end+1,1) = this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_',num2str(iCell)]);
-                
-                csNodes_Absorber_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1} = [this.sName ,'__Zeolite5A_2__Absorber_',num2str(iCell)];
-                csNodes_Flow_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1}     = [this.sName ,'__Zeolite5A_2__Flow_',num2str(iCell)];
-                
-                csConductors_Flow_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1} = ['Zeolite5A_2ConvectiveConductor_', num2str(iCell)];
-            end
-            
-            for iCell = this.tGeometry.Zeolite13x.iCellNumber:-1:1
-                this.tMassNetwork.aoPhasesCycleTwo(end+1,1) = this.toStores.Zeolite13x_1.toPhases.(['Flow_',num2str(iCell)]);
-                this.tMassNetwork.aoAbsorberCycleTwo(end+1,1) = this.toStores.Zeolite13x_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iCell)]);
-                
-                csNodes_Absorber_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1} = [this.sName ,'__Zeolite13x_1__Absorber_',num2str(iCell)];
-                csNodes_Flow_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1}     = [this.sName ,'__Zeolite13x_1__Flow_',num2str(iCell)];
-                
-                csConductors_Flow_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1} = ['Zeolite13x_1ConvectiveConductor_', num2str(iCell)];
-            end
-            
-            for iCell = this.tGeometry.Sylobead.iCellNumber:-1:1
-                this.tMassNetwork.aoPhasesCycleTwo(end+1,1) = this.toStores.Sylobead_1.toPhases.(['Flow_',num2str(iCell)]);
-                this.tMassNetwork.aoAbsorberCycleTwo(end+1,1) = this.toStores.Sylobead_1.toProcsP2P.(['AdsorptionProcessor_',num2str(iCell)]);
-                
-                csNodes_Absorber_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1} = [this.sName ,'__Sylobead_1__Absorber_',num2str(iCell)];
-                csNodes_Flow_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1}     = [this.sName ,'__Sylobead_1__Flow_',num2str(iCell)];
-                
-                csConductors_Flow_CycleTwo{length(this.tMassNetwork.aoPhasesCycleTwo),1} = ['Sylobead_1ConvectiveConductor_', num2str(iCell)];
-            end
-            
-            for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
-                csNodes_Absorber_CycleTwo{this.iCells + iCell,1} = [this.sName ,'__Zeolite5A_1__Absorber_',num2str(iCell)];
-                csNodes_Flow_CycleTwo{this.iCells + iCell,1} = [this.sName ,'__Zeolite5A_1__Flow_',num2str(iCell)];
-                csConductors_Flow_CycleTwo{this.iCells + iCell,1} = ['Zeolite5A_1ConvectiveConductor_', num2str(iCell)];
-            end
-            
-            this.tMassNetwork.aoPhasesCycleTwo(end+1,1) = this.toBranches.CDRA_Air_Out_2.coExmes{2}.oPhase;
-            
-%             for iPhase = 1:length(this.tMassNetwork.aoPhasesCycleTwo)
-%                 this.tMassNetwork.aoPhasesCycleTwo(iPhase).oOriginPhase = this.oAtmosphere;
-%             end
-            
-            this.tThermalNetwork.csNodes_Absorber_CycleTwo  = csNodes_Absorber_CycleTwo;
-            this.tThermalNetwork.csNodes_Flow_CycleTwo      = csNodes_Flow_CycleTwo;
-            this.tThermalNetwork.csConductors_Flow_CycleTwo = csConductors_Flow_CycleTwo;
-            
-            this.tGeometry.mfFrictionFactor = mfFrictionFactor;
-           
         end
-        function setReferencePhase(this, oPhase)
-            this.oAtmosphere = oPhase;
+        
+        function setIfThermal(this, varargin)
+            for iIF = 1:length(varargin)
+                this.connectThermalIF(varargin{iIF},  varargin{iIF});
+            end
+        end
+        
+        function setReferencePhase(this, oCabinPhase)
+            this.oAtmosphere = oCabinPhase;
             
             % assumed heat transfer cooefficient between CDRA and
             % atmosphere: 0.195
@@ -923,7 +761,7 @@ classdef CDRA < vsys
             fAreaSylobead   =     this.tGeometry.Sylobead.fCrossSection   * this.tGeometry.Sylobead.fLength     / this.tGeometry.Sylobead.iCellNumber;
             fArea13x        =     this.tGeometry.Zeolite13x.fCrossSection * this.tGeometry.Zeolite13x.fLength   / this.tGeometry.Zeolite5A.iCellNumber;
             
-            fThermalConductivity = this.oMT.calculateThermalConductivity(oPhase);
+            fThermalConductivity = this.oMT.calculateThermalConductivity(oCabinPhase);
             
             % Note: Transfer coefficient for the V-HAB thermal solver has
             % to be in W/K which means it is U*A or in this case
@@ -933,12 +771,11 @@ classdef CDRA < vsys
             mfTransferCoefficient(2)    = 1 / ( (0.5/(fThermalConductivity .* fAreaSylobead))  + (0.1/(237 .* fAreaSylobead)) + (0.1/(0.151 .* fAreaSylobead))); % asssumed conducitivty of 13x
             mfTransferCoefficient(3)   	= 1 / ( (0.5/(fThermalConductivity .* fArea5A))        + (0.1/(237 .* fArea5A))       + (0.1/(0.152 .* fArea5A)));
             
-            % adds a boundary node for the atmosphere around CDRA
-            oAtmosphereCapacity = this.addCreateCapacity(oPhase);
-
             csTypes = {'Zeolite13x', 'Sylobead', 'Zeolite5A'};
             % Since there are two filters of each type a for loop over the
             % two filters is used as well
+            csInterfaces = cell(this.tGeometry.Zeolite13x.iCellNumber * 2 + this.tGeometry.Sylobead.iCellNumber * 2 + this.tGeometry.Zeolite5A.iCellNumber * 2);
+            iIF = 1;
             for iType = 1:3
                 for iFilter = 1:2
                     sName = [(csTypes{iType}),'_',num2str(iFilter)];
@@ -949,22 +786,35 @@ classdef CDRA < vsys
                         % instances (the temperature of the absorber is
                         % then simply set to the same temperature as the
                         % flow)
-                        sAbsorberCapacity   = [this.sName,'__',(csTypes{iType}),'_',num2str(iFilter),'__','Flow_',num2str(iCell)];
-
-                        oCapacityAbsorber = this.poCapacities(sAbsorberCapacity);
-
-                        this.addConductor(thermal.conductors.linear(this, oCapacityAbsorber, oAtmosphereCapacity, mfTransferCoefficient(iType), [sName, '_CabinConductor_', num2str(iCell)]));
+                        oAbsorberPhase      = this.toStores.(sName).toPhases.(['Absorber_',num2str(iCell)]);
+                        
+                        sPort1 = ['ConductionCabin_', num2str(iCell)];
+                        thermal.procs.exme(oAbsorberPhase.oCapacity, sPort1);
+                        
+                        sPort2 = [sName, '_ConductionCDRA_', num2str(iCell+1)];
+                        thermal.procs.exme(oCabinPhase.oCapacity, sPort2);
+                        
+                        sConductorName = [sName, '_Cabin_Conductor_', num2str(iCell), '_', num2str(iCell+1)];
+                        thermal.procs.conductors.conduction(this, sConductorName, mfTransferCoefficient(iType));
+                        
+                        csInterfaces{iIF} = ['CDRA_ThermalIF_', sPort2];
+                        thermal.branch(this, [sName,'.', sPort1], {sConductorName}, csInterfaces{iIF}, [sName, '_CabinConduction_Cell_', num2str(iCell)]);
+                        
+                        thermal.branch(oCabinPhase.oStore.oParent, csInterfaces{iIF}, {}, [oCabinPhase.oStore.sName, '.', sPort2], [sName, '_CabinConduction_Cell_', num2str(iCell)]);
+                        iIF = iIF + 1;
                         
                     end
                 end
             end
-
+            
+            this.setIfThermal(this, csInterfaces{:});
         end
         
         function setHeaterPower(this, mfPower)
             % this function is used to set the power of the electrical
             % heaters inside the filter. If no heaters are used just leave
             % this property at zero at all times.
+            keyboard()
             this.tThermalNetwork.mfHeaterPower = mfPower;
             
             % in case that a new heater power was set the function to
@@ -994,7 +844,6 @@ classdef CDRA < vsys
                 %by the CCAA
                 % TO DO: Check when the flowrate from CCAA is smaller!
                 this.fFlowrateMain  = this.oParent.toChildren.(this.sAsscociatedCCAA).fCDRA_FlowRate;
-%                 this.fFlowrateMain  = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_CDRA.oHandler.fRequestedFlowRate;
             end
             
             %% Cycle Change handling:
@@ -1028,35 +877,6 @@ classdef CDRA < vsys
                 
                 this.tTimeProperties.fLastCycleSwitch = this.oTimer.fTime;
                 
-                % In order to get the flow rate calculation to higher
-                % speeds at each cycle change the phases are preset to
-                % contain pressures close to the final pressure (after the
-                % initial flowrate setup)
-                mfPressureDiff = this.tGeometry.mfFrictionFactor .* (this.oParent.toChildren.(this.sAsscociatedCCAA).fCDRA_FlowRate)^2;
-                mfPressurePhase = zeros(this.iCells+1,1);
-                for iPhase = 1:length(this.tMassNetwork.(['aoPhasesCycle', sNewCycle]))
-                    mfPressurePhase(iPhase) = this.tMassNetwork.(['aoPhasesCycle', sNewCycle])(end).fPressure + sum(mfPressureDiff(iPhase:end));
-                end
-                % The time step for the cycle change case is set to ONE
-                % second, therefore the calculated mass difference is
-                % directly the required flow rate that has to go into the
-                % phase to reach the desired mass
-                this.tMassNetwork.mfMassDiff = ((mfPressurePhase .* [this.tMassNetwork.(['aoPhasesCycle', sNewCycle]).fVolume]') ./ (287.1 .* 295)) - [this.tMassNetwork.(['aoPhasesCycle', sNewCycle]).fMass]';
-                this.tMassNetwork.mfMassDiff(end) = 0;
-                
-                % Now the mass difference required in the phases is
-                % translated into massflows for the branches for the next
-                % second
-                mfMassChangeRate = zeros(this.iCells+1,1);
-                this.tMassNetwork.(['aoBranchesCycle', sNewCycle])(1).oHandler.setFlowRate(-this.fFlowrateMain);
-                for iBranch = 2:(length(this.tMassNetwork.(['aoBranchesCycle', sNewCycle])))
-                    this.tMassNetwork.(['aoBranchesCycle', sNewCycle])(iBranch).oHandler.setPositiveFlowDirection(this.tMassNetwork.(['miNegativesCycle', sNewCycle])(iBranch) == 1);
-                    this.tMassNetwork.(['aoBranchesCycle', sNewCycle])(iBranch).oHandler.setActive(true);
-                    
-                    mfMassChangeRate(iBranch) = this.tMassNetwork.mfMassDiff(iBranch)/this.fInitTime;
-                    this.tMassNetwork.(['aoBranchesCycle', sNewCycle])(iBranch).oHandler.setAllowedFlowRate(mfMassChangeRate(iBranch-1));
-                end
-                
                 % Sets the correct cells for the adsorption P2Ps to store
                 % their values
                 for iP2P = 1:length(this.tMassNetwork.(['aoAbsorberCycle', sNewCycle]))
@@ -1069,99 +889,11 @@ classdef CDRA < vsys
                     this.tMassNetwork.aoAbsorberPhases(iP2P) = this.toStores.(['Zeolite5A_', num2str(iOldCycle)]).toProcsP2P.(['AdsorptionProcessor_',num2str(iP2P)]).oOut.oPhase;
                 end
                 
-                this.setTimeStep(this.fInitTime/this.iInitStep);
-                
-                for iPhase = 1:length(this.tMassNetwork.(['aoPhasesCycle', sNewCycle]))
-                   this.tMassNetwork.(['aoPhasesCycle', sNewCycle])(iPhase).fFixedTS = this.fInitTime/this.iInitStep;
-                   this.tMassNetwork.(['aoAbsorberPhases',sNewCycle])(iPhase).fFixedTS = this.fInitTime/this.iInitStep;
-                end
-                
                 this.iCycleActive = iNewCycle;
-                
-            elseif mod(this.oTimer.fTime, this.fCycleTime) < this.fInitTime
-            
-                if this.iCycleActive == 1
-                    sCycle = 'One';
-                else
-                    sCycle = 'Two';
-                end
-                aoPhases = this.tMassNetwork.(['aoPhasesCycle', sCycle]);
-                aoBranches =  this.tMassNetwork.(['aoBranchesCycle', sCycle]);
-                aoAbsorber  = this.tMassNetwork.(['aoAbsorberCycle',sCycle]);
-                
-                mfPressureDiff = this.tGeometry.mfFrictionFactor .* (this.oParent.toChildren.(this.sAsscociatedCCAA).fCDRA_FlowRate)^2;
-                mfPressurePhase = zeros(this.iCells+1,1);
-                for iPhase = 1:length(aoPhases)
-                    mfPressurePhase(iPhase) = aoPhases(end).fPressure + sum(mfPressureDiff(iPhase:end));
-                end
-                mfCellPressure(:,1)     = [aoPhases.fPressure];
-                
-                abFinished = abs(mfCellPressure - mfPressurePhase) < 500;
-                for iPhase = 1:length(abFinished)-1
-                    if abFinished(iPhase)
-                        aoBranches(iPhase+1).oHandler.setAllowedFlowRate(0);
-                    end
-                end
-                
-                for iAbsorber = 1:length(aoAbsorber)
-                    aoAbsorber(iAbsorber).ManualUpdate(this.fInitTime/this.iInitStep);
-                end
-                
-                if (this.fInitTime - mod(this.oTimer.fTime, this.fCycleTime)) <= (this.fInitTime/this.iInitStep) 
-                    
-                    if this.iCycleActive == 1
-                        sCycle = 'One';
-                    else
-                        sCycle = 'Two';
-                    end
-                    for iPhase = 1:length(this.tMassNetwork.(['aoPhasesCycle', sCycle]))
-                       this.tMassNetwork.(['aoPhasesCycle', sCycle])(iPhase).fFixedTS = [];
-                       this.tMassNetwork.(['aoAbsorberPhases',sCycle])(iPhase).fFixedTS = [];
-                    end
-                end
-            elseif mod(this.oTimer.fTime, this.fCycleTime) >= this.fInitTime
-                % the flowrate update function is only called if no cycle
-                % change is occuring in this tick!
-                if this.fFlowrateMain == 0
-                    % Main flowrate is 0 --> CDRA is shut down --> set all
-                    % flowrates to zero and do not use dynamic calculation
-                    for iBranch = 1:length(this.aoBranches)
-                        this.aoBranches(iBranch).oHandler.setFlowRate(0);
-                        if this.bVozdukh
-                            this.setTimeStep(this.oParent.fTimeStep);
-                        else
-                            this.setTimeStep(this.oParent.toChildren.(this.sAsscociatedCCAA).fTimeStep);
-                        end
-                    end
-                else
-                    % If the cycle is not currently changing the normal
-                    % calculation for the flowrates in continous operation
-                    % are used
-                    if ((this.tTimeProperties.AdsorptionLastExec + this.tTimeProperties.AdsorptionStep) - this.oTimer.fTime) <= 0
-                        this.updateFlowratesAdsorption()
-                    end
-                    if ((this.tTimeProperties.DesorptionLastExec + this.tTimeProperties.DesorptionStep) - this.oTimer.fTime) <= 0
-                        this.updateFlowratesDesorption()
-                    end
-                    
-                    % The overall timestep of the system is set to the
-                    % minimum timestep from the two calculations. However
-                    % the calculations themself are executed using their
-                    % individual time steps
-                    fAdsorptionStep = (this.tTimeProperties.AdsorptionLastExec + this.tTimeProperties.AdsorptionStep) - this.oTimer.fTime;
-                    fDesorptionStep = (this.tTimeProperties.DesorptionLastExec + this.tTimeProperties.DesorptionStep) - this.oTimer.fTime;
-                    
-                    this.setTimeStep(min([fAdsorptionStep, fDesorptionStep]));
-                end
             end
-            
-            this.calculateThermalProperties();
-            
-            % since the thermal solver currently only has constant time
-            % steps it currently uses the same time step as the filter
-            % model.
-            this.oThermalSolver.setTimestep(this.fTimeStep);
         end
+        
+        %% After rework, these section should no longer be required!
         function updateFlowratesAdsorption(this, ~)
             
             if this.iCycleActive == 1
