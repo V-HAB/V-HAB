@@ -1,4 +1,4 @@
-classdef setup < simulation.infrastructure
+classdef setup_complex < simulation.infrastructure
     %SETUP This class is used to setup a simulation
     %   There should always be a setup file present for each project. It is
     %   used for the following:
@@ -12,7 +12,7 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+        function this = setup_complex(ptConfigParams, tSolverParams) % Constructor function
             
             % Possible to change the constructor paths and params for the
             % monitors
@@ -20,7 +20,7 @@ classdef setup < simulation.infrastructure
             
             this@simulation.infrastructure('Tutorial_CDRA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            bSimpleCDRA = true;
+            bSimpleCDRA = false;
             
             % Creating the root object
             tutorials.CDRA.systems.Example(this.oSimulationContainer, 'Example', bSimpleCDRA);

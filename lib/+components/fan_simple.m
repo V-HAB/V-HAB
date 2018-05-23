@@ -10,8 +10,8 @@ classdef fan_simple < matter.procs.f2f
     end
         
     methods
-        function this = fan_simple(oMT, sName, fMaxDeltaP, bReverse)
-            this@matter.procs.f2f(oMT, sName);
+        function this = fan_simple(oParent, sName, fMaxDeltaP, bReverse)
+            this@matter.procs.f2f(oParent, sName);
                         
             this.fMaxDeltaP   = fMaxDeltaP;
             

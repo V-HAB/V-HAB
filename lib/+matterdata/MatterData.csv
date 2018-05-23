@@ -1,6 +1,6 @@
-Shortcut,Name,Phase,Molar Mass,Melting Point,Boiling Point,Density,Heat Capacity,Linear Expansion Coefficient,Modulus of Elasticity,
-sSubstance,sName,ttxPhases,fMolarMass,fMeltPoint,fBoilPoint,fDensity,fCp,fExpCoeff,fModElast,number of properties is not limited. as long as the name is in the first row and the variablename in the second!
--,-,-,kg/mol,K,K,kg/m3,J/(kg*K),-,-,
+Shortcut,Name,Phase,Molar Mass,Melting Point,Boiling Point,Density,Heat Capacity,Linear Expansion Coefficient,Modulus of Elasticity,Thermal Conductivity
+sSubstance,sName,ttxPhases,fMolarMass,fMeltPoint,fBoilPoint,fDensity,fCp,fExpCoeff,fModElast,fThermalConductivity number of properties is not limited. as long as the name is in the first row and the variablename in the second!
+-,-,-,kg/mol,K,K,kg/m3,J/(kg*K),-,-,W/(m*K)
 NH3,Ammonia,gas,0.01703052,195.42,239.81,0.717,2165,,,
 H2SO4,Hydrogen Sulfate,liquid,0.09807848,283,610,1840,,,,
 NO3,Nitrate,solid,0.0620049,,,804,1860,,,
@@ -243,11 +243,11 @@ A7LB_PLSS,A7LB_PLSS,solid,0.03,,,1345.8,1331.5,,,
 AmineSA9T,AmineSA9T,solid,0.03,,,636.7,2040,,,
 Graphite,Graphite,solid,0.0120107,3923.15,5100.15,2100,850,,,
 LiCl,Lithium Chloride,solid,,,,,,,,
-Zeolite5A,Zeolite5A,solid,0.03,,,1190,750,,,
-Zeolite5A_RK38,Zeolite5A_RK38,solid,0.03,,,1370,650,,,
-Zeolite13x,Zeolite13x,solid,0.03,,,1260,650,,,
-SilicaGel_40,SilicaGel_40,solid,0.03,,,1240,870,,,
-Sylobead_B125,Sylobead_B125,solid,0.03,,,1240,870,,,
+Zeolite5A,Zeolite5A,solid,0.03,,,1190,750,,,0.152
+Zeolite5A_RK38,Zeolite5A_RK38,solid,0.03,,,1370,650,,,0.152
+Zeolite13x,Zeolite13x,solid,0.03,,,1260,650,,,0.147
+SilicaGel_40,SilicaGel_40,solid,0.03,,,1240,870,,,0.151
+Sylobead_B125,Sylobead_B125,solid,0.03,,,1240,870,,,0.151
 C42H69O13N5,Feces,solid,0.852030825,,,804,1860,,,
 C2H6O2N2,UrinSolids,solid,0.09008,,,999.1,4188.5,,,
 Human,Human,solid,0.03,,,985,4184,,,

@@ -81,7 +81,7 @@ classdef Example < vsys
             if bSimpleCDRA
                 components.CDRA.CDRA_simple(this, 'CDRA', 60, tAtmosphere, sCCAA);
             else
-                components.CDRA.CDRA(this, 'CDRA', 60, tAtmosphere, sCCAA);
+                components.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA);
             end
             
             eval(this.oRoot.oCfgParams.configCode(this));
@@ -337,7 +337,7 @@ classdef Example < vsys
             %close the mass balance
             oHumanWaterPhase = matter.phases.gas(this.toStores.Cabin, 'HumanWater', struct(...
                 'H2O', this.iCrewMembers*70),...
-                this.iCrewMembers*70/1000, 309.15);
+                this.iCrewMembers*70, 309.15);
             
             matter.procs.exmes.gas(oHumanWaterPhase, 'HumidityOut');
             
