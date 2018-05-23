@@ -286,8 +286,6 @@ classdef branch < base & event.source
                             fFlowRate = -1 * fFlowRate;
                         end
                     end
-                    
-                    
                     afPressureDrops = nan(1, oB.iFlowProcs);
 
                     for iProc = 1:oB.iFlowProcs

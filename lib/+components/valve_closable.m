@@ -13,15 +13,10 @@ classdef valve_closable < matter.procs.f2f
         bOpen = true;
         
         fFlowCoefficient = 1;
+        
+        fDeltaPressure;
     end
     
-%     properties (SetAccess = protected, GetAccess = public)
-%         fHydrDiam;
-%         fHydrLength;
-%         fHydrcoef;
-%         bActive = false;
-%         fDeltaTemp = 0;
-%     end    
     methods
         function  this = valve_closable(oContainer, sName, fFlowCoefficient, bOpen)
             this@matter.procs.f2f(oContainer, sName);
@@ -46,12 +41,17 @@ classdef valve_closable < matter.procs.f2f
         
         function fDeltaPress = solverDeltas(this, fFlowRate)
             
+            if (this.fFlowCoefficient == 0)
+                fDeltaPress = inf;
+                this.fDeltaPressure = fDeltaPress;
+                return;
+            end
+            
             if (fFlowRate == 0)
                 fDeltaPress = 0;
                 this.fDeltaPressure = fDeltaPress;
                 return;
             end
-            
             
             if this.bOpen == 0
                 fDeltaPress = Inf;
@@ -78,12 +78,9 @@ classdef valve_closable < matter.procs.f2f
                    this.oMT.Const.fUniversalGas * oFlowIn.fTemperature / oFlowIn.fPressure) * 1000;
 
                
-            % Calculate Pressure Difference in   
-            if this.fFlowCoefficient == 0
-                fDeltaPress = 0;
-            else
-                fDeltaPress =  fSLM^2 / (fRoh * this.fFlowCoefficient^2);
-            end
+            % Calculate Pressure Difference in 
+            fDeltaPress =  fSLM^2 / (fRoh * this.fFlowCoefficient^2);  
+            
             
             %this.fDeltaPressure = fDeltaPress;
         end

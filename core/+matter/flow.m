@@ -31,7 +31,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
         fPressure    = 0;  % [Pa]
         
         % @type float
-        fTemperature = 0;   % [K]
+        fTemperature = 293;   % [K]
         
         
         

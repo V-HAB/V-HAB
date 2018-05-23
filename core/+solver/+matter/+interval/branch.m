@@ -176,7 +176,7 @@ classdef branch < solver.matter.base.branch
                 % an infinite pressure drop occurs e.g. if a valve closes
                 % to ensure that nothing flows through. Therefore, do not
                 % iterate but simply set flowrate to 0
-                fFlowRate   = iDir * fFlowRate;
+                fFlowRate   = 0;
                 mfData(isinf(mfData)) = 0;
                 afDeltaP    = mfData(:, 1);
                 return
