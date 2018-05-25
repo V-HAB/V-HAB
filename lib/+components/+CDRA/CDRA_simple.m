@@ -340,14 +340,14 @@ classdef CDRA_simple < vsys
             createSolverStructure@vsys(this);
             
             % Cycle one
-            solver.matter.manual.branch(this.toBranches.CDRA_Air_In_1);
+            solver.matter.residual.branch(this.toBranches.CDRA_Air_In_1);
                 
             solver.matter.residual.branch(this.toBranches.Filter13x1_to_Filter5A2);
             solver.matter.residual.branch(this.toBranches.Filter5A2_to_Filter13x2);
             solver.matter.residual.branch(this.toBranches.CDRA_Air_Out_1);
             solver.matter.residual.branch(this.toBranches.Filter5A1_to_Vent);
             
-            solver.matter.manual.branch(this.toBranches.CDRA_Air_In_2);
+            solver.matter.residual.branch(this.toBranches.CDRA_Air_In_2);
             
             solver.matter.residual.branch(this.toBranches.Filter13x2_to_Filter5A1);
             solver.matter.residual.branch(this.toBranches.Filter5A1_to_Filter13x1);
@@ -356,6 +356,10 @@ classdef CDRA_simple < vsys
             
             solver.matter.manual.branch(this.toBranches.Filter5A1_AirSafe);
             solver.matter.manual.branch(this.toBranches.Filter5A2_AirSafe);
+            
+            this.toBranches.CDRA_Air_In_1.oHandler.setPositiveFlowDirection(false);
+            this.toBranches.CDRA_Air_In_2.oHandler.setPositiveFlowDirection(false);
+            this.toBranches.CDRA_Air_In_2.oHandler.setActive(false);
             
             csStoreNames = fieldnames(this.toStores);
             for iStore = 1:length(csStoreNames)
@@ -401,14 +405,12 @@ classdef CDRA_simple < vsys
             
             if this.fFlowrateMain == 0
                 
-                this.toBranches.CDRA_Air_In_2.oHandler.setFlowRate(0);
                 this.toBranches.Filter13x2_to_Filter5A1.oHandler.setActive(false);
                 this.toBranches.Filter5A1_to_Filter13x1.oHandler.setActive(false);
                 this.toBranches.CDRA_Air_Out_2.oHandler.setActive(false);
                 this.toBranches.Filter5A2_to_Vent.oHandler.setActive(false);
                 this.toBranches.Filter5A1_to_Filter13x1.oHandler.setAllowedFlowRate(0);
 
-                this.toBranches.CDRA_Air_In_1.oHandler.setFlowRate(0);
                 this.toBranches.Filter13x1_to_Filter5A2.oHandler.setActive(false);
                 this.toBranches.Filter5A2_to_Filter13x2.oHandler.setActive(false);
                 this.toBranches.CDRA_Air_Out_1.oHandler.setActive(false);
@@ -462,6 +464,9 @@ classdef CDRA_simple < vsys
                     this.toBranches.Filter5A1_to_Vent.oHandler.setActive(true);
                     
                     this.fInitialFilterMass = this.toStores.Filter5A_1.aoPhases(1,1).fMass;
+                    this.toBranches.CDRA_Air_In_1.oHandler.setActive(true);
+                    this.toBranches.CDRA_Air_In_2.oHandler.setActive(false);
+                    
                 end
                
                 % Setting cycle one flow rates
@@ -541,6 +546,8 @@ classdef CDRA_simple < vsys
                     
                     
                     this.fInitialFilterMass = this.toStores.Filter5A_2.aoPhases(1,1).fMass;
+                    this.toBranches.CDRA_Air_In_1.oHandler.setActive(false);
+                    this.toBranches.CDRA_Air_In_2.oHandler.setActive(true);
                 end
                                 
                 % Setting cycle two flow rates
@@ -611,23 +618,6 @@ classdef CDRA_simple < vsys
             else
                 this.toStores.Filter5A_2.toProcsP2P.Filter5A_2_proc.setHeaterPower(0);
             end
-            
-            % sets the interface flowrate for the CCAA (from CDRA to CCAA)
-            
-            fFlowRate_CDRA_CCAA = this.toBranches.CDRA_Air_Out_2.fFlowRate + this.toBranches.CDRA_Air_Out_1.fFlowRate;
-            
-            fCurrentFlowRate_CHX_Cabin = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_Cabin.oHandler.fRequestedFlowRate;
-            fFlowRate_CCAA_Condensate = this.oParent.toChildren.(this.sAsscociatedCCAA).toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
-
-            % Sets the new flowrate from TCCV to CHX inside CCAA
-            fNewFlowRate_TCCV_CHX = this.fFlowrateMain + fCurrentFlowRate_CHX_Cabin + fFlowRate_CCAA_Condensate;
-            fCurrentFlowRate_TCCV_Cabin = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.TCCV_Cabin.oHandler.fRequestedFlowRate;
-            
-            % Sets the new flowrate from Cabin to TCCV inside CCAA
-            fNewFlowRate_Cabin_TCCV = fNewFlowRate_TCCV_CHX + fCurrentFlowRate_TCCV_Cabin - fFlowRate_CDRA_CCAA; 
-            this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fNewFlowRate_Cabin_TCCV);
-           
-            this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_CDRA.oHandler.setFlowRate(this.fFlowrateMain);
         end
     end
     

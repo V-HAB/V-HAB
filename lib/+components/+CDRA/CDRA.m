@@ -84,7 +84,7 @@ classdef CDRA < vsys
         tTimeProperties;
         
         fPipelength         = 1;
-        fPipeDiameter       = 0.001;
+        fPipeDiameter       = 0.01;
         fFrictionFactor     = 2e-3;
         
     end
@@ -651,7 +651,20 @@ classdef CDRA < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
+            % Outcommented code can be used to set a multi solver for each
+            % bed specifically, which helps with debugging. Additional the
+            % full system results in close to singular matrix, which might
+            % lead to issues.
+            
+            % TBD: With full system singular matrix
+            %solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches(:), 'complex');
             csBranches = fieldnames(this.toBranches);
+            
+            solver.matter.residual.branch(this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1);
+            solver.matter.residual.branch(this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2);
+            
+            this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1.oHandler.setPositiveFlowDirection(false);
+            this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2.oHandler.setPositiveFlowDirection(false);
             
             % Multisolver for Sylobead 1
             iMultiBranch = 1;
@@ -659,7 +672,6 @@ classdef CDRA < vsys
                 aoMultiSolverBranchesSylobead_1(iMultiBranch) = this.tMassNetwork.InternalBranches_Sylobead_1(iBranch);
                 iMultiBranch = iMultiBranch + 1;
             end
-            aoMultiSolverBranchesSylobead_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1;
             aoMultiSolverBranchesSylobead_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_Out_2;
             
             solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesSylobead_1(:), 'complex');
@@ -670,7 +682,6 @@ classdef CDRA < vsys
                 aoMultiSolverBranchesSylobead_2(iMultiBranch) = this.tMassNetwork.InternalBranches_Sylobead_2(iBranch);
                 iMultiBranch = iMultiBranch + 1;
             end
-            aoMultiSolverBranchesSylobead_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2;
             aoMultiSolverBranchesSylobead_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_Out_1;
             
             solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesSylobead_2(:), 'complex');
@@ -721,44 +732,6 @@ classdef CDRA < vsys
             
             solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite5A_2(:), 'complex');
             
-            
-            
-%             
-%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Sylobead_2)
-%                 aoMultiSolverBranches(iMultiBranch) = this.tMassNetwork.InternalBranches_Sylobead_2(iBranch);
-%                 iMultiBranch = iMultiBranch + 1;
-%             end
-%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite13x_1)
-%                 aoMultiSolverBranches(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite13x_1(iBranch);
-%                 iMultiBranch = iMultiBranch + 1;
-%             end
-%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite13x_2)
-%                 aoMultiSolverBranches(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite13x_2(iBranch);
-%                 iMultiBranch = iMultiBranch + 1;
-%             end
-%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite5A_1)
-%                 aoMultiSolverBranches(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite5A_1(iBranch);
-%                 iMultiBranch = iMultiBranch + 1;
-%             end
-%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite5A_2)
-%                 aoMultiSolverBranches(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite5A_2(iBranch);
-%                 iMultiBranch = iMultiBranch + 1;
-%             end
-%             csInterfaceBranches = fieldnames(this.tMassNetwork.InterfaceBranches);
-%             for iBranch = 1:length(csInterfaceBranches)
-%                 aoMultiSolverBranches(iMultiBranch) = this.tMassNetwork.InterfaceBranches.(csInterfaceBranches{iBranch});
-%                 iMultiBranch = iMultiBranch + 1;
-%             end
-            % Only the air in flows are manual branches, they will be used
-            % to set the primary flowrate through CDRA
-%             iMultiBranch = 1;
-%             for iB = 1:length(csBranches)
-%                 % ~isempty(regexp(csBranches{iB}, 'Sylobead', 'once')) || 
-%                 if ~isempty(regexp(csBranches{iB}, 'Sylobead', 'once')) || ~isempty(regexp(csBranches{iB}, 'Zeolite5A', 'once')) || ~isempty(regexp(csBranches{iB}, 'Zeolite13x', 'once'))
-%                     aoMultiSolverBranches(iMultiBranch) = this.toBranches.(csBranches{iB});
-%                     iMultiBranch = iMultiBranch + 1;
-%                 end
-%             end
             
             csStores = fieldnames(this.toStores);
             % sets numerical properties for the phases of CDRA

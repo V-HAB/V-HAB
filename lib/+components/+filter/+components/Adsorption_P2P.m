@@ -125,7 +125,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             this.setMatterProperties(fAdsorptionFlowRate, arPartialsAdsorption);
             
-            fFlowRateP2P = fAdsorptionFlowRate;
+            fFlowRateP2P = fAdsorptionFlowRate - fDesorptionFlowRate;
             this.fLastExec = this.oTimer.fTime;
         end
         

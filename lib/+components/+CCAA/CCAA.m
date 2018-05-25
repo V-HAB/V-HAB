@@ -266,6 +266,8 @@ classdef CCAA < vsys
             if ~isempty(this.sCDRA)
                 solver.matter.manual.branch(this.toBranches.CHX_CDRA);
                 
+                this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
+
                 solver.matter.residual.branch(this.toBranches.CDRA_TCCV);
                 this.toBranches.CDRA_TCCV.oHandler.setPositiveFlowDirection(false);
                 
@@ -309,7 +311,6 @@ classdef CCAA < vsys
             this.toBranches.TCCV_Cabin.oHandler.setFlowRate((fInFlow+fInFlow2) - fTCCV_To_CHX_FlowRate);
 
             this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
-
             
             if this.bActive == 1
                 %% Setting of initial flow rates
@@ -547,6 +548,13 @@ classdef CCAA < vsys
                  this.toBranches.CHX_Cabin.oHandler.setFlowRate(0);
             end
 
+            if ~isempty(this.sCDRA)
+                if fTCCV_To_CHX_FlowRate >= this.fCDRA_FlowRate
+                    this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
+                else
+                    this.toBranches.CHX_CDRA.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
+                end
+            end
         end
 	end
 end

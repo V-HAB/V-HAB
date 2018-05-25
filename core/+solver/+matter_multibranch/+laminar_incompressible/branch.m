@@ -92,6 +92,8 @@ classdef branch < base & event.source
         
         % Temporary - active flow f2f procs - pressure rise (or drop)
         afTmpPressureRise;
+        
+        miBranchIndexToRowID;
     end
     
     
@@ -236,12 +238,13 @@ classdef branch < base & event.source
             
             iRow = 0;
             
+            this.miBranchIndexToRowID = zeros(this.iBranches,1);
             % Loop branches, generate equation row to calculate flow rate
             % DP = C * FR, or P_Left - P_Right = C * FR
             for iB = 1:this.iBranches
                 iRow = iRow + 1;
                 oB   = this.aoBranches(iB);
-                
+                this.miBranchIndexToRowID(iB) = iRow;
                 
                 % If we have a branch with one, active component -->
                 % special treatment (no coefficient - get pressure rise
@@ -737,7 +740,6 @@ classdef branch < base & event.source
             % The initial flow rates are all zero, so initial rError below
             % will be inf -> that's good, e.g. the p2ps need a correct set
             % of flow rate directions to be included in equations!
-            afInitialFlowRates = this.afFlowRates;
             while abs(rError) > rErrorMax %|| iIteration < 5
                 afPrevFrs  = this.afFlowRates;
                 iIteration = iIteration + 1;
@@ -747,6 +749,62 @@ classdef branch < base & event.source
                 % Regenerates matrices, gets coeffs from flow procs
                 [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = this.generateMatrices();
                 
+                
+                % Infinite values can lead to singular matrixes in the solution
+                % process and at least result in badly scaled matrices.
+                % Therefore the branches are checked beforehand for pressure
+                % drops that are infinite, which means nothing can flow through
+                % this branch an 0 flowrate must be enforced anyway (e.g.
+                % closed valve)
+                mbZeroFlowBranches = isinf(this.afPressureDropCoeffsSum)';
+                
+                aoZeroFlowBranches = this.aoBranches(mbZeroFlowBranches);
+                
+                mbRemoveRow = false(1,length(aafPhasePressuresAndFlowRates));
+                mbRemoveColumn = false(1,length(aafPhasePressuresAndFlowRates));
+                iZeroFlowBranches = length(aoZeroFlowBranches);
+                for iZeroFlowBranch = 1:iZeroFlowBranches
+                    mbRemoveColumn(this.piObjUuidsToColIndex(aoZeroFlowBranches(iZeroFlowBranch).sUUID)) = true;
+                end
+                
+                aafPhasePressuresAndFlowRates(:, mbRemoveColumn) = [];
+                
+                mbRemoveRow(this.miBranchIndexToRowID(mbZeroFlowBranches)) = true;
+                aafPhasePressuresAndFlowRates(mbRemoveRow,:) = [];
+                afBoundaryConditions((this.miBranchIndexToRowID(mbZeroFlowBranches)),:) = [];
+                
+                iNewRows = length(aafPhasePressuresAndFlowRates);
+                miNewRowToOriginalRow = zeros(iNewRows, 1);
+                miNewColToOriginalCol = zeros(1, iNewRows);
+                
+                iOriginalRows = length(mbRemoveRow);
+                for iEntry = 1:iNewRows
+                    iIndex = 1;
+                    iShiftRowBy = 0;
+                    while iIndex < iEntry || mbRemoveRow(iIndex)
+                        if iIndex > iOriginalRows
+                            break
+                        else
+                            iShiftRowBy = iShiftRowBy + mbRemoveRow(iIndex);
+                        end
+                        iIndex = iIndex + 1;
+                    end
+                    
+                    miNewRowToOriginalRow(iEntry) = iEntry + iShiftRowBy;
+                    
+                    iIndex = 1;
+                    iShiftColBy = 0;
+                    while iIndex < iEntry || mbRemoveColumn(iIndex)
+                        if iIndex > iOriginalRows
+                            break
+                        else
+                            iShiftColBy = iShiftColBy + mbRemoveColumn(iIndex);
+                        end
+                        iIndex = iIndex + 1;
+                    end
+                    
+                    miNewColToOriginalCol(iEntry) = iEntry + iShiftColBy;
+                end
                 
                 %aafPhasePressuresAndFlowRates = tools.round.prec(aafPhasePressuresAndFlowRates, this.oTimer.iPrecision);
                 %afBoundaryConditions          = tools.round.prec(afBoundaryConditions,          this.oTimer.iPrecision);
@@ -842,8 +900,9 @@ classdef branch < base & event.source
                 %afResults = tools.round.prec(afResults, this.oTimer.iPrecision);
                 
 
-                for iR = 1:length(this.csObjUuidsToColIndex)
-                    oObj = this.poColIndexToObj(iR);
+                for iR = 1:iNewRows
+                    
+                    oObj = this.poColIndexToObj(miNewColToOriginalCol(iR));
 
                     if isa(oObj, 'matter.branch')
                         iB = find(this.aoBranches == oObj, 1);
@@ -854,6 +913,10 @@ classdef branch < base & event.source
                             this.afFlowRates(iB) = (this.afFlowRates(iB) * 3 + afResults(iR)) / 4;
                         end
                     end
+                end
+                for iZeroBranch = 1:iZeroFlowBranches
+                    iB = find(this.aoBranches == aoZeroFlowBranches(iZeroBranch), 1);
+                    this.afFlowRates(iB) = 0;
                 end
                 
                 %this.afFlowRates = tools.round.prec(this.afFlowRates, this.oTimer.iPrecision);
@@ -869,17 +932,21 @@ classdef branch < base & event.source
                 % Boundary conditions (= p2p and others) changing? Continue
                 % iteration!
                 % Also enforces at least two iterations ... ok? BS?
-                afBcChange = [ 0 ];
-                
-                if ~isempty(afPrevBoundaryConditions)
-                    %afBcChange = tools.round.prec(afPrevBoundaryConditions - afBoundaryConditions, iPrecision);
-                    afBcChange = tools.round.prec(afPrevBoundaryConditions - afBoundaryConditions, 4);
-                end
-                
-                if isempty(afPrevBoundaryConditions) || ~all(afBcChange == 0) % ~all(afPrevBoundaryConditions == afBoundaryConditions)
-                    if ~base.oLog.bOff, this.out(1, 2, 'changing-boundary-conditions', 'Boundary conditions changing (p2p!), iteration %i', { iIteration }); end;
-                    rError = inf;
-                end
+                % Not ok, as P2P flowrates are calculated during the
+                % iteration and therefore change, if this is forced to
+                % become 0 it will not converge for cases that actually use
+                % this
+%                 afBcChange = [ 0 ];
+%                 
+%                 if ~isempty(afPrevBoundaryConditions)
+%                     %afBcChange = tools.round.prec(afPrevBoundaryConditions - afBoundaryConditions, iPrecision);
+%                     afBcChange = tools.round.prec(afPrevBoundaryConditions - afBoundaryConditions, 4);
+%                 end
+%                 
+%                 if isempty(afPrevBoundaryConditions) || ~all(afBcChange == 0) % ~all(afPrevBoundaryConditions == afBoundaryConditions)
+%                     if ~base.oLog.bOff, this.out(1, 2, 'changing-boundary-conditions', 'Boundary conditions changing (p2p!), iteration %i', { iIteration }); end;
+%                     rError = inf;
+%                 end
                 
                 
                 if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { iIteration, rError }); end;

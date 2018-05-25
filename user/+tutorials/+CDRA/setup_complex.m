@@ -37,43 +37,68 @@ classdef setup_complex < simulation.infrastructure
             %% Logging
             oLog = this.toMonitors.oLogger;
             
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity', '-', 'Relative Humidity Cabin');
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)', 'Pa', 'Partial Pressure CO2');
+            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity',              '-',    'Relative Humidity Cabin');
+            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)',  'Pa',   'Partial Pressure CO2');
+            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'fTemperature',              'K',    'Temperature Atmosphere');
             
-            return
-            oLog.addValue('Example:c:CDRA:s:Filter_13X_1.toProcsP2P.DesorptionProcessor', 'fFlowRate', 'P2P 13x kg/s', 'Desorption Flowrate 13x1');
+            oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn', 'fTemperature',      'K',    'Temperature CHX');
+            oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn', 'fPressure',         'Pa',   'Pressure CHX');
+            oLog.addValue('Example:c:CCAA:s:CHX.toProcsP2P.CondensingHX', 'fFlowRate',      'kg/s', 'Condensate Flowrate CHX');
+            
+            iCellNumber13x = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Zeolite13x.iCellNumber;
+            iCellNumberSylobead = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Sylobead.iCellNumber;
+            iCellNumber5A = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Zeolite5A.iCellNumber;
+            miCellNumber = [iCellNumberSylobead, iCellNumber13x, iCellNumber5A];
+            csType = {'Sylobead_', 'Zeolite13x_', 'Zeolite5A_'};
+            for iType = 1:3
+                for iBed = 1:2
+                    for iCell = 1:miCellNumber(iType)
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Flow_',num2str(iCell)],      'fPressure',                    'Pa',   ['Flow Pressure', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Flow_',num2str(iCell)],      'afPP(this.oMT.tiN2I.H2O)',     'Pa',   ['Flow Pressure H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Flow_',num2str(iCell)],      'afPP(this.oMT.tiN2I.CO2)',     'Pa',   ['Flow Pressure CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Flow_',num2str(iCell)],      'fTemperature',                 'K',    ['Flow Temperature ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Absorber_',num2str(iCell)],  'fTemperature',                 'K',    ['Absorber Temperature ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
 
-            oLog.addValue('Example:c:CDRA:s:Filter_13X_1.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.H2O)', 'Adsorbed kg 13x', 'Adsorbed H2O 13x1');
-            oLog.addValue('Example:c:CDRA:s:Filter_13X_1.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.CO2)', 'Adsorbed kg 13x ', 'Adsorbed CO2 13x1');
-
-            oLog.addValue('Example:c:CDRA:s:Filter_13X_2.toProcsP2P.DesorptionProcessor', 'fFlowRate', 'P2P 13x kg/s', 'Desorption Flowrate 13x2');
-
-            oLog.addValue('Example:c:CDRA:s:Filter_13X_2.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.H2O)', 'Adsorbed kg 13x', 'Adsorbed H2O 13x2');
-            oLog.addValue('Example:c:CDRA:s:Filter_13X_2.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.CO2)', 'Adsorbed kg 13x', 'Adsorbed CO2 13x2');
-
-            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_1.toProcsP2P.Filter_Sylobead_1_proc', 'fFlowRate', 'P2P SG kg/s', 'Adsorption Flowrate Sylobead1');
-            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_1.toProcsP2P.DesorptionProcessor', 'fFlowRate', 'P2P SG kg/s', 'Desorption Flowrate Sylobead1');
-
-            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_1.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.H2O)', 'Adsorbed kg Sylobead', 'Adsorbed H2O Sylobead 1');
-            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_1.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.CO2)', 'Adsorbed kg Sylobead', 'Adsorbed CO2 Sylobead 1');
-
-            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_2.toProcsP2P.Filter_Sylobead_2_proc', 'fFlowRate', 'P2P SG kg/s', 'Adsorption Flowrate Sylobead2');
-            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_2.toProcsP2P.DesorptionProcessor', 'fFlowRate', 'P2P SG kg/s', 'Desorption Flowrate Sylobead2');
-
-            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_2.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.H2O)', 'Adsorbed kg Sylobead', 'Adsorbed H2O Sylobead 2');
-            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_2.toPhases.FilteredPhase', 'afMass(this.oMT.tiN2I.CO2)', 'Adsorbed kg Sylobead', 'Adsorbed CO2 Sylobead 2');
-
-            oLog.addValue('Example:c:CDRA:s:Filter5A_1.toProcsP2P.DesorptionProcessor', 'fFlowRate', 'P2P 5A kg/s', 'Desorption Flowrate 5A1');
-
-            oLog.addValue('Example:c:CDRA:s:Filter5A_2.toProcsP2P.DesorptionProcessor', 'fFlowRate', 'P2P 5A kg/s', 'Desorption Flowrate 5A2');
-
-            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_1.toProcsP2P.Filter_Sylobead_1_proc', 'fInternalLoading', 'Loading kg', 'Loading Sylobead1');
-            oLog.addValue('Example:c:CDRA:s:Filter_Sylobead_2.toProcsP2P.Filter_Sylobead_2_proc', 'fInternalLoading', 'Loading kg', 'Loading Sylobead2');
-            oLog.addValue('Example:c:CDRA:s:Filter_13X_1.toProcsP2P.Filter_13X_1_proc', 'fInternalLoading', 'Loading kg', 'Loading 13x1');
-            oLog.addValue('Example:c:CDRA:s:Filter_13X_2.toProcsP2P.Filter_13X_2_proc', 'fInternalLoading', 'Loading kg', 'Loading 13x2');
-            oLog.addValue('Example:c:CDRA:s:Filter5A_1.toProcsP2P.Filter5A_1_proc', 'fInternalLoading', 'Adsorbed kg 5A', 'Internal Loading CO2 5Ax1');
-            oLog.addValue('Example:c:CDRA:s:Filter5A_2.toProcsP2P.Filter5A_2_proc', 'fInternalLoading', 'Adsorbed kg 5A', 'Internal Loading CO2 5Ax2');
-
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Absorber_',num2str(iCell)],  'afMass(this.oMT.tiN2I.CO2)',   'kg',   ['Partial Mass CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Absorber_',num2str(iCell)],  'afMass(this.oMT.tiN2I.H2O)',   'kg',   ['Partial Mass H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toProcsP2P.AdsorptionProcessor_',num2str(iCell)],  'mfFlowRatesProp(this.oMT.tiN2I.CO2)',   'kg/s',   ['Absorber Flowrate CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toProcsP2P.AdsorptionProcessor_',num2str(iCell)],  'mfFlowRatesProp(this.oMT.tiN2I.H2O)',   'kg/s',   ['Absorber Flowrate H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                    
+                        oLog.addValue(['Example:c:CDRA.tMassNetwork.InternalBranches_',csType{iType}, num2str(iBed), '(', num2str(iCell), ')'],  'fFlowRate',   'kg/s',   ['Flowrate ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                        
+                    end
+                end
+            end
+            
+            csInterfaceBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tMassNetwork.InterfaceBranches);
+            iInterfaceBranches = length(csInterfaceBranches);
+            for iIB = 1:iInterfaceBranches
+                oLog.addValue(['Example:c:CDRA.tMassNetwork.InterfaceBranches.', csInterfaceBranches{iIB}],  'fFlowRate',   'kg/s',   csInterfaceBranches{iIB});
+            end
+            
+            % CDRA In
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 2');
+            
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Inlet Flow 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Inlet Flow 2');
+            
+            % CDRA Out
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Outlet Flow 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Outlet Flow 2');
+            
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Outlet Flow 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Outlet Flow 2');
+            
+            oLog.addVirtualValue('-1 .*("CDRA CO2 Inlet Flow 1" + "CDRA CO2 Inlet Flow 2")', 'kg/s', 'CDRA CO2 InletFlow');
+            oLog.addVirtualValue('-1 .*("CDRA H2O Inlet Flow 1" + "CDRA H2O Inlet Flow 2")', 'kg/s', 'CDRA H2O InletFlow');
+            
+            oLog.addVirtualValue('"CDRA CO2 Outlet Flow 1" + "CDRA CO2 Outlet Flow 2"', 'kg/s', 'CDRA CO2 OutletFlow');
+            oLog.addVirtualValue('"CDRA H2O Outlet Flow 1" + "CDRA H2O Outlet Flow 2"', 'kg/s', 'CDRA H2O OutletFlow');
+            
+            oLog.addVirtualValue('"Partial Pressure CO2" ./ 133.322', 'torr', 'Partial Pressure CO2 Torr');
+            
         end
         
         function plot(this) % Plotting the results
@@ -82,164 +107,126 @@ classdef setup_complex < simulation.infrastructure
             close all
           
             
-            if isa(this.oSimulationContainer.toChildren.Example.toChildren.CDRA, 'components.CDRA.CDRA')
-                for iIndex = 1:length(this.toMonitors.oLogger.tLogValues)
-                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Relative Humidity Cabin')
-                        iHumidityCabin = iIndex;
-                    end
+            %% Define plots
+            
+            oPlotter = plot@simulation.infrastructure(this);
+            
+            iCellNumber13x = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Zeolite13x.iCellNumber;
+            iCellNumberSylobead = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Sylobead.iCellNumber;
+            iCellNumber5A = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Zeolite5A.iCellNumber;
+            miCellNumber = [iCellNumberSylobead, iCellNumber13x, iCellNumber5A];
+            csType = {'Sylobead_', 'Zeolite13x_', 'Zeolite5A_'};
+            
+            csCDRA_CO2_Mass             = cell(3,2,max(miCellNumber));
+            csCDRA_H2O_Mass             = cell(3,2,max(miCellNumber));
+            csCDRA_CO2_Pressure         = cell(3,2,max(miCellNumber));
+            csCDRA_H2O_Pressure         = cell(3,2,max(miCellNumber));
+            csCDRA_Flow_Temperature     = cell(3,2,max(miCellNumber));
+            csCDRA_Absorber_Temperature = cell(3,2,max(miCellNumber));
+            csCDRA_Absorber_FlowrateCO2 = cell(3,2,max(miCellNumber));
+            csCDRA_Absorber_FlowrateH2O = cell(3,2,max(miCellNumber));
+            
+            csCDRA_FlowRate = cell(3,2,max(miCellNumber));
+            
+            for iType = 1:3
+                for iBed = 1:2
+                    for iCell = 1:miCellNumber(iType)
+                         csCDRA_CO2_Mass{iType,iBed,iCell}              = ['"Partial Mass CO2 ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell) ,'"'];
+                         csCDRA_H2O_Mass{iType,iBed,iCell}              = ['"Partial Mass H2O ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell),'"'];
 
-                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Partial Pressure CO2')
-                        iCO2Cabin = iIndex;
-                    end
+                         csCDRA_CO2_Pressure{iType,iBed,iCell}          = ['"Flow Pressure CO2 ',    csType{iType}, num2str(iBed),' Cell ',num2str(iCell),'"'];
+                         csCDRA_H2O_Pressure{iType,iBed,iCell}          = ['"Flow Pressure H2O ',    csType{iType}, num2str(iBed),' Cell ',num2str(iCell),'"'];
 
-                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, '5A1 Inlet Flow')
-                        i5A1InletFlow = iIndex;
-                    end
-                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, '5A1 Inlet Flow CO2 Ratio')
-                        i5A1InletFlowRatio = iIndex;
-                    end
-                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, '5A2 Inlet Flow')
-                        i5A2InletFlow = iIndex;
-                    end
-                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, '5A2 Inlet Flow CO2 Ratio')
-                        i5A2InletFlowRatio = iIndex;
-                    end
-                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Adsorption Flowrate 5A1')
-                        i5A1AdsorpFlow = iIndex;
-                    end
-                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Desorption Flowrate 5A1')
-                        i5A1DesorpFlow = iIndex;
-                    end
-                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Adsorption Flowrate 5A2')
-                        i5A2AdsorpFlow = iIndex;
-                    end
-                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Desorption Flowrate 5A2')
-                        i5A2DesorpFlow = iIndex;
-                    end
-%                     if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Loading 5Ax1')
-%                         i5A1Loading = iIndex;
-%                     end
-%                     if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Loading 5Ax2')
-%                         i5A2Loading = iIndex;
-%                     end
-                end
-                mLogDataHumidityCabin = this.toMonitors.oLogger.mfLog(:,iHumidityCabin);
-                mLogDataHumidityCabin(isnan(mLogDataHumidityCabin(:,1)),:)=[];
-                mLogDataHumidityCabin = mLogDataHumidityCabin.*100;
-
-                mLogDataCO2Cabin = this.toMonitors.oLogger.mfLog(:,iCO2Cabin);
-                mLogDataCO2Cabin(isnan(mLogDataCO2Cabin(:,1)),:)=[];
-
-                m5A1InletFlow = this.toMonitors.oLogger.mfLog(:,i5A1InletFlow);
-                m5A1InletFlow(isnan(m5A1InletFlow(:,1)),:)=[];
-
-                m5A2InletFlow = this.toMonitors.oLogger.mfLog(:,i5A2InletFlow);
-                m5A2InletFlow(isnan(m5A2InletFlow(:,1)),:)=[];
-
-                m5A1InletFlowRatio = this.toMonitors.oLogger.mfLog(:,i5A1InletFlowRatio);
-                m5A1InletFlowRatio(isnan(m5A1InletFlowRatio(:,1)),:)=[];
-
-                m5A2InletFlowRatio = this.toMonitors.oLogger.mfLog(:,i5A2InletFlowRatio);
-                m5A2InletFlowRatio(isnan(m5A2InletFlowRatio(:,1)),:)=[];
-
-                m5A1AdsorpFlow = this.toMonitors.oLogger.mfLog(:,i5A1AdsorpFlow);
-                m5A1AdsorpFlow(isnan(m5A1AdsorpFlow(:,1)),:)=[];
-
-                m5A1DesorpFlow = this.toMonitors.oLogger.mfLog(:,i5A1DesorpFlow);
-                m5A1DesorpFlow(isnan(m5A1DesorpFlow(:,1)),:)=[];
-
-                m5A2AdsorpFlow = this.toMonitors.oLogger.mfLog(:,i5A2AdsorpFlow);
-                m5A2AdsorpFlow(isnan(m5A2AdsorpFlow(:,1)),:)=[];
-
-                m5A2DesorpFlow = this.toMonitors.oLogger.mfLog(:,i5A2DesorpFlow);
-                m5A2DesorpFlow(isnan(m5A2DesorpFlow(:,1)),:)=[];
-
-%                 m5A1Loading = this.toMonitors.oLogger.mfLog(:,i5A1Loading);
-%                 m5A1Loading(isnan(m5A1Loading(:,1)),:)=[];
-%                 
-%                 m5A2Loading = this.toMonitors.oLogger.mfLog(:,i5A2Loading);
-%                 m5A2Loading(isnan(m5A2Loading(:,1)),:)=[];
-                
-                m5A1InletFlowCO2 = m5A1InletFlow.*m5A1InletFlowRatio;
-                m5A2InletFlowCO2 = m5A2InletFlow.*m5A2InletFlowRatio;
-
-                afTime = this.toMonitors.oLogger.afTime;
-
-                figure('name', 'Relative Humidity')
-                grid on
-                hold on
-                plot((afTime./3600), mLogDataHumidityCabin)
-                xlabel('Time in h')
-                ylabel('Rel. Humidity in %')
-
-                figure('name', 'Partial Pressure CO2')
-                grid on
-                hold on
-                plot((afTime./3600), mLogDataCO2Cabin)
-                xlabel('Time in h')
-                ylabel('Partial Pressure CO2 in Pa')
-                
-                figure('name', 'Partial Pressure CO2 Torr')
-                grid on
-                hold on
-                plot((afTime./3600), mLogDataCO2Cabin./133.33)
-                xlabel('Time in h')
-                ylabel('Partial Pressure CO2 in Torr')
-                
-                figure('name', '5A Flowrates')
-                grid on
-                hold on
-                plot((afTime./3600), m5A1InletFlowCO2,...
-                     (afTime./3600), m5A2InletFlowCO2,...
-                     (afTime./3600), m5A1AdsorpFlow,...
-                     (afTime./3600), m5A2AdsorpFlow,...
-                     (afTime./3600), m5A1DesorpFlow,...
-                     (afTime./3600), m5A2DesorpFlow)
-                xlabel('Time in h')
-                ylabel('Flow Rate in kg/s')
-                legend('5A1 Inlet CO2', '5A2 Inlet CO2', '5A1 Adsorp', '5A2 Adsorp', '5A1 Desorp', '5A2 Desorp', 'Internal Loading CO2 5A1', 'Internal Loading CO2 5A2')
-                
-                
-            else
-                for iIndex = 1:length(this.toMonitors.oLogger.tLogValues)
-                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Relative Humidity Cabin')
-                        iHumidityCabin = iIndex;
-                    end
-
-                    if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Partial Pressure CO2')
-                        iCO2Cabin = iIndex;
+                         csCDRA_Flow_Temperature{iType,iBed,iCell}      = ['"Flow Temperature ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell),'"'];
+                         csCDRA_Absorber_Temperature{iType,iBed,iCell}  = ['"Absorber Temperature ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell),'"'];
+                         
+                         csCDRA_Absorber_FlowrateCO2{iType,iBed,iCell}  = ['"Absorber Flowrate CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell),'"'];
+                         csCDRA_Absorber_FlowrateH2O{iType,iBed,iCell}  = ['"Absorber Flowrate H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell),'"'];
+                         
+                         csCDRA_FlowRate{iType,iBed,iCell}              = ['"Flowrate ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell), '"'];
                     end
                 end
-                mLogDataHumidityCabin = this.toMonitors.oLogger.mfLog(:,iHumidityCabin);
-                mLogDataHumidityCabin(isnan(mLogDataHumidityCabin(:,1)),:)=[];
-                mLogDataHumidityCabin = mLogDataHumidityCabin.*100;
-
-                mLogDataCO2Cabin = this.toMonitors.oLogger.mfLog(:,iCO2Cabin);
-                mLogDataCO2Cabin(isnan(mLogDataCO2Cabin(:,1)),:)=[];
-
-                afTime = this.toMonitors.oLogger.afTime;
-
-                figure('name', 'Relative Humidity')
-                grid on
-                hold on
-                plot((afTime./3600), mLogDataHumidityCabin)
-                xlabel('Time in h')
-                ylabel('Rel. Humidity in %')
-
-                figure('name', 'Partial Pressure CO2')
-                grid on
-                hold on
-                plot((afTime./3600), mLogDataCO2Cabin)
-                xlabel('Time in h')
-                ylabel('Partial Pressure CO2 in Pa')
-                
-                figure('name', 'Partial Pressure CO2 Torr')
-                grid on
-                hold on
-                plot((afTime./3600), mLogDataCO2Cabin./133.33)
-                xlabel('Time in h')
-                ylabel('Partial Pressure CO2 in Pa')
             end
+            
+            coPlot = cell(3,2);
+            for iType = 1:3
+                for iBed = 1:2
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_CO2_Mass(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorbed CO2 Mass']);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_CO2_Mass(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorbed H2O Mass']);
+                end
+            end
+            oPlotter.defineFigure(coPlot,  'Adsorbed Masses');
+            
+            
+            coPlot = cell(3,2);
+            for iType = 1:3
+                for iBed = 1:2
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_CO2_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' CO2 Pressure Flow']);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_H2O_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' H2O Pressure Flow']);
+                end
+            end
+            oPlotter.defineFigure(coPlot,  'Partial Pressures in Flow');
+            
+            coPlot = cell(3,2);
+            for iType = 1:3
+                for iBed = 1:2
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateCO2(iType,iBed,:), [csType{iType}, num2str(iBed), ' CO2 Adsorption Flowrate']);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateH2O(iType,iBed,:), [csType{iType}, num2str(iBed), ' H2O Adsorption Flowrate']);
+                end
+            end
+            oPlotter.defineFigure(coPlot,  'Adsorption Flow Rates');
+            
+            coPlot = cell(3,2);
+            for iType = 1:3
+                for iBed = 1:2
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Flow_Temperature(iType,iBed,:), [csType{iType}, num2str(iBed), ' Flow Temperature']);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_Temperature(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorber Temperature']);
+                end
+            end
+            oPlotter.defineFigure(coPlot,  'Temperatures');
+            
+            % csType = {'Sylobead_', 'Zeolite13x_', 'Zeolite5A_'};
+            csCDRA_FlowRate{1,1,iCellNumberSylobead+1} = '"CDRA_Air_In_1"';
+            csCDRA_FlowRate{1,1,iCellNumberSylobead+2} = '"CDRA_Air_Out_2"';
+            
+            csCDRA_FlowRate{1,2,iCellNumberSylobead+1} = '"CDRA_Air_In_2"';
+            csCDRA_FlowRate{1,2,iCellNumberSylobead+2} = '"CDRA_Air_Out_1"';
+            
+            csCDRA_FlowRate{2,1,iCellNumber13x+1} = '"Sylobead1_to_13x1"';
+            csCDRA_FlowRate{2,1,iCellNumber13x+2} = '"Zeolite5A2_to_13x1"';
+            
+            csCDRA_FlowRate{2,2,iCellNumber13x+1} = '"Sylobead2_to_13x2"';
+            csCDRA_FlowRate{2,2,iCellNumber13x+2} = '"Zeolite5A1_to_13x2"';
+            
+            csCDRA_FlowRate{3,1,iCellNumber5A+1} = '"Zeolite13x1_to_5A1"';
+            csCDRA_FlowRate{3,1,iCellNumber5A+2} = '"CDRA_Vent_2"';
+            csCDRA_FlowRate{3,1,iCellNumber5A+3} = '"CDRA_AirSafe_2"';
+            
+            csCDRA_FlowRate{3,2,iCellNumber5A+1} = '"Zeolite13x2_to_5A2"';
+            csCDRA_FlowRate{3,2,iCellNumber5A+2} = '"CDRA_Vent_1"';
+            csCDRA_FlowRate{3,2,iCellNumber5A+3} = '"CDRA_AirSafe_1"';
+            
+            miCellNumber(1) = miCellNumber(1) + 2;
+            miCellNumber(2) = miCellNumber(2) + 2;
+            miCellNumber(3) = miCellNumber(3) + 3;
+            
+            coPlot = cell(3,2);
+            for iType = 1:3
+                for iBed = 1:2
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_FlowRate(iType,iBed,1:miCellNumber(iType)), [csType{iType}, num2str(iBed), ' Flowrate']);
+                end
+            end
+            oPlotter.defineFigure(coPlot,  'FlowRates');
+            
+            coPlot = cell(2,3);
+            coPlot{1,1} = oPlotter.definePlot({'"CDRA CO2 InletFlow"', '"CDRA H2O InletFlow"', '"CDRA CO2 OutletFlow"', '"CDRA H2O OutletFlow"'}, 'CDRA In- and Outlet Flows');
+            coPlot{1,2} = oPlotter.definePlot({'"Condensate Flowrate CHX"'}, 'CHX Condensate Flowrate');
+            coPlot{1,3} = oPlotter.definePlot({'"Partial Pressure CO2"'}, 'Partial Pressure CO2 Habitat');
+            coPlot{2,1} = oPlotter.definePlot({'"Partial Pressure CO2 Torr"'}, 'Partial Pressure CO2 Habitat in Torr');
+            coPlot{2,2} = oPlotter.definePlot({'"Relative Humidity Cabin"'}, 'Relative Humidity Cabin');
+            oPlotter.defineFigure(coPlot,  'Plots');
+            
+            oPlotter.plot();
         end
     end
 end
