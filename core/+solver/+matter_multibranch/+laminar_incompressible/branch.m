@@ -959,8 +959,12 @@ classdef branch < base & event.source
                 mfMassToPressureBoundary(iBoundaryPhase)    = oBoundary.fMassToPressure;
                 
                 for iExme = 1:length(oBoundary.coProcsEXME)
-                    iBranch = find(this.aoBranches == oBoundary.coProcsEXME{iExme}.oFlow.oBranch,1);
-                    
+                    if oBoundary.coProcsEXME{iExme}.bFlowIsAProcP2P
+                        mfTotalMassChangeBoundary(iBoundaryPhase) = mfTotalMassChangeBoundary(iBoundaryPhase) + (oBoundary.coProcsEXME{iExme}.iSign * oBoundary.coProcsEXME{iExme}.oFlow.fFlowRate);
+                        continue
+                    else
+                        iBranch = find(this.aoBranches == oBoundary.coProcsEXME{iExme}.oFlow.oBranch,1);
+                    end
                     if ~isempty(iBranch)
                         mfTotalMassChangeBoundary(iBoundaryPhase) = mfTotalMassChangeBoundary(iBoundaryPhase) + (oBoundary.coProcsEXME{iExme}.iSign * this.afFlowRates(iBranch));
                     else
