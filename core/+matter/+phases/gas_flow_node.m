@@ -176,7 +176,8 @@ classdef gas_flow_node < matter.phases.gas
             
             if any(this.arPartialMass < 0)
                 this.out(2, 1, 'partials-error', 'NEGATIVE PARTIALS');
-                this.warn('updatePartials', 'negative partials');
+                % TO DO: Make a lower level debugging output
+                % this.warn('updatePartials', 'negative partials');
             end
         end
         

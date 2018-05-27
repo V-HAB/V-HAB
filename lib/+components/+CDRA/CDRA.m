@@ -2,6 +2,9 @@ classdef CDRA < vsys
     %% Carbon Dioxide Removal Assembly (CDRA) Subsystem File
     % Alternative Name: 4BMS or 4 Bed Molecular Sieve
     %
+    % TO DO: Check the buffer phase pressures, check how time step can be
+    % increased
+    %
     % The ISS uses two CDRAs as part of the US life support systems. One is
     % located in Node 3 and the other in the US Lab (normally only one CDRA
     % is working at the same time). Each CDRA gets air from a Common Cabin
@@ -413,23 +416,24 @@ classdef CDRA < vsys
                         sPipeName = ['Pipe_', sName, '_', num2str(iCell)];
                         components.pipe(this, sPipeName, this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
                         
+                        % this factor times the mass flow^2 will decide the pressure
+                        % loss. In this case the pressure loss will be 1 bar at a
+                        % flowrate of 0.01 kg/s
+                        this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell) = 5e7/iCellNumber;
+                        
                         % Each cell is connected to the next cell by a branch, the
                         % first and last cell also have the inlet and outlet branch
                         % attached that connects the filter to the parent system
                         %
                         % Note: Only the branches in between the cells of
                         % the currently generated filter are created here!
+                        components.CDRA.components.Filter_F2F(this, [sName, '_FrictionProc_',num2str(iCell)], this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell));
                         if iCell ~= 1
                             % branch between the current and the previous cell
-                            oBranch = matter.branch(this, [sName,'.','Outflow_',num2str(iCell-1)], {sPipeName}, [sName,'.','Inflow_',num2str(iCell)], [sName, 'Flow',num2str(iCell-1),'toFlow',num2str(iCell)]);
+                            oBranch = matter.branch(this, [sName,'.','Outflow_',num2str(iCell-1)], {[sName, '_FrictionProc_',num2str(iCell)]}, [sName,'.','Inflow_',num2str(iCell)], [sName, 'Flow',num2str(iCell-1),'toFlow',num2str(iCell)]);
                             
                             this.tMassNetwork.(['InternalBranches_', sName])(iCell-1) = oBranch;
                         end
-                        
-                        % this factor times the mass flow^2 will decide the pressure
-                        % loss. In this case the pressure loss will be 1 bar at a
-                        % flowrate of 0.01 kg/s
-                        this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell) = 5e7/iCellNumber;
                     
                     end
                     this.tGeometry.(csTypes{iType}).iCellNumber   = iCellNumber;
@@ -453,8 +457,9 @@ classdef CDRA < vsys
                     matter.procs.exmes.gas(oMassBuffer, 'Buffer_Inlet');
                     matter.procs.exmes.gas(oMassBuffer, 'Buffer_Outlet');
                     
-                    components.pipe(this, [sName, '_to_Buffer_Pipe'], this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
-                    oBranch = matter.branch(this, [sName,'.','Outflow_',num2str(iCellNumber)], {[sName, '_to_Buffer_Pipe']}, [sName, '.Buffer_Inlet'], [sName, '_to_Buffer']);
+                    components.CDRA.components.Filter_F2F(this, [sName, '_FrictionProc_Buffer'], this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell));
+                        
+                    oBranch = matter.branch(this, [sName,'.','Outflow_',num2str(iCellNumber)], {[sName, '_FrictionProc_Buffer']}, [sName, '.Buffer_Inlet'], [sName, '_to_Buffer']);
                     this.tMassNetwork.(['InternalBranches_', sName])(iCellNumber) = oBranch;
                 end
             end
@@ -656,16 +661,22 @@ classdef CDRA < vsys
             % full system results in close to singular matrix, which might
             % lead to issues.
             
-            % TBD: With full system singular matrix
-            %solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches(:), 'complex');
-            csBranches = fieldnames(this.toBranches);
-            
             solver.matter.residual.branch(this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1);
             solver.matter.residual.branch(this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2);
             
             this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1.oHandler.setPositiveFlowDirection(false);
             this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2.oHandler.setPositiveFlowDirection(false);
             
+%             iMultiBranch = 1;
+%             for iBranch = 1:length(this.aoBranches)
+%                 if isempty(regexp(this.aoBranches(iBranch).sCustomName, 'CDRA_Air_In', 'once'))
+%                     aoMultiBranches(iMultiBranch) = this.aoBranches(iBranch);
+%                     iMultiBranch = iMultiBranch + 1;
+%                 end
+%             end
+%             solver.matter_multibranch.laminar_incompressible.branch(aoMultiBranches, 'complex');
+            
+            csBranches = fieldnames(this.toBranches);
             % Multisolver for Sylobead 1
             iMultiBranch = 1;
             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Sylobead_1)
@@ -753,13 +764,15 @@ classdef CDRA < vsys
             end
             
             % Initialize valve open/close state
-            if this.iCycleActive
+            if this.iCycleActive == 1
                 for iValve = 1:length(this.tMassNetwork.aoActiveValvesCycleOne)
                     this.tMassNetwork.aoActiveValvesCycleOne(iValve).setOpen(true);
                     this.tMassNetwork.aoActiveValvesCycleTwo(iValve).setOpen(false);
                 end
                 this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(false);
                 this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(false);
+                this.toBranches.CDRA_Air_In_1.oHandler.setActive(true);
+                this.toBranches.CDRA_Air_In_2.oHandler.setActive(false);
             else
                 for iValve = 1:length(this.tMassNetwork.aoActiveValvesCycleOne)
                     this.tMassNetwork.aoActiveValvesCycleOne(iValve).setOpen(false);
@@ -767,6 +780,8 @@ classdef CDRA < vsys
                 end
                 this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(false);
                 this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(false);
+                this.toBranches.CDRA_Air_In_1.oHandler.setActive(false);
+                this.toBranches.CDRA_Air_In_2.oHandler.setActive(true);
             end
         end           
         

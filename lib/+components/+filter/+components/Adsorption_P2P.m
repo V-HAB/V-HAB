@@ -79,7 +79,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             % absorb something
             
             XXX = 0;
-            if isempty(afInFlowRates)
+            if isempty(afInFlowRates) || all(aarInPartials == 0)
                 fFlowRateP2P = 0;
                 arPartialsAdsorption                            = zeros(1,this.oMT.iSubstances);
                 this.setMatterProperties(fFlowRateP2P, arPartialsAdsorption);
@@ -92,12 +92,16 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             afPP                = arFractions .*  this.oIn.oPhase.fPressure;
             afPP((afPP < 2.5) & this.mbIgnoreSmallPressures) = 0;
 
-            [ mfEquilibriumLoading , ~ ] = this.oMT.calculateEquilibriumLoading(afMassAbsorber, afPP, fTemperature);
+            [ mfEquilibriumLoading , mfLinearizationConstant ] = this.oMT.calculateEquilibriumLoading(afMassAbsorber, afPP, fTemperature);
             
             mfCurrentLoading = afMassAbsorber;
             % the absorber material is not considered loading ;)
             mfCurrentLoading(this.oMT.abAbsorber) = 0;
             
+            afMinPP = mfCurrentLoading ./ mfLinearizationConstant;
+            afMinPP(isnan(afMinPP)) = 0;
+            afMinOutflows = ((afMinPP ./ this.oIn.oPhase.fPressure) .* sum(afCurrentMolsIn)) .* this.oMT.afMolarMass;
+             
             % dq/dt = k(q*-q)
             this.mfFlowRatesProp = this.mfMassTransferCoefficient .* (mfEquilibriumLoading - mfCurrentLoading);
             
@@ -117,6 +121,12 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
             arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./fDesorptionFlowRate);
 
+            abLimitFlows = (mfFlowRatesAdsorption > afPartialInFlows);
+            mfFlowRatesAdsorption(abLimitFlows) = afPartialInFlows(abLimitFlows);
+            
+            abLimitFlows = (mfFlowRatesAdsorption > afMinOutflows);
+            mfFlowRatesAdsorption(abLimitFlows) = afMinOutflows(abLimitFlows);
+            
             fAdsorptionFlowRate                             = sum(mfFlowRatesAdsorption);
             arPartialsAdsorption                            = zeros(1,this.oMT.iSubstances);
             arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./fAdsorptionFlowRate);

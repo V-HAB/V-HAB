@@ -716,7 +716,7 @@ classdef branch < base & event.source
             % Only iterate for the complex solving mechanism
             %rErrorMax = 0.01;
             %rErrorMax = sif(strcmp(this.sMode, 'complex'), 0.001, inf);
-            rErrorMax  = sif(strcmp(this.sMode, 'complex'), 0.001, 0);
+            rErrorMax  = sif(strcmp(this.sMode, 'complex'), 1e-6, 0);
             %rErrorMax  = sif(strcmp(this.sMode, 'complex'), 0.1 ^ this.oTimer.iPrecision, 0);
             iIteration = 0;
             
@@ -883,7 +883,7 @@ classdef branch < base & event.source
                 
                 if ~isempty(sLastWarn) && ~isempty(strfind(sLastWarn, 'badly scaled'))
                     if (this.oTimer.iTick - this.iLastWarn) >= 100
-                        warning(sLastWarn);
+                        % warning(sLastWarn);
                         
                         this.iLastWarn = this.oTimer.iTick;
                     end
@@ -927,7 +927,6 @@ classdef branch < base & event.source
                 %rError = max(abs(this.afFlowRates ./ afPrevFrs) - 1);
                 rError = max(afFrsDiff ./ afPrevFrs);
                 %rError = tools.round.prec(max(afFrsDiff ./ afPrevFrs), iPrecision);
-                
                 
                 % Boundary conditions (= p2p and others) changing? Continue
                 % iteration!
