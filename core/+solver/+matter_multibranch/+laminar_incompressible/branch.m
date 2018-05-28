@@ -33,7 +33,7 @@ classdef branch < base & event.source
         %     specific method in p2p)
         sMode = 'simple';
         
-        fMinimumTimeStep = 1e-3;
+        fMinimumTimeStep = 1e-1;
         
         iLastWarn = -1000;
     end
@@ -59,6 +59,7 @@ classdef branch < base & event.source
         
         oTimer;
         
+        iIteration = 0;
         
         
         % Variable pressure phases by UUID
@@ -86,6 +87,8 @@ classdef branch < base & event.source
         % For volumetric flow rate!
         afPressureDropCoeffsSum;
         
+        %
+        fMaxError = 1e-8;
         
         % Last values of caclulated flow rates.
         afFlowRates;
@@ -209,10 +212,13 @@ classdef branch < base & event.source
         end
         
         
-        function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatrices(this)
+        function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatrices(this, bForceP2Pcalc)
             % afBoundaryConditions is the B vector mostly with the boundary
             % node pressures (later also fan pressure deltas)
             
+            if nargin < 2
+                bForceP2Pcalc = false;
+            end
             % Average density
             afDensities = nan(1, length(this.csBoundaryPhases));
             
@@ -592,22 +598,41 @@ classdef branch < base & event.source
                         % getFlowData, but then setting the own flow rate
                     end
 
-                    for iProcP2p = 1:oP.iProcsP2Pflow
-                        oProcP2p = oP.coProcsP2Pflow{iProcP2p};
+                    if (mod(this.iIteration, 5) == 0) || bForceP2Pcalc
+                        for iProcP2p = 1:oP.iProcsP2Pflow
+                            oProcP2p = oP.coProcsP2Pflow{iProcP2p};
 
-                        if oProcP2p.oIn.oPhase ~= oP
-                            continue;
+                            if oProcP2p.oIn.oPhase ~= oP
+                                continue;
+                            end
+
+
+                            [ fFlowRateP2p, ~ ] = oProcP2p.calculateFilterRate(afInFlowRates, aarInPartials);
+
+                            % We only care about p2ps whose IN phase is the current
+                            % variable presusre phase here. So therefore, a
+                            % positive flow rate means an OUTflow!
+                            fFrSum = fFrSum + fFlowRateP2p;
+
+                            %disp('multi branch: TODO make sure that in the SAME tick, the according p2p / phases are updated so the new p2p flow rate, based on the new multi branch solver flow rates, are used! And that they are equal! Really equal!');
                         end
+                    else
+                         for iProcP2p = 1:oP.iProcsP2Pflow
+                            oProcP2p = oP.coProcsP2Pflow{iProcP2p};
 
+                            if oProcP2p.oIn.oPhase ~= oP
+                                continue;
+                            end
 
-                        [ fFlowRateP2p, ~ ] = oProcP2p.calculateFilterRate(afInFlowRates, aarInPartials);
+                            fFlowRateP2p = oProcP2p.fFlowRateP2P;
 
-                        % We only care about p2ps whose IN phase is the current
-                        % variable presusre phase here. So therefore, a
-                        % positive flow rate means an OUTflow!
-                        fFrSum = fFrSum + fFlowRateP2p;
+                            % We only care about p2ps whose IN phase is the current
+                            % variable pressure phase here. So therefore, a
+                            % positive flow rate means an OUTflow!
+                            fFrSum = fFrSum + fFlowRateP2p;
 
-                        %disp('multi branch: TODO make sure that in the SAME tick, the according p2p / phases are updated so the new p2p flow rate, based on the new multi branch solver flow rates, are used! And that they are equal! Really equal!');
+                            %disp('multi branch: TODO make sure that in the SAME tick, the according p2p / phases are updated so the new p2p flow rate, based on the new multi branch solver flow rates, are used! And that they are equal! Really equal!');
+                        end
                     end
                 end
                 
@@ -718,9 +743,9 @@ classdef branch < base & event.source
             % Only iterate for the complex solving mechanism
             %rErrorMax = 0.01;
             %rErrorMax = sif(strcmp(this.sMode, 'complex'), 0.001, inf);
-            rErrorMax  = sif(strcmp(this.sMode, 'complex'), 1e-6, 0);
+            rErrorMax  = sif(strcmp(this.sMode, 'complex'), this.fMaxError, 0);
             %rErrorMax  = sif(strcmp(this.sMode, 'complex'), 0.1 ^ this.oTimer.iPrecision, 0);
-            iIteration = 0;
+            this.iIteration = 0;
             
             afBoundaryConditions = [];
             % For an additional steady state solver there are basically two
@@ -742,14 +767,24 @@ classdef branch < base & event.source
             % The initial flow rates are all zero, so initial rError below
             % will be inf -> that's good, e.g. the p2ps need a correct set
             % of flow rate directions to be included in equations!
-            while abs(rError) > rErrorMax %|| iIteration < 5
-                afPrevFrs  = this.afFlowRates;
-                iIteration = iIteration + 1;
+            bFinalLoop = false;
+            mfFlowRates = nan(500, this.iBranches);
+            afPrevFrs  = this.afFlowRates;
+            while abs(rError) > rErrorMax || bFinalLoop %|| iIteration < 5
+                this.iIteration = this.iIteration + 1;
                 
                 afPrevBoundaryConditions = afBoundaryConditions;
                 
+                if bFinalLoop % || any(abs(this.afFlowRates./afPrevFrs - afPrevFrs) -1 > 0.25) %|| any(sign(afPrevFrs) ~= sign(this.afFlowRates))
+                    bForceP2PUpdate = true;
+                else
+                    bForceP2PUpdate = false;
+                end
+                
+                afPrevFrs  = this.afFlowRates;
+                
                 % Regenerates matrices, gets coeffs from flow procs
-                [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = this.generateMatrices();
+                [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = this.generateMatrices(bForceP2PUpdate);
                 
                 
                 % Infinite values can lead to singular matrixes in the solution
@@ -909,7 +944,7 @@ classdef branch < base & event.source
                     if isa(oObj, 'matter.branch')
                         iB = find(this.aoBranches == oObj, 1);
                         
-                        if iIteration == 1 || ~strcmp(this.sMode, 'complex')
+                        if this.iIteration == 1 || ~strcmp(this.sMode, 'complex')
                             this.afFlowRates(iB) = afResults(iR);
                         else
                             this.afFlowRates(iB) = (this.afFlowRates(iB) * 3 + afResults(iR)) / 4;
@@ -920,14 +955,26 @@ classdef branch < base & event.source
                     iB = find(this.aoBranches == aoZeroFlowBranches(iZeroBranch), 1);
                     this.afFlowRates(iB) = 0;
                 end
-                
+                mfFlowRates(this.iIteration,:) = this.afFlowRates;
                 %this.afFlowRates = tools.round.prec(this.afFlowRates, this.oTimer.iPrecision);
                 
                 iPrecision = this.oTimer.iPrecision;
                 afFrsDiff  = tools.round.prec(abs(this.afFlowRates - afPrevFrs), iPrecision);
                 
                 %rError = max(abs(this.afFlowRates ./ afPrevFrs) - 1);
-                rError = max(afFrsDiff ./ afPrevFrs);
+                rError = abs(max(afFrsDiff ./ afPrevFrs));
+                % if the error is smaller than the limit, do one final
+                % update where the recalculation of P2P flowrates is
+                % enforced. If after that the error is still smaller than
+                % the limit, the iteration is finished, otherwise it
+                % continues normally again
+                if bFinalLoop && rError < this.fMaxError
+                    bFinalLoop = false;
+                elseif rError < this.fMaxError
+                    bFinalLoop = true;
+                else
+                    bFinalLoop = false;
+                end
                 %rError = tools.round.prec(max(afFrsDiff ./ afPrevFrs), iPrecision);
                 
                 % Boundary conditions (= p2p and others) changing? Continue
@@ -950,15 +997,18 @@ classdef branch < base & event.source
 %                 end
                 
                 
-                if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { iIteration, rError }); end;
+                if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { this.iIteration, rError }); end;
                 
-                if iIteration > 200
+                if this.iIteration > 200
+                    A = 1;
+                end
+                if this.iIteration > 500
                     %keyboard();
                     this.throw('update', 'too many iterations, error %.12f', rError);
                 end
             end
             
-            if ~base.oLog.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { iIteration }); end;
+            if ~base.oLog.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration }); end;
             
             for iR = 1:length(this.csObjUuidsToColIndex)
                 oObj = this.poColIndexToObj(iR);

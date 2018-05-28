@@ -159,7 +159,6 @@ classdef setup_complex < simulation.infrastructure
             for iType = 1:3
                 for iBed = 1:2
                      coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' Pressure']);
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' Pressure']);
                 end
             end
             oPlotter.defineFigure(coPlot,  'CDRA Pressure');
@@ -168,30 +167,51 @@ classdef setup_complex < simulation.infrastructure
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_CO2_Mass(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorbed CO2 Mass']);
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_CO2_Mass(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorbed H2O Mass']);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_CO2_Mass(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorbed CO2 Mass']);     
                 end
             end
-            oPlotter.defineFigure(coPlot,  'Adsorbed Masses');
+            oPlotter.defineFigure(coPlot,  'CO2 Adsorbed Masses');
+            
+            coPlot = cell(3,2);
+            for iType = 1:3
+                for iBed = 1:2
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_H2O_Mass(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorbed H2O Mass']);
+                end
+            end
+            oPlotter.defineFigure(coPlot,  'H2O Adsorbed Masses');
             
             
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
                      coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_CO2_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' CO2 Pressure Flow']);
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_H2O_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' H2O Pressure Flow']);
                 end
             end
-            oPlotter.defineFigure(coPlot,  'Partial Pressures in Flow');
+            oPlotter.defineFigure(coPlot,  'CO2 Partial Pressures in Flow');
+            
+            coPlot = cell(3,2);
+            for iType = 1:3
+                for iBed = 1:2
+                    coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_H2O_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' H2O Pressure Flow']);
+                end
+            end
+            oPlotter.defineFigure(coPlot,  'H2O Partial Pressures in Flow');
             
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
                      coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateCO2(iType,iBed,:), [csType{iType}, num2str(iBed), ' CO2 Adsorption Flowrate']);
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateH2O(iType,iBed,:), [csType{iType}, num2str(iBed), ' H2O Adsorption Flowrate']);
                 end
             end
-            oPlotter.defineFigure(coPlot,  'Adsorption Flow Rates');
+            oPlotter.defineFigure(coPlot,  'CO2 Adsorption Flow Rates');
+            
+            coPlot = cell(3,2);
+            for iType = 1:3
+                for iBed = 1:2
+                    coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateH2O(iType,iBed,:), [csType{iType}, num2str(iBed), ' H2O Adsorption Flowrate']);
+                end
+            end
+            oPlotter.defineFigure(coPlot,  'H2O Adsorption Flow Rates');
             
             coPlot = cell(3,2);
             for iType = 1:3
