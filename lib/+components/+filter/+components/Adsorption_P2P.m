@@ -79,7 +79,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             % absorb something
             
             XXX = 0;
-            if isempty(afInFlowRates) || all(aarInPartials == 0)
+            if isempty(afInFlowRates) || all(sum(aarInPartials) == 0)
                 fFlowRateP2P = 0;
                 arPartialsAdsorption                            = zeros(1,this.oMT.iSubstances);
                 this.setMatterProperties(fFlowRateP2P, arPartialsAdsorption);

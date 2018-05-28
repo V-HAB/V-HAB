@@ -52,6 +52,8 @@ classdef setup_complex < simulation.infrastructure
             csType = {'Sylobead_', 'Zeolite13x_', 'Zeolite5A_'};
             for iType = 1:3
                 for iBed = 1:2
+                    oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.MassBuffer'],      'fPressure',                    'Pa',   ['Flow Pressure', csType{iType}, num2str(iBed),' MassBuffer']);
+                    
                     for iCell = 1:miCellNumber(iType)
                         oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Flow_',num2str(iCell)],      'fPressure',                    'Pa',   ['Flow Pressure', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
                         oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Flow_',num2str(iCell)],      'afPP(this.oMT.tiN2I.H2O)',     'Pa',   ['Flow Pressure H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
@@ -119,6 +121,7 @@ classdef setup_complex < simulation.infrastructure
             
             csCDRA_CO2_Mass             = cell(3,2,max(miCellNumber));
             csCDRA_H2O_Mass             = cell(3,2,max(miCellNumber));
+            csCDRA_Pressure             = cell(3,2,max(miCellNumber)+1);
             csCDRA_CO2_Pressure         = cell(3,2,max(miCellNumber));
             csCDRA_H2O_Pressure         = cell(3,2,max(miCellNumber));
             csCDRA_Flow_Temperature     = cell(3,2,max(miCellNumber));
@@ -131,6 +134,8 @@ classdef setup_complex < simulation.infrastructure
             for iType = 1:3
                 for iBed = 1:2
                     for iCell = 1:miCellNumber(iType)
+                         csCDRA_Pressure{iType,iBed,iCell}              =  ['"Flow Pressure', csType{iType}, num2str(iBed),' Cell ',num2str(iCell), '"'];
+                         
                          csCDRA_CO2_Mass{iType,iBed,iCell}              = ['"Partial Mass CO2 ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell) ,'"'];
                          csCDRA_H2O_Mass{iType,iBed,iCell}              = ['"Partial Mass H2O ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell),'"'];
 
@@ -145,8 +150,20 @@ classdef setup_complex < simulation.infrastructure
                          
                          csCDRA_FlowRate{iType,iBed,iCell}              = ['"Flowrate ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell), '"'];
                     end
+                    
+                    csCDRA_Pressure{iType,iBed,iCell+1} = ['"Flow Pressure', csType{iType}, num2str(iBed),' MassBuffer"'];
                 end
             end
+            
+            coPlot = cell(3,2);
+            for iType = 1:3
+                for iBed = 1:2
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' Pressure']);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' Pressure']);
+                end
+            end
+            oPlotter.defineFigure(coPlot,  'CDRA Pressure');
+            
             
             coPlot = cell(3,2);
             for iType = 1:3

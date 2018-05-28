@@ -151,6 +151,8 @@ classdef gas_flow_node < matter.phases.gas
             % as well as OUT-p2ps!
             %TODO also manips!?
             afTotalInFlows = zeros(1, this.oMT.iSubstances);
+            fInFlow = 0;
+            fOutFlow = 0;
             
             for iI = 1:this.iProcsEXME
                 oExme = this.coProcsEXME{iI};
@@ -161,6 +163,9 @@ classdef gas_flow_node < matter.phases.gas
                 if (fFlowRate > 0) || (oExme.bFlowIsAProcP2P && (fFlowRate < 0))
                     afTotalInFlows = afTotalInFlows + fFlowRate * arPartials;
                     
+                    fInFlow = fInFlow + fFlowRate;
+                else
+                    fOutFlow = fOutFlow + fFlowRate;
                 end
             end
             

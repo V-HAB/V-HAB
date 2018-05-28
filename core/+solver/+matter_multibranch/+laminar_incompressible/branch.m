@@ -625,6 +625,8 @@ classdef branch < base & event.source
                     else
                         this.throw('generateMatrices', 'BC flows (manual solver or p2p) but no variable, solved branches connected!');
                     end
+%                 elseif afBoundaryConditions(iRow) ~= 0
+%                     afBoundaryConditions(iRow) = (3 * afBoundaryConditions(iRow) + fFrSum) / 4;
                 end
                 % Remove everything 
 %                 elseif iAdded < 2 && fFrSum == 0
@@ -1005,6 +1007,11 @@ classdef branch < base & event.source
 %                 iCounter = iCounter + 1;
 %             end
             
+            mfError = aafPhasePressuresAndFlowRates * afResults - afBoundaryConditions;
+            
+            if any(abs(mfError) > 1e-8)
+                keyboard()
+            end
             %% Example time step limitation
             % Note not finished, just to showcase the effect of limitation
             % for time steps:
@@ -1067,8 +1074,30 @@ classdef branch < base & event.source
             end
             this.setTimeStep(fTimeStep);
             
+            
             % Ok now go through results - variable pressure phase pressures
             % and branch flow rates - and set!
+            for iR = 1:length(this.csObjUuidsToColIndex)
+                oObj = this.poColIndexToObj(iR);
+                
+                if isa(oObj, 'matter.phases.gas_flow_node')
+                    oObj.setPressure(afResults(iR));
+                    
+                    
+                elseif isa(oObj, 'matter.branch')
+                    iB = find(this.aoBranches == oObj, 1);
+                    
+                    %TODO get pressure drop distribution (depends on total
+                    %     pressure drop and drop coeffs!)
+                    %this.chSetBranchFlowRate{iB}(afResults(iR), []);
+                    this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), []);
+                end
+            end
+            
+            % Ok now go through the results again because the gas flow
+            % nodes need the flowrates of all branches to be set before
+            % calculating- variable pressure phase pressures and branch
+            % flow rates - and set!
             for iR = 1:length(this.csObjUuidsToColIndex)
                 oObj = this.poColIndexToObj(iR);
                 
@@ -1095,6 +1124,61 @@ classdef branch < base & event.source
             %TODO check total flow rates for each phase, vs. total flow
             %     rates for all connected phases -> calculate time required
             %     for the phases to equalize in mass --> max TS
+        end
+        
+        function aoAdjacentBranches = findAdjacentBranches(this, iBranch, bPositiveFlowDirection)
+            
+            aoAdjacentBranches = matter.branch.empty;
+            % implemented a fix for the residual solver, as for what it
+            % does:
+
+            % Assume Residual Solver A is attached to Phase A and B and is
+            % supposed to keep the mass of Phase A constant. If then
+            % Residual Solver B is attached to Phase B and C and is
+            % supposed to keep the mass of Phase B constant then residual
+            % solver B is required to update in case that residual solver A
+            % changes its flowrate. The issue here is that obviously all
+            % residual solvers are executed with the same post tick prio.
+            % The solution was to implement a check if any other residual
+            % solvers are attached to the same outlet phase as the current
+            % residual solver. So while residual solver A keeps the mass of
+            % Phase A constant, it checks if any residual solvers are
+            % connected to Phase B and orders a new posttick update if that
+            % is the case. Therefore the exme (and therefore the phase)
+            % through which is iterated here is the exact opposite of the
+            % one through which the iteration runs during the calculation
+            % of the residual flowrate for the current solver ;)
+            if bPositiveFlowDirection
+                iExme = 2;
+            else 
+                iExme = 1;
+            end
+            
+            oPhase = this.aoBranches(iBranch).coExmes{iExme}.oPhase;
+            
+            % Branches and p2p flows - they're also branches!
+            for iE = 1:oPhase.iProcsEXME
+                oExme   = oPhase.coProcsEXME{iE};
+                if oExme.bFlowIsAProcP2P
+                    continue
+                end
+                oBranch = oExme.oFlow.oBranch;
+                
+                iNewBranch = find(this.aoBranches == oBranch, 1);
+                
+                if oBranch == this.aoBranches(iBranch)
+                    continue;
+                elseif ~oExme.bFlowIsAProcP2P && isa(oBranch.oHandler, 'solver.matter_multibranch.laminar_incompressible.branch')
+                    
+                    % Only the residual solver that actually manages the
+                    % mass of the phase into which the flowrates has
+                    % changed is considered adjacent and has to be updated
+                    % again!
+                    if ((oExme.iSign == -1 && this.afFlowRates(iNewBranch) > 0 ) || (oExme.iSign == 1 && this.afFlowRates(iNewBranch) < 0))
+                        aoAdjacentBranches(end+1) = oBranch;
+                    end
+                end
+            end
         end
         
         function reUpdate(this)

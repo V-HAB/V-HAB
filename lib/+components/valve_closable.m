@@ -41,8 +41,8 @@ classdef valve_closable < matter.procs.f2f
         
         function fDeltaPress = solverDeltas(this, fFlowRate)
             
-            if (this.fFlowCoefficient == 0)
-                fDeltaPress = inf;
+            if (this.fFlowCoefficient == 0) && this.bOpen
+                fDeltaPress = 0;
                 this.fDeltaPressure = fDeltaPress;
                 return;
             end
