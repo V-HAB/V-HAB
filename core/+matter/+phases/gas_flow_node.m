@@ -121,70 +121,7 @@ classdef gas_flow_node < matter.phases.gas
             end
         end
         
-        function updatePartials(this, bForce)
-            
-            if isempty(this.fVirtualPressure)
-                
-                this.out(1, 1, 'skip-partials', '%s-%s: skip at %i (%f) - no pressure (i.e. before multi solver executed at least once)!', { this.oStore.sName, this.sName, this.oTimer.iTick, this.oTimer.fTime });
-                
-                return;
-            end
-            
-            
-            if nargin < 2, bForce = false; end;
-            
-            % Store needs to be sealed (else problems with initial
-            % conditions). Last partials update needs to be in the past,
-            % except forced, in case this method is called e.g. from
-            % .update() or .updateProcessorsAndManipulators()
-            if ~this.oStore.bSealed || (this.fLastPartialsUpdate >= this.oTimer.fTime && ~bForce)
-                
-                this.out(1, 1, 'skip-partials', '%s-%s: skip at %i (%f) - already executed!', { this.oStore.sName, this.sName, this.oTimer.iTick, this.oTimer.fTime });
-                
-                return;
-            end
-            
-            this.fLastPartialsUpdate = this.oTimer.fTime;
-            
-            
-            % Set this.arPartialMass - overwrite with weighted IN-flowrates
-            % as well as OUT-p2ps!
-            %TODO also manips!?
-            afTotalInFlows = zeros(1, this.oMT.iSubstances);
-            fInFlow = 0;
-            fOutFlow = 0;
-            
-            for iI = 1:this.iProcsEXME
-                oExme = this.coProcsEXME{iI};
-                %[ fFlowRate, arFlowPartials, ~] = oExme.getFlowData();
-                arPartials = oExme.oFlow.arPartialMass;
-                fFlowRate  = oExme.oFlow.fFlowRate * oExme.iSign;
-                
-                if (fFlowRate > 0) || (oExme.bFlowIsAProcP2P && (fFlowRate < 0))
-                    afTotalInFlows = afTotalInFlows + fFlowRate * arPartials;
-                    
-                    fInFlow = fInFlow + fFlowRate;
-                else
-                    fOutFlow = fOutFlow + fFlowRate;
-                end
-            end
-            
-            fTotalInFlow       = sum(afTotalInFlows);
-            this.arPartialMass = afTotalInFlows / fTotalInFlow;
-            
-            if fTotalInFlow == 0
-                this.arPartialMass = zeros(1, length(afTotalInFlows));
-            end
-            
-            
-            this.out(1, 1, 'set-partials', '%s-%s: updatePressure/Partials', { this.oStore.sName, this.sName });
-            
-            if any(this.arPartialMass < 0)
-                this.out(2, 1, 'partials-error', 'NEGATIVE PARTIALS');
-                % TO DO: Make a lower level debugging output
-                % this.warn('updatePartials', 'negative partials');
-            end
-        end
+       
         
         
 %         function updateProcessorsAndManipulators(this, varargin)

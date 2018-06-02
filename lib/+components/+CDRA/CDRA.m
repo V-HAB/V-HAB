@@ -87,7 +87,7 @@ classdef CDRA < vsys
         tTimeProperties;
         
         fPipelength         = 1;
-        fPipeDiameter       = 0.01;
+        fPipeDiameter       = 0.1;
         fFrictionFactor     = 2e-3;
         
     end
@@ -625,8 +625,19 @@ classdef CDRA < vsys
                         oHeatSourceAbsorber = thermal.heatsource(['AbsorberHeatSource_',num2str(iCell)], 0);
                         oAbsorberPhase.oCapacity.addHeatSource(oHeatSourceAbsorber);
                         
-                        oHeatSourceFlow = thermal.heatsource(['FlowHeatSource_',num2str(iCell)], 0);
-                        oFlowPhase.oCapacity.addHeatSource(oHeatSourceFlow);
+                        oHeatSourceAbsorber = thermal.heatsource(['AbsorberHeater_',num2str(iCell)], 0);
+                        oAbsorberPhase.oCapacity.addHeatSource(oHeatSourceAbsorber);
+                        
+%                         sPortAbsorber = [sName, '_ConvectionAdsorber_', num2str(iCell+1)];
+%                         thermal.procs.exme(oAbsorberPhase.oCapacity, sPortAbsorber);
+%                         sPortFlow = [sName, '_ConvectionFlow_', num2str(iCell)];
+%                         thermal.procs.exme(oFlowPhase.oCapacity, sPortFlow);
+%                         
+%                         oMassBranch = this.tMassNetwork.(['InternalBranches_', sName])(iCell);
+%                         sConductorName = [sName, '_Convection_', num2str(iCell), '_', num2str(iCell+1)];
+%                         components.thermal.infinite_convective_conductor(this, sConductorName, oMassBranch);
+%                         
+%                         thermal.branch(this, [sName,'.', sPortAbsorber], {sConductorName}, [sName,'.', sPortFlow], [sName, '_Convection_Cell_', num2str(iCell)]);
                         
                     end
                     
@@ -754,17 +765,17 @@ classdef CDRA < vsys
                         tTimeStepProperties.arMaxChange = arMaxChange;
                         tTimeStepProperties.rMaxChange = 0.1;
                         tTimeStepProperties.fMaxStep = 60;
-                        tTimeStepProperties.fMinStep = 1e-3;
+%                         tTimeStepProperties.fMinStep = 1e-3;
                         
                         oPhase.setTimeStepProperties(tTimeStepProperties);
                     elseif ~isempty(regexp(oPhase.sName, 'MassBuffer', 'once'))
                         arMaxChange = zeros(1,this.oMT.iSubstances);
-                        arMaxChange(this.oMT.tiN2I.H2O) = 0.9;
-                        arMaxChange(this.oMT.tiN2I.CO2) = 0.9;
+                        arMaxChange(this.oMT.tiN2I.H2O) = 0.25;
+                        arMaxChange(this.oMT.tiN2I.CO2) = 0.25;
                         tTimeStepProperties.arMaxChange = arMaxChange;
                         tTimeStepProperties.rMaxChange = 0.5;
                         tTimeStepProperties.fMaxStep = 60;
-                        tTimeStepProperties.fMinStep = 1e-3;
+%                         tTimeStepProperties.fMinStep = 1e-3;
                         
                         oPhase.setTimeStepProperties(tTimeStepProperties);
                     end
@@ -949,6 +960,30 @@ classdef CDRA < vsys
                 
                 this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(true);
                 this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(true);
+            end
+            
+            % handle the heaters in the currently desorbing Zeolite 5A bed
+            if this.iCycleActive == 1
+                iBed = 2;
+            else
+                iBed = 1;
+            end
+            
+            for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
+                oCapacity = this.toStores.(['Zeolite5A_', num2str(iBed)]).toPhases.(['Absorber_', num2str(iCell)]).oCapacity;
+                if oCapacity.fTemperature < this.TargetTemperature
+                    % 10 second time step maximum for this exec: Reduce
+                    % heat flow if target temperature is reached within
+                    % 10 seconds
+                    fRequiredThermalEnergy = oCapacity.fTotalHeatCapacity * (this.TargetTemperature - oCapacity.fTemperature);
+                    fRequiredHeatFlow = fRequiredThermalEnergy / 10;
+                    if fRequiredHeatFlow < this.fMaxHeaterPower
+                        fHeaterPower = fRequiredHeatFlow;
+                    else
+                        fHeaterPower = this.fMaxHeaterPower;
+                    end
+                    oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(fHeaterPower);
+                end
             end
         end
 	end

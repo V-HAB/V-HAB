@@ -674,11 +674,11 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     %
                     % FOr manual solvers this is not an issue!
                     if ~isa(oThis.oBranch.oHandler, 'solver.matter.manual.branch')
-                        if fPortPress < -10
-                            aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fPortPress, aoFlows(1).oBranch.sName);
-                        elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
-                            aoFlows(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, aoFlows(1).oBranch.sName);
-                        end
+%                         if fPortPress < -10
+%                             aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fPortPress, aoFlows(1).oBranch.sName);
+%                         elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
+%                             aoFlows(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, aoFlows(1).oBranch.sName);
+%                         end
                     end
                 elseif tools.round.prec(fPortPress, iPrec) == 0
                     % If the pressure is extremely small, we also set the

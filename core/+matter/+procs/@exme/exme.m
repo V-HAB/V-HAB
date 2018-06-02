@@ -161,7 +161,9 @@ classdef exme < base
             else
                 fFlowRate  =  this.oFlow.fFlowRate * this.iSign;
             end
-            
+            if nargin < 3
+                mfPartialInFlow = [];
+            end
             
             if this.bFlowIsAProcP2P
                 % This exme is connected to a P2P processor, so we can get
@@ -181,6 +183,16 @@ classdef exme < base
                     %      on all branches which would set the new
                     %      arPartials on all flows ... right?
                     arPartials   = this.oFlow.arPartialMass;
+                    if ~any(arPartials)
+                        for iUpdateExme = 1:2
+                            if this.oFlow.oBranch.coExmes{iUpdateExme} ~= this
+                                if this.oFlow.oBranch.coExmes{iUpdateExme}.oPhase.bFlow
+                                    this.oFlow.oBranch.coExmes{iUpdateExme}.oPhase.updatePartials();
+                                end
+                                arPartials = this.oFlow.oBranch.coExmes{iUpdateExme}.oPhase.arPartialMass;
+                            end
+                        end
+                    end
                     afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
                     
 %                     if this.oFlow.oBranch.coExmes{2} == this
@@ -211,7 +223,13 @@ classdef exme < base
                     %TODO instead of FR == 0 check, should we check if the
                     %  flow rate * the last step is roughly in the area of
                     %  the stored mass?
-                    arPartials   = sif(~this.oPhase.bFlow || this.oFlow.fFlowRate == 0, this.oPhase.arPartialMass, this.oFlow.arPartialMass);
+                    if this.oPhase.bFlow
+                        % if it is a flow phase, we first update the
+                        % partial mass composition because it depends on
+                        % the inflows of the phase
+                        this.oPhase.updatePartials();
+                    end
+                    arPartials = this.oPhase.arPartialMass;
                     afProperties = [ this.oPhase.fTemperature this.oPhase.oCapacity.fSpecificHeatCapacity ];
                 end
             end
@@ -347,6 +365,8 @@ classdef exme < base
                     % value that prevents negative masses from occuring
                     % (maximum value for partial p2p flowrate is equal to
                     % inflow rate)?
+                    afTotalSubstanceInflows(afTotalSubstanceInflows < 0) = 0;
+                    fTotalInFlowRate = sum(afTotalSubstanceInflows);
                     arPartialMass = afTotalSubstanceInflows ./ fTotalInFlowRate;
                     arPartialMass(arPartialMass < 0) = 0;
                     fMolarMass    = this.oMT.calculateMolarMass(afTotalSubstanceInflows);
