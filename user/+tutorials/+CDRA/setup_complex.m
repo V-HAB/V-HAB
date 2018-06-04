@@ -79,6 +79,9 @@ classdef setup_complex < simulation.infrastructure
                 oLog.addValue(['Example:c:CDRA.tMassNetwork.InterfaceBranches.', csInterfaceBranches{iIB}],  'fFlowRate',   'kg/s',   csInterfaceBranches{iIB});
             end
             
+            oLog.addValue('Example.toStores.CCAA_CDRA_Connection.aoPhases',      'fPressure',  'Pa',   'Connection Pressure CCAA to CDRA');
+            oLog.addValue('Example.toStores.CDRA_CCAA_Connection.aoPhases',      'fPressure',  'Pa',   'Connection Pressure CDRA to CCAA');
+            
             % CDRA In
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 1');
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 2');
@@ -255,13 +258,21 @@ classdef setup_complex < simulation.infrastructure
             end
             oPlotter.defineFigure(coPlot,  'FlowRates');
             
+            csNormalPhasePressures = {'"Flow PressureSylobead_1 MassBuffer"', '"Flow PressureSylobead_2 MassBuffer"',...
+                                      '"Flow PressureZeolite13x_1 MassBuffer"', '"Flow PressureZeolite13x_2 MassBuffer"',...
+                                      '"Flow PressureZeolite5A_1 MassBuffer"', '"Flow PressureZeolite5A_2 MassBuffer"',...
+                                      '"Connection Pressure CCAA to CDRA"', '"Connection Pressure CDRA to CCAA"'};
+            
             coPlot = cell(2,3);
             coPlot{1,1} = oPlotter.definePlot({'"CDRA CO2 InletFlow"', '"CDRA H2O InletFlow"', '"CDRA CO2 OutletFlow"', '"CDRA H2O OutletFlow"'}, 'CDRA In- and Outlet Flows');
             coPlot{1,2} = oPlotter.definePlot({'"Condensate Flowrate CHX"'}, 'CHX Condensate Flowrate');
             coPlot{1,3} = oPlotter.definePlot({'"Partial Pressure CO2"'}, 'Partial Pressure CO2 Habitat');
             coPlot{2,1} = oPlotter.definePlot({'"Partial Pressure CO2 Torr"'}, 'Partial Pressure CO2 Habitat in Torr');
             coPlot{2,2} = oPlotter.definePlot({'"Relative Humidity Cabin"'}, 'Relative Humidity Cabin');
+            coPlot{2,3} = oPlotter.definePlot(csNormalPhasePressures, 'Phase Pressures of Non-Flow Phases');
             oPlotter.defineFigure(coPlot,  'Plots');
+            
+            
             
             oPlotter.plot();
         end
