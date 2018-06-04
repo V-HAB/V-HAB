@@ -668,11 +668,11 @@ classdef CDRA < vsys
             % full system results in close to singular matrix, which might
             % lead to issues.
             
-            solver.matter.residual.branch(this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1);
-            solver.matter.residual.branch(this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2);
-            
-            this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1.oHandler.setPositiveFlowDirection(false);
-            this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2.oHandler.setPositiveFlowDirection(false);
+%             solver.matter.residual.branch(this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1);
+%             solver.matter.residual.branch(this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2);
+%             
+%             this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1.oHandler.setPositiveFlowDirection(false);
+%             this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2.oHandler.setPositiveFlowDirection(false);
             
 %             iMultiBranch = 1;
 %             for iBranch = 1:length(this.aoBranches)
@@ -690,7 +690,7 @@ classdef CDRA < vsys
                 aoMultiSolverBranchesSylobead_1(iMultiBranch) = this.tMassNetwork.InternalBranches_Sylobead_1(iBranch);
                 iMultiBranch = iMultiBranch + 1;
             end
-%             aoMultiSolverBranchesSylobead_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1;
+            aoMultiSolverBranchesSylobead_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1;
             aoMultiSolverBranchesSylobead_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_Out_2;
             
             solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesSylobead_1(:), 'complex');
@@ -701,7 +701,7 @@ classdef CDRA < vsys
                 aoMultiSolverBranchesSylobead_2(iMultiBranch) = this.tMassNetwork.InternalBranches_Sylobead_2(iBranch);
                 iMultiBranch = iMultiBranch + 1;
             end
-%             aoMultiSolverBranchesSylobead_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2;
+            aoMultiSolverBranchesSylobead_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2;
             aoMultiSolverBranchesSylobead_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_Out_1;
             
             solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesSylobead_2(:), 'complex');
@@ -760,8 +760,8 @@ classdef CDRA < vsys
                     oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
                     if ~isempty(regexp(oPhase.sName, 'Absorber', 'once'))
                         arMaxChange = zeros(1,this.oMT.iSubstances);
-                        arMaxChange(this.oMT.tiN2I.H2O) = 0.9;
-                        arMaxChange(this.oMT.tiN2I.CO2) = 0.9;
+                        arMaxChange(this.oMT.tiN2I.H2O) = 0.05;
+                        arMaxChange(this.oMT.tiN2I.CO2) = 0.05;
                         tTimeStepProperties.arMaxChange = arMaxChange;
                         tTimeStepProperties.rMaxChange = 0.1;
                         tTimeStepProperties.fMaxStep = 60;
@@ -773,7 +773,7 @@ classdef CDRA < vsys
                         arMaxChange(this.oMT.tiN2I.H2O) = 0.25;
                         arMaxChange(this.oMT.tiN2I.CO2) = 0.25;
                         tTimeStepProperties.arMaxChange = arMaxChange;
-                        tTimeStepProperties.rMaxChange = 0.5;
+                        tTimeStepProperties.rMaxChange = 0.1;
                         tTimeStepProperties.fMaxStep = 60;
 %                         tTimeStepProperties.fMinStep = 1e-3;
                         
@@ -790,8 +790,8 @@ classdef CDRA < vsys
                 end
                 this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(false);
                 this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(false);
-                this.toBranches.CDRA_Air_In_1.oHandler.setActive(true);
-                this.toBranches.CDRA_Air_In_2.oHandler.setActive(false);
+%                 this.toBranches.CDRA_Air_In_1.oHandler.setActive(true);
+%                 this.toBranches.CDRA_Air_In_2.oHandler.setActive(false);
             else
                 for iValve = 1:length(this.tMassNetwork.aoActiveValvesCycleOne)
                     this.tMassNetwork.aoActiveValvesCycleOne(iValve).setOpen(false);
@@ -799,8 +799,8 @@ classdef CDRA < vsys
                 end
                 this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(false);
                 this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(false);
-                this.toBranches.CDRA_Air_In_1.oHandler.setActive(false);
-                this.toBranches.CDRA_Air_In_2.oHandler.setActive(true);
+%                 this.toBranches.CDRA_Air_In_1.oHandler.setActive(false);
+%                 this.toBranches.CDRA_Air_In_2.oHandler.setActive(true);
             end
         end           
         
@@ -914,8 +914,8 @@ classdef CDRA < vsys
                     end
                     this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(false);
                     this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(false);
-                    this.toBranches.CDRA_Air_In_1.oHandler.setActive(true);
-                    this.toBranches.CDRA_Air_In_2.oHandler.setActive(false);
+%                     this.toBranches.CDRA_Air_In_1.oHandler.setActive(true);
+%                     this.toBranches.CDRA_Air_In_2.oHandler.setActive(false);
                     
                     oPhase = this.toStores.Zeolite5A_1.toPhases.MassBuffer;
                     tTimeStepProperties.fMinStep = 1;
@@ -928,8 +928,8 @@ classdef CDRA < vsys
                     end
                     this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(false);
                     this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(false);
-                    this.toBranches.CDRA_Air_In_1.oHandler.setActive(false);
-                    this.toBranches.CDRA_Air_In_2.oHandler.setActive(true);
+%                     this.toBranches.CDRA_Air_In_1.oHandler.setActive(false);
+%                     this.toBranches.CDRA_Air_In_2.oHandler.setActive(true);
                     
                     oPhase = this.toStores.Zeolite5A_2.toPhases.MassBuffer;
                     tTimeStepProperties.fMinStep = 1;

@@ -172,7 +172,7 @@ classdef exme < base
                 afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
             else
                 
-                if fFlowRate > 0 
+                if fFlowRate > 0
                     % The flow rate is larger than zero, this means we use
                     % the properties of the incoming flow.
                     %CHECK do we need to get that from other side, in
@@ -182,24 +182,14 @@ classdef exme < base
                     %      if that get's updated, fr recalc is called
                     %      on all branches which would set the new
                     %      arPartials on all flows ... right?
-                    arPartials   = this.oFlow.arPartialMass;
-                    if ~any(arPartials)
-                        for iUpdateExme = 1:2
-                            if this.oFlow.oBranch.coExmes{iUpdateExme} ~= this
-                                if this.oFlow.oBranch.coExmes{iUpdateExme}.oPhase.bFlow
-                                    this.oFlow.oBranch.coExmes{iUpdateExme}.oPhase.updatePartials();
-                                end
-                                arPartials = this.oFlow.oBranch.coExmes{iUpdateExme}.oPhase.arPartialMass;
-                            end
-                        end
-                    end
+                    
                     afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
                     
-%                     if this.oFlow.oBranch.coExmes{2} == this
-%                         arPartials   = this.oFlow.oBranch.coExmes{1}.getMatterProperties(); %oPhase.arPartialMass;
-%                     else
-%                         arPartials   = this.oFlow.oBranch.coExmes{2}.getMatterProperties(); %oPhase.arPartialMass;
-%                     end
+                    if this.oFlow.oBranch.coExmes{2} == this
+                        arPartials   = this.oFlow.oBranch.coExmes{1}.oPhase.arPartialMass; %oPhase.arPartialMass;
+                    else
+                        arPartials   = this.oFlow.oBranch.coExmes{2}.oPhase.arPartialMass; %oPhase.arPartialMass;
+                    end
                     
                 else 
                     % The flow rate is either zero or negative, which means
@@ -223,12 +213,6 @@ classdef exme < base
                     %TODO instead of FR == 0 check, should we check if the
                     %  flow rate * the last step is roughly in the area of
                     %  the stored mass?
-                    if this.oPhase.bFlow
-                        % if it is a flow phase, we first update the
-                        % partial mass composition because it depends on
-                        % the inflows of the phase
-                        this.oPhase.updatePartials();
-                    end
                     arPartials = this.oPhase.arPartialMass;
                     afProperties = [ this.oPhase.fTemperature this.oPhase.oCapacity.fSpecificHeatCapacity ];
                 end

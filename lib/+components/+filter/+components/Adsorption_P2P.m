@@ -18,8 +18,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         
         mbIgnoreSmallPressures;
         
-        fFlowRateP2P = 0;
-        
         iInFlowTick = -100;
         afPartialInFlows;
         
@@ -76,7 +74,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         
         end
         
-        function [fFlowRateP2P , XXX] = calculateFilterRate(this, afInFlowRates, aarInPartials)
+        function calculateFilterRate(this, afInFlowRates, aarInPartials)
             
             afMassAbsorber          = this.oOut.oPhase.afMass;
             fTemperature            = this.oIn.oPhase.fTemperature;
@@ -98,7 +96,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 this.mfFlowRatesProp = zeros(this.iAveraging, this.oMT.iSubstances);
             end
             
-            XXX = 0;
             if (isempty(afInFlowRates) || all(sum(aarInPartials) == 0)) && ~(this.iInFlowTick == this.oTimer.iTick)
 
                 % if there is no in flow, assume the partial pressure from
@@ -167,9 +164,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
             mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
             
-            mfFlowRatesDesorption = -mfFlowRatesDesorption;
-            
-            fDesorptionFlowRate                             = (sum(sum(this.mfFlowRatesProp(this.mfFlowRatesProp < 0))) + sum(mfFlowRatesDesorption)) / (this.iAveraging + 1);
+            fDesorptionFlowRate                             = -(sum(sum(this.mfFlowRatesProp(this.mfFlowRatesProp < 0))) + sum(mfFlowRatesDesorption)) / (this.iAveraging + 1);
             arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
             arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./sum(mfFlowRatesDesorption));
 
@@ -203,8 +198,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             arPartialsAdsorption    = zeros(1,this.oMT.iSubstances);
             arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./sum(mfFlowRatesAdsorption));
             
-            
-            
             this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
             
             % sets the heat flow to the absorber capacity
@@ -212,8 +205,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             this.setMatterProperties(fAdsorptionFlowRate, arPartialsAdsorption);
             
-            fFlowRateP2P = fAdsorptionFlowRate - fDesorptionFlowRate;
-            this.fFlowRateP2P = fFlowRateP2P;
             this.mfFlowRatesProp(this.iPropEntry, :) = mfFlowRatesAdsorption - mfFlowRatesDesorption;
             this.iPropEntry = this.iPropEntry + 1;
             if this.iPropEntry > this.iAveraging
