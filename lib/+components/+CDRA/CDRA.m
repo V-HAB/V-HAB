@@ -88,7 +88,7 @@ classdef CDRA < vsys
         
         fPipelength         = 1;
         fPipeDiameter       = 0.1;
-        fFrictionFactor     = 2e-3;
+        fFrictionFactor     = 2e-4;
         
     end
     
@@ -509,9 +509,7 @@ classdef CDRA < vsys
             oBranch = matter.branch(this, 'Sylobead_2.Buffer_Outlet', {'Sylobead_2_to_13x2_Pipe'}, 'Zeolite13x_2.Inflow_1', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
-            % Interface between 13x and 5A zeolite absorber beds 
-            iCellNumber = tInitialization.Zeolite13x.iCellNumber;
-            
+            % Interface between 13x and 5A zeolite absorber beds
             components.Temp_Dummy(this, 'PreCooler_5A1', 285, 1000);
             components.Temp_Dummy(this, 'PreCooler_5A2', 285, 1000);
             components.valve_closable(this, 'Valve_13x1_to_5A_1', 0);
@@ -674,93 +672,92 @@ classdef CDRA < vsys
 %             this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1.oHandler.setPositiveFlowDirection(false);
 %             this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2.oHandler.setPositiveFlowDirection(false);
             
-%             iMultiBranch = 1;
-%             for iBranch = 1:length(this.aoBranches)
-%                 if isempty(regexp(this.aoBranches(iBranch).sCustomName, 'CDRA_Air_In', 'once'))
-%                     aoMultiBranches(iMultiBranch) = this.aoBranches(iBranch);
-%                     iMultiBranch = iMultiBranch + 1;
-%                 end
-%             end
-%             solver.matter_multibranch.laminar_incompressible.branch(aoMultiBranches, 'complex');
-            
             tSolverProperties.fMaxError = 1e-3;
             tSolverProperties.iMaxIterations = 200;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
 
-            csBranches = fieldnames(this.toBranches);
-            % Multisolver for Sylobead 1
             iMultiBranch = 1;
-            for iBranch = 1:length(this.tMassNetwork.InternalBranches_Sylobead_1)
-                aoMultiSolverBranchesSylobead_1(iMultiBranch) = this.tMassNetwork.InternalBranches_Sylobead_1(iBranch);
+            for iBranch = 1:length(this.aoBranches)
+                aoMultiBranches(iMultiBranch) = this.aoBranches(iBranch);
                 iMultiBranch = iMultiBranch + 1;
             end
-            aoMultiSolverBranchesSylobead_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1;
-            aoMultiSolverBranchesSylobead_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_Out_2;
-            
-            oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesSylobead_1(:), 'complex');
+            oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
             
-            % Multisolver for Sylobead 2
-            iMultiBranch = 1;
-            for iBranch = 1:length(this.tMassNetwork.InternalBranches_Sylobead_2)
-                aoMultiSolverBranchesSylobead_2(iMultiBranch) = this.tMassNetwork.InternalBranches_Sylobead_2(iBranch);
-                iMultiBranch = iMultiBranch + 1;
-            end
-            aoMultiSolverBranchesSylobead_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2;
-            aoMultiSolverBranchesSylobead_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_Out_1;
-            
-            oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesSylobead_2(:), 'complex');
-            oSolver.setSolverProperties(tSolverProperties);
-            
-            % Multisolver for Zeolite 13x 1
-            iMultiBranch = 1;
-            for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite13x_1)
-                aoMultiSolverBranchesZeolite13x_1(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite13x_1(iBranch);
-                iMultiBranch = iMultiBranch + 1;
-            end
-            aoMultiSolverBranchesZeolite13x_1(end+1) = this.tMassNetwork.InterfaceBranches.Sylobead1_to_13x1;
-            aoMultiSolverBranchesZeolite13x_1(end+1) = this.tMassNetwork.InterfaceBranches.Zeolite5A2_to_13x1;
-            
-            oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite13x_1(:), 'complex');
-            oSolver.setSolverProperties(tSolverProperties);
-            
-            % Multisolver for Zeolite 13x 2
-            iMultiBranch = 1;
-            for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite13x_2)
-                aoMultiSolverBranchesZeolite13x_2(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite13x_2(iBranch);
-                iMultiBranch = iMultiBranch + 1;
-            end
-            aoMultiSolverBranchesZeolite13x_2(end+1) = this.tMassNetwork.InterfaceBranches.Sylobead2_to_13x2;
-            aoMultiSolverBranchesZeolite13x_2(end+1) = this.tMassNetwork.InterfaceBranches.Zeolite5A1_to_13x2;
-            
-            oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite13x_2(:), 'complex');
-            oSolver.setSolverProperties(tSolverProperties);
-            
-            % Multisolver for Zeolite 5A_1
-            iMultiBranch = 1;
-            for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite5A_1)
-                aoMultiSolverBranchesZeolite5A_1(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite5A_1(iBranch);
-                iMultiBranch = iMultiBranch + 1;
-            end
-            aoMultiSolverBranchesZeolite5A_1(end+1) = this.tMassNetwork.InterfaceBranches.Zeolite13x1_to_5A1;
-            aoMultiSolverBranchesZeolite5A_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Vent_2;
-            aoMultiSolverBranchesZeolite5A_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_AirSafe_2;
-            
-            oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite5A_1(:), 'complex');
-            oSolver.setSolverProperties(tSolverProperties);
-            
-            % Multisolver for Zeolite 5A_2
-            iMultiBranch = 1;
-            for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite5A_2)
-                aoMultiSolverBranchesZeolite5A_2(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite5A_2(iBranch);
-                iMultiBranch = iMultiBranch + 1;
-            end
-            aoMultiSolverBranchesZeolite5A_2(end+1) = this.tMassNetwork.InterfaceBranches.Zeolite13x2_to_5A2;
-            aoMultiSolverBranchesZeolite5A_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Vent_1;
-            aoMultiSolverBranchesZeolite5A_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_AirSafe_1;
-            
-            oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite5A_2(:), 'complex');
-            oSolver.setSolverProperties(tSolverProperties);
+%             csBranches = fieldnames(this.toBranches);
+%             % Multisolver for Sylobead 1
+%             iMultiBranch = 1;
+%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Sylobead_1)
+%                 aoMultiSolverBranchesSylobead_1(iMultiBranch) = this.tMassNetwork.InternalBranches_Sylobead_1(iBranch);
+%                 iMultiBranch = iMultiBranch + 1;
+%             end
+%             aoMultiSolverBranchesSylobead_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1;
+%             aoMultiSolverBranchesSylobead_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_Out_2;
+%             
+%             oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesSylobead_1(:), 'complex');
+%             oSolver.setSolverProperties(tSolverProperties);
+%             
+%             % Multisolver for Sylobead 2
+%             iMultiBranch = 1;
+%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Sylobead_2)
+%                 aoMultiSolverBranchesSylobead_2(iMultiBranch) = this.tMassNetwork.InternalBranches_Sylobead_2(iBranch);
+%                 iMultiBranch = iMultiBranch + 1;
+%             end
+%             aoMultiSolverBranchesSylobead_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2;
+%             aoMultiSolverBranchesSylobead_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_Out_1;
+%             
+%             oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesSylobead_2(:), 'complex');
+%             oSolver.setSolverProperties(tSolverProperties);
+%             
+%             % Multisolver for Zeolite 13x 1
+%             iMultiBranch = 1;
+%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite13x_1)
+%                 aoMultiSolverBranchesZeolite13x_1(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite13x_1(iBranch);
+%                 iMultiBranch = iMultiBranch + 1;
+%             end
+%             aoMultiSolverBranchesZeolite13x_1(end+1) = this.tMassNetwork.InterfaceBranches.Sylobead1_to_13x1;
+%             aoMultiSolverBranchesZeolite13x_1(end+1) = this.tMassNetwork.InterfaceBranches.Zeolite5A2_to_13x1;
+%             
+%             oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite13x_1(:), 'complex');
+%             oSolver.setSolverProperties(tSolverProperties);
+%             
+%             % Multisolver for Zeolite 13x 2
+%             iMultiBranch = 1;
+%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite13x_2)
+%                 aoMultiSolverBranchesZeolite13x_2(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite13x_2(iBranch);
+%                 iMultiBranch = iMultiBranch + 1;
+%             end
+%             aoMultiSolverBranchesZeolite13x_2(end+1) = this.tMassNetwork.InterfaceBranches.Sylobead2_to_13x2;
+%             aoMultiSolverBranchesZeolite13x_2(end+1) = this.tMassNetwork.InterfaceBranches.Zeolite5A1_to_13x2;
+%             
+%             oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite13x_2(:), 'complex');
+%             oSolver.setSolverProperties(tSolverProperties);
+%             
+%             % Multisolver for Zeolite 5A_1
+%             iMultiBranch = 1;
+%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite5A_1)
+%                 aoMultiSolverBranchesZeolite5A_1(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite5A_1(iBranch);
+%                 iMultiBranch = iMultiBranch + 1;
+%             end
+%             aoMultiSolverBranchesZeolite5A_1(end+1) = this.tMassNetwork.InterfaceBranches.Zeolite13x1_to_5A1;
+%             aoMultiSolverBranchesZeolite5A_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Vent_2;
+%             aoMultiSolverBranchesZeolite5A_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_AirSafe_2;
+%             
+%             oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite5A_1(:), 'complex');
+%             oSolver.setSolverProperties(tSolverProperties);
+%             
+%             % Multisolver for Zeolite 5A_2
+%             iMultiBranch = 1;
+%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite5A_2)
+%                 aoMultiSolverBranchesZeolite5A_2(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite5A_2(iBranch);
+%                 iMultiBranch = iMultiBranch + 1;
+%             end
+%             aoMultiSolverBranchesZeolite5A_2(end+1) = this.tMassNetwork.InterfaceBranches.Zeolite13x2_to_5A2;
+%             aoMultiSolverBranchesZeolite5A_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Vent_1;
+%             aoMultiSolverBranchesZeolite5A_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_AirSafe_1;
+%             
+%             oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite5A_2(:), 'complex');
+%             oSolver.setSolverProperties(tSolverProperties);
             
             csStores = fieldnames(this.toStores);
             % sets numerical properties for the phases of CDRA

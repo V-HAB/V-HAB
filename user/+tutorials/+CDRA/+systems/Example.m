@@ -184,7 +184,7 @@ classdef Example < vsys
             matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
-            oConnectionPhase.bFlow = true;
+%             oConnectionPhase.bFlow = true;
             
             % Adding heat sources to keep the cabin and coolant water at a
             % constant temperature

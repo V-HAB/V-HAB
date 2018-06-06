@@ -24,6 +24,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         iAveraging = 10;
         
         iPropEntry = 1;
+        
+        mfFlows;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -48,6 +50,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             this.afMassOld   = zeros(1,this.oMT.iSubstances);
             this.afPPOld     = zeros(1,this.oMT.iSubstances);
+            this.mfFlows     = zeros(1,this.oMT.iSubstances);
             this.fTemperatureOld = 0;
             
             this.mfFlowRatesProp = zeros(this.iAveraging, this.oMT.iSubstances);
@@ -164,7 +167,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
             mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
             
-            fDesorptionFlowRate                             = -(sum(sum(this.mfFlowRatesProp(this.mfFlowRatesProp < 0))) + sum(mfFlowRatesDesorption)) / (this.iAveraging + 1);
+            fDesorptionFlowRate                             = -sum(mfFlowRatesDesorption);
             arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
             arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./sum(mfFlowRatesDesorption));
 
@@ -176,7 +179,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             abLimitMinOutFlows = (afMinOutFlows > this.afPartialInFlows);
             afMinOutFlows(abLimitMinOutFlows) = this.afPartialInFlows(abLimitMinOutFlows);
             
-            fAdsorptionFlowRate   	= (sum(sum(this.mfFlowRatesProp(this.mfFlowRatesProp > 0))) + sum(mfFlowRatesAdsorption)) / (this.iAveraging + 1);
+            fAdsorptionFlowRate   	= sum(mfFlowRatesAdsorption);
             arPartialsAdsorption    = zeros(1,this.oMT.iSubstances);
             arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./sum(mfFlowRatesAdsorption));
             
@@ -205,7 +208,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             
             this.setMatterProperties(fAdsorptionFlowRate, arPartialsAdsorption);
             
-            this.mfFlowRatesProp(this.iPropEntry, :) = mfFlowRatesAdsorption - mfFlowRatesDesorption;
+            this.mfFlows = mfFlowRatesAdsorption - mfFlowRatesDesorption;
+            this.mfFlowRatesProp(this.iPropEntry, :) = this.mfFlows;
             this.iPropEntry = this.iPropEntry + 1;
             if this.iPropEntry > this.iAveraging
                 this.iPropEntry = 1;

@@ -33,8 +33,6 @@ classdef branch < base & event.source
         %     specific method in p2p)
         sMode = 'simple';
         
-        fMinimumTimeStep = 1;
-        
         iLastWarn = -1000;
     end
     
@@ -91,6 +89,7 @@ classdef branch < base & event.source
         fMaxError = 1e-4;
         iMaxIterations = 1000;
         iIterationsBetweenP2PUpdate = 1000;
+        fMinimumTimeStep = 1;
         
         % Last values of caclulated flow rates.
         afFlowRates;
@@ -484,12 +483,7 @@ classdef branch < base & event.source
                     % the right side, positive means INWARDS.
                     % Therefore if on exme 1, and positive, value must be
                     % negative, i.e. sign -1
-                    iSign = 1;
-                    
-                    if oB.coExmes{1}.oPhase == oP
-                        iSign = -1;
-                    end
-                    
+                    iSign = oP.coProcsEXME{iB}.iSign;
                     
                     % Not solved by us? Use as boundary cond flow rate!
                     if ~this.piObjUuidsToColIndex.isKey(oB.sUUID)
@@ -497,13 +491,11 @@ classdef branch < base & event.source
                     else
                         iCol = this.piObjUuidsToColIndex(oB.sUUID);
                         
-                        
                         % Check coeff of branch - if inf, don't add this
                         % term! No flow!
                         if isnan(this.afPressureDropCoeffsSum(this.aoBranches(iB) == oB))
                             continue;
                         end
-                        
                         
                         aafPhasePressuresAndFlowRates(iRow, iCol) = iSign;
                         iAdded = iAdded + 1;        
@@ -512,18 +504,11 @@ classdef branch < base & event.source
                 
                 % Now go through the P2Ps and get their flowrates
                 if oP.iProcsP2Pflow > 0
-                     for iProcP2P = 1:oP.iProcsP2Pflow
-                        oProcP2P = oP.coProcsP2Pflow{iProcP2P};
-
-                        % if the current phase is the In phase of the exme,
-                        % a positive flowrate means mass is taken out of
-                        % the phase
-                        if oProcP2P.oIn.oPhase == oP
-                            fFrSum = fFrSum - oProcP2P.fFlowRate;
-                        else
-                            fFrSum = fFrSum + oProcP2P.fFlowRate;
+                    for iProcP2P = 1:oP.iProcsEXME
+                        if oP.coProcsEXME{iProcP2P}.bFlowIsAProcP2P
+                            fFrSum = fFrSum + oP.coProcsEXME{iProcP2P}.iSign * oP.coProcsEXME{iProcP2P}.oFlow.fFlowRate;
                         end
-                     end
+                    end
                 end
                 
                 % If unsolved branch as BC, one solved branch is
@@ -888,36 +873,32 @@ classdef branch < base & event.source
                 afBoundaryConditions((this.miBranchIndexToRowID(mbZeroFlowBranches)),:) = [];
                 
                 iNewRows = length(aafPhasePressuresAndFlowRates);
+                iOriginalRows = length(mbRemoveRow);
+                
+                % create variables to simplify the transfer from old to new
+                % indices and vice versa
+                miOriginalRowToNewRow = zeros(iOriginalRows, 1);
+                miOriginalColToNewCol = zeros(1, iOriginalRows);
+                for iOriginalIndex = 1:iOriginalRows
+                    if mbRemoveRow(iOriginalIndex)
+                        miOriginalRowToNewRow(iOriginalIndex) = 0;
+                    else
+                        miOriginalRowToNewRow(iOriginalIndex) = iOriginalIndex - sum(mbRemoveRow(1:iOriginalIndex));
+                    end
+                    
+                    if mbRemoveColumn(iOriginalIndex)
+                        miOriginalColToNewCol(iOriginalIndex) = 0;
+                    else
+                        miOriginalColToNewCol(iOriginalIndex) = iOriginalIndex - sum(mbRemoveColumn(1:iOriginalIndex));
+                    end
+                end
+                
                 miNewRowToOriginalRow = zeros(iNewRows, 1);
                 miNewColToOriginalCol = zeros(1, iNewRows);
                 
-                iOriginalRows = length(mbRemoveRow);
-                for iEntry = 1:iNewRows
-                    iIndex = 1;
-                    iShiftRowBy = 0;
-                    while iIndex < iEntry || mbRemoveRow(iIndex)
-                        if iIndex > iOriginalRows
-                            break
-                        else
-                            iShiftRowBy = iShiftRowBy + mbRemoveRow(iIndex);
-                        end
-                        iIndex = iIndex + 1;
-                    end
-                    
-                    miNewRowToOriginalRow(iEntry) = iEntry + iShiftRowBy;
-                    
-                    iIndex = 1;
-                    iShiftColBy = 0;
-                    while iIndex < iEntry || mbRemoveColumn(iIndex)
-                        if iIndex > iOriginalRows
-                            break
-                        else
-                            iShiftColBy = iShiftColBy + mbRemoveColumn(iIndex);
-                        end
-                        iIndex = iIndex + 1;
-                    end
-                    
-                    miNewColToOriginalCol(iEntry) = iEntry + iShiftColBy;
+                for iNewIndex = 1:iNewRows
+                    miNewRowToOriginalRow(iNewIndex) = find(miOriginalRowToNewRow == iNewIndex);
+                    miNewColToOriginalCol(iNewIndex) = find(miOriginalColToNewCol == iNewIndex);
                 end
                 
                 iStartZeroSumEquations = length(afBoundaryConditions) - length(this.csVariablePressurePhases)+1;
@@ -1007,18 +988,11 @@ classdef branch < base & event.source
                     end
                 end
                 
-                %toc(hT);
-
-                %disp(afResults);
-                %keyboard();
-                
-                
                 % Round everything to the precision, else we get small
                 % errors
                 %afResults = tools.round.prec(afResults, this.oTimer.iPrecision);
                 
                 for iColumn = 1:iNewRows
-                    
                     oObj = this.poColIndexToObj(miNewColToOriginalCol(iColumn));
 
                     if isa(oObj, 'matter.branch')
@@ -1198,6 +1172,21 @@ classdef branch < base & event.source
                 end
             end
             
+            %% Setting of final results to afFlowRates
+            % during the iteration it is necessary to adapt the results for
+            % the next iteration so that the solver can converge. However
+            % after it has converged, the actual results must be used to
+            % ensure that the zero sum of mass flows over the gas flow
+            % nodes is maintained!
+            for iColumn = 1:iNewRows
+                oObj = this.poColIndexToObj(miNewColToOriginalCol(iColumn));
+
+                if isa(oObj, 'matter.branch')
+                    iB = find(this.aoBranches == oObj, 1);
+                    this.afFlowRates(iB) = afResults(iColumn);
+                end
+            end
+            
             if ~base.oLog.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration }); end;
             
             for iColumn = 1:length(this.csObjUuidsToColIndex)
@@ -1321,8 +1310,6 @@ classdef branch < base & event.source
             % Ok now go through results - variable pressure phase pressures
             % and branch flow rates - and set!
             
-            mbBranchUpdated = false(this.iBranches,1);
-            
             for iBL = 1:this.iBranchUpdateLevels 
                 
                 miCurrentBranches = find(this.mbBranchesPerUpdateLevel(iBL,:));
@@ -1330,9 +1317,6 @@ classdef branch < base & event.source
                 for iK = 1:length(miCurrentBranches)
                 
                     iB = miCurrentBranches(iK);
-                    if mbBranchUpdated(iB)
-                        continue
-                    end
                     
                     %TODO get pressure drop distribution (depends on total
                     %     pressure drop and drop coeffs!)
