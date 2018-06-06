@@ -16,7 +16,14 @@ classdef setup_complex < simulation.infrastructure
             
             % Possible to change the constructor paths and params for the
             % monitors
-            ttMonitorConfig = struct();
+            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestep_observer';
+            ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
+            
+%             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalance_observer';
+%             fAccuracy = 1e-8;
+%             fMaxMassBalanceDifference = inf;
+%             bSetBreakPoints = false;
+%             ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
             
             this@simulation.infrastructure('Tutorial_CDRA', ptConfigParams, tSolverParams, ttMonitorConfig);
             

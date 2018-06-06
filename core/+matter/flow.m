@@ -555,11 +555,25 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % p2p updates) the arPhasePartialMass may be all zeros,
                 % even though the phase mass is not zero. In that case,
                 % we'll just update the phase.
-                if sum(arPhasePartialMass) == 0 && oExme.oPhase.fMass ~= 0
-                    oExme.oPhase.update();
-                    [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
+                if oExme.oPhase.bFlow
+                    if sum(arPhasePartialMass) == 0 && oExme.oPhase.fCurrentTotalMassInOut ~= 0
+                        oExme.oPhase.update();
+                        [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
+                    end
+                else
+                    if sum(arPhasePartialMass) == 0 && oExme.oPhase.fMass ~= 0
+                        oExme.oPhase.update();
+                        [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
+                    end
                 end
-
+                % This can occur for example if a flow phase is used, which
+                % has an outflow, but not yet an inflow. In that case the
+                % partial mass of the phase is zero (as nothing flows in)
+                % and the phase is handled like an empty normal phase
+                if sum(arPhasePartialMass) == 0
+                    fFlowRate = 0;
+                end
+                
                 % If a phase was empty in one of the previous time steps
                 % and has had mass added to it, the specific heat capacity
                 % may not have yet been calculated, because the phase has

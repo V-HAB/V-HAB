@@ -607,16 +607,11 @@ classdef branch < base & event.source
                         % work!
                         if fFlowRate < 0
                             oCurrentProcExme = oCurrentBranch.coExmes{1};
-                            [ ~, arPartialsBranch, ~ ] = oCurrentBranch.coExmes{2}.getFlowData();
                         else
                             oCurrentProcExme = oCurrentBranch.coExmes{2};
-                            [ ~, arPartialsBranch, ~ ] = oCurrentBranch.coExmes{1}.getFlowData();
                         end
                         
-                        this.arPartialsFlowRates(iB, :) = arPartialsBranch;
-                        
                         oPhase = oCurrentProcExme.oPhase;
-                        
                         
                         iInflowBranches = 0;
                         for iExme = 1:oPhase.iProcsEXME
@@ -647,7 +642,14 @@ classdef branch < base & event.source
                                 iBranchIdx = find(this.aoBranches == oBranch, 1);
 
                                 fFlowRate = oProcExme.iSign * this.afFlowRates(iBranchIdx);
-                                arFlowPartials = this.arPartialsFlowRates(iB, :);
+                                
+                                if fFlowRate > 0
+                                    if this.afFlowRates(iBranchIdx) >= 0
+                                        arFlowPartials = oBranch.coExmes{1}.oPhase.arPartialMass;
+                                    else
+                                        arFlowPartials = oBranch.coExmes{2}.oPhase.arPartialMass;
+                                    end
+                                end
                             end
 
                             % Only for INflows
@@ -659,13 +661,7 @@ classdef branch < base & event.source
                         end
                         
                         if oPhase.bFlow
-                            % Note, this is not done for boundary phases,
-                            % if the multi branch solver is used with a
-                            % normal gas phase where the bFlow parameter is
-                            % set to true, this calculation will throw an
-                            % error, as that is not the intended use of
-                            % such phases!
-                            
+
                             % Now we have all inflows (except for P2Ps) for the
                             % current phase, with these values we can now
                             % update the current partial masses and flowrates
@@ -763,7 +759,6 @@ classdef branch < base & event.source
             end
             
             this.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
-            this.oTimer.bindPostTick(@this.reUpdate, this.iPostTickPriorityReUpdate);
         end
         
         
@@ -1088,6 +1083,7 @@ classdef branch < base & event.source
                     % the starting variable pressure phase is reached
                     bFinished = false;
                     
+                    this.iBranchUpdateLevels = this.iBranches+1;
                     mbBranchesOnUpdateLevel = false(this.iBranches+1,this.iBranches);
                     mbBranchesOnUpdateLevel(1,miBoundaryBranches) = true;
                     
@@ -1124,8 +1120,6 @@ classdef branch < base & event.source
                         end
                         iBranchUpdateLevel = iBranchUpdateLevel + 1;
                     end
-                    
-                    this.iBranchUpdateLevels = iBranchUpdateLevel;
                     
                     mbBranchesOnUpdateLevel(end,~sum(mbBranchesOnUpdateLevel,1)) = true;
                     this.mbBranchesPerUpdateLevel = mbBranchesOnUpdateLevel;
@@ -1245,6 +1239,8 @@ classdef branch < base & event.source
 %             if any(abs(mfError(iStartZeroSumEquations:end)) > 1e-8)
 %                 keyboard()
 %             end
+            mfError = aafPhasePressuresAndFlowRates * afResults - afBoundaryConditions;
+            
             %% Example time step limitation
             % Note not finished, just to showcase the effect of limitation
             % for time steps:
@@ -1344,21 +1340,6 @@ classdef branch < base & event.source
             %TODO check total flow rates for each phase, vs. total flow
             %     rates for all connected phases -> calculate time required
             %     for the phases to equalize in mass --> max TS
-        end
-        
-        
-        function reUpdate(this)
-            % Just re-set flow rates again so branches update from IN phase
-            for iR = 1:length(this.csObjUuidsToColIndex)
-                oObj = this.poColIndexToObj(iR);
-                
-                if isa(oObj, 'matter.branch')
-                    iB = find(this.aoBranches == oObj, 1);
-                    
-                    this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), []);
-                end
-            end
-            
         end
     end
 end
