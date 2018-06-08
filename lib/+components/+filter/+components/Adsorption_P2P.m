@@ -26,6 +26,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         iPropEntry = 1;
         
         mfFlows;
+        
+        bUseBufferPhase = false;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -69,6 +71,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             this.mbIgnoreSmallPressures = false(1,this.oMT.iSubstances);
             if ~isempty(regexp(this.oIn.oPhase.oStore.sName, 'Zeolite5A', 'once'))
                 this.mbIgnoreSmallPressures(this.oMT.tiN2I.H2O) = true;
+                bUseBufferPhase = true;
             end
             
         end
@@ -100,12 +103,16 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             end
             bZeroFlows = false;
             if (isempty(afInFlowRates) || all(sum(aarInPartials) == 0)) && ~(this.iInFlowTick == this.oTimer.iTick)
+                
+                if this.bUseBufferPhase
+                    % if there is no in flow, assume the partial pressure from
+                    % the mass phase of this filter as the correct value for
+                    % the partial pressures
+                    afPP = this.oIn.oPhase.oStore.toPhases.MassBuffer.afPP;
+                else
+                    afPP = zeros(1,this.oMT.iSubstances);
+                end
                 bZeroFlows = true;
-                % if there is no in flow, assume the partial pressure from
-                % the mass phase of this filter as the correct value for
-                % the partial pressures
-                afPP = this.oIn.oPhase.oStore.toPhases.MassBuffer.afPP;
-
                 [ mfEquilibriumLoading , mfLinearizationConstant ] = this.oMT.calculateEquilibriumLoading(afMassAbsorber, afPP, fTemperature);
 
                 mfCurrentLoading = afMassAbsorber;
@@ -115,9 +122,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % For this case there are no minimum outflows, there would
                 % be minimum partial pressures that can be reach, e.g.
                 % maximum time steps
-                afMinOutFlows = zeros(1,this.oMT.iSubstances);
                 this.afPartialInFlows = zeros(1,this.oMT.iSubstances);
-                
             else
                 if ~(isempty(afInFlowRates) || all(sum(aarInPartials) == 0))
                     this.iInFlowTick = this.oTimer.iTick;
@@ -201,11 +206,15 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             arPartialsAdsorption    = zeros(1,this.oMT.iSubstances);
             arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./sum(mfFlowRatesAdsorption));
             
-            if bZeroFlows
-                this.oStore.toProcsP2P.(['BufferDesorptionProcessor',this.sCell]).setMatterProperties( fDesorptionFlowRate, arPartialsDesorption);
-                this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(0, zeros(1,this.oMT.iSubstances));
+            if this.bUseBufferPhase
+                if bZeroFlows
+                    this.oStore.toProcsP2P.(['BufferDesorptionProcessor',this.sCell]).setMatterProperties( fDesorptionFlowRate, arPartialsDesorption);
+                    this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(0, zeros(1,this.oMT.iSubstances));
+                else
+                    this.oStore.toProcsP2P.(['BufferDesorptionProcessor',this.sCell]).setMatterProperties( 0, zeros(1,this.oMT.iSubstances));
+                    this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
+                end
             else
-                this.oStore.toProcsP2P.(['BufferDesorptionProcessor',this.sCell]).setMatterProperties( 0, zeros(1,this.oMT.iSubstances));
                 this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
             end
             % sets the heat flow to the absorber capacity

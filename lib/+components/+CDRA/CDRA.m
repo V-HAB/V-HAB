@@ -390,8 +390,9 @@ classdef CDRA < vsys
                         % adsorbedads
                         matter.procs.exmes.mixture(oFilterPhase, [sName, '_Absorber_Adsorption_',num2str(iCell)]);
                         matter.procs.exmes.mixture(oFilterPhase, [sName, '_Absorber_Desorption_',num2str(iCell)]);
-                        matter.procs.exmes.mixture(oFilterPhase, [sName, '_Absorber_DesorptionBuffer_',num2str(iCell)]);
-                        
+                        if strcmp(sName, 'Zeolite5A_2') || strcmp(sName, 'Zeolite5A_1')
+                            matter.procs.exmes.mixture(oFilterPhase, [sName, '_Absorber_DesorptionBuffer_',num2str(iCell)]);
+                        end
                         % for the flow phase two addtional exmes for the gas flow
                         % through the filter are required
                         matter.procs.exmes.gas(oFlowPhase, [sName, '_Flow_Adsorption_',num2str(iCell)]);
@@ -433,36 +434,38 @@ classdef CDRA < vsys
                     end
                     this.tGeometry.(csTypes{iType}).iCellNumber   = iCellNumber;
                     
-                    % Adds a phase to each of the absorbers that actually
-                    % contains the mass
-                    for iK = 1:length(csFlowSubstances)
-                        tfMassesFlow.(csFlowSubstances{iK}) = cAirHelper{1}.(csFlowSubstances{iK});
-                    end
-                    
-                    if (this.iCycleActive == 1 && strcmp(sName, 'Zeolite5A_2')) || (this.iCycleActive == 2 && strcmp(sName, 'Zeolite5A_1'))
-                        oMassBuffer = matter.phases.gas(this.toStores.(sName), 'MassBuffer', tfMassesFlow,fFlowVolume, this.TargetTemperature);
-                    else
-                        oMassBuffer = matter.phases.gas(this.toStores.(sName), 'MassBuffer', tfMassesFlow,fFlowVolume, fTemperatureFlow);
-                    end
-                    % adds the connection from the last cell of this bed
-                    % into the mass buffer (the connection from the buffer
-                    % to the next bed will be handled in the interface
-                    % definition below)
-                    
-                    matter.procs.exmes.gas(oMassBuffer, 'Buffer_Inlet');
-                    matter.procs.exmes.gas(oMassBuffer, 'Buffer_Outlet');
-                    
-                    components.CDRA.components.Filter_F2F(this, [sName, '_FrictionProc_Buffer'], this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell));
-                        
-                    oBranch = matter.branch(this, [sName,'.','Outflow_',num2str(iCellNumber)], {[sName, '_FrictionProc_Buffer']}, [sName, '.Buffer_Inlet'], [sName, '_to_Buffer']);
-                    this.tMassNetwork.(['InternalBranches_', sName])(iCellNumber) = oBranch;
-                    
-                    % add desorption procs to the buffer phase, these are
-                    % used when nothing flows through the flow nodes, but
-                    % desorption occurs!
-                    for iCell = 1:iCellNumber
-                        matter.procs.exmes.gas(oMassBuffer, [sName, '_Desorption_',num2str(iCell)]);
-                        components.filter.components.Desorption_P2P(this.toStores.(sName), ['BufferDesorptionProcessor_',num2str(iCell)], ['Absorber_',num2str(iCell),'.', sName, '_Absorber_DesorptionBuffer_',num2str(iCell)], ['MassBuffer.', sName, '_Desorption_',num2str(iCell)]);
+                    if strcmp(sName, 'Zeolite5A_2') || strcmp(sName, 'Zeolite5A_1')
+                        % Adds a phase to each of the absorbers that actually
+                        % contains the mass
+                        for iK = 1:length(csFlowSubstances)
+                            tfMassesFlow.(csFlowSubstances{iK}) = cAirHelper{1}.(csFlowSubstances{iK});
+                        end
+
+                        if (this.iCycleActive == 1 && strcmp(sName, 'Zeolite5A_2')) || (this.iCycleActive == 2 && strcmp(sName, 'Zeolite5A_1'))
+                            oMassBuffer = matter.phases.gas(this.toStores.(sName), 'MassBuffer', tfMassesFlow,fFlowVolume, this.TargetTemperature);
+                        else
+                            oMassBuffer = matter.phases.gas(this.toStores.(sName), 'MassBuffer', tfMassesFlow,fFlowVolume, fTemperatureFlow);
+                        end
+                        % adds the connection from the last cell of this bed
+                        % into the mass buffer (the connection from the buffer
+                        % to the next bed will be handled in the interface
+                        % definition below)
+
+                        matter.procs.exmes.gas(oMassBuffer, 'Buffer_Inlet');
+                        matter.procs.exmes.gas(oMassBuffer, 'Buffer_Outlet');
+
+                        components.CDRA.components.Filter_F2F(this, [sName, '_FrictionProc_Buffer'], this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell));
+
+                        oBranch = matter.branch(this, [sName,'.','Outflow_',num2str(iCellNumber)], {[sName, '_FrictionProc_Buffer']}, [sName, '.Buffer_Inlet'], [sName, '_to_Buffer']);
+                        this.tMassNetwork.(['InternalBranches_', sName])(iCellNumber) = oBranch;
+
+                        % add desorption procs to the buffer phase, these are
+                        % used when nothing flows through the flow nodes, but
+                        % desorption occurs!
+                        for iCell = 1:iCellNumber
+                            matter.procs.exmes.gas(oMassBuffer, [sName, '_Desorption_',num2str(iCell)]);
+                            components.filter.components.Desorption_P2P(this.toStores.(sName), ['BufferDesorptionProcessor_',num2str(iCell)], ['Absorber_',num2str(iCell),'.', sName, '_Absorber_DesorptionBuffer_',num2str(iCell)], ['MassBuffer.', sName, '_Desorption_',num2str(iCell)]);
+                        end
                     end
                 end
             end
@@ -493,8 +496,8 @@ classdef CDRA < vsys
             components.pipe(this, 'Sylobead_1_to_13x1_Pipe', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
             
             sBranchName = 'Sylobead1_to_13x1';
-            oBranch = matter.branch(this, 'Sylobead_1.Buffer_Outlet', {'Sylobead_1_to_13x1_Pipe'}, 'Zeolite13x_1.Inflow_1', sBranchName);
-            this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
+            oBranch = matter.branch(this, ['Sylobead_1.Outflow_', num2str(this.tGeometry.Sylobead.iCellNumber)], {'Sylobead_1_to_13x1_Pipe'}, 'Zeolite13x_1.Inflow_1', sBranchName);
+            this.tMassNetwork.InternalBranches_Sylobead_1(end+1) = oBranch;
             
             components.valve_closable(this, 'Cycle_Two_InletValve', 0);
             components.pipe(this, 'Cycle_Two_InletPipe', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
@@ -515,8 +518,8 @@ classdef CDRA < vsys
             components.pipe(this, 'Sylobead_2_to_13x2_Pipe', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
             
             sBranchName = 'Sylobead2_to_13x2';
-            oBranch = matter.branch(this, 'Sylobead_2.Buffer_Outlet', {'Sylobead_2_to_13x2_Pipe'}, 'Zeolite13x_2.Inflow_1', sBranchName);
-            this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
+            oBranch = matter.branch(this, ['Sylobead_2.Outflow_', num2str(this.tGeometry.Sylobead.iCellNumber)], {'Sylobead_2_to_13x2_Pipe'}, 'Zeolite13x_2.Inflow_1', sBranchName);
+            this.tMassNetwork.InternalBranches_Sylobead_2(end+1) = oBranch;
             
             % Interface between 13x and 5A zeolite absorber beds
             components.Temp_Dummy(this, 'PreCooler_5A1', 285, 1000);
@@ -527,18 +530,17 @@ classdef CDRA < vsys
             components.pipe(this, 'Pipe_13x2_to_5A_2', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
             
             sBranchName = 'Zeolite13x1_to_5A1';
-            oBranch = matter.branch(this, 'Zeolite13x_1.Buffer_Outlet', {'Pipe_13x1_to_5A_1', 'PreCooler_5A1', 'Valve_13x1_to_5A_1'}, 'Zeolite5A_1.Inflow_1', sBranchName);
-            this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
+            oBranch = matter.branch(this, ['Zeolite13x_1.Outflow_', num2str(this.tGeometry.Zeolite13x.iCellNumber)], {'Pipe_13x1_to_5A_1', 'PreCooler_5A1', 'Valve_13x1_to_5A_1'}, 'Zeolite5A_1.Inflow_1', sBranchName);
+            this.tMassNetwork.InternalBranches_Zeolite13x_1(end+1) = oBranch;
             
             sBranchName = 'Zeolite13x2_to_5A2';
-            oBranch = matter.branch(this, 'Zeolite13x_2.Buffer_Outlet', {'Pipe_13x2_to_5A_2', 'PreCooler_5A2', 'Valve_13x2_to_5A_2'}, 'Zeolite5A_2.Inflow_1', sBranchName);
-            this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
+            oBranch = matter.branch(this, ['Zeolite13x_2.Outflow_', num2str(this.tGeometry.Zeolite13x.iCellNumber)], {'Pipe_13x2_to_5A_2', 'PreCooler_5A2', 'Valve_13x2_to_5A_2'}, 'Zeolite5A_2.Inflow_1', sBranchName);
+            this.tMassNetwork.InternalBranches_Zeolite13x_2(end+1) = oBranch;
             
-            oFlowPhase = this.toStores.Zeolite13x_1.toPhases.MassBuffer;
-            matter.procs.exmes.gas(oFlowPhase, 'Buffer_Inlet_2');
-            
-            oFlowPhase = this.toStores.Zeolite13x_2.toPhases.MassBuffer;
-            matter.procs.exmes.gas(oFlowPhase, 'Buffer_Inlet_2');
+            oFlowPhase = this.toStores.Zeolite13x_1.toPhases.(['Flow_', num2str(this.tGeometry.Zeolite13x.iCellNumber)]);
+            matter.procs.exmes.gas(oFlowPhase, 'Inlet_From_5A2');
+            oFlowPhase = this.toStores.Zeolite13x_2.toPhases.(['Flow_', num2str(this.tGeometry.Zeolite13x.iCellNumber)]);
+            matter.procs.exmes.gas(oFlowPhase, 'Inlet_From_5A1');
             
             % Add valves
             components.valve_closable(this, 'Valve_5A_1_to_13x2', 0);
@@ -549,11 +551,11 @@ classdef CDRA < vsys
             components.pipe(this, 'Pipe_5A_2_to_13x1', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
             
             sBranchName = 'Zeolite5A1_to_13x2';
-            oBranch = matter.branch(this, 'Zeolite5A_1.Buffer_Outlet', {'Pipe_5A_1_to_13x2', 'Valve_5A_1_to_13x2', 'CheckValve_5A_1_to_13x2'}, 'Zeolite13x_2.Buffer_Inlet_2', sBranchName);
+            oBranch = matter.branch(this, 'Zeolite5A_1.Buffer_Outlet', {'Pipe_5A_1_to_13x2', 'Valve_5A_1_to_13x2', 'CheckValve_5A_1_to_13x2'}, 'Zeolite13x_2.Inlet_From_5A1', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
             sBranchName = 'Zeolite5A2_to_13x1';
-            oBranch = matter.branch(this, 'Zeolite5A_2.Buffer_Outlet', {'Pipe_5A_2_to_13x1', 'Valve_5A_2_to_13x1', 'CheckValve_5A_2_to_13x1'}, 'Zeolite13x_1.Buffer_Inlet_2', sBranchName);
+            oBranch = matter.branch(this, 'Zeolite5A_2.Buffer_Outlet', {'Pipe_5A_2_to_13x1', 'Valve_5A_2_to_13x1', 'CheckValve_5A_2_to_13x1'}, 'Zeolite13x_1.Inlet_From_5A2', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
             % 5A to Vacuum connection branches
@@ -685,88 +687,8 @@ classdef CDRA < vsys
             tSolverProperties.iMaxIterations = 200;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
 
-            iMultiBranch = 1;
-            for iBranch = 1:length(this.aoBranches)
-                aoMultiBranches(iMultiBranch) = this.aoBranches(iBranch);
-                iMultiBranch = iMultiBranch + 1;
-            end
-            oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiBranches, 'complex');
+            oSolver = solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
-            
-%             csBranches = fieldnames(this.toBranches);
-%             % Multisolver for Sylobead 1
-%             iMultiBranch = 1;
-%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Sylobead_1)
-%                 aoMultiSolverBranchesSylobead_1(iMultiBranch) = this.tMassNetwork.InternalBranches_Sylobead_1(iBranch);
-%                 iMultiBranch = iMultiBranch + 1;
-%             end
-%             aoMultiSolverBranchesSylobead_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1;
-%             aoMultiSolverBranchesSylobead_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_Out_2;
-%             
-%             oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesSylobead_1(:), 'complex');
-%             oSolver.setSolverProperties(tSolverProperties);
-%             
-%             % Multisolver for Sylobead 2
-%             iMultiBranch = 1;
-%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Sylobead_2)
-%                 aoMultiSolverBranchesSylobead_2(iMultiBranch) = this.tMassNetwork.InternalBranches_Sylobead_2(iBranch);
-%                 iMultiBranch = iMultiBranch + 1;
-%             end
-%             aoMultiSolverBranchesSylobead_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2;
-%             aoMultiSolverBranchesSylobead_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Air_Out_1;
-%             
-%             oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesSylobead_2(:), 'complex');
-%             oSolver.setSolverProperties(tSolverProperties);
-%             
-%             % Multisolver for Zeolite 13x 1
-%             iMultiBranch = 1;
-%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite13x_1)
-%                 aoMultiSolverBranchesZeolite13x_1(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite13x_1(iBranch);
-%                 iMultiBranch = iMultiBranch + 1;
-%             end
-%             aoMultiSolverBranchesZeolite13x_1(end+1) = this.tMassNetwork.InterfaceBranches.Sylobead1_to_13x1;
-%             aoMultiSolverBranchesZeolite13x_1(end+1) = this.tMassNetwork.InterfaceBranches.Zeolite5A2_to_13x1;
-%             
-%             oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite13x_1(:), 'complex');
-%             oSolver.setSolverProperties(tSolverProperties);
-%             
-%             % Multisolver for Zeolite 13x 2
-%             iMultiBranch = 1;
-%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite13x_2)
-%                 aoMultiSolverBranchesZeolite13x_2(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite13x_2(iBranch);
-%                 iMultiBranch = iMultiBranch + 1;
-%             end
-%             aoMultiSolverBranchesZeolite13x_2(end+1) = this.tMassNetwork.InterfaceBranches.Sylobead2_to_13x2;
-%             aoMultiSolverBranchesZeolite13x_2(end+1) = this.tMassNetwork.InterfaceBranches.Zeolite5A1_to_13x2;
-%             
-%             oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite13x_2(:), 'complex');
-%             oSolver.setSolverProperties(tSolverProperties);
-%             
-%             % Multisolver for Zeolite 5A_1
-%             iMultiBranch = 1;
-%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite5A_1)
-%                 aoMultiSolverBranchesZeolite5A_1(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite5A_1(iBranch);
-%                 iMultiBranch = iMultiBranch + 1;
-%             end
-%             aoMultiSolverBranchesZeolite5A_1(end+1) = this.tMassNetwork.InterfaceBranches.Zeolite13x1_to_5A1;
-%             aoMultiSolverBranchesZeolite5A_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Vent_2;
-%             aoMultiSolverBranchesZeolite5A_1(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_AirSafe_2;
-%             
-%             oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite5A_1(:), 'complex');
-%             oSolver.setSolverProperties(tSolverProperties);
-%             
-%             % Multisolver for Zeolite 5A_2
-%             iMultiBranch = 1;
-%             for iBranch = 1:length(this.tMassNetwork.InternalBranches_Zeolite5A_2)
-%                 aoMultiSolverBranchesZeolite5A_2(iMultiBranch) = this.tMassNetwork.InternalBranches_Zeolite5A_2(iBranch);
-%                 iMultiBranch = iMultiBranch + 1;
-%             end
-%             aoMultiSolverBranchesZeolite5A_2(end+1) = this.tMassNetwork.InterfaceBranches.Zeolite13x2_to_5A2;
-%             aoMultiSolverBranchesZeolite5A_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_Vent_1;
-%             aoMultiSolverBranchesZeolite5A_2(end+1) = this.tMassNetwork.InterfaceBranches.CDRA_AirSafe_1;
-%             
-%             oSolver = solver.matter_multibranch.laminar_incompressible.branch(aoMultiSolverBranchesZeolite5A_2(:), 'complex');
-%             oSolver.setSolverProperties(tSolverProperties);
             
             csStores = fieldnames(this.toStores);
             % sets numerical properties for the phases of CDRA

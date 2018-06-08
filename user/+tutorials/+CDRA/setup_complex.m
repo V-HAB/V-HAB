@@ -59,8 +59,6 @@ classdef setup_complex < simulation.infrastructure
             csType = {'Sylobead_', 'Zeolite13x_', 'Zeolite5A_'};
             for iType = 1:3
                 for iBed = 1:2
-                    oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.MassBuffer'],      'fPressure',                    'Pa',   ['Flow Pressure', csType{iType}, num2str(iBed),' MassBuffer']);
-                    
                     for iCell = 1:miCellNumber(iType)
                         oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Flow_',num2str(iCell)],      'fPressure',                    'Pa',   ['Flow Pressure', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
                         oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toPhases.Flow_',num2str(iCell)],      'afPP(this.oMT.tiN2I.H2O)',     'Pa',   ['Flow Pressure H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
@@ -73,12 +71,14 @@ classdef setup_complex < simulation.infrastructure
                         
                         oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toProcsP2P.AdsorptionProcessor_',num2str(iCell)],  'mfFlows(this.oMT.tiN2I.CO2)',   'kg/s',   ['Absorber Flowrate CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
                         oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toProcsP2P.AdsorptionProcessor_',num2str(iCell)],  'mfFlows(this.oMT.tiN2I.H2O)',   'kg/s',   ['Absorber Flowrate H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
-                    
+                        
                         oLog.addValue(['Example:c:CDRA.tMassNetwork.InternalBranches_',csType{iType}, num2str(iBed), '(', num2str(iCell), ')'],  'fFlowRate',   'kg/s',   ['Flowrate ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
                         
                     end
                 end
             end
+            oLog.addValue('Example:c:CDRA:s:Zeolite5A_1.toPhases.MassBuffer',      'fPressure',                    'Pa',   'Pressure Zeolite5A_1 MassBuffer');
+            oLog.addValue('Example:c:CDRA:s:Zeolite5A_2.toPhases.MassBuffer',      'fPressure',                    'Pa',   'Pressure Zeolite5A_2 MassBuffer');
             
             csInterfaceBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tMassNetwork.InterfaceBranches);
             iInterfaceBranches = length(csInterfaceBranches);
@@ -265,9 +265,7 @@ classdef setup_complex < simulation.infrastructure
             end
             oPlotter.defineFigure(coPlot,  'FlowRates');
             
-            csNormalPhasePressures = {'"Flow PressureSylobead_1 MassBuffer"', '"Flow PressureSylobead_2 MassBuffer"',...
-                                      '"Flow PressureZeolite13x_1 MassBuffer"', '"Flow PressureZeolite13x_2 MassBuffer"',...
-                                      '"Flow PressureZeolite5A_1 MassBuffer"', '"Flow PressureZeolite5A_2 MassBuffer"',...
+            csNormalPhasePressures = {'"Pressure Zeolite5A_1 MassBuffer"', '"Pressure Zeolite5A_2 MassBuffer"',...
                                       '"Connection Pressure CCAA to CDRA"', '"Connection Pressure CDRA to CCAA"'};
             
             coPlot = cell(2,3);
