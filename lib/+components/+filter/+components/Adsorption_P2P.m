@@ -98,9 +98,9 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             if this.iInFlowTick ~= this.oTimer.iTick
                 this.mfFlowRatesProp = zeros(this.iAveraging, this.oMT.iSubstances);
             end
-            
+            bZeroFlows = false;
             if (isempty(afInFlowRates) || all(sum(aarInPartials) == 0)) && ~(this.iInFlowTick == this.oTimer.iTick)
-
+                bZeroFlows = true;
                 % if there is no in flow, assume the partial pressure from
                 % the mass phase of this filter as the correct value for
                 % the partial pressures
@@ -201,8 +201,13 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             arPartialsAdsorption    = zeros(1,this.oMT.iSubstances);
             arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./sum(mfFlowRatesAdsorption));
             
-            this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
-            
+            if bZeroFlows
+                this.oStore.toProcsP2P.(['BufferDesorptionProcessor',this.sCell]).setMatterProperties( fDesorptionFlowRate, arPartialsDesorption);
+                this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(0, zeros(1,this.oMT.iSubstances));
+            else
+                this.oStore.toProcsP2P.(['BufferDesorptionProcessor',this.sCell]).setMatterProperties( 0, zeros(1,this.oMT.iSubstances));
+                this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
+            end
             % sets the heat flow to the absorber capacity
             this.oOut.oPhase.oCapacity.toHeatSources.(['AbsorberHeatSource_', num2str(this.iCell)]).setHeatFlow(this.fAdsorptionHeatFlow)
             

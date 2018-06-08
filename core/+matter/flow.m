@@ -33,10 +33,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % @type float
         fTemperature = 293;   % [K]
         
-        
-        
-        %TODO implement .update, get heat capacity depending on
-        %     arPartialMass and Temperature
         fSpecificHeatCapacity = 0;       % [J/K/kg]
         fMolarMass            = 0;       % [kg/mol]
         

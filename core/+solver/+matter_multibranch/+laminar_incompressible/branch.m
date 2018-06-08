@@ -59,7 +59,6 @@ classdef branch < base & event.source
         
         iIteration = 0;
         
-        
         % Variable pressure phases by UUID
         poVariablePressurePhases;
         
@@ -85,11 +84,37 @@ classdef branch < base & event.source
         % For volumetric flow rate!
         afPressureDropCoeffsSum;
         
-        %
-        fMaxError = 1e-4;
+        %% Solver Properties
+        % The maximum error represents the allowed remaining difference
+        % between the currently calculated flowrates and the previous
+        % flowrates in percent. This means once the difference of the
+        % flowrates for all branches is smaller than this the solver
+        % considers the system solved
+        fMaxError = 1e-4; % percent
+        % The maximum number of iterations defines how often the solver
+        % iterates before resulting in an error
         iMaxIterations = 1000;
+        % This value can be used to force more frequent P2P updates (every
+        % X iterations). Or the standard approach is to have the solver
+        % solve the branch flowrates and then calculate the P2P flowrates.
+        % Once the P2P flowrates are calculate, iterate through the system
+        % again till converged. This is repeated until overall convergence
+        % is achieved
         iIterationsBetweenP2PUpdate = 1000;
-        fMinimumTimeStep = 1;
+        % The solver calculates a maximum time step, after which the phases
+        % equalized their pressures. If this time step is exceed
+        % oscillations can occur. This timestep represents the lowest
+        % possible value for that time step (indepdentent from phase time
+        % steps)
+        fMinimumTimeStep = 1e-8; % s
+        % The minimum pressure difference defines how many Pa of pressure
+        % difference must be present before the solver starts calculating
+        % the branch. If the difference is below the value, the branch will
+        % be considered to have no pressure difference and therefore to
+        % have 0 kg/s flowrate
+        fMinPressureDiff = 10; % Pa
+        
+        tBoundaryConnection;
         
         % Last values of caclulated flow rates.
         afFlowRates;
@@ -106,8 +131,18 @@ classdef branch < base & event.source
     
     
     properties (SetAccess = protected, GetAccess = public)
+        % The solver itself is calculated before the residual solvers. This
+        % may lead to problems if a residual solver is used as input to
+        % this system directly (not with a boundary phase inbetween) as the
+        % flowrate of the residual solver is assumed to be constant
+        % boundary condition for one tick, while it can actually change
+        % before the tick ends. Therefore residual solvers should only be
+        % used as input with a boundary phase inbetween that reaches the
+        % necessary pressure to supply the system the correct flowrate
         iPostTickPriority = -1;
-        iPostTickPriorityReUpdate = 2;
+        % the time step is calculated in the last post tick, the same as
+        % the phase time steps
+        iPostTickPriorityCalculateTimeStep = 3;
     end
     
     
@@ -156,7 +191,6 @@ classdef branch < base & event.source
             
             this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdate(), inf);
             
-            
             this.initialize();
         end
         
@@ -177,11 +211,27 @@ classdef branch < base & event.source
             %               then the solver must converge again, till
             %               overall convergence is achieved
             %
+            % fMinimumTimeStep: The solver calculates a maximum time step,
+            %                   after which the phases equalized their
+            %                   pressures. If this time step is exceed
+            %                   oscillations can occur. This timestep
+            %                   represents the lowest possible value for
+            %                   that time step (indepdentent from phase
+            %                   time steps)
+            %
+            % fMinPressureDiff: The minimum pressure difference defines how
+            %                   many Pa of pressure difference must be
+            %                   present before the solver starts
+            %                   calculating the branch. If the difference
+            %                   is below the value, the branch will be
+            %                   considered to have no pressure difference
+            %                   and therefore to have 0 kg/s flowrate
+            %
             % In order to define these provide a struct with the fieldnames
             % as described here to this function for the values that you
             % want to set
             
-            csPossibleFieldNames = {'fMaxError', 'iMaxIterations', 'iIterationsBetweenP2PUpdate'};
+            csPossibleFieldNames = {'fMaxError', 'iMaxIterations', 'iIterationsBetweenP2PUpdate', 'fMinimumTimeStep', 'fMinPressureDiff'};
             
             % Gets the fieldnames of the struct to easier loop through them
             csFieldNames = fieldnames(tSolverProperties);
@@ -458,7 +508,18 @@ classdef branch < base & event.source
                 end
             end
             
-            
+            % We want to ignore small pressure differences (as specified by
+            % the user). Therefore we equalize pressure differences smaller
+            % than the specified limit
+            afBoundaryHelper = abs(afBoundaryConditions);
+            miSigns = sign(afBoundaryConditions);
+            for iBoundary = 1:length(afBoundaryConditions)
+                abEqualize = abs(afBoundaryHelper - afBoundaryHelper(5)) < this.fMinPressureDiff;
+                
+                fEqualizedPressure = sum(afBoundaryHelper(abEqualize)) / sum(abEqualize);
+                
+                afBoundaryConditions(abEqualize) = fEqualizedPressure .* miSigns(abEqualize);
+            end
             
             % Loop variable pressure phases, generate eq row to enforce sum
             % of flow rates is zero (or the BC/p2p conds)
@@ -759,13 +820,12 @@ classdef branch < base & event.source
             end
             
             this.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
+            this.oTimer.bindPostTick(@this.calculateTimeStep, this.iPostTickPriorityCalculateTimeStep);
+            
         end
         
         
         function update(this)
-%             disp(this.oTimer.fTime);
-%             disp(this.oTimer.fTime - this.fLastUpdate);
-            
             this.fLastUpdate         = this.oTimer.fTime;
             this.bRegisteredOutdated = false;
             
@@ -779,25 +839,10 @@ classdef branch < base & event.source
             end
             
             
-            %TOOD
-            % Now iterate ... in case of complex solver ...
-            % Only really set the resulting pressures/flow rates if
-            % converged.
-            % FRs - afFlowRates used in iterations, works (for calcDeltas)
-            % VPP (var. press. phases) don't need to be updated, densities
-            %     etc from last tick used anyways. Well, for initial flow
-            %     rate (if FR was zero), maybe the current value from the
-            %     iteration then needed?
-            
-            
             rError    = inf;
             afResults = [];
             
-            % Only iterate for the complex solving mechanism
-            %rErrorMax = 0.01;
-            %rErrorMax = sif(strcmp(this.sMode, 'complex'), 0.001, inf);
             rErrorMax  = sif(strcmp(this.sMode, 'complex'), this.fMaxError, 0);
-            %rErrorMax  = sif(strcmp(this.sMode, 'complex'), 0.1 ^ this.oTimer.iPrecision, 0);
             this.iIteration = 0;
             
             afBoundaryConditions = [];
@@ -850,6 +895,14 @@ classdef branch < base & event.source
                 % closed valve)
                 mbZeroFlowBranches = isinf(this.afPressureDropCoeffsSum)';
                 
+                % Also set branches which have a pressure difference of
+                % less than this.fMinPressureDiff Pa as zero flow branches!
+                % This also must be done in each iteration, as the gas flow
+                % nodes can change their pressure
+                if all(mbZeroFlowBranches)
+                    this.afFlowRates = zeros(1, this.iBranches);
+                    break
+                end
                 aoZeroFlowBranches = this.aoBranches(mbZeroFlowBranches);
                 
                 afBoundaryConditions = afFullBoundaryConditions;
@@ -1037,11 +1090,9 @@ classdef branch < base & event.source
                 % direction or became zero!
                 if any(sign(afPrevFrs) ~= sign(this.afFlowRates)) || any(this.afFlowRates(afPrevFrs == 0))
                     miBoundaryRows = false(iNewRows,1);
-                    iShift = this.poVariablePressurePhases.Count + 1 - sum(mbRemoveRow(1:this.poVariablePressurePhases.Count+1));
-
-                    miBoundaryRows(1:iShift) = afBoundaryConditions(1:iShift) ~= 0;
+                    miBoundaryRows(1:iStartZeroSumEquations-1) = afBoundaryConditions(1:iStartZeroSumEquations-1) ~= 0;
                     miBoundaryBranches = miNewRowToOriginalRow(miBoundaryRows);
-
+                    
                     % get the part of the equation that connects phases and
                     % branches (it contains the sum over each variable pressure
                     % phase and ensures that the total mass flow through it is
@@ -1060,12 +1111,21 @@ classdef branch < base & event.source
                             aafZeroSumMatrix(:,mbCol) = aafZeroSumMatrix(:,mbCol) .* sign(this.afFlowRates(iBranch));
                         end
                     end
-
+                    
                     % now remove the boundary branches that are exiting the
                     % system, we want to start from the boundary branches that
                     % enter the system
-                    for iBoundaryBranch = 1:length(miBoundaryBranches)
-                        if ~any(aafZeroSumMatrix(:,miBranchToColumnIndex(miBoundaryBranches(iBoundaryBranch))) > 0)
+                    for iBoundaryBranch = 1:length(miBoundaryBranches) 
+                        iBranch = miBoundaryBranches(iBoundaryBranch);
+                        if this.afFlowRates(iBranch) > 0
+                            if this.aoBranches(iBranch).coExmes{1}.oPhase.bFlow
+                                miBoundaryBranches(iBoundaryBranch) = 0;
+                            end
+                        elseif this.afFlowRates(iBranch) < 0
+                            if this.aoBranches(iBranch).coExmes{2}.oPhase.bFlow
+                                miBoundaryBranches(iBoundaryBranch) = 0;
+                            end
+                        else
                             miBoundaryBranches(iBoundaryBranch) = 0;
                         end
                     end
@@ -1107,7 +1167,7 @@ classdef branch < base & event.source
                             
                             for iPhase = 1:length(miPhases)
                                 % we want to know where this branch leads,
-                                % therefore we require the positive entries
+                                % therefore we require the negative entries
                                 % here
                                 miBranchesNext = find(aafZeroSumMatrix(miPhases(iPhase), :) == -1);
                                 for iK = 1:length(miBranchesNext)
@@ -1123,6 +1183,68 @@ classdef branch < base & event.source
                     
                     mbBranchesOnUpdateLevel(end,~sum(mbBranchesOnUpdateLevel,1)) = true;
                     this.mbBranchesPerUpdateLevel = mbBranchesOnUpdateLevel;
+                    
+                    clear this.tBoundaryConnection
+                    for iBoundaryBranch = 1:length(miBoundaryBranches)
+                        mbBranchesOnUpdateLevel = false(this.iBranches+1,this.iBranches);
+                        mbBranchesOnUpdateLevel(1,miBoundaryBranches(iBoundaryBranch)) = true;
+
+                        iBranchUpdateLevel = 1;
+                        coOtherSidePhase = cell(0,0);
+                        while ~bFinished
+                            if (iBranchUpdateLevel > this.iBranches) || ~any(mbBranchesOnUpdateLevel(iBranchUpdateLevel,:))
+                                break
+                            end
+
+                            mbBranches = mbBranchesOnUpdateLevel(iBranchUpdateLevel,:);
+                            miBranches = find(mbBranches);
+
+                            for iI = 1:length(miBranches)
+                                iBranch = miBranches(iI);
+                                miUpdateLevel(iBranch) = iBranchUpdateLevel;
+
+                                if miBranchToColumnIndex(iBranch) == 0
+                                    continue
+                                else
+                                    miPhases = find(aafZeroSumMatrix(:,miBranchToColumnIndex(iBranch)) > 0);
+                                end
+
+                                for iPhase = 1:length(miPhases)
+                                    % we want to know where this branch leads,
+                                    % therefore we require the negative entries
+                                    % here
+                                    miBranchesNext = find(aafZeroSumMatrix(miPhases(iPhase), :) == -1);
+                                    for iK = 1:length(miBranchesNext)
+                                        oB = this.poColIndexToObj(miBranchesNext(iK));
+                                        iB = find(this.aoBranches == oB);
+                                        miBranchesNext(1, iK) = iB;
+                                        
+                                        if this.afFlowRates(iB) == 0
+                                            continue
+                                        elseif this.afFlowRates(iB) > 0
+                                            iExme = 2;
+                                        else
+                                            iExme = 1;
+                                        end
+                                        
+                                        if ~oB.coExmes{iExme}.oPhase.bFlow
+                                            coOtherSidePhase{end+1} = oB.coExmes{iExme}.oPhase;
+                                        end
+                                    end
+                                    mbBranchesOnUpdateLevel(iBranchUpdateLevel+1, miBranchesNext) = true;
+                                end
+                            end
+                            iBranchUpdateLevel = iBranchUpdateLevel + 1;
+                        end
+                        
+                        oBoundaryBranch = this.aoBranches(this.miBranchIndexToRowID == (miBoundaryBranches(iBoundaryBranch)));
+                        if this.afFlowRates(miBoundaryBranches(iBoundaryBranch)) >= 0
+                            oBoundaryPhase = oBoundaryBranch.coExmes{1}.oPhase;
+                        else
+                            oBoundaryPhase = oBoundaryBranch.coExmes{2}.oPhase;
+                        end
+                        this.tBoundaryConnection.(oBoundaryPhase.sUUID) = coOtherSidePhase;
+                    end
                 end
                 
                 %rError = tools.round.prec(max(afFrsDiff ./ afPrevFrs), iPrecision);
@@ -1134,35 +1256,12 @@ classdef branch < base & event.source
                 % iteration and therefore change, if this is forced to
                 % become 0 it will not converge for cases that actually use
                 % this
-%                 afBcChange = [ 0 ];
-%                 
-%                 if ~isempty(afPrevBoundaryConditions)
-%                     %afBcChange = tools.round.prec(afPrevBoundaryConditions - afBoundaryConditions, iPrecision);
-%                     afBcChange = tools.round.prec(afPrevBoundaryConditions - afBoundaryConditions, 4);
-%                 end
-%                 
-%                 if isempty(afPrevBoundaryConditions) || ~all(afBcChange == 0) % ~all(afPrevBoundaryConditions == afBoundaryConditions)
-%                     if ~base.oLog.bOff, this.out(1, 2, 'changing-boundary-conditions', 'Boundary conditions changing (p2p!), iteration %i', { iIteration }); end;
-%                     rError = inf;
-%                 end
-                
                 
                 if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { this.iIteration, rError }); end;
                 
                 if this.iIteration > this.iMaxIterations
                     %keyboard();
                     this.throw('update', 'too many iterations, error %.12f', rError);
-                end
-                
-                % Ok now go through the results again because the gas flow
-                % nodes need the flowrates of all branches to be set before
-                % calculating- variable pressure phase pressures
-                for iColumn = 1:length(this.csObjUuidsToColIndex)
-                    oObj = this.poColIndexToObj(iColumn);
-
-                    if isa(oObj, 'matter.phases.gas_flow_node')
-                        oObj.setPressure(afResults(iColumn));
-                    end
                 end
             end
             
@@ -1181,6 +1280,17 @@ classdef branch < base & event.source
                 end
             end
             
+            % However, in the desorption case it is still possible that now
+            % mass is put into the flow nodes. To solve this either the
+            % P2Ps should have a flowrate of 0 in case nothing flows
+            % through the flow nodes, or a solution muste be found where it
+            % is allowed that desorption occurs for no flow through the
+            % phase. Or the solution could be that if nothing flows through
+            % the flow nodes, the desorption takes place directly in a
+            % boundary phase (the P2P would have decide what is the case)
+            % where all desorption flowrates from the flow node p2ps are
+            % summed up!
+            
             if ~base.oLog.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration }); end;
             
             for iColumn = 1:length(this.csObjUuidsToColIndex)
@@ -1192,117 +1302,6 @@ classdef branch < base & event.source
                     if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(iB) }); end;
                 end
             end
-            
-            % TO DO (puda): I think there is also another error that
-            % should be considered, mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions
-            % which is basically the error of this individual solution,
-            % In the tutorials the flowrates did not actually reach 0,
-            % which therefore lead to small mass changes in the branches.
-            % Either we have to find a way to solve these here and achieve
-            % an mfError vector as defined above which is 0, or we have to
-            % find a way to prevent these small errors from affecting the
-            % gas flow node calculations
-            % Specifically the last set of equation which enforces that the
-            % sum of flowrates for the variable pressure phases has to be
-            % zero has to be absolutely enforced. 
-%             mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions;
-%             mfErrorInitial = mfError;
-%             iStartZeroSumEquations = length(mfError) - length(this.csVariablePressurePhases)+1;
-%             iCounter = 0;
-%             while any(mfError(iStartZeroSumEquations:end)) && iCounter < 500
-%                 mfError = (aafPhasePressuresAndFlowRates*afResults) - afBoundaryConditions;
-% 
-%                 for iRow = iStartZeroSumEquations:length(mfError)
-%                     if (aafPhasePressuresAndFlowRates(iRow,:) * afResults) ~= 0
-%                         for iColumn = 1:length(mfError)
-%                             if aafPhasePressuresAndFlowRates(iRow,iColumn) ~= 0
-%                                 iOriginalCol = miNewColToOriginalCol(iColumn);
-%                                 oObj = this.poColIndexToObj(iOriginalCol);
-% 
-%                                 iB = find(this.aoBranches == oObj, 1);
-%                                 
-%                                 %                                                            Number of branches represented in the sum, the error is equally distributed
-%                                 fError = aafPhasePressuresAndFlowRates(iRow,iColumn) * mfError(iRow)/(sum(abs(aafPhasePressuresAndFlowRates(iRow,:))));
-%                                 
-%                                 this.afFlowRates(iB) = this.afFlowRates(iB) - fError;
-%                                 
-%                                 afResults(iColumn) = this.afFlowRates(iB);
-%                             end
-%                         end
-%                     end
-%                 end
-%                 iCounter = iCounter + 1;
-%             end
-%             
-%             mfError = aafPhasePressuresAndFlowRates * afResults - afBoundaryConditions;
-%             
-%             if any(abs(mfError(iStartZeroSumEquations:end)) > 1e-8)
-%                 keyboard()
-%             end
-            mfError = aafPhasePressuresAndFlowRates * afResults - afBoundaryConditions;
-            
-            %% Example time step limitation
-            % Note not finished, just to showcase the effect of limitation
-            % for time steps:
-            %
-            % Now check for the maximum allowable time step with the
-            % current flow rate (the pressure differences in the branches
-            % are not allowed to change their sign within one tick)
-            afMaxTimeStep = ones(this.poBoundaryPhases.Count, this.poBoundaryPhases.Count) * inf;
-            
-            mfTotalMassChangeBoundary   = zeros(this.poBoundaryPhases.Count,1);
-            mfMassBoundary              = zeros(this.poBoundaryPhases.Count,1);
-            mfMassToPressureBoundary    = zeros(this.poBoundaryPhases.Count,1);
-            
-            for iBoundaryPhase = 1:this.poBoundaryPhases.Count
-                oBoundary = this.poBoundaryPhases(this.csBoundaryPhases{iBoundaryPhase});
-                
-                mfMassBoundary(iBoundaryPhase)              = oBoundary.fMass;
-                mfMassToPressureBoundary(iBoundaryPhase)    = oBoundary.fMassToPressure;
-                
-                for iExme = 1:length(oBoundary.coProcsEXME)
-                    if oBoundary.coProcsEXME{iExme}.bFlowIsAProcP2P
-                        mfTotalMassChangeBoundary(iBoundaryPhase) = mfTotalMassChangeBoundary(iBoundaryPhase) + (oBoundary.coProcsEXME{iExme}.iSign * oBoundary.coProcsEXME{iExme}.oFlow.fFlowRate);
-                        continue
-                    else
-                        iBranch = find(this.aoBranches == oBoundary.coProcsEXME{iExme}.oFlow.oBranch,1);
-                    end
-                    if ~isempty(iBranch)
-                        mfTotalMassChangeBoundary(iBoundaryPhase) = mfTotalMassChangeBoundary(iBoundaryPhase) + (oBoundary.coProcsEXME{iExme}.iSign * this.afFlowRates(iBranch));
-                    else
-                        % in this case it is not a multi branch but for
-                        % example a manual branch which is simply assumed
-                        % to be a boundary condition and constant
-                        mfTotalMassChangeBoundary(iBoundaryPhase) = mfTotalMassChangeBoundary(iBoundaryPhase) + (oBoundary.coProcsEXME{iExme}.iSign * oBoundary.coProcsEXME{iExme}.oFlow.fFlowRate);
-                    end
-                end
-            end
-            
-            for iBoundaryLeft = 1:this.poBoundaryPhases.Count
-                for iBoundaryRight = 1:this.poBoundaryPhases.Count
-                    if iBoundaryLeft == iBoundaryRight
-                        continue
-                    else
-                        fPressureDifference = (mfMassBoundary(iBoundaryLeft) * mfMassToPressureBoundary(iBoundaryLeft) - mfMassBoundary(iBoundaryRight) * mfMassToPressureBoundary(iBoundaryRight));
-                        fAverageMassToPressure = (mfMassToPressureBoundary(iBoundaryLeft) + mfMassToPressureBoundary(iBoundaryRight))/2;
-                    end
-                    
-                    afMaxTimeStep(iBoundaryLeft, iBoundaryRight) = abs(fPressureDifference/(fAverageMassToPressure * (mfTotalMassChangeBoundary(iBoundaryLeft) - mfTotalMassChangeBoundary(iBoundaryRight))));
-                end
-            end
-            % Negative timesteps mean we are already past the
-            % equalization and are moving away from it (because of
-            % manual flows or active components) Therefore negative
-            % values do not have to be considered further. 0 Means
-            % we have reached equalization, therefore this can also
-            % be ignored for max time step condition
-            afMaxTimeStep(afMaxTimeStep <= 0) = inf;
-            fTimeStep = min(min(afMaxTimeStep));
-            if fTimeStep < this.fMinimumTimeStep
-                fTimeStep = this.fMinimumTimeStep;
-            end
-            this.setTimeStep(fTimeStep);
-            
             % Ok now go through results - variable pressure phase pressures
             % and branch flow rates - and set!
             
@@ -1321,25 +1320,83 @@ classdef branch < base & event.source
                 end
             end
             
-            % Ok now go through the results again because the gas flow
-            % nodes need the flowrates of all branches to be set before
-            % calculating- variable pressure phase pressures
-            for iColumn = 1:length(this.csObjUuidsToColIndex)
-                oObj = this.poColIndexToObj(iColumn);
+            this.calculateTimeStep();
+            
+        end
+        
+        function calculateTimeStep(this)
+            %% time step limitation
+            % Bound to a post tick level after the residual branches.
+            % Then all external flowrates are fix for this tick as well and
+            % the calculated time step is definitly correct!
+            %
+            % Now check for the maximum allowable time step with the
+            % current flow rate (the pressure differences in the branches
+            % are not allowed to change their sign within one tick)
+            for iBoundaryPhase = 1:this.poBoundaryPhases.Count
+                oBoundary = this.poBoundaryPhases(this.csBoundaryPhases{iBoundaryPhase});
                 
-                if isa(oObj, 'matter.phases.gas_flow_node')
-                    oObj.setPressure(afResults(iColumn));
+                tfTotalMassChangeBoundary.(oBoundary.sUUID) = 0;
+                for iExme = 1:length(oBoundary.coProcsEXME)
+                    tfTotalMassChangeBoundary.(oBoundary.sUUID) = tfTotalMassChangeBoundary.(oBoundary.sUUID) + (oBoundary.coProcsEXME{iExme}.iSign * oBoundary.coProcsEXME{iExme}.oFlow.fFlowRate);
                 end
             end
             
-            % Don't need the actual pressures right now, but 
-            % can easily calculated them using the coeffs!
-            %
-            
-            
-            %TODO check total flow rates for each phase, vs. total flow
-            %     rates for all connected phases -> calculate time required
-            %     for the phases to equalize in mass --> max TS
+            % TO DO: Currently, all boundary phase mass changes are
+            % compared to each other. That does not make a lot of sense
+            % (was only implemented as simple first example). Now for the
+            % actual branch it is necessary to find out which boundary
+            % phases are actually conenct with "gas flow node" branches
+            csBoundaries = fieldnames(this.tBoundaryConnection);
+            fTimeStep = inf;
+            for iBoundaryLeft = 1:length(csBoundaries)
+                if isempty(this.tBoundaryConnection.(csBoundaries{iBoundaryLeft}))
+                    continue
+                else
+                    coRightSide = this.tBoundaryConnection.(csBoundaries{iBoundaryLeft});
+                    
+                    oLeftBoundary = this.poBoundaryPhases(csBoundaries{iBoundaryLeft});
+                    
+                    for iBoundaryRight = 1:length(coRightSide)
+                        oRightBoundary = coRightSide{iBoundaryRight};
+                        
+                        fPressureDifference = oLeftBoundary.fMass * oLeftBoundary.fMassToPressure - oRightBoundary.fMass * oRightBoundary.fMassToPressure;
+                        
+                        % (p * delta_t * massflow * masstopressure)_Left =
+                        % (p * delta_t * massflow * masstopressure)_Right
+                        fPressureChangeRight = (tfTotalMassChangeBoundary.(oRightBoundary.sUUID) * oRightBoundary.fMassToPressure);
+                        fPressureChangeLeft  = (tfTotalMassChangeBoundary.(oLeftBoundary.sUUID) * oLeftBoundary.fMassToPressure);
+                        
+                        % For a positive pressure difference, if the left
+                        % pressure increases more than the right pressure,
+                        % no sign change will ever occur. Similar for a
+                        % negative pressure difference if the right
+                        % pressure increases more than left pressure this
+                        % will not occur
+                        if fPressureDifference > 0 && fPressureChangeLeft > fPressureChangeRight
+                            fNewStep = inf;
+                        elseif fPressureDifference < 0 && fPressureChangeLeft < fPressureChangeRight
+                            fNewStep = inf;
+                        else
+                            fNewStep = abs(fPressureDifference/(fPressureChangeRight - fPressureChangeLeft));
+                        end
+                        
+                        if fNewStep < fTimeStep
+                            fTimeStep = fNewStep;
+                        end
+                    end
+                end
+            end
+            % Negative timesteps mean we are already past the
+            % equalization and are moving away from it (because of
+            % manual flows or active components) Therefore negative
+            % values do not have to be considered further. 0 Means
+            % we have reached equalization, therefore this can also
+            % be ignored for max time step condition
+            if fTimeStep < this.fMinimumTimeStep
+                fTimeStep = this.fMinimumTimeStep;
+            end
+            this.setTimeStep(fTimeStep);
         end
     end
 end

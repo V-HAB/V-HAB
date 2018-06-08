@@ -390,6 +390,7 @@ classdef CDRA < vsys
                         % adsorbedads
                         matter.procs.exmes.mixture(oFilterPhase, [sName, '_Absorber_Adsorption_',num2str(iCell)]);
                         matter.procs.exmes.mixture(oFilterPhase, [sName, '_Absorber_Desorption_',num2str(iCell)]);
+                        matter.procs.exmes.mixture(oFilterPhase, [sName, '_Absorber_DesorptionBuffer_',num2str(iCell)]);
                         
                         % for the flow phase two addtional exmes for the gas flow
                         % through the filter are required
@@ -455,6 +456,14 @@ classdef CDRA < vsys
                         
                     oBranch = matter.branch(this, [sName,'.','Outflow_',num2str(iCellNumber)], {[sName, '_FrictionProc_Buffer']}, [sName, '.Buffer_Inlet'], [sName, '_to_Buffer']);
                     this.tMassNetwork.(['InternalBranches_', sName])(iCellNumber) = oBranch;
+                    
+                    % add desorption procs to the buffer phase, these are
+                    % used when nothing flows through the flow nodes, but
+                    % desorption occurs!
+                    for iCell = 1:iCellNumber
+                        matter.procs.exmes.gas(oMassBuffer, [sName, '_Desorption_',num2str(iCell)]);
+                        components.filter.components.Desorption_P2P(this.toStores.(sName), ['BufferDesorptionProcessor_',num2str(iCell)], ['Absorber_',num2str(iCell),'.', sName, '_Absorber_DesorptionBuffer_',num2str(iCell)], ['MassBuffer.', sName, '_Desorption_',num2str(iCell)]);
+                    end
                 end
             end
             
