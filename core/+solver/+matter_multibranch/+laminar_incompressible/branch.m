@@ -1342,57 +1342,56 @@ classdef branch < base & event.source
                 end
             end
             
-            % TO DO: Currently, all boundary phase mass changes are
-            % compared to each other. That does not make a lot of sense
-            % (was only implemented as simple first example). Now for the
-            % actual branch it is necessary to find out which boundary
-            % phases are actually conenct with "gas flow node" branches
-            csBoundaries = fieldnames(this.tBoundaryConnection);
+            % This calculation compares the mass change of only the
+            % connected boundary phases, which actually exchange masse. For
+            % them the total mass change is compared to calculate the
+            % maximum allowable time step. However, temperature changes are
+            % neglected here so in some cases this limitation might not be
+            % sufficient
             fTimeStep = inf;
-            for iBoundaryLeft = 1:length(csBoundaries)
-                if isempty(this.tBoundaryConnection.(csBoundaries{iBoundaryLeft}))
-                    continue
-                else
-                    coRightSide = this.tBoundaryConnection.(csBoundaries{iBoundaryLeft});
-                    
-                    oLeftBoundary = this.poBoundaryPhases(csBoundaries{iBoundaryLeft});
-                    
-                    for iBoundaryRight = 1:length(coRightSide)
-                        oRightBoundary = coRightSide{iBoundaryRight};
-                        
-                        fPressureDifference = oLeftBoundary.fMass * oLeftBoundary.fMassToPressure - oRightBoundary.fMass * oRightBoundary.fMassToPressure;
-                        
-                        % (p * delta_t * massflow * masstopressure)_Left =
-                        % (p * delta_t * massflow * masstopressure)_Right
-                        fPressureChangeRight = (tfTotalMassChangeBoundary.(oRightBoundary.sUUID) * oRightBoundary.fMassToPressure);
-                        fPressureChangeLeft  = (tfTotalMassChangeBoundary.(oLeftBoundary.sUUID) * oLeftBoundary.fMassToPressure);
-                        
-                        % For a positive pressure difference, if the left
-                        % pressure increases more than the right pressure,
-                        % no sign change will ever occur. Similar for a
-                        % negative pressure difference if the right
-                        % pressure increases more than left pressure this
-                        % will not occur
-                        if fPressureDifference > 0 && fPressureChangeLeft > fPressureChangeRight
-                            fNewStep = inf;
-                        elseif fPressureDifference < 0 && fPressureChangeLeft < fPressureChangeRight
-                            fNewStep = inf;
-                        else
-                            fNewStep = abs(fPressureDifference/(fPressureChangeRight - fPressureChangeLeft));
-                        end
-                        
-                        if fNewStep < fTimeStep
-                            fTimeStep = fNewStep;
+            if ~isempty(this.tBoundaryConnection)
+                csBoundaries = fieldnames(this.tBoundaryConnection);
+                for iBoundaryLeft = 1:length(csBoundaries)
+                    if isempty(this.tBoundaryConnection.(csBoundaries{iBoundaryLeft}))
+                        continue
+                    else
+                        coRightSide = this.tBoundaryConnection.(csBoundaries{iBoundaryLeft});
+
+                        oLeftBoundary = this.poBoundaryPhases(csBoundaries{iBoundaryLeft});
+
+                        for iBoundaryRight = 1:length(coRightSide)
+                            oRightBoundary = coRightSide{iBoundaryRight};
+
+                            fPressureDifference = oLeftBoundary.fMass * oLeftBoundary.fMassToPressure - oRightBoundary.fMass * oRightBoundary.fMassToPressure;
+
+                            % (p * delta_t * massflow * masstopressure)_Left =
+                            % (p * delta_t * massflow * masstopressure)_Right
+                            fPressureChangeRight = (tfTotalMassChangeBoundary.(oRightBoundary.sUUID) * oRightBoundary.fMassToPressure);
+                            fPressureChangeLeft  = (tfTotalMassChangeBoundary.(oLeftBoundary.sUUID) * oLeftBoundary.fMassToPressure);
+
+                            % For a positive pressure difference, if the left
+                            % pressure increases more than the right pressure,
+                            % no sign change will ever occur. Similar for a
+                            % negative pressure difference if the right
+                            % pressure increases more than left pressure this
+                            % will not occur
+                            if fPressureDifference > 0 && fPressureChangeLeft > fPressureChangeRight
+                                fNewStep = inf;
+                            elseif fPressureDifference < 0 && fPressureChangeLeft < fPressureChangeRight
+                                fNewStep = inf;
+                            else
+                                fNewStep = abs(fPressureDifference/(fPressureChangeRight - fPressureChangeLeft));
+                            end
+
+                            % 0 Means we have reached equalization, therefore this can also
+                            % be ignored for max time step condition
+                            if fNewStep < fTimeStep && fNewStep ~= 0
+                                fTimeStep = fNewStep;
+                            end
                         end
                     end
                 end
-            end
-            % Negative timesteps mean we are already past the
-            % equalization and are moving away from it (because of
-            % manual flows or active components) Therefore negative
-            % values do not have to be considered further. 0 Means
-            % we have reached equalization, therefore this can also
-            % be ignored for max time step condition
+            end 
             if fTimeStep < this.fMinimumTimeStep
                 fTimeStep = this.fMinimumTimeStep;
             end
