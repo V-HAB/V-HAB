@@ -131,7 +131,7 @@ classdef setup_complex < simulation.infrastructure
             
             csCDRA_CO2_Mass             = cell(3,2,max(miCellNumber));
             csCDRA_H2O_Mass             = cell(3,2,max(miCellNumber));
-            csCDRA_Pressure             = cell(3,2,max(miCellNumber)+1);
+            csCDRA_Pressure             = cell(3,2,max(miCellNumber));
             csCDRA_CO2_Pressure         = cell(3,2,max(miCellNumber));
             csCDRA_H2O_Pressure         = cell(3,2,max(miCellNumber));
             csCDRA_Flow_Temperature     = cell(3,2,max(miCellNumber));
@@ -160,8 +160,6 @@ classdef setup_complex < simulation.infrastructure
                          
                          csCDRA_FlowRate{iType,iBed,iCell}              = ['"Flowrate ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell), '"'];
                     end
-                    
-                    csCDRA_Pressure{iType,iBed,iCell+1} = ['"Flow Pressure', csType{iType}, num2str(iBed),' MassBuffer"'];
                 end
             end
             
@@ -239,23 +237,20 @@ classdef setup_complex < simulation.infrastructure
             csCDRA_FlowRate{1,2,iCellNumberSylobead+1} = '"CDRA_Air_In_2"';
             csCDRA_FlowRate{1,2,iCellNumberSylobead+2} = '"CDRA_Air_Out_1"';
             
-            csCDRA_FlowRate{2,1,iCellNumber13x+1} = '"Sylobead1_to_13x1"';
+            csCDRA_FlowRate{2,1,iCellNumber13x+1} = '"Zeolite5A2_to_13x1"';
             csCDRA_FlowRate{2,1,iCellNumber13x+2} = '"Zeolite5A2_to_13x1"';
-            
-            csCDRA_FlowRate{2,2,iCellNumber13x+1} = '"Sylobead2_to_13x2"';
+            csCDRA_FlowRate{2,2,iCellNumber13x+1} = '"Zeolite5A1_to_13x2"';
             csCDRA_FlowRate{2,2,iCellNumber13x+2} = '"Zeolite5A1_to_13x2"';
             
-            csCDRA_FlowRate{3,1,iCellNumber5A+1} = '"Zeolite13x1_to_5A1"';
-            csCDRA_FlowRate{3,1,iCellNumber5A+2} = '"CDRA_Vent_2"';
-            csCDRA_FlowRate{3,1,iCellNumber5A+3} = '"CDRA_AirSafe_2"';
+            csCDRA_FlowRate{3,1,iCellNumber5A+1} = '"CDRA_Vent_2"';
+            csCDRA_FlowRate{3,1,iCellNumber5A+2} = '"CDRA_AirSafe_2"';
             
-            csCDRA_FlowRate{3,2,iCellNumber5A+1} = '"Zeolite13x2_to_5A2"';
-            csCDRA_FlowRate{3,2,iCellNumber5A+2} = '"CDRA_Vent_1"';
-            csCDRA_FlowRate{3,2,iCellNumber5A+3} = '"CDRA_AirSafe_1"';
+            csCDRA_FlowRate{3,2,iCellNumber5A+1} = '"CDRA_Vent_1"';
+            csCDRA_FlowRate{3,2,iCellNumber5A+2} = '"CDRA_AirSafe_1"';
             
             miCellNumber(1) = miCellNumber(1) + 2;
             miCellNumber(2) = miCellNumber(2) + 2;
-            miCellNumber(3) = miCellNumber(3) + 3;
+            miCellNumber(3) = miCellNumber(3) + 2;
             
             coPlot = cell(3,2);
             for iType = 1:3
