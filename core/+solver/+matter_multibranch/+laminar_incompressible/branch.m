@@ -591,7 +591,7 @@ classdef branch < base & event.source
             end
         end
         
-        function aafPhasePressuresAndFlowRates = updatePressureDropCoefficients(this, aafPhasePressuresAndFlowRates)
+        function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureDropCoefficients(this, aafPhasePressuresAndFlowRates, afBoundaryConditions)
             % For higher speeds the full network is only calculated a few
             % times, this calculation handles the sole necessary update of
             % the pressure drop coefficient
@@ -613,9 +613,37 @@ classdef branch < base & event.source
                     bActiveBranch = true;
                 end
 
+                iRow = this.miBranchIndexToRowID(iB);
 
                 if bActiveBranch
                     fCoeffFlowRate = 0;
+                    
+                    % Active component? Get pressure rise based on last
+                    % iteration flow rate - add to boundary condition!
+                    fFlowRate   = this.afFlowRates(iB);
+                    oProcSolver = oB.aoFlowProcs(1).toSolve.(this.sSolverType);
+
+                    % calDeltas returns POSITIVE value for pressure DROP!
+                    fPressureRise = -1 * oProcSolver.calculateDeltas(fFlowRate);
+
+                    % No flow, most likely?
+                    if fPressureRise == 0
+                        this.afTmpPressureRise(iB) = 0;
+
+                    % DROP!
+                    elseif fPressureRise < 0
+                        this.afTmpPressureRise(iB) = 0;
+
+                    else
+                        fPressureRise = (this.afTmpPressureRise(iB) * 33 + fPressureRise) / 34;
+
+                        this.afTmpPressureRise(iB) = fPressureRise;
+                    end
+
+                    % Boundary condition must be zero, can't have active
+                    % component if one side is a fixed, BC phase.
+                    afBoundaryConditions(iRow) = -1 * fPressureRise;
+                    
                 else
                     if fFlowRate == 0
                         fFlowRate = this.oTimer.fMinimumTimeStep;
@@ -634,8 +662,6 @@ classdef branch < base & event.source
                     fCoeffFlowRate = this.afPressureDropCoeffsSum(iB);
                 end
 
-                iRow = this.miBranchIndexToRowID(iB);
-                
                 % Set flow coeff
                 iCol = this.piObjUuidsToColIndex(oB.sUUID);
 
@@ -897,8 +923,9 @@ classdef branch < base & event.source
                     % Regenerates matrices, gets coeffs from flow procs
                     [ aafFullPhasePressuresAndFlowRates, afFullBoundaryConditions ] = this.generateMatrices(bForceP2PUpdate);
                     aafPhasePressuresAndFlowRates = aafFullPhasePressuresAndFlowRates;
+                    afBoundaryConditions = afFullBoundaryConditions;
                 else
-                    aafPhasePressuresAndFlowRates = this.updatePressureDropCoefficients(aafFullPhasePressuresAndFlowRates);
+                    [aafPhasePressuresAndFlowRates, afBoundaryConditions] = this.updatePressureDropCoefficients(aafFullPhasePressuresAndFlowRates, afFullBoundaryConditions);
                 end
                 % Infinite values can lead to singular matrixes in the solution
                 % process and at least result in badly scaled matrices.
@@ -917,8 +944,6 @@ classdef branch < base & event.source
                     break
                 end
                 aoZeroFlowBranches = this.aoBranches(mbZeroFlowBranches);
-                
-                afBoundaryConditions = afFullBoundaryConditions;
                 
                 mbRemoveRow = false(1,length(aafPhasePressuresAndFlowRates));
                 mbRemoveColumn = false(1,length(aafPhasePressuresAndFlowRates));
