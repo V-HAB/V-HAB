@@ -31,7 +31,7 @@ classdef branch < base & event.source
         %   * complex: f2f callbacks for dP, fan callback, p2p immediately
         %     called in every iteration for absorption rate (requires
         %     specific method in p2p)
-        sMode = 'simple';
+        sMode = 'complex';
         
         iLastWarn = -1000;
     end
@@ -373,10 +373,6 @@ classdef branch < base & event.source
 
                 if bActiveBranch
                     fCoeffFlowRate = 0;
-
-                %TODO in case of complex solver, this.afPressDropCoeffSums
-                %     is relative to mass flow rate, in other case relative
-                %     to volumetric flow rate. Stupid.
                 elseif strcmp(this.sMode, 'complex')
                     % dP = Coeff * FR.
 
@@ -604,21 +600,39 @@ classdef branch < base & event.source
                 oB = this.aoBranches(iB);
                 afPressureDropCoeffs = nan(1, oB.iFlowProcs);
                 fFlowRate = this.afFlowRates(iB);
-                if fFlowRate == 0
-                    fFlowRate = this.oTimer.fMinimumTimeStep;
+                bActiveBranch = false;
 
-                    % Negative pressure difference? Negative guess!
-                    if oB.coExmes{1}.getPortProperties() < oB.coExmes{2}.getPortProperties()
-                        fFlowRate = -1 * fFlowRate;
+                if (oB.iFlowProcs == 1) && isa(oB.aoFlowProcs(1), 'components.fan')
+
+                    for iP = 1:2
+                        if this.poBoundaryPhases.isKey(oB.coExmes{iP}.oPhase.sUUID)
+                            this.throw('generateMatrices', 'Active f2f proc (fan component) - both sides need to be variable pressure phases!');
+                        end
                     end
-                end
-                for iProc = 1:oB.iFlowProcs
-                    afPressureDropCoeffs(iProc) = oB.aoFlowProcs(iProc).toSolve.(this.sSolverType).calculateDeltas(fFlowRate);
+
+                    bActiveBranch = true;
                 end
 
-                this.afPressureDropCoeffsSum(iB) = sum(afPressureDropCoeffs)/abs(fFlowRate);
-                
-                fCoeffFlowRate = this.afPressureDropCoeffsSum(iB);
+
+                if bActiveBranch
+                    fCoeffFlowRate = 0;
+                else
+                    if fFlowRate == 0
+                        fFlowRate = this.oTimer.fMinimumTimeStep;
+
+                        % Negative pressure difference? Negative guess!
+                        if oB.coExmes{1}.getPortProperties() < oB.coExmes{2}.getPortProperties()
+                            fFlowRate = -1 * fFlowRate;
+                        end
+                    end
+                    for iProc = 1:oB.iFlowProcs
+                        afPressureDropCoeffs(iProc) = oB.aoFlowProcs(iProc).toSolve.(this.sSolverType).calculateDeltas(fFlowRate);
+                    end
+
+                    this.afPressureDropCoeffsSum(iB) = sum(afPressureDropCoeffs)/abs(fFlowRate);
+
+                    fCoeffFlowRate = this.afPressureDropCoeffsSum(iB);
+                end
 
                 iRow = this.miBranchIndexToRowID(iB);
                 
@@ -845,7 +859,6 @@ classdef branch < base & event.source
             rErrorMax  = sif(strcmp(this.sMode, 'complex'), this.fMaxError, 0);
             this.iIteration = 0;
             
-            afBoundaryConditions = [];
             % For an additional steady state solver there are basically two
             % cases: A loop with an active component generating a pressure
             % difference and a loop without such a component that only
@@ -1363,7 +1376,10 @@ classdef branch < base & event.source
                             oRightBoundary = coRightSide{iBoundaryRight};
 
                             fPressureDifference = oLeftBoundary.fMass * oLeftBoundary.fMassToPressure - oRightBoundary.fMass * oRightBoundary.fMassToPressure;
-
+                            
+                            if abs(fPressureDifference) < this.fMinPressureDiff
+                                fPressureDifference = sign(fPressureDifference) * this.fMinPressureDiff;
+                            end
                             % (p * delta_t * massflow * masstopressure)_Left =
                             % (p * delta_t * massflow * masstopressure)_Right
                             fPressureChangeRight = (tfTotalMassChangeBoundary.(oRightBoundary.sUUID) * oRightBoundary.fMassToPressure);

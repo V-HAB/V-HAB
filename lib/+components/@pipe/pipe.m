@@ -213,9 +213,15 @@ classdef pipe < matter.procs.f2f
 
             % If the dynamic viscosity or the density is empty, return zero
             % as the pressure drop. Else, the pressure drop may become NaN.
-            if (fDensity == 0) || (this.fEta == 0)
+            if fDensity == 0
                 fDeltaPressure = 0;
                 return; % Return early.
+            end
+            if this.fEta == 0
+                this.fEta = 17.2 / 10^6;
+                %TODO Make this a low level debug output once the
+                %infrastructure for it exists.
+                %this.warn('solverDeltas', 'Error calculating dynamic viscosity in pipe (%s - %s). Using default value instead: %f [Pa s].\n', this.oBranch.sName, this.sName, this.fEta);
             end
 
             % Reynolds Number
