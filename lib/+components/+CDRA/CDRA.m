@@ -891,12 +891,13 @@ classdef CDRA < vsys
             
             % Change Airsave to vacuum desorption
             if this.oTimer.fTime > (this.tTimeProperties.fLastCycleSwitch + this.tTimeProperties.fAirSafeTime)
-                
-                this.toProcsF2F.Valve_5A_1_Airsave.setOpen(false);
-                this.toProcsF2F.Valve_5A_2_Airsave.setOpen(false);
-                
-                this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(true);
-                this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(true);
+                if this.iCycleActive == 1
+                    this.toProcsF2F.Valve_5A_2_Airsave.setOpen(false);
+                    this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(true);
+                else
+                    this.toProcsF2F.Valve_5A_1_Airsave.setOpen(false);
+                    this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(true);
+                end
             end
             
             % handle the heaters in the currently desorbing Zeolite 5A bed
