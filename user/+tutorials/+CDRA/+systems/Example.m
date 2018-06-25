@@ -93,7 +93,7 @@ classdef Example < vsys
             createMatterStructure@vsys(this);
             %% Gas System
             % Creating a store, volume 1 m^3
-            matter.store(this, 'Cabin', 100);
+            matter.store(this, 'Cabin', 100 + this.iCrewMembers*70/1000);
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
@@ -335,11 +335,9 @@ classdef Example < vsys
             
             %p2p proc to convert O2 taken in by humans to CO2 to somewhat
             %close the mass balance
-            oHumanWaterPhase = matter.phases.gas(this.toStores.Cabin, 'HumanWater', struct(...
-                'H2O', this.iCrewMembers*70),...
-                this.iCrewMembers*70/1000, 309.15);
+            oHumanWaterPhase = matter.phases.liquid(this.toStores.Cabin, 'HumanWater', struct( 'H2O', this.iCrewMembers*70), this.iCrewMembers*70/1000, 309.15, 1e5);
             
-            matter.procs.exmes.gas(oHumanWaterPhase, 'HumidityOut');
+            matter.procs.exmes.liquid(oHumanWaterPhase, 'HumidityOut');
             
             %p2p proc for the crew humidity generator
             tutorials.CDRA.components.Crew_Humidity_Generator(...
