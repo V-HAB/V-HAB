@@ -352,91 +352,7 @@ classdef branch < base & event.source
                 iRow = iRow + 1;
                 oB   = this.aoBranches(iB);
                 this.miBranchIndexToRowID(iB) = iRow;
-
-                % If we have a branch with one, active component -->
-                % special treatment (no coefficient - get pressure rise
-                % based on previous iteration flow rate - add total value
-                % as boundary condition (so iteration checks convergence)
-                bActiveBranch = false;
-
-                if (oB.iFlowProcs == 1) && isa(oB.aoFlowProcs(1), 'components.fan')
-
-                    for iP = 1:2
-                        if this.poBoundaryPhases.isKey(oB.coExmes{iP}.oPhase.sUUID)
-                            this.throw('generateMatrices', 'Active f2f proc (fan component) - both sides need to be variable pressure phases!');
-                        end
-                    end
-
-                    bActiveBranch = true;
-                end
-
-
-                if bActiveBranch
-                    fCoeffFlowRate = 0;
-                elseif strcmp(this.sMode, 'complex')
-                    % dP = Coeff * FR.
-
-                    % If flow rate is zero, use minTs as initial flow rate.
-                    % Depending on pressure difference of this branch, set
-                    % positive or negative - as we do not have active
-                    % components, the pressure difference determines the
-                    % flow direction! Yay!
-                    fFlowRate = this.afFlowRates(iB);
-
-                    %TODO round somewhere? In between iterations?
-                    if fFlowRate == 0
-                        fFlowRate = this.oTimer.fMinimumTimeStep;
-
-                        % Negative pressure difference? Negative guess!
-                        if oB.coExmes{1}.getPortProperties() < oB.coExmes{2}.getPortProperties()
-                            fFlowRate = -1 * fFlowRate;
-                        end
-                    end
-                    afPressureDrops = nan(1, oB.iFlowProcs);
-
-                    for iProc = 1:oB.iFlowProcs
-                        afPressureDrops(iProc) = oB.aoFlowProcs(iProc).toSolve.(this.sSolverType).calculateDeltas(fFlowRate);
-                    end
-
-                    % Got the absolute pressure drops, so now we need to 
-                    % divide that with the flow rate to get the coeff!
-                    this.afPressureDropCoeffsSum(iB) = sum(afPressureDrops) / abs(fFlowRate);
-                    fCoeffFlowRate = this.afPressureDropCoeffsSum(iB);
-
-                else
-                    afPressureDropCoeffs = nan(1, oB.iFlowProcs);
-
-
-                    %TODO might change after calculation, because pressure
-                    %     of VPP might be adapted. At least one iteration
-                    %     even for the simple case?
-                    %     Cause e.g. checkvalve ... might be some flow for
-                    %     one step, which might be up to 20 secs ...
-                    bFlowRatePositive = oB.coExmes{1}.getPortProperties() >= oB.coExmes{2}.getPortProperties();
-
-
-                    for iProc = 1:oB.iFlowProcs
-                        afPressureDropCoeffs(iProc) = oB.aoFlowProcs(iProc).toSolve.(this.sSolverType).getCoefficient(bFlowRatePositive);
-                    end
-
-                    this.afPressureDropCoeffsSum(iB) = sum(afPressureDropCoeffs);
-
-                    % For the matrix coeffs, we do need to convert the coeff,
-                    % which is relative to the VOLUMETRIC flow rate, to the
-                    % absolute flow rate - incompresible, use mean density of
-                    % all boundary nodes!
-                    fCoeffFlowRate = this.afPressureDropCoeffsSum(iB);
-                end
-
-                if ~base.oLog.bOff, this.out(1, 3, 'props', 'Branch %s: Flow Coeff %f', { oB.sName, fCoeffFlowRate}); end;
-
-
-                % Set flow coeff
-                iCol = this.piObjUuidsToColIndex(oB.sUUID);
-
-                aafPhasePressuresAndFlowRates(iRow, iCol) = -1 * fCoeffFlowRate;
-
-
+                
                 % Equation depending on pressure left/right
                 %   P-T, T-P, T-T, P-P
                 % If left side of branch - positive value on matrix,
@@ -472,35 +388,6 @@ classdef branch < base & event.source
 
                     % Multiplication not really necessary, only two loops
                     iSign = -1 * iSign;
-                end
-
-
-                % Active component? Get pressure rise based on last
-                % iteration flow rate - add to boundary condition!
-                if bActiveBranch
-                    fFlowRate   = this.afFlowRates(iB);
-                    oProcSolver = oB.aoFlowProcs(1).toSolve.(this.sSolverType);
-
-                    % calDeltas returns POSITIVE value for pressure DROP!
-                    fPressureRise = -1 * oProcSolver.calculateDeltas(fFlowRate);
-
-                    % No flow, most likely?
-                    if fPressureRise == 0
-                        this.afTmpPressureRise(iB) = 0;
-
-                    % DROP!
-                    elseif fPressureRise < 0
-                        this.afTmpPressureRise(iB) = 0;
-
-                    else
-                        fPressureRise = (this.afTmpPressureRise(iB) * 33 + fPressureRise) / 34;
-
-                        this.afTmpPressureRise(iB) = fPressureRise;
-                    end
-
-                    % Boundary condition must be zero, can't have active
-                    % component if one side is a fixed, BC phase.
-                    afBoundaryConditions(iRow) = -1 * fPressureRise;
                 end
             end
             
@@ -548,12 +435,6 @@ classdef branch < base & event.source
                     else
                         iCol = this.piObjUuidsToColIndex(oB.sUUID);
                         
-                        % Check coeff of branch - if inf, don't add this
-                        % term! No flow!
-                        if isnan(this.afPressureDropCoeffsSum(this.aoBranches(iB) == oB))
-                            continue;
-                        end
-                        
                         aafPhasePressuresAndFlowRates(iRow, iCol) = iSign;
                         iAdded = iAdded + 1;        
                     end
@@ -589,6 +470,13 @@ classdef branch < base & event.source
 %                     afBoundaryConditions(iRow) = (3 * afBoundaryConditions(iRow) + fFrSum) / 4;
                 end
             end
+            
+            % Now we use the subfunction to update the pressure drop and
+            % rise coefficients. This is a seperate function because this
+            % is the only part of the calculation that must be executed in
+            % every iteration!
+            [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureDropCoefficients(this, aafPhasePressuresAndFlowRates, afBoundaryConditions);
+            
         end
         
         function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureDropCoefficients(this, aafPhasePressuresAndFlowRates, afBoundaryConditions)
@@ -602,7 +490,7 @@ classdef branch < base & event.source
                 fFlowRate = this.afFlowRates(iB);
                 bActiveBranch = false;
 
-                if (oB.iFlowProcs == 1) && isa(oB.aoFlowProcs(1), 'components.fan')
+                if (oB.iFlowProcs == 1) && oB.aoFlowProcs(1).bActive
 
                     for iP = 1:2
                         if this.poBoundaryPhases.isKey(oB.coExmes{iP}.oPhase.sUUID)
@@ -640,9 +528,9 @@ classdef branch < base & event.source
                         this.afTmpPressureRise(iB) = fPressureRise;
                     end
 
-                    % Boundary condition must be zero, can't have active
-                    % component if one side is a fixed, BC phase.
-                    afBoundaryConditions(iRow) = -1 * fPressureRise;
+                    % Boundary condition for this case can be non zero,
+                    % both sides must be variable pressure phases
+                    afBoundaryConditions(iRow) = fPressureRise;
                     
                 else
                     if fFlowRate == 0
@@ -668,6 +556,20 @@ classdef branch < base & event.source
                 aafPhasePressuresAndFlowRates(iRow, iCol) = -1 * fCoeffFlowRate;
                 
             end
+            
+            % We want to ignore small pressure differences (as specified by
+            % the user). Therefore we equalize pressure differences smaller
+            % than the specified limit
+            afBoundaryHelper = abs(afBoundaryConditions);
+            miSigns = sign(afBoundaryConditions);
+            for iBoundary = 1:length(afBoundaryConditions)
+                abEqualize = abs(afBoundaryHelper - afBoundaryHelper(5)) < this.fMinPressureDiff;
+                
+                fEqualizedPressure = sum(afBoundaryHelper(abEqualize)) / sum(abEqualize);
+                
+                afBoundaryConditions(abEqualize) = fEqualizedPressure .* miSigns(abEqualize);
+            end
+            
         end
         
         
@@ -1104,7 +1006,7 @@ classdef branch < base & event.source
                 afFrsDiff  = tools.round.prec(abs(this.afFlowRates - afPrevFrs), iPrecision);
                 
                 %rError = max(abs(this.afFlowRates ./ afPrevFrs) - 1);
-                rError = abs(max(afFrsDiff ./ afPrevFrs));
+                rError = max(abs(afFrsDiff ./ afPrevFrs));
                 % if the error is smaller than the limit, do one final
                 % update where the recalculation of P2P flowrates is
                 % enforced. If after that the error is still smaller than
@@ -1298,7 +1200,7 @@ classdef branch < base & event.source
                 if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { this.iIteration, rError }); end;
                 
                 if this.iIteration > this.iMaxIterations
-                    %keyboard();
+                    keyboard();
                     this.throw('update', 'too many iterations, error %.12f', rError);
                 end
             end

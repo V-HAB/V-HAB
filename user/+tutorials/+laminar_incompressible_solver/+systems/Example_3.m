@@ -78,9 +78,8 @@ classdef Example_3 < vsys
             components.pipe(this, 'Pipe2', this.fPipeLength, this.fPipeDiameter, 2e-3);
             components.pipe(this, 'Pipe3', this.fPipeLength, this.fPipeDiameter, 2e-3);
             components.pipe(this, 'Pipe4', this.fPipeLength, this.fPipeDiameter, 2e-3);
-            components.pipe(this, 'Pipe5', this.fPipeLength, this.fPipeDiameter, 2e-3);
             
-            %components.fan_simple(this, 'Fan1', 2*10^5);
+            components.fan_simple(this, 'Fan1', 0.5*10^5);
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
@@ -89,9 +88,9 @@ classdef Example_3 < vsys
             matter.branch(this, 'Flow_1.Port_2', {'Pipe2'}, 'Tank_2.Port_1', 'Branch2');
             
             matter.branch(this, 'Tank_2.Port_2', {'Pipe3'}, 'Flow_2.Port_1', 'Branch3');
-            matter.branch(this, 'Flow_2.Port_2', {'Pipe4'}, 'Flow_3.Port_1', 'Branch4');
+            matter.branch(this, 'Flow_2.Port_2', {'Fan1'}, 'Flow_3.Port_1', 'Branch4');
             
-            matter.branch(this, 'Flow_3.Port_2', {'Pipe5'}, 'Tank_1.Port_2', 'Branch5');
+            matter.branch(this, 'Flow_3.Port_2', {'Pipe4'}, 'Tank_1.Port_2', 'Branch5');
             
         end
         
@@ -105,6 +104,9 @@ classdef Example_3 < vsys
             solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches(:), 'complex');
             
             %oIt1.iDampFR = 5;
+            tTimeStepProperties.rMaxChange = 0.001;
+            this.toStores.Tank_1.toPhases.CabinAir.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.Tank_2.toPhases.CabinAir.setTimeStepProperties(tTimeStepProperties);
             
             this.setThermalSolvers();
         end
