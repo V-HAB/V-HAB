@@ -394,10 +394,11 @@ classdef branch < base & event.source
             % We want to ignore small pressure differences (as specified by
             % the user). Therefore we equalize pressure differences smaller
             % than the specified limit
-            afBoundaryHelper = abs(afBoundaryConditions);
-            miSigns = sign(afBoundaryConditions);
-            for iBoundary = 1:length(afBoundaryConditions)
-                abEqualize = abs(afBoundaryHelper - afBoundaryHelper(5)) < this.fMinPressureDiff;
+            afBoundaryHelper = afBoundaryConditions(1:length(this.aoBranches));
+            miSigns = sign(afBoundaryHelper);
+            afBoundaryHelper = abs(afBoundaryHelper);
+            for iBoundary = 1:length(afBoundaryHelper)
+                abEqualize = abs(afBoundaryHelper - afBoundaryHelper(iBoundary)) < this.fMinPressureDiff;
                 
                 fEqualizedPressure = sum(afBoundaryHelper(abEqualize)) / sum(abEqualize);
                 
@@ -560,10 +561,11 @@ classdef branch < base & event.source
             % We want to ignore small pressure differences (as specified by
             % the user). Therefore we equalize pressure differences smaller
             % than the specified limit
-            afBoundaryHelper = abs(afBoundaryConditions);
-            miSigns = sign(afBoundaryConditions);
-            for iBoundary = 1:length(afBoundaryConditions)
-                abEqualize = abs(afBoundaryHelper - afBoundaryHelper(5)) < this.fMinPressureDiff;
+            afBoundaryHelper = afBoundaryConditions(1:length(this.aoBranches));
+            miSigns = sign(afBoundaryHelper);
+            afBoundaryHelper = abs(afBoundaryHelper);
+            for iBoundary = 1:length(afBoundaryHelper)
+                abEqualize = abs(afBoundaryHelper - afBoundaryHelper(iBoundary)) < this.fMinPressureDiff;
                 
                 fEqualizedPressure = sum(afBoundaryHelper(abEqualize)) / sum(abEqualize);
                 
