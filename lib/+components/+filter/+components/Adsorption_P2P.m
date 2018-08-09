@@ -68,12 +68,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             end
             this.mfAbsorptionEnthalpy = mfAbsorptionEnthalpyHelper;
 
-            this.mbIgnoreSmallPressures = false(1,this.oMT.iSubstances);
-            if ~isempty(regexp(this.oIn.oPhase.oStore.sName, 'Zeolite5A', 'once'))
-                this.mbIgnoreSmallPressures(this.oMT.tiN2I.H2O) = true;
-                bUseBufferPhase = true;
-            end
-            
+            this.mbIgnoreSmallPressures = true(1,this.oMT.iSubstances);
         end
         
         function update(~)
@@ -146,7 +141,12 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             afMinPP(isinf(afMinPP)) = 0;
 
             % dq/dt = k(q*-q)
-            mfFlowRates = this.mfMassTransferCoefficient .* (mfEquilibriumLoading - mfCurrentLoading);
+            % Here the solution to this differential equation is used:
+            % q(t + dt) = q* - (q* - q(t)) * exp( - k * dt)
+            % Here we assume that a fixed time step of 1 s is used (as it
+            % is diffcult to calculate the future correct V-HAB time step
+            % for this...
+            mfFlowRates = (mfEquilibriumLoading - (mfEquilibriumLoading - mfCurrentLoading) .* exp(- this.mfMassTransferCoefficient) - mfCurrentLoading);
             
 %             afNewInFlows = this.afPartialInFlows - this.mfFlowRatesProp;
 %             afNewInFlows(afNewInFlows < 0) = 0;
@@ -159,13 +159,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             afMinMassFraction = afMinMolarFraction .* this.oMT.afMolarMass;
 
             afMinOutFlows = sum(this.afPartialInFlows) .* afMinMassFraction;
-            
-            % exothermic reaction have a negative enthalpy by definition,
-            % therefore we have to multiply the equation with -1 to have a
-            % positive heat flow for positive flowrates
-            this.fAdsorptionHeatFlow = - sum((mfFlowRates ./ this.oMT.afMolarMass) .* this.mfAbsorptionEnthalpy);
-            % set heatflow to a heat source
-            % this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
             
             mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
             mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
@@ -217,6 +210,15 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             else
                 this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
             end
+            
+            % exothermic reaction have a negative enthalpy by definition,
+            % therefore we have to multiply the equation with -1 to have a
+            % positive heat flow for positive flowrates
+            mfFlowRates = mfFlowRatesAdsorption - mfFlowRatesDesorption;
+            this.fAdsorptionHeatFlow = - sum((mfFlowRates ./ this.oMT.afMolarMass) .* this.mfAbsorptionEnthalpy);
+            % set heatflow to a heat source
+            % this.oStore.oContainer.tThermalNetwork.mfAdsorptionHeatFlow(this.iCell) = this.fAdsorptionHeatFlow;
+            
             % sets the heat flow to the absorber capacity
             this.oOut.oPhase.oCapacity.toHeatSources.(['AbsorberHeatSource_', num2str(this.iCell)]).setHeatFlow(this.fAdsorptionHeatFlow)
             

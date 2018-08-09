@@ -174,15 +174,15 @@ classdef CDRA < vsys
             % for each cell (the values can obtained by running the
             % simulation for a longer time without startvalues and set them
             % according to the values once the simulation is repetetive)
-        	tInitialization.Zeolite13x.mfInitialCO2             = [0.01,  0.01,  0.01,  0.01,  0.01,  0.01,  0.01,  0.01,  0.01,  0.01];
-        	tInitialization.Zeolite13x.mfInitialH2O             = [0.06, 0.018, 0.005,     0,     0,     0,     0,     0,     0,     0];
+        	tInitialization.Zeolite13x.mfInitialCO2             = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0];
+        	tInitialization.Zeolite13x.mfInitialH2O             = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0];
             
-        	tInitialization.Sylobead.mfInitialCO2               = [   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0];
-        	tInitialization.Sylobead.mfInitialH2OAbsorb         = [ 0.4, 0.24, 0.13, 0.08, 0.05,    0,    0,    0,    0,    0,    0]; % Only set for the bed that just finished absorbing
-        	tInitialization.Sylobead.mfInitialH2ODesorb         = [0.17, 0.05,    0,    0,    0,    0,    0,    0,    0,    0,    0]; % Only set for the bed that just finished desorbing
+        	tInitialization.Sylobead.mfInitialCO2               = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,    0];
+        	tInitialization.Sylobead.mfInitialH2OAbsorb         = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,    0]; % Only set for the bed that just finished absorbing
+        	tInitialization.Sylobead.mfInitialH2ODesorb         = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,    0]; % Only set for the bed that just finished desorbing
             
-        	tInitialization.Zeolite5A.mfInitialCO2              = [   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0];
-        	tInitialization.Zeolite5A.mfInitialH2O              = [   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0];
+        	tInitialization.Zeolite5A.mfInitialCO2              = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,    0];
+        	tInitialization.Zeolite5A.mfInitialH2O              = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,    0];
             
             % Sets the cell numbers used for the individual filters
             tInitialization.Zeolite13x.iCellNumber  = 5;
@@ -707,8 +707,8 @@ classdef CDRA < vsys
                         oPhase.setTimeStepProperties(tTimeStepProperties);
                     elseif ~isempty(regexp(oPhase.sName, 'MassBuffer', 'once'))
                         arMaxChange = zeros(1,this.oMT.iSubstances);
-                        arMaxChange(this.oMT.tiN2I.H2O) = 0.25;
-                        arMaxChange(this.oMT.tiN2I.CO2) = 0.25;
+                        arMaxChange(this.oMT.tiN2I.H2O) = 0.1;
+                        arMaxChange(this.oMT.tiN2I.CO2) = 0.1;
                         tTimeStepProperties.arMaxChange = arMaxChange;
                         tTimeStepProperties.rMaxChange = 0.1;
                         tTimeStepProperties.fMaxStep = 60;
@@ -921,6 +921,8 @@ classdef CDRA < vsys
                         fHeaterPower = this.fMaxHeaterPower;
                     end
                     oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(fHeaterPower);
+                else
+                    oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(0);
                 end
             end
         end
