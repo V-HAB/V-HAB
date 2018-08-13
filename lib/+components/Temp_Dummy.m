@@ -12,15 +12,22 @@ classdef Temp_Dummy < matter.procs.f2f
         fDeltaPress = 0;        % Pressure difference created by the component in [Pa]
         bActive = true;         % Must be true so the update function is called from the branch solver
         fTemperature;
+        fMaxHeatFlow = inf;
         
     end
     
     methods
-        function this = Temp_Dummy(oMT, sName, fTemperature)
+        function this = Temp_Dummy(oMT, sName, fTemperature, fMaxHeatFlow)
             this@matter.procs.f2f(oMT, sName);
             
             this.fTemperature = fTemperature;
+            
+            if nargin > 3
+                this.fMaxHeatFlow = fMaxHeatFlow;
+            end
+            
             this.supportSolver('manual', true, @this.updateManualSolver);
+            this.supportSolver('callback',  @this.solverDeltas);
         end
         
         function updateManualSolver(this)
@@ -37,6 +44,29 @@ classdef Temp_Dummy < matter.procs.f2f
             end
             this.fDeltaTemp = (this.fTemperature - inFlow.fTemperature);
             this.fHeatFlow = (inFlow.fFlowRate*inFlow.fSpecificHeatCapacity)*this.fDeltaTemp;
+            if this.fHeatFlow > this.fMaxHeatFlow
+                this.fHeatFlow = this.fMaxHeatFlow;
+            end
+        end
+        
+        function fDeltaPressure = solverDeltas(this, fFlowRate)
+            try
+                [Flow1, Flow2] = this.getFlows();
+                
+                if Flow1.fFlowRate > 0
+                    inFlow = Flow1;
+                else
+                    inFlow = Flow2;
+                end
+            catch
+                inFlow = this.aoFlows(1);
+            end
+            this.fDeltaTemp = (this.fTemperature - inFlow.fTemperature);
+            this.fHeatFlow = (fFlowRate*inFlow.fSpecificHeatCapacity)*this.fDeltaTemp;
+            if this.fHeatFlow > this.fMaxHeatFlow
+                this.fHeatFlow = this.fMaxHeatFlow;
+            end
+            fDeltaPressure = 0;
         end
         
         function setActive(this, bActive, ~)

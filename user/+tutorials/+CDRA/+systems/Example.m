@@ -81,7 +81,7 @@ classdef Example < vsys
             if bSimpleCDRA
                 components.CDRA.CDRA_simple(this, 'CDRA', 60, tAtmosphere, sCCAA);
             else
-                components.CDRA.CDRA(this, 'CDRA', 60, tAtmosphere, sCCAA);
+                components.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA);
             end
             
             eval(this.oRoot.oCfgParams.configCode(this));
@@ -93,7 +93,7 @@ classdef Example < vsys
             createMatterStructure@vsys(this);
             %% Gas System
             % Creating a store, volume 1 m^3
-            matter.store(this, 'Cabin', 100 + this.iCrewMembers*70/1000);
+            matter.store(this, 'Cabin', 100);
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
@@ -163,28 +163,28 @@ classdef Example < vsys
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 0.1, struct('CO2', fCO2Percent),  295, 0, 1e5);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 0.1, struct('CO2', fCO2Percent),  295, 0, 2.5e5);
                
             % Adding a phase to the store
             oConnectionPhase = matter.phases.gas(this.toStores.CCAA_CDRA_Connection, 'ConnectionPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
-            oConnectionPhase.bFlow = true;
+            %oConnectionPhase.bFlow = true;
             
             % creates a store to connect the CCAA and the CDRA
             matter.store(this, 'CDRA_CCAA_Connection', 0.1);
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 0.2, struct('CO2', fCO2Percent),  295, 0, 1e5);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 0.1, struct('CO2', fCO2Percent),  295, 0, 1e5);
                
             % Adding a phase to the store
             oConnectionPhase = matter.phases.gas(this.toStores.CDRA_CCAA_Connection, 'ConnectionPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
-            oConnectionPhase.bFlow = true;
+%             oConnectionPhase.bFlow = true;
             
             % Adding heat sources to keep the cabin and coolant water at a
             % constant temperature
@@ -335,9 +335,11 @@ classdef Example < vsys
             
             %p2p proc to convert O2 taken in by humans to CO2 to somewhat
             %close the mass balance
-            oHumanWaterPhase = matter.phases.liquid(this.toStores.Cabin, 'HumanWater', struct( 'H2O', this.iCrewMembers*70), this.iCrewMembers*70/1000, 309.15, 1e5);
+            oHumanWaterPhase = matter.phases.gas(this.toStores.Cabin, 'HumanWater', struct(...
+                'H2O', this.iCrewMembers*70),...
+                this.iCrewMembers*70, 309.15);
             
-            matter.procs.exmes.liquid(oHumanWaterPhase, 'HumidityOut');
+            matter.procs.exmes.gas(oHumanWaterPhase, 'HumidityOut');
             
             %p2p proc for the crew humidity generator
             tutorials.CDRA.components.Crew_Humidity_Generator(...

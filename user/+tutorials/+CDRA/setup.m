@@ -12,18 +12,16 @@ classdef setup < simulation.infrastructure
     end
     
     methods
-        function this = setup(ptConfigParams, tSolverParams, bSimpleCDRA) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams) % Constructor function
             
             % Possible to change the constructor paths and params for the
             % monitors
             ttMonitorConfig = struct();
-            warning( 'off', 'all')
             
             this@simulation.infrastructure('Tutorial_CDRA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            if nargin < 3
-                bSimpleCDRA = true;
-            end
+            bSimpleCDRA = true;
+            
             % Creating the root object
             tutorials.CDRA.systems.Example(this.oSimulationContainer, 'Example', bSimpleCDRA);
 

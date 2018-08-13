@@ -31,12 +31,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
         fPressure    = 0;  % [Pa]
         
         % @type float
-        fTemperature = 0;   % [K]
+        fTemperature = 293;   % [K]
         
-        
-        
-        %TODO implement .update, get heat capacity depending on
-        %     arPartialMass and Temperature
         fSpecificHeatCapacity = 0;       % [J/K/kg]
         fMolarMass            = 0;       % [kg/mol]
         
@@ -555,11 +551,25 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % p2p updates) the arPhasePartialMass may be all zeros,
                 % even though the phase mass is not zero. In that case,
                 % we'll just update the phase.
-                if sum(arPhasePartialMass) == 0 && oExme.oPhase.fMass ~= 0
-                    oExme.oPhase.update();
-                    [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
+                if oExme.oPhase.bFlow
+                    if sum(arPhasePartialMass) == 0 && oExme.oPhase.fCurrentTotalMassInOut ~= 0
+                        oExme.oPhase.update();
+                        [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
+                    end
+                else
+                    if sum(arPhasePartialMass) == 0 && oExme.oPhase.fMass ~= 0
+                        oExme.oPhase.update();
+                        [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
+                    end
                 end
-
+                % This can occur for example if a flow phase is used, which
+                % has an outflow, but not yet an inflow. In that case the
+                % partial mass of the phase is zero (as nothing flows in)
+                % and the phase is handled like an empty normal phase
+                if sum(arPhasePartialMass) == 0
+                    fFlowRate = 0;
+                end
+                
                 % If a phase was empty in one of the previous time steps
                 % and has had mass added to it, the specific heat capacity
                 % may not have yet been calculated, because the phase has
@@ -671,10 +681,14 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     % Only warn for > 10Pa ... because ...
                     %TODO Make these warnings a lower level debug output,
                     %once the debug class is implemented.
-                    if fPortPress < -10
-                        aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fPortPress, aoFlows(1).oBranch.sName);
-                    elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
-                        aoFlows(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, aoFlows(1).oBranch.sName);
+                    %
+                    % FOr manual solvers this is not an issue!
+                    if ~isa(oThis.oBranch.oHandler, 'solver.matter.manual.branch')
+%                         if fPortPress < -10
+%                             aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fPortPress, aoFlows(1).oBranch.sName);
+%                         elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
+%                             aoFlows(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, aoFlows(1).oBranch.sName);
+%                         end
                     end
                 elseif tools.round.prec(fPortPress, iPrec) == 0
                     % If the pressure is extremely small, we also set the
