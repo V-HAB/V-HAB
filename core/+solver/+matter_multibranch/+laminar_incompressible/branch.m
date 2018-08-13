@@ -531,7 +531,7 @@ classdef branch < base & event.source
 
                     % Boundary condition for this case can be non zero,
                     % both sides must be variable pressure phases
-                    afBoundaryConditions(iRow) = fPressureRise;
+                    afBoundaryConditions(iRow) = -fPressureRise;
                     
                 else
                     if fFlowRate == 0

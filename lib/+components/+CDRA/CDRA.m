@@ -443,8 +443,10 @@ classdef CDRA < vsys
 
                         if (this.iCycleActive == 1 && strcmp(sName, 'Zeolite5A_2')) || (this.iCycleActive == 2 && strcmp(sName, 'Zeolite5A_1'))
                             oMassBuffer = matter.phases.gas(this.toStores.(sName), 'MassBuffer', tfMassesFlow,fFlowVolume, this.TargetTemperature);
+                            oAirSaveFlow = matter.phases.gas_flow_node(this.toStores.(sName), 'AirSaveFlow', tfMassesFlow,fFlowVolume, this.TargetTemperature);
                         else
                             oMassBuffer = matter.phases.gas(this.toStores.(sName), 'MassBuffer', tfMassesFlow,fFlowVolume, fTemperatureFlow);
+                            oAirSaveFlow = matter.phases.gas_flow_node(this.toStores.(sName), 'AirSaveFlow', tfMassesFlow,fFlowVolume, fTemperatureFlow);
                         end
                         % adds the connection from the last cell of this bed
                         % into the mass buffer (the connection from the buffer
@@ -453,6 +455,9 @@ classdef CDRA < vsys
 
                         matter.procs.exmes.gas(oMassBuffer, 'Buffer_Inlet');
                         matter.procs.exmes.gas(oMassBuffer, 'Buffer_Outlet');
+                        
+                        matter.procs.exmes.gas(oAirSaveFlow, 'AirSave_Inlet');
+                        matter.procs.exmes.gas(oAirSaveFlow, 'AirSave_Outlet');
 
                         components.CDRA.components.Filter_F2F(this, [sName, '_FrictionProc_Buffer'], this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell));
 
@@ -575,23 +580,32 @@ classdef CDRA < vsys
             components.fan_simple(this, 'AirsaveFanTwo', 1*10^5);
             components.pipe(this, 'Pipe_5A_1_Vacuum', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
             components.pipe(this, 'Pipe_5A_2_Vacuum', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
-            components.pipe(this, 'Pipe_5A_1_Airsave', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
-            components.pipe(this, 'Pipe_5A_2_Airsave', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
+            components.pipe(this, 'Pipe_5A_1_Airsave', this.fPipelength, 1e-3, this.fFrictionFactor);
+            components.pipe(this, 'Pipe_5A_2_Airsave', this.fPipelength, 1e-3, this.fFrictionFactor);
             
             sBranchName = 'CDRA_Vent_1';
             oBranch = matter.branch(this, 'Zeolite5A_2.OutletVacuum',  {'Valve_5A_2_Vacuum', 'Pipe_5A_2_Vacuum'}, 'CDRA_Vent_1', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
+            sBranchName = 'CDRA_AirSafe_1_Fan';
+            oBranch = matter.branch(this, 'Zeolite5A_2.OutletAirsave', {'AirsaveFanTwo'}, 'Zeolite5A_2.AirSave_Inlet', sBranchName);
+            this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
+            
             sBranchName = 'CDRA_AirSafe_1';
-            oBranch = matter.branch(this, 'Zeolite5A_2.OutletAirsave', {'Valve_5A_2_Airsave', 'AirsaveFanTwo', 'Pipe_5A_2_Airsave'}, 'CDRA_AirSafe_1', sBranchName);
+            oBranch = matter.branch(this, 'Zeolite5A_2.AirSave_Outlet', {'Valve_5A_2_Airsave', 'Pipe_5A_2_Airsave'}, 'CDRA_AirSafe_1', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
             sBranchName = 'CDRA_Vent_2';
             oBranch = matter.branch(this, 'Zeolite5A_1.OutletVacuum',  {'Valve_5A_1_Vacuum', 'Pipe_5A_1_Vacuum'}, 'CDRA_Vent_2', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
+            
+            sBranchName = 'CDRA_AirSafe_2_Fan';
+            oBranch = matter.branch(this, 'Zeolite5A_1.OutletAirsave', {'AirsaveFanOne'}, 'Zeolite5A_1.AirSave_Inlet', sBranchName);
+            this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
+            
             sBranchName = 'CDRA_AirSafe_2';
-            oBranch = matter.branch(this, 'Zeolite5A_1.OutletAirsave', {'Valve_5A_1_Airsave', 'AirsaveFanOne', 'Pipe_5A_1_Airsave'}, 'CDRA_AirSafe_2', sBranchName);
+            oBranch = matter.branch(this, 'Zeolite5A_1.AirSave_Outlet', {'Valve_5A_1_Airsave', 'Pipe_5A_1_Airsave'}, 'CDRA_AirSafe_2', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
             this.tMassNetwork.aoActiveValvesCycleOne(1) = this.toProcsF2F.Cycle_One_InletValve;
