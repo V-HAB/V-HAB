@@ -60,35 +60,89 @@ classdef branch < solver.thermal.base.branch
             fCurrentHeatFlowLeft    = fExmeHeatFlowLeft + fSourceHeatFlowLeft;
             fCurrentHeatFlowRight   = fExmeHeatFlowRight + fSourceHeatFlowRight;
             
-            % If we assume an inifinite conductor between the two
-            % capacities, the temperature change for each of the capacities
-            % is simply the total heat flow divided with the total capacity
-            % of both capacities.
-            fTemperatureChangePerSecond = (fCurrentHeatFlowLeft + fCurrentHeatFlowRight) / (oCapacityLeft.fTotalHeatCapacity + oCapacityRight.fTotalHeatCapacity);
+            if oCapacityLeft.oPhase.bFlow
+                
+                oFlowCapacity   = oCapacityLeft;
+                oNormalCapacity = oCapacityRight;
+                
+                bFlow = true;
+                bLeft = true;
+            elseif oCapacityRight.oPhase.bFlow
+                
+                oFlowCapacity   = oCapacityRight;
+                oNormalCapacity = oCapacityLeft;
+                
+                bFlow = true;
+                bLeft = false;
+            else
+                bFlow = false;
+            end
             
-            % Then the required heat flow for each of the phases is:
-            fRequiredHeatFlowLeft   = fTemperatureChangePerSecond * oCapacityLeft.fTotalHeatCapacity;
-            
-            fSolverHeatFlowLeft     = fRequiredHeatFlowLeft  - fCurrentHeatFlowLeft;
-            % Can be used for sanity check, the heat flow on the ohter side
-            % should be identical
-            % fRequiredHeatFlowRight  = fTemperatureChangePerSecond * oCapacityRight.fTotalHeatCapacity;
-            % fSolverHeatFlowRight    = fRequiredHeatFlowRight - fCurrentHeatFlowRight;
-            
-            % For a positive value of the respective heat flows the
-            % phase is supposed to increase in temperature, for the
-            % left side a negative value in the solver heat flow would
-            % represent an increase in temperature. Therefore we set 
-            %
-            % In order to equalize small differences in the
-            % temperature, the following term is also added (the
-            % difference can occur e.g. because the total heat capacity
-            % changes etc. However these errors should be small and the
-            % temperature of both capacities should be nearly identical
-            % all the time)
-            fEqualizationTemperatureChange = (oCapacityLeft.fTemperature - oCapacityRight.fTemperature) / 2;
+            if bFlow
+                % In the case that one phase is a flow phase it does not
+                % actually have a capacity, but just a capacity flow.
+                % Therefore, setting a heat flow for this phase directly
+                % sets the temperature of the flow phase. For this reason
+                % the solver heat flow of this branch is calculated in a
+                % way that the flow phase has the same temperature as the
+                % other phase while change in temperature only occurs in
+                % the normal capacity
+                
+                mfFlowRate              = zeros(1,oFlowCapacity.iProcsEXME);
+                mfSpecificHeatCapacity  = zeros(1,oFlowCapacity.iProcsEXME);
+                for iExme = 1:oFlowCapacity.iProcsEXME
+                    if isa(oFlowCapacity.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
+                        fFlowRate = oFlowCapacity.aoExmes(iExme).oBranch.coConductors{1}.oMassBranch.fFlowRate * oFlowCapacity.oPhase.toProcsEXME.(oFlowCapacity.aoExmes(iExme).sName).iSign;
+                        
+                        if fFlowRate > 0
+                            mfFlowRate(iExme) = fFlowRate;
+                            mfSpecificHeatCapacity(iExme) = oFlowCapacity.oPhase.toProcsEXME.(oFlowCapacity.aoExmes(iExme).sName).oFlow.fSpecificHeatCapacity;
+                        end
+                    end
+                end
+                
+                fOverallHeatCapacityFlow = sum(mfFlowRate .* mfSpecificHeatCapacity);
+                
+                fRequiredFlowHeatFlow = (oNormalCapacity.fTemperature - oFlowCapacity.fTemperature) * fOverallHeatCapacityFlow;
+                
+                if bLeft
+                    this.fSolverHeatFlow = -(fRequiredFlowHeatFlow - fCurrentHeatFlowLeft);
+                else
+                    this.fSolverHeatFlow = fRequiredFlowHeatFlow - fCurrentHeatFlowRight;
+                end
+                
+            else
+                % If we assume an inifinite conductor between the two
+                % capacities, the temperature change for each of the capacities
+                % is simply the total heat flow divided with the total capacity
+                % of both capacities.
+                fTemperatureChangePerSecond = (fCurrentHeatFlowLeft + fCurrentHeatFlowRight) / (oCapacityLeft.fTotalHeatCapacity + oCapacityRight.fTotalHeatCapacity);
 
-            this.fSolverHeatFlow = -fSolverHeatFlowLeft + (fEqualizationTemperatureChange * (oCapacityLeft.fTotalHeatCapacity + oCapacityRight.fTotalHeatCapacity) / 2);
+                % Then the required heat flow for each of the phases is:
+                fRequiredHeatFlowLeft   = fTemperatureChangePerSecond * oCapacityLeft.fTotalHeatCapacity;
+
+                fSolverHeatFlowLeft     = fRequiredHeatFlowLeft  - fCurrentHeatFlowLeft;
+                % Can be used for sanity check, the heat flow on the ohter side
+                % should be identical
+                % fRequiredHeatFlowRight  = fTemperatureChangePerSecond * oCapacityRight.fTotalHeatCapacity;
+                % fSolverHeatFlowRight    = fRequiredHeatFlowRight - fCurrentHeatFlowRight;
+
+                % For a positive value of the respective heat flows the
+                % phase is supposed to increase in temperature, for the
+                % left side a negative value in the solver heat flow would
+                % represent an increase in temperature. Therefore we set 
+                %
+                % In order to equalize small differences in the
+                % temperature, the following term is also added (the
+                % difference can occur e.g. because the total heat capacity
+                % changes etc. However these errors should be small and the
+                % temperature of both capacities should be nearly identical
+                % all the time)
+                fEqualizationTemperatureChange = (oCapacityLeft.fTemperature - oCapacityRight.fTemperature) / 2;
+
+                this.fSolverHeatFlow = -fSolverHeatFlowLeft + (fEqualizationTemperatureChange * (oCapacityLeft.fTotalHeatCapacity + oCapacityRight.fTotalHeatCapacity) / 2);
+                
+            end
             
             this.oBranch.coExmes{1}.setHeatFlow(this.fSolverHeatFlow);
             this.oBranch.coExmes{2}.setHeatFlow(this.fSolverHeatFlow);

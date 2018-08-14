@@ -508,7 +508,12 @@ classdef capacity < base & event.source
             % If we have set a fixed time step for the phase, we can just
             % continue without doing any calculations as the fixed step is
             % also used for the capacity
-            if ~isempty(this.oPhase.fFixedTimeStep)
+            if this.oPhase.bFlow
+                % In a flow phase heat flows do not change temperature over
+                % time, but instead directly change the temperature.
+                % Therefore, the time step in flow phases can be infinite
+                fNewStep = inf;
+            elseif ~isempty(this.oPhase.fFixedTimeStep)
                 fNewStep = this.oPhase.fFixedTimeStep;
             else
                 
@@ -548,7 +553,7 @@ classdef capacity < base & event.source
             % Value in store is only updated, if the new update time is
             % earlier than the currently set next update time.
             %this.oStore.setNextUpdateTime(this.fLastMassUpdate + fNewStep);
-            this.oPhase.oStore.setNextTimeStep(fNewStep);
+             this.oPhase.oStore.setNextTimeStep(fNewStep);
 
             % Cache - e.g. for logging purposes
             this.fTimeStep = fNewStep;
