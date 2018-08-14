@@ -22,7 +22,6 @@ classdef branch < base & event.source
         
         fLastUpdate = -10;
         
-        
         % Branch to sync to - if that branch is executed/updated, also
         % update here!
         oSyncedSolver;
@@ -56,6 +55,7 @@ classdef branch < base & event.source
         % branches update their flow rates.
         iPostTickPriority = -1;
         
+        bResidual = false;
         
         % See matter.branch, bTriggerSetFlowRate, for more!
         bTriggerUpdateCallbackBound = false;
