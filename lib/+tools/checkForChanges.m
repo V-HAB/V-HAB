@@ -282,7 +282,7 @@ if exist(sSavePath, 'file') ~= 0
             % subfolders, we can also clean up and save the data into the
             % file again for next time. 
             if bFirstCall
-                tools.removeEntriesForDeletedFiles(tSavedInfo);
+                tools.removeEntriesForDeletedFiles('', tSavedInfo);
                 save(sSavePath,'tSavedInfo','-v7');
                 clear global tSavedInfo
             end
