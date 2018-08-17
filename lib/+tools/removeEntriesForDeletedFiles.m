@@ -36,23 +36,25 @@ for iI = 1:length(csFieldNames)
         
         if ~any(abFoundItems)
             tInfo = rmfield(tInfo, csFieldNames{iI});
-            fprintf('''%s%s'' is being removed.\n', sPath, sFileName);
+            fprintf('''%s%s'' was removed.\n', sPath, sFileName);
         end
         
     else
         % Remove 'p_' at the beginning if present.
         if strcmp(csFieldNames{iI}(1:2),'p_')
-            csFieldNames{iI} = csFieldNames{iI}(3:end);
+            sFolderName = csFieldNames{iI}(3:end);
+        else
+            sFolderName = csFieldNames{iI};
         end
         
         if isempty(sPath)
-            sNewPath = [ csFieldNames{iI}, filesep ];
+            sNewPath = [ sFolderName, filesep ];
         else
-            if length(csFieldNames{iI}) > 3 && ...
-               strcmp(csFieldNames{iI}(1:3),'at_')
-                sNewPath = [ '@', csFieldNames{iI}(7:end), filesep ];
+            if length(sFolderName) > 3 && ...
+               strcmp(sFolderName(1:3),'at_')
+                sNewPath = [ '@', sFolderName(7:end), filesep ];
             else
-                sNewPath = [ '+', csFieldNames{iI}, filesep ];
+                sNewPath = [ '+', sFolderName, filesep ];
             end
         end
         
@@ -77,7 +79,7 @@ for iI = 1:length(csFieldNames)
                 sNewPath = [ csNames{abFoundItems}, filesep ];
             else
                 tInfo = rmfield(tInfo, csFieldNames{iI});
-                fprintf('''%s%s'' is being removed.\n', sPath, sFileName);
+                fprintf('''%s%s'' was removed.\n', sPath, sFolderName);
                 continue;
             end
         end

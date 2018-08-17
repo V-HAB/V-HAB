@@ -149,7 +149,7 @@ if exist(sSavePath, 'file') ~= 0
             % files and folders, so we return 'true' and finish the
             % function.
             bChanged = true;
-            fprintf('''%s'' is being added.\n', sFileOrFolderPath);
+            fprintf('''%s'' was added.\n', sFileOrFolderPath);
             return;
         else
             % The field name for the top level folder we are looking at
@@ -253,7 +253,7 @@ if exist(sSavePath, 'file') ~= 0
         % has to be the initial scan, so we set our return variable to
         % true and finish the function.
         bChanged = true;
-        fprintf('''%s'' is being added.\n', sFileOrFolderPath);
+        fprintf('''%s'' was added.\n', sFileOrFolderPath);
         return;
     else
         % Okay, so the file exists AND the field exists, this must be a
@@ -282,7 +282,7 @@ if exist(sSavePath, 'file') ~= 0
             % subfolders, we can also clean up and save the data into the
             % file again for next time. 
             if bFirstCall
-                tools.removeEntriesForDeletedFiles('', tSavedInfo);
+                tSavedInfo = tools.removeEntriesForDeletedFiles('', tSavedInfo);
                 save(sSavePath,'tSavedInfo','-v7');
                 clear global tSavedInfo
             end
@@ -308,7 +308,7 @@ if exist(sSavePath, 'file') ~= 0
     % In case it is the first call, we can clean up and save the data into
     % the file again for next time.
     if bFirstCall
-        tools.removeEntriesForDeletedFiles(tSavedInfo);
+        tSavedInfo = tools.removeEntriesForDeletedFiles(tSavedInfo);
         save(sSavePath,'tSavedInfo','-v7');
         clear global tSavedInfo
     end
