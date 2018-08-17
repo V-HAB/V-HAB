@@ -255,6 +255,31 @@ classdef plotter_basic < base
                 tFigureOptions = struct();
             end
             
+            if isfield(tFigureOptions, 'bArrangePlotsInSquare') && tFigureOptions.bArrangePlotsInSquare == true
+                if isfield(tFigureOptions, 'bTimePlot')
+                    btimePlot = tFigureOptions.bTimePlot;
+                else
+                    btimePlot = false;
+                end
+                iPlots  = length(coPlots) + sif(btimePlot,1,0);
+                iGrid   = ceil(sqrt(iPlots));
+                
+                % Rows of grid - can we reduce?
+                iGridRows = iGrid;
+                iGridCols = iGrid;
+                
+                while (iGridCols - 1) * iGridRows >= iPlots
+                    iGridCols = iGridCols - 1;
+                end
+                
+                coPlotsReArranged = cell(iGridRows,iGridCols);
+                for iI = 1:numel(coPlots)
+                    coPlotsReArranged{iI} = coPlots{iI};
+                end
+                
+                coPlots = coPlotsReArranged;
+            end
+            
             % We now have all we need, so we can add another entry to the
             % coFigures cell.
             this.coFigures{end+1} = tools.postprocessing.plotter.figure(sName, coPlots, tFigureOptions);

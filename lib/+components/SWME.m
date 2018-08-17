@@ -118,7 +118,10 @@ classdef SWME < vsys
             % otherwise it is possible, that the connected branch that
             % transfers the water vapor to the environment sucks all of the
             % matter out of the phase in one time step. 
-            this.toStores.SWMEStore.toPhases.VaporPhase.fMaxStep = 0.5;
+            %TEMPORARY
+            %CHECK Make sure I can actually comment this in the PLSS 2.0
+            %version
+            %this.toStores.SWMEStore.toPhases.VaporPhase.setTimeStepProperties(struct('fMaxStep', 0.5));
         end
         
         function setInterfaces(this, sInlet, sOutlet)

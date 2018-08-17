@@ -125,9 +125,9 @@ classdef infrastructure < base & event.source
             this.sName = sName;
             
             
-            if nargin < 2 || isempty(ptConfigParams), ptConfigParams = containers.Map(); end;
-            if nargin < 3 || isempty(tSolverParams),  tSolverParams  = struct(); end;
-            if nargin < 4 || isempty(tMonitors),      tMonitors      = struct(); end;
+            if nargin < 2 || isempty(ptConfigParams), ptConfigParams = containers.Map(); end
+            if nargin < 3 || isempty(tSolverParams),  tSolverParams  = struct(); end
+            if nargin < 4 || isempty(tMonitors),      tMonitors      = struct(); end
 
             % Monitors -> merge
             csMonitors = fieldnames(tMonitors);
@@ -315,6 +315,10 @@ classdef infrastructure < base & event.source
                     oChild.sealElectricalStructure();
                 end
                 
+                % Seal matter things - do we need something like that
+                % for thermal/electrical?
+                %oChild.seal();
+                    
                 oChild.createSolverStructure();
                 
                 %TODO Might have to add something like this here
@@ -576,7 +580,7 @@ classdef infrastructure < base & event.source
             sPath = [  this.sName '_' datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') sTick sAppendix ];
             
             
-            oSimObj = this;
+            oSimObj = this; %#ok<NASGU> Suppressing the unused variable warning.
             
             save([ 'data/' sPath '.mat' ], 'oSimObj');
 

@@ -17,7 +17,7 @@ classdef vhab
             % The old V-HAB projects are collected in one big project that
             % is located in the 'old' folder. Users may or may not have
             % this project, so we check for the folder.
-            if isdir([ strrep(pwd(), '\', '/') '/old' ])
+            if isfolder([ strrep(pwd(), '\', '/') '/old' ])
                 addpath([ strrep(pwd(), '\', '/') '/old' ]);
             end
         end
@@ -50,6 +50,8 @@ classdef vhab
             try
                 oSim = evalin('base', 'oLastSimObj');
                 delete(oSim);
+            catch
+                % Ignore all errors that occur. 
             end
             
             
@@ -102,8 +104,8 @@ classdef vhab
             
             % Default values for those parameters, so constructor for the
             % simulation does not have to check if they are present!
-            if nargin < 2 || isempty(ptConfigParams), ptConfigParams = containers.Map(); end;
-            if nargin < 3 || isempty(tSolverParams),  tSolverParams   = struct(); end;
+            if nargin < 2 || isempty(ptConfigParams), ptConfigParams = containers.Map(); end
+            if nargin < 3 || isempty(tSolverParams),  tSolverParams   = struct(); end
             
             oSim = vhab.sim(sSimulation, ptConfigParams, tSolverParams, varargin{:});
             
@@ -111,7 +113,7 @@ classdef vhab
             
             oSim.run();
             
-            if nargout >= 1, oSimRtn = oSim; end;
+            if nargout >= 1, oSimRtn = oSim; end
         end
         
         

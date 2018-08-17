@@ -112,7 +112,7 @@ classdef setup < simulation.infrastructure
             
             % The log is built like this:
             %
-            %               Path to the object containing the log value     Log Value                       Unit    Label of log value (used for legends and to plot the value) 
+            %             Path to the object containing the log value       Log Value                       Unit    Label of log value (used for legends and to plot the value) 
             oLog.addValue('Example:s:Tank_1.aoPhases(1)',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 1', 'ppCO2_Tank1');
             oLog.addValue('Example:s:Tank_2.aoPhases(1)',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 2', 'ppCO2_Tank2');
             

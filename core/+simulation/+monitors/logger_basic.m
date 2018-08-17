@@ -22,8 +22,8 @@ classdef logger_basic < simulation.monitor
         );
         
         poUnitsToLabels = containers.Map(...
-            { 's',    'kg',   'kg/s',      'g/s',       'K',           '°C',          'Pa',       'J/K',                 'J/kgK',                  'W/K',          'W',     'F',        'Ohm',        'H',           'A',       'V',       'C',      'mol/kg',        'ppm',           '%',       'Ah',     '-',    'kg/m^3',   'm/s',       'torr'}, ...
-            { 'Time', 'Mass', 'Flow Rate', 'Flow Rate', 'Temperature', 'Temperature', 'Pressure', 'Total Heat Capacity', 'Specific Heat Capacity', 'Conductivity', 'Power', 'Capacity', 'Resistance', 'Inductivity', 'Current', 'Voltage', 'Charge', 'Concentration', 'Concentration', 'Percent', 'Charge', '',     'Density',   'Velocity', 'Pressure'} ...
+            { 's',    'kg',   'kg/s',      'g/s',       'L/min',     'K',           '°C',          'Pa',       'J/K',                 'J/kgK',                  'W/K',          'W',     'F',        'Ohm',        'H',           'A',       'V',       'C',      'mol/kg',        'ppm',           '%',       'Ah',     'kg/m^3',   'm/s',       'torr',     '-'}, ...
+            { 'Time', 'Mass', 'Flow Rate', 'Flow Rate', 'Flow Rate', 'Temperature', 'Temperature', 'Pressure', 'Total Heat Capacity', 'Specific Heat Capacity', 'Conductivity', 'Power', 'Capacity', 'Resistance', 'Inductivity', 'Current', 'Voltage', 'Charge', 'Concentration', 'Concentration', 'Percent', 'Charge', 'Density',   'Velocity', 'Pressure', '' } ...
         );
     end
     
@@ -816,7 +816,7 @@ classdef logger_basic < simulation.monitor
                     % It may be the case, that the existing item was
                     % entered into the log via an automatic helper. This
                     % means, that the label was created automatically and
-                    % are not very legible. Also the sName field may be
+                    % is not very legible. Also the sName field may be
                     % empty. If the user has provided new values for these
                     % two fields, we overwrite them and publish a warning,
                     % so the user knows what's going on.
@@ -838,18 +838,31 @@ classdef logger_basic < simulation.monitor
             % it automatically from the information we have, which is the
             % expression to be evaluated and the object.
             if ~isfield(tLogProp, 'sName') || isempty(tLogProp.sName)
-                % Only accept alphanumeric - can be used for storage e.g.
-                % on a struct using sName as the key!
+                % Since we may need to use the name of the log item as a
+                % field name in a struct, we need to do some formatting
+                % with the sExpression field.
                 
-                tLogProp.sName = [ regexprep(tLogProp.sExpression, '[^a-zA-Z0-9]', '_') '__' oObj.sUUID '_' ];
-                tLogProp.sName = strrep(tLogProp.sName, 'this_', '');
+                % First we replace all characters that are not alphanumeric
+                % with underscores.
+                sName = regexprep(tLogProp.sExpression, '[^a-zA-Z0-9]', '_');
+                
+                % Next we remove all occurances of 'this_'
+                sName = strrep(sName, 'this_', '');
                 
                 % Since we may need to use the name of the log item as a
                 % field name in a struct, we shorten the string to the
-                % allowed 63 characters.
-                if length(tLogProp.sName) > 63
-                    tLogProp.sName = tLogProp.sName(1:63);
+                % allowed 63 characters. In order to make sure that the
+                % name is still unique, we will add the object UUID to the
+                % string, which is 32 characters long, so the remaining
+                % name can only be 30 characters in length, since we'll add
+                % an underscore for separation.
+                if length(sName) > 30
+                    sName = sName(1:30);
                 end
+                
+                % Now we can set the name with the appended UUID.
+                tLogProp.sName = [sName, '_', oObj.sUUID];
+            
             end
             
             

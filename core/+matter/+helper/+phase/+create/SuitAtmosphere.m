@@ -21,13 +21,13 @@ fMolarMassH2O = oStore.oMT.ttxMatter.H2O.fMolarMass;
 fMolarMassO2 = oStore.oMT.ttxMatter.O2.fMolarMass; 
 
 % Check input arguments, set default
-if nargin < 3 || isempty(fTemperature), fTemperature = matter.table.Standard.Temperature; end;
-if nargin < 4 || isempty(rRH),          rRH          = 0;     end;
-if nargin < 5 || isempty(fPressure),    fPressure    = 28900; end;
+if nargin < 3 || isempty(fTemperature), fTemperature = matter.table.Standard.Temperature; end
+if nargin < 4 || isempty(rRH),          rRH          = 0;     end
+if nargin < 5 || isempty(fPressure),    fPressure    = 28900; end
 
 if rRH
     % Calculation of the saturation vapour pressure
-    fSaturationVapourPressure = this.oMT.calculateVaporPressure(fTemperature, 'H2O');
+    fSaturationVapourPressure = oStore.oMT.calculateVaporPressure(fTemperature, 'H2O');
     
     % calculate vapour pressure [Pa]
     fVapourPressure = rRH*fSaturationVapourPressure; 

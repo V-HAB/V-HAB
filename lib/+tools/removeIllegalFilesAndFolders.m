@@ -20,7 +20,7 @@ abIllegals = zeros(1,length(tInputStruct));
 
 % First we need to find the illegal files
 for iI = 1:length(tInputStruct)
-    if ~isempty(strfind(tInputStruct(iI).name(1),'.')) || ...
+    if contains(tInputStruct(iI).name(1),'.') || ...
        ~isempty(strfind(tInputStruct(iI).name,'~'))
        abIllegals(iI) = 1;
     end

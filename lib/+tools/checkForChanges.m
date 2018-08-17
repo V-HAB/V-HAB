@@ -1,4 +1,4 @@
-function bChanged = checkForChanges(sFileOrFolderPath)
+function bChanged = checkForChanges(sFileOrFolderPath, sCaller)
 %CHECKFORCHANGES  Check whether folder contains changed files
 %   This function will check a given folder for changed files. The
 %   information when you last ran this function will be saved in a .mat
@@ -6,7 +6,6 @@ function bChanged = checkForChanges(sFileOrFolderPath)
 %   found one and then return a true or false.
 %   This function will be called recursively and during the recursions
 %   the input parameter may be a file name.
-%TODO: skip uninteresting files like images (PNG, JPG, ...)
 
 % Getting or creating a global variable to temporarily contain our data.
 global tSavedInfo
@@ -14,7 +13,7 @@ global tSavedInfo
 % This is mainly just to save some space in the following code, but it
 % also defines the file name we will use to store the tSavedInfo
 % struct.
-sSavePath  = fullfile('data','FolderStatus.mat');
+sSavePath = fullfile('data',['FolderStatusFor', sCaller, '.mat']);
 
 % Load the information from when we last executed this check or create
 % a new variable that we can later save.
@@ -25,7 +24,7 @@ if exist(sSavePath, 'file') ~= 0
     % and it's contents become the global variable. That happens because
     % the variable saved in the file is also called 'tSavedInfo'.
     if isempty(tSavedInfo)
-        load(sSavePath);
+        load(sSavePath, 'tSavedInfo');
         bFirstCall = true;
     else 
         bFirstCall = false;
@@ -80,7 +79,7 @@ if exist(sSavePath, 'file') ~= 0
         clear('tSavedInfo');
         % Now we recursively call this function, without the existing data
         % file this will trigger a re-scan.
-        tools.checkForChanges(sFileOrFolderPath);
+        tools.checkForChanges(sFileOrFolderPath, sCaller);
         % We still have to set the return variable to true, since this is
         % the first called instance of this function.
         bChanged = true;
@@ -133,7 +132,7 @@ if exist(sSavePath, 'file') ~= 0
                     % variable to true and save it to the data file.
                     tSavedInfo.bLastActionComplete = true;
                     % Recursive call of this function
-                    tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name]);
+                    tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name], sCaller);
                 else
                     % This is only executed if a new folder is added to
                     % the existing file that has files on the top
@@ -150,6 +149,7 @@ if exist(sSavePath, 'file') ~= 0
             % files and folders, so we return 'true' and finish the
             % function.
             bChanged = true;
+            fprintf('''%s'' is being added.\n', sFileOrFolderPath);
             return;
         else
             % The field name for the top level folder we are looking at
@@ -171,7 +171,7 @@ if exist(sSavePath, 'file') ~= 0
             % Now go through all the items and see if there are
             % changes.
             for iI = 1:length(tInfo)
-                abChanged (iI) = tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name]);
+                abChanged (iI) = tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name], sCaller);
             end
             
             % Set the return variable.
@@ -200,8 +200,11 @@ if exist(sSavePath, 'file') ~= 0
     % The last item in the csFieldNames struct is the file or folder we
     % are currently looking at, so we don't need to add it to the
     % struct string.
+    
     sFieldNames = csFieldNames{1};
     for iI = 2:(length(csFieldNames) - 1)
+        % Make sure that the field names are clean
+        csFieldNames{iI} = tools.normalizePath(csFieldNames{iI});
         sFieldNames = strcat(sFieldNames,'.',csFieldNames{iI});
     end
     sStructString = ['tSavedInfo','.',sFieldNames];
@@ -232,7 +235,7 @@ if exist(sSavePath, 'file') ~= 0
             tSavedInfo.bLastActionComplete = true;
             % Go into the folder to add its subfolders and files.
             for iI = 1:length(tInfo)
-                tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name]);
+                tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name], sCaller);
             end
         else
             % The item we're looking at is a file that has not yet been
@@ -250,6 +253,7 @@ if exist(sSavePath, 'file') ~= 0
         % has to be the initial scan, so we set our return variable to
         % true and finish the function.
         bChanged = true;
+        fprintf('''%s'' is being added.\n', sFileOrFolderPath);
         return;
     else
         % Okay, so the file exists AND the field exists, this must be a
@@ -266,7 +270,7 @@ if exist(sSavePath, 'file') ~= 0
             % folders.
             abChanged = zeros(1,length(tInfo));
             for iI = 1:length(tInfo)
-                abChanged (iI) = tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name]);
+                abChanged (iI) = tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name], sCaller);
             end
             
             % If any of the folders have changed, we need to return
@@ -278,6 +282,7 @@ if exist(sSavePath, 'file') ~= 0
             % subfolders, we can also clean up and save the data into the
             % file again for next time. 
             if bFirstCall
+                tools.removeEntriesForDeletedFiles(tSavedInfo);
                 save(sSavePath,'tSavedInfo','-v7');
                 clear global tSavedInfo
             end
@@ -292,6 +297,7 @@ if exist(sSavePath, 'file') ~= 0
                 % the struct and set our return variable to true.
                 eval([sStructString,'.',sFieldName,' = tInfo.datenum;'])
                 bChanged = true;
+                fprintf('''%s'' has changed.\n',sFileOrFolderPath);
             else
                 % Seems like nothing has changed, so we can return false.
                 bChanged = false;
@@ -302,6 +308,7 @@ if exist(sSavePath, 'file') ~= 0
     % In case it is the first call, we can clean up and save the data into
     % the file again for next time.
     if bFirstCall
+        tools.removeEntriesForDeletedFiles(tSavedInfo);
         save(sSavePath,'tSavedInfo','-v7');
         clear global tSavedInfo
     end
@@ -363,7 +370,7 @@ else
                 % we need to set the bLastActionComplete variable to true.
                 tSavedInfo.bLastActionComplete = true;
                 % Go into the folder to add its subfolders and files.
-                tools.checkForChanges(tInfo(iI).name);
+                tools.checkForChanges(tInfo(iI).name, sCaller);
             end
         else
             % The item we're looking at is a file, so we'll cleanup the
