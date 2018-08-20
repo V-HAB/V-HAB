@@ -1,4 +1,4 @@
-function tInfo = removeEntriesForDeletedFiles(sPath, tInfo)
+function [ tInfo, bRemoved ] = removeEntriesForDeletedFiles(sPath, tInfo)
 %REMOVEENTRIESFORDELETEDFILES This function is called by
 %tools.checkForChanges() to remove entries in the data struct storing the
 %file and folder information because they have been deleted. 
@@ -10,6 +10,8 @@ function tInfo = removeEntriesForDeletedFiles(sPath, tInfo)
 %   file and folder names to be valid field names for structs. A good part
 %   of this function deals with reverting these changes to a check if the
 %   file or folder exists can be performed. 
+%   The return values are the struct containing the file information and a
+%   boolean variable indicating, if a file or a folder was removed.
 
 % Getting a cell with the fieldnames from the input struct
 csFieldNames = fieldnames(tInfo);
@@ -20,7 +22,11 @@ csFieldNames = fieldnames(tInfo);
 csFieldNames(contains(csFieldNames,'bInitialScanComplete')) = [];
 csFieldNames(contains(csFieldNames,'bLastActionComplete'))  = [];
 
-% Now we can loop throuhg all the field names and check if the files and
+% Since we are iterating through all of the items in the current path
+% level, we create a boolean array to store the information in. 
+abRemoved = false([length(csFieldNames),1]);
+
+% Now we can loop through all the field names and check if the files and
 % folders the individual entries refer to still exist. If not, we delete
 % them.
 for iI = 1:length(csFieldNames)
@@ -64,6 +70,7 @@ for iI = 1:length(csFieldNames)
         % If we cannot find the file, we delete it and let the user know. 
         if ~any(abFoundItems)
             tInfo = rmfield(tInfo, csFieldNames{iI});
+            abRemoved(iI) = true;
             fprintf('''%s%s'' was removed.\n', sPath, sFileName);
         end
         
@@ -134,6 +141,7 @@ for iI = 1:length(csFieldNames)
                 % Deleting the field from the struct and informing the
                 % user. 
                 tInfo = rmfield(tInfo, csFieldNames{iI});
+                abRemoved(iI) = true;
                 fprintf('''%s%s'' was removed.\n', sPath, sFolderName);
                 
                 % We don't have to do anything else in this iteration, so
@@ -144,7 +152,15 @@ for iI = 1:length(csFieldNames)
         
         % We now have a working path so we call this function recursively
         % to check for deleted files folders on that path. 
-        tInfo.(csFieldNames{iI}) = tools.removeEntriesForDeletedFiles([sPath, sNewPath], tInfo.(csFieldNames{iI}));
+        [ tInfo.(csFieldNames{iI}), abRemoved(iI) ] = tools.fileChecker.removeEntriesForDeletedFiles([sPath, sNewPath], tInfo.(csFieldNames{iI}));
     end
+end
+
+% Before we are finished, we need to check if any files or folders have
+% been removed and set the return variable accordingly. 
+if any(abRemoved)
+    bRemoved = true;
+else
+    bRemoved = false;
 end
 end

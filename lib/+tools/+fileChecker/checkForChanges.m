@@ -6,6 +6,12 @@ function bChanged = checkForChanges(sFileOrFolderPath, sCaller)
 %   found one and then return a true or false.
 %   This function will be called recursively and during the recursions
 %   the input parameter may be a file name.
+%   If the given folder path string is empty, the STEPS Base top directory
+%   will be searched. 
+%   The sCaller input argument is to discern between different callers of
+%   this function in the stored file status files. This prevents one part
+%   of V-HAB code from calling this function and changing the file status
+%   without the other knowing about it. 
 
 % Getting or creating a global variable to temporarily contain our data.
 global tSavedInfo
@@ -79,7 +85,7 @@ if exist(sSavePath, 'file') ~= 0
         clear('tSavedInfo');
         % Now we recursively call this function, without the existing data
         % file this will trigger a re-scan.
-        tools.checkForChanges(sFileOrFolderPath, sCaller);
+        tools.fileChecker.checkForChanges(sFileOrFolderPath, sCaller);
         % We still have to set the return variable to true, since this is
         % the first called instance of this function.
         bChanged = true;
@@ -107,58 +113,136 @@ if exist(sSavePath, 'file') ~= 0
     if length(csFieldNames) == 1
         % Check if the folder name already exists as a field
         if ~isfield(tSavedInfo, csFieldNames{1})
-            % The folder name doesn't exist, so this has to be the
-            % addition of a new folder. So we add it to the top level
-            % of our tSavedInfo struct.
-            tSavedInfo.(csFieldNames{1}) = struct();
-            % Now we get the information struct for the folder via the
-            % dir() method. This struct contains information on all
-            % files and folders inside the folder we are currently
-            % looking at, including the date and time the files were
-            % last changed.
-            tInfo = dir(sFileOrFolderPath);
-            % There will be some hidden files and folders in here that
-            % we have to remove.
-            tInfo = tools.removeIllegalFilesAndFolders(tInfo);
-            % Now we can go through all objects in the folder to see if
-            % they have changed. If the current item is a folder, we
-            % just call this function (checkForChanges()) again, if it
-            % is a file we save the information to a field in the
-            % struct.
-            for iI = 1:length(tInfo)
-                if tInfo(iI).isdir
-                    % Since we will now be recursively calling this
-                    % function, we need to set the bLastActionComplete
-                    % variable to true and save it to the data file.
-                    tSavedInfo.bLastActionComplete = true;
-                    % Recursive call of this function
-                    tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name], sCaller);
-                else
-                    % This is only executed if a new folder is added to
-                    % the existing file that has files on the top
-                    % level.
-                    sFileName = tools.normalizePath(tInfo(iI).name);
-                    % Saving the new file info and setting the
-                    % bLastActionComplete variable to true.
-                    tSavedInfo.(csFieldNames{1}).(sFileName) = tInfo(iI).datenum;
-                    tSavedInfo.bLastActionComplete = true;
+            % The folder name doesn't exist, so this is either the
+            % addition of a new folder or we are searching the STEPS Base
+            % folder. We can determine this by checking if csFieldNames{1}
+            % is empty or not.
+            if isempty(csFieldNames{1})
+                % We are starting a search for changes in the top level
+                % STEPS Base folder.
+                
+                % Since we want to scan the entire V-HAB folder, we'll use
+                % the directory information of the current folder ('pwd').
+                tInfo = dir(pwd);
+                % Cleaning up the struct to get rid of files and folders we
+                % don't want to scan.
+                tInfo = tools.fileChecker.removeIllegalFilesAndFolders(tInfo);
+                % We're initializing a boolean array to save the
+                % information if there are changed files in the folder.
+                abChanged = zeros(1,length(tInfo));
+                % Now we go through all the items in the info struct and
+                % check for changes.
+                for iI = 1:length(tInfo)
+                    if isfolder(tInfo(iI).name)
+                        
+                        % Since we will now be recursively calling this
+                        % function, we need to set the
+                        % bLastActionComplete variable to true.
+                        tSavedInfo.bLastActionComplete = true;
+                        
+                        % Now go through all the items and see if there
+                        % are changes.
+                        if strcmp(tInfo(iI).name,'data')
+                            continue;
+                        else
+                            abChanged(iI) = tools.fileChecker.checkForChanges(tInfo(iI).name, sCaller);
+                        end
+                    else
+                        % We are looking at a file, so we'll compare the save date
+                        % that we stored in our file with the date in the current
+                        % file's info struct. If the current date is newer, then
+                        % the file has changed since we last ran this function.
+                        sFileName = tools.normalizePath(tInfo(iI).name);
+                        if eval(['tSavedInfo.',sFileName,' < tInfo(iI).datenum;'])
+                            % It has changed! So we can save the new change date into
+                            % the struct and set our return variable to true.
+                            eval(['tSavedInfo.',sFileName,' = tInfo(iI).datenum;'])
+                            abChanged(iI) = true;
+                            fprintf('''%s'' has changed.\n',tInfo(iI).name);
+                        else
+                            % Seems like nothing has changed, so we can return false.
+                            abChanged(iI) = false;
+                        end
+                    end
                 end
+                
+                % Set the return variable.
+                bChanged = any(abChanged);
+                
+                % In case it is the first call, we can clean up
+                % and save the data into the file again for
+                % next time.
+                if bFirstCall
+                    % Removing any deleted files
+                    [ tSavedInfo, bRemoved ] = tools.fileChecker.removeEntriesForDeletedFiles('', tSavedInfo);
+                    % If any files have been removed, then we also set the
+                    % return variable to true.
+                    if bRemoved, bChanged = true; end
+                    
+                    save(sSavePath,'tSavedInfo','-v7');
+                    clear global tSavedInfo
+                end
+                
+                % Finish the function.
+                return;
+                
+                
+            else
+                % The field name for the folder doesn't exist, So we add it
+                % to the top level of our tSavedInfo struct.
+                tSavedInfo.(csFieldNames{1}) = struct();
+                % Now we get the information struct for the folder via the
+                % dir() method. This struct contains information on all
+                % files and folders inside the folder we are currently
+                % looking at, including the date and time the files were
+                % last changed.
+                tInfo = dir(sFileOrFolderPath);
+                % There will be some hidden files and folders in here that
+                % we have to remove.
+                tInfo = tools.fileChecker.removeIllegalFilesAndFolders(tInfo);
+                % Now we can go through all objects in the folder to see if
+                % they have changed. If the current item is a folder, we
+                % just call this function (checkForChanges()) again, if it
+                % is a file we save the information to a field in the
+                % struct.
+                for iI = 1:length(tInfo)
+                    if tInfo(iI).isdir
+                        % Since we will now be recursively calling this
+                        % function, we need to set the bLastActionComplete
+                        % variable to true and save it to the data file.
+                        tSavedInfo.bLastActionComplete = true;
+                        % Recursive call of this function
+                        tools.fileChecker.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name], sCaller);
+                    else
+                        % This is only executed if a new folder is added to
+                        % the existing file that has files on the top
+                        % level.
+                        sFileName = tools.normalizePath(tInfo(iI).name);
+                        % Saving the new file info and setting the
+                        % bLastActionComplete variable to true.
+                        tSavedInfo.(csFieldNames{1}).(sFileName) = tInfo(iI).datenum;
+                        tSavedInfo.bLastActionComplete = true;
+                    end
+                end
+                
+                % This code block is only executed, when we're adding new
+                % files and folders, so we return 'true' and finish the
+                % function.
+                bChanged = true;
+                if tSavedInfo.bInitialScanComplete
+                    fprintf('''%s'' was added.\n', sFileOrFolderPath);
+                end
+                return;
             end
-            
-            % This code block is only executed, when we're adding new
-            % files and folders, so we return 'true' and finish the
-            % function.
-            bChanged = true;
-            fprintf('''%s'' was added.\n', sFileOrFolderPath);
-            return;
         else
             % The field name for the top level folder we are looking at
             % already exists. This means we are beginning a search in
             % this folder for changed files.
+            
             % Getting the info struct and deleting the illegal files
             % and folders.
             tInfo = dir(sFileOrFolderPath);
-            tInfo = tools.removeIllegalFilesAndFolders(tInfo);
+            tInfo = tools.fileChecker.removeIllegalFilesAndFolders(tInfo);
             % We're initializing a boolean array to save the
             % information if there are changed files in the folder.
             abChanged = zeros(1,length(tInfo));
@@ -171,7 +255,7 @@ if exist(sSavePath, 'file') ~= 0
             % Now go through all the items and see if there are
             % changes.
             for iI = 1:length(tInfo)
-                abChanged (iI) = tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name], sCaller);
+                abChanged (iI) = tools.fileChecker.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name], sCaller);
             end
             
             % Set the return variable.
@@ -180,6 +264,12 @@ if exist(sSavePath, 'file') ~= 0
             % In case it is the first call, we can clean up and save the data into
             % the file again for next time.
             if bFirstCall
+                % Removing any deleted files
+                [ tSavedInfo, bRemoved ] = tools.fileChecker.removeEntriesForDeletedFiles('', tSavedInfo);
+                % If any files have been removed, then we also set the
+                % return variable to true.
+                if bRemoved, bChanged = true; end
+                
                 save(sSavePath,'tSavedInfo','-v7');
                 clear global tSavedInfo
             end
@@ -227,7 +317,7 @@ if exist(sSavePath, 'file') ~= 0
             % the name of the folder as a field name and start looking
             % in there.
             % Getting info
-            tInfo = tools.removeIllegalFilesAndFolders(tInfo);
+            tInfo = tools.fileChecker.removeIllegalFilesAndFolders(tInfo);
             % Creating new sub-struct
             eval([sStructString,'.',sFieldName,' = struct();']);
             % Since we will now be recursively calling this function, we
@@ -235,7 +325,7 @@ if exist(sSavePath, 'file') ~= 0
             tSavedInfo.bLastActionComplete = true;
             % Go into the folder to add its subfolders and files.
             for iI = 1:length(tInfo)
-                tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name], sCaller);
+                tools.fileChecker.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name], sCaller);
             end
         else
             % The item we're looking at is a file that has not yet been
@@ -248,12 +338,14 @@ if exist(sSavePath, 'file') ~= 0
             tSavedInfo.bLastActionComplete = true;
         end
         
-        % Alright, all done in here, since we came into this part of
-        % the if-condition because there was a non-existent field, this
-        % has to be the initial scan, so we set our return variable to
-        % true and finish the function.
+        % Alright, all done in here, since we came into this part of the
+        % if-condition because there was a non-existent field, we have
+        % definitely added a file or a folder, so we set our return
+        % variable to true and finish the function.
         bChanged = true;
-        fprintf('''%s'' was added.\n', sFileOrFolderPath);
+        if tSavedInfo.bInitialScanComplete
+            fprintf('''%s'' was added.\n', sFileOrFolderPath);
+        end
         return;
     else
         % Okay, so the file exists AND the field exists, this must be a
@@ -265,12 +357,12 @@ if exist(sSavePath, 'file') ~= 0
             % It's a folder, so we'll remove the illegal entries and
             % call ourselves recursively to check the contents for
             % changes.
-            tInfo = tools.removeIllegalFilesAndFolders(tInfo);
+            tInfo = tools.fileChecker.removeIllegalFilesAndFolders(tInfo);
             % Initializing a boolean array to log the changes in the
             % folders.
             abChanged = zeros(1,length(tInfo));
             for iI = 1:length(tInfo)
-                abChanged (iI) = tools.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name], sCaller);
+                abChanged (iI) = tools.fileChecker.checkForChanges([sFileOrFolderPath,filesep,tInfo(iI).name], sCaller);
             end
             
             % If any of the folders have changed, we need to return
@@ -282,7 +374,12 @@ if exist(sSavePath, 'file') ~= 0
             % subfolders, we can also clean up and save the data into the
             % file again for next time. 
             if bFirstCall
-                tSavedInfo = tools.removeEntriesForDeletedFiles('', tSavedInfo);
+                % Removing any deleted files
+                [ tSavedInfo, bRemoved ] = tools.fileChecker.removeEntriesForDeletedFiles('', tSavedInfo);
+                % If any files have been removed, then we also set the
+                % return variable to true.
+                if bRemoved, bChanged = true; end
+                
                 save(sSavePath,'tSavedInfo','-v7');
                 clear global tSavedInfo
             end
@@ -308,7 +405,12 @@ if exist(sSavePath, 'file') ~= 0
     % In case it is the first call, we can clean up and save the data into
     % the file again for next time.
     if bFirstCall
-        tSavedInfo = tools.removeEntriesForDeletedFiles(tSavedInfo);
+        % Removing any deleted files
+        [ tSavedInfo, bRemoved ] = tools.fileChecker.removeEntriesForDeletedFiles('', tSavedInfo);
+        % If any files have been removed, then we also set the return
+        % variable to true.
+        if bRemoved, bChanged = true; end
+        
         save(sSavePath,'tSavedInfo','-v7');
         clear global tSavedInfo
     end
@@ -352,7 +454,7 @@ else
     tInfo = dir(pwd);
     % Cleaning up the struct to get rid of files and folders we don't want
     % to scan.
-    tInfo = tools.removeIllegalFilesAndFolders(tInfo);
+    tInfo = tools.fileChecker.removeIllegalFilesAndFolders(tInfo);
     % Now we go through all the items in the info struct and check for
     % changes, although since this is the fist run, they will of course
     % all have changed.
@@ -370,7 +472,7 @@ else
                 % we need to set the bLastActionComplete variable to true.
                 tSavedInfo.bLastActionComplete = true;
                 % Go into the folder to add its subfolders and files.
-                tools.checkForChanges(tInfo(iI).name, sCaller);
+                tools.fileChecker.checkForChanges(tInfo(iI).name, sCaller);
             end
         else
             % The item we're looking at is a file, so we'll cleanup the

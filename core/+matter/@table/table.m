@@ -128,8 +128,8 @@ classdef table < base
             % having to go through the entire import process again.
             if exist(strrep('data\MatterData.mat', '\', filesep),'file')
                 % The file exists, so we check for changes.
-                bMatterDataChanged  = tools.checkForChanges(fullfile('lib','+matterdata'),'MatterTable');
-                bMatterTableChanged = tools.checkForChanges(fullfile('core','+matter','@table'),'MatterTable');
+                bMatterDataChanged  = tools.fileChecker.checkForChanges(fullfile('lib','+matterdata'),'MatterTable');
+                bMatterTableChanged = tools.fileChecker.checkForChanges(fullfile('core','+matter','@table'),'MatterTable');
                 
                 % If there are no changes, we can load the previously saved
                 % data.

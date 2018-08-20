@@ -19,6 +19,12 @@ function [sOutputName, varargout] = normalizePath(sInputPath, bUseNewSeparators)
 %                       varargout will contain a struct of the used
 %                       separators. 
 
+if isempty(sInputPath)
+    sOutputName = '';
+    return;
+end
+
+
 % Define magic separators.
 %TODO: update callsites and drop second parameter
 if nargin > 1 && bUseNewSeparators
