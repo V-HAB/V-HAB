@@ -129,7 +129,7 @@ classdef pipe < matter.procs.f2f
                 end
             end
             
-            fDropCoefficient = (128 * this.fEta * this.fLength) / (pi * this.fDiameter ^ 4);
+            fDropCoefficient = (8 * this.fEta * this.fLength) / (pi * (this.fDiameter / 2) ^ 4);
             
             this.fTimeOfLastUpdate = this.oTimer.fTime;
             

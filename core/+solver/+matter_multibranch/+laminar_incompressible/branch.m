@@ -970,7 +970,7 @@ classdef branch < base & event.source
                 
                 warning('on','all');
                 
-                if ~isempty(sLastWarn) && ~isempty(strfind(sLastWarn, 'badly scaled'))
+                if ~isempty(sLastWarn) && contains(sLastWarn, 'badly scaled')
                     if (this.oTimer.iTick - this.iLastWarn) >= 100
                         % warning(sLastWarn);
                         
