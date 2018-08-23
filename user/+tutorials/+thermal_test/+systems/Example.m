@@ -57,16 +57,21 @@ classdef Example < vsys
             
             
             % Creating a store, volume 1 m^3
-            matter.store(this, 'Tank_1', 1);
+            tfMasses = struct('Zeolite5A', 4);
+            fSolidVolume = this.oMT.calculateSolidVolume(tfMasses, 293.15, true);
+            matter.store(this, 'Tank_1', 1 + fSolidVolume);
+            
+            % Filtered phase
+            matter.phases.mixture(this.toStores.Tank_1, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, 293.15, 1e5); 
             
             % Adding a phase to the store 'Tank_1', 1 m^3 air at 20 deg C
-            oGasPhase = this.toStores.Tank_1.createPhase('air', 1, 293.15);
+            oGasPhase = this.toStores.Tank_1.createPhase('air', 'air', 1, 293.15);
             
             % Creating a second store, volume 1 m^3
             matter.store(this, 'Tank_2', 1);
             
             % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
-            oAirPhase = this.toStores.Tank_2.createPhase('air', this.fPressureDifference + 1, 323.15);
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 'air', this.fPressureDifference + 1, 323.15);
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
@@ -113,12 +118,14 @@ classdef Example < vsys
 %             oProc = this.toProcsF2F.Pipe;
 %             fArea = oProc.fLength * pi * (oProc.fDiameter / 2)^2;
             
-            oCapacityTank_1 = this.toStores.Tank_1.aoPhases(1).oCapacity;
+            oCapacityTank_1 = this.toStores.Tank_1.toPhases.air.oCapacity;
             oHeatSource = thermal.heatsource('Heater', 0);
             oCapacityTank_1.addHeatSource(oHeatSource);
             
+            oCapacitySolidTank_1 = this.toStores.Tank_1.toPhases.FilteredPhase.oCapacity;
+            
             oCapacitySpace = this.toStores.Space.toPhases.vacuum.oCapacity;
-            oCapacityTank_2 = this.toStores.Tank_2.aoPhases(1).oCapacity;
+            oCapacityTank_2 = this.toStores.Tank_2.toPhases.air.oCapacity;
             
             thermal.procs.exme(oCapacitySpace, 'Radiator_1');
             thermal.procs.exme(oCapacityTank_2, 'Radiator_2');
@@ -128,6 +135,9 @@ classdef Example < vsys
             
             thermal.procs.exme(oCapacityTank_2, 'Port_Thermal_IF_In');
             thermal.procs.exme(oCapacityTank_2, 'Port_Thermal_IF_Out');
+            
+            thermal.procs.exme(oCapacityTank_1, 'InfniniteConductor_1');
+            thermal.procs.exme(oCapacitySolidTank_1, 'InfniniteConductor_2');
             
             fEpsilon        = 0.8;
             fSightFactor    = 1;
@@ -153,6 +163,8 @@ classdef Example < vsys
             
             thermal.branch(this, 'Space.Radiator_1', {'Radiator_Conductor'}, 'Tank_2.Radiator_2', 'Radiator');
             thermal.branch(this, 'Tank_1.Conductor_1', {'Material_Conductor'}, 'Tank_2.Conductor_2', 'Pipe_Material_Conductor');
+            
+            thermal.branch(this, 'Tank_1.InfniniteConductor_1', {}, 'Tank_1.InfniniteConductor_2', 'Infinite_Conductor');
             
             fMaterialConductivity = (fPipeMaterialArea * fThermalConductivityCopper)/0.5;
             
@@ -187,7 +199,7 @@ classdef Example < vsys
             exec@vsys(this);
             
             fHeatFlow = 100 * sin(this.oTimer.fTime/10);
-            this.toStores.Tank_1.toPhases.Tank_1_Phase_1.oCapacity.toHeatSources.Heater.setHeatFlow(fHeatFlow)
+            this.toStores.Tank_1.toPhases.air.oCapacity.toHeatSources.Heater.setHeatFlow(fHeatFlow)
             
             if ~base.oLog.bOff, this.out(2, 1, 'exec', 'Exec vsys %s', { this.sName }); end;
         end

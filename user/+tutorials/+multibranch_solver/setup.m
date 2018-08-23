@@ -9,13 +9,13 @@ classdef setup < simulation.infrastructure
             if nargin < 4 || isempty(iNr), iNr = 0; end;
             
             ttMonitorConfig = struct();%struct('oTimeStepObserver', struct('cParams', {{ 0 }}));
-            this@simulation.infrastructure('Tutorial_Solver_LaminarIncompressible', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Tutorial_Solver_MultiBranch', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             
             if iNr == 0
-                tutorials.laminar_incompressible_solver.systems.Example(this.oSimulationContainer, 'Example');
+                tutorials.multibranch_solver.systems.Example(this.oSimulationContainer, 'Example');
             else
-                tutorials.laminar_incompressible_solver.systems.(sprintf('Example_%i', iNr))(this.oSimulationContainer, 'Example');
+                tutorials.multibranch_solver.systems.(sprintf('Example_%i', iNr))(this.oSimulationContainer, 'Example');
             end
             
             

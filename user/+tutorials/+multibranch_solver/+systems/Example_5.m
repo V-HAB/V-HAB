@@ -185,7 +185,7 @@ classdef Example_5 < vsys
             createSolverStructure@vsys(this);
             
             
-            solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches, 'complex');
+            solver.matter_multibranch.iterative.branch(this.aoBranches, 'complex');
             
             this.setThermalSolvers();
         end

@@ -4,7 +4,6 @@ classdef hx_flow < matter.procs.f2f
 
     properties (SetAccess = protected, GetAccess = public)
         fDeltaPress = 0;
-        bActive = true;
         fFlowRate = 0;
         
     end

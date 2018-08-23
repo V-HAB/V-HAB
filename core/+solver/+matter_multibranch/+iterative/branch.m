@@ -1,14 +1,169 @@
 classdef branch < base & event.source
+        %% General Information
+    % This solver is used to solve networks of branches including gas flow
+    % nodes. Gas flow nodes are basically phases that are considered to
+    % have no mass and therefore allow the representation of very small
+    % volumes in V-HAB (e.g. of T-pieces). The solver is provided an array
+    % contain the objects of the branches (aoBranches) that it is supposed
+    % to solve. There is no limit to the number of branches that it can
+    % solve.
     %
+    %% Regaring the implementation some rules must be observed!:
     %
+    % - while it should work to have a gas flow node with only one branch
+    %   beeing solved by this solver, it is not recommended!
     %
+    % - it is not possible to have a gas flow node as the connection
+    %   between two different multi branch solvers!
     %
-    %TODO
-    %   * possibility to include time step calculator, prepared ones e.g.
-    %     for detection of pressure/mass oscillations in boundary nodes
-    %     (i.e. pressures equalized) -> set timestep for exact equalization
+    % - If an active component is used, it must have a gas flow node on
+    %   either side of the branch in which it is located and cannot have
+    %   any other flow to flow proc inside the branch where it is located!
+    %
+    % - loops can be solved but should have at least one "normal"
+    %   (boundary) phase in between. Full loops consisting only of gas flow
+    %   nodes are not possible!
+    %
+    % - P2Ps used together with this solver must implement the
+    %   calculateFilterRate(afInFlowRates, aarInPartials) function, which
+    %   can take an array of inflows with corresping partial mass ratios to
+    %   calculate the p2p flow rate
+    %
+    % - The solver itself is calculated before the residual solvers. This
+    %   may lead to problems if a residual solver is used as input to
+    %   this system directly (not with a boundary phase inbetween) as the
+    %   flowrate of the residual solver is assumed to be constant
+    %   boundary condition for one tick, while it can actually change
+    %   before the tick ends. Therefore residual solvers should only be
+    %   used as input with a boundary phase inbetween that reaches the
+    %   necessary pressure to supply the system the correct flowrate
+    %
+    %% Information about the possible parameters that can be changed for the solver
+    %
+    %   Please view the commenting of the setSolverProperties function for
+    %   information on the parameters and options for the solver! If you
+    %   want to change one also use that function to do so
+    %
+    %% Information and Tips on Debugging
+    %
+    % - Maximum number of iterations reached:
+    %   In this case the solver should stop (by a keyboard command) and you
+    %   can use the command plot(mfFlowRates) to view the course of the
+    %   branch flowrates over the calculation, if they are converging and
+    %   not osciallating (zoom in if you have very different flowrates!)
+    %   but you reached this error, you can try simply increasing the value
+    %   for the maximum iterations.
+    %   If your solver is oscillating in every iteration, most likely one
+    %   of your flow to flow components has large changes in the delta
+    %   pressure for small flowrate changes or jumps in this (e.g. at the
+    %   transition between laminar and turbulent flow). Please check which
+    %   branch is oscillating and review your f2fs to make sure that this
+    %   is not the case!
+    %   If the solver converges to a value but then jumps to a different
+    %   value again and repeats this the recalculation of a p2p throws your
+    %   solver of. This can happen e.g. if the p2p flowrates changes a lot
+    %   for small flowrates changes or oscillates due to some other reason.
+    %   In this case please check which branch is oscillating, then check
+    %   to which gas flow node it is connected and which p2p flowrates
+    %   influence it. Then check if that p2p flowrate is changing in
+    %   unintended ways!
+    %
+    % - You received an error of any different type? Please contact your
+    %   supervisor!
+    %
+    %% Additional Information regarding the solving process
+    %
+    % This information can also be found (in better formatting) on the wiki
+    % page: XXXX TO DO
+    %
+    % The solver creats a matrix from the provied branches which represents
+    % the branch pressure drops, the gas flow node pressures and equations
+    % that enforce that gas flow nodes have no mass change. Additionally
+    % branches not solved by this system but connected to it at any phase
+    % and p2ps are handled as boundary conditions together with the
+    % pressures of "normal" phases.
+    %
+    % The equations containing the gas flow node pressures and the branch
+    % pressure drops have a boundary phase pressure as boundary condition.
+    % These equations represent the pressure difference between two
+    % boundary phases. The total pressure drop between these must be equal
+    % to this pressure difference (in semi static conditions we neglect the 
+    % part where the flow is accelerated and this is not the case).
+    % 
+    % The only exception for this are branches containing active components, 
+    % the pressure rise of these is handled as a boundary condition and the
+    % equation from this row should only have two gas flow node pressures
+    % to solve! 
+    %
+    % The second part of the matrix contains only 1 and -1 entries and
+    % represents the in and outgoing flowrates of the gas flow nodes. The
+    % boundary conditions for these rows are the sum of external flowrates
+    % (from p2ps and other branches) for these gas flow nodes. Overall,
+    % these equations enforce that the gas flow nodes have no mass change
+    % as all in and outgoing flowrates solved by this system must be
+    % exactly the boundary condition times -1
+    %
+    % For Example: In the tutorial case (without additional parameter)
+    % this was the matrix:
+    %
+    % aafPhasePressuresAndFlowRates =
+    % 
+    %    1.0e+04 *
+    % 
+    %    -0.0001   -1.0890         0         0         0         0         0
+    %     0.0001         0   -0.0001   -1.0890         0         0         0
+    %          0         0    0.0001         0   -0.0001   -1.0890         0
+    %          0         0         0         0    0.0001         0   -1.0890
+    %          0         0         0    0.0001         0   -0.0001         0
+    %          0    0.0001         0   -0.0001         0         0         0
+    %          0         0         0         0         0    0.0001   -0.0001
+    %               
+    % and 
+    % afBoundaryConditions =
+    % 
+    %      -100200
+    %            0
+    %            0
+    %       100000
+    %            0
+    %            0
+    %            0
+    %
+    % now basically this would translate into the following system of
+    % equations: (1.089e4 will be written as 1e4
+    %
+    % - x1 - 1e4 x2                                             = -100200   (I)
+    % + x1          -  x3 - 1e4 x4                              = 0         (II)
+    %               +  x3               - x5 -  1e4 x6          = 0         (III)
+    %                                   + x5 -         - 1e4 x7 = 100000    (IV)
+    %                     +     x4           -      x6          = 0         (V)
+    %      +     x2      -      x4                              = 0         (VI)
+    %                                        +      x6 -     x7 = 0         (VII)
+    %
+    % According to this.poColIndexToObj the columns represent the following
+    % objects: (phases are gas flow nodes)
+    %   x1 ,  x2   ,  x3  ,   x4  ,   x5 ,   x6  ,  x7
+    % phase, branch, phase, branch, phase, branch, branch
+    %
+    % Therefoe there are three types of equations within this system:
+    %
+    % Equation (I) is -BoundaryPress + Pressure - C*m_dot = 0 
+    % which is the condition that the pressure difference in the branch has to
+    % be equal to the pressure difference between the two boundaries
+    %
+    % Equations (II) and (III) represent the same condition just not between a
+    % boundary and gas flow node, but between two gas flow nodes
+    %
+    % Equation (IV) is BoundaryPress - Pressure + C*m_dot, which is the same as
+    % Eqation I just with a different sign (as it is the boundary conditions
+    % from the other side)
+    %
+    % Equations (V) (VI) and (VII) mean that these flowrates have to sum up to zero
+    
     
     properties (SetAccess = private, GetAccess = private)
+        % cell containing the handles of the set flow rate functions of the
+        % individual branches in this network
         chSetBranchFlowRate;
     end
     
@@ -19,15 +174,18 @@ classdef branch < base & event.source
     end
     
     properties (SetAccess = private, GetAccess = public)
+       	% array containing the branches which are solved by this solver
         aoBranches;
+        % number of total branches in the network
         iBranches;
         
+        % last time at which the solver was updated
         fLastUpdate = -10;
-        
         
         % Mode:
         %   * simple: coeffs for f2fs, fan dP = f(fr, density), p2p = flow
-        %     rates from last tick used
+        %     rates from last tick used. Currently not working!
+        %
         %   * complex: f2f callbacks for dP, fan callback, p2p immediately
         %     called in every iteration for absorption rate (requires
         %     specific method in p2p)
@@ -69,6 +227,9 @@ classdef branch < base & event.source
         % the according column in the solving matrix
         piObjUuidsToColIndex;
         
+        % Maps variable which provides the corresponding object to a column
+        % index number (each column represents either a gas flow node or a
+        % branch)
         poColIndexToObj;
         
         
@@ -123,9 +284,18 @@ classdef branch < base & event.source
         % Temporary - active flow f2f procs - pressure rise (or drop)
         afTmpPressureRise;
         
+        % Matrix that translated the index of a branch from aoBranches to a
+        % row in the solution matrix
         miBranchIndexToRowID;
         
+        % Integer that tells us how many branches are connected in a row.
+        % These must be solved after each other to get the correct p2p
+        % flows
         iBranchUpdateLevels;
+        
+        % boolean matrix that has one row per update level. Each column
+        % represents a branch and is true if the branch should be updated
+        % in this update level
         mbBranchesPerUpdateLevel;
     end
     
@@ -148,11 +318,6 @@ classdef branch < base & event.source
     
     methods
         function this = branch(aoBranches, sMode)
-            %TODO check for every branch!
-%             if isempty(oBranch.coExmes{1}) || isempty(oBranch.coExmes{2})
-%                 this.throw('branch:constructor',['The interface branch %s is not properly connected.\n',...
-%                                      'Please make sure you call connectIF() on the subsystem.'], oBranch.sName);
-%             end
             
             if (nargin >= 2) && ~isempty(sMode)
                 this.sMode = sMode;
@@ -168,17 +333,6 @@ classdef branch < base & event.source
             
             % Preset
             this.afTmpPressureRise = zeros(1, this.iBranches);
-            
-            %this.aoSolverProps = solver.matter.base.type.(this.sSolverType).empty(0, size(this.oBranch.aoFlowProcs, 2));
-
-%             for iP = 1:length(this.oBranch.aoFlowProcs)
-%                 if ~isfield(this.oBranch.aoFlowProcs(iP).toSolve, this.sSolverType)
-%                     this.throw('branch:constructor', 'F2F processor ''%s'' does not support the %s solving method!', this.oBranch.aoFlowProcs(iP).sName, this.sSolverType);
-%                 end
-% 
-%                 this.aoSolverProps(iP) = this.oBranch.aoFlowProcs(iP).toSolve.(this.sSolverType);
-%             end
-            
             
             this.chSetBranchFlowRate = cell(1, this.iBranches);
             
@@ -316,14 +470,21 @@ classdef branch < base & event.source
         
         
         function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatrices(this, bForceP2Pcalc)
+            % This function builds the Matrix described in the beginning
+            % and the boundary condition vector. It is not updated all the
+            % time as this should not change that often.
+            %
+            % aafPhasePressuresAndFlowRates contains the pressure drops
+            % from the branches and the gas flow node pressures
+            % 
             % afBoundaryConditions is the B vector mostly with the boundary
-            % node pressures (later also fan pressure deltas)
+            % node pressures, fan pressure deltas and external flowrates
             
             if nargin < 2
                 bForceP2Pcalc = false;
             end
             
-            if ~base.oLog.bOff, this.out(1, 3, 'props', 'Mean density: %f', { fDensity }); end
+            if ~base.oLog.bOff, this.out(1, 3, 'props', 'Mean density: %f', { fDensity }); end;
             
             this.afPressureDropCoeffsSum = nan(1, this.iBranches);
             
@@ -340,11 +501,8 @@ classdef branch < base & event.source
             % Loop branches, generate equation row to calculate flow rate
             % DP = C * FR, or P_Left - P_Right = C * FR
             
-            bRepeat = this.updateNetwork(bForceP2Pcalc);
-            if bRepeat
-                % a P2P had a negative flow rate, therefore we repeat the
-                % calculation and force the update of all P2Ps
-                this.updateNetwork(true);
+            if bForceP2Pcalc
+                this.updateNetwork(bForceP2Pcalc);
             end
             
             for iB = 1:this.iBranches
@@ -377,7 +535,7 @@ classdef branch < base & event.source
 
 
 
-                        if ~base.oLog.bOff, this.out(1, 3, 'props', 'Phase %s-%s: Pressure %f', { oP.oStore.sName, oP.sName, oE.getPortProperties() }); end
+                        if ~base.oLog.bOff, this.out(1, 3, 'props', 'Phase %s-%s: Pressure %f', { oP.oStore.sName, oP.sName, oE.getPortProperties() }); end;
 
                     else
                         iCol = this.piObjUuidsToColIndex(oP.sUUID);
@@ -482,32 +640,40 @@ classdef branch < base & event.source
         
         function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureDropCoefficients(this, aafPhasePressuresAndFlowRates, afBoundaryConditions)
             % For higher speeds the full network is only calculated a few
-            % times, this calculation handles the sole necessary update of
+            % times, this calculation handles only the necessary update of
             % the pressure drop coefficient
+            % For this we first loop through all of the branches
             for iB = 1:this.iBranches
                 
+                % we have to get the branch object to decide if it is
+                % active or not and get the current flowrate etc.
                 oB = this.aoBranches(iB);
                 afPressureDropCoeffs = nan(1, oB.iFlowProcs);
                 fFlowRate = this.afFlowRates(iB);
                 bActiveBranch = false;
 
-                if (oB.iFlowProcs == 1) && oB.aoFlowProcs(1).bActive
-
-                    for iP = 1:2
-                        if this.poBoundaryPhases.isKey(oB.coExmes{iP}.oPhase.sUUID)
-                            this.throw('generateMatrices', 'Active f2f proc (fan component) - both sides need to be variable pressure phases!');
-                        end
-                    end
-
+                % if the branch contains an active component, it is not
+                % allowed to have any other f2f procs! And both sides
+                % must be fas flow nodes. But this is not checked here for
+                % speed reasons. This information is also provided at the
+                % beginning in the rules for solver implementation section!
+                % Therefore the user should be aware of it and if not,
+                % should find it when debugging
+                if oB.aoFlowProcs(1).bActive
                     bActiveBranch = true;
                 end
 
+                % now we get the corresponding row of this branch in the
+                % afBoundaryConditions and aafPhasePressuresAndFlowRates
+                % matrix
                 iRow = this.miBranchIndexToRowID(iB);
 
+                % if the branch is active we calculate the pressure rise
+                % and add it to the boundary conditions
                 if bActiveBranch
                     fCoeffFlowRate = 0;
                     
-                    % Active component? Get pressure rise based on last
+                    % Active component --> Get pressure rise based on last
                     % iteration flow rate - add to boundary condition!
                     fFlowRate   = this.afFlowRates(iB);
                     oProcSolver = oB.aoFlowProcs(1).toSolve.(this.sSolverType);
@@ -515,26 +681,24 @@ classdef branch < base & event.source
                     % calDeltas returns POSITIVE value for pressure DROP!
                     fPressureRise = -1 * oProcSolver.calculateDeltas(fFlowRate);
 
-                    % No flow, most likely?
-                    if fPressureRise == 0
-                        this.afTmpPressureRise(iB) = 0;
+                    % the pressure rise is not used directly but smoothed
+                    % out (TO DO: Check if this actually makes sense)
+                    fPressureRise = (this.afTmpPressureRise(iB) * 33 + fPressureRise) / 34;
 
-                    % DROP!
-                    elseif fPressureRise < 0
-                        this.afTmpPressureRise(iB) = 0;
-
-                    else
-                        fPressureRise = (this.afTmpPressureRise(iB) * 33 + fPressureRise) / 34;
-
-                        this.afTmpPressureRise(iB) = fPressureRise;
-                    end
+                    this.afTmpPressureRise(iB) = fPressureRise;
 
                     % Boundary condition for this case can be non zero,
                     % both sides must be variable pressure phases
                     afBoundaryConditions(iRow) = -fPressureRise;
                     
                 else
+                    % if the branch does not contain an active component,
+                    % the pressure drops are calculated, summed up and
+                    % added to the aafPhasePressuresAndFlowRates matrix at
+                    % the corresping index
                     if fFlowRate == 0
+                        % for no flowrate we check the drops with a very
+                        % small flow
                         fFlowRate = this.oTimer.fMinimumTimeStep;
 
                         % Negative pressure difference? Negative guess!
@@ -542,25 +706,41 @@ classdef branch < base & event.source
                             fFlowRate = -1 * fFlowRate;
                         end
                     end
+                    
+                    % Now we loop through all the f2fs of the branch and
+                    % calculate the pressure drops
                     for iProc = 1:oB.iFlowProcs
                         afPressureDropCoeffs(iProc) = oB.aoFlowProcs(iProc).toSolve.(this.sSolverType).calculateDeltas(fFlowRate);
                     end
 
+                    % the pressure drops are linearized to drop coefficient
+                    % by summing them all up and dividing them with the
+                    % currently assumed flowrate (for laminar this is
+                    % pretty accurate, for turbulent the correct
+                    % relationship would be a quadratic dependency on the
+                    % flowrate. TO DO: Check if implementing that increases
+                    % speed of the solver!)
                     this.afPressureDropCoeffsSum(iB) = sum(afPressureDropCoeffs)/abs(fFlowRate);
 
+                    % now we use this as flowrate coefficient for this
+                    % branch
                     fCoeffFlowRate = this.afPressureDropCoeffsSum(iB);
                 end
 
-                % Set flow coeff
+                % get the corresponding column from the matrix for this
+                % branch (we already have the row)
                 iCol = this.piObjUuidsToColIndex(oB.sUUID);
 
+                % now set the value to matrix (remember that drops are
+                % provided as positive values, therefore here the sign -1
+                % is used)
                 aafPhasePressuresAndFlowRates(iRow, iCol) = -1 * fCoeffFlowRate;
                 
             end
             
             % We want to ignore small pressure differences (as specified by
             % the user). Therefore we equalize pressure differences smaller
-            % than the specified limit
+            % than the specified limit in the boundary conditions!
             afBoundaryHelper = afBoundaryConditions(1:length(this.aoBranches));
             miSigns = sign(afBoundaryHelper);
             afBoundaryHelper = abs(afBoundaryHelper);
@@ -575,10 +755,21 @@ classdef branch < base & event.source
         end
         
         
-        function bRepeat = updateNetwork(this, bForceP2Pcalc)
+        function updateNetwork(this, bForceP2Pcalc)
+            % This function is used to update the network of the solver.
+            % P2Ps are only recalculated if either the solver reached
+            % initial convergence and the bForceP2Pcalc property is true or
+            % if the number of iterations between p2p updates as specified
+            % by the user have been reached
             
-            bRepeat = false;
-            
+            % the update is ordered according the branch update levels.
+            % Here actually not the branches are updated but rather the gas
+            % flow node mass composition (and if required p2p flows). This
+            % is done in branch update level order, because this order is
+            % according to the flow direction and the gas flow nodes
+            % require all ingoing flows and flow partials to be correctly
+            % set before they can be calculated. For this reason the update
+            % must be performed in the same direction as the flow
             if ~isempty(this.mbBranchesPerUpdateLevel)
                 this.arPartialsFlowRates = zeros(this.iBranches, this.oMT.iSubstances);
                 
@@ -598,10 +789,6 @@ classdef branch < base & event.source
                             continue
                         end
                         
-                        % Generate flow rates array!
-                        afInFlowRates = zeros(0);
-                        aarInPartials = zeros(0, this.oMT.iSubstances);
-                        
                         oCurrentBranch   = this.aoBranches(iB);
                         
                         fFlowRate = this.afFlowRates(iB);
@@ -619,6 +806,9 @@ classdef branch < base & event.source
                         oPhase = oCurrentProcExme.oPhase;
                         
                         iInflowBranches = 0;
+                        
+                        afInFlowRates = zeros(oPhase.iProcsEXME + oPhase.iProcsP2Pflow, 1);
+                        aarInPartials = zeros(oPhase.iProcsEXME + oPhase.iProcsP2Pflow, this.oMT.iSubstances);
                         for iExme = 1:oPhase.iProcsEXME
                             
                             oProcExme = oPhase.coProcsEXME{iExme};
@@ -660,8 +850,8 @@ classdef branch < base & event.source
                             % Only for INflows
                             if fFlowRate > 0
                                 iInflowBranches = iInflowBranches + 1;
-                                afInFlowRates(end + 1, 1) = fFlowRate;
-                                aarInPartials(end + 1, :) = arFlowPartials;
+                                afInFlowRates(iExme, 1) = fFlowRate;
+                                aarInPartials(iExme, :) = arFlowPartials;
                             end
                         end
                         
@@ -715,20 +905,11 @@ classdef branch < base & event.source
                                 % than the total inflows (so the lowest overall
                                 % value for the inflows is 0)
                                 if oProcP2P.oIn.oPhase == oPhase
-                                    afInFlowRates(end + 1, 1) = -oProcP2P.fFlowRate;
+                                    afInFlowRates(oPhase.iProcsEXME + iProcP2P, 1) = -oProcP2P.fFlowRate;
                                 else
-                                    afInFlowRates(end + 1, 1) = oProcP2P.fFlowRate;
+                                    afInFlowRates(oPhase.iProcsEXME + iProcP2P, 1) = oProcP2P.fFlowRate;
                                 end
-                                aarInPartials(end + 1, :) = oProcP2P.arPartialMass;
-
-                                % forced P2P update if the total inflow
-                                % becomes negative, if the forced P2P
-                                % update still results in a negative value,
-                                % throw an error!
-                                if any(sum(afInFlowRates .* aarInPartials,1) < 0)
-                                    bRepeat = true;
-                                    return
-                                end
+                                aarInPartials(oPhase.iProcsEXME + iProcP2P, :) = oProcP2P.arPartialMass;
                             end
 
                             % Now the phase is updated again this time with the
@@ -748,8 +929,9 @@ classdef branch < base & event.source
         
         
         function registerUpdate(this, ~)
-            
-            if ~base.oLog.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
+            % this function registers an update
+            % TO DO: provide more information on this in the wiki
+            if ~base.oLog.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end;
             
             if this.bRegisteredOutdated
                 return;
@@ -770,6 +952,10 @@ classdef branch < base & event.source
         
         
         function update(this)
+            % the actual calculation of the solver is performed here. For
+            % information on the solution routine please view the initial
+            % code section!
+            
             this.fLastUpdate         = this.oTimer.fTime;
             this.bRegisteredOutdated = false;
             
@@ -781,7 +967,6 @@ classdef branch < base & event.source
             for iB = 1:this.iBranches
                 this.afFlowRates(iB) = this.aoBranches(iB).fFlowRate;
             end
-            
             
             rError    = inf;
             afResults = [];
@@ -808,14 +993,25 @@ classdef branch < base & event.source
             % The initial flow rates are all zero, so initial rError below
             % will be inf -> that's good, e.g. the p2ps need a correct set
             % of flow rate directions to be included in equations!
+            
+            % The final loop is reached if the solver converged, in this
+            % case the p2ps are also updated (which reduces the number of
+            % calls for p2p updates) and the solver is recalculated with
+            % the new p2p flows. This is repeated again until the solver
+            % reaches overall convergence
             bFinalLoop = false;
+            
+            % These values are only used for debugging. Therefore they are
+            % also initialized with nans (as nans are ignored during
+            % plotting)
             mfFlowRates = nan(this.iMaxIterations, this.iBranches);
             afP2PFlows = nan(this.iMaxIterations, this.iBranches);
             
             while abs(rError) > rErrorMax || bFinalLoop %|| iIteration < 5
                 this.iIteration = this.iIteration + 1;
                 
-                if bFinalLoop % || any(abs(this.afFlowRates./afPrevFrs - afPrevFrs) -1 > 0.25) %|| any(sign(afPrevFrs) ~= sign(this.afFlowRates))
+                % if we have reached convergence recalculate the p2ps
+                if bFinalLoop
                     bForceP2PUpdate = true;
                 else
                     bForceP2PUpdate = false;
@@ -823,6 +1019,10 @@ classdef branch < base & event.source
                 
                 afPrevFrs  = this.afFlowRates;
                 
+                % only in the beginning and after convergence the whole
+                % network is rebuilt to ensure that the correct solution is
+                % reached. Otherwise we only update the pressure drop
+                % coefficients in the exisiting matrices
                 if this.iIteration == 1 || bFinalLoop
                     % Regenerates matrices, gets coeffs from flow procs
                     [ aafFullPhasePressuresAndFlowRates, afFullBoundaryConditions ] = this.generateMatrices(bForceP2PUpdate);
@@ -835,7 +1035,7 @@ classdef branch < base & event.source
                 % process and at least result in badly scaled matrices.
                 % Therefore the branches are checked beforehand for pressure
                 % drops that are infinite, which means nothing can flow through
-                % this branch an 0 flowrate must be enforced anyway (e.g.
+                % this branch and 0 flowrate must be enforced anyway (e.g.
                 % closed valve)
                 mbZeroFlowBranches = isinf(this.afPressureDropCoeffsSum)';
                 
@@ -865,8 +1065,11 @@ classdef branch < base & event.source
                 iNewRows = length(aafPhasePressuresAndFlowRates);
                 iOriginalRows = length(mbRemoveRow);
                 
-                % create variables to simplify the transfer from old to new
-                % indices and vice versa
+                
+                % in order to remove the branches without a flow but still
+                % be able to have the correct indices for every sitation we
+                % have to build a index transformation from the full matrix
+                % to the reduced matrix and vice versa
                 miOriginalRowToNewRow = zeros(iOriginalRows, 1);
                 miOriginalColToNewCol = zeros(1, iOriginalRows);
                 for iOriginalIndex = 1:iOriginalRows
@@ -891,6 +1094,10 @@ classdef branch < base & event.source
                     miNewColToOriginalCol(iNewIndex) = find(miOriginalColToNewCol == iNewIndex);
                 end
                 
+                % This index decides at which point in the matrix the
+                % equations which enforce zero mass change for the gas flow
+                % nodes start. These equations are later used to define the
+                % branch update order in flow direction
                 iStartZeroSumEquations = length(afBoundaryConditions) - length(this.csVariablePressurePhases)+1;
                 
                 afP2PFlowsHelper = afBoundaryConditions(iStartZeroSumEquations:end)';
@@ -901,76 +1108,17 @@ classdef branch < base & event.source
                 % Solve
                 %hT = tic();
                 warning('off','all');
-                % TO DO: Comment from puda
-                % Some comments from me, if I misunderstood anything please
-                % correct. This operation would solve the linear system of
-                % equation where aafPhasePressuresAndFlowRates * X =
-                % afBoundaryConditions but what are the X, are they the
-                % flowrates? This cannot be because in the example I viewed
-                % there were only 4 branches.
-                
-                % Example: In the tutorial case this was the matrix:
-%                 aafPhasePressuresAndFlowRates =
-% 
-%    1.0e+04 *
-% 
-%    -0.0001   -1.0890         0         0         0         0         0
-%     0.0001         0   -0.0001   -1.0890         0         0         0
-%          0         0    0.0001         0   -0.0001   -1.0890         0
-%          0         0         0         0    0.0001         0   -1.0890
-%          0         0         0    0.0001         0   -0.0001         0
-%          0    0.0001         0   -0.0001         0         0         0
-%          0         0         0         0         0    0.0001   -0.0001
-%               
-% and 
-% afBoundaryConditions =
-% 
-%      -100200
-%            0
-%            0
-%       100000
-%            0
-%            0
-%            0
-%
-% now basically this would translate into the following system of
-% equations: (1.089e4 will be written as 1e4
-%
-% - x1 - 1e4 x2                                             = -100200   (I)
-% + x1          -  x3 - 1e4 x4                              = 0         (II)
-%               +  x3               - x5 -  1e4 x6          = 0         (III)
-%                                   + x5 -         - 1e4 x7 = 100000    (IV)
-%                     +     x4           -      x6          = 0         (V)
-%      +     x2      -      x4                              = 0         (VI)
-%                                        +      x6 -     x7 = 0         (VII)
-%
-% According to this.poColIndexToObj the columns represent the following
-% objects: (phases are gas flow nodes)
-%   x1 ,  x2   ,  x3  ,   x4  ,   x5 ,   x6  ,  x7
-% phase, branch, phase, branch, phase, branch, branch
-%
-% Therefoe there are three types of equations within this system:
-%
-% Equation (I) is -BoundaryPress + Pressure - C*m_dot = 0 
-% which is the condition that the pressure difference in the branch has to
-% be equal to the pressure difference between the two boundaries
-%
-% Equations (II) and (III) represent the same condition just not between a
-% boundary and gas flow node, but between two gas flow nodes
-%
-% Equation (IV) is BoundaryPress - Pressure + C*m_dot, which is the same as
-% Eqation I just with a different sign (as it is the boundary conditions
-% from the other side)
-%
-% Equations (V) (VI) and (VII) mean that these flowrates have to sum up to zero
-% 
 
+                % this is the acutal solving of the matrix system:
+                % aafPhasePressuresAndFlowRates * afResults = afBoundaryConditions
+                % Where afResults contains gas flow node pressures and
+                % branch flowrates
                 afResults = aafPhasePressuresAndFlowRates \ afBoundaryConditions;
                 sLastWarn = lastwarn;
                 
                 warning('on','all');
                 
-                if ~isempty(sLastWarn) && contains(sLastWarn, 'badly scaled')
+                if ~isempty(sLastWarn) && ~isempty(strfind(sLastWarn, 'badly scaled'))
                     if (this.oTimer.iTick - this.iLastWarn) >= 100
                         % warning(sLastWarn);
                         
@@ -978,36 +1126,47 @@ classdef branch < base & event.source
                     end
                 end
                 
-                % Round everything to the precision, else we get small
-                % errors
-                %afResults = tools.round.prec(afResults, this.oTimer.iPrecision);
-                
+                % translate the calculated results into branch flowrates or
+                % gas flow node pressures
                 for iColumn = 1:iNewRows
+                    % get the corresponding object according to the current
+                    % column index. Note that in matrix multiplication the
+                    % column index from the matrix represents the row index
+                    % from the vector. So the column index from aafPhasePressuresAndFlowRates
+                    % corresponds to a row index in afResults!
                     oObj = this.poColIndexToObj(miNewColToOriginalCol(iColumn));
 
+                    % TO DO: if we can find a way to do this with a
+                    % booleand it would be a good speed optimization!
                     if isa(oObj, 'matter.branch')
                         iB = find(this.aoBranches == oObj, 1);
                         
                         if this.iIteration == 1 || ~strcmp(this.sMode, 'complex')
                             this.afFlowRates(iB) = afResults(iColumn);
                         else
+                            % in order for the solver to converge better
+                            % the flowrates are smoothed out with this
+                            % calculation
                             this.afFlowRates(iB) = (this.afFlowRates(iB) * 3 + afResults(iColumn)) / 4;
                         end
                     elseif isa(oObj, 'matter.phases.gas_flow_node')
                         oObj.setPressure(afResults(iColumn));
                     end
                 end
+                
+                % for the branches which were removed beforehand because
+                % they have 0 flowrate anyway, we set this
                 for iZeroBranch = 1:iZeroFlowBranches
                     iB = find(this.aoBranches == aoZeroFlowBranches(iZeroBranch), 1);
                     this.afFlowRates(iB) = 0;
                 end
+                % now we store the calculated flowrates in the matrix,
+                % which is quite usefull for debugging purposes
                 mfFlowRates(this.iIteration,:) = this.afFlowRates;
-                %this.afFlowRates = tools.round.prec(this.afFlowRates, this.oTimer.iPrecision);
                 
                 iPrecision = this.oTimer.iPrecision;
                 afFrsDiff  = tools.round.prec(abs(this.afFlowRates - afPrevFrs), iPrecision);
                 
-                %rError = max(abs(this.afFlowRates ./ afPrevFrs) - 1);
                 rError = max(abs(afFrsDiff ./ afPrevFrs));
                 % if the error is smaller than the limit, do one final
                 % update where the recalculation of P2P flowrates is
@@ -1086,17 +1245,28 @@ classdef branch < base & event.source
                     bFinished = false;
                     
                     this.iBranchUpdateLevels = this.iBranches+1;
+                    % Inititlize the update level to be false, all branches
+                    % on this level will be set to true in the while loop
                     mbBranchesOnUpdateLevel = false(this.iBranches+1,this.iBranches);
                     mbBranchesOnUpdateLevel(1,miBoundaryBranches) = true;
                     
+                    % here we need a while loop as we initially do not know
+                    % the shape and size of the network!
                     while ~bFinished
+                        % If we have an update level assigned for all
+                        % branches we can stop the while loop
                         if (iBranchUpdateLevel > this.iBranches) || ~any(mbBranchesOnUpdateLevel(iBranchUpdateLevel,:))
                             break
                         end
 
+                        % get the branches on the current update level
                         mbBranches = mbBranchesOnUpdateLevel(iBranchUpdateLevel,:);
                         miBranches = find(mbBranches);
 
+                        % now loop through these branches and check where
+                        % they lead by getting their connected gas flow
+                        % nodes. If the branch is connected to a boundary
+                        % node it is either a beginning or end of a loop
                         for iI = 1:length(miBranches)
                             iBranch = miBranches(iI);
                             miUpdateLevel(iBranch) = iBranchUpdateLevel;
@@ -1104,6 +1274,11 @@ classdef branch < base & event.source
                             if miBranchToColumnIndex(iBranch) == 0
                                 continue
                             else
+                                % the zero sum equation contains all
+                                % branches conected to the gas flow node
+                                % (and only the gas flow nodes) together
+                                % with the corresponding signs, therefore
+                                % we can use it to define the update order
                                 miPhases = find(aafZeroSumMatrix(:,miBranchToColumnIndex(iBranch)) > 0);
                             end
                             
@@ -1113,7 +1288,7 @@ classdef branch < base & event.source
                                 % here
                                 miBranchesNext = find(aafZeroSumMatrix(miPhases(iPhase), :) == -1);
                                 for iK = 1:length(miBranchesNext)
-                                    oB = this.poColIndexToObj(miNewColToOriginalCol(miBranchesNext(iK)));
+                                    oB = this.poColIndexToObj(miBranchesNext(iK));
                                     iB = find(this.aoBranches == oB);
                                     miBranchesNext(1, iK) = iB;
                                 end
@@ -1127,12 +1302,17 @@ classdef branch < base & event.source
                     this.mbBranchesPerUpdateLevel = mbBranchesOnUpdateLevel;
                     
                     clear this.tBoundaryConnection
+                    
+                    % this is the next level of branches, basically with
+                    % this we loop through all of the branches in order of
+                    % their flows
                     for iBoundaryBranch = 1:length(miBoundaryBranches)
                         mbBranchesOnUpdateLevel = false(this.iBranches+1,this.iBranches);
                         mbBranchesOnUpdateLevel(1,miBoundaryBranches(iBoundaryBranch)) = true;
 
                         iBranchUpdateLevel = 1;
-                        coOtherSidePhase = cell(0,0);
+                        iBoundaryPhase = 0;
+                        coOtherSidePhase = cell(100,0);
                         while ~bFinished
                             if (iBranchUpdateLevel > this.iBranches) || ~any(mbBranchesOnUpdateLevel(iBranchUpdateLevel,:))
                                 break
@@ -1157,7 +1337,7 @@ classdef branch < base & event.source
                                     % here
                                     miBranchesNext = find(aafZeroSumMatrix(miPhases(iPhase), :) == -1);
                                     for iK = 1:length(miBranchesNext)
-                                        oB = this.poColIndexToObj(miNewColToOriginalCol(miBranchesNext(iK)));
+                                        oB = this.poColIndexToObj(miBranchesNext(iK));
                                         iB = find(this.aoBranches == oB);
                                         miBranchesNext(1, iK) = iB;
                                         
@@ -1170,7 +1350,8 @@ classdef branch < base & event.source
                                         end
                                         
                                         if ~oB.coExmes{iExme}.oPhase.bFlow
-                                            coOtherSidePhase{end+1} = oB.coExmes{iExme}.oPhase;
+                                            iBoundaryPhase = iBoundaryPhase + 1;
+                                            coOtherSidePhase{iBoundaryPhase} = oB.coExmes{iExme}.oPhase;
                                         end
                                     end
                                     mbBranchesOnUpdateLevel(iBranchUpdateLevel+1, miBranchesNext) = true;
@@ -1185,11 +1366,11 @@ classdef branch < base & event.source
                         else
                             oBoundaryPhase = oBoundaryBranch.coExmes{2}.oPhase;
                         end
+                        
+                        coOtherSidePhase = coOtherSidePhase(1:iBoundaryPhase);
                         this.tBoundaryConnection.(oBoundaryPhase.sUUID) = coOtherSidePhase;
                     end
                 end
-                
-                %rError = tools.round.prec(max(afFrsDiff ./ afPrevFrs), iPrecision);
                 
                 % Boundary conditions (= p2p and others) changing? Continue
                 % iteration!
@@ -1199,9 +1380,11 @@ classdef branch < base & event.source
                 % become 0 it will not converge for cases that actually use
                 % this
                 
-                if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { this.iIteration, rError }); end
+                if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { this.iIteration, rError }); end;
                 
                 if this.iIteration > this.iMaxIterations
+                    % if you reach this, please view debugging tipps at the
+                    % beginning of this file!
                     keyboard();
                     this.throw('update', 'too many iterations, error %.12f', rError);
                 end
@@ -1233,7 +1416,7 @@ classdef branch < base & event.source
             % where all desorption flowrates from the flow node p2ps are
             % summed up!
             
-            if ~base.oLog.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration }); end
+            if ~base.oLog.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration }); end;
             
             for iColumn = 1:length(this.csObjUuidsToColIndex)
                 oObj = this.poColIndexToObj(iColumn);
@@ -1241,7 +1424,7 @@ classdef branch < base & event.source
                 if isa(oObj, 'matter.branch')
                     iB = find(this.aoBranches == oObj, 1);
                     
-                    if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(iB) }); end
+                    if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(iB) }); end;
                 end
             end
             % Ok now go through results - variable pressure phase pressures

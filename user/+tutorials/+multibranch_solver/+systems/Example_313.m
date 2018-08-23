@@ -201,7 +201,7 @@ classdef Example_313 < vsys
             createSolverStructure@vsys(this);
             
             
-            solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches);
+            solver.matter_multibranch.iterative.branch(this.aoBranches);
             
             
             

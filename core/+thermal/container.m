@@ -192,16 +192,18 @@ classdef container < sys
                     % through branch from a subsystem of this system to a
                     % suprasystem and is defined correctly at another time
                     if ~isempty(this.aoThermalBranches(iBranch).coExmes)
-                        if isa(this.aoThermalBranches(iBranch).coConductors{1}, 'thermal.procs.conductors.fluidic')
-                             solver.thermal.basic_fluidic.branch(this.aoThermalBranches(iBranch));
+                        if isempty(this.aoThermalBranches(iBranch).coConductors)
+                            solver.thermal.infinite.branch(this.aoThermalBranches(iBranch));
+                        elseif isa(this.aoThermalBranches(iBranch).coConductors{1}, 'thermal.procs.conductors.fluidic')
+                            solver.thermal.basic_fluidic.branch(this.aoThermalBranches(iBranch));
                         else
-                             solver.thermal.basic.branch(this.aoThermalBranches(iBranch));
+                            solver.thermal.basic.branch(this.aoThermalBranches(iBranch));
                         end
                     end
                 end
             end
         end
-            
+        
     end
     
     % Changed --> allow external access, e.g. scheduler needs to be able to

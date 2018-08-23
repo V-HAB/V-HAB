@@ -495,11 +495,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if this.iProcsP2Pflow > 0 || this.iManipulators > 0
                 this.oTimer.bindPostTick(@this.updateProcessorsAndManipulators, 1);
             end
-            
-            % Flowrate update binding for OUTFLOWING matter flows.
-            if this.bSynced || bSetBranchesOutdated
-                %%%this.setBranchesOutdated('out');
-            end
 
             % Phase sets new time step (registered with parent store, used
             % for all phases of that store)

@@ -430,7 +430,6 @@ classdef CDRA < vsys
                             
                             this.tMassNetwork.(['InternalBranches_', sName])(iCell-1) = oBranch;
                         end
-                    
                     end
                     this.tGeometry.(csTypes{iType}).iCellNumber   = iCellNumber;
                     
@@ -651,17 +650,12 @@ classdef CDRA < vsys
                         oHeatSourceAbsorber = thermal.heatsource(['AbsorberHeater_',num2str(iCell)], 0);
                         oAbsorberPhase.oCapacity.addHeatSource(oHeatSourceAbsorber);
                         
-%                         sPortAbsorber = [sName, '_ConvectionAdsorber_', num2str(iCell+1)];
-%                         thermal.procs.exme(oAbsorberPhase.oCapacity, sPortAbsorber);
-%                         sPortFlow = [sName, '_ConvectionFlow_', num2str(iCell)];
-%                         thermal.procs.exme(oFlowPhase.oCapacity, sPortFlow);
-%                         
-%                         oMassBranch = this.tMassNetwork.(['InternalBranches_', sName])(iCell);
-%                         sConductorName = [sName, '_Convection_', num2str(iCell), '_', num2str(iCell+1)];
-%                         components.thermal.infinite_convective_conductor(this, sConductorName, oMassBranch);
-%                         
-%                         thermal.branch(this, [sName,'.', sPortAbsorber], {sConductorName}, [sName,'.', sPortFlow], [sName, '_Convection_Cell_', num2str(iCell)]);
-                        
+                        % Add a thermal branch of infinite conduction to
+                        % represent the convective heat transfer
+                        thermal.procs.exme(oAbsorberPhase.oCapacity,  ['Solid_InfiniteConductor_', num2str(iCell)]);
+                        thermal.procs.exme(oFlowPhase.oCapacity,    ['Flow_InfiniteConductor_', num2str(iCell)]);
+                        thermal.branch(this, [sName,'.Flow_InfiniteConductor_', num2str(iCell)], {}, [sName,'.Solid_InfiniteConductor_', num2str(iCell)], [sName, '_Infinite_Conductor', num2str(iCell)]);
+                                               
                     end
                     
                     for iCell = 1:iCellNumber-1
@@ -701,7 +695,7 @@ classdef CDRA < vsys
             tSolverProperties.iMaxIterations = 200;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
 
-            oSolver = solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches, 'complex');
+            oSolver = solver.matter_multibranch.iterative.branch(this.aoBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
             
             csStores = fieldnames(this.toStores);
@@ -753,6 +747,8 @@ classdef CDRA < vsys
 %                 this.toBranches.CDRA_Air_In_1.oHandler.setActive(false);
 %                 this.toBranches.CDRA_Air_In_2.oHandler.setActive(true);
             end
+            
+            this.setThermalSolvers();
         end           
         
         %% Function to connect the system and subsystem level branches with each other
@@ -802,7 +798,7 @@ classdef CDRA < vsys
             csTypes = {'Zeolite13x', 'Sylobead', 'Zeolite5A'};
             % Since there are two filters of each type a for loop over the
             % two filters is used as well
-            csInterfaces = cell(this.tGeometry.Zeolite13x.iCellNumber * 2 + this.tGeometry.Sylobead.iCellNumber * 2 + this.tGeometry.Zeolite5A.iCellNumber * 2);
+            csThermalInterfaces = cell(this.tGeometry.Zeolite13x.iCellNumber * 2 + this.tGeometry.Sylobead.iCellNumber * 2 + this.tGeometry.Zeolite5A.iCellNumber * 2,1);
             iIF = 1;
             for iType = 1:3
                 for iFilter = 1:2
@@ -825,17 +821,18 @@ classdef CDRA < vsys
                         sConductorName = [sName, '_Cabin_Conductor_', num2str(iCell), '_', num2str(iCell+1)];
                         thermal.procs.conductors.conduction(this, sConductorName, mfTransferCoefficient(iType));
                         
-                        csInterfaces{iIF} = ['CDRA_ThermalIF_', sPort2];
-                        thermal.branch(this, [sName,'.', sPort1], {sConductorName}, csInterfaces{iIF}, [sName, '_CabinConduction_Cell_', num2str(iCell)]);
+                        csThermalInterfaces{iIF} = ['CDRA_ThermalIF_', sPort2];
+                        thermal.branch(this, [sName,'.', sPort1], {sConductorName}, csThermalInterfaces{iIF}, [sName, '_CabinConduction_Cell_', num2str(iCell)]);
                         
-                        thermal.branch(oCabinPhase.oStore.oParent, csInterfaces{iIF}, {}, [oCabinPhase.oStore.sName, '.', sPort2], [sName, '_CabinConduction_Cell_', num2str(iCell)]);
+                        thermal.branch(this.oParent, csThermalInterfaces{iIF}, {}, [oCabinPhase.oStore.sName,'.', sPort2], [sName, '_CabinConduction_Cell_', num2str(iCell)]);
+                        
                         iIF = iIF + 1;
                         
                     end
                 end
             end
             
-            this.setIfThermal(this, csInterfaces{:});
+            this.setIfThermal(csThermalInterfaces{:});
         end
     end
     

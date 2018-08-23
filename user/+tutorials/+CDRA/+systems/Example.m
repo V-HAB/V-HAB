@@ -118,6 +118,7 @@ classdef Example < vsys
             % For the CCAA to function properly the cabin phase to which
             % the CCAA is attached has to be set as reference
             this.toChildren.CCAA.setReferencePhase(oCabinPhase);
+            this.toChildren.CDRA.setReferencePhase(oCabinPhase);
             
             % Coolant store for the coolant water supplied to CCAA
             matter.store(this, 'CoolantStore', 1);

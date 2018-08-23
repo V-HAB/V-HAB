@@ -499,12 +499,21 @@ classdef capacity < base & event.source
                 fSourceHeatFlow = fSourceHeatFlow + this.aoHeatSource(iSource).fHeatFlow;
             end
             
-            this.fCurrentHeatFlow = fExmeHeatFlow + fSourceHeatFlow;
+            fNewHeatFlow = fExmeHeatFlow + fSourceHeatFlow;
+            if fNewHeatFlow ~= this.fCurrentHeatFlow
+                this.setBranchesOutdated(true);
+            end
+            this.fCurrentHeatFlow = fNewHeatFlow;
             
             % If we have set a fixed time step for the phase, we can just
             % continue without doing any calculations as the fixed step is
             % also used for the capacity
-            if ~isempty(this.oPhase.fFixedTimeStep)
+            if this.oPhase.bFlow
+                % In a flow phase heat flows do not change temperature over
+                % time, but instead directly change the temperature.
+                % Therefore, the time step in flow phases can be infinite
+                fNewStep = inf;
+            elseif ~isempty(this.oPhase.fFixedTimeStep)
                 fNewStep = this.oPhase.fFixedTimeStep;
             else
                 
@@ -544,7 +553,7 @@ classdef capacity < base & event.source
             % Value in store is only updated, if the new update time is
             % earlier than the currently set next update time.
             %this.oStore.setNextUpdateTime(this.fLastMassUpdate + fNewStep);
-            this.oPhase.oStore.setNextTimeStep(fNewStep);
+             this.oPhase.oStore.setNextTimeStep(fNewStep);
 
             % Cache - e.g. for logging purposes
             this.fTimeStep = fNewStep;
@@ -553,7 +562,11 @@ classdef capacity < base & event.source
             this.bOutdatedTS = false;
         end
         
-        function setBranchesOutdated(this, ~)
+        function setBranchesOutdated(this, bResidual)
+            
+            if nargin < 2
+                bResidual = false;
+            end
             
             if this.fLastSetOutdated >= this.oTimer.fTime
                 return;
@@ -567,24 +580,20 @@ classdef capacity < base & event.source
             for iE = 1:this.iProcsEXME
                 oExme   = this.aoExmes(iE);
                 oBranch = oExme.oBranch;
-                
-                % Make sure it's not a p2ps.flow - their update method
-                % is called in updateProcessorsAndManipulators method
-                if isa(oBranch, 'thermal.branch')
                     
-                    % We can't directly set this oBranch as outdated if
-                    % it is just connected to an interface, because the
-                    % solver is assigned to the 'leftest' branch.
-                    while ~isempty(oBranch.coBranches{1})
-                        oBranch = oBranch.coBranches{1};
-                    end
-                    
-                    %fprintf('%s-%s: setOutdated "%s"\n', this.oStore.sName, this.sName, oBranch.sName);
-                    
-                    % Tell branch to recalculate flow rate (done after
-                    % the current tick, in timer post tick).
-                    oBranch.setOutdated();
+                if bResidual && ~isempty(oBranch.oHandler) && ~oBranch.oHandler.bResidual
+                    continue
                 end
+                % We can't directly set this oBranch as outdated if
+                % it is just connected to an interface, because the
+                % solver is assigned to the 'leftest' branch.
+                while ~isempty(oBranch.coBranches{1})
+                    oBranch = oBranch.coBranches{1};
+                end
+
+                % Tell branch to recalculate flow rate (done after
+                % the current tick, in timer post tick).
+                oBranch.setOutdated();
             end % end of: for
             
         end % end of: setBranchesOutdated method
