@@ -129,9 +129,7 @@ classdef Example < vsys
             % Hack
             %this.toStores.Filter.aoPhases(2).setVolume(10000);
             
-            
-            %solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches(1:4), 'complex');
-            solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches(1:4));
+            solver.matter_multibranch.iterative.branch(this.aoBranches(1:4));
             
             
             this.oManual = solver.matter.manual.branch(this.aoBranches(5));

@@ -37,9 +37,6 @@ classdef fan < matter.procs.f2f
     end
     
     properties (SetAccess = protected, GetAccess = public)
-        % Switched off?
-        bActive = true;
-        
         
         % Direction of the flow the fan is trying to produce. Default
         % direction is left to right -> iBlowDirection = 1. For right to
@@ -112,6 +109,8 @@ classdef fan < matter.procs.f2f
             
             this@matter.procs.f2f(oContainer, sName);
             
+            % tells solvers that this component produces a pressure rise
+            this.bActive = true;
             
             this.fSpeedSetpoint = fSpeedSetpoint;
             

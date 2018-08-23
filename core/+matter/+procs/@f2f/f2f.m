@@ -90,6 +90,8 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         oHeatFlowObject;
         
         iHeatFlowDirection;
+        
+        bActive = false;
     end
     
     

@@ -10,7 +10,6 @@ classdef Temp_Dummy < matter.procs.f2f
         fHydrLength = 0;        % hydrauloc length, value irrelevant for manual solver
         fDeltaTemp = 0;         % Temperature difference created by the component in [K]
         fDeltaPress = 0;        % Pressure difference created by the component in [Pa]
-        bActive = true;         % Must be true so the update function is called from the branch solver
         fTemperature;
         fMaxHeatFlow = inf;
         

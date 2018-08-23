@@ -6,14 +6,16 @@ classdef fan_simple < matter.procs.f2f
     properties
         fMaxDeltaP;          % Maximum pressure rise in [Pa]
         iDir = 1;            % Direction of flow
-        bActive = true;
-       
+        
     end
         
     methods
         function this = fan_simple(oParent, sName, fMaxDeltaP, bReverse)
             this@matter.procs.f2f(oParent, sName);
-                        
+            
+            % tells solvers that this component produces a pressure rise
+            this.bActive = true;
+            
             this.fMaxDeltaP   = fMaxDeltaP;
             
             if (nargin >= 4) && islogical(bReverse) && bReverse

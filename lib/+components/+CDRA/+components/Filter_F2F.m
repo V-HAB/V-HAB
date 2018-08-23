@@ -7,8 +7,6 @@ classdef Filter_F2F < matter.procs.f2f
         % Pressure differential caused by the pipe in [Pa]
         fDeltaPressure  = 0;
         
-        bActive = false;
-        
     end
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

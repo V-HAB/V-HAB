@@ -695,7 +695,7 @@ classdef CDRA < vsys
             tSolverProperties.iMaxIterations = 200;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
 
-            oSolver = solver.matter_multibranch.laminar_incompressible.branch(this.aoBranches, 'complex');
+            oSolver = solver.matter_multibranch.iterative.branch(this.aoBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
             
             csStores = fieldnames(this.toStores);

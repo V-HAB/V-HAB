@@ -40,8 +40,6 @@ classdef pipe < matter.procs.f2f
         
         fTemperatureLastUpdate = 0;
         fPressureLastUpdate    = 0;
-        
-        bActive = false;
 
     end
     
