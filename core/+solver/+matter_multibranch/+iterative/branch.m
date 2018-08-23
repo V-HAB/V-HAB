@@ -484,7 +484,7 @@ classdef branch < base & event.source
                 bForceP2Pcalc = false;
             end
             
-            if ~base.oLog.bOff, this.out(1, 3, 'props', 'Mean density: %f', { fDensity }); end;
+            if ~base.oLog.bOff, this.out(1, 3, 'props', 'Mean density: %f', { fDensity }); end
             
             this.afPressureDropCoeffsSum = nan(1, this.iBranches);
             
@@ -535,7 +535,7 @@ classdef branch < base & event.source
 
 
 
-                        if ~base.oLog.bOff, this.out(1, 3, 'props', 'Phase %s-%s: Pressure %f', { oP.oStore.sName, oP.sName, oE.getPortProperties() }); end;
+                        if ~base.oLog.bOff, this.out(1, 3, 'props', 'Phase %s-%s: Pressure %f', { oP.oStore.sName, oP.sName, oE.getPortProperties() }); end
 
                     else
                         iCol = this.piObjUuidsToColIndex(oP.sUUID);
@@ -690,6 +690,8 @@ classdef branch < base & event.source
                     % Boundary condition for this case can be non zero,
                     % both sides must be variable pressure phases
                     afBoundaryConditions(iRow) = -fPressureRise;
+                    
+                    this.afPressureDropCoeffsSum(iB) = 0;
                     
                 else
                     % if the branch does not contain an active component,
@@ -931,7 +933,7 @@ classdef branch < base & event.source
         function registerUpdate(this, ~)
             % this function registers an update
             % TO DO: provide more information on this in the wiki
-            if ~base.oLog.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end;
+            if ~base.oLog.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
             
             if this.bRegisteredOutdated
                 return;
@@ -1288,7 +1290,7 @@ classdef branch < base & event.source
                                 % here
                                 miBranchesNext = find(aafZeroSumMatrix(miPhases(iPhase), :) == -1);
                                 for iK = 1:length(miBranchesNext)
-                                    oB = this.poColIndexToObj(miBranchesNext(iK));
+                                    oB = this.poColIndexToObj(miNewColToOriginalCol(miBranchesNext(iK)));
                                     iB = find(this.aoBranches == oB);
                                     miBranchesNext(1, iK) = iB;
                                 end
@@ -1337,7 +1339,7 @@ classdef branch < base & event.source
                                     % here
                                     miBranchesNext = find(aafZeroSumMatrix(miPhases(iPhase), :) == -1);
                                     for iK = 1:length(miBranchesNext)
-                                        oB = this.poColIndexToObj(miBranchesNext(iK));
+                                        oB = this.poColIndexToObj(miNewColToOriginalCol(miBranchesNext(iK)));
                                         iB = find(this.aoBranches == oB);
                                         miBranchesNext(1, iK) = iB;
                                         
@@ -1380,7 +1382,7 @@ classdef branch < base & event.source
                 % become 0 it will not converge for cases that actually use
                 % this
                 
-                if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { this.iIteration, rError }); end;
+                if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { this.iIteration, rError }); end
                 
                 if this.iIteration > this.iMaxIterations
                     % if you reach this, please view debugging tipps at the
@@ -1416,7 +1418,7 @@ classdef branch < base & event.source
             % where all desorption flowrates from the flow node p2ps are
             % summed up!
             
-            if ~base.oLog.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration }); end;
+            if ~base.oLog.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration }); end
             
             for iColumn = 1:length(this.csObjUuidsToColIndex)
                 oObj = this.poColIndexToObj(iColumn);
@@ -1424,7 +1426,7 @@ classdef branch < base & event.source
                 if isa(oObj, 'matter.branch')
                     iB = find(this.aoBranches == oObj, 1);
                     
-                    if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(iB) }); end;
+                    if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(iB) }); end
                 end
             end
             % Ok now go through results - variable pressure phase pressures

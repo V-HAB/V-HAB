@@ -362,7 +362,11 @@ classdef capacity < base & event.source
                 end
             else
                 if this.fTotalHeatCapacity == 0
-                    fTemperatureNew = 0;
+                    % Setting the temperature to 293 K. If the temperature
+                    % is set to zero, it will cause problems with several
+                    % solvers that use the capacity temperature for density
+                    % calculations, even though the flow rate is zero. 
+                    fTemperatureNew = 293;
                 else
                     % Now we calculate the new temperature
                     fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * fLastStep);
