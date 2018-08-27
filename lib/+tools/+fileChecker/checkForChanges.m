@@ -346,6 +346,21 @@ if exist(sSavePath, 'file') ~= 0
         if tSavedInfo.bInitialScanComplete
             fprintf('''%s'' was added.\n', sFileOrFolderPath);
         end
+        % We can also finish the function here, because this call was aimed
+        % at a folder, the other files will be done in the next one. In
+        % case it is the first call and there are no subfolders, we can
+        % also clean up and save the data into the file again for next
+        % time.
+        if bFirstCall
+            % Removing any deleted files
+            [ tSavedInfo, bRemoved ] = tools.fileChecker.removeEntriesForDeletedFiles('', tSavedInfo);
+            % If any files have been removed, then we also set the return
+            % variable to true.
+            if bRemoved, bChanged = true; end
+            
+            save(sSavePath,'tSavedInfo','-v7');
+            clear global tSavedInfo
+        end
         return;
     else
         % Okay, so the file exists AND the field exists, this must be a
