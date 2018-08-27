@@ -209,8 +209,6 @@ classdef table < base
             this.afMolarMass = zeros(1, this.iSubstances);
             this.tiN2I       = struct();
             
-            %%
-            
             % Now we go through all substances in the 'MatterData'
             % worksheet and fill the ttxMatter struct
             for iI = 1:this.iSubstances

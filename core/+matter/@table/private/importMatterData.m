@@ -115,7 +115,7 @@ if strcmp(sTarget, 'MatterData')
         csRawDataColumn = csImportCell{iFirstVariableColumn};
         % Now we go through each of the rows and check, if the value in the
         % individual element is numeric or not.
-        for iRow=1:size(csRawDataColumn, 1);
+        for iRow=1:size(csRawDataColumn, 1)
             % Create a regular expression to detect and remove non-numeric prefixes and
             % suffixes.
             sRegularExpression = '(?<prefix>.*?)(?<numbers>([-]*(\d+[\,]*)+[\.]{0,1}\d*[eEdD]{0,1}[-+]*\d*[i]{0,1})|([-]*(\d+[\,]*)*[\.]{1,1}\d+[eEdD]{0,1}[-+]*\d*[i]{0,1}))(?<suffix>.*)';
@@ -130,15 +130,15 @@ if strcmp(sTarget, 'MatterData')
             
             % Detected commas in non-thousand locations.
             bInvalidThousandsSeparator = false;
-            if any(sNumbers==',');
+            if any(sNumbers==',')
                 sThousandsRegExp = '^\d+?(\,\d{3})*\.{0,1}\d*$';
-                if isempty(regexp(sThousandsRegExp, ',', 'once'));
+                if isempty(regexp(sThousandsRegExp, ',', 'once'))
                     sNumbers = NaN;
                     bInvalidThousandsSeparator = true;
                 end
             end
             % Convert numeric strings to numbers.
-            if ~bInvalidThousandsSeparator;
+            if ~bInvalidThousandsSeparator
                 csNumbers = textscan(strrep(sNumbers, ',', ''), '%f');
                 afNumericData(iRow, iFirstVariableColumn) = csNumbers{1};
                 csRawData{iRow, iFirstVariableColumn} = csNumbers{1};
@@ -291,7 +291,7 @@ else
     % The csValues struct may contain numeric and string values. We need to
     % tell both apart, so we'll do all of the following to figure it out.
     
-    for iI=1:length(csValues);
+    for iI=1:length(csValues)
         % Create a regular expression to detect and remove non-numeric prefixes and
         % suffixes.
         sRegularExpression = '(?<prefix>.*?)(?<numbers>([-]*(\d+[\,]*)+[\.]{0,1}\d*[eEdD]{0,1}[-+]*\d*[i]{0,1})|([-]*(\d+[\,]*)*[\.]{1,1}\d+[eEdD]{0,1}[-+]*\d*[i]{0,1}))(?<suffix>.*)';
@@ -304,15 +304,15 @@ else
         
         % Detected commas in non-thousand locations.
         bInvalidThousandsSeparator = false;
-        if any(sNumbers==',');
+        if any(sNumbers==',')
             sThousandsRegExp = '^\d+?(\,\d{3})*\.{0,1}\d*$';
-            if isempty(regexp(sThousandsRegExp, ',', 'once'));
+            if isempty(regexp(sThousandsRegExp, ',', 'once'))
                 sNumbers = NaN;
                 bInvalidThousandsSeparator = true;
             end
         end
         % Convert numeric strings to numbers.
-        if ~bInvalidThousandsSeparator;
+        if ~bInvalidThousandsSeparator
             csNumbers = textscan(strrep(sNumbers, ',', ''), '%f');
             csValues{iI} = csNumbers{1};
         end
