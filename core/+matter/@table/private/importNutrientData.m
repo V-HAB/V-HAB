@@ -8,7 +8,7 @@ function [ ttxImportNutrientData ] = importNutrientData()
     %% Import data from PlantParameters.csv file
     
     % Open the file
-    iFileID = fopen(strrep('lib/+matterdata/NutrientData.csv','/',filesep), 'r');
+    iFileID = fopen(strrep('+matter/+data/NutrientData.csv','/',filesep), 'r');
     % Get first row
     csFirstRow = textscan(iFileID, '%s', 1, 'Delimiter', '\n');
     % This is a cell array of cells, so we 'unpack' one level to get the

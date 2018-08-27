@@ -28,7 +28,7 @@ if strcmp(sTarget, 'MatterData')
     % the future, this code won't have to change so much.
     
     % Open the file
-    iFileID = fopen(strrep('lib/+matterdata/MatterData.csv','/',filesep), 'r');
+    iFileID = fopen(strrep('+matter/+data/MatterData.csv','/',filesep), 'r');
     % Get first row
     csFirstRow = textscan(iFileID, '%s', 1, 'Delimiter', '\n');
     % This is a cell array of cells, so we 'unpack' one level to get the
@@ -266,7 +266,7 @@ else
     ttxImportMatter = struct();
     
     % Read Info file
-    iFileID = fopen(strrep(['lib/+matterdata/',sTarget,'_Information_File.csv'], '/', filesep));
+    iFileID = fopen(strrep(['+matter/+data/+NIST/',sTarget,'_Information_File.csv'], '/', filesep));
     csInput = textscan(iFileID, '%s', 'Delimiter','\n');
     csInput = csInput{1};
     sInput_1 = csInput{1};
@@ -337,7 +337,7 @@ else
     
     for iI = 1:2
         % Read header File
-        iFileID  = fopen(strrep(['lib/+matterdata/',csFileName{iI},'HeaderFile.csv'], '/', filesep));
+        iFileID  = fopen(strrep(['core/+matter/+data/+NIST/',csFileName{iI},'HeaderFile.csv'], '/', filesep));
         csInput  = textscan(iFileID, '%s', 'Delimiter','\n');
         csInput  = csInput{1};
         sInput_1 = csInput{1};
@@ -378,7 +378,7 @@ else
         end
         
         % Creating the file name
-        sFileName = strrep(['lib/+matterdata/',csFileName{iI},'DataFile.csv'], '/', filesep);
+        sFileName = strrep(['core/+matter/+data/+NIST/',csFileName{iI},'DataFile.csv'], '/', filesep);
         mfRawData = dlmread(sFileName,',');
         
         % We need to initialize three smaller matrices with enough space to
