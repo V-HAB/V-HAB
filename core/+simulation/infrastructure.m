@@ -277,9 +277,6 @@ classdef infrastructure < base & event.source
                 return;
             end
             
-            iPhases = 0;
-            iBranches = 0;
-            
             % Construct matter, solvers, ...
             oRoot = this.oSimulationContainer;
         
@@ -296,9 +293,6 @@ classdef infrastructure < base & event.source
                     % Seal matter things - do we need something like that
                     % for thermal/electrical?
                     oChild.sealMatterStructure();
-                    
-                    iPhases = iPhases + oChild.iPhases;
-                    iBranches = iBranches + oChild.iBranches;
                 end
 
                 
@@ -328,7 +322,6 @@ classdef infrastructure < base & event.source
             end
             
             disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!']);
-            disp(['Model contains ', num2str(iBranches), ' Branches and ', num2str(iPhases), ' Phases.'])
             
             this.bInitialized = true;
 

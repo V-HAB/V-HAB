@@ -96,17 +96,6 @@ classdef table < base
         abAbsorber;
     end
     
-    properties (Transient) %DELETE THESE WHEN READY
-        % Why do we need all of this? Seems like this should be in a
-        % separate class.
-        % Refernce to all phases and flows that use this matter table
-        aoPhases = []; %matter.phase.empty(); % ABSTRACT - can't do that!
-        aoFlows  = matter.flow.empty();
-        % Create 'empty' (placeholder) flow (for f2f, exme procs)
-        oFlowZero;
-        
-    end
-    
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Class constructor %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,20 +127,6 @@ classdef table < base
                     % not changed, we can load the MatterData.mat file, if
                     % it exists.
                     load(strrep('data\MatterData.mat', '\', filesep),'this');
-                    
-                    % There are a few properties that will have been saved
-                    % by the previous run of V-HAB in the matter.table
-                    % object that need to be reset to their initial values,
-                    % otherwise there might be errors if the object classes
-                    % were changed between runs.
-                    %
-                    % Also, objects here are included in e.g. mass balance
-                    % calculations, leading to wrong results.
-                    %
-                    %TODO delete these as soon as aoPhases and aoFlows
-                    %properties have been removed from this class.
-                    this.aoPhases = [];
-                    this.aoFlows  = matter.flow.empty();
                     
                     disp('Matter table loaded from stored version.');
                     
@@ -411,74 +386,7 @@ classdef table < base
                 mbAreInside(i) = any(strcmp(csSubstances{i}, csSubstanceList));
             end
         end
-        
-        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Methods for handling of related phases and flows %%%%%%%%%%%%%%%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function afMass = addPhase(this, oPhase)
-            % Add phase
-            %disp('Add phase')
-            if ~isa(oPhase, 'matter.phase')
-                this.throw('addPhase', 'Provided object does not derive from or is a matter.phase');
-            end
-            
-            % Preset with default: if phase not added, same vector returned
-            afMass = oPhase.afMass;
-            
-            if isempty(this.aoPhases) || ~any(this.aoPhases == oPhase)
-                % The basic matter.phases is abstract so aoPhases can not
-                % pre-initialized with an empty mixin vector - therefore
-                % need to distinguish between first and following phases.
-                if isempty(this.aoPhases)
-                    this.aoPhases = oPhase;
-                else
-                    this.aoPhases(end + 1) = oPhase;
-                end
-                
-            end
-        end
-        
-        function this = removePhase(this, oPhase)
-            %disp('Remove phase')
-            iInd = find(this.aoPhases == oPhase, 1); % Just find first result - phase never added twice
-            
-            if isempty(iInd)
-                this.throw('removePhase', 'Provided phase not assinged to this matter table!');
-            else
-                this.aoPhases(iInd) = [];
-            end
-        end
-        
-        function afMass = addFlow(this, oFlow)
-            % Add flow
-            %disp('Add flow')
-            if ~isa(oFlow, 'matter.flow')
-                this.throw('addFlow', 'Provided object does not derive from or is a matter.flow');
-            end
-            
-            % Preset with default: if phase not added, same vector returned
-            afMass = oFlow.arPartialMass;
-            
-            if ~any(this.aoFlows == oFlow)
-                this.aoFlows(length(this.aoFlows) + 1) = oFlow;
-                
-            end
-        end
-        
-        function this = removeFlow(this, oFlow)
-            %disp('Remove flow')
-            iInd = find(this.aoFlows == oFlow, 1); % Just find first result - flow never added twice
-            
-            if isempty(iInd)
-                this.throw('removeFlow', 'Provided flow not assinged to this matter table!');
-            else
-                this.aoFlows(iInd) = [];
-            end
-        end
-        
     end
-    
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Static helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

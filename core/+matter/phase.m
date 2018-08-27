@@ -307,8 +307,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.oMT    = this.oStore.oMT;
             this.oTimer = this.oStore.oTimer;
             
-            this.afMass = this.oMT.addPhase(this);
-            
             % Preset masses
             this.afMass = zeros(1, this.oMT.iSubstances);
             this.arPartialMass = zeros(1, this.oMT.iSubstances);
