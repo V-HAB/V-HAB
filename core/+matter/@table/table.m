@@ -96,7 +96,7 @@ classdef table < base
         abAbsorber;
     end
     
-    properties (Transient)%DELETE THESE WHEN READY
+    properties (Transient) %DELETE THESE WHEN READY
         % Why do we need all of this? Seems like this should be in a
         % separate class.
         % Refernce to all phases and flows that use this matter table
