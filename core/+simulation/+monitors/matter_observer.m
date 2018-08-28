@@ -1,5 +1,5 @@
 classdef matter_observer < simulation.monitor
-    %EXECUTION_CONTROL Summary of this class goes here
+    %MATTER_OBSERVER Summary of this class goes here
     %   Detailed explanation goes here
     
     

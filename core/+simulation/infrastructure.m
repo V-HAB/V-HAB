@@ -309,10 +309,6 @@ classdef infrastructure < base & event.source
                     oChild.sealElectricalStructure();
                 end
                 
-                % Seal matter things - do we need something like that
-                % for thermal/electrical?
-                %oChild.seal();
-                    
                 oChild.createSolverStructure();
                 
                 %TODO Might have to add something like this here

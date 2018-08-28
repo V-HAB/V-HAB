@@ -338,8 +338,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
 
                 % Calculate the partial masses
-                if this.fMass > 0, this.arPartialMass = this.afMass / this.fMass;
-                else               this.arPartialMass = this.afMass; % afMass is just zeros
+                if this.fMass > 0
+                    this.arPartialMass = this.afMass / this.fMass;
+                else
+                    this.arPartialMass = this.afMass; % afMass is just zeros
                 end
 
             else

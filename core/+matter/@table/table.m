@@ -77,7 +77,7 @@ classdef table < base
         tiN2I;
         
         % Reverse of tiN2I, a cell containing all the names of the
-        % substances, accessible via their index. 
+        % substances, accessible via their index.
         csI2N;
         
         % cell array for all edible substances
@@ -152,12 +152,12 @@ classdef table < base
             % substances which cannot be clealy defined (e.g. 'inedible
             % biomass' or 'brine'), but still need to be used in more
             % top-level simulations.
-            % There are also files for individual substances. These 
-            % substance-specific worksheets contain many datapoints for 
-            % several key properties at different temperatures, pressures 
-            % etc. both for isochoric and isobaric state changes. 
-            % The findProperty() method uses these datapoints to 
-            % interpolate between them if called.
+            % There are also files for individual substances. These
+            % substance-specific worksheets contain many datapoints for
+            % several key properties at different temperatures, pressures
+            % etc. both for isochoric and isobaric state changes. The
+            % findProperty() method uses these datapoints to interpolate
+            % between them if called.
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Importing data from 'MatterData.csv' file %%%%%%%%%%%%%%%%%%%
@@ -171,7 +171,7 @@ classdef table < base
             % backslash with the current system fileseparator, on Macs and
             % Linux, this is the forward slash.)
             this.ttxMatter = importMatterData('MatterData');
-             
+            
             % get all substances
             this.csSubstances = fieldnames(this.ttxMatter);
             % get number of substances
@@ -253,7 +253,7 @@ classdef table < base
             % Now we import all of the data contained in the individual
             % substance files. The NIST Scraper tool creates a data file
             % that contains the information on how many and which
-            % substances have individual files. So the first thing to do is 
+            % substances have individual files. So the first thing to do is
             % to read this file.
             
             iFileID = fopen(strrep('+matter/+data/+NIST/NIST_Scraper_Data.csv', '/', filesep));
@@ -302,7 +302,7 @@ classdef table < base
             
             % The actual substances are also included in 'MatterData.csv',
             % this part of the code adds the nutritional data to these
-            % substances. 
+            % substances.
             
             % read from .csv file
             this.ttxNutrientData = importNutrientData();
@@ -341,10 +341,10 @@ classdef table < base
             
             % The actual substances are also included in 'MatterData.csv',
             % this part of the code adds the absorber data to these
-            % substances. 
+            % substances.
             this.importAbsorberData();
             
-             
+            
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Saving the data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -363,14 +363,10 @@ classdef table < base
             % Let the simulations begin!
             
         end
-    end
-    
-    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    methods
         
+        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function csSubstanceList = getSubstancesFromVector(this, mfSubstances)
             csSubstanceList = this.asI2N(mfSubstances ~= 0);
         end
