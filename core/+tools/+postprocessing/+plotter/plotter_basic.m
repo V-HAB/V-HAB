@@ -256,12 +256,8 @@ classdef plotter_basic < base
             end
             
             if isfield(tFigureOptions, 'bArrangePlotsInSquare') && tFigureOptions.bArrangePlotsInSquare == true
-                if isfield(tFigureOptions, 'bTimePlot')
-                    btimePlot = tFigureOptions.bTimePlot;
-                else
-                    btimePlot = false;
-                end
-                iPlots  = length(coPlots) + sif(btimePlot,1,0);
+                
+                iPlots  = length(coPlots);
                 iGrid   = ceil(sqrt(iPlots));
                 
                 % Rows of grid - can we reduce?
