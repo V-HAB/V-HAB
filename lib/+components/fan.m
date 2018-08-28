@@ -81,6 +81,13 @@ classdef fan < matter.procs.f2f
         % Pressure difference produced by this fan.
         fDeltaPressure;
         
+        % Boolean variable to enable or disable the pressure rise at the
+        % beginning of a simulation. This prevents some solvers from
+        % becoming unstable due to the large pressure spike produced by the
+        % fan when starting at zero flow rate. 
+        %TODO should implement this better and make it use the gradual rise
+        %after each shutdown, not just at the beginning of a simulation.
+        bUsePressureRise = false;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -232,9 +239,15 @@ classdef fan < matter.procs.f2f
             % there is backflow), the fan produces a pressure drop.
             fDeltaPressure = fDensityCorrectedDeltaPressure * this.iBlowDirection * iFlowDir * (-1);
             
-            fRiseTime = 1;
-            if this.oTimer.fTime < fRiseTime
-                fDeltaPressure = fDeltaPressure * (-1 * ((this.oTimer.fTime - fRiseTime) / fRiseTime)^2 + 1);
+            % If it is turned on, we gradually increase the pressure at the
+            % start of a simulation over a time period of one second. This
+            % is done to prevent solver issues caused by a large pressure
+            % spike. 
+            if this.bUsePressureRise
+                fRiseTime = 1;
+                if this.oTimer.fTime < fRiseTime
+                    fDeltaPressure = fDeltaPressure * (-1 * ((this.oTimer.fTime - fRiseTime) / fRiseTime)^2 + 1);
+                end
             end
             
             % We might want to log this value, so we set the property
