@@ -10,9 +10,6 @@ classdef branch < base & event.source
     %
     %% Regaring the implementation some rules must be observed!:
     %
-    % - while it should work to have a gas flow node with only one branch
-    %   beeing solved by this solver, it is not recommended!
-    %
     % - it is not possible to have a gas flow node as the connection
     %   between two different multi branch solvers!
     %
@@ -29,14 +26,16 @@ classdef branch < base & event.source
     %   can take an array of inflows with corresping partial mass ratios to
     %   calculate the p2p flow rate
     %
-    % - The solver itself is calculated before the residual solvers. This
-    %   may lead to problems if a residual solver is used as input to
-    %   this system directly (not with a boundary phase inbetween) as the
-    %   flowrate of the residual solver is assumed to be constant
-    %   boundary condition for one tick, while it can actually change
-    %   before the tick ends. Therefore residual solvers should only be
-    %   used as input with a boundary phase inbetween that reaches the
-    %   necessary pressure to supply the system the correct flowrate
+    % - The solver is incompatible with a residual solver, unless the phase
+    %   in which this connection takes place is a boundary (normal) phase,
+    %   which does not have the bFlow parameter set to true! The reason for
+    %   this is that the solver cannot differentiate between a residual
+    %   solver and another solver, and would handle the old residual solver
+    %   flowrate (as this solver is calculated before the residual solver)
+    %   as a boundary conditions while the residual solver would then
+    %   change its flowrate after the calculation again. Instead simply add
+    %   the branches for which you wanted to use a residual solver to the
+    %   system solved by this solver!
     %
     %% Information about the possible parameters that can be changed for the solver
     %
@@ -67,6 +66,12 @@ classdef branch < base & event.source
     %   to which gas flow node it is connected and which p2p flowrates
     %   influence it. Then check if that p2p flowrate is changing in
     %   unintended ways!
+    %
+    % - If you received NAN values because the determinant of aafPhasePressuresAndFlowRates
+    %   is 0 (calculate with det(aafPhasePressuresAndFlowRates)) then you
+    %   probably have a wrong valve at some location that cut off gas flow
+    %   nodes from any boundary node, but they have a non zero external
+    %   flowrate
     %
     % - You received an error of any different type? Please contact your
     %   supervisor!
@@ -192,6 +197,8 @@ classdef branch < base & event.source
         sMode = 'complex';
         
         iLastWarn = -1000;
+        
+        bFinalLoop = false;
     end
     
     properties (SetAccess = private, GetAccess = protected) %, Transient = true)
@@ -603,7 +610,7 @@ classdef branch < base & event.source
                 if oP.iProcsP2Pflow > 0
                     for iProcP2P = 1:oP.iProcsEXME
                         if oP.coProcsEXME{iProcP2P}.bFlowIsAProcP2P
-                            fFrSum = fFrSum + oP.coProcsEXME{iProcP2P}.iSign * oP.coProcsEXME{iProcP2P}.oFlow.fFlowRate;
+                            fFrSum = fFrSum - oP.coProcsEXME{iProcP2P}.iSign * oP.coProcsEXME{iProcP2P}.oFlow.fFlowRate;
                         end
                     end
                 end
@@ -616,12 +623,7 @@ classdef branch < base & event.source
                 %TODO throw an error if fFrSum ~= 0 and iAdded == 0?
                 if fFrSum ~= 0
                     if iAdded >= 1
-                        % Note, since we add this as boundary condition we
-                        % have to change the sign, because it is on the
-                        % other of the = in the equation, and
-                        % mathematically has to be subtracted from the
-                        % overall equation to get it correct
-                        afBoundaryConditions(iRow) = -fFrSum;
+                        afBoundaryConditions(iRow) = fFrSum;
                     else
                         this.throw('generateMatrices', 'BC flows (manual solver or p2p) but no variable, solved branches connected!');
                     end
@@ -1001,7 +1003,7 @@ classdef branch < base & event.source
             % calls for p2p updates) and the solver is recalculated with
             % the new p2p flows. This is repeated again until the solver
             % reaches overall convergence
-            bFinalLoop = false;
+            this.bFinalLoop = false;
             
             % These values are only used for debugging. Therefore they are
             % also initialized with nans (as nans are ignored during
@@ -1009,11 +1011,11 @@ classdef branch < base & event.source
             mfFlowRates = nan(this.iMaxIterations, this.iBranches);
             afP2PFlows = nan(this.iMaxIterations, this.iBranches);
             
-            while abs(rError) > rErrorMax || bFinalLoop %|| iIteration < 5
+            while abs(rError) > rErrorMax || this.bFinalLoop %|| iIteration < 5
                 this.iIteration = this.iIteration + 1;
                 
                 % if we have reached convergence recalculate the p2ps
-                if bFinalLoop
+                if this.bFinalLoop 
                     bForceP2PUpdate = true;
                 else
                     bForceP2PUpdate = false;
@@ -1025,77 +1027,86 @@ classdef branch < base & event.source
                 % network is rebuilt to ensure that the correct solution is
                 % reached. Otherwise we only update the pressure drop
                 % coefficients in the exisiting matrices
-                if this.iIteration == 1 || bFinalLoop
+                if this.iIteration == 1 || this.bFinalLoop
                     % Regenerates matrices, gets coeffs from flow procs
                     [ aafFullPhasePressuresAndFlowRates, afFullBoundaryConditions ] = this.generateMatrices(bForceP2PUpdate);
                     aafPhasePressuresAndFlowRates = aafFullPhasePressuresAndFlowRates;
                     afBoundaryConditions = afFullBoundaryConditions;
+                    
                 else
                     [aafPhasePressuresAndFlowRates, afBoundaryConditions] = this.updatePressureDropCoefficients(aafFullPhasePressuresAndFlowRates, afFullBoundaryConditions);
                 end
+               
                 % Infinite values can lead to singular matrixes in the solution
                 % process and at least result in badly scaled matrices.
                 % Therefore the branches are checked beforehand for pressure
                 % drops that are infinite, which means nothing can flow through
                 % this branch and 0 flowrate must be enforced anyway (e.g.
                 % closed valve)
-                mbZeroFlowBranches = isinf(this.afPressureDropCoeffsSum)';
-                
-                % Also set branches which have a pressure difference of
-                % less than this.fMinPressureDiff Pa as zero flow branches!
-                % This also must be done in each iteration, as the gas flow
-                % nodes can change their pressure
-                if all(mbZeroFlowBranches)
-                    this.afFlowRates = zeros(1, this.iBranches);
-                    break
-                end
-                aoZeroFlowBranches = this.aoBranches(mbZeroFlowBranches);
-                
-                mbRemoveRow = false(1,length(aafPhasePressuresAndFlowRates));
-                mbRemoveColumn = false(1,length(aafPhasePressuresAndFlowRates));
-                iZeroFlowBranches = length(aoZeroFlowBranches);
-                for iZeroFlowBranch = 1:iZeroFlowBranches
-                    mbRemoveColumn(this.piObjUuidsToColIndex(aoZeroFlowBranches(iZeroFlowBranch).sUUID)) = true;
-                end
-                
-                aafPhasePressuresAndFlowRates(:, mbRemoveColumn) = [];
-                
-                mbRemoveRow(this.miBranchIndexToRowID(mbZeroFlowBranches)) = true;
-                aafPhasePressuresAndFlowRates(mbRemoveRow,:) = [];
-                afBoundaryConditions((this.miBranchIndexToRowID(mbZeroFlowBranches)),:) = [];
-                
-                iNewRows = length(aafPhasePressuresAndFlowRates);
-                iOriginalRows = length(mbRemoveRow);
-                
-                
-                % in order to remove the branches without a flow but still
-                % be able to have the correct indices for every sitation we
-                % have to build a index transformation from the full matrix
-                % to the reduced matrix and vice versa
-                miOriginalRowToNewRow = zeros(iOriginalRows, 1);
-                miOriginalColToNewCol = zeros(1, iOriginalRows);
-                for iOriginalIndex = 1:iOriginalRows
-                    if mbRemoveRow(iOriginalIndex)
-                        miOriginalRowToNewRow(iOriginalIndex) = 0;
-                    else
-                        miOriginalRowToNewRow(iOriginalIndex) = iOriginalIndex - sum(mbRemoveRow(1:iOriginalIndex));
+                mbZeroFlowBranchesNew = isinf(this.afPressureDropCoeffsSum)';
+                % for speed optimization this is only performed if anything
+                % changed compared to previous steps
+                if this.iIteration == 1 || any(mbZeroFlowBranchesNew ~= mbZeroFlowBranches)
+                    
+                    mbZeroFlowBranches = mbZeroFlowBranchesNew;
+                    
+                    % Also set branches which have a pressure difference of
+                    % less than this.fMinPressureDiff Pa as zero flow branches!
+                    % This also must be done in each iteration, as the gas flow
+                    % nodes can change their pressure
+                    if all(mbZeroFlowBranches)
+                        this.afFlowRates = zeros(1, this.iBranches);
+                        break
+                    end
+                    aoZeroFlowBranches = this.aoBranches(mbZeroFlowBranches);
+
+                    mbRemoveRow = false(1,length(aafPhasePressuresAndFlowRates));
+                    mbRemoveColumn = false(1,length(aafPhasePressuresAndFlowRates));
+                    iZeroFlowBranches = length(aoZeroFlowBranches);
+                    for iZeroFlowBranch = 1:iZeroFlowBranches
+                        mbRemoveColumn(this.piObjUuidsToColIndex(aoZeroFlowBranches(iZeroFlowBranch).sUUID)) = true;
                     end
                     
-                    if mbRemoveColumn(iOriginalIndex)
-                        miOriginalColToNewCol(iOriginalIndex) = 0;
-                    else
-                        miOriginalColToNewCol(iOriginalIndex) = iOriginalIndex - sum(mbRemoveColumn(1:iOriginalIndex));
+                    mbRemoveRow(this.miBranchIndexToRowID(mbZeroFlowBranches)) = true;
+                    iOriginalRows = length(mbRemoveRow);
+
+                    iNewRows = iOriginalRows - sum(mbRemoveRow);
+
+                    % in order to remove the branches without a flow but still
+                    % be able to have the correct indices for every sitation we
+                    % have to build a index transformation from the full matrix
+                    % to the reduced matrix and vice versa
+                    miOriginalRowToNewRow = zeros(iOriginalRows, 1);
+                    miOriginalColToNewCol = zeros(1, iOriginalRows);
+                    for iOriginalIndex = 1:iOriginalRows
+                        if mbRemoveRow(iOriginalIndex)
+                            miOriginalRowToNewRow(iOriginalIndex) = 0;
+                        else
+                            miOriginalRowToNewRow(iOriginalIndex) = iOriginalIndex - sum(mbRemoveRow(1:iOriginalIndex));
+                        end
+
+                        if mbRemoveColumn(iOriginalIndex)
+                            miOriginalColToNewCol(iOriginalIndex) = 0;
+                        else
+                            miOriginalColToNewCol(iOriginalIndex) = iOriginalIndex - sum(mbRemoveColumn(1:iOriginalIndex));
+                        end
                     end
+
+                    miNewRowToOriginalRow = zeros(iNewRows, 1);
+                    miNewColToOriginalCol = zeros(1, iNewRows);
+
+                    for iNewIndex = 1:iNewRows
+                        miNewRowToOriginalRow(iNewIndex) = find(miOriginalRowToNewRow == iNewIndex);
+                        miNewColToOriginalCol(iNewIndex) = find(miOriginalColToNewCol == iNewIndex);
+                    end
+                    
                 end
                 
-                miNewRowToOriginalRow = zeros(iNewRows, 1);
-                miNewColToOriginalCol = zeros(1, iNewRows);
-                
-                for iNewIndex = 1:iNewRows
-                    miNewRowToOriginalRow(iNewIndex) = find(miOriginalRowToNewRow == iNewIndex);
-                    miNewColToOriginalCol(iNewIndex) = find(miOriginalColToNewCol == iNewIndex);
-                end
-                
+                % now we actuall remove the values
+                aafPhasePressuresAndFlowRates(:, mbRemoveColumn) = [];
+                aafPhasePressuresAndFlowRates(mbRemoveRow,:) = [];
+                afBoundaryConditions((this.miBranchIndexToRowID(mbZeroFlowBranches)),:) = [];
+
                 % This index decides at which point in the matrix the
                 % equations which enforce zero mass change for the gas flow
                 % nodes start. These equations are later used to define the
@@ -1116,17 +1127,17 @@ classdef branch < base & event.source
                 % Where afResults contains gas flow node pressures and
                 % branch flowrates
                 afResults = aafPhasePressuresAndFlowRates \ afBoundaryConditions;
-                sLastWarn = lastwarn;
                 
+                %sLastWarn = lastwarn;
                 warning('on','all');
-                
-                if ~isempty(sLastWarn) && ~isempty(strfind(sLastWarn, 'badly scaled'))
-                    if (this.oTimer.iTick - this.iLastWarn) >= 100
-                        % warning(sLastWarn);
-                        
-                        this.iLastWarn = this.oTimer.iTick;
-                    end
-                end
+
+%                 if ~isempty(sLastWarn) && contains(sLastWarn, 'badly scaled')
+%                     if (this.oTimer.iTick - this.iLastWarn) >= 100
+%                         % warning(sLastWarn);
+%                         
+%                         this.iLastWarn = this.oTimer.iTick;
+%                     end
+%                 end
                 
                 % translate the calculated results into branch flowrates or
                 % gas flow node pressures
@@ -1160,7 +1171,8 @@ classdef branch < base & event.source
                 % they have 0 flowrate anyway, we set this
                 for iZeroBranch = 1:iZeroFlowBranches
                     iB = find(this.aoBranches == aoZeroFlowBranches(iZeroBranch), 1);
-                    this.afFlowRates(iB) = 0;
+                    % necessary if e.g. checkvalves are used
+                    this.afFlowRates(iB) = 0.75 * this.afFlowRates(iB);
                 end
                 % now we store the calculated flowrates in the matrix,
                 % which is quite usefull for debugging purposes
@@ -1175,12 +1187,12 @@ classdef branch < base & event.source
                 % enforced. If after that the error is still smaller than
                 % the limit, the iteration is finished, otherwise it
                 % continues normally again
-                if bFinalLoop && rError < this.fMaxError
-                    bFinalLoop = false;
+                if this.bFinalLoop && rError < this.fMaxError
+                    this.bFinalLoop = false;
                 elseif rError < this.fMaxError
-                    bFinalLoop = true;
+                    this.bFinalLoop = true;
                 else
-                    bFinalLoop = false;
+                    this.bFinalLoop = false;
                 end
                 
                 %%

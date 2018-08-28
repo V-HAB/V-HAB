@@ -6,7 +6,7 @@ classdef gas_flow_node < matter.phases.gas
     properties (SetAccess = protected, GetAccess = public)
         % Pressure is adjusted ('virtual', not a real pressure) to minimize
         % the total flow rate
-        fVirtualPressure;
+        fVirtualPressure = 1e5;
         
         % Informative
         fVirtualMassToPressure;

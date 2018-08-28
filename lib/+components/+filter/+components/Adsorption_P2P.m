@@ -96,18 +96,13 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             if this.iInFlowTick ~= this.oTimer.iTick
                 this.mfFlowRatesProp = zeros(this.iAveraging, this.oMT.iSubstances);
             end
-            bZeroFlows = false;
-            if (isempty(afInFlowRates) || all(sum(aarInPartials) == 0)) && ~(this.iInFlowTick == this.oTimer.iTick)
+            
+            if this.bUseBufferPhase
+                % if there is no in flow, assume the partial pressure from
+                % the mass phase of this filter as the correct value for
+                % the partial pressures
+                afPP = this.oIn.oPhase.oStore.toPhases.MassBuffer.afPP;
                 
-                if this.bUseBufferPhase
-                    % if there is no in flow, assume the partial pressure from
-                    % the mass phase of this filter as the correct value for
-                    % the partial pressures
-                    afPP = this.oIn.oPhase.oStore.toPhases.MassBuffer.afPP;
-                else
-                    afPP = zeros(1,this.oMT.iSubstances);
-                end
-                bZeroFlows = true;
                 [ mfEquilibriumLoading , mfLinearizationConstant ] = this.oMT.calculateEquilibriumLoading(afMassAbsorber, afPP, fTemperature);
 
                 mfCurrentLoading = afMassAbsorber;
@@ -118,10 +113,14 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % be minimum partial pressures that can be reach, e.g.
                 % maximum time steps
                 this.afPartialInFlows = zeros(1,this.oMT.iSubstances);
+                
+                afMinOutFlows = zeros(1,this.oMT.iSubstances);
             else
                 if ~(isempty(afInFlowRates) || all(sum(aarInPartials) == 0))
                     this.iInFlowTick = this.oTimer.iTick;
                     this.afPartialInFlows = sum((afInFlowRates .* aarInPartials),1);
+                else
+                    this.afPartialInFlows = zeros(1,this.oMT.iSubstances);
                 end
                 afCurrentMolsIn     = (this.afPartialInFlows ./ this.oMT.afMolarMass);
                 arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
@@ -136,9 +135,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 
             end
             
-            afMinPP = mfCurrentLoading ./ mfLinearizationConstant;
-            afMinPP(isnan(afMinPP)) = 0;
-            afMinPP(isinf(afMinPP)) = 0;
 
             % dq/dt = k(q*-q)
             % Here the solution to this differential equation is used:
@@ -147,18 +143,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             % is diffcult to calculate the future correct V-HAB time step
             % for this...
             mfFlowRates = (mfEquilibriumLoading - (mfEquilibriumLoading - mfCurrentLoading) .* exp(- this.mfMassTransferCoefficient) - mfCurrentLoading);
-            
-%             afNewInFlows = this.afPartialInFlows - this.mfFlowRatesProp;
-%             afNewInFlows(afNewInFlows < 0) = 0;
-%             
-%             afNewMolsIn     = (afNewInFlows ./ this.oMT.afMolarMass);
-%             arFractions 	= afNewMolsIn ./ sum(afNewMolsIn);
-%             afNewPP         = arFractions .*  fPressure;
-            
-            afMinMolarFraction = afMinPP ./ fPressure;
-            afMinMassFraction = afMinMolarFraction .* this.oMT.afMolarMass;
-
-            afMinOutFlows = sum(this.afPartialInFlows) .* afMinMassFraction;
             
             mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
             mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
@@ -171,42 +155,58 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
 
             mfFlowRatesDesorption = fDesorptionFlowRate .* arPartialsDesorption;
             
-            abLimitDesorpFlows = afMinOutFlows < mfFlowRatesDesorption;
-            mfFlowRatesDesorption(abLimitDesorpFlows) = afMinOutFlows(abLimitDesorpFlows);
-                        
-            abLimitMinOutFlows = (afMinOutFlows > this.afPartialInFlows);
-            afMinOutFlows(abLimitMinOutFlows) = this.afPartialInFlows(abLimitMinOutFlows);
-            
             fAdsorptionFlowRate   	= sum(mfFlowRatesAdsorption);
             arPartialsAdsorption    = zeros(1,this.oMT.iSubstances);
             arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./sum(mfFlowRatesAdsorption));
             
             mfFlowRatesAdsorption = fAdsorptionFlowRate .* arPartialsAdsorption;
             
-            abLimitFlows = ((this.afPartialInFlows - mfFlowRatesAdsorption) < afMinOutFlows);
-            afMaxAbsorberFlows = this.afPartialInFlows - afMinOutFlows;
-            mfFlowRatesAdsorption(abLimitFlows) = afMaxAbsorberFlows(abLimitFlows);
-            
-            abLimitFlows = (mfFlowRatesAdsorption > this.afPartialInFlows);
-            mfFlowRatesAdsorption(abLimitFlows) = this.afPartialInFlows(abLimitFlows);
+            if ~this.bUseBufferPhase
+                % in case we are not currently desorbing we assume that
+                % this represents a gas flow node and limit the flows
+                % accordingly
+                afMinPP = mfCurrentLoading ./ mfLinearizationConstant;
+                afMinPP(isnan(afMinPP)) = 0;
+                afMinPP(isinf(afMinPP)) = 0;
+
+                afMinMolarFraction = afMinPP ./ fPressure;
+                afMinMassFraction = afMinMolarFraction .* this.oMT.afMolarMass;
+                
+                afMinOutFlows = sum(this.afPartialInFlows) .* afMinMassFraction;
+                
+                abLimitDesorpFlows = afMinOutFlows < mfFlowRatesDesorption;
+                mfFlowRatesDesorption(abLimitDesorpFlows) = afMinOutFlows(abLimitDesorpFlows);
+
+                abLimitMinOutFlows = (afMinOutFlows > this.afPartialInFlows);
+                afMinOutFlows(abLimitMinOutFlows) = this.afPartialInFlows(abLimitMinOutFlows);
+                
+                abLimitFlows = ((this.afPartialInFlows - mfFlowRatesAdsorption) < afMinOutFlows);
+                afMaxAbsorberFlows = this.afPartialInFlows - afMinOutFlows;
+                mfFlowRatesAdsorption(abLimitFlows) = afMaxAbsorberFlows(abLimitFlows);
+
+                abLimitFlows = (mfFlowRatesAdsorption > this.afPartialInFlows);
+                mfFlowRatesAdsorption(abLimitFlows) = this.afPartialInFlows(abLimitFlows);
+            end
             
             
             fDesorptionFlowRate                             = sum(mfFlowRatesDesorption);
             arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
             arPartialsDesorption(mfFlowRatesDesorption~=0)  = abs(mfFlowRatesDesorption(mfFlowRatesDesorption~=0)./sum(mfFlowRatesDesorption));
 
-            fAdsorptionFlowRate   	= sum(mfFlowRatesAdsorption);
             arPartialsAdsorption    = zeros(1,this.oMT.iSubstances);
-            arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./sum(mfFlowRatesAdsorption));
+            if this.bUseBufferPhase
+                % this was implemented to avoid very small time steps
+                % during initialization. The error introduced from this
+                % assumption should be very small
+                fAdsorptionFlowRate     = 0;
+            else
+                fAdsorptionFlowRate   	= sum(mfFlowRatesAdsorption);
+                arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./sum(mfFlowRatesAdsorption));
+            end
             
             if this.bUseBufferPhase
-                if bZeroFlows
-                    this.oStore.toProcsP2P.(['BufferDesorptionProcessor',this.sCell]).setMatterProperties( fDesorptionFlowRate, arPartialsDesorption);
-                    this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(0, zeros(1,this.oMT.iSubstances));
-                else
-                    this.oStore.toProcsP2P.(['BufferDesorptionProcessor',this.sCell]).setMatterProperties( 0, zeros(1,this.oMT.iSubstances));
-                    this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
-                end
+                this.oStore.toProcsP2P.(['BufferDesorptionProcessor',this.sCell]).setMatterProperties( 0, zeros(1,this.oMT.iSubstances));
+                this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
             else
                 this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
             end

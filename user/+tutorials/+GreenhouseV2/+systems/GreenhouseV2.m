@@ -43,7 +43,7 @@ classdef GreenhouseV2 < vsys
             tInput(1).fPhotoperiod     = 17; % h
             % This parameter defines how many generations of this culture
             % are planted in succession
-            tInput(1).iConsecutiveGenerations      = 5; % days
+            tInput(1).iConsecutiveGenerations      = 5;
             
             % Additional cultures can be added here by adding more fields
             % to the tInput struct (because we loop over them below).
@@ -56,7 +56,7 @@ classdef GreenhouseV2 < vsys
             tInput(2).fEmergeTime      = 0; % days
             tInput(2).fPPFD            = 330; % micromol/m^2s
             tInput(2).fPhotoperiod     = 17; % h
-            tInput(2).iConsecutiveGenerations      = 5; % days
+            tInput(2).iConsecutiveGenerations      = 5;
             
             %% Create Culture Objects
             

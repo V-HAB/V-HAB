@@ -165,7 +165,7 @@ classdef CCAA < vsys
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.TCCV, 1, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, this.tAtmosphere.fPressure);
             oAir = matter.phases.gas(this.toStores.TCCV, 'TCCV_PhaseGas', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
-            oAir.bFlow      = true;
+%             oAir.bFlow      = true;
             oAir.bSynced    = true;
             
             matter.procs.exmes.gas(oAir, 'Port_In');
@@ -246,9 +246,10 @@ classdef CCAA < vsys
             
             % These branches are only necessary if a CDRA is connected to
             % the CCAA
+            components.pipe(this, 'Pipe_From_CDRA', 1, 0.1, 2e-4);
             if ~isempty(this.sCDRA)
-                matter.branch(this, 'CHX.Flow_Out_Gas2',            {},             'CCAA_CHX_to_CDRA_Out',     'CHX_CDRA');
-                matter.branch(this, 'TCCV.Port_In2',                {},             'CCAA_In_FromCDRA',         'CDRA_TCCV');
+                matter.branch(this, 'CHX.Flow_Out_Gas2',            {},                         'CCAA_CHX_to_CDRA_Out',     'CHX_CDRA');
+                matter.branch(this, 'TCCV.Port_In2',                {'Pipe_From_CDRA'},     	'CCAA_In_FromCDRA',         'CDRA_TCCV');
             end
         end
              
@@ -267,9 +268,6 @@ classdef CCAA < vsys
                 solver.matter.manual.branch(this.toBranches.CHX_CDRA);
                 
                 this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);
-
-                solver.matter.residual.branch(this.toBranches.CDRA_TCCV);
-                this.toBranches.CDRA_TCCV.oHandler.setPositiveFlowDirection(false);
                 
                 if this.fCDRA_FlowRate == 0
                     this.toBranches.CDRA_TCCV.oHandler.setActive(false);
@@ -297,7 +295,7 @@ classdef CCAA < vsys
             this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fInFlow);
 
             if ~isempty(this.sCDRA)
-                fInFlow2 = -this.toBranches.CDRA_TCCV.oHandler.fFlowRate;
+                fInFlow2 = -this.toBranches.CDRA_TCCV.fFlowRate;
             else
                 fInFlow2 = 0;
             end
@@ -437,18 +435,7 @@ classdef CCAA < vsys
                 this.toBranches.Coolant_In.oHandler.setFlowRate(0); 
                 this.toBranches.Coolant_Out.oHandler.setFlowRate(0);
                 
-                if ~isempty(this.sCDRA)
-                    this.toBranches.CDRA_TCCV.oHandler.setActive(false);
-                end
                 return
-            else
-                if ~isempty(this.sCDRA)
-                    if this.fCDRA_FlowRate == 0
-                        this.toBranches.CDRA_TCCV.oHandler.setActive(false);
-                    else
-                        this.toBranches.CDRA_TCCV.oHandler.setActive(true);
-                    end
-                end
             end
             
             % The CHX data is given for 50 to 450 cfm so the CCAA

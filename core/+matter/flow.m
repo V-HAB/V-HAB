@@ -226,8 +226,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % Remove references to In/Out proc, also tell that proc about
             % it if it still exists
             
-            if ~isempty(this.oIn)  && isvalid(this.oIn),  this.thRemoveCBs.in(); end;
-            if ~isempty(this.oOut) && isvalid(this.oOut), this.thRemoveCBs.out(); end;
+            if ~isempty(this.oIn)  && isvalid(this.oIn),  this.thRemoveCBs.in(); end
+            if ~isempty(this.oOut) && isvalid(this.oOut), this.thRemoveCBs.out(); end
             
             this.oIn = [];
             this.oOut = [];
@@ -484,27 +484,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             return;
             
-            % Calculate molar mass. Normally, the phase uses the method
-            % utilized below and provides a vector of absolute masses.
-            % Here, the mass fractions are used, which should make no
-            % difference.
-            %TODO: Check if this does make a difference!
-            this.fMolarMass = this.oMT.calculateMolarMass(this.arPartialMass);
-            
-            % Heat capacity. The oBranch references back to the p2p itself
-            % which provides the getInEXME method (p2p is always directly
-            % connected to EXMEs).
-            
-            % TO DO: Make limits adaptive
-            if (abs(this.fPressureLastMassPropUpdate - this.fPressure) > 100) ||...
-               (abs(this.fTemperatureLastMassPropUpdate - this.fTemperature) > 1) ||...
-                   (max(abs(this.arPartialMassLastMassPropUpdate - this.arPartialMass)) > 0.01)
-           
-                this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this);
-                this.fPressureLastMassPropUpdate = this.fPressure;
-                this.fTemperatureLastMassPropUpdate = this.fTemperature;
-                this.arPartialMassLastMassPropUpdate = this.arPartialMass;
-            end
         end
         
         
@@ -614,7 +593,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
             %     ALSO: if no afPress/afTemps, just distribute equally!?
             %if bSkipT || bSkipPT, this.warn('setData', 'setData on flows w/o press/temp (or just empty) --> difference: no delta temp/press (cause no f2f) or really don''t set??'); end;
             %if (bSkipT || bSkipPT) && (iL > 1), this.warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end;
-            if bSkipPT && (iL > 1), aoFlows(1).warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end;
+            if bSkipPT && (iL > 1), aoFlows(1).warn('setData', 'No temperature and/or temperature set for matter.flow(s), but matter.procs.f2f''s exist -> no usable data for those?'); end
             
             % Rounding precision
             iPrec = aoFlows(1).oTimer.iPrecision;
@@ -657,7 +636,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
                 
                 % Skip flowrate, pressure, temperature?
-                if bSkipFRandPT, continue; end;
+                if bSkipFRandPT, continue; end
                 
                 oThis.fFlowRate = fFlowRate;
                 
@@ -671,7 +650,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 
                 
                 % Skip pressure, temperature?
-                if bSkipPT, continue; end;
+                if bSkipPT, continue; end
                 
                 oThis.fPressure = fPortPress;
                 
