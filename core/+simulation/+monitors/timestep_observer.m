@@ -53,15 +53,13 @@ classdef timestep_observer < simulation.monitor
                 tInfo = functions(oTimer.cCallBacks{miIndexMinStep(iIndex)});
                 oCaller = tInfo.workspace{1}.this;
 
-                if isa(oCaller, 'matter.phase')
-                    csReports{iIndex} = ['In the system ', oCaller.oStore.oContainer.sName, ' in Store ', oCaller.oStore.sName, ' in Phase ', oCaller.sName, ' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oTimer.iTick), ' for the function ', tInfo.function];
+                if isa(oCaller, 'matter.store')
+                    [ ~, iPhase ] = min([ oCaller.aoPhases.fTimeStep ]);
+                    csReports{iIndex} = ['In the system ', oCaller.oContainer.sName, ' in Store ''', oCaller.sName, ''', Phase ''', oCaller.aoPhases(iPhase).sName,''', a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oTimer.iTick)];
 
                 elseif isa(oCaller, 'thermal.capacity')
                     csReports{iIndex} = ['In the system ', oCaller.oPhase.oStore.oContainer.sName, ' in Store ', oCaller.oPhase.oStore.sName, ' in Capacity ', oCaller.sName, ' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oTimer.iTick), ' for the function ', tInfo.function];
                     
-                elseif isa(oCaller, 'matter.store')
-                    csReports{iIndex} = ['In the system ', oCaller.oContainer.sName, ' in Store ', oCaller.sName, ' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oTimer.iTick)];
-
                 elseif isa(oCaller, 'vsys')
                     csReports{iIndex} = ['In the system ', oCaller.sName, ' a minimal time step of ' num2str(fMinStep), ' seconds was used in Simulation Tick ', num2str(oTimer.iTick)];
 
