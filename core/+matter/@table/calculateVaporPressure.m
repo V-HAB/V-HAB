@@ -9,39 +9,34 @@ function fVaporPressure = calculateVaporPressure(~, fTemperature, sSubstance)
 % First it is necessary to decide for which substance the vapor pressure
 % should be calculated
 
-for iRange = 1:length(matter.data.AntoineParameters.(sSubstance).Range)
-    
-    mfLimits = [matter.data.AntoineParameters.(sSubstance).Range(:).mfLimits];
-    
-    if fTemperature < mfLimits(1)
-        % For temperature below the limits the substance is liquid and the
-        % vapor pressure is 0. This is represented by the following antoine
-        % parameters
-        fA = 0;
-        fB = inf;
-        fC = 0;
-        
-    elseif fTemperature > mfLimits(end)
-        % For temperature above the limits the substance is gaseous and the
-        % vapor pressure is inf. This is represented by the following antoine
-        % parameters
-        fA = inf;
-        fB = 0;
-        fC = 0;
-        
-    elseif (fTemperature >= matter.data.AntoineParameters.(sSubstance).Range(iRange).mfLimits(1)) &&...
-            (fTemperature <= matter.data.AntoineParameters.(sSubstance).Range(iRange).mfLimits(2))
-        % In between the limits the respective antoine parameters from the
-        % NIST chemistry webbook for the respective substance are used
-        fA = matter.data.AntoineParameters.(sSubstance).Range(iRange).fA;
-        fB = matter.data.AntoineParameters.(sSubstance).Range(iRange).fB;
-        fC = matter.data.AntoineParameters.(sSubstance).Range(iRange).fC;
+AntoineData = matter.data.AntoineParameters.(sSubstance);
+
+mfLimits = [AntoineData.Range(:).mfLimits];
+
+if fTemperature < mfLimits(1)
+    % For temperature below the limits the substance is liquid and the
+    % vapor pressure is 0
+    fVaporPressure = 0;
+
+elseif fTemperature > mfLimits(end)
+    % For temperature above the limits the substance is gaseous and the
+    % vapor pressure is inf
+    fVaporPressure = inf;
+else
+    for iRange = 1:length(AntoineData.Range)
+        if (fTemperature >= AntoineData.Range(iRange).mfLimits(1)) &&...
+                (fTemperature <= AntoineData.Range(iRange).mfLimits(2))
+            % In between the limits the respective antoine parameters from the
+            % NIST chemistry webbook for the respective substance are used
+            fA = AntoineData.Range(iRange).fA;
+            fB = AntoineData.Range(iRange).fB;
+            fC = AntoineData.Range(iRange).fC;
+
+            % Antoine Equation, taken from http://webbook.nist.gov
+            fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5;
+            return
+        end
     end
-    
 end
-
-% Antoine Equation, taken from http://webbook.nist.gov
-fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5; 
-
 end
 
