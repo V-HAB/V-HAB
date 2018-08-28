@@ -101,20 +101,12 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % if there is no in flow, assume the partial pressure from
                 % the mass phase of this filter as the correct value for
                 % the partial pressures
-                afPP = this.oIn.oPhase.oStore.toPhases.MassBuffer.afPP;
+                afPP = zeros(1, this.oMT.iSubstances);
                 
-                [ mfEquilibriumLoading , mfLinearizationConstant ] = this.oMT.calculateEquilibriumLoading(afMassAbsorber, afPP, fTemperature);
-
-                mfCurrentLoading = afMassAbsorber;
-                % the absorber material is not considered loading ;)
-                mfCurrentLoading(this.oMT.abAbsorber) = 0;
-
                 % For this case there are no minimum outflows, there would
                 % be minimum partial pressures that can be reach, e.g.
                 % maximum time steps
                 this.afPartialInFlows = zeros(1,this.oMT.iSubstances);
-                
-                afMinOutFlows = zeros(1,this.oMT.iSubstances);
             else
                 if ~(isempty(afInFlowRates) || all(sum(aarInPartials) == 0))
                     this.iInFlowTick = this.oTimer.iTick;
@@ -126,15 +118,14 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
                 afPP                = arFractions .*  fPressure;
                 afPP((afPP < 2.5) & this.mbIgnoreSmallPressures) = 0;
-                
-                [ mfEquilibriumLoading , mfLinearizationConstant ] = this.oMT.calculateEquilibriumLoading(afMassAbsorber, afPP, fTemperature);
-
-                mfCurrentLoading = afMassAbsorber;
-                % the absorber material is not considered loading ;)
-                mfCurrentLoading(this.oMT.abAbsorber) = 0;
-                
             end
             
+            [ mfEquilibriumLoading , mfLinearizationConstant ] = this.oMT.calculateEquilibriumLoading(afMassAbsorber, afPP, fTemperature);
+
+            mfCurrentLoading = afMassAbsorber;
+            % the absorber material is not considered loading ;)
+            mfCurrentLoading(this.oMT.abAbsorber) = 0;
+
 
             % dq/dt = k(q*-q)
             % Here the solution to this differential equation is used:
@@ -204,12 +195,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./sum(mfFlowRatesAdsorption));
             end
             
-            if this.bUseBufferPhase
-                this.oStore.toProcsP2P.(['BufferDesorptionProcessor',this.sCell]).setMatterProperties( 0, zeros(1,this.oMT.iSubstances));
-                this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
-            else
-                this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
-            end
+            this.oStore.toProcsP2P.(['DesorptionProcessor',this.sCell]).setMatterProperties(fDesorptionFlowRate, arPartialsDesorption);
             
             % exothermic reaction have a negative enthalpy by definition,
             % therefore we have to multiply the equation with -1 to have a

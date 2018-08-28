@@ -2,9 +2,6 @@ classdef CDRA < vsys
     %% Carbon Dioxide Removal Assembly (CDRA) Subsystem File
     % Alternative Name: 4BMS or 4 Bed Molecular Sieve
     %
-    % TO DO: Check the buffer phase pressures, check how time step can be
-    % increased
-    %
     % The ISS uses two CDRAs as part of the US life support systems. One is
     % located in Node 3 and the other in the US Lab (normally only one CDRA
     % is working at the same time). Each CDRA gets air from a Common Cabin
@@ -384,9 +381,7 @@ classdef CDRA < vsys
                         % adsorbedads
                         matter.procs.exmes.mixture(oFilterPhase, [sName, '_Absorber_Adsorption_',num2str(iCell)]);
                         matter.procs.exmes.mixture(oFilterPhase, [sName, '_Absorber_Desorption_',num2str(iCell)]);
-                        if strcmp(sName, 'Zeolite5A_2') || strcmp(sName, 'Zeolite5A_1')
-                            matter.procs.exmes.mixture(oFilterPhase, [sName, '_Absorber_DesorptionBuffer_',num2str(iCell)]);
-                        end
+                        
                         % for the flow phase two addtional exmes for the gas flow
                         % through the filter are required
                         matter.procs.exmes.gas(oFlowPhase, [sName, '_Flow_Adsorption_',num2str(iCell)]);
@@ -427,42 +422,21 @@ classdef CDRA < vsys
                     this.tGeometry.(csTypes{iType}).iCellNumber   = iCellNumber;
                     
                     if strcmp(sName, 'Zeolite5A_2') || strcmp(sName, 'Zeolite5A_1')
-                        % Adds a phase to each of the absorbers that actually
-                        % contains the mass
+                        % Adds a phase to the 5A Buffer to enable the air
+                        % save fan (multi branch solver requires a gas flow
+                        % node on each side of the fan)
                         for iK = 1:length(csFlowSubstances)
                             tfMassesFlow.(csFlowSubstances{iK}) = cAirHelper{1}.(csFlowSubstances{iK});
                         end
 
                         if (this.iCycleActive == 1 && strcmp(sName, 'Zeolite5A_2')) || (this.iCycleActive == 2 && strcmp(sName, 'Zeolite5A_1'))
-                            oMassBuffer = matter.phases.gas(this.toStores.(sName), 'MassBuffer', tfMassesFlow,fFlowVolume, this.TargetTemperature);
                             oAirSaveFlow = matter.phases.gas_flow_node(this.toStores.(sName), 'AirSaveFlow', tfMassesFlow,fFlowVolume, this.TargetTemperature);
                         else
-                            oMassBuffer = matter.phases.gas(this.toStores.(sName), 'MassBuffer', tfMassesFlow,fFlowVolume, fTemperatureFlow);
                             oAirSaveFlow = matter.phases.gas_flow_node(this.toStores.(sName), 'AirSaveFlow', tfMassesFlow,fFlowVolume, fTemperatureFlow);
                         end
-                        % adds the connection from the last cell of this bed
-                        % into the mass buffer (the connection from the buffer
-                        % to the next bed will be handled in the interface
-                        % definition below)
-
-                        matter.procs.exmes.gas(oMassBuffer, 'Buffer_Inlet');
-                        matter.procs.exmes.gas(oMassBuffer, 'Buffer_Outlet');
                         
                         matter.procs.exmes.gas(oAirSaveFlow, 'AirSave_Inlet');
                         matter.procs.exmes.gas(oAirSaveFlow, 'AirSave_Outlet');
-
-                        components.CDRA.components.Filter_F2F(this, [sName, '_FrictionProc_Buffer'], this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell));
-
-                        oBranch = matter.branch(this, [sName,'.','Outflow_',num2str(iCellNumber)], {[sName, '_FrictionProc_Buffer']}, [sName, '.Buffer_Inlet'], [sName, '_to_Buffer']);
-                        this.tMassNetwork.(['InternalBranches_', sName])(iCellNumber) = oBranch;
-
-                        % add desorption procs to the buffer phase, these are
-                        % used when nothing flows through the flow nodes, but
-                        % desorption occurs!
-                        for iCell = 1:iCellNumber
-                            matter.procs.exmes.gas(oMassBuffer, [sName, '_Desorption_',num2str(iCell)]);
-                            components.filter.components.Desorption_P2P(this.toStores.(sName), ['BufferDesorptionProcessor_',num2str(iCell)], ['Absorber_',num2str(iCell),'.', sName, '_Absorber_DesorptionBuffer_',num2str(iCell)], ['MassBuffer.', sName, '_Desorption_',num2str(iCell)]);
-                        end
                     end
                 end
             end
@@ -545,12 +519,14 @@ classdef CDRA < vsys
             components.pipe(this, 'Pipe_5A_1_to_13x2', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
             components.pipe(this, 'Pipe_5A_2_to_13x1', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
             
+            this.tGeometry.Zeolite5A.iCellNumber   = iCellNumber;
+            
             sBranchName = 'Zeolite5A1_to_13x2';
-            oBranch = matter.branch(this, 'Zeolite5A_1.Buffer_Outlet', {'Pipe_5A_1_to_13x2', 'Valve_5A_1_to_13x2'}, 'Zeolite13x_2.Inlet_From_5A1', sBranchName);
+            oBranch = matter.branch(this, ['Zeolite5A_1.Outflow_',num2str(iCellNumber)] , {'Pipe_5A_1_to_13x2', 'Valve_5A_1_to_13x2'}, 'Zeolite13x_2.Inlet_From_5A1', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
             sBranchName = 'Zeolite5A2_to_13x1';
-            oBranch = matter.branch(this, 'Zeolite5A_2.Buffer_Outlet', {'Pipe_5A_2_to_13x1', 'Valve_5A_2_to_13x1'}, 'Zeolite13x_1.Inlet_From_5A2', sBranchName);
+            oBranch = matter.branch(this, ['Zeolite5A_2.Outflow_',num2str(iCellNumber)] , {'Pipe_5A_2_to_13x1', 'Valve_5A_2_to_13x1'}, 'Zeolite13x_1.Inlet_From_5A2', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
             % 5A to Vacuum connection branches
@@ -702,22 +678,12 @@ classdef CDRA < vsys
                     oPhase = this.toStores.(csStores{iS}).aoPhases(iP);
                     if ~isempty(regexp(oPhase.sName, 'Absorber', 'once'))
                         arMaxChange = zeros(1,this.oMT.iSubstances);
-                        arMaxChange(this.oMT.tiN2I.H2O) = 0.05;
-                        arMaxChange(this.oMT.tiN2I.CO2) = 0.05;
-                        tTimeStepProperties.arMaxChange = arMaxChange;
-                        tTimeStepProperties.rMaxChange = 0.1;
-                        tTimeStepProperties.fMaxStep = 60;
-                        tTimeStepProperties.fMinStep = 1e-2;
-                        
-                        oPhase.setTimeStepProperties(tTimeStepProperties);
-                    elseif ~isempty(regexp(oPhase.sName, 'MassBuffer', 'once'))
-                        arMaxChange = zeros(1,this.oMT.iSubstances);
                         arMaxChange(this.oMT.tiN2I.H2O) = 0.1;
                         arMaxChange(this.oMT.tiN2I.CO2) = 0.1;
                         tTimeStepProperties.arMaxChange = arMaxChange;
                         tTimeStepProperties.rMaxChange = 0.1;
                         tTimeStepProperties.fMaxStep = 60;
-                        tTimeStepProperties.fMinStep = 1e-8;
+                        tTimeStepProperties.fMinStep = 1e-4;
                         
                         oPhase.setTimeStepProperties(tTimeStepProperties);
                     end
@@ -868,13 +834,6 @@ classdef CDRA < vsys
                         this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_', num2str(iCell)]).bUseBufferPhase = false;
                         this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_', num2str(iCell)]).bUseBufferPhase = true;
                     end
-                    tTimeStepProperties.fMinStep = 1e-8;
-                    this.toStores.Zeolite5A_1.toPhases.MassBuffer.setTimeStepProperties(tTimeStepProperties);
-                    
-                    tTimeStepProperties.fMinStep = 1;
-                    this.toStores.Zeolite5A_2.toPhases.MassBuffer.setTimeStepProperties(tTimeStepProperties);
-                        
-                    this.setTimeStep(1);
                 else
                     for iValve = 1:length(this.tMassNetwork.aoActiveValvesCycleOne)
                         this.tMassNetwork.aoActiveValvesCycleOne(iValve).setOpen(false);
@@ -887,29 +846,9 @@ classdef CDRA < vsys
                         this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_', num2str(iCell)]).bUseBufferPhase = true;
                         this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_', num2str(iCell)]).bUseBufferPhase = false;
                     end
-                    tTimeStepProperties.fMinStep = 1;
-                    this.toStores.Zeolite5A_1.toPhases.MassBuffer.setTimeStepProperties(tTimeStepProperties);
-                    
-                    tTimeStepProperties.fMinStep = 1e-8;
-                    this.toStores.Zeolite5A_2.toPhases.MassBuffer.setTimeStepProperties(tTimeStepProperties);
-                        
-                    
-                    this.setTimeStep(1);
                  end
                 
                 this.tTimeProperties.fLastCycleSwitch = this.oTimer.fTime;
-                this.tTimeProperties.bInit = true;
-            end
-            
-            if this.tTimeProperties.bInit
-                if this.toStores.(['Zeolite5A_', num2str(this.iCycleActive)]).toPhases.MassBuffer.fPressure > 9e4
-                
-                    oPhase = this.toStores.(['Zeolite5A_', num2str(this.iCycleActive)]).toPhases.MassBuffer;
-                    tTimeStepProperties.fMinStep = 1e-8;
-                    oPhase.setTimeStepProperties(tTimeStepProperties);
-                    this.setTimeStep(10);
-                    this.tTimeProperties.bInit = false;
-                end
             end
             
             % Change Airsave to vacuum desorption
@@ -920,23 +859,6 @@ classdef CDRA < vsys
                 else
                     this.toProcsF2F.Valve_5A_1_Airsave.setOpen(false);
                     this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(true);
-                end
-            end
-            
-            % the 5A beds have to be filled at first, therefore the valves
-            % are closed/opened depending on the mass buffer pressure of
-            % the active 5A bed:
-            if this.iCycleActive == 1
-                if this.toStores.Zeolite5A_2.toPhases.MassBuffer.fPressure < 9e4
-                    this.toProcsF2F.Valve_5A_1_to_13x2.setOpen(false);
-                else
-                    this.toProcsF2F.Valve_5A_1_to_13x2.setOpen(true);
-                end
-            else
-                if this.toStores.Zeolite5A_2.toPhases.MassBuffer.fPressure < 9e4
-                    this.toProcsF2F.Valve_5A_2_to_13x1.setOpen(false);
-                else
-                    this.toProcsF2F.Valve_5A_2_to_13x1.setOpen(true);
                 end
             end
             

@@ -72,13 +72,13 @@ classdef setup_complex < simulation.infrastructure
                         oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toProcsP2P.AdsorptionProcessor_',num2str(iCell)],  'mfFlows(this.oMT.tiN2I.CO2)',   'kg/s',   ['Absorber Flowrate CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
                         oLog.addValue(['Example:c:CDRA:s:',csType{iType}, num2str(iBed),'.toProcsP2P.AdsorptionProcessor_',num2str(iCell)],  'mfFlows(this.oMT.tiN2I.H2O)',   'kg/s',   ['Absorber Flowrate H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
                         
-                        oLog.addValue(['Example:c:CDRA.tMassNetwork.InternalBranches_',csType{iType}, num2str(iBed), '(', num2str(iCell), ')'],  'fFlowRate',   'kg/s',   ['Flowrate ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
-                        
                     end
+                    
+                    for iCell = 1:miCellNumber(iType)-1
+                        oLog.addValue(['Example:c:CDRA.tMassNetwork.InternalBranches_',csType{iType}, num2str(iBed), '(', num2str(iCell), ')'],  'fFlowRate',   'kg/s',   ['Flowrate ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell)]);
+                    end     
                 end
             end
-            oLog.addValue('Example:c:CDRA:s:Zeolite5A_1.toPhases.MassBuffer',      'fPressure',                    'Pa',   'Pressure Zeolite5A_1 MassBuffer');
-            oLog.addValue('Example:c:CDRA:s:Zeolite5A_2.toPhases.MassBuffer',      'fPressure',                    'Pa',   'Pressure Zeolite5A_2 MassBuffer');
             
             csInterfaceBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tMassNetwork.InterfaceBranches);
             iInterfaceBranches = length(csInterfaceBranches);
@@ -158,6 +158,9 @@ classdef setup_complex < simulation.infrastructure
                          csCDRA_Absorber_FlowrateCO2{iType,iBed,iCell}  = ['"Absorber Flowrate CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell),'"'];
                          csCDRA_Absorber_FlowrateH2O{iType,iBed,iCell}  = ['"Absorber Flowrate H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell),'"'];
                          
+                    end
+                    
+                    for iCell = 1:miCellNumber(iType)-1
                          csCDRA_FlowRate{iType,iBed,iCell}              = ['"Flowrate ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell), '"'];
                     end
                 end
@@ -231,26 +234,26 @@ classdef setup_complex < simulation.infrastructure
             oPlotter.defineFigure(coPlot,  'Temperatures');
             
             % csType = {'Sylobead_', 'Zeolite13x_', 'Zeolite5A_'};
-            csCDRA_FlowRate{1,1,iCellNumberSylobead+1} = '"CDRA_Air_In_1"';
-            csCDRA_FlowRate{1,1,iCellNumberSylobead+2} = '"CDRA_Air_Out_2"';
+            csCDRA_FlowRate{1,1,iCellNumberSylobead} = '"CDRA_Air_In_1"';
+            csCDRA_FlowRate{1,1,iCellNumberSylobead+1} = '"CDRA_Air_Out_2"';
             
-            csCDRA_FlowRate{1,2,iCellNumberSylobead+1} = '"CDRA_Air_In_2"';
-            csCDRA_FlowRate{1,2,iCellNumberSylobead+2} = '"CDRA_Air_Out_1"';
+            csCDRA_FlowRate{1,2,iCellNumberSylobead} = '"CDRA_Air_In_2"';
+            csCDRA_FlowRate{1,2,iCellNumberSylobead+1} = '"CDRA_Air_Out_1"';
             
+            csCDRA_FlowRate{2,1,iCellNumber13x} = '"Zeolite5A2_to_13x1"';
             csCDRA_FlowRate{2,1,iCellNumber13x+1} = '"Zeolite5A2_to_13x1"';
-            csCDRA_FlowRate{2,1,iCellNumber13x+2} = '"Zeolite5A2_to_13x1"';
+            csCDRA_FlowRate{2,2,iCellNumber13x} = '"Zeolite5A1_to_13x2"';
             csCDRA_FlowRate{2,2,iCellNumber13x+1} = '"Zeolite5A1_to_13x2"';
-            csCDRA_FlowRate{2,2,iCellNumber13x+2} = '"Zeolite5A1_to_13x2"';
             
-            csCDRA_FlowRate{3,1,iCellNumber5A+1} = '"CDRA_Vent_2"';
-            csCDRA_FlowRate{3,1,iCellNumber5A+2} = '"CDRA_AirSafe_2"';
+            csCDRA_FlowRate{3,1,iCellNumber5A} = '"CDRA_Vent_2"';
+            csCDRA_FlowRate{3,1,iCellNumber5A+1} = '"CDRA_AirSafe_2"';
             
-            csCDRA_FlowRate{3,2,iCellNumber5A+1} = '"CDRA_Vent_1"';
-            csCDRA_FlowRate{3,2,iCellNumber5A+2} = '"CDRA_AirSafe_1"';
+            csCDRA_FlowRate{3,2,iCellNumber5A} = '"CDRA_Vent_1"';
+            csCDRA_FlowRate{3,2,iCellNumber5A+1} = '"CDRA_AirSafe_1"';
             
-            miCellNumber(1) = miCellNumber(1) + 2;
-            miCellNumber(2) = miCellNumber(2) + 2;
-            miCellNumber(3) = miCellNumber(3) + 2;
+            miCellNumber(1) = miCellNumber(1) + 1;
+            miCellNumber(2) = miCellNumber(2) + 1;
+            miCellNumber(3) = miCellNumber(3) + 1;
             
             coPlot = cell(3,2);
             for iType = 1:3
@@ -260,8 +263,7 @@ classdef setup_complex < simulation.infrastructure
             end
             oPlotter.defineFigure(coPlot,  'FlowRates');
             
-            csNormalPhasePressures = {'"Pressure Zeolite5A_1 MassBuffer"', '"Pressure Zeolite5A_2 MassBuffer"',...
-                                      '"Connection Pressure CCAA to CDRA"', '"Connection Pressure CDRA to CCAA"'};
+            csNormalPhasePressures = {'"Connection Pressure CCAA to CDRA"', '"Connection Pressure CDRA to CCAA"'};
             
             coPlot = cell(2,3);
             coPlot{1,1} = oPlotter.definePlot({'"CDRA CO2 InletFlow"', '"CDRA H2O InletFlow"', '"CDRA CO2 OutletFlow"', '"CDRA H2O OutletFlow"'}, 'CDRA In- and Outlet Flows');
