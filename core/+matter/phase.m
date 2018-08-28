@@ -291,7 +291,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %                   if  tfMass is provided
 
             % Parent has to be a or derive from matter.store
-            if ~isa(oStore, 'matter.store'), this.throw('phase', 'Provided oStore parameter has to be a matter.store'); end;
+            if ~isa(oStore, 'matter.store'), this.throw('phase', 'Provided oStore parameter has to be a matter.store'); end
 
             % Set name
             this.sName = sName;
@@ -330,7 +330,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
                     % Throw an error if the matter substance is not in the
                     % matter table
-                    if ~isfield(this.oMT.tiN2I, sKey), this.throw('phase', 'Matter type %s unkown to matter.table', sKey); end;
+                    if ~isfield(this.oMT.tiN2I, sKey), this.throw('phase', 'Matter type %s unkown to matter.table', sKey); end
 
                     this.afMass(this.oMT.tiN2I.(sKey)) = tfMass.(sKey);
                 end
@@ -386,7 +386,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             
             
-            if nargin < 2, bSetBranchesOutdated = false; end;
+            if nargin < 2, bSetBranchesOutdated = false; end
 
             fTime     = this.oTimer.fTime;
             fLastStep = fTime - this.fLastMassUpdate;
@@ -396,7 +396,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Return if no time has passed
             if fLastStep == 0
                 
-                if ~base.oLog.bOff, this.out(2, 1, 'skip', 'Skipping massupdate in %s-%s-%s\tset branches outdated? %i', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, bSetBranchesOutdated }); end;
+                if ~base.oLog.bOff, this.out(2, 1, 'skip', 'Skipping massupdate in %s-%s-%s\tset branches outdated? %i', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, bSetBranchesOutdated }); end
                 
                 %NOTE need that in case .exec sets flow rate in manual branch triggering massupdate,
                 %     and later in that tick phase does .update -> branches won't be set outdated!
@@ -407,7 +407,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 return;
             end
             
-            if ~base.oLog.bOff, this.out(tools.logger.INFO, 1, 'exec', 'Execute massupdate in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end;
+            if ~base.oLog.bOff, this.out(tools.logger.INFO, 1, 'exec', 'Execute massupdate in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
 
             % Immediately set fLastMassUpdate, so if there's a recursive call
             % to massupdate, e.g. by a p2ps.flow, nothing happens!
@@ -419,21 +419,27 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %SPEED OPT - value saved in last calculateTimeStep, still valid
             %[ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
             afTotalInOuts = this.afCurrentTotalInOuts;
-            mfInflowDetails = this.mfCurrentInflowDetails;
             
-            if ~base.oLog.bOff, this.out(1, 2, 'total-fr', 'Total flow rate in %s-%s: %.20f', { this.oStore.sName, this.sName, sum(afTotalInOuts) }); end;
+            if ~base.oLog.bOff, this.out(1, 2, 'total-fr', 'Total flow rate in %s-%s: %.20f', { this.oStore.sName, this.sName, sum(afTotalInOuts) }); end
             
             % Check manipulator
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
                 % Add the changes from the manipulator to the total inouts
                 afTotalInOuts = afTotalInOuts + this.toManips.substance.afPartialFlows;
                 
-                if ~base.oLog.bOff, this.out(tools.logger.MESSAGE, 1, 'manip-substance', 'Has substance manipulator'); end; % directly follows message above, so don't output name
+                if ~base.oLog.bOff, this.out(tools.logger.MESSAGE, 1, 'manip-substance', 'Has substance manipulator'); end % directly follows message above, so don't output name
             end
-
-            % Cache total mass in/out so the EXMEs can use that
-            this.fCurrentTotalMassInOut = sum(afTotalInOuts);
             
+            fTempCurrentTotalMassInOut = sum(afTotalInOuts);
+            % In case the total mass in and output changes the residual
+            % solvers must be set outdated to react to this (the true
+            % parameter indicates that only residual branches are set
+            % outdated)
+            if fTempCurrentTotalMassInOut ~= this.fCurrentTotalMassInOut
+                this.setBranchesOutdated('both', true);
+            end
+            % Cache total mass in/out so the EXMEs can use that
+            this.fCurrentTotalMassInOut = fTempCurrentTotalMassInOut;
             
             % Multiply with current time step
             afTotalInOuts = afTotalInOuts * fLastStep;
@@ -464,15 +470,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     this.out(3, 2, 'negative-mass', '%s\t', this.oMT.csI2N(abNegative));
                 end
                 
-                %csNegatives = {};
-                
-%                 for iNeg = 1:length(abNegative)
-%                     if ~abNegative(iNeg), continue; end;
-%                     
-%                     csNegatives{end + 1} = this.oMT.csI2N{iNeg};
-%                 end
             end
-
 
             %%%% Now calculate the new total heat capacity for the
             %%%% asscociated capacity
@@ -487,7 +485,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if this.bSynced || bSetBranchesOutdated
                 %%%this.setBranchesOutdated('in');
                 this.setBranchesOutdated();
-                this.setBranchesOutdated('both', true); % true to indicate that only residual branches are set outdated
             end
             
             % Execute updateProcessorsAndManipulators between branch solver
@@ -509,12 +506,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         function this = update(this)
             % Only update if not yet happened at the current time.
             if (this.oTimer.fTime <= this.fLastUpdate) || (this.oTimer.fTime < 0)
-                if ~base.oLog.bOff, this.out(2, 1, 'update', 'Skip update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end;
+                if ~base.oLog.bOff, this.out(2, 1, 'update', 'Skip update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
                 
                 return;
             end
             
-            if ~base.oLog.bOff, this.out(2, 1, 'update', 'Execute update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end;
+            if ~base.oLog.bOff, this.out(2, 1, 'update', 'Execute update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
             
 
             % Store update time
@@ -720,10 +717,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %               mass of the phase (one entry for every
             %               substance, zero represents substances that are
             %               not of interest to the user)
-            % trSubstanceMaxChange: Alterantive Input instead of
-            %               arMaxChange that contains a struct reference
-            %               for the maximum allowed partial mass change.
-            %               For example tTimeStepProperties.trSubstanceMaxChange = struct('H2O', 0.0001, 'CO2', 0.01)
+            % trMaxChange:  Alterantive Input instead of arMaxChange that
+            %               contains a struct reference for the maximum 
+            %               allowed partial mass change.
+            %               For example tTimeStepProperties.trMaxChange = struct('H2O', 0.0001, 'CO2', 0.01)
             % fMaxStep:     Maximum time step in seconds
             % fMinStep:     Minimum time step in seconds
             % fFixedTimeStep:     Fixed (constant) time step in seconds, if this
@@ -740,16 +737,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % In case the struct reference for the partial mass change is
             % used the arMaxChange vector for the internal calculations has
             % to be created based on the provided struct
-            if isfield(tTimeStepProperties, 'trSubstanceMaxChange')
-                csSubstances = fieldnames(tTimeStepProperties.trSubstanceMaxChange);
+            if isfield(tTimeStepProperties, 'trMaxChange')
+                csSubstances = fieldnames(tTimeStepProperties.trMaxChange);
                 arMaxChangeTemp = zeros(1,this.oMT.iSubstances);
                 for iSubstance = 1:length(csSubstances)
-                    arMaxChangeTemp(this.oMT.tiN2I.(csSubstances{iSubstance})) = tTimeStepProperties.trSubstanceMaxChange.(csSubstances{iSubstance});
+                    arMaxChangeTemp(this.oMT.tiN2I.(csSubstances{iSubstance})) = tTimeStepProperties.trMaxChange.(csSubstances{iSubstance});
                 end
                 tTimeStepProperties.arMaxChange = arMaxChangeTemp;
                 % removes the struct field as it has now been replaced by
                 % the arMaxChange vector
-                tTimeStepProperties = rmfield(tTimeStepProperties, 'trSubstanceMaxChange');
+                tTimeStepProperties = rmfield(tTimeStepProperties, 'trMaxChange');
             end
             
             % Gets the fieldnames of the struct to easier loop through them
@@ -918,7 +915,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 
                 % If the flow rate is empty, then the exme is not
                 % connected, so we can skip it and move on to the next one.
-                if isempty(fFlowRate), continue; end;
+                if isempty(fFlowRate), continue; end
                 
                 % Now we add the total mass flows per substance to the
                 % mfTotalFlows matrix.
@@ -1153,8 +1150,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Change in kg of partial masses per second
             [ afChange, mfDetails ] = this.getTotalMassChange();
             
-            
-            
             afTmpCurrentTotalInOuts = this.afCurrentTotalInOuts;
 
             % Setting the properties to the current values
@@ -1193,7 +1188,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     % Inf? -> zero change.
                     if fDevMagnitude > this.oTimer.iPrecision, fDevMagnitude = this.oTimer.iPrecision;
                     elseif isnan(fDevMagnitude),                      fDevMagnitude = 0;
-                    end;
+                    end
 
                     % Min deviation (order of magnitude of mass change) 
                     iMaxDev = this.oTimer.iPrecision;
@@ -1272,7 +1267,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 rPartialsPerSecond = max(arPartialsChange(~isinf(arPartialsChange)));
                 
                 %CHECK Why would this be empty?
-                if isempty(rPartialsPerSecond), rPartialsPerSecond = 0; end;
+                if isempty(rPartialsPerSecond), rPartialsPerSecond = 0; end
 
                 % Calculating the change per second of TOTAL mass.
                 % rTotalPerSecond also has the unit [1/s], giving us the
@@ -1373,7 +1368,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 fNewStep = min([ fNewStepTotal fNewStepPartials fNewStepPartialChangeToPartials fMaxFlowStep]);
 
                 if fNewStep < 0
-                    if ~base.oLog.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end;
+                    if ~base.oLog.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
                 end
                 % abs(sum(this.afCurrentTotalInOuts)) > 1e-8 & ~isempty(regexp(this.sName, 'Flow_'))
                 
