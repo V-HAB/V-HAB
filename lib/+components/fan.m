@@ -38,6 +38,9 @@ classdef fan < matter.procs.f2f
     
     properties (SetAccess = protected, GetAccess = public)
         
+        % Boolean variable determining if the fan is turned on at all
+        bTurnedOn;
+        
         % Direction of the flow the fan is trying to produce. Default
         % direction is left to right -> iBlowDirection = 1. For right to
         % left -> iBlowDirection = -1;
@@ -138,12 +141,12 @@ classdef fan < matter.procs.f2f
         
         
         function switchOn(this)
-            this.bActive = true;
+            this.bTurnedOn = true;
             this.oBranch.setOutdated();
         end
         
         function switchOff(this)
-            this.bActive = false;
+            this.bTurnedOn = false;
             this.oBranch.setOutdated();
         end
         
@@ -152,7 +155,7 @@ classdef fan < matter.procs.f2f
             
             
             % Switched off? No dP no matter what
-            if ~this.bActive
+            if ~this.bTurnedOn
                 
                 % VERY IMPORTANT! No flow -> no heat transfer!!
                 this.fHeatFlow = 0;
