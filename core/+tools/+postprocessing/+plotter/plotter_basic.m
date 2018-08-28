@@ -509,375 +509,379 @@ classdef plotter_basic < base
                 % decrease the number of plots by one, because the time
                 % plot is not contained in coPlots and that would lead to
                 % an 'index exceeds matrix dimensions' error.
-                for iPlot = 1:numel(this.coFigures{iFigure}.coPlots)
-                    
-                    if isempty(this.coFigures{iFigure}.coPlots{iPlot})
-                        % Loop can reach empty plots first and in this case
-                        % has to skip one iteration until the maximum
-                        continue
-                    end
-                    
-                    % Creating the empty subplot
-                    oPlot = subplot(iRows, iColumns, iPlot);
-                    
-                    % For better code readability, we create a local
-                    % variable for the plot options struct.
-                    tPlotOptions = this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions;
-                    
-                    % Before we get started filling the plot with data, we
-                    % need to do some checks of the plot options to set
-                    % some variables accordingly. 
-                    
-                    % Checking if there is more than one unit in the plot
-                    % data. In this case we will create two separate y
-                    % axes.
-                    if tPlotOptions.iNumberOfUnits > 1
-                        bTwoYAxes = true;
-                    else
-                        bTwoYAxes = false;
-                    end
-                    
-                    % Checking if this is a plot with an alternate x axis
-                    % instead of time
-                    if isfield(tPlotOptions, 'iAlternativeXAxisIndex')
-                        bAlternativeXAxis = true;
-                    else
-                        bAlternativeXAxis = false;
-                    end
-                    
-                    % We now have some combination of parameters. The
-                    % default and most commonly used is a plot of values
-                    % over time (bAlternativeXAxis == false) that have the
-                    % same unit (bTwoYAxes == false).
-                    if bTwoYAxes == false && bAlternativeXAxis == false
-                        % Getting the result data from the logger object
-                        [ mfData, afTime, tLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
-                        
-                        % Getting the Y label from the logger object
-                        if isfield(tPlotOptions, 'yLabel')
-                            sLabelY = tPlotOptions.yLabel;
+                iPlot = 0;
+                for iRow = 1:iRows
+                    for iColumn = 1:iColumns
+                        iPlot = iPlot + 1;
+                        if isempty(this.coFigures{iFigure}.coPlots{iRow, iColumn})
+                            % Loop can reach empty plots first and in this case
+                            % has to skip one iteration until the maximum
+                            continue
+                        end
+
+                        % Creating the empty subplot
+                        oPlot = subplot(iRows, iColumns, iPlot);
+
+                        % For better code readability, we create a local
+                        % variable for the plot options struct.
+                        tPlotOptions = this.coFigures{iFigure}.coPlots{iRow, iColumn}.tPlotOptions;
+
+                        % Before we get started filling the plot with data, we
+                        % need to do some checks of the plot options to set
+                        % some variables accordingly. 
+
+                        % Checking if there is more than one unit in the plot
+                        % data. In this case we will create two separate y
+                        % axes.
+                        if tPlotOptions.iNumberOfUnits > 1
+                            bTwoYAxes = true;
                         else
-                            sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                            bTwoYAxes = false;
                         end
-                        
-                        % If the user selected to change the unit of time
-                        % by which this plot is created, we have to adjust
-                        % the afTime array. 
-                        [ afTime, sTimeUnit ] = this.adjustTime(afTime, tPlotOptions);
-                        
-                        % Now we can actually create the plot with all of the
-                        % information we have gathered so far.
-                        this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
-                        
-                        % Setting the title of the plot
-                        title(oPlot, this.coFigures{iFigure}.coPlots{iPlot}.sTitle);
-                        
-                    elseif bTwoYAxes == true && bAlternativeXAxis == false
-                        % This creates a plot of values over time
-                        % (bAlternativeXAxis == false), but with two
-                        % separate y axes (bTwoYAxes == true). 
-                        
-                        % See if there is a field 'csUnitOverride', if yes,
-                        % this means there are at least three units
-                        % present. 
-                        if isfield(tPlotOptions, 'csUnitOverride')
-                            % To make the code more readable, we create a
-                            % shortcut here.
-                            csUnitOverride = tPlotOptions.csUnitOverride;
-                            
-                            % If there are exactly two items in the
-                            % csUnitOverride cell, they contain cells of
-                            % strings for the units on the right and left
-                            % sides. 
-                            if length(csUnitOverride) == 2
-                                csLeftUnits  = csUnitOverride{1};
-                                csRightUnits = csUnitOverride{2};
-                            elseif length(csUnitOverride) == 1
-                                % If there is only one entry in the cell,
-                                % one of the shortcuts shown below is
-                                % shown. 
-                                switch csUnitOverride{1}
-                                    % For now, there is only one option,
-                                    % but more might be added in the
-                                    % future. If changes are made here,
-                                    % they also have to be made in the
-                                    % definePlot() method.
-                                    case 'all left'
-                                        % This shortcut forces all units to
-                                        % be displayed on the left side of
-                                        % the plot.
-                                        csLeftUnits  = tPlotOptions.csUniqueUnits;
-                                        csRightUnits = {};
-                                    
-                                    otherwise
-                                        % Just in case something slipped by
-                                        % earlier. 
-                                        this.throw('plot','The value you have entered for csUnitOverride is illegal. This should have been caught in the definePlot() method, though...');
-                                end
-                            else
-                                % The csUnitOverride should not have more
-                                % than three items, but if it still does or
-                                % if it is empty for some reason, we catch
-                                % it here. 
-                                this.throw('plot', 'Something is wrong with the csUnitOverride cell.');
-                            end
+
+                        % Checking if this is a plot with an alternate x axis
+                        % instead of time
+                        if isfield(tPlotOptions, 'iAlternativeXAxisIndex')
+                            bAlternativeXAxis = true;
                         else
-                            % csUnitOverride is not set, so there are only
-                            % two units. We saved those in the
-                            % csUniqueUnits cell, so we can just use them
-                            % from there. 
-                            csLeftUnits  = tPlotOptions.csUniqueUnits{1};
-                            csRightUnits = tPlotOptions.csUniqueUnits{2};
+                            bAlternativeXAxis = false;
                         end
-                        
-                        % Now we have all of the units business figured
-                        % out, we need to split up the indexes accordingly
-                        % so we can get the actual data from the logger. 
-                        
-                        % First we get all indexes into an array.
-                        aiIndexes = this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes;
-                        
-                        % The units for each log item are stored in the
-                        % tLogValues struct of the logger, so we use the
-                        % logger's get() method to extract those values.
-                        [ ~, ~, tLogProps ] = oLogger.get(aiIndexes);
-                        
-                        % Calculating the number of items
-                        iNumberOfLogItems = length(tLogProps);
-                        
-                        % We'll need some boolean arrays later, so we
-                        % initialize them here. 
-                        abLeftIndexes  = false(iNumberOfLogItems, 1);
-                        abRightIndexes = false(iNumberOfLogItems, 1);
-                        
-                        % Now we're going through each of the log items and
-                        % checking which side it goes onto. We save the
-                        % result to the boolean arrays. 
-                        for iI = 1:iNumberOfLogItems
-                            abLeftIndexes(iI)  = any(strcmp(csLeftUnits,  tLogProps(iI).sUnit));
-                            abRightIndexes(iI) = any(strcmp(csRightUnits, tLogProps(iI).sUnit));
-                        end
-                        
-                        % Now we can create index arrays for both sides. 
-                        aiLeftIndexes  = aiIndexes(abLeftIndexes);
-                        aiRightIndexes = aiIndexes(abRightIndexes);
-                        
-                        % Getting the result data for the left side from
-                        % the logger object. 
-                        [ mfData, afTime, tLogProps ] = oLogger.get(aiLeftIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
-                        
-                        % If the user selected to change the unit of time
-                        % by which this plot is created, we have to adjust
-                        % the afTime array. 
-                        [ afTime, sTimeUnit ] = this.adjustTime(afTime, tPlotOptions);
-                        
-                        % Getting the Y label for the right side from the
-                        % logger object
-                        if isfield(tPlotOptions, 'yLabel')
-                            sLabelY = tPlotOptions.yLabel;
-                        else
-                            sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
-                        end
-                        
-                        % Actually creating the plot with all of the
-                        % information we have gathered so far.
-                        this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
-                        
-                        % Setting the title of the plot
-                        title(oPlot, this.coFigures{iFigure}.coPlots{iPlot}.sTitle);
-                        
-                        % If there are any items we want to plot onto the
-                        % right side, we do it now. The reason we have this
-                        % if-condition here is that csUnitOverride could
-                        % have been used to force all units to the left
-                        % side. Please note that there MUST be at least one
-                        % unit on the left. 
-                        if any(abRightIndexes)
-                            % Getting the result data for the right side
-                            % from the logger object
-                            [ mfData, afTime, tLogProps ] = oLogger.get(aiRightIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
-                            
-                            % Getting the Y label for the right side from
-                            % the logger object
+
+                        % We now have some combination of parameters. The
+                        % default and most commonly used is a plot of values
+                        % over time (bAlternativeXAxis == false) that have the
+                        % same unit (bTwoYAxes == false).
+                        if bTwoYAxes == false && bAlternativeXAxis == false
+                            % Getting the result data from the logger object
+                            [ mfData, afTime, tLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iRow, iColumn}.aiIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
+
+                            % Getting the Y label from the logger object
                             if isfield(tPlotOptions, 'yLabel')
                                 sLabelY = tPlotOptions.yLabel;
                             else
                                 sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
                             end
-                            
-                            % Using a specialized version of the
-                            % generatePlot() method we used for the left
-                            % side, we can now create the remaining traces
-                            % and the y axis on the right side. 
-                            this.generateRightYAxisPlot(afTime, mfData, tLogProps, sLabelY);
-                        end
-                        
-                    elseif bAlternativeXAxis == true
-                        % The user has selected to plot one value against a
-                        % value other than time. 
-                        
-                        % Getting the y axis data
-                        [ mfYData, ~, tYLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
-                        
-                        % Getting the Y label from the logger object
-                        if isfield(tPlotOptions, 'yLabel')
-                            sLabelY = tPlotOptions.yLabel;
-                        else
-                            sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
-                        end
-                        
-                        % Getting the x axis data
-                        [ afXData, ~, tXLogProps ] = oLogger.get(tPlotOptions.iAlternativeXAxisIndex, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
-                        
-                        % Getting the X label from the logger object
-                        sLabelX = this.getLabel(oLogger.poUnitsToLabels, tXLogProps);
-                        
-                        % Using a specialized version of the
-                        % generatePlot() method we used for the left side,
-                        % we can now create the plot.
-                        this.generatePlotWithAlternativeXAxis(oPlot, afXData, mfYData, tYLogProps, sLabelY, sLabelX);
-                        
-                        % Setting the title of the plot
-                        title(oPlot, this.coFigures{iFigure}.coPlots{iPlot}.sTitle);
-                    end
-                    
-                    % Setting the callback to undock this subplot to the
-                    % appropriate button, but only if there is more than
-                    % one plot in this figure. If there is only one plot,
-                    % we have already created a save button.
-                    if iNumberOfPlots > 1
-                        coButtons{iPlot}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, oPlot, legend};
-                    end
-                    
-                    % Setting the entry in the handles cell. 
-                    coAxesHandles{iPlot} = oPlot;
-                    
-                    %% Process the individual plot options
-                    
-                    % Process the line options struct, if there is one. 
-                    if isfield(this.coFigures{iFigure}.coPlots{iPlot}.tPlotOptions, 'tLineOptions')
-                        % This is a little more complex because we want to
-                        % have nice names and labels for all the things,
-                        % but in the log structs we need names and labels
-                        % that can be used as field names, i.e. without
-                        % spaces and special characters. This means we have
-                        % two pieces of information we need to extract
-                        % first, before we can start processing: The
-                        % display names, which MATLAB uses to identify a
-                        % line, and the log names, which we used in the
-                        % logger to identify individual plots. 
-                        
-                        % First we get the number of log items in this
-                        % plot.
-                        iNumberOfItems = length(this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes);
-                        
-                        % Now we can initialize our two cells. 
-                        csDisplayNames = cell(iNumberOfItems, 1);
-                        csLogItemNames = cell(iNumberOfItems, 1);
-                        
-                        % Now we can extract the log item names as they are
-                        % in the tLogValues and tVirtualValues structs in
-                        % the logger.
-                        for iI = 1:iNumberOfItems
-                            % Getting the current item's index
-                            iIndex = this.coFigures{iFigure}.coPlots{iPlot}.aiIndexes(iI);
-                            
-                            % We need to check, if this is a virtual value
-                            % or a "real" one and then we can get the
-                            % label, unit and name of the item. 
-                            if iIndex > 0
-                                sLabel = oLogger.tLogValues(iIndex).sLabel;
-                                sUnit  = oLogger.tLogValues(iIndex).sUnit;
-                                
-                                csLogItemNames{iI} = oLogger.tLogValues(iIndex).sName;
-                            else
-                                sLabel = oLogger.tVirtualValues(iIndex * (-1)).sLabel;
-                                sUnit  = oLogger.tVirtualValues(iIndex * (-1)).sUnit;
-                                
-                                csLogItemNames{iI} = oLogger.tVirtualValues(iIndex * (-1)).sName;
-                            end
-                            
-                            csDisplayNames{iI} = [sLabel,' [',sUnit,']'];
-                        end
-                            
-                        % Now that we have all the information we need, we
-                        % can go ahead and actually make the modifications
-                        % to the plot. 
-                        % Going through all lines in the plot.
-                        for iI = 1:length(oPlot.Children)
-                            % Now we through the individual log items in
-                            % our csDisplayNames cell to match them to the
-                            % child objects of the plot object.
-                            for iJ = 1:iNumberOfItems
-                                if strcmp(oPlot.Children(iI).DisplayName, csDisplayNames{iJ})
-                                    % We have a match, now we check if
-                                    % there are line options for that item.
-                                    if isfield(tPlotOptions.tLineOptions, csLogItemNames{iJ})
-                                        % There are options, so we parse
-                                        % the object options from our
-                                        % tLineOptions struct. 
-                                        this.parseObjectOptions(oPlot.Children(iI), tPlotOptions.tLineOptions.(csLogItemNames{iJ}));
-                                        
-                                        % There can only be one match, so
-                                        % there is no reason to continue
-                                        % this loop. 
-                                        break;
+
+                            % If the user selected to change the unit of time
+                            % by which this plot is created, we have to adjust
+                            % the afTime array. 
+                            [ afTime, sTimeUnit ] = this.adjustTime(afTime, tPlotOptions);
+
+                            % Now we can actually create the plot with all of the
+                            % information we have gathered so far.
+                            this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
+
+                            % Setting the title of the plot
+                            title(oPlot, this.coFigures{iFigure}.coPlots{iRow, iColumn}.sTitle);
+
+                        elseif bTwoYAxes == true && bAlternativeXAxis == false
+                            % This creates a plot of values over time
+                            % (bAlternativeXAxis == false), but with two
+                            % separate y axes (bTwoYAxes == true). 
+
+                            % See if there is a field 'csUnitOverride', if yes,
+                            % this means there are at least three units
+                            % present. 
+                            if isfield(tPlotOptions, 'csUnitOverride')
+                                % To make the code more readable, we create a
+                                % shortcut here.
+                                csUnitOverride = tPlotOptions.csUnitOverride;
+
+                                % If there are exactly two items in the
+                                % csUnitOverride cell, they contain cells of
+                                % strings for the units on the right and left
+                                % sides. 
+                                if length(csUnitOverride) == 2
+                                    csLeftUnits  = csUnitOverride{1};
+                                    csRightUnits = csUnitOverride{2};
+                                elseif length(csUnitOverride) == 1
+                                    % If there is only one entry in the cell,
+                                    % one of the shortcuts shown below is
+                                    % shown. 
+                                    switch csUnitOverride{1}
+                                        % For now, there is only one option,
+                                        % but more might be added in the
+                                        % future. If changes are made here,
+                                        % they also have to be made in the
+                                        % definePlot() method.
+                                        case 'all left'
+                                            % This shortcut forces all units to
+                                            % be displayed on the left side of
+                                            % the plot.
+                                            csLeftUnits  = tPlotOptions.csUniqueUnits;
+                                            csRightUnits = {};
+
+                                        otherwise
+                                            % Just in case something slipped by
+                                            % earlier. 
+                                            this.throw('plot','The value you have entered for csUnitOverride is illegal. This should have been caught in the definePlot() method, though...');
                                     end
+                                else
+                                    % The csUnitOverride should not have more
+                                    % than three items, but if it still does or
+                                    % if it is empty for some reason, we catch
+                                    % it here. 
+                                    this.throw('plot', 'Something is wrong with the csUnitOverride cell.');
                                 end
+                            else
+                                % csUnitOverride is not set, so there are only
+                                % two units. We saved those in the
+                                % csUniqueUnits cell, so we can just use them
+                                % from there. 
+                                csLeftUnits  = tPlotOptions.csUniqueUnits{1};
+                                csRightUnits = tPlotOptions.csUniqueUnits{2};
                             end
+
+                            % Now we have all of the units business figured
+                            % out, we need to split up the indexes accordingly
+                            % so we can get the actual data from the logger. 
+
+                            % First we get all indexes into an array.
+                            aiIndexes = this.coFigures{iFigure}.coPlots{iRow, iColumn}.aiIndexes;
+
+                            % The units for each log item are stored in the
+                            % tLogValues struct of the logger, so we use the
+                            % logger's get() method to extract those values.
+                            [ ~, ~, tLogProps ] = oLogger.get(aiIndexes);
+
+                            % Calculating the number of items
+                            iNumberOfLogItems = length(tLogProps);
+
+                            % We'll need some boolean arrays later, so we
+                            % initialize them here. 
+                            abLeftIndexes  = false(iNumberOfLogItems, 1);
+                            abRightIndexes = false(iNumberOfLogItems, 1);
+
+                            % Now we're going through each of the log items and
+                            % checking which side it goes onto. We save the
+                            % result to the boolean arrays. 
+                            for iI = 1:iNumberOfLogItems
+                                abLeftIndexes(iI)  = any(strcmp(csLeftUnits,  tLogProps(iI).sUnit));
+                                abRightIndexes(iI) = any(strcmp(csRightUnits, tLogProps(iI).sUnit));
+                            end
+
+                            % Now we can create index arrays for both sides. 
+                            aiLeftIndexes  = aiIndexes(abLeftIndexes);
+                            aiRightIndexes = aiIndexes(abRightIndexes);
+
+                            % Getting the result data for the left side from
+                            % the logger object. 
+                            [ mfData, afTime, tLogProps ] = oLogger.get(aiLeftIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
+
+                            % If the user selected to change the unit of time
+                            % by which this plot is created, we have to adjust
+                            % the afTime array. 
+                            [ afTime, sTimeUnit ] = this.adjustTime(afTime, tPlotOptions);
+
+                            % Getting the Y label for the right side from the
+                            % logger object
+                            if isfield(tPlotOptions, 'yLabel')
+                                sLabelY = tPlotOptions.yLabel;
+                            else
+                                sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                            end
+
+                            % Actually creating the plot with all of the
+                            % information we have gathered so far.
+                            this.generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit);
+
+                            % Setting the title of the plot
+                            title(oPlot, this.coFigures{iFigure}.coPlots{iRow, iColumn}.sTitle);
+
+                            % If there are any items we want to plot onto the
+                            % right side, we do it now. The reason we have this
+                            % if-condition here is that csUnitOverride could
+                            % have been used to force all units to the left
+                            % side. Please note that there MUST be at least one
+                            % unit on the left. 
+                            if any(abRightIndexes)
+                                % Getting the result data for the right side
+                                % from the logger object
+                                [ mfData, afTime, tLogProps ] = oLogger.get(aiRightIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
+
+                                % Getting the Y label for the right side from
+                                % the logger object
+                                if isfield(tPlotOptions, 'yLabel')
+                                    sLabelY = tPlotOptions.yLabel;
+                                else
+                                    sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                                end
+
+                                % Using a specialized version of the
+                                % generatePlot() method we used for the left
+                                % side, we can now create the remaining traces
+                                % and the y axis on the right side. 
+                                this.generateRightYAxisPlot(afTime, mfData, tLogProps, sLabelY);
+                            end
+
+                        elseif bAlternativeXAxis == true
+                            % The user has selected to plot one value against a
+                            % value other than time. 
+
+                            % Getting the y axis data
+                            [ mfYData, ~, tYLogProps ] = oLogger.get(this.coFigures{iFigure}.coPlots{iRow, iColumn}.aiIndexes, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
+
+                            % Getting the Y label from the logger object
+                            if isfield(tPlotOptions, 'yLabel')
+                                sLabelY = tPlotOptions.yLabel;
+                            else
+                                sLabelY = this.getLabel(oLogger.poUnitsToLabels, tLogProps);
+                            end
+
+                            % Getting the x axis data
+                            [ afXData, ~, tXLogProps ] = oLogger.get(tPlotOptions.iAlternativeXAxisIndex, tPlotOptions.sIntervalMode, tPlotOptions.fInterval);
+
+                            % Getting the X label from the logger object
+                            sLabelX = this.getLabel(oLogger.poUnitsToLabels, tXLogProps);
+
+                            % Using a specialized version of the
+                            % generatePlot() method we used for the left side,
+                            % we can now create the plot.
+                            this.generatePlotWithAlternativeXAxis(oPlot, afXData, mfYData, tYLogProps, sLabelY, sLabelX);
+
+                            % Setting the title of the plot
+                            title(oPlot, this.coFigures{iFigure}.coPlots{iRow, iColumn}.sTitle);
                         end
-                        
-                        % Since the oPlot.Children array only returns the
-                        % child objects of the left y axis, we need to do
-                        % the same thing we just did on the right y axis,
-                        % if there is one. 
-                        %QUESTION How do you make this better, how do you
-                        %re-use the code I already programmed above?
-                        if bTwoYAxes
-                            yyaxis('right');
+
+                        % Setting the callback to undock this subplot to the
+                        % appropriate button, but only if there is more than
+                        % one plot in this figure. If there is only one plot,
+                        % we have already created a save button.
+                        if iNumberOfPlots > 1
+                            coButtons{iRow, iColumn}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, oPlot, legend};
+                        end
+
+                        % Setting the entry in the handles cell. 
+                        coAxesHandles{iPlot} = oPlot;
+
+                        %% Process the individual plot options
+
+                        % Process the line options struct, if there is one. 
+                        if isfield(this.coFigures{iFigure}.coPlots{iRow, iColumn}.tPlotOptions, 'tLineOptions')
+                            % This is a little more complex because we want to
+                            % have nice names and labels for all the things,
+                            % but in the log structs we need names and labels
+                            % that can be used as field names, i.e. without
+                            % spaces and special characters. This means we have
+                            % two pieces of information we need to extract
+                            % first, before we can start processing: The
+                            % display names, which MATLAB uses to identify a
+                            % line, and the log names, which we used in the
+                            % logger to identify individual plots. 
+
+                            % First we get the number of log items in this
+                            % plot.
+                            iNumberOfItems = length(this.coFigures{iFigure}.coPlots{iRow, iColumn}.aiIndexes);
+
+                            % Now we can initialize our two cells. 
+                            csDisplayNames = cell(iNumberOfItems, 1);
+                            csLogItemNames = cell(iNumberOfItems, 1);
+
+                            % Now we can extract the log item names as they are
+                            % in the tLogValues and tVirtualValues structs in
+                            % the logger.
+                            for iI = 1:iNumberOfItems
+                                % Getting the current item's index
+                                iIndex = this.coFigures{iFigure}.coPlots{iRow, iColumn}.aiIndexes(iI);
+
+                                % We need to check, if this is a virtual value
+                                % or a "real" one and then we can get the
+                                % label, unit and name of the item. 
+                                if iIndex > 0
+                                    sLabel = oLogger.tLogValues(iIndex).sLabel;
+                                    sUnit  = oLogger.tLogValues(iIndex).sUnit;
+
+                                    csLogItemNames{iI} = oLogger.tLogValues(iIndex).sName;
+                                else
+                                    sLabel = oLogger.tVirtualValues(iIndex * (-1)).sLabel;
+                                    sUnit  = oLogger.tVirtualValues(iIndex * (-1)).sUnit;
+
+                                    csLogItemNames{iI} = oLogger.tVirtualValues(iIndex * (-1)).sName;
+                                end
+
+                                csDisplayNames{iI} = [sLabel,' [',sUnit,']'];
+                            end
+
+                            % Now that we have all the information we need, we
+                            % can go ahead and actually make the modifications
+                            % to the plot. 
+                            % Going through all lines in the plot.
                             for iI = 1:length(oPlot.Children)
+                                % Now we through the individual log items in
+                                % our csDisplayNames cell to match them to the
+                                % child objects of the plot object.
                                 for iJ = 1:iNumberOfItems
                                     if strcmp(oPlot.Children(iI).DisplayName, csDisplayNames{iJ})
+                                        % We have a match, now we check if
+                                        % there are line options for that item.
                                         if isfield(tPlotOptions.tLineOptions, csLogItemNames{iJ})
+                                            % There are options, so we parse
+                                            % the object options from our
+                                            % tLineOptions struct. 
                                             this.parseObjectOptions(oPlot.Children(iI), tPlotOptions.tLineOptions.(csLogItemNames{iJ}));
+
+                                            % There can only be one match, so
+                                            % there is no reason to continue
+                                            % this loop. 
                                             break;
                                         end
                                     end
                                 end
                             end
-                            yyaxis('left');
+
+                            % Since the oPlot.Children array only returns the
+                            % child objects of the left y axis, we need to do
+                            % the same thing we just did on the right y axis,
+                            % if there is one. 
+                            %QUESTION How do you make this better, how do you
+                            %re-use the code I already programmed above?
+                            if bTwoYAxes
+                                yyaxis('right');
+                                for iI = 1:length(oPlot.Children)
+                                    for iJ = 1:iNumberOfItems
+                                        if strcmp(oPlot.Children(iI).DisplayName, csDisplayNames{iJ})
+                                            if isfield(tPlotOptions.tLineOptions, csLogItemNames{iJ})
+                                                this.parseObjectOptions(oPlot.Children(iI), tPlotOptions.tLineOptions.(csLogItemNames{iJ}));
+                                                break;
+                                            end
+                                        end
+                                    end
+                                end
+                                yyaxis('left');
+                            end
                         end
+
+
+                        % Process all of our custom plot options.
+                        % bLegend
+                        if isfield(tPlotOptions, 'bLegend') && tPlotOptions.bLegend == false
+                            oPlot.Legend.Visible = 'off';
+
+                            % Since we run the tPlotOptions struct through the
+                            % parseObjectOptions() method later, we need to
+                            % remove this field from the tPlotOptions struct so
+                            % it is not processed twice.
+                            tPlotOptions = rmfield(tPlotOptions, 'bLegend');
+                        end
+
+                        % tRightYAxesOptions
+                        if isfield(tPlotOptions, 'tRightYAxesOptions')
+                            yyaxis('right');
+                            oAxes = gca;
+                            this.parseObjectOptions(oAxes, tPlotOptions.tRightYAxesOptions);
+                            yyaxis('left');
+
+                            % Since we run the tPlotOptions struct through the
+                            % parseObjectOptions() method later, we need to
+                            % remove this field from the tPlotOptions struct so
+                            % it is not processed twice.
+                            tPlotOptions = rmfield(tPlotOptions, 'tRightYAxesOptions');
+                        end
+
+                        % Process all of the items in tPlotOptions that
+                        % actually correspond to properties of the axes object.
+                        this.parseObjectOptions(oPlot, tPlotOptions);
                     end
-                    
-                    % Process all of our custom plot options.
-                    % bLegend
-                    if isfield(tPlotOptions, 'bLegend') && tPlotOptions.bLegend == false
-                        oPlot.Legend.Visible = 'off';
-                        
-                        % Since we run the tPlotOptions struct through the
-                        % parseObjectOptions() method later, we need to
-                        % remove this field from the tPlotOptions struct so
-                        % it is not processed twice.
-                        tPlotOptions = rmfield(tPlotOptions, 'bLegend');
-                    end
-                    
-                    % tRightYAxesOptions
-                    if isfield(tPlotOptions, 'tRightYAxesOptions')
-                        yyaxis('right');
-                        oAxes = gca;
-                        this.parseObjectOptions(oAxes, tPlotOptions.tRightYAxesOptions);
-                        yyaxis('left');
-                        
-                        % Since we run the tPlotOptions struct through the
-                        % parseObjectOptions() method later, we need to
-                        % remove this field from the tPlotOptions struct so
-                        % it is not processed twice.
-                        tPlotOptions = rmfield(tPlotOptions, 'tRightYAxesOptions');
-                    end
-                    
-                    % Process all of the items in tPlotOptions that
-                    % actually correspond to properties of the axes object.
-                    this.parseObjectOptions(oPlot, tPlotOptions);
                 end
                 
                 %% Process the individual figure options
