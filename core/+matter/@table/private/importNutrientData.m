@@ -8,7 +8,7 @@ function [ ttxImportNutrientData ] = importNutrientData()
     %% Import data from PlantParameters.csv file
     
     % Open the file
-    iFileID = fopen(strrep('lib/+matterdata/NutrientData.csv','/',filesep), 'r');
+    iFileID = fopen(strrep('+matter/+data/NutrientData.csv','/',filesep), 'r');
     % Get first row
     csFirstRow = textscan(iFileID, '%s', 1, 'Delimiter', '\n');
     % This is a cell array of cells, so we 'unpack' one level to get the
@@ -95,7 +95,7 @@ function [ ttxImportNutrientData ] = importNutrientData()
         csRawDataColumn = csImportCell{iFirstVariableColumn};
         % Now we go through each of the rows and check, if the value in the
         % individual element is numeric or not.
-        for iRow=1:size(csRawDataColumn, 1);
+        for iRow=1:size(csRawDataColumn, 1)
             % Create a regular expression to detect and remove non-numeric prefixes and
             % suffixes.
             sRegularExpression = '(?<prefix>.*?)(?<numbers>([-]*(\d+[\,]*)+[\.]{0,1}\d*[eEdD]{0,1}[-+]*\d*[i]{0,1})|([-]*(\d+[\,]*)*[\.]{1,1}\d+[eEdD]{0,1}[-+]*\d*[i]{0,1}))(?<suffix>.*)';
@@ -110,15 +110,15 @@ function [ ttxImportNutrientData ] = importNutrientData()
             
             % Detected commas in non-thousand locations.
             bInvalidThousandsSeparator = false;
-            if any(sNumbers==',');
+            if any(sNumbers==',')
                 sThousandsRegExp = '^\d+?(\,\d{3})*\.{0,1}\d*$';
-                if isempty(regexp(sThousandsRegExp, ',', 'once'));
+                if isempty(regexp(sThousandsRegExp, ',', 'once'))
                     sNumbers = NaN;
                     bInvalidThousandsSeparator = true;
                 end
             end
             % Convert numeric strings to numbers.
-            if ~bInvalidThousandsSeparator;
+            if ~bInvalidThousandsSeparator
                 csNumbers = textscan(strrep(sNumbers, ',', ''), '%f');
                 afNumericData(iRow, iFirstVariableColumn) = csNumbers{1};
                 csRawData{iRow, iFirstVariableColumn} = csNumbers{1};

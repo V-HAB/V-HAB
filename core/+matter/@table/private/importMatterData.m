@@ -28,7 +28,7 @@ if strcmp(sTarget, 'MatterData')
     % the future, this code won't have to change so much.
     
     % Open the file
-    iFileID = fopen(strrep('lib/+matterdata/MatterData.csv','/',filesep), 'r');
+    iFileID = fopen(strrep('+matter/+data/MatterData.csv','/',filesep), 'r');
     % Get first row
     csFirstRow = textscan(iFileID, '%s', 1, 'Delimiter', '\n');
     % This is a cell array of cells, so we 'unpack' one level to get the
@@ -115,7 +115,7 @@ if strcmp(sTarget, 'MatterData')
         csRawDataColumn = csImportCell{iFirstVariableColumn};
         % Now we go through each of the rows and check, if the value in the
         % individual element is numeric or not.
-        for iRow=1:size(csRawDataColumn, 1);
+        for iRow=1:size(csRawDataColumn, 1)
             % Create a regular expression to detect and remove non-numeric prefixes and
             % suffixes.
             sRegularExpression = '(?<prefix>.*?)(?<numbers>([-]*(\d+[\,]*)+[\.]{0,1}\d*[eEdD]{0,1}[-+]*\d*[i]{0,1})|([-]*(\d+[\,]*)*[\.]{1,1}\d+[eEdD]{0,1}[-+]*\d*[i]{0,1}))(?<suffix>.*)';
@@ -130,15 +130,15 @@ if strcmp(sTarget, 'MatterData')
             
             % Detected commas in non-thousand locations.
             bInvalidThousandsSeparator = false;
-            if any(sNumbers==',');
+            if any(sNumbers==',')
                 sThousandsRegExp = '^\d+?(\,\d{3})*\.{0,1}\d*$';
-                if isempty(regexp(sThousandsRegExp, ',', 'once'));
+                if isempty(regexp(sThousandsRegExp, ',', 'once'))
                     sNumbers = NaN;
                     bInvalidThousandsSeparator = true;
                 end
             end
             % Convert numeric strings to numbers.
-            if ~bInvalidThousandsSeparator;
+            if ~bInvalidThousandsSeparator
                 csNumbers = textscan(strrep(sNumbers, ',', ''), '%f');
                 afNumericData(iRow, iFirstVariableColumn) = csNumbers{1};
                 csRawData{iRow, iFirstVariableColumn} = csNumbers{1};
@@ -266,7 +266,7 @@ else
     ttxImportMatter = struct();
     
     % Read Info file
-    iFileID = fopen(strrep(['lib/+matterdata/',sTarget,'_Information_File.csv'], '/', filesep));
+    iFileID = fopen(strrep(['+matter/+data/+NIST/',sTarget,'_Information_File.csv'], '/', filesep));
     csInput = textscan(iFileID, '%s', 'Delimiter','\n');
     csInput = csInput{1};
     sInput_1 = csInput{1};
@@ -291,7 +291,7 @@ else
     % The csValues struct may contain numeric and string values. We need to
     % tell both apart, so we'll do all of the following to figure it out.
     
-    for iI=1:length(csValues);
+    for iI=1:length(csValues)
         % Create a regular expression to detect and remove non-numeric prefixes and
         % suffixes.
         sRegularExpression = '(?<prefix>.*?)(?<numbers>([-]*(\d+[\,]*)+[\.]{0,1}\d*[eEdD]{0,1}[-+]*\d*[i]{0,1})|([-]*(\d+[\,]*)*[\.]{1,1}\d+[eEdD]{0,1}[-+]*\d*[i]{0,1}))(?<suffix>.*)';
@@ -304,15 +304,15 @@ else
         
         % Detected commas in non-thousand locations.
         bInvalidThousandsSeparator = false;
-        if any(sNumbers==',');
+        if any(sNumbers==',')
             sThousandsRegExp = '^\d+?(\,\d{3})*\.{0,1}\d*$';
-            if isempty(regexp(sThousandsRegExp, ',', 'once'));
+            if isempty(regexp(sThousandsRegExp, ',', 'once'))
                 sNumbers = NaN;
                 bInvalidThousandsSeparator = true;
             end
         end
         % Convert numeric strings to numbers.
-        if ~bInvalidThousandsSeparator;
+        if ~bInvalidThousandsSeparator
             csNumbers = textscan(strrep(sNumbers, ',', ''), '%f');
             csValues{iI} = csNumbers{1};
         end
@@ -337,7 +337,7 @@ else
     
     for iI = 1:2
         % Read header File
-        iFileID  = fopen(strrep(['lib/+matterdata/',csFileName{iI},'HeaderFile.csv'], '/', filesep));
+        iFileID  = fopen(strrep(['core/+matter/+data/+NIST/',csFileName{iI},'HeaderFile.csv'], '/', filesep));
         csInput  = textscan(iFileID, '%s', 'Delimiter','\n');
         csInput  = csInput{1};
         sInput_1 = csInput{1};
@@ -378,7 +378,7 @@ else
         end
         
         % Creating the file name
-        sFileName = strrep(['lib/+matterdata/',csFileName{iI},'DataFile.csv'], '/', filesep);
+        sFileName = strrep(['core/+matter/+data/+NIST/',csFileName{iI},'DataFile.csv'], '/', filesep);
         mfRawData = dlmread(sFileName,',');
         
         % We need to initialize three smaller matrices with enough space to
