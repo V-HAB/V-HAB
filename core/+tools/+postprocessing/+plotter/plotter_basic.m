@@ -457,7 +457,7 @@ classdef plotter_basic < base
                     % contain references to each button object. These will
                     % be used later on to attach a plot specific callback
                     % function to each button.
-                    coButtons = cell(iNumberOfPlots,1);
+                    coButtons = cell(iRows,iColumns);
                     iSubPlotCounter = 1;
                     
                     % Creating the array of buttons according to the number
@@ -484,7 +484,7 @@ classdef plotter_basic < base
                                 
                                 % Adding a reference to the button we just
                                 % created to the coButtons cell.
-                                coButtons{iSubPlotCounter} = oButton;
+                                coButtons{iI, iJ} = oButton;
                                 
                                 % Incrementing the plot counter. 
                                 iSubPlotCounter = iSubPlotCounter + 1;
