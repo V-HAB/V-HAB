@@ -406,7 +406,7 @@ classdef plotter_basic < base
                 % small save button in the bottom left corner.
                 if iNumberOfPlots == 1
                     oButton = uicontrol(oFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
-                    oButton.Callback = @simulation.helper.plotter_basic.saveFigureAs;
+                    oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
                 else
                     % There are at least two plots in this figure, so we'll
                     % create our little grid of buttons. 
@@ -420,7 +420,7 @@ classdef plotter_basic < base
                     % Since the user may want to save the entire figure to
                     % a file, we create a save button above the panel.
                     oButton = uicontrol(oFigure,'String','Save Figure','FontSize',10,'Units','normalized','Position',[ 0 fPanelYSize fPanelXSize 0.03]);
-                    oButton.Callback = @simulation.helper.plotter_basic.saveFigureAs;
+                    oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
                     
                     % Doing some math so we get nicely proportioned
                     % buttons. The basic idea behind all of it is that the
@@ -744,7 +744,7 @@ classdef plotter_basic < base
                         % one plot in this figure. If there is only one plot,
                         % we have already created a save button.
                         if iNumberOfPlots > 1
-                            coButtons{iRow, iColumn}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, oPlot, legend};
+                            coButtons{iRow, iColumn}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, legend};
                         end
 
                         % Setting the entry in the handles cell. 
@@ -935,7 +935,7 @@ classdef plotter_basic < base
                         
                         % Setting the callback to undock this subplot to the
                         % appropriate button.
-                        coButtons{iNumberOfPlots}.Callback = {@simulation.helper.plotter_basic.undockSubPlot, oPlot, legend};
+                        coButtons{iNumberOfPlots}.Callback = {@tools.postprocessing.plotter.helper.undockSubPlot, oPlot, legend};
                         
                         % Setting the entry in the handles cell.
                         % MATLAB will give us a warning here, saying that
