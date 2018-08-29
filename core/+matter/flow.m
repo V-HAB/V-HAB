@@ -140,9 +140,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     this.oStore  = oCreator;
                 end
                 
-                % Register flow object with the matter table
-                this.oMT.addFlow(this);
-                
                 % Initialize the mass fractions array with zeros.
                 this.arPartialMass = zeros(1, this.oMT.iSubstances);
                 this.arPartialMassLastMassPropUpdate = this.arPartialMass;

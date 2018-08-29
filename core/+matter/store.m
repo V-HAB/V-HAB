@@ -678,8 +678,10 @@ classdef store < base
                 this.throw('addPhase', 'Can only add phases that do not have a parent oStore set (i.e. just while constructing)!');
             
             else
-                if isempty(this.aoPhases), this.aoPhases          = oPhase;
-                else                       this.aoPhases(end + 1) = oPhase;
+                if isempty(this.aoPhases) 
+                    this.aoPhases = oPhase;
+                else
+                    this.aoPhases(end + 1) = oPhase;
                 end
                 
                 this.toPhases.(oPhase.sName) = oPhase;

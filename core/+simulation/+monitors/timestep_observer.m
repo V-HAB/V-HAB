@@ -1,10 +1,11 @@
 classdef timestep_observer < simulation.monitor
-    % timestep_observer is a monitor to track the smallest time step in your
-    % simulation. It will identify the part of V-HAB that currently has the
-    % smalles time step, if you provided a limit the monitor will display
-    % the component and tick in which a timestep smaller than your limit
+    %TIMESTEP_OBSERVER This is a monitor to track the smallest time step in 
+    % your simulation. 
+    % It will identify the part of V-HAB that currently has the smallest
+    % time step, if you provided a limit the monitor will display the
+    % component and tick in which a timestep smaller than your limit
     % occured. If you used the standard use case without a limit you can
-    % use the tool findSmallestTimeStep after finishing or pausing your 
+    % use the tool findSmallestTimeStep after finishing or pausing your
     % simulation to receive a report on what component in which tick had
     % the smallest time step for the last 100 ticks.
     %

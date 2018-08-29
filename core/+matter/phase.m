@@ -307,8 +307,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.oMT    = this.oStore.oMT;
             this.oTimer = this.oStore.oTimer;
             
-            this.afMass = this.oMT.addPhase(this);
-            
             % Preset masses
             this.afMass = zeros(1, this.oMT.iSubstances);
             this.arPartialMass = zeros(1, this.oMT.iSubstances);
@@ -340,8 +338,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
 
                 % Calculate the partial masses
-                if this.fMass > 0, this.arPartialMass = this.afMass / this.fMass;
-                else               this.arPartialMass = this.afMass; % afMass is just zeros
+                if this.fMass > 0
+                    this.arPartialMass = this.afMass / this.fMass;
+                else
+                    this.arPartialMass = this.afMass; % afMass is just zeros
                 end
 
             else
