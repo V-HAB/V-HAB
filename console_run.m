@@ -43,7 +43,7 @@ classdef console_run < handle
         function sRtn = executeScript(sScript)
             %disp('>>>>>>>>>>> MATLAB SCRIPT OBJ <<<<<<<<<<<<<<<');
             %disp();
-            evalin('base', strrep(sScript, '\n', sprintf('\n')));
+            evalin('base', strrep(sScript, '\n', newline));
             disp('>>{done}<<');
 
             sRtn = evalin('base', 'sMatlabScriptReturn');
@@ -66,7 +66,7 @@ classdef console_run < handle
                     else
                         oObj.(sKey)(xParams);
                     end
-                catch oErr
+                catch 
                 end
                 
             else

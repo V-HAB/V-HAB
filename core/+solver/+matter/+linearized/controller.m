@@ -101,7 +101,7 @@ classdef controller < base
                 end
                 
                 
-                fCoeffsSum = sum(afCoeffs);
+                %fCoeffsSum = sum(afCoeffs);
                 csEquation = cell(1, oP.iProcsEXME);
                 
                 for iE = 1:oP.iProcsEXME
@@ -115,10 +115,10 @@ classdef controller < base
                 sEquation = '@(afPressuresNew) 0';
                 
                 for iS = 1:length(csEquation)
-                    sEquation = [ sEquation '+' csEquation{iS} ];
+                    sEquation = strcat(sEquation, '+', csEquation{iS});
                 end
                 
-                sEquation = [ sEquation ';' ];
+                sEquation = strcat(sEquation, ';' );
                 
                 cPressureCalc{iP, 1} = eval(sEquation);
                 cPressureCalc{iP, 2} = afCoeffs;

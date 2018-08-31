@@ -69,31 +69,31 @@ classdef monitor < base & event.source
     methods (Access = protected)
         
         % Placeholder methods
-        function onInitPre(this, ~)
+        function onInitPre(this, ~) %#ok<INUSD>
 
         end
 
-        function onInitPost(this, ~)
+        function onInitPost(this, ~) %#ok<INUSD>
 
         end
 
-        function onTickPre(this, ~)
+        function onTickPre(this, ~) %#ok<INUSD>
 
         end
 
-        function onTickPost(this, ~)
+        function onTickPost(this, ~) %#ok<INUSD>
 
         end
 
-        function onPause(this, ~)
+        function onPause(this, ~) %#ok<INUSD>
 
         end
 
-        function onFinish(this, ~)
+        function onFinish(this, ~) %#ok<INUSD>
 
         end
 
-        function onRun(this, ~)
+        function onRun(this, ~) %#ok<INUSD>
 
         end
         

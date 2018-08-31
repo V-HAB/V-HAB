@@ -69,7 +69,7 @@ classdef serializer < handle
             % For each attribute, code to dump that attribute in a JSON format is crated
             for iI = 1:length(csKeys)
                 %sEval = [ sEval sSep '''' csKeys{iI} ''', ' this.tSerialized.(csKeys{iI}) ];
-                sEval = [ sEval ' ''' sSep '"' csKeys{iI} '":'' ' this.tFields.(csKeys{iI}) ];
+                sEval = strcat(sEval, ' ''', sSep, '"', csKeys{iI}, '":'' ', this.tFields.(csKeys{iI}));
                 sSep  = ',';
                 
                 this.csAttrs{end + 1} = csKeys{iI};
@@ -89,8 +89,10 @@ classdef serializer < handle
         end
         
         function addObj(this, oObj)
-            if isempty(this.aoObjects), this.aoObjects = oObj;
-            else                         this.aoObjects(end + 1) = oObj;
+            if isempty(this.aoObjects)
+                this.aoObjects = oObj;
+            else
+                this.aoObjects(end + 1) = oObj;
             end
             
             this.aiObjects = 1:length(this.aoObjects);
@@ -265,14 +267,16 @@ classdef serializer < handle
     
     %% Static / Constant properties for serialization stuff %%%%%%%%%%%%%%%
     properties (GetAccess = protected, Constant)
-        sNewLine = sprintf('\n');
+        sNewLine = newline;
         sReturn  = sprintf('\r');
     end
     
     methods (Static = true, Access = protected)
         function sUrl = getObjUriForCell(oTmpObj)
-            if ~isempty(oTmpObj), sUrl = oTmpObj.sURL;
-            else          sUrl = '';
+            if ~isempty(oTmpObj)
+                sUrl = oTmpObj.sURL;
+            else
+                sUrl = '';
             end
             
             
@@ -317,9 +321,10 @@ classdef serializer < handle
             %TODO if col vector, do actually convert to e.g.
             %       [ [1], [2], ...] instead of [1,2,...] ?
             
-            if isempty(axVector), sS = '[]';
-            %else                  sS = strrep(strrep(mat2str(axVector), ';', ','), ' ', ',');
-            else                  sS = [ '[' strrep(strrep(sprintf(';%f;', axVector), ';;', ','), ';', '') ']' ];
+            if isempty(axVector)
+                sS = '[]';
+            else
+                sS = [ '[' strrep(strrep(sprintf(';%f;', axVector), ';;', ','), ';', '') ']' ];
             end
         end
         function sS = getVectorObjects(aoVector)
@@ -327,8 +332,10 @@ classdef serializer < handle
             % @type array; @types int, object
             %
             
-            if isempty(aoVector), sS = '[]';
-            else                  sS = [ '"' strjoin({ aoVector.sURL }, '","') '"' ];
+            if isempty(aoVector)
+                sS = '[]';
+            else
+                sS = [ '"' strjoin({ aoVector.sURL }, '","') '"' ];
             end
         end
         
@@ -339,8 +346,10 @@ classdef serializer < handle
             %
             %TODO char matrix? (@type matrix, @types string)
             
-            if isempty(mxS), sS = '[]';
-            else             sS = [ '[' strrep(strrep(mat2str(mxS), ';', '],['), ' ', ',') ']' ];
+            if isempty(mxS)
+                sS = '[]';
+            else
+                sS = [ '[' strrep(strrep(mat2str(mxS), ';', '],['), ' ', ',') ']' ];
             end
         end
         
@@ -351,8 +360,10 @@ classdef serializer < handle
             
             % mat2str wraps ' around chars, might have a '' for escaped '
             % in matrix. So replace "" with ' afterwards.
-            if isempty(mcMatrix), sS = '[]';
-            else                  sS = [ '[' strrep(strrep(strrep(strrep(mat2str(mcMatrix), ';', '],['), ' ', ','), '''', '"'), '""', '''') ']' ];
+            if isempty(mcMatrix)
+                sS = '[]';
+            else
+                sS = [ '[' strrep(strrep(strrep(strrep(mat2str(mcMatrix), ';', '],['), ' ', ','), '''', '"'), '""', '''') ']' ];
             end
         end
         

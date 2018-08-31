@@ -408,7 +408,7 @@ classdef Filter < matter.procs.p2ps.flow
             [ afInFlowrates, mrInPartials ] = this.getInFlows();
             afInFlows = sum(afInFlowrates .* mrInPartials,1);
             
-            if afInFlows(this.oMT.tiN2I.CO2) < (this.fFlowRateFilter .* this.arExtractPartials(this.oMT.tiN2I.CO2))
+            if afInFlows(this.oMT.tiN2I.CO2) < (this.fFlowRateFilter * this.arExtractPartials(this.oMT.tiN2I.CO2))
                 this.fFlowRateFilter = afInFlows(this.oMT.tiN2I.CO2);
             end
             

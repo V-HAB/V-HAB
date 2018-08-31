@@ -258,8 +258,8 @@ function bChanged = checkVHABFiles()
     bChanged = false;
     tInfo = dir();
     tInfo = tools.removeIllegalFilesAndFolders(tInfo);
-    tSavedInfo = struct();
-    load(sSavePath);
+    tSavedInfo = struct(); %#ok<NASGU>
+    load(sSavePath,'tSavedInfo');
     
     for iI = 1:length(tInfo)
         if ~tInfo(iI).isdir

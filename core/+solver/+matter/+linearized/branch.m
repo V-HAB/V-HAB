@@ -251,10 +251,10 @@ classdef branch < solver.matter.iterative.branch
             %TODO hmmm should include fTotalMassInOut of phases, right?
             %     Because could be steady state, right?
             %
-            fMassToPressureLeft  = this.oBranch.coExmes{1}.oPhase.fMassToPressure;
-            fMassToPressureRight = this.oBranch.coExmes{2}.oPhase.fMassToPressure;
-            fMassToPressureMean  = (fMassToPressureLeft + fMassToPressureRight) / 2;
-            fMassDiff            = fPressureDiff / fMassToPressureMean;
+            %fMassToPressureLeft  = this.oBranch.coExmes{1}.oPhase.fMassToPressure;
+            %fMassToPressureRight = this.oBranch.coExmes{2}.oPhase.fMassToPressure;
+            %fMassToPressureMean  = (fMassToPressureLeft + fMassToPressureRight) / 2;
+            %fMassDiff            = fPressureDiff / fMassToPressureMean;
             
             fMassDiff          = abs(this.oBranch.coExmes{1}.oPhase.fMass - this.oBranch.coExmes{2}.oPhase.fMass);
             fSecondsToEqualize = fMassDiff / abs(this.oBranch.fFlowRate);
@@ -262,7 +262,7 @@ classdef branch < solver.matter.iterative.branch
             
             
             
-            fCoeffDevTimeStep = interp1([ 0.1 0.01 ], [ 0 5 ], rCoeffDeviation, 'linear', 'extrap');
+%             fCoeffDevTimeStep = interp1([ 0.1 0.01 ], [ 0 5 ], rCoeffDeviation, 'linear', 'extrap');
             
             
             %fTimeStep = max([ 0 min([ fEqualizeTimeStep fCoeffDevTimeStep ]) ]);
@@ -300,15 +300,15 @@ classdef branch < solver.matter.iterative.branch
             % pressures are set in branches. REDO get coeffs --> compare!
             
             
-            mfData = zeros(oBranch.iFlowProcs, 1);
-            
-            for iP = oBranch.iFlowProcs:1
-
-                mfData(iP, 1) = this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
-
-                fPressDrop = fPressDrop + mfData(iP, 1);
-
-            end
+%             mfData = zeros(oBranch.iFlowProcs, 1);
+%             
+%             for iP = oBranch.iFlowProcs:1
+% 
+%                 mfData(iP, 1) = this.aoSolverProps(iP).calculateDeltas(iDir * fFlowRate);
+% 
+%                 fPressDrop = fPressDrop + mfData(iP, 1);
+% 
+%             end
         end
     end
 end

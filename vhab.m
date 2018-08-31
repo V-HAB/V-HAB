@@ -63,7 +63,7 @@ classdef vhab
             
             % FLUSH serializers / loggers
             % Only required if we're already initialized
-            if exist('base') > 0
+            if exist('base','file') > 0
                 base.flush();
             end
             
@@ -125,14 +125,12 @@ classdef vhab
         
         
         
-        function runner(this, tCfg)
-            % FROM runner_*
-            % Allow different configs (solver props and / or ptCfgs)
-            % Create all combinations before running
-            % ONE parfor loop, not nested!
-        end
-        
-        
+%         function runner(this, tCfg)
+%             % FROM runner_*
+%             % Allow different configs (solver props and / or ptCfgs)
+%             % Create all combinations before running
+%             % ONE parfor loop, not nested!
+%         end
         
         %TODO-RESTRUCTURING move to a monitor, e.g. json_dumper. Store
         %   bDump in dumpers per-simulation.

@@ -185,12 +185,12 @@ classdef branch < solver.matter.base.branch
                 % zero if this happens. 
                 rChange = sif(isnan(rChange), 0, rChange);
 
-                % Old time step
-                fOldStep = this.fTimeStep;
-
-                if fOldStep < this.oTimer.fMinimumTimeStep
-                    fOldStep = this.oTimer.fMinimumTimeStep;
-                end
+%                 % Old time step
+%                 fOldStep = this.fTimeStep;
+% 
+%                 if fOldStep < this.oTimer.fMinimumTimeStep
+%                     fOldStep = this.oTimer.fMinimumTimeStep;
+%                 end
 
                 % Change in flow rate direction? Min. time step!
                 if (rChange < 0) || isinf(rChange) || (this.iSignChangeFRCnt > 1)

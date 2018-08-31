@@ -72,7 +72,7 @@ classdef SWME < vsys
             
             % Special exme with a constant pressure, set on the initial
             % parameters
-            oExme = special.matter.const_press_exme(oEnvironment, 'ToEnvironment', this.fEnvironmentalPressure);
+            special.matter.const_press_exme(oEnvironment, 'ToEnvironment', this.fEnvironmentalPressure);
             
             % Creating the SWME Store
             components.SWME.stores.SWMEStore(this, 'SWMEStore', this.fSWMEVolume, this.fSWMEVaporVolume, this.fInitialTemperature);

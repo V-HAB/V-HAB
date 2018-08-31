@@ -34,8 +34,10 @@ classdef stationary < matter.procs.p2p
             
             mfMass = [ this.oIn.oPhase.afMass; this.oOut.oPhase.afMass ];
             
-            if this.fFlowRate >= 0, tiDir = struct('in', 1, 'out', 2);
-            else                    tiDir = struct('in', 2, 'out', 1);
+            if this.fFlowRate >= 0
+                tiDir = struct('in', 1, 'out', 2);
+            else
+                tiDir = struct('in', 2, 'out', 1);
             end
         end
         

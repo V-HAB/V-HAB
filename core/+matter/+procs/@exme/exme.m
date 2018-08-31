@@ -161,10 +161,7 @@ classdef exme < base
             else
                 fFlowRate  =  this.oFlow.fFlowRate * this.iSign;
             end
-            if nargin < 3
-                mfPartialInFlow = [];
-            end
-            
+                        
             if this.bFlowIsAProcP2P
                 % This exme is connected to a P2P processor, so we can get
                 % the properties from the connected flow.

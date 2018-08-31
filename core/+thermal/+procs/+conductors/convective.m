@@ -47,7 +47,7 @@ classdef convective < thermal.procs.conductor
             this.bSetOutdated = false;
         end
         
-        function updateHeatTransferCoefficient(this, ~)
+        function updateHeatTransferCoefficient(this, ~) %#ok<INUSD>
             % overwrite this with child class
         end
         

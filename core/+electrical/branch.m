@@ -145,7 +145,7 @@ classdef branch < base & event.source
             
             
             % Interface on left side?
-            if isempty(strfind(sLeft, '.'))
+            if ~contains(sLeft, '.')
                 this.abIf(1) = true;
                 
                 % Checking if the interface name is already present in this
@@ -234,7 +234,7 @@ classdef branch < base & event.source
             
             
             % Interface on right side?
-            if isempty(strfind(sRight, '.'))
+            if ~contains(sRight, '.')
                 
                 this.abIf(2) = true;
                 this.iIfFlow = length(this.aoFlows);

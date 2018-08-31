@@ -185,7 +185,7 @@ classdef filter < matter.procs.p2ps.flow
             [ afFlowRate, aarPartials ] = this.getInFlows();
             
             
-            [ fFlowRate, arExtractPartialsTmp ] = this.calculateFilterRate(afFlowRate, aarPartials);
+            [ fFlowRate, ~ ] = this.calculateFilterRate(afFlowRate, aarPartials);
             
             
             % Test ...

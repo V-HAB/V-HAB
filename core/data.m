@@ -107,7 +107,7 @@ classdef data < dynamicprops % & event.source
                 this.(sKey) = this.oParent.(sKey);
             else
                 this.tbLocal = rmfield(this.tbLocal, sKey);
-                xOldValue    = this.(sKey);
+                %xOldValue    = this.(sKey);
                 
                 % Remove property meta object (deletes property) and entry
                 % in the props struct

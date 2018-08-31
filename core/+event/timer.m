@@ -165,8 +165,10 @@ classdef timer < base
             this.ctPayload{iIdx}  = tPayloadDef;
             
             % Time step - provided or use the global
-            if nargin >= 3, this.afTimeStep(iIdx) = fTimeStep;
-            else            this.afTimeStep(iIdx) = this.fMinimumTimeStep;
+            if nargin >= 3 
+                this.afTimeStep(iIdx) = fTimeStep;
+            else
+                this.afTimeStep(iIdx) = this.fMinimumTimeStep;
             end
             
             % Return the callbacks - protected methods, wrapped so that the

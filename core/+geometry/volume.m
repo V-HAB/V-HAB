@@ -64,7 +64,8 @@ classdef volume < geometry.node
             if ~isempty(this.calcVolume)
                 this.fVolume = this.calcVolume(varargin{:});
                 
-            else this.fVolume = varargin{1};
+            else
+                this.fVolume = varargin{1};
             end
             
             this.trigger('set.fVolume', this.fVolume);

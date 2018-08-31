@@ -7,7 +7,7 @@ function sPath = getSysPath(oVsys)
     
     while ~isa(oVsys.oParent, 'systems.root')
         
-        sPath = [ '.toChildren.' oVsys.sName sPath ];
+        sPath = strcat('.toChildren.', oVsys.sName, sPath);
         
         oVsys = oVsys.oParent;
     end

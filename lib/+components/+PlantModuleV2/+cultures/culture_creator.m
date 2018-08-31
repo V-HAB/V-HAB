@@ -37,7 +37,7 @@ value8 = {16};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[7257600]};
+value10 = {7257600};
 
 % 10. Init Mass
 field111 = 'mfPlantMassInit';
@@ -138,7 +138,7 @@ value8 = {16};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[4838400]};
+value10 = {4838400};
 
 % 10. Sow Time
 field1234 = 'mfPlantMassInit';
@@ -188,7 +188,7 @@ value8 = {16};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[5443200]};
+value10 = {5443200};
 
 % 10. Sow Time
 field12345 = 'mfPlantMassInit';
@@ -238,7 +238,7 @@ value8 = {16};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[6048000]};
+value10 = {6048000};
 
 % 10. Init Mass
 field111 = 'mfPlantMassInit';
@@ -287,7 +287,7 @@ value8 = {16};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[6652800]};
+value10 = {6652800};
 % 
 % 10. Init Mass
 field111 = 'mfPlantMassInit';
@@ -336,7 +336,7 @@ value8 = {12};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[7257600]};
+value10 = {7257600};
 
 % 10. Init Mass
 field111 = 'mfPlantMassInit';
@@ -386,7 +386,7 @@ value8 = {12};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[1209600]};
+value10 = {1209600};
 
 % 10. Init Mass
 field111 = 'mfPlantMassInit';
@@ -436,7 +436,7 @@ value8 = {12};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[2419200]};
+value10 = {2419200};
 
 % 10. Init Mass
 field111 = 'mfPlantMassInit';
@@ -485,7 +485,7 @@ value8 = {12};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[3628800]};
+value10 = {3628800};
 
 % 10. Init Mass
 field111 = 'mfPlantMassInit';
@@ -536,7 +536,7 @@ value8 = {12};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[4838400]};
+value10 = {4838400};
 
 % 10. Init Mass
 field111 = 'mfPlantMassInit';
@@ -586,7 +586,7 @@ value8 = {12};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[6048000]};
+value10 = {6048000};
 
 % 10. Init Mass
 field111 = 'mfPlantMassInit';
@@ -639,7 +639,7 @@ value9 = {330};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[0]};
+value10 = {0};
 
 
 Culture1 = struct(field1,value1,field2,value2,...
@@ -687,7 +687,7 @@ value9 = {330};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[0]};
+value10 = {0};
 
 
 Culture1 = struct(field1,value1,field2,value2,...
@@ -734,7 +734,7 @@ value9 = {330};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[0]};
+value10 = {0};
 
 
 Culture1 = struct(field1,value1,field2,value2,...
@@ -781,7 +781,7 @@ value9 = {330};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[0]};
+value10 = {0};
 
 
 Culture1 = struct(field1,value1,field2,value2,...
@@ -828,7 +828,7 @@ value9 = {330};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[0]};
+value10 = {0};
 
 
 Culture1 = struct(field1,value1,field2,value2,...
@@ -875,7 +875,7 @@ value9 = {330};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[0]};
+value10 = {0};
 
 
 Culture1 = struct(field1,value1,field2,value2,...
@@ -922,7 +922,7 @@ value9 = {330};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[0]};
+value10 = {0};
 
 
 Culture1 = struct(field1,value1,field2,value2,...
@@ -969,7 +969,7 @@ value9 = {330};
 
 % 10. Sow Time
 field10 = 'mfSowTime';
-value10 = {[0]};
+value10 = {0};
 
 
 Culture1 = struct(field1,value1,field2,value2,...
@@ -1028,4 +1028,4 @@ end
 %%
 %Save Culture Struct as .mat File
 save('Series3Case1.mat', 'CultureInput')
-clear all
+clear all %#ok<CLALL>

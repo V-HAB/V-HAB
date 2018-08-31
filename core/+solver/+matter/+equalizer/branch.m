@@ -120,7 +120,7 @@ classdef branch < solver.matter.base.branch
             fPressureRight = this.oBranch.coExmes{2}.getPortProperties();
             fPressDiff     = fPressureLeft - fPressureRight;
             fFlowRate      = 0;
-            iDir           = sif(fPressDiff < 0, -1, 1);
+            %iDir           = sif(fPressDiff < 0, -1, 1);
             %fPressDiff     = iDir * fPressDiff;
             
             
@@ -147,8 +147,10 @@ classdef branch < solver.matter.base.branch
             end
             
             % Flow direction / out of bounds?
-            if isnan(fFlowRate), fFlowRate = 0;
-            else                 fFlowRate = sif(fPressDiff >= 0, fFlowRate, -1 * fFlowRate);
+            if isnan(fFlowRate)
+                fFlowRate = 0;
+            else
+                fFlowRate = sif(fPressDiff >= 0, fFlowRate, -1 * fFlowRate);
             end
             
             

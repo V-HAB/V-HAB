@@ -252,7 +252,7 @@ classdef branch < solver.matter.base.branch
             end
             
             %TODO remove all this!
-            fFlowRateUnrounded = fFlowRate;
+            fFlowRateUnroundedNew = fFlowRate;
             
             % If we don't round at some point, flow rates will eventually
             % become something like 1e-13 etc -> don't want that.
@@ -276,7 +276,7 @@ classdef branch < solver.matter.base.branch
             %%fprintf('avg:  %.25f (dyn %.25f)\n', (oP1.fPressure + oP2.fPressure) / 2, (coE{1}.getPortProperties() + coE{2}.getPortProperties()) / 2);
             
             % Calculating the new timestep for this branch
-            this.calculateTimeStep(fFlowRateUnrounded, fFlowRate);
+            this.calculateTimeStep(fFlowRateUnroundedNew, fFlowRate);
             
             
             %%%fprintf('%.16f [rChangeRate: %.7f]\n', this.fTimeStep, this.rFlowRateChange);
@@ -286,8 +286,8 @@ classdef branch < solver.matter.base.branch
             %%%    this.fFlowRate / fFlowRate, this.rFlowRateChange, this.fTimeStep, fFlowRate);
             
             %
-            if fFlowRateUnrounded ~= this.fFlowRateUnrounded
-                bFlowRateChangeIsPositive = fFlowRateUnrounded > this.fFlowRateUnrounded;
+            if fFlowRateUnroundedNew ~= this.fFlowRateUnrounded
+                bFlowRateChangeIsPositive = fFlowRateUnroundedNew > this.fFlowRateUnrounded;
                 
                 if this.bFlowRateChangePos ~= bFlowRateChangeIsPositive
                     
@@ -308,7 +308,7 @@ classdef branch < solver.matter.base.branch
 %             iDampUnrounded = 5;
             %this.fFlowRateUnrounded = (this.fFlowRateUnrounded * this.iFlowRateCompDamp + fFlowRateUnrounded) / (this.iFlowRateCompDamp + 1);
             %this.fFlowRateUnrounded = (this.fFlowRateUnrounded * iDampUnrounded + fFlowRateUnrounded) / (iDampUnrounded + 1);
-            this.fFlowRateUnrounded = fFlowRateUnrounded;
+            this.fFlowRateUnrounded = fFlowRateUnroundedNew;
             
             % Sets new flow rate
             update@solver.matter.base.branch(this, fFlowRate, afDeltaP);
