@@ -1,5 +1,7 @@
 classdef stationary < matter.procs.p2p
-    %P2P
+    %STATIONARY A P2P processor for a phase where the volumetric flow
+    %through the phase is significantly smaller than its volume or even
+    %zero.
     %
     %TODO
     %   - 

@@ -368,12 +368,12 @@ classdef serializer < handle
         end
         
         
-        function sS = getCell(cxCell)
-            % Convert cell to string representation using JSON arrays. Puts
-            % quotes around all elements no matter the content.
-            
-            %sS = [ '"' mat2str(mxS) '"' ];
-        end
+%         function sS = getCell(cxCell)
+%             % Convert cell to string representation using JSON arrays. Puts
+%             % quotes around all elements no matter the content.
+%             
+%             %sS = [ '"' mat2str(mxS) '"' ];
+%         end
         
 %         function serialized = serializeFctObj(oObj, sAttr)
 %             

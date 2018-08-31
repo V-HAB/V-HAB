@@ -243,7 +243,7 @@ elseif strcmp(sSubstance, 'C8H10')
         fVaporPressure = inf;
     end   
 else
-    error('the calculation for the substance %s is not available. Please visit http://webbook.nist.gov/chemistry/ and add the calculation to this file', sSubstance);
+    error('the calculation for the substance %s is not available. Please visit http://webbook.nist.gov/chemistry/ and add the calculation to this file\n', sSubstance);
 end
 
 end

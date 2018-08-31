@@ -1,5 +1,6 @@
 classdef flow < matter.procs.p2p
-    %P2P
+    %FLOW A P2P processor for a phase where the volumetric flow through the
+    %phase is significantly larger than its volume. 
     %
     %TODO
     %   - getInFlows, or overall logic for amount / type of EXMEs etc

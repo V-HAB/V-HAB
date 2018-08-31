@@ -29,13 +29,7 @@ classdef vsys < matter.container & thermal.container & electrical.container & sy
             this@matter.container(oParent, sName);
             this@thermal.container(oParent, sName);
             this@electrical.container(oParent, sName);
-            
-            % Setting the matter table
-% %             this.oMT = this.oData.oMT;
-            
-%             if nargin >= 3
-%                 this.setTimeStep(fTimeStep);
-%             end
+        
         end
         
         function createGeometricStructure(this)

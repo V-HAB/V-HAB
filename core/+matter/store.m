@@ -1,5 +1,5 @@
 classdef store < base
-    %STORE Summary of this class goes here
+    %STORE A store contains phases that contain mass
     %   Detailed explanation goes here
     %
     %TODO

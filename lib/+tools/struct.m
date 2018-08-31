@@ -3,6 +3,7 @@ classdef struct
     
     methods (Static = true)
         function tStruct = foreach(tStruct, callBack)
+            %CHECK Isn't this the same as structfun()?
             csFields = fieldnames(tStruct);
             iArgOut  = nargout(callBack);
             

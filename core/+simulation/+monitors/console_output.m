@@ -1,5 +1,5 @@
 classdef console_output < simulation.monitor
-    %LOGGER_BASIC Summary of this class goes here
+    %CONSOLE_OUTPUT Summary of this class goes here
     %   Detailed explanation goes here
     %
     %TODO see bOutputUuids

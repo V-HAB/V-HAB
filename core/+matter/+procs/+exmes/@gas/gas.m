@@ -1,4 +1,8 @@
 classdef gas < matter.procs.exme
+    %GAS An EXME that interfaces with a gaseous phase
+    %   The main purpose of this class is to provide the method
+    %   getPortProperties() which returns the pressure and temperature of
+    %   the attached phase.
     
     methods
 
@@ -14,10 +18,7 @@ classdef gas < matter.procs.exme
 
             
             fPortPressure    = this.oPhase.fMassToPressure * (this.oPhase.fMass + fMassSinceUpdate);
-            %fPortPressure    = this.oPhase.fMassToPressure * (this.oPhase.fMass);
             
-            
-
         end
 
     end

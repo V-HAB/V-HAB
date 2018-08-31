@@ -25,12 +25,8 @@ classdef monitor < base & event.source
     end
     
     methods
-        function this = monitor(oSimulationInfrastructure, csEvents) %tsEvents)
+        function this = monitor(oSimulationInfrastructure, csEvents)
             this.oSimulationInfrastructure = oSimulationInfrastructure;
-            
-%             if nargin >= 2 && isstruct(tsEvents)
-%                 this.tsEvents = tools.struct.mergeStructs(this.tsEvents, tsEvents);
-%             end
             
             if nargin >= 2, this.csEvents = csEvents; end
             
@@ -46,8 +42,6 @@ classdef monitor < base & event.source
     
     methods (Access = protected)
         function initializeEvents(this)
-            %csEvents = fieldnames(this.tsEvents);
-            
             
             for iE = 1:length(this.csEvents)
                 sEvent = this.csEvents{iE};

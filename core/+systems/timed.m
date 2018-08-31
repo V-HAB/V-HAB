@@ -43,7 +43,6 @@ classdef timed < sys
             else
                 % Set execution with each tick!
                 this.setTimeStep();
-                %this.fTimeStep = this.oTimer.fMinimumTimeStep;
             end
         end
     end

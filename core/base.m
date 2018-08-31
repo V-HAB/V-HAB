@@ -64,14 +64,7 @@ classdef base < handle
         %       --> base a mixin, .serialized() sealed --> aoAllObjs.serialize()?
     end
     
-    methods (Static = true)
-        function randomUUID(~)
-            %RANDOMUUID [removed, use |tools.getPseudoUUID()| instead]
-            this.throw('base::randomUUID', '|base.randomUUID()| has been removed. Use |tools.getPseudoUUID()| instead.');
-        end
-    end
-    
- % Section covers stuff needed for logging - ignore!
+    % Section covers stuff needed for logging - ignore!
     methods (Static = true)
         
         function activateSerializers()

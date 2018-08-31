@@ -1,6 +1,12 @@
 classdef container < sys
-    %CONTAINER Summary of this class goes here
-    %   Detailed explanation goes here
+    %CONTAINER A system that contains matter objects
+    %   Container is the base class of the matter domain in V-HAB. It
+    %   contains stores and branches and provides methods for adding and
+    %   removing stores, branches and associated processors. It also
+    %   provides functions that enable branches to be passed between system
+    %   and subsystem levels. 
+    %   For more information on the individual functions, please see their
+    %   descriptions. 
     
     properties (SetAccess = private, GetAccess = public)
         % Stores stored as struct.
@@ -10,34 +16,40 @@ classdef container < sys
         % @types object
         toStores = struct();
         
+        % An array of all branch objects
         % Branches stored as mixin (?) array, so e.g. all flow rates can be
         % extracted with [ this.aoBranches.fFlowRate ]
         % @type array
         % @types object
         aoBranches = matter.branch.empty();
         
-        % Processors - also stored in the branch they belong to, but might
-        % be helpfull to access them here through their name to e.g.
-        % execute some methods (close valve, switch off fan, ...)
+        % A struct with all processors in the container 
+        % These are also stored in the branch they belong to, but might be
+        % helpfull to access them here through their name to e.g. execute
+        % some methods (close valve, switch off fan, ...)
         toProcsF2F = struct(); %matter.procs.f2f.empty();
         
-        % Cached names
+        % Name strings of all stores
         csStores;
+        
+        % Name strings of all f2f processors
         csProcsF2F;
         
-        % Reference to the branches, by name
+        % Reference to the branches, by name as a struct
         toBranches = struct();
         
+        % Number of branches in this container
         iBranches = 0;
+        
+        % Number of phases in this container
         iPhases = 0;
         
-        oThermalContainer;
-        
-        % Sealed?
+        % Indicator if this container is sealed or not
         bMatterSealed = false;
     end
     
     properties (SetAccess = private, GetAccess = public) %, Transient = true)
+        % Matter table object reference
         %TODO These properties should be transient. That requires a static
         % method (loadobj) to be implemented in this class, so when the
         % simulation is re-loaded from a .mat file, the properties are
@@ -46,6 +58,7 @@ classdef container < sys
     end
     
     properties (SetAccess = protected, GetAccess = public)
+        % Solver parameters
         tSolverParams;
     end
     
@@ -64,6 +77,7 @@ classdef container < sys
         end
         
         function afMass = getTotalPartialMasses(this)
+            %CHECK This is unused in all of V-HAB. Can it be deleted?
             % Example method - get masses of each species within all phases
             % from all stores referenced in this container.
             
@@ -128,6 +142,8 @@ classdef container < sys
     methods (Access = public)
         
         function sealMatterStructure(this)
+            %SEALMATTERSTRUCTURE Seals all stores and branches in this
+            %container and calls this method on any subsystems
             if this.bMatterSealed
                 this.throw('sealMatterStructure', 'Already sealed');
             end
