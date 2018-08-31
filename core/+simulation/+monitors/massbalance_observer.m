@@ -77,8 +77,8 @@ classdef massbalance_observer < simulation.monitor
             
             oMT = oSim.oMT;
 
-            aoPhases = oMT.aoPhases;
-            aoFlows  = oMT.aoFlows;
+            aoPhases = oInfra.toMonitors.oMatterObserver.aoPhases;
+            aoFlows  = oInfra.toMonitors.oMatterObserver.aoFlows;
 
             %% Check branches and P2Ps
             for iFlow = 1:length(aoFlows)
@@ -183,7 +183,7 @@ classdef massbalance_observer < simulation.monitor
 
             if any(abs(afCurrentMassBalance) > this.fAccuracy)
                 miSubstances = abs(afCurrentMassBalance) > this.fAccuracy;
-                sSubstancesStringWithSpaces = strjoin({oMT.csI2N{miSubstances}}, ', ');
+                sSubstancesStringWithSpaces = strjoin(oMT.csI2N(miSubstances), ', ');
                 disp(['An overall mass balance issue was detected in tick ', num2str(aoPhases(1).oTimer.iTick), ' for the substances: ', sSubstancesStringWithSpaces]);
             end
 

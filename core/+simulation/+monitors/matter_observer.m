@@ -16,6 +16,9 @@ classdef matter_observer < simulation.monitor
         % Refernces to all phases in the simulation
         aoPhases   = [];
         aoBranches = [];
+        
+        % References to all flows in the simulation
+        aoFlows = [];
     end
     
     methods
@@ -85,6 +88,19 @@ classdef matter_observer < simulation.monitor
             sEnding1 = sif(iBranches == 1, '', 'es');
             sEnding2 = sif(iPhases   == 1, '',  's');
             fprintf('Model contains %i Branch%s and %i Phase%s.\n', iBranches, sEnding1, iPhases, sEnding2); 
+            
+            iNumberOfFlows = 0;
+            for iBranch = 1:length(this.aoBranches)
+                iNumberOfFlows = iNumberOfFlows + this.aoBranches(iBranch).iFlows;
+            end
+            
+            this.aoFlows = matter.flow.empty(0,iNumberOfFlows);
+            
+            iFlowCounter = 1;
+            for iBranch = 1:length(this.aoBranches)
+                iNewFlowCounter = iFlowCounter + this.aoBranches(iBranch).iFlows;
+                this.aoFlows(iFlowCounter:iNewFlowCounter-1) = this.aoBranches(iBranch).aoFlows;
+            end
         end
         
         
