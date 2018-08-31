@@ -496,11 +496,11 @@ classdef store < base
             
             
             
-            if ~base.oLog.bOff, this.out(1, 1, 'store-update', 'UPDATE store %s-%s and set last update!', { this.oContainer.sName, this.sName }); end;
+            if ~base.oLog.bOff, this.out(1, 1, 'store-update', 'UPDATE store %s-%s and set last update!', { this.oContainer.sName, this.sName }); end
             
             
             % Update phases
-            for iI = 1:this.iPhases, this.aoPhases(iI).update(); end;
+            for iI = 1:this.iPhases, this.aoPhases(iI).update(); end
 
             % Update stationary P2P processors
             for iP = this.aiProcsP2Pstationary
@@ -528,7 +528,7 @@ classdef store < base
             if (this.fLastUpdate + this.fTimeStep) > fTime
                 this.fTimeStep = fTime - this.fLastUpdate;
                 
-                if ~base.oLog.bOff, this.out(1, 1, 'set-new-ts', 'New TS in Store %s-%s: %.16f s - Next Exec: %.16f s', { this.oContainer.sName, this.sName, this.fTimeStep, this.fLastUpdate + this.fTimeStep }); end;
+                if ~base.oLog.bOff, this.out(1, 1, 'set-new-ts', 'New TS in Store %s-%s: %.16f s - Next Exec: %.16f s', { this.oContainer.sName, this.sName, this.fTimeStep, this.fLastUpdate + this.fTimeStep }); end
                 
                 % If time step < 0, timer sets it to 0!
                 this.setTimeStep(this.fTimeStep);
@@ -567,7 +567,7 @@ classdef store < base
             % this store.
             fNewNextExec     = this.oTimer.fTime + fTimeStep;
             
-            if ~base.oLog.bOff, this.out(1, 1, 'check-set-new-ts', 'Set new TS in store %s-%s ?? Current Next Exec: %.16f s - New next Exec: %.16f s - New Time Step: %.16f s', { this.oContainer.sName, this.sName, this.fNextExec, fNewNextExec, fTimeStep }); end;
+            if ~base.oLog.bOff, this.out(1, 1, 'check-set-new-ts', 'Set new TS in store %s-%s ?? Current Next Exec: %.16f s - New next Exec: %.16f s - New Time Step: %.16f s', { this.oContainer.sName, this.sName, this.fNextExec, fNewNextExec, fTimeStep }); end
             
             % Now we can compare the current next execution time and the
             % potential new execution time. If the new execution time would
@@ -578,7 +578,7 @@ classdef store < base
                 return;
             end
             
-            if ~base.oLog.bOff, this.out(1, 1, 'set-new-ts', 'New TS in Store %s-%s: %.16f s - Next Exec: %.16f s', { this.oContainer.sName, this.sName, fTimeStep, fNewNextExec }); end;
+            if ~base.oLog.bOff, this.out(1, 1, 'set-new-ts', 'New TS in Store %s-%s: %.16f s - Next Exec: %.16f s', { this.oContainer.sName, this.sName, fTimeStep, fNewNextExec }); end
             
             % The new time step is smaller than the old one, so we can
             % actually set then new timestep. The setTimeStep() method
@@ -699,7 +699,7 @@ classdef store < base
             
             %CHECK provide fVolume to helper automatically if varargin
             %      empty - should be required most of the time right?
-            if isempty(varargin), varargin = { this.fVolume }; end;
+            if isempty(varargin), varargin = { this.fVolume }; end
 
             % Get params and default 
             [ cParams, sDefaultPhase ] = this.createPhaseParams(sHelper, varargin{:});
@@ -721,7 +721,7 @@ classdef store < base
             %     also create indices for amount of phases, in phases for
             %     amount of ports etc
             
-            if this.bSealed, return; end;
+            if this.bSealed, return; end
             
             
             
@@ -804,7 +804,7 @@ classdef store < base
             %TODO in .seal(), store the references to solid/liquid/gas/...?
             
             % Mabye just for update
-            if nargin >= 2, this.fVolume = fVolume; end;
+            if nargin >= 2, this.fVolume = fVolume; end
             
             % Update ...
             csVolPhases  = { 'solid', 'liquid', 'absorber', 'mixture'};
@@ -850,12 +850,12 @@ classdef store < base
             %
             %TODO update p2p procs MT?
             
-            if ~isa(oMT, 'matter.table'), this.throw('setMatterTable', 'Provided object ~isa matter.table'); end;
+            if ~isa(oMT, 'matter.table'), this.throw('setMatterTable', 'Provided object ~isa matter.table'); end
             
             this.oMT = oMT;
             
             % Call setMatterTable on the phases
-            if ~isempty(this.aoPhases), this.aoPhases.updateMatterTable(); end;
+            if ~isempty(this.aoPhases), this.aoPhases.updateMatterTable(); end
             
             % Procs P2P
             csProcs = fieldnames(this.toProcsP2P);

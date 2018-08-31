@@ -49,9 +49,9 @@ end
 %decides wether temperature dependancy should also be accounted for
 if length(fDyn_Visc) == 2 && fConfig == 0
     fConfig = 3;
-elseif length(fDyn_Visc) == 2 && fConfig == 1;
+elseif length(fDyn_Visc) == 2 && fConfig == 1
     fConfig = 4;
-elseif length(fDyn_Visc) == 2 && fConfig == 2;
+elseif length(fDyn_Visc) == 2 && fConfig == 2
     fConfig = 5;
 end
 

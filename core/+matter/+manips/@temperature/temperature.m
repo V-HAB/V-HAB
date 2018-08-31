@@ -20,7 +20,7 @@ classdef temperature < matter.manip
     
     methods
         function this = temperature(sName, oPhase, sRequiredType)
-            if nargin < 3, sRequiredType = []; end;
+            if nargin < 3, sRequiredType = []; end
             
             this@matter.manip(sName, oPhase, sRequiredType);
         end

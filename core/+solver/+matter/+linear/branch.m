@@ -46,8 +46,8 @@ classdef branch < solver.matter.base.branch
             
             this.fCoeffFR = 0.00000133 * 20;
             
-            if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end;
-            if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end;
+            if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end
+            if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end
             
             
             this.oTimer = this.oBranch.oContainer.oTimer;
@@ -221,7 +221,7 @@ classdef branch < solver.matter.base.branch
                     end
                 end
 
-                if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end;
+                if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end
 
                 this.setTimeStep(fNewStep, true);
                 this.fTimeStep = fNewStep;

@@ -50,7 +50,7 @@ classdef logger < event.source % base % &
     methods
         function output(this, oObj, iLevel, iVerbosity, sIdentifier, sMessage, cParams)
             % Globally off? Don't do nothing!
-            if this.bOff, return; end;
+            if this.bOff, return; end
             
             
             % Objects are mapped to callbacks - if no mapping, don't do
@@ -92,7 +92,7 @@ classdef logger < event.source % base % &
         
         
         function flush(this)
-            if isempty(this) || ~isvalid(this), return; end;
+            if isempty(this) || ~isvalid(this), return; end
             
             warning('off', 'all')
             this.bOff = true;

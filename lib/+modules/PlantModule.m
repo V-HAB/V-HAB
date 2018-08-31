@@ -537,16 +537,16 @@ classdef PlantModule < vsys
             %biomass stores (food/waste) located in the connected LSS main system
                 %Inedible Biomass
                    if this.toStores.PlantCultivationStore.aoPhases(3).fMass > 0.1
-                        this.oOutputWasteBranch.setFlowRate(0.001);
+                       this.oOutputWasteBranch.setFlowRate(0.001);
                    else
                        this.oOutputWasteBranch.setFlowRate(0);
-                   end;
-                %Edible Biomass
-                    if this.toStores.PlantCultivationStore.aoPhases(4).fMass > 0.1
-                        this.oOutputFoodBranch.setFlowRate(0.001);
+                   end
+                   %Edible Biomass
+                   if this.toStores.PlantCultivationStore.aoPhases(4).fMass > 0.1
+                       this.oOutputFoodBranch.setFlowRate(0.001);
                    else
                        this.oOutputFoodBranch.setFlowRate(0);
-                   end;
+                   end
             
             
         end

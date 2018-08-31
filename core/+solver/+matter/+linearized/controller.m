@@ -29,7 +29,7 @@ classdef controller < base
     
     methods (Access = protected)
         function registerUpdate(this, ~)
-            if this.bRegisteredOutdated, return; end;
+            if this.bRegisteredOutdated, return; end
             
             this.aoBranches(1).oTimer.bindPostTick(@this.update, -3);
             this.bRegisteredOutdated = true;
@@ -155,7 +155,7 @@ classdef controller < base
                 end
                 
                 
-                if iIteration > 10,
+                if iIteration > 10
                     keyboard();
                 end
             end

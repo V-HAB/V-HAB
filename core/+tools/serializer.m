@@ -48,7 +48,7 @@ classdef serializer < handle
     methods
         function this = serializer(oMeta)
             
-            if nargin < 1, return; end;
+            if nargin < 1, return; end
             
             % String provided? Class path!
             if ischar(oMeta)
@@ -107,7 +107,7 @@ classdef serializer < handle
         
         
         function serialize(this)
-            if isempty(this.csAttrs), return; end;
+            if isempty(this.csAttrs), return; end
             
 %             iO = 0;
 %             for bU = ([ this.aoObjects.bUpdate ] == true)
@@ -129,11 +129,11 @@ classdef serializer < handle
             % Go through superclasses, call generateSerialization for all
             % superclasses and then parse this class itself
             
-            if nargin < 2, oMeta = this.oMeta; end;
+            if nargin < 2, oMeta = this.oMeta; end
             
             % Superclasses
             for iI = 1:length(oMeta.SuperclassList)
-                if strcmp(oMeta.SuperclassList(iI).Name, 'base'), break; end;
+                if strcmp(oMeta.SuperclassList(iI).Name, 'base'), break; end
 
                 this.generateSerialization(oMeta.SuperclassList(iI));
             end
@@ -287,7 +287,7 @@ classdef serializer < handle
             %     Variable keys only possible for fixed @types?
             %     Use value class for structs with fixed keys ...?
             
-            if nargin < 2, sType = '"%s"'; end;
+            if nargin < 2, sType = '"%s"'; end
             
             cxData  = [ fieldnames(txStruct), struct2cell(txStruct) ]';
             %sStruct = strrep([ '{' sprintf('"%s":"%s",', cxData{:}) '}' ], '{"}', '{}');

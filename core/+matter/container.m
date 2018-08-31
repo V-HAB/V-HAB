@@ -58,7 +58,7 @@ classdef container < sys
             this.tSolverParams = this.oParent.tSolverParams;
             
             
-            if ~isa(this.oRoot.oMT, 'matter.table'), this.throw('container', 'Provided object ~isa matter.table'); end;
+            if ~isa(this.oRoot.oMT, 'matter.table'), this.throw('container', 'Provided object ~isa matter.table'); end
             
             this.oMT    = this.oRoot.oMT;
         end
@@ -320,9 +320,9 @@ classdef container < sys
         function connectSubsystemInterfaces(this, sLeftSysAndIf, sRightSysAndIf, csProcsLeft, csProcsRight, fVolume)
             %TODO error check if sys, if etc doesn't exist
             
-            if nargin < 4 || isempty(csProcsLeft),  csProcsLeft  = {}; end;
-            if nargin < 5 || isempty(csProcsRight), csProcsRight = {}; end;
-            if nargin < 6, fVolume = []; end;
+            if nargin < 4 || isempty(csProcsLeft),  csProcsLeft  = {}; end
+            if nargin < 5 || isempty(csProcsRight), csProcsRight = {}; end
+            if nargin < 6, fVolume = []; end
             
             % Get left, right child sysmtes
             [ sLeftSys, sLeftSysIf ] = strtok(sLeftSysAndIf, '.');

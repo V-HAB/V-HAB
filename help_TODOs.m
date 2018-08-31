@@ -11,7 +11,7 @@ disp('Find''s all strings like "%TODO xyz ..." or "%NOTE abc"');
 
 sSearch = upper((input('Search string (default: TODO)? ', 's')));
 
-if isempty(sSearch), sSearch = 'TODO'; end;
+if isempty(sSearch), sSearch = 'TODO'; end
 
 disp([ 'Searching for %' sSearch ]);
 

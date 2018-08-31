@@ -171,7 +171,7 @@ classdef branch < base & event.source
                     sType = 'node';
                 else
                     this.throw('branch', 'Can''t find provided store or node %s on parent circuit', sStoreOrNode);
-                end;
+                end
                 
                 if strcmp(sType, 'store')
                     oTerminal = this.oCircuit.toStores.(sStoreOrNode).getTerminal(sTerminal(2:end));
@@ -257,7 +257,7 @@ classdef branch < base & event.source
                     sType = 'node';
                 else
                     this.throw('branch', 'Can''t find provided store or node ''%s'' on parent circuit', sStoreOrNode);
-                end;
+                end
                 
                 if strcmp(sType, 'store')
                     oTerminal = this.oCircuit.toStores.(sStoreOrNode).getTerminal(sTerminal(2:end));
@@ -574,7 +574,7 @@ classdef branch < base & event.source
         function setCurrent(this, fCurrent)
             % Set current for all flow objects
             
-            if this.abIf(1), this.throw('setCurrent', 'Left side is interface, can''t set current on this branch object'); end;
+            if this.abIf(1), this.throw('setCurrent', 'Left side is interface, can''t set current on this branch object'); end
             
             % Carried over from matter, if for some reason we want to round
             % over the last ten currents

@@ -13,11 +13,11 @@ function [ cParams, sDefaultPhase ] = air_custom(oStore, fVolume, trMasses, fTem
 
 
 % Defaults, if not set
-if ~isstruct(trMasses), trMasses = struct(); end;
+if ~isstruct(trMasses), trMasses = struct(); end
 
-if ~isfield(trMasses, 'O2'),  trMasses.O2  = 0.23135; end;
-if ~isfield(trMasses, 'Ar'),  trMasses.Ar  = 0.01288; end;
-if ~isfield(trMasses, 'CO2'), trMasses.CO2 = 0.00058; end;
+if ~isfield(trMasses, 'O2'),  trMasses.O2  = 0.23135; end
+if ~isfield(trMasses, 'Ar'),  trMasses.Ar  = 0.01288; end
+if ~isfield(trMasses, 'CO2'), trMasses.CO2 = 0.00058; end
 
 % N2 takes remaining fraction
 trMasses.N2 = 1 - trMasses.O2 - trMasses.Ar - trMasses.CO2;
@@ -45,9 +45,9 @@ fMolarMassH2O = oStore.oMT.afMolarMass(oStore.oMT.tiN2I.H2O);   % molar mass of 
 
 % Check input arguments, set default
 %TODO for fTemperature, rRH, fPress -> key/value pairs?
-if nargin < 4 || isempty(fTemperature), fTemperature = 273.15; end;
-if nargin < 5 || isempty(rRH),          rRH          = 0;      end;
-if nargin < 6 || isempty(fPressure),    fPressure    = 101325; end;
+if nargin < 4 || isempty(fTemperature), fTemperature = 273.15; end
+if nargin < 5 || isempty(rRH),          rRH          = 0;      end
+if nargin < 6 || isempty(fPressure),    fPressure    = 101325; end
 
 % Calculation of the saturation vapour pressure
 fSaturationVapourPressure = oStore.oMT.calculateVaporPressure(fTemperature, 'H2O');

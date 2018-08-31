@@ -115,7 +115,7 @@ classdef branch < solver.matter.base.branch
                 this.iDampFR = iDampening * this.oBranch.oContainer.oData.rSolverDampening;
             end
 
-            if nargin >= 3, this.fMaxStepAlt = iMaxStep; end;
+            if nargin >= 3, this.fMaxStepAlt = iMaxStep; end
             
             this.fMaxStep = this.fMaxStepAlt;
             
@@ -634,8 +634,8 @@ classdef branch < solver.matter.base.branch
                 % Loop counter
                 iCount = iCount + 1;
                 
-                if iCount > 401, this.throw('solveBranch', 'Too many iterations'); end;
-                if iCount > 400, keyboard(); end;
+                if iCount > 401, this.throw('solveBranch', 'Too many iterations'); end
+                if iCount > 400, keyboard(); end
                 
                 % Depending on rError, the new flow rate needs to be in- or
                 % decreased. Depending on situation, guess or derive a
@@ -845,7 +845,7 @@ classdef branch < solver.matter.base.branch
                     rError    = fPressDiff / (fNewDrop);
                     
                     % Diff 0, drop 0 -> oook!
-                    if isnan(rError) && (fPressDiff == 0), rError = 1; end;
+                    if isnan(rError) && (fPressDiff == 0), rError = 1; end
                     
                     % Inf counter - see above
                     iInfCounter = iInfCounter + (-1 * iDir);
@@ -1160,7 +1160,7 @@ classdef branch < solver.matter.base.branch
                     
                     %%fprintf('%.10f - %.12fs\n', this.rFlowRateChange, fNewStep);
 
-                    if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end;
+                    if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end
 
                     this.setTimeStep(fNewStep, true);
         %             disp(this.rFlowRateChange);

@@ -33,16 +33,18 @@ function F = colebrook(R,K)
 
 % Check for errors.
 %if any(R(:)<2300) == 1, 
-if any(R(:)<2000) == 1, 
+if any(R(:)<2000) == 1
    %warning('The Colebrook equation is valid for Reynolds'' numbers >= 2300.');      
    warning('The Colebrook equation is valid for Reynolds'' numbers >= 2000.');      
-end,
-if nargin == 1 || isempty(K) == 1,      
+end
+
+if nargin == 1 || isempty(K) == 1    
    K = 0;
-end,
-if any(K(:)<0) == 1, 
+end
+
+if any(K(:)<0) == 1
    warning('The relative sand roughness must be non-negative.'); 
-end,
+end
 
 % Initialization.
 X1 = K .* R * 0.123968186335417556;              % X1 <- K * R * log(10) / 18.574.

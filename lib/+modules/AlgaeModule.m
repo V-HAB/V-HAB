@@ -201,11 +201,12 @@ classdef AlgaeModule < vsys
                 if       this.oParent.toStores.crew_module.aoPhases(1).afPP(11)>140
                     if this.fAerationPower ~= 400
                         this.fAerationPower =400;
-                    end;
-                else if this.oParent.toStores.crew_module.aoPhases(1).afPP(11)<40
+                    end
+                else
+                    if this.oParent.toStores.crew_module.aoPhases(1).afPP(11)<40
                         if this.fAerationPower ~= 200
                             this.fAerationPower=200;
-                        end;
+                        end
                     end
                 end
             end
@@ -253,8 +254,8 @@ classdef AlgaeModule < vsys
                 else
                     this.oHarvestAlgaeBranch.setFlowRate(0.2*this.fHarvestFlowRate);
                     this.oHarvesttoBiomassBranch.setFlowRate(0.8*this.fHarvestFlowRate);
-                end;
-            end;
+                end
+            end
         end
         
         function stopHarvestFlowrate(this)

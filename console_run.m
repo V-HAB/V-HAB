@@ -24,7 +24,7 @@ classdef console_run < handle
             this.oRef = oRef;
             this.sEvent = sEvent;
             
-            if nargin >= 3, this.iSkip = iSkip; end;
+            if nargin >= 3, this.iSkip = iSkip; end
             
             this.oRef.bind(this.sEvent, @this.checkInput);
         end

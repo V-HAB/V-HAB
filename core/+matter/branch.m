@@ -219,7 +219,7 @@ classdef branch < base & event.source
                 
                 
                 % Get store name from parent
-                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end;
+                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end
                 
                 % Get EXME port/proc ...
                 oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
@@ -297,7 +297,7 @@ classdef branch < base & event.source
                 [ sStore, sPort ] = strtok(sRight, '.');
                 
                 % Get store name from container
-                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end;
+                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end
                 
                 % Get Port ...
                 oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
@@ -703,7 +703,7 @@ classdef branch < base & event.source
             %
             %NOTE/CHECK: afPressure is pressure DROPS, not total pressures!
             
-            if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
+            if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end
             
             
             

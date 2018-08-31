@@ -59,7 +59,7 @@ classdef volume < geometry.node
             % If callback set, varargin passed to function. If empty, first
             % varargin field set to fVolume.
             
-            if nargin == 0, return; end;
+            if nargin == 0, return; end
             
             if ~isempty(this.calcVolume)
                 this.fVolume = this.calcVolume(varargin{:});

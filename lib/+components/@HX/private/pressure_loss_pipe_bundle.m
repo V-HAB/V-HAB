@@ -52,7 +52,7 @@ function [fDelta_Pressure] = pressure_loss_pipe_bundle (fD_o, fs_1, fs_2, fN_Row
 %decides wether temperature dependancy should also be accounted for
 if length(fDyn_Visc) == 2 && fConfig == 0
     fConfig = 2;
-elseif length(fDyn_Visc) == 2 && fConfig == 1;
+elseif length(fDyn_Visc) == 2 && fConfig == 1
     fConfig = 3;
 end
 

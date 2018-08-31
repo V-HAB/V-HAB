@@ -70,7 +70,7 @@ classdef timed < sys
             % parent! If -1, dependent (each timer exec).
             
             % No fTimeStep provided?
-            if nargin < 2 || isempty(fTimeStep), fTimeStep = -1; end;
+            if nargin < 2 || isempty(fTimeStep), fTimeStep = -1; end
             
             % Set as obj property/attribute
             this.fTimeStep = fTimeStep;
@@ -111,7 +111,7 @@ classdef timed < sys
                 
                 % If time step is 0, means we registered on the global time
                 % step -> write to this sys
-                if this.fTimeStep == 0, this.fTimeStep = this.oTimer.fMinimumTimeStep; end;
+                if this.fTimeStep == 0, this.fTimeStep = this.oTimer.fMinimumTimeStep; end
             end
         end
     end

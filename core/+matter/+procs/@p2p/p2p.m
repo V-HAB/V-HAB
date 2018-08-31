@@ -169,7 +169,7 @@ classdef p2p < matter.flow
         function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
             % Get missing values from exmes
             
-            if (nargin < 2) || isempty(fFlowRate), fFlowRate = this.fFlowRate; end;
+            if (nargin < 2) || isempty(fFlowRate), fFlowRate = this.fFlowRate; end
             
             % We're a p2p, so we're directly connected to EXMEs
             %oExme = this.(sif(fFlowRate >= 0, 'oIn', 'oOut'));
@@ -194,8 +194,8 @@ classdef p2p < matter.flow
             
             % Check temp and pressure. First temp ... cause that might
             % change in a p2p ... pressure not really.
-            if (nargin < 4) || isempty(fTemperature), fTemperature = fPortTemperature; end;
-            if (nargin < 5) || isempty(fPressure), fPressure = fPortPressure; end;
+            if (nargin < 4) || isempty(fTemperature), fTemperature = fPortTemperature; end
+            if (nargin < 5) || isempty(fPressure), fPressure = fPortPressure; end
                 
             
             setMatterProperties@matter.flow(this, fFlowRate, arPartialMass, fTemperature, fPressure);

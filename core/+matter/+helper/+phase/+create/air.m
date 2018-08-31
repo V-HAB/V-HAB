@@ -20,9 +20,9 @@ fMolarMassH2O = oStore.oMT.afMolarMass(oStore.oMT.tiN2I.H2O);   % molar mass of 
 
 % Check input arguments, set default
 %TODO for fTemperature, rRH, fPress -> key/value pairs?
-if nargin < 3 || isempty(fTemperature), fTemperature = matter.table.Standard.Temperature; end;
-if nargin < 4 || isempty(rRH),          rRH          = 0;      end;
-if nargin < 5 || isempty(fPressure),    fPressure    = matter.table.Standard.Pressure; end;
+if nargin < 3 || isempty(fTemperature), fTemperature = matter.table.Standard.Temperature; end
+if nargin < 4 || isempty(rRH),          rRH          = 0; end
+if nargin < 5 || isempty(fPressure),    fPressure    = matter.table.Standard.Pressure; end
 
 if rRH
     % Calculation of the saturation vapour pressure

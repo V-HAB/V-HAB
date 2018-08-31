@@ -32,7 +32,7 @@ classdef monitor < base & event.source
 %                 this.tsEvents = tools.struct.mergeStructs(this.tsEvents, tsEvents);
 %             end
             
-            if nargin >= 2, this.csEvents = csEvents; end;
+            if nargin >= 2, this.csEvents = csEvents; end
             
             
             %TODO
@@ -52,7 +52,7 @@ classdef monitor < base & event.source
             for iE = 1:length(this.csEvents)
                 sEvent = this.csEvents{iE};
                 
-                if isempty(sEvent), continue; end;
+                if isempty(sEvent), continue; end
                 
                 % Stupid Matlab ... @this.(sMethod) does not work but using
                 % the shorthand saves a lot of exec time! So ... eval!

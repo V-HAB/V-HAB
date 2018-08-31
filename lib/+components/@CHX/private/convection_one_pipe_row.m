@@ -41,9 +41,9 @@ function [fConvection_alpha] = convection_one_pipe_row (fD_o, fs_1,...
 
 %fills parameter used to differentiate between calculation with temperature
 %dependant material values and undependant material values
-if length(fDyn_Visc) == 1;
+if length(fDyn_Visc) == 1
     fTemp_Dep = 0;
-elseif length(fDyn_Visc) == 2;
+elseif length(fDyn_Visc) == 2
     fTemp_Dep = 1;
 else
     error('wrong number of inputs for material values')

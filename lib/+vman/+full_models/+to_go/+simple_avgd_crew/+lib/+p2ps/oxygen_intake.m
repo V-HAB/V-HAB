@@ -38,7 +38,7 @@ classdef oxygen_intake < matter.procs.p2ps.flow
             if isempty(afFlowRate)
                 this.setMatterProperties(0, this.arExtractPartials);
                 
-                if this.fRequestedOxygenIntake > 0, this.warn('update', 'Cannot breathe ... no flow!'); end;
+                if this.fRequestedOxygenIntake > 0, this.warn('update', 'Cannot breathe ... no flow!'); end
                 
                 return;
             end

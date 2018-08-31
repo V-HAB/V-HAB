@@ -142,7 +142,7 @@ classdef timer < base
                 csFields = fieldnames(tPayloadDef);
                 
                 for iF = 1:length(csFields)
-                    if ~isfield(tPayload, csFields{iF}), continue; end;
+                    if ~isfield(tPayload, csFields{iF}), continue; end
                     
                     tPayloadDef.(csFields{iF}) = tPayload.(csFields{iF});
                 end
@@ -184,7 +184,7 @@ classdef timer < base
         
         
         function bindPostTick(this, hCB, iPriority)
-            if nargin < 3 || isempty(iPriority), iPriority = 0; end;
+            if nargin < 3 || isempty(iPriority), iPriority = 0; end
             
             iPriority = iPriority + 4;
             
@@ -330,7 +330,7 @@ classdef timer < base
             
             
             if ~isempty(fTimeStep) % && fTimeStep ~= 0
-                if fTimeStep < 0, fTimeStep = 0; end;
+                if fTimeStep < 0, fTimeStep = 0; end
                 
                 this.afTimeStep(iCB) = fTimeStep;
             else

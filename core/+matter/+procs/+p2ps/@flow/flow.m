@@ -38,7 +38,7 @@ classdef flow < matter.procs.p2p
             %     due to that also into account ... just as another flow
             %     rate? Should the phase do that?
             
-            if nargin < 2, sPhase = 'in'; end;
+            if nargin < 2, sPhase = 'in'; end
             
             oPhase = sif(strcmp(sPhase, 'in'), this.oIn.oPhase, this.oOut.oPhase);
             
@@ -93,7 +93,7 @@ classdef flow < matter.procs.p2p
             %     and mrFLowPartails is actually arFlowPartials!
             %     -> simplify!
             
-            if nargin < 2, sPhase = 'in'; end;
+            if nargin < 2, sPhase = 'in'; end
             
             oPhase = sif(strcmp(sPhase, 'in'), this.oIn.oPhase, this.oOut.oPhase);
             

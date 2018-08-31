@@ -8,7 +8,7 @@ classdef round
     
     methods (Static = true)
         function fValue = prec(fValue, iPrecision)
-            if nargin < 2, iPrecision = tools.round.iPrecision; end;
+            if nargin < 2, iPrecision = tools.round.iPrecision; end
             
             iPrecision = 10 ^ iPrecision;
             fValue = round(fValue * iPrecision) / iPrecision;

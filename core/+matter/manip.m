@@ -43,7 +43,7 @@ classdef manip < base
     
     methods
         function this = manip(sName, oPhase, sRequiredType)
-            if nargin >= 3, this.sRequiredType = sRequiredType; end;
+            if nargin >= 3, this.sRequiredType = sRequiredType; end
             
             % If a certain type of phase type is required for this
             % manipulator, we check for it here and throw an error if there

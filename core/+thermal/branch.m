@@ -142,7 +142,7 @@ classdef branch < base & event.source
                 [ sStore, sPort ] = strtok(sLeft, '.');
                 
                 % Get store name from parent
-                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end;
+                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end
                 
                 % Get EXME port/proc ...
                 oPort = this.oContainer.toStores.(sStore).getThermalPort(sPort(2:end));
@@ -183,7 +183,7 @@ classdef branch < base & event.source
                 [ sStore, sPort ] = strtok(sRight, '.');
                 
                 % Get store name from parent
-                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end;
+                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end
                 
                 % Get EXME port/proc ...
                 oPort = this.oContainer.toStores.(sStore).getThermalPort(sPort(2:end));

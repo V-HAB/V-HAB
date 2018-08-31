@@ -52,7 +52,7 @@ classdef data < dynamicprops % & event.source
             % on if exists on parent, else just set to []
             
             % Preset xValue if not provided
-            if nargin < 2, xValue = []; end;
+            if nargin < 2, xValue = []; end
             
             
             % No value - check if exists in parent, activate syncing!
@@ -99,7 +99,7 @@ classdef data < dynamicprops % & event.source
             % switches back to sync with parent.
             
             % Check if property exists
-            if ~isfield(this.toProps, sKey), return; end;
+            if ~isfield(this.toProps, sKey), return; end
             
             if ~isempty(this.oParent) && isfield(this.oParent.toProps, sKey) %any(strcmp(properties(this.oParent), sKey))
                 % delete tbLocal, set parent value and trigger change!

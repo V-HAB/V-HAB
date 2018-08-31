@@ -57,7 +57,7 @@ classdef branch < solver.matter.base.branch
             % Initial flow rate? Set for this.fFlowRate as initial value.
             fInitialFlowRate = [];
             
-            if (length(varargin) >= 3) && ~isempty(varargin{3}), fInitialFlowRate = varargin{3}; end;
+            if (length(varargin) >= 3) && ~isempty(varargin{3}), fInitialFlowRate = varargin{3}; end
             
             this@solver.matter.base.branch(oBranch, fInitialFlowRate, 'manual');
             
