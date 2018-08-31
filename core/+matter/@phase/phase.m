@@ -940,6 +940,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Now sum up in-/outflows over all EXMEs
             afTotalInOuts = sum(mfTotalFlows, 1);
             
+            % Checking for NaNs. It is necessary to do this here so the
+            % origin of NaNs can be found easily during debugging.
+            if any(isnan(afTotalInOuts))
+                error('Error in phase ''%s''. The flow rate of EXME ''%s'' is NaN.', this.sName, this.coProcsEXME{isnan(afTotalInOuts)}.sName);
+            end
+            
 %             afTotalInOuts   = tools.round.prec(afTotalInOuts,   this.oTimer.iPrecision);
 %             mfInflowDetails = tools.round.prec(mfInflowDetails, this.oTimer.iPrecision);
         end

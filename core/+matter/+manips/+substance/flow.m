@@ -14,6 +14,13 @@ classdef flow < matter.manips.substance
         end
         
         function update(this, afPartialFlows)
+            % Checking if any of the flow rates being set are NaNs. It is
+            % necessary to do this here so the origin of NaNs can be found
+            % easily during debugging. 
+            if any(isnan(afPartialFlows))
+                error('Error in manipulator %s. Some of the flow rates are NaN.', this.sName);
+            end
+            
             this.afPartialFlows = afPartialFlows;
         end
         

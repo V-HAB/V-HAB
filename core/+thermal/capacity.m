@@ -507,6 +507,24 @@ classdef capacity < base & event.source
             if fNewHeatFlow ~= this.fCurrentHeatFlow
                 this.setBranchesOutdated(true);
             end
+            
+            % Checking for NaNs. It is necessary to do this here so the
+            % origin of NaNs can be found easily during debugging.
+            if isnan(fNewHeatFlow)
+                
+                % Checking if its the EXMEs
+                abEXMEsWithNaNs = isnan([this.aoExmes.fHeatFlow]);
+                
+                if any(abEXMEsWithNaNs)
+                    error('Error in capacity ''%s''. The heat flow from EXME ''%s'' is NaN.', this.sName, this.aoExmes(abEXMEsWithNaNs).sName);
+                else
+                    % It's not from the EXMEs so it has to be from one of
+                    % the connected heat sources. 
+                    abHeatSourcesWithNaNs = isnan([this.aoHeatSource.fHeatFlow]);
+                    error('Error in capacity ''%s''. The heat flow from heatsource ''%s'' is NaN.', this.sName, this.aoHeatSource(abHeatSourcesWithNaNs).sName);
+                end
+            end
+            
             this.fCurrentHeatFlow = fNewHeatFlow;
             
             % If we have set a fixed time step for the phase, we can just
