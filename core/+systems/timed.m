@@ -29,13 +29,9 @@ classdef timed < sys
     end
     
     methods
-        function this = timed(oParent, sName, xTimer, fTimeStep)
+        function this = timed(oParent, sName, fTimeStep)
             this@sys(oParent, sName);
             
-            % Get timer from payload data or directly provided ...
-            %if ischar(xTimer), this.oTimer = this.oData.(xTimer);
-            %else               this.oTimer = xTimer;
-            %end
             this.oTimer = oParent.oTimer;
             
             if nargin >= 4 && ~isempty(fTimeStep)

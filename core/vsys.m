@@ -25,7 +25,7 @@ classdef vsys < matter.container & thermal.container & electrical.container & sy
             
             % Leads to a double call of the sys constructor, that's ok
             % since this expected to happen and accordingly caught
-            this@systems.timed(oParent, sName, 'oTimer', fTimeStep);
+            this@systems.timed(oParent, sName, fTimeStep);
             this@matter.container(oParent, sName);
             this@thermal.container(oParent, sName);
             this@electrical.container(oParent, sName);
