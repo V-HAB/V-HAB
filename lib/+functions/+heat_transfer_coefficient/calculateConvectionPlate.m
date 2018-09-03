@@ -19,10 +19,10 @@
 %
 %these parameters are used in the equation as follows:
 %
-%fConvection_alpha=convection_plate(fLength, fFlowSpeed, fDyn_Visc,
+%fConvection_alpha=calculateConvectionPlate(fLength, fFlowSpeed, fDyn_Visc,
 %                                   fDensity, fThermal_Conductivity, fC_p)
 
-function [fConvection_alpha] = convection_plate (fLength, fFlowSpeed,...
+function [fConvection_alpha] = calculateConvectionPlate (fLength, fFlowSpeed,...
                           fDyn_Visc, fDensity, fThermal_Conductivity, fC_p)
 %the source "Wärmeübertragung" Polifke will from now on be defined as [1]
 
@@ -81,14 +81,9 @@ elseif fRe == 0
 %values of Reynolds and Prandtlnumber as well as some key data to simplify
 %debugging for the user   
 else
-    fprintf(['Either the Reynolds or the Prandtl number are out of bounds. \n', ...
-             'Reynolds is valid for Re < 10^7. The value is %d \n', ...
-             'Prandtl is valid between 0.6 and 10^3. The value is %d \n', ...
-             'The flow speed is: %d \n', ...
-             'The kinematic viscosity is %d\n'], ...
-             fRe, fPr, fFlowSpeed, fKin_Visc);
-    
-    error('No possible equation was found in convection_plate, either Reynolds number or Prandtl number out of bounds!')    
+    string = sprintf(' either the Reynolds or the Prandtl number are out of bounds. \n Reynolds is valid for Re < 10^7. The value is %d \n Prandtl is valid between 0.6 and 10^3. The value is %d \n the flow speed is: %d \n the kinematic viscosity is %d', fRe, fPr, fFlowSpeed, fKin_Visc);
+    disp(string)
+    error('no possible equation was found in convection_plate, either Reynolds number or Prandtl number out of boundaries')    
 end
 
 %Definition of the Nußelt number according to [1] page 232 equation

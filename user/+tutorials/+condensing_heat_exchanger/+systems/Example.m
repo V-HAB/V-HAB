@@ -147,8 +147,8 @@ classdef Example < vsys
             components.pipe(this, 'Pipe5', 1, 0.01, 0.0002);
             components.pipe(this, 'Pipe6', 1, 0.01, 0.0002);
             
-            tutorials.incompressible_solver.components.fan(this, 'Fan_1', 1e4, 1);
-            tutorials.incompressible_solver.components.fan(this, 'Fan_2', 1e4, 1);
+            components.fan_simple(this, 'Fan_1', 1e4);
+            components.fan_simple(this, 'Fan_2', 1e4);
             
             % Creating the flow path between the two gas tanks via the heat
             % exchanger
