@@ -1024,10 +1024,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
         end
 
-        function setBranchesOutdated(this, sFlowDirection, bResidual)
+        function setBranchesOutdated(this, ~, bResidual)
             
 %             if nargin < 2
-                sFlowDirection = 'both'; 
+%                 sFlowDirection = 'both'; 
 %             end
             
             if nargin < 3
@@ -1060,19 +1060,20 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 elseif isa(oBranch, 'matter.branch')
                     % If flow direction set, only setOutdated if the
                     % flow direction is either inwards or outwards
-                    if strcmp(sFlowDirection, 'in')
-                        if oExme.iSign * oExme.oFlow.fFlowRate > 0
-                            % ok
-                        else
-                            continue;
-                        end
-                    elseif strcmp(sFlowDirection, 'out')
-                        if oExme.iSign * oExme.oFlow.fFlowRate <= 0
-                            % ok
-                        else
-                            continue;
-                        end
-                    end
+                    %CHECK If this needs to be re-implemented
+%                     if strcmp(sFlowDirection, 'in')
+%                         if oExme.iSign * oExme.oFlow.fFlowRate > 0
+%                             % ok
+%                         else
+%                             continue;
+%                         end
+%                     elseif strcmp(sFlowDirection, 'out')
+%                         if oExme.iSign * oExme.oFlow.fFlowRate <= 0
+%                             % ok
+%                         else
+%                             continue;
+%                         end
+%                     end
                     
                     % We can't directly set this oBranch as outdated if
                     % it is just connected to an interface, because the
