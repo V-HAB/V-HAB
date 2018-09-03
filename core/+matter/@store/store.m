@@ -642,6 +642,8 @@ classdef store < base
             
             oProc = this.aoPhases(iIdx).toProcsEXME.(sPort);
         end
+        
+        
         function oProc = getThermalPort(this, sPort)
             % Check all capacities to find thermal port
             % TO DO: basically identical functionality to getPort, which
@@ -912,9 +914,6 @@ classdef store < base
             cParams = [ { this sPhaseName } cParams ];
             %cParams = { this sHelper cParams{:} };
         end
-        
-        
-        
         
     end
     
