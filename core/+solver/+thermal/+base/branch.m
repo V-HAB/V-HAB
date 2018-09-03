@@ -137,7 +137,7 @@ classdef branch < base & event.source
                 this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
             end
 
-            if ~base.oLog.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end;
+            if ~base.oLog.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end
             
             this.bRegisteredOutdated = true;
             this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);

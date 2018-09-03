@@ -63,7 +63,7 @@ classdef vhab
             
             % FLUSH serializers / loggers
             % Only required if we're already initialized
-            if exist('base') > 0
+            if exist('base','file') > 0
                 base.flush();
             end
             
@@ -125,73 +125,13 @@ classdef vhab
         
         
         
-        function runner(this, tCfg)
-            % FROM runner_*
-            % Allow different configs (solver props and / or ptCfgs)
-            % Create all combinations before running
-            % ONE parfor loop, not nested!
-        end
+%         function runner(this, tCfg)
+%             % FROM runner_*
+%             % Allow different configs (solver props and / or ptCfgs)
+%             % Create all combinations before running
+%             % ONE parfor loop, not nested!
+%         end
         
-        
-        
-        %TODO-RESTRUCTURING move to a monitor, e.g. json_dumper. Store
-        %   bDump in dumpers per-simulation.
-        %   Figure out a way to activate serializers in base class, has to
-        %   be a global flag or something like that - its too late to set
-        %   that in the monitor itself, as for example the
-        %   simulation.infrastructure object would have to be serialized as
-        %   well, for example!
-        % pOptions = containers.Map({ 'bDump', 'sHost' }, { false, '' });
-% %         function setDump(bDump)
-% %             pOptions = vhab.pOptions;
-% %             
-% %             if nargin < 1 || isempty(bDump), bDump = false; end;
-% %             
-% %             pOptions('bDump') = ~~bDump;
-% %             
-% %             if nargin >= 2
-% %                 pOptions('sHost') = sHost;
-% %             end
-% %             
-% %             
-% %             % Also set config in base - create serializers
-% %             base.activateSerializers();
-% %         end
-        
-        function disp(oEvt)
-            %TODO-RESTRUCTURING move to dumper monitor
-            %           => base class bDump flag - how to set?
-% %             if pOptions('bDump')
-% %                 %TODO-OKT14 this host thing is a bad hack, probably doesn't always work so change the serializer, either implement some nice way to
-% %                 %           send options to serializer (host), or at least serializer should prefix every sURL with something,
-% %                 %           so URIs can really be identified (e.g. 'uri:/matter/store/abc' or so) - or just localhost/127.0.0.1?
-% %                 % AND also the Inf/NaN stuff!
-% %                 
-% %                 sHost = pOptions('sHost');
-% %                 
-% %                 if ~isempty(sHost)
-% %                     %disp([ '>>{{>>' strrep(base.dump(), '":"/', [ '":"' sHost '/' ]) '<<}}<<' ]);
-% %                     disp([ '>>{{>>' strrep(strrep(base.dump(), '"/', [ '"' sHost '/' ]), ':Inf', ':null') '<<}}<<' ]);
-% %                 else
-% %                     disp([ '>>{{>>' strrep(base.dump(), ':Inf', ':null') '<<}}<<' ]);
-% %                 end
-% %                 
-% %                 
-% %                 return;
-% %             end
-            
-            
-            
-            
-            %TODO-RESTRUCTURING implement in a monitor (same monitor
-            %  that stops the sim when sim time is reached?)
-% %             if mod(oSim.oTimer.iTick, vhab.pOptions('iTickRepIntv')) == 0
-% %                 if exist('STOP', 'file') == 2
-% %                     oSim.iSimTicks = oSim.oTimer.iTick + 5;
-% %                     oSim.bUseTime  = false;
-% %                 end
-% %             end
-        end
     end
     
 end

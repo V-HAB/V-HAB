@@ -93,7 +93,7 @@ classdef source < handle
                 return;
             end            
             
-            if nargin < 3, tData = []; end;
+            if nargin < 3, tData = []; end
             
             % dbstack - get caller's function name and set for event obj?
             

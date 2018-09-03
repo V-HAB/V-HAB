@@ -51,9 +51,9 @@ end
 %decides wether temperature dependancy should also be accounted for
 if length(fDyn_Visc) == 2 && fConfig == 0
     fConfig = 3;
-elseif length(fDyn_Visc) == 2 && fConfig == 1;
+elseif length(fDyn_Visc) == 2 && fConfig == 1
     fConfig = 4;
-elseif length(fDyn_Visc) == 2 && fConfig == 2;
+elseif length(fDyn_Visc) == 2 && fConfig == 2
     fConfig = 5;
 end
 
@@ -123,9 +123,13 @@ if fRoughness == 0
     %of Reynolds and Prandtlnumber as well as some key data to simplify
     %debugging for the user    
     else
-        string = sprintf(' Reynolds number is out of bounds. \n Reynolds is valid for Re < 10^6. The value is %d \n the flow speed is: %d \n the kinematic viscosity is %d', fRe, fFlowSpeed, fKin_Visc_m);
-        disp(string)
-        error('Reynolds number out of boundaries')    
+        fprintf(['Reynolds number is out of bounds. \n', ...
+                 'Reynolds is valid for Re < 10^6. The value is %d \n', ...
+                 'The flow speed is: %d \n', ...
+                 'The kinematic viscosity is %d\n'], ...
+                 fRe, fFlowSpeed, fKin_Visc_m);
+        
+        error('Reynolds number out of bounds!')    
     end
 %%
 %calculation in case of rough pipes

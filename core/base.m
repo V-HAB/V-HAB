@@ -64,14 +64,7 @@ classdef base < handle
         %       --> base a mixin, .serialized() sealed --> aoAllObjs.serialize()?
     end
     
-    methods (Static = true)
-        function randomUUID(~)
-            %RANDOMUUID [removed, use |tools.getPseudoUUID()| instead]
-            this.throw('base::randomUUID', '|base.randomUUID()| has been removed. Use |tools.getPseudoUUID()| instead.');
-        end
-    end
-    
- % Section covers stuff needed for logging - ignore!
+    % Section covers stuff needed for logging - ignore!
     methods (Static = true)
         
         function activateSerializers()
@@ -90,7 +83,7 @@ classdef base < handle
             %return;
             
             for iS = aiSerializers
-                if iS < 1, continue; end;
+                if iS < 1, continue; end
                 
                 %delete(coSerializers{iS});
                 coSerializers{iS}.flush();
@@ -237,7 +230,7 @@ classdef base < handle
             pDumper = this.pDumper;
             
             % Should we initialize the serializer?
-            if ~pDumper('bSerialize'), return; end;
+            if ~pDumper('bSerialize'), return; end
             
             poSerializers = pDumper('poSerializers');
             coSerializers = pDumper('coSerializers');
@@ -332,7 +325,7 @@ classdef base < handle
             
             
             % Flag to globally switch off logging!
-            if base.oLog.bOff, return; end;
+            if base.oLog.bOff, return; end
             
             
             % varargin:

@@ -654,7 +654,7 @@ classdef main < vsys
                             this.tCrewPlaner.cMetabolism{iCM,iEvent}.Ended = true;
                             %if the crew member was sleeping --> enter nominal
                             %state
-                            if strcmp(this.tCrewPlaner.cMetabolism{iCM,iEvent}.State, 'sleep');
+                            if strcmp(this.tCrewPlaner.cMetabolism{iCM,iEvent}.State, 'sleep')
                                 this.cCrewState{iCM} = 'nominal';
                             %of the crew member was working out --> enter
                             %recovery state

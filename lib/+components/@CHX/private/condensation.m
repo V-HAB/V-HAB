@@ -74,7 +74,7 @@ end
 %all is made
 mMaxMassFraction = (mVaporPressures./fPressure).*(mMolarMassSubstance./fMolarMassFlow);
 mMaxMassFlow = fFlowRate.*mMaxMassFraction;
-mMassFlow = fFlowRate.*mPartialMass;
+%mMassFlow = fFlowRate.*mPartialMass;
     
 mMaxCondensateMassFlow = mCondensableMassFlow - mMaxMassFlow;
 

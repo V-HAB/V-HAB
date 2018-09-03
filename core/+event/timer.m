@@ -142,7 +142,7 @@ classdef timer < base
                 csFields = fieldnames(tPayloadDef);
                 
                 for iF = 1:length(csFields)
-                    if ~isfield(tPayload, csFields{iF}), continue; end;
+                    if ~isfield(tPayload, csFields{iF}), continue; end
                     
                     tPayloadDef.(csFields{iF}) = tPayload.(csFields{iF});
                 end
@@ -165,8 +165,10 @@ classdef timer < base
             this.ctPayload{iIdx}  = tPayloadDef;
             
             % Time step - provided or use the global
-            if nargin >= 3, this.afTimeStep(iIdx) = fTimeStep;
-            else            this.afTimeStep(iIdx) = this.fMinimumTimeStep;
+            if nargin >= 3 
+                this.afTimeStep(iIdx) = fTimeStep;
+            else
+                this.afTimeStep(iIdx) = this.fMinimumTimeStep;
             end
             
             % Return the callbacks - protected methods, wrapped so that the
@@ -184,7 +186,7 @@ classdef timer < base
         
         
         function bindPostTick(this, hCB, iPriority)
-            if nargin < 3 || isempty(iPriority), iPriority = 0; end;
+            if nargin < 3 || isempty(iPriority), iPriority = 0; end
             
             iPriority = iPriority + 4;
             
@@ -330,7 +332,7 @@ classdef timer < base
             
             
             if ~isempty(fTimeStep) % && fTimeStep ~= 0
-                if fTimeStep < 0, fTimeStep = 0; end;
+                if fTimeStep < 0, fTimeStep = 0; end
                 
                 this.afTimeStep(iCB) = fTimeStep;
             else

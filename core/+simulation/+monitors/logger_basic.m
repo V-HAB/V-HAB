@@ -1092,7 +1092,7 @@ classdef logger_basic < simulation.monitor
 
                 fprintf('DUMPING - write to .mat: %s\n', sMat);
 
-                oLastSimObj = this.oSimulationInfrastructure; %#ok<NASGU>
+                oLastSimObj = this.oSimulationInfrastructure; 
                 save(sMat, 'oLastSimObj');
             end
             
@@ -1111,8 +1111,8 @@ classdef logger_basic < simulation.monitor
             fprintf('#############################################\n');
             fprintf('DUMPING - write to .mat: %s\n', sMat);
             
-            mfLogMatrix = this.mfLog; %#ok<NASGU>
-            afTimeVector = this.afTime; %#ok<NASGU>
+            mfLogMatrix = this.mfLog; 
+            afTimeVector = this.afTime; 
             save(sMat, 'mfLogMatrix', 'afTimeVector');
             
             disp('... done!');
@@ -1126,7 +1126,7 @@ classdef logger_basic < simulation.monitor
             
             fprintf('DUMPING - write to .mat: %s\n', sMat);
             
-            oLastSimObj = this.oSimulationInfrastructure; %#ok<NASGU>
+            oLastSimObj = this.oSimulationInfrastructure;
             save(sMat, 'oLastSimObj');
         end
         

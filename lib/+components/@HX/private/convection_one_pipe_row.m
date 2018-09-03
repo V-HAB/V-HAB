@@ -41,9 +41,9 @@ function [fConvection_alpha] = convection_one_pipe_row (fD_o, fs_1,...
 
 %fills parameter used to differentiate between calculation with temperature
 %dependant material values and undependant material values
-if length(fDyn_Visc) == 1;
+if length(fDyn_Visc) == 1
     fTemp_Dep = 0;
-elseif length(fDyn_Visc) == 2;
+elseif length(fDyn_Visc) == 2
     fTemp_Dep = 1;
 else
     error('wrong number of inputs for material values')
@@ -101,9 +101,14 @@ elseif fRe == 0
 %number are displayed as well as some key data to simplify debugging for 
 %the user  
 else
-    string = sprintf(' either the Reynolds or the Prandtl number are out of bounds. \n Reynolds is valid between 10 and 10^6. The value is %d \n Prandtl is valid between 0.6 and 10^3. The value is %d \n the flow speed is: %d \n the kinematic viscosity is %d', fRe, fPr_m, fFlowSpeed, fKin_Visc_m);
-    disp(string)    
-    error('no possible equation was found in convection_one_pipe_row, either Reynolds number or Prandtl number out of boundaries')
+    fprintf(['Either the Reynolds or the Prandtl number are out of bounds. \n', ...
+             'Reynolds is valid between 10 and 10^6. The value is %d \n', ...
+             'Prandtl is valid between 0.6 and 10^3. The value is %d \n', ...
+             'The flow speed is: %d \n', ...
+             'The kinematic viscosity is %d \n'], ...
+             fRe, fPr_m, fFlowSpeed, fKin_Visc_m);
+    
+    error('No possible equation was found in convection_one_pipe_row, either Reynolds number or Prandtl number out of bounds!')
 end
 if fTemp_Dep == 1
     %influence of temperature dependant material values is taken into 

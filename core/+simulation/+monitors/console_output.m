@@ -1,5 +1,5 @@
 classdef console_output < simulation.monitor
-    %LOGGER_BASIC Summary of this class goes here
+    %CONSOLE_OUTPUT Summary of this class goes here
     %   Detailed explanation goes here
     %
     %TODO see bOutputUuids
@@ -112,14 +112,14 @@ classdef console_output < simulation.monitor
             
             if ~isempty(iTicks)
                 
-                if mod(iTicks, 1) ~= 0, error('Ticks needs to be integer.'); end;
+                if mod(iTicks, 1) ~= 0, error('Ticks needs to be integer.'); end
                 
                 this.iMajorReportingInterval = iTicks;
             end
             
             if (nargin >= 3) && ~isempty(iMinorTicks)
                 
-                if mod(iMinorTicks, 1) ~= 0, error('Minor ticks needs to be integer.'); end;
+                if mod(iMinorTicks, 1) ~= 0, error('Minor ticks needs to be integer.'); end
                 
                 if mod(iTicks / iMinorTicks, 1) ~= 0
                     error('Minor tick needs to be a whole-number divisor of major tick (e.g. 25 vs. 100, 10 vs. 100)');

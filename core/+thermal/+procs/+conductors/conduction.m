@@ -23,7 +23,7 @@ classdef conduction < thermal.procs.conductor
             
         end
         
-        function update(this, ~)
+        function update(this, ~) %#ok<INUSD>
             % TO DO: implement material dependcy updates here?
         end 
     end

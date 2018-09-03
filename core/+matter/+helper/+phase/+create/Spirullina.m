@@ -8,9 +8,9 @@ fMolarMassCO2 = oStore.oMT.afMolarMass(oStore.oMT.tiN2I.CO2);   % molar mass of 
 
 % Check input arguments, set default
 %TODO for fTemperature, rRH, fPress -> key/value pairs?
-if nargin < 3, fTemperature = 273.15; end;
-if nargin < 4, rRH          = 0;      end;
-if nargin < 5, fPressure    = 101325; end;
+if nargin < 3, fTemperature = 273.15; end
+if nargin < 4, rRH          = 0;      end
+if nargin < 5, fPressure    = 101325; end
 
 % p V = m / M * R_m * T  <=>  m = p * V * M / (R_m * T)
 fMass = fPressure * fVolume * fMolarMassCO2 / (fRm * fTemperature);

@@ -1,6 +1,8 @@
-classdef mixture< matter.procs.exme
-    %ABSORBER Summary of this class goes here
-    %   Detailed explanation goes here
+classdef mixture < matter.procs.exme
+    %MIXTURE An EXME that interfaces with a mixture phase
+    %   The main purpose of this class is to provide the method
+    %   getPortProperties() which returns the pressure and temperature of
+    %   the attached phase. 
     
     properties
     end

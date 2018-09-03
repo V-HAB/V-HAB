@@ -46,8 +46,8 @@ classdef branch < solver.matter.base.branch
             
             this.fCoeffFR = 0.00000133 * 20;
             
-            if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end;
-            if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end;
+            if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end
+            if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end
             
             
             this.oTimer = this.oBranch.oContainer.oTimer;
@@ -185,12 +185,12 @@ classdef branch < solver.matter.base.branch
                 % zero if this happens. 
                 rChange = sif(isnan(rChange), 0, rChange);
 
-                % Old time step
-                fOldStep = this.fTimeStep;
-
-                if fOldStep < this.oTimer.fMinimumTimeStep
-                    fOldStep = this.oTimer.fMinimumTimeStep;
-                end
+%                 % Old time step
+%                 fOldStep = this.fTimeStep;
+% 
+%                 if fOldStep < this.oTimer.fMinimumTimeStep
+%                     fOldStep = this.oTimer.fMinimumTimeStep;
+%                 end
 
                 % Change in flow rate direction? Min. time step!
                 if (rChange < 0) || isinf(rChange) || (this.iSignChangeFRCnt > 1)
@@ -221,7 +221,7 @@ classdef branch < solver.matter.base.branch
                     end
                 end
 
-                if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end;
+                if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end
 
                 this.setTimeStep(fNewStep, true);
                 this.fTimeStep = fNewStep;

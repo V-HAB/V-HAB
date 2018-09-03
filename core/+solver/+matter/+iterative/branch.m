@@ -115,7 +115,7 @@ classdef branch < solver.matter.base.branch
                 this.iDampFR = iDampening * this.oBranch.oContainer.oData.rSolverDampening;
             end
 
-            if nargin >= 3, this.fMaxStepAlt = iMaxStep; end;
+            if nargin >= 3, this.fMaxStepAlt = iMaxStep; end
             
             this.fMaxStep = this.fMaxStepAlt;
             
@@ -252,7 +252,7 @@ classdef branch < solver.matter.base.branch
             end
             
             %TODO remove all this!
-            fFlowRateUnrounded = fFlowRate;
+            fFlowRateUnroundedNew = fFlowRate;
             
             % If we don't round at some point, flow rates will eventually
             % become something like 1e-13 etc -> don't want that.
@@ -276,7 +276,7 @@ classdef branch < solver.matter.base.branch
             %%fprintf('avg:  %.25f (dyn %.25f)\n', (oP1.fPressure + oP2.fPressure) / 2, (coE{1}.getPortProperties() + coE{2}.getPortProperties()) / 2);
             
             % Calculating the new timestep for this branch
-            this.calculateTimeStep(fFlowRateUnrounded, fFlowRate);
+            this.calculateTimeStep(fFlowRateUnroundedNew, fFlowRate);
             
             
             %%%fprintf('%.16f [rChangeRate: %.7f]\n', this.fTimeStep, this.rFlowRateChange);
@@ -286,8 +286,8 @@ classdef branch < solver.matter.base.branch
             %%%    this.fFlowRate / fFlowRate, this.rFlowRateChange, this.fTimeStep, fFlowRate);
             
             %
-            if fFlowRateUnrounded ~= this.fFlowRateUnrounded
-                bFlowRateChangeIsPositive = fFlowRateUnrounded > this.fFlowRateUnrounded;
+            if fFlowRateUnroundedNew ~= this.fFlowRateUnrounded
+                bFlowRateChangeIsPositive = fFlowRateUnroundedNew > this.fFlowRateUnrounded;
                 
                 if this.bFlowRateChangePos ~= bFlowRateChangeIsPositive
                     
@@ -308,7 +308,7 @@ classdef branch < solver.matter.base.branch
 %             iDampUnrounded = 5;
             %this.fFlowRateUnrounded = (this.fFlowRateUnrounded * this.iFlowRateCompDamp + fFlowRateUnrounded) / (this.iFlowRateCompDamp + 1);
             %this.fFlowRateUnrounded = (this.fFlowRateUnrounded * iDampUnrounded + fFlowRateUnrounded) / (iDampUnrounded + 1);
-            this.fFlowRateUnrounded = fFlowRateUnrounded;
+            this.fFlowRateUnrounded = fFlowRateUnroundedNew;
             
             % Sets new flow rate
             update@solver.matter.base.branch(this, fFlowRate, afDeltaP);
@@ -634,8 +634,8 @@ classdef branch < solver.matter.base.branch
                 % Loop counter
                 iCount = iCount + 1;
                 
-                if iCount > 401, this.throw('solveBranch', 'Too many iterations'); end;
-                if iCount > 400, keyboard(); end;
+                if iCount > 401, this.throw('solveBranch', 'Too many iterations'); end
+                if iCount > 400, keyboard(); end
                 
                 % Depending on rError, the new flow rate needs to be in- or
                 % decreased. Depending on situation, guess or derive a
@@ -845,7 +845,7 @@ classdef branch < solver.matter.base.branch
                     rError    = fPressDiff / (fNewDrop);
                     
                     % Diff 0, drop 0 -> oook!
-                    if isnan(rError) && (fPressDiff == 0), rError = 1; end;
+                    if isnan(rError) && (fPressDiff == 0), rError = 1; end
                     
                     % Inf counter - see above
                     iInfCounter = iInfCounter + (-1 * iDir);
@@ -1160,7 +1160,7 @@ classdef branch < solver.matter.base.branch
                     
                     %%fprintf('%.10f - %.12fs\n', this.rFlowRateChange, fNewStep);
 
-                    if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end;
+                    if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end
 
                     this.setTimeStep(fNewStep, true);
         %             disp(this.rFlowRateChange);

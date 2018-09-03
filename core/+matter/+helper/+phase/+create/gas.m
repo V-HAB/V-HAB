@@ -18,7 +18,7 @@ function [ cParams, sDefaultPhase ] = gas(oStore, fVolume, tfPartialPressure, fT
 % Values from @matter.table
 fRm           = oStore.oMT.Const.fUniversalGas;                 % ideal gas constant [J/K]
 
-if nargin < 4 || isempty(fTemperature),         fTemperature = matter.table.Standard.Temperature; end;
+if nargin < 4 || isempty(fTemperature),         fTemperature = matter.table.Standard.Temperature; end
 if nargin < 5 || isempty(rRelativeHumidity),    rRelativeHumidity = 0; end
 
 mfPartialPressure = zeros(1, oStore.oMT.iSubstances);

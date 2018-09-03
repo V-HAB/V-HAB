@@ -45,7 +45,7 @@ function [fConvection_alpha] = convection_pipe (fD_Hydraulic, fLength,...
 %decides wether temperature dependancy should also be accounted for
 if length(fDyn_Visc) == 2 && fConfig == 0
     fConfig = 2;
-elseif length(fDyn_Visc) == 2 && fConfig == 1;
+elseif length(fDyn_Visc) == 2 && fConfig == 1
     fConfig = 3;
 end
 
@@ -126,7 +126,7 @@ elseif (2300 <= fRe) && (fRe <= 10^4) && (0.6 < fPr_m) && (fPr_m < 1000)
     %see laminar case in this code for information on equation etc
     fNu_1 = 3.66;
     fNu_2 = 1.615 * (fRe * fPr_m * (fD_Hydraulic/fLength)^(1/3));
-    if fConfig == 1 || fConfig == 3;
+    if fConfig == 1 || fConfig == 3
         fNu_3 = (2/(1 + 22 * fPr_m))^(1/6) * (fRe * fPr_m *...
                 (fD_Hydraulic/fLength)^(1/2));
     else
@@ -154,9 +154,14 @@ elseif fRe == 0
 %values of Reynolds and Prandtlnumber as well as some key data to simplify
 %debugging for the user    
 else
-    string = sprintf(' either the Reynolds or the Prandtl number are out of bounds. \n Reynolds is valid for Re < 10^6. The value is %d \n Prandtl is valid between 0.6 and 10^3. The value is %d \n the flow speed is: %d \n the kinematic viscosity is %d', fRe, fPr_m, fFlowSpeed, fKin_Visc_m);
-    disp(string)
-    error('no possible equation was found in convection_pipe, either Reynolds number or Prandtl number out of boundaries')
+    fprintf(['Either the Reynolds or the Prandtl number are out of bounds. \n', ...
+             'Reynolds is valid for Re < 10^6. The value is %d \n', ...
+             'Prandtl is valid between 0.6 and 10^3. The value is %d \n', ...
+             'The flow speed is: %d \n', ...
+             'The kinematic viscosity is %d\n'], ...
+             fRe, fPr_m, fFlowSpeed, fKin_Visc_m);
+
+    error('No possible equation was found in convection_pipe, either Reynolds number or Prandtl number out of bounds!')
 end
 
 if fConfig == 2 || fConfig == 3

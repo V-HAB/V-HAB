@@ -142,7 +142,7 @@ classdef branch < base & event.source
                 [ sStore, sPort ] = strtok(sLeft, '.');
                 
                 % Get store name from parent
-                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end;
+                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end
                 
                 % Get EXME port/proc ...
                 oPort = this.oContainer.toStores.(sStore).getThermalPort(sPort(2:end));
@@ -183,7 +183,7 @@ classdef branch < base & event.source
                 [ sStore, sPort ] = strtok(sRight, '.');
                 
                 % Get store name from parent
-                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end;
+                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end
                 
                 % Get EXME port/proc ...
                 oPort = this.oContainer.toStores.(sStore).getThermalPort(sPort(2:end));
@@ -259,25 +259,29 @@ classdef branch < base & event.source
                 rethrow(oErr);
             end
             
-            % Does this branch we are connecting to have any flow to flow
-            % processors?
-            if this.coBranches{2}.iConductors == 0
-                % Is the branch we are connecting to a pass-through branch?
-                if ~all(this.coBranches{2}.abIf)
-                    % Since this non-pass-through branch has no flow
-                    % processors, we can connect directly to the exme on
-                    % the right side of this branch. It can't be on the
-                    % left side, of course, since this is where the
-                    % interface is!
-                    oProc = this.coBranches{2}.coExmes{2};
-                else
-                    this.throw('Pass-through branches currently require at least one conductor processor. Branch %s has none.', this.coBranches{2}.sName);
-                end
-            else
-                oProc = this.coBranches{2}.coConductors{1};
-            end
-            
-            % To help with debugging, we now change this branch's sName
+            %CHECK This was copied over from the matter.branch. There it is
+            %used to determine to which EXME a matter.flow object needs to
+            %be added. This is not the case anymore, so we don't need it,
+            %right?
+%             % Does this branch we are connecting to have any flow to flow
+%             % processors?
+%             if this.coBranches{2}.iConductors == 0
+%                 % Is the branch we are connecting to a pass-through branch?
+%                 if ~all(this.coBranches{2}.abIf)
+%                     % Since this non-pass-through branch has no flow
+%                     % processors, we can connect directly to the exme on
+%                     % the right side of this branch. It can't be on the
+%                     % left side, of course, since this is where the
+%                     % interface is!
+%                     oProc = this.coBranches{2}.coExmes{2};
+%                 else
+%                     this.throw('Pass-through branches currently require at least one conductor processor. Branch %s has none.', this.coBranches{2}.sName);
+%                 end
+%             else
+%                 oProc = this.coBranches{2}.coConductors{1};
+%             end
+%             
+%             % To help with debugging, we now change this branch's sName
             % property to reflect the actual flow path between two exmes
             % that it models. First we split the branch name at the three
             % consecutive underscores '___' which delimit the left and
@@ -481,7 +485,7 @@ classdef branch < base & event.source
                 if ~isempty(this.coExmes{2})
                     
                     % One flow proc less than flows
-                    this.coConductors = { this.coConductors{1:(this.iIfConductors)}, coRightSideConductors{:} };
+                    this.coConductors = [ {this.coConductors{1:(this.iIfConductors)}}, coRightSideConductors(:)' ];
                     
                     this.iConductors = length(this.coConductors);
                     

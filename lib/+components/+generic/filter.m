@@ -64,7 +64,7 @@ classdef filter < matter.procs.p2ps.flow
             %
             % Cannot be used if manip exists in phase!
             
-            if (nargin < 2) || isempty(sPhase), sPhase = 'in'; end;
+            if (nargin < 2) || isempty(sPhase), sPhase = 'in'; end
             
             iSubstance  = this.oMT.tiN2I.(this.sSubstance);
             rFilterLoad = sif(this.fCapacity == 0, 1, this.oOut.oPhase.afMass(iSubstance) / this.fCapacity);
@@ -132,7 +132,7 @@ classdef filter < matter.procs.p2ps.flow
             % instead of afMass(X), btw) to determine load.
             this.rLoad = this.oOut.oPhase.afMass(iSpecies) / this.fCapacity;
             
-            if this.fCapacity == 0, this.rLoad = 1; end;
+            if this.fCapacity == 0, this.rLoad = 1; end
             
             %this.rLoad = 0;
             
@@ -180,12 +180,12 @@ classdef filter < matter.procs.p2ps.flow
         
         function update(this)
             
-            if ~base.oLog.bOff, this.out(1, 1, 'set-fr', 'p2p update flowrate of %s', { this.sName }); end;
+            if ~base.oLog.bOff, this.out(1, 1, 'set-fr', 'p2p update flowrate of %s', { this.sName }); end
             %keyboard();
             [ afFlowRate, aarPartials ] = this.getInFlows();
             
             
-            [ fFlowRate, arExtractPartialsTmp ] = this.calculateFilterRate(afFlowRate, aarPartials);
+            [ fFlowRate, ~ ] = this.calculateFilterRate(afFlowRate, aarPartials);
             
             
             % Test ...

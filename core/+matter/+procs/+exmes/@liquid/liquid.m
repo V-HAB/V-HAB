@@ -1,4 +1,5 @@
 classdef liquid < matter.procs.exme
+    %LIQUID An EXME that interfaces with a liquid phase
     
     properties (SetAccess = protected, GetAccess = public)
 

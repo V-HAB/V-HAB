@@ -80,8 +80,8 @@ for iC = 1:length(csCircuits)
     end
     
     % Components
-    for iC = 1:length(oCircuit.aoComponents)
-        oComponent = oCircuit.aoComponents(iC);
+    for iComponent = 1:length(oCircuit.aoComponents)
+        oComponent = oCircuit.aoComponents(iComponent);
         sComponentPath = [ sCircuitPath, '.toComponents.', oComponent.sName ];
         
         % Capacitors

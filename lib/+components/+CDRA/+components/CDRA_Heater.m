@@ -54,7 +54,7 @@ classdef CDRA_Heater < base
             mbInFlows = zeros(iNumberOfExmes,1);
             for iK = 1:iNumberOfExmes
                 fFlowRateEXME = this.oFlowPhase.coProcsEXME{iK}.oFlow.fFlowRate * this.oFlowPhase.coProcsEXME{iK}.iSign;
-                if (fFlowRateEXME > 0) && ~this.oFlowPhase.coProcsEXME{iK}.bFlowIsAProcP2P;
+                if (fFlowRateEXME > 0) && ~this.oFlowPhase.coProcsEXME{iK}.bFlowIsAProcP2P
                     mbInFlows(iK) = true;
                 end
             end

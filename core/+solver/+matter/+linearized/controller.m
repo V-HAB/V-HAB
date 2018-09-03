@@ -29,7 +29,7 @@ classdef controller < base
     
     methods (Access = protected)
         function registerUpdate(this, ~)
-            if this.bRegisteredOutdated, return; end;
+            if this.bRegisteredOutdated, return; end
             
             this.aoBranches(1).oTimer.bindPostTick(@this.update, -3);
             this.bRegisteredOutdated = true;
@@ -101,7 +101,7 @@ classdef controller < base
                 end
                 
                 
-                fCoeffsSum = sum(afCoeffs);
+                %fCoeffsSum = sum(afCoeffs);
                 csEquation = cell(1, oP.iProcsEXME);
                 
                 for iE = 1:oP.iProcsEXME
@@ -115,10 +115,10 @@ classdef controller < base
                 sEquation = '@(afPressuresNew) 0';
                 
                 for iS = 1:length(csEquation)
-                    sEquation = [ sEquation '+' csEquation{iS} ];
+                    sEquation = strcat(sEquation, '+', csEquation{iS});
                 end
                 
-                sEquation = [ sEquation ';' ];
+                sEquation = strcat(sEquation, ';' );
                 
                 cPressureCalc{iP, 1} = eval(sEquation);
                 cPressureCalc{iP, 2} = afCoeffs;
@@ -155,7 +155,7 @@ classdef controller < base
                 end
                 
                 
-                if iIteration > 10,
+                if iIteration > 10
                     keyboard();
                 end
             end

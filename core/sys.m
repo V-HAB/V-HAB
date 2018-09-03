@@ -177,8 +177,10 @@ classdef sys < base & event.source
             
             % Easiest way just try/catch ...
             try
-                if ischar(xIndex), oChild = this.toChildren.(xIndex);
-                else               oChild = this.toChildren.(this.csChildren{xIndex});
+                if ischar(xIndex)
+                    oChild = this.toChildren.(xIndex);
+                else
+                    oChild = this.toChildren.(this.csChildren{xIndex});
                 end
             catch %#ok<CTCH>
                 oChild = [];

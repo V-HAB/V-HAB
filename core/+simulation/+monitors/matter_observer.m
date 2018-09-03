@@ -13,8 +13,10 @@ classdef matter_observer < simulation.monitor
         mfTotalMass = [];
         mfLostMass  = [];
         
-        % Refernces to all phases in the simulation
+        % References to all phases in the simulation
         aoPhases   = [];
+        
+        % References to all branches in the simulation
         aoBranches = [];
         
         % References to all flows in the simulation

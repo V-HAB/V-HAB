@@ -18,7 +18,7 @@ function fLiterPerMin = SLM(oFlow, bSTP)
 %   - bSTP      Get temperature and pressure from flow, or use STP values?
 %               NOTE: default is TRUE!
 
-if nargin < 2, bSTP = true; end;
+if nargin < 2, bSTP = true; end
 
 if ~isa(oFlow, 'matter.flow')
     % Has to be an instance of matter.flow OR a struct containing all

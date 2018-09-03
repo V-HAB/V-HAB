@@ -25,14 +25,10 @@ classdef monitor < base & event.source
     end
     
     methods
-        function this = monitor(oSimulationInfrastructure, csEvents) %tsEvents)
+        function this = monitor(oSimulationInfrastructure, csEvents)
             this.oSimulationInfrastructure = oSimulationInfrastructure;
             
-%             if nargin >= 2 && isstruct(tsEvents)
-%                 this.tsEvents = tools.struct.mergeStructs(this.tsEvents, tsEvents);
-%             end
-            
-            if nargin >= 2, this.csEvents = csEvents; end;
+            if nargin >= 2, this.csEvents = csEvents; end
             
             
             %TODO
@@ -46,13 +42,11 @@ classdef monitor < base & event.source
     
     methods (Access = protected)
         function initializeEvents(this)
-            %csEvents = fieldnames(this.tsEvents);
-            
             
             for iE = 1:length(this.csEvents)
                 sEvent = this.csEvents{iE};
                 
-                if isempty(sEvent), continue; end;
+                if isempty(sEvent), continue; end
                 
                 % Stupid Matlab ... @this.(sMethod) does not work but using
                 % the shorthand saves a lot of exec time! So ... eval!
@@ -69,31 +63,31 @@ classdef monitor < base & event.source
     methods (Access = protected)
         
         % Placeholder methods
-        function onInitPre(this, ~)
+        function onInitPre(this, ~) %#ok<INUSD>
 
         end
 
-        function onInitPost(this, ~)
+        function onInitPost(this, ~) %#ok<INUSD>
 
         end
 
-        function onTickPre(this, ~)
+        function onTickPre(this, ~) %#ok<INUSD>
 
         end
 
-        function onTickPost(this, ~)
+        function onTickPost(this, ~) %#ok<INUSD>
 
         end
 
-        function onPause(this, ~)
+        function onPause(this, ~) %#ok<INUSD>
 
         end
 
-        function onFinish(this, ~)
+        function onFinish(this, ~) %#ok<INUSD>
 
         end
 
-        function onRun(this, ~)
+        function onRun(this, ~) %#ok<INUSD>
 
         end
         

@@ -35,9 +35,9 @@ function [ cParams, sDefaultPhase ] = MarsOneAtmosphere(oStore, fVolume, fTemper
 
     % Check input arguments, set default
     %TODO for fTemp, rRH, fPress -> key/value pairs?
-    if nargin < 3 || isempty(fTemperature), fTemperature = 291.15; end;
-    if nargin < 4 || isempty(rRH),          rRH          = 0.43;      end;
-    if nargin < 5 || isempty(fPressure),    fPressure    = 70330; end;
+    if nargin < 3 || isempty(fTemperature), fTemperature = 291.15; end
+    if nargin < 4 || isempty(rRH),          rRH          = 0.43;   end
+    if nargin < 5 || isempty(fPressure),    fPressure    = 70330;  end
 
     if rRH
         % Calculation of the saturation vapour pressure
