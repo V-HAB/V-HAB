@@ -659,7 +659,7 @@ classdef CDRA < vsys
 %             this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2.oHandler.setPositiveFlowDirection(false);
             
             tSolverProperties.fMaxError = 1e-3;
-            tSolverProperties.iMaxIterations = 200;
+            tSolverProperties.iMaxIterations = 500;
             tSolverProperties.fMinimumTimeStep = 1;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
 

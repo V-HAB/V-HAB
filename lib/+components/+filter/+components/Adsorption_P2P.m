@@ -72,7 +72,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         end
         
         function update(~)
-        
+            
         end
         
         function calculateFilterRate(this, afInFlowRates, aarInPartials)
@@ -103,6 +103,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % the partial pressures
                 afPP = zeros(1, this.oMT.iSubstances);
                 
+                afMassAbsorber(afMassAbsorber < 1e-5) = 0;
+                
                 % For this case there are no minimum outflows, there would
                 % be minimum partial pressures that can be reach, e.g.
                 % maximum time steps
@@ -114,9 +116,11 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 else
                     this.afPartialInFlows = zeros(1,this.oMT.iSubstances);
                 end
-                afCurrentMolsIn     = (this.afPartialInFlows ./ this.oMT.afMolarMass);
-                arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
-                afPP                = arFractions .*  fPressure;
+%                 afCurrentMolsIn     = (this.afPartialInFlows ./ this.oMT.afMolarMass);
+%                 arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
+%                 afPP                = arFractions .*  fPressure;
+
+                afPP                = this.oIn.oPhase.afPP;
                 afPP((afPP < 2.5) & this.mbIgnoreSmallPressures) = 0;
             end
             

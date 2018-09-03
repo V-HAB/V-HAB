@@ -257,8 +257,8 @@ classdef CCAA < vsys
             createSolverStructure@vsys(this);
             % Creating the flowpath into this subsystem
             solver.matter.manual.branch(this.toBranches.CCAA_In_FromCabin);
-            solver.matter.residual.branch(this.toBranches.TCCV_CHX);
-            solver.matter.manual.branch(this.toBranches.TCCV_Cabin);
+            solver.matter.residual.branch(this.toBranches.TCCV_Cabin);
+            solver.matter.manual.branch(this.toBranches.TCCV_CHX);
             solver.matter.manual.branch(this.toBranches.Condensate_Out);
             solver.matter.manual.branch(this.toBranches.Coolant_In);
             solver.matter.manual.branch(this.toBranches.Coolant_Out);
@@ -306,9 +306,7 @@ classdef CCAA < vsys
             % Gets the two flow rates exiting the TCCV
             fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
 
-            this.toBranches.TCCV_Cabin.oHandler.setFlowRate((fInFlow+fInFlow2) - fTCCV_To_CHX_FlowRate);
-
-            this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
+            this.toBranches.TCCV_CHX.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
             
             if this.bActive == 1
                 %% Setting of initial flow rates
@@ -332,6 +330,7 @@ classdef CCAA < vsys
                     arMaxChange(this.oMT.tiN2I.H2O) = 0.05;
                     arMaxChange(this.oMT.tiN2I.CO2) = 0.75;
                     tTimeStepProperties.arMaxChange = arMaxChange;
+                    tTimeStepProperties.rMaxChange = 0.01;
                     
                     oPhase.setTimeStepProperties(tTimeStepProperties);
                 end

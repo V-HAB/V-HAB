@@ -481,6 +481,34 @@ classdef branch < base & event.source
             this.csVariablePressurePhases = this.poVariablePressurePhases.keys();
             this.csObjUuidsToColIndex     = this.piObjUuidsToColIndex.keys();
             this.csBoundaryPhases         = this.poBoundaryPhases.keys();
+            
+            % We bind the solver update to the post update of normal phases
+            % connected to gas flow nodes in the solver. This is necessary
+            % to update the solver (and with it the p2p) in case the mass
+            % in the normal phase changed and an update is triggered.
+            % Otherwise it is possible that the solver is not recalculated
+            % and a wrong P2P flowrate is used.
+            for iVariablePressurePhase = 1:length(this.csVariablePressurePhases)
+                
+                oPhase = this.poVariablePressurePhases(this.csVariablePressurePhases{iVariablePressurePhase});
+                
+                for iExme = 1:oPhase.iProcsEXME
+                    
+                    oExme = oPhase.coProcsEXME{iExme};
+                    if oExme.bFlowIsAProcP2P
+                        if oPhase.coProcsEXME{iExme}.oFlow.oIn ~= oExme
+                            oOtherPhase = oExme.oFlow.oIn.oPhase;
+                        else
+                            oOtherPhase = oExme.oFlow.oOut.oPhase;
+                        end
+                        if ~oOtherPhase.bFlow
+                            oOtherPhase.bind('update_post', @this.registerUpdate);
+                        end
+                        
+%                         oExme.oFlow.bind('update_MultiSolver', @this.registerUpdate);
+                    end
+                end
+            end
         end
         
         
@@ -586,13 +614,15 @@ classdef branch < base & event.source
                 fFrSum = 0;
                 iAdded = 0;
                 
+                miBranches = zeros(oP.iProcsEXME,1);
+                
+                bExternalBranch = false;
                 % Connected branches - col indices in matrix
                 for iB = 1:oP.iProcsEXME
                     % P2ps definitely not sovled by this solver.
                     if isa(oP.coProcsEXME{iB}.oFlow, 'matter.procs.p2p')
                         continue;
                     end
-
                     
                     oB = oP.coProcsEXME{iB}.oFlow.oBranch;
                     
@@ -607,18 +637,21 @@ classdef branch < base & event.source
                     if ~this.piObjUuidsToColIndex.isKey(oB.sUUID)
                         fFrSum = fFrSum - iSign * oB.fFlowRate;
                         if oB.fFlowRate ~= 0
-                            this.mbExternalBoundaryBranches(iB) = true;
-                        else
-                            this.mbExternalBoundaryBranches(iB) = false;
+                            bExternalBranch = true;
                         end
                     else
+                        miBranches(iB) = find(this.aoBranches == oB);
+
                         iCol = this.piObjUuidsToColIndex(oB.sUUID);
                         
                         aafPhasePressuresAndFlowRates(iRow, iCol) = iSign;
                         iAdded = iAdded + 1;        
                     end
                 end
-                
+                if bExternalBranch
+                    miBranches(miBranches == 0) = [];
+                    this.mbExternalBoundaryBranches(miBranches) = true;
+                end
                 % Now go through the P2Ps and get their flowrates
                 if oP.iProcsP2Pflow > 0
                     for iProcP2P = 1:oP.iProcsEXME
@@ -1053,129 +1086,134 @@ classdef branch < base & event.source
                         % partial masses are set correctly for this to
                         % work!
                         if fFlowRate < 0
-                            oCurrentProcExme = oCurrentBranch.coExmes{1};
+                            coCurrentProcExme = oCurrentBranch.coExmes(1);
+                        elseif fFlowRate > 0
+                            coCurrentProcExme = oCurrentBranch.coExmes(2);
                         else
-                            oCurrentProcExme = oCurrentBranch.coExmes{2};
+                            coCurrentProcExme = oCurrentBranch.coExmes;
                         end
                         
-                        oPhase = oCurrentProcExme.oPhase;
+                        % if the flowrate is zero we update both phases, to
+                        % be sure to update all P2Ps
+                        for iPhase = 1:length(coCurrentProcExme)
+                            oPhase = coCurrentProcExme{iPhase}.oPhase;
                         
-                        iInflowBranches = 0;
-                        
-                        afInFlowRates = zeros(oPhase.iProcsEXME + oPhase.iProcsP2Pflow, 1);
-                        aarInPartials = zeros(oPhase.iProcsEXME + oPhase.iProcsP2Pflow, this.oMT.iSubstances);
-                        for iExme = 1:oPhase.iProcsEXME
-                            
-                            oProcExme = oPhase.coProcsEXME{iExme};
-                            
-                            % at first skip the P2Ps, we first have to
-                            % calculate all flowrates except for the P2Ps,
-                            % then calculate the P2Ps and then consider the
-                            % necessary changes made by the P2P
-                            if oProcExme.bFlowIsAProcP2P
-                                continue;
-                            end
-                            
-                            oBranch = oProcExme.oFlow.oBranch;
-                            
-                            % If the branch is not part of this network
-                            % solver consider it as constant boundary
-                            % flowrate. TO DO: check this condition!
-                            if ~this.piObjUuidsToColIndex.isKey(oBranch.sUUID)
-                                [ fFlowRate, arFlowPartials, ~ ] = oProcExme.getFlowData();
+                            iInflowBranches = 0;
 
-                            % Dynamically solved branch - get CURRENT flow rate
-                            % (last iteration), not last time step flow rate!!
-                            else
+                            afInFlowRates = zeros(oPhase.iProcsEXME + oPhase.iProcsP2Pflow, 1);
+                            aarInPartials = zeros(oPhase.iProcsEXME + oPhase.iProcsP2Pflow, this.oMT.iSubstances);
+                            for iExme = 1:oPhase.iProcsEXME
 
-                                % Find branch index
-                                iBranchIdx = find(this.aoBranches == oBranch, 1);
+                                oProcExme = oPhase.coProcsEXME{iExme};
 
-                                fFlowRate = oProcExme.iSign * this.afFlowRates(iBranchIdx);
-                                
-                                if fFlowRate > 0
-                                    if this.afFlowRates(iBranchIdx) >= 0
-                                        arFlowPartials = oBranch.coExmes{1}.oPhase.arPartialMass;
-                                    else
-                                        arFlowPartials = oBranch.coExmes{2}.oPhase.arPartialMass;
+                                % at first skip the P2Ps, we first have to
+                                % calculate all flowrates except for the P2Ps,
+                                % then calculate the P2Ps and then consider the
+                                % necessary changes made by the P2P
+                                if oProcExme.bFlowIsAProcP2P
+                                    continue;
+                                end
+
+                                oBranch = oProcExme.oFlow.oBranch;
+
+                                % If the branch is not part of this network
+                                % solver consider it as constant boundary
+                                % flowrate. TO DO: check this condition!
+                                if ~this.piObjUuidsToColIndex.isKey(oBranch.sUUID)
+                                    [ fFlowRate, arFlowPartials, ~ ] = oProcExme.getFlowData();
+
+                                % Dynamically solved branch - get CURRENT flow rate
+                                % (last iteration), not last time step flow rate!!
+                                else
+
+                                    % Find branch index
+                                    iBranchIdx = find(this.aoBranches == oBranch, 1);
+
+                                    fFlowRate = oProcExme.iSign * this.afFlowRates(iBranchIdx);
+
+                                    if fFlowRate > 0
+                                        if this.afFlowRates(iBranchIdx) >= 0
+                                            arFlowPartials = oBranch.coExmes{1}.oPhase.arPartialMass;
+                                        else
+                                            arFlowPartials = oBranch.coExmes{2}.oPhase.arPartialMass;
+                                        end
                                     end
                                 end
+
+                                % Only for INflows
+                                if fFlowRate > 0
+                                    iInflowBranches = iInflowBranches + 1;
+                                    afInFlowRates(iExme, 1) = fFlowRate;
+                                    aarInPartials(iExme, :) = arFlowPartials;
+                                end
                             end
 
-                            % Only for INflows
-                            if fFlowRate > 0
-                                iInflowBranches = iInflowBranches + 1;
-                                afInFlowRates(iExme, 1) = fFlowRate;
-                                aarInPartials(iExme, :) = arFlowPartials;
-                            end
-                        end
-                        
-                        if oPhase.bFlow
+                            if oPhase.bFlow
 
-                            % Now we have all inflows (except for P2Ps) for the
-                            % current phase, with these values we can now
-                            % update the current partial masses and flowrates
-                            % for the current phase (oPhase) without P2Ps and
-                            % then calculate the P2P flowrates based on this
-                            if isempty(afInFlowRates)
-                                oPhase.updatePartials(zeros(1,this.oMT.iSubstances));
-                            else
-                                oPhase.updatePartials(afInFlowRates .* aarInPartials);
-                            end
+                                % Now we have all inflows (except for P2Ps) for the
+                                % current phase, with these values we can now
+                                % update the current partial masses and flowrates
+                                % for the current phase (oPhase) without P2Ps and
+                                % then calculate the P2P flowrates based on this
+                                if isempty(afInFlowRates)
+                                    oPhase.updatePartials(zeros(1,this.oMT.iSubstances));
+                                else
+                                    oPhase.updatePartials(afInFlowRates .* aarInPartials);
+                                end
 
-                            % TO DO: for another value as in every tick the
-                            % calculation of the flowrates in case it is
-                            % below zero must be changed but during testing
-                            % sometimes lead to osciallating P2P flowrates,
-                            % maybe the overall network update could be
-                            % repeated with bForceP2P = true?
-                            % Also allow the user to set this value? Write
-                            % a setSolverProperties function, similar to
-                            % the setTimeStep function of the phase to set
-                            % this value and the maximum number of
-                            % iterations, as well as the max Error for the
-                            % iterative solution
-                            if (mod(this.iIteration, this.iIterationsBetweenP2PUpdate) == 0) || bForceP2Pcalc
+                                % TO DO: for another value as in every tick the
+                                % calculation of the flowrates in case it is
+                                % below zero must be changed but during testing
+                                % sometimes lead to osciallating P2P flowrates,
+                                % maybe the overall network update could be
+                                % repeated with bForceP2P = true?
+                                % Also allow the user to set this value? Write
+                                % a setSolverProperties function, similar to
+                                % the setTimeStep function of the phase to set
+                                % this value and the maximum number of
+                                % iterations, as well as the max Error for the
+                                % iterative solution
+                                if bForceP2Pcalc
+                                    for iProcP2P = 1:oPhase.iProcsP2Pflow
+                                        oProcP2P = oPhase.coProcsP2Pflow{iProcP2P};
+
+                                        % Update the P2P! (not with update function
+                                        % because that is also called at different
+                                        % other times!
+                                        oProcP2P.calculateFilterRate(afInFlowRates, aarInPartials);
+                                    end
+                                end
+
                                 for iProcP2P = 1:oPhase.iProcsP2Pflow
                                     oProcP2P = oPhase.coProcsP2Pflow{iProcP2P};
-
-                                    % Update the P2P! (not with update function
-                                    % because that is also called at different
-                                    % other times!
-                                    oProcP2P.calculateFilterRate(afInFlowRates, aarInPartials);
+                                    % Get partial flow rates, not only total
+                                    % flowrates. Then this can be used to update
+                                    % the overall partial mass of the current
+                                    % phase! Also decide the sign by checking the
+                                    % oIn Phase, if the oIn Phase is the current
+                                    % phase, a positive flowrate represents an
+                                    % outflow, otherwise it is an inflow. For P2Ps
+                                    % both must be considered, but there should be
+                                    % no individual partial flowrate that is larger
+                                    % than the total inflows (so the lowest overall
+                                    % value for the inflows is 0)
+                                    if oProcP2P.oIn.oPhase == oPhase
+                                        afInFlowRates(oPhase.iProcsEXME + iProcP2P, 1) = -oProcP2P.fFlowRate;
+                                    else
+                                        afInFlowRates(oPhase.iProcsEXME + iProcP2P, 1) = oProcP2P.fFlowRate;
+                                    end
+                                    aarInPartials(oPhase.iProcsEXME + iProcP2P, :) = oProcP2P.arPartialMass;
                                 end
-                            end
 
-                            for iProcP2P = 1:oPhase.iProcsP2Pflow
-                                oProcP2P = oPhase.coProcsP2Pflow{iProcP2P};
-                                % Get partial flow rates, not only total
-                                % flowrates. Then this can be used to update
-                                % the overall partial mass of the current
-                                % phase! Also decide the sign by checking the
-                                % oIn Phase, if the oIn Phase is the current
-                                % phase, a positive flowrate represents an
-                                % outflow, otherwise it is an inflow. For P2Ps
-                                % both must be considered, but there should be
-                                % no individual partial flowrate that is larger
-                                % than the total inflows (so the lowest overall
-                                % value for the inflows is 0)
-                                if oProcP2P.oIn.oPhase == oPhase
-                                    afInFlowRates(oPhase.iProcsEXME + iProcP2P, 1) = -oProcP2P.fFlowRate;
+                                % Now the phase is updated again this time with the
+                                % partial flowrates of the P2Ps as well!
+                                if isempty(afInFlowRates)
+                                    oPhase.updatePartials(zeros(1,this.oMT.iSubstances));
                                 else
-                                    afInFlowRates(oPhase.iProcsEXME + iProcP2P, 1) = oProcP2P.fFlowRate;
+                                    oPhase.updatePartials(afInFlowRates .* aarInPartials);
                                 end
-                                aarInPartials(oPhase.iProcsEXME + iProcP2P, :) = oProcP2P.arPartialMass;
-                            end
-
-                            % Now the phase is updated again this time with the
-                            % partial flowrates of the P2Ps as well!
-                            if isempty(afInFlowRates)
-                                oPhase.updatePartials(zeros(1,this.oMT.iSubstances));
-                            else
-                                oPhase.updatePartials(afInFlowRates .* aarInPartials);
                             end
                         end
-                        
                         mbBranchUpdated(iB) = true;
                     end
                 end
@@ -1254,7 +1292,13 @@ classdef branch < base & event.source
             % calls for p2p updates) and the solver is recalculated with
             % the new p2p flows. This is repeated again until the solver
             % reaches overall convergence
-            this.bFinalLoop = false;
+            % Initially true so that in the first tick the matrices are
+            % calculated!
+            this.bFinalLoop = true;
+            
+            % parameters necessary in case the P2P flowrates oscillate
+            iP2PUpdates = 0;
+            bP2POscillationDetected = false;
             
             % These values are only used for debugging. Therefore they are
             % also initialized with nans (as nans are ignored during
@@ -1266,7 +1310,7 @@ classdef branch < base & event.source
                 this.iIteration = this.iIteration + 1;
                 
                 % if we have reached convergence recalculate the p2ps
-                if this.bFinalLoop 
+                if this.bFinalLoop || (mod(this.iIteration, this.iIterationsBetweenP2PUpdate) == 0) || bP2POscillationDetected
                     bForceP2PUpdate = true;
                 else
                     bForceP2PUpdate = false;
@@ -1278,11 +1322,36 @@ classdef branch < base & event.source
                 % network is rebuilt to ensure that the correct solution is
                 % reached. Otherwise we only update the pressure drop
                 % coefficients in the exisiting matrices
-                if this.iIteration == 1 || this.bFinalLoop
+                if bForceP2PUpdate
                     % Regenerates matrices, gets coeffs from flow procs
                     [ aafFullPhasePressuresAndFlowRates, afFullBoundaryConditions ] = this.generateMatrices(bForceP2PUpdate);
                     aafPhasePressuresAndFlowRates = aafFullPhasePressuresAndFlowRates;
                     afBoundaryConditions = afFullBoundaryConditions;
+                    
+                    % The p2ps are only updated once at the beginning and after the
+                    % solver converged (to reduce the calculation time for more
+                    % extensive P2P calculations, can be overwritten by the user).
+                    % However, the disadvantage of this is that oscillations can
+                    % occur in certain cases. These osciallations are detected by
+                    % the algorithm, which then activates the update of P2Ps in
+                    % every tick once necessary
+                    iP2PUpdates = iP2PUpdates + 1;
+                    
+                    iStartZeroSumEquationsFull = length(afFullBoundaryConditions) - length(this.csVariablePressurePhases)+1;
+                    afP2PFlowsHelper = afFullBoundaryConditions(iStartZeroSumEquationsFull:end)';
+                    afP2PFlows(iP2PUpdates, 1:length(afP2PFlowsHelper)) = afP2PFlowsHelper;
+                    
+                    if ~bP2POscillationDetected && iP2PUpdates > 3
+                        afP2PDiffLastCalc   = afP2PFlows(iP2PUpdates,:)   - afP2PFlows(iP2PUpdates-1,:);
+                        afP2PDiff1          = afP2PFlows(iP2PUpdates,:)   - afP2PFlows(iP2PUpdates-2,:);
+                        afP2PDiff2          = afP2PFlows(iP2PUpdates-1,:) - afP2PFlows(iP2PUpdates-3,:);
+                        
+                        if ~ bP2POscillationDetected && (any(afP2PDiffLastCalc > (afP2PDiff1 * 100)) || any((afP2PDiffLastCalc > (afP2PDiff2 * 100))))
+                            % If this is true the P2Ps are recalculated in
+                            % every tick
+                            bP2POscillationDetected = true;
+                        end
+                    end
                     
                 else
                     [aafPhasePressuresAndFlowRates, afBoundaryConditions] = this.updatePressureDropCoefficients(aafFullPhasePressuresAndFlowRates, afFullBoundaryConditions);
@@ -1364,8 +1433,6 @@ classdef branch < base & event.source
                 % branch update order in flow direction
                 iStartZeroSumEquations = length(afBoundaryConditions) - length(this.csVariablePressurePhases)+1;
                 
-                afP2PFlowsHelper = afBoundaryConditions(iStartZeroSumEquations:end)';
-                afP2PFlows(this.iIteration, 1:length(afP2PFlowsHelper)) = afP2PFlowsHelper;
                 %aafPhasePressuresAndFlowRates = tools.round.prec(aafPhasePressuresAndFlowRates, this.oTimer.iPrecision);
                 %afBoundaryConditions          = tools.round.prec(afBoundaryConditions,          this.oTimer.iPrecision);
 
@@ -1478,6 +1545,9 @@ classdef branch < base & event.source
                     this.afFlowRates(iB) = afResults(iColumn);
                 end
             end
+            % We have to reupdate this as well to calculate the P2P
+            % flowrates with the final results
+            this.generateMatrices();
             
             % However, in the desorption case it is still possible that now
             % mass is put into the flow nodes. To solve this either the
@@ -1502,7 +1572,11 @@ classdef branch < base & event.source
                 end
             end
             % Ok now go through results - variable pressure phase pressures
-            % and branch flow rates - and set!
+            % and branch flow rates - and set! This must be done in the
+            % update order of the branches to ensure that the variable
+            % pressure phase have already inflows, otherwise it is possible
+            % that nothing flows because the arPartialMass values of the
+            % flow nodes are still 0
             
             for iBL = 1:this.iBranchUpdateLevels 
                 
@@ -1555,10 +1629,17 @@ classdef branch < base & event.source
                         if isempty(this.tBoundaryConnection.(csBoundaries{iBoundaryLeft}))
                             continue
                         else
-                            coRightSide = this.tBoundaryConnection.(csBoundaries{iBoundaryLeft});
+                            try
+                                coRightSide = this.tBoundaryConnection.(csBoundaries{iBoundaryLeft});
 
-                            oLeftBoundary = this.poBoundaryPhases(csBoundaries{iBoundaryLeft});
+                                oLeftBoundary = this.poBoundaryPhases(csBoundaries{iBoundaryLeft});
 
+                            catch
+                                continue
+                            end
+                            if isempty(oLeftBoundary) || isempty(coRightSide)
+                                continue
+                            end
                             for iBoundaryRight = 1:length(coRightSide)
                                 oRightBoundary = coRightSide{iBoundaryRight};
 

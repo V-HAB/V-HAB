@@ -121,28 +121,27 @@ classdef gas < matter.phase
                 % to ensure that flow phases set the correct values and do
                 % not confuse the user, a seperate calculation for them is
                 % necessary
-                afPartialMassFlow_P2P   = zeros(this.iProcsEXME, this.oMT.iSubstances);
-                afPP_In                 = zeros(this.iProcsEXME, this.oMT.iSubstances);
                 afPartialMassFlow_In    = zeros(this.iProcsEXME, this.oMT.iSubstances);
                 
                 for iExme = 1:this.iProcsEXME
-                    if this.coProcsEXME{iExme}.bFlowIsAProcP2P
-                        afPartialMassFlow_P2P(iExme,:)      = this.coProcsEXME{iExme}.oFlow.arPartialMass .* (this.coProcsEXME{iExme}.iSign * this.coProcsEXME{iExme}.oFlow.fFlowRate);
-                    else
-                        
-                        fFlowRate = this.coProcsEXME{iExme}.iSign * this.coProcsEXME{iExme}.oFlow.fFlowRate;
-                        if fFlowRate > 0
-                            afPP_In(iExme,:)                = this.oMT.calculatePartialPressures(this.coProcsEXME{iExme}.oFlow);
-                            afPartialMassFlow_In(iExme,:)   = this.coProcsEXME{iExme}.oFlow.arPartialMass .* fFlowRate;
-                        end
+                    fFlowRate = this.coProcsEXME{iExme}.iSign * this.coProcsEXME{iExme}.oFlow.fFlowRate;
+                    if fFlowRate > 0
+                        afPartialMassFlow_In(iExme,:)   = this.coProcsEXME{iExme}.oFlow.arPartialMass .* fFlowRate;
                     end
                 end
-                
-                afPartialPressure = sum(afPP_In .* afPartialMassFlow_In, 1) ./ sum(afPartialMassFlow_In,1);
-                afPartialPressure = afPartialPressure .* ((sum(afPartialMassFlow_P2P,1) + sum(afPartialMassFlow_In,1)) ./ sum(afPartialMassFlow_In,1));
+                % See ideal gas mixtures for information on this
+                % calculation: "Ideally the ratio of partial pressures
+                % equals the ratio of the number of molecules. That is, the
+                % mole fraction of an individual gas component in an ideal
+                % gas mixture can be expressed in terms of the component's
+                % partial pressure or the moles of the component"
+                afCurrentMolsIn     = (sum(afPartialMassFlow_In,1) ./ this.oMT.afMolarMass);
+                arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
+                afPartialPressure   = arFractions .*  this.fPressure;
                 
                 afPartialPressure(isnan(afPartialPressure)) = 0;
                 afPartialPressure(afPartialPressure < 0 ) = 0;
+                
                 this.afPP = afPartialPressure;
                 
                 if this.afPP(this.oMT.tiN2I.H2O)
