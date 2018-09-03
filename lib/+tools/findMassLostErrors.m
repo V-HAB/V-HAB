@@ -3,13 +3,12 @@ function [ ] = findMassLostErrors( oLastSimObj )
 % with the highest mass balance errors. Uses oLastSimObj as input
 
     %% Highest Mass Loss
-    afMassLost_in_Phases = reshape([ oLastSimObj.oSimulationContainer.oMT.aoPhases.afMassLost ], oLastSimObj.oSimulationContainer.oMT.iSubstances, []);
+    aoPhases = oLastSimObj.toMonitors.oMatterObserver.aoPhases;
+    afMassLost_in_Phases = reshape([ aoPhases.afMassLost ], oLastSimObj.oSimulationContainer.oMT.iSubstances, []);
 
     fMassLost_in_Phases = sum(afMassLost_in_Phases);
 
     miMaxLostIndices = find(fMassLost_in_Phases == max(fMassLost_in_Phases));
-
-    aoPhases = oLastSimObj.oSimulationContainer.oMT.aoPhases;
     
     disp(' ')
     disp('The highest mass losses occured in:') 

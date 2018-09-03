@@ -52,6 +52,8 @@ classdef setup_complex < simulation.infrastructure
             oLog.addValue('Example:c:CCAA:s:CHX.toPhases.CHX_PhaseIn',      'this.fMass * this.fMassToPressure',        'Pa',   'Pressure CHX');
             oLog.addValue('Example:c:CCAA:s:TCCV.toPhases.TCCV_PhaseGas',  	'fTemperature',                             'K',    'Temperature TCCV');
             oLog.addValue('Example:c:CCAA:s:TCCV.toPhases.TCCV_PhaseGas',  	'this.fMass * this.fMassToPressure',    	'Pa',   'Pressure TCCV');
+            oLog.addValue('Example:c:CCAA:s:TCCV.toPhases.TCCV_PhaseGas',  	'afPP(this.oMT.tiN2I.H2O)',                 'Pa',   'Partial Pressure H2O TCCV');
+            oLog.addValue('Example:c:CCAA:s:TCCV.toPhases.TCCV_PhaseGas',  	'afPP(this.oMT.tiN2I.CO2)',                 'Pa',   'Partial Pressure CO2 TCCV');
             oLog.addValue('Example:c:CCAA:s:CHX.toProcsP2P.CondensingHX',   'fFlowRate',                                'kg/s', 'Condensate Flowrate CHX');
             
             iCellNumber13x = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Zeolite13x.iCellNumber;
@@ -276,6 +278,8 @@ classdef setup_complex < simulation.infrastructure
             coPlot{2,3} = oPlotter.definePlot(csNormalPhasePressures, 'Phase Pressures of Non-Flow Phases');
             coPlot{3,1} = oPlotter.definePlot({'"Temperature CHX"', '"Temperature TCCV"'}, 'Temperatures in CHX');
             coPlot{3,2} = oPlotter.definePlot({'"Pressure CHX"', '"Pressure TCCV"'}, 'Pressure in CHX');
+            coPlot{3,3} = oPlotter.definePlot({'"Partial Pressure H2O TCCV"', '"Partial Pressure CO2 TCCV"'}, 'Partial Pressure H2O and CO2 TCCV');
+            
             oPlotter.defineFigure(coPlot,  'Plots');
             
             oPlotter.plot();

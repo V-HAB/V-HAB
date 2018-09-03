@@ -116,11 +116,10 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 else
                     this.afPartialInFlows = zeros(1,this.oMT.iSubstances);
                 end
-%                 afCurrentMolsIn     = (this.afPartialInFlows ./ this.oMT.afMolarMass);
-%                 arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
-%                 afPP                = arFractions .*  fPressure;
-
-                afPP                = this.oIn.oPhase.afPP;
+                afCurrentMolsIn     = (this.afPartialInFlows ./ this.oMT.afMolarMass);
+                arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
+                afPP                = arFractions .*  fPressure;
+                
                 afPP((afPP < 2.5) & this.mbIgnoreSmallPressures) = 0;
             end
             
@@ -169,8 +168,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 
                 afMinOutFlows = sum(this.afPartialInFlows) .* afMinMassFraction;
                 
-                abLimitDesorpFlows = afMinOutFlows < mfFlowRatesDesorption;
-                mfFlowRatesDesorption(abLimitDesorpFlows) = afMinOutFlows(abLimitDesorpFlows);
+%                 abLimitDesorpFlows = afMinOutFlows < mfFlowRatesDesorption;
+%                 mfFlowRatesDesorption(abLimitDesorpFlows) = afMinOutFlows(abLimitDesorpFlows);
 
                 abLimitMinOutFlows = (afMinOutFlows > this.afPartialInFlows);
                 afMinOutFlows(abLimitMinOutFlows) = this.afPartialInFlows(abLimitMinOutFlows);

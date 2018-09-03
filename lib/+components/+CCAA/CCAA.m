@@ -166,7 +166,7 @@ classdef CCAA < vsys
             oAir = matter.phases.gas(this.toStores.TCCV, 'TCCV_PhaseGas', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
 %             oAir.bFlow      = true;
-            oAir.bSynced    = true;
+%             oAir.bSynced    = true;
             
             matter.procs.exmes.gas(oAir, 'Port_In');
             % This proc is only required if the CCAA has a CDRA connected to it
@@ -328,7 +328,7 @@ classdef CCAA < vsys
                     arMaxChange(this.oMT.tiN2I.O2) = 0.75;
                     arMaxChange(this.oMT.tiN2I.N2) = 0.75;
                     arMaxChange(this.oMT.tiN2I.H2O) = 0.05;
-                    arMaxChange(this.oMT.tiN2I.CO2) = 0.75;
+                    arMaxChange(this.oMT.tiN2I.CO2) = 0.05;
                     tTimeStepProperties.arMaxChange = arMaxChange;
                     tTimeStepProperties.rMaxChange = 0.01;
                     
