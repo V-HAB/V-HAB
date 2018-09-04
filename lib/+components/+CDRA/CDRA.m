@@ -831,8 +831,8 @@ classdef CDRA < vsys
                     % partial pressure in case of desorption, or the
                     % inflowing pressures in case of adsorption
                     for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
-                        this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_', num2str(iCell)]).bUseBufferPhase = false;
-                        this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_', num2str(iCell)]).bUseBufferPhase = true;
+                        this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_', num2str(iCell)]).bDesorption = false;
+                        this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_', num2str(iCell)]).bDesorption = true;
                     end
                 else
                     for iValve = 1:length(this.tMassNetwork.aoActiveValvesCycleOne)
@@ -843,8 +843,8 @@ classdef CDRA < vsys
                     this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(false);
                     
                     for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
-                        this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_', num2str(iCell)]).bUseBufferPhase = true;
-                        this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_', num2str(iCell)]).bUseBufferPhase = false;
+                        this.toStores.Zeolite5A_1.toProcsP2P.(['AdsorptionProcessor_', num2str(iCell)]).bDesorption = true;
+                        this.toStores.Zeolite5A_2.toProcsP2P.(['AdsorptionProcessor_', num2str(iCell)]).bDesorption = false;
                     end
                  end
                 
