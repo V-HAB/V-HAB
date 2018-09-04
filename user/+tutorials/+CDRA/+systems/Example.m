@@ -171,7 +171,6 @@ classdef Example < vsys
             matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
-%             oConnectionPhase.bFlow = true;
             
             % creates a store to connect the CCAA and the CDRA
             matter.store(this, 'CDRA_CCAA_Connection', 0.1);
@@ -185,7 +184,6 @@ classdef Example < vsys
             matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
-%             oConnectionPhase.bFlow = true;
             
             % Adding heat sources to keep the cabin and coolant water at a
             % constant temperature

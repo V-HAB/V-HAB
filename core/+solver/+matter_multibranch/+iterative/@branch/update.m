@@ -182,9 +182,6 @@ function update(this)
         % in flow direction
         iStartZeroSumEquations = length(afBoundaryConditions) - length(this.csVariablePressurePhases)+1;
         
-        %aafPhasePressuresAndFlowRates = tools.round.prec(aafPhasePressuresAndFlowRates, this.oTimer.iPrecision);
-        %afBoundaryConditions          = tools.round.prec(afBoundaryConditions,          this.oTimer.iPrecision);
-        
         % Solve
         %hT = tic();
         warning('off','all');
@@ -195,16 +192,7 @@ function update(this)
         % branch flowrates
         afResults = aafPhasePressuresAndFlowRates \ afBoundaryConditions;
         
-        %sLastWarn = lastwarn;
         warning('on','all');
-        
-        %                 if ~isempty(sLastWarn) && contains(sLastWarn, 'badly scaled')
-        %                     if (this.oTimer.iTick - this.iLastWarn) >= 100
-        %                         % warning(sLastWarn);
-        %
-        %                         this.iLastWarn = this.oTimer.iTick;
-        %                     end
-        %                 end
         
         % translate the calculated results into branch flowrates or
         % gas flow node pressures
@@ -331,9 +319,6 @@ function update(this)
             
             iB = miCurrentBranches(iK);
             
-            %TODO get pressure drop distribution (depends on total
-            %     pressure drop and drop coeffs!)
-            %this.chSetBranchFlowRate{iB}(afResults(iR), []);
             this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), []);
         end
     end

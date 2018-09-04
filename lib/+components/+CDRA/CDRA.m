@@ -698,8 +698,6 @@ classdef CDRA < vsys
                 end
                 this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(false);
                 this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(false);
-%                 this.toBranches.CDRA_Air_In_1.oHandler.setActive(true);
-%                 this.toBranches.CDRA_Air_In_2.oHandler.setActive(false);
             else
                 for iValve = 1:length(this.tMassNetwork.aoActiveValvesCycleOne)
                     this.tMassNetwork.aoActiveValvesCycleOne(iValve).setOpen(false);
@@ -707,8 +705,6 @@ classdef CDRA < vsys
                 end
                 this.toProcsF2F.Valve_5A_1_Vacuum.setOpen(false);
                 this.toProcsF2F.Valve_5A_2_Vacuum.setOpen(false);
-%                 this.toBranches.CDRA_Air_In_1.oHandler.setActive(false);
-%                 this.toBranches.CDRA_Air_In_2.oHandler.setActive(true);
             end
             
             this.setThermalSolvers();

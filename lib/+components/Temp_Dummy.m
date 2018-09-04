@@ -29,44 +29,34 @@ classdef Temp_Dummy < matter.procs.f2f
             this.supportSolver('callback',  @this.solverDeltas);
         end
         
-        function updateManualSolver(this)
-            try
-                [Flow1, Flow2] = this.getFlows();
-                
-                if Flow1.fFlowRate > 0
-                    inFlow = Flow1;
-                else
-                    inFlow = Flow2;
+        function updateManualSolver(~)
+        end
+        function fDeltaPressure = solverDeltas(~, ~)
+            fDeltaPressure = 0;
+        end
+        function updateThermal(this)
+            if ~this.bActive
+                this.fHeatFlow = 0;
+            else
+                try
+                    [Flow1, Flow2] = this.getFlows();
+
+                    if Flow1.fFlowRate > 0
+                        inFlow = Flow1;
+                    else
+                        inFlow = Flow2;
+                    end
+                catch
+                    inFlow = this.aoFlows(1);
                 end
-            catch
-                inFlow = this.aoFlows(1);
-            end
-            this.fDeltaTemp = (this.fTemperature - inFlow.fTemperature);
-            this.fHeatFlow = (inFlow.fFlowRate*inFlow.fSpecificHeatCapacity)*this.fDeltaTemp;
-            if this.fHeatFlow > this.fMaxHeatFlow
-                this.fHeatFlow = this.fMaxHeatFlow;
+                this.fDeltaTemp = (this.fTemperature - inFlow.fTemperature);
+                this.fHeatFlow = (inFlow.fFlowRate*inFlow.fSpecificHeatCapacity)*this.fDeltaTemp;
+                if this.fHeatFlow > this.fMaxHeatFlow
+                    this.fHeatFlow = this.fMaxHeatFlow;
+                end
             end
         end
         
-        function fDeltaPressure = solverDeltas(this, fFlowRate)
-            try
-                [Flow1, Flow2] = this.getFlows();
-                
-                if Flow1.fFlowRate > 0
-                    inFlow = Flow1;
-                else
-                    inFlow = Flow2;
-                end
-            catch
-                inFlow = this.aoFlows(1);
-            end
-            this.fDeltaTemp = (this.fTemperature - inFlow.fTemperature);
-            this.fHeatFlow = (fFlowRate*inFlow.fSpecificHeatCapacity)*this.fDeltaTemp;
-            if this.fHeatFlow > this.fMaxHeatFlow
-                this.fHeatFlow = this.fMaxHeatFlow;
-            end
-            fDeltaPressure = 0;
-        end
         
         function setActive(this, bActive, ~)
             this.bActive = bActive;

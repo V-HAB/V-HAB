@@ -168,13 +168,13 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             % Here we assume that a fixed time step of 1 s is used (as it
             % is diffcult to calculate the future correct V-HAB time step
             % for this...
-            mfFlowRates = (mfEquilibriumLoading - (mfEquilibriumLoading - mfCurrentLoading) .* exp(- this.mfMassTransferCoefficient) - mfCurrentLoading);
+            this.mfFlowRates = (mfEquilibriumLoading - (mfEquilibriumLoading - mfCurrentLoading) .* exp(- this.mfMassTransferCoefficient) - mfCurrentLoading);
             
             %% Seperate the calculate flowrates into adsorption and desorption flowrates
             mfFlowRatesAdsorption = zeros(1,this.oMT.iSubstances);
             mfFlowRatesDesorption = zeros(1,this.oMT.iSubstances);
-            mfFlowRatesAdsorption(mfFlowRates > 0) = mfFlowRates(mfFlowRates > 0);
-            mfFlowRatesDesorption(mfFlowRates < 0) = mfFlowRates(mfFlowRates < 0);
+            mfFlowRatesAdsorption(this.mfFlowRates > 0) = this.mfFlowRates(this.mfFlowRates > 0);
+            mfFlowRatesDesorption(this.mfFlowRates < 0) = this.mfFlowRates(this.mfFlowRates < 0);
             
             fDesorptionFlowRate                             = -sum(mfFlowRatesDesorption);
             arPartialsDesorption                            = zeros(1,this.oMT.iSubstances);
@@ -194,27 +194,56 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % in case we are not currently desorbing we assume that
                 % this represents a gas flow node and limit the flows
                 % accordingly
-                afMinPP = mfCurrentLoading ./ mfLinearizationConstant;
-                afMinPP(isnan(afMinPP)) = 0;
-                afMinPP(isinf(afMinPP)) = 0;
-
-                afMinMolarFraction = afMinPP ./ fPressure;
-                afMinMassFraction = afMinMolarFraction .* this.oMT.afMolarMass;
+                %
+                % To do so we first calculate the minimum value of partial
+                % pressure at which desorption/adsorption would switch
+                afMinPPHelper = mfCurrentLoading ./ mfLinearizationConstant;
+                afMinPPHelper(isnan(afMinPPHelper)) = 0;
+                afMinPPHelper(isinf(afMinPPHelper)) = 0;
                 
-                afMinOutFlows = sum(this.afPartialInFlows) .* afMinMassFraction;
+                % then we only overwrite the partial pressure values for
+                % the substances where such a minimum pressure exists
+                % (gases that are not adsorbed/desorbed are not changed by
+                % the p2p)
+                afMinPP = afPP;
+                afMinPP(afMinPPHelper ~= 0) = afMinPPHelper(afMinPPHelper ~= 0);
                 
-%                 abLimitDesorpFlows = afMinOutFlows < mfFlowRatesDesorption;
-%                 mfFlowRatesDesorption(abLimitDesorpFlows) = afMinOutFlows(abLimitDesorpFlows);
+                arMinMolarFraction = afMinPP ./ fPressure;
+                
+                % Basically we assume that one mol of the substance
+                % currently exists, since we are not interested in the
+                % absolute value but only in the fractions
+                arMinMassFraction = arMinMolarFraction .* this.oMT.afMolarMass;
+                
+                % Then we calculate the mass fraction by dividing the
+                % individual masses from the one mole assumption with the
+                % sum of all the masses
+                arMinMassFraction = arMinMassFraction ./ sum(arMinMassFraction);
+                
+                % Now the minimum outlet flowrates can be calculated ny
+                % multiplying the inlet flowrate and the partial mass
+                % fractions (assuming that the P2P flowrates are small when
+                % compared to the inflowing mass)
+                afMinOutFlows = sum(this.afPartialInFlows) .* arMinMassFraction;
+                
+                % now we limit the desorption flowrates so that at most so
+                % much can desorb that the P2P would start adsorbing again
+                abLimitDesorpFlows = afMinOutFlows < mfFlowRatesDesorption;
+                mfFlowRatesDesorption(abLimitDesorpFlows) = afMinOutFlows(abLimitDesorpFlows);
 
+                % Ironically we have to limit the limiting flows before
+                % calculating the adsorption limits, because the min outlet
+                % flows for the adsorption case can also not be larger than
+                % the partial inflowrate of that substance
                 abLimitMinOutFlows = (afMinOutFlows > this.afPartialInFlows);
                 afMinOutFlows(abLimitMinOutFlows) = this.afPartialInFlows(abLimitMinOutFlows);
                 
+                % While the adsorption flowrates are limit so that at most
+                % so much is adsorbed that the P2P would start desorbing
+                % again
                 abLimitFlows = ((this.afPartialInFlows - mfFlowRatesAdsorption) < afMinOutFlows);
                 afMaxAbsorberFlows = this.afPartialInFlows - afMinOutFlows;
                 mfFlowRatesAdsorption(abLimitFlows) = afMaxAbsorberFlows(abLimitFlows);
-
-                abLimitFlows = (mfFlowRatesAdsorption > this.afPartialInFlows);
-                mfFlowRatesAdsorption(abLimitFlows) = this.afPartialInFlows(abLimitFlows);
             end
             
             %% get the final adsorption and desorption flowrates and partials

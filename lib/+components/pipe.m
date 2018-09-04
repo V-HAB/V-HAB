@@ -146,23 +146,26 @@ classdef pipe < matter.procs.f2f
             fFlowSpeed   = abs(fFlowRate) / ((pi / 4) * this.fDiameter^2 * fDensity);
 
             % Calculate dynamic viscosity
-            try
-                if this.oTimer.fTime > this.fTimeOfLastUpdate
-                    rTemperatureChange = abs(1-this.fTemperatureLastUpdate/oFlowIn.fTemperature);
-                    rPressureChange    = abs(1-this.fPressureLastUpdate/oFlowIn.fPressure);
-                    if rTemperatureChange > this.rMaxChange || rPressureChange > this.rMaxChange
-                        this.fDynamicViscosity = oFlowIn.getDynamicViscosity();
-                        this.fTemperatureLastUpdate = oFlowIn.fTemperature;
-                        this.fPressureLastUpdate    = oFlowIn.fPressure;
+            if this.oBranch.fFlowRate ~= 0
+                try
+                    if this.oTimer.fTime > this.fTimeOfLastUpdate
+                        rTemperatureChange = abs(1-this.fTemperatureLastUpdate/oFlowIn.fTemperature);
+                        rPressureChange    = abs(1-this.fPressureLastUpdate/oFlowIn.fPressure);
+                        if rTemperatureChange > this.rMaxChange || rPressureChange > this.rMaxChange
+                            this.fDynamicViscosity = oFlowIn.getDynamicViscosity();
+                            this.fTemperatureLastUpdate = oFlowIn.fTemperature;
+                            this.fPressureLastUpdate    = oFlowIn.fPressure;
+                        end
                     end
+                catch
+                    this.fDynamicViscosity = 17.2 / 10^6;
+                    %TODO Make this a low level debug output once the
+                    %infrastructure for it exists.
+                    %this.warn('solverDeltas', 'Error calculating dynamic viscosity in pipe (%s - %s). Using default value instead: %f [Pa s].\n', this.oBranch.sName, this.sName, this.fDynamicViscosity);
                 end
-            catch
+            else
                 this.fDynamicViscosity = 17.2 / 10^6;
-                %TODO Make this a low level debug output once the
-                %infrastructure for it exists.
-                %this.warn('solverDeltas', 'Error calculating dynamic viscosity in pipe (%s - %s). Using default value instead: %f [Pa s].\n', this.oBranch.sName, this.sName, this.fDynamicViscosity);
             end
-
             % If the pipe diameter is zero, no matter can flow through that
             % pipe. Return an infinite pressure drop which should let the
             % solver know to set the flow rate to zero.
