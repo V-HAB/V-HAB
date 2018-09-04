@@ -402,6 +402,8 @@ classdef Human < vsys
             this.setThermalSolvers();
             
             this.setState(1);
+            
+            this.fTimeStep = 60;
         end
         
         function setIfFlows(this, varargin)
