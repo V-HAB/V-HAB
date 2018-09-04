@@ -91,7 +91,7 @@ classdef pipe < matter.procs.f2f
                 end
                 fFlowSpeed = oFlowIn.fFlowRate/(fDensity*pi*0.25*this.fDiameter^2);
 
-                this.fDeltaPressure = functions.pressure_loss.calculatePipe(this.fDiameter, this.fLength,...
+                this.fDeltaPressure = functions.calculateDeltaPressure.Pipe(this.fDiameter, this.fLength,...
                                 fFlowSpeed, this.fDynamicViscosity, fDensity, this.fRoughness, 0);
             end
             
@@ -184,7 +184,7 @@ classdef pipe < matter.procs.f2f
                 %this.warn('solverDeltas', 'Error calculating dynamic viscosity in pipe (%s - %s). Using default value instead: %f [Pa s].\n', this.oBranch.sName, this.sName, this.fDynamicViscosity);
             end
 
-            fDeltaPressure = functions.pressure_loss.calculatePipe (this.fDiameter, this.fLength, fFlowSpeed, this.fDynamicViscosity, fDensity, this.fRoughness, 0);
+            fDeltaPressure = functions.calculateDeltaPressure.Pipe (this.fDiameter, this.fLength, fFlowSpeed, this.fDynamicViscosity, fDensity, this.fRoughness, 0);
             this.fDeltaPressure = fDeltaPressure;
             
             this.fDropCoefficient = fDeltaPressure / (fFlowSpeed * pi * 0.25 * this.fDiameter^2);
