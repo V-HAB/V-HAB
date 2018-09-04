@@ -40,10 +40,10 @@
 %
 %these parameters are used in the equation as follows:
 %
-%fDelta_Pressure = pressure_loss_pipe_bundle (fD_o, fs_1, fs_2, fN_Rows, fFlowSpeed,
+%fDelta_Pressure = calculatePipeBundle (fD_o, fs_1, fs_2, fN_Rows, fFlowSpeed,
 %                                      fDyn_Visc, fDensity, fConfig);
 
-function [fDelta_Pressure] = pressure_loss_pipe_bundle (fD_o, fs_1, fs_2, fN_Rows, fFlowSpeed, fDyn_Visc, fDensity, fConfig)
+function [fDelta_Pressure] = calculatePipeBundle (fD_o, fs_1, fs_2, fN_Rows, fFlowSpeed, fDyn_Visc, fDensity, fConfig)
 
 %the source "Wärmeübertragung" Polifke will from now on be defined as [1]
 
@@ -52,7 +52,7 @@ function [fDelta_Pressure] = pressure_loss_pipe_bundle (fD_o, fs_1, fs_2, fN_Row
 %decides wether temperature dependancy should also be accounted for
 if length(fDyn_Visc) == 2 && fConfig == 0
     fConfig = 2;
-elseif length(fDyn_Visc) == 2 && fConfig == 1
+elseif length(fDyn_Visc) == 2 && fConfig == 1;
     fConfig = 3;
 end
 
