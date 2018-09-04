@@ -34,7 +34,7 @@ classdef timed < sys
             
             this.oTimer = oParent.oTimer;
             
-            if nargin >= 4 && ~isempty(fTimeStep)
+            if nargin >= 3 && ~isempty(fTimeStep)
                 this.setTimeStep(fTimeStep);
             else
                 % Set execution with each tick!
