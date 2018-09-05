@@ -81,7 +81,7 @@ classdef manip < base
     
     methods (Access = protected)
         function fTimeStep = getTimeStep(this)
-            fTimeStep = this.oPhase.fMassUpdateTimeStep;%oStore.oTimer.fTime - this.oPhase.fLastMassUpdate;
+            fTimeStep = this.oPhase.fMassUpdateTimeStep;
         end
         
         
@@ -98,8 +98,6 @@ classdef manip < base
             % minor code performance improvement.
             iNumberOfEXMEs = this.oPhase.iProcsEXME;
             
-            %CHECK store on obj var, as long as the amount of inflows
-            %      doesn't change -> kind of preallocated?
             % Initializing temporary matrix and array to save the per-exme
             % data. 
             mrInPartials  = zeros(iNumberOfEXMEs, this.oMT.iSubstances);
@@ -140,11 +138,13 @@ classdef manip < base
             % Get last time step
             fTimeStep = this.getTimeStep();
             
+            % Initializing temporary matrix and array to save the per-exme
+            % data. 
+            mrInPartials = zeros(iNumberOfEXMEs, this.oMT.iSubstances);
+            afInMasses   = zeros(iNumberOfEXMEs, 1);
             
-            %CHECK store on obj var, as long as the amount of inflows
-            %      doesn't change -> kind of preallocated?
-            mrInPartials  = zeros(0, this.oPhase.oMT.iSubstances);
-            afInMasses = [];
+            % Creating an array to log which of the flows are not in-flows
+            abOutFlows = true(iNumberOfEXMEs, 1);
             
             % See phase.getTotalMassChange
             for iI = 1:this.oPhase.iProcsEXME
@@ -154,13 +154,21 @@ classdef manip < base
                 abInf = (afFlowRates > 0);
                 
                 if any(abInf)
-                    mrInPartials  = [ mrInPartials;  mrFlowPartials(abInf, :) ];
-                    afInMasses = [ afInMasses; afFlowRates(1, abInf) ];
+                    mrInPartials(iI,:) = mrFlowPartials(abInf, :);
+                    afInMasses(iI)     = afFlowRates(abInf);
+                    abOutFlows(iI)     = false;
                 end
             end
             
-            mrInPartials  = [ mrInPartials;  this.oPhase.arPartialMass ];
-            afInMasses = [ afInMasses * fTimeStep; this.oPhase.fMass ];
+            % Now we delete all of the rows in the mrInPartials matrix
+            % that belong to out-flows.
+            if any(abOutFlows)
+                mrInPartials(abOutFlows,:) = [];
+                afInMasses(abOutFlows,:)   = [];
+            end
+            
+            mrInPartials = [ mrInPartials;  this.oPhase.arPartialMass ];
+            afInMasses   = [ afInMasses * fTimeStep; this.oPhase.fMass ];
         end
     end
 end
