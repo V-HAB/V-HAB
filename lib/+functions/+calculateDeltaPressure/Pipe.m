@@ -104,7 +104,7 @@ if (fRe < 2320) % check roughness limit
             error('no interpolation for values of fD_o/fD_i larger than 100 in pressure_loss_pipe')
         end
     end
-elseif fRoughness == 0 && 3000 <= fRe && fRe < 100000
+elseif fRoughness == 0 && 2320 <= fRe && fRe < 100000
     %definition of the friction factor according to [9] section Lab
     %equation (5)
     fFriction_Factor = 0.3164/nthroot(fRe,4);
