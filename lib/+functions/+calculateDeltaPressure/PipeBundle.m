@@ -43,7 +43,7 @@
 %fDelta_Pressure = calculatePipeBundle (fD_o, fs_1, fs_2, fN_Rows, fFlowSpeed,
 %                                      fDyn_Visc, fDensity, fConfig);
 
-function [fDelta_Pressure] = calculatePipeBundle (fD_o, fs_1, fs_2, fN_Rows, fFlowSpeed, fDyn_Visc, fDensity, fConfig)
+function [fDelta_Pressure] = PipeBundle (fD_o, fs_1, fs_2, fN_Rows, fFlowSpeed, fDyn_Visc, fDensity, fConfig)
 
 %the source "Wärmeübertragung" Polifke will from now on be defined as [1]
 

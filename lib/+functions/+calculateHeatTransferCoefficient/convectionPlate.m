@@ -22,7 +22,7 @@
 %fConvection_alpha=calculateConvectionPlate(fLength, fFlowSpeed, fDyn_Visc,
 %                                   fDensity, fThermal_Conductivity, fC_p)
 
-function [fConvection_alpha] = calculateConvectionPlate (fLength, fFlowSpeed,...
+function [fConvection_alpha] = convectionPlate (fLength, fFlowSpeed,...
                           fDyn_Visc, fDensity, fThermal_Conductivity, fC_p)
 %the source "Wärmeübertragung" Polifke will from now on be defined as [1]
 

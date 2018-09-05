@@ -33,7 +33,7 @@
 %fConvection_alpha = calculateConvectionOnePipeRow (fD_o, fs_1, fl, 
 %           fFlowSpeed, fDyn_Visc, fDensity, fThermal_Conductivity, fC_p);
 
-function [fConvection_alpha] = calculateConvectionOnePipeRow (fD_o, fs_1,...
+function [fConvection_alpha] = convectionOnePipeRow (fD_o, fs_1,...
     fFlowSpeed, fDyn_Visc, fDensity, fThermal_Conductivity, fC_p)
 %the source "Wärmeübertragung" Polifke will from now on be defined as [1]
 
