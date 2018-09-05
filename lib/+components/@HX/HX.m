@@ -6,150 +6,119 @@ classdef HX < vsys
 % Fluid 1, FlowProc 1 is the one with the fluid flowing through the pipes
 % if there are any pipes.
 %
-%The component uses the following user inputs:
+% The component uses the following user inputs:
 %
-%sHX_type with information about what type of heat exchanger should be
-%calculated. The possible inputs as strings are:
-%           'counter annular passage'
-%           'counter plate'
-%           'counter pipe bundle'
-%           'parallel annular passage'
-%           'parallel plate'
-%           'parallel pipe bundle'
-%           'cross'
-%           '1 n sat'
-%           '3 2 sat'
+% sHX_type with information about what type of heat exchanger should be
+% calculated. The possible inputs as strings are:
+%           'CounterAnnularPassage'
+%           'CounterPlate'
+%           'CounterPipeBundle'
+%           'ParallelAnnularPassage'
+%           'ParallelPlate'
+%           'ParallelPipeBundle'
+%           'Cross'
+%           '3_2_SAT'
 %
-%The vector mHX which contains the information about the geometry of the 
-%heat exchanger. The possible entries are:
+% The struct tHX_Parameters contains the information about the geometry of
+% the heat exchanger. The possible entries are:
 %
-%for sHX_type = 'counter annular passage' or 'parallel annular passage'
+% for sHX_type = 'CounterAnnularPassage' or 'ParallelAnnularPassage'
 %
-%mHX = [fD_i, fD_o, fR_i, fLength] with the parameters:
-%fD_i         = outer diameter of the inner pipe in m
-%fD_o         = inner diameter of the outer pipe in m
-%fR_i         = inner radius of the inner pipe in m
-%fLength      = length of the pipe in m
+% tHX_Parameters is a struct with the fields:
+% fInnerDiameter         = outer diameter of the inner pipe in m
+% fOuterDiameter         = inner diameter of the outer pipe in m
+% fInternalRadius        = inner radius of the inner pipe in m
+% fLength                = length of the pipe in m
 %
-%for sHX_type = 'counter plate' or 'parallel plate'
+%for sHX_type = 'CounterPlate' or 'ParallelPlate'
 %
-%mHX = [fBroadness, fHeight_1, fHeight_2, fLength, fThickness]
-%with the parameters:
+% tHX_Parameters is a struct with the fields:
 %fBroadness       = broadness of the heat exchange area in m;
 %fHeight_1        = Height of the channel for fluid 1 in m;
 %fHeight_2        = Height of the channel for fluid 2 in m;
 %fLength          = length of the heat exchanger in m;
 %fThickness       = thickness of the plate in m;
 %
-%for sHX_type = 'counter pipe bundle' or 'parallel pipe bundle'
+%for sHX_type = 'CounterPipeBundle' or 'ParallelPipeBundle'
 %
-%mHX=[fD_i, fD_o, fD_s, fLength, fN_Pipes, fs_1, fs_2] with the parameters:
-%fD_i         = inner diameter of the pipes in m
-%fD_o         = outer diameter of the pipes in m
-%fD_s         = inner (hydraulic) diameter of the shell
-%fLength      = length of the pipes in m
-%fN_Pipes     = number of pipes
-%fs_1         = distance between the center of two pipes next to each
-%               other perpendicular to flow direction in m
-%fs_2         = distance between the center of two pipes next to each
-%               other in flow direction in m
+% tHX_Parameters is a struct with the fields:
+% fInnerDiameter           = inner diameter of the pipes in m
+% fOuterDiameter           = outer diameter of the pipes in m
+% fShellDiameter           = inner diameter of the shell around the pipes in m
+% fLength                  = length of the HX in m
+% iNumberOfPipes           = number of pipes
+% fPerpendicularSpacing    = distance between the center of two pipes next 
+%                            to each other perpendicular to flow direction in m
+% fParallelSpacing         = distance between the center of two pipes next 
+%                            to each other in flow direction in m
 %
 %for sHX_type = 'cross'
 %
-%for number of pipes = 0 the parameters are:
-%mHX = [0, fBroadness, fHeight_1, fHeight_2, fLength, fThickness] 
-%with the parameters:
+%for number of pipes = 0 tHX_Parameters is a struct with the fields:
 %fBroadness       = broadness of the heat exchange area in m;
 %fHeight_1        = Height of the channel for fluid 1 in m;
 %fHeight_2        = Height of the channel for fluid 2 in m;
 %fLength          = length of the heat exchanger in m;
 %fThickness       = thickness of the plate in m;
-%for number of pipes >0
-%mHX = [fN_Rows, fN_Pipes, fD_i, fD_o, fLength, fs_1, fs_2, fconfig, fs_3] 
-%with the parameters:
-%fN_Rows        = number of pipe rows
-%fN_Pipes       = number of pipes
-%fD_i           = inner diameter of the pipes in m
-%fD_o           = outer diameter of the pipes in m
-%fLength        = length of the pipes in m
-%fs_1           = distance between the center of two pipes next to each
-%                 other perpendicular to flow direction in m
-%fs_2           = distance between the center of two pipes next to each
-%                 other in flow direction in m
-%fConfig        = parameter to check the configuration,for fConfig = 0 it
-%                 is assumed that the pipes are aligend.For fConfig = 1 it
-%                 is assumed that they are shiffted with the pipes of each
-%                 row shiffted exactly with fs_1/2. For fConfig = 2 a 
-%                 partially shiffted configuration is assumed.  
-%parameters only used for fConfig = 2:
-%fs_3           = distance between the center of two pipes, which are in 
-%                 different rows, measured perpendicular to flow direction 
-%                 in m. 
 %
-% 1 n sat so far still buggy and may yield complex results or wrong results
-%Possible problem is zero point calculation in matlab
-%for sHX_type = '1 n sat'
+%for number of pipes >0 tHX_Parameters is a struct with the fields:
+% iNumberOfRows            = number of pipe rows
+% iNumberOfPipes           = number of pipes
+% fInnerDiameter           = inner diameter of the pipes in m
+% fOuterDiameter           = outer diameter of the pipes in m
+% fLength                  = length of the pipes in m
+% fPerpendicularSpacing    = distance between the center of two pipes next
+%                            to each other perpendicular to flow direction in m
+% fParallelSpacing         = distance between the center of two pipes next 
+%                            to each other in flow direction in m
+% iConfiguration           = parameter to check the configuration,for
+%                            fConfig = 0 it is assumed that the pipes are
+%                            aligend.For fConfig = 1 it is assumed that
+%                            they are shiffted with the pipes of each row
+%                            shiffted exactly with fs_1/2. For fConfig = 2
+%                            a partially shiffted configuration is assumed.
+% fPipeRowOffset           = distance between the center of two pipes,
+%                            which are in different rows, measured
+%                            perpendicular to flow direction in m.
 %
-%mHX = [fLength, fD_s, mD_i(k), mD_o(k), mN_Pipes_Pass(k)]
-%fLength            = length of the pipes in m
-%fD_s               = shell diameter in m
-%mD_i(k)            = inner pipe diameter of the pass k in m
-%mD_o(k)            = outer pipe diameter of the pass k in m
-%mN_Pipes_Pass(k)   = number of pipes in the pass k
 %
-%the first two values fLength and fD_s are column vectors with only the 
-%first entry not zero. The first entry of these vectors is fLength or fD_s
-%The other values are column vectors with the entry for each pass in each
-%row.
-%Example mHX for a 1,3 HX
-%   fLength  ,   fD_s  ,  fD_i(1)  ,  fD_o(1)  ,  mN_Pipes_Pass(1)
-%    0       ,    0    ,  fD_i(2)  ,  fD_o(2)  ,  mN_Pipes_Pass(2)
-%    0       ,    0    ,  fD_i(3)  ,  fD_o(3)  ,  mN_Pipes_Pass(3)
+%for sHX_type = '3 2 sat' tHX_Parameters is a struct with the fields:
 %
-%for sHX_type = '3 2 sat'
-%this heat exchanger differs in its input from the other because it
-%requires a cell input, which means the inputs have to be set in {}
-%
-%mHX = {fD_i, fLength, fD_o, fD_Baffle, fD_Batch, fD_Hole, fD_Shell, 
-%       fD_Int, fLength_Int, fs_1, fs_2, fN_Pipes, fn_pipes_win,
-%       fN_Flow_Resist, fN_Flow_Resist_end, fN_Sealings, fN_Pipes_Diam,
-%       fDist_Baffles, fHeight_Baffles, fConfig, fs_3}
-%
-%fD_i (x)       = inner diameter of the pipes in m (if x fD_o is required)
-%fLength        = length of the pipes in m
-%fD_o (x)       = outer diameter of the pipes in m (if x fD_i is required)
-%fD_Baffle (x)  = diameter of the baffles
-%fD_Batch (x)   = outer diameter of the pipe batch
-%fD_Hole (x)    = diameter of the holes in the baffles through which the
-%                 pipes pass
-%fD_Shell       = inner diameter of the shell
-%fD_Int         = inner diameter of interface fittings in m
-%fLength_Int    = length of interface fittings in m
-%fs_1           = distance between the center of two pipes next to each
-%                 other perpendicular to flow direction in m
-%fs_2           = distance between the center of two pipes next to each
-%                 other in flow direction in m
-%fN_Pipes       = total number of pipes in the heat exchanger
-%fn_pipes_win(x)= number of pipes in the window left by a baffle
-%fN_Flow_Resist = number of main flow resistances in the transverse zone
-%                 (see [9] section Gh 4 Bild 6 for instruction on how to
-%                 count them)
-%fN_Flow_Resist_end(x) = number of main flow resistances in the endzone
-%fN_Sealings     = number of sealing strip pairs, between pipes and shell
-%fN_Pipes_Diam(x)= number of pipes at the diameter, counted parallel to
-%                 baffle edges.
-%fDist_Baffles   = distance between baffles in m
-%fHeight_Baffles = Height of baffles
-%fConfig         = parameter to check the configuration,for fConfig = 0 it
-%                 is assumed that the pipes are aligend.For fConfig = 1 it
-%                 is assumed that they are shiffted with the pipes of each
-%                 row shiffted exactly with fs_1/2. For fConfig = 2 a 
-%                 partially shiffted configuration is assumed.  
-%
-%parameters only used for fConfig = 2:
-%fs_3           = distance between the center of two pipes, which are in 
-%                 different rows, measured perpendicular to flow direction 
-%                 in m. 
+% fInnerDiameter              = inner diameter of the pipes in m (if x fOuterDiameter is required)
+% fLength                     = length of the pipes in m
+% fOuterDiameter              = outer diameter of the pipes in m (if x fInnerDiameter is required)
+% fBaffleDiameter             = diameter of the baffles
+% fBatchDiameter              = outer diameter of the pipe batch
+% fHoleDiameter               = diameter of the holes in the baffles
+%                               through which the pipes pass
+% fShellDiameter              = inner diameter of the shell
+% fInnerDiameterInterface     = inner diameter of interface fittings in m
+% fLengthInterfaceFitting     = length of interface fittings in m
+% fPerpendicularSpacing       = distance between the center of two pipes
+%                               next to each other perpendicular to flow
+%                               direction in m
+% fParallelSpacing            = distance between the center of two pipes 
+%                               next to each other in flow direction in m
+% iNumberOfPipes              = total number of pipes in the heat exchanger
+% iNumberOfPipesInWindow      = number of pipes in the window left by a baffle
+% iNumberOfResistances        = number of main flow resistances in the transverse zone
+%                               (see [9] section Gh 4 Bild 6 for instruction on how to
+%                               count them)
+% iNumberOfResistancesEndZone = number of main flow resistances in the endzone
+% iNumberOfSealings           = number of sealing strip pairs, between pipes and shell
+% iNumberOfPipes_Diam         =  number of pipes at the diameter, counted parallel to baffle edges.
+% fBaffleDistance             = distance between baffles in m
+% fBaffleHeight               = Height of baffles
+% iConfiguration              = parameter to check the configuration,for
+%                               fConfig = 0 it is assumed that the pipes
+%                               are aligend.For fConfig = 1 it is assumed
+%                               that they are shiffted with the pipes of
+%                               each row shiffted exactly with fs_1/2. For
+%                               fConfig = 2 a partially shiffted
+%                               configuration is assumed.
+% fPipeRowOffset              = distance between the center of two pipes,
+%                               which are in different rows, measured
+%                               perpendicular to flow direction in m.
 %
 %every input marked with (x) above can be set to the string 'x' in order to
 %use assumptions to fill that value.
@@ -163,8 +132,13 @@ classdef HX < vsys
 %
 %these inputs are used in the component call as follows:
 %
-%HX(this, 'componentname', mHX, sHX_type, Conductivity_Solid);
-
+%HX(oParent, sName, tHX_Parameters, sHX_type, fHX_TC, fTempChangeToRecalc, rChangeToRecalc)
+%
+% The parameter fTempChangeToRecalc represents the allowed temperature
+% change in K before the HX is recalculated while the parameter 
+% rChangeToRecalc represents percentual values for the other changes (e.g.
+% matter composition)
+ 
     properties 
         %flow to flow processors for fluid 1 and 2 to set outlet temp and
         %pressure
@@ -173,10 +147,12 @@ classdef HX < vsys
         
         %User Inputs for the geometry of the heat exchanger (see hx_main
         %for more information)
-        mHX;
+        tHX_Parameters;
+        
         %User input for the type of heat exchanger (see hx_man for more
         %information)
         sHX_type;
+        
         %Outlet temperatures of the heat exchangers. These two variables
         %don't directly serve any purpose but can be used to plot the
         %outlet temperature directly behind the heat exchanger
@@ -214,7 +190,7 @@ classdef HX < vsys
     end
     
     methods
-        function this = HX(oParent, sName, mHX, sHX_type, fHX_TC, fTempChangeToRecalc, rChangeToRecalc)
+        function this = HX(oParent, sName, tHX_Parameters, sHX_type, fHX_TC, fTempChangeToRecalc, rChangeToRecalc)
             this@vsys(oParent, sName);
             
             %if a thermal conductivity for the heat exchanger is provided
@@ -223,8 +199,21 @@ classdef HX < vsys
                 this.fHX_TC = fHX_TC;
             end
           
-            this.mHX = mHX;
-            this.sHX_type = sHX_type;      
+            this.tHX_Parameters = tHX_Parameters;
+            % To simplify code maintainability the parallel and counter
+            % flow options are not differentiated in their subfunctions
+            if ~isempty(regexp(sHX_type, 'Parallel', 'once'))
+                this.tHX_Parameters.bParallelFlow = true;
+                this.sHX_type = erase(sHX_type, "Parallel");
+                
+            elseif ~isempty(regexp(sHX_type, 'Counter', 'once'))
+                this.tHX_Parameters.bParallelFlow = false;
+                this.sHX_type = erase(sHX_type, "Counter");
+                
+            else
+                this.sHX_type = sHX_type;
+            end
+            
             this.bExecuteContainer = false;
             if nargin > 5
                 this.fTempChangeToRecalc = fTempChangeToRecalc;
@@ -322,28 +311,28 @@ classdef HX < vsys
                 
                     % sets the structs for the two fluids according to the
                     % definition from HX_main
-                    this.tInformation_Fluid_1 = struct();
-                    this.tInformation_Fluid_1.Massflow                = fMassFlow_1;
-                    this.tInformation_Fluid_1.Entry_Temperature       = fEntryTemp_1;
-                    this.tInformation_Fluid_1.Dynamic_Viscosity       = fDynVisc_1;
-                    this.tInformation_Fluid_1.Density                 = fDensity_1;
-                    this.tInformation_Fluid_1.Thermal_Conductivity    = fConductivity_1;
-                    this.tInformation_Fluid_1.Heat_Capacity           = fCp_1;
-                
-                    this.tInformation_Fluid_2 = struct();
-                    this.tInformation_Fluid_2.Massflow                = fMassFlow_2;
-                    this.tInformation_Fluid_2.Entry_Temperature       = fEntryTemp_2;
-                    this.tInformation_Fluid_2.Dynamic_Viscosity       = fDynVisc_2;
-                    this.tInformation_Fluid_2.Density                 = fDensity_2;
-                    this.tInformation_Fluid_2.Thermal_Conductivity    = fConductivity_2;
-                    this.tInformation_Fluid_2.Heat_Capacity           = fCp_2;
+                    Fluid_1 = struct();
+                    Fluid_1.fMassflow             	= fMassFlow_1;
+                    Fluid_1.fEntryTemperature       = fEntryTemp_1;
+                    Fluid_1.fDynamicViscosity       = fDynVisc_1;
+                    Fluid_1.fDensity                = fDensity_1;
+                    Fluid_1.fThermalConductivity    = fConductivity_1;
+                    Fluid_1.fSpecificHeatCapacity 	= fCp_1;
+                    
+                    Fluid_2 = struct();
+                    Fluid_2.fMassflow               = fMassFlow_2;
+                    Fluid_2.fEntryTemperature       = fEntryTemp_2;
+                    Fluid_2.fDynamicViscosity       = fDynVisc_2;
+                    Fluid_2.fDensity                = fDensity_2;
+                    Fluid_2.fThermalConductivity    = fConductivity_2;
+                    Fluid_2.fSpecificHeatCapacity   = fCp_2;
                 end
                 
                 % function call for HX_main to get outlet values as first 
                 % value the this struct from object HX is given to the 
                 % function HX_main
                 [fTempOut_1, fTempOut_2, fDeltaPress_1, fDeltaPress_2] = ...
-                    this.HX_main(this.tInformation_Fluid_1,this.tInformation_Fluid_2,this.fHX_TC);        
+                    this.(this.sHX_type)(this.tHX_Parameters, Fluid_1 ,Fluid_2 ,this.fHX_TC);
 
                 % sets the outlet temperatures into the respective variable
                 % inside the heat exchanger object for plotting purposes

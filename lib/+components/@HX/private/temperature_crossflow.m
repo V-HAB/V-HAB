@@ -165,7 +165,7 @@ else
         end
         
         %converts Variable_2 into double
-        yVariable_2 = double(yVariable_2);
+        yVariable_2 = sum(double(yVariable_2));
 
         %saves each Variable_2 which is calculated for every p into the 
         %vector Variable_1 to calculate the third sum from p=1 to (n-1)
