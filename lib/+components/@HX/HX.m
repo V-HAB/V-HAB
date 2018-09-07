@@ -182,11 +182,6 @@ classdef HX < vsys
         
         fTempChangeToRecalc = 0.05;
         rChangeToRecalc     = 0.01;
-        
-        % Two structs that store the current information for both fluids so
-        % we don't have to do recalculations during iterative solver calls.
-        tInformation_Fluid_1 = struct();
-        tInformation_Fluid_2 = struct();
     end
     
     methods
@@ -295,38 +290,33 @@ classdef HX < vsys
                 (abs(1-(oFlows_1.fPressure/this.fOldPressureFlow1)) > this.rChangeToRecalc)||...             %if Pressure changed by more than X%
                 (abs(1-(oFlows_2.fPressure/this.fOldPressureFlow2)) > this.rChangeToRecalc)                  %if Pressure changed by more than X%
                 
-                % If this is not the first call from the iterative solver,
-                % then we already have done all of these calculations in
-                % the previous iterations, so we can skip it, if the time
-                % stamp is the same.
-                if ~(this.oTimer.fTime == this.fLastUpdate)
-                    fDensity_1      = this.oMT.calculateDensity(oFlows_1);
-                    fDensity_2      = this.oMT.calculateDensity(oFlows_2);
+                fDensity_1      = this.oMT.calculateDensity(oFlows_1);
+                fDensity_2      = this.oMT.calculateDensity(oFlows_2);
+
+                fDynVisc_1      = this.oMT.calculateDynamicViscosity(oFlows_1);
+                fConductivity_1 = this.oMT.calculateThermalConductivity(oFlows_1);
+
+                fDynVisc_2      = this.oMT.calculateDynamicViscosity(oFlows_2);
+                fConductivity_2 = this.oMT.calculateThermalConductivity(oFlows_2);
+
+                % sets the structs for the two fluids according to the
+                % definition from HX_main
+                Fluid_1 = struct();
+                Fluid_1.fMassflow             	= fMassFlow_1;
+                Fluid_1.fEntryTemperature       = fEntryTemp_1;
+                Fluid_1.fDynamicViscosity       = fDynVisc_1;
+                Fluid_1.fDensity                = fDensity_1;
+                Fluid_1.fThermalConductivity    = fConductivity_1;
+                Fluid_1.fSpecificHeatCapacity 	= fCp_1;
+
+                Fluid_2 = struct();
+                Fluid_2.fMassflow               = fMassFlow_2;
+                Fluid_2.fEntryTemperature       = fEntryTemp_2;
+                Fluid_2.fDynamicViscosity       = fDynVisc_2;
+                Fluid_2.fDensity                = fDensity_2;
+                Fluid_2.fThermalConductivity    = fConductivity_2;
+                Fluid_2.fSpecificHeatCapacity   = fCp_2;
                     
-                    fDynVisc_1      = this.oMT.calculateDynamicViscosity(oFlows_1);
-                    fConductivity_1 = this.oMT.calculateThermalConductivity(oFlows_1);
-                    
-                    fDynVisc_2      = this.oMT.calculateDynamicViscosity(oFlows_2);
-                    fConductivity_2 = this.oMT.calculateThermalConductivity(oFlows_2);
-                
-                    % sets the structs for the two fluids according to the
-                    % definition from HX_main
-                    Fluid_1 = struct();
-                    Fluid_1.fMassflow             	= fMassFlow_1;
-                    Fluid_1.fEntryTemperature       = fEntryTemp_1;
-                    Fluid_1.fDynamicViscosity       = fDynVisc_1;
-                    Fluid_1.fDensity                = fDensity_1;
-                    Fluid_1.fThermalConductivity    = fConductivity_1;
-                    Fluid_1.fSpecificHeatCapacity 	= fCp_1;
-                    
-                    Fluid_2 = struct();
-                    Fluid_2.fMassflow               = fMassFlow_2;
-                    Fluid_2.fEntryTemperature       = fEntryTemp_2;
-                    Fluid_2.fDynamicViscosity       = fDynVisc_2;
-                    Fluid_2.fDensity                = fDensity_2;
-                    Fluid_2.fThermalConductivity    = fConductivity_2;
-                    Fluid_2.fSpecificHeatCapacity   = fCp_2;
-                end
                 
                 % function call for HX_main to get outlet values as first 
                 % value the this struct from object HX is given to the 
