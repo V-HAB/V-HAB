@@ -34,12 +34,6 @@ classdef CDRA < vsys
         %flow rate.
         fFlowrateMain = 0;                  % [kg/s]
         
-        %The amount of time that is spent in the air safe mode at the
-        %beginning of the CO2 desorption phase. During the air safe vacuum
-        %pumps are used to pump the air (and some CO2) within the adsorber 
-        %bed back into the cabin before the bed is connected to vacuum.
-        fAirSafeTime;                   % [s]
-        
         % Initialitation time for the pressure to reach "nominal"
         % conditions after a CDRA cycle switch
         fInitTime = 10;                 % [s]
@@ -102,7 +96,12 @@ classdef CDRA < vsys
             %considered the time it takes for both cycles to finish once. For
             %CDRA this is 144 minutes and for Vozdukh it is 30 minutes
             this.tTimeProperties.fCycleTime = 144*60;
-            this.tTimeProperties.fAirSafeTime = 10*60;
+            
+            %The amount of time that is spent in the air safe mode at the
+            %beginning of the CO2 desorption phase. During the air safe vacuum
+            %pumps are used to pump the air (and some CO2) within the adsorber 
+            %bed back into the cabin before the bed is connected to vacuum.
+            this.tTimeProperties.fAirSafeTime = 10*60; % [s]
             this.tTimeProperties.fLastCycleSwitch = -10000;
             this.tTimeProperties.bInit = false;
             
@@ -165,26 +164,27 @@ classdef CDRA < vsys
         	tInitialization.Zeolite5A.tfMassAbsorber  =   struct('Zeolite5A',fMassZeolite5A, 'Al', 2);
             tInitialization.Zeolite5A.fTemperature    =   281.25;
             
+            % Sets the cell numbers used for the individual filters
+            tInitialization.Zeolite13x.iCellNumber  = 5;
+            tInitialization.Sylobead.iCellNumber    = 5;
+            tInitialization.Zeolite5A.iCellNumber   = 5;
+            
             % Aside from the absorber mass itself the initial values of
             % absorbed substances (like H2O and CO2) can be set. Since the
             % loading is not equal over the cells they have to be defined
             % for each cell (the values can obtained by running the
             % simulation for a longer time without startvalues and set them
             % according to the values once the simulation is repetetive)
-        	tInitialization.Zeolite13x.mfInitialCO2             = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0];
-        	tInitialization.Zeolite13x.mfInitialH2O             = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0];
+        	tInitialization.Zeolite13x.mfInitialCO2             = zeros(tInitialization.Zeolite13x.iCellNumber,1);
+        	tInitialization.Zeolite13x.mfInitialH2O             = zeros(tInitialization.Zeolite13x.iCellNumber,1);
             
-        	tInitialization.Sylobead.mfInitialCO2               = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,    0];
-        	tInitialization.Sylobead.mfInitialH2OAbsorb         = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,    0]; % Only set for the bed that just finished absorbing
-        	tInitialization.Sylobead.mfInitialH2ODesorb         = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,    0]; % Only set for the bed that just finished desorbing
+        	tInitialization.Sylobead.mfInitialCO2               = zeros(tInitialization.Sylobead.iCellNumber,1);
+        	tInitialization.Sylobead.mfInitialH2OAbsorb         = zeros(tInitialization.Sylobead.iCellNumber,1);
+        	tInitialization.Sylobead.mfInitialH2ODesorb         = zeros(tInitialization.Sylobead.iCellNumber,1);
             
-        	tInitialization.Zeolite5A.mfInitialCO2              = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,    0];
-        	tInitialization.Zeolite5A.mfInitialH2O              = [     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,    0];
+        	tInitialization.Zeolite5A.mfInitialCO2              = zeros(tInitialization.Zeolite5A.iCellNumber,1);
+        	tInitialization.Zeolite5A.mfInitialH2O              = zeros(tInitialization.Zeolite5A.iCellNumber,1);
             
-            % Sets the cell numbers used for the individual filters
-            tInitialization.Zeolite13x.iCellNumber  = 5;
-            tInitialization.Sylobead.iCellNumber    = 5;
-            tInitialization.Zeolite5A.iCellNumber   = 5;
             
             % Values for the mass transfer coefficient can be found in the
             % paper ICES-2014-168. Here the values for Zeolite5A are used
@@ -403,7 +403,7 @@ classdef CDRA < vsys
                         
                         % this factor times the mass flow^2 will decide the pressure
                         % loss.
-                        this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell) = 5e6/iCellNumber;
+                        this.tGeometry.(csTypes{iType}).mfFrictionFactor(iCell) = 0.5e9/iCellNumber;
                         
                         % Each cell is connected to the next cell by a branch, the
                         % first and last cell also have the inlet and outlet branch
@@ -865,22 +865,25 @@ classdef CDRA < vsys
                 iBed = 1;
             end
             
-            for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
-                oCapacity = this.toStores.(['Zeolite5A_', num2str(iBed)]).toPhases.(['Absorber_', num2str(iCell)]).oCapacity;
-                if oCapacity.fTemperature < this.TargetTemperature
-                    % 10 second time step maximum for this exec: Reduce
-                    % heat flow if target temperature is reached within
-                    % 10 seconds
-                    fRequiredThermalEnergy = oCapacity.fTotalHeatCapacity * (this.TargetTemperature - oCapacity.fTemperature);
-                    fRequiredHeatFlow = fRequiredThermalEnergy / 10;
-                    if fRequiredHeatFlow < this.fMaxHeaterPower
-                        fHeaterPower = fRequiredHeatFlow;
+            % Only start heating the beds after the air save time
+            if (this.oTimer.fTime - this.tTimeProperties.fLastCycleSwitch) > this.tTimeProperties.fAirSafeTime
+                for iCell = 1:this.tGeometry.Zeolite5A.iCellNumber
+                    oCapacity = this.toStores.(['Zeolite5A_', num2str(iBed)]).toPhases.(['Absorber_', num2str(iCell)]).oCapacity;
+                    if oCapacity.fTemperature < this.TargetTemperature
+                        % 10 second time step maximum for this exec: Reduce
+                        % heat flow if target temperature is reached within
+                        % 10 seconds
+                        fRequiredThermalEnergy = oCapacity.fTotalHeatCapacity * (this.TargetTemperature - oCapacity.fTemperature);
+                        fRequiredHeatFlow = fRequiredThermalEnergy / 10;
+                        if fRequiredHeatFlow < this.fMaxHeaterPower
+                            fHeaterPower = fRequiredHeatFlow;
+                        else
+                            fHeaterPower = this.fMaxHeaterPower;
+                        end
+                        oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(fHeaterPower);
                     else
-                        fHeaterPower = this.fMaxHeaterPower;
+                        oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(0);
                     end
-                    oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(fHeaterPower);
-                else
-                    oCapacity.toHeatSources.(['AbsorberHeater_', num2str(iCell)]).setHeatFlow(0);
                 end
             end
         end

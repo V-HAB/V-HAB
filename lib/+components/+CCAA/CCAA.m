@@ -162,7 +162,7 @@ classdef CCAA < vsys
             % has trouble correctly calculating small volumes
             matter.store(this, 'TCCV', 1); 
             % Uses the custom air helper to set the air phase
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.TCCV, 1, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, this.tAtmosphere.fPressure);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.TCCV, this.toStores.TCCV.fVolume, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, this.tAtmosphere.fPressure);
             oAir = matter.phases.gas(this.toStores.TCCV, 'TCCV_PhaseGas', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
 %             oAir.bFlow      = true;

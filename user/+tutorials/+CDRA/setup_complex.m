@@ -18,6 +18,7 @@ classdef setup_complex < simulation.infrastructure
             % monitors
             ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestep_observer';
             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
+            ttMonitorConfig.oLogger.cParams = {true};
             
 %             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalance_observer';
 %             fAccuracy = 1e-8;
@@ -93,6 +94,8 @@ classdef setup_complex < simulation.infrastructure
             oLog.addValue('Example.toStores.CCAA_CDRA_Connection.aoPhases',      'fPressure',  'Pa',   'Connection Pressure CCAA to CDRA');
             oLog.addValue('Example.toStores.CDRA_CCAA_Connection.aoPhases',      'fPressure',  'Pa',   'Connection Pressure CDRA to CCAA');
             
+            oLog.addValue('Example.toStores.Cabin.toProcsP2P.CrewCO2Prod',       'fFlowRate',  'kg/s', 'CO2 Production');
+            
             % CDRA In
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 1');
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_In_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Inlet Flow 2');
@@ -103,15 +106,22 @@ classdef setup_complex < simulation.infrastructure
             % CDRA Out
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Outlet Flow 1');
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Outlet Flow 2');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_AirSafe_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Outlet Flow AirSafe 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_AirSafe_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'CDRA CO2 Outlet Flow AirSafe 2');
             
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Outlet Flow 1');
             oLog.addValue('Example:c:CDRA.toBranches.CDRA_Air_Out_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Outlet Flow 2');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_AirSafe_1.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Outlet Flow AirSafe 1');
+            oLog.addValue('Example:c:CDRA.toBranches.CDRA_AirSafe_2.aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)', 'kg/s', 'CDRA H2O Outlet Flow AirSafe 2');
             
             oLog.addVirtualValue('-1 .*("CDRA CO2 Inlet Flow 1" + "CDRA CO2 Inlet Flow 2")', 'kg/s', 'CDRA CO2 InletFlow');
             oLog.addVirtualValue('-1 .*("CDRA H2O Inlet Flow 1" + "CDRA H2O Inlet Flow 2")', 'kg/s', 'CDRA H2O InletFlow');
             
-            oLog.addVirtualValue('"CDRA CO2 Outlet Flow 1" + "CDRA CO2 Outlet Flow 2"', 'kg/s', 'CDRA CO2 OutletFlow');
-            oLog.addVirtualValue('"CDRA H2O Outlet Flow 1" + "CDRA H2O Outlet Flow 2"', 'kg/s', 'CDRA H2O OutletFlow');
+            oLog.addVirtualValue('"CDRA CO2 Outlet Flow 1" + "CDRA CO2 Outlet Flow 2" + "CDRA CO2 Outlet Flow AirSafe 1" + "CDRA CO2 Outlet Flow AirSafe 2"', 'kg/s', 'CDRA CO2 OutletFlow');
+            oLog.addVirtualValue('"CDRA H2O Outlet Flow 1" + "CDRA H2O Outlet Flow 2" + "CDRA H2O Outlet Flow AirSafe 1" + "CDRA H2O Outlet Flow AirSafe 2"', 'kg/s', 'CDRA H2O OutletFlow');
+            
+            oLog.addVirtualValue('-1 .*("CDRA CO2 Inlet Flow 1" + "CDRA CO2 Inlet Flow 2") - ("CDRA CO2 Outlet Flow 1" + "CDRA CO2 Outlet Flow 2" + "CDRA CO2 Outlet Flow AirSafe 1" + "CDRA CO2 Outlet Flow AirSafe 2")', 'kg/s', 'CDRA effective CO2 Flow');
+            oLog.addVirtualValue('-1 .*("CDRA H2O Inlet Flow 1" + "CDRA H2O Inlet Flow 2") - ("CDRA H2O Outlet Flow 1" + "CDRA H2O Outlet Flow 2" + "CDRA H2O Outlet Flow AirSafe 1" + "CDRA H2O Outlet Flow AirSafe 2")', 'kg/s', 'CDRA effective H2O Flow');
             
             oLog.addVirtualValue('"Partial Pressure CO2" ./ 133.322', 'torr', 'Partial Pressure CO2 Torr');
             
@@ -122,10 +132,17 @@ classdef setup_complex < simulation.infrastructure
             % further information
             close all
           
+            try
+                this.toMonitors.oLogger.readDataFromMat;
+            catch
+                disp('no data outputted yet')
+            end
             
             %% Define plots
             
             oPlotter = plot@simulation.infrastructure(this);
+            
+            tPlotOptions = struct('sTimeUnit','hours');
             
             iCellNumber13x = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Zeolite13x.iCellNumber;
             iCellNumberSylobead = this.oSimulationContainer.toChildren.Example.toChildren.CDRA.tGeometry.Sylobead.iCellNumber;
@@ -173,7 +190,7 @@ classdef setup_complex < simulation.infrastructure
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' Pressure']);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' Pressure'], tPlotOptions);
                 end
             end
             oPlotter.defineFigure(coPlot,  'CDRA Pressure');
@@ -182,7 +199,7 @@ classdef setup_complex < simulation.infrastructure
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_CO2_Mass(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorbed CO2 Mass']);     
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_CO2_Mass(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorbed CO2 Mass'], tPlotOptions);     
                 end
             end
             oPlotter.defineFigure(coPlot,  'CO2 Adsorbed Masses');
@@ -190,7 +207,7 @@ classdef setup_complex < simulation.infrastructure
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_H2O_Mass(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorbed H2O Mass']);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_H2O_Mass(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorbed H2O Mass'], tPlotOptions);
                 end
             end
             oPlotter.defineFigure(coPlot,  'H2O Adsorbed Masses');
@@ -199,7 +216,7 @@ classdef setup_complex < simulation.infrastructure
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_CO2_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' CO2 Pressure Flow']);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_CO2_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' CO2 Pressure Flow'], tPlotOptions);
                 end
             end
             oPlotter.defineFigure(coPlot,  'CO2 Partial Pressures in Flow');
@@ -207,7 +224,7 @@ classdef setup_complex < simulation.infrastructure
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
-                    coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_H2O_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' H2O Pressure Flow']);
+                    coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_H2O_Pressure(iType,iBed,:), [csType{iType}, num2str(iBed), ' H2O Pressure Flow'], tPlotOptions);
                 end
             end
             oPlotter.defineFigure(coPlot,  'H2O Partial Pressures in Flow');
@@ -215,7 +232,7 @@ classdef setup_complex < simulation.infrastructure
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateCO2(iType,iBed,:), [csType{iType}, num2str(iBed), ' CO2 Adsorption Flowrate']);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateCO2(iType,iBed,:), [csType{iType}, num2str(iBed), ' CO2 Adsorption Flowrate'], tPlotOptions);
                 end
             end
             oPlotter.defineFigure(coPlot,  'CO2 Adsorption Flow Rates');
@@ -223,7 +240,7 @@ classdef setup_complex < simulation.infrastructure
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
-                    coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateH2O(iType,iBed,:), [csType{iType}, num2str(iBed), ' H2O Adsorption Flowrate']);
+                    coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateH2O(iType,iBed,:), [csType{iType}, num2str(iBed), ' H2O Adsorption Flowrate'], tPlotOptions);
                 end
             end
             oPlotter.defineFigure(coPlot,  'H2O Adsorption Flow Rates');
@@ -231,8 +248,8 @@ classdef setup_complex < simulation.infrastructure
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Flow_Temperature(iType,iBed,:), [csType{iType}, num2str(iBed), ' Flow Temperature']);
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_Temperature(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorber Temperature']);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Flow_Temperature(iType,iBed,:), [csType{iType}, num2str(iBed), ' Flow Temperature'], tPlotOptions);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_Temperature(iType,iBed,:), [csType{iType}, num2str(iBed), ' Adsorber Temperature'], tPlotOptions);
                 end
             end
             oPlotter.defineFigure(coPlot,  'Temperatures');
@@ -262,23 +279,21 @@ classdef setup_complex < simulation.infrastructure
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_FlowRate(iType,iBed,1:miCellNumber(iType)), [csType{iType}, num2str(iBed), ' Flowrate']);
+                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_FlowRate(iType,iBed,1:miCellNumber(iType)), [csType{iType}, num2str(iBed), ' Flowrate'], tPlotOptions);
                 end
             end
             oPlotter.defineFigure(coPlot,  'FlowRates');
             
-            csNormalPhasePressures = {'"Connection Pressure CCAA to CDRA"', '"Connection Pressure CDRA to CCAA"'};
-            
             coPlot = cell(3,3);
-            coPlot{1,1} = oPlotter.definePlot({'"CDRA CO2 InletFlow"', '"CDRA H2O InletFlow"', '"CDRA CO2 OutletFlow"', '"CDRA H2O OutletFlow"'}, 'CDRA In- and Outlet Flows');
-            coPlot{1,2} = oPlotter.definePlot({'"Condensate Flowrate CHX"'}, 'CHX Condensate Flowrate');
-            coPlot{1,3} = oPlotter.definePlot({'"Partial Pressure CO2"'}, 'Partial Pressure CO2 Habitat');
-            coPlot{2,1} = oPlotter.definePlot({'"Partial Pressure CO2 Torr"'}, 'Partial Pressure CO2 Habitat in Torr');
-            coPlot{2,2} = oPlotter.definePlot({'"Relative Humidity Cabin"'}, 'Relative Humidity Cabin');
-            coPlot{2,3} = oPlotter.definePlot(csNormalPhasePressures, 'Phase Pressures of Non-Flow Phases');
-            coPlot{3,1} = oPlotter.definePlot({'"Temperature CHX"', '"Temperature TCCV"'}, 'Temperatures in CHX');
-            coPlot{3,2} = oPlotter.definePlot({'"Pressure CHX"', '"Pressure TCCV"'}, 'Pressure in CHX');
-            coPlot{3,3} = oPlotter.definePlot({'"Partial Pressure H2O TCCV"', '"Partial Pressure CO2 TCCV"'}, 'Partial Pressure H2O and CO2 TCCV');
+            coPlot{1,1} = oPlotter.definePlot({'"CDRA CO2 InletFlow"', '"CDRA H2O InletFlow"', '"CDRA CO2 OutletFlow"', '"CDRA H2O OutletFlow"'}, 'CDRA In- and Outlet Flows', tPlotOptions);
+            coPlot{1,2} = oPlotter.definePlot({'"Condensate Flowrate CHX"'}, 'CHX Condensate Flowrate', tPlotOptions);
+            coPlot{1,3} = oPlotter.definePlot({'"Partial Pressure CO2"'}, 'Partial Pressure CO2 Habitat',tPlotOptions);
+            coPlot{2,1} = oPlotter.definePlot({'"Partial Pressure CO2 Torr"'}, 'Partial Pressure CO2 Habitat in Torr',tPlotOptions);
+            coPlot{2,2} = oPlotter.definePlot({'"Relative Humidity Cabin"'}, 'Relative Humidity Cabin',tPlotOptions);
+            coPlot{2,3} = oPlotter.definePlot({'"CO2 Production"', '"CDRA effective CO2 Flow"'}, 'Effective CO2 FlowRates',tPlotOptions);
+            coPlot{3,1} = oPlotter.definePlot({'"Temperature CHX"', '"Temperature TCCV"'}, 'Temperatures in CHX',tPlotOptions);
+            coPlot{3,2} = oPlotter.definePlot({'"Pressure CHX"', '"Pressure TCCV"'}, 'Pressure in CHX', tPlotOptions);
+            coPlot{3,3} = oPlotter.definePlot({'"Partial Pressure H2O TCCV"', '"Partial Pressure CO2 TCCV"'}, 'Partial Pressure H2O and CO2 TCCV', tPlotOptions);
             
             oPlotter.defineFigure(coPlot,  'Plots');
             

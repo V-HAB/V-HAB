@@ -39,8 +39,9 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         mfAbsorptionEnthalpy;
         
         % boolean matrix to decide if the P2P should ignore small pressures
-        % (less than 2.5 Pa) to prevent oscillations
+        % (less than afIgnoredPP Pa) to prevent oscillations
         mbIgnoreSmallPressures;
+        afIgnoredPP;
         
         % partial inflowrates of all substances into the gas phase attached
         % to the adsorption P2P
@@ -87,6 +88,8 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
 
             % usually ignore small pressures for all substances
             this.mbIgnoreSmallPressures = true(1,this.oMT.iSubstances);
+            this.afIgnoredPP = ones(1,this.oMT.iSubstances);
+            this.afIgnoredPP = 5 .* this.afIgnoredPP;
         end
         
         function update(~)
@@ -116,10 +119,24 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
             end
             
             if this.bDesorption
-                % if there is no in flow, assume the partial pressure from
-                % the mass phase of this filter as the correct value for
-                % the partial pressures
-                afPP = zeros(1, this.oMT.iSubstances);
+                % Since the simulation uses only gas flow nodes, the
+                % pressure in the desorption case drops instantly. This is
+                % not quite correct and therefore a calculation is
+                % implemented here to simulate a slower decline of pressure
+                % without the mass time step limitations
+                fDesorptionTime = this.oTimer.fTime - this.oStore.oContainer.tTimeProperties.fLastCycleSwitch;
+                
+                fInitialPressure = 2e5;
+                fParameter = 250;
+                if fDesorptionTime < 600
+                    fPressure = (fInitialPressure * fParameter) .* (1./(fParameter + fDesorptionTime) - ((1/(fParameter+800)) .* fDesorptionTime./800));
+                    % if there is no in flow, assume the partial pressure from
+                    % the mass phase of this filter as the correct value for
+                    % the partial pressures
+                    afPP = (this.oStore.oContainer.oAtmosphere.afPP ./ this.oStore.oContainer.oAtmosphere.fPressure) .* fPressure;
+                else
+                    afPP = zeros(1, this.oMT.iSubstances);
+                end
                 
                 % similar to the small partial pressures, we also ignore
                 % very small absorber masses to prevent osciallations
@@ -150,7 +167,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
                 afPP                = arFractions .*  fPressure;
                 
-                afPP((afPP < 2.5) & this.mbIgnoreSmallPressures) = 0;
+                afPP((afPP < this.afIgnoredPP) & this.mbIgnoreSmallPressures) = 0;
             end
             
             % use the matter table to calculate the equilibrium loading and
@@ -200,13 +217,14 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 afMinPPHelper = mfCurrentLoading ./ mfLinearizationConstant;
                 afMinPPHelper(isnan(afMinPPHelper)) = 0;
                 afMinPPHelper(isinf(afMinPPHelper)) = 0;
+                afMinPPHelper(afMinPPHelper < this.afIgnoredPP) = this.afIgnoredPP(afMinPPHelper < this.afIgnoredPP);
                 
                 % then we only overwrite the partial pressure values for
                 % the substances where such a minimum pressure exists
                 % (gases that are not adsorbed/desorbed are not changed by
                 % the p2p)
                 afMinPP = afPP;
-                afMinPP(afMinPPHelper ~= 0) = afMinPPHelper(afMinPPHelper ~= 0);
+                afMinPP(mfLinearizationConstant ~= 0) = afMinPPHelper(mfLinearizationConstant ~= 0);
                 
                 arMinMolarFraction = afMinPP ./ fPressure;
                 
@@ -220,7 +238,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % sum of all the masses
                 arMinMassFraction = arMinMassFraction ./ sum(arMinMassFraction);
                 
-                % Now the minimum outlet flowrates can be calculated ny
+                % Now the minimum outlet flowrates can be calculated by
                 % multiplying the inlet flowrate and the partial mass
                 % fractions (assuming that the P2P flowrates are small when
                 % compared to the inflowing mass)
@@ -257,6 +275,12 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % during initialization. The error introduced from this
                 % assumption should be very small
                 fAdsorptionFlowRate     = 0;
+                mfFlowRatesAdsorption   = zeros(1,this.oMT.iSubstances);
+                if fDesorptionTime < 450
+                    fDesorptionFlowRate     = 0;
+                    mfFlowRatesDesorption   = zeros(1,this.oMT.iSubstances);
+                end
+                    
             else
                 fAdsorptionFlowRate   	= sum(mfFlowRatesAdsorption);
                 arPartialsAdsorption(mfFlowRatesAdsorption~=0)  = abs(mfFlowRatesAdsorption(mfFlowRatesAdsorption~=0)./sum(mfFlowRatesAdsorption));

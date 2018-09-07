@@ -433,7 +433,7 @@ classdef Example < vsys
                             this.cCrewPlaner{iCM,iEvent}.Ended = true;
                             %if the crew member was sleeping --> enter nominal
                             %state
-                            if strcmp(this.cCrewPlaner{iCM,iEvent}.State, 'sleep');
+                            if strcmp(this.cCrewPlaner{iCM,iEvent}.State, 'sleep')
                                 this.cCrewState{iCM} = 'nominal';
                             %of the crew member was working out --> enter
                             %recovery state
