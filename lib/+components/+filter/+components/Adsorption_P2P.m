@@ -128,8 +128,13 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 
                 fInitialPressure = 2e5;
                 fParameter = 250;
-                if fDesorptionTime < 600
-                    fPressure = (fInitialPressure * fParameter) .* (1./(fParameter + fDesorptionTime) - ((1/(fParameter+800)) .* fDesorptionTime./800));
+                fDelayTime = 400;
+                if fDesorptionTime < fDelayTime
+                    fPressure = 2e5;
+                    afPP = (this.oStore.oContainer.oAtmosphere.afPP ./ this.oStore.oContainer.oAtmosphere.fPressure) .* fPressure;
+                elseif fDesorptionTime < 600+fDelayTime
+                    fDesorptionTime = fDesorptionTime - fDelayTime;
+                    fPressure = (fInitialPressure * fParameter) .* (1./(fParameter + fDesorptionTime) - ((1/(fParameter+600)) .* fDesorptionTime./600));
                     % if there is no in flow, assume the partial pressure from
                     % the mass phase of this filter as the correct value for
                     % the partial pressures
@@ -276,7 +281,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 % assumption should be very small
                 fAdsorptionFlowRate     = 0;
                 mfFlowRatesAdsorption   = zeros(1,this.oMT.iSubstances);
-                if fDesorptionTime < 450
+                if fDesorptionTime < fDelayTime
                     fDesorptionFlowRate     = 0;
                     mfFlowRatesDesorption   = zeros(1,this.oMT.iSubstances);
                 end

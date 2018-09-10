@@ -92,7 +92,6 @@ classdef setup_complex < simulation.infrastructure
             end
             
             oLog.addValue('Example.toStores.CCAA_CDRA_Connection.aoPhases',      'fPressure',  'Pa',   'Connection Pressure CCAA to CDRA');
-            oLog.addValue('Example.toStores.CDRA_CCAA_Connection.aoPhases',      'fPressure',  'Pa',   'Connection Pressure CDRA to CCAA');
             
             oLog.addValue('Example.toStores.Cabin.toProcsP2P.CrewCO2Prod',       'fFlowRate',  'kg/s', 'CO2 Production');
             

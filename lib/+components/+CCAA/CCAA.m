@@ -165,14 +165,9 @@ classdef CCAA < vsys
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.TCCV, this.toStores.TCCV.fVolume, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, this.tAtmosphere.fPressure);
             oAir = matter.phases.gas(this.toStores.TCCV, 'TCCV_PhaseGas', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
-%             oAir.bFlow      = true;
-%             oAir.bSynced    = true;
+            oAir.bFlow      = true;
             
             matter.procs.exmes.gas(oAir, 'Port_In');
-            % This proc is only required if the CCAA has a CDRA connected to it
-            if ~isempty(this.sCDRA)
-                matter.procs.exmes.gas(oAir, 'Port_In2');
-            end
             matter.procs.exmes.gas(oAir, 'Port_Out_1');
             matter.procs.exmes.gas(oAir, 'Port_Out_2');
             
@@ -189,7 +184,6 @@ classdef CCAA < vsys
             oInput = matter.phases.gas(this.toStores.CHX, 'CHX_PhaseIn',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             oInput.bFlow    = true;
-            oInput.bSynced	= true;
             
             % H2O phase
             cWaterHelper = matter.helper.phase.create.water(this.toStores.CHX, 1, this.fCoolantTemperature, fPressure);
@@ -249,7 +243,6 @@ classdef CCAA < vsys
             components.pipe(this, 'Pipe_From_CDRA', 1, 0.1, 2e-4);
             if ~isempty(this.sCDRA)
                 matter.branch(this, 'CHX.Flow_Out_Gas2',            {},                         'CCAA_CHX_to_CDRA_Out',     'CHX_CDRA');
-                matter.branch(this, 'TCCV.Port_In2',                {'Pipe_From_CDRA'},     	'CCAA_In_FromCDRA',         'CDRA_TCCV');
             end
         end
              
@@ -294,11 +287,7 @@ classdef CCAA < vsys
             
             this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fInFlow);
 
-            if ~isempty(this.sCDRA)
-                fInFlow2 = -this.toBranches.CDRA_TCCV.fFlowRate;
-            else
-                fInFlow2 = 0;
-            end
+            fInFlow2 = 0;
 
             % Uses the interpolation for the TCCV to calculate the
             % percentage of flow entering the CHX
@@ -340,7 +329,7 @@ classdef CCAA < vsys
         end           
         
             %% Function to connect the system and subsystem level branches with each other
-        function setIfFlows(this, sInterface1, sInterface2, sInterface3, sInterface4, sInterface5, sInterface6, sInterface7, sInterface8)
+        function setIfFlows(this, sInterface1, sInterface2, sInterface3, sInterface4, sInterface5, sInterface6, sInterface7)
             if nargin == 7
                 % Case of a standalone CCAA (no CDRA connected)
                 this.connectIF('CCAA_In' , sInterface1);
@@ -349,16 +338,15 @@ classdef CCAA < vsys
                 this.connectIF('CCAA_CHX_Condensate_Out' , sInterface4);
                 this.connectIF('CCAA_CoolantIn' , sInterface5);
                 this.connectIF('CCAA_CoolantOut' , sInterface6);
-            elseif nargin == 9
+            elseif nargin == 8
                 % Case of a CDRA connected to the CCAA
                 this.connectIF('CCAA_In' , sInterface1);
-                this.connectIF('CCAA_In_FromCDRA' , sInterface2);
-                this.connectIF('CCAA_CHX_Air_Out' , sInterface3);
-                this.connectIF('CCAA_TCCV_Air_Out' , sInterface4);
-                this.connectIF('CCAA_CHX_Condensate_Out' , sInterface5);
-                this.connectIF('CCAA_CHX_to_CDRA_Out' , sInterface6);
-                this.connectIF('CCAA_CoolantIn' , sInterface7);
-                this.connectIF('CCAA_CoolantOut' , sInterface8);
+                this.connectIF('CCAA_CHX_Air_Out' , sInterface2);
+                this.connectIF('CCAA_TCCV_Air_Out' , sInterface3);
+                this.connectIF('CCAA_CHX_Condensate_Out' , sInterface4);
+                this.connectIF('CCAA_CoolantIn' , sInterface5);
+                this.connectIF('CCAA_CoolantOut' , sInterface6);
+                this.connectIF('CCAA_CHX_to_CDRA_Out' , sInterface7);
             else
                 error('CCAA Subsystem was given the wrong number of interfaces')
             end

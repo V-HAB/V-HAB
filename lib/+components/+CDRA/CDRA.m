@@ -666,7 +666,7 @@ classdef CDRA < vsys
             aoMultiSolverBranches = this.aoBranches;
             % we also add the CDRA outflowing branch that is located in the
             % CCAA to this network
-            aoMultiSolverBranches(end+1) = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CDRA_TCCV;
+%             aoMultiSolverBranches(end+1) = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CDRA_TCCV;
             
             oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);

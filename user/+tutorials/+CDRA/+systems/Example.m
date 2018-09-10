@@ -172,18 +172,9 @@ classdef Example < vsys
             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
             
-            % creates a store to connect the CCAA and the CDRA
-            matter.store(this, 'CDRA_CCAA_Connection', 0.1);
-            
-            % uses the custom air helper to generate an air phase with a
-            % defined co2 level and relative humidity
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 0.1, struct('CO2', fCO2Percent),  295, 0, 1e5);
-               
             % Adding a phase to the store
-            oConnectionPhase = matter.phases.gas_flow_node(this.toStores.CDRA_CCAA_Connection, 'ConnectionPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
-            matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
-            matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
-            matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
+            matter.procs.exmes.gas( oCabinPhase, 'CDRA_Port_1');
+            matter.procs.exmes.gas( oCabinPhase, 'CDRA_Port_2');
             
             % Adding heat sources to keep the cabin and coolant water at a
             % constant temperature
@@ -199,13 +190,12 @@ classdef Example < vsys
             matter.branch(this, 'CCAA_CondensateOutput', {}, 'CondensateStore.Port_1');
             matter.branch(this, 'CCAA_CoolantInput', {}, 'CoolantStore.Port_1');
             matter.branch(this, 'CCAA_CoolantOutput', {}, 'CoolantStore.Port_2');
-            matter.branch(this, 'CCAA_In_FromCDRA', {}, 'CDRA_CCAA_Connection.Port_1');
             matter.branch(this, 'CCAA_CHX_to_CDRA_Out', {}, 'CCAA_CDRA_Connection.Port_1');
             
             matter.branch(this, 'CDRA_Input1', {}, 'CCAA_CDRA_Connection.Port_2');
             matter.branch(this, 'CDRA_Input2', {}, 'CCAA_CDRA_Connection.Port_3');
-            matter.branch(this, 'CDRA_Output1', {}, 'CDRA_CCAA_Connection.Port_2');
-            matter.branch(this, 'CDRA_Output2', {}, 'CDRA_CCAA_Connection.Port_3');
+            matter.branch(this, 'CDRA_Output1', {}, 'Cabin.CDRA_Port_1');
+            matter.branch(this, 'CDRA_Output2', {}, 'Cabin.CDRA_Port_2');
             matter.branch(this, 'CDRA_Airsafe1', {}, 'Cabin.Port_FromCDRAAirSafe1');
             matter.branch(this, 'CDRA_Airsafe2', {}, 'Cabin.Port_FromCDRAAirSafe2');
             matter.branch(this, 'CDRA_Vent1', {}, 'Vented.Port_1');
@@ -213,7 +203,7 @@ classdef Example < vsys
             
             % now the interfaces between this system and the CCAA subsystem
             % are defined
-            this.toChildren.CCAA.setIfFlows('CCAAinput', 'CCAA_In_FromCDRA', 'CCAA_CHX_Output', 'CCAA_TCCV_Output', 'CCAA_CondensateOutput', 'CCAA_CHX_to_CDRA_Out', 'CCAA_CoolantInput', 'CCAA_CoolantOutput');
+            this.toChildren.CCAA.setIfFlows('CCAAinput', 'CCAA_CHX_Output', 'CCAA_TCCV_Output', 'CCAA_CondensateOutput', 'CCAA_CoolantInput', 'CCAA_CoolantOutput', 'CCAA_CHX_to_CDRA_Out');
             
             this.toChildren.CDRA.setIfFlows('CDRA_Input1', 'CDRA_Input2', 'CDRA_Output1', 'CDRA_Output2', 'CDRA_Vent1', 'CDRA_Vent2', 'CDRA_Airsafe1', 'CDRA_Airsafe2');
             
