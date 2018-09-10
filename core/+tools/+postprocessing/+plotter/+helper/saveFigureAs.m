@@ -34,7 +34,7 @@ function saveFigureAs(hButton,~)
     
     % First we create a fixed cell with the file types that we'll use as a
     % reference.
-    csFixedFileTypes = {'*.fig','MATLAB-Figure';'*.pdf','PDF';'*.png','PNG';'*.jpg','JPEG';'*.svg','SVG'};
+    csFixedFileTypes = {'*.fig','MATLAB-Figure';'*.pdf','PDF';'*.png','PNG';'*.jpg','JPEG';'*.svg','SVG';'*.emf','EMF'};
     
     % Now we instantiate the global variable with the index of the
     % previously selected format in the reference. 
@@ -100,6 +100,8 @@ function saveFigureAs(hButton,~)
                 sFormat = '-djpeg';
             case 5
                 sFormat = '-dsvg';
+            case 6
+                sFormat = '-dmeta';
             otherwise
                 error('Something went wrong the FilterIndex has an illegal value.');
         end
@@ -343,7 +345,7 @@ function saveFigureAs(hButton,~)
     % Now we finally have everything set just the way we like it, so we can
     % go ahead and save the file.
     switch csTypeList{iFilterIndex, 3}
-        case {2,5}
+        case {2,5,6}
             %TODO Suppress the "figure is too large" warning for PDFs. 
             % This is the PDF and SVG case. We chose the '-painters'
             % renderer here, because that produces a vector file. In some
