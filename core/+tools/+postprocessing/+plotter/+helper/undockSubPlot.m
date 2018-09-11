@@ -51,7 +51,7 @@ function undockSubPlot( ~, ~, oSubPlot, oLegend )
     % file. For this we create a small button in the bottom left corner of
     % the figure and set its callback.
     oButton = uicontrol(hFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
-    oButton.Callback = @simulation.helper.plotter_basic.saveFigureAs;
+    oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
 end
 
 function restoreFigure(~, ~)
