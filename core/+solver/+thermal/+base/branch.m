@@ -53,7 +53,7 @@ classdef branch < base & event.source
         % Update method is bound to this post tick priority. Some solvers
         % might need another priority to e.g. ensure that first, all other
         % branches update their flow rates.
-        iPostTickPriority = -1;
+        iPostTickPriority = 0;
         
         bResidual = false;
         

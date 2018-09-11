@@ -31,7 +31,7 @@ classdef branch < solver.matter.manual.branch
         function this = branch(oBranch)
             this@solver.matter.manual.branch(oBranch);
             
-            this.iPostTickPriority = 1;
+            this.iPostTickPriority = 2;
             this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
             
             this.oBranch.oTimer.bindPostTick(@this.findAdjacentResidualSolvers, -3);

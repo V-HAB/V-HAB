@@ -255,7 +255,9 @@ classdef timer < base
             %abExec = (this.afLastExec + this.afTimeStep) <= (this.fTime + fThisStep - this.fMinimumTimeStep);
             aiExec  = find(abExec);
             
-            % Execute callbacks
+            %% Execute callbacks
+            % Executes all components that registered a time step with the
+            % timer that must be executed at the current time
             for iE = 1:length(aiExec)
                 this.cCallBacks{aiExec(iE)}(this);
                 
