@@ -58,11 +58,6 @@ function [mLinearRate, mFluidFlowRate, mRadiationRate] = ...
         % with |1/s|).
         mLinearRate = mLinearRate ./ mTiledCapacitances;
 
-        % Very small capacities would result in the ode solver running
-        % endlessly (because the timesteps for the solver become so small
-        % that it gets stuck in and endless loop). Therefore the values for
-        % very small capacites in the linear rate are set to 0, to prevent 
-        mLinearRate(mTiledCapacitances < 1e-5) = 0;
     end
 
     %% Rate matrix for fluidic conductors
@@ -96,11 +91,6 @@ function [mLinearRate, mFluidFlowRate, mRadiationRate] = ...
         % with |1/s|).
         mFluidFlowRate = mFluidFlowRate ./ mTiledCapacitances;
 
-        % Very small capacities would result in the ode solver running
-        % endlessly (because the timesteps for the solver become so small
-        % that it gets stuck in and endless loop). Therefore the values for
-        % very small capacites in the linear rate are set to 0, to prevent 
-        mFluidFlowRate(mTiledCapacitances < 1e-5) = 0;
     end
 
     %% Rate matrix for radiative conductors
@@ -131,11 +121,6 @@ function [mLinearRate, mFluidFlowRate, mRadiationRate] = ...
         % term left with |1/(s*K^3)|).
         mRadiationRate = mRadiationRate ./ mTiledCapacitances;
 
-        % Very small capacities would result in the ode solver running
-        % endlessly (because the timesteps for the solver become so small
-        % that it gets stuck in and endless loop). Therefore the values for
-        % very small capacites in the linear rate are set to 0, to prevent 
-        mRadiationRate(mTiledCapacitances < 1e-5) = 0;
     end
 
 end

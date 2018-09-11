@@ -268,12 +268,6 @@ if ~strcmp(sMatterState, 'mixture')
     aiPhase = tiP2N.(sMatterState)*ones(1,this.iSubstances);
 end
 
-% If determine phase yield anything besides integer this
-% basically means a phase change is occuring at the moment.
-% Currently this can only be covered by a simplified
-% rounding operation
-aiPhase = round(aiPhase);
-
 % Go through all substances that have mass and get the conductivity of each. 
 for iI = 1:length(aiIndices)
     tParameters = struct();

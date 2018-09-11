@@ -13,9 +13,6 @@ classdef lumpedparameter < base
         
         %bCalcConductorHeatTransfer = false; % Calculate heat transfer of each conductor.
         
-        % minimum time step for the lumped parameter solver to prevent the
-        % ODE solver from crashing due to too small time steps
-        fMinimumTimeStep = 1e-8; % seconds
     end
     
     properties (SetAccess = protected)
@@ -148,48 +145,9 @@ classdef lumpedparameter < base
             fStepBeginTime = this.fPreviousTimestep;
             fStepEndTime   = oTimer.fTime;
             
-            % The ode45 Solver crashed for me because the timestep used in
-            % it was on the scale of e-13, which the ode makes even smaller
-            % thus leading to the effect that the internal ODE step becomes
-            % small enough to be lost due to rounding errors (in line 267
-            % of ode45 code the term t+hA(6) is used to calculate the new
-            % step but halting at this point during the error and entering
-            % the calculation (t + hA(6))-t yielded 0, thus making the new
-            % time tnew identical to the current one, which resulted in
-            % NANs, which in turn resulted in an endless loop :)
-            %
-            % Therefore the user can now set a minimum time step for the
-            % thermal solver and the function simply returns if that
-            % minimum time step has not been reached
-            fTimeStep = fStepEndTime - fStepBeginTime;
-            if fTimeStep < this.fMinimumTimeStep
-                return
-            end
             % Solve the equation.
             % http://www.mathworks.com/matlabcentral/answers/101581-why-do-i-receive-a-warning-about-integration-tolerance-when-using-the-ode-solver-functions
             % ode45, ode23s, ode15s, ode23tb?
-            
-            % TO DO: Find out why this became necessary
-            mHeatSources = this.oVSys.mHeatSourceVector;
-            for sNode = this.oVSys.piCapacityIndices.keys
-                
-                % Get index of current node.
-                iIndex = this.oVSys.tiCapacityIndices.(sNode{1});
-                
-                % Get the node object.
-                oNode = this.oVSys.poCapacities(sNode{1});
-                
-                % Get the heater power of current node and store
-                % the data at the associated index (i.e. position). %%%
-                mHeatSources(iIndex, 1)  = oNode.getHeatPower();
-                
-            end
-            
-            mCapacities  = this.oVSys.mCapacityVector;
-            
-            % Build the source rate vector.
-            this.mSourceRateVector = mHeatSources ./ mCapacities;
-            
             [mTimePoints, mSolutionTemps] = ode45(this.calcChangeRate, ...    ode23s
                 [fStepBeginTime, fStepEndTime], mNodeTemps, this.tOdeOptions);
             
@@ -208,8 +166,7 @@ classdef lumpedparameter < base
             mNodeHeatChange = this.mNodeCapacities' .* mTotalTempDiff;
             
             % Notify thermal container / nodes about heat energy transfer.
-            %this.oVSys.changeNodesInnerEnergy(mNodeHeatChange);
-            this.oVSys.setNodeHeatFlows(mNodeHeatChange/(fStepEndTime - fStepBeginTime));
+            this.oVSys.changeNodesInnerEnergy(mNodeHeatChange);
             
             % Remember the current (end) time for the next call to this
             % method, where it is used as the start time.
@@ -290,7 +247,7 @@ classdef lumpedparameter < base
             % Original logic by Christof Roth.
             
             %mLinearRateMatrices = this.mLinearRateMatrix + this.mFluidFlowRateMatrix;
-            
+
             mTemperatureChangeRate = this.mSourceRateVector + ...
                 (this.mLinearRateMatrix + this.mFluidFlowRateMatrix) * mCurrentTemperatures + ...
                 this.mRadiationRateMatrix * mCurrentTemperatures.^4;

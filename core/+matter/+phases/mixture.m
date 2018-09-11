@@ -18,10 +18,8 @@ classdef mixture < matter.phase
         % Volume in m^3
         fVolume;       
         fPressure;
-        fMassToPressure;
+
         sPhaseType;
-        
-        iFailedHeatCapUpdates = 0;
     end
     
     methods
@@ -32,7 +30,6 @@ classdef mixture < matter.phase
             this.fVolume = fVolume;
             this.fDensity = this.fMass / this.fVolume;
             this.fPressure = fPressure;
-            this.fMassToPressure = this.fPressure/this.fMass;
             this.fPressureLastHeatCapacityUpdate = this.fPressure;
         end
         
@@ -44,7 +41,6 @@ classdef mixture < matter.phase
         % TO DO: implement pressure calculation for liquid phase
         if strcmp(this.sPhaseType, 'gas')
             this.fPressure = this.oMT.calculatePressure(this);
-            this.fMassToPressure = this.fPressure/this.fMass;
         end
         
         
@@ -62,20 +58,11 @@ classdef mixture < matter.phase
            (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
 
             % Actually updating the specific heat capacity
-            try
-                this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
+            this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
 
-                % Setting the properties for the next check
-                this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
-                this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
-                this.iFailedHeatCapUpdates = 0;
-            catch
-                if this.iFailedHeatCapUpdates <100 
-                    this.iFailedHeatCapUpdates = this.iFailedHeatCapUpdates + 1;
-                else
-                    error('you have something in a phase changing state (liquid to gas or similar) for multiple ticks in a row and the matter table cannot calculate this')
-                end
-            end
+            % Setting the properties for the next check
+            this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
+            this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
         end
     end
     end

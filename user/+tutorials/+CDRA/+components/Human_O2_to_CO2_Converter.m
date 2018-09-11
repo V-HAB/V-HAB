@@ -23,7 +23,7 @@ classdef Human_O2_to_CO2_Converter < matter.manips.substance.flow
                 return
             end
             
-            afPartialFlowRates = zeros(1, this.oPhase.oMT.iSubstances);
+            arPartialFlowRates = zeros(1, this.oPhase.oMT.iSubstances);
             tiN2I      = this.oPhase.oMT.tiN2I;
             
             %simply converts all the O2 in the human into CO2, since only
@@ -32,10 +32,10 @@ classdef Human_O2_to_CO2_Converter < matter.manips.substance.flow
             %a human breathes out
             fO2MassFlow = this.oPhase.toProcsEXME.O2In.oFlow.fFlowRate;
             
-            afPartialFlowRates(tiN2I.CO2)   =  fO2MassFlow;%fO2Mass/fTimeStep;
-            afPartialFlowRates(tiN2I.O2)   = -fO2MassFlow;%-fO2Mass/fTimeStep;
+            arPartialFlowRates(tiN2I.CO2)   =  fO2MassFlow;%fO2Mass/fTimeStep;
+            arPartialFlowRates(tiN2I.O2)   = -fO2MassFlow;%-fO2Mass/fTimeStep;
             
-            update@matter.manips.substance.flow(this, afPartialFlowRates);
+            update@matter.manips.substance.flow(this, arPartialFlowRates);
             
             this.fLastUpdate = this.oPhase.oStore.oTimer.fTime;
         end

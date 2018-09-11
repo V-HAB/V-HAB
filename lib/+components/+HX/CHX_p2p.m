@@ -23,6 +23,10 @@ classdef CHX_p2p < matter.procs.p2ps.flow & event.source
                 error('the CHX_p2p processor only works in combination with a condensing heat exchanger')
             end
             this.oCHX = oCHX;
+            % to allow parent function to bind functions to the update
+            % function of the P2P (help with the recalculation of the CHX
+            % outlet flows
+            this.trigger('update');
         end
         
         function update(this)
@@ -64,11 +68,6 @@ classdef CHX_p2p < matter.procs.p2ps.flow & event.source
             % the phase itself are used (i.e. extracting all species
             % equally).
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
-            
-            % to allow parent function to bind functions to the update
-            % function of the P2P (help with the recalculation of the CHX
-            % outlet flows
-            this.trigger('update');
         end
     end
 end
