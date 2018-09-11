@@ -26,18 +26,22 @@ classdef heater < matter.procs.f2f
             this.supportSolver('manual', true, @this.updateManualSolver);
         end
         
-        function updateManualSolver(this)
-            this.fHeatFlow = this.fPower * this.rEfficiency;
+        function updateManualSolver(~)
         end
         
-        function ThermalUpdate(this)
-            this.updateManualSolver();
-        end
-        function fDeltaPress = solverDeltas(this, ~)
-            this.fHeatFlow = this.fPower * this.rEfficiency;
+        function fDeltaPress = solverDeltas(~, ~)
             fDeltaPress = 0;
-        
         end
+        
+        function updateThermal(this)
+            this.fHeatFlow = this.fPower * this.rEfficiency;
+        end
+        
+        function setPower(this, fPower)
+            this.fPower = fPower;
+            this.fHeatFlow = this.fPower * this.rEfficiency;
+        end
+        
     end
     
 end

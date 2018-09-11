@@ -1,5 +1,5 @@
 classdef console_output < simulation.monitor
-    %LOGGER_BASIC Summary of this class goes here
+    %CONSOLE_OUTPUT Summary of this class goes here
     %   Detailed explanation goes here
     %
     %TODO see bOutputUuids
@@ -69,7 +69,7 @@ classdef console_output < simulation.monitor
     end
     
     properties (SetAccess = protected, GetAccess = protected)
-        oLog;
+        oLogger;
         iLogBindId;
     end
     
@@ -90,12 +90,12 @@ classdef console_output < simulation.monitor
             
             
             % Register on logger / debugger
-            [ this.oLog, this.iLogBindId ] = base.signal('log', @this.printOutput, @this.filterObjByRootlineToSimContainer, this);
+            [ this.oLogger, this.iLogBindId ] = base.signal('log', @this.printOutput, @this.filterObjByRootlineToSimContainer, this);
         end
         
         
         function delete(this)
-            this.oLog.unbind(this.iLogBindId);
+            this.oLogger.unbind(this.iLogBindId);
         end
         
         
@@ -112,14 +112,14 @@ classdef console_output < simulation.monitor
             
             if ~isempty(iTicks)
                 
-                if mod(iTicks, 1) ~= 0, error('Ticks needs to be integer.'); end;
+                if mod(iTicks, 1) ~= 0, error('Ticks needs to be integer.'); end
                 
                 this.iMajorReportingInterval = iTicks;
             end
             
             if (nargin >= 3) && ~isempty(iMinorTicks)
                 
-                if mod(iMinorTicks, 1) ~= 0, error('Minor ticks needs to be integer.'); end;
+                if mod(iMinorTicks, 1) ~= 0, error('Minor ticks needs to be integer.'); end
                 
                 if mod(iTicks / iMinorTicks, 1) ~= 0
                     error('Minor tick needs to be a whole-number divisor of major tick (e.g. 25 vs. 100, 10 vs. 100)');
@@ -138,17 +138,20 @@ classdef console_output < simulation.monitor
         
         
         
-        
+        % Switch debugging output off.
         function this = setLogOff(this)
-            this.oLog.setOutputState(false);
+            this.oLogger.setOutputState(false);
         end
         
+        % Globally activate the debugging output. This should only be done when
+        % currently debugging, as it slows down the simulation.
         function this = setLogOn(this)
-            this.oLog.setOutputState(true);
+            this.oLogger.setOutputState(true);
         end
         
+        % When printing a debug message, include the stack output?
         function this = toggleShowStack(this)
-            this.oLog.toggleCreateStack();
+            this.oLogger.toggleCreateStack();
         end
         
         
@@ -156,12 +159,24 @@ classdef console_output < simulation.monitor
         
         
         
-        
+        % Debug outputs are mapped to a level, see base.m:
+        % 1 (MESSAGE), 2 (INFO), 3 (NOTICE), 4 (WARN) and 5 (ERROR)
+        % Only output messages above the level set here.
         function this = setLevel(this, iLevel)
+            % Parameters:
+            %   iLevel  Only messages above this level are printed.
+            
             this.iMinLevel = iLevel;
         end
         
+        % Verbosity of the debug messages. Each message can set a verbosity, 
+        % defining the amount of data printed. The higher the level, the more
+        % information is printed.
         function this = setVerbosity(this, iVerbosity)
+            % Parameters:
+            %   iVerbosity  The higher the number, the more information is printed.
+            
+            
             this.iMaxVerbosity = iVerbosity;
         end
         
@@ -191,11 +206,25 @@ classdef console_output < simulation.monitor
         
         % Types filters
         function this = resetTypesFilters(this)
+            % Resets all type filters, see addTypeToFilter
+            
             this.csTypes = {};
             %this.iTypes  = 0;
         end
         
+        
         function this = addTypeToFilter(this, sType)
+            % If debug messages are active, filter the printed messages depending
+            % on the type of the object that generated the message.
+            %
+            % If no filter is set, all messages printed. Several filters can be
+            % set to print messages from different object types.
+            %
+            % Parameters:
+            %   sType   Only print debug messages of objects of this type (isaa
+            %           check, e.g. type = 'matter.phase' also prints messages 
+            %           an object of a derived class)
+            
             if ~any(strcmp(this.csTypes, sType))
                 %this.iTypes  = this.iTypes + 1;
                 %this.csTypes{this.iTypes} = sType;
@@ -204,6 +233,8 @@ classdef console_output < simulation.monitor
         end
         
         function this = removeTypeFromFilter(this, sType)
+            % Removes a type filters, see addTypeToFilter
+            
             iIdx = find(strcmp(this.csTypes, sType));
             
             if ~isempty(iIdx)
@@ -215,16 +246,29 @@ classdef console_output < simulation.monitor
         
         % Identifiers filters
         function this = resetIdentFilters(this)
+            % See addIdentFilter; reset all filters.
+            
             this.csIdentifiers = {};
         end
         
         function this = addIdentFilter(this, sIdentifier)
+            % If debug messages are active, filter the printed messages depending
+            % on the ident string passed together with the debug data.
+            %
+            % If no ident filter is added, all are printed. Several filters can 
+            % be added, defined by the sIdentifier paramter.
+            %
+            % Can be chained, e.g.
+            % oO.addIdentFilter('first').addIdentFilter('second')
+            
             if ~any(strcmp(this.csIdentifiers, sIdentifier))
                 this.csIdentifiers{end + 1} = sIdentifier;
             end
         end
         
         function this = removeIdentFilter(this, sIdentifier)
+            % See addIdentFilter; reset filters for ident string sIdentifier.
+            
             iIdx = find(strcmp(this.csIdentifiers, sIdentifier));
             
             if ~isempty(iIdx)
@@ -235,16 +279,29 @@ classdef console_output < simulation.monitor
         
         % Method filters
         function this = resetMethodFilters(this)
+            % See addMethodFilter; remove all filters.
+            
             this.csMethods = {};
         end
         
         function this = addMethodFilter(this, sMethod)
+            % If debug messages are active, filter the printed messages depending
+            % on the method in which this debug message was generated.
+            %
+            % If no method filter is added, all messages are printed. Several 
+            % filters can be added, defined by the sMethod paramter.
+            %
+            % Can be chained, e.g.
+            % oO.addIdentFilter('first').addIdentFilter('second')
+            
             if ~any(strcmp(this.csMethods, sMethod))
                 this.csMethods{end + 1} = sMethod;
             end
         end
         
         function this = removeMethodFilter(this, sMethod)
+            % See addMethodFilter; remove method filters for method sMethod
+            
             iIdx = find(strcmp(this.csMethods, sMethod));
             
             if ~isempty(iIdx)
@@ -257,16 +314,22 @@ classdef console_output < simulation.monitor
         
         % Uuid filters
         function this = resetUuidFilters(this)
+            % See addUuidFilter
+            
             this.csUuids = {};
         end
         
         function this = addUuidFilter(this, sUuid)
+            % See addTypeToFilter, but here, filtered by object UUIDs.
+            
             if ~any(strcmp(this.csUuids, sUuid))
                 this.csUuids{end + 1} = sUuid;
             end
         end
         
         function this = removeUuidFilter(this, sUuid)
+            % See addUuidFilter
+            
             iIdx = find(strcmp(this.csUuids, sUuid));
             
             if ~isempty(iIdx)
@@ -277,10 +340,18 @@ classdef console_output < simulation.monitor
         
         % Path filters
         function this = resetPathsFilters(this)
+            % See resetPathsFilters
+            
             this.csPaths = {};
         end
         
         function this = addPathToFilter(this, sPath)
+            % See addTypeToFilter, but here, filtered by the objects path.
+            % Path is generated automatically for known objects like vsys, store,
+            % phase etc.
+            %
+            %TODO documented somewhere, link here!
+            
             sPath = simulation.helper.paths.convertShorthandToFullPath(sPath);
             
             if ~any(strcmp(this.csPaths, sPath))
@@ -289,6 +360,8 @@ classdef console_output < simulation.monitor
         end
         
         function this = removePathFromFilter(this, sPath)
+            % See resetPathsFilters
+            
             iIdx = find(strcmp(this.csPaths, sPath));
             
             if ~isempty(iIdx)
@@ -451,7 +524,7 @@ classdef console_output < simulation.monitor
             fprintf(tPayload.sMessage, tPayload.cParams{:});
             fprintf('\n');
             
-            if this.oLog.bCreateStack
+            if this.oLogger.bCreateStack
                 fprintf('     STACK');
                 fprintf(' <- %s', tPayload.tStack(:).name);
                 fprintf('\n\n');

@@ -37,9 +37,9 @@ classdef fan < matter.procs.f2f
     end
     
     properties (SetAccess = protected, GetAccess = public)
-        % Switched off?
-        bActive = true;
         
+        % Boolean variable determining if the fan is turned on at all
+        bTurnedOn;
         
         % Direction of the flow the fan is trying to produce. Default
         % direction is left to right -> iBlowDirection = 1. For right to
@@ -75,25 +75,19 @@ classdef fan < matter.procs.f2f
             'fTestPressure',    29649, ...      Pa
             'fTestTemperature',   294.26, ...   K
             'fTestGasConstant',   287.058, ...  J/kgK
-            'fTestDensity',         0.3510, ...  kg/m3
-            'fMaxDeltaPressure', 29649 ...      Pa
+            'fTestDensity',         0.3510 ...  kg/m3
             );
-        
-        % Question: The current Fan calculation does not limit the pressure
-        % difference /volumetric flow the fan can generate. Should there
-        % not be a limit to this?. I mean generallly the fan will be
-        % limited in regard to the maximum pressure differential it can
-        % generate (leading to a flowrate of zero in the end). Currently it
-        % seems that the fan polynomial just keeps going on to infinity.
-        % Furthermore it strikes me as a bit strange that the pressure
-        % difference is calculated from the flowrate. In general a flow is
-        % generated from a pressure difference existing. Therefore the
-        % pressure difference of the fan should depend on the speed of the
-        % fan (and environmental parameters), not the volumetric flowrate.
         
         % Pressure difference produced by this fan.
         fDeltaPressure;
         
+        % Boolean variable to enable or disable the pressure rise at the
+        % beginning of a simulation. This prevents some solvers from
+        % becoming unstable due to the large pressure spike produced by the
+        % fan when starting at zero flow rate. 
+        %TODO should implement this better and make it use the gradual rise
+        %after each shutdown, not just at the beginning of a simulation.
+        bUsePressureRise = false;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -125,6 +119,8 @@ classdef fan < matter.procs.f2f
             
             this@matter.procs.f2f(oContainer, sName);
             
+            % tells solvers that this component produces a pressure rise
+            this.bActive = true;
             
             this.fSpeedSetpoint = fSpeedSetpoint;
             
@@ -152,12 +148,12 @@ classdef fan < matter.procs.f2f
         
         
         function switchOn(this)
-            this.bActive = true;
+            this.bTurnedOn = true;
             this.oBranch.setOutdated();
         end
         
         function switchOff(this)
-            this.bActive = false;
+            this.bTurnedOn = false;
             this.oBranch.setOutdated();
         end
         
@@ -166,7 +162,7 @@ classdef fan < matter.procs.f2f
             
             
             % Switched off? No dP no matter what
-            if ~this.bActive
+            if ~this.bTurnedOn
                 
                 % VERY IMPORTANT! No flow -> no heat transfer!!
                 this.fHeatFlow = 0;
@@ -202,11 +198,8 @@ classdef fan < matter.procs.f2f
             end
             
             % Calculating the density of the incoming flowing matter:
-            if (this.oFlowIn.fPressure <= 0)
-                fDensity = 0;
-            else
-                fDensity = this.oFlowIn.getDensity();
-            end
+            fDensity = this.oFlowIn.getDensity();
+            
             % We need to check, if the flow rate is positive or negative
             % and set our iFlowDir variable accordingly.
             if fFlowRate < 0
@@ -236,10 +229,6 @@ classdef fan < matter.procs.f2f
             % Considering the influence of the density:
             fDensityCorrectedDeltaPressure = fInterpolatedDeltaPressure *  (fDensity / this.tCharacteristic.fTestDensity);
             
-            if abs(fDensityCorrectedDeltaPressure) > this.tCharacteristic.fMaxDeltaPressure
-                fDensityCorrectedDeltaPressure = sign(fDensityCorrectedDeltaPressure) * this.tCharacteristic.fMaxDeltaPressure;
-            end
-            
             % Setting the correct sign to respect the iterative solver's
             % directivity. If the direction of the flow and the direction
             % of the fan are pointing in the same direction (are both
@@ -250,12 +239,15 @@ classdef fan < matter.procs.f2f
             % there is backflow), the fan produces a pressure drop.
             fDeltaPressure = fDensityCorrectedDeltaPressure * this.iBlowDirection * iFlowDir * (-1);
             
-            % This is not a very good way to implement this. It will only
-            % work at the beginning of the simulation, not when the fan is
-            % activated later
-            fRiseTime = 1;
-            if this.oTimer.fTime < fRiseTime
-                fDeltaPressure = fDeltaPressure * (-1 * ((this.oTimer.fTime - fRiseTime) / fRiseTime)^2 + 1);
+            % If it is turned on, we gradually increase the pressure at the
+            % start of a simulation over a time period of one second. This
+            % is done to prevent solver issues caused by a large pressure
+            % spike. 
+            if this.bUsePressureRise
+                fRiseTime = 1;
+                if this.oTimer.fTime < fRiseTime
+                    fDeltaPressure = fDeltaPressure * (-1 * ((this.oTimer.fTime - fRiseTime) / fRiseTime)^2 + 1);
+                end
             end
             
             % We might want to log this value, so we set the property

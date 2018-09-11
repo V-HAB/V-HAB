@@ -55,12 +55,14 @@ classdef Example < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            oIt1 = solver.matter.iterative.branch(this.aoBranches(1));
+            oIt1 = solver.matter.interval.branch(this.aoBranches(1));
             
             %oIt1.iDampFR = 5;
             
             
             this.oMan = solver.matter.manual.branch(this.aoBranches(2));
+            
+            this.setThermalSolvers();
         end
     end
     

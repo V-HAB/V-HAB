@@ -16,11 +16,11 @@ classdef volume < matter.manip
     
     methods
         function this = volume(sName, oPhase, sRequiredType, sType)
-            if nargin < 3, sRequiredType = []; end;
+            if nargin < 3, sRequiredType = []; end
             
             this@matter.manip(sName, oPhase, sRequiredType);
             
-            if nargin >= 4, this.sType = sType; end;
+            if nargin >= 4, this.sType = sType; end
         end
     end
     

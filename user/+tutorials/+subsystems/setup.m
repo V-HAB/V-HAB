@@ -87,146 +87,83 @@ classdef setup < simulation.infrastructure
         
         function configureMonitors(this)
             
-            
             %% Logging
-            
             oLog = this.toMonitors.oLogger;
             
-            tiLog.ALL_EMP = oLog.add('Example', 'flow_props');
-            tiLog.ALL_SUB = oLog.add('Example/SubSystem', 'flow_props');
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            for iStore = 1:length(csStores)
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
+            
+            csStoresSubSystem = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.SubSystem.toStores);
+            for iStore = 1:length(csStoresSubSystem)
+                oLog.addValue(['Example:c:SubSystem.toStores.', csStoresSubSystem{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStoresSubSystem{iStore}, ' Pressure']);
+                oLog.addValue(['Example:c:SubSystem.toStores.', csStoresSubSystem{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStoresSubSystem{iStore}, ' Temperature']);
+            end
+            
+            csBranchesSubSystem = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.SubSystem.toBranches);
+            for iBranch = 1:length(csBranchesSubSystem)
+                oLog.addValue(['Example:c:SubSystem.toBranches.', csBranchesSubSystem{iBranch}],             'fFlowRate',    'kg/s', [csBranchesSubSystem{iBranch}, ' Flowrate']);
+            end
             
             
-            tiLog.PM_O2_Tank_1 = oLog.addValue('Example:s:Tank_1.aoPhases(1)', 'arPartialMass(this.oMT.tiN2I.O2)', 'Tank1 O2', 'kg');
-            tiLog.PM_O2_Tank_2 = oLog.addValue('Example:s:Tank_2.aoPhases(1)', 'arPartialMass(this.oMT.tiN2I.O2)', 'Tank2 O2', 'kg');
             
-            
+        end
+        
+        function plot(this, varargin) % Plotting the results
             
             %% Define Plots
             
-            
-            oPlot = this.toMonitors.oPlotter;
-            
-            
-            % 
-            oPlot.definePlotAllWithFilter('Pa', 'Tank Pressures');
-            %oPlot.definePlotAllWithFilter('K', 'Tank Temperatures');
-            
-            
-            oPlot.definePlotWithFilter(tiLog.ALL_EMP, 'kg', 'Tank Masses - System Example');
-            oPlot.definePlotWithFilter(tiLog.ALL_SUB, 'kg', 'Tank Masses - System Subsystem');
-            
-            
-            oPlot.definePlotAllWithFilter('kg/s', 'Flow Rates');
-            
-            
-            
-            % Just specific indices - O2
-            oPlot.definePlot([ tiLog.PM_O2_Tank_1 tiLog.PM_O2_Tank_2 ], 'Tank 1/2 O2 Partials in Percent (1 = 100%)');
-            
-            
-            
-            
-            % Creating a cell setting the log items
-%             this.csLog = {
-%                 % System timer
-%                 'oData.oTimer.fTime';                                                                   % 1
-%                 
-%                 % Add other parameters here
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMassToPressure';                       % 2
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass';                                 % 3
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMassToPressure';                       % 4
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';                                 % 5
-%                 'toChildren.Example.toChildren.SubSystem.aoBranches(1).fFlowRate';                      % 6
-%                 'toChildren.Example.toChildren.SubSystem.aoBranches(2).fFlowRate';                      % 7
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(1).fMassToPressure';  % 8
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(1).fMass';            % 9
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(2).fMassToPressure';  % 10
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.aoPhases(2).fMass';            % 11
-%                 'toChildren.Example.toChildren.SubSystem.toStores.Filter.oProc.fFlowRate';              % 12
-%                 'toChildren.Example.toStores.Tank_1.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)';% 13
-%                 'toChildren.Example.toStores.Tank_2.aoPhases(1).arPartialMass(this.oData.oMT.tiN2I.O2)';% 14
-%                 
-%                 
-%             };
-            
-            
-            
-            
-            
-            %% Simulation length
-            % Stop when specific time in sim is reached
-            % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 900 * 1; % In seconds
-            this.iSimTicks = 600;
-            this.bUseTime = true;
-
-        end
-        
-        function plot(this) % Plotting the results
-            
-            this.toMonitors.oPlotter.plot();
-            
-            return;
-            
-            
-            
-            % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
-            % further information
-            
             close all
+            oPlotter = plot@simulation.infrastructure(this);
             
-            figure('name', 'Tank Pressures');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [2 4 8]) .* this.mfLog(:, [3 5 9]));
-            legend('Tank 1', 'Tank 2', 'Filter');
-            ylabel('Pressure in Pa');
-            xlabel('Time in s');
             
-            figure('name', 'Tank Masses (1)');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [3 5]));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
             
-            figure('name', 'Tank Masses (2)');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [9 11]));
-            legend('Filter', 'Absorber');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
-                        
-            figure('name', 'Flow Rate');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [6 7 12]));
-            legend('In', 'Out', 'Filter Flow');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
             
-            figure('name', 'O2 Percentages');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [13 14]) * 100);
-            legend('Tank 1', 'Tank 2');
-            ylabel('O2 [%]');
-            xlabel('Time in s');
+            
+            csStoresSubSystem = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.SubSystem.toStores);
+            csPressuresSubSystem = cell(length(csStoresSubSystem),1);
+            csTemperaturesSubSystem = cell(length(csStoresSubSystem),1);
+            for iStore = 1:length(csStoresSubSystem)
+                csPressuresSubSystem{iStore} = ['"', csStoresSubSystem{iStore}, ' Pressure"'];
+                csTemperaturesSubSystem{iStore} = ['"', csStoresSubSystem{iStore}, ' Temperature"'];
+            end
+            
+            csBranchesSubSystem = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.SubSystem.toBranches);
+            csFlowRatesSubSystem = cell(length(csBranchesSubSystem),1);
+            for iBranch = 1:length(csBranchesSubSystem)
+                csFlowRatesSubSystem{iBranch} = ['"', csBranchesSubSystem{iBranch}, ' Flowrate"'];
+            end
+            
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
 
-            figure('name', 'Time Steps');
-            hold on;
-            grid minor;
-            plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-            legend('Solver');
-            ylabel('Time in [s]');
-            xlabel('Ticks');
+            coPlots{1,1} = oPlotter.definePlot({csPressures{:}, csPressuresSubSystem{:}},     'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({csFlowRates{:}, csFlowRatesSubSystem{:}},     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({csTemperatures{:}, csTemperaturesSubSystem{:}},  'Temperatures', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
             
-            tools.arrangeWindows();
+            oPlotter.plot();
         end
         
     end
     
 end
-

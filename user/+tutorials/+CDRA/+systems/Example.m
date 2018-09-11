@@ -43,7 +43,7 @@ classdef Example < vsys
     end
     
     methods
-        function this = Example(oParent, sName)
+        function this = Example(oParent, sName, bSimpleCDRA)
             % Call parent constructor. Third parameter defined how often
             % the .exec() method of this subsystem is called. This can be
             % used to change the system state, e.g. close valves or switch
@@ -57,9 +57,6 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName, 60);
             
-            % Initial ratio for amount of flow that is channeled through the
-            % CHX
-            rInitialCHX_Ratio = 0.21;
             % temperature for the coolant passing through the CCAA
             this.fCoolantTemperature = 277.55;
             % Struct containg basic atmospheric values for the
@@ -74,15 +71,19 @@ classdef Example < vsys
             sCDRA = 'CDRA';
             
             % Adding the subsystem CCAA
-            components.CCAA.CCAA(this, 'CCAA', 1, this.fCoolantTemperature, tAtmosphere, sCDRA);
+            components.CCAA.CCAA(this, 'CCAA', 10, this.fCoolantTemperature, tAtmosphere, sCDRA);
             
             % name for the asscociated CCAA subsystem, CDRA can only be
             % used together with a CCAA
             sCCAA = 'CCAA';
             
             % Adding the subsystem CDRA
-            components.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA);
-                
+            if bSimpleCDRA
+                components.CDRA.CDRA_simple(this, 'CDRA', 60, tAtmosphere, sCCAA);
+            else
+                components.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA);
+            end
+            
             eval(this.oRoot.oCfgParams.configCode(this));
             
         end
@@ -96,19 +97,16 @@ classdef Example < vsys
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
-            fCO2Percent = 0.00635;
+            fCO2Percent = 0.0062;
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 97.71, struct('CO2', fCO2Percent),  295, 0.4, 1e5);
                
             % Adding a phase to the store 'Cabin', 100 m^3 air
             oCabinPhase = matter.phases.gas(this.toStores.Cabin, 'CabinAir', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
-            this.toChildren.CDRA.setReferencePhase(oCabinPhase);
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oCabinPhase, 'Port_ToCCAA');
             matter.procs.exmes.gas(oCabinPhase, 'Port_FromCCAA_CHX');
             matter.procs.exmes.gas(oCabinPhase, 'Port_FromCCAA_TCCV');
-            matter.procs.exmes.gas(oCabinPhase, 'Port_TempControlIn');
-            matter.procs.exmes.gas(oCabinPhase, 'Port_TempControlOut');
             matter.procs.exmes.gas(oCabinPhase, 'Port_FromCDRAAirSafe1');
             matter.procs.exmes.gas(oCabinPhase, 'Port_FromCDRAAirSafe2');
             %Human Exmes
@@ -120,6 +118,7 @@ classdef Example < vsys
             % For the CCAA to function properly the cabin phase to which
             % the CCAA is attached has to be set as reference
             this.toChildren.CCAA.setReferencePhase(oCabinPhase);
+            this.toChildren.CDRA.setReferencePhase(oCabinPhase);
             
             % Coolant store for the coolant water supplied to CCAA
             matter.store(this, 'CoolantStore', 1);
@@ -134,8 +133,6 @@ classdef Example < vsys
             
             matter.procs.exmes.liquid(oCoolantPhase, 'Port_1');
             matter.procs.exmes.liquid(oCoolantPhase, 'Port_2');
-            matter.procs.exmes.liquid(oCoolantPhase, 'Port_3');
-            matter.procs.exmes.liquid(oCoolantPhase, 'Port_4');
             
             % Store to gather the condensate from CCAA
             matter.store(this, 'CondensateStore', 1);
@@ -161,44 +158,31 @@ classdef Example < vsys
             oVentedPhase = matter.phases.gas(this.toStores.Vented, 'VentedMass', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             matter.procs.exmes.gas(oVentedPhase, 'Port_1');
             matter.procs.exmes.gas(oVentedPhase, 'Port_2');
-            oVentedPhase.bConstantTemperature = true;
             
             % creates a store to connect the CCAA and the CDRA
             matter.store(this, 'CCAA_CDRA_Connection', 0.1);
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CCAA_CDRA_Connection, 0.1, struct('CO2', fCO2Percent),  this.fCoolantTemperature, 0, 1e5);
-               
-            % Adding a phase to the store - a mixture phase is used because
-            % the humidity released from CDRA back into the cabin might be
-            % higher than 100% for some times
-%             oConnectionPhase = matter.phases.mixture(this.toStores.CCAA_CDRA_Connection, 'ConnectionPhase', 'gas', cAirHelper{1},cAirHelper{2}, cAirHelper{3}, 1e5);
-             oConnectionPhase = matter.phases.gas(this.toStores.CCAA_CDRA_Connection, 'ConnectionPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
-            matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
-            matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
-            matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
-%             matter.procs.exmes.mixture( oConnectionPhase, 'Port_1');
-%             matter.procs.exmes.mixture( oConnectionPhase, 'Port_2');
-%             matter.procs.exmes.mixture( oConnectionPhase, 'Port_3');
-            
-            % creates a store to connect the CCAA and the CDRA
-            matter.store(this, 'CDRA_CCAA_Connection', 0.1);
-            
-            % uses the custom air helper to generate an air phase with a
-            % defined co2 level and relative humidity
-            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 0.1, struct('CO2', fCO2Percent),  this.fCoolantTemperature, 0, 1e5);
+            cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Cabin, 0.1, struct('CO2', fCO2Percent),  295, 0, 2.5e5);
                
             % Adding a phase to the store
-             oConnectionPhase = matter.phases.gas(this.toStores.CDRA_CCAA_Connection, 'ConnectionPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            oConnectionPhase = matter.phases.gas_flow_node(this.toStores.CCAA_CDRA_Connection, 'ConnectionPhase', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             matter.procs.exmes.gas( oConnectionPhase, 'Port_1');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_2');
             matter.procs.exmes.gas( oConnectionPhase, 'Port_3');
             
-            % Adding a Temperature Dummy to keep the Cabin at a constant
-            % temperature
-            components.Temp_Dummy(this, 'Cabin_TempDummy', 295, 2000);
-            components.Temp_Dummy(this, 'Coolant_TempDummy', this.fCoolantTemperature, 2000);
+            % Adding a phase to the store
+            matter.procs.exmes.gas( oCabinPhase, 'CDRA_Port_1');
+            matter.procs.exmes.gas( oCabinPhase, 'CDRA_Port_2');
+            
+            % Adding heat sources to keep the cabin and coolant water at a
+            % constant temperature
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
+            oCabinPhase.oCapacity.addHeatSource(oHeatSource);
+            
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
+            oCoolantPhase.oCapacity.addHeatSource(oHeatSource);
             
             matter.branch(this, 'CCAAinput', {}, 'Cabin.Port_ToCCAA');
             matter.branch(this, 'CCAA_CHX_Output', {}, 'Cabin.Port_FromCCAA_CHX');
@@ -206,24 +190,20 @@ classdef Example < vsys
             matter.branch(this, 'CCAA_CondensateOutput', {}, 'CondensateStore.Port_1');
             matter.branch(this, 'CCAA_CoolantInput', {}, 'CoolantStore.Port_1');
             matter.branch(this, 'CCAA_CoolantOutput', {}, 'CoolantStore.Port_2');
-            matter.branch(this, 'CCAA_In_FromCDRA', {}, 'CDRA_CCAA_Connection.Port_1');
             matter.branch(this, 'CCAA_CHX_to_CDRA_Out', {}, 'CCAA_CDRA_Connection.Port_1');
             
             matter.branch(this, 'CDRA_Input1', {}, 'CCAA_CDRA_Connection.Port_2');
             matter.branch(this, 'CDRA_Input2', {}, 'CCAA_CDRA_Connection.Port_3');
-            matter.branch(this, 'CDRA_Output1', {}, 'CDRA_CCAA_Connection.Port_2');
-            matter.branch(this, 'CDRA_Output2', {}, 'CDRA_CCAA_Connection.Port_3');
+            matter.branch(this, 'CDRA_Output1', {}, 'Cabin.CDRA_Port_1');
+            matter.branch(this, 'CDRA_Output2', {}, 'Cabin.CDRA_Port_2');
             matter.branch(this, 'CDRA_Airsafe1', {}, 'Cabin.Port_FromCDRAAirSafe1');
             matter.branch(this, 'CDRA_Airsafe2', {}, 'Cabin.Port_FromCDRAAirSafe2');
             matter.branch(this, 'CDRA_Vent1', {}, 'Vented.Port_1');
             matter.branch(this, 'CDRA_Vent2', {}, 'Vented.Port_2');
             
-            matter.branch(this, 'Cabin.Port_TempControlIn', {'Cabin_TempDummy'}, 'Cabin.Port_TempControlOut', 'Cabin_TempControl');
-            matter.branch(this, 'CoolantStore.Port_3', {'Coolant_TempDummy'}, 'CoolantStore.Port_4', 'Coolant_TempControl');
-            
             % now the interfaces between this system and the CCAA subsystem
             % are defined
-            this.toChildren.CCAA.setIfFlows('CCAAinput', 'CCAA_In_FromCDRA', 'CCAA_CHX_Output', 'CCAA_TCCV_Output', 'CCAA_CondensateOutput', 'CCAA_CHX_to_CDRA_Out', 'CCAA_CoolantInput', 'CCAA_CoolantOutput');
+            this.toChildren.CCAA.setIfFlows('CCAAinput', 'CCAA_CHX_Output', 'CCAA_TCCV_Output', 'CCAA_CondensateOutput', 'CCAA_CoolantInput', 'CCAA_CoolantOutput', 'CCAA_CHX_to_CDRA_Out');
             
             this.toChildren.CDRA.setIfFlows('CDRA_Input1', 'CDRA_Input2', 'CDRA_Output1', 'CDRA_Output2', 'CDRA_Vent1', 'CDRA_Vent2', 'CDRA_Airsafe1', 'CDRA_Airsafe2');
             
@@ -346,7 +326,7 @@ classdef Example < vsys
             %close the mass balance
             oHumanWaterPhase = matter.phases.gas(this.toStores.Cabin, 'HumanWater', struct(...
                 'H2O', this.iCrewMembers*70),...
-                this.iCrewMembers*70/1000, 309.15);
+                this.iCrewMembers*70, 309.15);
             
             matter.procs.exmes.gas(oHumanWaterPhase, 'HumidityOut');
             
@@ -354,25 +334,14 @@ classdef Example < vsys
             tutorials.CDRA.components.Crew_Humidity_Generator(...
                 this.toStores.Cabin,'CrewHumidityGen',...
                 'HumanWater.HumidityOut', 'CabinAir.HumidityIn',...
-                [1,1,1,1,1,1], this);
+                [1,1], this);
             
         end
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            solver.matter.manual.branch(this.toBranches.Cabin_TempControl);
-            this.toBranches.Cabin_TempControl.oHandler.setFlowRate(10);
-            
-            solver.matter.manual.branch(this.toBranches.Coolant_TempControl);
-            this.toBranches.Coolant_TempControl.oHandler.setFlowRate(10);
-            
-            this.toStores.Cabin.toPhases.CabinAir.arMaxChange(this.oMT.tiN2I.H2O) = 0.5;
-            this.toStores.Cabin.toPhases.CabinAir.arMaxChange(this.oMT.tiN2I.CO2) = 0.5;
-            
-            this.toStores.CoolantStore.aoPhases(1).fMaxStep = 1;
-            this.toStores.CCAA_CDRA_Connection.aoPhases(1).fMaxStep = 1;
-            this.toStores.CDRA_CCAA_Connection.aoPhases(1).fMaxStep = 1;
-            
+            %% Assign thermal solvers
+            this.setThermalSolvers();
         end
     end
     
@@ -470,11 +439,9 @@ classdef Example < vsys
             if (this.oTimer.fTime > (19.3*3600)) && (this.oTimer.fTime < (37.8*3600))
                 this.iCrewMembers = 4;
                 this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1,1]);
-                this.toStores.Cabin.toProcsP2P.CrewHumidityGen.setCrew([1,1,1,1]);
             elseif (this.oTimer.fTime >= (37.8*3600))
                 this.iCrewMembers = 3;
                 this.toStores.Cabin.toProcsP2P.CrewCO2Prod.setCrew([1,1,1]);
-                this.toStores.Cabin.toProcsP2P.CrewHumidityGen.setCrew([1,1,1]);
             end
             
         end

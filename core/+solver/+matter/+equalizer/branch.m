@@ -57,7 +57,7 @@ classdef branch < solver.matter.base.branch
             % Initial flow rate? Set for this.fFlowRate as initial value.
             fInitialFlowRate = [];
             
-            if (length(varargin) >= 3) && ~isempty(varargin{3}), fInitialFlowRate = varargin{3}; end;
+            if (length(varargin) >= 3) && ~isempty(varargin{3}), fInitialFlowRate = varargin{3}; end
             
             this@solver.matter.base.branch(oBranch, fInitialFlowRate, 'manual');
             
@@ -120,7 +120,7 @@ classdef branch < solver.matter.base.branch
             fPressureRight = this.oBranch.coExmes{2}.getPortProperties();
             fPressDiff     = fPressureLeft - fPressureRight;
             fFlowRate      = 0;
-            iDir           = sif(fPressDiff < 0, -1, 1);
+            %iDir           = sif(fPressDiff < 0, -1, 1);
             %fPressDiff     = iDir * fPressDiff;
             
             
@@ -147,8 +147,10 @@ classdef branch < solver.matter.base.branch
             end
             
             % Flow direction / out of bounds?
-            if isnan(fFlowRate), fFlowRate = 0;
-            else                 fFlowRate = sif(fPressDiff >= 0, fFlowRate, -1 * fFlowRate);
+            if isnan(fFlowRate)
+                fFlowRate = 0;
+            else
+                fFlowRate = sif(fPressDiff >= 0, fFlowRate, -1 * fFlowRate);
             end
             
             

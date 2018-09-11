@@ -21,23 +21,13 @@ fMolarMassH2O = oStore.oMT.ttxMatter.H2O.fMolarMass;
 fMolarMassO2 = oStore.oMT.ttxMatter.O2.fMolarMass; 
 
 % Check input arguments, set default
-if nargin < 3 || isempty(fTemperature), fTemperature = matter.table.Standard.Temperature; end;
-if nargin < 4 || isempty(rRH),          rRH          = 0;     end;
-if nargin < 5 || isempty(fPressure),    fPressure    = 28900; end;
+if nargin < 3 || isempty(fTemperature), fTemperature = matter.table.Standard.Temperature; end
+if nargin < 4 || isempty(rRH),          rRH          = 0; end
+if nargin < 5 || isempty(fPressure),    fPressure    = 28900; end
 
 if rRH
-    % Calculation of the saturation vapour pressure by using the MAGNUS
-    % Formula(validity: -45degC <= T <= 60degC, for water); Formula is only
-    % correct for pure steam, not the mixture of air and water; enhancement
-    % factors can be used by a Poynting-Correction (pressure and
-    % temperature dependent); the values of the enhancement factors are in
-    % the range of 1+- 10^-3; thus they are neglected. Formula is also only
-    % correct for water and air, not pure oxygen.
-    %Source: Important new Values of the Physical Constants of 1986, Vapour
-    % Pressure Formulations based on ITS-90, and Psychrometer Formulae. In:
-    % Z. Meteorol. 40, 5, S. 340-344, (1990)
-    
-    fSaturationVapourPressure = 6.11213 * exp(17.62 * (fTemperature - 273.15) / (243.12 + (fTemperature - 273.15))) * 100;
+    % Calculation of the saturation vapour pressure
+    fSaturationVapourPressure = oStore.oMT.calculateVaporPressure(fTemperature, 'H2O');
     
     % calculate vapour pressure [Pa]
     fVapourPressure = rRH*fSaturationVapourPressure; 

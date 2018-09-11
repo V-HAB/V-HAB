@@ -13,7 +13,7 @@ classdef absorber < matter.procs.exme
         function [ fPortPressure, fPortTemperature ] = getPortProperties(this)
             
             % Updated - uses the mass change rate as well. Faster ...?
-            fMassSinceUpdate = this.oPhase.fCurrentTotalMassInOut * (this.oPhase.oStore.oTimer.fTime - this.oPhase.fLastMassUpdate);
+            %fMassSinceUpdate = this.oPhase.fCurrentTotalMassInOut * (this.oPhase.oStore.oTimer.fTime - this.oPhase.fLastMassUpdate);
             
             
             fPortPressure    = [];

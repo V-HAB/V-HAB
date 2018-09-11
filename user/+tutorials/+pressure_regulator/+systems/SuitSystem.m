@@ -169,6 +169,7 @@ classdef SuitSystem < vsys
                 this.oRelief.fFixedTS = this.fFixedTimeStep;
             end
             
+            this.setThermalSolvers();
         end
     end
     

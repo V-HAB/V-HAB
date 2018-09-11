@@ -234,17 +234,20 @@ classdef RCA < vsys
             % quality, we set a lower rMaxChange value on the flow phases
             % in both adsorber beds and a high rMaxChange in the filtered
             % phases, because we don't really care about their properties
-            % a lot, so they don't have to be updated that often. 
-            this.toStores.Bed_A.toPhases.FilteredPhase.rMaxChange = 0.1;
-            this.toStores.Bed_B.toPhases.FilteredPhase.rMaxChange = 0.1;
+            % a lot, so they don't have to be updated that often.
+            tTimeStepProperties.rMaxChange = 0.1;
+            this.toStores.Bed_A.toPhases.FilteredPhase.setTimeStepProperties(tTimeStepProperties)
+            this.toStores.Bed_B.toPhases.FilteredPhase.setTimeStepProperties(tTimeStepProperties)
             
-            this.toStores.Vacuum.toPhases.Vacuum_Phase_1.rMaxChange = 0.5;
+            tTimeStepProperties.rMaxChange = 0.5;
+            this.toStores.Vacuum.toPhases.Vacuum_Phase_1.setTimeStepProperties(tTimeStepProperties)
 
             this.toStores.Splitter.toPhases.Splitter_Phase_1.bSynced = true;
             this.toStores.Bed_A.toPhases.FlowPhase.bSynced           = true;
             this.toStores.Bed_B.toPhases.FlowPhase.bSynced           = true;
             this.toStores.Merger.toPhases.Merger_Phase_1.bSynced     = true;
 
+            this.setThermalSolvers();
         end
     end
     

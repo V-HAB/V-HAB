@@ -90,6 +90,8 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         oHeatFlowObject;
         
         iHeatFlowDirection;
+        
+        bActive = false;
     end
     
     
@@ -352,7 +354,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
                 end
                 
             else
-                if fFlowRate == 0, this.throw('get', 'Can''t get when flow rate is zero!'); end;
+                if fFlowRate == 0, this.throw('get', 'Can''t get when flow rate is zero!'); end
                 
                 % Dirty (?) ... bool true = 1, false = 0 -> index 2 / 1
                 oFlow = this.aoFlows((fFlowRate > 0) + 1);

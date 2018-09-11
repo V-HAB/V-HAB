@@ -80,15 +80,60 @@ classdef Example < vsys
             matter.procs.exmes.liquid(oLiquidPhase, 'Port_7');
             matter.procs.exmes.liquid(oWaterPhase,  'Port_8');
             
-            %% Heat Exchanger
-            % Some configurating variables
-            sHX_type = 'counter plate';       % Heat exchanger type
-            Geometry = [0.2, 0.3, (0.19/2), 0.25, 1];   % Geometry [value1, value2, value3, value4] 
+            %% Examples for the different types of heat exchangers:
+            % Note old notations using the mHX can be translated to this by
+            % simply filling the mHX values into the respective struct
+            % values (the order should be from 1 to end here)
+            
+%             sHX_type = 'CounterAnnularPassage';       % Heat exchanger type
+%             tHX_Parameters.fInnerDiameter   = 1.1e-2;
+%             tHX_Parameters.fOuterDiameter   = 2e-2;
+%             tHX_Parameters.fInternalRadius  = 1e-2;
+%             tHX_Parameters.fLength          = 1;
+            
+%             sHX_type = 'CounterPipeBundle';       % Heat exchanger type
+%             tHX_Parameters.fInnerDiameter           = 5e-3;
+%             tHX_Parameters.fOuterDiameter           = 1e-2;
+%             tHX_Parameters.fShellDiameter           = 0.5;
+%             tHX_Parameters.fLength                  = 1;
+%             tHX_Parameters.iNumberOfPipes           = 20;
+%             tHX_Parameters.fPerpendicularSpacing    = 1e-2;
+%             tHX_Parameters.fParallelSpacing         = 1e-2;
+
+%             sHX_type = 'CounterPlate';       % Heat exchanger type
+%             sHX_type = 'ParallelPlate';
+%             sHX_type = 'Cross';
+%             tHX_Parameters.fBroadness  = 0.2;
+%             tHX_Parameters.fHeight_1   = 1e-2;
+%             tHX_Parameters.fHeight_2   = 1e-2;
+%             tHX_Parameters.fLength     = 1;
+%             tHX_Parameters.fThickness  = 1e-3;
+% 
+%             % For a plate cross flow use the same configuration as for the
+%             % other plate HX and add the field:
+%             tHX_Parameters.iNumberOfRows = 0;
+            
+            
+            sHX_type = 'Cross';
+            tHX_Parameters.iNumberOfRows            = 10;
+            tHX_Parameters.iNumberOfPipes           = 100;
+            tHX_Parameters.fInnerDiameter           = 5e-3;
+            tHX_Parameters.fOuterDiameter           = 1e-2;
+            tHX_Parameters.fLength                  = 10;
+            tHX_Parameters.fPerpendicularSpacing  	= 2e-2; 
+            tHX_Parameters.fParallelSpacing         = 2e-2;
+            tHX_Parameters.iConfiguration           = 2;
+            tHX_Parameters.fPipeRowOffset           = 1e-2;
+        
+        
+   
+            
             % --> see the HX file for information on the inputs for the different HX types
             Conductivity = 15;                          % Conductivity of the Heat exchanger solid material
             
+            %% Heat Exchanger
             %defines the heat exchanged object using the previously created properties
-            components.HX(this, 'HeatExchanger', Geometry, sHX_type, Conductivity);
+            components.HX(this, 'HeatExchanger', tHX_Parameters, sHX_type, Conductivity);
             
             %% Adding some pipes
             components.pipe(this, 'Pipe1', 1, 0.01);
@@ -126,6 +171,7 @@ classdef Example < vsys
             oB3.setFlowRate(0.01);
             oB4.setFlowRate(0.01);
             
+            this.setThermalSolvers();
         end
     end
     

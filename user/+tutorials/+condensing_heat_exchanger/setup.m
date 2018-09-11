@@ -35,47 +35,38 @@ classdef setup < simulation.infrastructure
             %% Logging
             oLog = this.toMonitors.oLogger;
             
-            oLog.add('Example', 'flow_props');
-            oLog.add('Example', 'thermal_properties');
-            
-            oLog.addValue('Example', 'toProcsF2F.CondensingHeatExchanger_1.fHeatFlow', 'W', 'Heat Flow');
-            oLog.addValue('Example', 'toProcsF2F.CondensingHeatExchanger_2.fHeatFlow', 'W', 'Heat Flow');
+            oLog.addValue('Example', 'toProcsF2F.CondensingHeatExchanger_1.fHeatFlow', 'W', 'Heat Flow Air');
+            oLog.addValue('Example', 'toProcsF2F.CondensingHeatExchanger_2.fHeatFlow', 'W', 'Heat Flow Coolant');
             
             oLog.addValue('Example:s:Tank_2.toProcsP2P.CondensingHX', 'fFlowRate', 'kg/s', 'Condensate Flow Rate');
             
             oLog.addValue('Example:s:Tank_1.toPhases.Air_1', 'rRelHumidity', '-', 'Relative Humidity Tank 1');
             oLog.addValue('Example:s:Tank_2.toPhases.Air_2', 'rRelHumidity', '-', 'Relative Humidity Tank 2');
             
-            %% Define plots
-            
-            oPlot = this.toMonitors.oPlotter;
-            
-            oPlot.definePlot('Pa',  'Tank Pressures');
-            oPlot.definePlot('K',   'Temperatures');
-            oPlot.definePlot('kg',  'Tank Masses');
-            oPlot.definePlot('kg/s','Flow Rates');
-            oPlot.definePlot('W',   'Heat Flows');
-            
-            
-            oPlot.definePlot({'Condensate Flow Rate'}, 'Condensate Flow Rate');
-            oPlot.definePlot({'Relative Humidity Tank 1', 'Relative Humidity Tank 1'}, 'Relative Humidity');
+            oLog.addValue('Example:s:Tank_1.toPhases.Air_1',            'fTemperature', 'K', 'Temperature Air Tank 1');
+            oLog.addValue('Example:s:Tank_2.toPhases.Air_2',            'fTemperature', 'K', 'Temperature Air Tank 2');
+            oLog.addValue('Example:s:Tank_3.toPhases.Coolant_Phase1',   'fTemperature', 'K', 'Temperature Coolant Tank 3');
+            oLog.addValue('Example:s:Tank_4.toPhases.Coolant_Phase2',   'fTemperature', 'K', 'Temperature Coolant Tank 4');
         end
         
         function plot(this) % Plotting the results
             % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
             % further information
             close all
-          
-            tParameters.sTimeUnit = 'min';
             
-            this.toMonitors.oPlotter.plot(tParameters);
+            oPlotter = plot@simulation.infrastructure(this);
             
-            this.toMonitors.oPlotter.plot();
+            % Define a single plot
+            coPlot{1,1} = oPlotter.definePlot({'"Heat Flow Air"', '"Heat Flow Coolant"'}, 'Heat Flows');
+            coPlot{1,2} = oPlotter.definePlot({'"Temperature Air Tank 1"','"Temperature Air Tank 2"', '"Temperature Coolant Tank 3"', '"Temperature Coolant Tank 4"'}, 'Temperatures');
+            coPlot{2,1} = oPlotter.definePlot({'"Relative Humidity Tank 1"','"Relative Humidity Tank 2"'}, 'Relative Humidity');
+            coPlot{2,2} = oPlotter.definePlot({'"Condensate Flow Rate"'}, 'Condensate Flowrate');
+
+            % Define a single figure
+            oPlotter.defineFigure(coPlot,  'Condensing Heat Exchanger');
             
-            
+            oPlotter.plot();
         end
-        
     end
-    
 end
 

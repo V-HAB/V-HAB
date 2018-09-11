@@ -123,14 +123,16 @@ classdef branch < base & event.source
         
         % Flow rate handler - only one can be set!
         oHandler;
+        
+        % Thermal branch which solves the thermal energy transport of this
+        % matter branch
+        oThermalBranch;
     end
     
     properties (SetAccess = private, GetAccess = private)
         % Function handle to the protected flow method setData, used to
         % update values within the flow objects array
         hSetFlowData;
-        
-        hFlowThermalUpdate;
         
         % If the RIGHT side of the branch is an interface (i.e. i/f to the
         % parent system), store its index on the aoFlows here to make it
@@ -157,7 +159,7 @@ classdef branch < base & event.source
     end
     
     methods
-        function this = branch(oContainer, sLeft, csProcs, sRight, sCustomName, bP2P)
+        function this = branch(oContainer, sLeft, csProcs, sRight, sCustomName)
             % Can be called with either stores/ports or interface names
             % (all combinations possible). Connections are always done from
             % subsystem to system.
@@ -186,7 +188,7 @@ classdef branch < base & event.source
             end
             this.sName = sTempName;
             
-            if nargin >= 5
+            if nargin == 5
                 this.sCustomName = sCustomName;
             end
             
@@ -196,7 +198,7 @@ classdef branch < base & event.source
             
             
             % Interface on left side?
-            if isempty(strfind(sLeft, '.'))
+            if ~contains(sLeft, '.')
                 this.abIf(1) = true;
                 
                 % Checking if the interface name is already present in this
@@ -207,11 +209,8 @@ classdef branch < base & event.source
   
             else
                 % Create first flow, get matter table from oData (see @sys)
-                if nargin == 6 && bP2P
-                    oFlow = matter.procs.p2ps.branch.flow(this);
-                else
-                    oFlow = matter.flow(this);
-                end
+                oFlow = matter.flow(this);
+                
                 % Add flow to index
                 this.aoFlows(end + 1) = oFlow;
                 
@@ -220,7 +219,7 @@ classdef branch < base & event.source
                 
                 
                 % Get store name from parent
-                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end;
+                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end
                 
                 % Get EXME port/proc ...
                 oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
@@ -282,7 +281,7 @@ classdef branch < base & event.source
             
             
             % Interface on right side?
-            if isempty(strfind(sRight, '.'))
+            if ~contains(sRight, '.')
                 
                 this.abIf(2) = true;
                 this.iIfFlow = length(this.aoFlows);
@@ -298,7 +297,7 @@ classdef branch < base & event.source
                 [ sStore, sPort ] = strtok(sRight, '.');
                 
                 % Get store name from container
-                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end;
+                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end
                 
                 % Get Port ...
                 oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
@@ -322,6 +321,55 @@ classdef branch < base & event.source
             
             this.iFlows     = length(this.aoFlows);
             this.iFlowProcs = length(this.aoFlowProcs);
+            
+            %% Construct asscociated thermal branch
+            % Create the respective thermal interfaces for the thermal
+            % branch
+            % Split to store name / port name
+            % TO DO: make nicer
+            [ sStore, sPort ] = strtok(sLeft, '.');
+            % Get EXME port/proc ...
+            if isempty(sPort)
+                % in this case an interface is used, and the interfase
+                % should be used in the thermal branch definition as well
+                % therefore we do nothing here
+            else
+                oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
+                thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
+            end
+            
+            % Split to store name / port name
+            [ sStore, sPort ] = strtok(sRight, '.');
+            % Get EXME port/proc ...
+            if isempty(sPort)
+                % in this case an interface is used, and the interfase
+                % should be used in the thermal branch definition as well
+                % therefore we do nothing here
+            else
+                oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
+                thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
+            end
+            
+            if length(csProcs) >= 1
+                for iProc = 1:length(csProcs)
+                    thermal.procs.conductors.fluidic(this.oContainer, csProcs{iProc}, this);
+                end
+            else
+                % branches without a f2f can exist (e.g. manual branches)
+                % however for the thermal branch we always require at least
+                % one conductor
+                if ~isempty(this.sCustomName)
+                    csProcs{1} = [this.sCustomName, '_Conductor'];
+                else
+                    csProcs{1} = [this.sName, '_Conductor'];
+                end
+                thermal.procs.conductors.fluidic(this.oContainer, csProcs{1}, this);
+            end
+            
+            if nargin < 5
+                sCustomName = [];
+            end
+            this.oThermalBranch = thermal.branch(this.oContainer, sLeft, csProcs, sRight, sCustomName);
         end
         
         
@@ -535,80 +583,24 @@ classdef branch < base & event.source
         
         
         
-        function setUpdated(this)
-            % used by the residual solver to tell the branch that the
-            % flowrate has not changed even though the outdated function
-            % has been called.
-            this.bOutdated = false;
-        end
         
         
-        function setOutdatedThermal(this)
-            % Can be used by phases to request recalculation of the temperatures
-            
-            if this.fFlowRate == 0
-                % nothing flows, nothing has to be updated
-                return
-            end
-            % tries to call the ThermalUpdate function of the F2Fs
-            for iF2F = 1:this.iFlows - 1
-                try
-                    this.aoFlowProcs(iF2F).ThermalUpdate();
-                catch
-                    % do nothing, but f2fs that do not require a thermal
-                    % update cane exist
-                end
-            end
-            
-            % updates only the temperatures and heat capacities of the flows
-            mfHeatFlows = [this.aoFlowProcs(:).fHeatFlow];
-            
-            if this.fFlowRate > 0
-                oPhase = this.coExmes{1}.oPhase;
-                
-                mfTemperatureDifference = mfHeatFlows ./ (oPhase.fSpecificHeatCapacity * abs(this.fFlowRate));
-            
-                mfFlowTemperature = zeros(this.iFlows, 1);
-                mfFlowTemperature(1) = oPhase.fTemperature;
-                this.hFlowThermalUpdate{1}(mfFlowTemperature(1), oPhase.fSpecificHeatCapacity);
-
-                for iFlow = 2:this.iFlows
-                    mfFlowTemperature(iFlow) = mfFlowTemperature(iFlow - 1) + mfTemperatureDifference(iFlow - 1);
-                    this.hFlowThermalUpdate{iFlow}(mfFlowTemperature(iFlow), oPhase.fSpecificHeatCapacity);
-                end
-                
-                % since a temperature change of the branch flow affects the
-                % downstream phase the temperatureupdate for the downstream
-                % phase is also called
-                this.coExmes{2}.oPhase.temperatureupdate();
-            else
-                oPhase = this.coExmes{2}.oPhase;
-                
-                mfTemperatureDifference = mfHeatFlows ./ (oPhase.fSpecificHeatCapacity * abs(this.fFlowRate));
-            
-                mfFlowTemperature    = zeros(this.iFlows, 1);
-                mfFlowTemperature(end) = oPhase.fTemperature;
-                this.hFlowThermalUpdate{end}(mfFlowTemperature(end), oPhase.fSpecificHeatCapacity);
-
-                for iFlow = this.iFlows-1:-1:1
-                    mfFlowTemperature(iFlow) = mfFlowTemperature(iFlow + 1) + mfTemperatureDifference(iFlow);
-                    this.hFlowThermalUpdate{iFlow}(mfFlowTemperature(iFlow), oPhase.fSpecificHeatCapacity);
-                end
-                
-                % since a temperature change of the branch flow affects the
-                % downstream phase the temperatureupdate for the downstream
-                % phase is also called
-                this.coExmes{1}.oPhase.temperatureupdate(false);
-            end
-        end
+        
         function setOutdated(this)
             % Can be used by phases or f2f processors to request recalc-
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
-            iE = sif(this.fFlowRate >= 0, 2, 1);
-            this.coExmes{iE}.oPhase.massupdate();
+            % TO DO: Question, why is this necessary when the solver base
+            % branch in the function bound to the trigger from this
+            % function also performs it?
+            for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
+                this.coExmes{iE}.oPhase.massupdate();
+            end
             
+            % If the flowrate changed, the thermal branch also has to be
+            % recalculated
+            this.oThermalBranch.setOutdated();
             % Only trigger if not yet set
             %CHECK inactivated here --> solvers and otehr "clients" should
             %      check themselves!
@@ -688,6 +680,7 @@ classdef branch < base & event.source
             %     and set (arPartialMass, Molar Mass, Heat Capacity)?
         end
         
+        
         % Catch 'bind' calls, so we can set a specific boolean property to
         % true so the .trigger() method will only be called if there are
         % callbacks registered.
@@ -710,7 +703,7 @@ classdef branch < base & event.source
             %
             %NOTE/CHECK: afPressure is pressure DROPS, not total pressures!
             
-            if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end;
+            if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end
             
             
             
@@ -750,9 +743,7 @@ classdef branch < base & event.source
             
             % No pressure? Distribute equally.
             if nargin < 3 || isempty(afPressure)
-                % TO DO: Why use get port properties, is it really
-                % necessary to include the mass change in this calculation?
-                fPressureDiff = (this.coExmes{1}.oPhase.fPressure - this.coExmes{2}.oPhase.fPressure);
+                fPressureDiff = (this.coExmes{1}.getPortProperties() - this.coExmes{2}.getPortProperties());
                 
                 % Each flow proc produces the same pressure drop, the sum
                 % being the actual pressure difference.
@@ -907,13 +898,13 @@ classdef branch < base & event.source
                 % which allows us to deconnect the flow from the f2f proc
                 % in the "outer" system (supsystem).
                 if this.abIf(2) && (this.iIfFlow == iI)
-                    [ this.hSetFlowData, this.hRemoveIfProc, this.hFlowThermalUpdate{iI} ] = this.aoFlows(iI).seal(true);
+                    [ this.hSetFlowData, this.hRemoveIfProc ] = this.aoFlows(iI).seal(true);
                 
                 % Only need the callback reference once ...
                 elseif iI == 1
-                     [ this.hSetFlowData, ~, this.hFlowThermalUpdate{iI} ] = this.aoFlows(iI).seal(false, this);
+                    this.hSetFlowData = this.aoFlows(iI).seal(false, this);
                 else
-                     [ this.hSetFlowData, ~, this.hFlowThermalUpdate{iI} ] = this.aoFlows(iI).seal(false, this);
+                    this.aoFlows(iI).seal(false, this);
                 end
             end
             

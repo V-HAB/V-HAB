@@ -77,7 +77,7 @@ classdef table < base
         tiN2I;
         
         % Reverse of tiN2I, a cell containing all the names of the
-        % substances, accessible via their index. 
+        % substances, accessible via their index.
         csI2N;
         
         % cell array for all edible substances
@@ -94,22 +94,6 @@ classdef table < base
         % defined in the matter table and contains the entry true for each
         % substance that can absorb something else
         abAbsorber;
-        
-        % property for the tool findMassBalanceErrors to write the names of
-        % all the locations where mass errors were detected. This is then
-        % used to autocreate break points at the relevant locations
-        tMassErrorHelper;
-    end
-    
-    properties %DELETE THESE WHEN READY
-        % Why do we need all of this? Seems like this should be in a
-        % separate class.
-        % Refernce to all phases and flows that use this matter table
-        aoPhases = []; %matter.phase.empty(); % ABSTRACT - can't do that!
-        aoFlows  = matter.flow.empty();
-        % Create 'empty' (placeholder) flow (for f2f, exme procs)
-        oFlowZero;
-        
     end
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -124,38 +108,31 @@ classdef table < base
             % Check for pre-existing data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            % First we'll check if there is previously stored matter data
-            % and if so, we check if the source files for all the matter
-            % data have changed since this constructor was last run. If
-            % not, then we can just use the existing data without having to
-            % go through the entire import process again.
             disp('Checking for changes regarding the matter table source data.');
-            if exist(strrep('data\MatterData.mat', '\', filesep),'file') && ...
-               ~tools.checkForChanges(fullfile('lib','+matterdata')) && ...
-               ~tools.checkForChanges(fullfile('core','+matter','@table'))
-                % If the matter files or the matter table itself have not
-                % changed, we can load the MatterData.mat file, if it
-                % exists.
-                load(strrep('data\MatterData.mat', '\', filesep));
+            
+            % First we'll check if there is previously stored matter data.
+            % Then we check if the source files for all the matter data and
+            % this file itself have changed since this constructor was last
+            % run. If not, then we can just use the existing data without
+            % having to go through the entire import process again.
+            if exist(strrep('data\MatterData.mat', '\', filesep),'file')
+                % The file exists, so we check for changes.
+                bMatterDataChanged  = tools.fileChecker.checkForChanges(fullfile('core','+matter','+data'),'MatterTable');
+                bMatterTableChanged = tools.fileChecker.checkForChanges(fullfile('core','+matter','@table'),'MatterTable');
                 
-                % There are a few properties that will have been saved
-                % by the previous run of V-HAB in the matter.table
-                % object that need to be reset to their initial values,
-                % otherwise there might be errors if the object classes
-                % were changed between runs.
-                %
-                % Also, objects here are included in e.g. mass balance
-                % calculations, leading to wrong results.
-                %
-                %TODO delete these as soon as aoPhases and aoFlows
-                %properties have been removed from this class.
-                this.aoPhases = [];
-                this.aoFlows  = matter.flow.empty();
-                
-                disp('Matter table loaded from stored version.');
-                
-                % The return command ends the constructor method
-                return;
+                % If there are no changes, we can load the previously saved
+                % data.
+                if ~(bMatterDataChanged || bMatterTableChanged)
+                    % If the matter files or the matter table itself have
+                    % not changed, we can load the MatterData.mat file, if
+                    % it exists.
+                    load(strrep('data\MatterData.mat', '\', filesep),'this');
+                    
+                    disp('Matter table loaded from stored version.');
+                    
+                    % The return command ends the constructor method
+                    return;
+                end
             end
             
             % Notify user that generating the matter data will take some time.
@@ -175,12 +152,12 @@ classdef table < base
             % substances which cannot be clealy defined (e.g. 'inedible
             % biomass' or 'brine'), but still need to be used in more
             % top-level simulations.
-            % There are also files for individual substances. These 
-            % substance-specific worksheets contain many datapoints for 
-            % several key properties at different temperatures, pressures 
-            % etc. both for isochoric and isobaric state changes. 
-            % The findProperty() method uses these datapoints to 
-            % interpolate between them if called.
+            % There are also files for individual substances. These
+            % substance-specific worksheets contain many datapoints for
+            % several key properties at different temperatures, pressures
+            % etc. both for isochoric and isobaric state changes. The
+            % findProperty() method uses these datapoints to interpolate
+            % between them if called.
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Importing data from 'MatterData.csv' file %%%%%%%%%%%%%%%%%%%
@@ -194,7 +171,7 @@ classdef table < base
             % backslash with the current system fileseparator, on Macs and
             % Linux, this is the forward slash.)
             this.ttxMatter = importMatterData('MatterData');
-             
+            
             % get all substances
             this.csSubstances = fieldnames(this.ttxMatter);
             % get number of substances
@@ -206,8 +183,6 @@ classdef table < base
             % this.
             this.afMolarMass = zeros(1, this.iSubstances);
             this.tiN2I       = struct();
-            
-            %%
             
             % Now we go through all substances in the 'MatterData'
             % worksheet and fill the ttxMatter struct
@@ -271,34 +246,6 @@ classdef table < base
                 
             end
             
-            %% Add nutritional data
-            
-            % read from .csv file
-            this.ttxNutrientData = importNutrientData();
-            
-            % get all edible substances
-            this.csEdibleSubstances = fieldnames(this.ttxNutrientData);
-            
-            %%%%%%%%%%%%
-            % WARNING! %
-            %%%%%%%%%%%%
-            
-            % right now, Drybean has been substituted with values from
-            % Kidney Beans and Redbeets have been substituted with Beets.
-            % BVAD uses those substances but they are not listed on the
-            % USDA Food Database as of time of writing.
-            % Nutrients are always linked to the USDA NDB No. (iUSDAID in
-            % the file), so check that if unsure!
-            
-            %%%%%%%%%%%%
-            
-            % loop over all edible substances
-            for iJ = 1:length(this.csEdibleSubstances)
-                if strcmp(this.csEdibleSubstances{iJ}, this.csSubstances{this.tiN2I.(this.csEdibleSubstances{iJ})})
-                    this.ttxMatter.(this.csEdibleSubstances{iJ}).txNutrientData = this.ttxNutrientData.(this.csEdibleSubstances{iJ});
-                end
-            end
-            
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Importing from individual substance files %%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -306,10 +253,10 @@ classdef table < base
             % Now we import all of the data contained in the individual
             % substance files. The NIST Scraper tool creates a data file
             % that contains the information on how many and which
-            % substances have individual files. So the first thing to do is 
+            % substances have individual files. So the first thing to do is
             % to read this file.
             
-            iFileID = fopen(strrep('lib/+matterdata/NIST_Scraper_Data.csv', '/', filesep));
+            iFileID = fopen(strrep('+matter/+data/+NIST/NIST_Scraper_Data.csv', '/', filesep));
             csInput = textscan(iFileID, '%s', 'Delimiter','\n');
             csInput = csInput{1};
             sInput_1  = csInput{1};
@@ -349,161 +296,59 @@ classdef table < base
             this.csI2N = fieldnames(this.tiN2I);
             
             
-            %% Add absorber data
+            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Adding nutritional data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            % TO DO: read this from excel files or is it sufficient to
-            % manually set it here?
-            this.abAbsorber = false(1,this.iSubstances);
-            this.abAbsorber(this.tiN2I.Zeolite5A)       = true;
-            this.abAbsorber(this.tiN2I.Zeolite5A_RK38)  = true;
-            this.abAbsorber(this.tiN2I.Zeolite13x)      = true;
-            this.abAbsorber(this.tiN2I.SilicaGel_40)    = true;
-            this.abAbsorber(this.tiN2I.Sylobead_B125)   = true;
+            % The actual substances are also included in 'MatterData.csv',
+            % this part of the code adds the nutritional data to these
+            % substances.
             
-            csAbsorbers = this.csSubstances(this.abAbsorber);
+            % read from .csv file
+            this.ttxNutrientData = importNutrientData();
             
-            for iAbsorber = 1:length(csAbsorbers)
-                this.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.tToth.mf_A0 = zeros(1,this.iSubstances);
-                this.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.tToth.mf_B0 = zeros(1,this.iSubstances);
-                this.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.tToth.mf_E  = zeros(1,this.iSubstances);
-                this.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.tToth.mf_T0 = zeros(1,this.iSubstances);
-                this.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.tToth.mf_C0 = zeros(1,this.iSubstances);
-                
-                this.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.mfAbsorptionEnthalpy = zeros(1,this.iSubstances);
+            % get all edible substances
+            this.csEdibleSubstances = fieldnames(this.ttxNutrientData);
+            
+            %%%%%%%%%%%%
+            % WARNING! %
+            %%%%%%%%%%%%
+            
+            % right now, Drybean has been substituted with values from
+            % Kidney Beans and Redbeets have been substituted with Beets.
+            % BVAD uses those substances but they are not listed on the
+            % USDA Food Database as of time of writing.
+            % Nutrients are always linked to the USDA NDB No. (iUSDAID in
+            % the file), so check that if unsure!
+            
+            %%%%%%%%%%%%
+            
+            % loop over all edible substances
+            for iJ = 1:length(this.csEdibleSubstances)
+                try
+                    if strcmp(this.csEdibleSubstances{iJ}, this.csSubstances{this.tiN2I.(this.csEdibleSubstances{iJ})})
+                        this.ttxMatter.(this.csEdibleSubstances{iJ}).txNutrientData = this.ttxNutrientData.(this.csEdibleSubstances{iJ});
+                    end
+                catch
+                    % substance not represented in matter table, but not an
+                    % issue as long as this food type is not used in sim
+                end
             end
-            % ALL Parameters according to ICES-2014-168
             
-            % Zeolite 5A
-            % Unit of the Factor is mol/(kg Pa)
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_A0(this.tiN2I.CO2)    = 9.875E-10;
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_A0(this.tiN2I.H2O)    = 1.106E-11;
+            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Adding absorber data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            % Unit of the Factor is 1/Pa
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_B0(this.tiN2I.CO2)    = 6.761E-11;
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_B0(this.tiN2I.H2O)    = 4.714E-13;
-            
-            % Unit of the Factor is K
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_E(this.tiN2I.CO2)     = 5.625E3;
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_E(this.tiN2I.H2O)     = 9.955E3;
-            
-            % Unit of the Factor is -
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_T0(this.tiN2I.CO2)    = 2.700E-1;
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_T0(this.tiN2I.H2O)    = 3.548E-1;
-            
-            % Unit of the Factor is K
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_C0(this.tiN2I.CO2)    = -2.002E1;
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_C0(this.tiN2I.H2O)    = -5.114E1;
-
-            % Absorption Enthalpy for the different substances in J/mol
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.mfAbsorptionEnthalpy(this.tiN2I.CO2)    = -38000;
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.mfAbsorptionEnthalpy(this.tiN2I.H2O)    = -45000;
+            % The actual substances are also included in 'MatterData.csv',
+            % this part of the code adds the absorber data to these
+            % substances.
+            this.importAbsorberData();
             
             
-            % Zeolite 5A_RK38 - Parameters for toth identical to 5A
-            % Unit of the Factor is mol/(kg Pa)
-            this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_A0(this.tiN2I.CO2)    = 9.875E-10;
-            this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_A0(this.tiN2I.H2O)    = 1.106E-11;
+            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Saving the data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            % Unit of the Factor is 1/Pa
-            this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_B0(this.tiN2I.CO2)    = 6.761E-11;
-            this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_B0(this.tiN2I.H2O)    = 4.714E-13;
-            
-            % Unit of the Factor is K
-            this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_E(this.tiN2I.CO2)     = 5.625E3;
-            this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_E(this.tiN2I.H2O)     = 9.955E3;
-            
-            % Unit of the Factor is -
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_T0(this.tiN2I.CO2)    = 2.700E-1;
-            this.ttxMatter.Zeolite5A.tAbsorberParameters.tToth.mf_T0(this.tiN2I.H2O)    = 3.548E-1;
-            
-            % Unit of the Factor is K
-            this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_C0(this.tiN2I.CO2)    = -2.002E1;
-            this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.tToth.mf_C0(this.tiN2I.H2O)    = -5.114E1;
-
-            % Absorption Enthalpy for the different substances in J/mol
-            this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.mfAbsorptionEnthalpy(this.tiN2I.CO2)    = -38000;
-            this.ttxMatter.Zeolite5A_RK38.tAbsorberParameters.mfAbsorptionEnthalpy(this.tiN2I.H2O)    = -45000;
-            
-            
-            % Zeolite 13x
-            % Unit of the Factor is mol/(kg Pa)
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_A0(this.tiN2I.CO2)    = 6.509E-6;
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_A0(this.tiN2I.H2O)    = 3.634E-9;
-            
-            % Unit of the Factor is 1/Pa
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_B0(this.tiN2I.CO2)    = 4.884E-7;
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_B0(this.tiN2I.H2O)    = 2.408E-10;
-            
-            % Unit of the Factor is K
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_E(this.tiN2I.CO2)     = 2.991E3;
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_E(this.tiN2I.H2O)     = 6.852E3;
-            
-            % Unit of the Factor is -
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_T0(this.tiN2I.CO2)    = 7.487E-2;
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_T0(this.tiN2I.H2O)    = 3.974E-1;
-            
-            % Unit of the Factor is K
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_C0(this.tiN2I.CO2)    = 3.805E1;
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.tToth.mf_C0(this.tiN2I.H2O)    = -4.199;
-
-            % Absorption Enthalpy for the different substances in J/mol
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.mfAbsorptionEnthalpy(this.tiN2I.CO2)    = -40000;
-            this.ttxMatter.Zeolite13x.tAbsorberParameters.mfAbsorptionEnthalpy(this.tiN2I.H2O)    = -55000;
-            
-            
-            % Silica Gel 40
-            % Unit of the Factor is mol/(kg Pa)
-            this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_A0(this.tiN2I.CO2)    = 7.678E-9;
-            this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_A0(this.tiN2I.H2O)    = 1.767E-1;
-            
-            % Unit of the Factor is 1/Pa
-            this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_B0(this.tiN2I.CO2)    = 5.164E-10;
-            this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_B0(this.tiN2I.H2O)    = 2.787E-8;
-            
-            % Unit of the Factor is K
-            this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_E(this.tiN2I.CO2)     = 2.330E3;
-            this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_E(this.tiN2I.H2O)     = 1.093E3;
-            
-            % Unit of the Factor is -
-            this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_T0(this.tiN2I.CO2)    = -3.053E-1;
-            this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_T0(this.tiN2I.H2O)    = -1.190E-3;
-            
-            % Unit of the Factor is K
-            this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_C0(this.tiN2I.CO2)    = 2.386E2;
-            this.ttxMatter.SilicaGel_40.tAbsorberParameters.tToth.mf_C0(this.tiN2I.H2O)    = 2.213E1;
-
-            % Absorption Enthalpy for the different substances in J/mol
-            this.ttxMatter.SilicaGel_40.tAbsorberParameters.mfAbsorptionEnthalpy(this.tiN2I.CO2)    = -40000;
-            this.ttxMatter.SilicaGel_40.tAbsorberParameters.mfAbsorptionEnthalpy(this.tiN2I.H2O)    = -50200;
-            
-            
-            % Sylobead_B125 - Parameters for toth identical to 5A
-            % Unit of the Factor is mol/(kg Pa)
-            this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_A0(this.tiN2I.CO2)    = 7.678E-9;
-            this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_A0(this.tiN2I.H2O)    = 1.767E-1;
-            
-            % Unit of the Factor is 1/Pa
-            this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_B0(this.tiN2I.CO2)    = 5.164E-10;
-            this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_B0(this.tiN2I.H2O)    = 2.787E-8;
-            
-            % Unit of the Factor is K
-            this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_E(this.tiN2I.CO2)     = 2.330E3;
-            this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_E(this.tiN2I.H2O)     = 1.093E3;
-            
-            % Unit of the Factor is -
-            this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_T0(this.tiN2I.CO2)    = -3.053E-1;
-            this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_T0(this.tiN2I.H2O)    = -1.190E-3;
-            
-            % Unit of the Factor is K
-            this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_C0(this.tiN2I.CO2)    = 2.386E2;
-            this.ttxMatter.Sylobead_B125.tAbsorberParameters.tToth.mf_C0(this.tiN2I.H2O)    = 2.213E1;
-
-            % Absorption Enthalpy for the different substances in J/mol
-            this.ttxMatter.Sylobead_B125.tAbsorberParameters.mfAbsorptionEnthalpy(this.tiN2I.CO2)    = -40000;
-            this.ttxMatter.Sylobead_B125.tAbsorberParameters.mfAbsorptionEnthalpy(this.tiN2I.H2O)    = -50200;
-            
-             
-            %%
             % Now we save the data into a .mat file, so if the matter table
             % doesn't change, we don't have to run through the entire
             % constructor again. To do this, we just place the entire table
@@ -518,21 +363,10 @@ classdef table < base
             % Let the simulations begin!
             
         end
-        function setMassErrorNames(this,sName)
-            % function called by the tool findMassBalanceErrors to set the
-            % names of the phases/branches/manips in which mass errors were
-            % detected to autocreate breakpoints that stop at the locations
-            % of interest to debug it
-            this.tMassErrorHelper.csMassErrorNames{end+1} = sName;
-        end
-    end
-    
-    %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    methods
         
+        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function csSubstanceList = getSubstancesFromVector(this, mfSubstances)
             csSubstanceList = this.asI2N(mfSubstances ~= 0);
         end
@@ -548,72 +382,7 @@ classdef table < base
                 mbAreInside(i) = any(strcmp(csSubstances{i}, csSubstanceList));
             end
         end
-        
-        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Methods for handling of related phases and flows %%%%%%%%%%%%%%%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        function afMass = addPhase(this, oPhase)
-            % Add phase
-            %disp('Add phase')
-            if ~isa(oPhase, 'matter.phase')
-                this.throw('addPhase', 'Provided object does not derive from or is a matter.phase');
-            end
-            
-            % Preset with default: if phase not added, same vector returned
-            afMass = oPhase.afMass;
-            
-            if isempty(this.aoPhases) || ~any(this.aoPhases == oPhase)
-                % The basic matter.phases is abstract so aoPhases can not
-                % pre-initialized with an empty mixin vector - therefore
-                % need to distinguish between first and following phases.
-                if isempty(this.aoPhases), this.aoPhases          = oPhase;
-                else                       this.aoPhases(end + 1) = oPhase;
-                end
-                
-            end
-        end
-        
-        function this = removePhase(this, oPhase)
-            %disp('Remove phase')
-            iInd = find(this.aoPhases == oPhase, 1); % Just find first result - phase never added twice
-            
-            if isempty(iInd)
-                this.throw('removePhase', 'Provided phase not assinged to this matter table!');
-            else
-                this.aoPhases(iInd) = [];
-            end
-        end
-        
-        function afMass = addFlow(this, oFlow)
-            % Add flow
-            %disp('Add flow')
-            if ~isa(oFlow, 'matter.flow')
-                this.throw('addFlow', 'Provided object does not derive from or is a matter.flow');
-            end
-            
-            % Preset with default: if phase not added, same vector returned
-            afMass = oFlow.arPartialMass;
-            
-            if ~any(this.aoFlows == oFlow)
-                this.aoFlows(length(this.aoFlows) + 1) = oFlow;
-                
-            end
-        end
-        
-        function this = removeFlow(this, oFlow)
-            %disp('Remove flow')
-            iInd = find(this.aoFlows == oFlow, 1); % Just find first result - flow never added twice
-            
-            if isempty(iInd)
-                this.throw('removeFlow', 'Provided flow not assinged to this matter table!');
-            else
-                this.aoFlows(iInd) = [];
-            end
-        end
-        
     end
-    
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Static helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -661,7 +430,7 @@ classdef table < base
                         % If the sAtomCount variable is empty, then there is
                         % only one atom of this element in the compound. So
                         % we can set sCount to 1.
-                        if isempty(sAtomCount), sAtomCount = '1'; end;
+                        if isempty(sAtomCount), sAtomCount = '1'; end
                         
                         % Now we can create the entry for the element in
                         % the output struct using sCurrentElement as key and
@@ -704,7 +473,7 @@ classdef table < base
                 % If the sAtomCount variable is empty, then there is
                 % only one atom of this element in the compound. So
                 % we can set sCount to 1.
-                if isempty(sAtomCount), sAtomCount = '1'; end;
+                if isempty(sAtomCount), sAtomCount = '1'; end
                 
                 % Now we can create the entry for the element in
                 % the output struct using sCurrentElement as key and

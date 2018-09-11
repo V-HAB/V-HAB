@@ -75,6 +75,7 @@ classdef Example < vsys
             this.bHighFlowRate = false;
             this.fFlowRate     = 0.1;
             
+            this.setThermalSolvers();
             
         end
     end

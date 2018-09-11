@@ -155,48 +155,8 @@ if iNumArgs == 1 %nargin < 3
         % ideales Gas allein das gesamte Volumen V bei der Temperatur T
         % ein; sie übt den Partialdruck Pi = YiP aus, der sich in diesem
         % Fall nach dem idealen Gasgesetz berechnet."
-        if strcmp(sMatterState, 'gas')
-            if oMatterRef.fFlowRate >= 0
-                afPP = oMatterRef.oBranch.coExmes{1,1}.oPhase.afPP;
-                if isempty(afPP)
-                    try
-                        [ afPP, ~ ] = this.calculatePartialPressures(oMatterRef.oBranch.coExmes{1,1}.oPhase);
-                    catch
-                        afPP = ones(1,this.iSubstances) .* this.Standard.Pressure;
-                    end
-                end
-            else
-                afPP = oMatterRef.oBranch.coExmes{2,1}.oPhase.afPP;
-            end
-        elseif strcmp(sMatterState, 'mixture')
-            if oMatterRef.fFlowRate >= 0
-                oPhase = oMatterRef.oBranch.coExmes{1,1}.oPhase;
-            else
-                oPhase = oMatterRef.oBranch.coExmes{2,1}.oPhase;
-            end
-            
-            aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, oPhase.fPressure);
-            if strcmp(oPhase.sPhaseType, 'gas')
-                afMassGas = zeros(1,this.iSubstances);
-                afMassGas(aiPhase ~= 1) = oPhase.afMass(aiPhase ~= 1);
-                afPP = this.calculatePartialPressures('gas',afMassGas, oPhase.fPressure);
-                afPP(aiPhase == 1) = oPhase.fPressure;
-
-                aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, afPP);
-            else
-                afPP = ones(1,this.iSubstances) .* oPhase.fPressure;
-            end
-        else
-            try
-                if oMatterRef.fFlowRate >= 0
-                    afPP = ones(1,this.iSubstances) .* oMatterRef.oBranch.coExmes{1,1}.oPhase.fPressure;
-                else
-                    afPP = ones(1,this.iSubstances) .* oMatterRef.oBranch.coExmes{2,1}.oPhase.fPressure;
-                end
-            catch
-                afPP = ones(1,this.iSubstances) .* this.Standard.Pressure;
-            end
-        end
+        
+        afPP = oMatterRef.afPartialPressure;
 
     else
         this.throw('calculateHeatCapacity', 'Single parameter must be of type |matter.phase| or |matter.flow|.');
@@ -237,12 +197,12 @@ else
     
     % If there is no temperature given, but pressure, set temperature to
     % standard temperature in [K]
-    if isempty(fTemperature); fTemperature = this.Standard.Temperature; end;
+    if isempty(fTemperature); fTemperature = this.Standard.Temperature; end
 end
 
 % If no mass is given the viscosity will be zero, so no need to do the rest
 % of the calculation.
-if sum(arPartialMass) == 0;
+if sum(arPartialMass) == 0
     fEta = 0;
     return;
 end

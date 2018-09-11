@@ -1,22 +1,27 @@
 classdef checkvalve < matter.procs.f2f
-    %Valve Summary of this class goes here
-    %   Detailed explanation goes here
-    
+    % This is a checkvalve which only allows fluid to pass in one direction
+    % and blocks it if it would flow the other way. This valve currently
+    % only works together with the multi branch solver but could be
+    % implemented for other solvers (interval iterative) as well. 
 
     
     properties (SetAccess = protected, GetAccess = public)
-        % Absolute, fixed pressure drop in flow direction
+        % Current Pressure Drop
         fPressureDrop = 0;
-        %TODO allow e.g. setting an interpolation for fr -> dp, possibly
-        %     with an exponent (e.g. ^3 -> cubic dependency)
         
+        % Coefficient for the pressure drop if fluid is allowed to flow
+        % through the valve. Is multiplied with the flowrate^2 to calculate
+        % pressure drop
+        fFlowThroughPressureDropCoefficient = 0;
         
         % If false, no flow at all (returns inf as pressure drop)
         bReversed = false;
+        
+        bCheckValve = true;
     end
     
     methods
-        function  this = checkvalve(oContainer, sName, bReversed, fPressureDrop)
+        function  this = checkvalve(oContainer, sName, bReversed, fFlowThroughPressureDropCoefficient)
             % Input Parameters:
             %   fFlowCoefficient - the bigger, the lower the pressure drop
             %   bValveOpen - if closed, inf pressure drop - no flow!
@@ -27,8 +32,8 @@ classdef checkvalve < matter.procs.f2f
                 this.bReversed = bReversed;
             end
             
-            if nargin >= 4 && ~isempty(fPressureDrop)
-                this.fPressureDrop = fPressureDrop;
+            if nargin >= 4 && ~isempty(fFlowThroughPressureDropCoefficient)
+                this.fFlowThroughPressureDropCoefficient = fFlowThroughPressureDropCoefficient;
             end
             
             
@@ -38,27 +43,31 @@ classdef checkvalve < matter.procs.f2f
         
         
         function fPressureDrop = solverDeltas(this, fFlowRate)
-            % No flow - no pressure drop
-            if fFlowRate == 0
-                fPressureDrop = 0;
-                
-                return;
             
-            % NEGATIVE flow for 'normal' checkvalve (matter can only flow
-            % from the left to the right side) - return inf to block flow!
-            elseif (fFlowRate < 0) && ~this.bReversed
-                fPressureDrop = inf;
-                
-                return;
-            
-            elseif (fFlowRate > 0) && this.bReversed
-                fPressureDrop = inf;
-                
-                return;
+            % we only calculate the valve in case that the solver has
+            % already converged. Otherwise the valve can result in
+            % oscillations in iterative solvers like the iterative
+            % multibranch, the iterative or the interval solver!
+            if ~this.oBranch.oHandler.bFinalLoop
+                fPressureDrop = this.fPressureDrop;
+                return
             end
             
+            % No flow - no pressure drop
+            if fFlowRate == 0
+                this.fPressureDrop = 0;
+                
+            % NEGATIVE flow for 'normal' checkvalve (matter can only flow
+            % from the left to the right side) - return inf to block flow!
+            elseif ~this.bReversed && fFlowRate < 0
+                this.fPressureDrop = inf;
+                
+            elseif this.bReversed && fFlowRate > 0
+                this.fPressureDrop = inf;
+                
+            end
             
-            fPressureDrop = this.fPressureDrop;
+            fPressureDrop = this.fFlowThroughPressureDropCoefficient * fFlowRate^2;
         end
     end
     

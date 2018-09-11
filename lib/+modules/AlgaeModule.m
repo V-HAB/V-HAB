@@ -34,31 +34,32 @@ classdef AlgaeModule < vsys
             this.fHarvest=0;
             this.fAerationPower=200;
             
-            oGeo = geometry.volumes.cuboid(3, 3, 0.026);
+            this.oGeo = geometry.volumes.cuboid(3, 3, 0.026);
             
+        end
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
             % Controls the Power and the initial power can be set
             components.AlgaeModule.PowerControl(this, 'PowerControl');
             
             % Creating the filter store
-            this.addStore(matter.store(this.oData.oMT,'FilterAlgaeReactor',10));
+            matter.store(this,'FilterAlgaeReactor',10);
             
-            
-            oFlow = matter.phases.liquid(this.toStores.FilterAlgaeReactor, ...
-                'Flowphase', ... Phase name
-                struct('H2O', 234 * oGeo.fVolume / 2,'CO2',0.01,'NO3',0.01),...
-                oGeo.fVolume / 2, ... %Phase volume
+            oFlow = matter.phases.mixture(this.toStores.FilterAlgaeReactor, 'Flowphase', 'liquid', struct('H2O', 234 * this.oGeo.fVolume / 2,'CO2',0.01,'NO3',0.01),...
+                this.oGeo.fVolume / 2, ... %Phase volume
                 293.15,... % Phase temperature
                 101325); % Phase pressure
             
-            matter.procs.exmes.liquid(oFlow,     'p4');
-            matter.procs.exmes.liquid(oFlow,     'p5');
-            matter.procs.exmes.liquid(oFlow,     'p6');
+            matter.procs.exmes.mixture(oFlow,     'p4');
+            matter.procs.exmes.mixture(oFlow,     'p5');
+            matter.procs.exmes.mixture(oFlow,     'p6');
             
             % creating the algae phase
             oFiltered = matter.phases.liquid(this.toStores.FilterAlgaeReactor, ...
                 'Spirulina', ... Phase name
                 struct('Spirulina',3*0.1685), ... Phase contents
-                oGeo.fVolume / 2, ... Phase volume
+                this.oGeo.fVolume / 2, ... Phase volume
                 293.15,... % Phase temperature
                 101325); % Phase pressure
             
@@ -93,9 +94,6 @@ classdef AlgaeModule < vsys
             this.oProc_Absorber_Algae = components.AlgaeModule.Absorber_Algae(this.toStores.FilterAlgaeReactor, 'filterproc', 'Flowphase.p6', 'Spirulina.p7', 'CO2', 'NO3', 'O2', 0);
             
             
-            
-            
-            
             this.oProc_Absorber_Algae2 = components.AlgaeModule.Absorber_Flowphase(this.toStores.FilterAlgaeReactor, 'filterproc2', 'air.p3', 'Flowphase.p4', 'CO2', 'O2', 0);
             % splits up the components taken from the freshwater phase in
             % the algae phase
@@ -106,66 +104,50 @@ classdef AlgaeModule < vsys
             this.oProc_Absorber_O2 = components.AlgaeModule.Absorber_O2(this.toStores.FilterAlgaeReactor, 'filterproc1', 'Spirulina.p8', 'air.p12', 'O2', 0);
             
             
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
             % Adding pipes to connect the components
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_1', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_2', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_3', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_4', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_5', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_6', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_7', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_8', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_9', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_10', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_11', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_12', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_13', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_14', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_15', 0.5, 0.01));
-            this.addProcF2F(components.AlgaeModule.Pipe1(this.oData.oMT, 'Pipe_16', 0.5, 0.01));
+            components.pipe(this, 'Pipe_1', 0.5, 0.01);
+            components.pipe(this, 'Pipe_2', 0.5, 0.01);
+            components.pipe(this, 'Pipe_3', 0.5, 0.01);
+            components.pipe(this, 'Pipe_4', 0.5, 0.01);
+            components.pipe(this, 'Pipe_5', 0.5, 0.01);
+            components.pipe(this, 'Pipe_6', 0.5, 0.01);
+            components.pipe(this, 'Pipe_7', 0.5, 0.01);
+            components.pipe(this, 'Pipe_8', 0.5, 0.01);
+            components.pipe(this, 'Pipe_9', 0.5, 0.01);
+            components.pipe(this, 'Pipe_10', 0.5, 0.01);
+            components.pipe(this, 'Pipe_11', 0.5, 0.01);
+            components.pipe(this, 'Pipe_12', 0.5, 0.01);
+            components.pipe(this, 'Pipe_13', 0.5, 0.01);
+            components.pipe(this, 'Pipe_14', 0.5, 0.01);
+            components.pipe(this, 'Pipe_15', 0.5, 0.01);
+            components.pipe(this, 'Pipe_16', 0.5, 0.01);
             
             
             
             % Creating the flowpath between the components
             
-            oInputBranch = this.createBranch('FilterAlgaeReactor.p1',  { 'Pipe_1' }, 'InletAir');
+            matter.branch(this, 'FilterAlgaeReactor.p1', 	{ 'Pipe_1' },   'InletAir',                 'InputAir');
             
-            oNO3Branch = this.createBranch('FilterAlgaeReactor.p5', { 'Pipe_2' }, 'InletNO3');
+            matter.branch(this, 'FilterAlgaeReactor.p5', 	{ 'Pipe_2' },   'InletNO3',                 'NO3_Inlet');
             
-            oHarvestAlgaeBranch = this.createBranch('FilterAlgaeReactor.p10', { 'Pipe_8'}, 'Outlet_Food_Storage');
+            matter.branch(this, 'FilterAlgaeReactor.p10',  	{ 'Pipe_8'},    'Outlet_Food_Storage',      'HarvestFood');
             
-            oHarvesttoBiomassBranch = this.createBranch('FilterAlgaeReactor.p9', { 'Pipe_14' }, 'Outlet_Biomass_Storage');
+            matter.branch(this, 'FilterAlgaeReactor.p9',    { 'Pipe_14' },  'Outlet_Biomass_Storage',   'HarvestBiomass');
             
-            oOutputAirBranch = this.createBranch('FilterAlgaeReactor.p2', { 'Pipe_16'}, 'OutletAir');
-            
-            
+            matter.branch(this, 'FilterAlgaeReactor.p2', 	{ 'Pipe_16'},   'OutletAir',                'OutputAir');
             
             
-            % Seal - means no more additions of stores etc can be done to
-            % this system.
-            this.seal();
-            
-            % set the pressure for liquid phases (liquid solver wasn't used
-            % when i first adapted this programm
-            this.toStores.FilterAlgaeReactor.aoPhases(1,1).setPressure(101325);
-            this.toStores.FilterAlgaeReactor.aoPhases(1,2).setPressure(101325);
+        end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
             
             % adding the branches to the solver
-            this.oInputBranch = solver.matter.manual.branch(oInputBranch);
-            this.oOutputAirBranch = solver.matter.manual.branch(oOutputAirBranch);
-            this.oNO3Branch = solver.matter.manual.branch(oNO3Branch);
-            this.oHarvestAlgaeBranch = solver.matter.manual.branch(oHarvestAlgaeBranch);
-            this.oHarvesttoBiomassBranch = solver.matter.manual.branch(oHarvesttoBiomassBranch);
+            this.oInputBranch = solver.matter.manual.branch(this.toBranches.InputAir);
+            this.oOutputAirBranch = solver.matter.manual.branch(this.toBranches.OutputAir);
+            this.oNO3Branch = solver.matter.manual.branch(this.toBranches.NO3_Inlet);
+            this.oHarvestAlgaeBranch = solver.matter.manual.branch(this.toBranches.HarvestFood);
+            this.oHarvesttoBiomassBranch = solver.matter.manual.branch(this.toBranches.HarvestBiomass);
             
             
             this.oOutputAirBranch.setFlowRate(0);
@@ -174,10 +156,13 @@ classdef AlgaeModule < vsys
             
             
             aoPhases = this.toStores.FilterAlgaeReactor.aoPhases;
-            aoPhases(1).fFixedTS = 15;
-            aoPhases(2).fFixedTS = 15;
-            aoPhases(3).fFixedTS = 15;
-            %
+            
+            tTimeStepProperties.fFixedTimeStep = 15;
+            aoPhases(1).setTimeStepProperties(tTimeStepProperties);
+            aoPhases(2).setTimeStepProperties(tTimeStepProperties);
+            aoPhases(3).setTimeStepProperties(tTimeStepProperties);
+            
+            this.setThermalSolvers();
             
         end
         function setIfFlows(this, sInlet, sOutlet, sOutlet2, sOutlet3, sInlet2)
@@ -204,10 +189,10 @@ classdef AlgaeModule < vsys
             
             this.oProc_Absorber_Algae.fPPCO2=this.oParent.toStores.crew_module.aoPhases(1).afPP(11);
             this.oProc_Absorber_Algae.fMassCO2=this.oParent.toStores.crew_module.aoPhases(1).afMass(11);
-            this.oProc_Absorber_Algae.fTime=this.oParent.oData.oTimer.fTime;
+            this.oProc_Absorber_Algae.fTime = this.oTimer.fTime;
             
             
-            if this.oParent.oParent.oData.oTimer.fTime< 900;
+            if this.oTimer.fTime < 900
             else
                 
                 this.setAerationFlowrate();
@@ -216,11 +201,12 @@ classdef AlgaeModule < vsys
                 if       this.oParent.toStores.crew_module.aoPhases(1).afPP(11)>140
                     if this.fAerationPower ~= 400
                         this.fAerationPower =400;
-                    end;
-                else if this.oParent.toStores.crew_module.aoPhases(1).afPP(11)<40
+                    end
+                else
+                    if this.oParent.toStores.crew_module.aoPhases(1).afPP(11)<40
                         if this.fAerationPower ~= 200
                             this.fAerationPower=200;
-                        end;
+                        end
                     end
                 end
             end
@@ -268,8 +254,8 @@ classdef AlgaeModule < vsys
                 else
                     this.oHarvestAlgaeBranch.setFlowRate(0.2*this.fHarvestFlowRate);
                     this.oHarvesttoBiomassBranch.setFlowRate(0.8*this.fHarvestFlowRate);
-                end;
-            end;
+                end
+            end
         end
         
         function stopHarvestFlowrate(this)

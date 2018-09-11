@@ -55,8 +55,8 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     end
     
     %The speed of sound for the two initial states is calculated  
-    fSonicSpeedRight= oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound('liquid', oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureRight, fPressureRight);
-    fSonicSpeedLeft = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound('liquid', oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureLeft, fPressureLeft);
+    fSonicSpeedRight= oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureRight, fPressureRight);
+    fSonicSpeedLeft = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureLeft, fPressureLeft);
 
 
     %%
@@ -71,24 +71,21 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
 
     %then the values in the star region are calculated according to [5]
     %page 299 equation (9.20)
-    fFlowSpeedStarPVRS = 0.5*(fFlowSpeedLeft+fFlowSpeedRight)+(fPressureLeft-...
-                    fPressureRight)/(2*fAverageDensity*fAverageSonicSpeed);             
+    fFlowSpeedStarPVRS = 0.5*(fFlowSpeedLeft + fFlowSpeedRight) + (fPressureLeft - fPressureRight) / (2*fAverageDensity*fAverageSonicSpeed);             
 
-    fDensityLeftStarPVRS = fDensityLeft+(fFlowSpeedLeft-fFlowSpeedStarPVRS)*...
-                        (fAverageDensity/fAverageSonicSpeed);            
+    fDensityLeftStarPVRS = fDensityLeft + (fFlowSpeedLeft-fFlowSpeedStarPVRS) * (fAverageDensity/fAverageSonicSpeed);            
 
-    fDensityRightStarPVRS = fDensityRight+(fFlowSpeedStarPVRS-fFlowSpeedRight)*...
-                        (fAverageDensity/fAverageSonicSpeed);               
+    fDensityRightStarPVRS = fDensityRight + (fFlowSpeedStarPVRS-fFlowSpeedRight) * (fAverageDensity/fAverageSonicSpeed);               
 
     if abs((fDensityRightStarPVRS-fDensityRight)/fDensityRight) < 0.01 %density changed by less than 1%
         fSonicSpeedRightStarPVRS = fSonicSpeedRight;
     else
-        fSonicSpeedRightStarPVRS = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound('liquid', oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureRight, fDensityRightStarPVRS, true);
+        fSonicSpeedRightStarPVRS = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureRight, fDensityRightStarPVRS, true);
     end
     if abs((fDensityRightStarPVRS-fDensityLeft)/fDensityLeft) < 0.01 %density changed by less than 1%
         fSonicSpeedLeftStarPVRS = fSonicSpeedLeft;
     else
-        fSonicSpeedLeftStarPVRS = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound('liquid', oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureLeft, fDensityLeftStarPVRS, true);
+        fSonicSpeedLeftStarPVRS = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureLeft, fDensityLeftStarPVRS, true);
     end
     %estimated wave speeds using the PVRS
     %left and right wave speed according to [7] page 28 equation (14)
@@ -125,12 +122,12 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     if abs((fDensityRightStarTemp-fDensityRightStarPVRS)/fDensityRightStarPVRS) < 0.01 %density changed by less than 1%
         fSonicSpeedRightStarTemp = fSonicSpeedRightStarPVRS;
     else
-        fSonicSpeedRightStarTemp = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound('liquid', oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureRight, fDensityRightStarTemp, true);
+        fSonicSpeedRightStarTemp = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureRight, fDensityRightStarTemp, true);
     end
     if abs((fDensityLeftStarTemp-fDensityLeftStarPVRS)/fDensityLeftStarPVRS) < 0.01 %density changed by less than 1%
         fSonicSpeedLeftStarTemp = fSonicSpeedLeftStarPVRS;
     else
-        fSonicSpeedLeftStarTemp = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound('liquid', oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureLeft, fDensityLeftStarTemp, true);
+        fSonicSpeedLeftStarTemp = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureLeft, fDensityLeftStarTemp, true);
     end
     %with these values new wave speed estimates based on the HLLC Riemann
     %solver are derived
@@ -190,12 +187,12 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     if abs((fDensityRightStar-fDensityRightStarTemp)/fDensityRightStarTemp) < 0.01 %density changed by less than 1%
         fSonicSpeedRightStar = fSonicSpeedRightStarTemp;
     else
-        fSonicSpeedRightStar = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound('liquid', oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureRight, fDensityRightStar, true);
+        fSonicSpeedRightStar = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureRight, fDensityRightStar, true);
     end
     if abs((fDensityRightStar-fDensityRightStarTemp)/fDensityRightStarTemp) < 0.01 %density changed by less than 1%
         fSonicSpeedLeftStar = fSonicSpeedLeftStarTemp;
     else
-        fSonicSpeedLeftStar = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound('liquid', oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureLeft, fDensityLeftStar, true);
+        fSonicSpeedLeftStar = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureLeft, fDensityLeftStar, true);
     end
     
     %with these values the final wave speed estimates are                   

@@ -42,8 +42,8 @@ classdef ExampleSubsystem < vsys
             
             % Create the solver instances. Generally, this can be done here
             % or directly within the vsys (after the .seal() command).
-            solver.matter.iterative.branch(this.aoBranches(1));
-            solver.matter.iterative.branch(this.aoBranches(2));
+            solver.matter.interval.branch(this.aoBranches(1));
+            solver.matter.interval.branch(this.aoBranches(2));
             
             
             
@@ -62,7 +62,11 @@ classdef ExampleSubsystem < vsys
             % We are not really interested in the pressure, heat capacity
             % etc. of the filtered phase, so we don't need to re-calculate
             % it often. So we set a large maximum change. 
-            oFilterBedPhase.rMaxChange = 0.5;
+            
+            tTimeStepProperties.rMaxChange = 0.5;
+            oFilterBedPhase.setTimeStepProperties(tTimeStepProperties);
+            
+            this.setThermalSolvers();
 
         end
         

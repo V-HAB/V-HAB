@@ -20,12 +20,16 @@ classdef AbsorberExample < matter.procs.p2ps.flow
         
         
         rLoad;
+        
+        oParent;
     end
     
     
     methods
-        function this = AbsorberExample(oStore, sName, sPhaseIn, sPhaseOut, sSubstance, fCapacity)
+        function this = AbsorberExample(oParent, oStore, sName, sPhaseIn, sPhaseOut, sSubstance, fCapacity)
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
+            
+            this.oParent = oParent;
             
             % Species to absorp, max absorption
             this.sSubstance  = sSubstance;
@@ -70,24 +74,19 @@ classdef AbsorberExample < matter.procs.p2ps.flow
             % according partial masses. Flow rates are a row vector,
             % partials are a matrix - each row represents one flow, the
             % columns represent the different substances.
-            [ afFlowRate, mrPartials ] = this.getInFlows();
+            [ afPartialFlowRates ] = this.getPartialInFlows();
             
             % Nothing flows in, so nothing absorbed ...
-            if isempty(afFlowRate)
+            if isempty(afPartialFlowRates)
                 this.setMatterProperties(0, this.arExtractPartials);
                 
                 return;
             end
             
-            % Now multiply the flow rates with the according partial mass
-            % of the substances extracted. Then we have several flow rates,
-            % representing exactly the amount of the mass of the according
-            % substances flowing into the filter.
-            afFlowRate = afFlowRate .* mrPartials(:, iSubstances);
             
             % Sum up flow rates and use the load of the filter to reduce 
             % the flow rate accordingly
-            fFlowRate = (1 - this.rLoad) * sum(afFlowRate);
+            fFlowRate = (1 - this.rLoad) * sum(afPartialFlowRates(:, iSubstances));
             
             % If we do nothing else, there will be a huge spike in the 
             % adsorption rate at the beginning of the simulation, because 

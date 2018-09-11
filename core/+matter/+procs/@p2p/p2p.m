@@ -7,6 +7,8 @@ classdef p2p < matter.flow
     
     properties (SetAccess = protected, GetAccess = public)
         fLastUpdate = -1;
+        
+        oThermalBranch;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -74,6 +76,35 @@ classdef p2p < matter.flow
             oStore.aoPhases(iPhaseIn ).toProcsEXME.(sPortIn(2:end) ).addFlow(this);
             oStore.aoPhases(iPhaseOut).toProcsEXME.(sPortOut(2:end)).addFlow(this);
             
+            %% Construct asscociated thermal branch
+            % Create the respective thermal interfaces for the thermal
+            % branch
+            % Split to store name / port name
+            % TO DO: make nicer
+            oPort = this.oStore.getPort(sPortIn(2:end));
+            thermal.procs.exme(oPort.oPhase.oCapacity, sPortIn(2:end));
+            
+            oPort = this.oStore.getPort(sPortOut(2:end));
+            thermal.procs.exme(oPort.oPhase.oCapacity, sPortOut(2:end));
+            
+            try
+                thermal.procs.conductors.fluidic(this.oStore.oContainer, this.sName, this);
+                sCustomName = this.sName;
+            catch
+                bError = true;
+                iCounter = 2;
+                while bError == true
+                    try
+                        thermal.procs.conductors.fluidic(this.oStore.oContainer, [this.sName, '_', num2str(iCounter)], this);
+                        bError = false;
+                    catch
+                        iCounter = iCounter + 1;
+                    end
+                end
+                sCustomName = [this.sName, '_', num2str(iCounter)];
+            end
+            
+            this.oThermalBranch = thermal.branch(this.oStore.oContainer, [this.oStore.sName,  sPortIn] , {sCustomName}, [this.oStore.sName,  sPortOut], sCustomName);
         end
     end
     
@@ -138,7 +169,7 @@ classdef p2p < matter.flow
         function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
             % Get missing values from exmes
             
-            if (nargin < 2) || isempty(fFlowRate), fFlowRate = this.fFlowRate; end;
+            if (nargin < 2) || isempty(fFlowRate), fFlowRate = this.fFlowRate; end
             
             % We're a p2p, so we're directly connected to EXMEs
             %oExme = this.(sif(fFlowRate >= 0, 'oIn', 'oOut'));
@@ -163,20 +194,11 @@ classdef p2p < matter.flow
             
             % Check temp and pressure. First temp ... cause that might
             % change in a p2p ... pressure not really.
-            if (nargin < 4) || isempty(fTemperature), fTemperature = fPortTemperature; end;
-            if (nargin < 5) || isempty(fPressure), fPressure = fPortPressure; end;
+            if (nargin < 4) || isempty(fTemperature), fTemperature = fPortTemperature; end
+            if (nargin < 5) || isempty(fPressure), fPressure = fPortPressure; end
+                
             
             setMatterProperties@matter.flow(this, fFlowRate, arPartialMass, fTemperature, fPressure);
-            
-            % TO DO: A Branch always has to call the phase mass updates
-            % when the flowrate of the branch changes (because otherwise
-            % the phases could not work with different time steps), why is
-            % this not also done for the update of P2Ps?
-            % Note currently this wont change anything since the massupdate
-            % is only called once if the branch and the P2P change in the
-            % same tick
-%             this.oIn.oPhase.massupdate();
-%             this.oOut.oPhase.massupdate();
         end
     end
 end

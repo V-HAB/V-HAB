@@ -41,7 +41,7 @@ classdef main < vsys
             % For now - just multiply rates with crew size. Therefore, also
             % crew size of 0 possible --> no flows at all! In that case, eq
             % solver not even initialized.
-            if nargin < 3 || isempty(fCrewSize), fCrewSize = 1; end;
+            if nargin < 3 || isempty(fCrewSize), fCrewSize = 1; end
             
             this.fOxygenRequired = fCrewSize * this.fOxygenRequired;
             this.fVentilation    = fCrewSize * this.fVentilation;

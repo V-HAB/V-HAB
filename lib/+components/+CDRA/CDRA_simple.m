@@ -167,22 +167,27 @@ classdef CDRA_simple < vsys
             % Input phase
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Filter_13X_1, 0.084557, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, fPressure);
             oInput = matter.phases.gas(this.toStores.Filter_13X_1, 'PhaseIn', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            oInput.bFlow = true;
+            oInput.bSynced = true;
             % Filtered phase
-            oFiltered = matter.phases.absorber(this.toStores.Filter_13X_1, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite5A'); 
+            oFiltered = matter.phases.mixture(this.toStores.Filter_13X_1, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, this.tAtmosphere.fTemperature, 1e5); 
+            
+            oHeatSource = thermal.heatsource('AbsorberHeatSource', 0);
+            oFiltered.oCapacity.addHeatSource(oHeatSource);
             
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In_1');
             matter.procs.exmes.gas(oInput, 'Flow_In_2');
             matter.procs.exmes.gas(oInput, 'Flow_Out_1');
             matter.procs.exmes.gas(oInput, 'Flow_Out_2');
-            matter.procs.exmes.gas(oInput, 'filterport');
-            matter.procs.exmes.absorber(oFiltered, 'filterport');
+            matter.procs.exmes.gas(oInput, 'filterport_Gas');
+            matter.procs.exmes.mixture(oFiltered, 'filterport_Absorber');
             
             % Create the Filterproc
             if this.bVozdukh == 1
-                components.CDRA.components.Filter(this.toStores.Filter_13X_1, 'Filter_13X_1_proc', 'PhaseIn.filterport', 'FilteredPhase.filterport', 'Filter_13x', (this.fCycleTime));                
+                components.CDRA.components.Filter(this.toStores.Filter_13X_1, 'Filter_13X_1_proc', 'PhaseIn.filterport_Gas', 'FilteredPhase.filterport_Absorber', 'Filter_13x', (this.fCycleTime));                
             else
-                components.CDRA.components.Filter(this.toStores.Filter_13X_1, 'Filter_13X_1_proc', 'PhaseIn.filterport', 'FilteredPhase.filterport', 'Filter_13x', (this.fCycleTime));
+                components.CDRA.components.Filter(this.toStores.Filter_13X_1, 'Filter_13X_1_proc', 'PhaseIn.filterport_Gas', 'FilteredPhase.filterport_Absorber', 'Filter_13x', (this.fCycleTime));
             end
             
             % Creating the Filter_13X_2 (H2O filter)
@@ -199,21 +204,26 @@ classdef CDRA_simple < vsys
             % Input phase
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Filter_13X_2, 0.084557, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, fPressure);
             oInput = matter.phases.gas(this.toStores.Filter_13X_2, 'PhaseIn', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            oInput.bFlow = true;
+            oInput.bSynced = true;
             % Filtered phase
-            oFiltered = matter.phases.absorber(this.toStores.Filter_13X_2, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite5A');
+            oFiltered = matter.phases.mixture(this.toStores.Filter_13X_2, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, this.tAtmosphere.fTemperature, 1e5); 
+            
+            oHeatSource = thermal.heatsource('AbsorberHeatSource', 0);
+            oFiltered.oCapacity.addHeatSource(oHeatSource);
             
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In_1');
             matter.procs.exmes.gas(oInput, 'Flow_In_2');
             matter.procs.exmes.gas(oInput, 'Flow_Out_1');
             matter.procs.exmes.gas(oInput, 'Flow_Out_2');
-            matter.procs.exmes.gas(oInput, 'filterport');
-            matter.procs.exmes.absorber(oFiltered, 'filterport');
+            matter.procs.exmes.gas(oInput, 'filterport_Gas');
+            matter.procs.exmes.mixture(oFiltered, 'filterport_Absorber');
             % Create the Filterproc
             if this.bVozdukh == 1
-                components.CDRA.components.Filter(this.toStores.Filter_13X_2, 'Filter_13X_2_proc', 'PhaseIn.filterport', 'FilteredPhase.filterport', 'Filter_13x', (this.fCycleTime));
+                components.CDRA.components.Filter(this.toStores.Filter_13X_2, 'Filter_13X_2_proc', 'PhaseIn.filterport_Gas', 'FilteredPhase.filterport_Absorber', 'Filter_13x', (this.fCycleTime));
             else
-                components.CDRA.components.Filter(this.toStores.Filter_13X_2, 'Filter_13X_2_proc', 'PhaseIn.filterport', 'FilteredPhase.filterport', 'Filter_13x', (this.fCycleTime));
+                components.CDRA.components.Filter(this.toStores.Filter_13X_2, 'Filter_13X_2_proc', 'PhaseIn.filterport_Gas', 'FilteredPhase.filterport_Absorber', 'Filter_13x', (this.fCycleTime));
             end
             
             % Creating the Filter5A_1 (CO2 filter)
@@ -231,28 +241,28 @@ classdef CDRA_simple < vsys
             tCO2.sPhaseType = 'gas';
             fDensityCO2 = this.oMT.findProperty(tCO2);
             
-            oInput = matter.phases.gas(this.toStores.Filter5A_1, ...
-                          'PhaseIn', ...                            % Phase name
-                          struct('CO2', fDensityCO2*0.084557), ...  % Phase contents
-                          0.084557, ...                             % Phase volume
-                          this.tAtmosphere.fTemperature);                      % Phase temperature 
+            oInput = matter.phases.gas(this.toStores.Filter5A_1, 'PhaseIn', struct('CO2', fDensityCO2*0.084557), 0.084557, this.tAtmosphere.fTemperature);
+            oInput.bSynced = true;
             
             % Filtered phase
-            oFiltered = matter.phases.absorber(this.toStores.Filter5A_1, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite5A');
+            oFiltered = matter.phases.mixture(this.toStores.Filter5A_1, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, this.tAtmosphere.fTemperature, 1e5); 
+            
+            oHeatSource = thermal.heatsource('AbsorberHeatSource', 0);
+            oFiltered.oCapacity.addHeatSource(oHeatSource);
             
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In');
             matter.procs.exmes.gas(oInput, 'Flow_Out_1');
             matter.procs.exmes.gas(oInput, 'Flow_Out_2');
             matter.procs.exmes.gas(oInput, 'Flow_Out_AirSafe');
-            matter.procs.exmes.gas(oInput, 'filterport');
-            matter.procs.exmes.absorber(oFiltered, 'filterport');
+            matter.procs.exmes.gas(oInput, 'filterport_Gas');
+            matter.procs.exmes.mixture(oFiltered, 'filterport_Absorber');
             
             % Create the Filterproc
             if this.bVozdukh == 1
-                oFilter1 = components.CDRA.components.Filter(this.toStores.Filter5A_1, 'Filter5A_1_proc', 'PhaseIn.filterport', 'FilteredPhase.filterport', 'Filter_5A', (this.fCycleTime), this.fAirSafeTime);
+                oFilter1 = components.CDRA.components.Filter(this.toStores.Filter5A_1, 'Filter5A_1_proc', 'PhaseIn.filterport_Gas', 'FilteredPhase.filterport_Absorber', 'Filter5A', (this.fCycleTime), this.fAirSafeTime);
             else
-                oFilter1 = components.CDRA.components.Filter(this.toStores.Filter5A_1, 'Filter5A_1_proc', 'PhaseIn.filterport', 'FilteredPhase.filterport', 'Filter_5A', (this.fCycleTime), this.fAirSafeTime);
+                oFilter1 = components.CDRA.components.Filter(this.toStores.Filter5A_1, 'Filter5A_1_proc', 'PhaseIn.filterport_Gas', 'FilteredPhase.filterport_Absorber', 'Filter5A', (this.fCycleTime), this.fAirSafeTime);
             end
             
             % Creating the Filter5A_2 (CO2 filter)
@@ -263,22 +273,26 @@ classdef CDRA_simple < vsys
             % Input phase
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Filter5A_2, 0.084557, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, fPressure);
             oInput = matter.phases.gas(this.toStores.Filter5A_2, 'PhaseIn', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            oInput.bSynced = true;
             
             % Filtered phase
-            oFiltered = matter.phases.absorber(this.toStores.Filter5A_2, 'FilteredPhase', tfMasses, this.tAtmosphere.fTemperature, 'solid', 'Zeolite5A');
+            oFiltered = matter.phases.mixture(this.toStores.Filter5A_2, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, this.tAtmosphere.fTemperature, 1e5); 
+            
+            oHeatSource = thermal.heatsource('AbsorberHeatSource', 0);
+            oFiltered.oCapacity.addHeatSource(oHeatSource);
             
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In');
             matter.procs.exmes.gas(oInput, 'Flow_Out_1');
             matter.procs.exmes.gas(oInput, 'Flow_Out_2');
             matter.procs.exmes.gas(oInput, 'Flow_Out_AirSafe');
-            matter.procs.exmes.gas(oInput, 'filterport');
-            matter.procs.exmes.absorber(oFiltered, 'filterport');
+            matter.procs.exmes.gas(oInput, 'filterport_Gas');
+            matter.procs.exmes.mixture(oFiltered, 'filterport_Absorber');
             % Create the Filterproc
             if this.bVozdukh == 1
-                oFilter2 = components.CDRA.componentsFilter(this.toStores.Filter5A_2, 'Filter5A_2_proc', 'PhaseIn.filterport', 'FilteredPhase.filterport', 'Filter_5A', (this.fCycleTime), this.fAirSafeTime);
+                oFilter2 = components.CDRA.componentsFilter(this.toStores.Filter5A_2, 'Filter5A_2_proc', 'PhaseIn.filterport_Gas', 'FilteredPhase.filterport_Absorber', 'Filter5A', (this.fCycleTime), this.fAirSafeTime);
             else
-                oFilter2 = components.CDRA.components.Filter(this.toStores.Filter5A_2, 'Filter5A_2_proc', 'PhaseIn.filterport', 'FilteredPhase.filterport', 'Filter_5A', (this.fCycleTime),this.fAirSafeTime);
+                oFilter2 = components.CDRA.components.Filter(this.toStores.Filter5A_2, 'Filter5A_2_proc', 'PhaseIn.filterport_Gas', 'FilteredPhase.filterport_Absorber', 'Filter5A', (this.fCycleTime),this.fAirSafeTime);
             end
             
             % Adding the Precoolers which are used to decrease the air
@@ -305,14 +319,14 @@ classdef CDRA_simple < vsys
             % Cycle one
             matter.branch(this, 'Filter_13X_1.Flow_In_1',       {},                     'CDRA_Air_In_1',            'CDRA_Air_In_1');           % Creating the flowpath into this subsystem
             matter.branch(this, 'Filter_13X_1.Flow_Out_1',      {'Precooler_1'},        'Filter5A_2.Flow_In',       'Filter13x1_to_Filter5A2');
-            matter.branch(this, 'Filter5A_2.Flow_Out_1',        {'Filter5A_2_f2f'},     'Filter_13X_2.Flow_In_1',   'Filter5A2_to_Filter13x2');
+            matter.branch(this, 'Filter5A_2.Flow_Out_1',        {'Filter5A_2_f2f'},    	'Filter_13X_2.Flow_In_1',   'Filter5A2_to_Filter13x2');
             matter.branch(this, 'Filter_13X_2.Flow_Out_1',      {},                     'CDRA_Air_Out_1',           'CDRA_Air_Out_1');     % Air to CDRA1 to CCAA2 connection tank
             matter.branch(this, 'Filter5A_1.Flow_Out_1',        {},                     'CDRA_Vent_1',              'Filter5A1_to_Vent');                      % CO2 to vacuum
 
             % Cycle two
             matter.branch(this, 'Filter_13X_2.Flow_In_2',       {},                     'CDRA_Air_In_2',            'CDRA_Air_In_2');         % Creating the flowpath into this subsystem
             matter.branch(this, 'Filter_13X_2.Flow_Out_2',      {'Precooler_2'},        'Filter5A_1.Flow_In',       'Filter13x2_to_Filter5A1');
-            matter.branch(this, 'Filter5A_1.Flow_Out_2',        {'Filter5A_1_f2f'},     'Filter_13X_1.Flow_In_2',   'Filter5A1_to_Filter13x1');
+            matter.branch(this, 'Filter5A_1.Flow_Out_2',        {'Filter5A_1_f2f'},   	'Filter_13X_1.Flow_In_2',   'Filter5A1_to_Filter13x1');
             matter.branch(this, 'Filter_13X_1.Flow_Out_2',      {},                     'CDRA_Air_Out_2',           'CDRA_Air_Out_2');  % Air to CDRA1 to CCAA2 connection tank
             matter.branch(this, 'Filter5A_2.Flow_Out_2',        {},                     'CDRA_Vent_2',              'Filter5A2_to_Vent');                  % CO2 to vacuum
 
@@ -326,14 +340,14 @@ classdef CDRA_simple < vsys
             createSolverStructure@vsys(this);
             
             % Cycle one
-            solver.matter.manual.branch(this.toBranches.CDRA_Air_In_1);
+            solver.matter.residual.branch(this.toBranches.CDRA_Air_In_1);
                 
             solver.matter.residual.branch(this.toBranches.Filter13x1_to_Filter5A2);
             solver.matter.residual.branch(this.toBranches.Filter5A2_to_Filter13x2);
             solver.matter.residual.branch(this.toBranches.CDRA_Air_Out_1);
             solver.matter.residual.branch(this.toBranches.Filter5A1_to_Vent);
             
-            solver.matter.manual.branch(this.toBranches.CDRA_Air_In_2);
+            solver.matter.residual.branch(this.toBranches.CDRA_Air_In_2);
             
             solver.matter.residual.branch(this.toBranches.Filter13x2_to_Filter5A1);
             solver.matter.residual.branch(this.toBranches.Filter5A1_to_Filter13x1);
@@ -343,15 +357,29 @@ classdef CDRA_simple < vsys
             solver.matter.manual.branch(this.toBranches.Filter5A1_AirSafe);
             solver.matter.manual.branch(this.toBranches.Filter5A2_AirSafe);
             
+            this.toBranches.CDRA_Air_In_1.oHandler.setPositiveFlowDirection(false);
+            this.toBranches.CDRA_Air_In_2.oHandler.setPositiveFlowDirection(false);
+            this.toBranches.CDRA_Air_In_2.oHandler.setActive(false);
+            
             csStoreNames = fieldnames(this.toStores);
             for iStore = 1:length(csStoreNames)
                 for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
                     oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
-                    %oPhase.fFixedTS = this.fFixedTS;
-                    oPhase.arMaxChange(this.oMT.tiN2I.CO2) = 0.75;
-                    oPhase.fMinStep = 0.1;
+                    
+                    arMaxChange= zeros(1,this.oMT.iSubstances);
+                    arMaxChange(this.oMT.tiN2I.Ar) = 0.75;
+                    arMaxChange(this.oMT.tiN2I.O2) = 0.75;
+                    arMaxChange(this.oMT.tiN2I.N2) = 0.75;
+                    arMaxChange(this.oMT.tiN2I.H2O) = 0.75;
+                    arMaxChange(this.oMT.tiN2I.CO2) = 0.75;
+                    
+                    tTimeStepProperties.arMaxChange = arMaxChange;
+                    tTimeStepProperties.fMinStep = 1e-8;
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
                 end
             end
+            
+            this.setThermalSolvers();
         end           
         
         %% Function to connect the system and subsystem level branches with each other
@@ -377,14 +405,12 @@ classdef CDRA_simple < vsys
             
             if this.fFlowrateMain == 0
                 
-                this.toBranches.CDRA_Air_In_2.oHandler.setFlowRate(0);
                 this.toBranches.Filter13x2_to_Filter5A1.oHandler.setActive(false);
                 this.toBranches.Filter5A1_to_Filter13x1.oHandler.setActive(false);
                 this.toBranches.CDRA_Air_Out_2.oHandler.setActive(false);
                 this.toBranches.Filter5A2_to_Vent.oHandler.setActive(false);
                 this.toBranches.Filter5A1_to_Filter13x1.oHandler.setAllowedFlowRate(0);
 
-                this.toBranches.CDRA_Air_In_1.oHandler.setFlowRate(0);
                 this.toBranches.Filter13x1_to_Filter5A2.oHandler.setActive(false);
                 this.toBranches.Filter5A2_to_Filter13x2.oHandler.setActive(false);
                 this.toBranches.CDRA_Air_Out_1.oHandler.setActive(false);
@@ -438,6 +464,9 @@ classdef CDRA_simple < vsys
                     this.toBranches.Filter5A1_to_Vent.oHandler.setActive(true);
                     
                     this.fInitialFilterMass = this.toStores.Filter5A_1.aoPhases(1,1).fMass;
+                    this.toBranches.CDRA_Air_In_1.oHandler.setActive(true);
+                    this.toBranches.CDRA_Air_In_2.oHandler.setActive(false);
+                    
                 end
                
                 % Setting cycle one flow rates
@@ -517,6 +546,8 @@ classdef CDRA_simple < vsys
                     
                     
                     this.fInitialFilterMass = this.toStores.Filter5A_2.aoPhases(1,1).fMass;
+                    this.toBranches.CDRA_Air_In_1.oHandler.setActive(false);
+                    this.toBranches.CDRA_Air_In_2.oHandler.setActive(true);
                 end
                                 
                 % Setting cycle two flow rates
@@ -587,22 +618,6 @@ classdef CDRA_simple < vsys
             else
                 this.toStores.Filter5A_2.toProcsP2P.Filter5A_2_proc.setHeaterPower(0);
             end
-            
-            % sets the interface flowrate for the CCAA (from CDRA to CCAA)
-            
-            fFlowRate_CDRA_CCAA = this.toBranches.CDRA_Air_Out_2.fFlowRate + this.toBranches.CDRA_Air_Out_1.fFlowRate;
-            
-            fCurrentFlowRate_CHX_Cabin = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CHX_Cabin.oHandler.fRequestedFlowRate;
-            fFlowRate_CCAA_Condensate = this.oParent.toChildren.(this.sAsscociatedCCAA).toStores.CHX.toProcsP2P.CondensingHX.fFlowRate;
-
-            % Sets the new flowrate from TCCV to CHX inside CCAA
-            fNewFlowRate_TCCV_CHX = this.fFlowrateMain + fCurrentFlowRate_CHX_Cabin + fFlowRate_CCAA_Condensate;
-            fCurrentFlowRate_TCCV_Cabin = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.TCCV_Cabin.oHandler.fRequestedFlowRate;
-            
-            % Sets the new flowrate from Cabin to TCCV inside CCAA
-            fNewFlowRate_Cabin_TCCV = fNewFlowRate_TCCV_CHX + fCurrentFlowRate_TCCV_Cabin - fFlowRate_CDRA_CCAA; 
-            this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fNewFlowRate_Cabin_TCCV);
-            
         end
     end
     

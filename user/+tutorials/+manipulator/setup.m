@@ -1,4 +1,4 @@
-classdef setup < simulation
+classdef setup < simulation.infrastructure
     %SETUP This class is used to setup a simulation
     %   There should always be a setup file present for each project. It is
     %   used for the following:
@@ -7,158 +7,91 @@ classdef setup < simulation
     %   - determine which items are logged
     %   - set the simulation duration
     %   - provide methods for plotting the results
-        
+    
     properties
     end
     
     methods
-        function this = setup()
-            this@simulation('Tutorial_Manipulator');
+        function this = setup(ptConfigParams, tSolverParams) % Constructor function
+            
+            % Possible to change the constructor paths and params for the
+            % monitors
+            ttMonitorConfig = struct();
+            
+            % First we call the parent constructor and tell it the name of
+            % this simulation we are creating.
+            this@simulation.infrastructure('Tutorial_Manipulator', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the root object
-            oExample = tutorials.manipulator.systems.Example(this.oRoot, 'Example');
-            
-            % Create the solver
-            oB1 = solver.matter.iterative.branch(oExample.aoBranches(1));
-            oB2 = solver.matter.iterative.branch(oExample.aoBranches(2));
-            
-            %% Ignore the contents of this section
-            
-            % Set a veeery high fixed time step - the solver will still be
-            % called by the phase update methods!
-%             oB1.fFixedTS = 10000;
-%             oB2.fFixedTS = 10000;
-            
-%             oB1.iDampFR = 3;
-%             oB2.iDampFR = 3;
-
-            % Set fixed time steps for all phases, synced. Means that every
-            % tick each phase and both branches are solved.
-            % Decrease if flow rates unstable, increase if too slow. If un-
-            % stable AND too slow, buy a new computer.
-            
-            % Phases in the Reactor
-%             aoPhases = this.oRoot.toChildren.Example.toStores.Reactor.aoPhases;
-            % Flow Phase
-%             aoPhases(1).bSynced    = true;
-%             aoPhases(1).fMaxStep   = 1;
-%             aoPhases(1).rMaxChange = 0.1;
-%             aoPhases(1).fFixedTS   = 0.1;
-            % Absorber Phase
-%             aoPhases(2).bSynced    = true;
-%             aoPhases(2).fMaxStep   = 1;
-%             aoPhases(2).rMaxChange = 0.1;
-%             aoPhases(2).fFixedTS   = 0.1;
-            
-            % Phases in the main system
-%             fMaxStep = 1;
-%             rMaxChange = 0.1;
-%             fFixedTS = 0.5;
-%             
-%             aoPhases = this.oRoot.toChildren.Example.toStores.Tank_1.aoPhases;
-%             aoPhases(1).fMaxStep   = fMaxStep;
-%             aoPhases(1).rMaxChange = rMaxChange;
-%             aoPhases(1).fFixedTS   = fFixedTS;
-%             
-%             aoPhases = this.oRoot.toChildren.Example.toStores.Tank_2.aoPhases;
-%             aoPhases(1).fMaxStep   = fMaxStep;
-%             aoPhases(1).rMaxChange = rMaxChange;
-%             aoPhases(1).fFixedTS   = fFixedTS;
-%             
-            
-            
-            %% Logging
-            % Creating a cell setting the log items
-            this.csLog = {
-                % System timer
-                'oData.oTimer.fTime';
-
-                % Add other parameters here
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fPressure';  % 2
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fPressure';
-                'toChildren.Example.toStores.Reactor.aoPhases(1).fPressure';
-
-                'toChildren.Example.aoBranches(1).fFlowRate';  % 5
-                'toChildren.Example.aoBranches(2).fFlowRate';
-                'toChildren.Example.toStores.Reactor.oProc.fFlowRate';
-
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).afMass(this.oData.oMT.tiN2I.O2)'; %8
-                'toChildren.Example.toStores.Reactor.aoPhases(2).afMass(this.oData.oMT.tiN2I.C)';
-                
-                'toChildren.Example.toStores.Tank_1.aoPhases(1).fMass'; % 10
-                'toChildren.Example.toStores.Tank_2.aoPhases(1).fMass';
-                'toChildren.Example.toStores.Reactor.aoPhases(1).fMass'; 
-                'toChildren.Example.toStores.Reactor.aoPhases(2).fMass';
-                
-            };
+            tutorials.manipulator.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length
             % Stop when specific time in sim is reached
             % or after specific amount of ticks (bUseTime true/false).
-            this.fSimTime = 3600 * 1;
-            %this.fSimTime = 1700;
+            this.fSimTime = 2000; % In seconds
             this.iSimTicks = 600;
             this.bUseTime = true;
         end
+        function configureMonitors(this)
+            
+            %% Logging
+            oLog = this.toMonitors.oLogger;
+            
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            for iStore = 1:length(csStores)
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
+            
+            oLog.addValue('Example:s:Reactor.toProcsP2P.FilterProc', 'fFlowRate', 'kg/s', 'P2P Flow Rate');
+            oLog.addValue('Example:s:Reactor.toPhases.FlowPhase.toManips.substance', 'afPartialFlows(this.oMT.tiN2I.O2)', 'kg/s', 'Bosch O2 Flow Rate');
+            oLog.addValue('Example:s:Reactor.toPhases.FlowPhase.toManips.substance', 'afPartialFlows(this.oMT.tiN2I.CO2)', 'kg/s', 'Bosch CO2 Flow Rate');
+            oLog.addValue('Example:s:Reactor.toPhases.FlowPhase.toManips.substance', 'afPartialFlows(this.oMT.tiN2I.C)', 'kg/s', 'Bosch C Flow Rate');
+        end
         
-        
-        
-        function plot(this)
+        function plot(this) % Plotting the results
+            
+            %% Define Plots
             
             close all
+            oPlotter = plot@simulation.infrastructure(this);
             
-            figure('name', 'Tank Pressures');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 2:4));
-            legend('Tank 1', 'Tank 2', 'Reactor');
-            ylabel('Pressure in Pa');
-            xlabel('Time in s');
             
-            figure('name', 'Flow Rates (1)');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 5:6));
-            legend('Tank 1 -> Reactor', 'Reactor -> Tank 2');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
+            
+            csBoschReactorFlows = {'"P2P Flow Rate"', '"Bosch O2 Flow Rate"',  '"Bosch CO2 Flow Rate"', '"Bosch C Flow Rate"'};
+            
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
 
-            figure('name', 'Flow Rates (2)');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 7));
-            legend('Reactor -> Filter');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
+            coPlots{1,1} = oPlotter.definePlot(csPressures,     'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot(csBoschReactorFlows,  'Bosch Reactor Flowrates', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
             
-            figure('name', 'Masses (1)');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [ 8 10 11 ]));
-            legend('O2 Tank 2', 'Mass Tank 1', 'Mass Tank 2');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
-            
-            figure('name', 'Masses (2)');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, [ 9 12 13 ]));
-            legend('C in Filter', 'Mass Flow Phase', 'Mass Filter Phase');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
-            
-            figure('name', 'Time Step');
-            hold on;
-            grid minor;
-            plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-            legend('Solver');
-            ylabel('Time in s');
-            xlabel('Ticks [-]');
-            
-            tools.arrangeWindows();
-                
+            oPlotter.plot();
         end
+        
     end
     
 end
+
 

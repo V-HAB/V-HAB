@@ -24,7 +24,7 @@ for iS = 1:length(csStores)
         sPhasePath = [ sStorePath '.toPhases.' oPhase.sName ];
         
         
-        for iC = 1:length(csSubstances);
+        for iC = 1:length(csSubstances)
             
             tLogProps(iV).sObjectPath = sPhasePath;
             tLogProps(iV).sExpression = [ 'afMass(' num2str(oVsys.oMT.tiN2I.(csSubstances{iC})) ')' ];

@@ -55,7 +55,6 @@ classdef valve < matter.procs.f2f
         
         % other solver parameters
         fHydrLength;
-        bActive = true;
         fDeltaTemp = 0;
     end
     

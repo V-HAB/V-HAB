@@ -138,8 +138,8 @@ classdef branch_incompressible_liquid < solver.matter.base.branch
             %It is important to get the pressure from the exme and not the 
             %store since the liquid exme also tales gravity effects into 
             %account.
-            [fPressureBoundary1, fTemperatureBoundary1]  = this.oBranch.coExmes{1}.getPortProperties();
-            [fPressureBoundary2, fTemperatureBoundary2]  = this.oBranch.coExmes{2}.getPortProperties();
+            [fPressureBoundary1, ~]  = this.oBranch.coExmes{1}.getPortProperties();
+            [fPressureBoundary2, ~]  = this.oBranch.coExmes{2}.getPortProperties();
            
             
             this.fMassFlow = this.oBranch.oContainer.oSystemSolver.mMassFlow(this.iBranchNumber);

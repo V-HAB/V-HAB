@@ -1,12 +1,4 @@
 classdef setup < simulation.infrastructure
-    %SETUP This class is used to setup a simulation
-    %   There should always be a setup file present for each project. It is
-    %   used for the following:
-    %   - instantiate the root object
-    %   - register branches to their appropriate solvers
-    %   - determine which items are logged
-    %   - set the simulation duration
-    %   - provide methods for plotting the results
     
     properties
     end
@@ -14,43 +6,11 @@ classdef setup < simulation.infrastructure
     methods
         function this = setup(ptConfigParams, tSolverParams) % Constructor function
             
-            % vhab.exec always passes in ptConfigParams, tSolverParams
-            % If not provided, set to empty containers.Map/struct
-            % Can be passed to vhab.exec:
-            %
-            % ptCfgParams = containers.Map();
-            % ptCfgParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
-            % vhab.exec('tutorials.simple_flow.setup', ptCfgParams);
-            
-            
-            % By Path - will overwrite (by definition) CTOR value, even 
-            % though the CTOR value is set afterwards!
-            %%%ptConfigParams('Tutorial_Simple_Flow/Example') = struct('fPipeLength', 7);
-            
-            
-            % By constructor
-            %%%ptConfigParams('tutorials.simple_flow.systems.Example') = struct('fPipeLength', 5, 'fPressureDifference', 2);
-            
-            
-            
-            % Possible to change the constructor paths and params for the
-            % monitors
             ttMonitorConfig = struct();
+            this@simulation.infrastructure('Tutorial_Human_1_Model', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            %%%ttMonitorConfig.oConsoleOutput = struct('cParams', {{ 50 5 }});
-            
-            %tSolverParams.rUpdateFrequency = 0.1;
-            %tSolverParams.rHighestMaxChangeDecrease = 100;
-            
-            % First we call the parent constructor and tell it the name of
-            % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Human_Model', ptConfigParams, tSolverParams, ttMonitorConfig);
-            
-            % Creating the 'Example' system as a child of the root system
-            % of this simulation. 
             tutorials.human_model.systems.Example(this.oSimulationContainer, 'Example');
             
-
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
             % specific amount of ticks (bUseTime true/false).
@@ -60,69 +20,143 @@ classdef setup < simulation.infrastructure
         end
         
         
-        
         function configureMonitors(this)
             
             %% Logging
-            % Creating a cell setting the log items. You need to know the
-            % exact structure of your model to set log items, so do this
-            % when you are done modelling and ready to run a simulation. 
-            
             oLog = this.toMonitors.oLogger;
             
-            oLog.add('Example', 'flow_props');
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            for iStore = 1:length(csStores)
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fMass',        'kg', [csStores{iStore}, ' Mass']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+            end
             
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity', '-', 'Relative Humidity Cabin');
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.CO2)', 'P_Pa', 'Partial Pressure CO2 Cabin');
-            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'afPP(this.oMT.tiN2I.O2)', 'P_Pa', 'Partial Pressure O2 Cabin');
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
             
-%             oLog.add('Example:c:Three_Humans', 'flow_props');
-
-%             oLog.addValue('Example:c:Three_Humans:s:Human.toPhases.Air', 'rRelHumidity', '-', 'Relative Humidity Human');
-%             oLog.addValue('Example:c:Three_Humans:s:Human.toPhases.Air', 'afPP(this.oMT.tiN2I.CO2)', 'P_Pa', 'Partial Pressure CO2 Human');
-%             oLog.addValue('Example:c:Three_Humans:s:Human.toPhases.Air', 'afPP(this.oMT.tiN2I.O2)', 'P_Pa', 'Partial Pressure O2 Human');
+            csStoresHuman_1 = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.Human_1.toStores);
+            
+            for iStore = 1:length(csStoresHuman_1)
+                csPhases = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.Human_1.toStores.(csStoresHuman_1{iStore}).toPhases);
+                for iPhase = 1:length(csPhases)
+                    oLog.addValue(['Example:c:Human_1.toStores.', csStoresHuman_1{iStore}, '.toPhases.', csPhases{iPhase}],	'fMass',        'kg', [csStoresHuman_1{iStore}, ' ', csPhases{iPhase}, ' Mass']);
+                    oLog.addValue(['Example:c:Human_1.toStores.', csStoresHuman_1{iStore}, '.toPhases.', csPhases{iPhase}],	'fPressure',	'Pa', [csStoresHuman_1{iStore}, ' ', csPhases{iPhase}, ' Pressure']);
+                    oLog.addValue(['Example:c:Human_1.toStores.', csStoresHuman_1{iStore}, '.toPhases.', csPhases{iPhase}],	'fTemperature',	'K',  [csStoresHuman_1{iStore}, ' ', csPhases{iPhase}, ' Temperature']);
+                end
+            end
+            
+            csBranchesHuman_1 = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.Human_1.toBranches);
+            for iBranch = 1:length(csBranchesHuman_1)
+                oLog.addValue(['Example:c:Human_1.toBranches.', csBranchesHuman_1{iBranch}],             'fFlowRate',    'kg/s', [csBranchesHuman_1{iBranch}, ' Flowrate']);
+            end
+            
+            oLog.addValue('Example:c:Human_1', 'fVO2_current',              '-', 'VO2');
+            oLog.addValue('Example:c:Human_1', 'fCurrentEnergyDemand',      'W', 'Current Energy Demand');
+            
+            oLog.addValue('Example:c:Human_1', 'fOxygenDemand',                 'kg/s', 'Oxygen Consumption');
+            oLog.addValue('Example:c:Human_1', 'fCO2Production',                'kg/s', 'CO_2 Production');
+            oLog.addValue('Example:c:Human_1', 'fRespiratoryCoefficient',       '-',    'Respiratory Coefficient');
             
             
-            oLog.add('Example:c:One_Human', 'flow_props');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.O2)',          'kg',    'Internal O_2 Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.CO2)',         'kg',    'Internal CO_2 Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.H2O)',         'kg',    'Internal H_2O Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C4H5ON)',      'kg',    'Internal Protein Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C16H32O2)',    'kg',    'Internal Fat Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C6H12O6)',     'kg',    'Internal Carbohydrate Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C42H69O13N5)', 'kg',    'Internal Feces Solid Mass');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toPhases.HumanPhase', 'this.afMass(this.oMT.tiN2I.C2H6O2N2)',    'kg',    'Internal Urine Solid Mass');
             
-            oLog.addValue('Example:c:One_Human:s:Human.toPhases.Air', 'rRelHumidity', '-', 'Relative Humidity Human');
-            oLog.addValue('Example:c:One_Human:s:Human.toPhases.Air', 'afPP(this.oMT.tiN2I.CO2)', 'P_Pa', 'Partial Pressure CO2 Human');
-            oLog.addValue('Example:c:One_Human:s:Human.toPhases.Air', 'afPP(this.oMT.tiN2I.O2)', 'P_Pa', 'Partial Pressure O2 Human');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toProcsP2P.Food_P2P', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.H2O)',            'kg/s',    'Food Conversion H2O Flowrate');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toProcsP2P.Food_P2P', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C16H32O2)',       'kg/s',    'Food Conversion Fat Flowrate');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toProcsP2P.Food_P2P', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C4H5ON)',         'kg/s',    'Food Conversion Protein Flowrate');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toProcsP2P.Food_P2P', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C6H12O6)',        'kg/s',    'Food Conversion Carbohydrates Flowrate');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toProcsP2P.Food_P2P', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C)',              'kg/s',    'Food Conversion Ash Flowrate');
             
-            oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood', 'afMass(this.oMT.tiN2I.C)', 'P_kg', 'Partial Mass Dry Solid Food');
-            oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood', 'afMass(this.oMT.tiN2I.H2O)', 'P_kg', 'Partial Mass H2O in Solid Food');
+            oLog.addValue('Example:c:Human_1.toStores.Human.toProcsP2P.Food_P2P', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.C)',              'kg/s',    'Food Conversion Ash Flowrate');
             
-             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.C)', 'Manip_kg/s', 'Digestion C Flow Rate');
-             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.H2O)', 'Manip_kg/s', 'Digestion Water Flow Rate');
-             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.Feces)', 'Manip_kg/s', 'Digestion Feces Flow Rate');
-             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.UrineSolids)', 'Manip_kg/s', 'Digestion UrineSolids Flow Rate');
-             oLog.addValue('Example:c:One_Human:s:Human.toPhases.SolidFood.toManips.substance' ,'afPartialFlows(this.oMT.tiN2I.Waste)', 'Manip_kg/s', 'Digestion Waste Flow Rate');
-            
-            %% Define plots
-            
-            oPlot = this.toMonitors.oPlotter;
-            
-            oPlot.definePlot('Pa', 'Tank Pressures');
-            oPlot.definePlot('K', 'Tank Temperatures');
-            oPlot.definePlot('kg', 'Tank Masses');
-            oPlot.definePlot('kg/s', 'Flow Rates');
-            
-            oPlot.definePlot('P_Pa', 'Partial Pressures in Cabin');
-            oPlot.definePlot('-', 'Relative Humidity in Cabin');
-            oPlot.definePlot('P_kg', 'Partial Masses in human');
-            
-            oPlot.definePlot('Manip_kg/s', 'Digestion Flow Rates');
-            
-
         end
         
-        function plot(this) % Plotting the results
+        function plot(this, varargin) % Plotting the results
             
-            this.toMonitors.oPlotter.plot();
-        
+            %% Define Plots
+            
+            close all
+            oPlotter = plot@simulation.infrastructure(this);
+            
+            
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            csMasses = cell(length(csStores),1);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csMasses{iStore} = ['"', csStores{iStore}, ' Mass"'];
+                csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
+            
+            
+            csStoresHuman_1 = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.Human_1.toStores);
+            csMassesHuman_1 = cell(length(csStoresHuman_1),1);
+            csPressuresHuman_1 = cell(length(csStoresHuman_1),1);
+            csTemperaturesHuman_1 = cell(length(csStoresHuman_1),1);
+            iIndex = 1;
+            for iStore = 1:length(csStoresHuman_1)
+                csPhases = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.Human_1.toStores.(csStoresHuman_1{iStore}).toPhases);
+                for iPhase = 1:length(csPhases)
+                    csMassesHuman_1{iIndex}         = ['"', csStoresHuman_1{iStore}, ' ', csPhases{iPhase}, ' Mass"'];
+                    csPressuresHuman_1{iIndex}      = ['"', csStoresHuman_1{iStore}, ' ', csPhases{iPhase}, ' Pressure"'];
+                    csTemperaturesHuman_1{iIndex}   = ['"', csStoresHuman_1{iStore}, ' ', csPhases{iPhase}, ' Temperature"'];
+                    iIndex = iIndex + 1;
+                end
+            end
+            
+            csBranchesHuman_1 = fieldnames(this.oSimulationContainer.toChildren.Example.toChildren.Human_1.toBranches);
+            csFlowRatesHuman_1 = cell(length(csBranchesHuman_1),1);
+            for iBranch = 1:length(csBranchesHuman_1)
+                csFlowRatesHuman_1{iBranch} = ['"', csBranchesHuman_1{iBranch}, ' Flowrate"'];
+            end
+            
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
+
+            coPlots{1,1} = oPlotter.definePlot({csPressures{:}, csPressuresHuman_1{:}},     'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({csFlowRates{:}, csFlowRatesHuman_1{:}},     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({csTemperatures{:}, csTemperaturesHuman_1{:}},  'Temperatures', tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot({csMasses{:}, csMassesHuman_1{:}},  'Masses', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
+            
+            csHumansPhaseMassses = {'"Internal O_2 Mass"', '"Internal CO_2 Mass"', '"Internal H_2O Mass"', '"Internal Protein Mass"',  '"Internal Fat Mass"',...
+                                    '"Internal Carbohydrate Mass"', '"Internal Feces Solid Mass"', '"Internal Urine Solid Mass"'};
+            
+            coPlots{1,1} = oPlotter.definePlot(csHumansPhaseMassses,     'Internal Human Masses', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({'"Current Energy Demand"'},     'Energy Demand', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({'"Oxygen Consumption"', '"CO_2 Production"'},  'Oxygen and CO2 flowrates', tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot({'"Respiratory Coefficient"'},  'Respiratory Coefficient', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Human Model Plots', tFigureOptions);
+            
+            csFoodConversionFlows = {'"Food Conversion H2O Flowrate"', '"Food Conversion Fat Flowrate"', '"Food Conversion Protein Flowrate"',...
+                                     '"Food Conversion Carbohydrates Flowrate"', '"Food Conversion Ash Flowrate"'};
+            
+            coPlots = {};
+            coPlots{1,1} = oPlotter.definePlot(csFoodConversionFlows,           'Food Flows', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({'"Human HumanPhase Mass"'},     'Human Phase Mass', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({'"Human Stomach Mass"'},        'Stomach Phase Mass', tPlotOptions);
+           
+            oPlotter.defineFigure(coPlots,  'Food Plots', tFigureOptions);
+            
+            oPlotter.plot();
         end
         
     end
     
 end
-

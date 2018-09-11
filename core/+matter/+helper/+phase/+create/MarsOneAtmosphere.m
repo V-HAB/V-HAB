@@ -35,22 +35,13 @@ function [ cParams, sDefaultPhase ] = MarsOneAtmosphere(oStore, fVolume, fTemper
 
     % Check input arguments, set default
     %TODO for fTemp, rRH, fPress -> key/value pairs?
-    if nargin < 3 || isempty(fTemperature), fTemperature = 291.15; end;
-    if nargin < 4 || isempty(rRH),          rRH          = 0.43;      end;
-    if nargin < 5 || isempty(fPressure),    fPressure    = 70330; end;
+    if nargin < 3 || isempty(fTemperature), fTemperature = 291.15; end
+    if nargin < 4 || isempty(rRH),          rRH          = 0.43;   end
+    if nargin < 5 || isempty(fPressure),    fPressure    = 70330;  end
 
     if rRH
         % Calculation of the saturation vapour pressure
-        % by using the MAGNUS Formula(validity: -45degC <= T <= 60degC, for
-        % water); Formula is only correct for pure steam, not the mixture
-        % of air and water; enhancement factors can be used by a
-        % Poynting-Correction (pressure and temperature dependent); the values of the enhancement factors are in
-        % the range of 1+- 10^-3; thus they are neglected.
-        %Source: Important new Values of the Physical Constants of 1986, Vapour
-        % Pressure Formulations based on ITS-90, and Psychrometer Formulae. In: Z. Meteorol.
-        % 40, 5, S. 340-344, (1990)
-    
-        fSaturationVapourPressure = 6.11213 * exp(17.62 * (fTemperature-273.15) / (243.12 + (fTemperature-273.15))) * 100;
+        fSaturationVapourPressure = this.oMT.calculateVaporPressure(fTemperature, 'H2O');
     
         % calculate vapour pressure [Pa]
         fVapourPressure = rRH * fSaturationVapourPressure; 

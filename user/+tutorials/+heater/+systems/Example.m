@@ -34,13 +34,10 @@ classdef Example < vsys
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
             this@vsys(oParent, sName, 20);
-            
-            eval(this.oRoot.oCfgParams.configCode(this));
         end
-        
+            
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
-            
             % Creating a store, volume 1000 m^3
             matter.store(this, 'Tank_1', 1000);
             
@@ -66,23 +63,22 @@ classdef Example < vsys
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
             matter.branch(this, 'Tank_1.Port_1', {'Pipe','Heater'}, 'Tank_2.Port_2');
+        end
+            
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            % Add branch to manual solver and set the flow rate
+            this.oBranch = solver.matter.manual.branch(this.aoBranches(1));
+            this.oBranch.setFlowRate(0.2);
             
             % Setting the initial switching time for the heater to 100 s. 
             this.fSwitchTime   = 100;
             
             % Initially, the heater is off. 
-            this.oHeater.fPower = 0;
+            this.oHeater.setPower(0);
             this.bHeaterOn = false;
             
-        end
-        
-        function createSolverStructure(this)
-            createSolverStructure@vsys(this);
-            
-            % Add branch to manual solver and set the flow rate
-            this.oBranch = solver.matter.manual.branch(this.aoBranches(1));
-            this.oBranch.setFlowRate(0.2);
-            
+            this.setThermalSolvers();
         end
     end
     
@@ -101,11 +97,11 @@ classdef Example < vsys
             if this.oTimer.fTime > this.fSwitchTime   % Have 100s passed?
                 if this.bHeaterOn                           % Is the heater currently on? 
                     this.bHeaterOn = false;                 % Turining the heater off
-                    this.oHeater.fPower = 0;
+                    this.oHeater.setPower(0);
                     
                 else
                     this.bHeaterOn = true;                  % Turining the heater on
-                    this.oHeater.fPower = 2000;
+                    this.oHeater.setPower(2000);
                     
                 end
                 

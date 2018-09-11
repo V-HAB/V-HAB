@@ -13,11 +13,11 @@ function [ cParams, sDefaultPhase ] = air_custom(oStore, fVolume, trMasses, fTem
 
 
 % Defaults, if not set
-if ~isstruct(trMasses), trMasses = struct(); end;
+if ~isstruct(trMasses), trMasses = struct(); end
 
-if ~isfield(trMasses, 'O2'),  trMasses.O2  = 0.23135; end;
-if ~isfield(trMasses, 'Ar'),  trMasses.Ar  = 0.01288; end;
-if ~isfield(trMasses, 'CO2'), trMasses.CO2 = 0.00058; end;
+if ~isfield(trMasses, 'O2'),  trMasses.O2  = 0.23135; end
+if ~isfield(trMasses, 'Ar'),  trMasses.Ar  = 0.01288; end
+if ~isfield(trMasses, 'CO2'), trMasses.CO2 = 0.00058; end
 
 % N2 takes remaining fraction
 trMasses.N2 = 1 - trMasses.O2 - trMasses.Ar - trMasses.CO2;
@@ -45,21 +45,12 @@ fMolarMassH2O = oStore.oMT.afMolarMass(oStore.oMT.tiN2I.H2O);   % molar mass of 
 
 % Check input arguments, set default
 %TODO for fTemperature, rRH, fPress -> key/value pairs?
-if nargin < 4 || isempty(fTemperature), fTemperature = 273.15; end;
-if nargin < 5 || isempty(rRH),          rRH          = 0;      end;
-if nargin < 6 || isempty(fPressure),    fPressure    = 101325; end;
+if nargin < 4 || isempty(fTemperature), fTemperature = 273.15; end
+if nargin < 5 || isempty(rRH),          rRH          = 0;      end
+if nargin < 6 || isempty(fPressure),    fPressure    = 101325; end
 
 % Calculation of the saturation vapour pressure
-% by using the MAGNUS Formula(validity: -45[C] <= T <= 60[C], for
-% water); Formula is only correct for pure steam, not the mixture
-% of air and water; enhancement factors can be used by a
-% Poynting-Correction (pressure and temperature dependent); the values of the enhancement factors are in
-% the range of 1+- 10^-3; thus they are neglected.
-%Source: Important new Values of the Physical Constants of 1986, Vapour
-% Pressure Formulations based on ITS-90, and Psychrometer Formulae. In: Z. Meteorol.
-% 40, 5, S. 340-344, (1990)
-
-fSaturationVapourPressure = 6.11213 * exp(17.62 * (fTemperature-273.15) / (243.12 + (fTemperature-273.15))) * 100; 
+fSaturationVapourPressure = oStore.oMT.calculateVaporPressure(fTemperature, 'H2O');
 
 % calculate vapour pressure [Pa]
 fVapourPressure = rRH * fSaturationVapourPressure; 

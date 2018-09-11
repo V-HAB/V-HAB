@@ -1,4 +1,4 @@
-classdef Two_Tanks_Definition < simulation
+classdef Two_Tanks_Definition < simulation.infrastructure
     %FLOW Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -6,252 +6,118 @@ classdef Two_Tanks_Definition < simulation
     end
     
     methods
-        function this = Two_Tanks_Definition()
-            this@simulation('TestCase_SimpleFlow');
-            oTwo_Tanks = tutorials.compressible_liquid_solver.systems.Two_Tanks(this.oRoot, 'Two_Tanks');
+        function this = Two_Tanks_Definition(ptConfigParams, tSolverParams)
             
-            oTwo_Tanks.oDefinition = this;
-            %for branch liquid the second entry is the number of cells used
-            %to calculate the branches
-            %branch_liquid(oBranch, iCells, fPressureResidual, fMassFlowResidual, fCourantNumber, sCourantAdaption)
-            sCourantAdaption = struct( 'bAdaption', 0,'fIncreaseFactor', 1.001, 'iTicksBetweenIncrease', 100, 'iInitialTicks', 10000, 'fMaxCourantNumber', 1);
-            solver.matter.fdm_liquid.branch_liquid(oTwo_Tanks.aoBranches(1), 10, 10^-5, 0, 1, sCourantAdaption);
-           
-            % What to log?
-            this.csLog = {
-                % System timer
-                'oData.oTimer.fTime';
-                'oData.oTimer.iTick';
-                                
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.fTimeStepBranch'; %3
-                
-                'toChildren.Two_Tanks.aoBranches(1).fFlowRate'; %4
-                
-                'toChildren.Two_Tanks.toStores.Tank_1.aoPhases(1).fPressure'; %5
-                'toChildren.Two_Tanks.toStores.Tank_2.aoPhases(1).fPressure'; %6
-                
-                'toChildren.Two_Tanks.toStores.Tank_1.aoPhases(1).fMass'; %7
-                'toChildren.Two_Tanks.toStores.Tank_2.aoPhases(1).fMass'; %8
-                
-                'toChildren.Two_Tanks.toStores.Tank_1.aoPhases(1).fVolume'; %9
-                'toChildren.Two_Tanks.toStores.Tank_2.aoPhases(1).fVolume'; %10
-                
-                'toChildren.Two_Tanks.toStores.Tank_1.aoPhases(1).fTemperature'; %11
-                'toChildren.Two_Tanks.toStores.Tank_2.aoPhases(1).fTemperature'; %12
-                
-                'toChildren.Two_Tanks.toStores.Tank_1.fTotalPressureErrorStore'; %13
-                'toChildren.Two_Tanks.toStores.Tank_2.fTotalPressureErrorStore'; %14
-
-                'toChildren.Two_Tanks.toStores.Tank_1.iNestedIntervallCounterStore'; %15
-                'toChildren.Two_Tanks.toStores.Tank_2.iNestedIntervallCounterStore'; %16
-                
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureOld(1)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureOld(2)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureOld(3)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureOld(4)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureOld(5)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureOld(6)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureOld(7)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureOld(8)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureOld(9)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureOld(10)';
-                
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mFlowSpeedOld(1)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mFlowSpeedOld(2)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mFlowSpeedOld(3)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mFlowSpeedOld(4)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mFlowSpeedOld(5)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mFlowSpeedOld(6)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mFlowSpeedOld(7)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mFlowSpeedOld(8)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mFlowSpeedOld(9)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mFlowSpeedOld(10)';
-                
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mDensityOld(1)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mDensityOld(2)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mDensityOld(3)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mDensityOld(4)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mDensityOld(5)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mDensityOld(6)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mDensityOld(7)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mDensityOld(8)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mDensityOld(9)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mDensityOld(10)';
-                
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mTemperatureOld(1)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mTemperatureOld(2)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mTemperatureOld(3)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mTemperatureOld(4)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mTemperatureOld(5)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mTemperatureOld(6)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mTemperatureOld(7)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mTemperatureOld(8)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mTemperatureOld(9)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mTemperatureOld(10)';
-
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureLoss(1)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureLoss(2)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureLoss(3)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureLoss(4)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureLoss(5)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureLoss(6)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureLoss(7)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureLoss(8)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureLoss(9)';
-                'toChildren.Two_Tanks.aoLiquidBranch{1,1}.mPressureLoss(10)';
-                
-                'oData.oTimer.afTimeStep(1)';
-                'oData.oTimer.afTimeStep(2)';
-                'oData.oTimer.afTimeStep(3)';
-                'oData.oTimer.afTimeStep(4)';
-            };
+            ttMonitorConfig = struct();
+            
+            % First we call the parent constructor and tell it the name of
+            % this simulation we are creating.
+            this@simulation.infrastructure('TestCase_SimpleFlow', ptConfigParams, tSolverParams, ttMonitorConfig);
+            
+            % Creating the 'Example' system as a child of the root system
+            % of this simulation. 
+            
+            tutorials.compressible_liquid_solver.systems.Two_Tanks(this.oSimulationContainer, 'Two_Tanks');
             
             % Sim time [s]
-            this.fSimTime = 0.005;
+            this.fSimTime = 0.05;
+            
         end
         
-        function plot(this)
+        function configureMonitors(this)
             
-            figure('name', 'Time Step');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 3));
-            legend('Timestep');
-            ylabel('Timestep in s');
-            xlabel('Time in s');
+            %% Logging
+            oLog = this.toMonitors.oLogger;
             
-            figure('name', 'Flow Rate');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 4));
-            legend('Branch');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
-            
-            figure('name', 'Tank Pressures');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 5:6));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Pressure in Pa');
-            xlabel('Time in s');
-
-            figure('name', 'Tank Masses');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 7:8));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
-            
-            figure('name', 'Volume Liquids');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 9:10));
-            legend('Liquid1', 'Liquid2');
-            ylabel('Volume [m³]');
-            xlabel('Time in s');
-            
-            figure('name', 'Temperature Liquids');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 11:12));
-            legend('Liquid1', 'Liquid2');
-            ylabel('Temperature [K]');
-            xlabel('Time in s');
-            
-            figure('name', 'Pressure Error in Tanks');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 13:14));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Error in Pa');
-            xlabel('Time in s');
-            
-            figure('name', 'Steps for Nested Intervall calculation');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 15:16));
-            legend('Tank 1', 'Tank 2');
-            ylabel('Steps');
-            xlabel('Time in s');
-            
-            %values for the individual cells
-            figure('name', 'Cell Pressure');
-            hold on;
-            grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, 17:19));
-%             legend('Cell 1', 'Cell 2', 'Cell 3');
-            plot(this.mfLog(:,1), this.mfLog(:, 17:26));
-            legend('Cell 1', 'Cell 2', 'Cell 3', 'Cell 4', 'Cell 5', 'Cell 6', 'Cell 7', 'Cell 8', 'Cell 9', 'Cell 10');
-            ylabel('Pressure in Pa');
-            xlabel('Time in s');
-            
-            figure('name', 'Cell Flowspeed');
-            hold on;
-            grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, 20:22));
-%            legend('Cell 1', 'Cell 2', 'Cell 3');
-            plot(this.mfLog(:,1), this.mfLog(:, 27:36));
-            legend('Cell 1', 'Cell 2', 'Cell 3', 'Cell 4', 'Cell 5', 'Cell 6', 'Cell 7', 'Cell 8', 'Cell 9', 'Cell 10');
-            ylabel('Flowspeed in m/s');
-            xlabel('Time in s');
-            
-            figure('name', 'Cell Density');
-            hold on;
-            grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, 23:25));
-%             legend('Cell 1', 'Cell 2', 'Cell 3');
-            plot(this.mfLog(:,1), this.mfLog(:, 37:46));
-            legend('Cell 1', 'Cell 2', 'Cell 3', 'Cell 4', 'Cell 5', 'Cell 6', 'Cell 7', 'Cell 8', 'Cell 9', 'Cell 10');
-            ylabel('Density in kg/m³');
-            xlabel('Time in s');
-
-            figure('name', 'Cell Temperature');
-            hold on;
-            grid minor;
-%             plot(this.mfLog(:,1), this.mfLog(:, 26:28));
-%             legend('Cell 1', 'Cell 2', 'Cell 3');
-            plot(this.mfLog(:,1), this.mfLog(:, 47:56));
-            legend('Cell 1', 'Cell 2', 'Cell 3', 'Cell 4', 'Cell 5', 'Cell 6', 'Cell 7', 'Cell 8', 'Cell 9', 'Cell 10');
-            ylabel('Temperature in K');
-            xlabel('Time in s');
-            
-            figure('name', 'Cell Pressure Loss');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 57:66));
-            legend('Cell 1', 'Cell 2', 'Cell 3');
-            ylabel('Pressure Loss in Pa');
-            xlabel('Time in s');
-
-
-            A = ~isnan(this.mfLog(:,1));
-            mTimeStep = zeros(length(this.mfLog(A,1)),1);
-            for k = 1:length(this.mfLog(A,1))-1
-                mTimeStep(k,1) = this.mfLog(k+1,1)-this.mfLog(k,1);
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Two_Tanks.toStores);
+            for iStore = 1:length(csStores)
+                oLog.addValue(['Two_Tanks.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fPressure',                            'Pa',   [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['Two_Tanks.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fMass',                                'kg',   [csStores{iStore}, ' Mass']);
+                oLog.addValue(['Two_Tanks.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fVolume',                              'm^3',  [csStores{iStore}, ' Volume']);
+                oLog.addValue(['Two_Tanks.toStores.', csStores{iStore},],                   'fTotalPressureErrorStore',             'Pa', 	[csStores{iStore}, ' Pressure Error']);
+                oLog.addValue(['Two_Tanks.toStores.', csStores{iStore},],                   'iNestedIntervallCounterStore',         '-',    [csStores{iStore}, ' Nested Intervall Counter']);
+                oLog.addValue(['Two_Tanks.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',                         'K',  [csStores{iStore}, ' Temperature']);
             end
             
-            figure('name', 'TimeStep');
-            hold on;
-            grid minor;
-            plot(this.mfLog(1:length(mTimeStep),1), mTimeStep(:,1));
-            legend('TimeStep');
-            ylabel('System Timestep in s');
-            xlabel('Time in s');
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Two_Tanks.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLog.addValue(['Two_Tanks.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
             
+            oLog.addValue('Two_Tanks.aoBranches(1).oHandler',	'fTimeStepBranch',    's', 'Solver Timestep');
             
-            figure('name', 'TimeStep');
-            hold on;
-            grid minor;
-            plot(this.mfLog(:,1), this.mfLog(:, 67:70));
-            legend('VSys', 'Store1', 'Store2', 'Branch');
-            ylabel('Timestep in s');
-            xlabel('Time in s');
-            
+            iCellNumber = 10;
+            for iCell = 1:iCellNumber
+                
+                oLog.addValue('Two_Tanks.aoBranches(1).oHandler',	['this.mPressureOld(', num2str(iCell), ')'],    'Pa',       ['Pressure Cell ', num2str(iCell)]);
+                oLog.addValue('Two_Tanks.aoBranches(1).oHandler',	['this.mFlowSpeedOld(', num2str(iCell), ')'],  	'm/s',      ['Flowspeed Cell ', num2str(iCell)]);
+                oLog.addValue('Two_Tanks.aoBranches(1).oHandler',	['this.mDensityOld(', num2str(iCell), ')'],     'kg/m^3',    ['Density Cell ', num2str(iCell)]);
+                oLog.addValue('Two_Tanks.aoBranches(1).oHandler',	['this.mTemperatureOld(', num2str(iCell), ')'], 'K',        ['Temperature Cell ', num2str(iCell)]);
+                oLog.addValue('Two_Tanks.aoBranches(1).oHandler',	['this.mPressureLoss(', num2str(iCell), ')'],   'Pa',       ['Pressure Loss Cell ', num2str(iCell)]);
+                
+            end
         end
+        
+        function plot(this, varargin) % Plotting the results
+            
+            %% Define Plots
+            
+            close all
+            oPlotter = plot@simulation.infrastructure(this);
+            
+            
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Two_Tanks.toStores);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
+                csPressureErrors{iStore} = ['"', csStores{iStore}, ' Pressure Error"'];
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Two_Tanks.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
+            
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
+
+            coPlots{1,1} = oPlotter.definePlot(csPressures,     'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot(csPressureErrors,  'Pressure Errors', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
+            
+            
+            
+            iCellNumber = 10;
+            csCellPressures      = cell(1,iCellNumber);
+            csCellFlowRates      = cell(1,iCellNumber);
+            csCellDensities      = cell(1,iCellNumber);
+            csCellTemperatures   = cell(1,iCellNumber);
+            csCellPressureLosses = cell(1,iCellNumber);
+            
+            for iCell = 1:iCellNumber
+                csCellPressures{iCell}      = ['"Pressure Cell ', num2str(iCell) ,'"'];
+                csCellFlowRates{iCell}      = ['"Flowspeed Cell ', num2str(iCell) ,'"'];
+                csCellDensities{iCell}      = ['"Density Cell ', num2str(iCell) ,'"'];
+                csCellTemperatures{iCell}   = ['"Temperature Cell ', num2str(iCell) ,'"'];
+                csCellPressureLosses{iCell} = ['"Pressure Loss Cell ', num2str(iCell) ,'"'];
+            end
+            
+            coPlots{1,1} = oPlotter.definePlot(csCellPressures,       'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csCellFlowRates,       'Flow Speeds', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csCellTemperatures,    'Temperatures', tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot(csCellPressureLosses,  'Pressure Losses', tPlotOptions);
+            coPlots{3,1} = oPlotter.definePlot(csCellDensities,       'Densities', tPlotOptions);
+            coPlots{3,2} = oPlotter.definePlot({'"Solver Timestep"'}, 'Solver Timestep', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Internal Solver Properties', tFigureOptions);
+            
+            oPlotter.plot();
+        end
+        
     end
     
-    
 end
-

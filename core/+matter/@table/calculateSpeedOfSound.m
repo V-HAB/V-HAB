@@ -149,7 +149,7 @@ function fSpeedOfSound = calculateSpeedOfSound(this, varargin) %sMatterState, af
     % Multiply the specific heat capacities with the mass fractions. The
     % result of the matrix multiplication is the specific heat capacity of
     % the mixture.
-    fSpeedOfSound = sum(arPartialMass .* afSpeedOfSound);
+    fSpeedOfSound = sum(arPartialMass(aiIndices)' .* afSpeedOfSound);
 
     % Make sure the heat capacity value is valid.
     assert(~isnan(fSpeedOfSound) && fSpeedOfSound >= 0, ...

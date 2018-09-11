@@ -1,5 +1,6 @@
 classdef flow < matter.procs.p2p
-    %P2P
+    %FLOW A P2P processor for a phase where the volumetric flow through the
+    %phase is significantly larger than its volume. 
     %
     %TODO
     %   - getInFlows, or overall logic for amount / type of EXMEs etc
@@ -38,7 +39,7 @@ classdef flow < matter.procs.p2p
             %     due to that also into account ... just as another flow
             %     rate? Should the phase do that?
             
-            if nargin < 2, sPhase = 'in'; end;
+            if nargin < 2, sPhase = 'in'; end
             
             oPhase = sif(strcmp(sPhase, 'in'), this.oIn.oPhase, this.oOut.oPhase);
             
@@ -48,7 +49,7 @@ classdef flow < matter.procs.p2p
             afInFlowrates = zeros(oPhase.iProcsEXME, 1);
             
             % Creating an array to log which of the flows are not in-flows
-            aiOutFlows = ones(oPhase.iProcsEXME, 1);
+            abOutFlows = true(oPhase.iProcsEXME, 1);
             
             % Get flow rates and partials from EXMEs
             for iI = 1:oPhase.iProcsEXME
@@ -64,15 +65,15 @@ classdef flow < matter.procs.p2p
                 if any(abInf)
                     mrInPartials(iI,:) = mrFlowPartials(abInf, :);
                     afInFlowrates(iI)  = afFlowRates(abInf);
-                    aiOutFlows(iI)     = 0;
+                    abOutFlows(iI)     = false;
                 end
             end
             
-            % Now we delete all of the rows in the mfInflowDetails matrix
+            % Now we delete all of the rows in the mrInPartials matrix
             % that belong to out-flows.
-            if any(aiOutFlows)
-                mrInPartials(logical(aiOutFlows),:)  = [];
-                afInFlowrates(logical(aiOutFlows),:) = [];
+            if any(abOutFlows)
+                mrInPartials(abOutFlows,:)  = [];
+                afInFlowrates(abOutFlows,:) = [];
             end
             
             % Check manipulator for partial
@@ -93,7 +94,7 @@ classdef flow < matter.procs.p2p
             %     and mrFLowPartails is actually arFlowPartials!
             %     -> simplify!
             
-            if nargin < 2, sPhase = 'in'; end;
+            if nargin < 2, sPhase = 'in'; end
             
             oPhase = sif(strcmp(sPhase, 'in'), this.oIn.oPhase, this.oOut.oPhase);
             

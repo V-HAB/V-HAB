@@ -1,4 +1,4 @@
-classdef logger < event.source
+classdef logger < event.source % base % & 
     %LOGGER Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -50,7 +50,7 @@ classdef logger < event.source
     methods
         function output(this, oObj, iLevel, iVerbosity, sIdentifier, sMessage, cParams)
             % Globally off? Don't do nothing!
-            if this.bOff, return; end;
+            if this.bOff, return; end
             
             
             % Objects are mapped to callbacks - if no mapping, don't do
@@ -92,8 +92,9 @@ classdef logger < event.source
         
         
         function flush(this)
-            if isempty(this), return; end;
+            if isempty(this) || ~isvalid(this), return; end
             
+            warning('off', 'all')
             this.bOff = true;
             
             this.chCallbacks = {};
@@ -104,6 +105,8 @@ classdef logger < event.source
             
             this.bCollect    = false;
             this.tCollection = struct('oObj', {}, 'iLevel', {}, 'iVerbosity', {}, 'sIdentifier', {}, 'sMessage', {}, 'cParams', {});
+            
+            warning('on', 'all')
         end
         
         

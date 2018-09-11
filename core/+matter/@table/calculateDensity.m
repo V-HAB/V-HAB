@@ -4,8 +4,8 @@ function fDensity = calculateDensity(this, varargin)
 %   flowing through the flow object. This is done by adding the single
 %   substance densities at the current temperature and pressure and
 %   weighing them with their mass fraction. Can use either a phase object
-%   as input parameter or the phase type (sType) and the masses array
 %   (afMass). Optionally temperature and partial pressures can be passed as
+%   as input parameter or the phase type (sType) and the masses array
 %   third and fourth parameters, respectively.
 %
 %   Examples: fDensity = calculateDensity(oFlow);
@@ -41,18 +41,12 @@ if length(varargin) == 1
         % this function.
         if varargin{1}.fPressure < 5e5
             fDensity = (varargin{1}.fPressure * varargin{1}.fMolarMass) / (this.Const.fUniversalGas * varargin{1}.fTemperature);
-           
-            if fDensity < 0 || isnan(fDensity)
-                % ideal gas law did not work, use complex calculation
-                clear fDensity
-            else
-           	% We already have what we want, so no need to execute the rest
-            % of this function. 
-                return;
-            end
+            % We already have what we want, so no need to execute the rest
+            % of this function.
+            return;
         end
         
-        afPartialPressures = this.calculatePartialPressures(varargin{1});
+        [ afPartialPressures, ~ ] = this.calculatePartialPressures(varargin{1});
         
     elseif strcmp(sMatterState, 'liquid')
         % For liquids the density has to be calculated from the matter
@@ -140,7 +134,7 @@ else
         end
         
         if any(strcmp(sMatterState, {'gas'}))
-            [ afPartialPressures, ~ ] = this.calculatePartialPressures(sMatterState, afMass, fPressure);
+            [ afPartialPressures, ~ ] = this.calculatePartialPressures(sMatterState, afMass, fPressure, fTemperature);
         else
             afPartialPressures = ones(1, this.iSubstances) * this.Standard.Pressure;
         end
@@ -163,12 +157,6 @@ if ~strcmp(sMatterState, 'mixture')
     aiPhase = tiP2N.(sMatterState)*ones(1,this.iSubstances);
 end
 
-% If determine phase yield anything besides integer this
-% basically means a phase change is occuring at the moment.
-% Currently this can only be covered by a simplified
-% rounding operation
-aiPhase = round(aiPhase);
-
 for iI = 1:length(aiIndices)
     % Generating the paramter struct that findProperty() requires.
     tParameters = struct();
@@ -180,14 +168,22 @@ for iI = 1:length(aiIndices)
     tParameters.sSecondDepName = 'Pressure';
     tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
     tParameters.bUseIsobaricData = true;
-
+    
     % Now we can call the findProperty() method.
     afRho(iI) = this.findProperty(tParameters);
 end
 
 % Sum up the densities multiplied by the partial masses to get the overall density.
-fDensity = sum(afRho .* arPartialMass(aiIndices));
-    
+if strcmp(sMatterState, 'gas')
+    % for gases the density is calculated for the partial pressure of each
+    % substance, and therefore is the partial density of the substance. The
+    % overal density therefore must be calculated as the sum of each
+    % partial density
+    fDensity = sum(afRho);
+else
+    fDensity = sum(afRho .* arPartialMass(aiIndices));
+end
+
 % If none of the substances has a valid density an error is thrown.
 if fDensity < 0 || isnan(fDensity)
     this.throw('calculateDensity','Error in Density calculation!');

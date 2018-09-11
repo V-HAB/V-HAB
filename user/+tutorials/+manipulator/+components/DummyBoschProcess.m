@@ -11,6 +11,7 @@ classdef DummyBoschProcess < matter.manips.substance.flow
     methods
         function this = DummyBoschProcess(sName, oPhase)
             this@matter.manips.substance.flow(sName, oPhase);
+            
         end
         
         function update(this)
@@ -22,7 +23,7 @@ classdef DummyBoschProcess < matter.manips.substance.flow
             afPartialFlows = zeros(1, this.oPhase.oMT.iSubstances);
             
             % Abbreviating some of the variables to make code more legible
-            afMolMass  = this.oPhase.oMT.afMolMass;
+            afMolMass  = this.oPhase.oMT.afMolarMass;
             tiN2I      = this.oPhase.oMT.tiN2I;
             
             % Getting the total CO2 mass in the phase

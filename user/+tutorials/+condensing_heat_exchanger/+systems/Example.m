@@ -30,7 +30,7 @@ classdef Example < vsys
             % the .exec method is called when the oParent.exec() is
             % executed (see this .exec() method - always call exec@vsys as
             % well!).
-            this@vsys(oParent, sName);
+            this@vsys(oParent, sName, 1);
             
             eval(this.oRoot.oCfgParams.configCode(this));
             
@@ -106,10 +106,15 @@ classdef Example < vsys
             %% Heat Exchanger
             % Some configurating variables
             sHX_type = 'cross';       % Heat exchanger type
-            
             %Geometry = [fN_Rows, fN_Pipes, fD_i, fD_o, fLength, fs_1, fs_2, fconfig
             Geometry = [3, 12, 0.05, 0.055, 0.5, 0.15, 0.15, 0];
             % --> see the HX file for information on the inputs for the different HX types
+            
+            
+%             sHX_type = 'parallel plate'; 
+%             % Geometry = [fBroadness, fHeight_1, fHeight_2, fLength, fThickness]
+%             Geometry = [1, 0.01, 0.01, 2, 0.001];
+            
             
             Conductivity = 15;                          % Conductivity of the Heat exchanger solid material
             
@@ -119,7 +124,7 @@ classdef Example < vsys
             
             % Defines when the CHX should be recalculated: 
             fTempChangeToRecalc = 0.1;        % If any inlet temperature changes by more than 1 K
-            fPercentChangeToRecalc = 0.25;  % If any inlet flowrate or composition changes by more than 0.25%
+            fPercentChangeToRecalc = 0.05;  % If any inlet flowrate or composition changes by more than 0.25%
             
             % defines the heat exchanged object using the previously created properties
             % (oParent, sName, mHX, sHX_type, iIncrements, fHX_TC, fTempChangeToRecalc, fPercentChangeToRecalc)
@@ -141,6 +146,9 @@ classdef Example < vsys
             components.pipe(this, 'Pipe4', 1, 0.01, 0.0002);
             components.pipe(this, 'Pipe5', 1, 0.01, 0.0002);
             components.pipe(this, 'Pipe6', 1, 0.01, 0.0002);
+            
+            components.fan_simple(this, 'Fan_1', 1e4);
+            components.fan_simple(this, 'Fan_2', 1e4);
             
             % Creating the flow path between the two gas tanks via the heat
             % exchanger
@@ -164,15 +172,28 @@ classdef Example < vsys
             oB3 = solver.matter.manual.branch(this.aoBranches(3));
             oB4 = solver.matter.manual.branch(this.aoBranches(4));
             
-            % Now we set the flow rate in the manual solver branches to a
-            % slow 10 grams per second.
-            oB1.setFlowRate(0.01);
-            oB2.setFlowRate(0.01);
-            oB3.setFlowRate(0.01);
-            oB4.setFlowRate(0.01);
+            oB1.setFlowRate(1);
+            oB2.setFlowRate(1);
+            oB3.setFlowRate(1);
+            oB4.setFlowRate(1);
             
-            this.toProcsF2F.Air_Heater.fPower = 10;
-            this.toProcsF2F.Water_Heater.fPower = -10;
+            this.toProcsF2F.Air_Heater.setPower(10);
+            this.toProcsF2F.Water_Heater.setPower(-10);
+            
+            csStoreNames = fieldnames(this.toStores);
+            for iStore = 1:length(csStoreNames)
+                for iPhase = 1:length(this.toStores.(csStoreNames{iStore}).aoPhases)
+                    oPhase = this.toStores.(csStoreNames{iStore}).aoPhases(iPhase);
+                    
+                    arMaxChange = zeros(1,this.oMT.iSubstances);
+                    arMaxChange(this.oMT.tiN2I.H2O) = 0.001;
+                    tTimeStepProperties.arMaxChange = arMaxChange;
+                    
+                    oPhase.setTimeStepProperties(tTimeStepProperties);
+                end
+            end
+            
+            this.setThermalSolvers();
         end
     end
     
@@ -183,9 +204,20 @@ classdef Example < vsys
             % Here it only calls its parent's exec function
             exec@vsys(this);
             
+            if this.oTimer.fTime > 10
+                for iBranch = 1:length(this.aoBranches)
+                    
+                    this.aoBranches(iBranch).oHandler.setFlowRate(0.001);
+                    
+                end
+            else
+                for iBranch = 1:length(this.aoBranches)
+                    
+                    this.aoBranches(iBranch).oHandler.setFlowRate(1);
+                    
+                end
+            end
         end
-        
     end
-    
 end
 

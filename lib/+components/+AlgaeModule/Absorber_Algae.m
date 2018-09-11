@@ -136,7 +136,7 @@ classdef Absorber_Algae < matter.procs.p2ps.flow
             
             if this.fFailure == 0
                 if this.fPPCO2 >= 100
-                    if this.fPower < this.fNominalPower;
+                    if this.fPower < this.fNominalPower
                         %if strcmp(obj.sName, 'CAlgae1')
                         disp(['PPCO2 >= 100 & Power Low']);
                         %end

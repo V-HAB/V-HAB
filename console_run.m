@@ -24,7 +24,7 @@ classdef console_run < handle
             this.oRef = oRef;
             this.sEvent = sEvent;
             
-            if nargin >= 3, this.iSkip = iSkip; end;
+            if nargin >= 3, this.iSkip = iSkip; end
             
             this.oRef.bind(this.sEvent, @this.checkInput);
         end
@@ -43,7 +43,7 @@ classdef console_run < handle
         function sRtn = executeScript(sScript)
             %disp('>>>>>>>>>>> MATLAB SCRIPT OBJ <<<<<<<<<<<<<<<');
             %disp();
-            evalin('base', strrep(sScript, '\n', sprintf('\n')));
+            evalin('base', strrep(sScript, '\n', newline));
             disp('>>{done}<<');
 
             sRtn = evalin('base', 'sMatlabScriptReturn');
@@ -66,7 +66,7 @@ classdef console_run < handle
                     else
                         oObj.(sKey)(xParams);
                     end
-                catch oErr
+                catch 
                 end
                 
             else

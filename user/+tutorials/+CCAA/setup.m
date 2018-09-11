@@ -35,50 +35,34 @@ classdef setup < simulation.infrastructure
             %% Logging
             oLog = this.toMonitors.oLogger;
             
-            oLog.add('Example', 'flow_props');
-            oLog.add('Example', 'thermal_properties');
             
             oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'rRelHumidity', '-', 'Relative Humidity Cabin');
-            %% Define plots
+            oLog.addValue('Example:s:Cabin.toPhases.CabinAir', 'fTemperature', 'K', 'Temperature Cabin');
             
-            oPlot = this.toMonitors.oPlotter;
-            
-            oPlot.definePlot('Pa',  'Tank Pressures');
-            oPlot.definePlot('K',   'Temperatures');
-            oPlot.definePlot('kg',  'Tank Masses');
-            oPlot.definePlot('kg/s','Flow Rates');
+            oLog.addValue('Example:c:CCAA:c:CCAA_CHX', 'fTotalCondensateHeatFlow',      'W',    'CCAA Condensate Heat Flow');
+            oLog.addValue('Example:c:CCAA:c:CCAA_CHX', 'fTotalHeatFlow',                'W',    'CCAA Total Heat Flow');
+            oLog.addValue('Example:c:CCAA:s:CHX.toProcsP2P.CondensingHX', 'fFlowRate',  'kg/s', 'CCAA Condensate Flow Rate');
         end
         
         function plot(this) % Plotting the results
             % See http://www.mathworks.de/de/help/matlab/ref/plot.html for
             % further information
             close all
+            
+            oPlotter = plot@simulation.infrastructure(this);
+            
+            tPlotOptions.sTimeUnit = 'hours';
+            tFigureOptions = struct('bTimePlot', true, 'bPlotTools', false);
           
-            this.toMonitors.oPlotter.plot();
+            coPlots{1,1} = oPlotter.definePlot({'"Temperature Cabin"'},        'Temperature', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot({'"Relative Humidity Cabin"'},   'Relative Humidity', tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot({'"CCAA Condensate Heat Flow"', '"CCAA Total Heat Flow"'},   'CCAA Heat Flows', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot({'"CCAA Condensate Flow Rate"'},'CCAA Condensate Flow Rate');
+            oPlotter.defineFigure(coPlots,  'CCAA Plots', tFigureOptions);
             
-            for iIndex = 1:length(this.toMonitors.oLogger.tLogValues)
-                if strcmp(this.toMonitors.oLogger.tLogValues(iIndex).sLabel, 'Relative Humidity Cabin')
-                    iHumidityCabin = iIndex;
-                end
-            end
-            
-            mLogDataHumidityCabin = this.toMonitors.oLogger.mfLog(:,iHumidityCabin);
-            mLogDataHumidityCabin(isnan(mLogDataHumidityCabin(:,1)),:)=[];
-            mLogDataHumidityCabin = mLogDataHumidityCabin.*100;
-            
-            afTime = this.toMonitors.oLogger.afTime;
-            
-            figure('name', 'Relative Humidity')
-            grid on
-            hold on
-            plot((afTime./3600), mLogDataHumidityCabin)
-            xlabel('Time in h')
-            ylabel('Rel. Humidity in %')
-            
+            oPlotter.plot();
         end
-        
     end
-    
 end
 
 

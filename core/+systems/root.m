@@ -1,21 +1,21 @@
 classdef root < sys
-    %ROOT Summary of this class goes here
-    %   Detailed explanation goes here
+    %ROOT Root system of a V-HAB Simulation
+    %   Every system object needs a parent, except for this one. The root
+    %   system is the top level system in a V-HAB simulation and its
+    %   oParent property points to itself. Other than that its like any
+    %   other system. 
     
     properties
-        % Dummy property for logging placeholder
-        fDummy = NaN;
+        
     end
     
     methods
-        function this = root(sId) % % % , oData)
+        function this = root(sId)
             this@sys([], sId);
             
-            % THIS is spar... the root system.
+            % Setting the root reference to ourselves
             this.oRoot = this;
             
-% % %             % Manually set data - setParent does nothing!
-% % %             this.setData(oData);
         end
         
         function setParent(this, ~)
@@ -25,12 +25,6 @@ classdef root < sys
             this.oParent = this;
         end
         
-% % %         function play(this)
-% % %             % Top system can be directly executed - child systems can
-% % %             % register on this system's exec - usable without timer?
-% % %             
-% % %             this.exec();
-% % %         end
     end
     
 end

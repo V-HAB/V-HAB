@@ -8,18 +8,22 @@ classdef logger_basic < simulation.monitor
     %
     %   check if sim already running (set bSealed in onInitPost) -> not
     %   possible to add additional log values!
+    %
+    %   find(): besides aiIndex, allow passing in path(s) to different
+    %       systems or other objects, and only properties logged for these are
+    %       returned? [e.g. plot all [W] for HX 1, 2 and 3]
     
     properties (GetAccess = public, Constant = true)
         % Loops through keys, comparison only with length of key
         % -> 'longer' keys need to be defined first (fMass * fMassToPress)
         poExpressionToUnit = containers.Map(...
-            { 'this.fMass * this.fMassToPressure', 'fMassToPressure', 'fMass', 'afMass', 'fFlowRate', 'fTemperature', 'fPressure', 'afPP', 'fTotalHeatCapacity', 'fSpecificHeatCapacity', 'fConductivity', 'fPower', 'fCapacity', 'fResistance', 'fInductivity', 'fCurrent', 'fVoltage', 'fCharge', 'fBatteryCharge' }, ...
-            { 'Pa',                                'Pa/kg',           'kg',    'kg',     'kg/s',      'K',            'Pa',        'Pa',   'J/K',                'J/kgK',                 'W/K',           'W',      'F',         '?',           'H',            'A',        'V',        'C',       'Ah'             }  ...
+            { 'this.fMass * this.fMassToPressure', 'fMassToPressure', 'fMass', 'afMass', 'fFlowRate', 'fTemperature', 'fPressure', 'afPP', 'fTotalHeatCapacity', 'fSpecificHeatCapacity', 'fConductivity', 'fPower', 'fCapacity', 'fResistance', 'fInductivity', 'fCurrent', 'fVoltage', 'fCharge', 'fBatteryCharge'}, ...
+            { 'Pa',                                'Pa/kg',           'kg',    'kg',     'kg/s',      'K',            'Pa',        'Pa',   'J/K',                'J/kgK',                 'W/K',           'W',      'F',         '?',           'H',            'A',        'V',        'C',       'Ah'            }  ...
         );
         
         poUnitsToLabels = containers.Map(...
-            { 's',    'kg',   'kg/s',      'K',           'Pa',       'J/K',                 'J/kgK',                  'W/K',          'W',     'F',        'Ohm',        'H',           'A',       'V',       'C',      'mol/kg',        'ppm',           '%',       'Ah',     '-'}, ...
-            { 'Time', 'Mass', 'Flow Rate', 'Temperature', 'Pressure', 'Total Heat Capacity', 'Specific Heat Capacity', 'Conductivity', 'Power', 'Capacity', 'Resistance', 'Inductivity', 'Current', 'Voltage', 'Charge', 'Concentration', 'Concentration', 'Percent', 'Charge', '' } ...
+            { 's',    'kg',   'kg/s',      'g/s',       'L/min',     'K',           '°C',          'Pa',       'J/K',                 'J/kgK',                  'W/K',          'W',     'F',        'Ohm',        'H',           'A',       'V',       'C',      'mol/kg',        'ppm',           '%',       'Ah',     'kg/m^3',   'm/s',       'torr',     '-', 'J/kg'}, ...
+            { 'Time', 'Mass', 'Flow Rate', 'Flow Rate', 'Flow Rate', 'Temperature', 'Temperature', 'Pressure', 'Total Heat Capacity', 'Specific Heat Capacity', 'Conductivity', 'Power', 'Capacity', 'Resistance', 'Inductivity', 'Current', 'Voltage', 'Charge', 'Concentration', 'Concentration', 'Percent', 'Charge', 'Density',   'Velocity', 'Pressure', '' , 'Enthalpy' } ...
         );
     end
     
@@ -33,9 +37,11 @@ classdef logger_basic < simulation.monitor
         %              with 'this.' if not present, afterwards all 'this.'
         %              strings will be replaced with the object path. This
         %              means that e.g. 'this.oMT.tiN2I.O2' can be used.
-        % sName: if empty, will be generated from sExpression
+        % sName:       if empty, will be generated from sExpression
         tLogValues = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {}, 'sObjUuid', {}, 'iIndex', {});%, 'iIndex', {});
-        tDerivedLogValues = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {}, 'sObjUuid', {}, 'iIndex', {});%, 'iIndex', {});
+        
+        tVirtualValues = struct('sExpression', {}, 'calculationHandle', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {});
+        
         
         % Shortcut to the paths of variables to log
         csPaths;
@@ -48,7 +54,6 @@ classdef logger_basic < simulation.monitor
         afTime;
         
         % Logged data
-        mfDerivedLog;
         mfLog;
         aiLog;
         
@@ -111,13 +116,24 @@ classdef logger_basic < simulation.monitor
         
         
         function tiLogIndices = add(this, xVsys, xHelper, varargin)
-            % xVsys - if string, convert to full path and eval 
-            %           (e.g. sys1/subsys1/subsubsys2)
-            % xHelper - if string, check s2f('sim.helper.logger_basic.' 
-            %           xHelper), if not present, check global
-            %           s2f(xHelper)
+            % This method can be used to add multiple items to the log
+            % using helpers. It returns a struct array with the log item's
+            % names as field names and their indexes in the tLogValues
+            % struct array as values. 
+            %
+            % add() requires the following input arguments:
+            % - xVsys       A reference to a vsys object. Can either be a 
+            %               path as a string (e.g.
+            %               sys1/subsys1/subsubsys2), or the object
+            %               reference itself.
+            % - xHelper     A reference to the helper class. Can ether be a
+            %               string or a function handle. If string, check
+            %               s2f('sim.helper.logger_basic.' xHelper), if not
+            %               present, check global s2f(xHelper)
+            %
+            % Any additional arguments that are provided beyond these two
+            % are passed on to the helper class. 
             
-            % varargin -> to helper, besides oVsys!
             
             % RETURN from helper --> should be struct --> add to tLogValues
             tEmptyLogProps = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {});
@@ -160,136 +176,490 @@ classdef logger_basic < simulation.monitor
         
         
         function iIdx = addValue(this, sObjectPath, sExpression, sUnit, sLabel, sName)
-            % sObjPath and sExp have to be provided.
-            % Unit, label will be guessed, name auto-added.
+            % This method adds a user-defined item to the log. The item 
+            % will then be logged every tick of the simulation. The method
+            % returns the index of the added item in the tLogValues struct
+            % array property of this class. 
+            %
+            % addValue() requires the following input arguments:
+            % - sObjectPath     The path to the simulation object as a
+            %                   string. The string can also be in shorthand
+            %                   form (e.g use :s: instead of .toStores.).
+            % - sExpression     In the simplest form, this can just be the
+            %                   name of the item to be logged, so the
+            %                   property of an object, like 'fMass' for
+            %                   instance. It can also be a mathematical
+            %                   operation on two properties of the same
+            %                   object, in that case however, the property
+            %                   names need to be prefixed with 'this.' due
+            %                   to the way V-HAB then processes these
+            %                   operations. (e.g. fMass * fMassToPressure).
+            % 
+            % addValue() accepts the following optional input arguments. If
+            % not given by the user, these values will either be guessed or
+            % automatically generated by the logger. 
+            % - sUnit           Unit of the log item as a string
+            % - sLabel          Label of the item as a string, this will be 
+            %                   used in user-facing dialogs and in the
+            %                   legend and axis labels of the plot
+            %                   containing the item. It can contain spaces,
+            %                   special characters, etc.
+            % - sName           Name of the item as astring. This is used
+            %                   internally to reference the log item and
+            %                   must therfore be compatible with things
+            %                   like struct field names. This means it
+            %                   cannot contain spaces or special
+            %                   characters. If it does, then it will be
+            %                   automatically cleaned. 
             
             tProp = struct('sObjectPath', [], 'sExpression', [], 'sName', [], 'sUnit', [], 'sLabel', []);
             
             tProp.sObjectPath = simulation.helper.paths.convertShorthandToFullPath(sObjectPath);
             tProp.sExpression = sExpression;
             
-            if nargin >= 4 && ~isempty(sUnit),  tProp.sUnit  = sUnit;  end;
-            if nargin >= 5 && ~isempty(sLabel), tProp.sLabel = sLabel; end;
-            if nargin >= 6 && ~isempty(sName),  tProp.sName  = sName;  end;
+            if nargin >= 4 && ~isempty(sUnit),  tProp.sUnit  = sUnit;  end
+            if nargin >= 5 && ~isempty(sLabel), tProp.sLabel = sLabel; end
+            if nargin >= 6 && ~isempty(sName),  tProp.sName  = sName;  end
             
             
             iIdx = this.addValueToLog(tProp);
         end
         
         
-        function aiIdx = find(this, aiIdx, tFilter)
-            % If aiIdx empty - get all!
+        function iIndex = addVirtualValue(this, sExpression, sUnit, sLabel, sName)
+            % This method allows users to add virtual values to the log,
+            % even after a simulation has completed. Virtual values are not
+            % actual properties of simulation objects, but values
+            % calculated from them. This can be used, for example, to
+            % perform unit conversions and other types of mathematical
+            % operations. 
+            %
+            % Expression needs to be valid Matlab code. Log values can be
+            % addressed using the name provided to addValue. Alternatively,
+            % they can be addressed using their labels, however, the value
+            % then has to be enclosed by " - e.g. '1 + "my label"'
+            %
+            % Important: the expression has to be 'vector' compatible, as
+            % the calculation is done only ONCE for all ticks! This means,
+            % if you want to divide value_a by value_b, DO NOT WRITE:
+            %   'value_a / value_b'             <-- WRONG!
+            % BUT INSTEAD:
+            %   'value_a ./ value_b'
+            % See the Matlab documentation for vector operations.
+            %
+            %
+            % All kinds of auto-generation of label, name etc done in
+            % addValue - not done here! Expression, unit and label are
+            % REQUIRED values; if name omitted, generated from label.
+            %
+            %
+            %NOTE virtual values themselves are not available in subsequent
+            %     calls to addVirtualValue - this could be implemented, but
+            %     a check would have to exist that calculates required virt
+            %     values on the fly!
             
-            if nargin < 2 || isempty(aiIdx)
-                aiIdx = 1:length(this.tLogValues);
+            
+            % negative idx
+            % store in separate tVirtProps
+            % add sExpression as anonymous fct handle - names already
+            % replaced with this.mfLog(:, XX)
+            % in .get(), check for negative indices - calculate!
+            
+            csNames   = { this.tLogValues.sName };
+            csLabels  = { this.tLogValues.sLabel };
+            aiIndices = [ this.tLogValues.iIndex ];
+            sParsed   = sExpression;
+            
+            for iN = 1:length(csNames)
+                sParsed = strrep(sParsed, csNames{iN}, sprintf('mfLog(:, %i)', aiIndices(iN)));
+                sParsed = strrep(sParsed, [ '"' csLabels{iN} '"' ], sprintf('mfLog(:, %i)', aiIndices(iN)));
             end
             
-            if isempty(aiIdx)
+            
+            funcHandle = [];
+            
+            try
+                funcHandle = eval([ '@(mfLog) ' sParsed ]);
+            catch oErr
+                assignin('base', 'oLastErr', oErr);
+                
+                this.throw('addVirtualValue', 'Invalid expression. Original expression was: "%s", which was converted to: "%s"\nThere seems to be a Matlab error during eval: "%s"', sExpression, sParsed, oErr.message);
+            end
+            
+            
+            if nargin < 5 || isempty(sName)
+                sName = regexprep(sLabel, '[^a-zA-Z0-9]', '_');
+            end
+            
+            % Creating a struct with all of the information of the log
+            % item.
+            tLogItem = struct(...
+                              'sExpression', sExpression, ...
+                              'calculationHandle', funcHandle, ...
+                              'sName', sName, ...
+                              'sUnit', sUnit, ...
+                              'sLabel', sLabel ...
+                              );
+                          
+            % We need to check the tLogValues field names so we don't have
+            % a conflict. BUT, since this method can also be called during
+            % post-processing, if this is just a repeat call to add the
+            % same value to the log, we can skip the error. 
+            iFoundIndex = find(strcmp(sName, { this.tVirtualValues.sName }), 1, 'first');
+            if ~isempty(iFoundIndex)
+                % So at least the same name is used here. Now we have to
+                % find out, if the new and old log items are the same.
+                % Unfortunately, MATLAB cannot compare anonymous function
+                % handles, so before we can make the comparison, we have to
+                % convert the function handles in both structs to strings. 
+                tNewLogItem = tLogItem;
+                tNewLogItem.calculationHandle = func2str(tNewLogItem.calculationHandle);
+                tOldLogItem = this.tVirtualValues(iFoundIndex);
+                tOldLogItem.calculationHandle = func2str(tOldLogItem.calculationHandle);
+                % Now we can finally compare the new and existing log
+                % items. 
+                if isequal(tNewLogItem, tOldLogItem)
+                    % They are equal, so we just set the index to the one
+                    % we found and return it. 
+                    iIndex = -1 * iFoundIndex;
+                    return;
+                end
+                
+                % The values to be logged are not equal to existing ones,
+                % so someone is actually trying to add a new log item with
+                % a name that is already in use. That's not possible, so we
+                % fail here and let the user know why. 
+                this.throw('addVirtualValue', 'The name "%s" is already in use!', sName);
+            end
+            
+            
+            % Everything checks out now, so we can add the new log item to
+            % the end of the tVirtualValues struct.
+            this.tVirtualValues(end + 1) = tLogItem;
+        
+            % Returning the negative index. 
+            iIndex = -1 * length(this.tVirtualValues);
+        end
+        
+        
+        function aiIndex = find(this, cxItems, tFilter)
+            % This method returns an array of integers for the items that
+            % are contained in the cxItems variable. This variable can
+            % either be empty or a cell. The cell can contain either
+            % integers representing the index of the item within the log
+            % matrix, strings representing the lable of the item or strings
+            % representing the name of the item. This method will detect
+            % which one it is and extract the index accordingly. 
+            % Using the tFilter input argument, the selection of items can
+            % be reduced by providing a struct containing filter criteria.
+            % These can be any values of the fields of the tLogValues
+            % struct, however it is mostly used to filter by unit (key
+            % 'sUnit') or a specific system or object (key 'sObjectPath').
+            
+            %% Getting Indexes
+            
+            % If cxItems is empty we'll just get all items in the log and
+            % return them.
+            if nargin < 2 || isempty(cxItems)
+                aiIndex = 1:length(this.tLogValues);
+                
+            elseif iscell(cxItems)
+                % If csItems is a cell, we now translate all of the items
+                % in the cell to indexes that are then returned via
+                % aiIndex.
+                % This is done prior to the application of any filters,
+                % because it represents a pre-selection, just as if an
+                % array of integers had been passed in directly.
+                
+                % Initializing some variables
+                iLength  = length(cxItems);
+                aiIndex = nan(1, iLength);
+                
+                % Getting the names and lables of all items in the current
+                % log object.
+                csNames  = { this.tLogValues.sName };
+                csLabels = { this.tLogValues.sLabel };
+                
+                % Getting the names and lables of all virtual items in the
+                % current log object.
+                csVirtualNames  = { this.tVirtualValues.sName };
+                csVirtualLabels = { this.tVirtualValues.sLabel };
+                
+                
+                % Now we'll loop through all of the items of cxItems and
+                % translate them to integers representing their index in
+                % the log array. 
+                for iI = 1:iLength
+                    % If the item is an integer, then we can just write it
+                    % directly to aiIndex and continue on with the next
+                    % item. 
+                    if isnumeric(cxItems{iI})
+                        aiIndex(iI) = cxItems{iI};
+                        
+                        continue;
+                    end
+                    
+                    % Since the current item is a string, we now have to
+                    % search through the four cells containing all of the
+                    % names and lables of all items in the log until we
+                    % find it. 
+                    
+                    % First, we'll try the cell with the item names
+                    iIndex = find(strcmp(csNames, cxItems{iI}), 1, 'first');
+                    
+                    % If the previous search returned nothing, we'll try
+                    % the virtual values.
+                    if isempty(iIndex)
+                        iIndex = -1 * find(strcmp(csVirtualNames, cxItems{iI}), 1, 'first');
+                    end
+                    
+                    % If the previous search returned nothing, we'll try
+                    % the labels.
+                    if isempty(iIndex)
+                        iIndex = find(strcmp(csLabels, cxItems{iI}(2:(end - 1))), 1, 'first');
+                    end
+                    
+                    % If the previous search returned nothing, we'll try
+                    % the virtual labels.
+                    if isempty(iIndex)
+                        iIndex = -1 * find(strcmp(csVirtualLabels, cxItems{iI}(2:(end - 1))), 1, 'first');
+                    end
+                    
+                    
+                    % If we still haven't found anything, there is no item
+                    % in the log with this name or lable, so we abort and
+                    % tell the user. 
+                    if isempty(iIndex)
+                        this.throw('find', 'Cannot find log value! String given: >>%s<< (if you were searching by label, pass in the label name enclosed by ", i.e. { ''"%s"'' })', cxItems{iI}, cxItems{iI});
+                    end
+                    
+                    % We can now write the found index to the return
+                    % variable. 
+                    aiIndex(iI) = iIndex;
+                end
+            end
+            
+            % If there is nothing to be logged, we also tell the user and
+            % return.
+            if isempty(aiIndex)
+                this.out(4, 1, 'Nothing found in log.');
                 return;
             end
             
-            %sPath = simulation.helper.paths.convertShorthandToFullPath(sPath);
-            %iIdx  = find(strcmp({ this.tLogValues.sPath }, sPath), 1, 'first');
+            %% Applying Filters
             
+            % Now that we have our aiIndex array, we have to check if there
+            % are any filters to be applied and if yes, do so. 
             if nargin >= 3 && ~isempty(tFilter) && isstruct(tFilter)
+                % The field names of the tFilter variable must correspond
+                % to field names in the tLogValues struct. 
                 csFilters     = fieldnames(tFilter);
-                abDeleteFinal = false(length(aiIdx), 1);
                 
+                % Initializing a boolean array that indicates which items
+                % are to be deleted from aiIndex.
+                abDeleteFinal = false(length(aiIndex), 1);
+                
+                % Now we loop through all of the filters to figure out,
+                % which items to delete. 
                 for iF = 1:length(csFilters)
+                    % Initializing some local variables for the current
+                    % filter. sFilter is the field name in the tLogValues
+                    % struct and xsValue is the value that shall be
+                    % filtered. This variable can be a string or a struct.
+                    % An example would be a filter for units 'W' and 'K',
+                    % so the resulting values would only be power and
+                    % temperature values. 
                     sFilter = csFilters{iF};
                     xsValue = tFilter.(sFilter);
                     
-                    %{
-                    abDelete = false(length(aiIdx), 1);
-                    
-                    for iI = length(aiIdx):-1:1
-                        if ~strcmp(this.tLogValues(aiIdx(iI)).(sFilter), sValue)
-                            %aiIdx(iI) = [];
-                            abDelete(iI) = true;
-                            
-                            %iI = iI - 1;
-                        end
-                    end
-                    %}
-                    
+                    % If xsValue is a cell, we have to extract all items in
+                    % it and do a separate search for each of them. 
                     if iscell(xsValue)
-                        csLogValues = { this.tLogValues(aiIdx).(sFilter) }';
+                        % First we'll get the values from each item in the
+                        % tLogValues struct in the according field.
+                        csLogValues = { this.tLogValues(aiIndex).(sFilter) }';
+                        
+                        % Now we're creating a boolean array of false
+                        % values with the same length.
                         abNoDelete  = false(length(csLogValues), 1);
                         
+                        % Looping throuhg the different filter criteria.
                         for iV = 1:length(xsValue)
+                            % Using the 'or' operator and a string
+                            % comparison between the log values and the
+                            % filter values, we can change the values in
+                            % the boolean array to true that we want to
+                            % filter. 
                             abNoDelete = abNoDelete | strcmp(csLogValues, xsValue{iV});
                         end
                         
+                        % As this array will be used to delete items from
+                        % the aiIndex array, we have to negate it. 
                         abDelete = ~abNoDelete;
                     else
-                        abDelete = ~strcmp({ this.tLogValues(aiIdx).(sFilter) }', xsValue);
+                        % If there is only one value for this filter, we
+                        % can write the negated string comparison directly
+                        % to the abDelete boolean array.
+                        abDelete = ~strcmp({ this.tLogValues(aiIndex).(sFilter) }', xsValue);
                     end
                     
-                    %aiIdx(abDelete) = [];
+                    % Now we use the 'or' operator again to update the
+                    % abDeleteFinal boolean array with the values to be
+                    % deleted for the current filter. 
                     abDeleteFinal = abDeleteFinal | abDelete;
                 end
                 
-                aiIdx(abDeleteFinal) = [];
+                % Finally, we remove all unwanted items from the aiIndex
+                % array.
+                aiIndex(abDeleteFinal) = [];
             end
         end
         
         
         
         
-        function [ mxData, tConfig ] = get(this, aiIdx)
-            % Need to truncate mfLog to iTick - preallocation!
-            %iTick = this.oSimulationInfrastructure.oSimulationContainer.oTimer.iTick + 1;
+        function [ aafData, afTime, atConfiguration ] = get(this, aiIndexes, sIntervalMode, fIntervalValue)
+            % This method gets the actual logged data from the mfLog
+            % property in addition to the configuration data struct and
+            % returns both in arrays. The aiIndex input parameters is an
+            % array of integers representing the log item's indexes in the
+            % mfLog matrix. 
+            
+            % First we need get the actual last tick of the simulation.
+            % That is not logged anywhere and the only indication of how
+            % log we have run is the length of the afTime property. We need
+            % the last tick so we can truncate the mfLog data, because it
+            % is preallocated, meaning there are most likely hundreds of
+            % rows filled with NaNs at the end, that would mess up
+            % everything.
             iTick = length(this.afTime);
+            aafLogTmp = this.mfLog(1:iTick, :);
             
-            mxData  = this.mfLog(1:iTick, aiIdx);
-            tConfig = this.tLogValues(aiIdx);
-        end
-        
-        
-        function add_mfLogValue(this,sNewLogName, mfLogValue, sUnit)
-            % This function is used by the plotter when mathematical
-            % operations are performed on different log values to create
-            % new derived log values. These new derived log values are
-            % stored in the logger by this function by adding them to the
-            % tDerivedLogValues struct and the mfDerivedLog matric. The two
-            % new properties "derived" were created to enable the advanceTo
-            % function of a finished or paused simulation to operate
-            % normally
+            % We now initialize our return array with NaNs
+            aafData = nan(size(aafLogTmp, 1), length(aiIndexes));
             
-            % Checks if the derived log already exists, in which case it
-            % should not be created as a new log again, but the previous
-            % values should be overwritten.
-            bLogExists = false;
-            for iLogIndex = 1:length(this.tDerivedLogValues)
-                if strcmp(this.tDerivedLogValues(iLogIndex).sLabel, sNewLogName)
-                    bLogExists = true;
-                    iIndex = iLogIndex;
+            % Going through each of the indexes being queried and getting
+            % the information
+            for iI = 1:length(aiIndexes)
+                % For easier reading we get the current index into a local
+                % variable.
+                iIndex = aiIndexes(iI);
+                
+                % If the index is smaller than zero, this indicates that we
+                % are dealing with a virtual value; one that was not logged
+                % directly, but calculated from other logged values. We
+                % have to do some additional stuff here. 
+                if iIndex < 0
+                    % First we can get the configuration struct from the
+                    % tVirtualValues property.
+                    tConfiguration  = this.tVirtualValues(-1 * iIndex);
+                    
+                    % Now we have to preset some values in tConfiguration
+                    % that are present in regularly logged values but not
+                    % virtual ones. 
+                    tConfiguration.sObjUuid    = [];
+                    tConfiguration.sObjectPath = [];
+                    tConfiguration.iIndex      = iIndex;
+                    
+                    
+                    % Using the function handle stored with the virtual
+                    % value we now perform the calculations that are to be
+                    % made here. 
+                    afData = tConfiguration.calculationHandle(aafLogTmp);
+                    
+                    % Finally, to be equal to a normally logged value, we
+                    % remove field containing the function handle.
+                    tConfiguration = rmfield(tConfiguration, 'calculationHandle');
+                else
+                    % The current index is not a virtual value so we can
+                    % just copy the data from the log matrix and the
+                    % tLogValues property.
+                    afData = aafLogTmp(:, iIndex);
+                    tConfiguration  = this.tLogValues(iIndex);
+                end
+                
+                % Copying the data from the current index into the return
+                % variable. 
+                aafData(:, iI) = afData;
+                
+                % If this is the first loop iteration, we initialize the
+                % return variable for the configuration data here. If it a
+                % following iteration, we append the array. 
+                if iI == 1
+                    atConfiguration = tConfiguration;
+                else
+                    atConfiguration(iI) = tConfiguration;
                 end
             end
             
-            % If the log does not exists already a new entry is created,
-            % storing the name of the log value and the unit as the well as
-            % the actual entries
-            if ~bLogExists
-                this.mfDerivedLog(:,end+1) = mfLogValue;
-                this.tDerivedLogValues(end+1).sLabel = sNewLogName;
-                this.tDerivedLogValues(end).sUnit = sUnit;
-                this.tDerivedLogValues(end).iIndex = length(this.mfDerivedLog(1,:));
-            else
-                % TO DO: Check if this works, if a simulation was paused,
-                % the plot command was used and derived logs created and
-                % then the simulation restarted, after which the plot is
-                % called a second time. (Might have a dimension mismatch
-                % here) 
-                try
-                    this.mfDerivedLog(:,iIndex) = mfLogValue;
-                catch
-                    this.mfDerivedLog = [];
-                    this.mfDerivedLog(:,end+1) = mfLogValue;
-                    this.tDerivedLogValues(end+1).sLabel = sNewLogName;
-                    this.tDerivedLogValues(end).sUnit = sUnit;
-                    this.tDerivedLogValues(end).iIndex = length(this.mfDerivedLog(1,:));
+            % If the third and fourth input arguments are set, the user
+            % wants to plot less data than actually exists. This is usually
+            % done to reduce the file size of MATLAB figure files that are
+            % saved. 
+            % The plotting interval can be either a number of ticks or a
+            % time interval in seconds. Which is used is determined by the
+            % sIntervalMode input argument.
+            if nargin > 2
+                % First we initialize a boolean array that will be used to
+                % delete the data in the arrays that are returned. 
+                abDeleteData = true(1,iTick);
+                
+                % Switching through the two possible interval modes
+                switch sIntervalMode
+                    case 'Tick'
+                        if fIntervalValue > 1
+                            % On our boolean array we set those items to
+                            % false that we DON'T want to delete.
+                            abDeleteData(1:fIntervalValue:iTick) = false;
+                        else
+                            % If the interval value is one, we want to keep
+                            % all values, so we can set the entire array to
+                            % false.
+                            abDeleteData = false(1,iTick);
+                        end
+                    case 'Time'
+                        % We initialize a time tracker at zero, the
+                        % beginning of the simulation.
+                        fTime = 0;
+                        
+                        % Now we loop through all of the ticks and see, if
+                        % the current time is larger or equal to the next
+                        % interval.
+                        for iI = 1:iTick
+                            if this.afTime(iI) >= fTime
+                                % The time stamp in this tick is larger or
+                                % equal to the interval, so we set that
+                                % item in the boolan array to false, so it
+                                % is not deleted.
+                                abDeleteData(iI) = false;
+                                
+                                % Now we have to increment the time tracker
+                                % by our time interval so the next tick's
+                                % time stamp is smaller than the tracker
+                                % again.
+                                fTime = fTime + fIntervalValue;
+                            end
+                        end
+                        
+                    otherwise
+                        % If the user provided an unknown interval mode
+                        % string, we let him or her know. 
+                        this.throw('get','The plotting interval mode you have provided (%s) is unknown. Can either be ''Tick'' or ''Time''.', sIntervalMode);
                 end
+                
+                % Using our abDeleteData boolean array we can now delete
+                % all of the unneded data rows in the aafData array.
+                aafData(abDeleteData,:) = [];
+                
+                % We also need to provide an array with the time steps of
+                % the selected data rows. we get this by only getting those
+                % items that were not deleted from the afTime property of
+                % the logger. 
+                afTime = this.afTime(~abDeleteData);
+            else
+                % No interval is set, so we have to do nothing with aafData
+                % and can just use afTime as is.
+                afTime = this.afTime;
             end
         end
         
@@ -365,23 +735,60 @@ classdef logger_basic < simulation.monitor
             this.mfLog      = mfLogNew;
             this.afTime     = afTimeNew;
         end
+        
+        function [ iNumberOfUnits, csUniqueUnits ] = getNumberOfUnits(this, aiIndexes)
+            % This function determines the number of units in a single plot
+            % and returns the value as an integer.
+            
+            % Initializing a cell that can hold all of the unit strings.
+            csUnits = cell(length(aiIndexes),1);
+            
+            % Going through each of the indexes being queried and getting
+            % the information
+            for iI = 1:length(aiIndexes)
+                % For easier reading we get the current index into a local
+                % variable.
+                iIndex = aiIndexes(iI);
+                
+                % If the index is smaller than zero, this indicates that we
+                % are dealing with a virtual value; one that was not logged
+                % directly, but calculated from other logged values. We
+                % have to get the units from somewhere else then. 
+                if iIndex < 0
+                    csUnits{iI} = this.tVirtualValues(-1 * iIndex).sUnit;
+                else
+                    csUnits{iI}  = this.tLogValues(iIndex).sUnit;
+                end
+            end
+            
+            % Now we can just get the number of unique entries in the cell
+            % and we have what we came for!
+            csUniqueUnits  = unique(csUnits);
+            iNumberOfUnits = length(csUniqueUnits);
+        end
     end
     
     
     methods (Access = protected)
         
         function iIndex = addValueToLog(this, tLogProp)
-            %IMPORTANT NOTE: tLogProp definition HAS to be as in tLogProps
+            % This method adds a value to the tLogValues struct array
+            % property and returns its index.
             
+            % Initializing a local variable to hold the object from which
+            % we want to add a property to the log.
             oObj   = [];
             
             % Replace shorthand to full path (e.g. :s: to .toStores.) and
             % prefix so object is reachable through eval().
             tLogProp.sObjectPath = simulation.helper.paths.convertShorthandToFullPath(tLogProp.sObjectPath);
             
+            % Making sure that the object exists.
             try
                 oObj = eval([ 'this.oSimulationInfrastructure.oSimulationContainer.toChildren.' tLogProp.sObjectPath ]);
                 
+                % The object exists so now we can set the UUID field in the
+                % tLogProp struct.
                 tLogProp.sObjUuid = oObj.sUUID;
             catch oErr
                 assignin('base', 'oLastErr', oErr);
@@ -389,63 +796,102 @@ classdef logger_basic < simulation.monitor
             end
             
             
-            % Only add property if not yet logged!
+            % Now we have to check to see if the item we are adding already
+            % exists in the tLogValues struct. If it does, we can just get
+            % its index and return.
+            
+            % First we see if there are matching UUIDs
             aiObjMatches = find(strcmp({ this.tLogValues.sObjUuid }, tLogProp.sObjUuid));
             
             if any(aiObjMatches)
+                % There are matching UUIDs, so now we see if there are
+                % matching expressions for these objects. 
                 aiExpressionMatches = find(strcmp({ this.tLogValues(aiObjMatches).sExpression }, tLogProp.sExpression));
                 
                 if any(aiExpressionMatches)
+                    % The expression and the object matches an existing
+                    % entry, so we can just get its index.
                     iIndex = this.tLogValues(aiObjMatches(aiExpressionMatches(1))).iIndex;
+                    
+                    % It may be the case, that the existing item was
+                    % entered into the log via an automatic helper. This
+                    % means, that the label was created automatically and
+                    % is not very legible. Also the sName field may be
+                    % empty. If the user has provided new values for these
+                    % two fields, we overwrite them and publish a warning,
+                    % so the user knows what's going on.
+                    if ~strcmp(this.tLogValues(aiObjMatches(aiExpressionMatches(1))).sLabel, tLogProp.sLabel) && ~isempty(tLogProp.sLabel)
+                        this.warn('addValueToLog', 'Overwriting log item label from "%s" to "%s".', this.tLogValues(aiObjMatches(aiExpressionMatches(1))).sLabel, tLogProp.sLabel);
+                        this.tLogValues(aiObjMatches(aiExpressionMatches(1))).sLabel = tLogProp.sLabel;
+                    end
+                    
+                    if ~strcmp(this.tLogValues(aiObjMatches(aiExpressionMatches(1))).sName, tLogProp.sName) && ~isempty(tLogProp.sName)
+                        this.warn('addValueToLog', 'Overwriting log item name from "%s" to "%s".', this.tLogValues(aiObjMatches(aiExpressionMatches(1))).sName, tLogProp.sName);
+                        this.tLogValues(aiObjMatches(aiExpressionMatches(1))).sName = tLogProp.sName;
+                    end
                     
                     return;
                 end
             end
             
-            
+            % If the user did not provide a name for this item, we generate
+            % it automatically from the information we have, which is the
+            % expression to be evaluated and the object.
             if ~isfield(tLogProp, 'sName') || isempty(tLogProp.sName)
-                % Only accept alphanumeric - can be used for storage e.g.
-                % on a struct using sName as the key!
-                %tLogProp.sName = [ oObj.sUUID '__' regexprep(tLogProp.sExpression, '[^a-zA-Z0-9]', '_') ];
+                % Since we may need to use the name of the log item as a
+                % field name in a struct, we need to do some formatting
+                % with the sExpression field.
                 
-                tLogProp.sName = [ regexprep(tLogProp.sExpression, '[^a-zA-Z0-9]', '_') '__' oObj.sUUID '_' ];
-                tLogProp.sName = strrep(tLogProp.sName, 'this_', '');
+                % First we replace all characters that are not alphanumeric
+                % with underscores.
+                sName = regexprep(tLogProp.sExpression, '[^a-zA-Z0-9]', '_');
                 
-                if length(tLogProp.sName) > 63
-                    tLogProp.sName = tLogProp.sName(1:63);
+                % Next we remove all occurances of 'this_'
+                sName = strrep(sName, 'this_', '');
+                
+                % Since we may need to use the name of the log item as a
+                % field name in a struct, we shorten the string to the
+                % allowed 63 characters. In order to make sure that the
+                % name is still unique, we will add the object UUID to the
+                % string, which is 32 characters long, so the remaining
+                % name can only be 30 characters in length, since we'll add
+                % an underscore for separation.
+                if length(sName) > 30
+                    sName = sName(1:30);
                 end
+                
+                % Now we can set the name with the appended UUID.
+                tLogProp.sName = [sName, '_', oObj.sUUID];
+            
             end
             
             
-            
+            % If the user did not provide a unit string, we can try to find
+            % it in the poExpressionToUnit map.
             if ~isfield(tLogProp, 'sUnit') || isempty(tLogProp.sUnit)
+                % Setting the fallback unit to '-'
                 tLogProp.sUnit = '-';
-                csKeys         = this.poExpressionToUnit.keys();
                 
+                % Getting a cell with all the expressions that we have
+                % units for
+                csKeys = this.poExpressionToUnit.keys();
                 
-                for iI = 1:length(csKeys)
-                    sKey   = csKeys{iI};
-                    iLen   = length(sKey);
-                    
-                    if iLen > length(tLogProp.sExpression)
-                        iLen = length(tLogProp.sExpression);
-                    end
-                    
-                    if strcmp(sKey, tLogProp.sExpression(1:iLen))
-                        tLogProp.sUnit = this.poExpressionToUnit(sKey);
-                        
-                        break;
-                    end
+                % See if any expressions match the one we are looking for.
+                abIndex =  strcmp(csKeys, tLogProp.sExpression);
+                if any(abIndex) && sum(abIndex) == 1
+                    % We have a match, so we can set the field accordingly.
+                    tLogProp.sUnit = this.poExpressionToUnit(csKeys{abIndex});
                 end
-                
-                %if .isKey(tLogProp.sExpression)
-                %    this.sUnit = this.poExpressionToUnit(tLogProp.sExpression);
-                %end
             end
             
             
+            % If the user did not provide a label, we will build one here.
             if ~isfield(tLogProp, 'sLabel') || isempty(tLogProp.sLabel)
-                % Does object have 'sName'? If not, use path!
+                
+                % First we'll check if the object we are logging from has a
+                % sName property. We want to use that name for our label.
+                % If there is no such property, we just use the object's
+                % path.
                 try
                     tLogProp.sLabel = oObj.sName;
                     
@@ -454,7 +900,9 @@ classdef logger_basic < simulation.monitor
                     
                 end
                 
-                % Unit to Label? if not, expression!
+                % If a unit is given hat is included in the poUnitsToLabels
+                % map, then we use that to finish our label, otherwise we
+                % just set the label to the expression to be evaluated. 
                 try
                     tLogProp.sLabel = [ tLogProp.sLabel ' - ' this.poUnitsToLabels(tLogProp.sUnit) ];
                     
@@ -466,7 +914,8 @@ classdef logger_basic < simulation.monitor
             
             
             
-            % Add element to log struct array
+            % Now we are finally done and can add the element to log struct
+            % array
             iIndex          = length(this.tLogValues) + 1;
             tLogProp.iIndex = iIndex;
             
@@ -502,11 +951,11 @@ classdef logger_basic < simulation.monitor
                     [ 'this.oSimulationInfrastructure.oSimulationContainer.toChildren.' this.tLogValues(iL).sObjectPath '.' ] ...
                     );
                 
-                try
-                    [~] = eval(this.csPaths{iL});
-                catch oError
-                    this.throw('\n\nSomething went wrong while logging ''%s'' on ''%s''. \nMATLAB provided the following error message:\n%s\n', this.tLogValues(iL).sExpression, this.tLogValues(iL).sObjectPath, oError.message);
-                end
+%                 try
+%                     [~] = eval(this.csPaths{iL});
+%                 catch oError
+%                     this.throw('\n\nSomething went wrong while logging ''%s'' on ''%s''. \nMATLAB provided the following error message:\n%s\n', this.tLogValues(iL).sExpression, this.tLogValues(iL).sObjectPath, oError.message);
+%                 end
             
                 %tLogProp.sExpression = strrep(tLogProp.sExpression, 'this.', [ tLogProp.sObjectPath '.' ]);
             end
@@ -643,7 +1092,7 @@ classdef logger_basic < simulation.monitor
 
                 fprintf('DUMPING - write to .mat: %s\n', sMat);
 
-                oLastSimObj = this.oSimulationInfrastructure; %#ok<NASGU>
+                oLastSimObj = this.oSimulationInfrastructure; 
                 save(sMat, 'oLastSimObj');
             end
             
@@ -662,8 +1111,8 @@ classdef logger_basic < simulation.monitor
             fprintf('#############################################\n');
             fprintf('DUMPING - write to .mat: %s\n', sMat);
             
-            mfLogMatrix = this.mfLog; %#ok<NASGU>
-            afTimeVector = this.afTime; %#ok<NASGU>
+            mfLogMatrix = this.mfLog; 
+            afTimeVector = this.afTime; 
             save(sMat, 'mfLogMatrix', 'afTimeVector');
             
             disp('... done!');
@@ -677,8 +1126,10 @@ classdef logger_basic < simulation.monitor
             
             fprintf('DUMPING - write to .mat: %s\n', sMat);
             
-            oLastSimObj = this.oSimulationInfrastructure; %#ok<NASGU>
+            oLastSimObj = this.oSimulationInfrastructure;
             save(sMat, 'oLastSimObj');
         end
+        
+        
     end
 end

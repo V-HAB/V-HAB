@@ -115,7 +115,7 @@ classdef exme < base
             
             
             this.bHasFlow = true;
-            this.bFlowIsAProcP2P = isa(this.oFlow, 'matter.procs.p2ps.flow') || isa(this.oFlow, 'matter.procs.p2ps.branch.flow');
+            this.bFlowIsAProcP2P = isa(this.oFlow, 'matter.procs.p2ps.flow') || isa(this.oFlow, 'matter.procs.p2ps.stationary');
             
             
             try
@@ -161,12 +161,7 @@ classdef exme < base
             else
                 fFlowRate  =  this.oFlow.fFlowRate * this.iSign;
             end
-            
-            
-            arPartials   = this.oFlow.arPartialMass;
-            afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
-            return
-            % TO DO; why can we not just use the flow all the time?
+                        
             if this.bFlowIsAProcP2P
                 % This exme is connected to a P2P processor, so we can get
                 % the properties from the connected flow.
@@ -174,7 +169,7 @@ classdef exme < base
                 afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
             else
                 
-                if fFlowRate > 0 
+                if fFlowRate > 0
                     % The flow rate is larger than zero, this means we use
                     % the properties of the incoming flow.
                     %CHECK do we need to get that from other side, in
@@ -184,56 +179,17 @@ classdef exme < base
                     %      if that get's updated, fr recalc is called
                     %      on all branches which would set the new
                     %      arPartials on all flows ... right?
-                    %
-                    % Well in the CDRA system this actuall differed. Also I
-                    % would would say the most important thing here is that
-                    % both phases use the same partial mass composition for
-                    % their massupdates for all mass transfers, because
-                    % otherwise we are transforming one mass into another
-                    % almost unnoticeably for the user. Since this function
-                    % is only called by the calculateTimeStep on the post
-                    % Tick it should be ensured that the phase does not
-                    % change its composition between the update function.
                     
-                    if this == this.oFlow.oBranch.coExmes{2}
-                        oCounterExMe = this.oFlow.oBranch.coExmes{1};
-                    else
-                        oCounterExMe = this.oFlow.oBranch.coExmes{2};
-                    end
-                    arPartials   = oCounterExMe.oPhase.arPartialMass;
-                    
+                    arPartials   = this.oFlow.arPartialMass;
                     afProperties = [ this.oFlow.fTemperature this.oFlow.fSpecificHeatCapacity ];
-                    
-%                     if this.oFlow.oBranch.coExmes{2} == this
-%                         arPartials   = this.oFlow.oBranch.coExmes{1}.getMatterProperties(); %oPhase.arPartialMass;
-%                     else
-%                         arPartials   = this.oFlow.oBranch.coExmes{2}.getMatterProperties(); %oPhase.arPartialMass;
-%                     end
                     
                 else 
                     % The flow rate is either zero or negative, which means
                     % matter is flowing out of the phase. In both cases we
                     % have to use the matter properties of the connected
                     % phase.
-                    %NOTE possibility to implement special EXME that
-                    %     provides an adjusted partial masses vector.
-                    %     For example a filter with an inflow at one
-                    %     end, and then throughout the axial dimension,
-                    %     some additional outflow ports. EXMEs would be
-                    %     linked to the filter model and know their
-                    %     position -> could ask the filter model for
-                    %     the partial pressure of the filtered species
-                    %     at that position and adjust the partial mass
-                    %     here accordingly.
-                    %
-                    %EXPERIMENTAL flow phase - partials is NOT based on
-                    % phase contents, but inflows! Calculated in the
-                    % previous step, so use branches value!
-                    %TODO instead of FR == 0 check, should we check if the
-                    %  flow rate * the last step is roughly in the area of
-                    %  the stored mass?
-                    arPartials   = sif(~this.oPhase.bSynced || this.oFlow.fFlowRate == 0, this.oPhase.arPartialMass, this.oFlow.arPartialMass);
-                    afProperties = [ this.oPhase.fTemperature this.oPhase.fSpecificHeatCapacity ];
+                    arPartials   = this.oPhase.arPartialMass;
+                    afProperties = [ this.oPhase.fTemperature this.oPhase.oCapacity.fSpecificHeatCapacity ];
                 end
             end
         end
@@ -263,68 +219,15 @@ classdef exme < base
             %      so if one needs to get the flow partials, the p2p has to
             %      be asked (or aoFlows(iI).oBranch which references back
             %      to the p2p). Does that make sense?
+            
+            if this.oPhase.bFlow
+                this.oPhase.updatePartials();
+            end
             arPartialMass = this.oPhase.arPartialMass;
             
             fMolarMass            = this.oPhase.fMolarMass;
-            fSpecificHeatCapacity = this.oPhase.fSpecificHeatCapacity;
+            fSpecificHeatCapacity = this.oPhase.oCapacity.fSpecificHeatCapacity;
             
-            
-            % Return INFLOW matter properties, not the phase contents props
-            if this.oPhase.bSynced
-                mrInPartials  = zeros(this.oPhase.iProcsEXME, this.oMT.iSubstances);
-                afInFlowrates = zeros(this.oPhase.iProcsEXME, 1);
-
-                % Creating an array to log which of the flows are not in-flows
-                aiOutFlows = ones(this.oPhase.iProcsEXME, 1);
-                
-                
-                % Need to separately collect IN flow rates that are NOT
-                % p2p's! I.e. ignore OUTWARDS p2ps - they depend on INWARDS
-                % flows, so should not be taken into account for the check
-                % if a flow rate exists
-                fInwardsFlowRates = 0;
-                
-                % Get flow rates and partials from EXMEs
-                for iI = 1:this.oPhase.iProcsEXME
-                    [ fFlowRate, arFlowPartials, ~ ] = this.oPhase.coProcsEXME{iI}.getFlowData();
-                    
-                    if fFlowRate > 0 || (this.oPhase.coProcsEXME{iI} ~= this && this.oPhase.coProcsEXME{iI}.bFlowIsAProcP2P)
-                        mrInPartials(iI,:) = arFlowPartials;
-                        afInFlowrates(iI)  = fFlowRate;
-                        aiOutFlows(iI)     = 0;
-                        
-                        
-                        %if ~this.oPhase.coProcsEXME{iI}.bFlowIsAProcP2P
-                        if fFlowRate > 0
-                            fInwardsFlowRates = fInwardsFlowRates + fFlowRate;
-                        end
-                    end
-                end
-
-                % Now we delete all of the rows in the mfInflowDetails matrix
-                % that belong to out-flows.
-                if any(aiOutFlows)
-                    mrInPartials(logical(aiOutFlows),:)  = [];
-                    afInFlowrates(logical(aiOutFlows),:) = [];
-                end
-
-                
-                for iF = 1:length(afInFlowrates)
-                    mrInPartials(iF, :) = mrInPartials(iF, :) .* afInFlowrates(iF);
-                end
-                
-                
-                fTotalInFlowRate = sum(afInFlowrates);
-                afTotalSubstanceInflows = sum(mrInPartials, 1);
-                
-                % Only use the inflow partial masses if there is actually
-                % an inflow of mass.
-                if fInwardsFlowRates ~= 0
-                    arPartialMass = afTotalSubstanceInflows ./ fTotalInFlowRate;
-                end
-                
-                %afFlowRate = afFlowRate .* mrPartials(:, iSpecies);
-            end
         end
     end
     

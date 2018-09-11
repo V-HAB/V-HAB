@@ -1,5 +1,7 @@
 classdef stationary < matter.procs.p2p
-    %P2P
+    %STATIONARY A P2P processor for a phase where the volumetric flow
+    %through the phase is significantly smaller than its volume or even
+    %zero.
     %
     %TODO
     %   - 
@@ -34,15 +36,17 @@ classdef stationary < matter.procs.p2p
             
             mfMass = [ this.oIn.oPhase.afMass; this.oOut.oPhase.afMass ];
             
-            if this.fFlowRate >= 0, tiDir = struct('in', 1, 'out', 2);
-            else                    tiDir = struct('in', 2, 'out', 1);
+            if this.fFlowRate >= 0
+                tiDir = struct('in', 1, 'out', 2);
+            else
+                tiDir = struct('in', 2, 'out', 1);
             end
         end
         
         
         
         function setMatterProperties(this, fFlowRate, arPartials)
-            if nargin < 3, arPartials = []; end;
+            if nargin < 3, arPartials = []; end
             
             this.fLastUpdate = this.oStore.oTimer.fTime;
             

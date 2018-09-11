@@ -55,12 +55,9 @@ classdef infrastructure < base & event.source
         % @type string
         sName;
         
-        
         % Sim Contaienr (root sys)
         % @type object
         oSimulationContainer;
-        
-        
         
         fRuntimeTick  = 0;
         fRuntimeOther = 0;
@@ -71,21 +68,9 @@ classdef infrastructure < base & event.source
         % @type string
         sCreated = '';
         
-        
         % Was everything initialized, e.g. create*Structure, event
         % init_post was sent etc?
         bInitialized = false;
-        
-        
-        %TODO-RESTRUCTURING see sStorageName
-% %         % String for disk storage
-% %         sStorageDir;
-        
-        %TODO-RESTRUCTURING move to monitor
-% %         % Variables holding the sum of lost mass / total mass, species-wise
-% %         %TODO move to monitors.matter_observer
-% %         mfTotalMass = [];
-% %         mfLostMass  = [];
         
         %TODO-RESTRUCTURING CPU, RAM etc
         
@@ -103,14 +88,12 @@ classdef infrastructure < base & event.source
             ... % Logs specific simulation values, can be specified throug helpers
             ... % First param is bDumpToMat --> active?
             'oLogger', struct('sClass', 'simulation.monitors.logger_basic', 'cParams', {{ false }}), ...
-            ... % Post-processing - show plots
-            'oPlotter', struct('sClass', 'simulation.monitors.plotter_basic'), ...   'simulation.monitors.plotgrid_with_tree'), ...
             ... % Allows to e.g. pause the simulation
             'oExecutionControl', struct('sClass', 'simulation.monitors.execution_control'), ...
             ... % Logs mass loss/gain, TODO warn if too much mass loss / gain
-            'oMatterObserver', struct('sClass', 'simulation.monitors.matter_observer') ...
-            ... %TODO implement - observes time step, warns if e.g. low because of just one phase, hints if e.g. mass in that phase doesn't change much / oscillates
-            ... %%%'oTimestepObserver', struct('sClass', 'simulation.monitors.timestep_observer') ...
+            'oMatterObserver', struct('sClass', 'simulation.monitors.matter_observer'), ...
+            ... observes time step, and can tell the user what part of the system uses a small timestep
+            'oTimeStepObserver', struct('sClass', 'simulation.monitors.timestep_observer') ...
         );
         
         % Monitor objs
@@ -127,9 +110,9 @@ classdef infrastructure < base & event.source
             this.sName = sName;
             
             
-            if nargin < 2 || isempty(ptConfigParams), ptConfigParams = containers.Map(); end;
-            if nargin < 3 || isempty(tSolverParams),  tSolverParams  = struct(); end;
-            if nargin < 4 || isempty(tMonitors),      tMonitors      = struct(); end;
+            if nargin < 2 || isempty(ptConfigParams), ptConfigParams = containers.Map(); end
+            if nargin < 3 || isempty(tSolverParams),  tSolverParams  = struct(); end
+            if nargin < 4 || isempty(tMonitors),      tMonitors      = struct(); end
 
             % Monitors -> merge
             csMonitors = fieldnames(tMonitors);
@@ -166,7 +149,7 @@ classdef infrastructure < base & event.source
             
             
             
-            %%% Create monitors
+            %% Create monitors
             csMonitors = fieldnames(this.ttMonitorCfg);
             
             for iM = 1:length(csMonitors)
@@ -181,9 +164,7 @@ classdef infrastructure < base & event.source
             end
             
             
-            
-
-            %%% Global objects and settings for constructors
+            %% Global objects and settings for constructors
 
             oTimer = event.timer();
 
@@ -211,42 +192,16 @@ classdef infrastructure < base & event.source
             
             oCfgParams = simulation.configuration_parameters(ptConfigParams);
             
-            
-
             % Create the root object for the simulation, referencing the
             % global objects. Also the hierarchy root for the systems.
-            this.oSimulationContainer = simulation.container(this.sName, oTimer, oMT, oCfgParams, tSolverParams, this);
+            this.oSimulationContainer = simulation.container(this.sName, oTimer, oMT, oCfgParams, tSolverParams);
 
-            
-            
-            
-            
             % Remember the time of object creation
             this.fCreated = now();
             this.sCreated = datestr(this.fCreated);
             
-            %TODO-RESTRUCTURING see above - exporter monitor?
-% %             %this.sStorageDir = [ datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') '_' this.sUUID ];
-% %             this.sStorageDir = [ datestr(this.fCreated, 'yyyy-mm-dd_HH-MM-SS_FFF') '_' this.sName ];
-            
-
-            
-            %TODO-RESTRUCTURING move to monitor
-            
-            % Init the mass log matrices - don't log yet, system's not
-            % initialized yet! Just create with one row, for the initial
-            % mass log. Subsequent logs dynamically allocate new memory -
-            % bad for performance, but only happens every Xth tick ...
-            
-% %             this.mfTotalMass = zeros(0, this.oData.oMT.iSubstances);
-% %             this.mfLostMass  = zeros(0, this.oData.oMT.iSubstances);
-        
-            
-        
-            
             % Bind the playFinishSound() method to the 'finished' event.
             this.bind('finish', @(~) this.playFinishSound());
-        
         
             % Pre Init
             this.trigger('init_pre');
@@ -261,18 +216,20 @@ classdef infrastructure < base & event.source
         end
         
         
-        function configureMonitors(this)
-            % Do stuff like: add log propertis, define plots, ...
+        function oPlotter = plot(this, sLogger)
+            if nargin >= 2
+                oPlotter = tools.postprocessing.plotter.plotter_basic(this, sLogger);
+            else
+                oPlotter = tools.postprocessing.plotter.plotter_basic(this);
+            end
         end
+
         
         
         function initialize(this)
             if this.bInitialized
                 return;
             end
-            
-            iPhases = 0;
-            iBranches = 0;
             
             % Construct matter, solvers, ...
             oRoot = this.oSimulationContainer;
@@ -286,34 +243,43 @@ classdef infrastructure < base & event.source
                 
                 if ismethod(oChild,'createMatterStructure')
                     oChild.createMatterStructure();
+                    
+                    % Seal matter things - do we need something like that
+                    % for thermal/electrical?
+                    oChild.sealMatterStructure();
                 end
-
-                % Seal matter things - do we need something like that
-                % for thermal/electrical?
-                oChild.seal();
 
                 
                 if ismethod(oChild,'createThermalStructure')
                     oChild.createThermalStructure();
+                    
+                    oChild.sealThermalStructure();
                 end
+                
                 
                 if ismethod(oChild,'createElectricalStructure')
                     oChild.createElectricalStructure();
+                    
+                    oChild.sealElectricalStructure();
                 end
                 
                 oChild.createSolverStructure();
                 
-                %TODO Might have to add something like this here
-                %if ismethod(oChild,'createDomainInterfaces')
-                %   oChild.createDomainInterfaces();
-                %end
+                % Check if all branches have a solver!
+                for iBranch = 1:length(oChild.aoBranches)
+                    if isempty(oChild.aoBranches(iBranch).oHandler)
+                        error('Error in System ''%s''. The branch ''%s'' has no solver.', oChild.sName, oChild.aoBranches(iBranch).sName);
+                    end
                     
-                    iPhases = iPhases + oChild.iPhases;
-                    iBranches = iBranches + oChild.iBranches;
+                end
+                for iThermalBranch = 1:length(oChild.aoThermalBranches)
+                    if isempty(oChild.aoThermalBranches(iThermalBranch).oHandler)
+                        error('Error in System ''%s''. The branch ''%s'' has no solver.', oChild.sName, oChild.aoThermalBranches(iThermalBranch).sName);
+                    end
+                end
             end
             
-            disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
-                disp(['Model contains ', num2str(iBranches), ' Branches and ', num2str(iPhases), ' Phases.'])
+            disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!']);
             
             this.bInitialized = true;
 
@@ -353,26 +319,6 @@ classdef infrastructure < base & event.source
                 
                 this.tick();
                 
-                % Stopped?
-                %TODO-RESTRUCTURING dumping to own logger/dumper monitor!
-                %  STOP file check to own monitor? see STOP in vhab.m!
-% %                 if this.bDumpToMat && (this.oTimer.iTick > 0) && (mod(this.oTimer.iTick, this.iPrealloc) == 0)
-% %                     sFile = [ 'data/runs/' this.sStorageDir '/STOP' ];
-% %                     
-% %                     % Always do that!
-% %                     disp('#############################################');
-% %                     disp('Writing sim obj to .mat!');
-% %                     this.finish();
-% %                     
-% %                     disp([ 'Checking for STOP file: ' sFile ]);
-% %                     
-% %                     if exist(sFile, 'file') == 2
-% %                         disp('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
-% %                         disp('STOPPED by STOP file. Har. Restart with "oLastSimObj.run()"');
-% %                         
-% %                         break;
-% %                     end
-% %                 end
             end
         end
         
@@ -427,15 +373,6 @@ classdef infrastructure < base & event.source
         
         
         function tick(this)
-            %TODO-RESTRUCTURING to own monitor, see above
-            % Pre-check -> timer tick at -1 --> initial call. So do the
-            % mass log, need the initial values.
-% %             if this.oSimulationContainer.oSimulationContainer.oTimer.iTick == -1
-% %                 this.masslog();
-% %             end
-            
-            
-            
             % Pre Tick (e.g. monitors) incl. time tracking
             hTimer = tic();
             this.trigger('tick_pre');
@@ -455,17 +392,6 @@ classdef infrastructure < base & event.source
             this.trigger('tick_post');
             this.fRuntimeOther = this.fRuntimeOther + toc(hTimer);
             
-            
-            
-            % Mass log?
-            %TODO-RESTRUCTURING move to matter_observer
-            %TODO do by time, not tick? Every 1s, 10s, 100s ...?
-            %     see old main script, need a var like fNextLogTime, just
-            %     compare this.oData.oTimer.fTIme >= this.fNexLogTime.
-% %             if mod(this.oData.oTimer.iTick, this.iMassLogInterval) == 0
-% %                 this.masslog();
-% %             end
-            
             % Sim finished?
             if (this.bUseTime && (this.oSimulationContainer.oTimer.fTime >= this.fSimTime)) || (~this.bUseTime && (this.oSimulationContainer.oTimer.iTick >= this.iSimTicks))
                 %this.finish();
@@ -484,77 +410,7 @@ classdef infrastructure < base & event.source
             this.trigger('finish');
         end
             
-        
-        %TODO-RESTRUCTURING see console_ouput
-        function finish(this)
-            
-            %TODO-RESTRUCTURING move to monitors.exporter, monitors.logger or so?
-% %             if this.bDumpToMat
-% %                 if ~isdir([ 'data/runs/' this.sStorageDir ])
-% %                     mkdir([ 'data/runs/' this.sStorageDir ]);
-% %                 end
-% %                 
-% %                 sMat = [ 'data/runs/' this.sStorageDir '/_simObj.mat' ];
-% %                 disp(['DUMPING - write to .mat: ' sMat]);
-% %    
-% %                 oLastSimObj = this;
-% %                 save(sMat, 'oLastSimObj');
-% %             end
-        end
-        
-        
-        
-        %TODO-RESTRUCTURING move to own monitor
-% %         function masslog(this)
-% %             iIdx = size(this.mfTotalMass, 1) + 1;
-% %             
-% %             % Total mass: sum over all mass stored in all phases, for each
-% %             % species separately.
-% %             this.mfTotalMass(iIdx, :) = sum(reshape([ this.oData.oMT.aoPhases.afMass ], this.oData.oMT.iSubstances, []), 2)';
-% %             
-% %             % Lost mass: logged by phases if more mass is extracted then
-% %             % available (for each substance separately).
-% %             this.mfLostMass(iIdx, :) = sum(reshape([ this.oData.oMT.aoPhases.afMassLost ], this.oData.oMT.iSubstances, []), 2)';
-% %             
-% %             %TODO implement methods for that ... break down everything down
-% %             %     to the moles and compare these?! So really count every
-% %             %     atom, not the molecules ... compare enthalpy etc?
-% %         end
-        
-        
-        %TODO-RESTRUCTURING to .exporter / .importer or so, depends on
-        %  settings if e.g. .mat files were written every Xth tick etc!
-% %         function readData(this)
-% %             if this.bDumpToMat
-% %                 sDir    = [ 'data/runs/' this.sStorageDir '/' ];
-% %                 tDir    = dir(sDir);
-% %                 aiDumps = [];
-% %                 
-% %                 for iD = 1:length(tDir)
-% %                     if (length(tDir(iD).name) > 5) && strcmp(tDir(iD).name(1:5), 'dump_')
-% %                         %disp([ sDir tDir(iD).name ]);
-% %                         aiDumps(end + 1) = str2double(tDir(iD).name(6:(end - 4)));
-% %                     end
-% %                 end
-% %                 
-% %                 aiDumps = sort(aiDumps);
-% %                 
-% %                 for iF = length(aiDumps):-1:1
-% %                     tFile = load([ sDir 'dump_' num2str(aiDumps(iF)) '.mat' ]);
-% %                     
-% %                     this.mfLog = [ tFile.mfLog; this.mfLog ];
-% %                 end
-% %             end
-% %         end
-% % 
         function saveSim(this, sAppendix)
-            %TODO move to own monitor, e.g. 'exporter'? Allow setting a
-            %     custom name?
-            %     If logger did dump data to .mat file, do not need to read
-            %     that data before saving, can be done after user re-loaded
-            %     the sim .mat in the workspace.
-            
-            %TODO rename to sAppendix
             if nargin < 2 || isempty(sAppendix)
                 sAppendix = '';
             else
@@ -603,3 +459,4 @@ classdef infrastructure < base & event.source
     end
 end
 
+	

@@ -16,7 +16,7 @@ classdef setup < simulation.infrastructure
             % Possible to change the constructor paths and params for the
             % monitors
             ttMonitorConfig = struct();
-            warning('off','all')
+            
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
             this@simulation.infrastructure('Tutorial_Fan_Loop_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
@@ -35,22 +35,54 @@ classdef setup < simulation.infrastructure
         end
         
         function configureMonitors(this)
+            
             %% Logging
-            tiLog = this.toMonitors.oLogger.add('Example', 'flow_props');
+            oLog = this.toMonitors.oLogger;
             
-            this.toMonitors.oLogger.addValue('Example.aoBranches(1).aoFlows(1)', 'fFlowRate', 'kg/s', 'Flowrate');
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            for iStore = 1:length(csStores)
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+            end
             
-            %% Plot definition
-            this.toMonitors.oPlotter.definePlot('Pa',   'Pressures')
-            this.toMonitors.oPlotter.definePlot('K',    'Temperatures')
-            this.toMonitors.oPlotter.definePlot('kg',   'Masses')
-            this.toMonitors.oPlotter.definePlot('kg/s', 'Flow Rates')
-
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
+            
         end
         
         function plot(this, varargin) % Plotting the results
-            this.toMonitors.oPlotter.plot(varargin{:});
             
+            %% Define Plots
+            
+            close all
+            oPlotter = plot@simulation.infrastructure(this);
+            
+            
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
+            
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
+
+            coPlots{1,1} = oPlotter.definePlot(csPressures,     'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
+            
+            oPlotter.plot();
         end
         
     end

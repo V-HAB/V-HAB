@@ -40,9 +40,33 @@ classdef Example1 < vsys
             matter.procs.exmes.gas(oAir, 'Out');
             matter.procs.exmes.gas(oAir, 'In');
             
-            % Creating the filter, last parameter is the filter capacity in
-            % kg.
-            tutorials.p2p.components.Filter(this, 'Filter', 0.5);
+             % Create the filter. See the according files, just an example
+            % for an implementation - copy to your own directory and change
+            % as needed.
+            fFilterVolume = 1;
+            matter.store(this, 'Filter', fFilterVolume);
+            oFlow = this.toStores.Filter.createPhase('air', 'FlowPhase', fFilterVolume/ 2, 293.15);
+            
+            oFiltered = matter.phases.gas(this.toStores.Filter, ...
+                          'FilteredPhase', ... Phase name
+                          struct(), ... Phase contents
+                          fFilterVolume / 2, ... Phase volume
+                          293.15); % Phase temperature 
+            
+            % Create the according exmes - default for the external
+            % connections, i.e. the air stream that should be filtered. The
+            % filterports are internal ones for the p2p processor to use.
+            matter.procs.exmes.gas(oFlow,       'In');
+            matter.procs.exmes.gas(oFlow,       'In_P2P');
+            matter.procs.exmes.gas(oFlow,  	'Out');
+            matter.procs.exmes.gas(oFiltered,  	'Out_P2P');
+            
+            % Creating the p2p processor
+            % Input parameters: name, flow phase name, absorber phase name, 
+            % species to be filtered, filter capacity
+            fSubstance = 'O2';
+            fCapacity = 0.5;
+            tutorials.p2p.components.AbsorberExample(this.toStores.Filter, 'filterproc', 'FlowPhase.In_P2P', 'FilteredPhase.Out_P2P', fSubstance, fCapacity);
             
             % Adding a fan
             components.fan(this, 'Fan', 40000, 'Left2Right');
@@ -79,11 +103,13 @@ classdef Example1 < vsys
 
                 this.oB1.setFlowRate(0.0005);
                 
-                this.toStores.Filter.toPhases.FilteredPhase.rMaxChange = 5;
+                tTimeStepProperties.rMaxChange = 10;
+                this.toStores.Filter.toPhases.FilteredPhase.setTimeStepProperties(tTimeStepProperties);
 
     %             this.toStores.Filter.aoPhases(2).rMaxChange = inf;
     %             this.toStores.Filter.aoPhases(1).rMaxChange = inf;
 
+                this.setThermalSolvers();
                 return;
 
             end
@@ -104,8 +130,8 @@ classdef Example1 < vsys
             % to instabilities in the flow rate. Using this parameter, the
             % solvers reduce the changes in flow rates:
             % fFlowRate = (fNewFR + iDampFR * fOldFR) / (iDampFR + 1)
-            this.oB1.iDampFR = 5;
-            this.oB2.iDampFR = 5;
+%             this.oB1.iDampFR = 5;
+%             this.oB2.iDampFR = 5;
             
             
             
@@ -123,11 +149,21 @@ classdef Example1 < vsys
 %             this.aoFilterPhases(1).bSynced = true;
             this.aoFilterPhases(1).bSynced = true;
             
+            % Resulting matter composition of inflows and p2ps will be
+            % given to the outflows, as this phase is very small and the
+            % filter flowPhase contents do not really matter, this helps to
+            % reduce rounding errors.
+            this.aoFilterPhases(1).bFlow = true;
+            
             
             % The phase for the adsorbed matter in the filter store has a
             % small rMaxChange (small volume) but is not really important
             % for the solving process, so increase rMaxChange manually.
-            this.aoFilterPhases(2).rMaxChange = 5;
+            
+            tTimeStepProperties.rMaxChange = 5;
+            this.aoFilterPhases(2).setTimeStepProperties(tTimeStepProperties);
+            
+            this.setThermalSolvers();
         end
     end
     

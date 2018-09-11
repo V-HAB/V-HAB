@@ -64,11 +64,6 @@ classdef timer < base
         aiPostTickMax = [ 0, 0, 0, 0, 0, 0, 0 ];
         
         iCurrentPostTickExecuting = 0;
-        
-        % struct used by the findSmallestTimeStep function from the tools
-        % folder (only if activated) to store information on the locations
-        % of the smallest timestep and the tick in which it occured
-        tDebug = struct();
     end
     
     methods
@@ -147,7 +142,7 @@ classdef timer < base
                 csFields = fieldnames(tPayloadDef);
                 
                 for iF = 1:length(csFields)
-                    if ~isfield(tPayload, csFields{iF}), continue; end;
+                    if ~isfield(tPayload, csFields{iF}), continue; end
                     
                     tPayloadDef.(csFields{iF}) = tPayload.(csFields{iF});
                 end
@@ -170,8 +165,10 @@ classdef timer < base
             this.ctPayload{iIdx}  = tPayloadDef;
             
             % Time step - provided or use the global
-            if nargin >= 3, this.afTimeStep(iIdx) = fTimeStep;
-            else            this.afTimeStep(iIdx) = this.fMinimumTimeStep;
+            if nargin >= 3 
+                this.afTimeStep(iIdx) = fTimeStep;
+            else
+                this.afTimeStep(iIdx) = this.fMinimumTimeStep;
             end
             
             % Return the callbacks - protected methods, wrapped so that the
@@ -189,14 +186,7 @@ classdef timer < base
         
         
         function bindPostTick(this, hCB, iPriority)
-            % This function can be used to define functions that should be
-            % executed after one tick of the system in an order defined by
-            % iPriority. Valid entries for iPriority are -3 to 3 in integer
-            % and go in the order from -3 for the functions executed first
-            % in the posttick to 3 for the functions executed last in the
-            % posttick. hCB should be a function for the callback (hence
-            % hCB) which can be defined for example as @this.update
-            if nargin < 3 || isempty(iPriority), iPriority = 0; end;
+            if nargin < 3 || isempty(iPriority), iPriority = 0; end
             
             iPriority = iPriority + 4;
             
@@ -258,30 +248,6 @@ classdef timer < base
             this.fTime = this.fTime + fThisStep;
             this.iTick = this.iTick + 1;
             
-            
-            %% Outcommented code that can be added again if you have trouble finding the location of your smallest time step in your system
-            %
-            % If you provide a limit larger than 0, then the report string
-            % telling you in which part of the system your time step was
-            % minimal will be displayed in the command window for all cases
-            % where the smallest time step is smaller or equal than the limit you
-            % provided
-            % Outcomment code from here to the next section to activate the
-            % debugging
-%             fLimit = 0;
-%             csReport = tools.findSmallestTimeStep(this, fLimit);
-%             if mod(this.iTick, 101) == 0
-%                 this.tDebug = struct();
-%                 this.tDebug(mod(this.iTick, 101)+1).csReport    = csReport;
-%                 this.tDebug(mod(this.iTick, 101)+1).iTick       = this.iTick;
-%                 this.tDebug(mod(this.iTick, 101)+1).fTimeStep   = fThisStep;
-%             else
-%                 this.tDebug(mod(this.iTick, 101)+1).csReport    = csReport;
-%                 this.tDebug(mod(this.iTick, 101)+1).iTick       = this.iTick;
-%                 this.tDebug(mod(this.iTick, 101)+1).fTimeStep   = fThisStep;
-%             end
-            
-            
             % Find all cb's indices whose last exec + time step <= fTime
             % Dependent systems have -1 as time step - therefore this
             % should always be true!
@@ -293,18 +259,20 @@ classdef timer < base
             for iE = 1:length(aiExec)
                 this.cCallBacks{aiExec(iE)}(this);
                 
-                tPayload = this.ctPayload{aiExec(iE)};
-                
-                this.out(1, 1, 'exec', 'Exec callback %i: %s', { aiExec(iE) func2str(this.cCallBacks{aiExec(iE)}) });
-                
-                if isempty(tPayload.oSrcObj)
-                    this.out(1, 2, 'run', 'Payload - Method Name: %s, Bind Decsription: %s', { tPayload.sMethod, tPayload.sDescription });
-                else
-                    this.out(1, 2, 'payload', '** Payload **');
-                    this.out(1, 2, 'payload', 'Method Name: %s', { tPayload.sMethod });
-                    this.out(1, 2, 'payload', 'Source Obj Entity %s', { tPayload.oSrcObj.sEntity });
-                    this.out(1, 3, 'payload', 'Src Obj UUID %s', { tPayload.oSrcObj.sUUID });
-                    this.out(1, 3, 'payload', 'Bind Description: "%s"', { tPayload.sDescription });
+                if ~base.oLog.bOff
+                    tPayload = this.ctPayload{aiExec(iE)};
+
+                    this.out(1, 1, 'exec', 'Exec callback %i: %s', { aiExec(iE) func2str(this.cCallBacks{aiExec(iE)}) });
+
+                    if isempty(tPayload.oSrcObj)
+                        this.out(1, 2, 'run', 'Payload - Method Name: %s, Bind Decsription: %s', { tPayload.sMethod, tPayload.sDescription });
+                    else
+                        this.out(1, 2, 'payload', '** Payload **');
+                        this.out(1, 2, 'payload', 'Method Name: %s', { tPayload.sMethod });
+                        this.out(1, 2, 'payload', 'Source Obj Entity %s', { tPayload.oSrcObj.sEntity });
+                        this.out(1, 3, 'payload', 'Src Obj UUID %s', { tPayload.oSrcObj.sUUID });
+                        this.out(1, 3, 'payload', 'Bind Description: "%s"', { tPayload.sDescription });
+                    end
                 end
             end
             
@@ -313,16 +281,11 @@ classdef timer < base
             % this works, don't need find!
             this.afLastExec(abExec) = this.fTime;
             
-            %% executing post ticks
-            % in order to improve the simulation speed the post tick call
-            % backs are not removed after they have been executed. This may
-            % be confusing since it seems (from looking at chPostTick) that
-            % very many call backs are executed, however only the call
-            % backs of each priority from the indices 1 to aiPostTickMax of
-            % the respective prio are actually executed!
             
-            this.out(1, 1, 'post-tick', 'Running post-tick tasks!');
-            this.out(1, 2, 'post-tick-num', 'Amount of cbs: %i\t', { this.aiPostTickMax });
+            if ~base.oLog.bOff
+                this.out(1, 1, 'post-tick', 'Running post-tick tasks!');
+                this.out(1, 2, 'post-tick-num', 'Amount of cbs: %i\t', { this.aiPostTickMax });
+            end
             
             % Just to make sure - prio 2 could attach postTick to prio -1
             %EXPERIMENTAL updated - now in that case, cb executed directly
@@ -369,7 +332,7 @@ classdef timer < base
             
             
             if ~isempty(fTimeStep) % && fTimeStep ~= 0
-                if fTimeStep < 0, fTimeStep = 0; end;
+                if fTimeStep < 0, fTimeStep = 0; end
                 
                 this.afTimeStep(iCB) = fTimeStep;
             else

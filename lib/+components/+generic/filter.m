@@ -64,7 +64,7 @@ classdef filter < matter.procs.p2ps.flow
             %
             % Cannot be used if manip exists in phase!
             
-            if (nargin < 2) || isempty(sPhase), sPhase = 'in'; end;
+            if (nargin < 2) || isempty(sPhase), sPhase = 'in'; end
             
             iSubstance  = this.oMT.tiN2I.(this.sSubstance);
             rFilterLoad = sif(this.fCapacity == 0, 1, this.oOut.oPhase.afMass(iSubstance) / this.fCapacity);
@@ -132,7 +132,7 @@ classdef filter < matter.procs.p2ps.flow
             % instead of afMass(X), btw) to determine load.
             this.rLoad = this.oOut.oPhase.afMass(iSpecies) / this.fCapacity;
             
-            if this.fCapacity == 0, this.rLoad = 1; end;
+            if this.fCapacity == 0, this.rLoad = 1; end
             
             %this.rLoad = 0;
             
@@ -172,18 +172,20 @@ classdef filter < matter.procs.p2ps.flow
             % ROUND
             %fFlowRate = tools.round.prec(fFlowRate, this.oIn.oTimer.iPrecision);
             
-            this.out(1, 1, 'calc-fr', 'p2p calc flowrate of %s, ads rate %f is: %.34f', { this.sName, rAdsorp, fFlowRate });
-            this.out(1, 2, 'calc-fr', '%.16f\t', { afFlowRate });
+            if ~base.oLog.bOff
+                this.out(1, 1, 'calc-fr', 'p2p calc flowrate of %s, ads rate %f is: %.34f', { this.sName, rAdsorp, fFlowRate });
+                this.out(1, 2, 'calc-fr', '%.16f\t', { afFlowRate });
+            end
         end
         
         function update(this)
             
-            this.out(1, 1, 'set-fr', 'p2p update flowrate of %s', { this.sName });
+            if ~base.oLog.bOff, this.out(1, 1, 'set-fr', 'p2p update flowrate of %s', { this.sName }); end
             %keyboard();
             [ afFlowRate, aarPartials ] = this.getInFlows();
             
             
-            [ fFlowRate, arExtractPartialsTmp ] = this.calculateFilterRate(afFlowRate, aarPartials);
+            [ fFlowRate, ~ ] = this.calculateFilterRate(afFlowRate, aarPartials);
             
             
             % Test ...

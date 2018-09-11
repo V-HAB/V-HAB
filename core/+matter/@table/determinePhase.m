@@ -51,8 +51,6 @@ if ~this.ttxMatter.(sSubstance).bIndividualFile
     for k = 1:length(csPossiblePhase)
         csPossiblePhase{k} = strrep(csPossiblePhase{k},'t','');
     end
-    % TO DO: if multiple possible phases how to decide which one is
-    % correct?
     miPhase = find(strcmp(csPhase, csPossiblePhase{1}));
     
     return

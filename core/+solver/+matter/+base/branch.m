@@ -157,23 +157,17 @@ classdef branch < base & event.source
             
             end
         end
-        
-        function setUpdated(this)
-            % used by the residual solver to tell the branch that the
-            % flowrate has not changed even though the outdated function
-            % has been called.
-         	this.bRegisteredOutdated = false;
-        end
     end
     
     methods (Access = private)
         function executeUpdate(this, ~)
-            this.out(1, 1, 'executeUpdate', 'Call massupdate on both branches, depending on flow rate %f', { this.oBranch.fFlowRate });
+            if ~base.oLog.bOff, this.out(1, 1, 'executeUpdate', 'Call massupdate on both branches, depending on flow rate %f', { this.oBranch.fFlowRate }); end
             
             for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
                 this.oBranch.coExmes{iE}.oPhase.massupdate();
             end
             
+            this.oBranch.oThermalBranch.setOutdated();
             %CHECK-160514
             %this.update();
             this.registerUpdate();
@@ -187,11 +181,18 @@ classdef branch < base & event.source
                 return;
             end
             
+            % TO DO: why is this necessary when the calling function
+            % (execute update) already performs this? (and the function
+            % triggerign execute update also performs it
+            for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
+                this.oBranch.coExmes{iE}.oPhase.massupdate();
+            end
+            
             if this.bTriggerRegisterUpdateCallbackBound
                 this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
             end
-            
-            this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName });
+
+            if ~base.oLog.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end
             
             this.bRegisteredOutdated = true;
             this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
@@ -221,7 +222,7 @@ classdef branch < base & event.source
             %       flow rate direction changed!!
             %       -> setFlowRate automatically updates all!
             
-            this.out(1, 1, 'update', 'Setting flow rate %f for branch %s', { fFlowRate, this.oBranch.sName });
+            if ~base.oLog.bOff, this.out(1, 1, 'update', 'Setting flow rate %f for branch %s', { fFlowRate, this.oBranch.sName }); end
             
             this.fLastUpdate = this.oBranch.oTimer.fTime;
             
@@ -232,7 +233,7 @@ classdef branch < base & event.source
                 % zero
                 oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
 
-                if tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
+                if ~oIn.bFlow && tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
                     fFlowRate = 0;
                     afPressures = zeros(1, this.oBranch.iFlowProcs);
                 end

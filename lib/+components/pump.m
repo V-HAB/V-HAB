@@ -18,7 +18,10 @@ classdef pump < matter.procs.f2f
         iDir;                   % Direction of flow [ 1 -1 ]
         fDeltaPressure = 0;     % Pressure difference created by the pump in Pa
         
-        fPreviousSetpoint;      
+        fPreviousSetpoint;    
+        
+        % Switched off?
+        bActive = true;  
         
     end
         
@@ -31,7 +34,8 @@ classdef pump < matter.procs.f2f
             this.iDir = sif(fFlowRateSP > 0, 1, -1);
             
             this.supportSolver('hydraulic', -5, 0.1, true, @this.update);
-
+            this.supportSolver('callback', @this.solverDeltas);
+            
             %TODO support that!
             %this.supportSolver('callback',  @this.solverDeltas);
         end
@@ -90,6 +94,8 @@ classdef pump < matter.procs.f2f
             % It would start at extremely low numbers (e-55).
             if abs(fDeltaPressure) < this.fMinDeltaP
                 fDeltaPressure = this.fMinDeltaP;
+            elseif abs(fDeltaPressure) > this.fMaxDeltaP
+                fDeltaPressure = this.fMaxDeltaP;
             end
                 
             % Saving the current delta pressure for use in the next call of
@@ -97,8 +103,71 @@ classdef pump < matter.procs.f2f
             this.fDeltaPressure = fDeltaPressure;
         end
         
+        function fDeltaPressure = solverDeltas(this, fFlowRate)
+            
+            
+            % Switched off? No dP no matter what
+            if ~this.bActive
+                
+                % VERY IMPORTANT! No flow -> no heat transfer!!
+                this.fHeatFlow = 0;
+                
+                fDeltaPressure = 0;
+                this.fDeltaPressure = fDeltaPressure;
+                
+                return;
+            end
+            
+            if abs(fFlowRate) > this.fMaxFlowRate
+                % If the flow rate is larger than the maximum flow rate, so
+                % water is being forced through the pump, then it acts as a
+                % resistance and produces a negativ pressure rise; a
+                % pressure drop.
+                fDeltaPressure = this.fMaxDeltaP;
+                
+            % Check if we need to increase or decrease the flow rate
+            else 
+                if this.fFlowRateSP * this.iDir > fFlowRate * this.iDir
+                    iChangeDir = 1;
+                else
+                    iChangeDir = -1;
+                end
+                
+                % Changeing the delta pressure of the pump according to the
+                % current flow rate and the flow rate setpoint. 
+                % This is of course not very accurate...
+                rFactor = (this.fFlowRateSP - fFlowRate) / this.fFlowRateSP;
+                
+                % If the flow rate setpoint is set to zero from a value
+                % different than zero, this factor would become 'Inf'. 
+                if abs(rFactor) > 2
+                    rFactor = 2;
+                end
+                
+                fDeltaPressure = this.fDeltaPressure * (1 + rFactor * iChangeDir / this.fDampeningFactor);
+            
+            end
+            
+            % Need to set at least a minimum delta pressure, otherwise it
+            % will take the rFactor too long to get to meaningful values.
+            % It would start at extremely low numbers (e-55).
+            if abs(fDeltaPressure) < this.fMinDeltaP
+                fDeltaPressure = - this.fMinDeltaP;
+            elseif abs(fDeltaPressure) > this.fMaxDeltaP
+                fDeltaPressure = -this.fMaxDeltaP;
+            end
+                
+            % Saving the current delta pressure for use in the next call of
+            % this method.
+            this.fDeltaPressure = fDeltaPressure;
+        end
         function changeSetpoint(this, fNewSetpoint)
             this.fFlowRateSP = fNewSetpoint;
+            if fNewSetpoint == 0
+                this.bActive = false;
+            else
+                this.bActive = true;
+            end
         end
     end
 end

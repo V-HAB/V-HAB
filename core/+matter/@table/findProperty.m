@@ -485,7 +485,7 @@ else
     end
 
         fProperty = txMatterForSubstance.ttxPhases.(sPhaseStructName).(sPropertyNoSpaces);
-        if isnan(fProperty) || isempty(fProperty)
+        if isempty(fProperty) || isnan(fProperty)
             this.throw('findProperty', 'Error using findProperty. The matter data for %s (%s) does not include a value for %s.', sSubstance, sPhaseType, sProperty);
         else
             if bDebug == true

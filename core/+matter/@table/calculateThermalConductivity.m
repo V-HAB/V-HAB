@@ -245,7 +245,7 @@ else
     
     % If there is no temperature given, but pressure, set temperature to
     % standard temperature in [K]
-    if isempty(fTemperature); fTemperature = this.Standard.Temperature; end;
+    if isempty(fTemperature); fTemperature = this.Standard.Temperature; end
 end
    
 % If no mass is given the dynamic viscosity will be zero, so no need to do

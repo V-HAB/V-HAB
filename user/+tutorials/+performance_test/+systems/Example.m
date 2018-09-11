@@ -86,6 +86,8 @@ classdef Example < vsys
                 %solver.matter.manual.branch(this.aoBranches(2));
                 solver.matter.residual.branch(this.aoBranches(2));
             end
+            
+            this.setThermalSolvers();
         end
     end
     

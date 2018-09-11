@@ -158,6 +158,9 @@ classdef setup < simulation.infrastructure
         
         function switchDebugState(this, oTimer)
             
+            % TO DO: Move this to a seperate tutorial! The basic P2P
+            % tutorial should not throw a bunch of debugging messages in
+            % between
             return;
             
             iTick  = oTimer.iTick;
@@ -200,164 +203,64 @@ classdef setup < simulation.infrastructure
         
         function configureMonitors(this)
             
-            
-            %this.oSimulationContainer.oTimer.setMinStep(1e-12);
-            
-            
-            %this.toMonitors.oConsoleOutput.setLogOn().setLevel(3);
-            
             %% Logging
-            % Creating a cell setting the log items. You need to know the
-            % exact structure of your model to set log items, so do this
-            % when you are done modelling and ready to run a simulation. 
+            oLog = this.toMonitors.oLogger;
+            
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            for iStore = 1:length(csStores)
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'this.fMass * this.fMassToPressure',	'Pa', [csStores{iStore}, ' Pressure']);
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+            end
+            
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            for iBranch = 1:length(csBranches)
+                oLog.addValue(['Example.toBranches.', csBranches{iBranch}],             'fFlowRate',    'kg/s', [csBranches{iBranch}, ' Flowrate']);
+            end
             
             
-            oLogger = this.toMonitors.oLogger;
+            oLog.addValue('Example:s:Atmos.aoPhases(1)', 'afMass(this.oMT.tiN2I.O2)',   'kg',       'O_2 Mass in Atmosphere');
+            oLog.addValue('Example:s:Filter.aoPhases(2)', 'afMass(this.oMT.tiN2I.O2)',  'kg',       'O_2 Mass in Filter');
             
-            
-            this.tiLog.M2P_Atmos  = oLogger.addValue('Example:s:Atmos.aoPhases(1)', 'fMassToPressure', 'Atmos mass2press', 'Pa/kg');
-            this.tiLog.M2P_Filter = oLogger.addValue('Example:s:Filter.aoPhases(1)', 'fMassToPressure', 'Filter mass2press', 'Pa/kg');
-            
-            this.tiLog.M_Atmos = oLogger.addValue('Example:s:Atmos.aoPhases(1)', 'fMass', 'Atmos Mass', 'kg');
-            %oL.addValue('Example:s:Atmos.toPhases.Atmos_Phase_1', 'fMass', 'Atmos Mass', 'kg');
-            
-            this.tiLog.M_Filter   = oLogger.addValue('Example:s:Filter.aoPhases(1)', 'fMass', 'Filter Mass', 'kg');
-            this.tiLog.M_Filtered = oLogger.addValue('Example:s:Filter.aoPhases(2)', 'fMass', 'Filtered Mass', 'kg');
-            
-            this.tiLog.PM_O2_Atmos    = oLogger.addValue('Example:s:Atmos.aoPhases(1)', 'afMass(this.oMT.tiN2I.O2)', 'Atmos O2', 'kg');
-            this.tiLog.PM_O2_Filtered = oLogger.addValue('Example:s:Filter.aoPhases(2)', 'afMass(this.oMT.tiN2I.O2)', 'Filtered O2', 'kg');
-            
-            this.tiLog.FR_AtmFlt  = oLogger.addValue('Example.aoBranches(1)', 'fFlowRate', 'Flow Rate To Filter', 'kg/s');
-            this.tiLog.FR_FltAtm  = oLogger.addValue('Example.aoBranches(2)', 'fFlowRate', 'Flow Rate From Filter', 'kg/s');
-            this.tiLog.FR_FltProc = oLogger.addValue('Example:s:Filter.oProc', 'fFlowRate', 'Proc Flow Rate', 'kg/s');
-            
-            
-            
-            
-% %             oLog = this.toMonitors.oLogger;
-% %             
-% %             this.tiLog.Atmos_Mass = oLog.addValue('Tutorial_p2p/Example:s:Atmos.aoPhases(1).fMass', 'Atmos Mass', 'kg');
-% %             this.tiLog.Filter_Phase1_Mass = oLog.addValue('Tutorial_p2p/Example:s:Filter.aoPhases(1).fMass', 'Filter Mass', 'kg');
-% %             this.tiLog.Filter_Phase2_Mass = oLog.addValue('Tutorial_p2p/Example:s:Filter.aoPhases(1).fMass', 'Filtered Mass', 'kg');
-% % 
-% %             
-% %             this.tiLog.FR1 = oLog.addValue('Tutorial_p2p/Example.aoBranches(1).fFlowRate', 'Flow Rate To Filter', 'kg/s');
-% %             this.tiLog.FR2 = oLog.addValue('Tutorial_p2p/Example.aoBranches(2).fFlowRate', 'Flow Rate From Filter', 'kg/s');
-% %             
-% %             this.tiLog.FR1 = oLog.addValue('Tutorial_p2p/Example.aoBranches(1)', 'fFlowRate', 'Flow Rate To Filter', 'kg/s');
-            
-            
-            
-%             this.csLog = {
-%                 % System timer
-%                 'oData.oTimer.fTime';                                           %1
-% 
-%                 % Add other parameters here
-%                 'toChildren.Example.toStores.Atmos.aoPhases(1).fMassToPressure';      %2
-%                 'toChildren.Example.toStores.Filter.aoPhases(1).fMassToPressure';     
-% 
-%                 'toChildren.Example.aoBranches(1).fFlowRate';                   %4
-%                 'toChildren.Example.aoBranches(2).fFlowRate';                   
-% 
-%                 'toChildren.Example.toStores.Filter.oProc.fFlowRate';           %6
-% 
-%                 'toChildren.Example.toStores.Atmos.aoPhases(1).afMass(this.oData.oMT.tiN2I.O2)';      
-%                 'toChildren.Example.toStores.Filter.aoPhases(2).afMass(this.oData.oMT.tiN2I.O2)';     %8
-% 
-%                 'toChildren.Example.toStores.Atmos.aoPhases(1).fMass';
-%                 'toChildren.Example.toStores.Filter.aoPhases(2).fMass';         %10
-%                 'toChildren.Example.toStores.Filter.aoPhases(1).fMass';         
-%             };
+            oLog.addValue('Example:s:Filter.toProcsP2P.filterproc', 'fFlowRate',                        'kg/s',  	'P2P Filter Flow Rate');
             
         end
         
-        
-        
-        function plot(this)
+        function plot(this) % Plotting the results
             
-            %close all 
+            %% Define Plots
             
-            oLogger = this.toMonitors.oLogger;
-            
-            [ mfLog, tConfig ] = oLogger.get(1:length(oLogger.tLogValues));
+            close all
+            oPlotter = plot@simulation.infrastructure(this);
             
             
+            csStores = fieldnames(this.oSimulationContainer.toChildren.Example.toStores);
+            csPressures = cell(length(csStores),1);
+            csTemperatures = cell(length(csStores),1);
+            for iStore = 1:length(csStores)
+                csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
+                csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+            end
             
-            figure('name', 'Tank Pressures');
-            hold on;
-            grid minor;
-            %plot(this.mfLog(:,1), this.mfLog(:, [ 2 3 ]) .* this.mfLog(:, [ 9 11 ]));
-            plot(oLogger.afTime, mfLog(:, [ 1 2 ]) .* mfLog(:, [ 3 4 ]));
-            %plot(oLogger.afTime, mfLog(:, [ this.tiLog.M2P_Atmos this.tiLog.M2P_Filter ]) .* mfLog(:, [ this.tiLog.M_Atmos this.tiLog.M_Filter ]));
-            legend('Atmos', 'Filter Flow');
-            ylabel('Pressure in Pa');
-            xlabel('Time in s');
+            csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
+            csFlowRates = cell(length(csBranches),1);
+            for iBranch = 1:length(csBranches)
+                csFlowRates{iBranch} = ['"', csBranches{iBranch}, ' Flowrate"'];
+            end
             
+            tPlotOptions.sTimeUnit = 'seconds';
+            tFigureOptions = struct('bTimePlot', false, 'bPlotTools', false);
             
-            figure('name', 'Tank Masses');
-            hold on;
-            grid minor;
-            plot(oLogger.afTime, mfLog(:, [ 3 4 5 ]));
-            legend('Atmos', 'Filter Flow', 'Filtered');
-%             plot(oLogger.afTime, mfLog(:, [ 4 ]));
-%             legend('Filter Flow');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
+            csIndividualPlots = {'"O_2 Mass in Atmosphere"', '"O_2 Mass in Filter"',  '"P2P Filter Flow Rate"'};
 
+            coPlots{1,1} = oPlotter.definePlot(csPressures,     'Pressures', tPlotOptions);
+            coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
+            coPlots{1,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
+            coPlots{2,2} = oPlotter.definePlot(csIndividualPlots,  'Random Plots', tPlotOptions);
+            oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
             
-            
-            %oPlotter.addPlot({ 'FR1', 'FR2' }, 'Filter Flow Rates');
-            
-            
-            figure('name', 'Flow Rates');
-            hold on;
-            grid minor;
-            %plot(this.mfLog(:,1), this.mfLog(:, [ this.tiLog.FR1 this.tiLog.FR2 ]));
-            plot(oLogger.afTime, mfLog(:, [ 8 9 ]));
-            legend('atmos to filter', 'filter to atmos');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
-
-            figure('name', 'Filter Rate');
-            hold on;
-            grid minor;
-            %plot(this.mfLog(:,1), this.mfLog(:, 6));
-            plot(oLogger.afTime, mfLog(:, 10));
-            legend('filter filter');
-            ylabel('flow rate [kg/s]');
-            xlabel('Time in s');
-
-
-            figure('name', 'Tank O2 Masses');
-            hold on;
-            grid minor;
-            %plot(this.mfLog(:,1), this.mfLog(:, 7:8));
-            plot(oLogger.afTime, mfLog(:, [ 6 7 ]));
-            legend('Atmos', 'Filtered');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
-
-            figure('name', 'Tank Masses');
-            hold on;
-            grid minor;
-            %plot(this.mfLog(:,1), this.mfLog(:, 9:11));
-            plot(oLogger.afTime, mfLog(:, [ 3 4 5 ]));
-            legend('Atmos', 'Filter Flow', 'Filter Stored');
-            ylabel('Mass in kg');
-            xlabel('Time in s');
-            
-            
-            figure('name', 'Time Step');
-            hold on;
-            grid minor;
-            %plot(1:length(this.mfLog(:,1)), this.mfLog(:, 1), '-*');
-            plot(1:length(oLogger.afTime), oLogger.afTime, '-*');
-            legend('Solver');
-            ylabel('Time Step [kg/s]');
-            xlabel('Time in s');
-            
-            tools.arrangeWindows();
+            oPlotter.plot();
         end
+        
     end
     
 end

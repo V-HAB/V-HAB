@@ -22,7 +22,7 @@ iV = 1;
 sStorePath = [ sPath '.toStores.' oPhase.oStore.sName ];
 sPhasePath = [ sStorePath '.toPhases.' oPhase.sName ];
 
-for iC = 1:length(csSubstances);
+for iC = 1:length(csSubstances)
     
     tLogProps(iV).sObjectPath = sPhasePath;
     tLogProps(iV).sExpression = [ 'afPP(' num2str(oVsys.oMT.tiN2I.(csSubstances{iC})) ')' ];

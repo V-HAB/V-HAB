@@ -307,6 +307,7 @@ classdef Incompressible_System < vsys
             %(oSystem, fMinTimeStep, fMaxTimeStep, fMaxProcentualFlowSpeedChange, iPartialSteps, iLastSystemBranch, fSteadyStateTimeStep, fSteadyStateAcceleration, mLoopBranches)  
             this.oSystemSolver = solver.matter.incompressible_liquid.system_incompressible_liquid(this, 1e-2, 5, 1e-1, 30, iIncompBranches, 10, 10, mLoopBranches);
            
+            this.setThermalSolvers();
             
 %             for iI = 1:length(this.aoBranches)
 %                 solver.matter.linear.branch(this.aoBranches(iI));

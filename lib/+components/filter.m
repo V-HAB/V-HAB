@@ -212,13 +212,14 @@ classdef filter < matter.store
             % Creating the phase representing the filter volume manually.
             % gas(oStore, sName, tfMasses, fVolume, fTemp)
             tfMass.AmineSA9T = this.oMT.ttxMatter.AmineSA9T.ttxPhases.tSolid.Density * this.oGeometry.fVolume * (1-this.rVoidFraction);
-            matter.phases.absorber(this, 'FilteredPhase', tfMass, fTemperature, 'solid');
+            matter.phases.mixture(this, 'FilteredPhase', 'solid', tfMass, this.oGeometry.fVolume, fTemperature, fPressure);
 
             % Fixed Time Step
             if exist('fFixedTimeStep','var')
             % Adding fixed time steps for the filter
-                this.toPhases.FlowPhase.fFixedTS     = fFixedTimeStep;
-                this.toPhases.FilteredPhase.fFixedTS = fFixedTimeStep;
+                tTimeStepProperties.fFixedTimeStep = fFixedTimeStep;
+                this.toPhases.FlowPhase.setTimeStepProperties(tTimeStepProperties);
+                this.toPhases.FilteredPhase.setTimeStepProperties(tTimeStepProperties);
             end
             
             % Create the according exmes - default for the external

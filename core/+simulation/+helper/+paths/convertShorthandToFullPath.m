@@ -1,7 +1,10 @@
 function sPath = convertShorthandToFullPath(sShortPath)
-%CONVERTSHORTHANDTOFULLPATH Summary of this function goes here
-%   Detailed explanation goes here
-
+%CONVERTSHORTHANDTOFULLPATH Converts shorthand object paths into full V-HAB paths
+%   In an effort to shorten the paths used for logging, field names and
+%   other uses, several strings, like for instance '.toStores.', are
+%   replaced with shorter versions. In this example it would be ':s:'. This
+%   function reverses these replacements and returns the full V-HAB object
+%   path for programmatic use.
 
     sPath  = strrep(sShortPath, '/', ':c:');
     tsConv = struct(...

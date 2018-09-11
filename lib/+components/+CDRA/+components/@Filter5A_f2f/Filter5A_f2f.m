@@ -29,6 +29,9 @@ classdef Filter5A_f2f < matter.procs.f2f
             this.supportSolver('manual', true, @this.update);
         end
         
+        function updateThermal(this)
+            this.update();
+        end
         function update(this)
             
             fTimeStep = this.oBranch.oContainer.oTimer.fTime - this.fLastExec;
@@ -64,7 +67,7 @@ classdef Filter5A_f2f < matter.procs.f2f
             %may not be entirely correct, but it is definitly better than
             %the previous calculations using natural convection.
             try
-                fConvection_alpha = convection_plate (1.0922, fFlowSpeed, fDynVisc, fDensity, fThermCond, this.oFilter.toPhases.PhaseIn.fSpecificHeatCapacity);
+                fConvection_alpha = convection_plate (1.0922, fFlowSpeed, fDynVisc, fDensity, fThermCond, this.oFilter.toPhases.PhaseIn.oCapacity.fSpecificHeatCapacity);
                 this.iFailedConvectionCalculationCounter = 0;
             catch
                 this.iFailedConvectionCalculationCounter = this.iFailedConvectionCalculationCounter + 1;

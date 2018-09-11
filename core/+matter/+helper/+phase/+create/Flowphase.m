@@ -14,9 +14,9 @@ fMolarMassH2O = oStore.oMT.afMolarMass(oStore.oMT.tiN2I.H2O);   % molar mass of 
 
 % Check input arguments, set default
 %TODO for fTemperature, rRH, fPress -> key/value pairs?
-if nargin < 3, fTemperature = 273.15; end;
-if nargin < 4, rRH          = 0;      end;
-if nargin < 5, fPressure    = 101325; end;
+if nargin < 3, fTemperature = 273.15; end
+if nargin < 4, rRH          = 0;      end
+if nargin < 5, fPressure    = 101325; end
 
 % p V = m / M * R_m * T  <=>  m = p * V * M / (R_m * T)
 fMass = fPressure * fVolume * fMolarMassH2O / (fRm * fTemperature);
@@ -31,7 +31,7 @@ tfMass = struct(...
 % Check relative humidity - add?
 % See http://en.wikipedia.org/wiki/Vapor_pressure
 if rRH > 0
-    fSatPressure = 6.11213 * exp(17.62 * fTemperature / (243.12 + fTemperature)) * 100;
+    fSatPressure = this.oMT.calculateVaporPressure(fTemperature, 'H2O');
     
     % Pressure to absolute mass - pV = nRT -> p is saturation pressure
     tfMass.H2O = fSatPressure * fMolarMassH2O / fRm / fTemperature * fVolume;

@@ -170,9 +170,9 @@ classdef circuit < base & event.source
         function connectSubsystemInterfaces(this, sLeftSysAndIf, sRightSysAndIf, csProcsLeft, csProcsRight, fVolume)
             %TODO error check if sys, if etc doesn't exist
             
-            if nargin < 4 || isempty(csProcsLeft),  csProcsLeft  = {}; end;
-            if nargin < 5 || isempty(csProcsRight), csProcsRight = {}; end;
-            if nargin < 6, fVolume = []; end;
+            if nargin < 4 || isempty(csProcsLeft),  csProcsLeft  = {}; end
+            if nargin < 5 || isempty(csProcsRight), csProcsRight = {}; end
+            if nargin < 6, fVolume = []; end
             
             % Get left, right child sysmtes
             [ sLeftSys, sLeftSysIf ] = strtok(sLeftSysAndIf, '.');

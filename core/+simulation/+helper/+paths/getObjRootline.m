@@ -25,6 +25,7 @@ function [ coRootLine, sPath ] = getObjRootline(oObj)
         'matter.table', '', '';
         'simulation.configuration_parameters', '', '';
         'simulation.monitor', '', '';
+        'tools.postprocessing.plotter.plotter_basic', '', '';
     };
     
 
@@ -75,7 +76,7 @@ function [ coRootLine, sPath ] = getObjRootline(oObj)
             sC = csParentChildKeys{iC};
             
             if oObj == toParentChildStruct.(sC)
-                sPath = [ '.to' cParentRefs{iRow, 3} '.' sC sPath ];
+                sPath = strcat('.to', cParentRefs{iRow, 3}, '.', sC, sPath);
                 
                 break;
             end

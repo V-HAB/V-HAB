@@ -40,10 +40,7 @@ classdef gas < matter.phase
         % Relative humidity in the phase, see this.update() for details on
         % the calculation.
         rRelHumidity
-        
-        % Counter to check how many ticks in a row the humidity has been
-        % above 1
-        iCondensationCounter = 0;
+    
     end
     
     
@@ -59,10 +56,11 @@ classdef gas < matter.phase
             %TODO
             %   - not all params required, use defaults?
             %   - volume from store ...?
+            
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             % Get volume from 
-            if nargin < 4 || isempty(fVolume), fVolume = oStore.fVolume; end;
+            if nargin < 4 || isempty(fVolume), fVolume = oStore.fVolume; end
             
             this.fVolume  = fVolume;
             this.fDensity = this.fMass / this.fVolume;
@@ -71,7 +69,17 @@ classdef gas < matter.phase
             this.fPressure = this.fMass * this.fMassToPressure;
             this.fPressureLastHeatCapacityUpdate = this.fPressure;
             
+            
             [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
+            
+            if this.afPP(this.oMT.tiN2I.H2O)
+                % calculate saturation vapour pressure [Pa];
+                fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
+                % calculate relative humidity
+                this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
+            else
+                this.rRelHumidity = 0;
+            end
         end
         
         
@@ -109,7 +117,43 @@ classdef gas < matter.phase
             % Check for volume not empty, when called from constructor
             %TODO see above, generally support empty volume? Treat a zero
             %     and an empty ([]) volume differently?
-            if ~isempty(this.fVolume)
+            if this.bFlow && this.oTimer.iTick > 0
+                % to ensure that flow phases set the correct values and do
+                % not confuse the user, a seperate calculation for them is
+                % necessary
+                afPartialMassFlow_In    = zeros(this.iProcsEXME, this.oMT.iSubstances);
+                
+                for iExme = 1:this.iProcsEXME
+                    fFlowRate = this.coProcsEXME{iExme}.iSign * this.coProcsEXME{iExme}.oFlow.fFlowRate;
+                    if fFlowRate > 0
+                        afPartialMassFlow_In(iExme,:)   = this.coProcsEXME{iExme}.oFlow.arPartialMass .* fFlowRate;
+                    end
+                end
+                % See ideal gas mixtures for information on this
+                % calculation: "Ideally the ratio of partial pressures
+                % equals the ratio of the number of molecules. That is, the
+                % mole fraction of an individual gas component in an ideal
+                % gas mixture can be expressed in terms of the component's
+                % partial pressure or the moles of the component"
+                afCurrentMolsIn     = (sum(afPartialMassFlow_In,1) ./ this.oMT.afMolarMass);
+                arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
+                afPartialPressure   = arFractions .*  this.fPressure;
+                
+                afPartialPressure(isnan(afPartialPressure)) = 0;
+                afPartialPressure(afPartialPressure < 0 ) = 0;
+                
+                this.afPP = afPartialPressure;
+                
+                if this.afPP(this.oMT.tiN2I.H2O)
+                    % calculate saturation vapour pressure [Pa];
+                    fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
+                    % calculate relative humidity
+                    this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
+                else
+                    this.rRelHumidity = 0;
+                end
+                
+            elseif ~isempty(this.fVolume)
                 this.fMassToPressure = this.calculatePressureCoefficient();
                 
                 this.fPressure = this.fMass * this.fMassToPressure;
@@ -142,7 +186,6 @@ classdef gas < matter.phase
             else
                 this.fPressure = 0;
             end
-            
         end
         
         function [ afPartialPressures ] = getPartialPressures(this)
@@ -176,89 +219,20 @@ classdef gas < matter.phase
 
         end
         
-        function updateSpecificHeatCapacity(this)
-            % When a phase was empty and is being filled with matter again,
-            % it may be a couple of ticks until the phase.update() method
-            % is called, which updates the phase's specific heat capacity.
-            % Other objects, for instance matter.flow, may require the
-            % correct value for the heat capacity as soon as there is
-            % matter in the phase. In this case, these objects can call
-            % this function, that will update the fSpecificHeatCapacity
-            % property of the phase.
+        function setTemperature(this, oCaller, fTemperature)
+            % This function can only be called from the ascociated capacity
+            % (TO DO: Implement the check) and ensure that the temperature
+            % calculated in the thermal capacity is identical to the phase
+            % temperature (by using a set function in the capacity that
+            % always calls this function as well)
+            if ~isa(oCaller, 'thermal.capacity')
+                this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by capacity objects. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
+            end
+                
+            this.fTemperature = fTemperature;
             
-            % In order to reduce the amount of times the matter
-            % calculation is executed it is checked here if the pressure
-            % and/or temperature have changed significantly enough to
-            % justify a recalculation
-            % TO DO: Make limits adaptive
-            if (this.oTimer.iTick <= 0) ||... %necessary to prevent the phase intialization from crashing the remaining checks
-               (abs(this.fPressureLastHeatCapacityUpdate - this.fPressure) > 100) ||...
-               (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
-               (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
-                
-                this.out(1, 1, 'name', '%s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName });
-                
-                this.out(1, 2, 'last', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
-                this.out(1, 2, 'last', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
-                this.out(1, 2, 'last', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
-                this.out(1, 2, 'last', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
-                
-                % Well if the humidity is above 1 the matter table will
-                % usually crash. If this is only the case because the
-                % pressure update occurs after the mass update and the
-                % recalculation of the partial pressures this will fix it.
-                % Otherwise the logic will use the previous values but at
-                % most for 5 Ticks. If it is longer than that an error will
-                % be given to tell the user that condensation occurs in one
-                % of the phases. This was implemented because in a system
-                % that regulates the humidity/partial pressure of H2O it is
-                % necessary for the phase to have the high value in at
-                % least one tick for the regulation to kick in. The
-                % humidity currently can change by more than 100% within
-                % one tick, and therefore it is necessary to give
-                % regulating p2ps or other components time to react to the
-                % increase in humidity
-                if this.rRelHumidity > 1
-                    [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
-                    try
-                        % Actually updating the specific heat capacity  
-                        this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
-                        this.iCondensationCounter                 = 0;
-                
-                        % Setting the properties for the next check
-                        this.fPressureLastHeatCapacityUpdate     = this.fPressure;
-                        this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
-                        this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
-                    catch
-                        % The upate failed and the old value will be kept,
-                        % but a counter will be used to check that this
-                        % does not occur too often
-                        this.iCondensationCounter = this.iCondensationCounter + 1;
-                        
-                        % Enforce update on next tick!
-                        this.fPressureLastHeatCapacityUpdate     = -1;
-                        this.fTemperatureLastHeatCapacityUpdate  = -1;
-                        this.arPartialMassLastHeatCapacityUpdate = -1;
-                        
-                        if this.iCondensationCounter > 5
-                            error(['In the system ',this.oStore.oContainer.sName,' within the store ',this.oStore.sName,' in the phase ',this.sName,' condensation is occuring which prevents the matter table from recalculating the matter properties'])
-                        end
-                    end
-                else
-                    % Actually updating the specific heat capacity  
-                    this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
-                    this.iCondensationCounter                 = 0;
-
-                    % Setting the properties for the next check
-                    this.fPressureLastHeatCapacityUpdate     = this.fPressure;
-                    this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
-                    this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
-                    this.out(1, 2, 'curr', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
-                    this.out(1, 2, 'curr', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
-                    this.out(1, 2, 'curr', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
-                    this.out(1, 2, 'curr', 'fTemperatureLastHeatCapacityUpdate: %f [K]', { this.fTemperatureLastHeatCapacityUpdate });
-
-                end
+            if ~isempty(this.fVolume)
+                this.fMassToPressure = this.calculatePressureCoefficient();
             end
         end
     end
