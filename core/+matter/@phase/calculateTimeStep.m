@@ -258,5 +258,5 @@ this.oStore.setNextTimeStep(fNewStep);
 this.fTimeStep = fNewStep;
 
 % Now up to date!
-this.bOutdatedTS = false;
+this.bOutdatedTimeStep = false;
 end
