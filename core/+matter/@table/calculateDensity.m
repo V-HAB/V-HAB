@@ -108,6 +108,14 @@ else
     sMatterState = varargin{1};
     afMass       = varargin{2};
     
+    if isstruct(afMass)
+        tfMass = afMass;
+        afMass = zeros(1, this.iSubstances);
+        csSubstances = fieldnames(tfMass);
+        for iSubstance = 1:length(csSubstances)
+            afMass(this.tiN2I.(csSubstances{iSubstance})) = tfMass.(csSubstances{iSubstance});
+        end
+    end
     arPartialMass = afMass ./ sum(afMass);
     
     % if no mass given also no density possible

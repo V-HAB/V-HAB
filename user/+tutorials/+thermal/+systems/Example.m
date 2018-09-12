@@ -25,19 +25,9 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName, 1);
             
-            tutorials.thermal_test.subsystems.ExampleSubsystem(this, 'SubSystem');
+            tutorials.thermal.subsystems.ExampleSubsystem(this, 'SubSystem');
             
-            % Make the system configurable
-%             disp(this);
-%             disp('------------');
-%             disp(this.oRoot.oCfgParams.configCode(this));
-%             disp('------------');
-%             disp(this.oRoot.oCfgParams.get(this));
-%             disp('------------');
             eval(this.oRoot.oCfgParams.configCode(this));
-            
-            %disp(this);
-            
             
         end
         
@@ -57,8 +47,9 @@ classdef Example < vsys
             
             
             % Creating a store, volume 1 m^3
-            tfMasses = struct('Zeolite5A', 4);
-            fSolidVolume = this.oMT.calculateSolidVolume(tfMasses, 293.15, true);
+            fZeoliteMass = 4;
+            tfMasses = struct('Zeolite5A', fZeoliteMass);
+            fSolidVolume = fZeoliteMass / this.oMT.calculateDensity('solid', tfMasses, 293.15, 1e5);
             matter.store(this, 'Tank_1', 1 + fSolidVolume);
             
             % Filtered phase

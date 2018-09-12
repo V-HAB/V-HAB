@@ -49,17 +49,7 @@ classdef setup < simulation.infrastructure
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            oSys = tutorials.thermal_test.systems.Example(this.oSimulationContainer, 'Example');
-            
-            % This is an alternative to providing the ttMonitorConfig above
-            %this.toMonitors.oConsoleOutput.setReportingInterval(10, 1);
-            
-            
-            
-            
-            
-            %solver.thermal.lumpedparameter(oSys);
-            
+            tutorials.thermal.systems.Example(this.oSimulationContainer, 'Example');
             
 
             %% Simulation length
@@ -85,8 +75,6 @@ classdef setup < simulation.infrastructure
             % when you are done modelling and ready to run a simulation. 
             
             oLog = this.toMonitors.oLogger;
-%             this.toMonitors.oConsoleOutput.setLogOn();
-%             this.toMonitors.oConsoleOutput.setLevel(5);
             
             % Aside from using the shortcut helpers like flow_props you can
             % also specfy the exact value you want to log. For this you

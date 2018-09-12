@@ -23,7 +23,7 @@ classdef ExampleSubsystem < vsys
             createMatterStructure@vsys(this);
             
             % Creating a filter as shown in the p2p Example
-            tutorials.thermal_test.components.Filter(this, 'Filter', 10);
+            tutorials.thermal.components.Filter(this, 'Filter', 10);
             
             % Creating the branch from the parent system into this subsystem
             % Input parameter format is always: 
@@ -67,7 +67,7 @@ classdef ExampleSubsystem < vsys
             fLength     = 1;
             fBroadness  = 0.1;
             fFlowArea   = fBroadness * 0.1;
-            tutorials.thermal_test.components.convection_Filter(this, 'Convective_Conductor', fLength, fBroadness, fFlowArea, this.toBranches.Inlet, 1);
+            tutorials.thermal.components.convection_Filter(this, 'Convective_Conductor', fLength, fBroadness, fFlowArea, this.toBranches.Inlet, 1);
             
             thermal.branch(this, 'Filter.Convective_Flow', {'Convective_Conductor'}, 'Filter.Convective_Filtered', 'Convective_Branch');
             
