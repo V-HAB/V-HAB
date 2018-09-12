@@ -43,7 +43,7 @@ classdef Example < vsys
     end
     
     methods
-        function this = Example(oParent, sName, bSimpleCDRA)
+        function this = Example(oParent, sName)
             % Call parent constructor. Third parameter defined how often
             % the .exec() method of this subsystem is called. This can be
             % used to change the system state, e.g. close valves or switch
@@ -78,12 +78,12 @@ classdef Example < vsys
             sCCAA = 'CCAA';
             
             % Adding the subsystem CDRA
-            if bSimpleCDRA
-                components.CDRA.CDRA_simple(this, 'CDRA', 60, tAtmosphere, sCCAA);
-            else
+            try
+                tInitialization = oParent.oCfgParams.ptConfigParams('tInitialization');
+                components.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA, tInitialization);
+            catch
                 components.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA);
             end
-            
             eval(this.oRoot.oCfgParams.configCode(this));
             
         end
