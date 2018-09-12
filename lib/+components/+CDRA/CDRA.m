@@ -34,14 +34,6 @@ classdef CDRA < vsys
         %flow rate.
         fFlowrateMain = 0;                  % [kg/s]
         
-        % Initialitation time for the pressure to reach "nominal"
-        % conditions after a CDRA cycle switch
-        fInitTime = 10;                 % [s]
-        
-        % Number of steps taken within the initialitation time to built up
-        % the pressure
-        iInitStep = 250;                % [-]
-        
         % Subsystem name for the CCAA that is connected to this CDRA
         sAsscociatedCCAA;
         
@@ -57,10 +49,6 @@ classdef CDRA < vsys
         % imitation (since no data on Vozdukh is available)
         % TO DO: Implement, but does this even make sense?
         bVozdukh = false;
-        
-        % Number of cells within the current adsorption cycle (THIS DOES
-        % NOT INLCUDE THE CELLS IN THE BED CURRENTLY DESORBING!)
-        iCells;
         
         % The Geometry struct contains information about the geometry of
         % the beds (either order by bed in the substructs or order by cell
@@ -81,11 +69,6 @@ classdef CDRA < vsys
         % the constructor in the initialization struct. Please view to
         % constructor for more information on what field can be set!
         tInitializationOverwrite
-        
-        fPipelength         = 1;
-        fPipeDiameter       = 0.1;
-        fFrictionFactor     = 2e-4;
-        
     end
     
     methods
@@ -108,7 +91,6 @@ classdef CDRA < vsys
             %bed back into the cabin before the bed is connected to vacuum.
             this.tTimeProperties.fAirSafeTime = 10*60; % [s]
             this.tTimeProperties.fLastCycleSwitch = -10000;
-            this.tTimeProperties.bInit = false;
             
             if nargin >= 5
                 this.tInitializationOverwrite = tInitializationOverwrite;
@@ -290,28 +272,10 @@ classdef CDRA < vsys
             nSpheres_5A = (tInitialization.Zeolite13x.tfMassAbsorber.Zeolite13x/(this.oMT.ttxMatter.Zeolite13x.ttxPhases.tSolid.Density * 4.85e-9));
             this.tGeometry.Zeolite5A.fAbsorberSurfaceArea       = (13.85e-6)*nSpheres_5A;
             
-            % For the thermal calculations during which nothing flow the
-            % free gas distance is necessary as value. This is assumed to
-            % be half the diameter of the spheres
-            this.iCells = 2*tInitialization.Sylobead.iCellNumber + 2*tInitialization.Zeolite13x.iCellNumber + tInitialization.Zeolite5A.iCellNumber;
-            
-            this.tGeometry.mfAbsorbentRadius = zeros(this.iCells+tInitialization.Zeolite5A.iCellNumber,1);
-            this.tGeometry.mfAbsorbentRadius(1:tInitialization.Sylobead.iCellNumber) = 2.25e-3/2;
-            
-            iCurrentCell = tInitialization.Sylobead.iCellNumber+1;
-            this.tGeometry.mfAbsorbentRadius(iCurrentCell : iCurrentCell+tInitialization.Zeolite13x.iCellNumber) = 2.19e-3/2;
-            
-            iCurrentCell = tInitialization.Sylobead.iCellNumber + tInitialization.Zeolite13x.iCellNumber + 1;
-            this.tGeometry.mfAbsorbentRadius(iCurrentCell:iCurrentCell+tInitialization.Zeolite5A.iCellNumber) = 2.21e-3/2;
-            
-            iCurrentCell = tInitialization.Sylobead.iCellNumber + tInitialization.Zeolite13x.iCellNumber + tInitialization.Zeolite5A.iCellNumber + 1;
-            this.tGeometry.mfAbsorbentRadius(iCurrentCell:iCurrentCell+tInitialization.Zeolite13x.iCellNumber) = 2.19e-3/2;
-            
-            iCurrentCell = tInitialization.Sylobead.iCellNumber + 2*tInitialization.Zeolite13x.iCellNumber + tInitialization.Zeolite5A.iCellNumber + 1;
-            this.tGeometry.mfAbsorbentRadius(iCurrentCell:iCurrentCell+tInitialization.Sylobead.iCellNumber) = 2.25e-3/2;
-            
-            iCurrentCell = 2*tInitialization.Sylobead.iCellNumber + 2*tInitialization.Zeolite13x.iCellNumber + tInitialization.Zeolite5A.iCellNumber + 1;
-            this.tGeometry.mfAbsorbentRadius(iCurrentCell:iCurrentCell+tInitialization.Zeolite5A.iCellNumber) = 2.21e-3/2;
+            % Define the standard values used for pipes
+            fPipelength         = 1;
+            fPipeDiameter       = 0.1;
+            fFrictionFactor     = 2e-4;
             
             % Now all values to create the system are defined and the 6
             % absorbers can be defined. There will be 6 absorbers because
@@ -455,7 +419,7 @@ classdef CDRA < vsys
                         oP2P.iCell = iCell;
                         
                         sPipeName = ['Pipe_', sName, '_', num2str(iCell)];
-                        components.pipe(this, sPipeName, this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
+                        components.pipe(this, sPipeName, fPipelength, fPipeDiameter, fFrictionFactor);
                         
                         % Each cell is connected to the next cell by a branch, the
                         % first and last cell also have the inlet and outlet branch
@@ -500,7 +464,7 @@ classdef CDRA < vsys
             % because the location from which the air is supplied is
             % different
             components.valve_closable(this, 'Cycle_One_InletValve', 0);
-            components.pipe(this, 'Cycle_One_InletPipe', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
+            components.pipe(this, 'Cycle_One_InletPipe', fPipelength, fPipeDiameter, fFrictionFactor);
             
             sBranchName = 'CDRA_Air_In_1';
             oBranch = matter.branch(this, 'Sylobead_1.Inflow_1', {'Cycle_One_InletValve', 'Cycle_One_InletPipe'}, 'CDRA_Air_In_1', sBranchName);
@@ -510,20 +474,20 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oFlowPhase, 'Outlet');
             
             components.valve_closable(this, 'Cycle_Two_OutletValve', 0);
-            components.pipe(this, 'Cycle_Two_OutletPipe', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
+            components.pipe(this, 'Cycle_Two_OutletPipe', fPipelength, fPipeDiameter, fFrictionFactor);
             
             sBranchName = 'CDRA_Air_Out_2';
             oBranch = matter.branch(this, 'Sylobead_1.Outlet', {'Cycle_Two_OutletValve', 'Cycle_Two_OutletPipe'}, 'CDRA_Air_Out_2', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
              
-            components.pipe(this, 'Sylobead_1_to_13x1_Pipe', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
+            components.pipe(this, 'Sylobead_1_to_13x1_Pipe', fPipelength, fPipeDiameter, fFrictionFactor);
             
             sBranchName = 'Sylobead1_to_13x1';
             oBranch = matter.branch(this, ['Sylobead_1.Outflow_', num2str(this.tGeometry.Sylobead.iCellNumber)], {'Sylobead_1_to_13x1_Pipe'}, 'Zeolite13x_1.Inflow_1', sBranchName);
             this.tMassNetwork.InternalBranches_Sylobead_1(end+1) = oBranch;
             
             components.valve_closable(this, 'Cycle_Two_InletValve', 0);
-            components.pipe(this, 'Cycle_Two_InletPipe', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
+            components.pipe(this, 'Cycle_Two_InletPipe', fPipelength, fPipeDiameter, fFrictionFactor);
             
             sBranchName = 'CDRA_Air_In_2';
             oBranch = matter.branch(this, 'Sylobead_2.Inflow_1', {'Cycle_Two_InletValve', 'Cycle_Two_InletPipe'}, 'CDRA_Air_In_2', sBranchName);
@@ -532,13 +496,13 @@ classdef CDRA < vsys
             oFlowPhase = this.toStores.Sylobead_2.toPhases.Flow_1;
             matter.procs.exmes.gas(oFlowPhase, 'Outlet');
             components.valve_closable(this, 'Cycle_One_OutletValve', 0);
-            components.pipe(this, 'Cycle_One_OutletPipe', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
+            components.pipe(this, 'Cycle_One_OutletPipe', fPipelength, fPipeDiameter, fFrictionFactor);
             
             sBranchName = 'CDRA_Air_Out_1';
             oBranch = matter.branch(this, 'Sylobead_2.Outlet', {'Cycle_One_OutletValve', 'Cycle_One_OutletPipe'}, 'CDRA_Air_Out_1', sBranchName);
             this.tMassNetwork.InterfaceBranches.(sBranchName) = oBranch;
             
-            components.pipe(this, 'Sylobead_2_to_13x2_Pipe', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
+            components.pipe(this, 'Sylobead_2_to_13x2_Pipe', fPipelength, fPipeDiameter, fFrictionFactor);
             
             sBranchName = 'Sylobead2_to_13x2';
             oBranch = matter.branch(this, ['Sylobead_2.Outflow_', num2str(this.tGeometry.Sylobead.iCellNumber)], {'Sylobead_2_to_13x2_Pipe'}, 'Zeolite13x_2.Inflow_1', sBranchName);
@@ -549,8 +513,8 @@ classdef CDRA < vsys
             components.Temp_Dummy(this, 'PreCooler_5A2', 285, 1000);
             components.valve_closable(this, 'Valve_13x1_to_5A_1', 0);
             components.valve_closable(this, 'Valve_13x2_to_5A_2', 0);
-            components.pipe(this, 'Pipe_13x1_to_5A_1', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
-            components.pipe(this, 'Pipe_13x2_to_5A_2', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
+            components.pipe(this, 'Pipe_13x1_to_5A_1', fPipelength, fPipeDiameter, fFrictionFactor);
+            components.pipe(this, 'Pipe_13x2_to_5A_2', fPipelength, fPipeDiameter, fFrictionFactor);
             
             sBranchName = 'Zeolite13x1_to_5A1';
             oBranch = matter.branch(this, ['Zeolite13x_1.Outflow_', num2str(this.tGeometry.Zeolite13x.iCellNumber)], {'Pipe_13x1_to_5A_1', 'PreCooler_5A1', 'Valve_13x1_to_5A_1'}, 'Zeolite5A_1.Inflow_1', sBranchName);
@@ -568,8 +532,8 @@ classdef CDRA < vsys
             % Add valves
             components.valve_closable(this, 'Valve_5A_1_to_13x2', 0);
             components.valve_closable(this, 'Valve_5A_2_to_13x1', 0);
-            components.pipe(this, 'Pipe_5A_1_to_13x2', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
-            components.pipe(this, 'Pipe_5A_2_to_13x1', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
+            components.pipe(this, 'Pipe_5A_1_to_13x2', fPipelength, fPipeDiameter, fFrictionFactor);
+            components.pipe(this, 'Pipe_5A_2_to_13x1', fPipelength, fPipeDiameter, fFrictionFactor);
             
             this.tGeometry.Zeolite5A.iCellNumber   = iCellNumber;
             
@@ -596,10 +560,10 @@ classdef CDRA < vsys
             components.valve_closable(this, 'Valve_5A_2_Vacuum', 0);
             components.fan_simple(this, 'AirsaveFanOne', 1*10^5);
             components.fan_simple(this, 'AirsaveFanTwo', 1*10^5);
-            components.pipe(this, 'Pipe_5A_1_Vacuum', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
-            components.pipe(this, 'Pipe_5A_2_Vacuum', this.fPipelength, this.fPipeDiameter, this.fFrictionFactor);
-            components.pipe(this, 'Pipe_5A_1_Airsave', this.fPipelength, 0.01, this.fFrictionFactor);
-            components.pipe(this, 'Pipe_5A_2_Airsave', this.fPipelength, 0.01, this.fFrictionFactor);
+            components.pipe(this, 'Pipe_5A_1_Vacuum', fPipelength, fPipeDiameter, fFrictionFactor);
+            components.pipe(this, 'Pipe_5A_2_Vacuum', fPipelength, fPipeDiameter, fFrictionFactor);
+            components.pipe(this, 'Pipe_5A_1_Airsave', fPipelength, 0.01, fFrictionFactor);
+            components.pipe(this, 'Pipe_5A_2_Airsave', fPipelength, 0.01, fFrictionFactor);
             
             sBranchName = 'CDRA_Vent_1';
             oBranch = matter.branch(this, 'Zeolite5A_2.OutletVacuum',  {'Valve_5A_2_Vacuum', 'Pipe_5A_2_Vacuum'}, 'CDRA_Vent_1', sBranchName);
@@ -703,22 +667,12 @@ classdef CDRA < vsys
             % bed specifically, which helps with debugging. Additional the
             % full system results in close to singular matrix, which might
             % lead to issues.
-            
-%             solver.matter.residual.branch(this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1);
-%             solver.matter.residual.branch(this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2);
-%             
-%             this.tMassNetwork.InterfaceBranches.CDRA_Air_In_1.oHandler.setPositiveFlowDirection(false);
-%             this.tMassNetwork.InterfaceBranches.CDRA_Air_In_2.oHandler.setPositiveFlowDirection(false);
-            
             tSolverProperties.fMaxError = 1e-3;
             tSolverProperties.iMaxIterations = 500;
             tSolverProperties.fMinimumTimeStep = 1;
             tSolverProperties.iIterationsBetweenP2PUpdate = 200;
 
             aoMultiSolverBranches = this.aoBranches;
-            % we also add the CDRA outflowing branch that is located in the
-            % CCAA to this network
-%             aoMultiSolverBranches(end+1) = this.oParent.toChildren.(this.sAsscociatedCCAA).toBranches.CDRA_TCCV;
             
             oSolver = solver.matter_multibranch.iterative.branch(aoMultiSolverBranches, 'complex');
             oSolver.setSolverProperties(tSolverProperties);
