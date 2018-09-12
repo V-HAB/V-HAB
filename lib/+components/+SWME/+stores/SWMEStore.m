@@ -12,17 +12,12 @@ classdef SWMEStore < matter.store
             
             this@matter.store(oContainer, sName, fSWMEVolume);
             
-            % Defining volume available for the liquid phase inside the
-            % hollow fibers
-            fSWMELiquidVolume = fSWMEVolume - fSWMEVaporVolume;
-            
             % Creating liquid water phase inside the hollow fibers of the
             % X50 membrane
             oLiquidHoFiPhase = matter.phases.liquid(...
                                this,...                      % Store where the phase is located
                               'FlowPhase', ...               % Phase name
                                struct('H2O', 0.0881439), ... % Phase contents
-                               fSWMELiquidVolume, ...        % Phase volume
                                fInitialTemperature,...       % Phase temperature
                                28300);                       % Phase pressure
             

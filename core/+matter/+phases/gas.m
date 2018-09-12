@@ -1,20 +1,10 @@
 classdef gas < matter.phase
-    %GAS Describes a volume of gas
-    %   Detailed explanation goes here
-    %
-    %TODO
-    %   - support empty / zero volume (different meanings?)
-    %   - if gas is solved in a fluid, different sutff ... don't really
-    %     need the fVolume, right? Just pressure of fluid, so need a linked
-    %     fluid phase, or also do through store (so own store that supports
-    %     that ...). Then a p2p proc to move gas out of the solvent into
-    %     the outer gas phase depending on partial pressures ...
-
+    % GAS Describes a volume of ideally mixed gas using ideal gas
+    % assumptions. Must be located inside a store to work!
+    
     properties (Constant)
 
-        % State of matter in phase (e.g. gas, liquid, ?)
-        % @type string
-        %TODO: rename to |sMatterState|
+        % State of matter in phase (e.g. gas, liquid, solid)
         sType = 'gas';
 
     end
@@ -50,13 +40,7 @@ classdef gas < matter.phase
         % tfMasses      : Struct containing mass value for each species
         % fVolume       : Volume of the phase
         % fTemperature  : Temperature of matter in phase
-        %
-        %TODO fVolume is stupid - needs to be set by store!
         function this = gas(oStore, sName, tfMasses, fVolume, fTemperature)
-            %TODO
-            %   - not all params required, use defaults?
-            %   - volume from store ...?
-            
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             % Get volume from 
@@ -86,37 +70,16 @@ classdef gas < matter.phase
         function bSuccess = setVolume(this, fNewVolume)
             % Changes the volume of the phase. If no processor for volume
             % change registered, do nothing.
-            %
-            %TODO see above, needs to be redone (processors/manipulator)
             
             bSuccess = this.setParameter('fVolume', fNewVolume);
             
             return;
-            
-            %TODO with events:
-            %this.trigger('set.fVolume', struct('fVolume', fNewVolume, 'setAttribute', @this.setAttribute));
-            
-            % See human, events return data which is processed here??
-            % What is several events are registered? Different types of
-            % volume change etc ...? Normally just ENERGY should be
-            % provided to change the volume, and the actual change in
-            % volume is returned ...
-            % See above, manipulators instead of processors. For each
-            % phase, user needs to decide if e.g. isobaric or isochoric
-            % change of volume.
         end
         
         
         function this = update(this)
             update@matter.phase(this);
             
-            %TODO coeff m to p: also in liquids, plasma. Not solids, right?
-            %     calc afPPs, rel humidity, ... --> in matter table!
-            %
-            
-            % Check for volume not empty, when called from constructor
-            %TODO see above, generally support empty volume? Treat a zero
-            %     and an empty ([]) volume differently?
             if this.bFlow && this.oTimer.iTick > 0
                 % to ensure that flow phases set the correct values and do
                 % not confuse the user, a seperate calculation for them is
@@ -188,30 +151,16 @@ classdef gas < matter.phase
             end
         end
         
-        function [ afPartialPressures ] = getPartialPressures(this)
-            %TODO should we still provide this proxy method? Or throw a
-            %     deprecation warning/error?
-            [ afPartialPressures, ~ ] = this.oMT.calculatePartialPressures(this);
-        end
-        
-        
         function fMassToPressure = calculatePressureCoefficient(this)
             % p = m * (R_m * T / M / V)
             %
             
             fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
             
-            %TODO molar mass zero if no mass - NaN, or Inf if mass zero
             if isnan(fMassToPressure) || isinf(fMassToPressure)
                 fMassToPressure = 0;
             end
         end
-
-
-        function setProperty(this, sAttribute, xValue)
-            this.(sAttribute) = xValue;
-        end
-
 
         function seal(this)
 

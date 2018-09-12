@@ -187,7 +187,7 @@ classdef CCAA < vsys
             
             % H2O phase
             cWaterHelper = matter.helper.phase.create.water(this.toStores.CHX, 1, this.fCoolantTemperature, fPressure);
-            oH2O = matter.phases.liquid(this.toStores.CHX, 'CHX_H2OPhase', cWaterHelper{1}, cWaterHelper{2}, cWaterHelper{3}, cWaterHelper{4});
+            oH2O = matter.phases.liquid(this.toStores.CHX, 'CHX_H2OPhase', cWaterHelper{1}, cWaterHelper{2}, cWaterHelper{3});
             this.fInitialCHXWaterMass = oH2O.fMass;
             % Creating the ports
             matter.procs.exmes.gas(oInput, 'Flow_In');
@@ -222,7 +222,7 @@ classdef CCAA < vsys
             % http://www.nasa.gov/pdf/473486main_iss_atcs_overview.pdf
             
             cWaterHelper = matter.helper.phase.create.water(this.toStores.CoolantStore, 0.02, this.fCoolantTemperature, fPressure);
-            oH2O = matter.phases.liquid(this.toStores.CoolantStore, 'CoolantPhase', cWaterHelper{1}, cWaterHelper{2}, cWaterHelper{3}, cWaterHelper{4});
+            oH2O = matter.phases.liquid(this.toStores.CoolantStore, 'CoolantPhase', cWaterHelper{1}, cWaterHelper{2}, cWaterHelper{3});
             matter.procs.exmes.liquid(oH2O, 'Flow_In_Coolant');
             matter.procs.exmes.liquid(oH2O, 'Flow_Out_Coolant');
             

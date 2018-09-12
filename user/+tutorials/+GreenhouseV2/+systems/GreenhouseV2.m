@@ -109,7 +109,6 @@ classdef GreenhouseV2 < vsys
                 'WaterSupply', ...                  % phase name
                 struct(...                          % phase contents    [kg]
                     'H2O', 100e3), ...
-                100, ...                             % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 fPressureInit);                     % phase pressure    [Pa]
                        
@@ -122,7 +121,6 @@ classdef GreenhouseV2 < vsys
                 'NutrientSupply', ...               % phase name
                 struct(...                          % phase contens     [kg]
                     'Nutrients', 1e3), ...
-                20, ...                             % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 fPressureInit);                     % phase pressure    [Pa]
             
@@ -135,7 +133,6 @@ classdef GreenhouseV2 < vsys
                 'BiomassEdible', ...                % phase name
                 struct(...                          % phase contents    [kg]
                     ), ...
-                2, ...                              % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
             
@@ -147,7 +144,6 @@ classdef GreenhouseV2 < vsys
                 'BiomassInedible', ...              % phase name
                 struct(...                          % phase contents    [kg]
                     ), ...
-                2, ...                              % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
 
@@ -164,7 +160,6 @@ classdef GreenhouseV2 < vsys
                 struct(...                          % phase contents    [kg]
                     'CabbageEdibleWet', 5, ...
                     'StrawberryEdibleWet', 3), ...
-                2, ...                              % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
             
@@ -177,7 +172,6 @@ classdef GreenhouseV2 < vsys
                 'BiomassInedible', ...              % phase name
                 struct(...                          % phase contents    [kg]
                     ), ...
-                2, ...                              % phase volume      [m^3]
                 fTemperatureInit, ...               % phase temperature [K]
                 101325);
             
@@ -276,7 +270,6 @@ classdef GreenhouseV2 < vsys
                 'WaterWS', ...                          % phase name
                 struct(...                              % phase contents    [kg]
                     'H2O', 1e-3), ...
-                4, ...                                  % phase volume      [m^3]
                 fTemperatureInit, ...                   % phase temperature [K]
                 fPressureInit);                         % phase pressure    [Pa]
            

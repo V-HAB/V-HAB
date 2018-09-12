@@ -120,7 +120,7 @@ classdef Example < vsys
             % Potable Water Store
             matter.store(this, 'PotableWaterStorage', 1);
             
-            oPotableWaterPhase = matter.phases.liquid(this.toStores.PotableWaterStorage, 'PotableWater', struct('H2O', 100), 1, 295, 101325);
+            oPotableWaterPhase = matter.phases.liquid(this.toStores.PotableWaterStorage, 'PotableWater', struct('H2O', 100), 295, 101325);
             
             
             % Creates a store for the urine

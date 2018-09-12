@@ -37,7 +37,7 @@ tfMass = struct(...
 % Create cParams for a whole matter.phases.liquid standard phase. If user does
 % not want to use all of them, can just use
 % matter.phases.liquid(oMT.create('air'){1:2}, ...)
-cParams = { tfMass fVolume fTemperature fPressure};
+cParams = { tfMass fTemperature fPressure};
 
 % Default class - required for automatic construction of phase. Helper re-
 % turns the default phase that could be constructed with this set of params

@@ -8,8 +8,6 @@ classdef mixture < matter.phase
     
     properties (Constant)
         % State of matter in phase (e.g. gas, liquid, ?)
-        % @type string
-        %TODO: rename to |sMatterState|
         sType = 'mixture';
     end
     
@@ -33,38 +31,18 @@ classdef mixture < matter.phase
             this.fPressureLastHeatCapacityUpdate = this.fPressure;
         end
         
-    function this = update(this)
-        update@matter.phase(this);
-        
-        this.fDensity = this.fMass / this.fVolume;
-        
-        % TO DO: implement pressure calculation for liquid phase
-        if strcmp(this.sPhaseType, 'gas')
-            this.fPressure = this.oMT.calculatePressure(this);
+        function this = update(this)
+            update@matter.phase(this);
+            
+            this.fDensity = this.fMass / this.fVolume;
+            
+            % TO DO: implement pressure calculation for liquid phase
+            if strcmp(this.sPhaseType, 'gas')
+                this.fPressure = this.oMT.calculatePressure(this);
+            end
+            
+            
         end
-        
-        
-    end
-    function updateSpecificHeatCapacity(this)
-        
-        
-        % In order to reduce the amount of times the matter
-        % calculation is executed it is checked here if the pressure
-        % and/or temperature have changed significantly enough to
-        % justify a recalculation
-        % TO DO: Make limits adaptive
-        if (this.oTimer.iTick <= 0) ||... %necessary to prevent the phase intialization from crashing the remaining checks
-           (abs(this.fTemperatureLastHeatCapacityUpdate - this.fTemperature) > 1) ||...
-           (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.arPartialMass)) > 0.01)
-
-            % Actually updating the specific heat capacity
-            this.fSpecificHeatCapacity           = this.oMT.calculateSpecificHeatCapacity(this);
-
-            % Setting the properties for the next check
-            this.fTemperatureLastHeatCapacityUpdate  = this.fTemperature;
-            this.arPartialMassLastHeatCapacityUpdate = this.arPartialMass;
-        end
-    end
     end
 end
 

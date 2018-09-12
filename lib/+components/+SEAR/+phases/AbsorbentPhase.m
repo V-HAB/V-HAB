@@ -48,10 +48,10 @@ classdef AbsorbentPhase < matter.phases.liquid
     
     methods
         %% Constructor
-        function this = AbsorbentPhase(oStore, sName, tfMasses, fVolume, fTemperature)
+        function this = AbsorbentPhase(oStore, sName, tfMasses, fTemperature)
             
             % Initialize constructor of superclass 'matter.phases.liquid'
-            this@matter.phases.liquid(oStore, sName, tfMasses, fVolume, fTemperature);
+            this@matter.phases.liquid(oStore, sName, tfMasses, fTemperature);
             
             % Initial mass of absorbent (lithium chloride)
             this.fMassLiCl = tfMasses.LiCl;
