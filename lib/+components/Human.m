@@ -331,9 +331,7 @@ classdef Human < vsys
             % airphase helper
             % defined co2 level and relative humidity
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.Human, fVolumeLung, struct('CO2', 0.0062),  fHumanTemperature, 0.4, 101325);
-             
-            oAirPhase = matter.phases.gas(this.toStores.Human, 'Air', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
-            oAirPhase.bFlow = true;
+            oAirPhase = matter.phases.gas_flow_node(this.toStores.Human, 'Air', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             oCapacityAir = oAirPhase.oCapacity;
             oHeatSource = thermal.heatsource('Heater', 0);

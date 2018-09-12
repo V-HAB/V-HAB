@@ -1,20 +1,10 @@
 classdef gas < matter.phase
     %GAS Describes a volume of gas
     %   Detailed explanation goes here
-    %
-    %TODO
-    %   - support empty / zero volume (different meanings?)
-    %   - if gas is solved in a fluid, different sutff ... don't really
-    %     need the fVolume, right? Just pressure of fluid, so need a linked
-    %     fluid phase, or also do through store (so own store that supports
-    %     that ...). Then a p2p proc to move gas out of the solvent into
-    %     the outer gas phase depending on partial pressures ...
 
     properties (Constant)
 
-        % State of matter in phase (e.g. gas, liquid, ?)
-        % @type string
-        %TODO: rename to |sMatterState|
+        % State of matter in phase (e.g. gas, liquid, solid)
         sType = 'gas';
 
     end
@@ -110,50 +100,8 @@ classdef gas < matter.phase
         function this = update(this)
             update@matter.phase(this);
             
-            %TODO coeff m to p: also in liquids, plasma. Not solids, right?
-            %     calc afPPs, rel humidity, ... --> in matter table!
-            %
-            
             % Check for volume not empty, when called from constructor
-            %TODO see above, generally support empty volume? Treat a zero
-            %     and an empty ([]) volume differently?
-            if this.bFlow && this.oTimer.iTick > 0
-                % to ensure that flow phases set the correct values and do
-                % not confuse the user, a seperate calculation for them is
-                % necessary
-                afPartialMassFlow_In    = zeros(this.iProcsEXME, this.oMT.iSubstances);
-                
-                for iExme = 1:this.iProcsEXME
-                    fFlowRate = this.coProcsEXME{iExme}.iSign * this.coProcsEXME{iExme}.oFlow.fFlowRate;
-                    if fFlowRate > 0
-                        afPartialMassFlow_In(iExme,:)   = this.coProcsEXME{iExme}.oFlow.arPartialMass .* fFlowRate;
-                    end
-                end
-                % See ideal gas mixtures for information on this
-                % calculation: "Ideally the ratio of partial pressures
-                % equals the ratio of the number of molecules. That is, the
-                % mole fraction of an individual gas component in an ideal
-                % gas mixture can be expressed in terms of the component's
-                % partial pressure or the moles of the component"
-                afCurrentMolsIn     = (sum(afPartialMassFlow_In,1) ./ this.oMT.afMolarMass);
-                arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
-                afPartialPressure   = arFractions .*  this.fPressure;
-                
-                afPartialPressure(isnan(afPartialPressure)) = 0;
-                afPartialPressure(afPartialPressure < 0 ) = 0;
-                
-                this.afPP = afPartialPressure;
-                
-                if this.afPP(this.oMT.tiN2I.H2O)
-                    % calculate saturation vapour pressure [Pa];
-                    fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
-                    % calculate relative humidity
-                    this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
-                else
-                    this.rRelHumidity = 0;
-                end
-                
-            elseif ~isempty(this.fVolume)
+            if ~isempty(this.fVolume)
                 this.fMassToPressure = this.calculatePressureCoefficient();
                 
                 this.fPressure = this.fMass * this.fMassToPressure;

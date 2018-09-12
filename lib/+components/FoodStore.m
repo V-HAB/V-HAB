@@ -25,8 +25,7 @@ classdef FoodStore < matter.store
             
             this.iHumans = this.iHumans + 1;
             
-            oPhase = matter.phases.mixture(this, ['Food_Output_', num2str(this.iHumans)], 'solid', [], 1e-4, this.oMT.Standard.Temperature, this.oMT.Standard.Pressure);
-            oPhase.bFlow = true;
+            oPhase = matter.phases.mixture_flow_node(this, ['Food_Output_', num2str(this.iHumans)], 'solid', [], 1e-4, this.oMT.Standard.Temperature, this.oMT.Standard.Pressure);
             
             matter.procs.exmes.mixture(this.toPhases.Food,     ['FoodPrepOut_', num2str(this.iHumans)]);
             matter.procs.exmes.mixture(oPhase,     ['FoodPrepIn_', num2str(this.iHumans)]);
