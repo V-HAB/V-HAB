@@ -1,28 +1,25 @@
 classdef timer < base
-    %TIMER Timer object. Provides similar interface as events.source.
-    %   Detailed explanation goes here
+    %TIMER The timer handles all timing operations within V-HAB. It
+    % contains the logic to decide when the next update should occur and
+    % handles post tick updates! 
     
     properties (SetAccess = private, GetAccess = public)
         % Minimum time step, no individual time steps shorter than this one
         % possible.
-        % @type float
         fMinimumTimeStep = 1e-8;  % [s]
         
         
         % "Accuracy" of simulation - min time step. Use as
         % precision for rounding.
-        % @type int
         iPrecision = 7;
     end
     
     properties (SetAccess = protected, GetAccess = public)
         
         % Current time
-        % @type float
         fTime = 0;
         
         % Current tick
-        % @type int
         iTick = -1;
         
         % Start time
@@ -30,8 +27,6 @@ classdef timer < base
         
         % Timer active?
         bRun = false;
-        
-        
         
         % Callbacks - cell array with all callbacks
         cCallBacks = {};
@@ -102,24 +97,11 @@ classdef timer < base
             
             this.bRun = true;
             
-            % If this is the initial run (fTime is zero), call ALL
-            % callbacks!
-%             if this.fTime == 0
-%                 cellfun(@(cb) cb(this), this.cCallBacks);
-%             end
-            
             % Normal step
             this.run();
         end
         
         function step(this)
-            
-            % If this is the initial run (fTime is zero), call ALL
-            % callbacks!
-%             if this.fTime == 0
-%                 cellfun(@(cb) cb(this), this.cCallBacks);
-%             end
-            
             % Normal step
             this.run();
         end
@@ -148,7 +130,7 @@ classdef timer < base
                 end
             else
                 % At least some info?
-                try %#ok<TRYNC>
+                try
                     tPayloadDef.oSrcObj = evalin('caller', 'this');
                 end
                 
@@ -252,7 +234,6 @@ classdef timer < base
             % Dependent systems have -1 as time step - therefore this
             % should always be true!
             abExec = (this.afLastExec + this.afTimeStep) <= this.fTime;
-            %abExec = (this.afLastExec + this.afTimeStep) <= (this.fTime + fThisStep - this.fMinimumTimeStep);
             aiExec  = find(abExec);
             
             %% Execute callbacks
@@ -289,31 +270,26 @@ classdef timer < base
                 this.out(1, 2, 'post-tick-num', 'Amount of cbs: %i\t', { this.aiPostTickMax });
             end
             
-            % Just to make sure - prio 2 could attach postTick to prio -1
-            %EXPERIMENTAL updated - now in that case, cb executed directly
-            %  and not added to queue
-            %while any(this.aiPostTickMax ~= 0)
-                % Prios from -3, -2, -1, 0, 1, 2, 3
-                for iP = 1:7
-                    % Post-tick stack
-                    iPostTick = 1;
-                    
-                    this.iCurrentPostTickExecuting = iP;
+            % Prios from -3, -2, -1, 0, 1, 2, 3
+            for iP = 1:7
+                % Post-tick stack
+                iPostTick = 1;
 
-                    % iPostTickMax can change in interation!
-                    while iPostTick <= this.aiPostTickMax(iP)
-                        % Executing the first item in the stack, represented by the
-                        % first item in the cell array
-                        this.chPostTick{iP, iPostTick}();
+                this.iCurrentPostTickExecuting = iP;
 
-                        iPostTick = iPostTick + 1;
-                    end
+                % iPostTickMax can change in interation!
+                while iPostTick <= this.aiPostTickMax(iP)
+                    % Executing the first item in the stack, represented by the
+                    % first item in the cell array
+                    this.chPostTick{iP, iPostTick}();
 
-                    this.aiPostTickMax(iP) = 0;
+                    iPostTick = iPostTick + 1;
                 end
-                
-                this.iCurrentPostTickExecuting = 0;
-            %end
+
+                this.aiPostTickMax(iP) = 0;
+            end
+
+            this.iCurrentPostTickExecuting = 0;
             
             % check for bRun -> if true, execute this.step() again!
             if this.bRun
@@ -326,23 +302,17 @@ classdef timer < base
             % Set time step for a specific call back. Protected method, is
             % returned upon .bind!
             
-            
-            
             % Find dependent timed callbacks (when timer executes)
-            %this.abDependent = this.afTimeStep == -1;
             this.abDependent(iCB) = (fTimeStep == -1);
             
             
-            if ~isempty(fTimeStep) % && fTimeStep ~= 0
+            if ~isempty(fTimeStep)
                 if fTimeStep < 0, fTimeStep = 0; end
                 
                 this.afTimeStep(iCB) = fTimeStep;
             else
-                %TODO could be 
-                this.afTimeStep(iCB) = 0;%this.fTimeStep;
+                this.afTimeStep(iCB) = 0;
             end
-            
-            
             
             % If bResetLastExecuted is true, the time the registered call-
             % back was last executed will be updated to the current time.

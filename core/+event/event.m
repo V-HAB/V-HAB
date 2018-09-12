@@ -51,18 +51,5 @@ classdef event < handle
                 this.modifyFilterCb(this, varargin{:});
             end
         end
-        
-%         function setInterval(this, iInterval)
-%             if ~isempty(this.sToken)
-%                 this.oCaller.setCallbackInterval(this.sToken, iInterval);
-%             end
-%         end
-%         
-%         function setTimeout(this, iInterval)
-%             if ~isempty(this.sToken)
-%                 this.oCaller.setCallbackTimeout(this.sToken, iInterval);
-%             end
-%         end
     end
-    
 end

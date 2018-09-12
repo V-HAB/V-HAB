@@ -1,13 +1,8 @@
 classdef source < handle
-    %EVENTS blah ...
-    %
-    %TODO
-    %   - return obj when binding, just delete(obj) removes event bind?
-    %   - clean of all stuff like time or ticks or anything specific -
-    %     should be done with derived class or so
-    %   - possibility to change the event object?
-    %   - check each callback on registration with nargout(callBack), store
-    %     the return. Then throw out the try/catch below!
+    % provides the framework for other classes to use events. If any class
+    % wants to use .bind or .trigger functions it has to inherit from this
+    % class! For documentation regarding events visit:
+    % https://wiki.tum.de/pages/viewpage.action?pageId=41593225
     
     properties (Access = private)
         iCounter = 0;
@@ -34,17 +29,7 @@ classdef source < handle
                 'sType', [], ...
                 'oCaller', this, ...
                 'tData', [], ...
-                ...
-                ... %TODO IMPLEMENT - stop further execution of callbacks, 
-                ... e.g. set this.tbStopCurrentEvent.(sType) = true
-                ... 'stopPropagation', @(a, b) this.stopPropagation(sType), ...
-                ...
-                ... %TODO implement, allow callbacks to add return values
-                ...   -> don't use real func outputs because Matlab stinks!
-                ... 'cxReturn', {}, ...
                 'addReturnValue', @this.addReturn ...
-                ... addReturn would write xVal to this.xLastReturn, then 
-                ... after each callbac execution below, check this.xLastRet
             );
             
         end
@@ -74,19 +59,11 @@ classdef source < handle
         
         
         function addReturn(this, xVal)
-            %this.xLastReturn = xVal;
-            %TODO cxLastReturn etc just if bRunning, see below!
-            
             this.cxLastReturn{end + 1} = xVal;
             this.bNewLastReturn = true;
         end
         
-        %CU uh! if e.g. tick.eat, and setTimeout, only executed while still
-        %   on tick.eat - so at least a detick event, or something? JO!
-        %   Then it is setTimeout OR detick!
         function cReturn = trigger(this, sType, tData)
-            %global oSim;
-            
             
             if ~this.bHasCallbacks
                 cReturn = {};
@@ -95,29 +72,6 @@ classdef source < handle
             
             if nargin < 3, tData = []; end
             
-            % dbstack - get caller's function name and set for event obj?
-            
-            % FAKE OBJECT!
-            %TODO-SPEED save on this.ttEventObjs.(sType) and reuse! Just
-            %           overwrite tData/xData!
-%             oEvent = struct(...
-%                 'sType', sType, ...
-%                 'oCaller', this, ...
-%                 'xData', tData, ...
-%                 'tData', tData, ...
-%                 ...
-%                 ... %TODO IMPLEMENT - stop further execution of callbacks, 
-%                 ... e.g. set this.tbStopCurrentEvent.(sType) = true
-%                 ... 'stopPropagation', @(a, b) this.stopPropagation(sType), ...
-%                 ...
-%                 ... %TODO implement, allow callbacks to add return values
-%                 ...   -> don't use real func outputs because Matlab stinks!
-%                 ... 'cxReturn', {}, ...
-%                 'addReturnValue', @this.addReturn ...
-%                 ... addReturn would write xVal to this.xLastReturn, then 
-%                 ... after each callbac execution below, check this.xLastRet
-%             );
-
             % Copy from default event obj
             oEvent = this.tEventObject;
             
@@ -136,44 +90,17 @@ classdef source < handle
             for iC = 1:length(cCallbackCell)
                 callBack = cCallbackCell{iC};
                 
-%                 % Execute callback - first try with return
-%                 try
-%                     cReturn{iC} = callBack(oEvent);
-%                     
-%                     %if ~isempty(xTmp), cReturn.(sprintf('cb_%i', iC)) = xTmp; end;
-% 
-%                 % Ok, that didn't work, so now without return
-%                 % STUPID MATLAB!
-%                 %catch
-%                 %    callBack(oEvent);
-%                 %end
-%                 catch oErr
-%                     % If error is not 'Too many output 
-%                     % arguments' or 'undefined func', throw!
-%                     csErrorIdentifiers = {'MATLAB:TooManyOutputs',...
-%                                           'MATLAB:maxlhs',...
-%                                           'MATLAB:UndefinedFunction'};
-% 
-%                     if ~any(strcmp(oErr.identifier, csErrorIdentifiers))
-%                         rethrow(oErr);
-%                     else
-                        callBack(oEvent);
-                        
-                        %TODO todo do cxLastReturn stuff only if nested
-                        %     events? cath that -> bRunning, then if event
-                        %     triggered again and bRunning -> nested!
-                        if this.bNewLastReturn % ~isempty(this.xLastReturn)
-                            cReturn{iC} = this.cxLastReturn{end};
-                            
-                            this.cxLastReturn(end) = {};
-                            
-                            if isempty(this.cxLastReturn)
-                                this.bNewLastReturn = false;
-                            end
-                            %this.xLastReturn = [];
-                        end
-%                     end
-%                 end
+                callBack(oEvent);
+                
+                if this.bNewLastReturn
+                    cReturn{iC} = this.cxLastReturn{end};
+
+                    this.cxLastReturn(end) = {};
+
+                    if isempty(this.cxLastReturn)
+                        this.bNewLastReturn = false;
+                    end
+                end
             end
         end
     end
