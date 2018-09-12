@@ -2,10 +2,6 @@ classdef stationary < matter.procs.p2p
     %STATIONARY A P2P processor for a phase where the volumetric flow
     %through the phase is significantly smaller than its volume or even
     %zero.
-    %
-    %TODO
-    %   - 
-    
     
     properties (SetAccess = protected, GetAccess = protected)
         

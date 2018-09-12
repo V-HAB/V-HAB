@@ -3,26 +3,12 @@ classdef exme < base
     %   Extracts matter flow from and merges matter flow into a phase.
     %
     % See also matter.procs.f2f which has a lot in common.
-    %
-    %
-    %TODO
-    %   - for specific solvers, probably need additional methods. So either
-    %     user needs to know solver and includes according EXME, or need
-    %     some kind of proxy/decorator that the solver uses and places 'in
-    %     front of' the actual EXME ...?
-    %     Or similar to .setAttribute here, use function handles, maybe
-    %     provided with some func handles from EXME/Flows/Branches/...?
-    %   - exme/f2f same base class? also p2p?
-    %   - instead of allowing several flows on 'default' port, introduce
-    %     a bMultiple attribute?
     
     properties (SetAccess = private, GetAccess = private)
         % See matter.proc.f2f
         pthFlow;
     end
     
-    %TODO check - protected, private access? Ok that derived can set any
-    %     value? More generic extract(), merge() here?
     properties (SetAccess = private, GetAccess = protected)
         
         % Function handle to the phase to set any attribute!
@@ -33,33 +19,31 @@ classdef exme < base
     
     properties (SetAccess = private, GetAccess = public)
         % Phase the EXME belongs to
-        % @type object
         oPhase;
         
         % Matter table
-        % @type object
         oMT;
         
         % Timer
-        % @type object
         oTimer;
         
         % Name of processor. If 'default', several MFs can be connected
-        %TODO make that configurable?
-        % @type string
         sName;
         
         % Connected matter flow
         oFlow = matter.flow.empty();
         
-        % HAs a flow?
+        % Has a flow?
         bHasFlow = false;
         
         % Is flow a p2p?
         bFlowIsAProcP2P = false;
         
         
-        % See @matter.procs.f2f
+        % integer that is either 1 or -1. This multiplied with the flowrate
+        % of the asscociated flow from the oFlow property results in the
+        % correct mass change for the phase to which the exme is connected
+        % (stored in oPhase property)
         iSign;
 
     end
@@ -82,12 +66,9 @@ classdef exme < base
             this.oMT    = oPhase.oMT;
             this.oTimer = oPhase.oTimer;
             
-            %this.setAttribute = 
             oPhase.addProcEXME(this);
             
             this.oPhase = oPhase;
-            
-            
             
             % Create map for the func handles
             this.pthFlow = containers.Map('KeyType', 'single', 'ValueType', 'any');
@@ -195,14 +176,13 @@ classdef exme < base
         end
 
         
+        function [ fPortPressure, fPortTemperature ] = getPortProperties(this)
         % Method returns absolute values of pressure and temperature of the
         % extracted matter
         % For e.g. a liquid phase, the pressure would depend on gravity,
         % filling level and position of the port, which could be
         % implemented by a derived version of the EXME. See the according
         % matter.procs.exme.[phase type] for that.
-        %TODO make this an abstract method?
-        function [ fPortPressure, fPortTemperature ] = getPortProperties(this)
             this.throw('getPortProperties', 'Can''t be called in matter.procs.exme');
             
             % These two lines are only here to make MATLAB shut up about
