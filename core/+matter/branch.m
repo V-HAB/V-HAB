@@ -21,47 +21,27 @@ classdef branch < base & event.source
     %
     %   The constructor recognises if this is an interface branch or not 
     %   and accordingly creates the branch object and the matter.flow 
-    %   objects between the f2f processors and exme processors. 
-    %
-    %   TODO
-    %   - set flow rate and also partial ratios? Or do via normal .update
-    %     command in solver, which is executed properly in direction of the
-    %     flow rate? Call .update on FLOWS, with partial mass (or they get
-    %     the partial mass from the flow before them?
-    %     --> this.oIn.aoFlows(1) or this.oOut.aoFlows(2), depending on Fr,
-    %         if positive, the former, negative, the latter!
-    %   - EXME I/F -> special matter.branchEXME < matter.branch, only has 
-    %     to change the setConnected / setDisconnected methods; no aoFlows,
-    %     chSetFRs etc -> no flow in that branch! only one exme!
-    %     -> can add several if branches from subsystems there!
-    %     => JUST THIS CLASS, check if csProcs empty in constructor and
-    %        right side actually a store, AND if port is called 'default',
-    %        then allow for several branches to dock on the left side; no
-    %        setFRs returned (automatically, empty), return right phase
-    %        completely normally as always.
+    %   objects between the f2f processors and exme processors.
     
     properties (SetAccess = protected, GetAccess = public)
         % Reference to the parent matter container
-        % @type object
         oContainer;
         
         % Created from the store/interface names provided to the
         % createBranch method on matter.container (store1_port1__ifName, or
         % store1_port1__otherStore_somePort)
-        % @type string
         sName;
         
+        % Optional property where the user can define a specific name for
+        % the branch to easier identify it in the toBranches struct (which
+        % uses the custom names, if they are available)
         sCustomName;
         
         % Names for left/right (cell with 1/2, can be accessed like
         % [ aoBranches.csNames ] --> cell with names, two rows, n cols
-        % @type cell
-        % @types string
         csNames = { ''; '' };
         
         % Interfaces left/right?
-        % @type array
-        % @types int
         abIf = [ false; false ];
         
         % When branch fully connected, contains references to the EXMEs at
@@ -69,33 +49,23 @@ classdef branch < base & event.source
         % automatically set for branch on the left side
         %coPhases = { matter.phase.empty(1, 0); matter.phase.empty(1, 0) };
         %coPhases = { []; [] };
-        % @type cell
-        % @types object
         coExmes = { []; [] };
         
         % Connected branches on the left (index 1, branch in subsystem) or
         % the right (index 2, branch in supsystem) side?
-        % @type cell
-        % @types object
         coBranches = { matter.branch.empty(1, 0); matter.branch.empty(1, 0) };
         
         % Flows belonging to this branch
-        % @type array
-        % @types object
         aoFlows = matter.flow.empty();
         
         % Array with f2f processors in between the flows
-        % @type array
-        % @types object
         aoFlowProcs = matter.procs.f2f.empty();
         
         % Amount of flows / procs
-        %TODO make transient!
         iFlows = 0;
         iFlowProcs = 0;
         
         % Current flow rate on branch
-        % @type float
         fFlowRate = 0;
         
         % Last couple of flow rates - used to test if below rounding prec
@@ -107,18 +77,15 @@ classdef branch < base & event.source
         % set e.g. through a flow proc that changed some internal state.
         bOutdated = false;
         
-        
         % Do we need to trigger the setFlowRate event?
         bTriggerSetFlowRateCallbackBound = false;
     end
     
     properties (SetAccess = private, GetAccess = public)
         % Reference to the matter table
-        % @type object
         oMT;
         
         % Reference to the timer
-        % @type object
         oTimer;
         
         % Flow rate handler - only one can be set!
@@ -163,10 +130,6 @@ classdef branch < base & event.source
             % Can be called with either stores/ports or interface names
             % (all combinations possible). Connections are always done from
             % subsystem to system.
-            %
-            %TODO
-            %   - does store.getPort have a throw if port not found? Else
-            %     throw here.
             
             % Reference to the matter.container and some shorthand refs.
             this.oContainer = oContainer;
@@ -326,7 +289,6 @@ classdef branch < base & event.source
             % Create the respective thermal interfaces for the thermal
             % branch
             % Split to store name / port name
-            % TO DO: make nicer
             [ sStore, sPort ] = strtok(sLeft, '.');
             % Get EXME port/proc ...
             if isempty(sPort)
@@ -381,9 +343,6 @@ classdef branch < base & event.source
             % (end flow) to this branch here, store indices to be able to
             % remove the references later.
             %
-            %TODO Check connectTo branch - is EXME? Then some specific
-            %     handling of the connection to EXME ... see above
-            
             % Find matching interface branch
             % See container -> connectIF, need to get all left names of
             % branches of parent system, since they depict the interfaces
@@ -498,6 +457,9 @@ classdef branch < base & event.source
         end
         
         function [ hGetBranchData, hSetDisconnected ] = setConnected(this, oSubSysBranch, hUpdateConnectedBranches)
+            % This function is used to connect two seperate interfaces
+            % branches of a parent and child system and create a single
+            % branch from them
             if ~this.abIf(1)
                 this.throw('setConnected', 'Left side of this branch is not an interface!');
             
@@ -580,20 +542,11 @@ classdef branch < base & event.source
             end
         end
         
-        
-        
-        
-        
-        
-        
         function setOutdated(this)
             % Can be used by phases or f2f processors to request recalc-
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
-            % TO DO: Question, why is this necessary when the solver base
-            % branch in the function bound to the trigger from this
-            % function also performs it?
             for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
                 this.coExmes{iE}.oPhase.massupdate();
             end
@@ -619,13 +572,6 @@ classdef branch < base & event.source
             %   and gets a fct handle to the internal setFlowRate method.
             %   One solver obj per branch, atm no possibility for de-
             %   connect that one.
-            %TODO Later, either check if solver obj is
-            %     deleted and if yes, allow new one; or some sealed methods
-            %     and private attrs on the basic branch solver class, and
-            %     on setFRhandler, the branch solver provides fct callback
-            %     to release the solver -> deletes the stored fct handle to
-            %     the setFlowRate method of the branch. The branch calls
-            %     this fct before setting a new solver.
             
             if ~isempty(this.oHandler)
                 this.throw('registerHandlerFR', 'Can only set one handler!');
@@ -634,7 +580,6 @@ classdef branch < base & event.source
             this.oHandler = oHandler;
             
             setFlowRate   = @this.setFlowRate;
-            %setFlowRate   = @(varargin) this.setFlowRate(varargin{:});
         end
         
     
@@ -645,12 +590,6 @@ classdef branch < base & event.source
                 % phase that contains more mass than the other! This 
                 % ensures that the matter properties don't become zero if
                 % the coExmes{1} phase is empty.
-                
-                %CHECK: we use getPortProperties() to get the pressure (gas
-                %       and liquid) or some equivalent (soldids ...?)
-                %       instead of mass - see e.g. const_press_exme!
-                %aoPhases   = [ this.coExmes{1}.oPhase, this.coExmes{2}.oPhase ];
-                %iWhichExme = sif(aoPhases(1).fMass >= aoPhases(2).fMass, 1, 2);
                 
                 afPressure = [ this.coExmes{1}.getPortProperties(), this.coExmes{2}.getPortProperties() ];
                 iWhichExme = sif(afPressure(1) >= afPressure(2), 1, 2);
@@ -666,8 +605,7 @@ classdef branch < base & event.source
                     end
                 end
             else
-                %iWhichExme = sif(this.fFlowRate < 0, 2, 1);
-                iWhichExme = (this.fFlowRate < 0) + 1; % Faster?
+                iWhichExme = (this.fFlowRate < 0) + 1;
             end
 
             oExme = this.coExmes{iWhichExme};
@@ -701,11 +639,9 @@ classdef branch < base & event.source
         function setFlowRate(this, fFlowRate, afPressure)
             % Set flowrate for all flow objects
             %
-            %NOTE/CHECK: afPressure is pressure DROPS, not total pressures!
+            % NOTE: afPressure is pressure DROPS, not total pressures!
             
             if this.abIf(1), this.throw('setFlowRate', 'Left side is interface, can''t set flowrate on this branch object'); end
-            
-            
             
             % Connected phases have to do a massupdate before we set the
             % new flow rate - so the mass for the LAST time step, with the
@@ -713,7 +649,6 @@ classdef branch < base & event.source
             for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
                 this.coExmes{iE}.oPhase.massupdate();
             end
-            
             
             this.afFlowRates = [ this.afFlowRates(2:end) fFlowRate ];
             
@@ -734,12 +669,8 @@ classdef branch < base & event.source
                 end
             end
             
-            
-            
-            
             this.fFlowRate = fFlowRate;
             this.bOutdated = false;
-            
             
             % No pressure? Distribute equally.
             if nargin < 3 || isempty(afPressure)
@@ -747,15 +678,11 @@ classdef branch < base & event.source
                 
                 % Each flow proc produces the same pressure drop, the sum
                 % being the actual pressure difference.
-                %CHECK need the abs() of the pressure diff because need to
-                %      make sure pressure drops are positive?
                 afPressure = ones(1, this.iFlowProcs) * (fPressureDiff) / this.iFlowProcs;
                 
                 % Note: no matter the flow direction, positive values on
                 % afPRessure always denote a pressure DROP
             end
-            
-            
             
             % Update data in flows
             this.hSetFlowData(this.aoFlows, this.getInEXME(), fFlowRate, afPressure);
@@ -764,8 +691,6 @@ classdef branch < base & event.source
                 this.trigger('setFlowRate');
             end
         end
-    
-        
         
         function updateConnectedBranches(this, sNewBranchName)
             
@@ -802,30 +727,11 @@ classdef branch < base & event.source
 
                 end
                 
-                %TODO check ... do 'reseal' or something??
-%                 % Since the subsystem branch is already sealed, we have to
-%                 % do it manually here for the new members of this sealed
-%                 % branch. First the flows...
-%                 for iI = 1:this.iFlows
-%                     if ~this.aoFlows(iI).bSealed
-%                         this.aoFlows(iI).seal(false, this);
-%                     end
-%                 end
-%                 
-%                 % Now we seal the new flow processors.
-%                 for iI = 1:this.iFlowProcs
-%                     if ~this.aoFlowProcs(iI).bSealed
-%                         this.aoFlowProcs(iI).seal(this);
-%                     end
-%                 end
-                
                 % If the current method was called from a pass-through
                 % branch, there will be a new Name for this branch. If not,
                 % then the 'sNewBranchName' variable is empty.
                 if ~(strcmp(sNewBranchName,''))
-                    %sOldName = this.sName;
-                    this.sName = sNewBranchName;
-                    %this.oContainer.updateBranchNames(this, sOldName);                 
+                    this.sName = sNewBranchName;              
                 end
             end
         end

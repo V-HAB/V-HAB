@@ -2,20 +2,11 @@ function update(this, ~)
 %UPDATE Updates the phases inside this store
 % Update phases, then recalculate internal values as volume
 % available for phases.
-%
-%TODO don't update everything all the time? If one phase
-%     changes, do not necessarily to update all other phases as well? If
-%     liquid, need to update gas, but other way around?
-%     First update solids, then liquids, then gas? Smarter ways for volume
-%     distribution?
 
 this.fTimeStep   = this.fDefaultTimeStep;
 
 % Set the default time step - can be overwritten by phases
-%TODO register post-post-tick-callback and only set then?
 this.setTimeStep(this.fTimeStep);
-
-%TODO check volume stuff
 
 %%
 %calculates the volume of liquid and gas phase if both phases are present

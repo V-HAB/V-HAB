@@ -1,10 +1,9 @@
 classdef substance < matter.manip
-    %SUBSTANCES
-    %
-    %TODO
-    %   - differences for solid, gas, liquid ...?
-    %   - helpers for required energy, catalyst, produced energy, etc, then
-    %     some energy object input for e.g. heat
+    % Manipulator for substances. Allows the model to change one substance
+    % into another substance, to model chemical reactions. For example
+    % electrolysis is the chemical reaction 2 * H2O -> 2 * H2 + O2 which
+    % requires the model to change the substance H2O into the substances H2
+    % and O2
     
     
     properties (Abstract, SetAccess = protected)
@@ -21,16 +20,9 @@ classdef substance < matter.manip
     end
        
     methods (Abstract)
+        % Every child class must implement this function with the
+        % corresponding calculation to set the according flow rates
         update(this)
-    end
-    
-    methods
-    
-        function exec(this, fTime)
-            % Called from subsystem to update the internal state of the
-            % processor, e.g. change efficiencies etc
-        end
-        
     end
 end
 

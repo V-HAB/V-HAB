@@ -60,8 +60,6 @@ else
         
         rFactor = interp1(afBase, afRes, fDevMagnitude, 'linear');
         
-        %fprintf('%i\t%i\tDECREASE rMaxChange from %f by %f to %f\n', iDev, iThreshold, rMaxChangeTmp, rFactor, rMaxChangeTmp / rFactor);
-        
         rMaxChangeFactor = 1 / (1 + rFactor);
     end
     
@@ -75,9 +73,6 @@ else
     % phase, not to themselves, else if a trace gas mass does change
     % significantly, it will reduce the time step too much even though it
     % does not change the overall phase properties a lot.
-    %TODO maybe use change in temperature, molar mass, ... as
-    %     reference, not the partial mass changes?
-    %arPreviousChange = abs(this.afMass ./ this.afMassLastUpdate - 1);
     arPreviousChange = abs(this.afMass - this.afMassLastUpdate) / this.fMass;
     
     
@@ -215,22 +210,16 @@ else
     if fNewStep < 0
         if ~base.oLog.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
     end
-    % abs(sum(this.afCurrentTotalInOuts)) > 1e-8 & ~isempty(regexp(this.sName, 'Flow_'))
     
     % If our newly calculated time step is larger than the maximum time
     % step set for this phase, we use this instead.
     if fNewStep > this.fMaxStep
         fNewStep = this.fMaxStep;
-        %TODO Make this output a lower level debug message.
-        %fprintf('\nTick %i, Time %f: Phase %s setting maximum timestep of %f\n', this.oTimer.iTick, this.oTimer.fTime, this.sName, this.fMaxStep);
-        
         % If the time step is smaller than the set minimal time step for
         % the phase the minimal time step is used (standard case is that
         % fMinStep is 0, but the user can set it to a different value)
     elseif fNewStep < this.fMinStep
         fNewStep = this.fMinStep;
-        %TODO Make this output a lower level debug message.
-        %fprintf('Tick %i, Time %f: Phase %s.%s setting minimum timestep\n', this.oTimer.iTick, this.oTimer.fTime, this.oStore.sName, this.sName);
     end
     
     
@@ -251,7 +240,6 @@ end
 % pass on an absolute time, not a time step. Value in store is only
 % updated, if the new update time is earlier than the currently set next
 % update time.
-%this.oStore.setNextUpdateTime(this.fLastMassUpdate + fNewStep);
 this.oStore.setNextTimeStep(fNewStep);
 
 % Cache - e.g. for logging purposes
