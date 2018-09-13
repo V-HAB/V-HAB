@@ -209,13 +209,22 @@ classdef CDRA < vsys
             % simulation for a longer time without startvalues and set them
             % according to the values once the simulation is repetetive)
             tStandardInit.Zeolite13x.mfInitialCO2             = zeros(tInitialization.Zeolite13x.iCellNumber,1);
-            tStandardInit.Zeolite13x.mfInitialH2O             = 0.16 : -0.16/tInitialization.Zeolite13x.iCellNumber : 0;
-            
             tStandardInit.Sylobead.mfInitialCO2               = zeros(tInitialization.Sylobead.iCellNumber,1);
-            tStandardInit.Sylobead.mfInitialH2OAbsorb         = 0.28 : -0.28/tInitialization.Sylobead.iCellNumber : 0;
-            tStandardInit.Sylobead.mfInitialH2ODesorb         = 0.05 : -0.05/tInitialization.Sylobead.iCellNumber : 0;
+            tStandardInit.Zeolite5A.mfInitialCO2              = zeros(tInitialization.Zeolite5A.iCellNumber,1);
+        	
+            % 0.16 is the value derived from running simulations, 5 was the
+            % cell number during the simulation. The adsorbed in the
+            % calculation can be reduced since it is both in the
+            % denominator and numerator
+            fLoadingFirstCell13x        = (0.16 * 5) / tInitialization.Sylobead.iCellNumber;
+            tStandardInit.Zeolite13x.mfInitialH2O          = fLoadingFirstCell13x : -fLoadingFirstCell13x/(tInitialization.Zeolite13x.iCellNumber - 1) : 0;
+           	
+            fLoadingFirstCellSylobeadAbsorb = (0.28 * 5) / tInitialization.Sylobead.iCellNumber;
+            tStandardInit.Sylobead.mfInitialH2OAbsorb         = fLoadingFirstCellSylobeadAbsorb : -fLoadingFirstCellSylobeadAbsorb/(tInitialization.Sylobead.iCellNumber - 1) : 0;
             
-        	tStandardInit.Zeolite5A.mfInitialCO2              = zeros(tInitialization.Zeolite5A.iCellNumber,1);
+            fLoadingFirstCellSylobeadDesorb = (0.05 * 5) / tInitialization.Sylobead.iCellNumber;
+            tStandardInit.Sylobead.mfInitialH2ODesorb         = fLoadingFirstCellSylobeadDesorb : -fLoadingFirstCellSylobeadDesorb/(tInitialization.Sylobead.iCellNumber - 1) : 0;
+            
         	tStandardInit.Zeolite5A.mfInitialH2O              = zeros(tInitialization.Zeolite5A.iCellNumber,1);
             
             csTypes = {'Zeolite13x', 'Sylobead', 'Zeolite5A'};
