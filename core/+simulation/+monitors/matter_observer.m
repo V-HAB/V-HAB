@@ -1,8 +1,24 @@
 classdef matter_observer < simulation.monitor
-    %MATTER_OBSERVER Summary of this class goes here
-    %   Detailed explanation goes here
-    
-    
+    %MATTER_OBSERVER logs the overall mass balance and mass lost. The
+    % difference is that mass balance is: 
+    % sum(Mass of all Phases at tick 1) - sum(Mass of all Phases at final tick) 
+    % Which means a positive mass balance is actually a reduction in mass
+    %
+    % This value should be similar in size to the mass lost value, as the
+    % primary source of mass balance error are the mass lost values. If you
+    % have a large mass balance error check your manipulators! They are the
+    % most likely source of such errors!
+    %
+    % Mass lost sums up the afMassLost properties of alle phases. This
+    % occurs if more mass of a single substance is reduced from a phase
+    % within a tick than the phase currently stores. As the mass becomes
+    % negative in this case, this value is always negative. But a negative
+    % afMassLost actually represents creating additional mass, as
+    % overwriting a negative value with 0 produces mass! This value should
+    % be small, otherwise you have an error in your time step settings!
+    %
+    % For debugging you can also try using the massbalance_observer, which
+    % tries to find the locations in your simulation where the errors occur
     
     properties (SetAccess = protected, GetAccess = public)
         % How often should the total mass in the system be calculated?
@@ -49,10 +65,6 @@ classdef matter_observer < simulation.monitor
                     % Lost mass: logged by phases if more mass is extracted then
                     % available (for each substance separately).
                     this.mfLostMass(iIdx, :) = sum(reshape([ this.aoPhases.afMassLost ], oMT.iSubstances, []), 2)';
-                    
-                    %TODO implement methods for that ... break down everything down
-                    %     to the moles and compare these?! So really count every
-                    %     atom, not the molecules ... compare enthalpy etc?
                 end
             else
                 iIdx = size(this.mfTotalMass, 1) + 1;
@@ -143,10 +155,6 @@ classdef matter_observer < simulation.monitor
             
             disp([ '| Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
             disp([ '| Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(mfTotalFinalMass)) 'kg' ]);
-            %fBalance = sum(this.fBalance);
-            
-            %TODO accuracy from time step!
-            %fprinft('| Mass Lost (i.e. negative masses in phases when depleted): %.12f', fBalance);
             
             fprintf('+------------------------------------------------------+\n');
         end

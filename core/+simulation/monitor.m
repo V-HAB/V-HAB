@@ -1,6 +1,6 @@
 classdef monitor < base & event.source
-    %MONITOR Summary of this class goes here
-    %   Detailed explanation goes here
+    %MONITOR this is the basic class that provdes the framework for all
+    % other monitor subclasses. 
     
     properties (SetAccess = private, GetAccess = public)
         % Sim infra with oSimulationRoot etc
@@ -30,11 +30,6 @@ classdef monitor < base & event.source
             
             if nargin >= 2, this.csEvents = csEvents; end
             
-            
-            %TODO
-            % * cbs for step/tick, pause, stop, start, init, finish, ...
-            %       (tick post, pre! etc). -> CONFIGURABLE!
-            %   INIT pre/post! From .container for addChild?
             this.initializeEvents();
         end
     end
@@ -51,7 +46,6 @@ classdef monitor < base & event.source
                 % Stupid Matlab ... @this.(sMethod) does not work but using
                 % the shorthand saves a lot of exec time! So ... eval!
                 sMethod  = this.tsEvents.(sEvent);
-                %callBack = eval([ '@(~) this.' sMethod '()' ]);
                 callBack = eval([ '@this.' sMethod ]);
                 
                 this.oSimulationInfrastructure.bind(sEvent, callBack);
@@ -62,7 +56,7 @@ classdef monitor < base & event.source
     
     methods (Access = protected)
         
-        % Placeholder methods
+        % Placeholder methods, the comments suppress code warnings
         function onInitPre(this, ~) %#ok<INUSD>
 
         end

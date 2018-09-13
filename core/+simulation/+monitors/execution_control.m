@@ -1,6 +1,7 @@
 classdef execution_control < simulation.monitor
-    %EXECUTION_CONTROL Summary of this class goes here
-    %   Detailed explanation goes here
+    %EXECUTION_CONTROL this class controlls the execution of the V-HAB
+    % simulation and allows the user to stop a simulation by creating a
+    % STOP.m file in the V-HAB directory.
     
     
     

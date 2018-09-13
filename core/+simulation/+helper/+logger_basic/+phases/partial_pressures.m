@@ -1,6 +1,7 @@
 function tLogProps = partial_pressures(tLogProps, oPhase, csSubstances)
-%PARTIAL_PRESSURES Summary of this function goes here
-%   Detailed explanation goes here
+%PARTIAL_PRESSURES is a helper to log the partial pressures of the provided
+% phase for the provided substances. If no substances are provided Air
+% composition is assumed
 
 
 if ~isa(oPhase, 'matter.phases.gas')

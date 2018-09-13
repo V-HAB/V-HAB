@@ -6,40 +6,22 @@ classdef infrastructure < base & event.source
     %   It also contains the tick() method which advances the timer one
     %   time step (or tick) ahead until the total simulated time has
     %   reached the user-defined value.
-    %
-    %TODO The constructor of the derived class needs to or should set 
-    %   csLog, and either iSimTicks of fSimTime.
-    %
-    
-    
-    properties (SetAccess = public, GetAccess = public)
-        %TODO-RESTRUCTURING general storage dir, for .mat, info about code,
-        %   system etc? Or just everything in objs, save() to .mat?
-        %   How to implement regular dumping in logger, so mfLog does not
-        %   get too big?
-% %         sStorageName;
-% %         sDescription;
-    end
     
     properties (SetAccess = public, GetAccess = public)
         % Default number of ticks
-        % @type int
         iSimTicks = 100;
         
         % Default simulation time [s]
-        % @type int
         fSimTime  = 3600 * 1;
         
         % Use time or ticks to check if simulation finished? Default is
         % time in seconds.
-        % @type int
         bUseTime = true;
         
         % Boolean variable to suppress the console output at the beginning
         % and end of each simulation. This is mainly for cases when V-HAB
         % is being called by TherMoS every simulated second and we want to
         % minimize clutter on the console.
-        %TODO move to simulation.infrastructure.monitors.console_output
         bSuppressConsoleOutput = false;
         
         % Sometimes it may be helpful for the user to receive an acoustic
@@ -52,11 +34,9 @@ classdef infrastructure < base & event.source
     
     properties (SetAccess = private, GetAccess = public)
         % Name of sim
-        % @type string
         sName;
         
         % Sim Contaienr (root sys)
-        % @type object
         oSimulationContainer;
         
         fRuntimeTick  = 0;
@@ -65,18 +45,20 @@ classdef infrastructure < base & event.source
         % Matlab date number -> object/sim created
         fCreated = 0;
         
-        % @type string
+        % string containing the time and date at which this simulation was
+        % created (or startet) 
         sCreated = '';
         
         % Was everything initialized, e.g. create*Structure, event
         % init_post was sent etc?
         bInitialized = false;
-        
-        %TODO-RESTRUCTURING CPU, RAM etc
-        
     end
     
     properties (GetAccess = public, Dependent = true)
+        % This factor represents the simulated time / elapsed time. It
+        % therefore represents how much faster than real time the
+        % simulation is (if the factor is larger than 1) or how much slower
+        % it is (smaller than 1)
         fSimFactor;
     end
 
@@ -102,11 +84,6 @@ classdef infrastructure < base & event.source
     
     methods
         function this = infrastructure(sName, ptConfigParams, tSolverParams, tMonitors)
-            %CHANGELOG
-            % fMinStep --> use oTimer.setMinStep()
-            % tData --> simulation.container
-            
-            
             this.sName = sName;
             
             
@@ -209,10 +186,6 @@ classdef infrastructure < base & event.source
             % finished, the initialize() method (that also sends init_post)
             % will have to be called explicitly (e.g. from vhab.sim) or in
             % .run() below (if first tick).
-            %TODO make sure that sims are always created through vhab.sim()
-            %     because if .init is not called directly, we might get
-            %     issues with e.g. the debugger/logger not being able to
-            %     sort out which object belong to which simulation obj?
         end
         
         
@@ -394,7 +367,6 @@ classdef infrastructure < base & event.source
             
             % Sim finished?
             if (this.bUseTime && (this.oSimulationContainer.oTimer.fTime >= this.fSimTime)) || (~this.bUseTime && (this.oSimulationContainer.oTimer.iTick >= this.iSimTicks))
-                %this.finish();
                 % Only trigger 'finish' if we actually want the console
                 % output. 
                 if ~this.bSuppressConsoleOutput
