@@ -5,12 +5,6 @@ classdef branch < solver.matter.base.branch
     % pressure rises from components) but uses a completly different
     % solution method
 
-    properties (SetAccess = public, GetAccess = public)
-        
-        
-        
-    end
-    
     properties (SetAccess = protected, GetAccess = public)
         % Actual time between flow rate calculations
         fTimeStep = 0;

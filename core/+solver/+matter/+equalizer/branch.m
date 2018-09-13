@@ -3,13 +3,6 @@ classdef branch < solver.matter.base.branch
 %
 % No pressure drop or f2f components taken into account, just equalize
 % pressures between phases. No own time step, updates when phases update.
-%
-%
-%TODO
-%   - check mass flows into both phases -> take into account?
-%   - check oPhases --> bSynced could probably be deactivated if the only
-%     other connected branch is the one we're aligned with?
-%   - own time step?
     
     properties (SetAccess = protected, GetAccess = public)
         % Which maximum flow rate [kg/s] reached at ...
@@ -22,9 +15,6 @@ classdef branch < solver.matter.base.branch
         % first row defines pressure difference [Pa], the second row
         % defines the according flow rate [kg/s]
         mfFlowByPressDiff; % = [ 0 10132.5; 0 0.02 ];
-        
-        
-        %afExec = [];
         
         
         % If solver is aligned with another branch's solver, which means
@@ -109,20 +99,11 @@ classdef branch < solver.matter.base.branch
     
     methods (Access = protected)
         function update(this)
-            %CHECK gt or gt/eq?
-            if (this.oBranch.oContainer.oTimer.fTime <= this.fLastUpdate) && ~this.bRegisteredOutdated
-                %if ~this.bRegisteredOutdated, this.warn('update', 'Called a 2nd time in this time step, but prevented by bRegisteredOutdated'); end;
-                %return;
-            end
-            
             % Get pressures
             fPressureLeft  = this.oBranch.coExmes{1}.getPortProperties();
             fPressureRight = this.oBranch.coExmes{2}.getPortProperties();
             fPressDiff     = fPressureLeft - fPressureRight;
             fFlowRate      = 0;
-            %iDir           = sif(fPressDiff < 0, -1, 1);
-            %fPressDiff     = iDir * fPressDiff;
-            
             
             if fPressDiff == 0
                 % ...
@@ -153,18 +134,9 @@ classdef branch < solver.matter.base.branch
                 fFlowRate = sif(fPressDiff >= 0, fFlowRate, -1 * fFlowRate);
             end
             
-            
             fFlowRate = (this.fOldFlowRate * this.iDampFR + fFlowRate) / (this.iDampFR + 1);
             
             this.fOldFlowRate = fFlowRate;
-            
-            %disp('>>>> Update equalizer');
-            %disp(fFlowRate);
-            %disp(this.oBranch.sName);
-            
-            if this.oBranch.oContainer.oTimer.iTick >= 500
-                %keyboard();
-            end
             
             
             % Now check if we're synced to another solver. If yes, use that
@@ -173,18 +145,8 @@ classdef branch < solver.matter.base.branch
             if ~isempty(this.oSyncedSolver)
                 iInv = sif(this.bAlignedSolverInvertedFlowRate, -1, 1);
                 
-%                 if abs(fFlowRate) > abs(this.oSyncedSolver.fFlowRate) / 10
-%                     fFlowRate = iDir * abs(this.oSyncedSolver.fFlowRate) / 10;
-%                 end
-                
-                %disp('synced');
                 fFlowRate = iInv * this.oSyncedSolver.fFlowRate + fFlowRate;
             end
-            
-            
-            
-            %disp([ this.oBranch.sName ' eq @' num2str(this.oBranch.oContainer.oTimer.fTime) ]);
-            %this.afExec(end + 1) = this.oBranch.oContainer.oTimer.fTime;
             
             update@solver.matter.base.branch(this, fFlowRate);
         end

@@ -1,6 +1,10 @@
 classdef hydraulic < handle
     %HYDRAULIC Delta Pressure Calculation via Hydraulic Length and Diameter
-    %   Detailed explanation goes here
+    % Solvers of this type are only provided the current hydraulic diameter
+    % (can change for valves) and length and calculate the flowrate from
+    % this information. Active components are required to implement the
+    % calculateDeltaPressure function to provide the delta pressure of the
+    % active component (e.g. fan or pump)
     
     properties
         fHydrDiam;

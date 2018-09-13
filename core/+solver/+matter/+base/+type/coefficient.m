@@ -1,6 +1,9 @@
 classdef coefficient < handle
-    %MANUAL Summary of this class goes here
-    %   Detailed explanation goes here
+    %COEFFICIENT Delta pressure calculation via coefficient.
+    % Solvers of this type require their F2Fs to implement the function
+    % getCoefficient, which multiplied with the flowrate, results in a
+    % delta pressure. The solver can then use this to calculate the overall
+    % branch flowrate.
     
     properties (SetAccess = protected, GetAccess = public)
         getCoefficient
