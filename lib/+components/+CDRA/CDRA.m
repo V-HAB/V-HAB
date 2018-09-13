@@ -216,7 +216,7 @@ classdef CDRA < vsys
             % cell number during the simulation. The adsorbed in the
             % calculation can be reduced since it is both in the
             % denominator and numerator
-            fLoadingFirstCell13x        = (0.16 * 5) / tInitialization.Sylobead.iCellNumber;
+            fLoadingFirstCell13x        = (0.16 * 5) / tInitialization.Zeolite13x.iCellNumber;
             tStandardInit.Zeolite13x.mfInitialH2O          = fLoadingFirstCell13x : -fLoadingFirstCell13x/(tInitialization.Zeolite13x.iCellNumber - 1) : 0;
            	
             fLoadingFirstCellSylobeadAbsorb = (0.28 * 5) / tInitialization.Sylobead.iCellNumber;

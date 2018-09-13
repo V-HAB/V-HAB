@@ -91,10 +91,6 @@ function update(this)
             afP2PFlowsHelper = afFullBoundaryConditions(iStartZeroSumEquationsFull:end)';
             afP2PFlows(iP2PUpdates, 1:length(afP2PFlowsHelper)) = afP2PFlowsHelper;
             
-            if bP2POscillationDetected
-                afBoundaryConditions(iStartZeroSumEquationsFull:end) = (sum(afP2PFlows(iP2PUpdates-2:iP2PUpdates, 1:length(afP2PFlowsHelper)),1)./3)';
-            end
-            
             if ~bP2POscillationDetected && iP2PUpdates > 3
                 afP2PDiffLastCalc   = afP2PFlows(iP2PUpdates,:)   - afP2PFlows(iP2PUpdates-1,:);
                 afP2PDiff1          = afP2PFlows(iP2PUpdates,:)   - afP2PFlows(iP2PUpdates-2,:);
