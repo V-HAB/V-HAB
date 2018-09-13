@@ -212,8 +212,8 @@ classdef CDRA < vsys
             tStandardInit.Zeolite13x.mfInitialH2O             = 0.16 : -0.16/tInitialization.Zeolite13x.iCellNumber : 0;
             
             tStandardInit.Sylobead.mfInitialCO2               = zeros(tInitialization.Sylobead.iCellNumber,1);
-            tStandardInit.Sylobead.mfInitialH2OAbsorb         = 0.28 : -0.28/tInitialization.Zeolite13x.iCellNumber : 0;
-            tStandardInit.Sylobead.mfInitialH2ODesorb         = 0.05 : -0.05/tInitialization.Zeolite13x.iCellNumber : 0;
+            tStandardInit.Sylobead.mfInitialH2OAbsorb         = 0.28 : -0.28/tInitialization.Sylobead.iCellNumber : 0;
+            tStandardInit.Sylobead.mfInitialH2ODesorb         = 0.05 : -0.05/tInitialization.Sylobead.iCellNumber : 0;
             
         	tStandardInit.Zeolite5A.mfInitialCO2              = zeros(tInitialization.Zeolite5A.iCellNumber,1);
         	tStandardInit.Zeolite5A.mfInitialH2O              = zeros(tInitialization.Zeolite5A.iCellNumber,1);
