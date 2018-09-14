@@ -190,7 +190,7 @@ classdef container < sys
             % in the container at all. In some cases, there can be 
             % subsystems with no branches. The heat exchanger component is 
             % an example. It only provides two processors. So we check for 
-            % existin branches first. 
+            % existing branches first. 
             if ~isempty(this.aoBranches)
                 % Now we can get the 2xN matrix for all the branches in the
                 % container.
@@ -213,8 +213,8 @@ classdef container < sys
                 
                 for iI = 1:length(this.aoBranches)
                     % So now the stubs are deleted and the pass-through are
-                    % already sealed, so we only have to seal the non-interface
-                    % branches and the
+                    % already sealed, so we only have to seal the
+                    % non-interface branches.
                     if sum(this.aoBranches(iI).abIf) <= 1
                         this.aoBranches(iI).seal();
                     end
@@ -321,7 +321,7 @@ classdef container < sys
             this.aoBranches(end + 1, 1)     = oBranch;
             if ~isempty(oBranch.sCustomName)
                 if isfield(this.toBranches, oBranch.sCustomName)
-                    error('A branch with this custom name already exists')
+                    this.throw('addBranch', 'Branch with custom name "%s" alreay exists!', oBranch.sCustomName);
                 else
                     this.toBranches.(oBranch.sCustomName) = oBranch;
                 end
@@ -563,6 +563,10 @@ classdef container < sys
                         sName = sName(1:namelengthmax);
                     end
                     this.toBranches = rmfield(this.toBranches, sName);
+                    
+                    % We also need to decrease the iBranches property by
+                    % one.
+                    this.iBranches = this.iBranches - 1;
                 end
             end
         end

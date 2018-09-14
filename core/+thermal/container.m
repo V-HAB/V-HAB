@@ -320,9 +320,9 @@ classdef container < sys
                 % Using the element-wise AND operator '&' we delete only the
                 % branches with abIf = [1; 0].
                 % First we create a helper array.
-                aoBranchStubs = this.aoThermalBranches(mbIf(1,:) & ~mbIf(2,:));
+                aoBranchStubs = this.aoThermalBranches(mbIf(1,:) & mbIf(2,:));
                 % Now we delete the branches from the aoBranches property.
-                this.aoThermalBranches(mbIf(1,:) & ~mbIf(2,:)) = [];
+                this.aoThermalBranches(mbIf(1,:) & mbIf(2,:)) = [];
                 % Now, using the helper array, we delete the fields from
                 % the toBranches struct.
                 for iI = 1:length(aoBranchStubs)
@@ -338,6 +338,10 @@ classdef container < sys
                         sName = sName(1:namelengthmax);
                     end
                     this.toThermalBranches = rmfield(this.toThermalBranches, sName);
+                    
+                    % We also need to decrease the iThermalBranches
+                    % property by one. 
+                    this.iThermalBranches = this.iThermalBranches - 1;
                 end
             end
         end
