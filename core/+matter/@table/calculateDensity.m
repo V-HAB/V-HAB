@@ -10,7 +10,7 @@ function fDensity = calculateDensity(this, varargin)
 %
 %   Examples: fDensity = calculateDensity(oFlow);
 %             fDensity = calculateDensity(oPhase);
-%             fDensity = calculateDensity(sType, afMass, fTemperature, afPartialPressures);
+%             fDensity = calculateDensity(sType, xfMass, fTemperature, afPartialPressures);
 %
 % calculateDensity returns
 %  fDensitiy - density of matter in current state in kg/m^3
@@ -106,10 +106,10 @@ else
     % This part is in case values directly passed to this function, rather
     % than a phase or flow object.
     sMatterState = varargin{1};
-    afMass       = varargin{2};
+    xfMass       = varargin{2};
     
-    if isstruct(afMass)
-        tfMass = afMass;
+    if isstruct(xfMass)
+        tfMass = xfMass;
         afMass = zeros(1, this.iSubstances);
         csSubstances = fieldnames(tfMass);
         for iSubstance = 1:length(csSubstances)
