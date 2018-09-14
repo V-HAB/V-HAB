@@ -174,23 +174,6 @@ classdef exme < base
                 end
             end
         end
-
-        
-        function [ fPortPressure, fPortTemperature ] = getPortProperties(this)
-        % Method returns absolute values of pressure and temperature of the
-        % extracted matter
-        % For e.g. a liquid phase, the pressure would depend on gravity,
-        % filling level and position of the port, which could be
-        % implemented by a derived version of the EXME. See the according
-        % matter.procs.exme.[phase type] for that.
-            this.throw('getPortProperties', 'Can''t be called in matter.procs.exme');
-            
-            % These two lines are only here to make MATLAB shut up about
-            % unset return variables.
-            fPortPressure = 0;
-            fPortTemperature = 0;
-        end
-        
         
         function [ arPartialMass, fMolarMass, fSpecificHeatCapacity ] = getMatterProperties(this)
             %CHECK If a p2p processor asks for the port properties, makes
@@ -213,7 +196,13 @@ classdef exme < base
     
     %% ABSTRACT METHODS - the concrete exmes have to define those!
     methods (Abstract = true)
-        
+        % Method returns absolute values of pressure and temperature of the
+        % extracted matter
+        % For e.g. a liquid phase, the pressure would depend on gravity,
+        % filling level and position of the port, which could be
+        % implemented by a derived version of the EXME. See the according
+        % matter.procs.exme.[phase type] for that.
+        getPortProperties(~);
     end
     
     
