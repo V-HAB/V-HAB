@@ -23,7 +23,7 @@ classdef ExampleSubsystem < vsys
             createMatterStructure@vsys(this);
             
             % Creating a filter as shown in the p2p Example
-            tutorials.subsystems.components.Filter(this, 'Filter', 10);
+            tutorials.subsubsystems.components.Filter(this, 'Filter', 10);
             
             % Creating the branch from the parent system into this subsystem
             % Input parameter format is always: 
