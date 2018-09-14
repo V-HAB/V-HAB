@@ -424,6 +424,23 @@ classdef container < sys
             oRightSys.connectIF(sRightSysIf, sRightIf);
             
         end
+        
+        function checkMatterSolvers(this)
+            % Check if all branches have a solver, both here and in our
+            % children.
+            
+            csChildren = fieldnames(this.toChildren);
+            for iChild = 1:this.iChildren
+                this.toChildren.(csChildren{iChild}).checkMatterSolvers();
+            end
+            
+            for iBranch = 1:length(this.aoBranches)
+                if isempty(this.aoBranches(iBranch).oHandler)
+                    error('Error in System ''%s''. The branch ''%s'' has no solver.', this.sName, this.aoBranches(iBranch).sName);
+                end
+                
+            end
+        end
     end
     
     

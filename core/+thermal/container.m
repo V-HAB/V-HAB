@@ -184,7 +184,7 @@ classdef container < sys
         end
         
         function setThermalSolvers(this, ~)
-            % automatically assing solver for branches which do not yet
+            % automatically adding solver for branches which do not yet
             % have a handler
             for iBranch = 1:this.iThermalBranches
                 if isempty(this.aoThermalBranches(iBranch).oHandler)
@@ -204,6 +204,24 @@ classdef container < sys
             end
         end
         
+        
+        function checkThermalSolvers(this)
+            % Check if all branches have a solver, both here and in our
+            % children.
+            
+            csChildren = fieldnames(this.toChildren);
+            for iChild = 1:this.iChildren
+                this.toChildren.(csChildren{iChild}).checkThermalSolvers();
+            end
+            
+            for iBranch = 1:length(this.aoThermalBranches)
+                % If the branch handler is empty, there is an error. 
+                if isempty(this.aoThermalBranches(iBranch).oHandler)
+                    error('Error in System ''%s''. The branch ''%s'' has no solver.', this.sName, this.aoThermalBranches(iBranch).sName);
+                end
+                
+            end
+        end
     end
     
     % Changed --> allow external access, e.g. scheduler needs to be able to

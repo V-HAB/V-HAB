@@ -49,20 +49,6 @@ classdef vsys < matter.container & thermal.container & electrical.container & sy
             for iC = 1:length(csChildren)
                 sChild = csChildren{iC};
                 this.toChildren.(sChild).createSolverStructure();
-                
-                oChild = this.toChildren.(sChild);
-                % Check if all branches have a solver!
-                for iBranch = 1:length(oChild.aoBranches)
-                    if isempty(oChild.aoBranches(iBranch).oHandler)
-                        error('Error in System ''%s''. The branch ''%s'' has no solver.', oChild.sName, oChild.aoBranches(iBranch).sName);
-                    end
-                    
-                end
-                for iThermalBranch = 1:length(oChild.aoThermalBranches)
-                    if isempty(oChild.aoThermalBranches(iThermalBranch).oHandler)
-                        error('Error in System ''%s''. The branch ''%s'' has no solver.', oChild.sName, oChild.aoThermalBranches(iThermalBranch).sName);
-                    end
-                end
             end
         end
         
