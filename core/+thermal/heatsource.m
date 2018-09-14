@@ -7,10 +7,6 @@ classdef heatsource < base & event.source
     %   post-tick. This thermal solver update is however only triggered, if
     %   the change in power is greater than one milliwatt. This is to
     %   prevent too frequent updates, which take a long time. 
-    %
-    %TODO include some kind of sign handling? Just like branch - have two
-    %     'ends' of the heat source, and a positive heat flow on the left
-    %     end means a negative one on the right end etc.
     
     properties (SetAccess = protected)
         sName;
@@ -59,7 +55,6 @@ classdef heatsource < base & event.source
             end
         end
         
-        % SCJO: @OLCL is this so much faster than using .trigger('update')?
         function setUpdateCallBack(this, oThermalSolver)
             this.hTriggerSolverUpdate = @oThermalSolver.registerUpdate;
         end
@@ -84,7 +79,5 @@ classdef heatsource < base & event.source
                 this.bTriggerUpdateCallbackBound = true;
             end
         end
-    end
-    
+    end 
 end
-

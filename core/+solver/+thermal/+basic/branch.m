@@ -52,10 +52,7 @@ classdef branch < solver.thermal.base.branch
                 fDeltaTemperature = this.oBranch.coExmes{1}.oCapacity.fTemperature^4 - this.oBranch.coExmes{2}.oCapacity.fTemperature^4;
             
             end
-
-            % TO DO: check if this is also true for radiation, and if it is
-            % even possible to have multiple radiators in a row (mylar
-            % foil?)
+            
             afThermalResistance = 1./afConductivity;
 
             % See Wärmeübetragung Polifke equation 3.16, only valid if

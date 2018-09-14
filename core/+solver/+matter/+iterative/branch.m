@@ -701,6 +701,9 @@ classdef branch < solver.matter.base.branch
                 % initial - tanks equalized - just nothing ...?
                 elseif rError == 0
                     rError = 1;
+                elseif (fFlowRate < this.oBranch.oContainer.oTimer.fMinimumTimeStep)
+                    %rError = 1;
+                end
                 
             end
 
@@ -727,10 +730,6 @@ classdef branch < solver.matter.base.branch
     methods (Access = protected)
         %% Calculate new time step
         function calculateTimeStep(this, fFlowRateUnrounded, fFlowRate)
-            %TODO should probably depend in flow speed vs. length of
-            %     branch or something? Maybe flowrate vs. mass in phases,
-            %     and flow speed?
-            
             if ~isempty(this.fFixedTS)
                 
                 if this.fTimeStep ~= this.fFixedTS
@@ -740,207 +739,64 @@ classdef branch < solver.matter.base.branch
                 
             else
                 
-                if this.bUseAltTimeStepLogic && bXXXXXX
-                    %%%%%%%% Alternative Time Step %%%%%%%%
-                    % Just checks for alternating flowrate increase and
-                    % decrease from step to step, and reduces flow rate in
-                    % that case. Assumes that connected phases have small
-                    % enough rMaxChange parameters to deal with the
-                    % absolute flow rate change.
-                    
-                    if isempty(this.fMinStep) || this.fMinStep < this.oBranch.oContainer.oTimer.fMinimumTimeStep
-                        this.fMinStep = this.oBranch.oContainer.oTimer.fMinimumTimeStep;
-                    end
-
-                    fOldStep = this.fTimeStep;
-                    iRemDeSi = this.iRememberDeltaSign;
-                    iPrec    = this.oBranch.oContainer.oTimer.iPrecision;
-                    iExp     = 5;
-
-                    this.abDeltaPositive(1:iRemDeSi)   = this.abDeltaPositive(2:(iRemDeSi + 1));
-                    this.abDeltaPositive(iRemDeSi + 1) = fFlowRate > this.fFlowRate;
-
-                    if tools.round.prec(fFlowRate, iPrec) == tools.round.prec(this.fFlowRate, iPrec)
-                        this.abDeltaPositive(iRemDeSi + 1) = this.abDeltaPositive(iRemDeSi);
-                    end
-
-
-                    % The abDeltaPositive array stores booleans, true if for
-                    % the according time step, the new flow rate was greater
-                    % than the old one, and false if it was lower. If the flow
-                    % rate was the same, previous bool value used.
-                    %
-                    % Therefore this creates an array with one element less
-                    % than the stored bools, with a 1 if a switch happend (e.g.
-                    % flow rate was becoming larger each tick, then smaller),
-                    % and a 0 if nothing changed (not the flow rate itself did
-                    % not change, the direction in which it was adapted did not
-                    % change).
-                    aiChanges = abs(diff(this.abDeltaPositive));
-                    % This creates an array the length of aiChanges, each index
-                    % representing an increasing weight which are then 
-                    % converted to relative weights.
-                    afExp = (1:iRemDeSi) .^ iExp;
-                    arExp     = afExp ./ sum(afExp);
-                    % Therefore, delta fr sign changes in more recent ticks
-                    % weigh more than 'older' ones as for this array, the
-                    % (relative, i.e. the sum is 1) weights are multiplied with
-                    % the indicators for delta sign changes.
-                    rChanges  = sum(arExp .* aiChanges);
-                    % This means if rChanges is 0, no change in the delta sign
-                    % has happend. If it is 1, for every time step a change has
-                    % happend.
-
-
-                    % Min and max timestep - interpolate based on rChanges.
-                    % Create a base vector for interpolation, between 0 and 1 
-                    % to match rChanges
-                    arBase = 0:0.01:1;
-                    % Create weighted version for results - can't do linear
-                    % interpolation between e.g. 1e-8 and 10 based on rChanges,
-                    % would tend to be way too large
-                    afWeighted = arBase .^ (iExp * 2);
-                    % We were between 0 and 1 - which we should still be. So
-                    % expand / move to match the min/max TS domain:
-                    afWeighted = this.fMinStep + afWeighted * (this.fMaxStep - this.fMinStep);
-
-
-                    % Now do the interpolation. We have to turn around rChanges
-                    % - in our weighted TS vector, at position 0 we have the
-                    % smalles TS and vice versa.
-                    fNewStep = interp1(arBase, afWeighted, 1 - rChanges);
-                    %keyboard();
-                    %fprintf('[%s] FR: %f, TS: %f\n', this.oBranch.sName, this.fFlowRate, fNewStep);
-
-
-                    this.setTimeStep(fNewStep);
-                    this.fTimeStep = fNewStep;
                 
+                %%%%%%%% TS calc %%%%%%%%
+                    
+                % In case both were zero!
+                if fFlowRateUnrounded == this.fFlowRateUnrounded
+                    rChange = 0;
+
                 else
-                    %%%%%%%% Old TS calc %%%%%%%%
+                    rChange = abs(abs(fFlowRateUnrounded / this.fFlowRateUnrounded) - 1);
+                end
 
-                    % Change in flow rate
-                    %TODO use this.fLastUpdate and this.oBranch.oCont.oBranch.oContainer.oTimer.fTime
-                    %     and set the rChange in relation to elapsed time!
-                    %rChange = abs(fFlowRate / this.fFlowRate - 1);
-                    
-                    %fChange = tools.round.prec(fFlowRateUnrounded - this.fFlowRateUnrounded, this.oBranch.oContainer.oTimer.iPrecision);
-                    %rChange = abs(fChange / this.fFlowRateUnrounded);
-                    
-                    
-                    % In case both were zero!
-                    if fFlowRateUnrounded == this.fFlowRateUnrounded
-                        rChange = 0;
-                        
+
+                if isinf(rChange) || isnan(rChange)
+                    rChange = 1;
+                end
+
+                rChange = tools.round.prec(rChange, this.oBranch.oContainer.oTimer.iPrecision);
+
+                % Change in flow rate direction? Min. time step!
+
+                if false && (fFlowRate == 0) && (this.fFlowRate ~= 0)
+                    fNewStep = fOldStep;
+                elseif false && (rChange < 0) || isinf(rChange) || (this.iSignChangeFRCnt > 1)
+                    fNewStep = 0;
+                    this.iSignChangeFRCnt = this.iSignChangeFRCnt + 1;
+
+                elseif false && (fFlowRate == 0) && (this.fFlowRate == 0)
+                    % If both the current and the previous flow rate
+                    % are zero, then nothing is happening in the system
+                    % at the moment so we can set the new time step to
+                    % maximum. 
+                    fNewStep = this.fMaxStep;
+                else
+
+                    if this.iSignChangeFRCnt > 1
+                        this.iSignChangeFRCnt = this.iSignChangeFRCnt - 1;
                     else
-                        rChange = abs(abs(fFlowRateUnrounded / this.fFlowRateUnrounded) - 1);
+                        this.iSignChangeFRCnt = 0;
                     end
-                    
-                    
-                    if isinf(rChange) || isnan(rChange)
-                        rChange = 1;
-                    end
-                    
-                    
-                    %fprintf('%.12f\n', rChange);
-                    
-                    
-                    
-                    %fMass = min([ this.oBranch.coExmes{1}.oPhase.fMass, this.oBranch.coExmes{1}.oPhase.fMass ]);
-                    
-                    %if this.oBranch.oContainer.oTimer.iTick > 400
-                        %fprintf('rC %.12f, rC_rnd %.12f, rC_new %.12f\n', rChange, tools.round.prec(rChange, this.oBranch.oContainer.oTimer.iPrecision), rChange / fMass);
-                    %end
-                    
-                    
-                    %keyboard();
-                    rChange = tools.round.prec(rChange, this.oBranch.oContainer.oTimer.iPrecision);
-                    
-                    
-                    % Old time step
-%                     fOldStep = this.fTimeStep;
-% 
-%                     if fOldStep < this.oBranch.oContainer.oTimer.fMinimumTimeStep
-%                         fOldStep = this.oBranch.oContainer.oTimer.fMinimumTimeStep;
-%                     end
+                    this.rFlowRateChange = (rChange + this.iRemChange * this.rFlowRateChange) / (1 + this.iRemChange);
 
-                    % Change in flow rate direction? Min. time step!
-                    
-                    if false && (fFlowRate == 0) && (this.fFlowRate ~= 0)
-                        fNewStep = fOldStep;
-                        %disp('FR 0, OLD FR NOT 0');
-                        
-                    elseif false && (rChange < 0) || isinf(rChange) || (this.iSignChangeFRCnt > 1)
+                    % Change larger than limit? Minimum time step.
+                    if this.rFlowRateChange > this.rMaxChange
                         fNewStep = 0;
-                        
-                        %disp('SIGN CHANGE, INF OR NEG CHANGE');
-
-                        this.iSignChangeFRCnt = this.iSignChangeFRCnt + 1;
-
-                    elseif false && (fFlowRate == 0) && (this.fFlowRate == 0)
-                        % If both the current and the previous flow rate
-                        % are zero, then nothing is happening in the system
-                        % at the moment so we can set the new time step to
-                        % maximum. 
-                        fNewStep = this.fMaxStep;
-                        
-                        %disp('FR 0, OLD FR 0');
                     else
-                        
-                        if this.iSignChangeFRCnt > 1
-                            this.iSignChangeFRCnt = this.iSignChangeFRCnt - 1;
-                        else
-                            this.iSignChangeFRCnt = 0;
-                        end
-
-                        % Remember/damp flow rate changes
-%                         if rChange >= this.rFlowRateChange
-%                            this.rFlowRateChange = rChange;
-%                         else
-                            this.rFlowRateChange = (rChange + this.iRemChange * this.rFlowRateChange) / (1 + this.iRemChange);
-%                         end
-                        %disp(this.rFlowRateChange);
-                        
-                        
-                        %fprintf('[%i] Damped %f, Curr %f [%.12f vs old %.12f]\n', this.oBranch.oTimer.iTick, this.rFlowRateChange, rChange, fFlowRateUnrounded, this.fFlowRateUnrounded);
-                        
-                        % Change larger than limit? Minimum time step.
-                        if this.rFlowRateChange > this.rMaxChange
-                            fNewStep = 0;
-                        else
-                            % Interpolate
-                            %fNewStep = interp1([ 0 this.rSetChange this.rMaxChange ], [ 2 * fOldStep fOldStep 0 ], this.rFlowRateChange, 'linear', 'extrap');
-                            
-                            %fNewStep = interp1([ 0 this.rSetChange this.rMaxChange ], [ this.fMaxStep fOldStep 0 ], this.rFlowRateChange, 'pchip', 'extrap');
-                            %fNewStep = interp1([ 0 this.rSetChange this.rMaxChange ], [ this.fMaxStep fOldStep 0 ], this.rFlowRateChange, 'linear', 'extrap');
-                            
-                            
-                            %fInt = interp1([ 0 this.rMaxChange ], [ 1 0 ], this.rFlowRateChange, 'linear', 'extrap');
-                            fInt = 1 - this.rFlowRateChange / this.rMaxChange;
-                            iI = this.fSensitivity;
-                            fNewStep = fInt.^iI * this.fMaxStep + this.oBranch.oContainer.oTimer.fMinimumTimeStep;
-                        end
-                        %disp(fNewStep);
-                        
-                        %fprintf('TS %.12f   FRCHANGE %f    CHANGE %f\n', fNewStep, this.rFlowRateChange, rChange);
+                        % Interpolate
+                        fInt = 1 - this.rFlowRateChange / this.rMaxChange;
+                        iI = this.fSensitivity;
+                        fNewStep = fInt.^iI * this.fMaxStep + this.oBranch.oContainer.oTimer.fMinimumTimeStep;
                     end
-                    
-                    %%fprintf('%.10f - %.12fs\n', this.rFlowRateChange, fNewStep);
 
                     if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end
 
                     this.setTimeStep(fNewStep, true);
-        %             disp(this.rFlowRateChange);
-        %             disp(fNewStep);
-        %             disp('---------');
                     this.fTimeStep = fNewStep;
 
                 end
-                
             end
-            
-        end % end of calculateTimeStep
-        
+        end
     end
-    
 end

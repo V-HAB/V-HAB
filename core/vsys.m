@@ -10,8 +10,7 @@ classdef vsys < matter.container & thermal.container & electrical.container & sy
     %   step.
     
     properties (SetAccess = protected, GetAccess = public)
-        % Execute container .exec on this exec? Set to false if solver, atm
-        %TODO throw out? need solver anyway, and if just a manual one?
+        % Execute container .exec on this exec? Set to false if solver
         bExecuteContainer = false;
         
         bSealed;
@@ -98,7 +97,5 @@ classdef vsys < matter.container & thermal.container & electrical.container & sy
                 exec@electrical.container(this, this.fLastTimeStep);
             end
         end
-    end
-    
+    end 
 end
-

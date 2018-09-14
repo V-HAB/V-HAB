@@ -4,17 +4,12 @@ classdef timed < sys
     %   execution, or set a fixed interval for calling the exec method. The
     %   setTimestep method can be used to adjust that interval at any time
     %   in the simulation.
-    %
-    %NOTE make sure the .exec() method here is called to trigger 'exec' or
-    %     trigger that event manually in child class.
     
     properties (SetAccess = protected, GetAccess = public)
        % Reference to timer object
-       % @type object
        oTimer;
        
        % Current time step
-       % @type float
        fTimeStep;
        
        fLastExec     = -1;
@@ -48,9 +43,6 @@ classdef timed < sys
         function exec(this, ~)
             % Specifically don't call the sys exec - we do trigger event
             % here with time provided!
-            %TODO need to extend that logic. Problably need pre/post exec
-            %     triggers? Should child systems call the parent exec
-            %     method before or after they actually execute?
             
             this.fLastTimeStep = this.oTimer.fTime - this.fLastExec;
             
@@ -71,7 +63,6 @@ classdef timed < sys
             this.fTimeStep = fTimeStep;
             
             % If logical false - link to parent
-            %if fTimeStep == -1
             if islogical(fTimeStep) && ~fTimeStep
                 % Unregister with timer if we're registered!
                 if ~isempty(this.unbindCB)
@@ -111,4 +102,3 @@ classdef timed < sys
         end
     end
 end
-

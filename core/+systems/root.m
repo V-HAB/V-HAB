@@ -20,8 +20,6 @@ classdef root < sys
         
         function setParent(this, ~)
             % Not really adding a parent, haw-haw!
-            
-            %TODO check - leave empty or reference back to itself?
             this.oParent = this;
         end
         

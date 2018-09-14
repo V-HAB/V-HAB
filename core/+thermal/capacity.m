@@ -32,11 +32,9 @@ classdef capacity < base & event.source
         % Internal properties
         
         % Specific heat capacity of mixture in phase
-        % @type float
         fSpecificHeatCapacity = 0; % [J/(K*kg)]
         
         % Total heat capacity of mixture in phase
-        % @type float
         fTotalHeatCapacity = 0; % [J/(K*kg)]
         
         % Property to store the current overall heat flow of this capacity
@@ -138,7 +136,6 @@ classdef capacity < base & event.source
             % calculation is executed it is checked here if the pressure
             % and/or temperature have changed significantly enough to
             % justify a recalculation
-            % TO DO: Make limits adaptive
             if (this.oTimer.iTick <= 0)
                 return
             end
@@ -616,9 +613,7 @@ classdef capacity < base & event.source
                 % Tell branch to recalculate flow rate (done after
                 % the current tick, in timer post tick).
                 oBranch.setOutdated();
-            end % end of: for
-            
-        end % end of: setBranchesOutdated method
-
+            end
+        end
     end
 end

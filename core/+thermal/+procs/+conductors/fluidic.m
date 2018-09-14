@@ -27,12 +27,6 @@ classdef fluidic < thermal.procs.conductor
         
         function fConductivity = update(this, ~)
             
-            % TO DO: if we allow heat capacity changes inside a branch, we
-            % have to decide how to close the energy balance for that case
-            % (as thermal branches, like mass branches, do not contain
-            % "thermal mass" this is in the current logic difficult and
-            % would require us to allow branches to contain mass or in this
-            % case energy)
             if this.oMassBranch.fFlowRate >= 0
                 iExme = 1;
             else
@@ -47,7 +41,6 @@ classdef fluidic < thermal.procs.conductor
         
         
         function updateConnectedMatterBranch(this, oMassBranch)
-            % TO DO: limit acces to container
             this.oMassBranch = oMassBranch;
         end
             
