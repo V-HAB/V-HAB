@@ -51,12 +51,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         % are calculated anyway) we store both the adsorption and
         % desorption flows in this property
         mfFlowRates
-        
-        % boolean matrix to decide if the P2P should ignore small pressures
-        % (less than afIgnoredPP Pa) to prevent oscillations
-        mbIgnoreSmallPressures;
-        afIgnoredPP;
-        
 
     end
     
@@ -87,11 +81,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 mfAbsorptionEnthalpyHelper = mfAbsorptionEnthalpyHelper + rAbsorberMassRatio * this.oMT.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.mfAbsorptionEnthalpy;
             end
             this.mfAbsorptionEnthalpy = mfAbsorptionEnthalpyHelper;
-            
-            % usually ignore small pressures for all substances
-            this.mbIgnoreSmallPressures = true(1,this.oMT.iSubstances);
-            this.afIgnoredPP = ones(1,this.oMT.iSubstances);
-            this.afIgnoredPP = 0.5 .* this.afIgnoredPP;
         end
         
         function update(~)
@@ -173,8 +162,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 afCurrentMolsIn     = (this.afPartialInFlows ./ this.oMT.afMolarMass);
                 arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
                 afPP                = arFractions .*  fPressure; 
-                
-                afPP((afPP < this.afIgnoredPP) & this.mbIgnoreSmallPressures) = 0;
             end
             
             % use the matter table to calculate the equilibrium loading and
@@ -263,12 +250,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
 
                         iIteration = iIteration + 1;
                     end
-                    
-                    if (afMinPP(miSubstances(iSubstance)) < this.afIgnoredPP(miSubstances(iSubstance))) && this.mbIgnoreSmallPressures(miSubstances(iSubstance))
-                        afMinPPFinal(miSubstances(iSubstance)) = this.afIgnoredPP(miSubstances(iSubstance));
-                    else
-                        afMinPPFinal(miSubstances(iSubstance)) = afMinPP(miSubstances(iSubstance));
-                    end
+                    afMinPPFinal(miSubstances(iSubstance)) = afMinPP(miSubstances(iSubstance));
                 end
                 
                 arMinMolarFraction = afMinPPFinal ./ fPressure;

@@ -115,17 +115,6 @@ function updateNetwork(this, bForceP2Pcalc)
                             oPhase.updatePartials(afInFlowRates .* aarInPartials);
                         end
                         
-                        % TO DO: for another value as in every tick the
-                        % calculation of the flowrates in case it is below
-                        % zero must be changed but during testing sometimes
-                        % lead to osciallating P2P flowrates, maybe the
-                        % overall network update could be repeated with
-                        % bForceP2P = true? Also allow the user to set this
-                        % value? Write a setSolverProperties function,
-                        % similar to the setTimeStep function of the phase
-                        % to set this value and the maximum number of
-                        % iterations, as well as the max Error for the
-                        % iterative solution
                         if bForceP2Pcalc
                             for iProcP2P = 1:oPhase.iProcsP2Pflow
                                 oProcP2P = oPhase.coProcsP2Pflow{iProcP2P};
