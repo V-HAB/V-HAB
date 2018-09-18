@@ -302,6 +302,64 @@ classdef setup < simulation.infrastructure
             oPlotter.defineFigure(coPlot,  'Plots');
             
             oPlotter.plot();
+            
+            %% Get Test Data:
+            iFileID = fopen(strrep('+tutorials/+CDRA/+TestData/CDRA_Test_Data.csv','/',filesep), 'r');
+            
+            [FilePath,~,~,~] = fopen(iFileID);
+            
+            mfTestData = csvread(FilePath);
+            % at hour 50 of the test data the CO2 input is reduced to 4 CM,
+            % this corresponds to hour 19.3 in the simulation. Therefore
+            % Test data is timeshifted by 30.7 hours to fit the simulation
+            % and ease plotting:
+            mfTestData(:,1) = mfTestData(:,1) - 30.7;
+            % We do not need the negative values (the test data had a
+            % period where an error occur, we start comparing after that)
+            mfTestData(mfTestData(:,1) < 0,:) = [];
+            
+            % Plot overlay with test data:
+            figure()
+            plot(mfTestData(:,1), mfTestData(:,2));
+            grid on
+            xlabel('Time in h');
+            ylabel('Partial Pressure CO_2 in Torr');
+            hold on
+            
+            oLogger = oPlotter.oSimulationInfrastructure.toMonitors.oLogger;
+            for iVirtualLog = 1:length(oLogger.tVirtualValues)
+                if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Partial Pressure CO2 Torr')
+                    calculationHandle = oLogger.tVirtualValues(iVirtualLog).calculationHandle;
+                end
+            end
+            mfCO2PartialPressure = calculationHandle(oLogger.mfLog);
+            mfCO2PartialPressure(isnan(mfCO2PartialPressure)) = [];
+            
+            afTime = (oLogger.afTime./3600)';
+            afTime(isnan(afTime)) = [];
+            
+            plot(afTime, mfCO2PartialPressure);
+            legend('Test Data','Simulation');
+            
+            [afTimeDataUnique, ia, ~] = unique(mfTestData(:,1));
+            afCO2DataUnique = mfTestData(ia,2);
+            
+            InterpolatedTestData = interp1(afTimeDataUnique, afCO2DataUnique, afTime);
+            
+            % There will be some nan values because the simulation has data
+            % before the simulation data, these are removed here
+            mfCO2PartialPressure(isnan(InterpolatedTestData)) = [];
+            InterpolatedTestData(isnan(InterpolatedTestData)) = [];
+            
+            fMaxDiff  = max(abs(mfCO2PartialPressure - InterpolatedTestData));
+            fMinDiff  = min(abs(mfCO2PartialPressure - InterpolatedTestData));
+            fMeanDiff = mean(mfCO2PartialPressure - InterpolatedTestData);
+            
+            disp(['Maximum   Difference between Simulation and Test:     ', num2str(fMaxDiff), ' Torr'])
+            disp(['Minimum   Difference between Simulation and Test:     ', num2str(fMinDiff), ' Torr'])
+            disp(['Mean      Difference between Simulation and Test:     ', num2str(fMeanDiff), ' Torr'])
+            
+            
         end
     end
 end
