@@ -719,19 +719,11 @@ classdef branch < base & event.source
             
             % If sum of the last ten flow rates is < precision, set flow
             % rate to zero
-            if tools.round.prec(sum(this.afFlowRates), this.oContainer.oTimer.iPrecision) == 0
+            if tools.round.prec(sum(this.afFlowRates), 30) == 0
                 fFlowRate = 0;
                 
                 afPressure = zeros(1,this.iFlowProcs);
                 
-            elseif this.fFlowRate == 0 %&& false
-                % If flow rate is already zero, more strict rounding! Don't
-                % re-set a flow rate until its larger then the precision!
-                if tools.round.prec(fFlowRate, this.oContainer.oTimer.iPrecision) == 0
-                    fFlowRate = 0;
-                    
-                    afPressure = zeros(1,this.iFlowProcs);
-                end
             end
             
             
