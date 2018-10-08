@@ -204,15 +204,14 @@ classdef PlantCulture < vsys
             matter.procs.exmes.mixture(oBalance, 'GasExchange1_In');
             matter.procs.exmes.mixture(oBalance, 'GasExchange2_Out');
             
-            oAtmospherePhase = this.toStores.Plant_Culture.createPhase('air', 'PlantAtmosphere', 0.1, 293.15, 0.5, 101325);
-                  
+            cAirHelper = matter.helper.phase.create.air(this.toStores.Plant_Culture, 0.1, 293.15, 0.5, 101325);
+            oAtmospherePhase = matter.phases.gas_flow_node(this.toStores.Plant_Culture, 'PlantAtmosphere',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            
             matter.procs.exmes.gas(oAtmospherePhase, 'Air_From_Greenhouse');
             matter.procs.exmes.gas(oAtmospherePhase, 'Air_To_Greenhouse');
             
             matter.procs.exmes.gas(oAtmospherePhase, 'GasExchange2_In');
             matter.procs.exmes.gas(oAtmospherePhase, 'GasExchange1_Out');
-            
-            oAtmospherePhase.bFlow = true;
             
             %% Create Biomass Growth P2P Processor
             
@@ -301,7 +300,6 @@ classdef PlantCulture < vsys
                 end
             end
             
-            this.toStores.Plant_Culture.toPhases.PlantAtmosphere.bFlow = true;
             %% Assign thermal solvers
             this.setThermalSolvers();
         end

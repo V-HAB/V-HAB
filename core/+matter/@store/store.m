@@ -343,12 +343,24 @@ classdef store < base
             
             %CHECK provide fVolume to helper automatically if varargin
             %      empty - should be required most of the time right?
-            if isempty(varargin), varargin = { this.fVolume }; end
+            if isempty(varargin)
+                cInputs = { this.fVolume };
+                bFlowNode = false;
+            elseif isa(varargin{1}, 'logical')
+                bFlowNode = varargin{1};
+                cInputs = {varargin{2:end}};
+            else
+                cInputs = varargin;
+                bFlowNode = false;
+            end
 
             % Get params and default 
-            [ cParams, sDefaultPhase ] = this.createPhaseParams(sHelper, varargin{:});
+            [ cParams, sDefaultPhase ] = this.createPhaseParams(sHelper, cInputs{:});
             
             % Function handle from phase class path and create object
+            if bFlowNode
+                sDefaultPhase = [sDefaultPhase, '_flow_node'];
+            end
             hClassConstr = str2func(sDefaultPhase);
             oPhase       = hClassConstr(cParams{:});
         end

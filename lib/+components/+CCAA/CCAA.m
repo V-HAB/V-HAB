@@ -163,9 +163,7 @@ classdef CCAA < vsys
             matter.store(this, 'TCCV', 1); 
             % Uses the custom air helper to set the air phase
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.TCCV, this.toStores.TCCV.fVolume, struct('CO2', fCO2Percent), this.tAtmosphere.fTemperature, this.tAtmosphere.fRelHumidity, this.tAtmosphere.fPressure);
-            oAir = matter.phases.gas(this.toStores.TCCV, 'TCCV_PhaseGas', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
-            
-            oAir.bFlow      = true;
+            oAir = matter.phases.gas_flow_node(this.toStores.TCCV, 'TCCV_PhaseGas', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             matter.procs.exmes.gas(oAir, 'Port_In');
             matter.procs.exmes.gas(oAir, 'Port_Out_1');
@@ -181,9 +179,7 @@ classdef CCAA < vsys
             matter.store(this, 'CHX', 2);
             % Input phase
             cAirHelper = matter.helper.phase.create.air_custom(this.toStores.CHX, 1, struct('CO2', fCO2Percent), this.fCoolantTemperature, 0, this.tAtmosphere.fPressure);
-            oInput = matter.phases.gas(this.toStores.CHX, 'CHX_PhaseIn',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
-            
-            oInput.bFlow    = true;
+            oInput = matter.phases.gas_flow_node(this.toStores.CHX, 'CHX_PhaseIn',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             % H2O phase
             cWaterHelper = matter.helper.phase.create.water(this.toStores.CHX, 1, this.fCoolantTemperature, fPressure);
