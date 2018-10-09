@@ -10,9 +10,6 @@ classdef vsys < matter.container & thermal.container & electrical.container & sy
     %   step.
     
     properties (SetAccess = protected, GetAccess = public)
-        % Execute container .exec on this exec? Set to false if solver
-        bExecuteContainer = false;
-        
         bSealed;
     end
     
@@ -86,16 +83,6 @@ classdef vsys < matter.container & thermal.container & electrical.container & sy
             if ~base.oLog.bOff, this.out(2, 1, 'exec', 'vsys.exec system "%s"', { this.sName }); end
             
             exec@systems.timed(this);
-            
-            if this.bExecuteContainer
-                if ~base.oLog.bOff 
-                    this.out(2, 2, 'exec', 'Calling the matter/thermal container exec methods (should that happen??)'); 
-                end
-                
-                exec@matter.container(this, this.fLastTimeStep);
-                exec@thermal.container(this, this.fLastTimeStep);
-                exec@electrical.container(this, this.fLastTimeStep);
-            end
         end
     end 
 end
