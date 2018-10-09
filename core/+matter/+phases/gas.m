@@ -80,6 +80,8 @@ classdef gas < matter.phase
         function this = update(this)
             update@matter.phase(this);
             
+            % Check for volume not empty, when called from constructor
+            if ~isempty(this.fVolume)
                 this.fMassToPressure = this.calculatePressureCoefficient();
                 
                 this.fPressure = this.fMass * this.fMassToPressure;
@@ -108,7 +110,6 @@ classdef gas < matter.phase
                 else
                     this.rRelHumidity = 0;
                 end
-        
             else
                 this.fPressure = 0;
             end
