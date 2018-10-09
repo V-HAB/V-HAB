@@ -1,5 +1,6 @@
 classdef base < handle
-    %BASE Base handle obj class
+    %BASE Base handle obj class all other classes in V-HAB inherit from
+    % base or a subclass of base
     %   Sets uuid, meta class, type usw
     %
     %NOTE prefixes:
@@ -18,19 +19,6 @@ classdef base < handle
     %   specifically says mixed values, could be omitted since in this
     %   example (from @matter.table), the values are containing the prefix,
     %   e.g. fMolarMass).
-    %
-    %TODO (branch/feature logging, nevermind)
-    %   - inf (done at the moment in vhab - replaced with 'null')
-    %
-    %   1) dump, uri download, event reg, socket, cmd exchange console node
-    %       -> each as own module in tools.base.* (later some URI)
-    %       -> .base cfg which are used and configuration for them (e.g.
-    %          dump frequency & data to append, socket port, event listen-
-    %          ers (e.g. call 'dump' on 'tick.post' on objs class 'timer')
-    %   2) add @uri, @version (timer fTime) on dump (also cfg-able in .base)?
-    %       prefix 'localhost' (or '127.0.0.1') on dump, so it can be replaced in vhab.m by actual host?
-    %   3) check - print 'pause?' -> pause(0.1) -> node writes cmd to cons?
-    
     
     %% Static methods/attrs - helpers etc %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -50,18 +38,6 @@ classdef base < handle
     properties (GetAccess = public, Constant)
         % Registered loggers
         oLog = tools.logger();
-        
-        
-        % Attributes for socket connection
-        %NOTE not used right now, dumps directly to console / stdout
-        %sHost = '127.0.0.1';
-        %iPort = 65433;
-        
-        %TODO
-        %   - constructor -> check this.oCO.rxCfg(this.sBase)
-        %       --> with doc(), MetaClass etc create Schema (see old .js /
-        %       XML / genMetaDef) --> @type, @default etc
-        %       --> base a mixin, .serialized() sealed --> aoAllObjs.serialize()?
     end
     
     % Section covers stuff needed for logging - ignore!
@@ -164,20 +140,6 @@ classdef base < handle
         end
     end
     
-    
-    methods (Static = true, Access = private)
-        
-        function createSocket(this)
-            % If socket's not initialized, create one
-            %TODO check if still exists? connection lost or so?
-%             if isempty(base.oCO.oSocket)
-%                 base.oCO.oSocket = this.net.jtcp('request', base.sHost, base.iPort, 'serialize', false);
-%             end
-        end
-    end
-    
-    
-    
     %% Attributes and constructor %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     properties (SetAccess = private, GetAccess = public)
@@ -250,18 +212,6 @@ classdef base < handle
             
             
         end
-        
-        function tObj = serialize(this)
-            % Serialize object, returns a struct with the serialized object
-            % attributes. If an object attribute contains another object
-            % that is derived from 'base', replaced by sURL.
-            %tObj = base.oCO.poSerializers(this.sEntity).serialize(this);
-        end
-        
-%         function delete(this)
-%             poObjects     = this.poObjects;
-%             poObjects.remove(this.sUUID);
-%         end
         
     end
     

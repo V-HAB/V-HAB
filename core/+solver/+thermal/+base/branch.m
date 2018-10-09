@@ -4,10 +4,6 @@ classdef branch < base & event.source
     %   other solver branch classes inherit from this class. 
     %
     properties (SetAccess = private, GetAccess = private)
-        %TODO how to serialize function handles? Do differently in the
-        %     first place, e.g. with some internal 'passphrase' that is
-        %     generated and returned on registerHandlerFR and checked on
-        %     setFlowRate?
         setBranchHeatFlow;
     end
     
@@ -82,8 +78,6 @@ classdef branch < base & event.source
             % Branch allows only one solver to take control
             this.setBranchHeatFlow = this.oBranch.registerHandlerHeatFlow(this);
             
-            %TODO check - which one?
-            %this.setTimeStep = this.oBranch.oTimer.bind(@(~) this.registerUpdate(), inf);
             this.setTimeStep = this.oBranch.oTimer.bind(@this.executeUpdate, inf, struct(...
                 'sMethod', 'executeUpdate', ...
                 'sDescription', 'ExecuteUpdate in solver which does updateTemperature and then registers .update in post tick!', ...
@@ -92,8 +86,6 @@ classdef branch < base & event.source
             
             % If the branch triggers the 'outdated' event, need to
             % re-calculate the heat flow!
-            %CHECK-160514
-            %this.oBranch.bind('outdated', @this.registerUpdate);
             this.oBranch.bind('outdated', @this.executeUpdate);
         end
         
@@ -120,8 +112,6 @@ classdef branch < base & event.source
                 this.oBranch.coExmes{iE}.oCapacity.updateTemperature();
             end
             
-            %CHECK-160514
-            %this.update();
             this.registerUpdate();
         end
     end
@@ -191,9 +181,6 @@ classdef branch < base & event.source
             
             this.setBranchHeatFlow(this.fHeatFlow, afTemperatures);
             
-            %TODO Add a comment here to tell the user what this is actually
-            %good for. I'm assuming this is only here to call a synced
-            %solver? 
             this.bUpdateTrigger = true;
             
             if this.bTriggerUpdateCallbackBound

@@ -7,7 +7,6 @@ classdef data < dynamicprops % & event.source
     
     properties (SetAccess = protected, GetAccess = public)
         oParent;
-        %tiEvents = struct(); % Store the ids for the 'change.*' events on the parent
         % Event ids for parent
         aiEvents = [ 0 0 ];
         
@@ -107,7 +106,6 @@ classdef data < dynamicprops % & event.source
                 this.(sKey) = this.oParent.(sKey);
             else
                 this.tbLocal = rmfield(this.tbLocal, sKey);
-                %xOldValue    = this.(sKey);
                 
                 % Remove property meta object (deletes property) and entry
                 % in the props struct
@@ -115,9 +113,6 @@ classdef data < dynamicprops % & event.source
                 
                 this.toProps = rmfield(this.toProps, sKey);
                 
-                % For now, inactive. Maybe replace with Matlab triggers?
-                % Branch 'logging' needs this removed!
-                %this.trigger([ 'delete.' sKey ], struct('sKey', sKey, 'xOldValue', xOldValue));
             end
         end
         
@@ -228,4 +223,3 @@ classdef data < dynamicprops % & event.source
         end
     end
 end
-

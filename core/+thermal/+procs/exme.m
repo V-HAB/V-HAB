@@ -7,16 +7,12 @@ classdef exme < base
         oCapacity;
         
         % Matter table
-        % @type object
         oMT;
         
         % Timer
-        % @type object
         oTimer;
         
         % Name of processor. If 'default', several MFs can be connected
-        %TODO make that configurable?
-        % @type string
         sName;
         
         % Connected thermal branch
@@ -92,9 +88,6 @@ classdef exme < base
         end
         
         function setHeatFlow(this, fHeatFlow)
-            
-            % TO DO: limit acces to this function to only the solver branch
-            % of the respective branch
             this.fHeatFlow = fHeatFlow;
         end
     end

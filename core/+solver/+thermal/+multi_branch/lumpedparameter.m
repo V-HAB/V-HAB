@@ -1,10 +1,9 @@
 classdef lumpedparameter < base
     %LUMPEDPARAMETER Lumped parameter solver for thermal analysis.
     %   Solves a thermal network described within a |thermal.container|.
-    %
-    %TODO:
-    %    - check naming convetion: "capacity" -> |Capacity| wrapper object,
-    %      "heat capacity" -> (scalar) value of capacity
+    % 
+    % CURRENTLY UNUSABLE; WAS NOT DELTED FOR POSSIBLE FUTURE
+    % REIMPLEMENTATION
     
     properties
         

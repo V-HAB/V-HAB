@@ -4,16 +4,6 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     %   flow connected to each port. Provides methods for managing the
     %   connected flows and their flow rates
     %
-    %TODO
-    %   - diameters for each port -> could do stuff like increasing the
-    %     pressure or decreasing the velocity. Or match of flows can be
-    %     connected, e.g. some adapter/geometry definition?
-    %   - only support two ports here, and for splitter-comps special base
-    %     class anyway - needs to behave phase/store-like ... DONE
-    %   - THROW OUT the afFR stuff? If we use createBranch etc, we know for
-    %     sure that the procs where connected in the 'right' direction
-    
-    
     properties (SetAccess = private, GetAccess = private)
         % Struct with function handles returned by the flow that allow
         % manipulation of the matter properties
@@ -32,32 +22,21 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         
         % Connected matter flows (one for each port possible), indexed
         % according to port name in csPorts
-        % @type array
-        % @types object
         aoFlows = matter.flow.empty();
         
         % Sign. Depending on the "side" of the flow this processor is
         % connected to, the flow rate set for that flow is either out or in
         % when positive. This array here is accordingly filled with 1 / -1.
-        % @type array
-        % @types int
         aiSign = [ 0 0 ];
         
         % Matter table
-        % @type object
         oMT;
         
         % Timer
-        % @type object
         oTimer;
         
         % Name of processor.
-        % @type string
         sName;
-        
-        %TODO Need something like type, as for phases? Define what types of
-        %     phases can be used with this processor?
-        
         
         % Reference to the branch object
         oBranch;
@@ -70,8 +49,6 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         bSealed = false;
         
         % Supported sovling mechanisms.
-        %TODO should access be protected, and obj passed to solver another
-        %     way (instead of solver directly accessing it)?
         toSolve = struct();
     end
     
@@ -250,15 +227,10 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     end
     
     % Protected methods - get flow rates, set matter properties
-    %CHECK Also sealed, or should it be possible to overload?
     methods (Access = protected, Sealed = true)
         function afFRs = getFRs(this)
             % Get flow rate of all ports, adjusted with the according sign
             % to ensure that negative FR always means an outflow of mass!
-            %afFRs = [ this.aoFlows.fFlowRate ] .* this.aiSign;
-            %afFRs(1) = this.aoFlows(1).fFlowRate * this.aiSign(1);
-            %afFRs(2) = this.aoFlows(2).fFlowRate * this.aiSign(2);
-            %afFRs = [this.aoFlows(1).fFlowRate * this.aiSign(1) this.aoFlows(2).fFlowRate * this.aiSign(2)];
             fSecondFlowRate = this.aoFlows(2).fFlowRate * this.aiSign(2);
             fFirstFlowRate  = this.aoFlows(1).fFlowRate * this.aiSign(1);
             
@@ -267,8 +239,6 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         
         
         function [ oFlowIn, oFlowOut ] = getFlows(this, fFlowRate)
-%             afFRs = this.getFRs();
-            
             
             if nargin > 1
                 if (fFlowRate >= 0)
@@ -339,7 +309,6 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             else
                 if fFlowRate == 0, this.throw('get', 'Can''t get when flow rate is zero!'); end
                 
-                % Dirty (?) ... bool true = 1, false = 0 -> index 2 / 1
                 oFlow = this.aoFlows((fFlowRate > 0) + 1);
             end
         end

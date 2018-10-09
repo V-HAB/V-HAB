@@ -60,7 +60,6 @@ classdef Example < vsys
             oCondensatePhase = matter.phases.liquid(this.toStores.Tank_2, ...  Store in which the phase is located
                 'Condensate_Phase', ...         Phase name
                 struct('H2O', 1), ...      Phase contents
-                0.1, ...                     Phase volume
                 295, ...                Phase temperature
                 101325);                 % Phase pressure
             

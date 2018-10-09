@@ -3,8 +3,6 @@ classdef container < sys
     %   Detailed explanation goes here
         
     properties (SetAccess = protected, GetAccess = public)
-        % TO DO: add stores here as well? toStores = struct();
-        
         % Branches stored as mixin (?) array, so e.g. all flow rates can be
         % extracted with [ this.aoBranches.fFlowRate ] @type array @types
         % object
@@ -21,9 +19,13 @@ classdef container < sys
         % Reference to the branches, by name
         toThermalBranches = struct();
         
+        % Total number of thermal branches inside this thermal container
         iThermalBranches = 0;
+        
+        % total number of capacities inside this thermal container
         iCapacities = 0;
         
+        % Reference to the corresponding matter container
         oMatterContainer;
         
         % Sealed?
@@ -204,7 +206,6 @@ classdef container < sys
             end
         end
         
-        
         function checkThermalSolvers(this)
             % Check if all branches have a solver, both here and in our
             % children.
@@ -266,12 +267,6 @@ classdef container < sys
             % branch on the suPsystem or one of the following branches is
             % connected to a store!) ...
             
-            %DONE In following method?
-%             %TODO bind/trigger events to make sure reconnecting of branches
-%             %     is possible during simulation, see disconnectIF etc!
-%             %     -> register on oBranch branch.connected if that one
-%             %        get's reconnected!
-            
             if ~oBranch.abIf(1) && ~isempty(oBranch.coExmes{2})
                 % ... trigger event if anyone wants to know
                 this.trigger('branch.connected', iLocalBranch);
@@ -291,8 +286,6 @@ classdef container < sys
                 this.throw('connectIF', 'Branch doesn''t have an interface on the right side (connected to store).');
             end
             
-            %TODO See above, handle events for disconnect during sim
-            %bTrigger = ~oBranch.abIfs(1) && ~isempty(oBranch.coPhases{2});
             bTrigger = ~oBranch.abIfs(1) && ~isempty(oBranch.coExmes{2});
             
             oBranch.disconnect();
@@ -314,16 +307,6 @@ classdef container < sys
             % this system is already sealed. If yes, we'll just return
             % without doing anything.
             
-            %TODO insert a low level warning here, once the debug output
-            %system is implemented. It might be usefull to alert the user
-            %that someone is trying to delete the pass-through branches
-            %here, although that should happen later. Template for the
-            %warning message inserted below.
-            
-            if ~this.bSealed
-                %this.throw('container.seal','The pass-through branches on %s cannot be deleted yet. First the container must be sealed.',this.sName);
-                return;
-            end
             
             % Of course, we only have to do this, if there are any branches
             % in the container at all. In some cases, there can be 
@@ -393,4 +376,3 @@ classdef container < sys
         end
     end
 end
-

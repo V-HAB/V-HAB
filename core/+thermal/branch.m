@@ -40,8 +40,6 @@ classdef branch < base & event.source
         
         % Connected branches on the left (index 1, branch in subsystem) or
         % the right (index 2, branch in supsystem) side?
-        % @type cell
-        % @types object
         coBranches = { thermal.branch.empty(1, 0); thermal.branch.empty(1, 0) };
         
         % boolean value to check if the branch is already set for update
@@ -170,9 +168,6 @@ classdef branch < base & event.source
             % Write the aoFlows from the other branch, and the oPhase/oFlow
             % (end flow) to this branch here, store indices to be able to
             % remove the references later.
-            %
-            %TODO Check connectTo branch - is EXME? Then some specific
-            %     handling of the connection to EXME ... see above
             
             % Find matching interface branch
             % See container -> connectIF, need to get all left names of
@@ -221,29 +216,6 @@ classdef branch < base & event.source
                 rethrow(oErr);
             end
             
-            %CHECK This was copied over from the matter.branch. There it is
-            %used to determine to which EXME a matter.flow object needs to
-            %be added. This is not the case anymore, so we don't need it,
-            %right?
-%             % Does this branch we are connecting to have any flow to flow
-%             % processors?
-%             if this.coBranches{2}.iConductors == 0
-%                 % Is the branch we are connecting to a pass-through branch?
-%                 if ~all(this.coBranches{2}.abIf)
-%                     % Since this non-pass-through branch has no flow
-%                     % processors, we can connect directly to the exme on
-%                     % the right side of this branch. It can't be on the
-%                     % left side, of course, since this is where the
-%                     % interface is!
-%                     oProc = this.coBranches{2}.coExmes{2};
-%                 else
-%                     this.throw('Pass-through branches currently require at least one conductor processor. Branch %s has none.', this.coBranches{2}.sName);
-%                 end
-%             else
-%                 oProc = this.coBranches{2}.coConductors{1};
-%             end
-%             
-%             % To help with debugging, we now change this branch's sName
             % property to reflect the actual flow path between two exmes
             % that it models. First we split the branch name at the three
             % consecutive underscores '___' which delimit the left and
@@ -333,12 +305,10 @@ classdef branch < base & event.source
                 iF = this.iIfFlow + 1;
                 
                 this.aoFlows    (iF:end) = [];
-                %this.chSetFRs   (iF:end) = [];
                 % One flow proc less than flows
                 this.aoFlowProcs((iF - 1):end) = [];
                 
                 % Phase shortcut, also remove
-                %this.coPhases{2} = [];
                 this.coExmes{2} = [];
                 
                 this.iFlows     = length(this.aoFlows);
@@ -346,19 +316,12 @@ classdef branch < base & event.source
             end
         end
         
-        
-        
-        
-        
-        
         function setOutdated(this)
             % Can be used by phases or conductors processors to request recalc-
             % ulation of the flow rate, e.g. after some internal parameters
             % changed.
             
             % Only trigger if not yet set
-            %CHECK inactivated here --> solvers and other "clients" should
-            %      check themselves!
             if ~this.bOutdated
                 this.bOutdated = true;
 
@@ -374,13 +337,6 @@ classdef branch < base & event.source
             %   and gets a fct handle to the internal setHeatFlow method.
             %   One solver obj per branch, atm no possibility for de-
             %   connect that one.
-            %TODO Later, either check if solver obj is
-            %     deleted and if yes, allow new one; or some sealed methods
-            %     and private attrs on the basic branch solver class, and
-            %     on setFRhandler, the branch solver provides fct callback
-            %     to release the solver -> deletes the stored fct handle to
-            %     the setHeatFlow method of the branch. The branch calls
-            %     this fct before setting a new solver.
             
             if ~isempty(this.oHandler)
                 this.throw('registerHandlerFR', 'Can only set one handler!');
@@ -389,7 +345,6 @@ classdef branch < base & event.source
             this.oHandler = oHandler;
             
             setHeatFlow   = @this.setHeatFlow;
-            %setHeatFlow   = @(varargin) this.setHeatFlow(varargin{:});
         end
         
     end
@@ -584,9 +539,7 @@ classdef branch < base & event.source
                 % branch, there will be a new Name for this branch. If not,
                 % then the 'sNewBranchName' variable is empty.
                 if ~(strcmp(sNewBranchName,''))
-                    %sOldName = this.sName;
-                    this.sName = sNewBranchName;
-                    %this.oContainer.updateBranchNames(this, sOldName);                 
+                    this.sName = sNewBranchName;              
                 end
             end
         end
@@ -668,24 +621,6 @@ classdef branch < base & event.source
             if this.bSealed
                 this.throw('seal', 'Already sealed');
             end
-%             TO DO: implement subsystem interface branches for thermal
-%             system
-%             for iI = 1:length(this.aoFlows)
-%                 % If last flow and right interface, provide true as param,
-%                 % which means that the .seal() returns a remove callback
-%                 % which allows us to deconnect the flow from the f2f proc
-%                 % in the "outer" system (supsystem).
-%                 if this.abIf(2) && (this.iIfFlow == iI)
-%                     [ this.hSetFlowData, this.hRemoveIfProc ] = this.aoFlows(iI).seal(true);
-%                 
-%                 % Only need the callback reference once ...
-%                 elseif iI == 1
-%                     this.hSetFlowData = this.aoFlows(iI).seal(false, this);
-%                 else
-%                     this.aoFlows(iI).seal(false, this);
-%                 end
-%             end
-            
             for iI = 1:length(this.coConductors)
                 this.coConductors{iI}.seal(this);
             end

@@ -10,12 +10,6 @@ classdef manip < base
     %                           would be called in setVolume
     %       matter.manips.substances.xyz can change partial masses in a phase
     %                           within the .massupdate method
-    %
-    %TODO when to use getInFlows, when to use getMasses? If getMasses is
-    %     used, the .updateAbsolute() should probably be used for setting.
-    %     Define some isStationary, compare masses vs. inFRs * timestep
-    %     => if inFRs*TS > 0.1 * masses ...?
-    %     => just always use masses?
     
     properties (SetAccess = private, GetAccess = public)
         % Handle of the phase object this manipulator is attached to
@@ -28,11 +22,9 @@ classdef manip < base
         sRequiredType;
         
         % Reference to the matter table
-        % @type object
         oMT;
         
         % Reference to the timer
-        % @type object
         oTimer;
     end
     
@@ -83,11 +75,6 @@ classdef manip < base
         function fTimeStep = getTimeStep(this)
             fTimeStep = this.oPhase.fMassUpdateTimeStep;
         end
-        
-        
-        
-        
-        
         
         function [ afInFlowrates, mrInPartials ] = getInFlows(this)
             % Return vector with all INWARD flow rates and matrix with 

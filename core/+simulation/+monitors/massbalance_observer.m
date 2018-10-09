@@ -196,7 +196,6 @@ classdef massbalance_observer < simulation.monitor
                 if iLength > 1
                     afInitialTotalMass = oInfrastructure.toMonitors.oMatterObserver.mfTotalMass(1,:);
                     afCurrentTotalMass = oInfrastructure.toMonitors.oMatterObserver.mfTotalMass(end,:);
-                    % afCurrentTotalMass = sum(reshape([ oMT.aoPhases.afMass ], oMT.iSubstances, []), 2)';
 
                     fError = abs(sum(afInitialTotalMass) - sum(afCurrentTotalMass));
                     if fError > this.fMaxMassBalanceDifference

@@ -84,7 +84,6 @@ classdef LCARAbsorber < matter.store
             oAbsorberPhase = components.SEAR.phases.AbsorbentPhase(this,...
                                         'AbsorberPhase',... Name
                                         tfMasses,       ... Mass content
-                                        1,              ... Volume
                                         tParameters.fInitialTemperature ...
                                         ); 
             

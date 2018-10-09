@@ -1,23 +1,24 @@
 classdef container < systems.root
-    %CONTAINER Summary of this class goes here
-    %   Detailed explanation goes here
+    %CONTAINER Summary this is the basic container class which provides the
+    % general framework for all types (matter, thermal, electrical...) of
+    % containers that make up the vsys in the final simulation. It provides
+    % the generally necessary properties and methods for all the child
+    % classes, which then implement the more specific methods and
+    % properties. The vsys is then a combination of the inidivdual
+    % containers
     
     properties (SetAccess = private, GetAccess = public)
         % Global timer object
-        % @type object
         oTimer;
         
         % Global / unique matter table
-        % @type object
         oMT;
         
         % Reference to the configuration object for vsystems (supporting
         % that feature, see simulation.configuration_parameters)
-        % @type object
         oCfgParams;
         
         % Global solver tuning parameters
-        % @type object
         tSolverParams = struct(...
             ... % Used to adjust the rMaxChange parameter in (gas) phases. Can
             ... % still be set manually (after .seal() was called). Sets the
@@ -57,12 +58,7 @@ classdef container < systems.root
         
         function this = addChild(this, oChild)
             addChild@systems.root(this, oChild);
-            
-            %oChild.createMatterStructure();
-            %oChild.seal();
-            %oChild.createSolverStructure();
         end
     end
-    
 end
 

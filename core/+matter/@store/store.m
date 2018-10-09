@@ -1,44 +1,31 @@
 classdef store < base
-    %STORE A store contains phases that contain mass
-    %   Detailed explanation goes here
-    %
-    %TODO
-    %   - see comments at fVolume; also: creating new phases, what volume
-    %     to set? should basically immediately derive from store, never
-    %     directly be provided, right?
-    %   - something like total pressure, if gas phases share a volume?
+    %STORE A store contains one or multiple phases that contain mass
+    % if you want to discretize the store use flow_nodes for that purpose.
+    % Multiple gas phases in one store will result in incorrect results!
     
     properties (SetAccess = private, GetAccess = public)
         % Phases - mixin arrays, with the base class being matter.phase who
         % is abstract - therefore can't create empty - see matter.table ...
-        % @type array
-        % @types object
         aoPhases = [];
         
+        % struct which has the phase names as fields and the corresponding
+        % phase objects as values of these fields
         toPhases = struct();
         
         % Amount of phases
         iPhases;
         
         % Processors - p2p (int/exme added to phase, f2f to container)
-        toProcsP2P = struct(); %matter.procs.p2p.empty();
+        toProcsP2P = struct();
         
-        % @type cell
-        % @types string
-        %TODO This property should be transient. That requires a static
-        % method (loadobj) to be implemented in this class, so when the
-        % simulation is re-loaded from a .mat file, the properties are
-        % reset to their proper values.
+        % cell array containing the names of all P2Ps inside the store
         csProcsP2P = {};
         
-        %TODO This property should be transient. That requires a static
-        % method (loadobj) to be implemented in this class, so when the
-        % simulation is re-loaded from a .mat file, the properties are
-        % reset to their proper values.
+        % array containing the indices of all stationary P2Ps in the store.
+        % The indices refer to the csProcsP2P cell array
         aiProcsP2Pstationary;
         
         % Matter table
-        % @type object
         oMT;
         
         % Reference to the vsys (matter.container) in which this store is 
@@ -46,7 +33,6 @@ classdef store < base
         oContainer;
         
         % Name of store
-        % @type string
         sName;
         
         % If the initial configuration of the store and all its phases,
@@ -73,10 +59,22 @@ classdef store < base
         %%
         % Timer object, needs to inherit from / implement event.timer
         oTimer;
+        
+        % Last overall time in seconds at which the update function of this
+        % store was executed
         fLastUpdate = 0;
+        
+        % Local time step of this store in seconds. Is the smallest time
+        % step of all phases inside the store in case all phases are
+        % updated together
         fTimeStep = 0;
+        
+        % Total simulation time in seconds at which the store will be
+        % updated next
         fNextExec = inf;
         
+        % Parameters to debugg the compressible liquid calculation from the
+        % update function
         fTotalPressureErrorStore = 0;
         iNestedIntervallCounterStore = 0;
     end
@@ -85,18 +83,10 @@ classdef store < base
         % Volume. Can be set through setVolume, subtracts volumes of fluid
         % and solid phases and distributes the rest equally throughout the
         % gas phases.
-        %
-        %TODO could be dependent on e.g. some geom.cube etc. If volume of a
-        %     phase changes, might be some 'solved' process due to
-        %     available vol energy for vol change - properties of phase
-        %     (gas isochoric etc, solids, ...). Does not necessarily change
-        %     store volume, but if store volume is reduced, the phase vol
-        %     change things have to be taken into account.
-        % @type float
         fVolume = 0;
         
-        %Parameter to check wether liquids should be calculated as
-        %compressible or incompressible compared to gas phases in the store
+        % Parameter to check wether liquids should be calculated as
+        % compressible or incompressible compared to gas phases in the store
         bIsIncompressible = 1;
     end
     
@@ -146,43 +136,6 @@ classdef store < base
             end
             
         end
-        
-        
-        function exec(this) %#ok<MANU>
-            %TODO-NOW this.toProcsP2P exec, flow and stationary.
-            %this.throw('exec', 'Not implemented!');
-        end
-        
-        %CHECK Can this method be deleted?
-        function setNextUpdateTime(this, fTime)
-            % Set a time step for updating the store and all phases. Only
-            % sets shorter times for updating!
-            % IMPORTANT - parameter does NOT define next time step but the 
-            %             next ABSOLUTE time this store is updated.
-            
-            this.throw('setNextUpdateTime', 'Use setNextTimeStep(fTimeStep) instead! Measured from the current point in time!');
-            
-            % Check if last update time (same as the one stored within the
-            % timer) plus current time step larger then new exec time - if
-            % yes, calc the new time step with fTime and set!
-            %TODO should timer somehow always provide the last exec time
-            %     for each subsystem, on each callback execution?
-            if (this.fLastUpdate + this.fTimeStep) > fTime
-                this.fTimeStep = fTime - this.fLastUpdate;
-                
-                if ~base.oLog.bOff, this.out(1, 1, 'set-new-ts', 'New TS in Store %s-%s: %.16f s - Next Exec: %.16f s', { this.oContainer.sName, this.sName, this.fTimeStep, this.fLastUpdate + this.fTimeStep }); end
-                
-                % If time step < 0, timer sets it to 0!
-                this.setTimeStep(this.fTimeStep);
-                %disp([ this.sName '  ' num2str(this.oTimer.iTick) '  ' num2str(this.fTimeStep) ]);
-            else
-                %keyboard();
-                %disp([ this.sName '  ' num2str(this.oTimer.iTick) '   SAME   ' num2str(this.fTimeStep) ]);
-            end
-        end
-        
-        
-        
         
         function setNextTimeStep(this, fTimeStep)
             % This method is called from the phase object during its
@@ -238,7 +191,6 @@ classdef store < base
         end
     end
     
-    
     %% Methods for the outer interface - manage ports, volume, ...
     methods
         function oProc = getPort(this, sPort)
@@ -254,21 +206,11 @@ classdef store < base
             %NOTE on adding phases and their ports, it has to be made sure
             %     that no port of any phase has the same name then one of
             %     the phases themselves.
-            %
-            %TODO 
-            %   - throw an error if the port was found on several phases?
-            %   - create index in seal() of phases and their ports!
-            
-            % Find out if default port of a phase should be used
-            %TODO check for empty aoPhases ...
-            %TODO throw out! Default ports will be removed anyways. Right
-            %     now a port can't have the same name than a phase!
             iIdx = find(strcmp({ this.aoPhases.sName }, sPort), 1);
             
             if ~isempty(iIdx)
                 sPort  = 'default';
             else
-                %TODO make waaaay better!!
                 for iI = 1:length(this.aoPhases)
                     if isfield(this.aoPhases(iI).toProcsEXME, sPort)
                         iIdx = iI;
@@ -288,8 +230,6 @@ classdef store < base
         
         function oProc = getThermalPort(this, sPort)
             % Check all capacities to find thermal port
-            % TO DO: basically identical functionality to getPort, which
-            % has to do to make it way better
             iIdx = [];
             for iI = 1:length(this.aoPhases)
                 if isfield(this.aoPhases(iI).oCapacity.toProcsEXME, sPort)
@@ -365,21 +305,10 @@ classdef store < base
             oPhase       = hClassConstr(cParams{:});
         end
         
-        
-        
-        
         function seal(this)
             % See doc for bSealed attr.
-            %
-            %TODO create indices of phases, their ports etc! Trigger event?
-            %     -> external solver can build stuff ... whatever, matrix,
-            %        function handle cells, indices ...
-            %     also create indices for amount of phases, in phases for
-            %     amount of ports etc
             
             if this.bSealed, return; end
-            
-            
             
             % Bind the .update method to the timer, with a time step of 0
             % (i.e. smallest step), will be adapted after each .update
@@ -395,17 +324,14 @@ classdef store < base
             this.csProcsP2P = fieldnames(this.toProcsP2P);
             
             % Find stationary p2ps
-            %TODO split those up completely, stationary/flow p2ps?
             for iI = 1:length(this.csProcsP2P)
                 if isa(this.toProcsP2P.(this.csProcsP2P{iI}), 'matter.procs.p2ps.stationary')
                     this.aiProcsP2Pstationary(end + 1) = iI;
                 end
             end
             
-            
             % Update volume on phases
             this.setVolume();
-            
             
             % Seal phases
             for iI = 1:length(this.aoPhases)
@@ -415,14 +341,8 @@ classdef store < base
             this.bSealed = true;
         end
         
-        
-        
-        
-        
         function addP2P(this, oProcP2P)
             % Get sName from oProcP2P, add to toProcsP2P
-            %
-            %TODO better way of handling stationary and flow p2ps!
             
             if this.bSealed
                 this.throw('addP2P', 'Store already sealed!');
@@ -442,24 +362,6 @@ classdef store < base
     methods (Access = protected)
         function setVolume(this, fVolume)
             % Change the volume.
-            %
-            %TODO Event?
-            % Trigger 'set.fVolume' -> return values of callbacks say
-            % something about the distribution throughout the phases?
-            % Then trigger 'change.fVolume'?
-            % Don't change if no callback registered for set.fVol or do
-            % some default stuff then?
-            %tRes = this.trigger('set.fVolume', fVolume);
-            % Somehow process tRes ... how? Multiple callbacks possible?
-            % Which wins?? Just distribution of volumes for gas/plasma, or
-            % also stuff to change e.g. solid volumes (waste compactor)?
-            %
-            % Also: several gases in one phase - pressures need to be added
-            % to get the total pressure.
-            
-            %TODO in .seal(), store the references to solid/liquid/gas/...?
-            
-            % Mabye just for update
             if nargin >= 2, this.fVolume = fVolume; end
             
             % Update ...
@@ -502,10 +404,7 @@ classdef store < base
         
         
         function setMatterTable(this, oMT)
-            % Set matter table for store, also updates phases (and p2p?)
-            %
-            %TODO update p2p procs MT?
-            
+            % Set matter table for store, also updates phases
             if ~isa(oMT, 'matter.table'), this.throw('setMatterTable', 'Provided object ~isa matter.table'); end
             
             this.oMT = oMT;
@@ -566,7 +465,6 @@ classdef store < base
             % If that should be prevented, createPhaseParams has to be used
             % directly and phase constructor manually called.
             cParams = [ { this sPhaseName } cParams ];
-            %cParams = { this sHelper cParams{:} };
         end
         
     end

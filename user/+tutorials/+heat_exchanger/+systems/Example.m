@@ -60,7 +60,6 @@ classdef Example < vsys
             oLiquidPhase = matter.phases.liquid(this.toStores.Tank_3, ...  Store in which the phase is located
                 'Liquid_Phase', ...        Phase name
                 struct('H2O', 1), ...      Phase contents
-                1, ...                     Phase volume
                 333.15, ...                Phase temperature
                 101325);                 % Phase pressure
             
@@ -71,7 +70,6 @@ classdef Example < vsys
             oWaterPhase = matter.phases.liquid(this.toStores.Tank_4, ...  Store in which the phase is located
                 'Water_Phase', ...         Phase name
                 struct('H2O', 1), ...      Phase contents
-                1, ...                     Phase volume
                 333.15, ...                Phase temperature
                 101325);                 % Phase pressure
             

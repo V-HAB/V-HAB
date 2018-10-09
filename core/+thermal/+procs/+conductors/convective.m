@@ -51,11 +51,6 @@ classdef convective < thermal.procs.conductor
             % overwrite this with child class
         end
         
-        function updateConnectMatterBranch(this, oMassBranch)
-            % TO DO: limit acces to container
-            this.oMassBranch = oMassBranch;
-        end
-        
         function connectMatterSolverBranch(this, ~)
             % necessary for the convective conductor to realise that the
             % mass flow rate has changed

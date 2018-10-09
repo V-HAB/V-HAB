@@ -1,20 +1,21 @@
 classdef p2p < matter.flow
-    %P2P
-    %
-    %TODO
-    %   - more than two phases possible?
-    
+    %P2P or Phase to Phase processor, can be used to move matter from one
+    % phase to another within a single store. Allows phase change and
+    % specific substance transfer to model e.g. condensation/vaporization
+    % (phase change) or adsorbing only CO2 from air (consisting of N2, O2,
+    % CO2 and H2O)
     
     properties (SetAccess = protected, GetAccess = public)
         fLastUpdate = -1;
         
+        % for the thermal side the P2Ps are not different from branches,
+        % therefore no thermal P2P exists and instead a thermal branch is
+        % used to model the heat transfer of this P2P
         oThermalBranch;
     end
     
     properties (SetAccess = private, GetAccess = public)
         % Name of the p2p processor
-        % @type string
-        % @default p2proc
         sName;
     end
     
@@ -25,25 +26,28 @@ classdef p2p < matter.flow
             % p2p constructor.
             %
             % Parameters:
-            %   - sName         Name of the processor
+            %   - sName                 Name of the processor
+            %   - sPhaseAndPortIn and sPhaseAndPortOut:
+            %       Combination of Phase and Exme name in dot notation:
+            %       phase.exme as a string. The in side is considered from
+            %       the perspective of the P2P, which means in goes into
+            %       the P2P but leaves the phase, which might be confusing
+            %       at first. So for a positive flowrate the mass is taken
+            %       from the in phase and exme!
             
             % Parent constructor
             this@matter.flow(oStore);
-            
-            %TODO A lot of this stuff can be discarded, now that we have
-            %the toPhases struct on all stores. No need to get the indexes
-            %of the phases. 
             
             % Phases / ports
             [ sPhaseIn,  sPortIn ]  = strtok(sPhaseAndPortIn, '.');
             [ sPhaseOut, sPortOut ] = strtok(sPhaseAndPortOut, '.');
             
             % Find the phases
-            iPhaseIn  = find(strcmp({ oStore.aoPhases.sName }, sPhaseIn ), 1);
-            iPhaseOut = find(strcmp({ oStore.aoPhases.sName }, sPhaseOut), 1);
-            
-            if isempty(iPhaseIn) || isempty(iPhaseOut)
-                this.throw('p2p', 'Phase could not be found: in phase "%s" has index "%i", out phase "%s" has index "%i"', sPhaseIn, iPhaseIn, sPhaseOut, iPhaseOut);
+            try
+                oPhaseIn    = this.oStore.toPhases.(sPhaseIn);
+                oPhaseOut   = this.oStore.toPhases.(sPhaseOut);
+            catch
+                this.throw('p2p', 'Phase could not be found: in phase "%s", out phase "%s"', sPhaseIn, sPhaseOut);
             end
             
             % Set name of P2P
@@ -58,29 +62,26 @@ classdef p2p < matter.flow
             if isempty(sPortIn)
                 sPortIn = sprintf('.p2p_%s_in', this.sName);
                 
-                sPhaseType = this.oStore.aoPhases(iPhaseIn).sType;
+                sPhaseType = oPhaseIn.sType;
                 
-                matter.procs.exmes.(sPhaseType)(oStore.aoPhases(iPhaseIn), sPortIn(2:end));
+                matter.procs.exmes.(sPhaseType)(oPhaseIn, sPortIn(2:end));
             end
             
             if isempty(sPortOut)
                 sPortOut = sprintf('.p2p_%s_out', this.sName);
                 
-                sPhaseType = this.oStore.aoPhases(iPhaseOut).sType;
+                sPhaseType = oPhaseOut.sType;
                 
-                matter.procs.exmes.(sPhaseType)(oStore.aoPhases(iPhaseOut), sPortOut(2:end));
+                matter.procs.exmes.(sPhaseType)(oPhaseOut, sPortOut(2:end));
             end
             
-            
-            %TODO add .getPort method to phase?
-            oStore.aoPhases(iPhaseIn ).toProcsEXME.(sPortIn(2:end) ).addFlow(this);
-            oStore.aoPhases(iPhaseOut).toProcsEXME.(sPortOut(2:end)).addFlow(this);
+            oPhaseIn.toProcsEXME.(sPortIn(2:end) ).addFlow(this);
+            oPhaseOut.toProcsEXME.(sPortOut(2:end)).addFlow(this);
             
             %% Construct asscociated thermal branch
             % Create the respective thermal interfaces for the thermal
             % branch
             % Split to store name / port name
-            % TO DO: make nicer
             oPort = this.oStore.getPort(sPortIn(2:end));
             thermal.procs.exme(oPort.oPhase.oCapacity, sPortIn(2:end));
             
@@ -160,11 +161,6 @@ classdef p2p < matter.flow
     
     
     methods (Access = protected)
-        function setData(this)
-            % Inactive ... badaboom
-            this.throw('Should that happen on a p2p processor?');
-        end
-        
         
         function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
             % Get missing values from exmes
@@ -172,14 +168,11 @@ classdef p2p < matter.flow
             if (nargin < 2) || isempty(fFlowRate), fFlowRate = this.fFlowRate; end
             
             % We're a p2p, so we're directly connected to EXMEs
-            %oExme = this.(sif(fFlowRate >= 0, 'oIn', 'oOut'));
             if fFlowRate >= 0
                 oExme = this.oIn;
             else
                 oExme = this.oOut;
             end
-            %oExme = this.(sif(fFlowRate >= 0, 'oIn', 'oOut'));
-            
             
             
             if nargin < 3 || isempty(arPartialMass)

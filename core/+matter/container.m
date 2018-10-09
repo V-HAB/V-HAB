@@ -10,24 +10,16 @@ classdef container < sys
     
     properties (SetAccess = private, GetAccess = public)
         % Stores stored as struct.
-        %CHECK change to mixin array? Do we need that?
-        %aoStores = matter.store.empty();
-        % @type struct
-        % @types object
         toStores = struct();
         
         % An array of all branch objects
-        % Branches stored as mixin (?) array, so e.g. all flow rates can be
-        % extracted with [ this.aoBranches.fFlowRate ]
-        % @type array
-        % @types object
         aoBranches = matter.branch.empty();
         
         % A struct with all processors in the container 
         % These are also stored in the branch they belong to, but might be
         % helpfull to access them here through their name to e.g. execute
         % some methods (close valve, switch off fan, ...)
-        toProcsF2F = struct(); %matter.procs.f2f.empty();
+        toProcsF2F = struct();
         
         % Name strings of all stores
         csStores;
@@ -50,10 +42,6 @@ classdef container < sys
     
     properties (SetAccess = private, GetAccess = public) %, Transient = true)
         % Matter table object reference
-        %TODO These properties should be transient. That requires a static
-        % method (loadobj) to be implemented in this class, so when the
-        % simulation is re-loaded from a .mat file, the properties are
-        % reset to their proper values.
         oMT;
     end
     
@@ -75,70 +63,10 @@ classdef container < sys
             
             this.oMT    = this.oRoot.oMT;
         end
-        
-        function afMass = getTotalPartialMasses(this)
-            %CHECK This is unused in all of V-HAB. Can it be deleted?
-            % Example method - get masses of each species within all phases
-            % from all stores referenced in this container.
-            
-            % Create object array of all phases. Need the [] since Matlab
-            % returns the results the same way a cell with {:} does.
-            % OLD - aoStores now toStores!
-            %aoPhases = [ this.aoStores.aoPhases ];
-            % Convert struct to cell, get all elements, and make array!
-            %CHECK speed? switch back to aoStores?
-            coStores = struct2cell(this.toStores);
-            aoStores = [ coStores{:} ];
-            aoPhases = [ aoStores.aoPhases ];
-            
-            % Get masses - one long row vector, since masses are stored as
-            % row vector within the phase objects
-            afMassesVector = [ aoPhases.afMass ];
-            
-            % Therefore reshape the afMass vector, with the first dimension
-            % being the amount of species stored in the matter table since
-            % that's the amount of elements all the afMass vectors have.
-            mfMass = reshape(afMassesVector, this.oData.oMT.iSpecies, []);
-            
-            % Now the mfMass contains a matrix where the columns represent
-            % each phase, the rows represent the species (therefore the
-            % second parameter to sum)
-            afMass = sum(mfMass, 2);
-            
-            % afMass now contains the sum for each species from all phases,
-            % well should, not tested :-)
-        end
     end
     
     
-    %% Internal methods
-    % References to the store, f2f etc are stored one-way, i.e. store
-    % does not point to container.
-    methods (Access = protected)
-%TODO
-%DELETE? Is never called...
-%SCJO: yes and no. Within vsys .exec(), this method COULD be called. The
-%      idea was that matter procs like F2Fs are updated here. Maybe this
-%      does not make sense, and rather proc update methods have to be
-%      called explicitly by the user in vsys.exec?
-%
-%         function exec(this, fTimeStep)
-%             
-%             
-%             % Stores call phases call exme .update(). Phases/Exme do the
-%             % actual mass moving, so if just update of internal parameters
-%             % desired, call oPhase.update(0).
-%             %TODO Call EXEC, not update!
-%             for iI = 1:length(this.csStores), this.toStores.(this.csStores{iI}).exec(fTimeStep); end;
-%             
-%             %TODO .exec, not .update (see above)
-%             for iI = 1:length(this.csProcsF2F), this.toProcsF2F.(this.csProcsF2F{iI}).exec(fTimeStep); end;
-%         end
-        
-        
-        
-    end
-    
+    %% Public methods
     methods (Access = public)
         
         function sealMatterStructure(this)
@@ -159,10 +87,6 @@ classdef container < sys
                 this.iPhases = this.iPhases + this.toChildren.(sChild).iPhases;
                 this.iBranches = this.iBranches + length(this.toChildren.(sChild).toBranches);
             end
-            
-            
-            
-            
             
             this.csStores = fieldnames(this.toStores);
             this.csProcsF2F = fieldnames(this.toProcsF2F);
@@ -236,10 +160,6 @@ classdef container < sys
             this.bMatterSealed = true;
         end
         
-        
-        
-        
-        
         function createMatterStructure(this)
             % Call in child elems
             csChildren = fieldnames(this.toChildren);
@@ -276,12 +196,8 @@ classdef container < sys
             
         end
         
-        
-        
         function this = addProcF2F(this, oProcF2F)
             % Adds a f2f proc.
-            %
-            %TODO tell the flow proc about that? Or just one-way?
             
             if this.bSealed
                 this.throw('addProcF2F', 'The container is sealed, so no f2f procs can be added any more.');
@@ -334,7 +250,6 @@ classdef container < sys
         
         
         function connectSubsystemInterfaces(this, sLeftSysAndIf, sRightSysAndIf, csProcsLeft, csProcsRight, fVolume)
-            %TODO error check if sys, if etc doesn't exist
             
             if nargin < 4 || isempty(csProcsLeft),  csProcsLeft  = {}; end
             if nargin < 5 || isempty(csProcsRight), csProcsRight = {}; end
@@ -487,12 +402,6 @@ classdef container < sys
             % branch on the suPsystem or one of the following branches is
             % connected to a store!) ...
             
-            %DONE In following method?
-%             %TODO bind/trigger events to make sure reconnecting of branches
-%             %     is possible during simulation, see disconnectIF etc!
-%             %     -> register on oBranch branch.connected if that one
-%             %        get's reconnected!
-            
             if ~oBranch.abIf(1) && ~isempty(oBranch.coExmes{2})
                 % ... trigger event if anyone wants to know
                 this.trigger('branch.connected', iLocalBranch);
@@ -515,8 +424,6 @@ classdef container < sys
                 this.throw('connectIF', 'Branch doesn''t have an interface on the right side (connected to store).');
             end
             
-            %TODO See above, handle events for disconnect during sim
-            %bTrigger = ~oBranch.abIfs(1) && ~isempty(oBranch.coPhases{2});
             bTrigger = ~oBranch.abIfs(1) && ~isempty(oBranch.coExmes{2});
             
             oBranch.disconnect();
@@ -538,14 +445,7 @@ classdef container < sys
             % this system is already sealed. If yes, we'll just return
             % without doing anything.
             
-            %TODO insert a low level warning here, once the debug output
-            %system is implemented. It might be usefull to alert the user
-            %that someone is trying to delete the pass-through branches
-            %here, although that should happen later. Template for the
-            %warning message inserted below.
-            
             if ~this.bSealed
-                %this.throw('container.seal','The pass-through branches on %s cannot be deleted yet. First the container must be sealed.',this.sName);
                 return;
             end
             

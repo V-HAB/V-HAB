@@ -26,8 +26,6 @@ classdef (Abstract) conductor < base & event.source
     end
     
     properties (Abstract, SetAccess = protected)
-        %TODO: evaluate Access = protected.
-        
         fConductivity; % Thermal conductivity of connection (unit depends on subclass).
         
     end

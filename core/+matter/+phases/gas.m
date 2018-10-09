@@ -1,7 +1,7 @@
 classdef gas < matter.phase
-    %GAS Describes a volume of gas
-    %   Detailed explanation goes here
-
+    % GAS Describes a volume of ideally mixed gas using ideal gas
+    % assumptions. Must be located inside a store to work!
+    
     properties (Constant)
 
         % State of matter in phase (e.g. gas, liquid, solid)
@@ -40,13 +40,7 @@ classdef gas < matter.phase
         % tfMasses      : Struct containing mass value for each species
         % fVolume       : Volume of the phase
         % fTemperature  : Temperature of matter in phase
-        %
-        %TODO fVolume is stupid - needs to be set by store!
         function this = gas(oStore, sName, tfMasses, fVolume, fTemperature)
-            %TODO
-            %   - not all params required, use defaults?
-            %   - volume from store ...?
-            
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             % Get volume from 
@@ -76,32 +70,16 @@ classdef gas < matter.phase
         function bSuccess = setVolume(this, fNewVolume)
             % Changes the volume of the phase. If no processor for volume
             % change registered, do nothing.
-            %
-            %TODO see above, needs to be redone (processors/manipulator)
             
             bSuccess = this.setParameter('fVolume', fNewVolume);
             
             return;
-            
-            %TODO with events:
-            %this.trigger('set.fVolume', struct('fVolume', fNewVolume, 'setAttribute', @this.setAttribute));
-            
-            % See human, events return data which is processed here??
-            % What is several events are registered? Different types of
-            % volume change etc ...? Normally just ENERGY should be
-            % provided to change the volume, and the actual change in
-            % volume is returned ...
-            % See above, manipulators instead of processors. For each
-            % phase, user needs to decide if e.g. isobaric or isochoric
-            % change of volume.
         end
         
         
         function this = update(this)
             update@matter.phase(this);
             
-            % Check for volume not empty, when called from constructor
-            if ~isempty(this.fVolume)
                 this.fMassToPressure = this.calculatePressureCoefficient();
                 
                 this.fPressure = this.fMass * this.fMassToPressure;
@@ -136,30 +114,16 @@ classdef gas < matter.phase
             end
         end
         
-        function [ afPartialPressures ] = getPartialPressures(this)
-            %TODO should we still provide this proxy method? Or throw a
-            %     deprecation warning/error?
-            [ afPartialPressures, ~ ] = this.oMT.calculatePartialPressures(this);
-        end
-        
-        
         function fMassToPressure = calculatePressureCoefficient(this)
             % p = m * (R_m * T / M / V)
             %
             
             fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
             
-            %TODO molar mass zero if no mass - NaN, or Inf if mass zero
             if isnan(fMassToPressure) || isinf(fMassToPressure)
                 fMassToPressure = 0;
             end
         end
-
-
-        function setProperty(this, sAttribute, xValue)
-            this.(sAttribute) = xValue;
-        end
-
 
         function seal(this)
 

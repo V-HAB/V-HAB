@@ -714,16 +714,15 @@ classdef branch_liquid < solver.matter.base.branch
                     end
                 end
                 
-                %%
-                %calculation of the Godunov Flux with the pressures set
-                %correctly for the second Godunov Flux
-                
-                %before working on this section it is important to
-                %understand how the fluxes influence each other because
-                %this is somewhat counter intuitive for the second
-                %component of the Godunov Flux. For example an increase of
-                %one flux can overall mean a reduction of flow speed
-                %because the acceleration on the fluid is decreased etc.
+%%
+%calculation of the Godunov Flux with the pressures set correctly for the
+%second Godunov Flux
+
+%before working on this section it is important to understand how the
+%fluxes influence each other because this is somewhat counter intuitive for
+%the second component of the Godunov Flux. For example an increase of one
+%flux can overall mean a reduction of flow speed because the acceleration
+%on the fluid is decreased etc.
 
 %at a cell k with the fluxes k and k+1 at the sides of the cell
 %

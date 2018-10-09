@@ -1,8 +1,9 @@
 classdef configuration_parameters < base
-    %CONFIGURATION_PARAMETERS Summary of this class goes here
-    %   Detailed explanation goes here
-    %
-    %TODO also by system name?
+    %CONFIGURATION_PARAMETERS class framework to provide configuration
+    % parameters for simulation. These can be handed into the simulation by
+    % a container map through the setup vhab.exec command and are finally
+    % stored in this class in simulation.infrastructure and added as
+    % property
     
     properties
         ptConfigParams;
@@ -37,7 +38,6 @@ classdef configuration_parameters < base
             
             sCtor    = oVsys.oMeta.Name;
             sSysPath = simulation.helper.paths.getSysPath(oVsys);
-            %TODO -> also check parent class constructors!
             
             csKeys  = this.ptConfigParams.keys();
             tParams = struct();
@@ -58,18 +58,7 @@ classdef configuration_parameters < base
                 end
             end
             
-            
-            %TODO also check vsys sName?
-            
             csKeys = fieldnames(tParams);
-            
-            %TODO
-            % get CTOR name, generate path
-            % init empty struct
-            % check if ctor in ptCfgParams -> merge on struct
-            % check if path/full path in ptCfgParams -> merge on struct
-            %       ( loop ptCfgParam keys, each key - fullPath - check)
-            % return struct
         end
         
         function sCode = configCode(this, oVsys)

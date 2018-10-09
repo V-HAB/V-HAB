@@ -23,14 +23,12 @@ classdef flow < base & matlab.mixin.Heterogeneous
     properties (SetAccess = private, GetAccess = public)
         
         % Flow rate, pressure and temperature of the matter stream
-        % Initialize NOT with empty but some number ...?
-        % @type float
         fFlowRate    = 0;   % [kg/s]
         
-        % @type float
+        % Pressure of this flow object
         fPressure    = 0;  % [Pa]
         
-        % @type float
+        % Temperature of this flow object
         fTemperature = 293;   % [K]
         
         fSpecificHeatCapacity = 0;       % [J/K/kg]
@@ -38,18 +36,13 @@ classdef flow < base & matlab.mixin.Heterogeneous
         
         % Partial masses in percent (ratio) in indexed vector (use oMT to
         % translate, e.g. this.oMT.tiN2I)
-        % Can be empty, won't be accessed if fFlowRate is zero ...?
-        % @type array
-        % @types float
         arPartialMass;
         
         
         % Reference to the matter table
-        % @type object
         oMT;
         
         % Reference to the timer
-        % @type object
         oTimer;
     end
     
@@ -62,10 +55,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
         oStore;
         
         % Diameter
-        %TODO maybe several phases somehow (linked flows or something?). So
-        %     same as in stores: available diameter has to be distributed
-        %     throughout the flows (diam - fluid/solid = diam gas)
-        % @type float
         fDiameter = 0;
     end
     
@@ -82,13 +71,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
         % delete
         bInterface = false;
         
-        
-        
-        
-        
         % Re-calculated every tick in setData/seal
         afPartialPressure;
-        
         
         % Only recalculated when setData was executed and requested again!
         fDensity;
@@ -107,23 +91,9 @@ classdef flow < base & matlab.mixin.Heterogeneous
         thRemoveCBs = struct();
     end
     
-    %TODO check if private is ok - done to ensure that flow always handles
-    %     the matter stuff the same way (according methods are sealed)
-    properties (SetAccess = private, GetAccess = private)
-        % Struct with function handles to the methods to set matter
-        % properties. Can be extended by derived classes if required.
-        % Is returned to the f2f/exme procs whose base classes ensure that
-        % they can only be called if the matter flow is actually flowing
-        % from the processor into the flow!
-        % NOW inactive.
-        %thFuncs;
-    end
-    
     %% Public methods
     methods
         function this = flow(oCreator)
-            
-            %TODO: get matter table from somewhere if no param is given?
             
             if nargin == 1
                 % Setting the matter table
@@ -144,24 +114,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 this.arPartialMass = zeros(1, this.oMT.iSubstances);
                 this.arPartialMassLastMassPropUpdate = this.arPartialMass;
             end
-            
-%             % See thFuncs definition above and addProc below.
-%             this.thFuncs = struct(...
-%                 ... %TODO check, but FR needs to be set by solver etc, so has public access
-%                 ... 'setFlowRate', @this.setFlowRate,    ...
-%                 'setPressure', @this.setPressure,    ...
-%                 'setTemperature', @this.setTemperature, ...
-%                 'setSpecificHeatCapacity',@this.setSpecificHeatCapacity,...
-%                 'setPartialMass', @this.setPartialMass  ...
-%                 );
         end
-        
-        
-        function this = update(this)
-            disp('flow update')
-            % At the moment done through the solver specific methods ...
-        end
-        
         
         function [ setData, hRemoveIfProc ] = seal(this, bIf, oBranch)
             
@@ -193,11 +146,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % an interface branch, one of the phases might not exist.
                 % So we take a look at the branch and decide which phase we
                 % want to use for initialization.
-                %TODO This workaround is just to make sure that some
-                %     reasonable values are set. More properly, the data
-                %     should be fetched from the EXMEs with
-                %     |getPortProperties()| and use pressure or equivalent
-                %     for solids.
                 if any(this.oBranch.abIf)
                     oPhase = this.oBranch.coExmes{~this.oBranch.abIf}.oPhase;
                 else
@@ -215,7 +163,7 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     this.afPartialPressure = this.calculatePartialPressures();
                 end
 
-            end % if not an interface flow
+            end
         end
         
         
@@ -270,11 +218,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % which can be multiplied with fFlowRate to get the correct
             % sign of the flow rate. If oIn is not empty but oOut is, an
             % 1 is returned for iSighn. If none are empty, error thrown.
-            %
-            %TODO 
-            %   - also store the port for the oProc?
-            %   - call a method on oProc and provide a function handle
-            %     which allows manipulation of the stuff here?
             
             % Proc of right type?
             if ~isa(oProc, 'matter.procs.f2f') && ~isa(oProc, 'matter.procs.exme')
@@ -318,19 +261,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
             
             % Provide struct with function handles allowing manipulation
             % of matter properties through the protected methods below!
-            %thFuncs = this.thFuncs;
-            
-            % Last/first flow in branch, i.e. proc is an exme?
-            if isa(oProc, 'matter.procs.exme')
-                %TODO bTerminator needed?
-                %this.bTerminator = true;
-                
-            % The proc is f2f - however, f2f's can't set the partial
-            % masses, so remove that callback
-            else
-                %thFuncs = rmfield(thFuncs, 'setPartialMass');
-            end
-            
             thFuncs = struct();
         end
         
@@ -339,21 +269,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
         function varargout = eq(varargin)
             varargout{:} = eq@base(varargin{:});
         end
-    end
-    
-    
-    
-    
-    %% Solver Methods - should be in solver.basic.matter.flow?
-    %TODO see matter.procs.exme, implement a more general version of these
-    %     methods. If a solver needs additional functionality that can't be
-    %     implemented by some kind of proxy object that gathers the needed
-    %     data from the objects, some way to replace flows/branches/procs
-    %     etc with solver-specific derived objects.
-    %     Only matter.procs.f2f components have to specificly derive from a
-    %     solver class to make sure they implement the according methods.
-    methods
-        % SEE BELOW
     end
     
     %% Public methods that take care of calculations that are needed a lot
@@ -424,11 +339,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
             afPartialPressure = arFractions .* this.fPressure;
         end
         
-        
-        
-        
-        
-        
         function removeIfProc(this)
             % Decouple from processor - only possible if interface flow!
             if ~this.bInterface
@@ -447,8 +357,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
         end
         
         
-        
-        
         function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
             % For derived classes of flow, can set the matter properties 
             % through this method manually. In contrast to setData, this 
@@ -457,30 +365,20 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % derived, but still generic classes (namely matter.p2ps.flow 
             % and matter.p2ps.stationary) to ensure control over the actual
             % processor implementatins when they set the flow properties.
-            %
-            % Is only called by p2p (?), only ONE flow
             
             this.fFlowRate     = fFlowRate;
             this.arPartialMass = arPartialMass;
             this.fTemperature  = fTemperature;
             this.fPressure     = fPressure;
             
-            
-            
-            %CHECK see setData, using the IN exme props!
             if this.fFlowRate >= 0
                 oPhase = this.oIn.oPhase;
             else
                 oPhase = this.oOut.oPhase;
             end
             
-            %[ ~, this.fMolarMass, this.fSpecificHeatCapacity ] = oExme.getMatterProperties();
             this.fSpecificHeatCapacity = oPhase.oCapacity.fSpecificHeatCapacity;
             this.fMolarMass            = oPhase.fMolarMass;
-            
-            
-            return;
-            
         end
         
         
@@ -489,10 +387,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % Sets flow data on an array of flow objects. If flow rate not
             % provided, just molar masses, cp, arPartials etc are set.
             % Function handle to this method is provided on seal(), so the
-            % branch can set stuff.
-            %
-            % Is only called by branch (?), for all flows in branch
-            %
             %
             %TODO
             % - This method does not need to be part of the flow class. It
@@ -654,17 +548,13 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 if tools.round.prec(fPortPress, iPrec) < 0
                     oThis.fPressure = 0;
                     
-                    % Only warn for > 10Pa ... because ...
-                    %TODO Make these warnings a lower level debug output,
-                    %once the debug class is implemented.
-                    %
                     % FOr manual solvers this is not an issue!
                     if ~isa(oThis.oBranch.oHandler, 'solver.matter.manual.branch')
-%                         if fPortPress < -10
-%                             aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fPortPress, aoFlows(1).oBranch.sName);
-%                         elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
-%                             aoFlows(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, aoFlows(1).oBranch.sName);
-%                         end
+                        if fPortPress < -10
+                            aoFlows(1).warn('setData', 'Setting a negative pressure less than -10 Pa (%f) for the LAST flow in branch "%s"!', fPortPress, aoFlows(1).oBranch.sName);
+                        elseif (~bNeg && iI ~= iL) || (bNeg && iI ~= 1)
+                            aoFlows(1).warn('setData', 'Setting a negative pressure, for flow no. %i/%i in branch "%s"!', iI, iL, aoFlows(1).oBranch.sName);
+                        end
                     end
                 elseif tools.round.prec(fPortPress, iPrec) == 0
                     % If the pressure is extremely small, we also set the
@@ -688,40 +578,13 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     fPortPress = fPortPress - afPressures(iI - sif(bNeg, 1, 0));
                 end
                 
-                
-                
-                
                 % Re-calculate partial pressures
                 oThis.afPartialPressure = oThis.calculatePartialPressures();
                 
                 % Reset to empty, so if requested again, recalculated!
                 oThis.fDensity          = [];
                 oThis.fDynamicViscosity = [];
-                
-                
-                
-                
-                
-                % Skip temperature?
-%                 if bSkipT, continue; end;
-%                 
-%                 this(iI).fTemperature= fCurrTemp;
-%                 
-%                 % Due to friction etc, the 'natural' thing is that the
-%                 % temperature increases, therefore: positive values
-%                 % represent a temperature INCREASE.
-%                 %TODO right now afTemps represents temperature DROPS,
-%                 %     change that?
-%                 if iI < iL, fCurrTemp = fCurrTemp - afTemps(iI); end;
             end
-            
-
-%             disp('---');
-%             disp([ this.fFlowRate ]);
-%             disp([ this.fPressure ]);
-%             disp([ this.fTemperature]);
         end
     end
-    
 end
-

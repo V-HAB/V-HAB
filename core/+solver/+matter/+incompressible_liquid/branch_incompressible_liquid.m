@@ -109,19 +109,6 @@ classdef branch_incompressible_liquid < solver.matter.base.branch
             
             this.setTimeStep(fTimeStep);
             
-            %if the massflow and temperature boundaries have not changed
-            %the flows in the branch do not have to be recalculated
-            %TO DO: Have to see if this should be applied or not
-            try
-                if this.oBranch.oContainer.oTimer.iTick > 1
-                    if (abs(this.fMassFlow - this.oBranch.oContainer.oSystemSolver.mMassFlow(this.iBranchNumber)) < 1e-8) && ...
-                            max(abs(this.mDeltaTempComp - this.oBranch.oContainer.oSystemSolver.cDeltaTempComp{this.iBranchNumber})) < 0.1
-                        return
-                    end
-                end
-            catch
-                
-            end
             %% 
             %get all neccessary variables from the boundaries, procs etc
             %that are stored in the system solver
@@ -149,44 +136,30 @@ classdef branch_incompressible_liquid < solver.matter.base.branch
             %generate the values the solver returns to V-HAB.
             %Note that a flow is only located between two different
             %processors (procs) or a proc and a boundary.
-
-            %calculation of the flow temperatures
-            %mFlowTemp = zeros(this.iNumberOfProcs+1,1);
             mFlowPressure = zeros(this.iNumberOfProcs+1,1);
             
             if this.fMassFlow >= 0
-                %mFlowTemp(1) = fTemperatureBoundary1;
                 mFlowPressure(1) = fPressureBoundary1;
                 for k = 2:this.iNumberOfProcs+1
-                    %mFlowTemp(k) = fTemperatureBoundary1-sum(this.mDeltaTempComp(1:(k-1)));
                     mFlowPressure(k) = fPressureBoundary1+sum(mDeltaPressureComp(1:(k-1)))-sum(mPressureLoss(1:(k-1)));
                 end
             else
-                %mFlowTemp(end) = fTemperatureBoundary2;
                 mFlowPressure(end) = fPressureBoundary2;
                 for k = 1:this.iNumberOfProcs
-                    %mFlowTemp(k) = fTemperatureBoundary2-sum(this.mDeltaTempComp((k+1):end));
                     mFlowPressure(k) = fPressureBoundary2+sum(mDeltaPressureComp((k+1):end))-sum(mPressureLoss((k+1):end));
                 end
             end
             
             afPressure = zeros(this.iNumberOfProcs,1);
-            %afTemps = zeros(this.iNumberOfProcs,1);
             %Positive Deltas for Pressure and Temperature mean a                
             %decrease, negative an increase!
             for k = 1:this.iNumberOfProcs
-                 %afTemps(k) = mFlowTemp(k)-mFlowTemp(k+1);
                 afPressure(k) = mFlowPressure(k)-mFlowPressure(k+1);
             end
             
             %%
-            %tells the stores when to update
-%             this.oBranch.coExmes{1, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
-%             this.oBranch.coExmes{2, 1}.oPhase.oStore.setNextExec(this.oBranch.oContainer.oTimer.fTime+fTimeStep);
-            
             %calls the update for the base branch using the newly
             %calculated mass flow
-            %branch(this, fFlowRate, afPressures, afTemps)
             update@solver.matter.base.branch(this, this.fMassFlow, afPressure);
         end
     end

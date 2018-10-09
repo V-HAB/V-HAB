@@ -1,19 +1,17 @@
 classdef logger_basic < simulation.monitor
-    %LOGGER_BASIC Summary of this class goes here
-    %   Detailed explanation goes here
-    %
-    %TODO see old master -> simulation.m ==> bDumpToMat!
-    %       1) in regular intervals, dump mfLog data to .mat file
-    %       2) provide readData method -> re-read data from .mat files
-    %
-    %   check if sim already running (set bSealed in onInitPost) -> not
-    %   possible to add additional log values!
-    %
-    %   find(): besides aiIndex, allow passing in path(s) to different
-    %       systems or other objects, and only properties logged for these are
-    %       returned? [e.g. plot all [W] for HX 1, 2 and 3]
+    %LOGGER_BASIC provides the necessary structure to log values from the
+    % simulation into a persistent log file. If values are not selected for
+    % the log only the currently stored values from the current tick can be
+    % accessed in the oLastSimObj
     
     properties (GetAccess = public, Constant = true)
+        % The properties enable automatic label generation for the plots.
+        % They map specific quantities from the V-HAB simulation to
+        % specific physical values and units. If you receive an error
+        % pointing you here because the unit is missing from this property
+        % you can either add the corresponding values or use a custom label
+        % for your axis.
+        %
         % Loops through keys, comparison only with length of key
         % -> 'longer' keys need to be defined first (fMass * fMassToPress)
         poExpressionToUnit = containers.Map(...
@@ -70,12 +68,10 @@ classdef logger_basic < simulation.monitor
     properties  (SetAccess = public, GetAccess = public)
         % Preallocation - how much data should be preallocated for logging?
         % iPrealloc = 10000;
-        % CHANGED: in the past, that value refered to the numer of rows
-        % that should be pre-allocated. Now, iPreallocData refers to the 
-        % total fields that should be pre-allocated, i.e. rows * columns!
-        % This way, the value can be translated into the amount of RAM or,
-        % in case dump to mat is active, size of the .mat files for each
-        % pre-allocation cycle.
+        % iPreallocData refers to the total fields that should be
+        % pre-allocated, i.e. rows * columns! This way, the value can be
+        % translated into the amount of RAM or, in case dump to mat is
+        % active, size of the .mat files for each pre-allocation cycle.
         %
         % By default, set to 10k rows with 100 columns.
         iPreallocData = 1e4 * 100; %10000;
@@ -97,7 +93,6 @@ classdef logger_basic < simulation.monitor
             % data needs to be re-read with this.readDataFromMat()
             %   
             
-            %this@simulation.monitor(oSimulationInfrastructure, struct('tick_post', 'logData', 'init_post', 'init'));
             this@simulation.monitor(oSimulationInfrastructure, { 'tick_post', 'init_post', 'finish' });
             
             % Setting the storage directory for dumping
@@ -950,18 +945,8 @@ classdef logger_basic < simulation.monitor
                     'this.', ...
                     [ 'this.oSimulationInfrastructure.oSimulationContainer.toChildren.' this.tLogValues(iL).sObjectPath '.' ] ...
                     );
-                
-%                 try
-%                     [~] = eval(this.csPaths{iL});
-%                 catch oError
-%                     this.throw('\n\nSomething went wrong while logging ''%s'' on ''%s''. \nMATLAB provided the following error message:\n%s\n', this.tLogValues(iL).sExpression, this.tLogValues(iL).sObjectPath, oError.message);
-%                 end
-            
-                %tLogProp.sExpression = strrep(tLogProp.sExpression, 'this.', [ tLogProp.sObjectPath '.' ]);
             end
             
-            
-            % 
             this.iPrealloc  = floor(this.iPreallocData / length(this.csPaths));
             this.aiLog      = 1:length(this.csPaths);
             this.mfLog      = nan(this.iPrealloc, length(this.csPaths));
@@ -975,10 +960,6 @@ classdef logger_basic < simulation.monitor
             sCmd = '[ ';
                 
             for iL = this.aiLog
-                %sCmd = [ sCmd 'this.oRoot.' this.csLog{iL} ',' ];
-                %sCmd = [ sCmd sprintf('this.oRoot.%s,\n', this.csLog{iL}) ];
-                
-                % sS((length(sN) + 1):end)
                 sCmd = strcat( sCmd, this.csPaths{iL}, ',' );
             end
 
@@ -993,11 +974,6 @@ classdef logger_basic < simulation.monitor
         
         
         function onTickPost(this, ~)
-%             disp('LOG onTickPost');
-%             disp(this.oSimulationInfrastructure.oSimulationContainer.oTimer.fTime);
-            
-            
-            
             
             try
                 this.mfLog(this.iLogIdx + 1, :) = this.logDataEvald();

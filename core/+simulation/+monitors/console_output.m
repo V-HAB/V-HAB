@@ -1,8 +1,9 @@
 classdef console_output < simulation.monitor
-    %CONSOLE_OUTPUT Summary of this class goes here
-    %   Detailed explanation goes here
+    %CONSOLE_OUTPUT supports the debugging features of V-HAB. The user can
+    % set output levels:
+    % 1 (MESSAGE), 2 (INFO), 3 (NOTICE), 4 (WARN) and 5 (ERROR)
     %
-    %TODO see bOutputUuids
+    % To decide how much information the console_output should provide.
     
     
     properties (SetAccess = protected, GetAccess = public)
@@ -99,13 +100,6 @@ classdef console_output < simulation.monitor
         end
         
         
-        
-        
-        
-        
-        
-        
-        
         function this = setReportingInterval(this, iTicks, iMinorTicks)
             % Set the interval in which the tick and the sim time are
             % reported to the console.
@@ -131,13 +125,6 @@ classdef console_output < simulation.monitor
             end
         end
         
-        
-        
-        
-        
-        
-        
-        
         % Switch debugging output off.
         function this = setLogOff(this)
             this.oLogger.setOutputState(false);
@@ -153,11 +140,6 @@ classdef console_output < simulation.monitor
         function this = toggleShowStack(this)
             this.oLogger.toggleCreateStack();
         end
-        
-        
-        
-        
-        
         
         % Debug outputs are mapped to a level, see base.m:
         % 1 (MESSAGE), 2 (INFO), 3 (NOTICE), 4 (WARN) and 5 (ERROR)
