@@ -24,7 +24,7 @@ classdef branch < solver.matter.base.branch
             this@solver.matter.base.branch(oBranch, fInitialFlowRate, 'callback');
             
             if this.oBranch.iFlowProcs == 0
-                this.warn('There are no f2f processors in the iterative solver branch %s.\nThis may cause problems during flow rate calculation.\nIt is recommended to insert a small pipe.');
+                this.throw('\nThere are no f2f processors in the iterative solver branch %s.\nThis may cause problems during flow rate calculation.\nIt is recommended to insert a small pipe.', this.oBranch.sName);
             end
             
             % Sets the flow rate to 0 which sets matter properties

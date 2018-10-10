@@ -646,13 +646,6 @@ classdef branch < base & event.source
 
                 end
                 
-                %TODO delete this once the absorber phase is no longer in
-                %use
-                if isa(oPort, 'matter.procs.exmes.absorber')
-                    this.throw('branch','You cannot connect an absorber ExMe (%s->%s->%s->%s) to a matter branch. In can only connect to a P2P processor. ',...
-                               oPort.oPhase.oStore.oContainer.sName, oPort.oPhase.oStore.sName, oPort.oPhase.sName, oPort.sName);
-                end
-                
                 % We create branches from left to right. If this is a
                 % left side, we need to create the first flow object. If
                 % this is a right side, we can just use the last flow
