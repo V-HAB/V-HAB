@@ -665,24 +665,25 @@ classdef branch < base & event.source
                         % Add flow to index
                         this.aoFlows(end + 1) = oFlow;
                     case 'right'
-                        % It may be the case that a branch that passes
-                        % through a subsystem from a subsubsystem to a
-                        % supersystem. These branches currently must have
-                        % at least one f2f processor to make the creation
-                        % of branches possible. If the user forgot to
-                        % create an f2f processor here, the aoFlows
-                        % property will be empty. So we catch this here and
-                        % tell the user what to do. 
+                        % It may be the case that a branch has no flow
+                        % objects if there are no f2f processors and this
+                        % branch has an interface on the left side or if it
+                        % is a pass-through branch. The latter case will
+                        % cause an error later on when the subsystem is
+                        % connected. The former case is okay as long as the
+                        % solver used on this branch can handle that.
                         if ~isempty(this.aoFlows)
                             oFlow = this.aoFlows(end);
                         else
-                            this.throw('Pass-through branches currently require at least one f2f processor. This branch has none.');
+                            oFlow = [];
                         end
                         
                 end
                 
-                % ... and add flow
-                oPort.addFlow(oFlow);
+                % ... and add flow, if there is one.
+                if ~isempty(oFlow)
+                    oPort.addFlow(oFlow);
+                end
                 
                 % Add port to the coExmes property
                 this.coExmes{iSideIndex} = oPort;
