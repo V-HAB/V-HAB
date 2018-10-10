@@ -38,11 +38,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         % table for the adsorber directly.
         mfAbsorptionEnthalpy;
         
-        % boolean matrix to decide if the P2P should ignore small pressures
-        % (less than afIgnoredPP Pa) to prevent oscillations
-        mbIgnoreSmallPressures;
-        afIgnoredPP;
-        
         % partial inflowrates of all substances into the gas phase attached
         % to the adsorption P2P
         afPartialInFlows;
@@ -56,6 +51,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
         % are calculated anyway) we store both the adsorption and
         % desorption flows in this property
         mfFlowRates
+
     end
     
     methods
@@ -85,11 +81,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 mfAbsorptionEnthalpyHelper = mfAbsorptionEnthalpyHelper + rAbsorberMassRatio * this.oMT.ttxMatter.(csAbsorbers{iAbsorber}).tAbsorberParameters.mfAbsorptionEnthalpy;
             end
             this.mfAbsorptionEnthalpy = mfAbsorptionEnthalpyHelper;
-
-            % usually ignore small pressures for all substances
-            this.mbIgnoreSmallPressures = true(1,this.oMT.iSubstances);
-            this.afIgnoredPP = ones(1,this.oMT.iSubstances);
-            this.afIgnoredPP = 5 .* this.afIgnoredPP;
         end
         
         function update(~)
@@ -170,9 +161,7 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 end
                 afCurrentMolsIn     = (this.afPartialInFlows ./ this.oMT.afMolarMass);
                 arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
-                afPP                = arFractions .*  fPressure;
-                
-                afPP((afPP < this.afIgnoredPP) & this.mbIgnoreSmallPressures) = 0;
+                afPP                = arFractions .*  fPressure; 
             end
             
             % use the matter table to calculate the equilibrium loading and
@@ -222,7 +211,6 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 afMinPPHelper = mfCurrentLoading ./ mfLinearizationConstant;
                 afMinPPHelper(isnan(afMinPPHelper)) = 0;
                 afMinPPHelper(isinf(afMinPPHelper)) = 0;
-                afMinPPHelper(afMinPPHelper < this.afIgnoredPP) = this.afIgnoredPP(afMinPPHelper < this.afIgnoredPP);
                 
                 % then we only overwrite the partial pressure values for
                 % the substances where such a minimum pressure exists
@@ -231,7 +219,41 @@ classdef Adsorption_P2P < matter.procs.p2ps.flow & event.source
                 afMinPP = afPP;
                 afMinPP(mfLinearizationConstant ~= 0) = afMinPPHelper(mfLinearizationConstant ~= 0);
                 
-                arMinMolarFraction = afMinPP ./ fPressure;
+                mfFlowRatesHelper = ones(1,this.oMT.iSubstances);
+                iIteration = 1;
+                afMinPPFinal = afPP;
+                % Since we used an approximation the initial result for the
+                % minimal partial pressure is not accurate. Therefore we
+                % iterate the calculation until the results are
+                % sufficiently accurate
+                miSubstances = find(mfLinearizationConstant ~= 0);
+                for iSubstance = 1:length(miSubstances)
+                    while abs(mfFlowRatesHelper(miSubstances(iSubstance))) > 1e-10 && iIteration < 500
+                        
+                        afMinPPHelper = afPP;
+                        afMinPPHelper(miSubstances(iSubstance)) = afMinPP(miSubstances(iSubstance));
+                        
+                        [ mfEquilibriumLoadingHelper , mfLinearizationConstantHelper ] = this.oMT.calculateEquilibriumLoading(afMassAbsorber, afMinPPHelper, fTemperature);
+
+                        afMinPPHelper = mfCurrentLoading ./ mfLinearizationConstantHelper;
+                        afMinPPHelper(isnan(afMinPPHelper)) = 0;
+                        afMinPPHelper(isinf(afMinPPHelper)) = 0;
+
+                        % then we only overwrite the partial pressure values for
+                        % the substances where such a minimum pressure exists
+                        % (gases that are not adsorbed/desorbed are not changed by
+                        % the p2p)
+                        afMinPP = afPP;
+                        afMinPP(mfLinearizationConstantHelper ~= 0) = afMinPPHelper(mfLinearizationConstantHelper ~= 0);
+
+                        mfFlowRatesHelper = (mfEquilibriumLoadingHelper - (mfEquilibriumLoadingHelper - mfCurrentLoading) .* exp(- this.mfMassTransferCoefficient) - mfCurrentLoading);
+
+                        iIteration = iIteration + 1;
+                    end
+                    afMinPPFinal(miSubstances(iSubstance)) = afMinPP(miSubstances(iSubstance));
+                end
+                
+                arMinMolarFraction = afMinPPFinal ./ fPressure;
                 
                 % Basically we assume that one mol of the substance
                 % currently exists, since we are not interested in the

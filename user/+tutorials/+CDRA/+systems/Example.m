@@ -43,7 +43,7 @@ classdef Example < vsys
     end
     
     methods
-        function this = Example(oParent, sName, bSimpleCDRA)
+        function this = Example(oParent, sName)
             % Call parent constructor. Third parameter defined how often
             % the .exec() method of this subsystem is called. This can be
             % used to change the system state, e.g. close valves or switch
@@ -57,8 +57,10 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName, 60);
             
-            % temperature for the coolant passing through the CCAA
-            this.fCoolantTemperature = 277.55;
+            % temperature for the coolant passing through the CCAA,
+            % according to ICES 2000-01-2345 the setpoint was 43 degree
+            % fahrenheit
+            this.fCoolantTemperature = 279.26;
             % Struct containg basic atmospheric values for the
             % initialization of the CCAA
             tAtmosphere.fTemperature = 295;
@@ -73,17 +75,18 @@ classdef Example < vsys
             % Adding the subsystem CCAA
             components.CCAA.CCAA(this, 'CCAA', 10, this.fCoolantTemperature, tAtmosphere, sCDRA);
             
+            
             % name for the asscociated CCAA subsystem, CDRA can only be
             % used together with a CCAA
             sCCAA = 'CCAA';
             
             % Adding the subsystem CDRA
-            if bSimpleCDRA
-                components.CDRA.CDRA_simple(this, 'CDRA', 60, tAtmosphere, sCCAA);
-            else
+            try
+                tInitialization = oParent.oCfgParams.ptConfigParams('tInitialization');
+                components.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA, tInitialization);
+            catch
                 components.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA);
             end
-            
             eval(this.oRoot.oCfgParams.configCode(this));
             
         end
@@ -176,7 +179,7 @@ classdef Example < vsys
             
             % Adding heat sources to keep the cabin and coolant water at a
             % constant temperature
-            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
+            oHeatSource = thermal.heatsource('Heater', 940); %according to ICES 2000-01-2345 940 of sensible load)
             oCabinPhase.oCapacity.addHeatSource(oHeatSource);
             
             oHeatSource = components.thermal.heatsources.ConstantTemperature('Coolant_Constant_Temperature');
@@ -331,12 +334,15 @@ classdef Example < vsys
             %p2p proc for the crew humidity generator
             tutorials.CDRA.components.Crew_Humidity_Generator(...
                 this.toStores.Cabin,'CrewHumidityGen',...
-                'HumanWater.HumidityOut', 'CabinAir.HumidityIn',...
-                [1,1], this);
+                'HumanWater.HumidityOut', 'CabinAir.HumidityIn', this);
             
         end
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
+            
+            % Cabin setpoint according to ICES 2000-01-2345 was 65 degree
+            % fahrenheit
+            this.toChildren.CCAA.setTemperature(18.33);
             
             %% Assign thermal solvers
             this.setThermalSolvers();

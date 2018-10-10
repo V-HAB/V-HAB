@@ -388,12 +388,8 @@ classdef CCAA < vsys
             
             this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fInFlow);
 
-            if ~isempty(this.sCDRA)
-                fInFlow2 = -this.toBranches.CDRA_TCCV.oHandler.fFlowRate;
-            else
-                fInFlow2 = 0;
-            end
-
+            fInFlow2 = 0;
+            
             % Uses the interpolation for the TCCV to calculate the
             % percentage of flow entering the CHX
             fFlowPercentageCHX = this.Interpolation(fNew_TCCV_Angle);
@@ -494,11 +490,7 @@ classdef CCAA < vsys
             
             this.toBranches.CCAA_In_FromCabin.oHandler.setFlowRate(-fInFlow);
 
-            if ~isempty(this.sCDRA)
-                fInFlow2 = -this.toBranches.CDRA_TCCV.oHandler.fFlowRate;
-            else
-                fInFlow2 = 0;
-            end
+            fInFlow2 = 0;
 
             % Uses the interpolation for the TCCV to calculate the
             % percentage of flow entering the CHX
