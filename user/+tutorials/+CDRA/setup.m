@@ -125,6 +125,21 @@ classdef setup < simulation.infrastructure
             
             oLog.addVirtualValue('"Partial Pressure CO2" ./ 133.322', 'torr', 'Partial Pressure CO2 Torr');
             
+            
+            for iType = 1:3
+                for iBed = 1:2
+                    sTotalCO2Mass = ['"Partial Mass CO2 ', csType{iType}, num2str(iBed),' Cell ',num2str(1),'"'];
+                    sTotalH2OMass = ['"Partial Mass H2O ', csType{iType}, num2str(iBed),' Cell ',num2str(1),'"'];
+                    for iCell = 2:miCellNumber(iType)
+                         sTotalCO2Mass	= [sTotalCO2Mass, ' + "Partial Mass CO2 ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell),'"'];
+                         sTotalH2OMass = [sTotalH2OMass, ' + "Partial Mass H2O ',     csType{iType}, num2str(iBed),' Cell ',num2str(iCell),'"'];
+                    end
+                    
+                    oLog.addVirtualValue(sTotalCO2Mass, 'kg', ['Total Mass CO2 ', csType{iType}, ' ', num2str(iBed)]);
+                    oLog.addVirtualValue(sTotalH2OMass, 'kg', ['Total Mass H2O ', csType{iType}, ' ', num2str(iBed)]);
+            
+                end
+            end
         end
         
         function plot(this) % Plotting the results
@@ -138,10 +153,27 @@ classdef setup < simulation.infrastructure
                 disp('no data outputted yet')
             end
             
-            %% Define plots
-            
             oPlotter = plot@simulation.infrastructure(this);
+            oLogger = oPlotter.oSimulationInfrastructure.toMonitors.oLogger;
             
+            % Calculate and display convergence parameters:
+            
+            for iCO2OutletIndex = 1:length(oLogger.tVirtualValues)
+                strcmp(oLogger.tVirtualValues(iCO2OutletIndex).sLabel, 'CDRA CO2 OutletFlow');
+                break
+            end
+            mfCO2OutletFlow = oLogger.tVirtualValues(iCO2OutletIndex).calculationHandle(oLogger.mfLog);
+            mfCO2OutletFlow(isnan(mfCO2OutletFlow)) = [];
+            mfCO2OutletFlow(end) = [];
+            
+            afTimeSteps = oLogger.afTime(2:end) - oLogger.afTime(1:end-1);
+            fAveragedCO2Outlet = sum(mfCO2OutletFlow .* afTimeSteps') ./ sum(afTimeSteps);
+            
+            disp(' ')
+            disp(['Averaged CO2 Outlet Flow:       ', num2str(fAveragedCO2Outlet)])
+            disp(' ')
+            
+            %% Define plots
             tPlotOptions.sTimeUnit  = 'hours';
             tPlotOptions.bLegend    = false;
             
@@ -161,6 +193,9 @@ classdef setup < simulation.infrastructure
             csCDRA_Absorber_FlowrateCO2 = cell(3,2,max(miCellNumber));
             csCDRA_Absorber_FlowrateH2O = cell(3,2,max(miCellNumber));
             
+            csTotalMassCO2 = cell(3,2);
+            csTotalMassH2O = cell(3,2);
+                    
             csCDRA_FlowRate = cell(3,2,max(miCellNumber));
             
             for iType = 1:3
@@ -185,16 +220,19 @@ classdef setup < simulation.infrastructure
                     for iCell = 1:miCellNumber(iType)-1
                          csCDRA_FlowRate{iType,iBed,iCell}              = ['"Flowrate ', csType{iType}, num2str(iBed),' Cell ',num2str(iCell), '"'];
                     end
+                    
+                    csTotalMassCO2{iType,iBed} = ['"Total Mass CO2 ', csType{iType}, ' ', num2str(iBed), '"'];
+                    csTotalMassH2O{iType,iBed} = ['"Total Mass H2O ', csType{iType}, ' ', num2str(iBed), '"'];
                 end
             end
             
-            coPlot = cell(3,2);
-            for iType = 1:3
-                for iBed = 1:2
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Pressure(iType,iBed,1:miCellNumber(iType)), [csType{iType}, num2str(iBed), ' Pressure'], tPlotOptions);
-                end
-            end
-            oPlotter.defineFigure(coPlot,  'CDRA Pressure');
+%             coPlot = cell(3,2);
+%             for iType = 1:3
+%                 for iBed = 1:2
+%                      coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Pressure(iType,iBed,1:miCellNumber(iType)), [csType{iType}, num2str(iBed), ' Pressure'], tPlotOptions);
+%                 end
+%             end
+%             oPlotter.defineFigure(coPlot,  'CDRA Pressure');
             
             
             coPlot = cell(3,2);
@@ -208,10 +246,26 @@ classdef setup < simulation.infrastructure
             coPlot = cell(3,2);
             for iType = 1:3
                 for iBed = 1:2
+                     coPlot{iType,iBed} = oPlotter.definePlot(csTotalMassCO2(iType,iBed), [csType{iType}, num2str(iBed), ' Adsorbed CO2 Mass'], tPlotOptions);     
+                end
+            end
+            oPlotter.defineFigure(coPlot,  'Total CO2 Adsorbed Masses');
+            
+            coPlot = cell(3,2);
+            for iType = 1:3
+                for iBed = 1:2
                      coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_H2O_Mass(iType,iBed,1:miCellNumber(iType)), [csType{iType}, num2str(iBed), ' Adsorbed H2O Mass'], tPlotOptions);
                 end
             end
             oPlotter.defineFigure(coPlot,  'H2O Adsorbed Masses');
+            
+            coPlot = cell(3,2);
+            for iType = 1:3
+                for iBed = 1:2
+                     coPlot{iType,iBed} = oPlotter.definePlot(csTotalMassH2O(iType,iBed), [csType{iType}, num2str(iBed), ' Adsorbed H2O Mass'], tPlotOptions);     
+                end
+            end
+            oPlotter.defineFigure(coPlot,  'Total H2O Adsorbed Masses');
             
             
             coPlot = cell(3,2);
@@ -230,21 +284,21 @@ classdef setup < simulation.infrastructure
             end
             oPlotter.defineFigure(coPlot,  'H2O Partial Pressures in Flow');
             
-            coPlot = cell(3,2);
-            for iType = 1:3
-                for iBed = 1:2
-                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateCO2(iType,iBed,1:miCellNumber(iType)), [csType{iType}, num2str(iBed), ' CO2 Adsorption Flowrate'], tPlotOptions);
-                end
-            end
-            oPlotter.defineFigure(coPlot,  'CO2 Adsorption Flow Rates');
-            
-            coPlot = cell(3,2);
-            for iType = 1:3
-                for iBed = 1:2
-                    coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateH2O(iType,iBed,1:miCellNumber(iType)), [csType{iType}, num2str(iBed), ' H2O Adsorption Flowrate'], tPlotOptions);
-                end
-            end
-            oPlotter.defineFigure(coPlot,  'H2O Adsorption Flow Rates');
+%             coPlot = cell(3,2);
+%             for iType = 1:3
+%                 for iBed = 1:2
+%                      coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateCO2(iType,iBed,1:miCellNumber(iType)), [csType{iType}, num2str(iBed), ' CO2 Adsorption Flowrate'], tPlotOptions);
+%                 end
+%             end
+%             oPlotter.defineFigure(coPlot,  'CO2 Adsorption Flow Rates');
+%             
+%             coPlot = cell(3,2);
+%             for iType = 1:3
+%                 for iBed = 1:2
+%                     coPlot{iType,iBed} = oPlotter.definePlot(csCDRA_Absorber_FlowrateH2O(iType,iBed,1:miCellNumber(iType)), [csType{iType}, num2str(iBed), ' H2O Adsorption Flowrate'], tPlotOptions);
+%                 end
+%             end
+%             oPlotter.defineFigure(coPlot,  'H2O Adsorption Flow Rates');
             
             coPlot = cell(3,2);
             for iType = 1:3
@@ -326,7 +380,6 @@ classdef setup < simulation.infrastructure
             ylabel('Partial Pressure CO_2 in Torr');
             hold on
             
-            oLogger = oPlotter.oSimulationInfrastructure.toMonitors.oLogger;
             for iVirtualLog = 1:length(oLogger.tVirtualValues)
                 if strcmp(oLogger.tVirtualValues(iVirtualLog).sLabel, 'Partial Pressure CO2 Torr')
                     calculationHandle = oLogger.tVirtualValues(iVirtualLog).calculationHandle;
@@ -349,16 +402,24 @@ classdef setup < simulation.infrastructure
             % There will be some nan values because the simulation has data
             % before the simulation data, these are removed here
             mfCO2PartialPressure(isnan(InterpolatedTestData)) = [];
+            afTime(isnan(InterpolatedTestData)) = [];
             InterpolatedTestData(isnan(InterpolatedTestData)) = [];
+            
+            % We only look at the differen from hour 11 onward as before
+            % the test data is not accurate because CDRA was turned off
+            % since it had a water carry over event
+            mfCO2PartialPressure(afTime < 11) = [];
+            InterpolatedTestData(afTime < 11) = [];
             
             fMaxDiff  = max(abs(mfCO2PartialPressure - InterpolatedTestData));
             fMinDiff  = min(abs(mfCO2PartialPressure - InterpolatedTestData));
             fMeanDiff = mean(mfCO2PartialPressure - InterpolatedTestData);
+            rPercentualError = 100 * fMeanDiff / mean(InterpolatedTestData);
             
             disp(['Maximum   Difference between Simulation and Test:     ', num2str(fMaxDiff), ' Torr'])
             disp(['Minimum   Difference between Simulation and Test:     ', num2str(fMinDiff), ' Torr'])
             disp(['Mean      Difference between Simulation and Test:     ', num2str(fMeanDiff), ' Torr'])
-            
+            disp(['Percent   Difference between Simulation and Test:     ', num2str(rPercentualError), ' %'])
             
         end
     end
