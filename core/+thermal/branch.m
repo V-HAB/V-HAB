@@ -105,7 +105,12 @@ classdef branch < base & event.source
             this.oContainer    = oContainer;
             this.oMT           = oContainer.oMT;
             this.oTimer        = oContainer.oTimer;
-            this.oMatterObject = oMatterObject;
+            % Since there are thermal branches which do not have a matter
+            % object (e.g. radiative or conductive branches) the matter
+            % object is only added in case it is provided as input
+            if nargin > 5
+                this.oMatterObject = oMatterObject;
+            end
             
             %% Handle the left side of the branch
             sLeftSideName = this.handleSide('left', xLeft);

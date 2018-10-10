@@ -260,7 +260,6 @@ classdef CHX < vsys
             this.mHX = mHX;
             this.sHX_type = sHX_type;      
             this.iIncrements = iIncrements;
-            this.bExecuteContainer = false;
             
             if nargin > 6
                 this.fTempChangeToRecalc = fTempChangeToRecalc;
