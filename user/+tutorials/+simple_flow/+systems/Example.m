@@ -94,11 +94,13 @@ classdef Example < vsys
             % Now that the system is sealed, we can add the branch to a
             % specific solver. In this case we will use the iterative
             % solver. 
-            oIt1 = solver.matter.interval.branch(this.aoBranches(1));
+            solver.matter.interval.branch(this.aoBranches(1));
+            
+            tTimeStepProperties.rMaxChange = 1e-3;
+            this.toStores.Tank_1.aoPhases(1).setTimeStepProperties(tTimeStepProperties);
+            this.toStores.Tank_2.aoPhases(1).setTimeStepProperties(tTimeStepProperties);
             
             this.setThermalSolvers();
-            
-            %oIt1.iDampFR = 5;
         end
     end
     
