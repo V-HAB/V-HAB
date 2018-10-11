@@ -238,18 +238,10 @@ classdef infrastructure < base & event.source
                 
                 oChild.createSolverStructure();
                 
-                % Check if all branches have a solver!
-                for iBranch = 1:length(oChild.aoBranches)
-                    if isempty(oChild.aoBranches(iBranch).oHandler)
-                        error('Error in System ''%s''. The branch ''%s'' has no solver.', oChild.sName, oChild.aoBranches(iBranch).sName);
-                    end
-                    
-                end
-                for iThermalBranch = 1:length(oChild.aoThermalBranches)
-                    if isempty(oChild.aoThermalBranches(iThermalBranch).oHandler)
-                        error('Error in System ''%s''. The branch ''%s'' has no solver.', oChild.sName, oChild.aoThermalBranches(iThermalBranch).sName);
-                    end
-                end
+                % Making sure that all of our branches have a solver
+                % assigned to them. 
+                oChild.checkMatterSolvers();
+                oChild.checkThermalSolvers();
             end
             
             disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!']);

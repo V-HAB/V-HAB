@@ -186,7 +186,7 @@ classdef container < sys
         end
         
         function setThermalSolvers(this, ~)
-            % automatically assing solver for branches which do not yet
+            % automatically adding solver for branches which do not yet
             % have a handler
             for iBranch = 1:this.iThermalBranches
                 if isempty(this.aoThermalBranches(iBranch).oHandler)
@@ -203,6 +203,24 @@ classdef container < sys
                         end
                     end
                 end
+            end
+        end
+        
+        function checkThermalSolvers(this)
+            % Check if all branches have a solver, both here and in our
+            % children.
+            
+            csChildren = fieldnames(this.toChildren);
+            for iChild = 1:this.iChildren
+                this.toChildren.(csChildren{iChild}).checkThermalSolvers();
+            end
+            
+            for iBranch = 1:length(this.aoThermalBranches)
+                % If the branch handler is empty, there is an error. 
+                if isempty(this.aoThermalBranches(iBranch).oHandler)
+                    error('Error in System ''%s''. The branch ''%s'' has no solver.', this.sName, this.aoThermalBranches(iBranch).sName);
+                end
+                
             end
         end
     end
@@ -303,9 +321,9 @@ classdef container < sys
                 % Using the element-wise AND operator '&' we delete only the
                 % branches with abIf = [1; 0].
                 % First we create a helper array.
-                aoBranchStubs = this.aoThermalBranches(mbIf(1,:) & ~mbIf(2,:));
+                aoBranchStubs = this.aoThermalBranches(mbIf(1,:) & mbIf(2,:));
                 % Now we delete the branches from the aoBranches property.
-                this.aoThermalBranches(mbIf(1,:) & ~mbIf(2,:)) = [];
+                this.aoThermalBranches(mbIf(1,:) & mbIf(2,:)) = [];
                 % Now, using the helper array, we delete the fields from
                 % the toBranches struct.
                 for iI = 1:length(aoBranchStubs)
@@ -321,6 +339,10 @@ classdef container < sys
                         sName = sName(1:namelengthmax);
                     end
                     this.toThermalBranches = rmfield(this.toThermalBranches, sName);
+                    
+                    % We also need to decrease the iThermalBranches
+                    % property by one. 
+                    this.iThermalBranches = this.iThermalBranches - 1;
                 end
             end
         end

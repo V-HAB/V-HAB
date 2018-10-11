@@ -11,6 +11,7 @@ classdef branch < solver.matter.base.branch
         
         fMaxError       = 1e-8; % Maximum allowed error in the solution in Pa
         iMaxIterations  = 500;  % Maximum allowed iterations
+        iPrecision      = 7;   % precision of the solver values smaller than 10^-iPrecision will be rounded to zero
     end
     methods
         
@@ -24,7 +25,7 @@ classdef branch < solver.matter.base.branch
             this@solver.matter.base.branch(oBranch, fInitialFlowRate, 'callback');
             
             if this.oBranch.iFlowProcs == 0
-                this.warn('There are no f2f processors in the iterative solver branch %s.\nThis may cause problems during flow rate calculation.\nIt is recommended to insert a small pipe.');
+                this.throw('\nThere are no f2f processors in the iterative solver branch %s.\nThis may cause problems during flow rate calculation.\nIt is recommended to insert a small pipe.', this.oBranch.sName);
             end
             
             this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
@@ -265,7 +266,15 @@ classdef branch < solver.matter.base.branch
             end
             
             fFlowRate   = iDir * (fUpperBoundary + fLowerBoundary)/2;
+            
             afDeltaP    = mfData(:, 1);
+            
+            % If the flowrate is smaller than the precision of the solver
+            % it is rounded to 0
+            if tools.round.prec(fFlowRate, this.iPrecision) == 0
+                fFlowRate = 0;
+                afDeltaP = zeros(length(mfData),1);
+            end
         end
     end
     methods (Access = protected)
@@ -305,13 +314,12 @@ classdef branch < solver.matter.base.branch
             fNewMassChangeLeft = oLeft.fCurrentTotalMassInOut + this.fFlowRate - fFlowRate;
             fNewMassChangeRight = oRight.fCurrentTotalMassInOut - this.fFlowRate + fFlowRate;
             
-            
             [ fPressureLeft,  ~ ] = this.oBranch.coExmes{1}.getPortProperties();
             [ fPressureRight, ~ ] = this.oBranch.coExmes{2}.getPortProperties();
             
             fPressureDifference = fPressureLeft - fPressureRight;
             
-            fTargetPressureDifference = fPressureDifference - (sign(fFlowRate) * sum(afDeltaP(afDeltaP > 0)));
+            fTargetPressureDifference = (sign(fFlowRate) * sum(afDeltaP(afDeltaP < 0)));
             
             try
                 fMassToPressure = max(oLeft.fMassToPressure, oRight.fMassToPressure);
@@ -337,7 +345,7 @@ classdef branch < solver.matter.base.branch
             
             % to assure stability we do not use the maximum possible time
             % step
-            fTimeStep = 0.75 * fTimeStep;
+            fTimeStep = 0.5 * fTimeStep;
             
             this.setTimeStep(fTimeStep);
         end

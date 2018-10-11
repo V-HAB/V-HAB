@@ -152,15 +152,12 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
         % If no branch added, don't add bc flow rate. This is a VPP so that
         % would only be valid if the inflow is zero! And that does not
         % really make sense.
-        %TODO throw an error if fFrSum ~= 0 and iAdded == 0?
         if fFrSum ~= 0
             if iAdded >= 1
                 afBoundaryConditions(iRow) = fFrSum;
             else
                 this.throw('generateMatrices', 'BC flows (manual solver or p2p) but no variable, solved branches connected!');
             end
-%         elseif afBoundaryConditions(iRow) ~= 0
-%             afBoundaryConditions(iRow) = (3 * afBoundaryConditions(iRow) + fFrSum) / 4;
         end
     end
     

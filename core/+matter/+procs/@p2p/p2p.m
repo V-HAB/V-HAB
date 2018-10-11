@@ -105,7 +105,7 @@ classdef p2p < matter.flow
                 sCustomName = [this.sName, '_', num2str(iCounter)];
             end
             
-            this.oThermalBranch = thermal.branch(this.oStore.oContainer, [this.oStore.sName,  sPortIn] , {sCustomName}, [this.oStore.sName,  sPortOut], sCustomName);
+            this.oThermalBranch = thermal.branch(this.oStore.oContainer, [this.oStore.sName,  sPortIn] , {sCustomName}, [this.oStore.sName,  sPortOut], sCustomName, this);
         end
     end
     

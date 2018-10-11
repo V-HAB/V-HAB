@@ -280,9 +280,6 @@ function update(this)
             this.afFlowRates(iB) = afResults(iColumn);
         end
     end
-    % We have to reupdate this as well to calculate the P2P flowrates with
-    % the final results
-    this.generateMatrices();
     
     % However, in the desorption case it is still possible that now mass is
     % put into the flow nodes. To solve this either the P2Ps should have a

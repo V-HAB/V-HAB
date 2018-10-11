@@ -55,6 +55,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         fPressureLastHeatCapacityUpdate    = 0;
         fTemperatureLastHeatCapacityUpdate = 0;
         arPartialMassLastHeatCapacityUpdate;
+        
+        % For very small phases, bFlow can be set to true. With that, the
+        % outflowing matter properties will be set to the sum of the
+        % inflowing matter, taking p2ps/manip.substance into account. Also,
+        % properties like molar mass and heat capacity are calculated on 
+        % the fly.
+        % should only be reset by the child class glow node!
+        bFlow = false;
     end
 
     properties (SetAccess = private, GetAccess = public)
@@ -160,7 +168,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Index of the update post tick in the corresponding cell
         % and boolean array of the timer
         hBindPostTickUpdate
-
+        
         % Index of the calculate Time Step post tick
         hBindPostTickTimeStep
     end
@@ -170,19 +178,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % flow rates. Use when volumes of phase compared to flow rates are
         % small!
         bSynced = false;
-        
-        % For very small phases, bFlow can be set to true. With that, the
-        % outflowing matter properties will be set to the sum of the
-        % inflowing matter, taking p2ps/manip.substance into account. Also,
-        % properties like molar mass and heat capacity are calculated on 
-        % the fly.
-        % NOTE this is experimental and was not tested in all possible confi-
-        %      gurations, e.g. when using p2ps and a substance manipulator.
-        %      Also, as various properties are calculated on the fly, there
-        %      might be situations where this is slower.
-        % TO DO: Move flow specific handling to subclass (gas_flow_node)
-        bFlow = false;
-       
     end
 
     methods
@@ -460,128 +455,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
             
             if this.bFlow
-                this.updatePartials();
+            	this.trigger('update_partials');
             end
             
             if this.bTriggerSetUpdateCallbackBound
             	this.trigger('update_post');
-            end
-        end
-        
-        function updatePartials(this, afPartialInFlows)
-            
-            if ~this.bFlow
-                error('ONLY USE THIS FEATURE FOR FLOW PHASES!!!')
-            end
-            
-            if isempty(this.fPressure)
-                
-                this.out(1, 1, 'skip-partials', '%s-%s: skip at %i (%f) - no pressure (i.e. before multi solver executed at least once)!', { this.oStore.sName, this.sName, this.oTimer.iTick, this.oTimer.fTime });
-                
-                return;
-            end
-            
-            
-            % Store needs to be sealed (else problems with initial
-            % conditions). Last partials update needs to be in the past,
-            % except forced, in case this method is called e.g. from
-            % .update() or .updateProcessorsAndManipulators()
-            if ~this.oStore.bSealed %|| (this.fLastPartialsUpdate >= this.oTimer.fTime && ~bForce)
-                
-                this.out(1, 1, 'skip-partials', '%s-%s: skip at %i (%f) - already executed!', { this.oStore.sName, this.sName, this.oTimer.iTick, this.oTimer.fTime });
-                
-                return;
-            end
-            if nargin < 2
-                %NOTE these should probably be named e.g. afRelevantFlows
-                %     because e.g. p2ps both in and out used!
-                mrInPartials  = zeros(this.iProcsEXME, this.oMT.iSubstances);
-                afInFlowrates = zeros(this.iProcsEXME, 1);
-                
-                % Creating an array to log which of the flows are not in-flows
-                % This will include only real matter, no p2ps - they will
-                % all be included, no matter the direction.
-                aiOutFlows = ones(this.iProcsEXME, 1);
-                
-                
-                % Need to make sure a flow rate exists. Because p2ps depend
-                % on the normal branch inflows (at least outflowing p2ps),
-                % don't include those in the check for an existing flow
-                % rate - only return the 'inflow' based partials if there
-                % is actually a real flow rate.
-                fInwardsFlowRates = 0;
-                
-                % Get flow rates and partials from EXMEs
-                for iI = 1:this.iProcsEXME
-                    [ fFlowRate, arFlowPartials, ~ ] = this.coProcsEXME{iI}.getFlowData();
-                    
-                    % Include if EITHER an (real) inflow, OR a p2p (but not
-                    % ourselves!) in either direction (p2ps can change
-                    % matter composition, therefore include both in and
-                    % outflowing)
-                    if fFlowRate > 0 || (this.coProcsEXME{iI} ~= this && this.coProcsEXME{iI}.bFlowIsAProcP2P)
-                        mrInPartials(iI,:) = arFlowPartials;
-                        afInFlowrates(iI)  = fFlowRate;
-                        aiOutFlows(iI)     = 0;
-                        
-                        %if ~this.coProcsEXME{iI}.bFlowIsAProcP2P
-                        if fFlowRate > 0
-                            fInwardsFlowRates = fInwardsFlowRates + fFlowRate;
-                        end
-                    end
-                end
-
-                % Now we delete all of the rows in the mfInflowDetails matrix
-                % that belong to out-flows.
-                if any(aiOutFlows)
-                    mrInPartials(logical(aiOutFlows),:)  = [];
-                    afInFlowrates(logical(aiOutFlows),:) = [];
-                end
-
-                
-                for iF = 1:length(afInFlowrates)
-                    mrInPartials(iF, :) = mrInPartials(iF, :) .* afInFlowrates(iF);
-                end
-                
-                % Include possible manipulator, which uses an array of
-                % absolute flow-rates for the different substances
-                % Also depends on normal inflow branches, so do not include
-                % with the fInwardsFlowRates check.
-                if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
-                    % The sum() of the flow rates of a substance manip
-                    % should always be zero. Therefore, split positive and
-                    % negative rates and see as two flows.
-                    afManipPartialsIn  = this.toManips.substance.afPartialFlows;
-                    afManipPartialsOut = this.toManips.substance.afPartialFlows;
-                    
-                    afManipPartialsIn (afManipPartialsIn  < 0) = 0;
-                    afManipPartialsOut(afManipPartialsOut > 0) = 0;
-                    
-                    afInFlowrates(end + 1) = sum(afManipPartialsIn);
-                    afInFlowrates(end + 1) = sum(afManipPartialsOut);
-                    
-                    mrInPartials(end + 1, :) = afManipPartialsIn;
-                    mrInPartials(end + 1, :) = afManipPartialsOut;
-                end
-                
-                afPartialInFlows = sum(mrInPartials, 1); %note we did multiply mrInPartials with flow rates above, so actually total partial flows!
-                
-            else
-                afPartialInFlows = sum(afPartialInFlows, 1);
-            end
-            
-            if any(afPartialInFlows < 0)
-                afPartialInFlows(afPartialInFlows < 0) = 0;
-                this.out(2, 1, 'partials-error', 'NEGATIVE PARTIALS');
-                % TO DO: Make a lower level debugging output
-                % this.warn('updatePartials', 'negative partials');
-            end
-            
-            fTotalInFlow       = sum(afPartialInFlows);
-            this.arPartialMass = afPartialInFlows / fTotalInFlow;
-            
-            if fTotalInFlow == 0
-                this.arPartialMass = zeros(1, this.oMT.iSubstances);
             end
         end
         
@@ -783,7 +661,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             aiOutFlows = ones(this.iProcsEXME, 1);
             
             if this.bFlow
-                this.updatePartials();
+            	this.trigger('update_partials');
             end
 
             % Get flow rates and partials from EXMEs

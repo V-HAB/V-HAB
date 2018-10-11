@@ -1,23 +1,24 @@
 classdef branch < base & event.source
-    %BRANCH Describes flow path between two exme processors
+    %BRANCH Describes flow path between two ExMe processors
     %   The positive flow direction is defined as 'from left to right', the
-    %   left side being the exme that is given as the second input 
-    %   parameter and the right side being the exme that is given as the 
+    %   left side being the ExMe that is given via the second input 
+    %   parameter and the right side being the ExMe that is given as the 
     %   fourth input parameter. 
-    %   In between the exmes there can be any number of flow to flow 
+    %   In between the ExMes there can be any number of flow to flow 
     %   processors that influence the behaviour of the flow between the two 
     %   exams, either through pressure or temperature changes.
     %
-    %   Inputs are the parent store (oContainer), the left exme (sLeft), a 
-    %   cell array of f2f processors (csProcs) and the right exme (sRight). 
-    %   The exams are given as a string in the following format: 
-    %   <store name>.<exme Name>
+    %   Inputs are the parent store (oContainer), the left ExMe (xLeft), a 
+    %   cell array of f2f processors (csProcs) and the right ExMe (xRight). 
+    %   The ExMes are given either as a string in the following format: 
+    %   <store name>.<ExMe Name>, or implicitly by passing in a phase
+    %   object handle as the second or fourth input parameter. 
     %   If one of the ends of the branch is an interface to other system 
-    %   levels, the string can be anything as long as it doesn?t contain a 
+    %   levels, the string can be anything as long as it doesn't contain a 
     %   period character('.'). If the interface is to a higher system
-    %   level, it has to be given instead of the right exme. If the
+    %   level, it has to be given instead of the right ExMe. If the
     %   interface is to a lower system level, it has to be given instead of
-    %   the left exme.
+    %   the left ExMe.
     %
     %   The constructor recognises if this is an interface branch or not 
     %   and accordingly creates the branch object and the matter.flow 
@@ -126,18 +127,59 @@ classdef branch < base & event.source
     end
     
     methods
-        function this = branch(oContainer, sLeft, csProcs, sRight, sCustomName)
-            % Can be called with either stores/ports or interface names
-            % (all combinations possible). Connections are always done from
-            % subsystem to system.
+        function this = branch(oContainer, xLeft, csProcs, xRight, sCustomName)
+            % Can be called with either stores/ports, phase object handles
+            % or interface names (all combinations possible). Connections
+            % are always done from subsystem to system.
             
             % Reference to the matter.container and some shorthand refs.
             this.oContainer = oContainer;
             this.oMT        = oContainer.oRoot.oMT;
             this.oTimer     = oContainer.oRoot.oTimer;
             
-            this.csNames    = strrep({ sLeft; sRight }, '.', '__');
-            sTempName      = [ this.csNames{1} '___' this.csNames{2} ];
+            %% Handle the left side of the branch
+            sLeftSideName = this.handleSide('left', xLeft);
+            
+            %% Creating flow objects between the processors
+            % Looping through f2f procs
+            for iI = 1:length(csProcs)
+                sProc = csProcs{iI};
+                
+                if ~isfield(this.oContainer.toProcsF2F, sProc)
+                    this.throw('branch', 'F2F proc %s not found on system this branch belongs to!', sProc);
+                end
+                
+                % Unless this is the first processor in a branch with an
+                % interface flow at its left side, we connect the last flow
+                % in the aoFlows property to the currently selected
+                % processor.
+                if ~this.abIf(1) || (iI ~= 1)
+                    % Connect to previous flow (the 'left' port of the proc
+                    % goes to the 'out' port of the previous flow)
+                    this.oContainer.toProcsF2F.(sProc).addFlow(this.aoFlows(end));
+                end
+                
+                % Create flow
+                oFlow = matter.flow(this);
+                this.aoFlows(end + 1) = oFlow;
+                
+                % Connect the new flow - 'right' of proc to 'in' of flow
+                % Because of the possibility that the proc is not connected
+                % to an in flow (interface branch - in flow not yet known),
+                % we explicitly provide the port to connect the flow to.
+                this.aoFlowProcs(end + 1) = this.oContainer.toProcsF2F.(sProc).addFlow(oFlow, 2);
+            end
+            
+            %% Handle the right side of the branch
+            sRightSideName = this.handleSide('right', xRight);
+            
+            %% Setting the name property for this branch object
+            
+            % Setting the csNames property
+            this.csNames = {sLeftSideName; sRightSideName};
+            
+            % Creating a temporary name first
+            sTempName = [ sLeftSideName, '___', sRightSideName ];
             
             % We need to jump through some hoops because the
             % maximum field name length of MATLAB is only 63
@@ -149,175 +191,34 @@ classdef branch < base & event.source
             if length(sTempName) > namelengthmax
                 sTempName = sTempName(1:namelengthmax);
             end
+            
+            % Setting the sName property
             this.sName = sTempName;
             
+            % If the user provided a custom name, we also set that
+            % property.
             if nargin == 5
                 this.sCustomName = sCustomName;
-            end
-            
-            oFlow = [];
-            
-            %%%% HANDLE LEFT SIDE
-            
-            
-            % Interface on left side?
-            if ~contains(sLeft, '.')
-                this.abIf(1) = true;
-                
-                % Checking if the interface name is already present in this
-                % system. Only do this if there any branches at all, of course. 
-                if ~isempty(this.oContainer.aoBranches) && any(strcmp(subsref([ this.oContainer.aoBranches.csNames ], struct('type', '()', 'subs', {{ 1, ':' }})), sLeft))
-                    this.throw('branch', 'An interface called ''%s'' already exists in ''%s''! Please choose a different name.', sLeft, this.oContainer.sName);
-                end
-  
-            else
-                % Create first flow, get matter table from oData (see @sys)
-                oFlow = matter.flow(this);
-                
-                % Add flow to index
-                this.aoFlows(end + 1) = oFlow;
-                
-                % Split to store name / port name
-                [ sStore, sPort ] = strtok(sLeft, '.');
-                
-                
-                % Get store name from parent
-                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end
-                
-                % Get EXME port/proc ...
-                oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
-                
-                if isa(oPort, 'matter.procs.exmes.absorber')
-                    this.throw('branch','You cannot connect an absorber exme (%s->%s->%s->%s) to a matter branch (%s). In can only connect to a P2P processor. ',...
-                               oPort.oPhase.oStore.oContainer.sName, oPort.oPhase.oStore.sName, oPort.oPhase.sName, oPort.sName, this.sName);
-                end
-                
-                % ... and add flow
-                oPort.addFlow(oFlow);
-                
-                % Add as a normal proc
-                %this.aoFlowProcs(end + 1) = oPort;
-                
-                % Get phase from flow and add to index
-                %this.coPhases{1} = oPort.oPhase;
-                this.coExmes{1} = oPort;
-            end
-            
-            
-            
-            
-            %%%% CREATE FLOWS FOR PROCS
-            
-            % Loop f2f procs
-            for iI = 1:length(csProcs)
-                sProc = csProcs{iI};
-                
-                if ~isfield(this.oContainer.toProcsF2F, sProc)
-                    this.throw('branch', 'F2F proc %s not found on system this branch belongs to!', sProc);
-                end
-                
-                
-                % IF flow - FIRST proc - NO FLOW! That will be done when
-                % the branch is actually connected to another one (to be
-                % more exact, another branch connects to this here).
-                if ~this.abIf(1) || (iI ~= 1)
-                    % Connect to previous flow (the 'left' port of the proc
-                    % goes to the 'out' port of the previous flow)
-                    this.oContainer.toProcsF2F.(sProc).addFlow(oFlow);
-                end
-                
-                % Create flow
-                oFlow = matter.flow(this);
-                this.aoFlows(end + 1) = oFlow;
-                
-                % Connect the new flow - 'right' of proc to 'in' of flow
-                % Because of the possibility that the proc is not connected
-                % to an in flow (if branch - in flow not yet known), we
-                % explicitly provide the port to connect the flow to
-                this.aoFlowProcs(end + 1) = this.oContainer.toProcsF2F.(sProc).addFlow(oFlow, 2);
-            end
-            
-            
-            
-            %%%% HANDLE RIGHT SIDE
-            
-            
-            
-            % Interface on right side?
-            if ~contains(sRight, '.')
-                
-                this.abIf(2) = true;
-                this.iIfFlow = length(this.aoFlows);
-                
-                % Checking if the interface name is already present in this
-                % system. Only do this if there any branches at all, of course. 
-                if ~isempty(this.oContainer.aoBranches) && any(strcmp(subsref([ this.oContainer.aoBranches.csNames ], struct('type', '()', 'subs', {{ 2, ':' }})), sRight))
-                    this.throw('branch', 'An interface called ''%s'' already exists in ''%s''! Please choose a different name.', sRight, this.oContainer.sName);
-                end
-                
-            else
-                % Split to store name / port name
-                [ sStore, sPort ] = strtok(sRight, '.');
-                
-                % Get store name from container
-                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end
-                
-                % Get Port ...
-                oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
-                
-                % ... and add flow IF not empty, could be if on the left,
-                % no procs --> no oFlow, the IF flow from the subsystem
-                % will connect to this EXME directly.
-                %TODO still problem if no proc, and left IF to right store.
-                %     That would basically be a exmeIFport to subsystems,
-                %     so implement that (several subs can dock), see above
-                if ~isempty(oFlow)
-                    oPort.addFlow(oFlow);
-                end
-                
-                % Get phase from flow and add to index
-                this.coExmes{2} = oPort;
             end
             
             % Adding the branch to our matter.container
             this.oContainer.addBranch(this);
             
+            % Counting the number of flows and processors in this branch
             this.iFlows     = length(this.aoFlows);
             this.iFlowProcs = length(this.aoFlowProcs);
             
             %% Construct asscociated thermal branch
-            % Create the respective thermal interfaces for the thermal
-            % branch
-            % Split to store name / port name
-            [ sStore, sPort ] = strtok(sLeft, '.');
-            % Get EXME port/proc ...
-            if isempty(sPort)
-                % in this case an interface is used, and the interfase
-                % should be used in the thermal branch definition as well
-                % therefore we do nothing here
-            else
-                oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
-                thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
-            end
-            
-            % Split to store name / port name
-            [ sStore, sPort ] = strtok(sRight, '.');
-            % Get EXME port/proc ...
-            if isempty(sPort)
-                % in this case an interface is used, and the interfase
-                % should be used in the thermal branch definition as well
-                % therefore we do nothing here
-            else
-                oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
-                thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
-            end
-            
+            % To model the mass-bound heat (advective) transfer we need a
+            % thermal branch in parallel to the matter branch. The required
+            % thermal exmes on the capacities have already been created in
+            % conductor for every f2f processor in this branch. 
             if length(csProcs) >= 1
                 for iProc = 1:length(csProcs)
                     thermal.procs.conductors.fluidic(this.oContainer, csProcs{iProc}, this);
                 end
             else
-                % branches without a f2f can exist (e.g. manual branches)
+                % Branches without a f2f can exist (e.g. manual branches)
                 % however for the thermal branch we always require at least
                 % one conductor
                 if ~isempty(this.sCustomName)
@@ -328,10 +229,9 @@ classdef branch < base & event.source
                 thermal.procs.conductors.fluidic(this.oContainer, csProcs{1}, this);
             end
             
-            if nargin < 5
-                sCustomName = [];
-            end
-            this.oThermalBranch = thermal.branch(this.oContainer, sLeft, csProcs, sRight, sCustomName);
+            % Now we have everything we need, so we can call the thermal
+            % branch constructor. 
+            this.oThermalBranch = thermal.branch(this.oContainer, xLeft, csProcs, xRight, this.sCustomName, this);
         end
         
         
@@ -396,7 +296,7 @@ classdef branch < base & event.source
                 % Is the branch we are connecting to a pass-through branch?
                 if ~all(this.coBranches{2}.abIf)
                     % Since this non-pass-through branch has no flow
-                    % processors, we can connect directly to the exme on
+                    % processors, we can connect directly to the ExMe on
                     % the right side of this branch. It can't be on the
                     % left side, of course, since this is where the
                     % interface is!
@@ -411,7 +311,7 @@ classdef branch < base & event.source
             oProc.addFlow(this.aoFlows(this.iIfFlow));
             
             % To help with debugging, we now change this branch's sName
-            % property to reflect the actual flow path between two exmes
+            % property to reflect the actual flow path between two ExMes
             % that it models. First we split the branch name at the three
             % consecutive underscores '___' which delimit the left and
             % right side of a branch name. 
@@ -555,7 +455,7 @@ classdef branch < base & event.source
             % recalculated
             this.oThermalBranch.setOutdated();
             % Only trigger if not yet set
-            %CHECK inactivated here --> solvers and otehr "clients" should
+            %CHECK inactivated here --> solvers and other "clients" should
             %      check themselves!
             if ~this.bOutdated
                 this.bOutdated = true;
@@ -636,6 +536,153 @@ classdef branch < base & event.source
     % Methods provided to a connected subsystem branch
     methods (Access = protected)
         
+        function sSideName = handleSide(this, sSide, xInput)
+            %HANDLESIDE Does a bunch of stuff related to the left or right
+            %side of a branch.
+            
+            % Setting an index variable depending on which side we are
+            % looking at.
+            switch sSide
+                case 'left'
+                    iSideIndex = 1;
+                    
+                case 'right'
+                    iSideIndex = 2;
+            end
+            
+            % The xInput input parameter can have one of three forms: 
+            %   - <StoreName>.<ExMeName>
+            %   - <InterfaceName>
+            %   - phase object handle
+            %
+            % The following code is there to determine which of the three
+            % it is. 
+            
+            % If xInput is a phase object handle, we need to create an
+            % ExMe for that phase. This will be captured in the boolean
+            % variable below.
+            bCreateExMe = false;
+            
+            % If xInput is the name of an interface, this boolean variale
+            % will be set to true. 
+            bInterface  = false;
+            
+            % Check what type of variable xInput is, it can be either a
+            % string or a phase object handle.
+            if isa(xInput,'matter.phase')
+                % It's a phase object, so we set the boolean to true.
+                bCreateExMe = true;
+            elseif ~contains(xInput, '.')
+                % It's not a phase and the string provided does not contain
+                % the '.' character, therfore it must be an interface name.
+                bInterface  = true;
+            end
+            
+            if bInterface
+                % This side is an interface, so we only need to set the
+                % abIf(iSideIndex) entry to true.
+                this.abIf(iSideIndex) = true;
+                
+                % Checking if the interface name is already present in this
+                % system. Only do this if there any branches at all, of course.
+                if ~isempty(this.oContainer.aoBranches) && any(strcmp(subsref([ this.oContainer.aoBranches.csNames ], struct('type', '()', 'subs', {{ iSideIndex, ':' }})), xInput))
+                    this.throw('branch', 'An interface called ''%s'' already exists in ''%s''! Please choose a different name.', xInput, this.oContainer.sName);
+                end
+                
+                % The side name is just the interface name for now
+                sSideName = xInput;
+                
+                % If this is the right side of the branch, we also need to
+                % set the iIfFlow property.
+                if strcmp(sSide, 'right')
+                    this.iIfFlow = length(this.aoFlows);
+                end
+                
+            else
+                % This side is not an interface, so we are either starting
+                % or ending a branch here. 
+                
+                if bCreateExMe
+                    % This side was provided as a phase onbject, so we need
+                    % to create an ExMe there first.
+                    
+                    % To automatically generate the ExMe name
+                    if isempty(xInput.toProcsEXME)
+                        iNumber = 1;
+                    else
+                        iNumber = numel(fieldnames(xInput.toProcsEXME)) + 1;
+                    end
+                    
+                    sPortName = sprintf('Port_%i',iNumber);
+                    oPort = matter.procs.exmes.(xInput.sType)(xInput, sPortName);
+                    
+                    % The side name is of the format
+                    % <StoreName>__<ExMeName>.
+                    sSideName = [xInput.oStore.sName, '__', sPortName];
+                else
+                    % xInput is a string containing the name of a store and
+                    % an ExMe.
+                    
+                    % Split to store name / port name
+                    [ sStore, sPort ] = strtok(xInput, '.');
+                    
+                    % Check if store exists
+                    if ~isfield(this.oContainer.toStores, sStore)
+                        this.throw('branch', 'Can''t find provided store %s on parent system', sStore); 
+                    end
+                    
+                    % Get a handle to the ExMe 
+                    oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
+                    
+                    % The side name is of the format
+                    % <StoreName>__<ExMeName>, so we just need to do some
+                    % replacing in the xInput variable.
+                    sSideName = strrep(xInput, '.', '__');
+                    
+                    % Since we will be creating a thermal branch to run in
+                    % parallel with this matter branch, we need to create a
+                    % thermal ExMe that corresponds to this matter ExMe.
+                    thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
+
+                end
+                
+                % We create branches from left to right. If this is a
+                % left side, we need to create the first flow object. If
+                % this is a right side, we can just use the last flow
+                % object in the aoFlows property. 
+                switch sSide
+                    case 'left'
+                        % Create a flow
+                        oFlow = matter.flow(this);
+                        
+                        % Add flow to index
+                        this.aoFlows(end + 1) = oFlow;
+                    case 'right'
+                        % It may be the case that a branch has no flow
+                        % objects if there are no f2f processors and this
+                        % branch has an interface on the left side or if it
+                        % is a pass-through branch. The latter case will
+                        % cause an error later on when the subsystem is
+                        % connected. The former case is okay as long as the
+                        % solver used on this branch can handle that.
+                        if ~isempty(this.aoFlows)
+                            oFlow = this.aoFlows(end);
+                        else
+                            oFlow = [];
+                        end
+                        
+                end
+                
+                % ... and add flow, if there is one.
+                if ~isempty(oFlow)
+                    oPort.addFlow(oFlow);
+                end
+                
+                % Add port to the coExmes property
+                this.coExmes{iSideIndex} = oPort;
+            end
+        end
+        
         function setFlowRate(this, fFlowRate, afPressure)
             % Set flowrate for all flow objects
             %
@@ -654,19 +701,11 @@ classdef branch < base & event.source
             
             % If sum of the last ten flow rates is < precision, set flow
             % rate to zero
-            if tools.round.prec(sum(this.afFlowRates), this.oContainer.oTimer.iPrecision) == 0
+            if tools.round.prec(sum(this.afFlowRates), 30) == 0
                 fFlowRate = 0;
                 
                 afPressure = zeros(1,this.iFlowProcs);
                 
-            elseif this.fFlowRate == 0 %&& false
-                % If flow rate is already zero, more strict rounding! Don't
-                % re-set a flow rate until its larger then the precision!
-                if tools.round.prec(fFlowRate, this.oContainer.oTimer.iPrecision) == 0
-                    fFlowRate = 0;
-                    
-                    afPressure = zeros(1,this.iFlowProcs);
-                end
             end
             
             this.fFlowRate = fFlowRate;

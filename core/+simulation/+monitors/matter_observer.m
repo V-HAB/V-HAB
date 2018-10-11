@@ -201,8 +201,15 @@ classdef matter_observer < simulation.monitor
             end
             
             % Finally we append the new arrays to the ones passed in as
-            % arguments to this function and we are done. 
-            aoPhasesOut   = [ aoPhasesIn, aoPhasesNew ];
+            % arguments to this function and we are done. We need to do
+            % some checking for empty arrays first though, because MATLAB
+            % will otherwise complain during the concatenation process. 
+            if isempty(aoPhasesIn)
+                aoPhasesOut = aoPhasesNew;
+            else
+                aoPhasesOut = [ aoPhasesIn, aoPhasesNew ];
+            end
+            
             aoBranchesOut = [ aoBranchesIn; aoBranchesNew ];
             
         end

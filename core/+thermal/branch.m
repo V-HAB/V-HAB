@@ -52,6 +52,10 @@ classdef branch < base & event.source
         
         % boolean to decide if event should be triggered or not
         bTriggersetHeatFlowCallbackBound = false;
+        
+        % Matter object which solves the matter flow rate of this thermal
+        % branch. Can either be a matter.branch or a p2p processor
+        oMatterObject;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -85,10 +89,10 @@ classdef branch < base & event.source
     
     methods
         
-        function this = branch(oContainer, sLeft, csProcs, sRight, sCustomName, oMassBranch)
+        function this = branch(oContainer, xLeft, csProcs, xRight, sCustomName, oMatterObject)
             % The thermal branch uses the same definition as the matter
             % branch, just with thermal object. A matter phase with the
-            % respective thermal exme is rerquire as interface on both the
+            % respective thermal exme is required as interface on both the
             % left and right side and multiple conductors of the same type
             % (Advective, Conduction/Convective, Radiative) can be defined
             % in csProcs (similar to f2f procs on the matter side)
@@ -98,12 +102,40 @@ classdef branch < base & event.source
             % subsystem to system.
             
             % Reference to the matter.container and some shorthand refs.
-            this.oContainer = oContainer;
-            this.oMT        = oContainer.oMT;
-            this.oTimer     = oContainer.oTimer;
+            this.oContainer    = oContainer;
+            this.oMT           = oContainer.oMT;
+            this.oTimer        = oContainer.oTimer;
+            % Since there are thermal branches which do not have a matter
+            % object (e.g. radiative or conductive branches) the matter
+            % object is only added in case it is provided as input
+            if nargin > 5
+                this.oMatterObject = oMatterObject;
+            end
             
-            this.csNames    = strrep({ sLeft; sRight }, '.', '__');
-            sTempName      = [ this.csNames{1} '___' this.csNames{2} ];
+            %% Handle the left side of the branch
+            sLeftSideName = this.handleSide('left', xLeft);
+            
+            %% Loop through conductor procs
+            for iI = 1:length(csProcs)
+                sProc = csProcs{iI};
+                
+                if ~isfield(this.oContainer.toProcsConductor, sProc)
+                    this.throw('branch', 'Conductor %s not found on system this branch belongs to!', sProc);
+                end
+                
+                this.coConductors{end + 1} = this.oContainer.toProcsConductor.(sProc);
+            end
+            
+            %% Handle the right side of the branch
+            sRightSideName = this.handleSide('right', xRight);
+            
+            %% Setting the name property for this branch object
+            
+            % Setting the csNames property
+            this.csNames = {sLeftSideName; sRightSideName};
+            
+            % Creating a temporary name first
+            sTempName = [ sLeftSideName, '___', sRightSideName ];
             
             % We need to jump through some hoops because the
             % maximum field name length of MATLAB is only 63
@@ -115,85 +147,20 @@ classdef branch < base & event.source
             if length(sTempName) > namelengthmax
                 sTempName = sTempName(1:namelengthmax);
             end
+            
+            % Setting the sName property
             this.sName = sTempName;
             
-            if nargin >= 5
+            % If the user provided a custom name, we also set that
+            % property.
+            if nargin == 5
                 this.sCustomName = sCustomName;
             end
             
-            if nargin >= 6
-                this.oMassBranch = oMassBranch;
-            end
-            
-            
-            % Interface on left side?
-            if ~contains(sLeft, '.')
-                this.abIf(1) = true;
-                
-                % Checking if the interface name is already present in this
-                % system. Only do this if there any branches at all, of course. 
-                if ~isempty(this.oContainer.aoThermalBranches) && any(strcmp(subsref([ this.oContainer.aoThermalBranches.csNames ], struct('type', '()', 'subs', {{ 1, ':' }})), sLeft))
-                    this.throw('branch', 'An interface called ''%s'' already exists in ''%s''! Please choose a different name.', sLeft, this.oContainer.sName);
-                end
-            else
-                % Split to store name / port name
-                [ sStore, sPort ] = strtok(sLeft, '.');
-                
-                % Get store name from parent
-                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end
-                
-                % Get EXME port/proc ...
-                oPort = this.oContainer.toStores.(sStore).getThermalPort(sPort(2:end));
-                
-                this.coExmes{1} = oPort;
-                
-                % Add the branch to the exmes of this branch
-                this.coExmes{1}.addBranch(this);
-            end
-            
-            
-            % Loop through conductor procs
-            for iI = 1:length(csProcs)
-                sProc = csProcs{iI};
-                
-                if ~isfield(this.oContainer.toProcsConductor, sProc)
-                    this.throw('branch', 'Conductor %s not found on system this branch belongs to!', sProc);
-                end
-                
-                this.coConductors{end + 1} = this.oContainer.toProcsConductor.(sProc);
-            end
-            
-            %%%% HANDLE RIGHT SIDE
-            
-            % Interface on right side?
-            if ~contains(sRight, '.')
-                
-                this.abIf(2) = true;
-                this.iIfConductors = length(this.coConductors);
-                
-                % Checking if the interface name is already present in this
-                % system. Only do this if there any branches at all, of course. 
-                if ~isempty(this.oContainer.aoThermalBranches) && any(strcmp(subsref([ this.oContainer.aoThermalBranches.csNames ], struct('type', '()', 'subs', {{ 2, ':' }})), sRight))
-                    this.throw('branch', 'An interface called ''%s'' already exists in ''%s''! Please choose a different name.', sRight, this.oContainer.sName);
-                end
-            else
-                % Split to store name / port name
-                [ sStore, sPort ] = strtok(sRight, '.');
-                
-                % Get store name from parent
-                if ~isfield(this.oContainer.toStores, sStore), this.throw('branch', 'Can''t find provided store %s on parent system', sStore); end
-                
-                % Get EXME port/proc ...
-                oPort = this.oContainer.toStores.(sStore).getThermalPort(sPort(2:end));
-                
-                this.coExmes{2} = oPort;
-                % Add the branch to the exmes of this branch
-                this.coExmes{2}.addBranch(this);
-            end
-            
-            % Adding the branch to our matter.container
+            %% Adding the branch to our matter.container
             this.oContainer.addThermalBranch(this);
             
+            % Counting the number of conductors in the branch
             this.iConductors = length(this.coConductors);
             
         end
@@ -389,6 +356,120 @@ classdef branch < base & event.source
     
     methods (Access = protected)
         
+        function sSideName = handleSide(this, sSide, xInput)
+            %HANDLESIDE Does a bunch of stuff related to the left or right
+            %side of a branch.
+            
+            % Setting an index variable depending on which side we are
+            % looking at.
+            switch sSide
+                case 'left'
+                    iSideIndex = 1;
+                    
+                case 'right'
+                    iSideIndex = 2;
+            end
+            
+            % The xInput input parameter can have one of three forms: 
+            %   - <StoreName>.<ExMeName>
+            %   - <InterfaceName>
+            %   - phase object handle
+            %
+            % The following code is there to determine which of the three
+            % it is. 
+            
+            % If xInput is a phase object handle, we need to create an
+            % ExMe for that phase. This will be captured in the boolean
+            % variable below.
+            bCreateExMe = false;
+            
+            % If xInput is the name of an interface, this boolean variale
+            % will be set to true. 
+            bInterface  = false;
+            
+            % Check what type of variable xInput is, it can be either a
+            % string or a phase object handle.
+            if isa(xInput,'matter.phase')
+                % It's a phase object, so we set the boolean to true.
+                bCreateExMe = true;
+            elseif ~contains(xInput, '.')
+                % It's not a phase and the string provided does not contain
+                % the '.' character, therfore it must be an interface name.
+                bInterface  = true;
+            end
+            
+            if bInterface
+                % This side is an interface, so we only need to set the
+                % abIf(iSideIndex) entry to true.
+                this.abIf(iSideIndex) = true;
+                
+                % Checking if the interface name is already present in this
+                % system. Only do this if there any branches at all, of course.
+                if ~isempty(this.oContainer.aoThermalBranches) && any(strcmp(subsref([ this.oContainer.aoThermalBranches.csNames ], struct('type', '()', 'subs', {{ iSideIndex, ':' }})), xInput))
+                    this.throw('branch', 'An interface called ''%s'' already exists in ''%s''! Please choose a different name.', xInput, this.oContainer.sName);
+                end
+                
+                % The side name is just the interface name for now
+                sSideName = xInput;
+                
+                % If this is the right side of the branch, we also need to
+                % set the iIfFlow property.
+                if strcmp(sSide, 'right')
+                    this.iIfConductors = length(this.coConductors);
+                end
+                
+            else
+                % This side is not an interface, so we are either starting
+                % or ending a branch here. 
+                
+                if bCreateExMe
+                    % This side was provided as a phase onbject, so we need
+                    % to get the appropriate port from the phase's
+                    % associated capacity object. 
+                    
+                    % To automatically generate the ExMe name
+                    if isempty(xInput.oCapacity.toProcsEXME)
+                        iNumber = 1;
+                    else
+                        iNumber = numel(fieldnames(xInput.toProcsEXME)) + 1;
+                    end
+                    
+                    sPortName = sprintf('Port_%i',iNumber);
+                    oPort = thermal.procs.exme(xInput.oCapacity, sPortName);
+                    
+                    % The side name is of the format
+                    % <StoreName>__<ExMeName>.
+                    sSideName = [xInput.oStore.sName, '__', sPortName];
+                else
+                    % xInput is a string containing the name of a store and
+                    % an ExMe.
+                    
+                    % Split to store name / port name
+                    [ sStore, sPort ] = strtok(xInput, '.');
+                    
+                    % Check if store exists
+                    if ~isfield(this.oContainer.toStores, sStore)
+                        this.throw('branch', 'Can''t find provided store %s on parent system', sStore); 
+                    end
+                    
+                    % Get a handle to the ExMe 
+                    oPort = this.oContainer.toStores.(sStore).getThermalPort(sPort(2:end));
+                    
+                    % The side name is of the format
+                    % <StoreName>__<ExMeName>, so we just need to do some
+                    % replacing in the xInput variable.
+                    sSideName = strrep(xInput, '.', '__');
+                end
+                
+                % Add port to the coExmes property
+                this.coExmes{iSideIndex} = oPort;
+                
+                % Add the branch to the exmes of this branch
+                this.coExmes{iSideIndex}.addBranch(this);
+                
+            end
+        end
+        
         function setHeatFlow(this, fHeatFlow, afTemperatures)
             
             if this.abIf(1), this.throw('setHeatFlow', 'Left side is interface, can''t set flowrate on this branch object'); end
@@ -440,7 +521,7 @@ classdef branch < base & event.source
                 if ~isempty(this.coExmes{2})
                     
                     % One flow proc less than flows
-                    this.coConductors = [ {this.coConductors{1:(this.iIfConductors)}}, coRightSideConductors(:)' ];
+                    this.coConductors = [ this.coConductors(1:(this.iIfConductors)), coRightSideConductors(:)' ];
                     
                     this.iConductors = length(this.coConductors);
                     

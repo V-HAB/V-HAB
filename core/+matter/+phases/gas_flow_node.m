@@ -1,90 +1,75 @@
-classdef gas_flow_node < matter.phases.gas
+classdef gas_flow_node < matter.phases.flow_node
     %% gas_flow_node
-    % A phase that is modelled as containing no matter. For implementation
-    % purposes the phase does have a mass, but the calculations enforce
-    % zero mass change for the phase and calculate all values based on the
-    % inflows. The pressure is calculated and set by the multi branch
-    % solver, therefore this phase can only be used in a network of
-    % branches that is solved by the multi branch solver!
+    % A gas phase that is modelled as containing no matter. 
     
-    
+    properties (Constant)
+
+        % State of matter in phase (e.g. gas, liquid, solid)
+        sType = 'gas';
+        
+    end
     properties (SetAccess = protected, GetAccess = public)
-        % Pressure is adjusted ('virtual', not a real pressure) to minimize
-        % the total flow rate
-        fVirtualPressure = 1e5;
+        % Partial pressures in Pa
+        afPP;
         
-        % Informative
-        fVirtualMassToPressure;
+        % Substance concentrations in ppm
+        afPartsPerMillion;
         
-        
-        % Actual pressure - just informative
-        fActualPressure;
-        
-        % Actual mass to pressure - just informative
-        fActualMassToPressure;
-        
-        % Initial mass?
-        fInitialMass;
-        
-        
-        fLastPartialsUpdate = -1;
+        % Relative humidity in the phase, see this.update() for details on
+        % the calculation.
+        rRelHumidity;
     end
     
     methods
         function this = gas_flow_node(oStore, sName, varargin)
-            this@matter.phases.gas(oStore, sName, varargin{:});
-            
-            this.fInitialMass = this.fMass;
-            
-            tTimeStepProperties.rMaxChange = 0;
-            this.setTimeStepProperties(tTimeStepProperties)
+            this@matter.phases.flow_node(oStore, sName, varargin{:});
             
         end
         
-        function setPressure(this, fPressure)
-            if fPressure < 0
-                fPressure = 0;
+        function this = update(this)
+            update@matter.phase(this);
+            
+            if this.oTimer.iTick > 0
+                % to ensure that flow phases set the correct values and do
+                % not confuse the user, a seperate calculation for them is
+                % necessary
+                afPartialMassFlow_In    = zeros(this.iProcsEXME, this.oMT.iSubstances);
+                
+                for iExme = 1:this.iProcsEXME
+                    fFlowRate = this.coProcsEXME{iExme}.iSign * this.coProcsEXME{iExme}.oFlow.fFlowRate;
+                    if fFlowRate > 0
+                        afPartialMassFlow_In(iExme,:)   = this.coProcsEXME{iExme}.oFlow.arPartialMass .* fFlowRate;
+                    end
+                end
+                % See ideal gas mixtures for information on this
+                % calculation: "Ideally the ratio of partial pressures
+                % equals the ratio of the number of molecules. That is, the
+                % mole fraction of an individual gas component in an ideal
+                % gas mixture can be expressed in terms of the component's
+                % partial pressure or the moles of the component"
+                afCurrentMolsIn     = (sum(afPartialMassFlow_In,1) ./ this.oMT.afMolarMass);
+                arFractions         = afCurrentMolsIn ./ sum(afCurrentMolsIn);
+                afPartialPressure   = arFractions .*  this.fPressure;
+                
+                afPartialPressure(isnan(afPartialPressure)) = 0;
+                afPartialPressure(afPartialPressure < 0 ) = 0;
+                
+                this.afPP = afPartialPressure;
+                
+                if this.afPP(this.oMT.tiN2I.H2O)
+                    % calculate saturation vapour pressure [Pa];
+                    fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
+                    % calculate relative humidity
+                    this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
+                else
+                    this.rRelHumidity = 0;
+                end
+                
+            else
+                this.fPressure = 0;
+                this.afPP = zeros(1,this.oMT.iSubstances);
+                this.rRelHumidity = 0;
             end
-            this.fVirtualPressure = fPressure;
-        end
-        
-        
-        function massupdate(this, varargin)
-            
-            massupdate@matter.phases.gas(this, varargin{:});
-            
-            this.updatePressure();
-        end
-        
-        function update(this, varargin)
-            update@matter.phases.gas(this, varargin{:});
-            
-            this.updatePressure();
-        end
-        
-        
-        function seal(this)
-            seal@matter.phases.gas(this);
-            
-            this.bSynced    = true;
-            this.bFlow      = true;
-        end
-    end
-    
-    methods (Access = protected)
-        function updatePressure(this)
-            
-            if isempty(this.fVirtualPressure)
-                this.fVirtualPressure = 0;
-            end
-            
-            this.fActualMassToPressure = this.fMassToPressure;
-            this.fActualPressure       = this.fPressure;
-
-            this.fVirtualMassToPressure = this.fVirtualPressure / this.fMass;
-
-            this.fPressure       = this.fVirtualPressure;
-            this.fMassToPressure = this.fVirtualMassToPressure;
         end
     end
 end

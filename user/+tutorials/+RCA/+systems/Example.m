@@ -30,17 +30,15 @@ classdef Example < vsys
             % Creating a store simulating the gaseous part of the space suit
             % Influence of residence mass can/should be analyzed in a future work
             matter.store(this, 'SpaceSuit', 0.015);
-            oAir = this.toStores.SpaceSuit.createPhase('N2Atmosphere', 0.015, fInitialTemperature);
+            cAirHelper = matter.helper.phase.create.N2Atmosphere(this.toStores.SpaceSuit, 0.015, fInitialTemperature);
+            oAir = matter.phases.gas_flow_node(this.toStores.SpaceSuit, 'N2Atmosphere',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            
             special.matter.const_press_exme(oAir, 'Out', 28900);
             special.matter.const_press_exme(oAir, 'In', 28300);
             matter.procs.exmes.gas(oAir, 'H2OInlet');
             matter.procs.exmes.gas(oAir, 'CO2Inlet');
             matter.procs.exmes.gas(oAir, 'N2Inlet');
             
-            % Syncing the phase, this makes solver branch updating smoother
-            % and prevents instabilities.
-            oAir.bFlow = true;
-                        
             % Creating a H2O store to simulate metabolic rates
             matter.store(this, 'H2OStore', 10);
             % Add Phase: gas(oStore, sName, tfMasses, fVolume, fTemp)
