@@ -244,6 +244,8 @@ classdef branch_liquid < solver.matter.base.branch
             %initilaization
             oBranch.setOutdated();
             
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
+            
         end
     end
     

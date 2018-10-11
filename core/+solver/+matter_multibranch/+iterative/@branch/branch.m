@@ -314,22 +314,6 @@ classdef branch < base & event.source
     end
     
     
-    properties (SetAccess = protected, GetAccess = public)
-        % The solver itself is calculated before the residual solvers. This
-        % may lead to problems if a residual solver is used as input to
-        % this system directly (not with a boundary phase inbetween) as the
-        % flowrate of the residual solver is assumed to be constant
-        % boundary condition for one tick, while it can actually change
-        % before the tick ends. Therefore residual solvers should only be
-        % used as input with a boundary phase inbetween that reaches the
-        % necessary pressure to supply the system the correct flowrate
-        iPostTickPriority = -1;
-        % the time step is calculated in the last post tick, the same as
-        % the phase time steps
-        iPostTickPriorityCalculateTimeStep = 3;
-    end
-    
-    
     methods
         function this = branch(aoBranches, sMode)
             
@@ -359,6 +343,17 @@ classdef branch < base & event.source
             
             
             this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdate(), inf);
+            
+            % The solver itself is calculated before the residual solvers. This
+            % may lead to problems if a residual solver is used as input to
+            % this system directly (not with a boundary phase inbetween) as the
+            % flowrate of the residual solver is assumed to be constant
+            % boundary condition for one tick, while it can actually change
+            % before the tick ends. Therefore residual solvers should only be
+            % used as input with a boundary phase inbetween that reaches the
+            % necessary pressure to supply the system the correct flowrate
+            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'multibranch_solver');
+            this.hBindPostTickTimeStepCalculation = this.oBranch.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
             
             this.initialize();
         end
@@ -524,12 +519,12 @@ classdef branch < base & event.source
             
             for iB = 1:this.iBranches
                 for iE = sif(this.aoBranches(iB).fFlowRate >= 0, 1:2, 2:-1:1)
-                    this.aoBranches(iB).coExmes{iE}.oPhase.massupdate();
+                    this.aoBranches(iB).coExmes{iE}.oPhase.hBindPostTickMassUpdate();
                 end
             end
             
-            this.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
-            this.oTimer.bindPostTick(@this.calculateTimeStep, this.iPostTickPriorityCalculateTimeStep);
+            this.hBindPostTickUpdate();
+            this.hBindPostTickTimeStepCalculation();
             
         end
         

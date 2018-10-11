@@ -24,6 +24,8 @@ classdef branch < solver.matter.manual.branch
         fAllowedFlowRate = 0;
         
         fLastUpdateTime = -1;
+        
+        hBindPostTickFindAdajcentResiduals;
     end
     
     
@@ -32,14 +34,15 @@ classdef branch < solver.matter.manual.branch
             this@solver.matter.manual.branch(oBranch);
             
             this.iPostTickPriority = 2;
-            this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
             
-            this.oBranch.oTimer.bindPostTick(@this.findAdjacentResidualSolvers, -3);
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update, 'matter' , 'residual_solver');
+            this.hBindPostTickFindAdajcentResiduals      = this.oTimer.registerPostTick(@this.update, 'matter' , 'residual_solver');
+            
         end
         
         function setPositiveFlowDirection(this, bPositiveFlowDirection)
             this.bPositiveFlowDirection = bPositiveFlowDirection;
-            this.oBranch.oTimer.bindPostTick(@this.findAdjacentResidualSolvers, -3);
+            this.hBindPostTickFindAdajcentResiduals();
             
             % If this command is used all adjacent residual solvers on both
             % sides also have to update their adjacent residual solvers!

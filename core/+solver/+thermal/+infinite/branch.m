@@ -16,10 +16,8 @@ classdef branch < solver.thermal.base.branch
         function this = branch(oBranch)
             this@solver.thermal.base.branch(oBranch, 'basic');
             
-            this.iPostTickPriority = 2;
-            
-            this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
-            
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update, 'thermal' , 'residual_solver');
+                        
             this.bResidual = true;
         end
         

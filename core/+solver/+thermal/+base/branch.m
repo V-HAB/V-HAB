@@ -46,10 +46,11 @@ classdef branch < base & event.source
     
     
     properties (SetAccess = protected, GetAccess = public)
-        % Update method is bound to this post tick priority. Some solvers
-        % might need another priority to e.g. ensure that first, all other
-        % branches update their flow rates.
-        iPostTickPriority = 0;
+        
+        % Handle to bind an update to the corresponding post tick. Simply
+        % use XXX.hBindPostTickUpdate() to register an update. Solvers
+        % should ONLY be updated in the post tick!
+        hBindPostTickUpdate;
         
         bResidual = false;
         
@@ -130,7 +131,7 @@ classdef branch < base & event.source
             if ~base.oLog.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end
             
             this.bRegisteredOutdated = true;
-            this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
+            this.hBindPostTickUpdate();
         end
         
         

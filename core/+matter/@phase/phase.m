@@ -153,12 +153,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         afMassLog;
         afLastUpd;
         
-    end
+        % Index of the massupdate post tick in the corresponding cell
+        % and boolean array of the timer
+        hBindPostTickMassUpdate
+        
+        % Index of the update post tick in the corresponding cell
+        % and boolean array of the timer
+        hBindPostTickUpdate
 
-    properties (Access = protected)
-        % Boolean indicator of an outdated time step
-        bOutdatedTimeStep = false;
-
+        % Index of the calculate Time Step post tick
+        hBindPostTickTimeStep
     end
 
     properties (Access = public)
@@ -278,9 +282,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Preset the cached masses (see calculateTimeStep)
             this.fMassLastUpdate  = 0;
             this.afMassLastUpdate = zeros(1, this.oMT.iSubstances);
+            
+            %% Register post tick callbacks for massupdate and update
+            this.hBindPostTickMassUpdate  = this.oTimer.registerPostTick(@this.massupdate_post,  'matter' , 'phase_massupdate');
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update_post,      'matter' , 'phase_update');
+            this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
         end
 
-        function this = massupdate(this, bSetBranchesOutdated)
+        function this = massupdate(this, ~)
+            this.hBindPostTickMassUpdate();
+        end
+        function this = massupdate_post(this, ~)
             % This method updates the mass and temperature related
             % properties of the phase. It takes into account all in- and
             % outflowing matter streams via the exme processors connected
@@ -295,25 +307,13 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % phase to outdated, also causing a recalculation in the
             % post-tick.
             
-            
-            
-            if nargin < 2, bSetBranchesOutdated = false; end
-
             fTime     = this.oTimer.fTime;
             fLastStep = fTime - this.fLastMassUpdate;
-            
-            
             
             % Return if no time has passed
             if fLastStep == 0
                 
-                if ~base.oLog.bOff, this.out(2, 1, 'skip', 'Skipping massupdate in %s-%s-%s\tset branches outdated? %i', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, bSetBranchesOutdated }); end
-                
-                %NOTE need that in case .exec sets flow rate in manual branch triggering massupdate,
-                %     and later in that tick phase does .update -> branches won't be set outdated!
-                if bSetBranchesOutdated
-                    this.setBranchesOutdated();
-                end
+                this.setBranchesOutdated();
                 
                 return;
             end
@@ -388,15 +388,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.fMass = sum(this.afMass);
             
             % Trigger branch solver updates in post tick for all branches
-            if this.bSynced || bSetBranchesOutdated
-                this.setBranchesOutdated();
-            end
-            
-            % Execute updateProcessorsAndManipulators between branch solver
-            % updates for inflowing and outflowing flows
-            if this.iProcsP2Pflow > 0 || this.iManipulators > 0
-                this.oTimer.bindPostTick(@this.updateProcessorsAndManipulators, 1);
-            end
+            this.setBranchesOutdated();
 
             % Phase sets new time step (registered with parent store, used
             % for all phases of that store)
@@ -409,6 +401,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
         
         function this = update(this)
+            this.hBindPostTickUpdate();
+            this.hBindPostTickMassUpdate();
+        end
+        function this = update_post(this)
             % Only update if not yet happened at the current time.
             if (this.oTimer.fTime <= this.fLastUpdate) || (this.oTimer.fTime < 0)
                 if ~base.oLog.bOff, this.out(2, 1, 'update', 'Skip update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
@@ -421,12 +417,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Store update time
             this.fLastUpdate = this.oTimer.fTime;
             
-            % Actually move the mass into/out of the phase.
-            % Pass true as a parameter so massupd calls setBranchesOutdated
-            % even if the bSynced attribute is not true
-            this.massupdate(true);
-            this.oCapacity.updateTemperature(true);
-
             % Cache current fMass / afMass so they represent the values at
             % the last phase update. Needed in phase time step calculation.
             this.fMassLastUpdate  = this.fMass;
@@ -977,12 +967,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
         
         function setOutdatedTS(this)
-            
-            if ~this.bOutdatedTimeStep
-                this.bOutdatedTimeStep = true;
-
-                this.oTimer.bindPostTick(@this.calculateTimeStep, 3);
-            end
+            % Setting this to true multiple times in the timer is no
+            % problem, therefore no check required
+            this.hBindPostTickTimeStep();
         end
 
         function setAttribute(this, sAttribute, xValue)

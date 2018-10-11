@@ -244,7 +244,4 @@ this.oStore.setNextTimeStep(fNewStep);
 
 % Cache - e.g. for logging purposes
 this.fTimeStep = fNewStep;
-
-% Now up to date!
-this.bOutdatedTimeStep = false;
 end

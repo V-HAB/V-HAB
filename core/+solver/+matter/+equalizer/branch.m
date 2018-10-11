@@ -64,6 +64,9 @@ classdef branch < solver.matter.base.branch
             
             % Infinite time step ...
             this.setTimeStep(Inf);
+            
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
+            
         end
         
         function setProperties(this, varargin)

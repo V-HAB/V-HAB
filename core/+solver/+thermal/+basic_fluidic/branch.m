@@ -24,7 +24,8 @@ classdef branch < solver.thermal.base.branch
                 this.oBranch.coConductors{1}.oMassBranch.bind('update',@(~)this.update());
             end
             
-           
+            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'thermal' , 'solver');
+            
             this.update();
             
         end

@@ -80,6 +80,14 @@ classdef massbalance_observer < simulation.monitor
             aoPhases = oInfra.toMonitors.oMatterObserver.aoPhases;
             aoFlows  = oInfra.toMonitors.oMatterObserver.aoFlows;
 
+            % Include a calculation if the afCurrentTotalInOuts of each
+            % phase corresponds to the total flowrate of all attached
+            % branches! Covers the case where the calculateTimeStep
+            % function was not correctly called!
+            afMassBalanceError = aoPhases(2).afCurrentTotalInOuts + aoPhases(3).afCurrentTotalInOuts;
+            if any(afMassBalanceError)
+                keyboard()
+            end
             %% Check branches and P2Ps
             for iFlow = 1:length(aoFlows)
 

@@ -57,6 +57,8 @@ classdef branch < solver.matter.base.branch
             
             this.fTimeStep = inf;
             
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
+            
             this.setTimeStep(this.fTimeStep);
             
             this.registerUpdate();

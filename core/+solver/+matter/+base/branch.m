@@ -50,11 +50,14 @@ classdef branch < base & event.source
     
     
     properties (SetAccess = protected, GetAccess = public)
-        % Update method is bound to this post tick priority. Some solvers
-        % might need another priority to e.g. ensure that first, all other
-        % branches update their flow rates.
-        iPostTickPriority = -2;
         
+        % This is the handle to bind a post tick update for the solver.
+        % Note solvers should ONLY be updated in the post tick! Simply use
+        % the XXX.hBindPostTickUpdate() to bind and update
+        hBindPostTickUpdate;
+        % This is the same as above but for the time step calculation of
+        % the solver, if one is used
+        hBindPostTickTimeStepCalculation;
         
         % See matter.branch, bTriggerSetFlowRate, for more!
         bTriggerUpdateCallbackBound = false;
@@ -105,6 +108,7 @@ classdef branch < base & event.source
             % If the branch triggers the 'outdated' event, need to
             % re-calculate the flow rate!
             this.oBranch.bind('outdated', @this.executeUpdate);
+            
         end
         
         function [ this, unbindCallback ] = bind(this, sType, callBack)
@@ -123,10 +127,6 @@ classdef branch < base & event.source
     methods (Access = private)
         function executeUpdate(this, ~)
             if ~base.oLog.bOff, this.out(1, 1, 'executeUpdate', 'Call massupdate on both branches, depending on flow rate %f', { this.oBranch.fFlowRate }); end
-            
-            for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.oBranch.coExmes{iE}.oPhase.massupdate();
-            end
             
             % if the mass branch is outdated it means the flowrate changed,
             % which requires us to update the corresponding thermal branch
@@ -151,7 +151,7 @@ classdef branch < base & event.source
             % phases before we can change the flowrate. Otherwise the mass
             % balance would be incorrect
             for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.oBranch.coExmes{iE}.oPhase.massupdate();
+                this.oBranch.coExmes{iE}.oPhase.hBindPostTickMassUpdate();
             end
             
             % Allows other functions to register an event to this trigger
@@ -165,7 +165,7 @@ classdef branch < base & event.source
             this.bRegisteredOutdated = true;
             % this finally binds the update function to the specified post
             % tick level
-            this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
+            this.hBindPostTickUpdate();
         end
         
         

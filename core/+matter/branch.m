@@ -548,7 +548,7 @@ classdef branch < base & event.source
             % changed (closing a valve).
             
             for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.coExmes{iE}.oPhase.massupdate();
+                this.coExmes{iE}.oPhase.hBindPostTickMassUpdate();
             end
             
             % If the flowrate changed, the thermal branch also has to be
@@ -647,7 +647,7 @@ classdef branch < base & event.source
             % new flow rate - so the mass for the LAST time step, with the
             % old flow rate, is actually moved from tank to tank.
             for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.coExmes{iE}.oPhase.massupdate();
+                this.coExmes{iE}.oPhase.hBindPostTickMassUpdate();
             end
             
             this.afFlowRates = [ this.afFlowRates(2:end) fFlowRate ];
