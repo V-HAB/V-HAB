@@ -518,8 +518,8 @@ classdef branch < base & event.source
             this.bRegisteredOutdated = true;
             
             for iB = 1:this.iBranches
-                for iE = sif(this.aoBranches(iB).fFlowRate >= 0, 1:2, 2:-1:1)
-                    this.aoBranches(iB).coExmes{iE}.oPhase.hBindPostTickMassUpdate();
+                for iE = 1:2
+                    this.aoBranches(iB).coExmes{iE}.oPhase.massupdate();
                 end
             end
             

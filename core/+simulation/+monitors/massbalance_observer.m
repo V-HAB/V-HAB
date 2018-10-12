@@ -84,7 +84,7 @@ classdef massbalance_observer < simulation.monitor
             % phase corresponds to the total flowrate of all attached
             % branches! Covers the case where the calculateTimeStep
             % function was not correctly called!
-            afMassBalanceError = aoPhases(2).afCurrentTotalInOuts + aoPhases(3).afCurrentTotalInOuts;
+            afMassBalanceError = aoPhases(1).afCurrentTotalInOuts + aoPhases(2).afCurrentTotalInOuts;
             if any(afMassBalanceError)
                 keyboard()
             end

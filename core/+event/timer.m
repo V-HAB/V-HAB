@@ -127,10 +127,16 @@ classdef timer < base
                     txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(['pre_', csPostTicks{iPostTick}])  = cell.empty();
                     txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(csPostTicks{iPostTick})            = cell.empty();
                     txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(['post_', csPostTicks{iPostTick}]) = cell.empty();
+                    
+                    tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}).(['pre_', csPostTicks{iPostTick}])  = logical.empty();
+                    tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}).(csPostTicks{iPostTick})            = logical.empty();
+                    tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}).(['post_', csPostTicks{iPostTick}]) = logical.empty();
+                    
                 end
             end
             
             this.txPostTicks = txPostTicksFull;
+            this.tbPostTickControl = tbPostTickControlFull;
             this.csPostTickGroups = fieldnames(this.txPostTicks);
         end
 
@@ -362,22 +368,32 @@ classdef timer < base
             for iPostTickGroup = 1:length(this.csPostTickGroups)
                 csLevel = fieldnames(this.txPostTicks.(this.csPostTickGroups{iPostTickGroup}));
                 for iPostTickLevel = 1:length(csLevel)
-                    try
+                    % To allow post ticks of the same level to be added on
+                    % the fly while we are executing this level, we use a
+                    % while loop to execute the post ticks till all are
+                    % executed
+                    while any(this.tbPostTickControl.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel}))
                         abExecutePostTicks = this.tbPostTickControl.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel});
-                    catch
-                        continue
-                    end
-                    
-                    csPostTicks = this.txPostTicks.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel})(abExecutePostTicks);
 
-                    for iPostTick = 1:sum(abExecutePostTicks)
-                        csPostTicks{iPostTick}();
+                        chPostTicks = this.txPostTicks.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel});
+
+                        aiPostTicksToExecute = find(abExecutePostTicks);
+                        for iIndex = 1:sum(abExecutePostTicks)
+                            iPostTick = aiPostTicksToExecute(iIndex);
+                            % We set the post tick control for this post
+                            % tick to false, before we execute the post
+                            % tick, to allow rebinding of other post ticks
+                            % in the level during the execution of the
+                            % level
+                            this.tbPostTickControl.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel})(iPostTick) = false;
+                            chPostTicks{iPostTick}();
+                        end
                     end
-                    abExecutePostTicks(abExecutePostTicks) = false;
-                    this.tbPostTickControl.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel}) = abExecutePostTicks;
-                    
                 end
             end
+            % TO DO: Add a option for a higher level post tick to add lower
+            % level post ticks and execute them directly? Or is it fine if
+            % the lower level post ticks are executed in the next tick?
             
             % check for bRun -> if true, execute this.step() again!
             if this.bRun

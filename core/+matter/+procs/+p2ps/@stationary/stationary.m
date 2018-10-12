@@ -48,8 +48,8 @@ classdef stationary < matter.procs.p2p
             
             % The phase that called update already did matterupdate, but 
             % set the fLastUpd to curr time so doesn't do that again
-            this.oIn.oPhase.hBindPostTickMassUpdate();
-            this.oOut.oPhase.hBindPostTickMassUpdate();
+            this.oIn.oPhase.massupdate();
+            this.oOut.oPhase.massupdate();
             
             % Set matter properties. Calculates molar mass, heat capacity,
             % etc.

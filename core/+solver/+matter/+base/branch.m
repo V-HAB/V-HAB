@@ -150,8 +150,8 @@ classdef branch < base & event.source
             % finish transferring mass at the current flowrate in both
             % phases before we can change the flowrate. Otherwise the mass
             % balance would be incorrect
-            for iE = sif(this.oBranch.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.oBranch.coExmes{iE}.oPhase.hBindPostTickMassUpdate();
+            for iE = 1:2
+                this.oBranch.coExmes{iE}.oPhase.massupdate();
             end
             
             % Allows other functions to register an event to this trigger

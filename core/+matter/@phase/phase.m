@@ -307,9 +307,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % Return if no time has passed
             if fLastStep == 0
-                
-                this.setBranchesOutdated();
-                
                 return;
             end
             
@@ -382,9 +379,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Update total mass
             this.fMass = sum(this.afMass);
             
-            % Trigger branch solver updates in post tick for all branches
-            this.setBranchesOutdated();
-
             % Phase sets new time step (registered with parent store, used
             % for all phases of that store)
             this.setOutdatedTS();
@@ -396,8 +390,17 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         end
         
         function this = update(this)
+            % A phase update is called, which means the
+            % pressure etc changed so much that a recalculation is required
             this.hBindPostTickUpdate();
-            this.hBindPostTickMassUpdate();
+            
+            % therefore we also update the mass of this phase
+            this.massupdate();
+            
+            % and trigger branch solver updates in post tick for all
+            % branches because their boundary conditions changed
+            this.setBranchesOutdated();
+
         end
         function this = update_post(this)
             % Only update if not yet happened at the current time.

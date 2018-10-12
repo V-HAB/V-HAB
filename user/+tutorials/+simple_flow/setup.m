@@ -22,7 +22,7 @@ classdef setup < simulation.infrastructure
             ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Simple_Flow');
+            this@simulation.infrastructure('Tutorial_Simple_Flow', containers.Map(), struct(), ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
