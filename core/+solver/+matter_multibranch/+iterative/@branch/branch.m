@@ -207,6 +207,9 @@ classdef branch < base & event.source
         % simulation is re-loaded from a .mat file, the properties are
         % reset to their proper values.
         bRegisteredOutdated = false;
+        
+        hBindPostTickUpdate;
+        hBindPostTickTimeStepCalculation;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -352,8 +355,8 @@ classdef branch < base & event.source
             % before the tick ends. Therefore residual solvers should only be
             % used as input with a boundary phase inbetween that reaches the
             % necessary pressure to supply the system the correct flowrate
-            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'multibranch_solver');
-            this.hBindPostTickTimeStepCalculation = this.oBranch.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update, 'matter' , 'multibranch_solver');
+            this.hBindPostTickTimeStepCalculation = this.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
             
             this.initialize();
         end

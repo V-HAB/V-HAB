@@ -246,13 +246,14 @@ classdef CCAA < vsys
             createSolverStructure@vsys(this);
             % Creating the flowpath into this subsystem
             solver.matter.manual.branch(this.toBranches.CCAA_In_FromCabin);
-            solver.matter.residual.branch(this.toBranches.TCCV_Cabin);
             solver.matter.manual.branch(this.toBranches.TCCV_CHX);
             solver.matter.manual.branch(this.toBranches.Condensate_Out);
             solver.matter.manual.branch(this.toBranches.Coolant_In);
             solver.matter.manual.branch(this.toBranches.Coolant_Out);
             
+            solver.matter.residual.branch(this.toBranches.TCCV_Cabin);
             solver.matter.residual.branch(this.toBranches.CHX_Cabin);
+            
             if ~isempty(this.sCDRA)
                 solver.matter.manual.branch(this.toBranches.CHX_CDRA);
                 
@@ -396,9 +397,7 @@ classdef CCAA < vsys
             % Gets the two flow rates exiting the TCCV
             fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
 
-            this.toBranches.TCCV_Cabin.oHandler.setFlowRate((fInFlow+fInFlow2) - fTCCV_To_CHX_FlowRate);
-
-            this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
+            this.toBranches.TCCV_CHX.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
         end
     end
     
@@ -498,18 +497,8 @@ classdef CCAA < vsys
             % Gets the two flow rates exiting the TCCV
             fTCCV_To_CHX_FlowRate = fFlowPercentageCHX*(fInFlow+fInFlow2);
 
-            if (fInFlow+fInFlow2) > fTCCV_To_CHX_FlowRate
-                this.toBranches.TCCV_Cabin.oHandler.setFlowRate((fInFlow+fInFlow2) - fTCCV_To_CHX_FlowRate);
-            else
-                this.toBranches.TCCV_Cabin.oHandler.setFlowRate(0);
-            end
+            this.toBranches.TCCV_CHX.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate);
             
-            if (fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate) > 0
-                this.toBranches.CHX_Cabin.oHandler.setFlowRate(fTCCV_To_CHX_FlowRate - this.fCDRA_FlowRate);
-            else
-                 this.toBranches.CHX_Cabin.oHandler.setFlowRate(0);
-            end
-
             if ~isempty(this.sCDRA)
                 if fTCCV_To_CHX_FlowRate >= this.fCDRA_FlowRate
                     this.toBranches.CHX_CDRA.oHandler.setFlowRate(this.fCDRA_FlowRate);

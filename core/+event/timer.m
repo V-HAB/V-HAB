@@ -85,7 +85,12 @@ classdef timer < base
                          
         tbPostTickControl;
         csPostTickGroups;
-                         
+        
+        tiPostTickGroup;
+        tiPostTickLevel;
+        
+        iCurrentPostTickGroup = 0;
+        iCurrentPostTickLevel = 0;
     end
     
     methods
@@ -123,6 +128,8 @@ classdef timer < base
             % is executed)
             for iPostTickGroup = 1:iPostTickGroups
                 csPostTicks = fieldnames(this.txPostTicks.(csBasicPostTickGroups{iPostTickGroup}));
+                
+                this.tiPostTickGroup.(csBasicPostTickGroups{iPostTickGroup}) = iPostTickGroup;
                 for iPostTick = 1:length(csPostTicks)
                     txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(['pre_', csPostTicks{iPostTick}])  = cell.empty();
                     txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(csPostTicks{iPostTick})            = cell.empty();
@@ -132,6 +139,7 @@ classdef timer < base
                     tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}).(csPostTicks{iPostTick})            = logical.empty();
                     tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}).(['post_', csPostTicks{iPostTick}]) = logical.empty();
                     
+                    this.tiPostTickLevel.(csBasicPostTickGroups{iPostTickGroup}).(csPostTicks{iPostTick}) = iPostTick;
                 end
             end
             
@@ -275,7 +283,27 @@ classdef timer < base
             % do not require any checks if this should be done or not,
             % because they likely take about as much time as just setting
             % the value to true
-            this.tbPostTickControl.(sPostTickGroup).(sPostTickLevel)(iPostTickNumber) = true;
+            %
+            % If the post tick is bound while we are currently executing
+            % post ticks, we check if the post tick is from an earlier
+            % group. (e.g. massupdate bound during solver stuff). In that
+            % case the post tick is executed directly instead of binding
+            % the boolean
+            if this.iCurrentPostTickGroup < this.tiPostTickGroup.(sPostTickGroup)
+                % Post tick is from a later post tick group and level
+                this.tbPostTickControl.(sPostTickGroup).(sPostTickLevel)(iPostTickNumber) = true;
+            elseif this.iCurrentPostTickGroup == this.tiPostTickGroup.(sPostTickGroup)
+                if this.iCurrentPostTickLevel > this.tiPostTickLevel.(sPostTickGroup).(sPostTickLevel)
+                    % Post tick is from an earlier post tick group and level
+                    this.txPostTicks.(sPostTickGroup).(sPostTickLevel){iPostTickNumber}();
+                else
+                    % Post tick is from a later post tick group and level
+                    this.tbPostTickControl.(sPostTickGroup).(sPostTickLevel)(iPostTickNumber) = true;
+                end
+            else
+                % Post tick is from a later post tick group and level
+                this.txPostTicks.(sPostTickGroup).(sPostTickLevel){iPostTickNumber}();
+            end
         end
     end
     
@@ -364,10 +392,16 @@ classdef timer < base
             end
             
             % Now we go through the post ticks and execute the registered
-            % post ticks
+            % post ticks.
             for iPostTickGroup = 1:length(this.csPostTickGroups)
+                this.iCurrentPostTickGroup = iPostTickGroup;
+                
                 csLevel = fieldnames(this.txPostTicks.(this.csPostTickGroups{iPostTickGroup}));
+                
                 for iPostTickLevel = 1:length(csLevel)
+                    
+                    this.iCurrentPostTickLevel = iPostTickLevel;
+
                     % To allow post ticks of the same level to be added on
                     % the fly while we are executing this level, we use a
                     % while loop to execute the post ticks till all are
@@ -391,9 +425,9 @@ classdef timer < base
                     end
                 end
             end
-            % TO DO: Add a option for a higher level post tick to add lower
-            % level post ticks and execute them directly? Or is it fine if
-            % the lower level post ticks are executed in the next tick?
+            
+            this.iCurrentPostTickGroup = 0;
+            this.iCurrentPostTickLevel = 0;
             
             % check for bRun -> if true, execute this.step() again!
             if this.bRun

@@ -447,10 +447,6 @@ classdef branch < base & event.source
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
-            for iE = 1:2
-                this.coExmes{iE}.oPhase.massupdate();
-            end
-            
             % If the flowrate changed, the thermal branch also has to be
             % recalculated
             this.oThermalBranch.setOutdated();

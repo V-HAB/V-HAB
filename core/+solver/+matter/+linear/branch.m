@@ -49,9 +49,8 @@ classdef branch < solver.matter.base.branch
             if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end
             if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end
             
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
+            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
             
-            this.oTimer = this.oBranch.oContainer.oTimer;
         end
     end
     

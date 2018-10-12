@@ -97,7 +97,7 @@ classdef branch < solver.matter.base.branch
             this.fSensitivity = this.oBranch.oContainer.tSolverParams.fSolverSensitivity;
             this.fMaxStep     = this.oBranch.oContainer.tSolverParams.fMaxTimeStep;
             
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
+            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
             this.hBindPostTickTimeStepCalculation = this.oBranch.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
             
             % Sets the flow rate to 0 which sets matter properties

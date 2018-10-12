@@ -19,7 +19,7 @@ classdef branch < solver.thermal.base.branch
         function this = branch(oBranch)
             this@solver.thermal.base.branch(oBranch, 'basic');
             
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update, 'thermal' , 'solver');
+            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'thermal' , 'solver');
             
             this.update();
         end

@@ -1,9 +1,6 @@
-classdef branch < solver.matter.manual.branch
+classdef branch < solver.matter.base.branch
     % Calculates sum of flow rates of other branches and p2p procs and set
     % remaining flowrate for own branch.
-    %
-    %TODO
-    %   * check if in phase is bSynced, check if added as last solver?
     %
     % please note that the residual solver will not work if you create a
     % loop of several residual solvers!
@@ -19,6 +16,8 @@ classdef branch < solver.matter.manual.branch
         aoAdjacentResidualSolver;
         fResidualFlowRatePrev = 0;
         
+        fRequestedFlowRate = 0;
+        
         bActive = true;
         
         fAllowedFlowRate = 0;
@@ -28,15 +27,18 @@ classdef branch < solver.matter.manual.branch
         hBindPostTickFindAdajcentResiduals;
     end
     
+    properties (SetAccess = private, GetAccess = public)
+        
+        % Actual time between flow rate calculations
+        fTimeStep = inf;
+    end
     
     methods
         function this = branch(oBranch)
-            this@solver.matter.manual.branch(oBranch);
+            this@solver.matter.base.branch(oBranch, [], 'manual');
             
-            this.iPostTickPriority = 2;
-            
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update, 'matter' , 'residual_solver');
-            this.hBindPostTickFindAdajcentResiduals      = this.oTimer.registerPostTick(@this.update, 'matter' , 'residual_solver');
+            this.hBindPostTickUpdate                    = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'residual_solver');
+            this.hBindPostTickFindAdajcentResiduals     = this.oBranch.oTimer.registerPostTick(@this.findAdjacentResidualSolvers, 'matter' , 'pre_residual_solver');
             
         end
         
@@ -144,7 +146,6 @@ classdef branch < solver.matter.manual.branch
         function update(this)
             if ~this.bActive
                 this.fRequestedFlowRate = 0;
-                update@solver.matter.manual.branch(this);
                 this.updateFlowProcs();
                 return
             end

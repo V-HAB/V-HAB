@@ -26,6 +26,8 @@ classdef manip < base
         
         % Reference to the timer
         oTimer;
+        
+        hBindPostTickUpdate;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -55,6 +57,8 @@ classdef manip < base
             % Adding the manipulator to the phase, returns a handle to the
             % detachManipulator() method.
             this.hDetach = this.oPhase.addManipulator(this);
+            
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,      'matter' , 'manips');
         end
         
         function delete(this)
@@ -63,6 +67,10 @@ classdef manip < base
                 this.hDetach();
                 this.hDetach = [];
             end
+        end
+        
+        function bindUpdate(this)
+            this.hBindPostTickUpdate();
         end
     end
     
