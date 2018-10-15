@@ -333,16 +333,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 if ~base.oLog.bOff, this.out(tools.logger.MESSAGE, 1, 'manip-substance', 'Has substance manipulator'); end % directly follows message above, so don't output name
             end
             
-            fTempCurrentTotalMassInOut = sum(afTotalInOuts);
-            % In case the total mass in and output changes the residual
-            % solvers must be set outdated to react to this (the true
-            % parameter indicates that only residual branches are set
-            % outdated)
-            if fTempCurrentTotalMassInOut ~= this.fCurrentTotalMassInOut
-                this.setBranchesOutdated('both', true);
-            end
             % Cache total mass in/out so the EXMEs can use that
-            this.fCurrentTotalMassInOut = fTempCurrentTotalMassInOut;
+            this.fCurrentTotalMassInOut = sum(afTotalInOuts);
             
             % Multiply with current time step
             afTotalInOuts = afTotalInOuts * fLastStep;
@@ -379,6 +371,43 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Update total mass
             this.fMass = sum(this.afMass);
             
+            % Partial masses
+            if ~this.bFlow
+                if this.fMass > 0
+                    this.arPartialMass = this.afMass / this.fMass;
+                else
+                    this.arPartialMass = this.afMass; % afMass is just zeros
+                end
+            else
+                this.trigger('update_partials');
+            end
+            
+            if this.bSynced
+                this.setBranchesOutdated([],true);
+            end
+            
+            if this.iProcsP2Pflow > 0 || this.iManipulators > 0
+                
+                if ~isempty(this.toManips.substance)
+                    this.toManips.substance.bindUpdate();
+                end
+
+                % Call p2ps.flow update methods (if not yet called)
+                for iP = 1:this.iProcsP2Pflow
+                    % That check would make more sense within the flow p2p
+                    % update method - however, that method will be overloaded
+                    % in p2ps to include the model to derive the flow rate, so
+                    % would have to be manually added in each derived p2p ...
+                    if this.coProcsP2Pflow{iP}.fLastUpdate < this.fLastMassUpdate
+                        % Triggers the .massupdate of both connected phases
+                        % which is ok, because the fTimeStep == 0 check above
+                        % will prevent this .massupdate from re-executing.
+                        this.coProcsP2Pflow{iP}.bindUpdate();
+                    end
+                end
+                
+            end
+
             % Phase sets new time step (registered with parent store, used
             % for all phases of that store)
             this.setOutdatedTS();
@@ -419,15 +448,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % the last phase update. Needed in phase time step calculation.
             this.fMassLastUpdate  = this.fMass;
             this.afMassLastUpdate = this.afMass;
-            
-            % Partial masses
-            if ~this.bFlow
-                if this.fMass > 0
-                    this.arPartialMass = this.afMass / this.fMass;
-                else
-                    this.arPartialMass = this.afMass; % afMass is just zeros
-                end
-            end
 
             % Now update the matter properties
             this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
@@ -781,14 +801,26 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
         end
 
-        function setBranchesOutdated(this, ~, bResidual)
+        function setBranchesOutdated(this, ~, bSynced)
             
             if nargin < 3
-                bResidual = false;
+                bSynced = false;
             end
             
+            % If the phase is synced, it can be a flow_node for which we
+            % have to set the outflows outdated even if they have already
+            % been set outdated in this tick! Since the input branches can
+            % change the partial mass composition of the flow nodes and the
+            % execution order between input and output branches is
+            % initially not defined
             if this.fLastSetOutdated >= this.oTimer.fTime
-                return;
+                if bSynced
+                    bUpdateOutFlow = true;
+                else
+                    return;
+                end
+            else
+                bUpdateOutFlow = false;
             end
             
             this.fLastSetOutdated = this.oTimer.fTime;
@@ -802,9 +834,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 
                 % Make sure it's not a p2ps.flow - their update method
                 % is called in updateProcessorsAndManipulators method
-                if bResidual
+                if bUpdateOutFlow
                     if ~oExme.bFlowIsAProcP2P
-                        if isa(oBranch.oHandler, 'solver.matter.residual.branch')
+                        if oExme.iSign * oExme.oFlow.fFlowRate < 0
                             % Tell branch to recalculate flow rate (done after
                             % the current tick, in timer post tick).
                             oBranch.setOutdated();
@@ -821,28 +853,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     % Tell branch to recalculate flow rate (done after
                     % the current tick, in timer post tick).
                     oBranch.setOutdated();
-                end
-            end
-        end
-        
-        function updateProcessorsAndManipulators(this)
-            % Update the p2p flow and manip processors
-            
-            if ~isempty(this.toManips.substance)
-                this.toManips.substance.update();
-            end
-
-            % Call p2ps.flow update methods (if not yet called)
-            for iP = 1:this.iProcsP2Pflow
-                % That check would make more sense within the flow p2p
-                % update method - however, that method will be overloaded
-                % in p2ps to include the model to derive the flow rate, so
-                % would have to be manually added in each derived p2p ...
-                if this.coProcsP2Pflow{iP}.fLastUpdate < this.fLastMassUpdate
-                    % Triggers the .massupdate of both connected phases
-                    % which is ok, because the fTimeStep == 0 check above
-                    % will prevent this .massupdate from re-executing.
-                    this.coProcsP2Pflow{iP}.update();
                 end
             end
         end

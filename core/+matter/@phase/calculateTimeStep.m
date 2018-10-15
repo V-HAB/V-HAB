@@ -193,19 +193,9 @@ else
     fNewStepTotal    = (this.rMaxChange * rMaxChangeFactor - rPreviousChange) / rTotalPerSecond;
     fNewStepPartials = (this.rMaxChange * rMaxChangeFactor - max(arPreviousChange)) / rPartialsPerSecond;
     
-    %% Maximum Time Step
-    % Additional to the normal time steps, which are percentual limits of
-    % how much the total or individual masses are allowed to change, a
-    % maximum time step must be calculate to prevent negative masses from
-    % occuring. It is the time step for which at the current flowrates the
-    % first positive mass in the phase reaches 0:
-    abOutFlows = this.afCurrentTotalInOuts < 0;
-    abOutFlows(this.afMass < 1e-8) = false;
-    fMaxFlowStep = min(abs(this.afMass(abOutFlows) ./ this.afCurrentTotalInOuts(abOutFlows)));
-    
     % The new time step will be set to the smaller one of these two
     % candidates.
-    fNewStep = min([ fNewStepTotal fNewStepPartials fNewStepPartialChangeToPartials fMaxFlowStep]);
+    fNewStep = min([ fNewStepTotal fNewStepPartials fNewStepPartialChangeToPartials]);
     
     if fNewStep < 0
         if ~base.oLog.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
@@ -222,6 +212,27 @@ else
         fNewStep = this.fMinStep;
     end
     
+    %% Maximum Time Step
+    % Additional to the normal time steps, which are percentual limits of
+    % how much the total or individual masses are allowed to change, a
+    % maximum time step must be calculate to prevent negative masses from
+    % occuring. It is the time step for which at the current flowrates the
+    % first positive mass in the phase reaches 0:
+    abOutFlows = this.afCurrentTotalInOuts < 0;
+    abOutFlows((this.afMass(abOutFlows) + this.afCurrentTotalInOuts(abOutFlows) .* fNewStep) >= 0) = false;
+    % TO DO: This condition should not be necessary, however at the moment
+    % with flow nodes the time step gets stuck at the minimum timestep if
+    % this is used. There must be a (small) error in the flow node partial
+    % mass update and outlet branch update
+    abOutFlows(this.afMass < 1e-8) = false;
+    fMaxFlowStep = min(abs(this.afMass(abOutFlows) ./ this.afCurrentTotalInOuts(abOutFlows)));
+    
+    if fNewStep > fMaxFlowStep
+        fNewStep = fMaxFlowStep;
+        if fNewStep < this.fMinStep
+            fNewStep = this.fMinStep;
+        end
+    end
     
     if ~base.oLog.bOff
         this.out(1, 1, 'prev-timestep', 'Previous changes for new time step calc for %s-%s-%s - previous change: %.8f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, rPreviousChange });
