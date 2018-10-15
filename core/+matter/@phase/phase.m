@@ -279,14 +279,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.afMassLastUpdate = zeros(1, this.oMT.iSubstances);
             
             %% Register post tick callbacks for massupdate and update
-            this.hBindPostTickMassUpdate  = this.oTimer.registerPostTick(@this.massupdate_post,  'matter' , 'phase_massupdate');
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update_post,      'matter' , 'phase_update');
-            this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
+            this.hBindPostTickMassUpdate  = this.oTimer.registerPostTick(@this.massupdate_post,   'matter',        'phase_massupdate');
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update_post,       'matter',        'phase_update');
+            this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics' , 'timestep');
         end
 
         function this = massupdate(this, ~)
             this.hBindPostTickMassUpdate();
         end
+        
         function this = massupdate_post(this, ~)
             % This method updates the mass and temperature related
             % properties of the phase. It takes into account all in- and
@@ -431,6 +432,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.setBranchesOutdated();
 
         end
+        
         function this = update_post(this)
             % Only update if not yet happened at the current time.
             if (this.oTimer.fTime <= this.fLastUpdate) || (this.oTimer.fTime < 0)
