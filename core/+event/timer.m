@@ -47,19 +47,6 @@ classdef timer < base
         % executes the larger TSs).
         abDependent = [];
         
-        
-        % Post-tick stack: after systems are executed, all callbacks on
-        % this cell are executed and immediately removed.
-        % Preallocating 100 slots, assuming that should be sufficient most
-        % of the time. If more callbacks are added in one tick, that means
-        % that the first time that might be slower because Matlab needs to
-        % extend the cell, the following times - quick again.
-        chPostTick = cell(7, 100);
-        
-        aiPostTickMax = [ 0, 0, 0, 0, 0, 0, 0 ];
-        
-        iCurrentPostTickExecuting = 0;
-        
         txPostTicks = struct('matter', struct(...
                                 'phase_massupdate', cell.empty(),...
                                 'phase_update', cell.empty(),...
@@ -83,8 +70,11 @@ classdef timer < base
                              'post_physics', struct(...
                                 'timestep', cell.empty()));
                          
+        %
+        mbGlobalPostTickControl;
         tbPostTickControl;
         csPostTickGroups;
+        tcsPostTickLevel;
         
         tiPostTickGroup;
         tiPostTickLevel;
@@ -138,8 +128,13 @@ classdef timer < base
                     tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}).(['pre_', csPostTicks{iPostTick}])  = logical.empty();
                     tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}).(csPostTicks{iPostTick})            = logical.empty();
                     tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}).(['post_', csPostTicks{iPostTick}]) = logical.empty();
-                    
-                    this.tiPostTickLevel.(csBasicPostTickGroups{iPostTickGroup}).(csPostTicks{iPostTick}) = iPostTick;
+                end
+                
+                csFullLevels = fieldnames(tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}));
+                this.tcsPostTickLevel.(csBasicPostTickGroups{iPostTickGroup}) = csFullLevels;
+                
+                for iPostTickFull = 1:length(csFullLevels)
+                    this.tiPostTickLevel.(csBasicPostTickGroups{iPostTickGroup}).(csFullLevels{iPostTickFull}) = iPostTickFull;
                 end
             end
             
@@ -289,21 +284,8 @@ classdef timer < base
             % group. (e.g. massupdate bound during solver stuff). In that
             % case the post tick is executed directly instead of binding
             % the boolean
-            if this.iCurrentPostTickGroup < this.tiPostTickGroup.(sPostTickGroup)
-                % Post tick is from a later post tick group and level
-                this.tbPostTickControl.(sPostTickGroup).(sPostTickLevel)(iPostTickNumber) = true;
-            elseif this.iCurrentPostTickGroup == this.tiPostTickGroup.(sPostTickGroup)
-                if this.iCurrentPostTickLevel > this.tiPostTickLevel.(sPostTickGroup).(sPostTickLevel)
-                    % Post tick is from an earlier post tick group and level
-                    this.txPostTicks.(sPostTickGroup).(sPostTickLevel){iPostTickNumber}();
-                else
-                    % Post tick is from a later post tick group and level
-                    this.tbPostTickControl.(sPostTickGroup).(sPostTickLevel)(iPostTickNumber) = true;
-                end
-            else
-                % Post tick is from a later post tick group and level
-                this.txPostTicks.(sPostTickGroup).(sPostTickLevel){iPostTickNumber}();
-            end
+            this.tbPostTickControl.(sPostTickGroup).(sPostTickLevel)(iPostTickNumber) = true;
+            
         end
     end
     
@@ -393,35 +375,59 @@ classdef timer < base
             
             % Now we go through the post ticks and execute the registered
             % post ticks.
-            for iPostTickGroup = 1:length(this.csPostTickGroups)
-                this.iCurrentPostTickGroup = iPostTickGroup;
-                
-                csLevel = fieldnames(this.txPostTicks.(this.csPostTickGroups{iPostTickGroup}));
-                
-                for iPostTickLevel = 1:length(csLevel)
+            bExecutePostTicks = true;
+            while bExecutePostTicks
+                for iPostTickGroup = 1:length(this.csPostTickGroups)
+                    this.iCurrentPostTickGroup = iPostTickGroup;
                     
-                    this.iCurrentPostTickLevel = iPostTickLevel;
+                    csLevel = this.tcsPostTickLevel.(this.csPostTickGroups{iPostTickGroup});
 
-                    % To allow post ticks of the same level to be added on
-                    % the fly while we are executing this level, we use a
-                    % while loop to execute the post ticks till all are
-                    % executed
-                    while any(this.tbPostTickControl.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel}))
-                        abExecutePostTicks = this.tbPostTickControl.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel});
+                    for iPostTickLevel = 1:length(csLevel)
 
-                        chPostTicks = this.txPostTicks.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel});
+                        this.iCurrentPostTickLevel = iPostTickLevel;
 
-                        aiPostTicksToExecute = find(abExecutePostTicks);
-                        for iIndex = 1:sum(abExecutePostTicks)
-                            iPostTick = aiPostTicksToExecute(iIndex);
-                            % We set the post tick control for this post
-                            % tick to false, before we execute the post
-                            % tick, to allow rebinding of other post ticks
-                            % in the level during the execution of the
-                            % level
-                            this.tbPostTickControl.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel})(iPostTick) = false;
-                            chPostTicks{iPostTick}();
+                        % To allow post ticks of the same level to be added on
+                        % the fly while we are executing this level, we use a
+                        % while loop to execute the post ticks till all are
+                        % executed
+                        while any(this.tbPostTickControl.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel}))
+                            abExecutePostTicks = this.tbPostTickControl.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel});
+
+                            chPostTicks = this.txPostTicks.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel});
+
+                            aiPostTicksToExecute = find(abExecutePostTicks);
+                            for iIndex = 1:sum(abExecutePostTicks)
+                                iPostTick = aiPostTicksToExecute(iIndex);
+                                % We set the post tick control for this post
+                                % tick to false, before we execute the post
+                                % tick, to allow rebinding of other post ticks
+                                % in the level during the execution of the
+                                % level
+                                chPostTicks{iPostTick}();
+                                this.tbPostTickControl.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel})(iPostTick) = false;
+                                this.mbGlobalPostTickControl(iPostTickGroup, iPostTickLevel, iPostTick) = false;
+                            end
                         end
+                    end
+                end
+                
+                bExecutePostTicks = false;
+                % now we check if during the post ticks new post ticks were
+                % bound and if that is true, execute them:
+                for iPostTickGroup = 1:length(this.csPostTickGroups)
+                    this.iCurrentPostTickGroup = iPostTickGroup;
+
+                    csLevel = this.tcsPostTickLevel.(this.csPostTickGroups{iPostTickGroup});
+
+                    for iPostTickLevel = 1:length(csLevel)
+                        if any(this.tbPostTickControl.(this.csPostTickGroups{iPostTickGroup}).(csLevel{iPostTickLevel}))
+                            bExecutePostTicks = true;
+                            break
+                        end
+                    end
+                    
+                    if bExecutePostTicks
+                        break
                     end
                 end
             end
