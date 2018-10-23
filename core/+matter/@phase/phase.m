@@ -173,6 +173,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         hBindPostTickTimeStep
     end
 
+    properties (SetAccess = protected, GetAccess = protected)
+        setTimeStep;
+    end
+    
     properties (Access = public)
         % If true, massupdate triggers all branches to re-calculate their
         % flow rates. Use when volumes of phase compared to flow rates are
@@ -746,6 +750,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % iPrecision ^ 2 is more or less arbitrary
             iStore = this.oTimer.iPrecision ^ 2;
             
+            % Bind the .update method to the timer, with a time step of 0
+            % (i.e. smallest step), will be adapted after each .update
+            %this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0);
+            this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0, struct(...
+                'sMethod', 'update', ...
+                'sDescription', 'The .update method of a phase', ...
+                'oSrcObj', this ...
+            ));
+            
             this.afMassLog = ones(1, iStore) * this.fMass;
             this.afLastUpd = 0:(1/(iStore-1)):1;%ones(1, iStore) * 0.00001;
             
@@ -838,7 +851,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % is called in updateProcessorsAndManipulators method
                 if bUpdateOutFlow
                     if ~oExme.bFlowIsAProcP2P
-                        if oExme.iSign * oExme.oFlow.fFlowRate < 0
+                        if oExme.iSign * oExme.oFlow.fFlowRate <= 0
                             % Tell branch to recalculate flow rate (done after
                             % the current tick, in timer post tick).
                             oBranch.setOutdated();

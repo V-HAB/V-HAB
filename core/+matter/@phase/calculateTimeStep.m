@@ -197,6 +197,12 @@ else
     % candidates.
     fNewStep = min([ fNewStepTotal fNewStepPartials fNewStepPartialChangeToPartials]);
     
+    % For phases with zero mass, we simply limit the error within one time
+    % step to 1e-8 kg
+    if this.fMass == 0 && fChange > -1e-10
+        fNewStep = abs(1e-8/fChange);
+    end
+    
     if fNewStep < 0
         if ~base.oLog.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
     end
@@ -247,11 +253,15 @@ else
 end
 
 
-% Set the time at which the containing store will be updated again. Need to
-% pass on an absolute time, not a time step. Value in store is only
-% updated, if the new update time is earlier than the currently set next
-% update time.
-this.oStore.setNextTimeStep(fNewStep);
+% Set the time step for this phase. If the update was also called in this
+% tick we also reset the time at which the phase was last executed thus
+% enforcing the next execution time to be exactly this.oTimer.fTime +
+% fNewStep
+if this.fLastUpdate == this.oTimer.fTime
+    this.setTimeStep(fNewStep, true);
+else
+    this.setTimeStep(fNewStep, true);
+end
 
 % Cache - e.g. for logging purposes
 this.fTimeStep = fNewStep;

@@ -42,6 +42,13 @@ classdef branch < solver.matter.base.branch
     methods
         function this = branch(oBranch)
             this@solver.matter.base.branch(oBranch, [], 'manual');
+            
+            this.fTimeStep = inf;
+            
+            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
+            
+            this.setTimeStep(this.fTimeStep);
+            
         end
         
         
@@ -54,12 +61,6 @@ classdef branch < solver.matter.base.branch
             
             this.fRequestedFlowRate = fFlowRate;
             this.fRequestedVolumetricFlowRate = [];
-            
-            this.fTimeStep = inf;
-            
-            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
-            
-            this.setTimeStep(this.fTimeStep);
             
             this.registerUpdate();
         end
