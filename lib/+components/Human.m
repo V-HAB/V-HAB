@@ -786,7 +786,7 @@ classdef Human < vsys
             this.toBranches.Air_In.oHandler.setFlowRate(- this.fOxygenDemand/this.toBranches.Air_In.coExmes{2}.oPhase.arPartialMass(this.oMT.tiN2I.O2));
             
             for iPhase = 1:this.toStores.Human.iPhases
-                this.toStores.Human.aoPhases(iPhase).update();
+                this.toStores.Human.aoPhases(iPhase).registerUpdate();
             end
             
         end

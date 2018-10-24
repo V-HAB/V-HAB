@@ -64,8 +64,8 @@ classdef liquid < matter.phase
             this.fPressure = this.oMT.calculatePressure(this);
         end
         
-        function this = update(this)
-            update@matter.phase(this);
+        function this = registerUpdate(this)
+            registerUpdate@matter.phase(this);
             
             % Check for volume not empty, when called from constructor
             if ~isempty(this.fVolume) && this.fLastUpdateLiquid ~= this.oStore.oTimer.fTime && ~this.oStore.bIsIncompressible

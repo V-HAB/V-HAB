@@ -284,7 +284,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             %% Register post tick callbacks for massupdate and update
             this.hBindPostTickMassUpdate  = this.oTimer.registerPostTick(@this.massupdate,   'matter',        'phase_massupdate');
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update_post,       'matter',        'phase_update');
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,       'matter',        'phase_update');
             this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics' , 'timestep');
         end
 
@@ -292,7 +292,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.hBindPostTickMassUpdate();
         end
         
-        function this = update(this)
+        function this = registerUpdate(this)
             % A phase update is called, which means the
             % pressure etc changed so much that a recalculation is required
             this.hBindPostTickUpdate();
@@ -567,7 +567,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Bind the .update method to the timer, with a time step of 0
             % (i.e. smallest step), will be adapted after each .update
             %this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0);
-            this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0, struct(...
+            this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdate(), 0, struct(...
                 'sMethod', 'update', ...
                 'sDescription', 'The .update method of a phase', ...
                 'oSrcObj', this ...
@@ -754,7 +754,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
         end
         
-        function this = update_post(this)
+        function this = update(this)
             % Only update if not yet happened at the current time.
             if (this.oTimer.fTime <= this.fLastUpdate) || (this.oTimer.fTime < 0)
                 if ~base.oLog.bOff, this.out(2, 1, 'update', 'Skip update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
@@ -899,7 +899,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             txValues = [];
             
             this.setAttribute(sParamName, xNewValue);
-            this.update();
+            this.registerUpdate();
 
         end
     end
