@@ -30,9 +30,11 @@ classdef mixture < matter.phase
             this.fPressure = fPressure;
             this.fPressureLastHeatCapacityUpdate = this.fPressure;
         end
+    end
         
-        function this = registerUpdate(this)
-            registerUpdate@matter.phase(this);
+    methods (Access = protected)
+        function this = update(this)
+            update@matter.phase(this);
             
             this.fDensity = this.fMass / this.fVolume;
             

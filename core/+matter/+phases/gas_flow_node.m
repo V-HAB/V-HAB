@@ -25,9 +25,11 @@ classdef gas_flow_node < matter.phases.flow_node
             this@matter.phases.flow_node(oStore, sName, varargin{:});
             
         end
+    end
         
-        function this = registerUpdate(this)
-            registerUpdate@matter.phase(this);
+    methods (Access = protected)
+        function this = update(this)
+            update@matter.phase(this);
             
             if this.oTimer.iTick > 0
                 % to ensure that flow phases set the correct values and do

@@ -63,9 +63,11 @@ classdef liquid < matter.phase
             
             this.fPressure = this.oMT.calculatePressure(this);
         end
-        
-        function this = registerUpdate(this)
-            registerUpdate@matter.phase(this);
+    end
+    %% Protected methods, called internally to update matter properties %%%
+    methods (Access = protected)
+        function this = update(this)
+            update@matter.phase(this);
             
             % Check for volume not empty, when called from constructor
             if ~isempty(this.fVolume) && this.fLastUpdateLiquid ~= this.oStore.oTimer.fTime && ~this.oStore.bIsIncompressible
@@ -78,9 +80,7 @@ classdef liquid < matter.phase
                 this.coProcsEXME{1, k}.update();
             end
         end
-    end
-    %% Protected methods, called internally to update matter properties %%%
-    methods (Access = protected)
+        
         function setAttribute(this, sAttribute, xValue)
             % Internal helper, see @matter.phase class.
             %
