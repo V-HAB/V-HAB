@@ -70,14 +70,6 @@ classdef flow_node < matter.phase
             this.fPressure = fPressure;
         end
         
-        function massupdate(this, varargin)
-            % We call the massupdate together with the function to update
-            % the pressure
-            massupdate@matter.phase(this, varargin{:});
-            
-            this.updatePressure();
-            
-        end
         function updatePartials(this, afPartialInFlows)
             
             if isempty(this.fPressure)
@@ -193,6 +185,15 @@ classdef flow_node < matter.phase
     end
     
     methods  (Access = protected)
+        function massupdate(this, varargin)
+            % We call the massupdate together with the function to update
+            % the pressure
+            massupdate@matter.phase(this, varargin{:});
+            
+            this.updatePressure();
+            
+        end
+        
         function updatePressure(this)
             % if a multi branch solver is used the virtual pressure
             % property is set and the phase pressure is handled by the

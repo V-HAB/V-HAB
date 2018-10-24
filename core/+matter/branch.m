@@ -690,7 +690,7 @@ classdef branch < base & event.source
             % new flow rate - so the mass for the LAST time step, with the
             % old flow rate, is actually moved from tank to tank.
             for iE = 1:2
-                this.coExmes{iE}.oPhase.massupdate();
+                this.coExmes{iE}.oPhase.registerMassupdate();
             end
             
             this.afFlowRates = [ this.afFlowRates(2:end) fFlowRate ];

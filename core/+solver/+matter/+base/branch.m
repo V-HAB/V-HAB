@@ -151,7 +151,7 @@ classdef branch < base & event.source
             % phases before we can change the flowrate. Otherwise the mass
             % balance would be incorrect
             for iE = 1:2
-                this.oBranch.coExmes{iE}.oPhase.massupdate();
+                this.oBranch.coExmes{iE}.oPhase.registerMassupdate();
             end
             
             % Allows other functions to register an event to this trigger
