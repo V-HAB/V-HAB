@@ -260,7 +260,7 @@ end
 if this.fLastUpdate == this.oTimer.fTime
     this.setTimeStep(fNewStep, true);
 else
-    this.setTimeStep(fNewStep, true);
+    this.setTimeStep(fNewStep);
 end
 
 % Cache - e.g. for logging purposes
