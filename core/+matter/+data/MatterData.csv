@@ -354,3 +354,5 @@ Nutrients,Nutriens,liquid,0.02307,,,804,1860,,,
 C6H12O6,Carbohydrates,solid,0.18015765,,,804,1860,,,
 C16H32O2,Fat,solid,0.2564288,,,804,1860,,,
 C4H5ON,Protein,solid,0.083088875,,,804,1860,,,
+C2H2F4,Coolant,liquid,0.1020309,170,250,,
+C2H2F4,Coolant,gas,0.1020309,170,250,4.25,702.4
