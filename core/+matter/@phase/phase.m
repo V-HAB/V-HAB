@@ -160,21 +160,19 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Log mass and time steps which are used to influence rMaxChange
         afMassLog;
         afLastUpd;
-        
-        % Index of the massupdate post tick in the corresponding cell
-        % and boolean array of the timer
-        hBindPostTickMassUpdate
-        
-        % Index of the update post tick in the corresponding cell
-        % and boolean array of the timer
-        hBindPostTickUpdate
-        
-        % Index of the calculate Time Step post tick
-        hBindPostTickTimeStep
     end
 
     properties (SetAccess = protected, GetAccess = protected)
         setTimeStep;
+        % function handle to bind a post tick update of the massupdate
+        % function of this phase. The handle is created while registering
+        % the post tick at the timer and contains all necessary inputs
+        % already. The same is true for the other two handles below.
+        hBindPostTickMassUpdate
+        % Handle to bind a post tick update of this phase
+        hBindPostTickUpdate
+        % Handle to bind a post tick time step calculation of this phase
+        hBindPostTickTimeStep
     end
     
     properties (Access = public)
@@ -283,12 +281,20 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.afMassLastUpdate = zeros(1, this.oMT.iSubstances);
             
             %% Register post tick callbacks for massupdate and update
+            % This is only done once and permanently registers the post
+            % ticks at the timer, which provides the necessary function to
+            % bind post tick updates. These functions are stored as
+            % properties and can then simply be called with e.g. 
+            % this.hBindPostTickMassUpdate();
             this.hBindPostTickMassUpdate  = this.oTimer.registerPostTick(@this.massupdate,   'matter',        'phase_massupdate');
             this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,       'matter',        'phase_update');
             this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics' , 'timestep');
         end
 
         function this = registerMassupdate(this, ~)
+            % To simplify debugging registering a massupdate must be done
+            % using this function. That way it is possible to set
+            % breakpoints here to see what binds massupdates for the phase
             this.hBindPostTickMassUpdate();
         end
         
@@ -304,6 +310,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % branches because their boundary conditions changed
             this.setBranchesOutdated();
             
+            % We also ensure that the time step is recalculated
             this.setOutdatedTS();
         end
         

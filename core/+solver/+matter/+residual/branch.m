@@ -37,6 +37,12 @@ classdef branch < solver.matter.base.branch
         function this = branch(oBranch)
             this@solver.matter.base.branch(oBranch, [], 'manual');
             
+            % Now we register the solver at the timer, specifying the post
+            % tick level in which the solver should be executed. For more
+            % information on the execution view the timer documentation.
+            % Registering the solver with the timer provides a function as
+            % output that can be used to bind the post tick update in a
+            % tick resulting in the post tick calculation to be executed
             this.hBindPostTickUpdate                    = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'residual_solver');
             this.hBindPostTickFindAdajcentResiduals     = this.oBranch.oTimer.registerPostTick(@this.findAdjacentResidualSolvers, 'matter' , 'pre_residual_solver');
             
