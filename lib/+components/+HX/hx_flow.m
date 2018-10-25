@@ -26,6 +26,10 @@ classdef hx_flow < matter.procs.f2f
            this.oHXParent.update(); 
         end
         
+        function updateThermal(this)
+           this.oHXParent.update(); 
+        end
+        
         function fDeltaPress = solverDeltas(this, fFlowRate)
             % Setting the flow rate given to us by the solver
             this.fFlowRate = fFlowRate;
