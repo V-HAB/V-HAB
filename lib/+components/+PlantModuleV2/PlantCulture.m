@@ -352,7 +352,7 @@ classdef PlantCulture < vsys
             end
             
             % Get reference phase atmospheric values:
-            this.fCO2 = this.oParent.CalculateCO2Concentration();
+            this.fCO2 = ((this.oAtmosphere.afMass(this.oAtmosphere.oMT.tiN2I.CO2) * this.oAtmosphere.fMolarMass) / (this.oAtmosphere.fMass * this.oAtmosphere.oMT.afMolarMass(this.oAtmosphere.oMT.tiN2I.CO2))) * 1e6;
             
             %% Calculate 8 MMEC Parameters
             [ this ] =  components.PlantModuleV2.PlantGrowth(this, this.fPlantTime);

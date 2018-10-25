@@ -102,7 +102,7 @@ classdef GreenhouseV2 < vsys
             
             %% Water Supply
             
-            matter.store(this, 'WaterSupply', 100);
+            matter.store(this, 'WaterSupply', 100e3);
             
             oWaterSupply = matter.phases.liquid(...
                 this.toStores.WaterSupply, ...      % store containing phase
