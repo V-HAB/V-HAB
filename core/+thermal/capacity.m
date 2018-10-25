@@ -217,7 +217,7 @@ classdef capacity < base & event.source
                     this.fSpecificHeatCapacity  = sum(mfFlowRate .* mfSpecificHeatCapacity) / sum(mfFlowRate);
                 end
             else
-                fInnerEnergyBefore = this.fTotalHeatCapacity * this.fTemperature;
+                fInnerEnergyBefore = this.oPhase.fMass * this.fSpecificHeatCapacity * this.fTemperature;
 
                 this.fTotalHeatCapacity = (this.oPhase.fMass * fSpecificHeatCapacity);
 
