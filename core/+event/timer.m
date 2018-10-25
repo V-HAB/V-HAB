@@ -558,7 +558,6 @@ classdef timer < base
                         % level
                         chPostTicks{iPostTick}();
                         this.tbPostTickControl.post_physics.(csLevel{iPostTickLevel})(iPostTick) = false;
-                        this.mbGlobalPostTickControl(this.tiPostTickGroup.post_physics, iPostTickLevel, iPostTick) = false;
                     end
                 end
             end
