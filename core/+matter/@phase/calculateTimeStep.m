@@ -225,13 +225,10 @@ else
     % occuring. It is the time step for which at the current flowrates the
     % first positive mass in the phase reaches 0:
     abOutFlows = this.afCurrentTotalInOuts < 0;
-    abOutFlows((this.afMass(abOutFlows) + this.afCurrentTotalInOuts(abOutFlows) .* fNewStep) >= 0) = false;
-    % TO DO: This condition should not be necessary, however at the moment
-    % with flow nodes the time step gets stuck at the minimum timestep if
-    % this is used. There must be a (small) error in the flow node partial
-    % mass update and outlet branch update
-    abOutFlows(this.afMass < 1e-8) = false;
-    fMaxFlowStep = min(abs(this.afMass(abOutFlows) ./ this.afCurrentTotalInOuts(abOutFlows)));
+    % This calculation limits the maximum mass loss that occurs within one
+    % tick to 1e-8 kg. Adding the 1e-8 kg is necessary to prevent extremly
+    % small time steps
+    fMaxFlowStep = min(abs((1e-8 + this.afMass(abOutFlows)) ./ this.afCurrentTotalInOuts(abOutFlows)));
     
     if fNewStep > fMaxFlowStep
         fNewStep = fMaxFlowStep;

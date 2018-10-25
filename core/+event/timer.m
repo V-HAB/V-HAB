@@ -377,7 +377,7 @@ classdef timer < base
             % post ticks.
             bExecutePostTicks = true;
             while bExecutePostTicks
-                for iPostTickGroup = 1:length(this.csPostTickGroups)
+                for iPostTickGroup = 1:length(this.csPostTickGroups)-1
                     this.iCurrentPostTickGroup = iPostTickGroup;
                     
                     csLevel = this.tcsPostTickLevel.(this.csPostTickGroups{iPostTickGroup});
@@ -414,7 +414,7 @@ classdef timer < base
                 bExecutePostTicks = false;
                 % now we check if during the post ticks new post ticks were
                 % bound and if that is true, execute them:
-                for iPostTickGroup = 1:length(this.csPostTickGroups)
+                for iPostTickGroup = 1:length(this.csPostTickGroups)-1
                     this.iCurrentPostTickGroup = iPostTickGroup;
 
                     csLevel = this.tcsPostTickLevel.(this.csPostTickGroups{iPostTickGroup});
@@ -432,6 +432,43 @@ classdef timer < base
                 end
             end
             
+            %% TIme Step post physics calculation
+            %To ensure that the time step calculation is only performed
+            %once at the end of the post tick calculation it is perfomed
+            %outside of the while loop
+            this.iCurrentPostTickGroup = this.tiPostTickGroup.post_physics;
+
+            csLevel = this.tcsPostTickLevel.post_physics;
+
+            for iPostTickLevel = 1:length(csLevel)
+
+                this.iCurrentPostTickLevel = iPostTickLevel;
+
+                % To allow post ticks of the same level to be added on
+                % the fly while we are executing this level, we use a
+                % while loop to execute the post ticks till all are
+                % executed
+                while any(this.tbPostTickControl.post_physics.(csLevel{iPostTickLevel}))
+                    abExecutePostTicks = this.tbPostTickControl.post_physics.(csLevel{iPostTickLevel});
+
+                    chPostTicks = this.txPostTicks.post_physics.(csLevel{iPostTickLevel});
+
+                    aiPostTicksToExecute = find(abExecutePostTicks);
+                    for iIndex = 1:sum(abExecutePostTicks)
+                        iPostTick = aiPostTicksToExecute(iIndex);
+                        % We set the post tick control for this post
+                        % tick to false, before we execute the post
+                        % tick, to allow rebinding of other post ticks
+                        % in the level during the execution of the
+                        % level
+                        chPostTicks{iPostTick}();
+                        this.tbPostTickControl.post_physics.(csLevel{iPostTickLevel})(iPostTick) = false;
+                        this.mbGlobalPostTickControl(this.tiPostTickGroup.post_physics, iPostTickLevel, iPostTick) = false;
+                    end
+                end
+            end
+
+
             this.iCurrentPostTickGroup = 0;
             this.iCurrentPostTickLevel = 0;
             

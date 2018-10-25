@@ -606,7 +606,7 @@ classdef Human < vsys
                 % food would be burned, it represents all minerals in the
                 % food which are necessary nutrients but are not part of
                 % the energy balance)
-                if txResults.(sFood).Mass < 1e-6
+                if txResults.(sFood).Mass > 1e-6
                     fWaterMass = txResults.(sFood).Mass - txResults.(sFood).DryMass;
 
                     afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) = afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) + txResults.(sFood).CarbohydrateMass / fFoodConversionTimeStep;

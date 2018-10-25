@@ -45,7 +45,7 @@ classdef Example1 < vsys
             % as needed.
             fFilterVolume = 1;
             matter.store(this, 'Filter', fFilterVolume);
-            oFlow = this.toStores.Filter.createPhase('air', 'FlowPhase', fFilterVolume/ 2, 293.15);
+            oFlow = this.toStores.Filter.createPhase('air', true, 'FlowPhase', fFilterVolume/ 2, 293.15);
             
             oFiltered = matter.phases.gas(this.toStores.Filter, ...
                           'FilteredPhase', ... Phase name
@@ -140,21 +140,6 @@ classdef Example1 < vsys
             
             this.aoFilterPhases = this.toStores.Filter.aoPhases;
             this.oAtmosPhase    = this.toStores.Atmos.aoPhases(1);
-            
-            % As the input flow rate can change quickly due to the fan, and
-            % the filter flow phase is rather small, it can help to 'sync'
-            % the flow rate solvers connected to this phase. This means
-            % that as soon as the flow rate of one of the solvers changes,
-            % the other solvers will also immediately calculate a new FR.
-%             this.aoFilterPhases(1).bSynced = true;
-            this.aoFilterPhases(1).bSynced = true;
-            
-            % Resulting matter composition of inflows and p2ps will be
-            % given to the outflows, as this phase is very small and the
-            % filter flowPhase contents do not really matter, this helps to
-            % reduce rounding errors.
-            this.aoFilterPhases(1).bFlow = true;
-            
             
             % The phase for the adsorbed matter in the filter store has a
             % small rMaxChange (small volume) but is not really important

@@ -102,7 +102,7 @@ classdef GreenhouseV2 < vsys
             
             %% Water Supply
             
-            matter.store(this, 'WaterSupply', 100);
+            matter.store(this, 'WaterSupply', 100e3);
             
             oWaterSupply = matter.phases.liquid(...
                 this.toStores.WaterSupply, ...      % store containing phase
@@ -269,7 +269,7 @@ classdef GreenhouseV2 < vsys
               	this.toStores.Atmosphere, ...       % store containing phase
                 'WaterWS', ...                          % phase name
                 struct(...                              % phase contents    [kg]
-                    'H2O', 1e-3), ...
+                    'H2O', 10), ...
                 fTemperatureInit, ...                   % phase temperature [K]
                 fPressureInit);                         % phase pressure    [Pa]
            
@@ -625,6 +625,14 @@ classdef GreenhouseV2 < vsys
                 this.update();
             else
                 this.update();
+            end
+            
+            % In order to resynchronize the phase update ticks we update
+            % all of them in the exec
+            for iStore = 1:length(this.csStores)
+                for iPhase = 1:this.toStores.(this.csStores{iStore}).iPhases
+                    this.toStores.(this.csStores{iStore}).aoPhases(iPhase).registerUpdate();
+                end
             end
         end
     end 

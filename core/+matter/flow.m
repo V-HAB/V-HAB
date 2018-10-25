@@ -423,12 +423,12 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 % we'll just update the phase.
                 if oExme.oPhase.bFlow
                     if sum(arPhasePartialMass) == 0 && oExme.oPhase.fCurrentTotalMassInOut ~= 0
-                        oExme.oPhase.update();
+                        oExme.oPhase.registerUpdate();
                         [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
                     end
                 else
                     if sum(arPhasePartialMass) == 0 && oExme.oPhase.fMass ~= 0
-                        oExme.oPhase.update();
+                        oExme.oPhase.registerUpdate();
                         [ arPhasePartialMass, fPhaseMolarMass, fPhaseSpecificHeatCapacity ] = oExme.getMatterProperties();
                     end
                 end

@@ -19,7 +19,7 @@ classdef heater < matter.procs.f2f
         fDiameter = 0.5;        % Hydraulic diameter
         fLength = 1;            % Hydraulic Length
         fDeltaTemp = 0;         % temperature difference created by the heater in K
-        bActive = true;         % Must be true so the update function is called from the branch solver
+        
     end
     
     methods

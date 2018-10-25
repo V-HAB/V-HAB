@@ -303,7 +303,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % and trigger branch solver updates in post tick for all
             % branches because their boundary conditions changed
             this.setBranchesOutdated();
-
+            
+            this.setOutdatedTS();
         end
         
         function setTemperature(this, oCaller, fTemperature)
@@ -807,6 +808,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             if this.bTriggerSetUpdateCallbackBound
             	this.trigger('update_post');
             end
+            
         end
         
         function detachManipulator(this, sManip)

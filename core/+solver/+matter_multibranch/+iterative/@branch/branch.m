@@ -455,13 +455,15 @@ classdef branch < base & event.source
                             this.piObjUuidsToColIndex(oP.sUUID) = iColIndex;
                             this.poColIndexToObj(iColIndex)     = oP;
                         end
-                    
+                        
                     % 'Real' phase - boundary condition
                     else
                         if ~this.poBoundaryPhases.isKey(oP.sUUID)
                             this.poBoundaryPhases(oP.sUUID) = oP;
                         end
                     end
+                    
+                    oP.bind('update_post', @this.registerUpdate);
                 end
                 
                 
@@ -499,11 +501,6 @@ classdef branch < base & event.source
                         else
                             oOtherPhase = oExme.oFlow.oOut.oPhase;
                         end
-                        if ~oOtherPhase.bFlow
-                            oOtherPhase.bind('update_post', @this.registerUpdate);
-                        end
-                        
-%                         oExme.oFlow.bind('update_MultiSolver', @this.registerUpdate);
                     end
                 end
             end
@@ -522,7 +519,7 @@ classdef branch < base & event.source
             
             for iB = 1:this.iBranches
                 for iE = 1:2
-                    this.aoBranches(iB).coExmes{iE}.oPhase.massupdate();
+                    this.aoBranches(iB).coExmes{iE}.oPhase.registerMassupdate();
                 end
             end
             

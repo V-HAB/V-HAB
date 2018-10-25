@@ -21,7 +21,7 @@ classdef flow_node < matter.phase
         
         % Coefficient for pressure = COEFF * mass,  depends on current 
         % matter properties
-        fMassToPressure;  
+        fMassToPressure = 0;  
         
         % Initial mass for information and debugging purposes. If
         % everything works correctly the phase should not change its mass!

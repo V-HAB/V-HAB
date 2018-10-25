@@ -31,7 +31,7 @@ classdef Example < vsys
             % Number of days that events shall be planned goes here:
             iLengthOfMission = 10; % [d]
             
-            ctEvents = cell(iLengthOfMission, 2, this.iNumberOfCrewMembers);
+            ctEvents = cell(iLengthOfMission, this.iNumberOfCrewMembers);
             
             %% Nominal Operation
             
