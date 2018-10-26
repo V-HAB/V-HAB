@@ -63,36 +63,6 @@ else
         rMaxChangeFactor = 1 / (1 + rFactor);
     end
     
-    
-    %% Calculating the changes of mass in phase since last mass update.
-    
-    % Calculate the change in total and partial mass since the phase was
-    % last updated
-    rPreviousChange  = abs(this.fMass   / this.fMassLastUpdate  - 1);
-    % The partial mass changes need to be compared to the total mass in the
-    % phase, not to themselves, else if a trace gas mass does change
-    % significantly, it will reduce the time step too much even though it
-    % does not change the overall phase properties a lot.
-    arPreviousChange = abs(this.afMass - this.afMassLastUpdate) / this.fMass;
-    
-    
-    % If rPrevious change is not a number ('NaN'), the mass during the
-    % previous update was zero and the current mass is also zero. That
-    % means that afMass was also all zeros during this and the previous
-    % update. Therfore the relative change between updates is zero.
-    if isnan(rPreviousChange)
-        rPreviousChange  = 0;
-        arPreviousChange = zeros(1, this.oMT.iSubstances);
-    end
-    
-    % If rPreviousChange is infinity ('Inf'), that means that the mass
-    % during the last update was zero, but now it is not. The
-    % arPreviousChange array will be mostly NaN values, except for the ones
-    % where the mass changed from zero to something else. Since the
-    % calculation of fNewStepPartials later in this function uses the max()
-    % method on arPrevious change, we don't have to do anything here,
-    % because it will return one of the 'Inf' values from arPreviousChange.
-    
     %% Calculating the changes of mass in phase during this update.
     
     % To calculate the change in partial mass, we only use entries where
@@ -190,8 +160,8 @@ else
     % To derive the timestep, we use the percentage change of the total
     % mass or the maximum percentage change of one of the substances'
     % relative masses.
-    fNewStepTotal    = (this.rMaxChange * rMaxChangeFactor - rPreviousChange) / rTotalPerSecond;
-    fNewStepPartials = (this.rMaxChange * rMaxChangeFactor - max(arPreviousChange)) / rPartialsPerSecond;
+    fNewStepTotal    = (this.rMaxChange * rMaxChangeFactor) / rTotalPerSecond;
+    fNewStepPartials = (this.rMaxChange * rMaxChangeFactor) / rPartialsPerSecond;
     
     % The new time step will be set to the smaller one of these two
     % candidates.
