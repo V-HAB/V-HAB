@@ -27,10 +27,20 @@ classdef solid < matter.phase
             
         end
         
-        function bSuccess = setVolume(this, ~)
-            % Prevent volume from being set.
-            bSuccess = false;
-            this.throw('matter:phases:solid', 'Cannot compress a solid, duh!');
+        function bSuccess = setPressure(this, fPressure)
+            % Changes the pressure of the phase. If no processor for volume
+            % change registered, do nothing.
+            
+            bSuccess = this.setParameter('fPressure', fPressure);
+            this.fDensity = this.fMass / this.fVolume;
+        end
+        
+        function bSuccess = setVolume(this, fVolume)
+            % Changes the volume of the phase. If no processor for volume
+            % change registered, do nothing.
+            
+            bSuccess = this.setParameter('fVolume', fVolume);
+            this.fDensity = this.fMass / this.fVolume;
         end
     end
 end

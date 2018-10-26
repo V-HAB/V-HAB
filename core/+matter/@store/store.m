@@ -72,11 +72,6 @@ classdef store < base
         % Total simulation time in seconds at which the store will be
         % updated next
         fNextExec = inf;
-        
-        % Parameters to debugg the compressible liquid calculation from the
-        % update function
-        fTotalPressureErrorStore = 0;
-        iNestedIntervallCounterStore = 0;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -92,6 +87,12 @@ classdef store < base
     
     properties (SetAccess = protected, GetAccess = protected)
         setTimeStep;
+        
+        % function handle to bind a post tick update of the store
+        % function of this phase. The handle is created while registering
+        % the post tick at the timer and contains all necessary inputs
+        % already. The same is true for the other two handles below.
+        hBindPostTickUpdate;
     end
     
     properties (SetAccess = public, GetAccess = public)
@@ -135,6 +136,7 @@ classdef store < base
                 this.tGeometryParameters = tGeometryParams;
             end
             
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,       'matter',        'store_update');
         end
         
         function setNextTimeStep(this, fTimeStep)
@@ -226,7 +228,9 @@ classdef store < base
             
             oProc = this.aoPhases(iIdx).toProcsEXME.(sPort);
         end
-        
+        function registerUpdate(this)
+            this.hBindPostTickUpdate();
+        end
         
         function oProc = getThermalPort(this, sPort)
             % Check all capacities to find thermal port
@@ -313,8 +317,8 @@ classdef store < base
             % Bind the .update method to the timer, with a time step of 0
             % (i.e. smallest step), will be adapted after each .update
             %this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0);
-            this.setTimeStep = this.oTimer.bind(@this.update, 0, struct(...
-                'sMethod', 'update', ...
+            this.setTimeStep = this.oTimer.bind(@(~)this.registerUpdate(), 0, struct(...
+                'sMethod', 'registerUpdate', ...
                 'sDescription', 'The .update method of a store (i.e. including phases)', ...
                 'oSrcObj', this ...
             ));

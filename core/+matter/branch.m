@@ -609,7 +609,7 @@ classdef branch < base & event.source
                         iNumber = numel(fieldnames(xInput.toProcsEXME)) + 1;
                     end
                     
-                    sPortName = sprintf('Port_%i',iNumber);
+                    sPortName = [xInput.sName, '_Port_', num2str(iNumber)];
                     oPort = matter.procs.exmes.(xInput.sType)(xInput, sPortName);
                     
                     % The side name is of the format

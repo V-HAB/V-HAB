@@ -229,7 +229,7 @@ classdef capacity < base & event.source
                     this.fSpecificHeatCapacity  = sum(mfFlowRate .* mfSpecificHeatCapacity) / sum(mfFlowRate);
                 end
             else
-                fInnerEnergyBefore = this.fTotalHeatCapacity * this.fTemperature;
+                fInnerEnergyBefore = this.oPhase.fMass * this.fSpecificHeatCapacity * this.fTemperature;
 
                 this.fTotalHeatCapacity = (this.oPhase.fMass * fSpecificHeatCapacity);
 
@@ -352,12 +352,17 @@ classdef capacity < base & event.source
                 mfTemperature           = zeros(1,this.iProcsEXME);
                 for iExme = 1:this.iProcsEXME
                     if isa(this.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
-                        fFlowRate = this.aoExmes(iExme).oBranch.coConductors{1}.oMassBranch.fFlowRate * this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).iSign;
+                        if this.aoExmes(iExme).oBranch.oMatterObject.coExmes{1}.oPhase == this.oPhase
+                            iMatterExme = 1;
+                        else
+                            iMatterExme = 2;
+                        end
+                        fFlowRate = this.aoExmes(iExme).oBranch.oMatterObject.fFlowRate * this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iMatterExme}.iSign;
                         
                         if fFlowRate > 0
                             mfFlowRate(iExme) = fFlowRate;
-                            mfSpecificHeatCapacity(iExme) = this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).oFlow.fSpecificHeatCapacity;
-                            mfTemperature(iExme) = this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).oFlow.fTemperature;
+                            mfSpecificHeatCapacity(iExme) = this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iMatterExme}.oFlow.fSpecificHeatCapacity;
+                            mfTemperature(iExme) = this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iMatterExme}.oFlow.fTemperature;
                         end
                     end
                 end

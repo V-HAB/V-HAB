@@ -4,19 +4,7 @@ classdef Example < vsys
     %   rate setpoint for the pump is changed every 100 seconds. 
     
     properties
-        % Object reference to the f2f processor representing the water 
-        % pump. We need this so we can change the setpoint during the 
-        % simulation.
-        oPump;       
-        
-        % Boolean variable indicating if the pump flow rate is set to a 
-        % value or zero. At the beginning of the simulation it is active.
-        bPumpActive = true; 
-        
-        % This property is used to store the time step during which the 
-        % pump switching was last performed.
-        fLastPumpUpdate = 0; 
-                    
+        iCells = 10;
     end
     
     methods
@@ -40,49 +28,84 @@ classdef Example < vsys
             createMatterStructure@vsys(this);
             
             % Creating a store
-            matter.store(this, 'Tank_1', 1);
+            matter.store(this, 'WaterTank_1', 2, false);
             
             % Creating a second store
-            matter.store(this, 'Tank_2', 1);
+            matter.store(this, 'WaterTank_2', 2, false);
             
             % Adding a phase with liquid water to the store
-            oLiquidPhase = matter.phases.liquid(this.toStores.Tank_1, ...  Store in which the phase is located
-                                                'Liquid_Phase', ...        Phase name
+            oWaterPhase1 = matter.phases.liquid(this.toStores.WaterTank_1, ...  Store in which the phase is located
+                                                'Water_Phase', ...        Phase name
                                                 struct('H2O', 1000), ...   Phase contents
                                                 293.15, ...                Phase temperature
                                                 101325);                 % Phase pressure
             
+            
             % Adding an empty phase to the second store, this represents an
             % empty tank
-            oWaterPhase = matter.phases.liquid(this.toStores.Tank_2, ...   Store in which the phase is located
+            oWaterPhase2 = matter.phases.liquid(this.toStores.WaterTank_2, ...   Store in which the phase is located
                                                 'Water_Phase', ...         Phase name
-                                                struct('H2O', 0), ...      Phase contents
+                                                struct('H2O', 1), ...      Phase contents
                                                 293.15, ...                Phase temperature
                                                 101325);                 % Phase pressure
-                                            
+            
+            % Now we had a gas phase without any connections to fill the
+            % remaining volume of the store
+            this.toStores.WaterTank_1.createPhase('air', 2 - oWaterPhase1.fVolume, 293.15, 0.5, 1e5);
+            this.toStores.WaterTank_2.createPhase('air', 2 - oWaterPhase2.fVolume, 293.15, 0.5, 1.1e5);                     
+            
+            % We also add two stores containing air
+            matter.store(this, 'AirTank_1', 2);
+            matter.store(this, 'AirTank_2', 2);
+            oAir1 = this.toStores.AirTank_1.createPhase('gas', 'AirPhase', 2, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293.15, 0.5);
+            oAir2 = this.toStores.AirTank_2.createPhase('gas', 'AirPhase', 2, struct('N2', 1.1*8e4, 'O2', 1.1*2e4, 'CO2', 1.1*500), 293.15, 0.5);
             
             
-            % Adding extract/merge processors to the phases
-            matter.procs.exmes.liquid(oLiquidPhase, 'Port_1');
-            matter.procs.exmes.liquid(oWaterPhase, 'Port_2');
+            fFlowVolume = 1e-4;
+            matter.store(this, 'FlowPath', fFlowVolume);
             
-            % Adding a pump
-            % Warning! This is a really dumb pump, a better model is in the
-            % making in conjuction with a better liquid solver. 
-            components.pump(this, 'Pump', 0.267);
             
-            % Setting the oPump property so we can access the pump settings
-            % later.
-            this.oPump = this.toProcsF2F.Pump;
+            % Adding flow nodes to the store for water and air
+            coFlowNodeAir = cell(this.iCells,1);
+            coFlowNodeWater = cell(this.iCells,1);
+            for iCell = 1:this.iCells
+                coFlowNodeAir{iCell}    = this.toStores.FlowPath.createPhase('gas', true, ['AirCell_', num2str(iCell)], 0.5 * fFlowVolume / this.iCells, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293.15, 0.5);
+                coFlowNodeWater{iCell}  = matter.phases.liquid_flow_node(this.toStores.FlowPath, ['WaterCell_', num2str(iCell)], struct('H2O', 1e-9), 0.5 * fFlowVolume / this.iCells, 293.15);
+            end
             
-            % Adding pipes to connect the components
-            components.pipe(this, 'Pipe_1', 1, 0.1, 2e-3);
-            components.pipe(this, 'Pipe_2', 1, 0.1, 2e-3);
+            fAirPipeLength = 0.1;
+            fAirPipeDiameter = 0.05;
             
+            fWaterPipeLength = 0.1;
+            fWaterPipeDiameter = 0.05;
+            % Adding pipes tand branches to connect the flownodes
+            for iCell = 1:this.iCells-1
+                components.pipe(this, ['AirPipe_',      num2str(iCell)], fAirPipeLength, fAirPipeDiameter, 2e-3);
+                components.pipe(this, ['WaterPipe_',    num2str(iCell)], fWaterPipeLength, fWaterPipeDiameter, 2e-3);
+                
+                matter.branch(this, coFlowNodeAir{iCell},   {['AirPipe_', num2str(iCell)]},     coFlowNodeAir{iCell+1},     ['AirFlowBranch_', num2str(iCell)]);
+                matter.branch(this, coFlowNodeWater{iCell}, {['WaterPipe_', num2str(iCell)]},   coFlowNodeWater{iCell+1},   ['WaterFlowBranch_', num2str(iCell)]);
+                
+            end
+            
+            % Add in and outflow of the flow path for air
+            components.pipe(this, ['AirPipe_', num2str(this.iCells)], fAirPipeLength, fAirPipeDiameter, 2e-3);
             % Creating the flowpath between the components
-            matter.branch(this, 'Tank_1.Port_1', {'Pipe_1', 'Pump', 'Pipe_2'}, 'Tank_2.Port_2');
+            matter.branch(this, oAir1, {}, coFlowNodeAir{1}, 'AirFlowBranchInlet');
+            matter.branch(this, coFlowNodeAir{end}, {['AirPipe_', num2str(this.iCells)]}, oAir2, ['AirFlowBranch_', num2str(this.iCells)]);
             
+            % Adding a reflow pipe and branch for the air
+            components.pipe(this, 'AirPipe_Reflow', 1, 0.03, 2e-3);
+            matter.branch(this, oAir2, {'AirPipe_Reflow'}, oAir1, 'AirReflow');
             
+            % Add in and outflow of the flow path for water
+            components.pipe(this, ['WaterPipe_', num2str(this.iCells)], fWaterPipeLength, fWaterPipeDiameter, 2e-3);
+            matter.branch(this, oWaterPhase1, {}, coFlowNodeWater{1}, 'WaterFlowBranchInlet');
+            matter.branch(this, coFlowNodeWater{end}, {['WaterPipe_', num2str(this.iCells)]}, oWaterPhase2, ['WaterFlowBranch_', num2str(this.iCells)]);
+            
+            % Adding a reflow pipe and branch for the water
+            components.pipe(this, 'WaterPipe_Reflow', 1, 0.01, 2e-3);
+            matter.branch(this, oWaterPhase2, {'WaterPipe_Reflow'}, oWaterPhase1, 'WaterReflow');
         end
         
         function createSolverStructure(this)
@@ -90,8 +113,27 @@ classdef Example < vsys
             % Now that the system is sealed, we can add the branch to a
             % specific solver. In this case we will use the linear
             % solver. 
-            solver.matter.interval.branch(this.aoBranches(1));
-                        
+            solver.matter.manual.branch(this.toBranches.AirFlowBranchInlet);
+            solver.matter.manual.branch(this.toBranches.WaterFlowBranchInlet);
+            
+            this.toBranches.AirFlowBranchInlet.oHandler.setFlowRate(0.1);
+            this.toBranches.WaterFlowBranchInlet.oHandler.setFlowRate(0.1);
+            
+            for iCell = 1:this.iCells
+                aoAirFlowBranches(iCell)    = this.toBranches.(['AirFlowBranch_', num2str(iCell)]); %#ok
+                aoWaterFlowBranches(iCell)  = this.toBranches.(['WaterFlowBranch_', num2str(iCell)]); %#ok
+            end
+            aoAirFlowBranches(end+1)    = this.toBranches.AirReflow;
+            aoWaterFlowBranches(end+1)  = this.toBranches.WaterReflow;
+            
+            solver.matter_multibranch.iterative.branch([aoAirFlowBranches, aoWaterFlowBranches]);
+            
+            tTimeStepProperties.rMaxChange = 0.01;
+            this.toStores.WaterTank_1.toPhases.Water_Phase.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.WaterTank_2.toPhases.Water_Phase.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.AirTank_1.toPhases.AirPhase.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.AirTank_2.toPhases.AirPhase.setTimeStepProperties(tTimeStepProperties);
+            
             this.setThermalSolvers();
         end
     end
@@ -101,21 +143,6 @@ classdef Example < vsys
         function exec(this, ~)
             exec@vsys(this);
             
-            % Switching between flow rate setpoints for the pump every 100
-            % seconds
-            if this.oTimer.fTime - this.fLastPumpUpdate > 100   % Have 100s passed? 
-                if this.bPumpActive                   % Is the flow rate currently high? 
-                    this.oPump.changeSetpoint(0);     % Set flow rate setpoint to zero
-                    this.bPumpActive = false;         % Change pump indicator to false
-                else
-                    this.oPump.changeSetpoint(0.267); % Set flow rate setpoint to a value
-                    this.bPumpActive = true;          % Change pump indicator to false
-                end
-                
-                % Remember this time step as the one we last updated the
-                % pump.
-                this.fLastPumpUpdate = this.oTimer.fTime;
-            end
         end
         
      end
