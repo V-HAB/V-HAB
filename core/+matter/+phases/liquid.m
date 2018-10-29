@@ -58,7 +58,6 @@ classdef liquid < matter.phase
             % change registered, do nothing.
             
             bSuccess = this.setParameter('fPressure', fPressure);
-            this.fDensity = this.fMass / this.fVolume;
         end
         
         function bSuccess = setVolume(this, fVolume)

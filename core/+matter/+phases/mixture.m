@@ -14,7 +14,7 @@ classdef mixture < matter.phase
     properties (SetAccess = protected, GetAccess = public)
         
         % Volume in m^3
-        fVolume;       
+        fVolume;
         fPressure;
 
         sPhaseType;
@@ -30,20 +30,38 @@ classdef mixture < matter.phase
             this.fPressure = fPressure;
             this.fPressureLastHeatCapacityUpdate = this.fPressure;
         end
-    end
         
+        function bSuccess = setPressure(this, fPressure)
+            % Changes the pressure of the phase. If no processor for volume
+            % change registered, do nothing.
+
+            bSuccess = this.setParameter('fPressure', fPressure);
+        end
+
+        function bSuccess = setVolume(this, fVolume)
+            % Changes the volume of the phase. If no processor for volume
+            % change registered, do nothing.
+
+            bSuccess = this.setParameter('fVolume', fVolume);
+            this.fDensity = this.fMass / this.fVolume;
+        end
+    end
+    
+    
     methods (Access = protected)
         function this = update(this)
             update@matter.phase(this);
             
             this.fDensity = this.fMass / this.fVolume;
             
-            % TO DO: implement pressure calculation for liquid phase
             if strcmp(this.sPhaseType, 'gas')
                 this.fPressure = this.oMT.calculatePressure(this);
             end
-            
-            
+        end
+        
+        function setAttribute(this, sAttribute, xValue)
+            % Internal helper, see @matter.phase class.
+            this.(sAttribute) = xValue;
         end
     end
 end

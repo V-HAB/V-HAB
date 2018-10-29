@@ -34,18 +34,22 @@ classdef Example < vsys
             matter.store(this, 'WaterTank_2', 2, false);
             
             % Adding a phase with liquid water to the store
-            oWaterPhase1 = matter.phases.liquid(this.toStores.WaterTank_1, ...  Store in which the phase is located
+            oWaterPhase1 = matter.phases.mixture(this.toStores.WaterTank_1, ...  Store in which the phase is located
                                                 'Water_Phase', ...        Phase name
+                                                'liquid',...
                                                 struct('H2O', 100), ...   Phase contents
+                                                0.1,...
                                                 293.15, ...                Phase temperature
                                                 101325);                 % Phase pressure
             
             
             % Adding an empty phase to the second store, this represents an
             % empty tank
-            oWaterPhase2 = matter.phases.liquid(this.toStores.WaterTank_2, ...   Store in which the phase is located
+            oWaterPhase2 = matter.phases.mixture(this.toStores.WaterTank_2, ...   Store in which the phase is located
                                                 'Water_Phase', ...         Phase name
+                                                'liquid',...
                                                 struct('H2O', 100), ...      Phase contents
+                                                0.1,...
                                                 293.15, ...                Phase temperature
                                                 101325);                 % Phase pressure
             
@@ -70,7 +74,12 @@ classdef Example < vsys
             coFlowNodeWater = cell(this.iCells,1);
             for iCell = 1:this.iCells
                 coFlowNodeAir{iCell}    = this.toStores.FlowPath.createPhase('gas', true, ['AirCell_', num2str(iCell)], 0.5 * fFlowVolume / this.iCells, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293.15, 0.5);
-                coFlowNodeWater{iCell}  = matter.phases.liquid_flow_node(this.toStores.FlowPath, ['WaterCell_', num2str(iCell)], struct('H2O', 1e-9), 0.5 * fFlowVolume / this.iCells, 293.15);
+                coFlowNodeWater{iCell}  = matter.phases.mixture_flow_node(this.toStores.FlowPath, ['WaterCell_', num2str(iCell)], 'liquid', struct('H2O', 1e-9), 0.5 * fFlowVolume / this.iCells, 293.15);
+                
+                matter.procs.exmes.gas(coFlowNodeAir{iCell},       ['P2P_Air', num2str(iCell)]);
+                matter.procs.exmes.mixture(coFlowNodeWater{iCell}, ['P2P_Water', num2str(iCell)]);
+                
+                tutorials.mixture_flow.components.Adsorber(this.toStores.FlowPath, ['Adsorber_', num2str(iCell)], [coFlowNodeAir{iCell}.sName, '.P2P_Air', num2str(iCell)], [coFlowNodeWater{iCell}.sName, '.P2P_Water', num2str(iCell)]);
             end
             
             fAirPipeLength = 0.1;
@@ -85,7 +94,7 @@ classdef Example < vsys
                 
                 matter.branch(this, coFlowNodeAir{iCell},   {['AirPipe_', num2str(iCell)]},     coFlowNodeAir{iCell+1},     ['AirFlowBranch_', num2str(iCell)]);
                 matter.branch(this, coFlowNodeWater{iCell}, {['WaterPipe_', num2str(iCell)]},   coFlowNodeWater{iCell+1},   ['WaterFlowBranch_', num2str(iCell)]);
-                
+               
             end
             
             % Add in and outflow of the flow path for air

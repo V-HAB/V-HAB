@@ -24,13 +24,24 @@ for iPhase = 1:length(this.aoPhases)
         aiLiquidPhases(end+1) = iPhase; %#ok
     elseif strcmp(this.aoPhases(iPhase).sType, 'solid')
         aiSolidPhases(end+1) = iPhase; %#ok
+        
+    elseif strcmp(this.aoPhases(iPhase).sType, 'mixture')
+        if strcmp(this.aoPhases(iPhase).sPhaseType, 'gas')
+            aiGasePhases(end+1) = iPhase; %#ok
+        elseif strcmp(this.aoPhases(iPhase).sPhaseType, 'liquid')
+            aiLiquidPhases(end+1) = iPhase; %#ok
+        elseif strcmp(this.aoPhases(iPhase).sPhaseType, 'solid')
+            aiSolidPhases(end+1) = iPhase; %#ok
+        end
     end
 end
 
 if this.bIsIncompressible == 0
     
-    fLiquidDensity = this.oMT.calculateDensity(this.aoPhases(aiLiquidPhases));
-    fVolumeLiquid = this.aoPhases(aiLiquidPhases).fMass / fLiquidDensity;
+    if ~isempty(aiLiquidPhases)
+        fLiquidDensity = this.oMT.calculateDensity(this.aoPhases(aiLiquidPhases));
+        fVolumeLiquid = this.aoPhases(aiLiquidPhases).fMass / fLiquidDensity;
+    end
     
     if ~isempty(aiSolidPhases)
         fSolidDensity = this.oMT.calculateDensity(this.aoPhases(aiSolidPhases));
@@ -47,12 +58,17 @@ if this.bIsIncompressible == 0
         % p*V = m*R*T => p = m*R*T / V
         oGas = this.aoPhases(aiGasePhases);
         fPressure = oGas.fMass * (this.oMT.Const.fUniversalGas/oGas.fMolarMass) * oGas.fTemperature / oGas.fVolume;
+        
+        this.aoPhases(aiLiquidPhases).setVolume(fVolumeLiquid);
+        this.aoPhases(aiLiquidPhases).setPressure(fPressure);
     else
-        fPressure = this.oMT.calculatePressure(this.aoPhases(aiLiquidPhases));
+        % No gas phase, only set the pressure of the liquid phase
+        if ~isempty(aiLiquidPhases)
+            fPressure = this.oMT.calculatePressure(this.aoPhases(aiLiquidPhases));
+            this.aoPhases(aiLiquidPhases).setPressure(fPressure);
+        end
     end
     
-    this.aoPhases(aiLiquidPhases).setVolume(fVolumeLiquid);
-    this.aoPhases(aiLiquidPhases).setPressure(fPressure);
     
     if ~isempty(aiSolidPhases)
         this.aoPhases(aiSolidPhases).setVolume(fVolumeSolid);
