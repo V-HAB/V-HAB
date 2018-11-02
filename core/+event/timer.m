@@ -87,16 +87,6 @@ classdef timer < base
                              'post_physics', struct(...
                                 'timestep', cell.empty()));
                          
-        % This variable has the same structure as the txPostTickControl
-        % property. Here each level does not contain a cell array but
-        % instead a boolean vector. The indices of the boolean vector
-        % correspond to the indices from the respective cell array in
-        % txPostTick and if the boolean value is true the function from the
-        % corresponding cell will be executed during the post tick
-        % calculation. As for txPostTick the entries of the vector are only
-        % added once during the registration of a post tick and after that
-        % only the values changes
-        mbPostTickControl;
         
         % The fieldnames of the post tick groups from the txPostTick struct
         % are stored in this property to allow looping through them with
@@ -119,6 +109,30 @@ classdef timer < base
         % tenth post tick level that is calculated in this group
         tiPostTickLevel;
         
+        % For faster calculations the verbose struct txPostTicks is
+        % internally translated into a three dimensional cell array. The
+        % first dimension represents the post tick groups with the indices
+        % corresponding to the values from the tiPostTickGroup struct. The
+        % second dimension represents the post tick levels with the indices
+        % corresponding to the values from the tiPostTickLevel struct. Then
+        % the same handle vector as in txPostTicks with identical indices
+        % is the third dimension.
+        chPostTicks;
+        
+        % mbPostTickControl is a three dimensional boolean array. The first
+        % dimension represents the post tick groups with the indices
+        % corresponding to the values from the tiPostTickGroup struct. The
+        % second dimension represents the post tick levels with the indices
+        % corresponding to the values from the tiPostTickLevel struct. The
+        % indices of the boolean vector correspond to the indices from the
+        % respective cell array in txPostTick (or chPostTicks) and if the
+        % boolean value is true the function from the corresponding cell
+        % will be executed during the post tick calculation. As for
+        % txPostTick the entries of the vector are only added once during
+        % the registration of a post tick and after that only the values
+        % changes
+        mbPostTickControl;
+        
         % in order to decide whether a newly bound post tick is from an
         % earlier group and level as the one we are currently execution
         % these two properties store the corresponding number from
@@ -127,9 +141,11 @@ classdef timer < base
         iCurrentPostTickGroup = 0;
         iCurrentPostTickLevel = 0;
         
+        % Also for faster operation, the corresponding number of post tick
+        % levels for each post tick group index from tiPostTickGroup is
+        % stored here
         aiNumberOfPostTickLevel;
         
-        chPostTicks;
     end
     
     methods
@@ -174,19 +190,11 @@ classdef timer < base
                     txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(['pre_', csPostTicks{iPostTick}])  = cell.empty();
                     txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(csPostTicks{iPostTick})            = cell.empty();
                     txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(['post_', csPostTicks{iPostTick}]) = cell.empty();
-                    
-                    % We also want a post tick control struct that has the
-                    % same field structure as the txPostTick struct,
-                    % therefore we simply create this here in parallel to
-                    % ensure identical structure
-                    tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}).(['pre_', csPostTicks{iPostTick}])  = logical.empty();
-                    tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}).(csPostTicks{iPostTick})            = logical.empty();
-                    tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}).(['post_', csPostTicks{iPostTick}]) = logical.empty();
                 end
                 % now we can store the fieldnames of both levels of the
                 % structs in the properties to make looping trough them
                 % easier and faster
-                csFullLevels = fieldnames(tbPostTickControlFull.(csBasicPostTickGroups{iPostTickGroup}));
+                csFullLevels = fieldnames(txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}));
                 this.tcsPostTickLevel.(csBasicPostTickGroups{iPostTickGroup}) = csFullLevels;
                 
                 this.aiNumberOfPostTickLevel(iPostTickGroup) = length(csFullLevels);
@@ -336,18 +344,19 @@ classdef timer < base
             % at the timer beforehand using the registerPostTick function
             % of the timer! The input parameters are defined as follows:
             %
+            % iPostTickGroup: Specifies the post tick group in which the
+            % corresponding post tick level is located. E.g. for the post
+            % tick group matter the index must be this.tiPostTickGroups.matter
+            %
+            % iPostTickLevel: Specifies the post tick update level e.g. 
+            % for the level post_phase_update the index must be 
+            % this.tiPostTickGroups.matter.post_phase_update 
+            %
             % iPostTickNumber: During registration of the post tick, the
             % timer provides an output parameter for the index in the cell
             % and boolean array to which the post tick was bound. That
             % number should be stored in a property of the calling object
             % and provided to this function call
-            %
-            % sPostTickGroup: Specifies the post tick group in which the
-            % corresponding post tick level is located. E.g. 'matter'
-            %
-            % sPostTickLevel: Specifies the post tick update level e.g. 
-            % post_phase_update for a post tick update after the phase
-            % update function
             
             % here we only have to set the boolean value to true! Note we
             % do not require any checks if this should be done or not,
@@ -514,9 +523,11 @@ classdef timer < base
                     end
                 end
                 
-                % Now we initially assume that all post ticks have been
-                % executed and then loop through the tbPostTickControl
-                % struct to check if that is true
+                % Now we check the boolean matrix except for the last post
+                % tick group (which is the post physics group) if any new
+                % post ticks where set during execution of the previous
+                % ones, and if that is the case we iterate the post tick
+                % calculations
                 bExecutePostTicks = any(any(any(this.mbPostTickControl(1:end-1,:,:))));
             end
             
