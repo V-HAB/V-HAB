@@ -547,7 +547,7 @@ classdef timer < base
                 % the fly while we are executing this level, we use a
                 % while loop to execute the post ticks till all are
                 % executed
-                while any(this.mbPostTickControl(iPostTickGroup, iPostTickLevel))
+                while any(this.mbPostTickControl(iPostTickGroup, iPostTickLevel, :))
                     abExecutePostTicks = this.mbPostTickControl(iPostTickGroup, iPostTickLevel, :);
 
                     chCurrentPostTicks = this.chPostTicks(iPostTickGroup, iPostTickLevel,:);
