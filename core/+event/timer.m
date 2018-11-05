@@ -90,12 +90,19 @@ classdef timer < base
         
         % The fieldnames of the post tick groups from the txPostTick struct
         % are stored in this property to allow looping through them with
-        % for loops
+        % for loops. 
         csPostTickGroups;
         % This struct has the post tick groups as fields, and each field
         % contains a cell array with the fieldnames of the corresponding
         % post tick levels (again to enable for loops)
         tcsPostTickLevel;
+        % These two properties can be used to translate the first two
+        % indices from one of the three dimensional arrays (chPostTicks and
+        % mbPostTickControl) into the corresponding post tick group and
+        % level. For example the entries chPostTicks{2,3,:} are from the
+        % second post tick group (electrical) and the third post tick level
+        % (in this case post_circuit). Remember that for each level defined
+        % in the struct above a pre_ and post_ level is added!
         
         % this struct contains the post tick groups as fieldnames and the
         % value of each field corresponds to the execution order of that
