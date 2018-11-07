@@ -80,9 +80,21 @@ classdef store < base
         % gas phases.
         fVolume = 0;
         
-        % Parameter to check wether liquids should be calculated as
-        % compressible or incompressible compared to gas phases in the store
-        bIsIncompressible = 1;
+        % Parameter to check whether the store should calculate the volumes
+        % of liquids/solids and subtract them from the store volume to get
+        % the gas volume. Also sets the gas pressure as liquid/solid
+        % pressure
+        bNoStoreCalculation = true;
+        
+        % Array containing the indices from the aoPhases array for all gas
+        % phases
+        aiGasePhases;
+        % Array containing the indices from the aoPhases array for all
+        % liquid phases
+        aiLiquidPhases;
+        % Array containing the indices from the aoPhases array for all
+        % solid phases
+        aiSolidPhases;
     end
     
     properties (SetAccess = protected, GetAccess = protected)
@@ -103,7 +115,7 @@ classdef store < base
     
     
     methods
-        function this = store(oContainer, sName, fVolume, bIsIncompressible, tGeometryParams)
+        function this = store(oContainer, sName, fVolume, bNoStoreCalculation, tGeometryParams)
             % Create a new matter store object. Expects the matter table
             % object and a name as parameters. Optionally, you can pass a
             % store volume and whether the contents of the store are
@@ -129,7 +141,7 @@ classdef store < base
             end
 
             if nargin >= 4
-                this.bIsIncompressible = bIsIncompressible;
+                this.bNoStoreCalculation = bNoStoreCalculation;
             end
             
             if nargin >= 5
@@ -340,6 +352,29 @@ classdef store < base
             % Seal phases
             for iI = 1:length(this.aoPhases)
                 this.aoPhases(iI).seal(); 
+            end
+            
+            
+            % Now we store the indices from the aoPhases struct for the
+            % different phase types in the corresponding arrays. Mixtures
+            % are regarded as the specified phase type
+            for iPhase = 1:length(this.aoPhases)
+                if strcmp(this.aoPhases(iPhase).sType, 'gas')
+                    this.aiGasePhases(end+1) = iPhase;
+                elseif strcmp(this.aoPhases(iPhase).sType, 'liquid')
+                    this.aiLiquidPhases(end+1) = iPhase;
+                elseif strcmp(this.aoPhases(iPhase).sType, 'solid')
+                    this.aiSolidPhases(end+1) = iPhase;
+
+                elseif strcmp(this.aoPhases(iPhase).sType, 'mixture')
+                    if strcmp(this.aoPhases(iPhase).sPhaseType, 'gas')
+                        this.aiGasePhases(end+1) = iPhase;
+                    elseif strcmp(this.aoPhases(iPhase).sPhaseType, 'liquid')
+                        this.aiLiquidPhases(end+1) = iPhase;
+                    elseif strcmp(this.aoPhases(iPhase).sPhaseType, 'solid')
+                        this.aiSolidPhases(end+1) = iPhase;
+                    end
+                end
             end
             
             this.bSealed = true;
