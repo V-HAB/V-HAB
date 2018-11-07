@@ -448,7 +448,7 @@ classdef branch < base & event.source
                     
                     % Variable pressure phase - add to reference map if not
                     % present yet, generate index for matrix column
-                    if isa(oP, 'matter.phases.gas_flow_node')
+                    if isa(oP, 'matter.phases.flow_node')
                         if ~this.poVariablePressurePhases.isKey(oP.sUUID)
 
                             this.poVariablePressurePhases(oP.sUUID) = oP;

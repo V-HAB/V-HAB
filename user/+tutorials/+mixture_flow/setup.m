@@ -19,11 +19,11 @@ classdef setup < simulation.infrastructure
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Liquid_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Tutorial_Mixture_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            tutorials.liquid_flow.systems.Example(this.oSimulationContainer, 'Example');
+            tutorials.mixture_flow.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
@@ -42,6 +42,8 @@ classdef setup < simulation.infrastructure
                 oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fVolume',	'm^3', [csStores{iStore}, ' Volume']);
                 oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fPressure','Pa', [csStores{iStore}, ' Pressure']);
                 oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'fTemperature',	'K',  [csStores{iStore}, ' Temperature']);
+                
+                oLog.addValue(['Example.toStores.', csStores{iStore}, '.aoPhases(1)'],	'afMass(this.oMT.tiN2I.CO2)',	'kg', [csStores{iStore}, ' CO_2 Mass']);
             end
             
             csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
@@ -64,11 +66,15 @@ classdef setup < simulation.infrastructure
             csPressures = cell(length(csStores),1);
             csVolumes = cell(length(csStores),1);
             csTemperatures = cell(length(csStores),1);
+            csCO2Masses = cell(length(csStores),1);
+            
             for iStore = 1:length(csStores)
                 csMasses{iStore} = ['"', csStores{iStore}, ' Mass"'];
                 csPressures{iStore} = ['"', csStores{iStore}, ' Pressure"'];
                 csVolumes{iStore} = ['"', csStores{iStore}, ' Volume"'];
                 csTemperatures{iStore} = ['"', csStores{iStore}, ' Temperature"'];
+                
+                csCO2Masses{iStore} = ['"', csStores{iStore}, ' CO_2 Mass"'];
             end
             
             csBranches = fieldnames(this.oSimulationContainer.toChildren.Example.toBranches);
@@ -85,6 +91,7 @@ classdef setup < simulation.infrastructure
             coPlots{2,1} = oPlotter.definePlot(csFlowRates,     'Flow Rates', tPlotOptions);
             coPlots{2,2} = oPlotter.definePlot(csTemperatures,  'Temperatures', tPlotOptions);
             coPlots{3,1} = oPlotter.definePlot(csVolumes,       'Volumes', tPlotOptions);
+            coPlots{3,2} = oPlotter.definePlot(csCO2Masses,       'CO2 Masses', tPlotOptions);
             oPlotter.defineFigure(coPlots,  'Plots', tFigureOptions);
             
             oPlotter.plot();

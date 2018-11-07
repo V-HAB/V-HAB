@@ -229,6 +229,9 @@ if this.fLastUpdate == this.oTimer.fTime
 else
     this.setTimeStep(fNewStep);
 end
+if ~this.oStore.bIsIncompressible
+    this.oStore.setNextTimeStep(fNewStep)
+end
 
 % Cache - e.g. for logging purposes
 this.fTimeStep = fNewStep;

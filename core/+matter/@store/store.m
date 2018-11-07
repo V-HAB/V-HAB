@@ -72,11 +72,6 @@ classdef store < base
         % Total simulation time in seconds at which the store will be
         % updated next
         fNextExec = inf;
-        
-        % Parameters to debugg the compressible liquid calculation from the
-        % update function
-        fTotalPressureErrorStore = 0;
-        iNestedIntervallCounterStore = 0;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -85,13 +80,31 @@ classdef store < base
         % gas phases.
         fVolume = 0;
         
-        % Parameter to check wether liquids should be calculated as
-        % compressible or incompressible compared to gas phases in the store
-        bIsIncompressible = 1;
+        % Parameter to check whether the store should calculate the volumes
+        % of liquids/solids and subtract them from the store volume to get
+        % the gas volume. Also sets the gas pressure as liquid/solid
+        % pressure
+        bNoStoreCalculation = true;
+        
+        % Array containing the indices from the aoPhases array for all gas
+        % phases
+        aiGasePhases;
+        % Array containing the indices from the aoPhases array for all
+        % liquid phases
+        aiLiquidPhases;
+        % Array containing the indices from the aoPhases array for all
+        % solid phases
+        aiSolidPhases;
     end
     
     properties (SetAccess = protected, GetAccess = protected)
         setTimeStep;
+        
+        % function handle to bind a post tick update of the store
+        % function of this phase. The handle is created while registering
+        % the post tick at the timer and contains all necessary inputs
+        % already. The same is true for the other two handles below.
+        hBindPostTickUpdate;
     end
     
     properties (SetAccess = public, GetAccess = public)
@@ -102,7 +115,7 @@ classdef store < base
     
     
     methods
-        function this = store(oContainer, sName, fVolume, bIsIncompressible, tGeometryParams)
+        function this = store(oContainer, sName, fVolume, bNoStoreCalculation, tGeometryParams)
             % Create a new matter store object. Expects the matter table
             % object and a name as parameters. Optionally, you can pass a
             % store volume and whether the contents of the store are
@@ -128,13 +141,14 @@ classdef store < base
             end
 
             if nargin >= 4
-                this.bIsIncompressible = bIsIncompressible;
+                this.bNoStoreCalculation = bNoStoreCalculation;
             end
             
             if nargin >= 5
                 this.tGeometryParameters = tGeometryParams;
             end
             
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,       'matter',        'store_update');
         end
         
         function setNextTimeStep(this, fTimeStep)
@@ -226,7 +240,9 @@ classdef store < base
             
             oProc = this.aoPhases(iIdx).toProcsEXME.(sPort);
         end
-        
+        function registerUpdate(this)
+            this.hBindPostTickUpdate();
+        end
         
         function oProc = getThermalPort(this, sPort)
             % Check all capacities to find thermal port
@@ -313,8 +329,8 @@ classdef store < base
             % Bind the .update method to the timer, with a time step of 0
             % (i.e. smallest step), will be adapted after each .update
             %this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0);
-            this.setTimeStep = this.oTimer.bind(@this.update, 0, struct(...
-                'sMethod', 'update', ...
+            this.setTimeStep = this.oTimer.bind(@(~)this.registerUpdate(), 0, struct(...
+                'sMethod', 'registerUpdate', ...
                 'sDescription', 'The .update method of a store (i.e. including phases)', ...
                 'oSrcObj', this ...
             ));
@@ -336,6 +352,29 @@ classdef store < base
             % Seal phases
             for iI = 1:length(this.aoPhases)
                 this.aoPhases(iI).seal(); 
+            end
+            
+            
+            % Now we store the indices from the aoPhases struct for the
+            % different phase types in the corresponding arrays. Mixtures
+            % are regarded as the specified phase type
+            for iPhase = 1:length(this.aoPhases)
+                if strcmp(this.aoPhases(iPhase).sType, 'gas')
+                    this.aiGasePhases(end+1) = iPhase;
+                elseif strcmp(this.aoPhases(iPhase).sType, 'liquid')
+                    this.aiLiquidPhases(end+1) = iPhase;
+                elseif strcmp(this.aoPhases(iPhase).sType, 'solid')
+                    this.aiSolidPhases(end+1) = iPhase;
+
+                elseif strcmp(this.aoPhases(iPhase).sType, 'mixture')
+                    if strcmp(this.aoPhases(iPhase).sPhaseType, 'gas')
+                        this.aiGasePhases(end+1) = iPhase;
+                    elseif strcmp(this.aoPhases(iPhase).sPhaseType, 'liquid')
+                        this.aiLiquidPhases(end+1) = iPhase;
+                    elseif strcmp(this.aoPhases(iPhase).sPhaseType, 'solid')
+                        this.aiSolidPhases(end+1) = iPhase;
+                    end
+                end
             end
             
             this.bSealed = true;

@@ -19,7 +19,11 @@ classdef mixture_flow_node < matter.phases.flow_node
             this@matter.phases.flow_node(oStore, sName, varargin{2:4});
             
             this.sPhaseType = varargin{1};
-            this.fPressure = varargin{5};
+            if length(varargin) >= 5
+                this.fPressure = varargin{5};
+            else
+                this.fPressure = 1e5;
+            end
         end
     end
 end

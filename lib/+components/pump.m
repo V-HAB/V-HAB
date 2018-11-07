@@ -20,8 +20,6 @@ classdef pump < matter.procs.f2f
         
         fPreviousSetpoint;    
         
-        % Switched off?
-        bActive = true;  
         
     end
         
@@ -40,6 +38,7 @@ classdef pump < matter.procs.f2f
             this.supportSolver('hydraulic', -5, 0.1, true, @this.update);
             this.supportSolver('callback', @this.solverDeltas);
             
+            this.bActive = true;
             %TODO support that!
             %this.supportSolver('callback',  @this.solverDeltas);
         end
