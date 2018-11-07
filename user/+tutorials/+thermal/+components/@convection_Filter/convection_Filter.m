@@ -36,7 +36,11 @@ classdef convection_Filter < thermal.procs.conductors.convective
             % calculates the current flow speed
             fFlowSpeed = this.oMassBranch.fFlowRate / (this.fFlowArea * fDensity);
             
-            [fConvection_alpha] = this.convection_plate(this.fLength, fFlowSpeed, fDyn_Visc, fDensity, fThermal_Conductivity, fSpecificHeatCapacity);
+            if fFlowSpeed == 0
+                fConvection_alpha = 0;
+            else
+                [fConvection_alpha] = this.convection_plate(this.fLength, fFlowSpeed, fDyn_Visc, fDensity, fThermal_Conductivity, fSpecificHeatCapacity);
+            end
         end
         
     end

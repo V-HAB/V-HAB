@@ -153,7 +153,7 @@ classdef branch < base & event.source
             
             % If the user provided a custom name, we also set that
             % property.
-            if nargin == 5
+            if nargin >= 5
                 this.sCustomName = sCustomName;
             end
             
