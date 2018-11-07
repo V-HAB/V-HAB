@@ -68,9 +68,18 @@ classdef Example < vsys
                     csFlowProcs{end + 1} = components.checkvalve(this, sprintf('Checkvalve_%i%i',  iB, iB + 1)).sName;
                 end
                 
-            
-                sStoreLeft  = sprintf(sif(iB == 1,    'Tank_%i.Port', 'Tank_%i.Port_2'), iB);
-                sStoreRight = sprintf(sif(iB == iLen, 'Tank_%i.Port', 'Tank_%i.Port_1'), iB + 1);
+                if iB == 1
+                    sString = 'Tank_%i.Port';
+                else
+                    sString = 'Tank_%i.Port_2';
+                end
+                sStoreLeft  = sprintf(sString, iB);
+                if iB == iLen
+                    sString = 'Tank_%i.Port';
+                else
+                    sString = 'Tank_%i.Port_1';
+                end
+                sStoreRight = sprintf(sString, iB + 1);
                 
                 %fprintf('%s -> ', sStoreLeft, csFlowProcs{:}, sStoreRight);
                 %fprintf('\n');

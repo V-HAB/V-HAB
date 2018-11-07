@@ -9,10 +9,13 @@ classdef test_press_drop < simulation
         function this = test_press_drop(bReversed)
             this@simulation('left_to_right');
             
-            if nargin < 1 || ~islogical(bReversed), bReversed = false; end;
+            if nargin < 1 || ~islogical(bReversed), bReversed = false; end
             
-            
-            sDir = sif(bReversed, 'right_to_left', 'left_to_right');
+            if bReversed
+                sDir = 'right_to_left';
+            else
+                sDir = 'left_to_right';
+            end
             
             tutorials.solver_tests.systems.def(this.oRoot, 'Example', sDir, 'iterative', 'pipes');
             

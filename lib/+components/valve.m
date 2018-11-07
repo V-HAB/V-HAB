@@ -50,7 +50,11 @@ classdef valve < matter.procs.f2f
             %solver, which makes sense because the valve is much thiner
             %and shorter than the pipes around it. So it has in fact no
             %influence on the gas flow if it is open
-            this.fHydrDiam=sif(this.bValveOpen, this.fHydrDiameter_open, this.fHydrDiameter_close);
+            if this.bValveOpen
+                this.fHydrDiam = this.fHydrDiameter_open;
+            else
+                this.fHydrDiam = this.fHydrDiameter_close;
+            end
             
             
             %Assigning the length of the valve

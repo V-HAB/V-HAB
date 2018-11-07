@@ -64,8 +64,12 @@ classdef cuboid < geometry.volume
                 csDims = { 'x', 'y', 'z' };
                 aiZero = find(arVector == 0);
                 
-                sName = sprintf('surface_%s_%s_%s', csDims{aiZero(1)}, csDims{aiZero(2)}, ...
-                                    sif(arVector(arVector ~= 0) > 0, 'pos', 'neg'));
+                if arVector(arVector ~= 0) > 0
+                    sDir = 'pos';
+                else
+                    sDir = 'neg';
+                end
+                sName = sprintf('surface_%s_%s_%s', csDims{aiZero(1)}, csDims{aiZero(2)}, sDir);
                 
                 this.toSurfaces.(sName) = geometry.surfaces.rectangle(...
                     this, cSurfaces{iS, 3}, cSurfaces{iS, 4}, ...

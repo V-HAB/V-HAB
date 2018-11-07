@@ -67,7 +67,12 @@ classdef filter < matter.procs.p2ps.flow
             if (nargin < 2) || isempty(sPhase), sPhase = 'in'; end
             
             iSubstance  = this.oMT.tiN2I.(this.sSubstance);
-            rFilterLoad = sif(this.fCapacity == 0, 1, this.oOut.oPhase.afMass(iSubstance) / this.fCapacity);
+            
+            if this.fCapacity == 0
+                rFilterLoad = 1;
+            else
+                rFilterLoad = this.oOut.oPhase.afMass(iSubstance) / this.fCapacity;
+            end
             
             % Calculate filter rate
             if this.fCharacteristics > 0
@@ -78,7 +83,11 @@ classdef filter < matter.procs.p2ps.flow
             
             
             % Get connected branch compositions
-            oPhase        = sif(strcmp(sPhase, 'in'), this.oIn.oPhase, this.oOut.oPhase);
+            if strcmp(sPhase, 'in')
+                oPhase = this.oIn.oPhase;
+            else
+                oPhase = this.oOut.oPhase;
+            end
             arFilterRates = zeros(oPhase.iProcsEXME, 1);
             
             
@@ -92,7 +101,11 @@ classdef filter < matter.procs.p2ps.flow
                 % opposite phase! The coeff is only valid/used for
                 % INflowing flow rates!
                 oB = oPhase.coProcsEXME{iI}.oFlow.oBranch;
-                iE = sif(oB.coExmes{1}.oPhase == oPhase, 2, 1);
+                if oB.coExmes{1}.oPhase == oPhase
+                    iE = 2;
+                else
+                    iE = 1;
+                end
                 
                 arFlowPartials = oB.coExmes{iE}.oPhase.arPartialMass;
                 

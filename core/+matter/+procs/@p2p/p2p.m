@@ -128,7 +128,7 @@ classdef p2p < matter.flow
             % This is needed to e.g. get the phase type for heat capacity
             % calculations.
             %TODO: reword
-            oExme = this.(sif(this.fFlowRate < 0, 'oOut', 'oIn'));
+            if this.fFlowRate < 0; oExme = this.oOut; else; oExme = this.oIn; end
         end
         
         

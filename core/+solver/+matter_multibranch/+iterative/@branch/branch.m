@@ -324,8 +324,11 @@ classdef branch < base & event.source
                 this.sMode = sMode;
             end
             
-            this.sSolverType = sif(strcmp(this.sMode, 'complex'), 'callback', 'coefficient');
-            
+            if strcmp(this.sMode, 'complex')
+                this.sSolverType = 'callback';
+            else
+                this.sSolverType = 'coefficient';
+            end
             
             this.aoBranches = aoBranches;
             this.iBranches  = length(this.aoBranches);

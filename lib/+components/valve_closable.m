@@ -35,7 +35,11 @@ classdef valve_closable < matter.procs.f2f
         
         
         function fDropCoefficient = calculatePressureDropCoefficient(this, ~)
-            fDropCoefficient = sif(this.bOpen, 0, uint64(18446744073709551615));%inf);
+            if this.bOpen
+                fDropCoefficient = 0;
+            else
+                fDropCoefficient = uint64(18446744073709551615);
+            end
         end
         
         

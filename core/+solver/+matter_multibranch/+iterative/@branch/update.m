@@ -19,7 +19,11 @@ function update(this)
     rError    = inf;
     afResults = [];
     
-    rErrorMax  = sif(strcmp(this.sMode, 'complex'), this.fMaxError, 0);
+    if strcmp(this.sMode, 'complex')
+         rErrorMax  = this.fMaxError;
+    else
+         rErrorMax  = 0;
+    end
     this.iIteration = 0;
     
     % For an additional steady state solver there are basically two cases:

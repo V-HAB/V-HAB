@@ -71,7 +71,11 @@ classdef branch < solver.matter.base.branch
             
             % See base branch, same check here - if input phase nearly
             % empty, just set flow rate to zero
-            oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
+            if fFlowRate >= 0
+                oIn = this.oBranch.coExmes{1}.oPhase;
+            else
+                oIn = this.oBranch.coExmes{2}.oPhase;
+            end
             
             if tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
                 fFlowRate = 0;

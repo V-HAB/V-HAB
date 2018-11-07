@@ -189,15 +189,9 @@ classdef branch < solver.matter.base.branch
                 % causing the new time step to be NaN. If that happens, the
                 % branch will never be updated again. So we set rChange to
                 % zero if this happens. 
-                rChange = sif(isnan(rChange), 0, rChange);
-
-%                 % Old time step
-%                 fOldStep = this.fTimeStep;
-% 
-%                 if fOldStep < this.oTimer.fMinimumTimeStep
-%                     fOldStep = this.oTimer.fMinimumTimeStep;
-%                 end
-
+                if isnan(rChange)
+                    rChange = 0;
+                end
                 % Change in flow rate direction? Min. time step!
                 if (rChange < 0) || isinf(rChange) || (this.iSignChangeFRCnt > 1)
                     fNewStep = 0;

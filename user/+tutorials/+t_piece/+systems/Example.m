@@ -66,7 +66,12 @@ classdef Example < vsys
             
             
             % Create T-Piece with three ports!
-            fVolume = geometry.volumes.cube(sif(isempty(this.fTpieceLen), this.fPipeDiameter, this.fTpieceLen)).fVolume;
+            if isempty(this.fTpieceLen)
+                fGeometry = this.fPipeDiameter;
+            else
+                fGeometry = this.fTpieceLen;
+            end
+            fVolume = geometry.volumes.cube(fGeometry).fVolume;
             
             matter.store(this, 'T_Piece', fVolume);
             %this.toStores.T_Piece.createPhase('air', 'air', fVolume * (this.fPressureDifference / 2 + 1));
