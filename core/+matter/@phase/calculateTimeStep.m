@@ -229,7 +229,7 @@ if this.fLastUpdate == this.oTimer.fTime
 else
     this.setTimeStep(fNewStep);
 end
-if ~this.oStore.bIsIncompressible
+if ~this.oStore.bNoStoreCalculation
     this.oStore.setNextTimeStep(fNewStep)
 end
 
