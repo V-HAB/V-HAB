@@ -427,9 +427,6 @@ classdef CDRA < vsys
                         oP2P =  components.filter.components.Adsorption_P2P(this.toStores.(sName), ['AdsorptionProcessor_',num2str(iCell)], ['Flow_',num2str(iCell),'.', sName, '_Flow_Adsorption_',num2str(iCell)], ['Absorber_',num2str(iCell),'.', sName, '_Absorber_Adsorption_',num2str(iCell)], mfMassTransferCoefficient);
                         oP2P.iCell = iCell;
                         
-                        sPipeName = ['Pipe_', sName, '_', num2str(iCell)];
-                        components.pipe(this, sPipeName, fPipelength, fPipeDiameter, fFrictionFactor);
-                        
                         % Each cell is connected to the next cell by a branch, the
                         % first and last cell also have the inlet and outlet branch
                         % attached that connects the filter to the parent system
@@ -624,8 +621,8 @@ classdef CDRA < vsys
                 
                 iCellNumber             = this.tGeometry.(csTypes{iType}).iCellNumber;
                 fConductance            = mfConductivity(iType) * (this.tGeometry.(csTypes{iType}).fLength / iCellNumber);
-                fFilterMaterialArea     = this.tGeometry.(csTypes{iType}).fCrossSection * this.tGeometry.(csTypes{iType}).rVoidFraction;
-                fMaterialConductivity   = (fFilterMaterialArea * fConductance)/(this.tGeometry.Zeolite5A.fLength/iCellNumber);
+                fFilterMaterialArea     = this.tGeometry.(csTypes{iType}).fCrossSection * (1-this.tGeometry.(csTypes{iType}).rVoidFraction);
+                fMaterialConductivity   = (fFilterMaterialArea * fConductance)/(this.tGeometry.(csTypes{iType}).fLength/iCellNumber);
 
                 for iFilter = 1:2
                     sName               = [(csTypes{iType}),'_',num2str(iFilter)];

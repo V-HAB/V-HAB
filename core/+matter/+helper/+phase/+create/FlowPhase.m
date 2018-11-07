@@ -1,4 +1,4 @@
-function [ cParams, sDefaultPhase ] = Flowphase(oStore, fVolume, fTemperature, rRH, fPressure)
+function [ cParams, sDefaultPhase ] = FlowPhase(oStore, fVolume, fTemperature, rRH, fPressure)
 %FLOWPHASE
 %   TODO: figure out what this does and why we need this
 %
@@ -31,7 +31,7 @@ tfMass = struct(...
 % Check relative humidity - add?
 % See http://en.wikipedia.org/wiki/Vapor_pressure
 if rRH > 0
-    fSatPressure = this.oMT.calculateVaporPressure(fTemperature, 'H2O');
+    fSatPressure = oStore.oMT.calculateVaporPressure(fTemperature, 'H2O');
     
     % Pressure to absolute mass - pV = nRT -> p is saturation pressure
     tfMass.H2O = fSatPressure * fMolarMassH2O / fRm / fTemperature * fVolume;
