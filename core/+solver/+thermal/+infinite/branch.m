@@ -16,10 +16,14 @@ classdef branch < solver.thermal.base.branch
         function this = branch(oBranch)
             this@solver.thermal.base.branch(oBranch, 'basic');
             
-            this.iPostTickPriority = 2;
-            
-            this.oBranch.oTimer.bindPostTick(@this.update, this.iPostTickPriority);
-            
+            % Now we register the solver at the timer, specifying the post
+            % tick level in which the solver should be executed. For more
+            % information on the execution view the timer documentation.
+            % Registering the solver with the timer provides a function as
+            % output that can be used to bind the post tick update in a
+            % tick resulting in the post tick calculation to be executed
+            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'thermal' , 'residual_solver');
+                        
             this.bResidual = true;
         end
         

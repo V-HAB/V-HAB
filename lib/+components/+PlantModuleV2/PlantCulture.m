@@ -385,7 +385,6 @@ classdef PlantCulture < vsys
                 this.tfBiomassGrowthRates.fGrowthRateEdible = 0;
                 this.tfBiomassGrowthRates.fGrowthRateInedible = 0;
                 
-                this.toBranches.Biomass_Out.oHandler.setFlowRate(0);
                 this.toBranches.WaterSupply_In.oHandler.setFlowRate(0);
                 this.toBranches.NutrientSupply_In.oHandler.setFlowRate(0);
                 
@@ -394,8 +393,7 @@ classdef PlantCulture < vsys
                 
             elseif this.iState == 2
                 %
-                this.toBranches.Biomass_Out.oHandler.setFlowRate(...
-                    this.toStores.Plant_Culture.toPhases.Plants.fMass / this.oParent.fTimeStep);
+                this.toBranches.Biomass_Out.oHandler.setMassTransfer(0.99 * this.toStores.Plant_Culture.toPhases.Plants.fMass, 1*this.oParent.fTimeStep);
             end
             
             try

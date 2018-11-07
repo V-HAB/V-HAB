@@ -447,10 +447,6 @@ classdef branch < base & event.source
             % ulation of the flow rate, e.g. after some internal parameters
             % changed (closing a valve).
             
-            for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.coExmes{iE}.oPhase.massupdate();
-            end
-            
             % If the flowrate changed, the thermal branch also has to be
             % recalculated
             this.oThermalBranch.setOutdated();
@@ -693,8 +689,8 @@ classdef branch < base & event.source
             % Connected phases have to do a massupdate before we set the
             % new flow rate - so the mass for the LAST time step, with the
             % old flow rate, is actually moved from tank to tank.
-            for iE = sif(this.fFlowRate >= 0, 1:2, 2:-1:1)
-                this.coExmes{iE}.oPhase.massupdate();
+            for iE = 1:2
+                this.coExmes{iE}.oPhase.registerMassupdate();
             end
             
             this.afFlowRates = [ this.afFlowRates(2:end) fFlowRate ];

@@ -236,7 +236,7 @@ classdef FilterProc_sorp_old < matter.procs.p2ps.flow
             
             % To be sure we have the most recent flow data, we perform a
             % massupdate() on the flow phase.
-            this.oStore.toPhases.FlowPhase.massupdate();
+            this.oStore.toPhases.FlowPhase.registerMassupdate();
             
             % Now we can get the inflow rates.
             afInFlowRates = this.oStore.toPhases.FlowPhase.mfCurrentInflowDetails(:,1);

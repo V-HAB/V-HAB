@@ -160,15 +160,21 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Log mass and time steps which are used to influence rMaxChange
         afMassLog;
         afLastUpd;
-        
     end
 
-    properties (Access = protected)
-        % Boolean indicator of an outdated time step
-        bOutdatedTimeStep = false;
-        
+    properties (SetAccess = protected, GetAccess = protected)
+        setTimeStep;
+        % function handle to bind a post tick update of the massupdate
+        % function of this phase. The handle is created while registering
+        % the post tick at the timer and contains all necessary inputs
+        % already. The same is true for the other two handles below.
+        hBindPostTickMassUpdate
+        % Handle to bind a post tick update of this phase
+        hBindPostTickUpdate
+        % Handle to bind a post tick time step calculation of this phase
+        hBindPostTickTimeStep
     end
-
+    
     properties (Access = public)
         % If true, massupdate triggers all branches to re-calculate their
         % flow rates. Use when volumes of phase compared to flow rates are
@@ -273,204 +279,39 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Preset the cached masses (see calculateTimeStep)
             this.fMassLastUpdate  = 0;
             this.afMassLastUpdate = zeros(1, this.oMT.iSubstances);
+            
+            %% Register post tick callbacks for massupdate and update
+            % This is only done once and permanently registers the post
+            % ticks at the timer, which provides the necessary function to
+            % bind post tick updates. These functions are stored as
+            % properties and can then simply be called with e.g. 
+            % this.hBindPostTickMassUpdate();
+            this.hBindPostTickMassUpdate  = this.oTimer.registerPostTick(@this.massupdate,   'matter',        'phase_massupdate');
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,       'matter',        'phase_update');
+            this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics' , 'timestep');
         end
 
-        function this = massupdate(this, bSetBranchesOutdated)
-            % This method updates the mass and temperature related
-            % properties of the phase. It takes into account all in- and
-            % outflowing matter streams via the exme processors connected
-            % to the phase, including the ones associated with p2p
-            % processors. It also gets the mass changes from substance
-            % manipulators. The new temperature is based on the thermal
-            % energy of the in- and outflow. After completing the update of
-            % fMass, afMass and fTemperature this method sets the phase's timestep
-            % outdated, so it will be recalculated during the post-tick.
-            % Additionally, if this phase is set as 'sycned', this method
-            % will set all branches connected to exmes connected to this
-            % phase to outdated, also causing a recalculation in the
-            % post-tick.
-            
-            
-            
-            if nargin < 2, bSetBranchesOutdated = false; end
-
-            fTime     = this.oTimer.fTime;
-            fLastStep = fTime - this.fLastMassUpdate;
-            
-            
-            
-            % Return if no time has passed
-            if fLastStep == 0
-                
-                if ~base.oLog.bOff, this.out(2, 1, 'skip', 'Skipping massupdate in %s-%s-%s\tset branches outdated? %i', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, bSetBranchesOutdated }); end
-                
-                %NOTE need that in case .exec sets flow rate in manual branch triggering massupdate,
-                %     and later in that tick phase does .update -> branches won't be set outdated!
-                if bSetBranchesOutdated
-                    this.setBranchesOutdated();
-                end
-                
-                return;
-            end
-            
-            if ~base.oLog.bOff, this.out(tools.logger.INFO, 1, 'exec', 'Execute massupdate in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
-
-            % Immediately set fLastMassUpdate, so if there's a recursive call
-            % to massupdate, e.g. by a p2ps.flow, nothing happens!
-            this.fLastMassUpdate     = fTime;
-            this.fMassUpdateTimeStep = fLastStep;
-            
-            % All in-/outflows in [kg/s] and multiply with curernt time
-            % step, also get the inflow rates / temperature / heat capacity
-            %SPEED OPT - value saved in last calculateTimeStep, still valid
-            %[ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
-            afTotalInOuts = this.afCurrentTotalInOuts;
-            
-            if ~base.oLog.bOff, this.out(1, 2, 'total-fr', 'Total flow rate in %s-%s: %.20f', { this.oStore.sName, this.sName, sum(afTotalInOuts) }); end
-            
-            % Check manipulator
-            if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
-                % Add the changes from the manipulator to the total inouts
-                afTotalInOuts = afTotalInOuts + this.toManips.substance.afPartialFlows;
-                
-                if ~base.oLog.bOff, this.out(tools.logger.MESSAGE, 1, 'manip-substance', 'Has substance manipulator'); end % directly follows message above, so don't output name
-            end
-            
-            fTempCurrentTotalMassInOut = sum(afTotalInOuts);
-            % In case the total mass in and output changes the residual
-            % solvers must be set outdated to react to this (the true
-            % parameter indicates that only residual branches are set
-            % outdated)
-            if fTempCurrentTotalMassInOut ~= this.fCurrentTotalMassInOut
-                this.setBranchesOutdated('both', true);
-            end
-            % Cache total mass in/out so the EXMEs can use that
-            this.fCurrentTotalMassInOut = fTempCurrentTotalMassInOut;
-            
-            % Multiply with current time step
-            afTotalInOuts = afTotalInOuts * fLastStep;
-            
-            % Do the actual adding/removing of mass.
-            this.afMass =  this.afMass + afTotalInOuts;
-
-            % Now we check if any of the masses has become negative. This
-            % can happen for two reasons, the first is just MATLAB rounding
-            % errors causing barely negative numbers (e-14 etc.) The other
-            % is an error in the programming of one of the procs/solvers.
-            % In any case, we don't interrupt the simulation for this, we
-            % just log the negative masses and set them to zero in the
-            % afMass array. The sum of all mass lost is shown in the
-            % command window in the post simulation summary.
-            abNegative = this.afMass < 0;
-
-            if any(abNegative)
-                this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
-                this.afMass(abNegative) = 0;
-                
-                if ~base.oLog.bOff
-                    this.out(tools.logger.NOTICE, 1, 'negative-mass', 'Got negative mass, added to mass lost.', {}); % directly follows message above, so don't output name
-                    %this.out(3, 2, 'negative-mass', 'TODO: output all substance names with negative masses!');
-                    this.out(3, 2, 'negative-mass', '%s\t', this.oMT.csI2N(abNegative));
-                end
-                
-            end
-
-            %%%% Now calculate the new total heat capacity for the
-            %%%% asscociated capacity
-            this.oCapacity.setTotalHeatCapacity(this.fMass * this.oCapacity.fSpecificHeatCapacity);
-            
-            % Update total mass
-            this.fMass = sum(this.afMass);
-            
-            % Trigger branch solver updates in post tick for all branches
-            if this.bSynced || bSetBranchesOutdated
-                this.setBranchesOutdated();
-            end
-            
-            % Execute updateProcessorsAndManipulators between branch solver
-            % updates for inflowing and outflowing flows
-            if this.iProcsP2Pflow > 0 || this.iManipulators > 0
-                this.oTimer.bindPostTick(@this.updateProcessorsAndManipulators, 1);
-            end
-
-            % Phase sets new time step (registered with parent store, used
-            % for all phases of that store)
-            this.setOutdatedTS();
-            
-            
-            if this.bTriggerSetMassUpdateCallbackBound
-            	this.trigger('massupdate_post');
-            end
+        function this = registerMassupdate(this, ~)
+            % To simplify debugging registering a massupdate must be done
+            % using this function. That way it is possible to set
+            % breakpoints here to see what binds massupdates for the phase
+            this.hBindPostTickMassUpdate();
         end
         
-        function this = update(this)
-            % Only update if not yet happened at the current time.
-            if (this.oTimer.fTime <= this.fLastUpdate) || (this.oTimer.fTime < 0)
-                if ~base.oLog.bOff, this.out(2, 1, 'update', 'Skip update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
-                
-                return;
-            end
+        function this = registerUpdate(this)
+            % A phase update is called, which means the
+            % pressure etc changed so much that a recalculation is required
+            this.hBindPostTickUpdate();
             
-            if ~base.oLog.bOff, this.out(2, 1, 'update', 'Execute update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
+            % therefore we also update the mass of this phase
+            this.registerMassupdate();
             
-            % Store update time
-            this.fLastUpdate = this.oTimer.fTime;
+            % and trigger branch solver updates in post tick for all
+            % branches because their boundary conditions changed
+            this.setBranchesOutdated();
             
-            % Actually move the mass into/out of the phase.
-            % Pass true as a parameter so massupd calls setBranchesOutdated
-            % even if the bSynced attribute is not true
-            this.massupdate(true);
-            this.oCapacity.updateTemperature(true);
-
-            % Cache current fMass / afMass so they represent the values at
-            % the last phase update. Needed in phase time step calculation.
-            this.fMassLastUpdate  = this.fMass;
-            this.afMassLastUpdate = this.afMass;
-            
-            % Partial masses
-            if ~this.bFlow
-                if this.fMass > 0
-                    this.arPartialMass = this.afMass / this.fMass;
-                else
-                    this.arPartialMass = this.afMass; % afMass is just zeros
-                end
-            end
-
-            % Now update the matter properties
-            this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
-            
-            % If this update was triggered by the changeInnerEnergy()
-            % method, then we already have calculated the current specific
-            % heat capacity of this phase. So we don't have to do the
-            % calculation again, we check against the timestep and only do
-            % the calculation if it hasn't been done before.
-            %
-            % See getTotalHeatCapacity --> only recalculated if at least
-            % the minimal time difference between calculations, as
-            % specified in the fMinimalTimeBetweenHeatCapacityUpdates
-            % property, has passed. So we'll also include that here!
-            if ~isempty(this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates) && (this.oTimer.fTime >= (this.oCapacity.fLastTotalHeatCapacityUpdate + this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates))
-                bRecalculate = true;
-            elseif isempty(this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates) && ~(this.oTimer.fTime == this.oCapacity.fLastTotalHeatCapacityUpdate)
-                bRecalculate = true;
-            else
-                bRecalculate = false;
-            end
-
-            if bRecalculate
-                % Our checks have concluded, that we have to recalculate
-                % the specific heat capacity for this phase. To do that, we
-                % call a phase type specific method. 
-                this.oCapacity.updateSpecificHeatCapacity();
-            end
-            
-            if this.bFlow
-            	this.trigger('update_partials');
-            end
-            
-            if this.bTriggerSetUpdateCallbackBound
-            	this.trigger('update_post');
-            end
+            % We also ensure that the time step is recalculated
+            this.setOutdatedTS();
         end
         
         function setTemperature(this, oCaller, fTemperature)
@@ -731,6 +572,15 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % iPrecision ^ 2 is more or less arbitrary
             iStore = this.oTimer.iPrecision ^ 2;
             
+            % Bind the .update method to the timer, with a time step of 0
+            % (i.e. smallest step), will be adapted after each .update
+            %this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0);
+            this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdate(), 0, struct(...
+                'sMethod', 'update', ...
+                'sDescription', 'The .update method of a phase', ...
+                'oSrcObj', this ...
+            ));
+            
             this.afMassLog = ones(1, iStore) * this.fMass;
             this.afLastUpd = 0:(1/(iStore-1)):1;%ones(1, iStore) * 0.00001;
             
@@ -781,6 +631,193 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
     %% Internal, protected methods
     methods (Access = protected)
 
+        function this = massupdate(this, ~)
+            % This method updates the mass and temperature related
+            % properties of the phase. It takes into account all in- and
+            % outflowing matter streams via the exme processors connected
+            % to the phase, including the ones associated with p2p
+            % processors. It also gets the mass changes from substance
+            % manipulators. The new temperature is based on the thermal
+            % energy of the in- and outflow. After completing the update of
+            % fMass, afMass and fTemperature this method sets the phase's timestep
+            % outdated, so it will be recalculated during the post-tick.
+            % Additionally, if this phase is set as 'sycned', this method
+            % will set all branches connected to exmes connected to this
+            % phase to outdated, also causing a recalculation in the
+            % post-tick.
+            
+            fTime     = this.oTimer.fTime;
+            fLastStep = fTime - this.fLastMassUpdate;
+            
+            % Return if no time has passed
+            if fLastStep == 0
+                return;
+            end
+            
+            if ~base.oLog.bOff, this.out(tools.logger.INFO, 1, 'exec', 'Execute massupdate in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
+
+            % Immediately set fLastMassUpdate, so if there's a recursive call
+            % to massupdate, e.g. by a p2ps.flow, nothing happens!
+            this.fLastMassUpdate     = fTime;
+            this.fMassUpdateTimeStep = fLastStep;
+            
+            % All in-/outflows in [kg/s] and multiply with curernt time
+            % step, also get the inflow rates / temperature / heat capacity
+            %SPEED OPT - value saved in last calculateTimeStep, still valid
+            %[ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
+            afTotalInOuts = this.afCurrentTotalInOuts;
+            
+            if ~base.oLog.bOff, this.out(1, 2, 'total-fr', 'Total flow rate in %s-%s: %.20f', { this.oStore.sName, this.sName, sum(afTotalInOuts) }); end
+            
+            % Check manipulator
+            if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
+                % Add the changes from the manipulator to the total inouts
+                afTotalInOuts = afTotalInOuts + this.toManips.substance.afPartialFlows;
+                
+                if ~base.oLog.bOff, this.out(tools.logger.MESSAGE, 1, 'manip-substance', 'Has substance manipulator'); end % directly follows message above, so don't output name
+            end
+            
+            % Cache total mass in/out so the EXMEs can use that
+            this.fCurrentTotalMassInOut = sum(afTotalInOuts);
+            
+            % Multiply with current time step
+            afTotalInOuts = afTotalInOuts * fLastStep;
+            
+            % Do the actual adding/removing of mass.
+            this.afMass =  this.afMass + afTotalInOuts;
+
+            % Now we check if any of the masses has become negative. This
+            % can happen for two reasons, the first is just MATLAB rounding
+            % errors causing barely negative numbers (e-14 etc.) The other
+            % is an error in the programming of one of the procs/solvers.
+            % In any case, we don't interrupt the simulation for this, we
+            % just log the negative masses and set them to zero in the
+            % afMass array. The sum of all mass lost is shown in the
+            % command window in the post simulation summary.
+            abNegative = this.afMass < 0;
+
+            if any(abNegative)
+                this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
+                this.afMass(abNegative) = 0;
+                
+                if ~base.oLog.bOff
+                    this.out(tools.logger.NOTICE, 1, 'negative-mass', 'Got negative mass, added to mass lost.', {}); % directly follows message above, so don't output name
+                    %this.out(3, 2, 'negative-mass', 'TODO: output all substance names with negative masses!');
+                    this.out(3, 2, 'negative-mass', '%s\t', this.oMT.csI2N(abNegative));
+                end
+                
+            end
+
+            %%%% Now calculate the new total heat capacity for the
+            %%%% asscociated capacity
+            this.oCapacity.setTotalHeatCapacity(this.fMass * this.oCapacity.fSpecificHeatCapacity);
+            
+            % Update total mass
+            this.fMass = sum(this.afMass);
+            
+            % Partial masses
+            if ~this.bFlow
+                if this.fMass > 0
+                    this.arPartialMass = this.afMass / this.fMass;
+                else
+                    this.arPartialMass = this.afMass; % afMass is just zeros
+                end
+            else
+                this.trigger('update_partials');
+            end
+            
+            if this.bSynced
+                this.setBranchesOutdated([],true);
+            end
+            
+            if this.iProcsP2Pflow > 0 || this.iManipulators > 0
+                
+                if ~isempty(this.toManips.substance)
+                    this.toManips.substance.bindUpdate();
+                end
+
+                % Call p2ps.flow update methods (if not yet called)
+                for iP = 1:this.iProcsP2Pflow
+                    % That check would make more sense within the flow p2p
+                    % update method - however, that method will be overloaded
+                    % in p2ps to include the model to derive the flow rate, so
+                    % would have to be manually added in each derived p2p ...
+                    if this.coProcsP2Pflow{iP}.fLastUpdate < this.fLastMassUpdate
+                        % Triggers the .massupdate of both connected phases
+                        % which is ok, because the fTimeStep == 0 check above
+                        % will prevent this .massupdate from re-executing.
+                        this.coProcsP2Pflow{iP}.bindUpdate();
+                    end
+                end
+                
+            end
+
+            % Phase sets new time step (registered with parent store, used
+            % for all phases of that store)
+            this.setOutdatedTS();
+            
+            
+            if this.bTriggerSetMassUpdateCallbackBound
+            	this.trigger('massupdate_post');
+            end
+        end
+        
+        function this = update(this)
+            % Only update if not yet happened at the current time.
+            if (this.oTimer.fTime <= this.fLastUpdate) || (this.oTimer.fTime < 0)
+                if ~base.oLog.bOff, this.out(2, 1, 'update', 'Skip update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
+                
+                return;
+            end
+            
+            if ~base.oLog.bOff, this.out(2, 1, 'update', 'Execute update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
+            
+            % Store update time
+            this.fLastUpdate = this.oTimer.fTime;
+            
+            % Cache current fMass / afMass so they represent the values at
+            % the last phase update. Needed in phase time step calculation.
+            this.fMassLastUpdate  = this.fMass;
+            this.afMassLastUpdate = this.afMass;
+
+            % Now update the matter properties
+            this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
+            
+            % If this update was triggered by the changeInnerEnergy()
+            % method, then we already have calculated the current specific
+            % heat capacity of this phase. So we don't have to do the
+            % calculation again, we check against the timestep and only do
+            % the calculation if it hasn't been done before.
+            %
+            % See getTotalHeatCapacity --> only recalculated if at least
+            % the minimal time difference between calculations, as
+            % specified in the fMinimalTimeBetweenHeatCapacityUpdates
+            % property, has passed. So we'll also include that here!
+            if ~isempty(this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates) && (this.oTimer.fTime >= (this.oCapacity.fLastTotalHeatCapacityUpdate + this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates))
+                bRecalculate = true;
+            elseif isempty(this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates) && ~(this.oTimer.fTime == this.oCapacity.fLastTotalHeatCapacityUpdate)
+                bRecalculate = true;
+            else
+                bRecalculate = false;
+            end
+
+            if bRecalculate
+                % Our checks have concluded, that we have to recalculate
+                % the specific heat capacity for this phase. To do that, we
+                % call a phase type specific method. 
+                this.oCapacity.updateSpecificHeatCapacity();
+            end
+            
+            if this.bFlow
+            	this.trigger('update_partials');
+            end
+            
+            if this.bTriggerSetUpdateCallbackBound
+            	this.trigger('update_post');
+            end
+            
+        end
+        
         function detachManipulator(this, sManip)
             
             %CHECK several manipulators possible?
@@ -788,14 +825,26 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
         end
 
-        function setBranchesOutdated(this, ~, bResidual)
+        function setBranchesOutdated(this, ~, bSynced)
             
             if nargin < 3
-                bResidual = false;
+                bSynced = false;
             end
             
+            % If the phase is synced, it can be a flow_node for which we
+            % have to set the outflows outdated even if they have already
+            % been set outdated in this tick! Since the input branches can
+            % change the partial mass composition of the flow nodes and the
+            % execution order between input and output branches is
+            % initially not defined
             if this.fLastSetOutdated >= this.oTimer.fTime
-                return;
+                if bSynced
+                    bUpdateOutFlow = true;
+                else
+                    return;
+                end
+            else
+                bUpdateOutFlow = false;
             end
             
             this.fLastSetOutdated = this.oTimer.fTime;
@@ -809,9 +858,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 
                 % Make sure it's not a p2ps.flow - their update method
                 % is called in updateProcessorsAndManipulators method
-                if bResidual
+                if bUpdateOutFlow
                     if ~oExme.bFlowIsAProcP2P
-                        if isa(oBranch.oHandler, 'solver.matter.residual.branch')
+                        if oExme.iSign * oExme.oFlow.fFlowRate <= 0
                             % Tell branch to recalculate flow rate (done after
                             % the current tick, in timer post tick).
                             oBranch.setOutdated();
@@ -832,35 +881,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             end
         end
         
-        function updateProcessorsAndManipulators(this)
-            % Update the p2p flow and manip processors
-            
-            if ~isempty(this.toManips.substance)
-                this.toManips.substance.update();
-            end
-
-            % Call p2ps.flow update methods (if not yet called)
-            for iP = 1:this.iProcsP2Pflow
-                % That check would make more sense within the flow p2p
-                % update method - however, that method will be overloaded
-                % in p2ps to include the model to derive the flow rate, so
-                % would have to be manually added in each derived p2p ...
-                if this.coProcsP2Pflow{iP}.fLastUpdate < this.fLastMassUpdate
-                    % Triggers the .massupdate of both connected phases
-                    % which is ok, because the fTimeStep == 0 check above
-                    % will prevent this .massupdate from re-executing.
-                    this.coProcsP2Pflow{iP}.update();
-                end
-            end
-        end
-        
         function setOutdatedTS(this)
-            
-            if ~this.bOutdatedTimeStep
-                this.bOutdatedTimeStep = true;
-
-                this.oTimer.bindPostTick(@this.calculateTimeStep, 3);
-            end
+            % Setting this to true multiple times in the timer is no
+            % problem, therefore no check required
+            this.hBindPostTickTimeStep();
         end
 
         function setAttribute(this, sAttribute, xValue)
@@ -884,7 +908,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             txValues = [];
             
             this.setAttribute(sParamName, xNewValue);
-            this.update();
+            this.registerUpdate();
 
         end
     end

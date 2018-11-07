@@ -21,10 +21,6 @@ classdef mixture_flow_node < matter.phases.flow_node
             this.sPhaseType = varargin{1};
             this.fPressure = varargin{5};
         end
-        
-        function this = update(this)
-            update@matter.phase(this);
-        end
     end
 end
 

@@ -97,6 +97,15 @@ classdef branch < solver.matter.base.branch
             this.fSensitivity = this.oBranch.oContainer.tSolverParams.fSolverSensitivity;
             this.fMaxStep     = this.oBranch.oContainer.tSolverParams.fMaxTimeStep;
             
+            % Now we register the solver at the timer, specifying the post
+            % tick level in which the solver should be executed. For more
+            % information on the execution view the timer documentation.
+            % Registering the solver with the timer provides a function as
+            % output that can be used to bind the post tick update in a
+            % tick resulting in the post tick calculation to be executed
+            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
+            this.hBindPostTickTimeStepCalculation = this.oBranch.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
+            
             % Sets the flow rate to 0 which sets matter properties
             this.update();
             

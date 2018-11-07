@@ -17,6 +17,12 @@ classdef p2p < matter.flow
     properties (SetAccess = private, GetAccess = public)
         % Name of the p2p processor
         sName;
+        
+        % Index of the update post tick in the corresponding cell
+        % and boolean array of the timer
+        hBindPostTickUpdate;
+        
+        coExmes;
     end
     
     
@@ -106,6 +112,10 @@ classdef p2p < matter.flow
             end
             
             this.oThermalBranch = thermal.branch(this.oStore.oContainer, [this.oStore.sName,  sPortIn] , {sCustomName}, [this.oStore.sName,  sPortOut], sCustomName, this);
+            
+            this.coExmes = {this.oIn, this.oOut};
+            
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,      'matter' , 'P2Ps');
         end
     end
     
@@ -130,6 +140,10 @@ classdef p2p < matter.flow
             % processor, e.g. change efficiencies etc
         end
         
+        function bindUpdate(this)
+            this.hBindPostTickUpdate();
+        end
+            
         function update(this, fFlowRate, arPartials)
             % Calculate new flow rate in [kg/s]. The update method is
             % called right before the phases merge/extract. The p2p merge

@@ -241,7 +241,21 @@ classdef branch < base & event.source
             % Now we set the new name for this branch, inserting the
             % letters 'if' in the middle, so when looking at the name, we
             % know that this is a subsystem to supersystem branch.
-            this.sName = [ csLeftBranchName{1}, '___if___', csRightBranchName{2} ];
+            sTempName = [ csLeftBranchName{1}, '___if___', csRightBranchName{2} ];
+            
+            % We need to jump through some hoops because the
+            % maximum field name length of MATLAB is only 63
+            % characters, so we delete the rest of the actual
+            % branch name... 
+            % namelengthmax is the MATLAB variable that stores the
+            % maximum name length, so in case it changes in the
+            % future, we don't have to change this code!
+            if length(sTempName) > namelengthmax
+                sTempName = sTempName(1:namelengthmax);
+            end
+            
+            % Setting the sName property
+            this.sName = sTempName;
             
             % Now we call the updateBranchNames() method on our container,
             % so the updated branch names are also visible there. 

@@ -25,7 +25,9 @@ classdef gas_flow_node < matter.phases.flow_node
             this@matter.phases.flow_node(oStore, sName, varargin{:});
             
         end
+    end
         
+    methods (Access = protected)
         function this = update(this)
             update@matter.phase(this);
             

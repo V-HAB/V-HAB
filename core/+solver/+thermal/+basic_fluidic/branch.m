@@ -24,7 +24,14 @@ classdef branch < solver.thermal.base.branch
                 this.oBranch.coConductors{1}.oMassBranch.bind('update',@(~)this.update());
             end
             
-           
+            % Now we register the solver at the timer, specifying the post
+            % tick level in which the solver should be executed. For more
+            % information on the execution view the timer documentation.
+            % Registering the solver with the timer provides a function as
+            % output that can be used to bind the post tick update in a
+            % tick resulting in the post tick calculation to be executed
+            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'thermal' , 'solver');
+            
             this.update();
             
         end

@@ -151,8 +151,8 @@ classdef flow < matter.procs.p2p
             
             % The phase that called update already did matterupdate, but 
             % set the fLastUpd to curr time so doesn't do that again
-            this.oIn.oPhase.massupdate();
-            this.oOut.oPhase.massupdate();
+            this.oIn.oPhase.registerMassupdate();
+            this.oOut.oPhase.registerMassupdate();
             
             
             % Set matter properties. Calculates molar mass, heat capacity,

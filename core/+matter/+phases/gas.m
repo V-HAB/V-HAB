@@ -76,45 +76,6 @@ classdef gas < matter.phase
             return;
         end
         
-        
-        function this = update(this)
-            update@matter.phase(this);
-            
-            % Check for volume not empty, when called from constructor
-            if ~isempty(this.fVolume)
-                this.fMassToPressure = this.calculatePressureCoefficient();
-                
-                this.fPressure = this.fMass * this.fMassToPressure;
-                [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
-                this.fDensity = this.fMass / this.fVolume;
-                
-                
-                % Function rRelHumidity calculates the relative humidity of
-                % the gas by using the MAGNUS Formula(validity: 
-                % -45[C] <= T <= 60[C], for water); Formula is only correct 
-                % for pure steam, not the mixture of air and water; 
-                % enhancement factors can be used by a Poynting-Correction 
-                % (pressure and temperature dependent); the values of the 
-                % enhancement factors are in the range of 1+- 10^-3; thus 
-                % they are neglected.
-                % Source: Important new Values of the Physical Constants of 
-                % 1986, Vapour Pressure Formulations based on ITS-90, and 
-                % Psychrometer Formulae. In: Z. Meteorol. 40, 5,
-                % S. 340-344, (1990)
-                
-                if this.afMass(this.oMT.tiN2I.H2O)
-                    % calculate saturation vapour pressure [Pa];
-                    fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
-                    % calculate relative humidity
-                    this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
-                else
-                    this.rRelHumidity = 0;
-                end
-            else
-                this.fPressure = 0;
-            end
-        end
-        
         function fMassToPressure = calculatePressureCoefficient(this)
             % p = m * (R_m * T / M / V)
             %
@@ -153,6 +114,44 @@ classdef gas < matter.phase
     
     %% Protected methods, called internally to update matter properties %%%
     methods (Access = protected)
+        function this = update(this)
+            update@matter.phase(this);
+            
+            % Check for volume not empty, when called from constructor
+            if ~isempty(this.fVolume)
+                this.fMassToPressure = this.calculatePressureCoefficient();
+                
+                this.fPressure = this.fMass * this.fMassToPressure;
+                [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
+                this.fDensity = this.fMass / this.fVolume;
+                
+                
+                % Function rRelHumidity calculates the relative humidity of
+                % the gas by using the MAGNUS Formula(validity: 
+                % -45[C] <= T <= 60[C], for water); Formula is only correct 
+                % for pure steam, not the mixture of air and water; 
+                % enhancement factors can be used by a Poynting-Correction 
+                % (pressure and temperature dependent); the values of the 
+                % enhancement factors are in the range of 1+- 10^-3; thus 
+                % they are neglected.
+                % Source: Important new Values of the Physical Constants of 
+                % 1986, Vapour Pressure Formulations based on ITS-90, and 
+                % Psychrometer Formulae. In: Z. Meteorol. 40, 5,
+                % S. 340-344, (1990)
+                
+                if this.afMass(this.oMT.tiN2I.H2O)
+                    % calculate saturation vapour pressure [Pa];
+                    fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
+                    % calculate relative humidity
+                    this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
+                else
+                    this.rRelHumidity = 0;
+                end
+            else
+                this.fPressure = 0;
+            end
+        end
+        
         function setAttribute(this, sAttribute, xValue)
             % Internal helper, see @matter.phase class.
             %

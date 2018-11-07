@@ -21,7 +21,7 @@ classdef flow_node < matter.phase
         
         % Coefficient for pressure = COEFF * mass,  depends on current 
         % matter properties
-        fMassToPressure;  
+        fMassToPressure = 0;  
         
         % Initial mass for information and debugging purposes. If
         % everything works correctly the phase should not change its mass!
@@ -44,7 +44,7 @@ classdef flow_node < matter.phase
             % Mass change must be zero for flow nodes, if that is not the
             % case, this enforces V-HAB to make a minimum size time step to
             % keep the error small
-            tTimeStepProperties.rMaxChange = 0;
+            tTimeStepProperties.rMaxChange = 0.01;
             this.setTimeStepProperties(tTimeStepProperties)
             
             % Set flags to identify this as flow phase and sync all solvers
@@ -70,14 +70,6 @@ classdef flow_node < matter.phase
             this.fPressure = fPressure;
         end
         
-        function massupdate(this, varargin)
-            % We call the massupdate together with the function to update
-            % the pressure
-            massupdate@matter.phase(this, varargin{:});
-            
-            this.updatePressure();
-            
-        end
         function updatePartials(this, afPartialInFlows)
             
             if isempty(this.fPressure)
@@ -193,6 +185,15 @@ classdef flow_node < matter.phase
     end
     
     methods  (Access = protected)
+        function massupdate(this, varargin)
+            % We call the massupdate together with the function to update
+            % the pressure
+            massupdate@matter.phase(this, varargin{:});
+            
+            this.updatePressure();
+            
+        end
+        
         function updatePressure(this)
             % if a multi branch solver is used the virtual pressure
             % property is set and the phase pressure is handled by the

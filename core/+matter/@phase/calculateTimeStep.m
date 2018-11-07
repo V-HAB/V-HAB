@@ -63,36 +63,6 @@ else
         rMaxChangeFactor = 1 / (1 + rFactor);
     end
     
-    
-    %% Calculating the changes of mass in phase since last mass update.
-    
-    % Calculate the change in total and partial mass since the phase was
-    % last updated
-    rPreviousChange  = abs(this.fMass   / this.fMassLastUpdate  - 1);
-    % The partial mass changes need to be compared to the total mass in the
-    % phase, not to themselves, else if a trace gas mass does change
-    % significantly, it will reduce the time step too much even though it
-    % does not change the overall phase properties a lot.
-    arPreviousChange = abs(this.afMass - this.afMassLastUpdate) / this.fMass;
-    
-    
-    % If rPrevious change is not a number ('NaN'), the mass during the
-    % previous update was zero and the current mass is also zero. That
-    % means that afMass was also all zeros during this and the previous
-    % update. Therfore the relative change between updates is zero.
-    if isnan(rPreviousChange)
-        rPreviousChange  = 0;
-        arPreviousChange = zeros(1, this.oMT.iSubstances);
-    end
-    
-    % If rPreviousChange is infinity ('Inf'), that means that the mass
-    % during the last update was zero, but now it is not. The
-    % arPreviousChange array will be mostly NaN values, except for the ones
-    % where the mass changed from zero to something else. Since the
-    % calculation of fNewStepPartials later in this function uses the max()
-    % method on arPrevious change, we don't have to do anything here,
-    % because it will return one of the 'Inf' values from arPreviousChange.
-    
     %% Calculating the changes of mass in phase during this update.
     
     % To calculate the change in partial mass, we only use entries where
@@ -190,22 +160,18 @@ else
     % To derive the timestep, we use the percentage change of the total
     % mass or the maximum percentage change of one of the substances'
     % relative masses.
-    fNewStepTotal    = (this.rMaxChange * rMaxChangeFactor - rPreviousChange) / rTotalPerSecond;
-    fNewStepPartials = (this.rMaxChange * rMaxChangeFactor - max(arPreviousChange)) / rPartialsPerSecond;
-    
-    %% Maximum Time Step
-    % Additional to the normal time steps, which are percentual limits of
-    % how much the total or individual masses are allowed to change, a
-    % maximum time step must be calculate to prevent negative masses from
-    % occuring. It is the time step for which at the current flowrates the
-    % first positive mass in the phase reaches 0:
-    abOutFlows = this.afCurrentTotalInOuts < 0;
-    abOutFlows(this.afMass < 1e-8) = false;
-    fMaxFlowStep = min(abs(this.afMass(abOutFlows) ./ this.afCurrentTotalInOuts(abOutFlows)));
+    fNewStepTotal    = (this.rMaxChange * rMaxChangeFactor) / rTotalPerSecond;
+    fNewStepPartials = (this.rMaxChange * rMaxChangeFactor) / rPartialsPerSecond;
     
     % The new time step will be set to the smaller one of these two
     % candidates.
-    fNewStep = min([ fNewStepTotal fNewStepPartials fNewStepPartialChangeToPartials fMaxFlowStep]);
+    fNewStep = min([ fNewStepTotal fNewStepPartials fNewStepPartialChangeToPartials]);
+    
+    % For phases with zero mass, we simply limit the error within one time
+    % step to 1e-8 kg
+    if this.fMass == 0 && fChange > -1e-10
+        fNewStep = abs(1e-8/fChange);
+    end
     
     if fNewStep < 0
         if ~base.oLog.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
@@ -222,6 +188,24 @@ else
         fNewStep = this.fMinStep;
     end
     
+    %% Maximum Time Step
+    % Additional to the normal time steps, which are percentual limits of
+    % how much the total or individual masses are allowed to change, a
+    % maximum time step must be calculate to prevent negative masses from
+    % occuring. It is the time step for which at the current flowrates the
+    % first positive mass in the phase reaches 0:
+    abOutFlows = this.afCurrentTotalInOuts < 0;
+    % This calculation limits the maximum mass loss that occurs within one
+    % tick to 1e-8 kg. Adding the 1e-8 kg is necessary to prevent extremly
+    % small time steps
+    fMaxFlowStep = min(abs((1e-8 + this.afMass(abOutFlows)) ./ this.afCurrentTotalInOuts(abOutFlows)));
+    
+    if fNewStep > fMaxFlowStep
+        fNewStep = fMaxFlowStep;
+        if fNewStep < this.fMinStep
+            fNewStep = this.fMinStep;
+        end
+    end
     
     if ~base.oLog.bOff
         this.out(1, 1, 'prev-timestep', 'Previous changes for new time step calc for %s-%s-%s - previous change: %.8f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, rPreviousChange });
@@ -236,15 +220,16 @@ else
 end
 
 
-% Set the time at which the containing store will be updated again. Need to
-% pass on an absolute time, not a time step. Value in store is only
-% updated, if the new update time is earlier than the currently set next
-% update time.
-this.oStore.setNextTimeStep(fNewStep);
+% Set the time step for this phase. If the update was also called in this
+% tick we also reset the time at which the phase was last executed thus
+% enforcing the next execution time to be exactly this.oTimer.fTime +
+% fNewStep
+if this.fLastUpdate == this.oTimer.fTime
+    this.setTimeStep(fNewStep, true);
+else
+    this.setTimeStep(fNewStep);
+end
 
 % Cache - e.g. for logging purposes
 this.fTimeStep = fNewStep;
-
-% Now up to date!
-this.bOutdatedTimeStep = false;
 end

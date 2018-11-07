@@ -47,18 +47,112 @@ classdef timer < base
         % executes the larger TSs).
         abDependent = [];
         
+        % This structs orders the different post tick functions (like phase
+        % massupdate and update) into a specific execution order (just as
+        % it is written here from top to bottom). There are four groups of
+        % post ticks, matter, electrical, thermal and post_physics (which
+        % contains the time step calculations). Each group contains
+        % multiple post tick levels defining the order of execution within
+        % the post tick group. The functions containing the calculations
+        % that should be executed are bound as function handles to the
+        % corresponding post tick level cell array when a post tick is
+        % registered. This only occurs once, therefore the struct contains
+        % all post ticks in the simulation, regardless if they are executed
+        % in this tick or not. In order to decide which post ticks are
+        % executed a struct with the same structure containing boolean
+        % values is used. Additionally to the levels shown here a pre_ and
+        % post_ level for each of the levels is generated during timer
+        % definition, allowing the user to bind specific functions to be
+        % executed either before or after a specific calculation
+        txPostTicks = struct('matter', struct(...
+                                'phase_massupdate', cell.empty(),...
+                                'phase_update', cell.empty(),...
+                                'solver', cell.empty(),...
+                                'P2Ps', cell.empty(),...
+                                'manips', cell.empty(),...
+                                'multibranch_solver', cell.empty(),...
+                                'residual_solver', cell.empty()),...
+                             ...
+                             'electrical', struct(...
+                                'circuits', cell.empty()),...
+                             ...
+                             'thermal', struct(...
+                                'capacity_temperatureupdate', cell.empty(),...
+                                'capacity_update', cell.empty(),...
+                                'solver', cell.empty(),...
+                                'heatsources', cell.empty(),...
+                                'multibranch_solver', cell.empty(),...
+                                'residual_solver', cell.empty()),...
+                             ...
+                             'post_physics', struct(...
+                                'timestep', cell.empty()));
+                         
         
-        % Post-tick stack: after systems are executed, all callbacks on
-        % this cell are executed and immediately removed.
-        % Preallocating 100 slots, assuming that should be sufficient most
-        % of the time. If more callbacks are added in one tick, that means
-        % that the first time that might be slower because Matlab needs to
-        % extend the cell, the following times - quick again.
-        chPostTick = cell(7, 100);
+        % The fieldnames of the post tick groups from the txPostTick struct
+        % are stored in this property to allow looping through them with
+        % for loops. 
+        csPostTickGroups;
+        % This struct has the post tick groups as fields, and each field
+        % contains a cell array with the fieldnames of the corresponding
+        % post tick levels (again to enable for loops)
+        tcsPostTickLevel;
+        % These two properties can be used to translate the first two
+        % indices from one of the three dimensional arrays (chPostTicks and
+        % mbPostTickControl) into the corresponding post tick group and
+        % level. For example the entries chPostTicks{2,3,:} are from the
+        % second post tick group (electrical) and the third post tick level
+        % (in this case post_circuit). Remember that for each level defined
+        % in the struct above a pre_ and post_ level is added!
         
-        aiPostTickMax = [ 0, 0, 0, 0, 0, 0, 0 ];
+        % this struct contains the post tick groups as fieldnames and the
+        % value of each field corresponds to the execution order of that
+        % group. So if a group has the value 3 in this property it means
+        % that it is the third post tick group that is executed
+        tiPostTickGroup;
+        % this struct again has the post tick groups as fieldnames and each
+        % group has the post tick levels as further field. Each level then
+        % contains the execution order of the corresponding level. If a
+        % post tick level has an value of 10 here it means that it is the
+        % tenth post tick level that is calculated in this group
+        tiPostTickLevel;
         
-        iCurrentPostTickExecuting = 0;
+        % For faster calculations the verbose struct txPostTicks is
+        % internally translated into a three dimensional cell array. The
+        % first dimension represents the post tick groups with the indices
+        % corresponding to the values from the tiPostTickGroup struct. The
+        % second dimension represents the post tick levels with the indices
+        % corresponding to the values from the tiPostTickLevel struct. Then
+        % the same handle vector as in txPostTicks with identical indices
+        % is the third dimension.
+        chPostTicks;
+        
+        % mbPostTickControl is a three dimensional boolean array. The first
+        % dimension represents the post tick groups with the indices
+        % corresponding to the values from the tiPostTickGroup struct. The
+        % second dimension represents the post tick levels with the indices
+        % corresponding to the values from the tiPostTickLevel struct. The
+        % indices of the boolean vector correspond to the indices from the
+        % respective cell array in txPostTick (or chPostTicks) and if the
+        % boolean value is true the function from the corresponding cell
+        % will be executed during the post tick calculation. As for
+        % txPostTick the entries of the vector are only added once during
+        % the registration of a post tick and after that only the values
+        % changes
+        mbPostTickControl;
+        
+        % in order to decide whether a newly bound post tick is from an
+        % earlier group and level as the one we are currently execution
+        % these two properties store the corresponding number from
+        % tiPostTickGroup and tiPostTickLevel for the currently executing
+        % group and level.
+        iCurrentPostTickGroup = 0;
+        iCurrentPostTickLevel = 0;
+        
+        % Also for faster operation, the corresponding number of post tick
+        % levels for each post tick group index from tiPostTickGroup is
+        % stored here
+        aiNumberOfPostTickLevel;
+        
     end
     
     methods
@@ -82,6 +176,48 @@ classdef timer < base
             % in seconds. 
             this.iPrecision = floor(log10(1 / this.fMinimumTimeStep)) - 1;
             
+            csBasicPostTickGroups = fieldnames(this.txPostTicks);
+            
+            iPostTickGroups = length(csBasicPostTickGroups);
+            iPostTickLevels = 0;
+            % we want a nicely ordered struct where the order of the fields
+            % also represents the execution order in V-HAB, for that
+            % purpose we create a new struct with the same order of the
+            % property txPostTicks but add a pre_ and post_ field for every
+            % defined post tick. This results in the correctly structured
+            % post tick struct, where the order of the fieldnames also
+            % defines the execution order within V-HAB (group from top to
+            % bottom, each groups ticks are executed before the next group
+            % is executed)
+            for iPostTickGroup = 1:iPostTickGroups
+                csPostTicks = fieldnames(this.txPostTicks.(csBasicPostTickGroups{iPostTickGroup}));
+                
+                this.tiPostTickGroup.(csBasicPostTickGroups{iPostTickGroup}) = iPostTickGroup;
+                for iPostTick = 1:length(csPostTicks)
+                    txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(['pre_', csPostTicks{iPostTick}])  = cell.empty();
+                    txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(csPostTicks{iPostTick})            = cell.empty();
+                    txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}).(['post_', csPostTicks{iPostTick}]) = cell.empty();
+                end
+                % now we can store the fieldnames of both levels of the
+                % structs in the properties to make looping trough them
+                % easier and faster
+                csFullLevels = fieldnames(txPostTicksFull.(csBasicPostTickGroups{iPostTickGroup}));
+                this.tcsPostTickLevel.(csBasicPostTickGroups{iPostTickGroup}) = csFullLevels;
+                
+                this.aiNumberOfPostTickLevel(iPostTickGroup) = length(csFullLevels);
+                
+                for iPostTickLevelFull = 1:length(csFullLevels)
+                    if iPostTickLevels < iPostTickLevelFull
+                        iPostTickLevels = iPostTickLevelFull;
+                    end
+                    this.tiPostTickLevel.(csBasicPostTickGroups{iPostTickGroup}).(csFullLevels{iPostTickLevelFull}) = iPostTickLevelFull;
+                end
+            end
+            % And finally the newly created complete structs are set as the
+            % new properties
+            this.txPostTicks = txPostTicksFull;
+            this.mbPostTickControl = logical.empty(iPostTickGroups,iPostTickLevels,0);
+            this.csPostTickGroups = fieldnames(this.txPostTicks);
         end
 
 
@@ -130,7 +266,7 @@ classdef timer < base
                 end
             else
                 % At least some info?
-                try
+                try %#ok
                     tPayloadDef.oSrcObj = evalin('caller', 'this');
                 end
                 
@@ -166,23 +302,76 @@ classdef timer < base
             this.abDependent = this.afTimeStep == -1;
         end
         
+        function hSetPostTick = registerPostTick(this, hCallBackFunctionHandle, sPostTickGroup, sPostTickLevel)
+            % This function must be used to initialy register all post tick
+            % updates at the timer. This enables the usage of a (mostly)
+            % static cell array for the post tick and a boolean vector for
+            % the different levels to decide what must be updated in this
+            % tick, which should improve performance. The required inputs
+            % of the function are:
+            %
+            % hCallBackFunctionHandle: Function handle of the callback,
+            % provided e.g. with the syntax @this.update
+            %
+            % sPostTickGroup: Specifies the post tick group in which the
+            % corresponding post tick level is located. E.g. 'matter'
+            %
+            % sPostTickLevel: Specifies the post tick update level e.g. 
+            % post_phase_update for a post tick update after the phase
+            % update function
+            this.txPostTicks.(sPostTickGroup).(sPostTickLevel){end+1} = hCallBackFunctionHandle;
+            
+            % This index represents the index of the corresponding
+            % cell/boolean array in txPostTicks/tbPostTickControl. The
+            % value must be unchanged for the whole simulation as it is the
+            % link between the specific function binding the post tick and
+            % the timer. Therefore the index is directly set as input value
+            % for the setPostTick function allowing the caller to simply
+            % use that function without inputs thus ensuring the correct
+            % values are used.
+            iPostTickNumber = length(this.txPostTicks.(sPostTickGroup).(sPostTickLevel));
+            
+            iPostTickGroup = this.tiPostTickGroup.(sPostTickGroup);
+            iPostTickLevel = this.tiPostTickLevel.(sPostTickGroup).(sPostTickLevel);
+            
+            this.chPostTicks{iPostTickGroup, iPostTickLevel, iPostTickNumber} = hCallBackFunctionHandle;
+            
+            this.mbPostTickControl(iPostTickGroup, iPostTickLevel, iPostTickNumber) = false;
+            
+            % To allow the user to easily set the post tick that was
+            % registered we return a function handle which already contains
+            % the necessary input variables for this specific post tick
+            hSetPostTick = @() this.bindPostTick(iPostTickGroup, iPostTickLevel, iPostTickNumber);
+        end
         
-        function bindPostTick(this, hCB, iPriority)
-            if nargin < 3 || isempty(iPriority), iPriority = 0; end
+        function bindPostTick(this, iPostTickGroup, iPostTickLevel, iPostTickNumber)
+            % this function is used to bind a post tick update for the
+            % calling object and the corresponding post tick group and post
+            % tick level. This only works if the post tick was registered
+            % at the timer beforehand using the registerPostTick function
+            % of the timer! The input parameters are defined as follows:
+            %
+            % iPostTickGroup: Specifies the post tick group in which the
+            % corresponding post tick level is located. E.g. for the post
+            % tick group matter the index must be this.tiPostTickGroups.matter
+            %
+            % iPostTickLevel: Specifies the post tick update level e.g. 
+            % for the level post_phase_update the index must be 
+            % this.tiPostTickGroups.matter.post_phase_update 
+            %
+            % iPostTickNumber: During registration of the post tick, the
+            % timer provides an output parameter for the index in the cell
+            % and boolean array to which the post tick was bound. That
+            % number should be stored in a property of the calling object
+            % and provided to this function call
             
-            iPriority = iPriority + 4;
-            
-            % Post-Tick currently running and already at higher prio?
-            %   -> directly execute!
-            if this.iCurrentPostTickExecuting > iPriority
-                hCB();
-                
-                return;
-            end
-            
-            %this.chPostTick{end + 1} = hCB;
-            this.aiPostTickMax(iPriority) = this.aiPostTickMax(iPriority) + 1;
-            this.chPostTick{iPriority, this.aiPostTickMax(iPriority)} = hCB;
+            % here we only have to set the boolean value to true! Note we
+            % do not require any checks if this should be done or not,
+            % because they likely take about as much time as just setting
+            % the value to true and setting it true mutliply times does not
+            % break anything. Note that any calculation put in here takes
+            % abnormally long to calculate because of the context changes!
+            this.mbPostTickControl(iPostTickGroup, iPostTickLevel, iPostTickNumber) = true;
         end
     end
     
@@ -270,26 +459,125 @@ classdef timer < base
                 this.out(1, 2, 'post-tick-num', 'Amount of cbs: %i\t', { this.aiPostTickMax });
             end
             
-            % Prios from -3, -2, -1, 0, 1, 2, 3
-            for iP = 1:7
-                % Post-tick stack
-                iPostTick = 1;
+            %% Execute Post Ticks
+            % For information on execution order view the description of
+            % the txPostTick property!
+            % Now we go through the post ticks and execute the registered
+            % post ticks in the correct order.
+            
+            % A while loop is used because it is possible that during a
+            % post tick calculation earlier post ticks are bound again. In
+            % that case the while loop iterates through the post tick
+            % executiong until no post ticks to be executed remain.
+            bExecutePostTicks = true;
+            while bExecutePostTicks
+                % Now we loop through the groups, except for the last
+                % (post_physics) group. We do not want to execute that
+                % during the while loop as it would be possible that the
+                % time step calculation is executed and after it flowrates
+                % change (which would not be considered then till the next
+                % execution)
+                for iPostTickGroup = 1:length(this.csPostTickGroups)-1
+                    % Set the property for which post tick group is
+                    % currently beeing executed
+                    this.iCurrentPostTickGroup = iPostTickGroup;
+                    
+                    % get the post tick level names
+                    iTotalLevel = this.aiNumberOfPostTickLevel(iPostTickGroup);
+                    
+                    % now loop through the levels of the current group
+                    for iPostTickLevel = 1:iTotalLevel
 
-                this.iCurrentPostTickExecuting = iP;
+                        this.iCurrentPostTickLevel = iPostTickLevel;
 
-                % iPostTickMax can change in interation!
-                while iPostTick <= this.aiPostTickMax(iP)
-                    % Executing the first item in the stack, represented by the
-                    % first item in the cell array
-                    this.chPostTick{iP, iPostTick}();
+                        % To allow post ticks of the same level to be added on
+                        % the fly while we are executing this level, we use a
+                        % while loop to execute the post ticks till all are
+                        % executed. Note that it is necessary here to
+                        % access the property directly as its contents can
+                        % change during the while loop (a new value beeing
+                        % set to true for example). For the same reason we
+                        % have to get the abExecutePostTicks in each
+                        % iteration of the loop
+                        while any(this.mbPostTickControl(iPostTickGroup, iPostTickLevel, :))
+                            abExecutePostTicks = this.mbPostTickControl(iPostTickGroup, iPostTickLevel, :);
 
-                    iPostTick = iPostTick + 1;
+                            % Now we store the cell array containing the
+                            % function handles for easier access
+                            chCurrentPostTicks = this.chPostTicks(iPostTickGroup, iPostTickLevel,:);
+
+                            % And get the indices that should be executed
+                            % in this tick
+                            aiPostTicksToExecute = find(abExecutePostTicks);
+                            % Then we can loop through all of these indices
+                            % (only the once that should be executed) and
+                            % call their functions
+                            for iIndex = 1:sum(abExecutePostTicks)
+                                iPostTick = aiPostTicksToExecute(iIndex);
+                                % We set the post tick control for this post
+                                % tick to false, before we execute the post
+                                % tick, to allow rebinding of other post ticks
+                                % in the level during the execution of the
+                                % level
+                                chCurrentPostTicks{iPostTick}();
+                                % The booelans are set to false after the
+                                % calculation to prevent the currently
+                                % executing post tick from binding an
+                                % update directly again
+                                this.mbPostTickControl(iPostTickGroup, iPostTickLevel, iPostTick) = false;
+                            end
+                        end
+                    end
                 end
+                
+                % Now we check the boolean matrix except for the last post
+                % tick group (which is the post physics group) if any new
+                % post ticks where set during execution of the previous
+                % ones, and if that is the case we iterate the post tick
+                % calculations
+                bExecutePostTicks = any(any(any(this.mbPostTickControl(1:end-1,:,:))));
+            end
+            
+            %% TIme Step post physics calculation
+            %To ensure that the time step calculation is only performed
+            %once at the end of the post tick calculation it is perfomed
+            %outside of the while loop
+            iPostTickGroup = this.tiPostTickGroup.post_physics;
+            this.iCurrentPostTickGroup = iPostTickGroup;
+            iTotalLevel = this.aiNumberOfPostTickLevel(iPostTickGroup);
 
-                this.aiPostTickMax(iP) = 0;
+            for iPostTickLevel = 1:iTotalLevel
+
+                this.iCurrentPostTickLevel = iPostTickLevel;
+
+                % To allow post ticks of the same level to be added on
+                % the fly while we are executing this level, we use a
+                % while loop to execute the post ticks till all are
+                % executed
+                while any(this.mbPostTickControl(iPostTickGroup, iPostTickLevel, :))
+                    abExecutePostTicks = this.mbPostTickControl(iPostTickGroup, iPostTickLevel, :);
+
+                    chCurrentPostTicks = this.chPostTicks(iPostTickGroup, iPostTickLevel,:);
+
+                    aiPostTicksToExecute = find(abExecutePostTicks);
+                    for iIndex = 1:sum(abExecutePostTicks)
+                        iPostTick = aiPostTicksToExecute(iIndex);
+                        % We set the post tick control for this post
+                        % tick to false, before we execute the post
+                        % tick, to allow rebinding of other post ticks
+                        % in the level during the execution of the
+                        % level
+                        chCurrentPostTicks{iPostTick}();
+                        this.mbPostTickControl(iPostTickGroup, iPostTickLevel, iPostTick) = false;
+                    end
+                end
             end
 
-            this.iCurrentPostTickExecuting = 0;
+            % after the post ticks are finished executing the current group
+            % and level is set to 0 again to indicate that no post ticks
+            % are currently executing
+            this.iCurrentPostTickGroup = 0;
+            this.iCurrentPostTickLevel = 0;
             
             % check for bRun -> if true, execute this.step() again!
             if this.bRun
@@ -323,4 +611,3 @@ classdef timer < base
         end
     end
 end
-

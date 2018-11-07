@@ -323,7 +323,7 @@ if ~base.oLog.bOff, this.out(1, 1, 'store-update', 'UPDATE store %s-%s and set l
 
 
 % Update phases
-for iI = 1:this.iPhases, this.aoPhases(iI).update(); end
+for iI = 1:this.iPhases, this.aoPhases(iI).registerUpdate(); end
 
 % Update stationary P2P processors
 for iP = this.aiProcsP2Pstationary

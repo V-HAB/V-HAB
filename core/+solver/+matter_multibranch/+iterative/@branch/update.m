@@ -320,7 +320,4 @@ function update(this)
             this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), []);
         end
     end
-    
-    this.calculateTimeStep();
-    
 end

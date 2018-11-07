@@ -606,18 +606,20 @@ classdef Human < vsys
                 % food would be burned, it represents all minerals in the
                 % food which are necessary nutrients but are not part of
                 % the energy balance)
-                fWaterMass = txResults.(sFood).Mass - txResults.(sFood).DryMass;
-                
-                afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) = afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) + txResults.(sFood).CarbohydrateMass / fFoodConversionTimeStep;
-                afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2) = afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2) + txResults.(sFood).LipidMass / fFoodConversionTimeStep;
-                afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON) = afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON) + txResults.(sFood).ProteinMass / fFoodConversionTimeStep;
-                
-                % Ash is represented as Carbon
-                afFoodConversionFlowRates(this.oMT.tiN2I.C) = afFoodConversionFlowRates(this.oMT.tiN2I.C) + txResults.(sFood).AshMass / fFoodConversionTimeStep;
-                
-                afFoodConversionFlowRates(this.oMT.tiN2I.H2O) = afFoodConversionFlowRates(this.oMT.tiN2I.H2O) + fWaterMass / fFoodConversionTimeStep;
-                
-                afFoodConversionFlowRates(this.oMT.tiN2I.(sFood)) = - txResults.(sFood).Mass / fFoodConversionTimeStep;
+                if txResults.(sFood).Mass > 1e-6
+                    fWaterMass = txResults.(sFood).Mass - txResults.(sFood).DryMass;
+
+                    afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) = afFoodConversionFlowRates(this.oMT.tiN2I.C6H12O6) + txResults.(sFood).CarbohydrateMass / fFoodConversionTimeStep;
+                    afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2) = afFoodConversionFlowRates(this.oMT.tiN2I.C16H32O2) + txResults.(sFood).LipidMass / fFoodConversionTimeStep;
+                    afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON) = afFoodConversionFlowRates(this.oMT.tiN2I.C4H5ON) + txResults.(sFood).ProteinMass / fFoodConversionTimeStep;
+
+                    % Ash is represented as Carbon
+                    afFoodConversionFlowRates(this.oMT.tiN2I.C) = afFoodConversionFlowRates(this.oMT.tiN2I.C) + txResults.(sFood).AshMass / fFoodConversionTimeStep;
+
+                    afFoodConversionFlowRates(this.oMT.tiN2I.H2O) = afFoodConversionFlowRates(this.oMT.tiN2I.H2O) + fWaterMass / fFoodConversionTimeStep;
+
+                    afFoodConversionFlowRates(this.oMT.tiN2I.(sFood)) = - txResults.(sFood).Mass / fFoodConversionTimeStep;
+                end
             end
             
             oStomachPhase.toManips.substance.setFlowRate(afFoodConversionFlowRates);
@@ -700,8 +702,6 @@ classdef Human < vsys
             afManipulatorFlowRates(this.oMT.tiN2I.O2)           = -  this.fOxygenDemand;
             
             %% Setting of P2P and Manip flowrates
-            this.toStores.Human.toPhases.HumanPhase.update();
-            
             afCO2P2PFlowRates = zeros(1,this.oMT.iSubstances);
             afCO2P2PFlowRates(this.oMT.tiN2I.CO2) = this.fCO2Production;
             this.toStores.Human.toProcsP2P.CO2_P2P.setFlowRate(afCO2P2PFlowRates);
@@ -785,6 +785,9 @@ classdef Human < vsys
             % the Oxygen in the air is consumed
             this.toBranches.Air_In.oHandler.setFlowRate(- this.fOxygenDemand/this.toBranches.Air_In.coExmes{2}.oPhase.arPartialMass(this.oMT.tiN2I.O2));
             
+            for iPhase = 1:this.toStores.Human.iPhases
+                this.toStores.Human.aoPhases(iPhase).registerUpdate();
+            end
             
         end
     end

@@ -14,7 +14,7 @@ classdef fan < matter.procs.f2f
         fDiameter = 1;          % Hydraulic diameter 
         fLength = 0;            % This just has to be there because of parent class and solver, value is irrelevant
         fDeltaTemp = 0;         % This fan model does not include temperature changes
-        bActive = true;         % Must be true so the update function is called from the branch solver
+            
     end
     
     methods
@@ -23,6 +23,8 @@ classdef fan < matter.procs.f2f
                         
             this.fMaxDeltaP   = fMaxDeltaP;
             this.fDeltaPressure = fMaxDeltaP;
+            this.bActive = true;         % Must be true so the update function is called from the branch solver
+
 
             this.supportSolver('hydraulic', this.fDiameter, this.fLength);
         end

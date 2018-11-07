@@ -209,7 +209,6 @@ classdef HX < vsys
                 this.sHX_type = sHX_type;
             end
             
-            this.bExecuteContainer = false;
             if nargin > 5
                 this.fTempChangeToRecalc = fTempChangeToRecalc;
                 this.rChangeToRecalc = rChangeToRecalc;

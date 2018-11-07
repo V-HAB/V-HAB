@@ -63,7 +63,9 @@ classdef liquid < matter.phase
             
             this.fPressure = this.oMT.calculatePressure(this);
         end
-        
+    end
+    %% Protected methods, called internally to update matter properties %%%
+    methods (Access = protected)
         function this = update(this)
             update@matter.phase(this);
             
@@ -78,9 +80,7 @@ classdef liquid < matter.phase
                 this.coProcsEXME{1, k}.update();
             end
         end
-    end
-    %% Protected methods, called internally to update matter properties %%%
-    methods (Access = protected)
+        
         function setAttribute(this, sAttribute, xValue)
             % Internal helper, see @matter.phase class.
             %

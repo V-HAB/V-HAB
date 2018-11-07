@@ -61,8 +61,6 @@ classdef capacity < base & event.source
         % change is 1.47 K
         rMaxChange = 0.005;
         
-        bOutdatedTS = false;
-        
         fLastSetOutdated = -1;
         
         fLastTotalHeatCapacityUpdate = 0;
@@ -80,6 +78,18 @@ classdef capacity < base & event.source
         % where these triggers are not used
         bTriggerSetCalculateHeatsourcePreCallbackBound = false;
         bTriggerSetUpdateTemperaturePostCallbackBound = false;
+        
+        
+        % Index of the massupdate post tick in the corresponding cell
+        % and boolean array of the timer
+        hBindPostTickTemperatureUpdate
+        
+        % Index of the update post tick in the corresponding cell
+        % and boolean array of the timer
+        hBindPostTickUpdate
+
+        % Index of the calculate Time Step post tick
+        hBindPostTickTimeStep
     end
     
     methods
@@ -118,7 +128,9 @@ classdef capacity < base & event.source
             
             % Set name of capacity.
             this.sName = oPhase.sName;
-            
+            %% Register post tick callbacks for massupdate and update        
+            this.hBindPostTickTemperatureUpdate  = this.oTimer.registerPostTick(@this.updateTemperature_post,  'thermal' , 'capacity_temperatureupdate');
+            this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
         end
         
         function updateSpecificHeatCapacity(this)
@@ -285,15 +297,16 @@ classdef capacity < base & event.source
         end
         
         function setOutdatedTS(this)
-            
-            if ~this.bOutdatedTS
-                this.bOutdatedTS = true;
-
-                this.oTimer.bindPostTick(@this.calculateTimeStep, 3);
-            end
+            % Only sets a boolean in the timer to true, so it does not
+            % matter if we do this multiple times --> no check required
+            this.hBindPostTickTimeStep();
         end
         
-        function updateTemperature(this, bSetBranchesOutdated)
+        function updateTemperature(this, ~)
+            this.hBindPostTickTemperatureUpdate();
+        end
+            
+        function updateTemperature_post(this, ~)
             % use fCurrentHeatFlow to calculate the temperature change
             % since the last execution fLastTemperatureUpdate
             
@@ -318,9 +331,15 @@ classdef capacity < base & event.source
             end
             
             % to ensure that we calculate the new energy with the correct
-            % total heat capacity, a massupdate is executed first (if this
-            % was not done anyway already)
-            this.oPhase.massupdate();
+            % total heat capacity we have to get the current mass and the
+            % possible mass that was added since the last mass update (in
+            % case this was not executed in the same tick)
+            % (oPhase.fMass + oPhase.fCurrentTotalInOuts * (this.oTimer.fTime
+            % - oPhase.fLastMassUpdate)) * this.fSpecificHeatCapacity
+            % There is a small error from this because the specific heat
+            % capacity is not perfectly correct. However, as the matter
+            % side controls the maximum allowed changes in composition till
+            % this is recalculated, these are acceptable errors
             
             
             % in case that the phase is considered only a flowthrough phase
@@ -333,12 +352,17 @@ classdef capacity < base & event.source
                 mfTemperature           = zeros(1,this.iProcsEXME);
                 for iExme = 1:this.iProcsEXME
                     if isa(this.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
-                        fFlowRate = this.aoExmes(iExme).oBranch.coConductors{1}.oMassBranch.fFlowRate * this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).iSign;
+                        if this.aoExmes(iExme).oBranch.oMatterObject.coExmes{1}.oPhase == this.oPhase
+                            iMatterExme = 1;
+                        else
+                            iMatterExme = 2;
+                        end
+                        fFlowRate = this.aoExmes(iExme).oBranch.oMatterObject.fFlowRate * this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iMatterExme}.iSign;
                         
                         if fFlowRate > 0
                             mfFlowRate(iExme) = fFlowRate;
-                            mfSpecificHeatCapacity(iExme) = this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).oFlow.fSpecificHeatCapacity;
-                            mfTemperature(iExme) = this.oPhase.toProcsEXME.(this.aoExmes(iExme).sName).oFlow.fTemperature;
+                            mfSpecificHeatCapacity(iExme) = this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iMatterExme}.oFlow.fSpecificHeatCapacity;
+                            mfTemperature(iExme) = this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iMatterExme}.oFlow.fTemperature;
                         end
                     end
                 end
@@ -576,9 +600,6 @@ classdef capacity < base & event.source
 
             % Cache - e.g. for logging purposes
             this.fTimeStep = fNewStep;
-
-            % Now up to date!
-            this.bOutdatedTS = false;
         end
         
         function setBranchesOutdated(this, bResidual)
