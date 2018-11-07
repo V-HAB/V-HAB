@@ -177,7 +177,6 @@ classdef flow_node < matter.phase
             
             fTotalInFlow       = sum(afPartialInFlows);
             this.arPartialMass = afPartialInFlows / fTotalInFlow;
-            this.afMass        = afPartialInFlows;
             
             if fTotalInFlow == 0
                 this.arPartialMass = zeros(1, this.oMT.iSubstances);
