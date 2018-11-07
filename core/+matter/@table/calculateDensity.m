@@ -30,6 +30,12 @@ if length(varargin) == 1
     elseif isa(varargin{1}, 'matter.flow')
         sMatterState = varargin{1}.oBranch.getInEXME().oPhase.sType;
         oPhase = varargin{1}.oBranch.getInEXME().oPhase;
+        
+        % If the flowrate is 0 use density of phase
+        if varargin{1}.fFlowRate == 0
+            fDensity = oPhase.fDensity;
+            return
+        end
     end
     
     fTemperature = varargin{1}.fTemperature;
