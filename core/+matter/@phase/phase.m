@@ -588,11 +588,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             
             % Auto-Set rMaxChange - max. 0.25, min. 1e-5!
-            rMaxChangeTmp = sif(this.fVolume <= 0.25, this.fVolume, 0.25);
-            rMaxChangeTmp = sif(rMaxChangeTmp <= 1e-5, 1e-5, rMaxChangeTmp);
-            
+            if this.fVolume <= 0.25
+                rMaxChangeTmp = this.fVolume;
+            else
+                rMaxChangeTmp = 0.25;
+            end
+            if rMaxChangeTmp <= 1e-5
+                rMaxChangeTmp = 1e-5;
+            end
+
             this.rMaxChange = rMaxChangeTmp / this.oStore.oContainer.tSolverParams.rUpdateFrequency;
-            
             
             % Max time step
             this.fMaxStep = this.oStore.oContainer.tSolverParams.fMaxTimeStep;

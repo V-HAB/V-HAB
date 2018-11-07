@@ -152,8 +152,11 @@ classdef branch < solver.matter.base.branch
             % solver's flow rate and just add the FR here, assuming the
             % user set an accordingly lower max. FR.
             if ~isempty(this.oSyncedSolver)
-                iInv = sif(this.bAlignedSolverInvertedFlowRate, -1, 1);
-                
+                if this.bAlignedSolverInvertedFlowRate
+                    iInv = -1;
+                else
+                    iInv = 1;
+                end
                 fFlowRate = iInv * this.oSyncedSolver.fFlowRate + fFlowRate;
             end
             

@@ -118,7 +118,11 @@ classdef wire < electrical.components.resistor
             catch
                 %TODO solver should handle that, could also be an issue if
                 %     temperature is zero
-                fMolarMass = sif(oFlowIn.fMolarMass > 0, oFlowIn.fMolarMass, 1);
+                if oFlowIn.fMolarMass > 0
+                    fMolarMass = oFlowIn.fMolarMass;
+                else
+                    fMolarMass = 1;
+                end
 
                 %CHECK e.g. fRoh - used for fV and Re - so doesn't really make
                 %      sense to include. Need another way to calculate Re/V?

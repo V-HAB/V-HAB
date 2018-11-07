@@ -543,14 +543,12 @@ classdef branch < base & event.source
                 % ensures that the matter properties don't become zero if
                 % the coExmes{1} phase is empty.
                 
-                %CHECK: we use getPortProperties() to get the pressure (gas
-                %       and liquid) or some equivalent (soldids ...?)
-                %       instead of mass - see e.g. const_press_exme!
-                %aoPhases   = [ this.coExmes{1}.oPhase, this.coExmes{2}.oPhase ];
-                %iWhichExme = sif(aoPhases(1).fMass >= aoPhases(2).fMass, 1, 2);
-                
                 afPressure = [ this.coExmes{1}.getPortProperties(), this.coExmes{2}.getPortProperties() ];
-                iWhichExme = sif(afPressure(1) >= afPressure(2), 1, 2);
+                if afPressure(1) >= afPressure(2)
+                    iWhichExme = 1;
+                else
+                    iWhichExme = 2;
+                end
                 
                 for iI = 1:this.iFlowProcs
                     if isa(this.aoFlowProcs(iI), 'components.valve') && ~this.aoFlowProcs(iI).bValveOpen

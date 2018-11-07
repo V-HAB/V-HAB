@@ -150,7 +150,11 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     oPhase = this.oBranch.coExmes{~this.oBranch.abIf}.oPhase;
                 else
                     aoPhases = [ this.oBranch.coExmes{1}.oPhase, this.oBranch.coExmes{2}.oPhase ];
-                    oPhase   = sif(aoPhases(1).fMass >= aoPhases(2).fMass, aoPhases(1), aoPhases(2));
+                    if aoPhases(1).fMass >= aoPhases(2).fMass
+                        oPhase = aoPhases(1);
+                    else
+                        oPhase = aoPhases(2);
+                    end
                 end
                 
                 % This is likely to be overwritten by the assigned solver
@@ -513,8 +517,8 @@ classdef flow < base & matlab.mixin.Heterogeneous
                 bNeg = fFlowRate < 0;
             end
        
-            
-            for iI = sif(bNeg, iL:-1:1, 1:iL)
+            if bNeg; aiIndices = iL:-1:1; else; aiIndices = 1:iL; end
+            for iI = aiIndices
                 oThis = aoFlows(iI);
                 
                 % Only set those params if oExme was provided
@@ -575,7 +579,12 @@ classdef flow < base & matlab.mixin.Heterogeneous
                     % EXME|FLOW(1)|F2F(1)|FLOW(2)|F2F(2)|FLOW(3)|EXME
                     % Therefore, if we're starting with FLOW(3), we need to
                     % subtract one from the FLOW index to get the last F2F
-                    fPortPress = fPortPress - afPressures(iI - sif(bNeg, 1, 0));
+                    if bNeg
+                        iIndex = iI - 1;
+                    else
+                        iIndex = iI;
+                    end
+                    fPortPress = fPortPress - afPressures(iIndex);
                 end
                 
                 % Re-calculate partial pressures

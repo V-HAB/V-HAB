@@ -142,7 +142,11 @@ classdef branch < solver.matter.base.branch
             
             % See base branch, same check here - if input phase nearly
             % empty, just set flow rate to zero
-            oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
+            if fFlowRate >= 0
+                oIn = this.oBranch.coExmes{1}.oPhase;
+            else
+                oIn = this.oBranch.coExmes{2}.oPhase;
+            end
             
             if tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
                 fFlowRate = 0;
@@ -231,11 +235,13 @@ classdef branch < solver.matter.base.branch
             % If we actually damped the flow rate, we need to run the
             % solver specific method on all processors again, since some of
             % them might need to update some internal values, such as the
-            % heat flow. 
-            %TODO To avoid this, maybe the heat flow should be specific
-            %rather than absolute? 
+            % heat flow.
             if this.iDampFR ~= 0 && bRecalculateFlowProperties
-                aiProcs = sif(fFlowRate > 0, 1:this.oBranch.iFlowProcs, this.oBranch.iFlowProcs:-1:1);
+                if fFlowRate > 0
+                    aiProcs = 1:this.oBranch.iFlowProcs;
+                else
+                    aiProcs = this.oBranch.iFlowProcs:-1:1;
+                end
                 for iI = aiProcs
                     this.aoSolverProps(iI).calculateDeltas(fFlowRate);
                 end
@@ -324,10 +330,6 @@ classdef branch < solver.matter.base.branch
                 iDir = 1;
                 fPressDiff = iDir * fPressDiffOrg;
                 
-                % Create array with indices of flows in flow direction for 
-                % update method
-                %aiFlows = sif(iDir > 0, 1:oBranch.iFlows, oBranch.iFlows:-1:1);
-                
                 % Preset pressure drop to zero, set initial flow rate
                 fPressDrop = 0;
                 %fFlowRate  = 0.00001 / fTimeStep;
@@ -395,8 +397,7 @@ classdef branch < solver.matter.base.branch
                 
             %%% Flow rate not zero - do some preparations
             else
-                
-                iDir      = sif(fFlowRate > 0, 1, -1);
+                if fFlowRate > 0; iDir = 1; else; iDir = -1; end
                 fFlowRate = abs(fFlowRate);
                 fPressDiff = iDir * fPressDiffOrg;
                 
@@ -461,7 +462,11 @@ classdef branch < solver.matter.base.branch
             %   NEW pressures in phases, but the old flow rate) and OLD
             %	pressure drop! Also preallocate matrix with data of flow
             %	procs and  the counter for iteration break.
-            aiProcs    = sif(iDir > 0, 1:oBranch.iFlowProcs, oBranch.iFlowProcs:-1:1);
+            if fFlowRate > 0
+                aiProcs = 1:this.oBranch.iFlowProcs;
+            else
+                aiProcs = this.oBranch.iFlowProcs:-1:1;
+            end
             rError     = fPressDiff / (fPressDrop);
             
             % Loop counter and max. error acceptable (increases)
@@ -633,8 +638,11 @@ classdef branch < solver.matter.base.branch
                     fPressDiff = iDir * fPressDiffOrg;
                     
                     % Get other pressure diff, preset the indices vectors
-                    aiProcs    = sif(iDir > 0, 1:oBranch.iFlowProcs, oBranch.iFlowProcs:-1:1);
-                    
+                    if fFlowRate > 0
+                        aiProcs = 1:this.oBranch.iFlowProcs;
+                    else
+                        aiProcs = this.oBranch.iFlowProcs:-1:1;
+                    end
                     bDirectionChanged = true;
                 end
                 
@@ -667,7 +675,11 @@ classdef branch < solver.matter.base.branch
                     fFlowRate = fTmpFlowRate;
                     
                     % Reverted stuff and set Cp/molar/... but not pressures
-                    aiProcs    = sif(iDir > 0, 1:oBranch.iFlowProcs, oBranch.iFlowProcs:-1:1);
+                    if iDir > 0
+                        aiProcs = 1:this.oBranch.iFlowProcs;
+                    else
+                        aiProcs = this.oBranch.iFlowProcs:-1:1;
+                    end
                     
                     % New error value
                     rError    = fPressDiff / (fNewDrop);

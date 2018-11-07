@@ -121,8 +121,13 @@ classdef branch < solver.thermal.base.branch
                 oMassBranch.setTemperature(afTemperatures(1));
             else
                 oMassBranch.aoFlows(iFirstFlow).setTemperature(afTemperatures(iFirstFlow));
-                 
-                for iFlow = sif(oMassBranch.fFlowRate >= 0, 2:(iFlowProcs + 1), (iFlowProcs):-1:1)
+                
+                if oMassBranch.fFlowRate >= 0
+                    aiFlows = 2:(iFlowProcs + 1);
+                else
+                    aiFlows = (iFlowProcs):-1:1;
+                end
+                for iFlow = aiFlows
                     try
                         oMassBranch.aoFlowProcs(iFlow - iDirection).updateThermal();
                     catch

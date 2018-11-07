@@ -12,12 +12,17 @@ classdef def < vsys
         function this = def(oParent, sName, sDirection, sSolver, sAdditionalComps)
             this@vsys(oParent, sName, 50);
             
-            if nargin < 3 || isempty(sDirection), sDirection = 'left_to_right'; end;
-            if nargin < 4 || isempty(sSolver),    sSolver    = 'iterative'; end;
-            if nargin < 5, sAdditionalComps = ''; end;
+            if nargin < 3 || isempty(sDirection), sDirection = 'left_to_right'; end
+            if nargin < 4 || isempty(sSolver),    sSolver    = 'iterative'; end
+            if nargin < 5, sAdditionalComps = ''; end
             
-            iPhaseLeftPressureInc  = sif(strcmp(sDirection, 'left_to_right'), 2, 1);
-            iPhaseRightPressureInc = sif(strcmp(sDirection, 'right_to_left'), 2, 1);
+            if strcmp(sDirection, 'left_to_right') 
+                iPhaseLeftPressureInc  = 2;
+                iPhaseRightPressureInc = 1;
+            else
+                iPhaseLeftPressureInc = 1;
+                iPhaseRightPressureInc = 2;
+            end
             
             %TODO
             % - param -- which solver (manual, iterative, linear)

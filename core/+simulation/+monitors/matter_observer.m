@@ -99,9 +99,9 @@ classdef matter_observer < simulation.monitor
             
             iBranches = length(this.aoBranches);
             iPhases   = length(this.aoPhases);
-            sEnding1 = sif(iBranches == 1, '', 'es');
-            sEnding2 = sif(iPhases   == 1, '',  's');
-            fprintf('Model contains %i Branch%s and %i Phase%s.\n', iBranches, sEnding1, iPhases, sEnding2); 
+            if iBranches == 1; sEnding1 = ''; else; sEnding1 = 'es'; end
+            if iPhases == 1; sEnding2 = ''; else; sEnding2 = 's'; end
+            fprintf('Model contains %i Branch%s and %i Phase%s.\n', iBranches, sEnding1, iPhases, sEnding2);
             
             iNumberOfFlows = 0;
             for iBranch = 1:length(this.aoBranches)
