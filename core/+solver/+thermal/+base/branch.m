@@ -109,7 +109,12 @@ classdef branch < base & event.source
         function executeUpdate(this, ~)
             if ~base.oLog.bOff, this.out(1, 1, 'executeUpdate', 'Call updateTemperature on both branches, depending on flow rate %f', { this.oBranch.fHeatFlow }); end
             
-            for iE = sif(this.oBranch.fHeatFlow >= 0, 1:2, 2:-1:1)
+            if this.oBranch.fHeatFlow >= 0
+                aiExmes = 1:2;
+            else
+                aiExmes = 2:-1:1;
+            end
+            for iE = aiExmes
                 this.oBranch.coExmes{iE}.oCapacity.updateTemperature();
             end
             
@@ -157,7 +162,11 @@ classdef branch < base & event.source
                 % If mass in inflowing tank is smaller than the precision
                 % of the simulation, set flow rate and delta pressures to
                 % zero
-                oIn = this.oBranch.coExmes{sif(fHeatFlow >= 0, 1, 2)}.oCapacity.oPhase;
+                if fHeatFlow >= 0
+                    oIn = this.oBranch.coExmes{1}.oCapacity.oPhase;
+                else
+                    oIn = this.oBranch.coExmes{2}.oCapacity.oPhase;
+                end
 
                 if tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
                     fHeatFlow = 0;

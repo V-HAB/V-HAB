@@ -342,7 +342,7 @@ classdef table < base
             % The actual substances are also included in 'MatterData.csv',
             % this part of the code adds the absorber data to these
             % substances.
-            this.importAbsorberData();
+            importAbsorberData(this);
             
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

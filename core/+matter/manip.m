@@ -135,8 +135,8 @@ classdef manip < base
             
             % Initializing temporary matrix and array to save the per-exme
             % data. 
-            mrInPartials = zeros(iNumberOfEXMEs, this.oMT.iSubstances);
-            afInMasses   = zeros(iNumberOfEXMEs, 1);
+            mrInPartials = zeros(this.oPhase.iProcsEXME, this.oMT.iSubstances);
+            afInMasses   = zeros(this.oPhase.iProcsEXME, 1);
             
             % Creating an array to log which of the flows are not in-flows
             abOutFlows = true(iNumberOfEXMEs, 1);

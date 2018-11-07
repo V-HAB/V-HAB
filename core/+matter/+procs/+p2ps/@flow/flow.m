@@ -41,7 +41,7 @@ classdef flow < matter.procs.p2p
             
             if nargin < 2, sPhase = 'in'; end
             
-            oPhase = sif(strcmp(sPhase, 'in'), this.oIn.oPhase, this.oOut.oPhase);
+            if strcmp(sPhase, 'in'); oPhase = this.oIn.oPhase; else; this.oOut.oPhase; end
             
             % Initializing temporary matrix and array to save the per-exme
             % data. 
@@ -96,7 +96,7 @@ classdef flow < matter.procs.p2p
             
             if nargin < 2, sPhase = 'in'; end
             
-            oPhase = sif(strcmp(sPhase, 'in'), this.oIn.oPhase, this.oOut.oPhase);
+            if strcmp(sPhase, 'in'); oPhase = this.oIn.oPhase; else; this.oOut.oPhase; end
             
             % Initializing temporary matrix and array to save the per-exme
             % data. 

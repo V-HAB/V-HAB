@@ -190,8 +190,12 @@ classdef branch < base & event.source
                 % If mass in inflowing tank is smaller than the precision
                 % of the simulation, set flow rate and delta pressures to
                 % zero
-                oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
-
+                if fFlowRate >= 0
+                    oIn = this.oBranch.coExmes{1}.oPhase;
+                else
+                    oIn = this.oBranch.coExmes{2}.oPhase;
+                end
+                
                 if ~oIn.bFlow && tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
                     fFlowRate = 0;
                     afPressures = zeros(1, this.oBranch.iFlowProcs);

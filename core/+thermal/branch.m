@@ -493,7 +493,8 @@ classdef branch < base & event.source
             % set the new heat flow - so the thermal energy for the LAST
             % time step, with the old flow, is actually moved from tank to
             % tank.
-            for iE = sif(this.fHeatFlow >= 0, 1:2, 2:-1:1)
+            if this.fHeatFlow >= 0; aiExmes = 1:2; else; aiExmes = 2:-1:1; end
+            for iE = aiExmes
                 this.coExmes{iE}.oCapacity.updateTemperature();
             end
             

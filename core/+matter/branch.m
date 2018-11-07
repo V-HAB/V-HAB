@@ -488,7 +488,7 @@ classdef branch < base & event.source
                 % the coExmes{1} phase is empty.
                 
                 afPressure = [ this.coExmes{1}.getPortProperties(), this.coExmes{2}.getPortProperties() ];
-                iWhichExme = sif(afPressure(1) >= afPressure(2), 1, 2);
+                if afPressure(1) >= afPressure(2); iWhichExme = 1; else; iWhichExme = 2; end
                 
                 for iI = 1:this.iFlowProcs
                     if isa(this.aoFlowProcs(iI), 'components.valve') && ~this.aoFlowProcs(iI).bValveOpen
@@ -497,7 +497,7 @@ classdef branch < base & event.source
                     end
                     
                     if isa(this.aoFlowProcs(iI), 'components.fan')
-                        iWhichExme = sif(this.aoFlowProcs(iI).iBlowDirection == 1, 1, 2);
+                        if this.aoFlowProcs(iI).iBlowDirection == 1; iWhichExme = 1; else; iWhichExme = 2; end
                     end
                 end
             else

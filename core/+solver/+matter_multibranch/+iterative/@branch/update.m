@@ -19,7 +19,11 @@ function update(this)
     rError    = inf;
     afResults = [];
     
-    rErrorMax  = sif(strcmp(this.sMode, 'complex'), this.fMaxError, 0);
+    if strcmp(this.sMode, 'complex')
+         rErrorMax  = this.fMaxError;
+    else
+         rErrorMax  = 0;
+    end
     this.iIteration = 0;
     
     % For an additional steady state solver there are basically two cases:
@@ -233,8 +237,9 @@ function update(this)
         % quite usefull for debugging purposes
         mfFlowRates(this.iIteration,:) = this.afFlowRates;
         
-        iPrecision = this.oTimer.iPrecision;
-        afFrsDiff  = tools.round.prec(abs(this.afFlowRates - afPrevFrs), iPrecision);
+        % flowrates smaller than 1e-8 are respected, but no longer
+        % considered as errors
+        afFrsDiff  = tools.round.prec(abs(this.afFlowRates - afPrevFrs), 8);
         
         rError = max(abs(afFrsDiff ./ afPrevFrs));
         % if the error is smaller than the limit, do one final update where

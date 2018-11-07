@@ -71,7 +71,11 @@ classdef branch < solver.matter.base.branch
             
             % See base branch, same check here - if input phase nearly
             % empty, just set flow rate to zero
-            oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
+            if fFlowRate >= 0
+                oIn = this.oBranch.coExmes{1}.oPhase;
+            else
+                oIn = this.oBranch.coExmes{2}.oPhase;
+            end
             
             if tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
                 fFlowRate = 0;
@@ -327,32 +331,35 @@ classdef branch < solver.matter.base.branch
             
             fTargetPressureDifference = (sign(fFlowRate) * sum(afDeltaP(afDeltaP < 0)));
             
-            try
-                fMassToPressure = max(oLeft.fMassToPressure, oRight.fMassToPressure);
-                fTimeStepLeft = abs((fPressureDifference - fTargetPressureDifference)/(fMassToPressure * fNewMassChangeLeft));
-                fTimeStepRight = abs((fPressureDifference - fTargetPressureDifference)/(fMassToPressure * fNewMassChangeRight));
-            catch
-                if isa(oLeft, 'matter.phase.gas')
-                    fTimeStepLeft = abs((fPressureDifference - fTargetPressureDifference)/(oLeft.fMassToPressure * fNewMassChangeLeft));
-                    fTimeStepRight = 20;
-                    
-                elseif isa(oRight, 'matter.phase.gas')
-                    fTimeStepRight = abs((fPressureDifference - fTargetPressureDifference)/(oRight.fMassToPressure * fNewMassChangeRight));
-                    fTimeStepLeft  = 20;
-                else
-                    % we do yet have a good calculation for liquid/solid
-                    % pressures
-                    fTimeStepRight = 20;
-                    fTimeStepLeft  = 20;
+            if fPressureDifference == fTargetPressureDifference
+                fTimeStep = inf;
+            else
+                try
+                    fMassToPressure = max(oLeft.fMassToPressure, oRight.fMassToPressure);
+                    fTimeStepLeft = abs((fPressureDifference - fTargetPressureDifference)/(fMassToPressure * fNewMassChangeLeft));
+                    fTimeStepRight = abs((fPressureDifference - fTargetPressureDifference)/(fMassToPressure * fNewMassChangeRight));
+                catch
+                    if isa(oLeft, 'matter.phase.gas')
+                        fTimeStepLeft = abs((fPressureDifference - fTargetPressureDifference)/(oLeft.fMassToPressure * fNewMassChangeLeft));
+                        fTimeStepRight = 20;
+
+                    elseif isa(oRight, 'matter.phase.gas')
+                        fTimeStepRight = abs((fPressureDifference - fTargetPressureDifference)/(oRight.fMassToPressure * fNewMassChangeRight));
+                        fTimeStepLeft  = 20;
+                    else
+                        % we do yet have a good calculation for liquid/solid
+                        % pressures
+                        fTimeStepRight = 20;
+                        fTimeStepLeft  = 20;
+                    end
                 end
+
+                fTimeStep = min(fTimeStepLeft, fTimeStepRight);
+
+                % to assure stability we do not use the maximum possible time
+                % step
+                fTimeStep = 0.5 * fTimeStep;
             end
-            
-            fTimeStep = min(fTimeStepLeft, fTimeStepRight);
-            
-            % to assure stability we do not use the maximum possible time
-            % step
-            fTimeStep = 0.5 * fTimeStep;
-            
             this.setTimeStep(fTimeStep);
         end
     end

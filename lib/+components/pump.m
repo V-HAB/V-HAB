@@ -29,7 +29,11 @@ classdef pump < matter.procs.f2f
             
             this.fFlowRateSP = fFlowRateSP;
             this.fPreviousSetpoint = fFlowRateSP;
-            this.iDir = sif(fFlowRateSP > 0, 1, -1);
+            if fFlowRateSP > 0
+                this.iDir = 1;
+            else
+                this.iDir = -1;
+            end
             
             this.supportSolver('hydraulic', -5, 0.1, true, @this.update);
             this.supportSolver('callback', @this.solverDeltas);

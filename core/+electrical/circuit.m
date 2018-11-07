@@ -199,8 +199,11 @@ classdef circuit < base & event.source
             
             
             % Smaller phase -> use for matter properties
-            oRefPhase = sif(oLeftPhase.fVolume > oRightPhase.fVolume, oRightPhase, oLeftPhase);
-            
+            if oLeftPhase.fVolume > oRightPhase.fVolume
+                oRefPhase = oRightPhase;
+            else
+                oRefPhase = oLeftPhase;
+            end
             
             if isa(oLeftPhase, 'matter.phases.gas') && isa(oRightPhase, 'matter.phases.gas')
                 sPhaseType = 'gas_virtual';

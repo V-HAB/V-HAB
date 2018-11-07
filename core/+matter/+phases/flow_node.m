@@ -42,7 +42,8 @@ classdef flow_node < matter.phase
             this.fInitialMass = this.fMass;
             
             % Mass change must be zero for flow nodes, if that is not the
-            % case, this enforces a very small mass change at least
+            % case, this enforces V-HAB to make a minimum size time step to
+            % keep the error small
             tTimeStepProperties.rMaxChange = 0.01;
             this.setTimeStepProperties(tTimeStepProperties)
             
