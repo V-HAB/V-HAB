@@ -90,6 +90,8 @@ classdef capacity < base & event.source
 
         % Index of the calculate Time Step post tick
         hBindPostTickTimeStep
+        
+        setTimeStep;
     end
     
     methods
@@ -129,8 +131,18 @@ classdef capacity < base & event.source
             % Set name of capacity.
             this.sName = oPhase.sName;
             %% Register post tick callbacks for massupdate and update        
-            this.hBindPostTickTemperatureUpdate  = this.oTimer.registerPostTick(@this.updateTemperature_post,  'thermal' , 'capacity_temperatureupdate');
-            this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
+            this.hBindPostTickTemperatureUpdate  = this.oTimer.registerPostTick(@this.updateTemperature,  'thermal' , 'capacity_temperatureupdate');
+            this.hBindPostTickTimeStep           = this.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
+            
+            this.hBindPostTickTemperatureUpdate();
+            
+            % Bind the .update method to the timer, with a time step of 0
+            % (i.e. smallest step), will be adapted after each .update
+            this.setTimeStep = this.oTimer.bind(@(~) this.registerUpdateTemperature(), 0, struct(...
+                'sMethod', 'update', ...
+                'sDescription', 'The .update method of a phase', ...
+                'oSrcObj', this ...
+            ));
         end
         
         function updateSpecificHeatCapacity(this)
@@ -302,11 +314,11 @@ classdef capacity < base & event.source
             this.hBindPostTickTimeStep();
         end
         
-        function updateTemperature(this, ~)
+        function registerUpdateTemperature(this, ~)
             this.hBindPostTickTemperatureUpdate();
         end
             
-        function updateTemperature_post(this, ~)
+        function updateTemperature(this, ~)
             % use fCurrentHeatFlow to calculate the temperature change
             % since the last execution fLastTemperatureUpdate
             
@@ -561,6 +573,7 @@ classdef capacity < base & event.source
             else
                 
                 if this.fTotalHeatCapacity == 0 || this.fTemperature == 0
+                    this.setTimeStep(inf);
                     return
                 end
                 
@@ -596,7 +609,16 @@ classdef capacity < base & event.source
             % Value in store is only updated, if the new update time is
             % earlier than the currently set next update time.
             %this.oStore.setNextUpdateTime(this.fLastMassUpdate + fNewStep);
-             this.oPhase.oStore.setNextTimeStep(fNewStep);
+            
+            % Set the time step for this capacity. If the update was also called in this
+            % tick we also reset the time at which the phase was last executed thus
+            % enforcing the next execution time to be exactly this.oTimer.fTime +
+            % fNewStep
+            if this.fLastTemperatureUpdate == this.oTimer.fTime
+                this.setTimeStep(fNewStep, true);
+            else
+                this.setTimeStep(fNewStep);
+            end
 
             % Cache - e.g. for logging purposes
             this.fTimeStep = fNewStep;
