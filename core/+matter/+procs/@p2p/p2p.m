@@ -94,27 +94,61 @@ classdef p2p < matter.flow
             oPort = this.oStore.getPort(sPortOut(2:end));
             thermal.procs.exme(oPort.oPhase.oCapacity, sPortOut(2:end));
             
+            % Now we automatically create a fluidic processor for the
+            % thermal heat transfer bound to the matter transferred by the
+            % P2P
             try
                 thermal.procs.conductors.fluidic(this.oStore.oContainer, this.sName, this);
                 sCustomName = this.sName;
-            catch
-                bError = true;
-                iCounter = 2;
-                while bError == true
-                    try
-                        thermal.procs.conductors.fluidic(this.oStore.oContainer, [this.sName, '_', num2str(iCounter)], this);
-                        bError = false;
-                    catch
-                        iCounter = iCounter + 1;
+            % The operation can fail because the P2Ps are local within a
+            % store and therefore can share common names acros multiple
+            % stores (e.g. you can have 5 Stores, each containing a P2P
+            % called "Absorber"). However, as F2Fs the thermal conductors
+            % are added to the parent system, and therefore must be unique
+            % for each system. Therefore we count a number up until we find
+            % a name that is not yet taken for the fluidic processor
+            catch oError 
+                if contains(oError.message, 'already exists.')
+                    bError = true;
+                    iCounter = 2;
+                    while bError == true
+                        % now we just try the name until we find one that
+                        % is not yet taken, increasing the counter each
+                        % time the creation of the proc failed
+                        try
+                            thermal.procs.conductors.fluidic(this.oStore.oContainer, [this.sName, '_', num2str(iCounter)], this);
+                            bError = false;
+                        catch oError
+                            if contains(oError.message, 'already exists.')
+                                iCounter = iCounter + 1;
+                            else
+                                % If it is another error than what we area looking for,
+                                % we do throw the error
+                                this.throw('P2P', oError.message)
+                            end
+                        end
+                        
+                        % If we reach 1000 Iterations, throw an error as we
+                        % are not likely to find a valid name anymore
+                        if iCounter >= 1000
+                            this.throw('P2P',[ 'could not find a valid name for the thermal fluidic conductor of P2P ', this.sName])
+                        end
                     end
+                    sCustomName = [this.sName, '_', num2str(iCounter)];
+                else
+                    % If it is another error than what we area looking for,
+                    % we do throw the error
+                    this.throw('P2P', oError.message)
                 end
-                sCustomName = [this.sName, '_', num2str(iCounter)];
             end
             
+            % Now we generically create the corresponding thermal branch
+            % using the previously created fluidic conductor
             this.oThermalBranch = thermal.branch(this.oStore.oContainer, [this.oStore.sName,  sPortIn] , {sCustomName}, [this.oStore.sName,  sPortOut], sCustomName, this);
             
             this.coExmes = {this.oIn, this.oOut};
             
+            %% Register the post tick update for the P2P at the timer
             this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,      'matter' , 'P2Ps');
         end
     end
