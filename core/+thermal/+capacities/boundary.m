@@ -22,6 +22,9 @@ classdef boundary < thermal.capacity
         function setBoundaryTemperature(this, fTemperature)
             % external function to set the boundary temperature
             this.setTemperature(fTemperature);
+            
+            this.fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
+            this.fTotalHeatCapacity = this.oPhase.fMass * this.fSpecificHeatCapacity;
         end
         
         function updateTemperature_post(this, ~)

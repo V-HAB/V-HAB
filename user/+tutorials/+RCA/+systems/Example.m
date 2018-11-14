@@ -31,7 +31,7 @@ classdef Example < vsys
             % Influence of residence mass can/should be analyzed in a future work
             matter.store(this, 'SpaceSuit', 0.015);
             cAirHelper = matter.helper.phase.create.N2Atmosphere(this.toStores.SpaceSuit, 0.015, fInitialTemperature);
-            oAir = matter.phases.gas_flow_node(this.toStores.SpaceSuit, 'N2Atmosphere',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            oAir = matter.phases.flow.gas(this.toStores.SpaceSuit, 'N2Atmosphere',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             special.matter.const_press_exme(oAir, 'Out', 28900);
             special.matter.const_press_exme(oAir, 'In', 28300);

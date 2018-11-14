@@ -63,6 +63,24 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % the fly.
         % should only be reset by the child class glow node!
         bFlow = false;
+        
+        % For very large phases which model e.g. the enviroment boundary
+        % phases can be used. This parameter decides if the phase is a
+        % boundary phase or not
+        bBoundary = false;
+        
+        % Last time the phase mass was updated. Is NOT an actual update!
+        % Only the mass is changed not all other properties, e.g. Pressure
+        % and Temperature remain the same.
+        fLastMassUpdate = -10;
+
+        % Time step between the last mass updates
+        fMassUpdateTimeStep = 0;
+
+        % Current total incoming or (if negative value) outgoing mass flow,
+        % for all substances combined. Used to improve pressure estimation
+        % in ExMe processors.
+        fCurrentTotalMassInOut = 0;
     end
 
     properties (SetAccess = private, GetAccess = public)
@@ -102,18 +120,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         toManips = struct('volume', [], 'temperature', [], 'substance', []);
         iManipulators = 0;
         
-        % Last time the phase mass was updated. Is NOT an actual update!
-        % Only the mass is changed not all other properties, e.g. Pressure
-        % and Temperature remain the same.
-        fLastMassUpdate = -10;
-
-        % Time step between the last mass updates
-        fMassUpdateTimeStep = 0;
-
-        % Current total incoming or (if negative value) outgoing mass flow,
-        % for all substances combined. Used to improve pressure estimation
-        % in ExMe processors.
-        fCurrentTotalMassInOut = 0;
         
         % Storage - preserve the values calculated during calculateTimeStep
         % to improve performance:
@@ -184,7 +190,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
     methods
 
-        function this = phase(oStore, sName, tfMass, fTemperature)
+        function this = phase(oStore, sName, tfMass, fTemperature, sCaller)
             % Constructor for the |matter.phase| class. Input parameters
             % can be provided to define the contained masses and
             % temperature, additionally the internal, merge and extract
@@ -201,6 +207,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %                   Keys refer to the name of the according substance
             %   fTemperature  - temperature of the initial mass, has to be given
             %                   if  tfMass is provided
+            %   sCaller       - only internally used to decide which
+            %                   capactiy should be added to the phase
 
             % Parent has to be a or derive from matter.store
             if ~isa(oStore, 'matter.store'), this.throw('phase', 'Provided oStore parameter has to be a matter.store'); end
@@ -271,8 +279,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
             % add a thermal capacity to this phase to handle thermal
             % calculations 
-            this.oCapacity = thermal.capacity(this, fTemperature);
-            
+            if nargin > 4 && strcmp(sCaller, 'boundary')
+                this.oCapacity = thermal.capacities.boundary(this, fTemperature);
+            else
+                this.oCapacity = thermal.capacity(this, fTemperature);
+            end
             % Now update the matter properties
             this.oCapacity.updateSpecificHeatCapacity();
                

@@ -45,7 +45,7 @@ classdef Example < vsys
             matter.store(this, 'Junction_1', 0.0001);
 % %             this.toStores.Junction_1.createPhase('air', this.toStores.Junction_1.fVolume);
             cParams = matter.helper.phase.create.air(this, this.toStores.Junction_1.fVolume);
-            matter.phases.gas_flow_node(this.toStores.Junction_1, 'flow', cParams{:});
+            matter.phases.flow.gas(this.toStores.Junction_1, 'flow', cParams{:});
             
             matter.procs.exmes.gas(this.toStores.Junction_1.aoPhases(1), 'Port_1');
             matter.procs.exmes.gas(this.toStores.Junction_1.aoPhases(1), 'Port_2');

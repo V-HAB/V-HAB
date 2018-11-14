@@ -194,16 +194,18 @@ else
     % maximum time step must be calculate to prevent negative masses from
     % occuring. It is the time step for which at the current flowrates the
     % first positive mass in the phase reaches 0:
-    abOutFlows = this.afCurrentTotalInOuts < 0;
-    % This calculation limits the maximum mass loss that occurs within one
-    % tick to 1e-8 kg. Adding the 1e-8 kg is necessary to prevent extremly
-    % small time steps
-    fMaxFlowStep = min(abs((1e-8 + this.afMass(abOutFlows)) ./ this.afCurrentTotalInOuts(abOutFlows)));
-    
-    if fNewStep > fMaxFlowStep
-        fNewStep = fMaxFlowStep;
-        if fNewStep < this.fMinStep
-            fNewStep = this.fMinStep;
+    if ~this.bBoundary
+        abOutFlows = this.afCurrentTotalInOuts < 0;
+        % This calculation limits the maximum mass loss that occurs within one
+        % tick to 1e-8 kg. Adding the 1e-8 kg is necessary to prevent extremly
+        % small time steps
+        fMaxFlowStep = min(abs((1e-8 + this.afMass(abOutFlows)) ./ this.afCurrentTotalInOuts(abOutFlows)));
+
+        if fNewStep > fMaxFlowStep
+            fNewStep = fMaxFlowStep;
+            if fNewStep < this.fMinStep
+                fNewStep = this.fMinStep;
+            end
         end
     end
     

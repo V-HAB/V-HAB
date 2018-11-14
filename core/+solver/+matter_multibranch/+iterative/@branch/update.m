@@ -221,7 +221,7 @@ function update(this)
                     % calculation
                     this.afFlowRates(iB) = (this.afFlowRates(iB) * 3 + afResults(iColumn)) / 4;
                 end
-            elseif isa(oObj, 'matter.phases.gas_flow_node')
+            elseif isa(oObj, 'matter.phases.flow.gas')
                 oObj.setPressure(afResults(iColumn));
             end
         end

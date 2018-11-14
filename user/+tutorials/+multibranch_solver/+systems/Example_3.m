@@ -56,19 +56,19 @@ classdef Example_3 < vsys
             
             matter.store(this, 'Flow_1', 1e-5);
             cParams = matter.helper.phase.create.gas(this, this.toStores.Flow_1.fVolume, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293, 0.5);
-            oGasPhase = matter.phases.gas_flow_node(this.toStores.Flow_1, 'flow', cParams{:});
+            oGasPhase = matter.phases.flow.gas(this.toStores.Flow_1, 'flow', cParams{:});
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
             
             matter.store(this, 'Flow_2', 1e-5);
             cParams = matter.helper.phase.create.gas(this, this.toStores.Flow_2.fVolume, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293, 0.5);
-            oGasPhase = matter.phases.gas_flow_node(this.toStores.Flow_2, 'flow', cParams{:});
+            oGasPhase = matter.phases.flow.gas(this.toStores.Flow_2, 'flow', cParams{:});
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
             
             matter.store(this, 'Flow_3', 1e-5);
             cParams = matter.helper.phase.create.gas(this, this.toStores.Flow_3.fVolume, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293, 0.5);
-            oGasPhase = matter.phases.gas_flow_node(this.toStores.Flow_3, 'flow', cParams{:});
+            oGasPhase = matter.phases.flow.gas(this.toStores.Flow_3, 'flow', cParams{:});
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
             

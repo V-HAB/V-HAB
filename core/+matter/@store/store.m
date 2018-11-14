@@ -322,9 +322,12 @@ classdef store < base
             
             % Function handle from phase class path and create object
             if bFlowNode
-                sDefaultPhase = [sDefaultPhase, '_flow_node'];
+                sDefaultPhase = strrep(sDefaultPhase, 'phases.' , 'phases.flow.');
             elseif bBoundaryNode
-                sDefaultPhase = [sDefaultPhase, '_boundary'];
+                sDefaultPhase = strrep(sDefaultPhase, 'phases.' , 'phases.boundary.');
+                if length(cInputs) == 3
+                    cParams{end+1} = cInputs{3};
+                end
             end
             hClassConstr = str2func(sDefaultPhase);
             oPhase       = hClassConstr(cParams{:});

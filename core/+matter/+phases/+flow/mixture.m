@@ -1,4 +1,4 @@
-classdef mixture_flow_node < matter.phases.flow_node
+classdef mixture < matter.phases.flow.flow
     %% mixture_flow_node
     % A mixture phase that is modelled as containing no matter. 
     
@@ -15,8 +15,8 @@ classdef mixture_flow_node < matter.phases.flow_node
     end
     
     methods
-        function this = mixture_flow_node(oStore, sName, varargin)            
-            this@matter.phases.flow_node(oStore, sName, varargin{2:4});
+        function this = mixture(oStore, sName, varargin)            
+            this@matter.phases.flow.flow(oStore, sName, varargin{2:4});
             
             this.sPhaseType = varargin{1};
             if length(varargin) >= 5

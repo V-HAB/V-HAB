@@ -1,5 +1,5 @@
-classdef flow_node < matter.phase
-    %% flow_node
+classdef (Abstract) flow < matter.phase
+    %% flow
     % A phase that is modelled as containing no matter. For implementation
     % purposes the phase does have a mass, but the calculations enforce
     % zero mass change for the phase and calculate all values based on the
@@ -34,7 +34,7 @@ classdef flow_node < matter.phase
     end
     
     methods
-        function this = flow_node(oStore, sName, varargin)
+        function this = flow(oStore, sName, varargin)
             this@matter.phase(oStore, sName, varargin{1}, varargin{3});
             
             this.fVolume = varargin{2};

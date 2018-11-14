@@ -60,7 +60,12 @@ classdef matter_observer < simulation.monitor
                     
                     % Total mass: sum over all mass stored in all phases, for each
                     % species separately.
-                    this.mfTotalMass(iIdx, :) = sum(reshape([ this.aoPhases.afMass ], oMT.iSubstances, []), 2)';
+                    if any([this.aoPhases.bBoundary])
+                        this.mfTotalMass(iIdx, :) = sum(reshape([ this.aoPhases(~[this.aoPhases.bBoundary]).afMass ], oMT.iSubstances, []), 2)' +...
+                                                    sum(reshape([ this.aoPhases([this.aoPhases.bBoundary]).afMassChange ], oMT.iSubstances, []), 2)';
+                    else
+                        this.mfTotalMass(iIdx, :) = sum(reshape([ this.aoPhases(~[this.aoPhases.bBoundary]).afMass ], oMT.iSubstances, []), 2)';
+                    end
                     
                     % Lost mass: logged by phases if more mass is extracted then
                     % available (for each substance separately).

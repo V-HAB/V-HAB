@@ -159,6 +159,7 @@ classdef branch < solver.matter.base.branch
             
             fPressureDifference = fPressureLeft - fPressureRight;
             
+            
             if fPreviousFlowRate == 0
                 % previous flowrate was 0, check if another solution should
                 % apply
@@ -174,7 +175,7 @@ classdef branch < solver.matter.base.branch
             end
             
             [fError, fPressureRise, ~, mfData] = this.calculatePressureDrops(iDir, fFlowRate, fPressureDifference);
-            
+                        
             if abs(fError) < this.fMaxError
                 % if the error is already smaller we have the solution
                 fFlowRate   = iDir * fFlowRate;
