@@ -4,20 +4,15 @@ classdef fluidic < thermal.procs.conductor
     
     properties (SetAccess = protected)
         
-        fConductivity = 0; % Thermal conductivity of connection in [W/K].
+        fResistance = 0; % Thermal resistance of connection in [K/W].
         
         oMassBranch;
-        
-        bRadiative  = false;
-        bConvective = false;
-        bConductive = false;
     end
     
     methods
         
         function this = fluidic(oContainer, sName, oMassBranch)
-            % Create a fluidic conductor instance
-             
+            % Calling the parent constructor
             this@thermal.procs.conductor(oContainer, sName);
             
             this.oMassBranch = oMassBranch;
@@ -25,7 +20,7 @@ classdef fluidic < thermal.procs.conductor
             
         end
         
-        function fConductivity = update(this, ~)
+        function fResistance = update(this, ~)
             
             if this.oMassBranch.fFlowRate >= 0
                 iExme = 1;
@@ -34,9 +29,9 @@ classdef fluidic < thermal.procs.conductor
             end
                 
             fSpecificHeatCapacity = this.oThermalBranch.coExmes{iExme}.oCapacity.fSpecificHeatCapacity;
-            this.fConductivity = abs(this.oMassBranch.fFlowRate * fSpecificHeatCapacity);
+            fResistance = 1 / abs(this.oMassBranch.fFlowRate * fSpecificHeatCapacity);
             
-            fConductivity = this.fConductivity;
+            this.fResistance = fResistance;
         end
         
         

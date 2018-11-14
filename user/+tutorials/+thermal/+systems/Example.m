@@ -133,9 +133,9 @@ classdef Example < vsys
             fEpsilon        = 0.8;
             fSightFactor    = 1;
             fArea           = 0.1;
-            fRadiativeConductivity = fEpsilon * fSightFactor * this.oMT.Const.fStefanBoltzmann * fArea;
+            fRadiativeResistance = 1 / (fEpsilon * fSightFactor * this.oMT.Const.fStefanBoltzmann * fArea);
             
-            thermal.procs.conductors.radiative(this, 'Radiator_Conductor', fRadiativeConductivity);
+            thermal.procs.conductors.radiative(this, 'Radiator_Conductor', fRadiativeResistance);
             
             
             fWallThickness = 0.002; % 2mm of wall thickness for the pipe
@@ -148,19 +148,19 @@ classdef Example < vsys
             
             fThermalConductivityCopper = 15;
             
-            fMaterialConductivity = (fPipeMaterialArea * fThermalConductivityCopper)/this.fPipeLength;
+            fConductionResistance = this.fPipeLength / (fPipeMaterialArea * fThermalConductivityCopper);
             
-            thermal.procs.conductors.conduction(this, 'Material_Conductor', fMaterialConductivity);
+            thermal.procs.conductors.conductive(this, 'Material_Conductor', fConductionResistance);
             
             thermal.branch(this, 'Space.Radiator_1', {'Radiator_Conductor'}, 'Tank_2.Radiator_2', 'Radiator');
             thermal.branch(this, 'Tank_1.Conductor_1', {'Material_Conductor'}, 'Tank_2.Conductor_2', 'Pipe_Material_Conductor');
             
             thermal.branch(this, 'Tank_1.InfniniteConductor_1', {}, 'Tank_1.InfniniteConductor_2', 'Infinite_Conductor');
             
-            fMaterialConductivity = (fPipeMaterialArea * fThermalConductivityCopper)/0.5;
+            fConductionResistance = 0.5 / (fPipeMaterialArea * fThermalConductivityCopper);
             
-            thermal.procs.conductors.conduction(this, 'Material_Conductor1', fMaterialConductivity);
-            thermal.procs.conductors.conduction(this, 'Material_Conductor2', fMaterialConductivity);
+            thermal.procs.conductors.conductive(this, 'Material_Conductor1', fConductionResistance);
+            thermal.procs.conductors.conductive(this, 'Material_Conductor2', fConductionResistance);
             
             thermal.branch(this, 'Conduction_From_Subsystem', {'Material_Conductor1'}, 'Tank_2.Port_Thermal_IF_In');
             thermal.branch(this, 'Conduction_To_Subsystem',   {'Material_Conductor2'}, 'Tank_2.Port_Thermal_IF_Out');

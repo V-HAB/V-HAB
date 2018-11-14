@@ -25,7 +25,7 @@ classdef branch < solver.thermal.base.branch
             % Registering the solver with the timer provides a function as
             % output that can be used to bind the post tick update in a
             % tick resulting in the post tick calculation to be executed
-            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'thermal' , 'solver');
+            this.hBindPostTickUpdate = this.oBranch.oTimer.registerPostTick(@this.update, 'thermal' , 'solver');
             
             this.update();
         end
@@ -35,18 +35,19 @@ classdef branch < solver.thermal.base.branch
     methods (Access = protected)
         function update(this)
             
-            afConductivity              = zeros(1,this.oBranch.iConductors);
-            bRadiative      = false;
-            bConductive     = false;
+            afResistances = zeros(1,this.oBranch.iConductors);
+            bRadiative    = false;
+            bConductive   = false;
             
             for iConductor = 1:this.oBranch.iConductors
-                this.oBranch.coConductors{iConductor}.update();
+                
                 if this.oBranch.coConductors{iConductor}.bRadiative
                     bRadiative = true;
                 else
-                    bConductive= true;
+                    bConductive = true;
                 end
-                afConductivity(iConductor) = this.oBranch.coConductors{iConductor}.fConductivity;
+                
+                afResistances(iConductor) = this.oBranch.coConductors{iConductor}.update();
             end
             
             if bRadiative && bConductive
@@ -61,12 +62,10 @@ classdef branch < solver.thermal.base.branch
             
             end
             
-            afThermalResistance = 1./afConductivity;
-
             % See Wärmeübetragung Polifke equation 3.16, only valid if
             % all resistances are in a row and not parallel, for
             % parallel resistances use multiple branches
-            fTotalThermalResistance = sum(afThermalResistance);
+            fTotalThermalResistance = sum(afResistances);
 
             this.fSolverHeatFlow = fDeltaTemperature / fTotalThermalResistance;
             

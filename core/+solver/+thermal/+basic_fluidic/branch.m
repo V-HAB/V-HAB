@@ -30,7 +30,7 @@ classdef branch < solver.thermal.base.branch
             % Registering the solver with the timer provides a function as
             % output that can be used to bind the post tick update in a
             % tick resulting in the post tick calculation to be executed
-            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'thermal' , 'solver');
+            this.hBindPostTickUpdate = this.oBranch.oTimer.registerPostTick(@this.update, 'thermal' , 'solver');
             
             this.update();
             
@@ -41,11 +41,10 @@ classdef branch < solver.thermal.base.branch
         function update(this)
             
             
-            afConductivity = zeros(1,this.oBranch.iConductors);
+            afResistances = zeros(1,this.oBranch.iConductors);
             
             for iConductor = 1:this.oBranch.iConductors
-                this.oBranch.coConductors{iConductor}.update();
-                afConductivity(iConductor) = this.oBranch.coConductors{iConductor}.fConductivity;
+                afResistances(iConductor) = this.oBranch.coConductors{iConductor}.update();
             end
             
             oMassBranch = this.oBranch.coConductors{1}.oMassBranch;
@@ -54,23 +53,23 @@ classdef branch < solver.thermal.base.branch
 
             % Currently for mass bound heat transfer it is not possible to
             % allow different conducitvities in the thermal branch, as that
-            % would result in energy beeing destroyed/generated. TO solve
+            % would result in energy being destroyed/generated. To solve
             % this it would be necessary for the branch to store thermal
             % energy, which would be equivalent to the matter branch
             % storing mass. Therefore, the issue is solved by averaging the
-            % conducivity values in the branch
-            fConductivity = sum(afConductivity) / this.oBranch.iConductors;
+            % resistance values in the branch
+            fResistance = sum(afResistances) / this.oBranch.iConductors;
             
-            fHeatFlow = fConductivity * (fDeltaTemperature);
+            fHeatFlow = fDeltaTemperature / fResistance;
             
             try
-                iFlowProcs      = oMassBranch.iFlowProcs;
+                iFlowProcs = oMassBranch.iFlowProcs;
             catch
                 % in this case we have a p2p
                 iFlowProcs = 0;
             end
             
-            if fConductivity == 0
+            if fResistance == 0
                 this.afSolverHeatFlow = [0, 0];
                 
                 afTemperatures = ones(1,iFlowProcs + 1) * this.oBranch.coExmes{1}.oCapacity.fTemperature;
@@ -137,7 +136,7 @@ classdef branch < solver.thermal.base.branch
                     % to the overall heat flow
                     afF2F_HeatFlows(iFlow + iFlowProcShifter) = oMassBranch.aoFlowProcs(iFlow + iFlowProcShifter).fHeatFlow;
 
-                    afTemperatures(iFlow) = afTemperatures(iFlow - iDirection) + (afF2F_HeatFlows (iFlow + iFlowProcShifter) / fConductivity);
+                    afTemperatures(iFlow) = afTemperatures(iFlow - iDirection) + (afF2F_HeatFlows(iFlow + iFlowProcShifter) / (1/fResistance) );
 
                     oMassBranch.aoFlows(iFlow).setTemperature(afTemperatures(iFlow))
 
