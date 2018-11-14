@@ -115,7 +115,7 @@ classdef branch < base & event.source
                 aiExmes = 2:-1:1;
             end
             for iE = aiExmes
-                this.oBranch.coExmes{iE}.oCapacity.registerUpdateTemperature();
+                this.oBranch.coExmes{iE}.oCapacity.updateTemperature();
             end
             
             this.registerUpdate();
