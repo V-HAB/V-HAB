@@ -145,7 +145,7 @@ classdef branch < base.branch
             % tank.
             if this.fHeatFlow >= 0; aiExmes = 1:2; else; aiExmes = 2:-1:1; end
             for iE = aiExmes
-                this.coExmes{iE}.oCapacity.updateTemperature();
+                this.coExmes{iE}.oCapacity.registerUpdateTemperature();
             end
             
             this.fHeatFlow = fHeatFlow;
