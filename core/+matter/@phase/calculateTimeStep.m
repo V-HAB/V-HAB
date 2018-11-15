@@ -17,6 +17,12 @@ afTmpCurrentTotalInOuts = this.afCurrentTotalInOuts;
 this.afCurrentTotalInOuts = afChange;
 this.mfCurrentInflowDetails = mfDetails;
 
+if this.iManipulators ~= 0
+    afPartialFlows = this.afCurrentTotalInOuts + this.toManips.substance.afPartialFlows;
+else
+    afPartialFlows = this.afCurrentTotalInOuts;
+end
+    
 % If we have set a fixed time steop for this phase, we can just continue
 % without doing any calculations.
 if ~isempty(this.fFixedTimeStep)
@@ -73,8 +79,8 @@ else
     % the total mass change check. The unit of arPartialsChange is [1/s],
     % so multiplied by 100 % we would have a percentage change per second
     % for each substance.
-    abChange = (afChange ~= 0);
-    arPartialsChange = abs(afChange(abChange) ./ tools.round.prec(this.fMass, this.oTimer.iPrecision));
+    abChange = (afPartialFlows ~= 0);
+    arPartialsChange = abs(afPartialFlows(abChange) ./ tools.round.prec(this.fMass, this.oTimer.iPrecision));
     
     % Only use non-inf values. They would be inf if the current mass of
     % according substance is zero. If a new substance enters the phase, it
@@ -89,7 +95,7 @@ else
     % Calculating the change per second of TOTAL mass. rTotalPerSecond also
     % has the unit [1/s], giving us the percentage change per second of the
     % overall mass of the phase.
-    fChange = sum(afChange);
+    fChange = sum(afPartialFlows);
     
     if fChange == 0
         rTotalPerSecond = 0;
@@ -132,7 +138,7 @@ else
         % timestep will go asymptotically towards zero the smaller the
         % partial mass becomes)
         afCurrentMass(this.afMass < 10^(-this.oTimer.iPrecision)) = 10^(-this.oTimer.iPrecision);
-        arPartialChangeToPartials = abs(afChange ./ tools.round.prec(afCurrentMass, this.oTimer.iPrecision));
+        arPartialChangeToPartials = abs(afPartialFlows ./ tools.round.prec(afCurrentMass, this.oTimer.iPrecision));
         % Values where the partial mass is zero are set to zero, otherwise
         % the value for these is NaN or Inf
         arPartialChangeToPartials(this.afMass == 0) = 0;
@@ -194,11 +200,11 @@ else
     % maximum time step must be calculate to prevent negative masses from
     % occuring. It is the time step for which at the current flowrates the
     % first positive mass in the phase reaches 0:
-    abOutFlows = this.afCurrentTotalInOuts < 0;
+    abOutFlows = afPartialFlows < 0;
     % This calculation limits the maximum mass loss that occurs within one
     % tick to 1e-8 kg. Adding the 1e-8 kg is necessary to prevent extremly
     % small time steps
-    fMaxFlowStep = min(abs((1e-8 + this.afMass(abOutFlows)) ./ this.afCurrentTotalInOuts(abOutFlows)));
+    fMaxFlowStep = min(abs((1e-8 + this.afMass(abOutFlows)) ./ afPartialFlows(abOutFlows)));
     
     if fNewStep > fMaxFlowStep
         fNewStep = fMaxFlowStep;
