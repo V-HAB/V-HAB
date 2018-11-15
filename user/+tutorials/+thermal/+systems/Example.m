@@ -39,7 +39,7 @@ classdef Example < vsys
             fVolume = 1e10;
             matter.store(this, 'Space', 1e10);
             
-            tfPartialPressure   = struct('N2', 5);
+            tfPartialPressure   = struct('N2', 1);
             fTemperature        = 3;
             rRelativeHumidity   = 0;
 

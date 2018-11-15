@@ -162,7 +162,7 @@ if iNumArgs == 1 %nargin < 3
         % Fall nach dem idealen Gasgesetz berechnet."
         if strcmp(sMatterState, 'gas')
             if oMatterRef.fFlowRate >= 0
-                afPP = oMatterRef.oBranch.coExmes{1,1}.oPhase.afPP;
+                afPP = oMatterRef.oBranch.coExmes{1}.oPhase.afPP;
                 if isempty(afPP)
                     try
                         [ afPP, ~ ] = this.calculatePartialPressures(oMatterRef.oBranch.coExmes{1,1}.oPhase);
@@ -171,14 +171,14 @@ if iNumArgs == 1 %nargin < 3
                     end
                 end
             else
-                afPP = oMatterRef.oBranch.coExmes{1,2}.oPhase.afPP;
+                afPP = oMatterRef.oBranch.coExmes{2}.oPhase.afPP;
             end
             
         elseif strcmp(sMatterState, 'mixture')
             if oMatterRef.fFlowRate >= 0
-                oPhase = oMatterRef.oBranch.coExmes{1,1}.oPhase;
+                oPhase = oMatterRef.oBranch.coExmes{1}.oPhase;
             else
-                oPhase = oMatterRef.oBranch.coExmes{2,1}.oPhase;
+                oPhase = oMatterRef.oBranch.coExmes{2}.oPhase;
             end
             
             aiPhase = this.determinePhase(oPhase.afMass, oPhase.fTemperature, (ones(1,this.iSubstances).*oPhase.fPressure));

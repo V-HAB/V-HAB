@@ -85,6 +85,8 @@ elseif fTemp_Dep == 1
     fKin_Visc_w = fDyn_Visc(2)/fDensity(2);
 end
 
+fFlowSpeed = abs(fFlowSpeed);
+
 %Definition of the overflowed length of the pipes according to [9] section
 %Gg 1
 fOverflow_Length = (pi/2) * fD_o;

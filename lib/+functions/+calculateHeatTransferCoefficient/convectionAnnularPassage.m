@@ -50,6 +50,8 @@ elseif length(fDyn_Visc) == 2 && fConfig == 1;
     fConfig = 3;
 end
 
+fFlowSpeed = abs(fFlowSpeed);
+
 %Definition of the kinematic viscosity
 fKin_Visc_m = fDyn_Visc(1)/fDensity(1);
 

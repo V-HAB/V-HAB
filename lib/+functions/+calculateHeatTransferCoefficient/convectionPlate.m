@@ -29,6 +29,8 @@ function [fConvection_alpha] = convectionPlate (fLength, fFlowSpeed,...
 %Definition of the kinematic viscosity
 fKin_Visc = fDyn_Visc(1)/fDensity(1);
 
+fFlowSpeed = abs(fFlowSpeed);
+
 %Definition of the Reynolds number according to [1] page 232 equation
 %(10.30)
 fRe = (fFlowSpeed * fLength) / fKin_Visc;

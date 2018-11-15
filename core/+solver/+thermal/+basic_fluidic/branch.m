@@ -69,7 +69,7 @@ classdef branch < solver.thermal.base.branch
                 iFlowProcs = 0;
             end
             
-            if fResistance == 0
+            if fResistance == inf
                 this.afSolverHeatFlow = [0, 0];
                 
                 afTemperatures = ones(1,iFlowProcs + 1) * this.oBranch.coExmes{1}.oCapacity.fTemperature;

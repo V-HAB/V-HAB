@@ -80,7 +80,7 @@ classdef ExampleSubsystem < vsys
             % Create the solver instances. Generally, this can be done here
             % or directly within the vsys (after the .seal() command).
             oManual = solver.matter.manual.branch(this.aoBranches(1));
-            oManual.setFlowRate(0.1);
+            oManual.setFlowRate(-0.1);
             
             solver.matter.residual.branch(this.aoBranches(2));
             %, this.toBranches.(this.aoThermalBranches(1).sName

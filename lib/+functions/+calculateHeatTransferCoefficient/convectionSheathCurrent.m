@@ -84,6 +84,8 @@ narginchk(20, 21)
 %Definition of the kinematic viscosity
 fKin_Visc = fDyn_Visc(1)/fDensity(1);
 
+fFlowSpeed = abs(fFlowSpeed);
+
 %Definition of the overflowed length of the pipes according to [9] section
 %Gg 1
 fOverflow_Length = (pi/2) * fD_o;

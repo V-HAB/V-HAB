@@ -49,6 +49,8 @@ else
     error('wrong number of inputs for material values')
 end
 
+fFlowSpeed = abs(fFlowSpeed);
+
 %Definition of the kinematic viscosity
 if fTemp_Dep == 0 
     fKin_Visc_m = fDyn_Visc/fDensity;
