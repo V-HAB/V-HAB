@@ -152,18 +152,21 @@ classdef matter_observer < simulation.monitor
             mfTotalFinalMass = this.mfTotalMass(end, :) + sum(mfMassError,1);
             
             % DISP balance
-            fprintf('+------------------- MATTER BALANCE -------------------+\n');
+            fprintf('+---------------------------------- MATTER BALANCE ---------------------------------+\n');
             
-            disp([ '| Generated Mass in Phases:    ' num2str(sum(this.mfGeneratedMass(end, :))) 'kg' ]);
-            disp([ '| Total Mass Balance:          ' num2str(sum(mfTotalFinalMass) - sum(this.mfTotalMass(1, :))) 'kg' ]);
+            fprintf('| Generated Mass in Phases:    %f kg\n', sum(this.mfGeneratedMass(end, :)));
+            fprintf('| Total Mass Balance:          %f kg\n', sum(mfTotalFinalMass) - sum(this.mfTotalMass(1, :)));
             
-            disp(  '| ');
-            disp(  '| Generated Mass refers to the sum over all phases for the afGeneratedMass property. There mass is generated in case slightly too much mass is taken out of the phase.');
-            disp(  '| ');
-            disp(  '| Mass Balance refers to the total mass balance and shows the difference between the sum over all phase masses at the end of the simulation and the beginning.');
-            disp(  '| A positive mass balance means mass was generated during the simulation, therefore the Generated Mass value always results in a mass balance error');
+            fprintf('| \n');
+            fprintf('| Generated Mass refers to the sum over all phases for the afGeneratedMass property.\n');
+            fprintf('| There mass is generated in case slightly too much mass is taken out of the phase.\n');
+            fprintf('| \n');
+            fprintf('| Mass Balance refers to the total mass balance and shows the difference between the \n');
+            fprintf('| sum over all phase masses at the end of the simulation and the beginning.\n');
+            fprintf('| A positive mass balance means mass was generated during the simulation, therefore \n');
+            fprintf('| the Generated Mass value always results in a mass balance error.\n');
             
-            fprintf('+------------------------------------------------------+\n');
+            fprintf('+-----------------------------------------------------------------------------------+\n');
         end
         
         function [ aoPhasesOut, aoBranchesOut ] = getPhasesAndBranches(this, oSystem, aoPhasesIn, aoBranchesIn)

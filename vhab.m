@@ -7,9 +7,9 @@ classdef vhab
     methods (Static = true)
         function init()
             % check if subdirs on path!
-            disp('--------------------------------------')
-            disp('-------- V-HAB Initialization --------')
-            disp('--------------------------------------')
+            fprintf('+-----------------------------------------------------------------------------------+\n');
+            fprintf('+------------------------------ V-HAB INITIALIZATION -------------------------------+\n');
+            fprintf('+-----------------------------------------------------------------------------------+\n');
             addpath([ strrep(pwd(), '\', '/') '/lib'  ]);
             addpath([ strrep(pwd(), '\', '/') '/core' ]);
             addpath([ strrep(pwd(), '\', '/') '/user' ]);

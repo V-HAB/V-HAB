@@ -270,7 +270,7 @@ classdef infrastructure < base & event.source
             % run.
             if ~this.bSuppressConsoleOutput || this.oSimulationContainer.oTimer.iTick == -1
                 disp('Initialization complete!');
-                disp('--------------------------------------');
+                fprintf('+-----------------------------------------------------------------------------------+\n');
                 disp('Starting simulation run...');
             end
             
@@ -285,6 +285,7 @@ classdef infrastructure < base & event.source
                 this.tick();
                 
             end
+            
         end
         
         
