@@ -29,8 +29,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % phase, there is currently no way to tell the branch about this
         % issue. Instead of throwing an error or setting a negative value
         % for the substance mass, the mass is set to zero and the absolute
-        % 'lost' (negative) mass is added to this vector.
-        afMassLost;
+        % 'generated' mass is added to this vector. (Generated because of
+        % we overwrite a negative mass value with 0 we actually ad mass to
+        % the system)
+        afMassGenerated;
 
         % Mass fraction of every substance in phase
         arPartialMass; % [%]
@@ -267,7 +269,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
              
             % Mass
             this.fMass = sum(this.afMass);
-            this.afMassLost = zeros(1, this.oMT.iSubstances);
+            this.afMassGenerated = zeros(1, this.oMT.iSubstances);
 
             % add a thermal capacity to this phase to handle thermal
             % calculations 
@@ -702,7 +704,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             abNegative = this.afMass < 0;
 
             if any(abNegative)
-                this.afMassLost(abNegative) = this.afMassLost(abNegative) - this.afMass(abNegative);
+                this.afMassGenerated(abNegative) = this.afMassGenerated(abNegative) - this.afMass(abNegative);
                 this.afMass(abNegative) = 0;
                 
                 if ~base.oLog.bOff

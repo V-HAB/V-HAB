@@ -9,11 +9,11 @@ classdef matter_observer < simulation.monitor
     % have a large mass balance error check your manipulators! They are the
     % most likely source of such errors!
     %
-    % Mass lost sums up the afMassLost properties of alle phases. This
+    % Mass lost sums up the afMassGenerated properties of alle phases. This
     % occurs if more mass of a single substance is reduced from a phase
     % within a tick than the phase currently stores. As the mass becomes
     % negative in this case, this value is always negative. But a negative
-    % afMassLost actually represents creating additional mass, as
+    % afMassGenerated actually represents creating additional mass, as
     % overwriting a negative value with 0 produces mass! This value should
     % be small, otherwise you have an error in your time step settings!
     %
@@ -27,7 +27,7 @@ classdef matter_observer < simulation.monitor
         
         % Variables holding the sum of lost mass / total mass, species-wise
         mfTotalMass = [];
-        mfLostMass  = [];
+        mfGeneratedMass  = [];
         
         % References to all phases in the simulation
         aoPhases   = [];
@@ -64,7 +64,7 @@ classdef matter_observer < simulation.monitor
                     
                     % Lost mass: logged by phases if more mass is extracted then
                     % available (for each substance separately).
-                    this.mfLostMass(iIdx, :) = sum(reshape([ this.aoPhases.afMassLost ], oMT.iSubstances, []), 2)';
+                    this.mfGeneratedMass(iIdx, :) = sum(reshape([ this.aoPhases.afMassGenerated ], oMT.iSubstances, []), 2)';
                 end
             else
                 iIdx = size(this.mfTotalMass, 1) + 1;
@@ -72,7 +72,7 @@ classdef matter_observer < simulation.monitor
                 % Total mass: sum over all mass stored in all phases, for each
                 % species separately.
                 this.mfTotalMass(iIdx, :) = zeros(1, oMT.iSubstances);
-                this.mfLostMass(iIdx, :)  = zeros(1, oMT.iSubstances);
+                this.mfGeneratedMass(iIdx, :)  = zeros(1, oMT.iSubstances);
             end
         end
         
@@ -90,7 +90,7 @@ classdef matter_observer < simulation.monitor
             % mass log. Subsequent logs dynamically allocate new memory -
             % bad for performance, but only happens every Xth tick ...
             this.mfTotalMass = zeros(0, oSim.oMT.iSubstances);
-            this.mfLostMass  = zeros(0, oSim.oMT.iSubstances);
+            this.mfGeneratedMass  = zeros(0, oSim.oMT.iSubstances);
             
             % Going through all systems and their subsystems to gather the
             % phases and branches
@@ -123,8 +123,9 @@ classdef matter_observer < simulation.monitor
         end
         
         
-        function onPause(this, ~)
-            this.displayMatterBalance();
+        function onPause( ~)
+            % Currently not required. But in case some specific operation
+            % should occur when the sim is paused this function can be used
         end
         
         
@@ -153,8 +154,14 @@ classdef matter_observer < simulation.monitor
             % DISP balance
             fprintf('+------------------- MATTER BALANCE -------------------+\n');
             
-            disp([ '| Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
-            disp([ '| Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(mfTotalFinalMass)) 'kg' ]);
+            disp([ '| Generated Mass in Phases:    ' num2str(sum(this.mfGeneratedMass(end, :))) 'kg' ]);
+            disp([ '| Total Mass Balance:          ' num2str(sum(mfTotalFinalMass) - sum(this.mfTotalMass(1, :))) 'kg' ]);
+            
+            disp(  '| ');
+            disp(  '| Generated Mass refers to the sum over all phases for the afGeneratedMass property. There mass is generated in case slightly too much mass is taken out of the phase.');
+            disp(  '| ');
+            disp(  '| Mass Balance refers to the total mass balance and shows the difference between the sum over all phase masses at the end of the simulation and the beginning.');
+            disp(  '| A positive mass balance means mass was generated during the simulation, therefore the Generated Mass value always results in a mass balance error');
             
             fprintf('+------------------------------------------------------+\n');
         end
