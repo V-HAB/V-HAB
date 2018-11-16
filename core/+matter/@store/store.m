@@ -302,12 +302,19 @@ classdef store < base
             if isempty(varargin)
                 cInputs = { this.fVolume };
                 bFlowNode = false;
-            elseif isa(varargin{1}, 'logical')
-                bFlowNode = varargin{1};
+                bBoundaryNode = false;
+            elseif strcmp(varargin{1}, 'flow')
+                bFlowNode = true;
+                bBoundaryNode = false;
+                cInputs = {varargin{2:end}};
+            elseif strcmp(varargin{1}, 'boundary')
+                bFlowNode = false;
+                bBoundaryNode = true;
                 cInputs = {varargin{2:end}};
             else
                 cInputs = varargin;
                 bFlowNode = false;
+                bBoundaryNode = false;
             end
 
             % Get params and default 
@@ -315,7 +322,12 @@ classdef store < base
             
             % Function handle from phase class path and create object
             if bFlowNode
-                sDefaultPhase = [sDefaultPhase, '_flow_node'];
+                sDefaultPhase = strrep(sDefaultPhase, 'phases.' , 'phases.flow.');
+            elseif bBoundaryNode
+                sDefaultPhase = strrep(sDefaultPhase, 'phases.' , 'phases.boundary.');
+                if length(cInputs) == 3
+                    cParams{end+1} = cInputs{3};
+                end
             end
             hClassConstr = str2func(sDefaultPhase);
             oPhase       = hClassConstr(cParams{:});

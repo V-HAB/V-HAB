@@ -62,7 +62,7 @@ classdef Example_5 < vsys
                 oStore = matter.store(this, sValve, 1e-6);
                 
                 cParams = matter.helper.phase.create.N2Atmosphere(this, oStore.fVolume);
-                matter.phases.gas_flow_node(oStore, 'flow', cParams{:});
+                matter.phases.flow.gas(oStore, 'flow', cParams{:});
             end
             
             
@@ -125,7 +125,7 @@ classdef Example_5 < vsys
                 
                 matter.store(this, sN, 1e-6);
                 cParams = matter.helper.phase.create.N2Atmosphere(this, this.toStores.(sN).fVolume);
-                matter.phases.gas_flow_node(this.toStores.(sN), 'flow', cParams{:});
+                matter.phases.flow.gas(this.toStores.(sN), 'flow', cParams{:});
                 matter.procs.exmes.gas(this.toStores.(sN).aoPhases(1), 'Port_1');
                 matter.procs.exmes.gas(this.toStores.(sN).aoPhases(1), 'Port_2');
                 matter.procs.exmes.gas(this.toStores.(sN).aoPhases(1), 'Port_3');

@@ -205,7 +205,7 @@ classdef PlantCulture < vsys
             matter.procs.exmes.mixture(oBalance, 'GasExchange2_Out');
             
             cAirHelper = matter.helper.phase.create.air(this.toStores.Plant_Culture, 0.1, 293.15, 0.5, 101325);
-            oAtmospherePhase = matter.phases.gas_flow_node(this.toStores.Plant_Culture, 'PlantAtmosphere',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
+            oAtmospherePhase = matter.phases.flow.gas(this.toStores.Plant_Culture, 'PlantAtmosphere',  cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
             matter.procs.exmes.gas(oAtmospherePhase, 'Air_From_Greenhouse');
             matter.procs.exmes.gas(oAtmospherePhase, 'Air_To_Greenhouse');

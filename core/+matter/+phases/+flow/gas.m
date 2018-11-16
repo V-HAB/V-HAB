@@ -1,4 +1,4 @@
-classdef gas_flow_node < matter.phases.flow_node
+classdef gas < matter.phases.flow.flow
     %% gas_flow_node
     % A gas phase that is modelled as containing no matter. 
     
@@ -21,8 +21,8 @@ classdef gas_flow_node < matter.phases.flow_node
     end
     
     methods
-        function this = gas_flow_node(oStore, sName, varargin)
-            this@matter.phases.flow_node(oStore, sName, varargin{:});
+        function this = gas(oStore, sName, varargin)
+            this@matter.phases.flow.flow(oStore, sName, varargin{:});
             
         end
     end

@@ -69,8 +69,8 @@ classdef Example < vsys
             coFlowNodeAir = cell(this.iCells,1);
             coFlowNodeWater = cell(this.iCells,1);
             for iCell = 1:this.iCells
-                coFlowNodeAir{iCell}    = this.toStores.FlowPath.createPhase('gas', true, ['AirCell_', num2str(iCell)], 0.5 * fFlowVolume / this.iCells, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293.15, 0.5);
-                coFlowNodeWater{iCell}  = matter.phases.liquid_flow_node(this.toStores.FlowPath, ['WaterCell_', num2str(iCell)], struct('H2O', 1e-9), 0.5 * fFlowVolume / this.iCells, 293.15);
+                coFlowNodeAir{iCell}    = this.toStores.FlowPath.createPhase('gas', 'flow', ['AirCell_', num2str(iCell)], 0.5 * fFlowVolume / this.iCells, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293.15, 0.5);
+                coFlowNodeWater{iCell}  = matter.phases.flow.liquid(this.toStores.FlowPath, ['WaterCell_', num2str(iCell)], struct('H2O', 1e-9), 0.5 * fFlowVolume / this.iCells, 293.15);
             end
             
             fAirPipeLength = 0.1;

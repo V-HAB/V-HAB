@@ -368,7 +368,7 @@ classdef CDRA < vsys
                                 end
                                 
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), fTemperatureAbsorber, fPressure);
-                                oFlowPhase = matter.phases.gas_flow_node(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow);
+                                oFlowPhase = matter.phases.flow.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow);
                                 
                             else
                                 cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), this.TargetTemperature, 0, 100);
@@ -379,7 +379,7 @@ classdef CDRA < vsys
                                 end
                                 
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), this.TargetTemperature, fPressure);
-                                oFlowPhase =  matter.phases.gas_flow_node(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), this.TargetTemperature);
+                                oFlowPhase =  matter.phases.flow.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), this.TargetTemperature);
                             end
                         else
                             if ~strcmp(sName, 'Zeolite5A_1')
@@ -391,7 +391,7 @@ classdef CDRA < vsys
                                 end
                                 
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), fTemperatureAbsorber, fPressure);
-                                oFlowPhase =  matter.phases.gas_flow_node(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow);
+                                oFlowPhase =  matter.phases.flow.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), fTemperatureFlow);
                             else
                                 cAirHelper = matter.helper.phase.create.air_custom(this.toStores.([(csTypes{iType}), '_1']), fFlowVolume, struct('CO2', this.tAtmosphere.fCO2Percent), this.TargetTemperature, 0, 100);
                 
@@ -401,7 +401,7 @@ classdef CDRA < vsys
                                 end
                                 
                                 oFilterPhase = matter.phases.mixture(this.toStores.(sName), ['Absorber_',num2str(iCell)], 'solid', tfMassesAbsorber,(fAbsorberVolume/iCellNumber), this.TargetTemperature, fPressure);
-                                oFlowPhase =  matter.phases.gas_flow_node(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), this.TargetTemperature);
+                                oFlowPhase =  matter.phases.flow.gas(this.toStores.(sName), ['Flow_',num2str(iCell)], tfMassesFlow,(fFlowVolume/iCellNumber), this.TargetTemperature);
                             end
                         end
                         % An individual orption and desorption Exme and P2P is
@@ -452,9 +452,9 @@ classdef CDRA < vsys
                         end
 
                         if (this.iCycleActive == 1 && strcmp(sName, 'Zeolite5A_2')) || (this.iCycleActive == 2 && strcmp(sName, 'Zeolite5A_1'))
-                            oAirSaveFlow = matter.phases.gas_flow_node(this.toStores.(sName), 'AirSaveFlow', tfMassesFlow,fFlowVolume, this.TargetTemperature);
+                            oAirSaveFlow = matter.phases.flow.gas(this.toStores.(sName), 'AirSaveFlow', tfMassesFlow,fFlowVolume, this.TargetTemperature);
                         else
-                            oAirSaveFlow = matter.phases.gas_flow_node(this.toStores.(sName), 'AirSaveFlow', tfMassesFlow,fFlowVolume, fTemperatureFlow);
+                            oAirSaveFlow = matter.phases.flow.gas(this.toStores.(sName), 'AirSaveFlow', tfMassesFlow,fFlowVolume, fTemperatureFlow);
                         end
                         
                         matter.procs.exmes.gas(oAirSaveFlow, 'AirSave_Inlet');

@@ -45,7 +45,7 @@ classdef Example1 < vsys
             % as needed.
             fFilterVolume = 1;
             matter.store(this, 'Filter', fFilterVolume);
-            oFlow = this.toStores.Filter.createPhase('air', true, 'FlowPhase', fFilterVolume/ 2, 293.15);
+            oFlow = this.toStores.Filter.createPhase('air', 'flow', 'FlowPhase', fFilterVolume/ 2, 293.15);
             
             oFiltered = matter.phases.gas(this.toStores.Filter, ...
                           'FilteredPhase', ... Phase name
