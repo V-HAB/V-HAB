@@ -108,6 +108,13 @@ elseif fRoughness == 0 && 2320 <= fRe && fRe < 100000
     %definition of the friction factor according to [9] section Lab
     %equation (5)
     fFriction_Factor = 0.3164/nthroot(fRe,4);
+    
+    % To prevent oscillations in the solver we smooth the transition
+    % between laminar and non laminar flows:
+    if fRe < 3320
+        fFriction_Factor = ((64/2320) * (3320 - fRe)/1000) + (fFriction_Factor * (fRe - 2320)/1000);
+    end
+    
 elseif fRoughness == 0 && 100000 <= fRe && fRe < 10^6
     %definition of the friction factor according to [9] section Lab
     %equation (6)
@@ -197,6 +204,12 @@ else
         fFriction_Factor = 1.151292546497022842 ./ fFriction_Factor; 	% F <- 0.5 * log(10) / F;
         fFriction_Factor = fFriction_Factor .* fFriction_Factor;        % F <- Friction factor.
     end
+    
+    % To prevent oscillations in the solver we smooth the transition
+    % between laminar and non laminar flows:
+    if fRe < 3320
+        fFriction_Factor = ((64/2320) * (3320 - fRe)/1000) + (fFriction_Factor * (fRe - 2320)/1000);
+    end
 end
     
 %definition of the pressure loss according to [9] section Lab
@@ -204,8 +217,7 @@ end
 if fFlowSpeed == 0
     fDelta_Pressure = 0;
 else
-    fDelta_Pressure = fFriction_Factor * fLength/fD_Hydraulic * (fDensity(1)*...
-                  fFlowSpeed^2)/2;
+    fDelta_Pressure = fFriction_Factor * fLength/fD_Hydraulic * (fDensity(1) * fFlowSpeed^2)/2;
 end
 
 
