@@ -1,4 +1,4 @@
-classdef Crew_Humidity_Generator < matter.procs.p2ps.flow
+classdef Crew_Humidity_Generator < matter.procs.p2ps.stationary
     
     %A phase manipulator to simulate the humidity generation by the crew.
     %Should be used in the store where the crew is present and a liquid
@@ -18,7 +18,7 @@ classdef Crew_Humidity_Generator < matter.procs.p2ps.flow
     
     methods
         function this = Crew_Humidity_Generator(oStore, sName, sPhaseIn, sPhaseOut, oSystem)
-            this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
+            this@matter.procs.p2ps.stationary(oStore, sName, sPhaseIn, sPhaseOut);
             
             this.oSystem = oSystem;
             

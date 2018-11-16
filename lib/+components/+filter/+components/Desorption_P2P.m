@@ -11,7 +11,7 @@ classdef Desorption_P2P < matter.procs.p2ps.flow
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);  
         end
         
-        function calculateFilterRate(~, ~, ~)
+        function calculateFlowRate(~, ~, ~)
         end
         function update(~)   
         end

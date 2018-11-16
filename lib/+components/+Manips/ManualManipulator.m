@@ -1,4 +1,4 @@
-classdef ManualManipulator < matter.manips.substance.flow
+classdef ManualManipulator < matter.manips.substance.stationary
     % This manipulator allows the user to define the desired flowrates by
     % using the a setFlowRate function. It contains an internal check to
     % see if the flowrates add up to zero and if that is not the case tries
@@ -17,7 +17,7 @@ classdef ManualManipulator < matter.manips.substance.flow
     
     methods
         function this = ManualManipulator(oParent, sName, oPhase)
-            this@matter.manips.substance.flow(sName, oPhase);
+            this@matter.manips.substance.stationary(sName, oPhase);
 
             this.oParent = oParent;
             
@@ -68,7 +68,7 @@ classdef ManualManipulator < matter.manips.substance.flow
             this.fTotalError = this.fTotalError + (fError * fTimeStep);
             
             %% sets the flowrate values
-            update@matter.manips.substance.flow(this, this.afManualFlowRates);
+            update@matter.manips.substance.stationary(this, this.afManualFlowRates);
             
             this.fLastExec = this.oTimer.fTime;
         end

@@ -9,7 +9,7 @@ classdef Adsorber < matter.procs.p2ps.flow
             this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);  
         end
         
-        function calculateFilterRate(this, afInFlowRates, aarInPartials)
+        function calculateFlowRate(this, afInFlowRates, aarInPartials)
             if ~(isempty(afInFlowRates) || all(sum(aarInPartials) == 0))
                 this.afPartialInFlows = sum((afInFlowRates .* aarInPartials),1);
             else

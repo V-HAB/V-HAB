@@ -1,4 +1,4 @@
-classdef Human_O2_to_CO2_Converter < matter.manips.substance.flow
+classdef Human_O2_to_CO2_Converter < matter.manips.substance.stationary
     
     %A phase manipulator to simulate conversion of O2 into CO2 inside the
     %human body. It does not use any other inputs except for O2 so the mass
@@ -11,7 +11,7 @@ classdef Human_O2_to_CO2_Converter < matter.manips.substance.flow
     
     methods
         function this = Human_O2_to_CO2_Converter(sName, oPhase)
-            this@matter.manips.substance.flow(sName, oPhase);
+            this@matter.manips.substance.stationary(sName, oPhase);
             this.fLastUpdate = 0;
         end
         

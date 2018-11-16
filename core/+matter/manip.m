@@ -84,6 +84,20 @@ classdef manip < base
             fTimeStep = this.oPhase.fMassUpdateTimeStep;
         end
         
+        function afFlowRates = getTotalFlowRates(this)
+            % Get all inwards and the stored partial masses as total kg/s
+            % values.
+            
+            [ afFlowRates, mrInPartials ] = this.getInFlows();
+            
+            
+            if ~isempty(afFlowRates)
+                afFlowRates = sum(bsxfun(@times, afFlowRates, mrInPartials), 1);
+            else
+                afFlowRates = zeros(1, this.oMT.iSubstances);
+            end
+        end
+        
         function [ afInFlowrates, mrInPartials ] = getInFlows(this)
             % Return vector with all INWARD flow rates and matrix with 
             % partial masses of each in flow.
@@ -120,50 +134,6 @@ classdef manip < base
                 mrInPartials(abOutFlows,:)  = [];
                 afInFlowrates(abOutFlows,:) = [];
             end
-            
-             
-        end
-        
-        function [ afInMasses, mrInPartials ] = getMasses(this)
-            % Return vector with all INWARD flow rates and matrix with 
-            % partial masses of each in flow MULTIPLIED with current time
-            % step so the become absolute masses. Then the currently stored
-            % mass is added!
-            
-            % Get last time step
-            fTimeStep = this.getTimeStep();
-            
-            % Initializing temporary matrix and array to save the per-exme
-            % data. 
-            mrInPartials = zeros(this.oPhase.iProcsEXME, this.oMT.iSubstances);
-            afInMasses   = zeros(this.oPhase.iProcsEXME, 1);
-            
-            % Creating an array to log which of the flows are not in-flows
-            abOutFlows = true(iNumberOfEXMEs, 1);
-            
-            % See phase.getTotalMassChange
-            for iI = 1:this.oPhase.iProcsEXME
-                [ afFlowRates, mrFlowPartials, ~ ] = this.oPhase.coProcsEXME{iI}.getFlowData();
-                
-                % Inflowing?
-                abInf = (afFlowRates > 0);
-                
-                if any(abInf)
-                    mrInPartials(iI,:) = mrFlowPartials(abInf, :);
-                    afInMasses(iI)     = afFlowRates(abInf);
-                    abOutFlows(iI)     = false;
-                end
-            end
-            
-            % Now we delete all of the rows in the mrInPartials matrix
-            % that belong to out-flows.
-            if any(abOutFlows)
-                mrInPartials(abOutFlows,:) = [];
-                afInMasses(abOutFlows,:)   = [];
-            end
-            
-            mrInPartials = [ mrInPartials;  this.oPhase.arPartialMass ];
-            afInMasses   = [ afInMasses * fTimeStep; this.oPhase.fMass ];
         end
     end
 end

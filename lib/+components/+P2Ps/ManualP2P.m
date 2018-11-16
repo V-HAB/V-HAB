@@ -1,4 +1,4 @@
-classdef ManualP2P < matter.procs.p2ps.flow
+classdef ManualP2P < matter.procs.p2ps.stationary
     % This p2p is designed to function like the manual solver for branches.
     % The user can use the setFlowRate function to specify the desired
     % partial mass flowrates (in kg/s) in an array (array has to be the
@@ -23,7 +23,7 @@ classdef ManualP2P < matter.procs.p2ps.flow
     
     methods
         function this = ManualP2P(oParent, oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut)
-            this@matter.procs.p2ps.flow(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
+            this@matter.procs.p2ps.stationary(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
 
             this.oParent = oParent;
         end

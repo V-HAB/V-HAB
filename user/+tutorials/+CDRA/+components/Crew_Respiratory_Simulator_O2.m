@@ -1,4 +1,4 @@
-classdef Crew_Respiratory_Simulator_O2 < matter.procs.p2ps.flow
+classdef Crew_Respiratory_Simulator_O2 < matter.procs.p2ps.stationary
     
     %A phase manipulator to simulate the CO2 generation from resperation
     %by the crew. Should be used in the store where the crew is present and
@@ -23,7 +23,7 @@ classdef Crew_Respiratory_Simulator_O2 < matter.procs.p2ps.flow
     
     methods
         function this = Crew_Respiratory_Simulator_O2(oStore, sName, sPhaseIn, sPhaseOut, mbCrewMembers, oSystem)
-            this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
+            this@matter.procs.p2ps.stationary(oStore, sName, sPhaseIn, sPhaseOut);
             
             this.mbCrewMembers = mbCrewMembers;
             this.oSystem = oSystem;

@@ -1,4 +1,4 @@
-classdef ConstantMassP2P < matter.procs.p2ps.flow
+classdef ConstantMassP2P < matter.procs.p2ps.stationary
     % This p2p is designed to keep the mass of the specified substances on
     % its input side constant with regard to the mass value that is
     % present initially. The value for the constant mass can also be
@@ -29,7 +29,7 @@ classdef ConstantMassP2P < matter.procs.p2ps.flow
     
     methods
         function this = ConstantMassP2P(oParent, oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut, csSubstances, iDirection)
-            this@matter.procs.p2ps.flow(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
+            this@matter.procs.p2ps.stationary(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
 
             this.oParent = oParent;
             
