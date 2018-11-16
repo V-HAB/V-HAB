@@ -23,7 +23,8 @@ classdef convection_Filter < thermal.procs.conductors.convective
         function fConvection_alpha = updateHeatTransferCoefficient(this, ~)
             
             % gets the required matter properties
-            fDensity                    = this.oMT.calculateDensity(this.oMassBranch.aoFlows(this.iFlow));
+            fDensity = this.oMT.calculateDensity(this.oMassBranch.aoFlows(this.iFlow));
+            
             if fDensity == 0
                 fConvection_alpha = 0;
                 return
@@ -39,7 +40,7 @@ classdef convection_Filter < thermal.procs.conductors.convective
             if fFlowSpeed == 0
                 fConvection_alpha = 0;
             else
-                [fConvection_alpha] = this.convection_plate(this.fLength, fFlowSpeed, fDyn_Visc, fDensity, fThermal_Conductivity, fSpecificHeatCapacity);
+                fConvection_alpha = functions.calculateHeatTransferCoefficient.convectionPlate(this.fLength, fFlowSpeed, fDyn_Visc, fDensity, fThermal_Conductivity, fSpecificHeatCapacity);
             end
         end
         

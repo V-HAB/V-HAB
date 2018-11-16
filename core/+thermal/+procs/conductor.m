@@ -23,12 +23,20 @@ classdef (Abstract) conductor < base & event.source
         oTimer;
         
         bSealed = false;
+        
+        % The thermal solver will need to determine which type of
+        % conductor a specific object is. Since isa() is very slow, we
+        % create these three boolean variables. 
+        bRadiative  = false;
+        bConvective = false;
+        bConductive = false;
     end
     
     properties (Abstract, SetAccess = protected)
-        fConductivity; % Thermal conductivity of connection (unit depends on subclass).
+        fResistance; % Thermal resistance of connection (unit depends on subclass).
         
     end
+    
     
     methods
         
@@ -51,6 +59,12 @@ classdef (Abstract) conductor < base & event.source
         function seal(this, oThermalBranch)
             if this.bSealed
                 this.throw('seal', 'Already sealed!');
+            end
+            
+            % Making sure that the object is configured properly in terms
+            % of it's type.
+            if sum([this.bRadiative this.bConductive this.bConvective]) > 1
+                this.throw('seal', 'You have configured the conductor ''%s'' to be of multiple types. Can only be one (radiative, conductive or convective).', this.sName);
             end
             
             this.oThermalBranch = oThermalBranch;

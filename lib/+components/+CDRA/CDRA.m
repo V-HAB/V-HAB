@@ -622,8 +622,8 @@ classdef CDRA < vsys
                 iCellNumber             = this.tGeometry.(csTypes{iType}).iCellNumber;
                 fConductance            = mfConductivity(iType) * (this.tGeometry.(csTypes{iType}).fLength / iCellNumber);
                 fFilterMaterialArea     = this.tGeometry.(csTypes{iType}).fCrossSection * (1-this.tGeometry.(csTypes{iType}).rVoidFraction);
-                fMaterialConductivity   = (fFilterMaterialArea * fConductance)/(this.tGeometry.(csTypes{iType}).fLength/iCellNumber);
-
+                fMaterialResistivity   = (this.tGeometry.(csTypes{iType}).fLength/iCellNumber) / (fFilterMaterialArea * fConductance);
+                
                 for iFilter = 1:2
                     sName               = [(csTypes{iType}),'_',num2str(iFilter)];
 
@@ -657,7 +657,7 @@ classdef CDRA < vsys
                         thermal.procs.exme(oAbsorberPhase2.oCapacity, sPort2);
                         
                         sConductorName = [sName, '_Material_Conductor_', num2str(iCell), '_', num2str(iCell+1)];
-                        thermal.procs.conductors.conduction(this, sConductorName, fMaterialConductivity);
+                        thermal.procs.conductors.conductive(this, sConductorName, fMaterialResistivity);
                         
                         thermal.branch(this, [sName,'.', sPort1], {sConductorName}, [sName,'.', sPort2], [sName, '_Conduction_Cell_', num2str(iCell), '_to_Cell_', num2str(iCell+1)]);
                     end
@@ -762,9 +762,17 @@ classdef CDRA < vsys
             % to be in W/K which means it is U*A or in this case
             % 1/sum(R_th): With R_th = s/(lambda * A)
             % Assumes                            50 cm of air and                                 10 cm of AL                     + 10cm of zeolite, conductivity values from ICES 2014-168 
-            mfTransferCoefficient(1)   	= 1 / ( (0.5/(fThermalConductivity .* fArea13x))       + (0.1/(237 .* fArea13x))      + (0.1/(0.147 .* fArea13x)));
-            mfTransferCoefficient(2)    = 1 / ( (0.5/(fThermalConductivity .* fAreaSylobead))  + (0.1/(237 .* fAreaSylobead)) + (0.1/(0.151 .* fAreaSylobead))); % asssumed conducitivty of 13x
-            mfTransferCoefficient(3)   	= 1 / ( (0.5/(fThermalConductivity .* fArea5A))        + (0.1/(237 .* fArea5A))       + (0.1/(0.152 .* fArea5A)));
+            mfResistance(1,1)   	= 0.5/(fThermalConductivity .* fArea13x);
+            mfResistance(1,2)       = 0.1/(237 .* fArea13x);
+            mfResistance(1,3)       = 0.1/(0.147 .* fArea13x);
+            
+            mfResistance(2,1)       = 0.5/(fThermalConductivity .* fAreaSylobead);
+            mfResistance(2,2)       = 0.1/(237 .* fAreaSylobead);
+            mfResistance(2,3)       = 0.1/(0.151 .* fAreaSylobead); % asssumed conducitivty of 13x
+            
+            mfResistance(3,1)       = 0.5/(fThermalConductivity .* fArea5A);
+            mfResistance(3,2)       = 0.1/(237 .* fArea5A);
+            mfResistance(3,3)       = 0.1/(0.152 .* fArea5A);
             
             csTypes = {'Zeolite13x', 'Sylobead', 'Zeolite5A'};
             % Since there are two filters of each type a for loop over the
@@ -789,11 +797,17 @@ classdef CDRA < vsys
                         sPort2 = [sName, '_ConductionCDRA_', num2str(iCell+1)];
                         thermal.procs.exme(oCabinPhase.oCapacity, sPort2);
                         
-                        sConductorName = [sName, '_Cabin_Conductor_', num2str(iCell), '_', num2str(iCell+1)];
-                        thermal.procs.conductors.conduction(this, sConductorName, mfTransferCoefficient(iType));
+                        sConductorName1 = [sName, '_Cabin_Conductor_Air_', num2str(iCell), '_', num2str(iCell+1)];
+                        thermal.procs.conductors.conductive(this, sConductorName1, mfResistance(iType, 1));
+                        
+                        sConductorName2 = [sName, '_Cabin_Conductor_Al_', num2str(iCell), '_', num2str(iCell+1)];
+                        thermal.procs.conductors.conductive(this, sConductorName2, mfResistance(iType, 2));
+                        
+                        sConductorName3 = [sName, '_Cabin_Conductor_Adsorber_', num2str(iCell), '_', num2str(iCell+1)];
+                        thermal.procs.conductors.conductive(this, sConductorName3, mfResistance(iType, 3));
                         
                         csThermalInterfaces{iIF} = ['CDRA_ThermalIF_', sPort2];
-                        thermal.branch(this, [sName,'.', sPort1], {sConductorName}, csThermalInterfaces{iIF}, [sName, '_CabinConduction_Cell_', num2str(iCell)]);
+                        thermal.branch(this, [sName,'.', sPort1], {sConductorName1, sConductorName2, sConductorName3}, csThermalInterfaces{iIF}, [sName, '_CabinConduction_Cell_', num2str(iCell)]);
                         
                         thermal.branch(this.oParent, csThermalInterfaces{iIF}, {}, [oCabinPhase.oStore.sName,'.', sPort2], [sName, '_CabinConduction_Cell_', num2str(iCell)]);
                         

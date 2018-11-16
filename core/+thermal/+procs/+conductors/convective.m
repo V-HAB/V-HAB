@@ -7,7 +7,7 @@ classdef convective < thermal.procs.conductor
     
     properties (SetAccess = protected)
         
-        fConductivity = 0; % Thermal conductivity of connection in [W/K].
+        fResistance = 0; % Thermal resistance of connection in [K/W].
 
         fArea;
         
@@ -16,19 +16,17 @@ classdef convective < thermal.procs.conductor
         oMassBranch;
         iFlow;
         
-        bRadiative  = false;
-        bConvective = true;
-        bConductive = false;
-        
         bSetOutdated = false;
     end
     
     methods
         
         function this = convective(oContainer, sName, fArea, oMassBranch, iFlow)
-            % Create a convective conductor instance
-             
+            % Calling the parent constructor
             this@thermal.procs.conductor(oContainer, sName);
+            
+            % Setting the conductor type to convective
+            this.bConvective = true;
             
             this.fArea = fArea;
             this.oMassBranch = oMassBranch;
@@ -36,13 +34,13 @@ classdef convective < thermal.procs.conductor
             
         end
         
-        function fConductivity = update(this, ~)
+        function fResistance = update(this, ~)
             
             this.fHeatTransferCoefficient = this.updateHeatTransferCoefficient();
             
-            fConductivity = this.fHeatTransferCoefficient * this.fArea;
+            fResistance = 1 / (this.fHeatTransferCoefficient * this.fArea);
             
-            this.fConductivity = fConductivity;
+            this.fResistance = fResistance;
             
             this.bSetOutdated = false;
         end

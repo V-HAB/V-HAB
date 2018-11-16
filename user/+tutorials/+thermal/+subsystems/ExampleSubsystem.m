@@ -58,8 +58,8 @@ classdef ExampleSubsystem < vsys
             
             fMaterialConductivity = (fPipeMaterialArea * fThermalConductivityCopper)/fPipeLength;
             
-            thermal.procs.conductors.conduction(this, 'Material_Conductor1', fMaterialConductivity);
-            thermal.procs.conductors.conduction(this, 'Material_Conductor2', fMaterialConductivity);
+            thermal.procs.conductors.conductive(this, 'Material_Conductor1', fMaterialConductivity);
+            thermal.procs.conductors.conductive(this, 'Material_Conductor2', fMaterialConductivity);
             
             thermal.branch(this, 'Filter.Inlet_1', {'Material_Conductor1'}, 'Inlet_Conduction', 'Pipe_Material_Conductor_In');
             thermal.branch(this, 'Filter.Outlet_1', {'Material_Conductor2'}, 'Outlet_Conduction', 'Pipe_Material_Conductor_Out');
@@ -80,7 +80,7 @@ classdef ExampleSubsystem < vsys
             % Create the solver instances. Generally, this can be done here
             % or directly within the vsys (after the .seal() command).
             oManual = solver.matter.manual.branch(this.aoBranches(1));
-            oManual.setFlowRate(0.1);
+            oManual.setFlowRate(-0.1);
             
             solver.matter.residual.branch(this.aoBranches(2));
             %, this.toBranches.(this.aoThermalBranches(1).sName
