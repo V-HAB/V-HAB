@@ -37,6 +37,13 @@ classdef matter_observer < simulation.monitor
         
         % References to all flows in the simulation
         aoFlows = [];
+        
+    end
+    
+    properties
+        % Toggles a more verbose output of the matter balance in the
+        % console
+        bVerbose = true;
     end
     
     methods
@@ -163,14 +170,16 @@ classdef matter_observer < simulation.monitor
             fprintf('| Generated Mass in Phases:    %f kg\n', sum(this.mfGeneratedMass(end, :)));
             fprintf('| Total Mass Balance:          %f kg\n', sum(mfTotalFinalMass) - sum(this.mfTotalMass(1, :)));
             
-            fprintf('| \n');
-            fprintf('| Generated Mass refers to the sum over all phases for the afGeneratedMass property.\n');
-            fprintf('| There mass is generated in case slightly too much mass is taken out of the phase.\n');
-            fprintf('| \n');
-            fprintf('| Mass Balance refers to the total mass balance and shows the difference between the \n');
-            fprintf('| sum over all phase masses at the end of the simulation and the beginning.\n');
-            fprintf('| A positive mass balance means mass was generated during the simulation, therefore \n');
-            fprintf('| the Generated Mass value always results in a mass balance error.\n');
+            if this.bVerbose
+                fprintf('| \n');
+                fprintf('| Generated Mass refers to the sum over all phases for the afGeneratedMass property.\n');
+                fprintf('| There mass is generated in case slightly too much mass is taken out of the phase.\n');
+                fprintf('| \n');
+                fprintf('| Mass Balance refers to the total mass balance and shows the difference between the \n');
+                fprintf('| sum over all phase masses at the end of the simulation and the beginning.\n');
+                fprintf('| A positive mass balance means mass was generated during the simulation, therefore \n');
+                fprintf('| the Generated Mass value always results in a mass balance error.\n');
+            end
             
             fprintf('+-----------------------------------------------------------------------------------+\n');
         end

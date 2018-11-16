@@ -554,7 +554,10 @@ classdef console_output < simulation.monitor
         function this = onPause(this, ~)
             fprintf('+-----------------------------------------------------------------------------------+\n');
             fprintf('+-------------------------------- SIMULATION PAUSED --------------------------------+\n');
-            fprintf('+-----------------------------------------------------------------------------------+\n');
+            fprintf('+-----------------------------------------------------------------------------------+\n\n');
+            
+            
+            this.printSimulationStatistics();
         end
         
         
@@ -565,10 +568,16 @@ classdef console_output < simulation.monitor
             % major tick display.
             disp('');
             
+            fprintf('Simulation completed!\n\n');
+            
+            this.printSimulationStatistics();
+            
+        end
+        
+        function printSimulationStatistics(this)
+            
             oSimInfra = this.oSimulationInfrastructure;
             oTimer    = oSimInfra.oSimulationContainer.oTimer;
-            
-            fprintf('Simulation completed!\n\n');
             
             fprintf('+------------------------------ SIMULATION STATISTICS ------------------------------+\n');
             fprintf('Sim Time:      %i [s] in %i ticks\n', oTimer.fTime, oTimer.iTick);
@@ -576,7 +585,7 @@ classdef console_output < simulation.monitor
             fprintf('Sim factor:    %.4f [-] (ratio)\n', oSimInfra.fSimFactor);
             fprintf('Avg Time/Tick: %.4f [s]\n', oTimer.fTime / oTimer.iTick);
             fprintf('+-----------------------------------------------------------------------------------+\n\n');
-
+            
         end
         
         
