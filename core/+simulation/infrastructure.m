@@ -52,9 +52,6 @@ classdef infrastructure < base & event.source
         % Was everything initialized, e.g. create*Structure, event
         % init_post was sent etc?
         bInitialized = false;
-        
-        % Is this simulation currently paused? This flag can be used to
-        % suppress console outputs that would 
     end
     
     properties (GetAccess = public, Dependent = true)
