@@ -209,7 +209,7 @@ classdef CCAA < vsys
             % Store that contains the coolant passing through the CHX. This
             % store is only necessary because it is not possible to have
             % System Interfaces without a store in between.
-            matter.store(this, 'CoolantStore', 0.02);
+            matter.store(this, 'CoolantStore', 0.03);
             % H2O phase
             % Temperature is from ICES-2015-27: Low temperature loop in US lab 
             % has a temperature between 4.4°c and 9.4°C. But also a document from

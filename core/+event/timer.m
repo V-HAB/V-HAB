@@ -9,9 +9,11 @@ classdef timer < base
         fMinimumTimeStep = 1e-8;  % [s]
         
         
-        % "Accuracy" of simulation - min time step. Use as
-        % precision for rounding.
-        iPrecision = 7;
+        % "Accuracy" of simulation - represent the number of digits after
+        % the decimal sign which are considered valid in the simulation
+        % itself. For example for the value of 20 all values smaller than
+        % 10^-20 will be rounded to zero
+        iPrecision = 20;
     end
     
     properties (SetAccess = protected, GetAccess = public)
@@ -172,11 +174,6 @@ classdef timer < base
                 this.fTime = -1 * this.fMinimumTimeStep;
             end
             
-            % Precision of simulation. We derive this from the time step
-            % and make it 2 orders of magnitude smaller than the timestep
-            % in seconds. 
-            this.iPrecision = floor(log10(1 / this.fMinimumTimeStep)) - 1;
-            
             csBasicPostTickGroups = fieldnames(this.txPostTicks);
             
             iPostTickGroups = length(csBasicPostTickGroups);
@@ -224,10 +221,19 @@ classdef timer < base
 
         function setMinStep(this, fMinStep)
             this.fMinimumTimeStep = fMinStep;
-            this.iPrecision       = floor(log10(1 / this.fMinimumTimeStep)) - 1;
             this.fTime            = -1 * this.fMinimumTimeStep;
         end
         
+        function setSimulationPrecision(this, iPrecision)
+            % This function allows the user to set the overall precision of
+            % the V-HAB Simulation. All flowrates smaller than the
+            % precision (regardless of matter, thermal or electrical
+            % domain) will be rounded to zero. The precision represent the
+            % number of digits after the decimal sign which are considered
+            % valid in the simulation itself. For example for the value of
+            % 20 all values smaller than 10^-20 will be rounded to zero
+            this.iPrecision = iPrecision;
+        end
         
         function go(this)
             % Run the timer
