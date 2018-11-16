@@ -1,4 +1,4 @@
-classdef DummyBoschProcess < matter.manips.substance.flow
+classdef DummyBoschProcess < matter.manips.substance.stationary
     %DUMMYBOSCHPROCESS A dummy model of the Bosch Process
     %   This manipulator converts all of the CO2 in the connected phase to
     %   the according amount of pure carbon and oxygen.
@@ -10,7 +10,7 @@ classdef DummyBoschProcess < matter.manips.substance.flow
     
     methods
         function this = DummyBoschProcess(sName, oPhase)
-            this@matter.manips.substance.flow(sName, oPhase);
+            this@matter.manips.substance.stationary(sName, oPhase);
             
         end
         
@@ -49,7 +49,7 @@ classdef DummyBoschProcess < matter.manips.substance.flow
             % afPartials variable. The last parameter indicates that the
             % values in afPartials are absolute masses, so within the
             % update method they are converted to flow rates. 
-            update@matter.manips.substance.flow(this, afPartialFlows);
+            update@matter.manips.substance.stationary(this, afPartialFlows);
         end
     end
     

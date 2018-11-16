@@ -1,4 +1,4 @@
-classdef PlantManipulator < matter.manips.substance.flow
+classdef PlantManipulator < matter.manips.substance.stationary
     % This manipulator converts O2, CO2, H2O, Nutrients and Biomass 
     
     properties
@@ -15,7 +15,7 @@ classdef PlantManipulator < matter.manips.substance.flow
     
     methods
         function this = PlantManipulator(oParent, sName, oPhase)
-            this@matter.manips.substance.flow(sName, oPhase);
+            this@matter.manips.substance.stationary(sName, oPhase);
 
             this.oParent = oParent;
             this.iEdibleWetBiomass = this.oMT.tiN2I.([this.oParent.txPlantParameters.sPlantSpecies, 'EdibleWet']);
@@ -81,7 +81,7 @@ classdef PlantManipulator < matter.manips.substance.flow
             end
             
             
-            update@matter.manips.substance.flow(this, afPartialFlows);
+            update@matter.manips.substance.stationary(this, afPartialFlows);
             
             %%
             

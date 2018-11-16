@@ -209,6 +209,113 @@ classdef p2p < matter.flow
     
     
     methods (Access = protected)
+        function [ afInFlowrates, mrInPartials ] = getInFlows(this, sPhase)
+            % Return vector with all INWARD flow rates and matrix with 
+            % partial masses of each in flow
+            %
+            %TODO also check for matter.manips.substances, and take the change
+            %     due to that also into account ... just as another flow
+            %     rate? Should the phase do that?
+            
+            if nargin < 2, sPhase = 'in'; end
+            
+            if strcmp(sPhase, 'in'); oPhase = this.oIn.oPhase; else; this.oOut.oPhase; end
+            
+            % Initializing temporary matrix and array to save the per-exme
+            % data. 
+            mrInPartials  = zeros(oPhase.iProcsEXME, this.oMT.iSubstances);
+            afInFlowrates = zeros(oPhase.iProcsEXME, 1);
+            
+            % Creating an array to log which of the flows are not in-flows
+            abOutFlows = true(oPhase.iProcsEXME, 1);
+            
+            % Get flow rates and partials from EXMEs
+            for iI = 1:oPhase.iProcsEXME
+                [ afFlowRates, mrFlowPartials, ~ ] = oPhase.coProcsEXME{iI}.getFlowData();
+                
+                % The afFlowRates is a row vector containing the flow rate
+                % at each flow, negative being an extraction!
+                % mrFlowPartials is matrix, each row has partial ratios for
+                % a flow, cols are the different substances.
+                
+                abInf = (afFlowRates > 0);
+                
+                if any(abInf)
+                    mrInPartials(iI,:) = mrFlowPartials(abInf, :);
+                    afInFlowrates(iI)  = afFlowRates(abInf);
+                    abOutFlows(iI)     = false;
+                end
+            end
+            
+            % Now we delete all of the rows in the mrInPartials matrix
+            % that belong to out-flows.
+            if any(abOutFlows)
+                mrInPartials(abOutFlows,:)  = [];
+                afInFlowrates(abOutFlows,:) = [];
+            end
+            
+            % Check manipulator for partial
+            if ~isempty(oPhase.toManips.substance) && ~isempty(oPhase.toManips.substance.afPartialFlows)
+                this.warn('getInFlows', 'Unsafe when using a manipulator. Use getPartialInFlows instead!');
+            end
+        end
+        
+        
+        function aafPartials = getPartialInFlows(this, sPhase)
+            % Return matrix with all INWARD flow rates and matrix with 
+            % partial masses of each in flow in kg/s per flow / substance
+            % To get the total flow rate of each substance into the phase:
+            % 
+            % afPartialFlows = afFlowRate .* mrPartials(:, iSpecies)
+            %
+            %TODO clean up - from getFlowData, afFlowRates is afFlowRate
+            %     and mrFLowPartails is actually arFlowPartials!
+            %     -> simplify!
+            
+            if nargin < 2, sPhase = 'in'; end
+            
+            if strcmp(sPhase, 'in'); oPhase = this.oIn.oPhase; else; this.oOut.oPhase; end
+            
+            % Initializing temporary matrix and array to save the per-exme
+            % data. 
+            aafPartials  = zeros(oPhase.iProcsEXME, this.oMT.iSubstances);
+            
+            % Creating an array to log which of the flows are not in-flows
+            aiOutFlows = ones(oPhase.iProcsEXME, 1);
+            
+            % Get flow rates and partials from EXMEs
+            for iI = 1:oPhase.iProcsEXME
+                [ fFlowRate, arFlowPartials, ~ ] = oPhase.coProcsEXME{iI}.getFlowData();
+                
+                % The afFlowRates is a row vector containing the flow rate
+                % at each flow, negative being an extraction!
+                % mrFlowPartials is matrix, each row has partial ratios for
+                % a flow, cols are the different substances.
+                
+                bInf = (fFlowRate > 0);
+                
+                if bInf
+                    aafPartials(iI,:) = fFlowRate .* arFlowPartials;
+                    aiOutFlows(iI)    = 0;
+                end
+            end
+            
+            % Now we delete all of the rows in the aafPartials matrix
+            % that belong to out-flows.
+            if any(aiOutFlows)
+                aafPartials(logical(aiOutFlows),:)  = [];
+            end
+            
+            % Check manipulator for partial
+            if ~isempty(oPhase.toManips.substance) && ~isempty(oPhase.toManips.substance.afPartialFlows)
+                % Was updated just this tick - partial changes in kg/s
+                afTmpPartials = oPhase.toManips.substance.afPartialFlows;
+                
+                if any(afTmpPartials)
+                    aafPartials  = [ aafPartials;  afTmpPartials ];
+                end
+            end
+        end
         
         function setMatterProperties(this, fFlowRate, arPartialMass, fTemperature, fPressure)
             % Get missing values from exmes

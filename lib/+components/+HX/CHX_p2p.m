@@ -29,6 +29,10 @@ classdef CHX_p2p < matter.procs.p2ps.flow & event.source
             this.trigger('update');
         end
         
+        function calculateFlowRate(this, ~, ~)
+            this.update();
+        end
+            
         function update(this)
             % Called whenever a flow rate changes. The two EXMES (oIn/oOut)
             % have an oPhase attribute that allows us to get the phases on

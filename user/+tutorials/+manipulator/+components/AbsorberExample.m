@@ -1,4 +1,4 @@
-classdef AbsorberExample < matter.procs.p2ps.flow
+classdef AbsorberExample < matter.procs.p2ps.stationary
     %ABSORBEREXAMPLE Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -27,7 +27,7 @@ classdef AbsorberExample < matter.procs.p2ps.flow
     
     methods
         function this = AbsorberExample(oParent, oStore, sName, sPhaseIn, sPhaseOut, sSubstance, fCapacity)
-            this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
+            this@matter.procs.p2ps.stationary(oStore, sName, sPhaseIn, sPhaseOut);
             
             this.oParent = oParent;
             

@@ -22,7 +22,7 @@ classdef branch < base & event.source
     %   nodes are not possible!
     %
     % - P2Ps used together with this solver must implement the
-    %   calculateFilterRate(afInFlowRates, aarInPartials) function, which
+    %   calculateFlowRate(afInFlowRates, aarInPartials) function, which
     %   can take an array of inflows with corresping partial mass ratios to
     %   calculate the p2p flow rate
     %

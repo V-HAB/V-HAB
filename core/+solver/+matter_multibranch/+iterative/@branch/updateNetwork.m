@@ -122,7 +122,7 @@ function updateNetwork(this, bForceP2Pcalc)
                                 % Update the P2P! (not with update function
                                 % because that is also called at different
                                 % other times!
-                                oProcP2P.calculateFilterRate(afInFlowRates, aarInPartials);
+                                oProcP2P.calculateFlowRate(afInFlowRates, aarInPartials);
                             end
                         end
                         

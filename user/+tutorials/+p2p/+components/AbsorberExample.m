@@ -1,4 +1,4 @@
-classdef AbsorberExample < matter.procs.p2ps.flow & event.source
+classdef AbsorberExample < matter.procs.p2ps.stationary & event.source
     %ABSORBEREXAMPLE An example for a p2p processor implementation
     %   The actual logic behind the absorbtion behavior is not based on any
     %   specific physical system. It is just implemented in a way to
@@ -31,7 +31,7 @@ classdef AbsorberExample < matter.procs.p2ps.flow & event.source
     
     methods
         function this = AbsorberExample(oStore, sName, sPhaseIn, sPhaseOut, sSubstance, fCapacity, fCharacteristics)
-            this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
+            this@matter.procs.p2ps.stationary(oStore, sName, sPhaseIn, sPhaseOut);
             
             % Species to absorb, max absorption
             this.sSubstance  = sSubstance;

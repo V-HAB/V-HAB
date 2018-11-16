@@ -17,6 +17,13 @@ classdef stationary < matter.procs.p2p
         function this = stationary(varargin)
             this@matter.procs.p2p(varargin{:});
             
+            if this.oIn.oPhase.bFlow && this.oOut.oPhase.bFlow
+                % P2Ps of this type are intended to be used in conjunction
+                % with normal or boundary phases. If a flow phase is
+                % connected to this use a flow p2p instead
+                this.throw('p2p', 'The stationary P2P %s has a flow phase as either input or output. No side of the P2P can be a flow phase! For flow phases use flow P2Ps!', this.sName);
+            end
+            
         end
     end
     
