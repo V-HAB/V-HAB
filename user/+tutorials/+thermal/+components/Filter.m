@@ -46,7 +46,7 @@ classdef Filter < matter.store
             % Creating the p2p processor
             % Input parameters: name, flow phase name, absorber phase name, 
             % species to be filtered, filter capacity
-            this.oProc = tutorials.subsystems.components.AbsorberExample(this, 'filterproc', 'FlowPhase', 'FilteredPhase', 'O2', fCapacity);
+            this.oProc = tutorials.thermal.components.AbsorberExample(this, 'filterproc', 'FlowPhase', 'FilteredPhase', 'O2', fCapacity);
             
         end
     end
