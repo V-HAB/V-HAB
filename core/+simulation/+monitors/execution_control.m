@@ -9,6 +9,10 @@ classdef execution_control < simulation.monitor
         iTickInterval = 100;
     end
     
+    properties (SetAccess = private, GetAccess = public)
+        bPaused = false;
+    end
+    
     methods
         function this = execution_control(oSimulationInfrastructure)
             this@simulation.monitor(oSimulationInfrastructure, { 'tick_post', 'init_post' });
@@ -39,6 +43,11 @@ classdef execution_control < simulation.monitor
                     else
                         oInfra.pause();
                     end
+                    
+                    this.bPaused = true;
+                    
+                else
+                    this.bPaused = false;
                 end
             end
         end

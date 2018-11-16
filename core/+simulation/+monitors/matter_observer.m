@@ -123,7 +123,7 @@ classdef matter_observer < simulation.monitor
         end
         
         
-        function onPause( ~)
+        function onPause(varargin)
             % Currently not required. But in case some specific operation
             % should occur when the sim is paused this function can be used
         end

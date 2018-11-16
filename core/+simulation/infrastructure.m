@@ -52,6 +52,9 @@ classdef infrastructure < base & event.source
         % Was everything initialized, e.g. create*Structure, event
         % init_post was sent etc?
         bInitialized = false;
+        
+        % Is this simulation currently paused? This flag can be used to
+        % suppress console outputs that would 
     end
     
     properties (GetAccess = public, Dependent = true)
@@ -292,7 +295,6 @@ classdef infrastructure < base & event.source
         function pause(this, varargin)
             this.iSimTicks = this.oSimulationContainer.oTimer.iTick;
             this.bUseTime  = false;
-            disp('##################### PAUSE ###################');
             
             this.trigger('pause');
         end
@@ -362,7 +364,7 @@ classdef infrastructure < base & event.source
             if (this.bUseTime && (this.oSimulationContainer.oTimer.fTime >= this.fSimTime)) || (~this.bUseTime && (this.oSimulationContainer.oTimer.iTick >= this.iSimTicks))
                 % Only trigger 'finish' if we actually want the console
                 % output. 
-                if ~this.bSuppressConsoleOutput
+                if ~this.bSuppressConsoleOutput && ~this.toMonitors.oExecutionControl.bPaused
                     this.trigger('finish');
                 end
             end
