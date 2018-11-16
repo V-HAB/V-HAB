@@ -566,26 +566,17 @@ classdef console_output < simulation.monitor
             % major tick display.
             disp('');
             
-% %             disp('------------------------------------------------------------------------');
-% %             disp('SIMULATION FINISHED - STATS!');
-% %             disp('------------------------------------------------------------------------');
-            
-            
-            
             oSimInfra = this.oSimulationInfrastructure;
             oTimer    = oSimInfra.oSimulationContainer.oTimer;
             
-            disp('------------------------------------------------------------------------');
-            disp([ 'Sim Time:     ' num2str(oTimer.fTime) 's in ' num2str(oTimer.iTick) ' ticks' ]);
-            disp([ 'Sim Runtime:  ' num2str(oSimInfra.fRuntimeTick + oSimInfra.fRuntimeOther) 's, from that for monitors (e.g. logging): ' num2str(oSimInfra.fRuntimeOther) 's' ]);
-            disp([ 'Sim factor:   ' num2str(oSimInfra.fSimFactor) ' [-] (ratio)' ]);
-            disp([ 'Avg Time/Tick:' num2str(oTimer.fTime / oTimer.iTick) ' [s]' ]);
-            %disp([ 'Mass lost:    to be re-implemented' ]);
-% %             disp([ 'Mass lost:    ' num2str(sum(this.mfLostMass(end, :))) 'kg' ]);
-% %             disp([ 'Mass balance: ' num2str(sum(this.mfTotalMass(1, :)) - sum(this.mfTotalMass(end, :))) 'kg' ]);
-%             disp([ 'Minimum Time Step * Total Sim Time: ' num2str(oTimer.fMinimumTimeStep * oTimer.fTime) ]);
-%             disp([ 'Minimum Time Step * Total Ticks:    ' num2str(oTimer.fMinimumTimeStep * oTimer.iTick) ]);
-            disp('------------------------------------------------------------------------');
+            fprintf('Simulation completed!\n\n');
+            
+            fprintf('+------------------------------ SIMULATION STATISTICS ------------------------------+\n');
+            fprintf('Sim Time:      %i [s] in %i ticks\n', oTimer.fTime, oTimer.iTick);
+            fprintf('Sim Runtime:   %.2f [s], from that for monitors (e.g. logging) %.2f [s]\n', oSimInfra.fRuntimeTick + oSimInfra.fRuntimeOther, oSimInfra.fRuntimeOther);
+            fprintf('Sim factor:    %.4f [-] (ratio)\n', oSimInfra.fSimFactor);
+            fprintf('Avg Time/Tick: %.4f [s]\n', oTimer.fTime / oTimer.iTick);
+            fprintf('+-----------------------------------------------------------------------------------+\n\n');
 
         end
         
