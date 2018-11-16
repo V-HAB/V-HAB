@@ -149,6 +149,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % all other time step properties will be ignored and the set time
         % step will be used
         fFixedTimeStep;
+        % Precision with which mass changes are considered during time step
+        % calculation
+        iTimeStepPrecision = 7;
         
         % Maximum factor with which rMaxChange is decreased
         rHighestMaxChangeDecrease = 0;
@@ -348,12 +351,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %               property is set all other time step properties
             %               will be ignored and the set time step will be
             %               used
+            % iTimeStepPrecision:   Precision for the rounding of mass
+            %               values during time step calculation. Values
+            %               smaller than 10^-iPrecision will be rounded to
+            %               0 and not result in smaller time steps
             %
             % In order to define these provide a struct with the fieldnames
             % as described here to this function for the values that you
             % want to set
             
-            csPossibleFieldNames = {'rMaxChange', 'arMaxChange', 'fMaxStep', 'fMinStep', 'fFixedTimeStep'};
+            csPossibleFieldNames = {'rMaxChange', 'arMaxChange', 'fMaxStep', 'fMinStep', 'fFixedTimeStep', 'iTimeStepPrecision'};
             
             % In case the struct reference for the partial mass change is
             % used the arMaxChange vector for the internal calculations has

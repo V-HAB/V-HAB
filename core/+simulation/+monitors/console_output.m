@@ -624,7 +624,7 @@ classdef console_output < simulation.monitor
                 
                 %disp([ num2str(oSim.oTimer.iTick), ' (', num2str(oSim.oTimer.fTime), 's) (Delta Time ', num2str(fDeltaTime), 's)']);
                 
-                sFloat = [ '%.' num2str(oSim.oTimer.iPrecision) 'f' ];
+                sFloat = [ '%.' num2str(7) 'f' ];
                 
                 fprintf([ '%i\t(' sFloat 's)\t(Tick Delta ' sFloat 's)\n' ], oSim.oTimer.iTick, oSim.oTimer.fTime, fDeltaTime);
             end

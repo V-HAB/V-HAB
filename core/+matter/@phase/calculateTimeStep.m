@@ -80,7 +80,7 @@ else
     % so multiplied by 100 % we would have a percentage change per second
     % for each substance.
     abChange = (afPartialFlows ~= 0);
-    arPartialsChange = abs(afPartialFlows(abChange) ./ tools.round.prec(this.fMass, this.oTimer.iPrecision));
+    arPartialsChange = abs(afPartialFlows(abChange) ./ tools.round.prec(this.fMass, this.iTimeStepPrecision));
     
     % Only use non-inf values. They would be inf if the current mass of
     % according substance is zero. If a new substance enters the phase, it
@@ -137,8 +137,8 @@ else
         % partial masses from delaying the simulation (otherwise the
         % timestep will go asymptotically towards zero the smaller the
         % partial mass becomes)
-        afCurrentMass(this.afMass < 10^(-this.oTimer.iPrecision)) = 10^(-this.oTimer.iPrecision);
-        arPartialChangeToPartials = abs(afPartialFlows ./ tools.round.prec(afCurrentMass, this.oTimer.iPrecision));
+        afCurrentMass(this.afMass < 10^(-this.iTimeStepPrecision)) = 10^(-this.iTimeStepPrecision);
+        arPartialChangeToPartials = abs(afPartialFlows ./ tools.round.prec(afCurrentMass, this.iTimeStepPrecision));
         % Values where the partial mass is zero are set to zero, otherwise
         % the value for these is NaN or Inf
         arPartialChangeToPartials(this.afMass == 0) = 0;

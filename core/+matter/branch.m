@@ -239,7 +239,7 @@ classdef branch < base.branch
             
             % If sum of the last ten flow rates is < precision, set flow
             % rate to zero
-            if tools.round.prec(sum(this.afFlowRates), 30) == 0
+            if tools.round.prec(sum(this.afFlowRates), this.oTimer.iPrecision) == 0
                 fFlowRate = 0;
                 
                 afPressure = zeros(1,this.iFlowProcs);
