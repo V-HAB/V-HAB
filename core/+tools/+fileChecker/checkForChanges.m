@@ -21,21 +21,30 @@ global tSavedInfo
 % struct.
 sSavePath = fullfile('data',['FolderStatusFor', sCaller, '.mat']);
 
-% Load the information from when we last executed this check or create
-% a new variable that we can later save.
-if exist(sSavePath, 'file') ~= 0
-    % If this is the first call of this function, then the global variable
-    % 'tSavedInfo' that saves the folder or file information is empty.
-    % Since we have a file that contains this information, we load this now
-    % and it's contents become the global variable. That happens because
-    % the variable saved in the file is also called 'tSavedInfo'.
-    if isempty(tSavedInfo)
+% If this is the very first call of this function the global variable
+% 'tSavedInfo' will be empty and we have not yet saved any information to a
+% file. However, if this function has been called before, then the file
+% will exist. Finally, this call may be a recursive one, in which case the
+% global variable will already be populated. We check all of this here for
+% performance reasons. The exist() function is very slow, so by checking it
+% here once, we don't need to do it for every recursive call of this
+% function. 
+if isempty(tSavedInfo)
+    if exist(sSavePath, 'file') ~= 0
         load(sSavePath, 'tSavedInfo');
         bFirstCall = true;
-    else 
-        bFirstCall = false;
+        bFirstRun = false;
+    else
+        bFirstRun = true;
     end
-    
+else
+    bFirstCall = false;
+    bFirstRun = false;
+end
+
+% Load the information from when we last executed this check or create
+% a new variable that we can later save.
+if ~bFirstRun
     % There is a mechanism in place to prevent a corrupted file from being
     % used in the event the initial folder scan was aborted. We check if
     % this field exists at all to force an update for users that created
@@ -148,20 +157,47 @@ if exist(sSavePath, 'file') ~= 0
                             abChanged(iI) = tools.fileChecker.checkForChanges(tInfo(iI).name, sCaller);
                         end
                     else
-                        % We are looking at a file, so we'll compare the save date
-                        % that we stored in our file with the date in the current
-                        % file's info struct. If the current date is newer, then
-                        % the file has changed since we last ran this function.
+                        % We are looking at a file so we'll first get the
+                        % struct-compatible file name.
                         sFileName = tools.normalizePath(tInfo(iI).name);
-                        if eval(['tSavedInfo.',sFileName,' < tInfo(iI).datenum;'])
-                            % It has changed! So we can save the new change date into
-                            % the struct and set our return variable to true.
-                            eval(['tSavedInfo.',sFileName,' = tInfo(iI).datenum;'])
-                            abChanged(iI) = true;
-                            fprintf('''%s'' has changed.\n',tInfo(iI).name);
+                        
+                        % Now we need to check, if this is a new or an
+                        % existing file.
+                        if isfield(tSavedInfo, sFileName)
+                            % The file exists, so we'll compare the save
+                            % date that we stored in our file with the date
+                            % in the current file's info struct. If the
+                            % current date is newer, then the file has
+                            % changed since we last ran this function.
+                        
+                            if eval(['tSavedInfo.',sFileName,' < tInfo(iI).datenum;'])
+                                % It has changed! So we can save the new
+                                % change date into the struct and set our
+                                % return variable to true.
+                                eval(['tSavedInfo.',sFileName,' = tInfo(iI).datenum;'])
+                                abChanged(iI) = true;
+                                fprintf('''%s'' has changed.\n',tInfo(iI).name);
+                            else
+                                % Seems like nothing has changed, so we can
+                                % return false.
+                                abChanged(iI) = false;
+                            end
                         else
-                            % Seems like nothing has changed, so we can return false.
-                            abChanged(iI) = false;
+                            % The file doesn't exist. This means we are
+                            % adding a new file in the V-HAB base directory
+                            % that has not yet been added to the struct. So
+                            % we use the file name as a key to create a new
+                            % member of the current struct, with the
+                            % changed date as a value. 
+                            eval(['tSavedInfo.',sFileName,' = tInfo(iI).datenum;']);
+                            
+                            % Returning true for this item
+                            abChanged(iI) = true;
+                            
+                            % Letting the user know that this file was
+                            % added.
+                            fprintf('''%s'' was added.\n', tInfo(iI).name);
+                            
                         end
                     end
                 end
@@ -264,11 +300,16 @@ if exist(sSavePath, 'file') ~= 0
             % In case it is the first call, we can clean up and save the data into
             % the file again for next time.
             if bFirstCall
+                % Getting the old struct for the folder we are looking at.
+                tOldInfo = eval(['tSavedInfo.',sFileOrFolderPath]);
                 % Removing any deleted files
-                [ tSavedInfo, bRemoved ] = tools.fileChecker.removeEntriesForDeletedFiles('', tSavedInfo);
+                [ tNewInfo, bRemoved ] = tools.fileChecker.removeEntriesForDeletedFiles([sFileOrFolderPath, filesep], tOldInfo); %#ok<ASGLU>
                 % If any files have been removed, then we also set the
-                % return variable to true.
-                if bRemoved, bChanged = true; end
+                % return variable to true and update the saved info struct.
+                if bRemoved
+                    bChanged = true;
+                    eval(['tSavedInfo.',sFileOrFolderPath, '=','tNewInfo;']);
+                end
                 
                 save(sSavePath,'tSavedInfo','-v7');
                 clear global tSavedInfo
@@ -346,22 +387,7 @@ if exist(sSavePath, 'file') ~= 0
         if tSavedInfo.bInitialScanComplete
             fprintf('''%s'' was added.\n', sFileOrFolderPath);
         end
-        % We can also finish the function here, because this call was aimed
-        % at a folder, the other files will be done in the next one. In
-        % case it is the first call and there are no subfolders, we can
-        % also clean up and save the data into the file again for next
-        % time.
-        if bFirstCall
-            % Removing any deleted files
-            [ tSavedInfo, bRemoved ] = tools.fileChecker.removeEntriesForDeletedFiles('', tSavedInfo);
-            % If any files have been removed, then we also set the return
-            % variable to true.
-            if bRemoved, bChanged = true; end
-            
-            save(sSavePath,'tSavedInfo','-v7');
-            clear global tSavedInfo
-        end
-        return;
+        
     else
         % Okay, so the file exists AND the field exists, this must be a
         % search for actual changes and not the initial scan.
@@ -383,22 +409,7 @@ if exist(sSavePath, 'file') ~= 0
             % If any of the folders have changed, we need to return
             % true. 
             bChanged = any(abChanged);
-            % We can also finish the function here, because this call was
-            % aimed at a folder, the other files will be done in the next
-            % one. In case it is the first call and there are no
-            % subfolders, we can also clean up and save the data into the
-            % file again for next time. 
-            if bFirstCall
-                % Removing any deleted files
-                [ tSavedInfo, bRemoved ] = tools.fileChecker.removeEntriesForDeletedFiles('', tSavedInfo);
-                % If any files have been removed, then we also set the
-                % return variable to true.
-                if bRemoved, bChanged = true; end
-                
-                save(sSavePath,'tSavedInfo','-v7');
-                clear global tSavedInfo
-            end
-            return;
+            
         else
             % We are looking at a file, so we'll compare the save date
             % that we stored in our file with the date in the current
@@ -420,11 +431,16 @@ if exist(sSavePath, 'file') ~= 0
     % In case it is the first call, we can clean up and save the data into
     % the file again for next time.
     if bFirstCall
+        % Getting the old struct for the folder we are looking at.
+        tOldInfo = eval([sStructString,'.',sFieldName]);
         % Removing any deleted files
-        [ tSavedInfo, bRemoved ] = tools.fileChecker.removeEntriesForDeletedFiles('', tSavedInfo);
+        [ tNewInfo, bRemoved ] = tools.fileChecker.removeEntriesForDeletedFiles([sFileOrFolderPath, filesep], tOldInfo); %#ok<ASGLU>
         % If any files have been removed, then we also set the return
-        % variable to true.
-        if bRemoved, bChanged = true; end
+        % variable to true and update the saved info struct.
+        if bRemoved
+            bChanged = true;
+            eval([sStructString,'.',sFieldName, '=','tNewInfo;']);
+        end
         
         save(sSavePath,'tSavedInfo','-v7');
         clear global tSavedInfo

@@ -44,9 +44,9 @@ for iI = 1:length(csFieldNames)
             sFileName = csFieldNames{iI};
         end
         
-        % If this is the first call, then sPath will be an empty string. If
-        % so, we can call the dir command without any arguments to get the
-        % information on the current directory. 
+        % If we are looking at the base directory, then sPath will be an
+        % empty string. If so, we can call the dir command without any
+        % arguments to get the information on the current directory.
         if isempty(sPath)
             tDirInfo = dir;
         else
@@ -87,22 +87,15 @@ for iI = 1:length(csFieldNames)
             sFolderName = csFieldNames{iI};
         end
         
-        % If the given path is empty, as would be the case during the first
-        % call, we can simply append the current folder name with the file
-        % separator and use that for the next recursion. 
-        if isempty(sPath)
-            sNewPath = [ sFolderName, filesep ];
+        % Now we have to look at the folder name. Some folders have '@' at
+        % the beginning. This will have been replaced with 'at_at_' to make
+        % it a valid struct field name. If there is no '@', then it is
+        % usually '+'.
+        if length(sFolderName) > 3 && ...
+                strcmp(sFolderName(1:3),'at_')
+            sNewPath = [ '@', sFolderName(7:end), filesep ];
         else
-            % The path is not empty, so now we have to look at the folder
-            % name. Some folders have '@' at the beginning. This will have
-            % been replaced with 'at_at_' to make it a valid struct field
-            % name. If there is no '@', then it is usually '+'.
-            if length(sFolderName) > 3 && ...
-               strcmp(sFolderName(1:3),'at_')
-                sNewPath = [ '@', sFolderName(7:end), filesep ];
-            else
-                sNewPath = [ '+', sFolderName, filesep ];
-            end
+            sNewPath = [ '+', sFolderName, filesep ];
         end
         
         % Now we check if the folder exists. This should work for all
@@ -121,6 +114,7 @@ for iI = 1:length(csFieldNames)
                 bContinue = false;
             end
         end
+        
         if bContinue
             % First we get the directory information. If the path is empty,
             % this is the first call, so we can just use dir() without
