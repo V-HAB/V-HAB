@@ -56,7 +56,6 @@ classdef PPRV < matter.procs.f2f
         
         % other solver parameters
         fHydrLength;
-        bActive = true;
         fDeltaTemp = 0;
     end
     
@@ -82,6 +81,7 @@ classdef PPRV < matter.procs.f2f
                 this.bChangeSetpoint = bChangeSetpoint;
             end
             
+            this.bActive = true;
             
             % calculate spring force to keep valve closed until at pressure 
             % fDeltaPressureMaxValve

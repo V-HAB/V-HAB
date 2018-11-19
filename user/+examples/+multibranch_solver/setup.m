@@ -6,16 +6,18 @@ classdef setup < simulation.infrastructure
     methods
         function this = setup(ptConfigParams, tSolverParams, fSimTime, iNr) % Constructor function
             
-            if nargin < 4 || isempty(iNr), iNr = 0; end;
+            if nargin < 4 || isempty(iNr)
+                iNr = 0;
+            end
             
             ttMonitorConfig = struct();%struct('oTimeStepObserver', struct('cParams', {{ 0 }}));
-            this@simulation.infrastructure('Tutorial_Solver_MultiBranch', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Example_Solver_MultiBranch', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             
             if iNr == 0
-                tutorials.multibranch_solver.systems.Example(this.oSimulationContainer, 'Example');
+                examples.multibranch_solver.systems.Example(this.oSimulationContainer, 'Example');
             else
-                tutorials.multibranch_solver.systems.(sprintf('Example_%i', iNr))(this.oSimulationContainer, 'Example');
+                examples.multibranch_solver.systems.(sprintf('Example_%i', iNr))(this.oSimulationContainer, 'Example');
             end
             
             

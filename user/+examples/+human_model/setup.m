@@ -7,9 +7,9 @@ classdef setup < simulation.infrastructure
         function this = setup(ptConfigParams, tSolverParams) % Constructor function
             
             ttMonitorConfig = struct();
-            this@simulation.infrastructure('Tutorial_Human_1_Model', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Example_Human_1_Model', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            tutorials.human_model.systems.Example(this.oSimulationContainer, 'Example');
+            examples.human_model.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length
             % Stop when specific time in simulation is reached or after 

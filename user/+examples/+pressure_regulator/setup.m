@@ -15,7 +15,7 @@ classdef setup < simulation.infrastructure
             fFixedTimeStep = 0.1;
             
             % create root object
-            tutorials.pressure_regulator.systems.SuitSystem(this.oSimulationContainer, 'SuitSystem', fFixedTimeStep); 
+            examples.pressure_regulator.systems.SuitSystem(this.oSimulationContainer, 'SuitSystem', fFixedTimeStep); 
             
             %% Simulation length
             

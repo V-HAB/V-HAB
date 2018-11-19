@@ -18,10 +18,10 @@ classdef setup < simulation.infrastructure
             % monitors
             ttMonitorConfig = struct();
             
-            this@simulation.infrastructure('Tutorial_Condensing_Heat_Exchanger', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Example_Condensing_Heat_Exchanger', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the root object
-            tutorials.condensing_heat_exchanger.systems.Example(this.oSimulationContainer, 'Example');
+            examples.condensing_heat_exchanger.systems.Example(this.oSimulationContainer, 'Example');
 
             %% Simulation length
             % Stop when specific time in simulation is reached or after 
@@ -38,7 +38,7 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example', 'toProcsF2F.CondensingHeatExchanger_1.fHeatFlow', 'W', 'Heat Flow Air');
             oLog.addValue('Example', 'toProcsF2F.CondensingHeatExchanger_2.fHeatFlow', 'W', 'Heat Flow Coolant');
             
-            oLog.addValue('Example:s:Tank_2.toProcsP2P.CondensingHX', 'fFlowRate', 'kg/s', 'Condensate Flow Rate');
+            oLog.addValue('Example:s:CHX.toProcsP2P.CondensingHX', 'fFlowRate', 'kg/s', 'Condensate Flow Rate');
             
             oLog.addValue('Example:s:Tank_1.toPhases.Air_1', 'rRelHumidity', '-', 'Relative Humidity Tank 1');
             oLog.addValue('Example:s:Tank_2.toPhases.Air_2', 'rRelHumidity', '-', 'Relative Humidity Tank 2');

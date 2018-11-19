@@ -133,7 +133,7 @@ classdef SuitSystem < vsys
             % activation/deactivation with bPPRVExists in class properties
             if this.bPPRVExists
                 % add pressure relief valve
-                oProc = tutorials.pressure_regulator.components.PPRV(this, 'ValvePPRV', 0.6e5);
+                oProc = examples.pressure_regulator.components.PPRV(this, 'ValvePPRV', 0.6e5);
                 oProc.setEnvironmentReference(oGasPhaseEnvRef);
                 
                 % add extract/merge processors, exme after the PPRV should 
@@ -142,7 +142,7 @@ classdef SuitSystem < vsys
                 % with longer simulation times due to too high a pressure
                 % in the buffer store
                 matter.procs.exmes.gas(oGasPhaseSuit, 'PortSuitPPRV');
-                special.matter.const_press_exme(oGasPhaseBuffer, 'PortBufferPPRV', 0);
+                matter.procs.exmes.gas(oGasPhaseBuffer, 'PortBufferPPRV');
                 % connect pressure relief branch
                 matter.branch(this, 'SuitTank.PortSuitPPRV', {'ValvePPRV'}, 'BufferTank.PortBufferPPRV', 'PPRVBranch');
                 

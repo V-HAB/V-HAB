@@ -1,4 +1,4 @@
-classdef GreenhouseV2 < vsys
+classdef Greenhouse < vsys
     properties
         % Concentration of CO2 in PPM
         fCO2 = 330; %PPM
@@ -11,7 +11,7 @@ classdef GreenhouseV2 < vsys
     end
     
     methods
-        function this = GreenhouseV2(oParent, sName)
+        function this = Greenhouse(oParent, sName)
             this@vsys(oParent, sName, 3600);
             
             %% Set Culture Setup Inputs

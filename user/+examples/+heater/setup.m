@@ -20,9 +20,9 @@ classdef setup < simulation.infrastructure
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Heater', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Example_Heater', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            tutorials.heater.systems.Example(this.oSimulationContainer, 'Example');
+            examples.heater.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length
             % Stop when specific time in sim is reached

@@ -18,10 +18,10 @@ classdef setup < simulation.infrastructure
             % monitors
             ttMonitorConfig = struct();
             
-            this@simulation.infrastructure('Tutorial_CCAA', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Example_CCAA', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the root object
-            tutorials.CCAA.systems.Example(this.oSimulationContainer, 'Example');
+            examples.CCAA.systems.Example(this.oSimulationContainer, 'Example');
 
             %% Simulation length
             % Stop when specific time in simulation is reached or after 

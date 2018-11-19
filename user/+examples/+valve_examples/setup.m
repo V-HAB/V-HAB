@@ -8,17 +8,17 @@ classdef setup < simulation.infrastructure
             
             
             % Example for _Mutiple
-            % vhab.exec('tutorials.valve_examples.setup', [], struct('rUpdateFrequency', 0.05, 'rHighestMaxChangeDecrease', 500), 3600 * 0.1, true)
-            % vhab.exec('tutorials.valve_examples.setup', containers.Map({'Example'}, {struct('piPipeLengths', containers.Map({ 6, 7, 9 }, { 10, 10, 10 }))}), struct('rUpdateFrequency', 0.05, 'rHighestMaxChangeDecrease', 500), 3600 * 0.1, true)
+            % vhab.exec('examples.valve_examples.setup', [], struct('rUpdateFrequency', 0.05, 'rHighestMaxChangeDecrease', 500), 3600 * 0.1, true)
+            % vhab.exec('examples.valve_examples.setup', containers.Map({'Example'}, {struct('piPipeLengths', containers.Map({ 6, 7, 9 }, { 10, 10, 10 }))}), struct('rUpdateFrequency', 0.05, 'rHighestMaxChangeDecrease', 500), 3600 * 0.1, true)
             
             this@simulation.infrastructure('Tutorial_Valve_Examples', ptConfigParams, tSolverParams);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
             if (nargin >= 4) && ~isempty(bExample2) && islogical(bExample2) && (bExample2 == true)
-                tutorials.valve_examples.systems.Example_Multiple(this.oSimulationContainer, 'Example');
+                examples.valve_examples.systems.Example_Multiple(this.oSimulationContainer, 'Example');
             else
-                tutorials.valve_examples.systems.Example(this.oSimulationContainer, 'Example');
+                examples.valve_examples.systems.Example(this.oSimulationContainer, 'Example');
             end
             
             

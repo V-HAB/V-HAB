@@ -57,11 +57,6 @@ classdef Example < vsys
             % Adding a phase to the store 'Tank_2', 2 m^3 air
             oAirPhase_2 = matter.phases.gas(this.toStores.Tank_2, 'Air_2', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
-            oCondensatePhase = matter.phases.liquid(this.toStores.Tank_2, ...  Store in which the phase is located
-                'Condensate_Phase', ...         Phase name
-                struct('H2O', 1), ...      Phase contents
-                295, ...                Phase temperature
-                101325);                 % Phase pressure
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oAirPhase_1, 'Port_1');
@@ -69,8 +64,6 @@ classdef Example < vsys
             matter.procs.exmes.gas(oAirPhase_1, 'Port_3');
             matter.procs.exmes.gas(oAirPhase_2, 'Port_4');
             
-            matter.procs.exmes.gas(oAirPhase_2, 'Condensate_Out');
-            matter.procs.exmes.liquid(oCondensatePhase, 'Condensate_In');
             %% Water System
             % Creating a third store, volume 1 m^3
             matter.store(this, 'Tank_3', 1);
@@ -103,6 +96,23 @@ classdef Example < vsys
             aoPhases_Temp(4) = oCoolantPhase2;
             this.aoPhases = aoPhases_Temp;
             %% Heat Exchanger
+            
+            matter.store(this, 'CHX', 1);
+            oCHX_Air = this.toStores.CHX.createPhase('gas', 'flow', 'CHX_Gas', 0.9, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293.15, 0.5);
+            
+            oCondensatePhase = matter.phases.liquid(this.toStores.CHX, ...  Store in which the phase is located
+                'Condensate_Phase', ...         Phase name
+                struct('H2O', 1), ...      Phase contents
+                295, ...                Phase temperature
+                101325);                 % Phase pressure
+            
+            
+            matter.procs.exmes.gas(oCHX_Air, 'CHX_In');
+            matter.procs.exmes.gas(oCHX_Air, 'CHX_Out');
+            
+            matter.procs.exmes.gas(oCHX_Air, 'Condensate_Out');
+            matter.procs.exmes.liquid(oCondensatePhase, 'Condensate_In');
+            
             % Some configurating variables
             sHX_type = 'cross';       % Heat exchanger type
             %Geometry = [fN_Rows, fN_Pipes, fD_i, fD_o, fLength, fs_1, fs_2, fconfig
@@ -131,7 +141,7 @@ classdef Example < vsys
             
             % adds the P2P proc for the CHX that takes care of the actual
             % phase change
-            oCHX.oP2P = components.HX.CHX_p2p(this.toStores.Tank_2, 'CondensingHX', 'Air_2.Condensate_Out', 'Condensate_Phase.Condensate_In', oCHX);
+            oCHX.oP2P = components.HX.CHX_p2p(this.toStores.CHX, 'CondensingHX', 'CHX_Gas.Condensate_Out', 'Condensate_Phase.Condensate_In', oCHX);
 
             % adds heaters to provide some temperature difference between
             % the two fluid loops
@@ -153,7 +163,7 @@ classdef Example < vsys
             % exchanger
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            matter.branch(this, 'Tank_1.Port_1', {'Pipe1', 'CondensingHeatExchanger_2', 'Pipe2'}, 'Tank_2.Port_2');
+            matter.branch(this, 'Tank_1.Port_1', {'Pipe1', 'CondensingHeatExchanger_2'}, 'CHX.CHX_In');
             matter.branch(this, 'Tank_2.Port_4', {'Pipe5', 'Air_Heater'}, 'Tank_1.Port_3');
             
             % Creating the flow path between the two water tanks via the 
@@ -161,20 +171,23 @@ classdef Example < vsys
             matter.branch(this, 'Tank_3.Port_5', {'Pipe3', 'CondensingHeatExchanger_1', 'Pipe4'}, 'Tank_4.Port_6');
             matter.branch(this, 'Tank_4.Port_8', {'Pipe6', 'Water_Heater'}, 'Tank_3.Port_7');
             
+            matter.branch(this, 'CHX.CHX_Out', {'Pipe2'}, 'Tank_2.Port_2');
         end
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
             % Creating the solver branches.
             oB1 = solver.matter.manual.branch(this.aoBranches(1));
-            oB2 = solver.matter.manual.branch(this.aoBranches(2));
+            OB2 = solver.matter.manual.branch(this.aoBranches(2));
             oB3 = solver.matter.manual.branch(this.aoBranches(3));
             oB4 = solver.matter.manual.branch(this.aoBranches(4));
+            solver.matter.residual.branch(this.aoBranches(5));
             
             oB1.setFlowRate(1);
-            oB2.setFlowRate(1);
+            OB2.setFlowRate(1);
             oB3.setFlowRate(1);
             oB4.setFlowRate(1);
+            
             
             this.toProcsF2F.Air_Heater.setPower(10);
             this.toProcsF2F.Water_Heater.setPower(-10);
@@ -204,13 +217,13 @@ classdef Example < vsys
             exec@vsys(this);
             
             if this.oTimer.fTime > 10
-                for iBranch = 1:length(this.aoBranches)
+                for iBranch = 1:4
                     
                     this.aoBranches(iBranch).oHandler.setFlowRate(0.001);
                     
                 end
             else
-                for iBranch = 1:length(this.aoBranches)
+                for iBranch = 1:4
                     
                     this.aoBranches(iBranch).oHandler.setFlowRate(1);
                     

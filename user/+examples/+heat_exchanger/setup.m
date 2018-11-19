@@ -18,10 +18,10 @@ classdef setup < simulation.infrastructure
             % monitors
             ttMonitorConfig = struct();
             
-            this@simulation.infrastructure('Tutorial_Heat_Exchanger', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Example_Heat_Exchanger', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the root object
-            tutorials.heat_exchanger.systems.Example(this.oSimulationContainer, 'Example');
+            examples.heat_exchanger.systems.Example(this.oSimulationContainer, 'Example');
 
             %% Simulation length
             % Stop when specific time in simulation is reached or after 

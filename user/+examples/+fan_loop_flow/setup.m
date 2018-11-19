@@ -19,12 +19,12 @@ classdef setup < simulation.infrastructure
             
             % First we call the parent constructor and tell it the name of
             % this simulation we are creating.
-            this@simulation.infrastructure('Tutorial_Fan_Loop_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
+            this@simulation.infrastructure('Example_Fan_Loop_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
             
-            tutorials.fan_loop_flow.systems.Example(this.oSimulationContainer, 'Example');
+            examples.fan_loop_flow.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length
             % Stop when specific time in sim is reached
