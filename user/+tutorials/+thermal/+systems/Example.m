@@ -39,12 +39,11 @@ classdef Example < vsys
             fVolume = 1e10;
             matter.store(this, 'Space', 1e10);
             
-            tfPartialPressure   = struct('N2', 1);
-            fTemperature        = 3;
-            rRelativeHumidity   = 0;
+            tfPartialPressure = struct('N2', 0);
+            fTemperature      = 3;
+            rRelativeHumidity = 0;
 
             this.toStores.Space.createPhase('gas', 'vacuum',  fVolume, tfPartialPressure, fTemperature, rRelativeHumidity);
-            
             
             % Creating a store, volume 1 m^3
             fZeoliteMass = 4;
