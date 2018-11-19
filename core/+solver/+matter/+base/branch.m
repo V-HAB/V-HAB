@@ -23,11 +23,7 @@ classdef branch < base & event.source
         
         % last total time in seconds at which this solver was updated
         fLastUpdate = -10;
-        
-        % Branch to sync to - if that branch is executed/updated, also
-        % update here!
-        oSyncedSolver;
-        bUpdateTrigger = false;
+    
     end
     
     properties (SetAccess = private, GetAccess = protected)
@@ -168,14 +164,6 @@ classdef branch < base & event.source
             this.hBindPostTickUpdate();
         end
         
-        
-        function syncedUpdateCall(this)
-            % Prevent loops
-            if ~this.bUpdateTrigger
-                this.update();
-            end
-        end
-        
         function update(this, fFlowRate, afPressures)
             % Inherited class can overload .update and write this.fFlowRate
             % and subsequently CALL THE PARENT METHOD by
@@ -217,13 +205,9 @@ classdef branch < base & event.source
             
             this.setBranchFR(this.fFlowRate, afPressures);
             
-            this.bUpdateTrigger = true;
-            
             if this.bTriggerUpdateCallbackBound
                 this.trigger('update');
             end
-            
-            this.bUpdateTrigger = false;
         end
     end
 end
