@@ -69,12 +69,12 @@ classdef Example1 < vsys
             tutorials.p2p.components.AbsorberExample(this.toStores.Filter, 'filterproc', 'FlowPhase.In_P2P', 'FilteredPhase.Out_P2P', fSubstance, fCapacity);
             
             % Adding a fan
-            components.fan(this, 'Fan', 40000, 'Left2Right');
+            components.matter.fan(this, 'Fan', 40000, 'Left2Right');
             
             % Adding pipes to connect the components
-            components.pipe(this, 'Pipe_1', 0.5, 0.005);
-            components.pipe(this, 'Pipe_2', 0.5, 0.005);
-            components.pipe(this, 'Pipe_3', 0.5, 0.005);
+            components.matter.pipe(this, 'Pipe_1', 0.5, 0.005);
+            components.matter.pipe(this, 'Pipe_2', 0.5, 0.005);
+            components.matter.pipe(this, 'Pipe_3', 0.5, 0.005);
             
             % Creating the flowpath (=branch) between the components
             % Since we are using default exme-processors here, the input

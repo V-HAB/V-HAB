@@ -62,7 +62,7 @@ classdef Greenhouse < vsys
             
             % loop over total cultures amount
             for iCulture = 1:length(tInput)
-                components.PlantModuleV2.PlantCulture(...
+                components.matter.PlantModuleV2.PlantCulture(...
                         this, ...                   % parent system reference
                         tInput(iCulture), ...       % input for specific culture
                         this.fTimeStep);            % Time step initially used for this culture in [s]
@@ -91,7 +91,7 @@ classdef Greenhouse < vsys
             csPlantCultures = {};
             for iChild = 1:length(this.csChildren)
                 % culture object gets assigned using its culture name 
-                if isa(this.toChildren.(this.csChildren{iChild}), 'components.PlantModuleV2.PlantCulture')
+                if isa(this.toChildren.(this.csChildren{iChild}), 'components.matter.PlantModuleV2.PlantCulture')
                     this.toChildren.(this.csChildren{iChild}).setReferenceAtmosphere(oAtmosphere);
                     csPlantCultures{length(csPlantCultures)+1} = this.csChildren{iChild};
                 end
@@ -302,21 +302,21 @@ classdef Greenhouse < vsys
             matter.procs.exmes.gas(oAtmosphere, 'ExcessCO2_P2P_Out');
             
             % add excess extraction p2ps
-            components.P2Ps.ManualP2P(...
+            components.matter.P2Ps.ManualP2P(...
                 this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
                 'ExcessO2_P2P', ...                         % p2p processor name
                 'Atmosphere_Phase_1.ExcessO2_P2P_Out', ... 	% first phase and exme
                 'ExcessO2.ExcessO2_P2P_In');               	% second phase and exme
                 
-            components.P2Ps.ManualP2P(...
+            components.matter.P2Ps.ManualP2P(...
                 this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
                 'ExcessCO2_P2P', ...                        % p2p processor name
                 'Atmosphere_Phase_1.ExcessCO2_P2P_Out', ...	% first phase and exme
                 'ExcessCO2.ExcessCO2_P2P_In');             	% second phase and exme
                         
-            components.P2Ps.ManualP2P(...
+            components.matter.P2Ps.ManualP2P(...
                 this, ...                                   % parent system reference
                 this.toStores.Atmosphere, ...               % store containing phases
                 'WaterAbsorber_P2P', ...                 	% p2p processor name
@@ -349,7 +349,7 @@ classdef Greenhouse < vsys
             
             %% Create Biomass Split P2P
             
-            oConstantP2P = components.P2Ps.ConstantMassP2P(this, ...
+            oConstantP2P = components.matter.P2Ps.ConstantMassP2P(this, ...
                 this.toStores.BiomassSplit, ...
                 'EdibleInedible_Split_P2P', ...
                 'BiomassEdible.EdibleInedible_Split_P2P_Out', ...

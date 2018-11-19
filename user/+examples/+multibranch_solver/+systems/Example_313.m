@@ -72,13 +72,13 @@ classdef Example_313 < vsys
             % Add p2p between BedA flow and adsorbed
             %TODO tutorial dummy p2p to components library wiht
             %     fCharacteristics! Also return COeffs Function!
-            %%%components.generic.filter(this.toStores.BedA, 'co2_filter', 'flow', 'adsorbed', 'CO2', 3);
+            %%%components.matter.generic.filter(this.toStores.BedA, 'co2_filter', 'flow', 'adsorbed', 'CO2', 3);
             
             
             
-            components.pipe(this, 'Pipe_AtmosToSplitter', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_MergerToAtmos',   this.fPipeLength, this.fPipeDiameter);
-            %%%components.pipe(this, 'Pipe_MergerToVacuum',  this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe_AtmosToSplitter', this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe_MergerToAtmos',   this.fPipeLength, this.fPipeDiameter);
+            %%%components.matter.pipe(this, 'Pipe_MergerToVacuum',  this.fPipeLength, this.fPipeDiameter);
             
             
             matter.branch(this, 'Atmosphere.Out', { 'Pipe_AtmosToSplitter' }, 'Splitter.FromAtmos');
@@ -114,8 +114,8 @@ classdef Example_313 < vsys
                     matter.procs.exmes.gas(oOtherPhase, oBed.sName);
                     matter.procs.exmes.gas(oBed.aoPhases(1), sOtherStore);
                     
-                    oPipe  = components.pipe(this, [ 'Pipe_' sBed '_' sOtherStore    ], this.fPipeLength, this.fPipeDiameter);
-                    oValve = components.valve_closable(this, [ 'Valve_' sBed '_' sOtherStore ], this.fValveFlowCoeff);
+                    oPipe  = components.matter.pipe(this, [ 'Pipe_' sBed '_' sOtherStore    ], this.fPipeLength, this.fPipeDiameter);
+                    oValve = components.matter.valve_closable(this, [ 'Valve_' sBed '_' sOtherStore ], this.fValveFlowCoeff);
                     
                     if strcmp(sOtherStore, 'Splitter')
                         matter.branch(this, ...
@@ -140,14 +140,14 @@ classdef Example_313 < vsys
 %                 matter.procs.exmes.gas(oBed.aoPhases(1), 'To_Vacuum');
 %                 
 %                 
-%                 components.pipe(this, [ 'Pipe_SplitterTo' sBed     ], this.fPipeLength, this.fPipeDiameter);
-%                 components.pipe(this, [ 'Pipe_' sBed 'ToMerger'    ], this.fPipeLength, this.fPipeDiameter);
-%                 components.pipe(this, [ 'Pipe_' sBed 'ToMergerVac' ], this.fPipeLength, this.fPipeDiameter);
+%                 components.matter.pipe(this, [ 'Pipe_SplitterTo' sBed     ], this.fPipeLength, this.fPipeDiameter);
+%                 components.matter.pipe(this, [ 'Pipe_' sBed 'ToMerger'    ], this.fPipeLength, this.fPipeDiameter);
+%                 components.matter.pipe(this, [ 'Pipe_' sBed 'ToMergerVac' ], this.fPipeLength, this.fPipeDiameter);
 %                 
 %                 
-%                 components.valve_closable(this, [ 'Pipe_SplitterTo' sBed     ], 0.5);
-%                 components.valve_closable(this, [ 'Pipe_' sBed 'ToMerger'    ], 0.5);
-%                 components.valve_closable(this, [ 'Pipe_' sBed 'ToMergerVac' ], 0.5);
+%                 components.matter.valve_closable(this, [ 'Pipe_SplitterTo' sBed     ], 0.5);
+%                 components.matter.valve_closable(this, [ 'Pipe_' sBed 'ToMerger'    ], 0.5);
+%                 components.matter.valve_closable(this, [ 'Pipe_' sBed 'ToMergerVac' ], 0.5);
             end
             
             
@@ -159,25 +159,25 @@ classdef Example_313 < vsys
             return;
             
             % Pipes Loop
-            components.pipe(this, 'Pipe_Atmos_Splitter',  this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_Splitter_BedA_1', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_Splitter_BedA_2', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_BedA_Merger_1',   this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_BedA_Merger_2',   this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_Merger_Atmos',    this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe_Atmos_Splitter',  this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe_Splitter_BedA_1', this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe_Splitter_BedA_2', this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe_BedA_Merger_1',   this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe_BedA_Merger_2',   this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe_Merger_Atmos',    this.fPipeLength, this.fPipeDiameter);
             
-            components.valve_closable(this, 'Valve_Splitter_BedA', 0.5);
-            components.valve_closable(this, 'Valve_BedA_Merger', 0.5);
+            components.matter.valve_closable(this, 'Valve_Splitter_BedA', 0.5);
+            components.matter.valve_closable(this, 'Valve_BedA_Merger', 0.5);
             
             
             % To Vacuum Comps
-            components.pipe(this, 'Pipe__BedA_Flow__Vacuum__1',     this.fPipeLength, this.fPipeDiameter / 10);
-            components.pipe(this, 'Pipe__BedA_Flow__Vacuum__2',     this.fPipeLength, this.fPipeDiameter / 10);
-            components.pipe(this, 'Pipe__BedA_Adsorbed__Vacuum__1', this.fPipeLength, this.fPipeDiameter / 10);
-            components.pipe(this, 'Pipe__BedA_Adsorbed__Vacuum__2', this.fPipeLength, this.fPipeDiameter / 10);
+            components.matter.pipe(this, 'Pipe__BedA_Flow__Vacuum__1',     this.fPipeLength, this.fPipeDiameter / 10);
+            components.matter.pipe(this, 'Pipe__BedA_Flow__Vacuum__2',     this.fPipeLength, this.fPipeDiameter / 10);
+            components.matter.pipe(this, 'Pipe__BedA_Adsorbed__Vacuum__1', this.fPipeLength, this.fPipeDiameter / 10);
+            components.matter.pipe(this, 'Pipe__BedA_Adsorbed__Vacuum__2', this.fPipeLength, this.fPipeDiameter / 10);
             
-            components.valve_closable(this, 'Valve__BedA_Flow__Vacuum', 0.5, false);%.setOpen(false);
-            components.valve_closable(this, 'Valve__BedA_Adsorbed__Vacuum', 0.5, false);%.setOpen(false);
+            components.matter.valve_closable(this, 'Valve__BedA_Flow__Vacuum', 0.5, false);%.setOpen(false);
+            components.matter.valve_closable(this, 'Valve__BedA_Adsorbed__Vacuum', 0.5, false);%.setOpen(false);
             
             
             

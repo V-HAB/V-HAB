@@ -74,7 +74,7 @@ classdef Example_5 < vsys
                 sExmeR  = [ 'From__' sBranch ];
                 
                 % Pipe with length defined in cConnections
-                components.pipe(this, sPipe, cConnections{iBranch, 2}, 0.0035);
+                components.matter.pipe(this, sPipe, cConnections{iBranch, 2}, 0.0035);
                 
                 
                 %%%% Create exmes
@@ -151,15 +151,15 @@ classdef Example_5 < vsys
                 sPipe   = [ 'Pipe_' csPipesWithFactors{iP} ];
                 iFactor = tiPipesWithFactors.(csPipesWithFactors{iP});
                 
-                components.pipe(this, sPipe, this.fPipeLength * iFactor, this.fPipeDiameter);
+                components.matter.pipe(this, sPipe, this.fPipeLength * iFactor, this.fPipeDiameter);
             end
             
             % Resistors
-            components.pipe(this, 'R_1',  0.1, 0.001);
-            components.pipe(this, 'R_2',  0.1, 0.001);
-            components.pipe(this, 'R_3',  0.1, 0.001);
-            components.pipe(this, 'R_4',  0.1, 0.001);
-            components.pipe(this, 'R_5',  0.1, 0.001);
+            components.matter.pipe(this, 'R_1',  0.1, 0.001);
+            components.matter.pipe(this, 'R_2',  0.1, 0.001);
+            components.matter.pipe(this, 'R_3',  0.1, 0.001);
+            components.matter.pipe(this, 'R_4',  0.1, 0.001);
+            components.matter.pipe(this, 'R_5',  0.1, 0.001);
             
             
             matter.branch(this, 'Store.Port_Out', { 'Pipe_1' }, 'Valve_1.Port_1');

@@ -49,7 +49,7 @@ classdef Example < vsys
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter. The pipe is in the components library and is
             % derived from the flow-to-flow (f2f) processor class
-            components.pipe(this, 'Pipe', 1.5, 0.005);
+            components.matter.pipe(this, 'Pipe', 1.5, 0.005);
             
             % Creating the flowpath, called a branch in V-HAB, between the
             % components. 

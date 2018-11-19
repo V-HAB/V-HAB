@@ -137,27 +137,27 @@ classdef Example < vsys
             
             % defines the heat exchanged object using the previously created properties
             % (oParent, sName, mHX, sHX_type, iIncrements, fHX_TC, fTempChangeToRecalc, fPercentChangeToRecalc)
-            oCHX = components.CHX(this, 'CondensingHeatExchanger', Geometry, sHX_type, iIncrements, Conductivity, fTempChangeToRecalc, fPercentChangeToRecalc);
+            oCHX = components.matter.CHX(this, 'CondensingHeatExchanger', Geometry, sHX_type, iIncrements, Conductivity, fTempChangeToRecalc, fPercentChangeToRecalc);
             
             % adds the P2P proc for the CHX that takes care of the actual
             % phase change
-            oCHX.oP2P = components.HX.CHX_p2p(this.toStores.CHX, 'CondensingHX', 'CHX_Gas.Condensate_Out', 'Condensate_Phase.Condensate_In', oCHX);
+            oCHX.oP2P = components.matter.HX.CHX_p2p(this.toStores.CHX, 'CondensingHX', 'CHX_Gas.Condensate_Out', 'Condensate_Phase.Condensate_In', oCHX);
 
             % adds heaters to provide some temperature difference between
             % the two fluid loops
-            components.heater(this, 'Air_Heater');
-            components.heater(this, 'Water_Heater');
+            components.matter.heater(this, 'Air_Heater');
+            components.matter.heater(this, 'Water_Heater');
             
             %% Adding some pipes
-            components.pipe(this, 'Pipe1', 1, 0.01, 0.0002);
-            components.pipe(this, 'Pipe2', 1, 0.01, 0.0002);
-            components.pipe(this, 'Pipe3', 1, 0.01, 0.0002);
-            components.pipe(this, 'Pipe4', 1, 0.01, 0.0002);
-            components.pipe(this, 'Pipe5', 1, 0.01, 0.0002);
-            components.pipe(this, 'Pipe6', 1, 0.01, 0.0002);
+            components.matter.pipe(this, 'Pipe1', 1, 0.01, 0.0002);
+            components.matter.pipe(this, 'Pipe2', 1, 0.01, 0.0002);
+            components.matter.pipe(this, 'Pipe3', 1, 0.01, 0.0002);
+            components.matter.pipe(this, 'Pipe4', 1, 0.01, 0.0002);
+            components.matter.pipe(this, 'Pipe5', 1, 0.01, 0.0002);
+            components.matter.pipe(this, 'Pipe6', 1, 0.01, 0.0002);
             
-            components.fan_simple(this, 'Fan_1', 1e4);
-            components.fan_simple(this, 'Fan_2', 1e4);
+            components.matter.fan_simple(this, 'Fan_1', 1e4);
+            components.matter.fan_simple(this, 'Fan_2', 1e4);
             
             % Creating the flow path between the two gas tanks via the heat
             % exchanger

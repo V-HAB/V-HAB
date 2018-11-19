@@ -63,8 +63,8 @@ classdef Example2 < vsys
             tutorials.p2p.components.AbsorberExample(this.toStores.Filter, 'filterproc', 'FlowPhase.In_P2P', 'FilteredPhase.Out_P2P', fSubstance, fCapacity);
             
             % Adding pipes to connect the components
-            components.pipe(this, 'Pipe_1', 0.5, 0.01);
-            components.pipe(this, 'Pipe_2', 0.5, 0.01);
+            components.matter.pipe(this, 'Pipe_1', 0.5, 0.01);
+            components.matter.pipe(this, 'Pipe_2', 0.5, 0.01);
             
             % Creating the flowpath between the components
             matter.branch(this, 'Atmos.Out',  { 'Pipe_1' }, 'Filter.In');

@@ -77,8 +77,8 @@ classdef Example < vsys
 
             
             % Adding pipes to connect the components
-            components.pipe(this, 'Pipe_1', 0.5, 0.005);
-            components.pipe(this, 'Pipe_2', 0.5, 0.005);
+            components.matter.pipe(this, 'Pipe_1', 0.5, 0.005);
+            components.matter.pipe(this, 'Pipe_2', 0.5, 0.005);
             
             % Creating the flowpath between the components
             matter.branch(this, 'Tank_1.Outlet',  { 'Pipe_1' }, 'Reactor.Inlet');

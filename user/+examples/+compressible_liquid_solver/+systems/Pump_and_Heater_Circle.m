@@ -70,10 +70,10 @@ classdef Pump_and_Heater_Circle < vsys
          	tutorials.compressible_liquid_solver.components.heater(this, 'Heater', 313, 0.01, 0.25, 0.2*10^-3);
             
             % Adding pipes to connect the components
-            components.pipe(this, 'Pipe_1', 0.5, 0.01, 0.2*10^-3);
-            components.pipe(this, 'Pipe_2', 0.5, 0.01, 0.2*10^-3);
-            components.pipe(this, 'Pipe_3', 0.5, 0.01, 0.2*10^-3);
-            components.pipe(this, 'Pipe_4',   1, 0.01, 0.2*10^-3);
+            components.matter.pipe(this, 'Pipe_1', 0.5, 0.01, 0.2*10^-3);
+            components.matter.pipe(this, 'Pipe_2', 0.5, 0.01, 0.2*10^-3);
+            components.matter.pipe(this, 'Pipe_3', 0.5, 0.01, 0.2*10^-3);
+            components.matter.pipe(this, 'Pipe_4',   1, 0.01, 0.2*10^-3);
             
             % Creating the flow branches
             matter.branch(this, 'Tank_1.Port_1', {'Pipe_1', 'Fan', 'Pipe_2', 'Heater', 'Pipe_3',}, 'Tank_2.Port_2');

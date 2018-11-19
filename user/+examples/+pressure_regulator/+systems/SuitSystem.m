@@ -59,7 +59,7 @@ classdef SuitSystem < vsys
             tParameters.tSecondStageParameters = struct('fPressureSetpoint', 56500);
             
             % create regulator subsystem
-            components.PressureRegulator(this, 'Regulator', tParameters);
+            components.matter.PressureRegulator(this, 'Regulator', tParameters);
             
             this.sAtmosphereHelper = 'SuitAtmosphere';
         end
@@ -104,9 +104,9 @@ classdef SuitSystem < vsys
             oGasPhaseEnvBuf = this.toStores.EnvironmentBuffer.createPhase(this.sAtmosphereHelper, 1, 293.15, 0, this.fPressureEnvironment * 2);
             
             % add pipe for suit leakage branch
-            components.pipe(this, 'Pipe_Suit_Buffer', 0.05, 0.005);
+            components.matter.pipe(this, 'Pipe_Suit_Buffer', 0.05, 0.005);
             % add pipe for environment reference branch
-            components.pipe(this, 'Pipe_EnvRef_EnvBuf', 0.05, 0.005);
+            components.matter.pipe(this, 'Pipe_EnvRef_EnvBuf', 0.05, 0.005);
 
             % add extract/merge processors
             matter.procs.exmes.gas(oGasPhaseTank, 'PortTank');

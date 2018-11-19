@@ -111,7 +111,7 @@ classdef Example_Multiple < vsys
                 end
                 
                 csFlowProcs = {
-                    components.pipe(this, sprintf('Pipe_%i%i', iStoreLeft, iStoreRight), fPipeLen, this.fPipeDiameter).sName;
+                    components.matter.pipe(this, sprintf('Pipe_%i%i', iStoreLeft, iStoreRight), fPipeLen, this.fPipeDiameter).sName;
                 };
                 
                 sLeftStore  = sprintf('Tank_%i', iStoreLeft);

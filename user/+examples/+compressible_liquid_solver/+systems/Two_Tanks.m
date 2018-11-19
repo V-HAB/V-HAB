@@ -42,7 +42,7 @@ classdef Two_Tanks < vsys
             matter.procs.exmes.liquid(oWaterPhase2, 'Port_2');
             
             % Adding pipes to connect the components
-            components.pipe(this, 'Pipe_1', 1.0, 0.01, 0.002);
+            components.matter.pipe(this, 'Pipe_1', 1.0, 0.01, 0.002);
             
             matter.branch(this, 'Tank_1.Port_1', {'Pipe_1'}, 'Tank_2.Port_2');
 

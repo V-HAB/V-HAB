@@ -39,7 +39,7 @@ classdef GravityDrivenFlow < vsys
             matter.procs.exmes.liquid(oWaterPhase2, 'Port_2', 0);
 
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe('Pipe_1', 1, 0.2, 0.2));  
+            this.addProcF2F(components.matter.pipe('Pipe_1', 1, 0.2, 0.2));  
             
             this.createBranch('Tank_1.Port_1', {'Pipe_1'}, 'Tank_2.Port_2');
             

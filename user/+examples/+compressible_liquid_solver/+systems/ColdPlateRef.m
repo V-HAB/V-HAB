@@ -47,8 +47,8 @@ classdef ColdPlateRef < vsys
             this.addProcF2F(tutorials.compressible_liquid_solver.components.heater('Heater', 292.85, 0.01, 0, 0));
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe('Pipe_1', 1, 0.01, 0.2*10^-3));
-            this.addProcF2F(components.pipe('Pipe_2', 1, 0.01, 0.2*10^-3));
+            this.addProcF2F(components.matter.pipe('Pipe_1', 1, 0.01, 0.2*10^-3));
+            this.addProcF2F(components.matter.pipe('Pipe_2', 1, 0.01, 0.2*10^-3));
                       
             this.createBranch('Tank_1.Port_1', {'Pipe_1', 'Heater', 'Pipe_2',}, 'Tank_2.Port_2');
                         

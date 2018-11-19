@@ -43,7 +43,7 @@ classdef Example < vsys
             
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter.
-            components.pipe(this, 'Pipe', 1.5, 0.005);
+            components.matter.pipe(this, 'Pipe', 1.5, 0.005);
             
             % Creating the flowpath (=branch) between the components. Note
             % that here we are using the matter.phase objects as the left

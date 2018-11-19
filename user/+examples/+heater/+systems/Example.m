@@ -55,9 +55,9 @@ classdef Example < vsys
             matter.procs.exmes.gas(oAirPhase, 'Port_2');
              
             % Adding a pipe to connect the tanks, length 1 m, diameter 0.1 m
-            components.pipe(this, 'Pipe', 10, 0.01);
+            components.matter.pipe(this, 'Pipe', 10, 0.01);
             
-            this.oHeater = components.heater(this, 'Heater');
+            this.oHeater = components.matter.heater(this, 'Heater');
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 

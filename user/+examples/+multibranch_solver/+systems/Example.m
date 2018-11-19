@@ -65,12 +65,12 @@ classdef Example < vsys
             
             
             %P2P!
-            %components.generic.filter(this.toStores.Filter, 'co2_filter', 'flow', 'adsorbed', 'CO2', inf);%0.01);
-            %components.generic.filter(this.toStores.Filter, 'co2_filter', 'flow', 'adsorbed', 'CO2', 0.001, 1);%inf);%0.01);
-            %components.generic.filter(this.toStores.Filter, 'a_filter', 'flow', 'adsorbed', 'CO2', 0.05);%0.01);
+            %components.matter.generic.filter(this.toStores.Filter, 'co2_filter', 'flow', 'adsorbed', 'CO2', inf);%0.01);
+            %components.matter.generic.filter(this.toStores.Filter, 'co2_filter', 'flow', 'adsorbed', 'CO2', 0.001, 1);%inf);%0.01);
+            %components.matter.generic.filter(this.toStores.Filter, 'a_filter', 'flow', 'adsorbed', 'CO2', 0.05);%0.01);
             
-            %%components.generic.filter(this.toStores.Filter, 'a_filter', 'flow', 'adsorbed', 'CO2', 0.01, 2);%0.01);
-            %components.generic.filter(this.toStores.Filter, 'a_filter', 'flow', 'adsorbed', 'CO2', 0.025);
+            %%components.matter.generic.filter(this.toStores.Filter, 'a_filter', 'flow', 'adsorbed', 'CO2', 0.01, 2);%0.01);
+            %components.matter.generic.filter(this.toStores.Filter, 'a_filter', 'flow', 'adsorbed', 'CO2', 0.025);
             
             
             matter.store(this, 'Valve_2', 1e-6);
@@ -81,14 +81,14 @@ classdef Example < vsys
             
             fRoughness = 0;% 0.002;
             
-            components.pipe(this, 'Pipe_Store_Valve1_1',  this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.pipe(this, 'Pipe_Store_Valve1_2',  this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.pipe(this, 'Pipe_Valve1_Filter_1', this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.pipe(this, 'Pipe_Valve1_Filter_2', this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.pipe(this, 'Pipe_Filter_Valve2_1', this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.pipe(this, 'Pipe_Filter_Valve2_2', this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.pipe(this, 'Pipe_Valve2_Store_1',  this.fPipeLength, this.fPipeDiameter, fRoughness);
-            components.pipe(this, 'Pipe_Valve2_Store_2',  this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.matter.pipe(this, 'Pipe_Store_Valve1_1',  this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.matter.pipe(this, 'Pipe_Store_Valve1_2',  this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.matter.pipe(this, 'Pipe_Valve1_Filter_1', this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.matter.pipe(this, 'Pipe_Valve1_Filter_2', this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.matter.pipe(this, 'Pipe_Filter_Valve2_1', this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.matter.pipe(this, 'Pipe_Filter_Valve2_2', this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.matter.pipe(this, 'Pipe_Valve2_Store_1',  this.fPipeLength, this.fPipeDiameter, fRoughness);
+            components.matter.pipe(this, 'Pipe_Valve2_Store_2',  this.fPipeLength, this.fPipeDiameter, fRoughness);
             
             
             matter.branch(this, 'Store.Port_Out', { 'Pipe_Store_Valve1_1',  'Pipe_Store_Valve1_2'  }, 'Valve_1.In');

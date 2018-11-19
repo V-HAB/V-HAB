@@ -40,7 +40,7 @@ classdef setup < simulation.infrastructure
             oGreenhouse = this.oSimulationContainer.toChildren.Greenhouse;
             for iChild = 1:length(this.oSimulationContainer.toChildren.Greenhouse.csChildren)
                 % culture object gets assigned using its culture name 
-                if isa(oGreenhouse.toChildren.(oGreenhouse.csChildren{iChild}), 'components.PlantModuleV2.PlantCulture')
+                if isa(oGreenhouse.toChildren.(oGreenhouse.csChildren{iChild}), 'components.matter.PlantModuleV2.PlantCulture')
                     csCultures{length(csCultures)+1} = oGreenhouse.csChildren{iChild};
                 end
             end
@@ -128,7 +128,7 @@ classdef setup < simulation.infrastructure
             oGreenhouse = this.oSimulationContainer.toChildren.Greenhouse;
             for iChild = 1:length(this.oSimulationContainer.toChildren.Greenhouse.csChildren)
                 % culture object gets assigned using its culture name 
-                if isa(oGreenhouse.toChildren.(oGreenhouse.csChildren{iChild}), 'components.PlantModuleV2.PlantCulture')
+                if isa(oGreenhouse.toChildren.(oGreenhouse.csChildren{iChild}), 'components.matter.PlantModuleV2.PlantCulture')
                     csCultures{length(csCultures)+1} = oGreenhouse.csChildren{iChild};
                 end
             end

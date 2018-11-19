@@ -62,8 +62,8 @@ classdef Example < vsys
             
             
             if strcmp(this.sMode, 'flow')
-                components.pipe(this, 'Pipe_1', 2.5, 0.005);
-                components.pipe(this, 'Pipe_2', 2.5, 0.005);
+                components.matter.pipe(this, 'Pipe_1', 2.5, 0.005);
+                components.matter.pipe(this, 'Pipe_2', 2.5, 0.005);
 
                 matter.branch(this, 'Tank_1.Port', {'Pipe_1'}, 'Tank_Mid.Port_Left');
                 matter.branch(this, 'Tank_Mid.Port_Right', {'Pipe_2'}, 'Tank_2.Port');

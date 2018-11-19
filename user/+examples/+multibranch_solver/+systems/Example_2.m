@@ -86,12 +86,12 @@ classdef Example_2 < vsys
             
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter.
-            components.pipe(this, 'Pipe1', this.fPipeLength, this.fPipeDiameter, 2e-3);
-            components.pipe(this, 'Pipe2', this.fPipeLength, this.fPipeDiameter, 2e-3);
-            components.pipe(this, 'Pipe3', this.fPipeLength, this.fPipeDiameter, 2e-3);
-            components.pipe(this, 'Pipe4', this.fPipeLength, this.fPipeDiameter, 2e-3);
-            components.pipe(this, 'Pipe5', this.fPipeLength, this.fPipeDiameter, 2e-3);
-            components.pipe(this, 'Pipe6', this.fPipeLength, this.fPipeDiameter, 2e-3);
+            components.matter.pipe(this, 'Pipe1', this.fPipeLength, this.fPipeDiameter, 2e-3);
+            components.matter.pipe(this, 'Pipe2', this.fPipeLength, this.fPipeDiameter, 2e-3);
+            components.matter.pipe(this, 'Pipe3', this.fPipeLength, this.fPipeDiameter, 2e-3);
+            components.matter.pipe(this, 'Pipe4', this.fPipeLength, this.fPipeDiameter, 2e-3);
+            components.matter.pipe(this, 'Pipe5', this.fPipeLength, this.fPipeDiameter, 2e-3);
+            components.matter.pipe(this, 'Pipe6', this.fPipeLength, this.fPipeDiameter, 2e-3);
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 

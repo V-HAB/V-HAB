@@ -89,8 +89,8 @@ classdef Example < vsys
             fWaterPipeDiameter = 0.05;
             % Adding pipes tand branches to connect the flownodes
             for iCell = 1:this.iCells-1
-                components.pipe(this, ['AirPipe_',      num2str(iCell)], fAirPipeLength, fAirPipeDiameter, 2e-3);
-                components.pipe(this, ['WaterPipe_',    num2str(iCell)], fWaterPipeLength, fWaterPipeDiameter, 2e-3);
+                components.matter.pipe(this, ['AirPipe_',      num2str(iCell)], fAirPipeLength, fAirPipeDiameter, 2e-3);
+                components.matter.pipe(this, ['WaterPipe_',    num2str(iCell)], fWaterPipeLength, fWaterPipeDiameter, 2e-3);
                 
                 matter.branch(this, coFlowNodeAir{iCell},   {['AirPipe_', num2str(iCell)]},     coFlowNodeAir{iCell+1},     ['AirFlowBranch_', num2str(iCell)]);
                 matter.branch(this, coFlowNodeWater{iCell}, {['WaterPipe_', num2str(iCell)]},   coFlowNodeWater{iCell+1},   ['WaterFlowBranch_', num2str(iCell)]);
@@ -98,22 +98,22 @@ classdef Example < vsys
             end
             
             % Add in and outflow of the flow path for air
-            components.pipe(this, ['AirPipe_', num2str(this.iCells)], fAirPipeLength, fAirPipeDiameter, 2e-3);
+            components.matter.pipe(this, ['AirPipe_', num2str(this.iCells)], fAirPipeLength, fAirPipeDiameter, 2e-3);
             % Creating the flowpath between the components
             matter.branch(this, oAir1, {}, coFlowNodeAir{1}, 'AirFlowBranchInlet');
             matter.branch(this, coFlowNodeAir{end}, {['AirPipe_', num2str(this.iCells)]}, oAir2, ['AirFlowBranch_', num2str(this.iCells)]);
             
             % Adding a reflow pipe and branch for the air
-            components.pipe(this, 'AirPipe_Reflow', 1, 0.03, 2e-3);
+            components.matter.pipe(this, 'AirPipe_Reflow', 1, 0.03, 2e-3);
             matter.branch(this, oAir2, {'AirPipe_Reflow'}, oAir1, 'AirReflow');
             
             % Add in and outflow of the flow path for water
-            components.pipe(this, ['WaterPipe_', num2str(this.iCells)], fWaterPipeLength, fWaterPipeDiameter, 2e-3);
+            components.matter.pipe(this, ['WaterPipe_', num2str(this.iCells)], fWaterPipeLength, fWaterPipeDiameter, 2e-3);
             matter.branch(this, oWaterPhase1, {}, coFlowNodeWater{1}, 'WaterFlowBranchInlet');
             matter.branch(this, coFlowNodeWater{end}, {['WaterPipe_', num2str(this.iCells)]}, oWaterPhase2, ['WaterFlowBranch_', num2str(this.iCells)]);
             
             % Adding a reflow pipe and branch for the water
-            components.pipe(this, 'WaterPipe_Reflow', 1, 0.01, 2e-3);
+            components.matter.pipe(this, 'WaterPipe_Reflow', 1, 0.01, 2e-3);
             matter.branch(this, oWaterPhase2, {'WaterPipe_Reflow'}, oWaterPhase1, 'WaterReflow');
         end
         

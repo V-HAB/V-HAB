@@ -21,8 +21,8 @@ classdef MiddleSystem < vsys
         function createMatterStructure(this)
             createMatterStructure@vsys(this);
             
-            components.pipe(this, 'Pipe3', 1, 0.005);
-            components.pipe(this, 'Pipe4', 1, 0.005);
+            components.matter.pipe(this, 'Pipe3', 1, 0.005);
+            components.matter.pipe(this, 'Pipe4', 1, 0.005);
             
             matter.branch(this, 'FromSubOut', {'Pipe3'}, 'ToSupIn');
             

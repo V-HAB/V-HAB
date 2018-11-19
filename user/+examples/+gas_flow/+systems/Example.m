@@ -43,11 +43,11 @@ classdef Example < vsys
             matter.procs.exmes.gas(oAirPhase, 'Port_2');
             
             % Adding a fan to move the gas
-            components.fan_simple(this, 'Fan', 2000, false);
+            components.matter.fan_simple(this, 'Fan', 2000, false);
             
             % Adding a pipe to connect the tanks
-            components.pipe(this, 'Pipe_1', 1, 0.01);
-            components.pipe(this, 'Pipe_2', 1, 0.01);
+            components.matter.pipe(this, 'Pipe_1', 1, 0.01);
+            components.matter.pipe(this, 'Pipe_2', 1, 0.01);
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 

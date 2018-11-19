@@ -47,20 +47,20 @@ classdef HeatExchangerSystem < vsys
             matter.procs.exmes.liquid(oWaterPhase4, 'Port_2');
             
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_3', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_4', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_5', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_6', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_7', 0.5, 0.1, 0.2*10^-3));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_8', 0.5, 0.1, 0.2*10^-3));
+            this.addProcF2F(components.matter.pipe(this.oData.oMT, 'Pipe_1', 0.5, 0.1, 0.2*10^-3));
+            this.addProcF2F(components.matter.pipe(this.oData.oMT, 'Pipe_2', 0.5, 0.1, 0.2*10^-3));
+            this.addProcF2F(components.matter.pipe(this.oData.oMT, 'Pipe_3', 0.5, 0.1, 0.2*10^-3));
+            this.addProcF2F(components.matter.pipe(this.oData.oMT, 'Pipe_4', 0.5, 0.1, 0.2*10^-3));
+            this.addProcF2F(components.matter.pipe(this.oData.oMT, 'Pipe_5', 0.5, 0.1, 0.2*10^-3));
+            this.addProcF2F(components.matter.pipe(this.oData.oMT, 'Pipe_6', 0.5, 0.1, 0.2*10^-3));
+            this.addProcF2F(components.matter.pipe(this.oData.oMT, 'Pipe_7', 0.5, 0.1, 0.2*10^-3));
+            this.addProcF2F(components.matter.pipe(this.oData.oMT, 'Pipe_8', 0.5, 0.1, 0.2*10^-3));
             
             % Adding pumps
             this.addProcF2F(tutorials.compressible_liquid_solver.components.fan(this.oData.oMT, 'Fan_1', 2*10^5));
             this.addProcF2F(tutorials.compressible_liquid_solver.components.fan(this.oData.oMT, 'Fan_2', 2*10^5));
-            %this.addProcF2F(components.fan(this.oData.oMT, 'Fan_1', 2*10^5));
-            %this.addProcF2F(components.fan(this.oData.oMT, 'Fan_2', 2*10^5));
+            %this.addProcF2F(components.matter.fan(this.oData.oMT, 'Fan_1', 2*10^5));
+            %this.addProcF2F(components.matter.fan(this.oData.oMT, 'Fan_2', 2*10^5));
             
             %conductivity of HX material
             Conductivity = 15;
@@ -71,8 +71,7 @@ classdef HeatExchangerSystem < vsys
             
             % HX Params: oParent, sName, mHX, sHX_type, fHX_TC
             % adding the heat exchanger
-            this.oHX = puda.HX.components.HX(this, 'HeatExchanger', Geometry, sHX_type, Conductivity);
-            %this.oHX = components.HX(this, 'HeatExchanger', Geometry, sHX_type, Conductivity);
+            this.oHX = components.matter.HX(this, 'HeatExchanger', Geometry, sHX_type, Conductivity);
             
             %adding the processors from the heat exchanger to the system
             this.addProcF2F(this.oHX.oF2F_1);

@@ -47,14 +47,14 @@ classdef def < vsys
             %%%% COMPS %%%%
             fPipeDiam = 0.0015;
             
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_1', 1, fPipeDiam));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_2', 1, fPipeDiam));
+            this.addProcF2F(components.matter.pipe(this.oData.oMT, 'Pipe_1', 1, fPipeDiam));
+            this.addProcF2F(components.matter.pipe(this.oData.oMT, 'Pipe_2', 1, fPipeDiam));
             
             csFlowProcs = { 'Pipe_1', 'Pipe_2' };
             
             
             if strcmp(sAdditionalComps, 'heater') || strcmp(sAdditionalComps, 'heater_and_pipes')
-                this.oHeater = components.heater(this.oData.oMT, 'Heater');
+                this.oHeater = components.matter.heater(this.oData.oMT, 'Heater');
                 
                 this.addProcF2F(this.oHeater);
                 
@@ -62,8 +62,8 @@ classdef def < vsys
             end
             
             if strcmp(sAdditionalComps, 'pipes') || strcmp(sAdditionalComps, 'heater_and_pipes')
-                this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_3', 1, fPipeDiam));
-                this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe_4', 1, fPipeDiam));
+                this.addProcF2F(components.matter.pipe(this.oData.oMT, 'Pipe_3', 1, fPipeDiam));
+                this.addProcF2F(components.matter.pipe(this.oData.oMT, 'Pipe_4', 1, fPipeDiam));
                 
                 csFlowProcs{end + 1} = 'Pipe_3';
                 csFlowProcs{end + 1} = 'Pipe_4';

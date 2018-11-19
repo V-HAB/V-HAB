@@ -131,15 +131,15 @@ classdef Example < vsys
             
             %% Heat Exchanger
             %defines the heat exchanged object using the previously created properties
-            components.HX(this, 'HeatExchanger', tHX_Parameters, sHX_type, Conductivity);
+            components.matter.HX(this, 'HeatExchanger', tHX_Parameters, sHX_type, Conductivity);
             
             %% Adding some pipes
-            components.pipe(this, 'Pipe1', 1, 0.01);
-            components.pipe(this, 'Pipe2', 1, 0.01);
-            components.pipe(this, 'Pipe3', 1, 0.01);
-            components.pipe(this, 'Pipe4', 1, 0.01);
-            components.pipe(this, 'Pipe5', 1, 0.01);
-            components.pipe(this, 'Pipe6', 1, 0.01);
+            components.matter.pipe(this, 'Pipe1', 1, 0.01);
+            components.matter.pipe(this, 'Pipe2', 1, 0.01);
+            components.matter.pipe(this, 'Pipe3', 1, 0.01);
+            components.matter.pipe(this, 'Pipe4', 1, 0.01);
+            components.matter.pipe(this, 'Pipe5', 1, 0.01);
+            components.matter.pipe(this, 'Pipe6', 1, 0.01);
             
             % Creating the flow path between the two gas tanks via the heat
             % exchanger

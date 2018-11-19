@@ -551,7 +551,7 @@ classdef branch < base & event.source
                 end
                 
                 for iI = 1:this.iFlowProcs
-                    if isa(this.aoFlowProcs(iI), 'components.valve') && ~this.aoFlowProcs(iI).bValveOpen
+                    if isa(this.aoFlowProcs(iI), 'components.matter.valve') && ~this.aoFlowProcs(iI).bValveOpen
                         oExme = [];
                         return;
                     end

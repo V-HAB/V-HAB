@@ -79,8 +79,8 @@ classdef Example < vsys
             
                         
             %% Adding some pipes
-            components.pipe(this, 'Pipe1', 1, 0.005);
-            components.pipe(this, 'Pipe2', 1, 0.005);
+            components.matter.pipe(this, 'Pipe1', 1, 0.005);
+            components.matter.pipe(this, 'Pipe2', 1, 0.005);
             
             % Creating the flowpath (=branch) into a subsystem
             % Input parameter format is always: 

@@ -42,15 +42,15 @@ classdef Example_4 < vsys
             end
             
             for iP = 1:(iValves + 3)
-                components.pipe(this, sprintf('Pipe_%i', iP),  this.fPipeLength, this.fPipeDiameter);
+                components.matter.pipe(this, sprintf('Pipe_%i', iP),  this.fPipeLength, this.fPipeDiameter);
             end
             
             % Resistors
-            components.pipe(this, 'R_1',  0.1, 0.001);
-            components.pipe(this, 'R_2',  0.1, 0.001);
-            components.pipe(this, 'R_3',  0.1, 0.001);
-            components.pipe(this, 'R_4',  0.1, 0.001);
-            components.pipe(this, 'R_5',  0.1, 0.001);
+            components.matter.pipe(this, 'R_1',  0.1, 0.001);
+            components.matter.pipe(this, 'R_2',  0.1, 0.001);
+            components.matter.pipe(this, 'R_3',  0.1, 0.001);
+            components.matter.pipe(this, 'R_4',  0.1, 0.001);
+            components.matter.pipe(this, 'R_5',  0.1, 0.001);
             
             
             matter.branch(this, 'Store.Port_Out', { 'Pipe_1' }, 'Valve_1.Port_1');

@@ -87,7 +87,7 @@ classdef Example < vsys
                 txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);
                 txCrewPlaner.tMealTimes = tMealTimes;
                 
-                components.Human(this, ['Human_', num2str(iCrewMember)], true, 28, 84.5, 1.84, txCrewPlaner);
+                components.matter.Human(this, ['Human_', num2str(iCrewMember)], true, 28, 84.5, 1.84, txCrewPlaner);
                 
                 clear txCrewPlaner;
             end
@@ -135,7 +135,7 @@ classdef Example < vsys
             
             % Adds a food store to the system
             tfFood = struct('Food', 100, 'CarrotsEdibleWet', 10);
-            oFoodStore = components.FoodStore(this, 'FoodStore', 100, tfFood);
+            oFoodStore = components.matter.FoodStore(this, 'FoodStore', 100, tfFood);
             
             
             for iHuman = 1:this.iNumberOfCrewMembers

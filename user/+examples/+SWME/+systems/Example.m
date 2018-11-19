@@ -22,7 +22,7 @@ classdef Example < vsys
             eval(this.oRoot.oCfgParams.configCode(this));
             
             % Creating the SWME
-            components.SWME(this, 'SWME', this.fInitialTemperature);
+            components.matter.SWME(this, 'SWME', this.fInitialTemperature);
             
             % Setting the initial temperature set point. 10 degrees Celcius
             % is a standard temperature here. 
@@ -65,8 +65,8 @@ classdef Example < vsys
             
             % Two standard pipes, which connect the SWME to the super
             % system
-            components.pipe(this, 'Pipe_1', 0.01, 0.0127);
-            components.pipe(this, 'Pipe_2', 0.01, 0.0127);
+            components.matter.pipe(this, 'Pipe_1', 0.01, 0.0127);
+            components.matter.pipe(this, 'Pipe_2', 0.01, 0.0127);
             
             % Flow from the inlet feed tank,  flowing through pipe 1,
             % entering the SWME

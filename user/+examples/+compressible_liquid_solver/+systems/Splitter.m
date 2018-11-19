@@ -54,10 +54,10 @@ classdef Splitter < vsys
             matter.procs.exmes.liquid(oWaterPhase5, 'Splitter_Port_4');
 
             % Adding pipes to connect the components
-            this.addProcF2F(components.pipe('Pipe_1', 1.0, 0.1, 0.02));
-            this.addProcF2F(components.pipe('Pipe_2', 1.0, 0.1, 0.02));
-            this.addProcF2F(components.pipe('Pipe_3', 1.0, 0.1, 0.02));
-            this.addProcF2F(components.pipe('Pipe_4', 1.0, 0.1, 0.02));
+            this.addProcF2F(components.matter.pipe('Pipe_1', 1.0, 0.1, 0.02));
+            this.addProcF2F(components.matter.pipe('Pipe_2', 1.0, 0.1, 0.02));
+            this.addProcF2F(components.matter.pipe('Pipe_3', 1.0, 0.1, 0.02));
+            this.addProcF2F(components.matter.pipe('Pipe_4', 1.0, 0.1, 0.02));
             
             
             this.createBranch('Tank_1.Port_1', {'Pipe_1'}, 'Splitter.Splitter_Port_1');

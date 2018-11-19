@@ -69,7 +69,7 @@ classdef Example < vsys
              
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter.
-            components.pipe(this, 'Pipe', this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe', this.fPipeLength, this.fPipeDiameter);
             
             % Creating the flowpath (=branch) between the components
             % Input parameter format is always: 
@@ -81,8 +81,8 @@ classdef Example < vsys
             matter.procs.exmes.gas(oAirPhase, 'Port_IF_In');
             
             
-            components.pipe(this, 'Pipe1', 1, 0.005);
-            components.pipe(this, 'Pipe2', 1, 0.005);
+            components.matter.pipe(this, 'Pipe1', 1, 0.005);
+            components.matter.pipe(this, 'Pipe2', 1, 0.005);
             
             % Creating the flowpath (=branch) into a subsystem
             % Input parameter format is always: 

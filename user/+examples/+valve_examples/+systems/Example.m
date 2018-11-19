@@ -59,13 +59,13 @@ classdef Example < vsys
             
             for iB = 1:iLen
                 csFlowProcs = {
-                    components.pipe(this, sprintf('Pipe_%i%i_1', iB, iB + 1), this.fPipeLength, this.fPipeDiameter).sName;
-                	components.valve_pressure_drop(this, sprintf('Valve_%i%i',  iB, iB + 1), this.afFlowCoeffs(iB)).sName;
-                	components.pipe(this, sprintf('Pipe_%i%i_2', iB, iB + 1), this.fPipeLength, this.fPipeDiameter).sName;
+                    components.matter.pipe(this, sprintf('Pipe_%i%i_1', iB, iB + 1), this.fPipeLength, this.fPipeDiameter).sName;
+                	components.matter.valve_pressure_drop(this, sprintf('Valve_%i%i',  iB, iB + 1), this.afFlowCoeffs(iB)).sName;
+                	components.matter.pipe(this, sprintf('Pipe_%i%i_2', iB, iB + 1), this.fPipeLength, this.fPipeDiameter).sName;
                 };
                 
                 if iB == 1
-                    csFlowProcs{end + 1} = components.checkvalve(this, sprintf('Checkvalve_%i%i',  iB, iB + 1)).sName;
+                    csFlowProcs{end + 1} = components.matter.checkvalve(this, sprintf('Checkvalve_%i%i',  iB, iB + 1)).sName;
                 end
                 
                 if iB == 1

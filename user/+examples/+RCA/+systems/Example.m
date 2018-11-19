@@ -17,7 +17,7 @@ classdef Example < vsys
             this@vsys(oParent, sName);
             
             % Instatiating the RCA
-            components.RCA(this, 'RCA', 'N2Atmosphere');
+            components.matter.RCA(this, 'RCA', 'N2Atmosphere');
             
         end
         
@@ -57,9 +57,9 @@ classdef Example < vsys
             matter.procs.exmes.gas(oN2Gas, 'N2Port');
             
             % Adding pipes to connect the stores
-            components.pipe(this, 'Pipe_H2O', 1.0, 0.01, 0.0002);
-            components.pipe(this, 'Pipe_CO2', 1.0, 0.01, 0.0002);
-            components.pipe(this, 'Pipe_N2', 1.0, 0.01, 0.0002);
+            components.matter.pipe(this, 'Pipe_H2O', 1.0, 0.01, 0.0002);
+            components.matter.pipe(this, 'Pipe_CO2', 1.0, 0.01, 0.0002);
+            components.matter.pipe(this, 'Pipe_N2', 1.0, 0.01, 0.0002);
             
             % Creating branches
             matter.branch(this, 'H2OStore.H2OPort', {'Pipe_H2O'}, 'SpaceSuit.H2OInlet');
@@ -67,8 +67,8 @@ classdef Example < vsys
             matter.branch(this, 'N2Store.N2Port', {'Pipe_N2'}, 'SpaceSuit.N2Inlet');
             
             % Adding pipes to connect the components
-            components.pipe(this, 'Pipe_1', this.fPipeLength, this.fPipeDiameter);
-            components.pipe(this, 'Pipe_2', this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe_1', this.fPipeLength, this.fPipeDiameter);
+            components.matter.pipe(this, 'Pipe_2', this.fPipeLength, this.fPipeDiameter);
             
             % Creating flow branches to connect to the RCA
             matter.branch(this, 'RCA_In', {'Pipe_1'}, 'SpaceSuit.Out');
