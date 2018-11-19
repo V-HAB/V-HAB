@@ -676,6 +676,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % Return if no time has passed
             if fLastStep == 0
+                % This is necessary to ensure the TS is set outdated for
+                % cases where flow phases are handled (as they can change
+                % their partial mass composition after the solvers are
+                % updated, which is after the initial mass updates)
+                this.setOutdatedTS();
                 return;
             end
             

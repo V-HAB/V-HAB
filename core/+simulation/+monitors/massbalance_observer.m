@@ -79,7 +79,12 @@ classdef massbalance_observer < simulation.monitor
 
             aoPhases = oInfra.toMonitors.oMatterObserver.aoPhases;
             aoFlows  = oInfra.toMonitors.oMatterObserver.aoFlows;
-
+            
+            % Since we execute after all timer operations are finished we
+            % can calculate the next time step to see if the mass balance
+            % error exceeds the accuracy
+            fTimeStep = min(aoPhases(1).oTimer.afTimeStep + aoPhases(1).oTimer.afLastExec) - aoPhases(1).oTimer.fTime;
+            
             % Include a calculation if the afCurrentTotalInOuts of each
             % phase corresponds to the total flowrate of all attached
             % branches! Covers the case where the calculateTimeStep
@@ -175,23 +180,42 @@ classdef massbalance_observer < simulation.monitor
                     afCurrentMassBalance = afCurrentMassBalance + aoPhases(iPhase).afCurrentTotalInOuts;
                     
                     if aoPhases(iPhase).bFlow
-                        if aoPhases(iPhase).fCurrentTotalMassInOut ~= 0 && abs(sum(aoPhases(iPhase).arPartialMass) - 1) > this.fAccuracy
-                            disp(['In the Store ', aoPhases(iPhase).oStore.sName, ' in Phase ', aoPhases(iPhase).sName, ' the partial mass vector is unequal to 1']);
+                        if abs(aoPhases(iPhase).fCurrentTotalMassInOut * fTimeStep) > this.fAccuracy && abs(sum(aoPhases(iPhase).arPartialMass) - 1) > this.fAccuracy
+                            disp(['In the Store ', aoPhases(iPhase).oStore.sName, ' in Phase ', aoPhases(iPhase).sName, ' the partial mass vector is unequal to 1 in Tick ',  num2str(aoPhases(iPhase).oTimer.iTick)]);
                         end
                     else
                         if aoPhases(iPhase).fMass ~= 0 && abs(sum(aoPhases(iPhase).arPartialMass) - 1) > this.fAccuracy
-                            disp(['In the Store ', aoPhases(iPhase).oStore.sName, ' in Phase ', aoPhases(iPhase).sName, ' the partial mass vector is unequal to 1']);
+                            disp(['In the Store ', aoPhases(iPhase).oStore.sName, ' in Phase ', aoPhases(iPhase).sName, ' the partial mass vector is unequal to 1 in Tick ',  num2str(aoPhases(iPhase).oTimer.iTick)]);
                         end
                     end
                 end
             end
 
-            if any(abs(afCurrentMassBalance) > this.fAccuracy)
+            if any(abs(afCurrentMassBalance * fTimeStep) > this.fAccuracy)
                 miSubstances = abs(afCurrentMassBalance) > this.fAccuracy;
                 sSubstancesStringWithSpaces = strjoin(oMT.csI2N(miSubstances), ', ');
                 disp(['An overall mass balance issue was detected in tick ', num2str(aoPhases(1).oTimer.iTick), ' for the substances: ', sSubstancesStringWithSpaces]);
             end
 
+            %% Check whether the Exme values of the phase match the values calculated during the time step
+            if length(aoPhases) > 1
+                for iPhase = 1:length(aoPhases)
+                    afFlowRates = zeros(1, oMT.iSubstances);
+                    
+                    for iExme = 1:aoPhases(iPhase).iProcsEXME
+                        afFlowRates = afFlowRates + (aoPhases(iPhase).coProcsEXME{iExme}.iSign .* aoPhases(iPhase).coProcsEXME{iExme}.oFlow.fFlowRate .* aoPhases(iPhase).coProcsEXME{iExme}.oFlow.arPartialMass);
+                    end
+                    
+                    if any(abs(((aoPhases(iPhase).afCurrentTotalInOuts - afFlowRates) * fTimeStep)) > this.fAccuracy)
+                        
+                        mbSubstances = (aoPhases(iPhase).afCurrentTotalInOuts - afFlowRates) ~= 0;
+                        sSubstancesStringWithSpaces = strjoin(oMT.csI2N(mbSubstances), ', ');
+                        disp(['The calculated flow rates and Exme flow rates of phase ', aoPhases(iPhase).sName, ' in Tick ', num2str(aoPhases(1).oTimer.iTick), ' did not match for the substances: ', sSubstancesStringWithSpaces]);
+                    end
+                    
+                end
+            end
+            
             %% checks the mass balance in V-HAB and stops the simulation if it exceeds a value defined by the user
             if this.fMaxMassBalanceDifference ~= inf
                 oInfrastructure = oMT.aoPhases(1).oStore.oContainer.oRoot.oInfrastructure;

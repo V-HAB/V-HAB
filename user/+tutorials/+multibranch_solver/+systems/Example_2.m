@@ -49,7 +49,7 @@ classdef Example_2 < vsys
             % Creating a store, volume 1 m^3
             matter.store(this, 'Tank_1', 1);
             
-            oGasPhase = this.toStores.Tank_1.createPhase(  'gas',   'CabinAir', this.toStores.Tank_1.fVolume, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293, 0.5);
+            oGasPhase = this.toStores.Tank_1.createPhase(  'gas',   'Tank1Air', this.toStores.Tank_1.fVolume, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293, 0.5);
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
             
@@ -57,30 +57,30 @@ classdef Example_2 < vsys
             matter.store(this, 'Tank_2', 1);
             
             % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
-            oGasPhase = this.toStores.Tank_2.createPhase(  'gas',   'CabinAir', this.toStores.Tank_2.fVolume, struct('N2', 2e5), 353, 0.5);
+            oGasPhase = this.toStores.Tank_2.createPhase(  'gas',   'Tank2Air', this.toStores.Tank_2.fVolume, struct('N2', 2e5), 353, 0.5);
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
              
             matter.store(this, 'Vacuum', 1e4);
-            oVacuum = this.toStores.Vacuum.createPhase(  'gas',   'CabinAir', this.toStores.Vacuum.fVolume, struct('N2', 1e3), 293, 0);
+            oVacuum = this.toStores.Vacuum.createPhase(  'gas',   'Vacuum', this.toStores.Vacuum.fVolume, struct('N2', 1e3), 293, 0);
             matter.procs.exmes.gas(oVacuum, 'Port_1');
             
             matter.store(this, 'Flow_1', 1e-5);
             cParams = matter.helper.phase.create.gas(this, this.toStores.Flow_1.fVolume, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293, 0.5);
-            oGasPhase = matter.phases.flow.gas(this.toStores.Flow_1, 'flow', cParams{:});
+            oGasPhase = matter.phases.flow.gas(this.toStores.Flow_1, 'flow_1', cParams{:});
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
             
             matter.store(this, 'Flow_2', 1e-5);
             cParams = matter.helper.phase.create.gas(this, this.toStores.Flow_2.fVolume, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293, 0.5);
-            oGasPhase = matter.phases.flow.gas(this.toStores.Flow_2, 'flow', cParams{:});
+            oGasPhase = matter.phases.flow.gas(this.toStores.Flow_2, 'flow_2', cParams{:});
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
             matter.procs.exmes.gas(oGasPhase, 'Port_3');
             
             matter.store(this, 'Flow_3', 1e-5);
             cParams = matter.helper.phase.create.gas(this, this.toStores.Flow_3.fVolume, struct('N2', 8e4, 'O2', 2e4, 'CO2', 500), 293, 0.5);
-            oGasPhase = matter.phases.flow.gas(this.toStores.Flow_3, 'flow', cParams{:});
+            oGasPhase = matter.phases.flow.gas(this.toStores.Flow_3, 'flow_3', cParams{:});
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oGasPhase, 'Port_2');
             
@@ -116,8 +116,8 @@ classdef Example_2 < vsys
             solver.matter_multibranch.iterative.branch(this.aoBranches(:), 'complex');
             
             tTimeProps.rMaxChange = 0.1;
-            this.toStores.Tank_1.toPhases.CabinAir.setTimeStepProperties(tTimeProps);
-            this.toStores.Tank_2.toPhases.CabinAir.setTimeStepProperties(tTimeProps);
+            this.toStores.Tank_1.aoPhases(1).setTimeStepProperties(tTimeProps);
+            this.toStores.Tank_2.aoPhases(1).setTimeStepProperties(tTimeProps);
             %oIt1.iDampFR = 5;
             
             this.setThermalSolvers();
