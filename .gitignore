@@ -1,8 +1,10 @@
 # Ignore for STEPS base folder
 
-# Ignore all user folders except the tutorials folder
+# Ignore all user folders except the tutorials, examples and tests folder
 user/+*
 !user/+tutorials
+!user/+examples
+!user/+tests
 
 # Ignore simulation results, excepct README
 data/*
