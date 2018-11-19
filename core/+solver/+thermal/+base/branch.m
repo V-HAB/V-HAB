@@ -179,13 +179,9 @@ classdef branch < base & event.source
             
             this.setBranchHeatFlow(this.fHeatFlow, afTemperatures);
             
-            this.bUpdateTrigger = true;
-            
             if this.bTriggerUpdateCallbackBound
                 this.trigger('update');
             end
-            
-            this.bUpdateTrigger = false;
         end
     end
 end

@@ -205,13 +205,9 @@ classdef branch < base & event.source
             
             this.setBranchFR(this.fFlowRate, afPressures);
             
-            this.bUpdateTrigger = true;
-            
             if this.bTriggerUpdateCallbackBound
                 this.trigger('update');
             end
-            
-            this.bUpdateTrigger = false;
         end
     end
 end
