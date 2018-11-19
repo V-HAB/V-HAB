@@ -167,8 +167,8 @@ classdef matter_observer < simulation.monitor
             % DISP balance
             fprintf('+---------------------------------- MATTER BALANCE ---------------------------------+\n');
             
-            fprintf('| Generated Mass in Phases:    %f kg\n', sum(this.mfGeneratedMass(end, :)));
-            fprintf('| Total Mass Balance:          %f kg\n', sum(mfTotalFinalMass) - sum(this.mfTotalMass(1, :)));
+            disp(['| Generated Mass in Phases: ', num2str(sum(this.mfGeneratedMass(end, :))), ' kg']);
+            disp(['| Total Mass Balance:       ', num2str(sum(mfTotalFinalMass) - sum(this.mfTotalMass(1, :))), ' kg']);
             
             if this.bVerbose
                 fprintf('| \n');

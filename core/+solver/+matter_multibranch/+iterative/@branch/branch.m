@@ -72,6 +72,9 @@ classdef branch < base & event.source
     %   probably have a wrong valve at some location that cut off gas flow
     %   nodes from any boundary node, but they have a non zero external
     %   flowrate
+    % - Another reason for returning NaN values is the implementation of
+    %   fans. These require
+    % 
     %
     % - You received an error of any different type? Please contact your
     %   supervisor!
@@ -442,71 +445,52 @@ classdef branch < base & event.source
             
             iColIndex = 0;
             
-            for iB = 1:this.iBranches
-                for iP = 1:2
-                    oP = this.aoBranches(iB).coExmes{iP}.oPhase;
+            for iBranch = 1:this.iBranches
+                abIsFlowNode = [false, false];
+                for iPhase = 1:2
+                    oPhase = this.aoBranches(iBranch).coExmes{iPhase}.oPhase;
                     
                     % Variable pressure phase - add to reference map if not
                     % present yet, generate index for matrix column
-                    if isa(oP, 'matter.phases.flow.flow')
-                        if ~this.poVariablePressurePhases.isKey(oP.sUUID)
+                    if isa(oPhase, 'matter.phases.flow.flow')
+                        abIsFlowNode(iPhase) = true;
+                        if ~this.poVariablePressurePhases.isKey(oPhase.sUUID)
 
-                            this.poVariablePressurePhases(oP.sUUID) = oP;
+                            this.poVariablePressurePhases(oPhase.sUUID) = oPhase;
 
                             iColIndex = iColIndex + 1;
 
-                            this.piObjUuidsToColIndex(oP.sUUID) = iColIndex;
-                            this.poColIndexToObj(iColIndex)     = oP;
+                            this.piObjUuidsToColIndex(oPhase.sUUID) = iColIndex;
+                            this.poColIndexToObj(iColIndex)     = oPhase;
                         end
                         
                     % 'Real' phase - boundary condition
                     else
-                        if ~this.poBoundaryPhases.isKey(oP.sUUID)
-                            this.poBoundaryPhases(oP.sUUID) = oP;
+                        abIsFlowNode(iPhase) = false;
+                        if ~this.poBoundaryPhases.isKey(oPhase.sUUID)
+                            this.poBoundaryPhases(oPhase.sUUID) = oPhase;
                         end
                     end
                     
-                    oP.bind('update_post', @this.registerUpdate);
+                    oPhase.bind('update_post', @this.registerUpdate);
                 end
                 
                 
                 iColIndex = iColIndex + 1;
-                oB = this.aoBranches(iB);
+                oBranch = this.aoBranches(iBranch);
                 
-                this.piObjUuidsToColIndex(oB.sUUID) = iColIndex;
-                this.poColIndexToObj(iColIndex)     = oB;
+                this.piObjUuidsToColIndex(oBranch.sUUID) = iColIndex;
+                this.poColIndexToObj(iColIndex)     = oBranch;
                 
                 % Init
-                this.chSetBranchFlowRate{iB}(0, []);
+                this.chSetBranchFlowRate{iBranch}(0, []);
+                
             end
             
             
             this.csVariablePressurePhases = this.poVariablePressurePhases.keys();
             this.csObjUuidsToColIndex     = this.piObjUuidsToColIndex.keys();
             this.csBoundaryPhases         = this.poBoundaryPhases.keys();
-            
-            % We bind the solver update to the post update of normal phases
-            % connected to gas flow nodes in the solver. This is necessary
-            % to update the solver (and with it the p2p) in case the mass
-            % in the normal phase changed and an update is triggered.
-            % Otherwise it is possible that the solver is not recalculated
-            % and a wrong P2P flowrate is used.
-            for iVariablePressurePhase = 1:length(this.csVariablePressurePhases)
-                
-                oPhase = this.poVariablePressurePhases(this.csVariablePressurePhases{iVariablePressurePhase});
-                
-                for iExme = 1:oPhase.iProcsEXME
-                    
-                    oExme = oPhase.coProcsEXME{iExme};
-                    if oExme.bFlowIsAProcP2P
-                        if oPhase.coProcsEXME{iExme}.oFlow.oIn ~= oExme
-                            oOtherPhase = oExme.oFlow.oIn.oPhase;
-                        else
-                            oOtherPhase = oExme.oFlow.oOut.oPhase;
-                        end
-                    end
-                end
-            end
         end
         
         function registerUpdate(this, ~)
