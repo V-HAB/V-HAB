@@ -140,7 +140,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
             this.mbExternalBoundaryBranches(miBranches) = true;
         end
         % Now go through the P2Ps and get their flowrates
-        if oP.iProcsP2Pflow > 0
+        if oP.iProcsP2P > 0
             for iProcP2P = 1:oP.iProcsEXME
                 if oP.coProcsEXME{iProcP2P}.bFlowIsAProcP2P
                     fFrSum = fFrSum - oP.coProcsEXME{iProcP2P}.iSign * oP.coProcsEXME{iProcP2P}.oFlow.fFlowRate;

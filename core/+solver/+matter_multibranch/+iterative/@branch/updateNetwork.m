@@ -53,8 +53,8 @@ function updateNetwork(this, bForceP2Pcalc)
                     
                     iInflowBranches = 0;
                     
-                    afInFlowRates = zeros(oPhase.iProcsEXME + oPhase.iProcsP2Pflow, 1);
-                    aarInPartials = zeros(oPhase.iProcsEXME + oPhase.iProcsP2Pflow, this.oMT.iSubstances);
+                    afInFlowRates = zeros(oPhase.iProcsEXME + oPhase.iProcsP2P, 1);
+                    aarInPartials = zeros(oPhase.iProcsEXME + oPhase.iProcsP2P, this.oMT.iSubstances);
                     for iExme = 1:oPhase.iProcsEXME
                         
                         oProcExme = oPhase.coProcsEXME{iExme};
@@ -116,8 +116,8 @@ function updateNetwork(this, bForceP2Pcalc)
                         end
                         
                         if bForceP2Pcalc
-                            for iProcP2P = 1:oPhase.iProcsP2Pflow
-                                oProcP2P = oPhase.coProcsP2Pflow{iProcP2P};
+                            for iProcP2P = 1:oPhase.iProcsP2P
+                                oProcP2P = oPhase.coProcsP2P{iProcP2P};
                                 
                                 % Update the P2P! (not with update function
                                 % because that is also called at different
@@ -126,8 +126,8 @@ function updateNetwork(this, bForceP2Pcalc)
                             end
                         end
                         
-                        for iProcP2P = 1:oPhase.iProcsP2Pflow
-                            oProcP2P = oPhase.coProcsP2Pflow{iProcP2P};
+                        for iProcP2P = 1:oPhase.iProcsP2P
+                            oProcP2P = oPhase.coProcsP2P{iProcP2P};
                             % Get partial flow rates, not only total
                             % flowrates. Then this can be used to update
                             % the overall partial mass of the current

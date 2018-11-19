@@ -85,7 +85,7 @@ classdef Absorber_Flowphase < matter.procs.p2ps.flow
          function update(this)
 
             
-           fFlowRate=(this.oOut.oPhase.coProcsP2Pflow{1,2}.fFlowRate*this.oOut.oPhase.coProcsP2Pflow{1,2}.arExtractPartials(this.oMT.tiN2I.(this.sSubstance1)));
+           fFlowRate=(this.oOut.oPhase.coProcsP2P{1,2}.fFlowRate*this.oOut.oPhase.coProcsP2P{1,2}.arExtractPartials(this.oMT.tiN2I.(this.sSubstance1)));
             
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
          
