@@ -534,10 +534,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Creating an array to log which of the flows are not in-flows
             aiOutFlows = ones(this.iProcsEXME, 1);
             
-            if this.bFlow
-            	this.trigger('update_partials');
-            end
-
             % Get flow rates and partials from EXMEs
             for iI = 1:this.iProcsEXME
                 % The fFlowRate parameter is the flow rate at the exme,
