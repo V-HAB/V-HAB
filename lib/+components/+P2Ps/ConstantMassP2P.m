@@ -48,13 +48,6 @@ classdef ConstantMassP2P < matter.procs.p2ps.stationary
         
         function update(this)
             
-            if (this.oTimer.fTime - this.fLastExec) < this.fTimeStep
-                % ensure that the store (and with it the phase, and with
-                % those the P2Ps) are update at the next intended update
-                % time of this P2P
-                this.oIn.oPhase.oStore.setNextTimeStep((this.fTimeStep - (this.oTimer.fTime - this.fLastExec)));
-                return
-            end
             % calculate the difference between the current mass and the
             % constant mass. The calculation results in a higher current
             % mass to have a positive flowrate as outflows are defined as

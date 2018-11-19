@@ -112,11 +112,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         iProcsEXME;
 
         % Cache: List and count of all p2p flow processor objects (i.e.
-        % |matter.procs.p2ps.flow|) that are connected to an ExMe of this
+        % |matter.procs.p2ps|) that are connected to an ExMe of this
         % phase. Used to quickly access the objects in |this.massupdate()|;
         % created in |this.seal()|.
-        coProcsP2Pflow;
-        iProcsP2Pflow;
+        coProcsP2P;
+        iProcsP2P = 0;
         
         % List and number of manipulators added to the phase
         toManips = struct('volume', [], 'temperature', [], 'substance', []);
@@ -325,6 +325,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % and trigger branch solver updates in post tick for all
             % branches because their boundary conditions changed
             this.setBranchesOutdated();
+            
+            % We also tell the P2Ps and manips to update
+            this.setP2PsAndManipsOutdated();
             
             % We also ensure that the time step is recalculated
             this.setOutdatedTS();
@@ -627,16 +630,16 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.iProcsEXME  = length(this.coProcsEXME);
                 
                 % Get all p2p flow processors on EXMEs
-                this.coProcsP2Pflow = {};
-                this.iProcsP2Pflow  = 0;
+                this.coProcsP2P = {};
+                this.iProcsP2P  = 0;
 
                 for iE = 1:this.iProcsEXME
                     % Get number and references for connected P2Ps
                     if ~isempty(this.coProcsEXME{iE}.oFlow) 
-                        if isa(this.coProcsEXME{iE}.oFlow, 'matter.procs.p2ps.flow')
-                            this.iProcsP2Pflow = this.iProcsP2Pflow + 1;
+                        if this.coProcsEXME{iE}.bFlowIsAProcP2P
+                            this.iProcsP2P = this.iProcsP2P + 1;
 
-                            this.coProcsP2Pflow{this.iProcsP2Pflow} = this.coProcsEXME{iE}.oFlow;
+                            this.coProcsP2P{this.iProcsP2P} = this.coProcsEXME{iE}.oFlow;
                         end
                     else
                         this.throw('seal','Phase ''%s'' in store ''%s'' has an unconnected exme processor: ''%s''',this.sName, this.oStore.sName, this.coProcsEXME{iE}.sName);
@@ -760,28 +763,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.setBranchesOutdated([],true);
             end
             
-            if this.iProcsP2Pflow > 0 || this.iManipulators > 0
-                
-                if ~isempty(this.toManips.substance)
-                    this.toManips.substance.bindUpdate();
-                end
-
-                % Call p2ps.flow update methods (if not yet called)
-                for iP = 1:this.iProcsP2Pflow
-                    % That check would make more sense within the flow p2p
-                    % update method - however, that method will be overloaded
-                    % in p2ps to include the model to derive the flow rate, so
-                    % would have to be manually added in each derived p2p ...
-                    if this.coProcsP2Pflow{iP}.fLastUpdate < this.fLastMassUpdate
-                        % Triggers the .massupdate of both connected phases
-                        % which is ok, because the fTimeStep == 0 check above
-                        % will prevent this .massupdate from re-executing.
-                        this.coProcsP2Pflow{iP}.bindUpdate();
-                    end
-                end
-                
-            end
-
+            this.setP2PsAndManipsOutdated();
+            
             % Phase sets new time step (registered with parent store, used
             % for all phases of that store)
             this.setOutdatedTS();
@@ -909,6 +892,32 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                     oBranch.setOutdated();
                 end
             end
+        end
+        
+        function setP2PsAndManipsOutdated(this, ~)
+            
+            if this.iProcsP2P > 0 || this.iManipulators > 0
+                
+                if ~isempty(this.toManips.substance)
+                    this.toManips.substance.registerUpdate();
+                end
+
+                % Call p2ps.flow update methods (if not yet called)
+                for iP = 1:this.iProcsP2P
+                    % That check would make more sense within the flow p2p
+                    % update method - however, that method will be overloaded
+                    % in p2ps to include the model to derive the flow rate, so
+                    % would have to be manually added in each derived p2p ...
+                    if this.coProcsP2P{iP}.fLastUpdate < this.fLastMassUpdate
+                        % Triggers the .massupdate of both connected phases
+                        % which is ok, because the fTimeStep == 0 check above
+                        % will prevent this .massupdate from re-executing.
+                        this.coProcsP2P{iP}.registerUpdate();
+                    end
+                end
+                
+            end
+
         end
         
         function setOutdatedTS(this)

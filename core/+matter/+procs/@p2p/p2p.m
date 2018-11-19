@@ -174,7 +174,7 @@ classdef p2p < matter.flow
             % processor, e.g. change efficiencies etc
         end
         
-        function bindUpdate(this)
+        function registerUpdate(this)
             this.hBindPostTickUpdate();
         end
             

@@ -69,7 +69,7 @@ classdef manip < base
             end
         end
         
-        function bindUpdate(this)
+        function registerUpdate(this)
             this.hBindPostTickUpdate();
         end
     end
