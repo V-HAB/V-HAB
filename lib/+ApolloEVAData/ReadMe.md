@@ -1,1 +1,0 @@
-The files in this folder contain three columns of data. The first column is a time stamp in seconds after the EVA had begun. The second column is the crew member heart rate and the third column is the calculated metabolic rate. 
