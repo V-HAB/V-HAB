@@ -18,10 +18,6 @@ classdef branch < base & event.source
         
         fLastUpdate = -10;
         
-        % Branch to sync to - if that branch is executed/updated, also
-        % update here!
-        oSyncedSolver;
-        bUpdateTrigger = false;
     end
     
     properties (SetAccess = private, GetAccess = protected) %, Transient = true)
@@ -137,14 +133,6 @@ classdef branch < base & event.source
             
             this.bRegisteredOutdated = true;
             this.hBindPostTickUpdate();
-        end
-        
-        
-        function syncedUpdateCall(this)
-            % Prevent loops
-            if ~this.bUpdateTrigger
-                this.update();
-            end
         end
         
         function update(this, fHeatFlow, afTemperatures)
