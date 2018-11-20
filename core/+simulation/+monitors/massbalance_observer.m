@@ -39,6 +39,15 @@ classdef massbalance_observer < simulation.monitor
     %                   value to true the function will try to automaticall set
     %                   breakpoints at the locations within V-HAB where the
     %                   mass balance error orginiates.
+    % 
+    % If you want to add this monitor to your simulation you can use the
+    % following code as an example to do so:
+    %
+    %        ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalance_observer';
+    %        fAccuracy = 1e-8;
+    %        fMaxMassBalanceDifference = inf;
+    %        bSetBreakPoints = false;
+    %        ttMonitorConfig.oMassBalanceObserver.cParams = { fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints };
 
     
     properties (SetAccess = protected, GetAccess = public)
