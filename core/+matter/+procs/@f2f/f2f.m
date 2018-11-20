@@ -69,6 +69,9 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         iHeatFlowDirection;
         
         bActive = false;
+        
+        % Pressure difference of the f2f component in [Pa]
+        fDeltaPressure = 0;
     end
     
     

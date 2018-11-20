@@ -16,7 +16,6 @@ classdef pump < matter.procs.f2f
         
         fFlowRateSP;            % Flow rate setpoint in kg/s
         iDir;                   % Direction of flow [ 1 -1 ]
-        fDeltaPressure = 0;     % Pressure difference created by the pump in Pa
         
         fPreviousSetpoint;    
         

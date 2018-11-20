@@ -3,7 +3,6 @@ classdef hx_flow < matter.procs.f2f
     %         a heat exchanger 
 
     properties (SetAccess = protected, GetAccess = public)
-        fDeltaPress = 0;
         fFlowRate = 0;
         
     end
@@ -30,7 +29,7 @@ classdef hx_flow < matter.procs.f2f
            this.oHXParent.update(); 
         end
         
-        function fDeltaPress = solverDeltas(this, fFlowRate)
+        function fDeltaPressure = solverDeltas(this, fFlowRate)
             % Setting the flow rate given to us by the solver
             this.fFlowRate = fFlowRate;
             
@@ -41,16 +40,16 @@ classdef hx_flow < matter.procs.f2f
             % If the flow rate is non-zero we set the delta pressure
             % according to our property, otherwise it's just zero.
             if fFlowRate ~= 0
-                fDeltaPress = this.fDeltaPress;
+                fDeltaPressure = this.fDeltaPressure;
             else
-                fDeltaPress = 0;
+                fDeltaPressure = 0;
             end
         end
         
         % Function to set the heat flow and pressure of the heat exchanger
-        function setOutFlow(this, fHeatFlow, fDeltaPress)
+        function setOutFlow(this, fHeatFlow, fDeltaPressure)
             this.fHeatFlow   = fHeatFlow;
-            this.fDeltaPress = fDeltaPress;
+            this.fDeltaPressure = fDeltaPressure;
         end
         
         function oInFlow = getInFlow(this)

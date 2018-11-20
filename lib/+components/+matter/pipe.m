@@ -25,9 +25,6 @@ classdef pipe < matter.procs.f2f
         % Surface roughness of the pipe in [m]
         fRoughness      = 0;
         
-        % Pressure differential caused by the pipe in [Pa]
-        fDeltaPressure  = 0;
-        
         % Pressure drop coefficient of the pipe that can be multiplied with
         % the volumetric flowrate to get the pressure looss
         fDropCoefficient = 0;

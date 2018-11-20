@@ -38,6 +38,7 @@ classdef fan_simple < matter.procs.f2f
         function [ fDeltaPress, fDeltaTemp ] = solverDeltas(this, ~)
             fDeltaTemp = 0;
             fDeltaPress = -1 * this.fMaxDeltaP;
+            this.fDeltaPressure = fDeltaPress;
         end
         
         function fDeltaTemperature = updateManualSolver(this)

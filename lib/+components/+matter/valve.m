@@ -13,11 +13,6 @@ classdef valve < matter.procs.f2f
         fHydrDiameter_open;
         fHydrDiam;
         fHydrLength;
-        
-        % Delta Pressure, for use with branch, needs to have the same name
-        % as pipe or other f2f procs, 
-        %TODO This should probably be abstract in a f2f.gas subclass.
-        fDeltaPressure;
     end
     
     methods

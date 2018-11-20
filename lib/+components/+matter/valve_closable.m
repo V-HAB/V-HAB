@@ -1,11 +1,7 @@
 %classdef Valve < solver.basic.matter.procs.f2f & solver.matter.linear.procs.f2f
 classdef valve_closable < matter.procs.f2f
-    %Valve Summary of this class goes here
-    %   Detailed explanation goes here
-    %
-    %NOTE
-    %   - from HaRo - haro.components.Valve
-    %   - only works with the iterative solver
+    % this is a simple closable valve, which can open and close branches.
+    % Works with interval and multibranch iterative solver
 
     
     properties (SetAccess = protected, GetAccess = public)
@@ -13,8 +9,6 @@ classdef valve_closable < matter.procs.f2f
         bOpen = true;
         
         fFlowCoefficient = 1;
-        
-        fDeltaPressure;
     end
     
     methods

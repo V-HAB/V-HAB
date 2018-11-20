@@ -9,7 +9,6 @@ classdef Temp_Dummy < matter.procs.f2f
         fHydrDiam = 1;          % Hydraulic diameter value irrelevant for manual solver
         fHydrLength = 0;        % hydrauloc length, value irrelevant for manual solver
         fDeltaTemp = 0;         % Temperature difference created by the component in [K]
-        fDeltaPress = 0;        % Pressure difference created by the component in [Pa]
         fTemperature;
         fMaxHeatFlow = inf;
         

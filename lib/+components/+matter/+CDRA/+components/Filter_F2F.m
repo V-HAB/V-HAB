@@ -3,10 +3,6 @@ classdef Filter_F2F < matter.procs.f2f
     properties (SetAccess = protected, GetAccess = public)
         
         fFrictionFactor   = 0;
-        
-        % Pressure differential caused by the pipe in [Pa]
-        fDeltaPressure  = 0;
-        
     end
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
