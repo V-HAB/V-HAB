@@ -52,7 +52,7 @@ function [fDelta_Pressure] = PipeBundle (fD_o, fs_1, fs_2, fN_Rows, fFlowSpeed, 
 %decides wether temperature dependancy should also be accounted for
 if length(fDyn_Visc) == 2 && fConfig == 0
     fConfig = 2;
-elseif length(fDyn_Visc) == 2 && fConfig == 1;
+elseif length(fDyn_Visc) == 2 && fConfig == 1
     fConfig = 3;
 end
 
@@ -74,6 +74,7 @@ end
 
 %Definition of the Reynolds number according to [9] section Gg 1 
 %equation (6)
+fFlowSpeed = abs(fFlowSpeed);
 fRe = (fFlowSpeed * fOverflow_Length) / (fKin_Visc_m * fPsi);
 
 %Definition of the laminar friction factor according to [9] section Lad

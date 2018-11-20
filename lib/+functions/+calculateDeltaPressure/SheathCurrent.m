@@ -104,6 +104,7 @@ fOverflow_Length = (pi/2) * fD_o;
 
 %flowspeed
 fFlowSpeed = fMassFlow/fDensity;
+fFlowSpeed = abs(fFlowSpeed);
 
 %Definition of the Reynolds number according to [9] section Gg 1 
 %equation (6)

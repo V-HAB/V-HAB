@@ -321,7 +321,14 @@ function update(this)
             
             iB = miCurrentBranches(iK);
             
-            this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), []);
+            afDeltaPressures = zeros(1,this.aoBranches(iB).iFlowProcs);
+            for iF2F = 1:this.aoBranches(iB).iFlowProcs
+                if ~this.aoBranches(iB).aoFlowProcs(iF2F).bActive
+                    afDeltaPressures(iF2F) = this.aoBranches(iB).aoFlowProcs(iF2F).fDeltaPressure;
+                end
+            end
+            
+            this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), afDeltaPressures);
         end
     end
 end

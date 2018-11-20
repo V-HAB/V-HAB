@@ -44,6 +44,7 @@ fKin_Visc_m = fDyn_Visc(1)/fDensity(1);
 %(10.30)
 %note that for a pipe bundle the hydraulic diameter is equal to the
 %diameter of one of its pipes
+fFlowSpeed = abs(fFlowSpeed);
 fRe = (fFlowSpeed * fD_i) / fKin_Visc_m;
 
 %Definition of the area relation between supply pipe and pipe bundle

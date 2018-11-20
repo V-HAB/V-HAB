@@ -70,6 +70,7 @@ fKin_Visc_m = fDyn_Visc/fDensity;
 
 %Definition of the Reynolds number according to [1] page 232 equation
 %(10.30)
+fFlowSpeed = abs(fFlowSpeed);
 fRe = (fFlowSpeed * fD_Hydraulic) / fKin_Visc_m;
 
 %%

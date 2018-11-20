@@ -68,6 +68,7 @@ classdef (Abstract) flow < matter.phase
             end
             this.fVirtualPressure = fPressure;
             this.fPressure = fPressure;
+            this.fMassToPressure = fPressure / this.fMass;
         end
         
         function updatePartials(this, afPartialInFlows)
