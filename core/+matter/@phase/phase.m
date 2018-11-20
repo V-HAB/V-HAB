@@ -755,9 +755,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.trigger('update_partials');
             end
             
-            if this.bSynced
-                this.setBranchesOutdated([],true);
-            end
+            this.setBranchesOutdated([],true);
             
             this.setP2PsAndManipsOutdated();
             

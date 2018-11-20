@@ -101,8 +101,8 @@ classdef setup < simulation.infrastructure
             % The log is built like this:
             %
             %               Path to the object containing the log value     Log Value                       Unit    Label of log value (used for legends and to plot the value) 
-            oLog.addValue('Example:s:Tank_1.toPhases.air',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 1', 'ppCO2_Tank1');
-            oLog.addValue('Example:s:Tank_2.toPhases.air',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 2', 'ppCO2_Tank2');
+            oLog.addValue('Example:s:Tank_1.toPhases.Tank1Air',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 1', 'ppCO2_Tank1');
+            oLog.addValue('Example:s:Tank_2.toPhases.Tank2Air',                   'afPP(this.oMT.tiN2I.CO2)',     'Pa',   'Partial Pressure CO_2 Tank 2', 'ppCO2_Tank2');
             
             % it is also possible to define a calculation as log value and
             % e.g. multiply two values from the object.
@@ -111,20 +111,20 @@ classdef setup < simulation.infrastructure
             % through a branch that transports air for example            
             oLog.addValue('Example.aoBranches(1).aoFlows(1)', 'this.fFlowRate * this.arPartialMass(this.oMT.tiN2I.CO2)', 'kg/s', 'Flowrate of CO2', 'fr_co2');
             
-            oLog.addValue('Example:s:Tank_1.toPhases.air', 'afMass(this.oMT.tiN2I.CO2)', 'kg');
-            oLog.addValue('Example:s:Tank_2.toPhases.air', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
+            oLog.addValue('Example:s:Tank_1.toPhases.Tank1Air', 'afMass(this.oMT.tiN2I.CO2)', 'kg');
+            oLog.addValue('Example:s:Tank_2.toPhases.Tank2Air', 'afMass(this.oMT.tiN2I.CO2)', 'kg', 'Partial Mass CO_2 Tank 2');
             
-            oLog.addValue('Example:s:Tank_1.toPhases.air', 'fTemperature', 'K', 'Temperature Air 1');
-            oLog.addValue('Example:s:Tank_1.toPhases.FilteredPhase', 'fTemperature', 'K', 'Temperature Solid 1');
-            oLog.addValue('Example:s:Tank_2.toPhases.air', 'fTemperature', 'K', 'Temperature Air 2');
-            oLog.addValue('Example:s:Space.toPhases.vacuum',  'fTemperature', 'K', 'Temperature Space');
+            oLog.addValue('Example:s:Tank_1.toPhases.Tank1Air',         'fTemperature', 'K', 'Temperature Air 1');
+            oLog.addValue('Example:s:Tank_1.toPhases.FilteredPhase',    'fTemperature', 'K', 'Temperature Solid 1');
+            oLog.addValue('Example:s:Tank_2.toPhases.Tank2Air',         'fTemperature', 'K', 'Temperature Air 2');
+            oLog.addValue('Example:s:Space.toPhases.vacuum',            'fTemperature', 'K', 'Temperature Space');
             
             oLog.addValue('Example:c:SubSystem:s:Filter.toPhases.FlowPhase',        'fTemperature', 'K', 'Temperature Filter Flow');
             oLog.addValue('Example:c:SubSystem:s:Filter.toPhases.FlowPhase',        'fPressure',    'Pa','Pressure Filter Flow');
             oLog.addValue('Example:c:SubSystem:s:Filter.toPhases.FilteredPhase',    'fTemperature', 'K', 'Temperature Filter Absorbed');
             
-            oLog.addValue('Example:s:Tank_1.toPhases.air', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 1');
-            oLog.addValue('Example:s:Tank_2.toPhases.air', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 2');
+            oLog.addValue('Example:s:Tank_1.toPhases.Tank1Air', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 1');
+            oLog.addValue('Example:s:Tank_2.toPhases.Tank2Air', 'this.fMass * this.fMassToPressure', 'Pa', 'Pressure Phase 2');
             
             oLog.addValue('Example.toBranches.Branch', 'fFlowRate', 'kg/s', 'Branch Flow Rate', 'branch_FR');
             oLog.addValue('Example:c:SubSystem.toBranches.Inlet', 'fFlowRate', 'kg/s', 'Subsystem Inlet Flow Rate');
@@ -143,7 +143,7 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:c:SubSystem.toThermalBranches.Pipe_Material_Conductor_Out',	'fHeatFlow', 'W', 'Subsystem Conduction Outlet Heat Flow');
             oLog.addValue('Example:c:SubSystem.toThermalBranches.Convective_Branch',            'fHeatFlow', 'W', 'Subsystem Convective Heat Flow');
             
-            oLog.addValue('Example:s:Tank_1.toPhases.air.oCapacity.toHeatSources.Heater', 'fHeatFlow', 'W', 'Phase 1 Heat Source Heat Flow');
+            oLog.addValue('Example:s:Tank_1.toPhases.Tank1Air.oCapacity.toHeatSources.Heater', 'fHeatFlow', 'W', 'Phase 1 Heat Source Heat Flow');
             
         end
         

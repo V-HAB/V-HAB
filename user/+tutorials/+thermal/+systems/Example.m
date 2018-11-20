@@ -55,13 +55,13 @@ classdef Example < vsys
             matter.phases.mixture(this.toStores.Tank_1, 'FilteredPhase', 'solid', tfMasses, fSolidVolume, 293.15, 1e5); 
             
             % Adding a phase to the store 'Tank_1', 1 m^3 air at 20 deg C
-            oGasPhase = this.toStores.Tank_1.createPhase('air', 'air', 1, 293.15);
+            oGasPhase = this.toStores.Tank_1.createPhase('air', 'Tank1Air', 1, 293.15);
             
             % Creating a second store, volume 1 m^3
             matter.store(this, 'Tank_2', 1);
             
             % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
-            oAirPhase = this.toStores.Tank_2.createPhase('air', 'air', this.fPressureDifference + 1, 323.15);
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 'Tank2Air', this.fPressureDifference + 1, 323.15);
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
@@ -108,14 +108,14 @@ classdef Example < vsys
 %             oProc = this.toProcsF2F.Pipe;
 %             fArea = oProc.fLength * pi * (oProc.fDiameter / 2)^2;
             
-            oCapacityTank_1 = this.toStores.Tank_1.toPhases.air.oCapacity;
+            oCapacityTank_1 = this.toStores.Tank_1.toPhases.Tank1Air.oCapacity;
             oHeatSource = thermal.heatsource('Heater', 0);
             oCapacityTank_1.addHeatSource(oHeatSource);
             
             oCapacitySolidTank_1 = this.toStores.Tank_1.toPhases.FilteredPhase.oCapacity;
             
             oCapacitySpace = this.toStores.Space.toPhases.vacuum.oCapacity;
-            oCapacityTank_2 = this.toStores.Tank_2.toPhases.air.oCapacity;
+            oCapacityTank_2 = this.toStores.Tank_2.toPhases.Tank2Air.oCapacity;
             
             thermal.procs.exme(oCapacitySpace, 'Radiator_1');
             thermal.procs.exme(oCapacityTank_2, 'Radiator_2');
@@ -171,7 +171,7 @@ classdef Example < vsys
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
             
-            solver.matter.iterative.branch(this.toBranches.Branch);
+            solver.matter.interval.branch(this.toBranches.Branch);
             
             tTimeStepProperties.rMaxChange = 0.001;
             this.toStores.Tank_1.aoPhases(1).oCapacity.setTimeStepProperties(tTimeStepProperties);
@@ -189,9 +189,9 @@ classdef Example < vsys
             exec@vsys(this);
             
             fHeatFlow = 100 * sin(this.oTimer.fTime/10);
-            this.toStores.Tank_1.toPhases.air.oCapacity.toHeatSources.Heater.setHeatFlow(fHeatFlow)
+            this.toStores.Tank_1.toPhases.Tank1Air.oCapacity.toHeatSources.Heater.setHeatFlow(fHeatFlow)
             
-            if ~base.oLog.bOff, this.out(2, 1, 'exec', 'Exec vsys %s', { this.sName }); end;
+            if ~base.oLog.bOff, this.out(2, 1, 'exec', 'Exec vsys %s', { this.sName }); end
         end
         
      end
