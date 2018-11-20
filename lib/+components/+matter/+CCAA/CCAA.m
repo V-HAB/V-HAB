@@ -112,7 +112,7 @@ classdef CCAA < vsys
             end
             
             % Loading the flow rate table for the valves
-            this.mfCHXAirFlow = load(strrep('lib\+components\+CCAA\CCAA_CHXAirflowMean.mat', '\', filesep));
+            this.mfCHXAirFlow = load(strrep('lib\+components\+matter\+CCAA\CCAA_CHXAirflowMean.mat', '\', filesep));
                 
            	this.Interpolation = griddedInterpolant(this.mfCHXAirFlow.TCCV_Angle, this.mfCHXAirFlow.CHXAirflowMean);
             

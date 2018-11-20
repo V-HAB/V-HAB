@@ -8,7 +8,7 @@ function [ ttxImportPlantParameters ] = importPlantParameters(varargin)
     %% Import data from PlantParameters.csv file
     
     % Open the file
-    iFileID = fopen(strrep('lib/+components/+PlantModuleV2/+plantparameters/PlantParameters.csv','/',filesep), 'r');
+    iFileID = fopen(strrep('lib/+components/+matter/+PlantModuleV2/+plantparameters/PlantParameters.csv','/',filesep), 'r');
     % Get first row
     csFirstRow = textscan(iFileID, '%s', 1, 'Delimiter', '\n');
     % This is a cell array of cells, so we 'unpack' one level to get the
@@ -220,10 +220,10 @@ function [ ttxImportPlantParameters ] = importPlantParameters(varargin)
         sPlantSpecies = varargin{1};
         txPlantParameters = ttxImportPlantParameters.(sPlantSpecies);
         % import coefficient matrices for CQY
-        txPlantParameters.mfMatrix_CQY = csvread(['lib/+components/+PlantModuleV2/+plantparameters/', sPlantSpecies, '_Coefficient_Matrix_CQY.csv']);
+        txPlantParameters.mfMatrix_CQY = csvread(['lib/+components/+matter/+PlantModuleV2/+plantparameters/', sPlantSpecies, '_Coefficient_Matrix_CQY.csv']);
 
         % import coefficient matrices for T_A
-        txPlantParameters.mfMatrix_T_A = csvread(['lib/+components/+PlantModuleV2/+plantparameters/', sPlantSpecies, '_Coefficient_Matrix_T_A.csv']);
+        txPlantParameters.mfMatrix_T_A = csvread(['lib/+components/+matter/+PlantModuleV2/+plantparameters/', sPlantSpecies, '_Coefficient_Matrix_T_A.csv']);
 
         % Unit conversion factor. not a true "plant" parameter per
         % se but needed in the MMEC calculations so it will be part 
