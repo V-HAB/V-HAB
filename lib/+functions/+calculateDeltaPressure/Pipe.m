@@ -9,6 +9,8 @@ function [fDelta_Pressure] = Pipe (fD_Hydraulic, fLength,...
 %fFlowSpeed     = flow speed of the fluid in the pipe in m/s
 %fDyn_Visc      = dynamic viscosity of the fluid in kg/(m s)
 %fDensity       = density of the fluid in kg/m³
+%fRoughness     = Surface roughness K of the pipe in m according to [9] 
+%                 page 1224 equation (8)
 %fConfig        = parameter to set the function configuration 
 %                 for fConfig = 0 a round pipe is assumed
 %                 for fConfig = 1 a quadratic pipe is assumed

@@ -22,7 +22,7 @@ classdef pipe < matter.procs.f2f
     end
 
     properties (SetAccess = protected, GetAccess = public)
-        % Surface roughness of the pipe in [?]
+        % Surface roughness of the pipe in [m]
         fRoughness      = 0;
         
         % Pressure differential caused by the pipe in [Pa]
