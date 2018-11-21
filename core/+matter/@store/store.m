@@ -358,8 +358,21 @@ classdef store < base
                 end
             end
             
-            % Update volume on phases
-            this.setVolume();
+            if ~this.bNoStoreCalculation
+                % Update volume on phases
+                this.setVolume();
+            end
+            
+            % Check if volume of the store is equal or smaller than total
+            % phase volume
+            fPhaseVolume = 0;
+            for iI = 1:this.iPhases
+                fPhaseVolume = fPhaseVolume + this.aoPhases(iI).fVolume;
+            end
+            if tools.round.prec(this.fVolume - fPhaseVolume, this.oTimer.iPrecision) < 0
+                this.throw('The values you have entered for the phase volumes of the ''%s'' store are larger than the store itself.', this.sName);
+            end
+            
             
             % Seal phases
             for iI = 1:length(this.aoPhases)
@@ -438,17 +451,12 @@ classdef store < base
                 this.throw('The values you have entered for the phase volumes of the ''%s'' store are larger than the store itself.', this.sName);
             end
             
-            % Set remaining volume for each phase - see above, need to
-            % calculate an absolute pressure from all gas/plasma phases?
-            % TO DO: Currently this is only performed if only one gas phase
-            % exists. We require a better logic for this or workarounds for
-            % stores with discretized cells and therefore multiple gas
-            % phases
-            if iPhasesSet == 1
-                for iI = 1:this.iPhases
-                    if ~any(strcmp(csVolPhases, this.aoPhases(iI).sType))
-                        this.aoPhases(iI).setVolume(fVolume);
-                    end
+            % Now we divide the remaining (gas) volume with the number of
+            % gas phases and set the corresponding volume as the gas phase
+            % volume
+            for iI = 1:this.iPhases
+                if ~any(strcmp(csVolPhases, this.aoPhases(iI).sType))
+                    this.aoPhases(iI).setVolume(fVolume / iPhasesSet);
                 end
             end
         end

@@ -11,10 +11,10 @@ this.setTimeStep(this.fTimeStep);
 %%
 % calculates the volume of liquid and gas phase if both phases are present
 % in one store.
-if this.bNoStoreCalculation == 0
+if ~this.bNoStoreCalculation
     % Currently only works if at most one of each phase type is
     % present!
-    if length(this.aiGasePhases) > 1 || length(this.aiLiquidPhases) > 1 || length(this.aiSolidPhases) > 1
+    if length(this.aiLiquidPhases) > 1 || length(this.aiSolidPhases) > 1
         error('the calculation for more than one phase of a specific type was not yet implemented. Please use only one gas/solid/liquid phase at a time')
     end
     
@@ -51,11 +51,22 @@ if this.bNoStoreCalculation == 0
             error('the time step was too large and the calculate gas volume in store %s became smaller than zero', this.sName)
         end
         
-        this.aoPhases(this.aiGasePhases).setVolume(fVolumeGas);
+        iGasPhases = length(this.aiLiquidPhases);
         
-        % p*V = m*R*T => p = m*R*T / V
-        oGas = this.aoPhases(this.aiGasePhases);
-        fPressure = oGas.fMass * (this.oMT.Const.fUniversalGas/oGas.fMolarMass) * oGas.fTemperature / oGas.fVolume;
+        this.aoPhases(this.aiGasePhases).setVolume(fVolumeGas / iGasPhases);
+        
+        mfGasPressure = zeros(1,iGasPhases);
+        for iGasPhase = 1:iGasPhases
+            % p*V = m*R*T => p = m*R*T / V
+            oGas = this.aoPhases(this.aiGasePhases(iGasPhase));
+            mfGasPressure(iGasPhase) = oGas.fMass * (this.oMT.Const.fUniversalGas/oGas.fMolarMass) * oGas.fTemperature / oGas.fVolume;
+        end
+        
+        % Since currently only one liquid/solid phase is allowed with store
+        % calculations, we use the average pressure. Otherwise it is also
+        % difficult to know which gas phase represents which liquid phase
+        % etc.
+        fPressure = sum(mfGasPressure) / iGasPhases;
         
         % If a liquid is present we now tell the liquid its new pressure
         % and volume!
