@@ -121,6 +121,8 @@ else
         for iSubstance = 1:length(csSubstances)
             afMass(this.tiN2I.(csSubstances{iSubstance})) = tfMass.(csSubstances{iSubstance});
         end
+    else
+        afMass = xfMass;
     end
     arPartialMass = afMass ./ sum(afMass);
     
