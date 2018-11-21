@@ -133,6 +133,13 @@ classdef table < base
                     % The return command ends the constructor method
                     return;
                 end
+                
+            else
+                % Even though the MatterData file does not exist, we still
+                % need to capture the current state of the files in the
+                % V-HAB directory. So we'll do the initial scan of the
+                % matter data and matter table directories here. 
+                tools.fileChecker.checkForChanges(fullfile('core','+matter','+data'),'MatterTable');
             end
             
             % Notify user that generating the matter data will take some time.
