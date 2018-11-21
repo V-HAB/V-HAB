@@ -31,19 +31,21 @@ classdef Example < vsys
             % method of the parent class.
             createMatterStructure@vsys(this);
             
-            % Creating a store, volume 1 m^3
-            matter.store(this, 'Tank_1', 1);
+            % Creating a store with an infinite volume since we want it to
+            % be a boundary
+            matter.store(this, 'Tank_1', Inf);
             
-            % Adding a phase to the store 'Tank_1', 1 m^3 air at 20 deg C
+            % Adding a phase to the store 'Tank_1' with air at 20 deg C. We
+            % are also passing in a volume of 1 m^3, but that is only for
+            % the matter table to be able to correctly calculate the
+            % properties of the phase. The actual phase volume will be Inf.
             oGasPhase = this.toStores.Tank_1.createPhase('air', 'boundary', 1, 293.15);
             
-            % Creating a second store, volume 1 m^3
-            matter.store(this, 'Tank_2', 1);
+            % Creating a second store, again with infinite volume
+            matter.store(this, 'Tank_2', Inf);
             
-            % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
-            % Note that we are creating a phase that is twice as voluminous
-            % as the store it is in. This means that the pressure of this
-            % phase will be higher than that of 'Tank_1'
+            % Adding a phase to the store 'Tank_2', air at 50 deg C and 
+            % 200 kPA.
             oAirPhase = this.toStores.Tank_2.createPhase('air', 'boundary', 1, 323.15, 2e5);
             
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in

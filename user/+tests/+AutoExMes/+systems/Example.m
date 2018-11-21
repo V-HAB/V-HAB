@@ -6,8 +6,8 @@ classdef Example < vsys
     %   reducing the number of lines of code. 
     
     properties (SetAccess = protected, GetAccess = public)
-        % Pressure difference in bar
-        fPressureDifference = 1;
+        % Pressure difference in Pa
+        fPressureDifference = 10^5;
     end
     
     methods
@@ -38,8 +38,9 @@ classdef Example < vsys
             % Creating a second store, volume 1 m^3
             matter.store(this, 'Tank_2', 1);
             
-            % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
-            oAirPhase = this.toStores.Tank_2.createPhase('air', this.fPressureDifference + 1, 323.15);
+            % Adding a phase to the store 'Tank_2', 1 m^3 air at 50 deg C
+            % and 200 kPa
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 1, 323.15, [], this.fPressureDifference + 10^5);
             
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter.

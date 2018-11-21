@@ -26,7 +26,7 @@ classdef setup < simulation.infrastructure
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            tutorials.boundaries.systems.Example(this.oSimulationContainer, 'Example');
+            tests.boundaries.systems.Example(this.oSimulationContainer, 'Example');
             
             % Setting the simulation duration to one hour. Time is always
             % in units of seconds in V-HAB.

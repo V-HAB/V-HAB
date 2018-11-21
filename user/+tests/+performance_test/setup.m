@@ -17,7 +17,7 @@ classdef setup < simulation.infrastructure
             
             this@simulation.infrastructure('Tutorial_Simple_Flow', ptConfigParams, tSolverParams, ttMonitorConfig);
             
-            tutorials.performance_test.systems.Example(this.oSimulationContainer, 'Example');
+            tests.performance_test.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length
             % Stop when specific time in simulation is reached or after 

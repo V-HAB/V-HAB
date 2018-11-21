@@ -23,7 +23,7 @@ classdef setup < simulation.infrastructure
             
             % Creating the 'Example' system as a child of the root system
             % of this simulation. 
-            tutorials.AutoExMes.systems.Example(this.oSimulationContainer, 'Example');
+            tests.AutoExMes.systems.Example(this.oSimulationContainer, 'Example');
             
             %% Simulation length
             % Stop when specific time in simulation is reached or after 

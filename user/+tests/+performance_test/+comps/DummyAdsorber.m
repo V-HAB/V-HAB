@@ -1,4 +1,4 @@
-classdef DummyAdsorber < matter.procs.p2ps.flow
+classdef DummyAdsorber < matter.procs.p2ps.stationary
     %ABSORBEREXAMPLE An example for a p2p processor implementation
     %   The actual logic behind the absorbtion behavior is not based on any
     %   specific physical system. It is just implemented in a way to
@@ -26,7 +26,7 @@ classdef DummyAdsorber < matter.procs.p2ps.flow
     
     methods
         function this = DummyAdsorber(oStore, sName, sPhaseIn, sPhaseOut, sSubstance, fCapacity)
-            this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
+            this@matter.procs.p2ps.stationary(oStore, sName, sPhaseIn, sPhaseOut);
             
             % Species to absorb, max absorption
             this.sSubstance  = sSubstance;
@@ -60,7 +60,9 @@ classdef DummyAdsorber < matter.procs.p2ps.flow
             % instead of afMass(X), btw) to determine load.
             this.rLoad = this.oOut.oPhase.afMass(iSpecies) / this.fCapacity;
             
-            if this.fCapacity == 0, this.rLoad = 1; end;
+            if this.fCapacity == 0
+                this.rLoad = 1; 
+            end
             
             %this.rLoad = 0;
             

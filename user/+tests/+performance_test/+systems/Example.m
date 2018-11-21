@@ -40,7 +40,7 @@ classdef Example < vsys
             
             if strcmp(this.sMode, 'flow') || strcmp(this.sMode, 'filter')
                 matter.store(this, 'Tank_1', this.fStoreVolumes);
-                this.toStores.Tank_1.createPhase('air', this.toStores.Tank_1.fVolume * 2);
+                this.toStores.Tank_1.createPhase('air', this.toStores.Tank_1.fVolume, [], [], 2e5);
                 matter.procs.exmes.gas(this.toStores.Tank_1.aoPhases(1), 'Port');
 
 
@@ -51,13 +51,13 @@ classdef Example < vsys
 
                 
                 matter.store(this, 'Tank_Mid', this.fStoreVolumes);
-                this.toStores.Tank_Mid.createPhase('air', 'flow', this.toStores.Tank_Mid.fVolume);
+                this.toStores.Tank_Mid.createPhase('air', 'flow_phase', this.toStores.Tank_Mid.fVolume);
                 matter.procs.exmes.gas(this.toStores.Tank_Mid.aoPhases(1), 'Port_Left');
                 matter.procs.exmes.gas(this.toStores.Tank_Mid.aoPhases(1), 'Port_Right');
                 
                 
                 this.toStores.Tank_Mid.createPhase('air', 'filtered', 0);
-                tutorials.performance_test.comps.DummyAdsorber(this.toStores.Tank_Mid, 'dummyDing', 'flow', 'filtered', 'O2', inf);
+                tests.performance_test.comps.DummyAdsorber(this.toStores.Tank_Mid, 'dummyDing', 'flow_phase', 'filtered', 'O2', inf);
             end
             
             
