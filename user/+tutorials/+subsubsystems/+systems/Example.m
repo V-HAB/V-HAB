@@ -64,7 +64,7 @@ classdef Example < vsys
             matter.store(this, 'Tank_1', 1);
             
             % Adding a phase to the store 'Tank_1', 2 m^3 air
-            oGasPhase = this.toStores.Tank_1.createPhase('air', 2);
+            oGasPhase = this.toStores.Tank_1.createPhase('air', 1, 293, 0.5, 2e5);
             
             % Creating a second store, volume 1 m^3
             matter.store(this, 'Tank_2', 1);

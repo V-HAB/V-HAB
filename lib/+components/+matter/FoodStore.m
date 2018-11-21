@@ -13,8 +13,9 @@ classdef FoodStore < matter.store
     
     methods
         function this = FoodStore(oParentSys, sName, fVolume, tfFood)
-            % Creating a store based on the volume
-            this@matter.store(oParentSys, sName, fVolume);
+            % Creating a store based on the volume. Added 1 m³ to the
+            % volume for the human interface phases
+            this@matter.store(oParentSys, sName, fVolume + 1);
             
             matter.phases.mixture(this, 'Food', 'solid', tfFood, fVolume, this.oMT.Standard.Temperature, this.oMT.Standard.Pressure);
             

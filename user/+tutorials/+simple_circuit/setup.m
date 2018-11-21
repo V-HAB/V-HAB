@@ -72,15 +72,14 @@ classdef setup < simulation.infrastructure
         
 
             %% Define plots
-            
-            oPlot = this.toMonitors.oPlotter;
-            
-            oPlot.definePlotAllWithFilter('V', 'Voltages');
-            oPlot.definePlotAllWithFilter('A', 'Currents');
         end
         
-        function plot(this, varargin) % Plotting the results
-            this.toMonitors.oPlotter.plot(varargin{:});
+        function plot(this) % Plotting the results
+            
+            oPlotter = plot@simulation.infrastructure(this);
+            
+%             oPlotter.definePlotAllWithFilter('V', 'Voltages');
+%             oPlotter.definePlotAllWithFilter('A', 'Currents');
         end
         
     end

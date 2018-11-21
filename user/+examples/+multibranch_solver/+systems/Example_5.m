@@ -52,7 +52,7 @@ classdef Example_5 < vsys
                 sStore = sprintf('S%i', iStore);
                 oStore = matter.store(this, sStore, aafStores(2, iStore));
                 
-                oStore.createPhase('N2Atmosphere', oStore.fVolume * aafStores(1, iStore));
+                oStore.createPhase('N2Atmosphere', oStore.fVolume, 293, 0.5, 10^5 * aafStores(1, iStore));
             end
             
             

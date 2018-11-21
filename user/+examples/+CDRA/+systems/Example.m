@@ -96,7 +96,7 @@ classdef Example < vsys
             createMatterStructure@vsys(this);
             %% Gas System
             % Creating a store, volume 1 m^3
-            matter.store(this, 'Cabin', 100);
+            matter.store(this, 'Cabin', 577.71);
             
             % uses the custom air helper to generate an air phase with a
             % defined co2 level and relative humidity

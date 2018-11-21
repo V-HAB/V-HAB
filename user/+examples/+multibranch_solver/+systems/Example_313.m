@@ -33,8 +33,8 @@ classdef Example_313 < vsys
             
             matter.store(this, 'Atmosphere', 10);
             this.toStores.Atmosphere.createPhase('N2Atmosphere', this.toStores.Atmosphere.fVolume);
-            special.matter.const_press_exme(this.toStores.Atmosphere.aoPhases(1), 'Out', 600 + this.toStores.Atmosphere.aoPhases(1).fPressure);
-            special.matter.const_press_exme(this.toStores.Atmosphere.aoPhases(1), 'Rtn', this.toStores.Atmosphere.aoPhases(1).fPressure);
+            matter.procs.exmes.gas(this.toStores.Atmosphere.aoPhases(1), 'Out');
+            matter.procs.exmes.gas(this.toStores.Atmosphere.aoPhases(1), 'Rtn');
             
             
             
@@ -81,7 +81,8 @@ classdef Example_313 < vsys
             %%%components.matter.pipe(this, 'Pipe_MergerToVacuum',  this.fPipeLength, this.fPipeDiameter);
             
             
-            matter.branch(this, 'Atmosphere.Out', { 'Pipe_AtmosToSplitter' }, 'Splitter.FromAtmos');
+            components.matter.fan_simple(this, 'Fan', 600, false);
+            matter.branch(this, 'Atmosphere.Out', { 'Pipe_AtmosToSplitter', 'Fan'}, 'Splitter.FromAtmos');
             matter.branch(this, 'Merger.ToAtmos', { 'Pipe_MergerToAtmos'   }, 'Atmosphere.Rtn');
             %%%matter.branch(this, 'VacMerge.ToVac', { 'Pipe_MergerToVacuum'  }, 'Vacuum.From_Beds');
             
@@ -202,30 +203,6 @@ classdef Example_313 < vsys
             
             
             solver.matter_multibranch.iterative.branch(this.aoBranches);
-            
-            
-            
-            %this.toValves.BedA_VacMerge.setOpen(false);
-            %this.toValves.BedB_Splitter.setOpen(false);
-            %this.toValves.BedB_Merger.setOpen(false);
-            
-            %%%this.toValves.BedA_VacMerge.setOpen(false);
-            %%%this.toValves.BedB_VacMerge.setOpen(false);
-            
-            
-            %this.toStores.BedA.toPhases.BedA_Phase_1.rMaxChange = 0.01;
-            %this.toStores.BedB.toPhases.BedB_Phase_1.rMaxChange = 0.01;
-            
-            
-            
-            % Set CPE pressures from phase
-            fPressure = this.toStores.Atmosphere.aoPhases(1).fPressure;
-            
-            this.toStores.Atmosphere.aoPhases(1).coProcsEXME{1}.fPortPressure = fPressure + 600;
-            this.toStores.Atmosphere.aoPhases(1).coProcsEXME{2}.fPortPressure = fPressure;
-            
-            
-            
             
             this.setThermalSolvers();
             

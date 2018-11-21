@@ -3,8 +3,8 @@ classdef Example < vsys
     %   Two tanks filled with gas at different pressures and a pipe in between
     
     properties (SetAccess = protected, GetAccess = public)
-        fPipeLength   = 1.5;
-        fPipeDiameter = 0.005; %% for 3/5 mm overflow of warnings
+        fPipeLength   = 0.5;
+        fPipeDiameter = 0.001; %% for 3/5 mm overflow of warnings
         
         oManual;
     end

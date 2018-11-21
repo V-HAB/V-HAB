@@ -370,7 +370,7 @@ classdef store < base
                 fPhaseVolume = fPhaseVolume + this.aoPhases(iI).fVolume;
             end
             if tools.round.prec(this.fVolume - fPhaseVolume, this.oTimer.iPrecision) < 0
-                this.throw('The values you have entered for the phase volumes of the ''%s'' store are larger than the store itself.', this.sName);
+                this.throw('sealStore', ['The values you have entered for the phase volumes of the store ', this.sName ' are larger than the store itself by ', num2str(fPhaseVolume - this.fVolume), ' m^3. Either increase the store volume or turn on the store calculations to automatically set the volumes!']);
             end
             
             

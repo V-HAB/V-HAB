@@ -18,7 +18,7 @@ classdef Filter < matter.store
     methods
         function this = Filter(oContainer, sName, fCapacity)
             % Creating a store based with a volume of 0.02 m^2
-            this@matter.store(oContainer, sName, 0.02);
+            this@matter.store(oContainer, sName, 0.025);
             
             % Creating the phase representing the flow volume, using the
             % 'air' helper. The phase volume will later be set to 0.01 m^2,

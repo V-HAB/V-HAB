@@ -22,8 +22,8 @@ classdef Example_4 < vsys
             
             matter.store(this, 'Store', 100);
             this.toStores.Store.createPhase('N2Atmosphere', this.toStores.Store.fVolume);
-            special.matter.const_press_exme(this.toStores.Store.aoPhases(1), 'Port_Out', 600 + this.toStores.Store.aoPhases(1).fPressure);
-            special.matter.const_press_exme(this.toStores.Store.aoPhases(1), 'Port_Rtn', this.toStores.Store.aoPhases(1).fPressure);
+            matter.procs.exmes.gas(this.toStores.Store.aoPhases(1), 'Port_Out');
+            matter.procs.exmes.gas(this.toStores.Store.aoPhases(1), 'Port_Rtn');
             
             
             
@@ -52,8 +52,8 @@ classdef Example_4 < vsys
             components.matter.pipe(this, 'R_4',  0.1, 0.001);
             components.matter.pipe(this, 'R_5',  0.1, 0.001);
             
-            
-            matter.branch(this, 'Store.Port_Out', { 'Pipe_1' }, 'Valve_1.Port_1');
+            components.matter.fan_simple(this, 'Fan', 600, false);
+            matter.branch(this, 'Store.Port_Out', { 'Pipe_1' , 'Fan'}, 'Valve_1.Port_1');
             
             %matter.branch(this, 'Valve_1.Port_2', { 'Pipe_2', 'R_2' }, 'Valve_2.Port_1');
             matter.branch(this, 'Valve_1.Port_2', { 'Pipe_2' }, 'Valve_2.Port_1');
@@ -74,13 +74,6 @@ classdef Example_4 < vsys
         
         function createSolverStructure(this)
             createSolverStructure@vsys(this);
-            
-            % Set CPE pressures from phase
-            fPressure = this.toStores.Store.aoPhases(1).fPressure;
-            
-            this.toStores.Store.aoPhases(1).coProcsEXME{1}.fPortPressure = fPressure + 600;
-            this.toStores.Store.aoPhases(1).coProcsEXME{2}.fPortPressure = fPressure;
-            
             
             solver.matter_multibranch.iterative.branch(this.aoBranches, 'complex');
             this.setThermalSolvers();

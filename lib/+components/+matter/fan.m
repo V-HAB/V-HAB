@@ -78,9 +78,6 @@ classdef fan < matter.procs.f2f
             'fTestDensity',         0.3510 ...  kg/m3
             );
         
-        % Pressure difference produced by this fan.
-        fDeltaPressure;
-        
         % Boolean variable to enable or disable the pressure rise at the
         % beginning of a simulation. This prevents some solvers from
         % becoming unstable due to the large pressure spike produced by the

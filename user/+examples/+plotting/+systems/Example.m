@@ -44,7 +44,7 @@ classdef Example < vsys
             % Note that we are creating a phase that is twice as voluminous
             % as the store it is in. This means that the pressure of this
             % phase will be higher than that of 'Tank_1'
-            oAirPhase = this.toStores.Tank_2.createPhase('air', 2, 323.15);
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 1, 323.15, 0.5, 2e5);
             
             % Adding a pipe to connect the tanks, 1.5 m long, 5 mm in
             % diameter. The pipe is in the components library and is

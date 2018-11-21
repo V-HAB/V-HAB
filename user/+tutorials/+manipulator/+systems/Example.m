@@ -29,10 +29,8 @@ classdef Example < vsys
             % Creating a store - volume 10m3
             matter.store(this, 'Tank_1', 10);
              
-            % Create normal air (standard atmosphere) for 20m3. Will
-            % have ~twice the pressure of the standard atmosphere, because 
-            %the store is volume is only half as big.
-            oAir = this.toStores.Tank_1.createPhase('air', 20);
+            % Create normal air (standard atmosphere) for 10m3 and 2 bar
+            oAir = this.toStores.Tank_1.createPhase('air', 10, 293, 0.5, 2e5);
             
             % Adding an extract/merge processor to the phase
             matter.procs.exmes.gas(oAir, 'Outlet');

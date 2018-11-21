@@ -81,7 +81,7 @@ classdef Greenhouse < vsys
             %% Atmosphere
             
             % comment 2e6 if regulation is not needed
-            matter.store(this, 'Atmosphere', 200);
+            matter.store(this, 'Atmosphere', 600.02);
             
             % this.toStores.Atmosphere.bPreventVolumeOverwrite = true;
             oAtmosphere = this.toStores.Atmosphere.createPhase('air', 200, 293.15, 0.5, 101325);

@@ -64,7 +64,7 @@ classdef (Abstract) flow < matter.phase
         function setPressure(this, fPressure)
             % Allows the solver to set the pressure
             if fPressure < 0
-                fPressure = 0;
+                error(['a negative pressure occured in the flow phase ', this.sName, ' in store ', this.oStore.sName, '. This can happen if e.g. the f2f have a too large pressure drops for a constant flowrate boundary forcing the solver to converge to a solution with negative pressures. Please check your system']);
             end
             this.fVirtualPressure = fPressure;
             this.fPressure = fPressure;

@@ -42,7 +42,7 @@ classdef Example < vsys
                 
                 matter.store(this, sS, this.afStoreVolumes(iS));
                 
-                this.toStores.(sS).createPhase('air', this.arPressures(iS) * this.toStores.(sS).fVolume);
+                this.toStores.(sS).createPhase('air', this.toStores.(sS).fVolume, 293, 0.5, 10^5 * this.arPressures(iS));
                 
                 if this.aiExmes(iS) == 1
                     matter.procs.exmes.gas(this.toStores.(sS).aoPhases(1), 'Port');

@@ -25,7 +25,6 @@ classdef filter < matter.procs.p2ps.flow
         % Ratio of actual loading and maximum load
         rLoad;
         
-        
         % Exponent for characeristics (e.g. 0 -> no reduction through
         % loaded bed, 1 = linear, 2 exponential etc.)
         fCharacteristics = 1;
@@ -58,73 +57,7 @@ classdef filter < matter.procs.p2ps.flow
         end
         
         
-        function arFilterRates = calculateFilterRatesXXX(this, sPhase)
-            % Calculates the ratio of filtered flow rate (by adsorption,
-            % absorption, ...) for each connected branch.
-            %
-            % Cannot be used if manip exists in phase!
-            
-            if (nargin < 2) || isempty(sPhase), sPhase = 'in'; end
-            
-            iSubstance  = this.oMT.tiN2I.(this.sSubstance);
-            
-            if this.fCapacity == 0
-                rFilterLoad = 1;
-            else
-                rFilterLoad = this.oOut.oPhase.afMass(iSubstance) / this.fCapacity;
-            end
-            
-            % Calculate filter rate
-            if this.fCharacteristics > 0
-                rFilterRate = (1 - rFilterLoad^this.fCharacteristics);
-            else
-                rFilterRate = 1;
-            end
-            
-            
-            % Get connected branch compositions
-            if strcmp(sPhase, 'in')
-                oPhase = this.oIn.oPhase;
-            else
-                oPhase = this.oOut.oPhase;
-            end
-            arFilterRates = zeros(oPhase.iProcsEXME, 1);
-            
-            
-            for iI = 1:oPhase.iProcsEXME
-                % Hmm other p2p? Ignore!
-                if isa(oPhase.coProcsEXME{iI}.oFlow, 'matter.procs.p2p')
-                    continue;
-                end
-                
-                % Need to get the composition of the flow stream from the
-                % opposite phase! The coeff is only valid/used for
-                % INflowing flow rates!
-                oB = oPhase.coProcsEXME{iI}.oFlow.oBranch;
-                if oB.coExmes{1}.oPhase == oPhase
-                    iE = 2;
-                else
-                    iE = 1;
-                end
-                
-                arFlowPartials = oB.coExmes{iE}.oPhase.arPartialMass;
-                
-                % arFlowPartials is ratio/% of the filtered substance in
-                % the connected branch.
-                arFilterRates(iI) = arFlowPartials(iSubstance) * rFilterRate;
-            end
-            
-            
-            arFilterRates = tools.round.prec(arFilterRates, this.oIn.oTimer.iPrecision);
-            
-            %disp(arFilterRates(arFilterRates ~= 0));
-        end
-        
-        
-        
-        
-        
-        function [ fFlowRate, arExtractPartials ] = calculateFilterRate(this, afFlowRate, mrPartials)
+        function [ fFlowRate, arExtractPartials ] = calculateFlowRate(this, afFlowRate, mrPartials)
             %disp('>>>>');
             %disp(mrPartials);
             %disp('<<<<');
@@ -198,7 +131,7 @@ classdef filter < matter.procs.p2ps.flow
             [ afFlowRate, aarPartials ] = this.getInFlows();
             
             
-            [ fFlowRate, ~ ] = this.calculateFilterRate(afFlowRate, aarPartials);
+            [ fFlowRate, ~ ] = this.calculateFlowRate(afFlowRate, aarPartials);
             
             
             % Test ...

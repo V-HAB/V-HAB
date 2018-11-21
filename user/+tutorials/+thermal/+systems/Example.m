@@ -61,7 +61,7 @@ classdef Example < vsys
             matter.store(this, 'Tank_2', 1);
             
             % Adding a phase to the store 'Tank_2', 2 m^3 air at 50 deg C
-            oAirPhase = this.toStores.Tank_2.createPhase('air', 'Tank2Air', this.fPressureDifference + 1, 323.15);
+            oAirPhase = this.toStores.Tank_2.createPhase('air', 'Tank2Air', 1, 323.15, 0.5, (1+this.fPressureDifference)*10^5);
             
             % Adding extract/merge processors to the phase
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
@@ -104,10 +104,6 @@ classdef Example < vsys
         function createThermalStructure(this)
             createThermalStructure@vsys(this);
             
-%             oCapa = this.addCreateCapacity(this.toStores.Atmos.toPhases.hell);
-%             oProc = this.toProcsF2F.Pipe;
-%             fArea = oProc.fLength * pi * (oProc.fDiameter / 2)^2;
-            
             oCapacityTank_1 = this.toStores.Tank_1.toPhases.Tank1Air.oCapacity;
             oHeatSource = thermal.heatsource('Heater', 0);
             oCapacityTank_1.addHeatSource(oHeatSource);
@@ -115,7 +111,11 @@ classdef Example < vsys
             oCapacitySolidTank_1 = this.toStores.Tank_1.toPhases.FilteredPhase.oCapacity;
             
             oCapacitySpace = this.toStores.Space.toPhases.vacuum.oCapacity;
+            
             oCapacityTank_2 = this.toStores.Tank_2.toPhases.Tank2Air.oCapacity;
+            oHeatSource = thermal.heatsource('Heater', 0);
+            oCapacityTank_2.addHeatSource(oHeatSource);
+            oHeatSource.setHeatFlow(50);
             
             thermal.procs.exme(oCapacitySpace, 'Radiator_1');
             thermal.procs.exme(oCapacityTank_2, 'Radiator_2');

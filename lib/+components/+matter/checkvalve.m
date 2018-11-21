@@ -48,10 +48,15 @@ classdef checkvalve < matter.procs.f2f
             % already converged. Otherwise the valve can result in
             % oscillations in iterative solvers like the iterative
             % multibranch, the iterative or the interval solver!
-            if ~this.oBranch.oHandler.bFinalLoop
-                fPressureDrop = this.fPressureDrop;
-                return
+            try 
+                if ~this.oBranch.oHandler.bFinalLoop
+                    fPressureDrop = this.fPressureDrop;
+                    return
+                end
+            catch
+                % if the solver is not iterative always calculate the valve
             end
+                
             
             % No flow - no pressure drop
             if fFlowRate == 0
