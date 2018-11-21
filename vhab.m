@@ -4,61 +4,77 @@ classdef vhab
     %   methods to construct and run V-HAB simulations and to configure the
     %   logging scheme. 
     
-    properties (GetAccess = public, Constant = true)
-        poSims   = containers.Map();
-        pOptions = containers.Map({ 'iTickRepIntv', 'iTimeRepIntv', 'bDump', 'sHost' }, { 100, 60, false, '' });
-
-        fLastDispTime = 0;      % So we can calulate the delta t between the 100*X ticks display
-    end
-    
     methods (Static = true)
         function init()
             % check if subdirs on path!
-            disp('--------------------------------------')
-            disp('-------- V-HAB Initialization --------')
-            disp('--------------------------------------')
-            addpath([ strrep(pwd(), '\', '/') '/lib' ]);
+            fprintf('+-----------------------------------------------------------------------------------+\n');
+            fprintf('+------------------------------ V-HAB INITIALIZATION -------------------------------+\n');
+            fprintf('+-----------------------------------------------------------------------------------+\n');
+            addpath([ strrep(pwd(), '\', '/') '/lib'  ]);
             addpath([ strrep(pwd(), '\', '/') '/core' ]);
             addpath([ strrep(pwd(), '\', '/') '/user' ]);
+            
+            % The old V-HAB projects are collected in one big project that
+            % is located in the 'old' folder. Users may or may not have
+            % this project, so we check for the folder.
+            if verLessThan('matlab', '9.4')
+                if isdir([ strrep(pwd(), '\', '/') '/old' ]) %#ok<ISDIR>
+                    addpath([ strrep(pwd(), '\', '/') '/old' ]);
+                end
+            else
+                if isfolder([ strrep(pwd(), '\', '/') '/old' ])
+                    addpath([ strrep(pwd(), '\', '/') '/old' ]);
+                end
+            end
         end
         
         
-        function sSimulation = sim(sSimulation, varargin)
+        
+        function oSim = sim(sSimulation, varargin)
             vhab.init();
             
-            %if length(strfind(sSimulation, '.')) == 1
-            %    sSimulation = [ sSimulation '.main' ];
-            %end
+            % Construct the simulation object
+            simConstructor = str2func(sSimulation);
+            oSim           = simConstructor(varargin{:});
             
-            poSims = vhab.poSims;
             
-            % Delete old sim of exists
-            if poSims.isKey(sSimulation)
-                delete(poSims(sSimulation));
-            end
-            
-            % Create new sim and write to poSims by path
-            simConstructor      = str2func(sSimulation);
-            disp('Assembling Simulation Model...')
-            hTimer = tic();
-            %TODO seems to not work, vhab.poSims still empty after .exec??
-            poSims(sSimulation) = simConstructor(varargin{:});
-            disp(['Model Assembly Completed in ', num2str(toc(hTimer)), ' seconds!'])
-            
-            poSims(sSimulation).bind('tick.post', @vhab.disp);
-            
-            assignin('base', 'oLastSimObj', poSims(sSimulation));
+            % Now call .initialize() which wraps everything up. Very
+            % important if e.g. several sim objs should be created before
+            % running one of them (e.g. logging would get mixed up!)
+            oSim.initialize();
         end
         
         
-        function clear()
-            csKeys = vhab.poSims.keys();
-            
-            for iI = 1:length(csKeys)
-                delete(vhab.poSims(csKeys{iI}));
+        function clear(bDontPreserveBreakpoints)
+            if nargin < 1 || ~islogical(bDontPreserveBreakpoints)
+                bDontPreserveBreakpoints = false;
             end
             
-            vhab.poSims.remove(csKeys);
+            
+            % If an old simulation obj exists in the base workspace, remove
+            % that explicitly just to make sure ...
+            try
+                oSim = evalin('base', 'oLastSimObj');
+                delete(oSim);
+            catch
+                % Ignore all errors that occur. 
+            end
+            
+            
+            % FLUSH serializers / loggers
+            % Only required if we're already initialized
+            if exist('base','file') > 0
+                base.flush();
+            end
+            
+            
+            disp('Clearing MATLAB classes...');
+            hTimer = tic();
+            % Save all breakpoints so we can restore them after the clear
+            % command.
+            tBreakpoints = dbstatus('-completenames');
+            
+            
             
             % Clearing the workspace and old classes
             % This is done to ensure that all classes are correctly
@@ -73,146 +89,49 @@ classdef vhab
             evalin('base','clear all');
             evalin('base','clear classes');
             warning('on','all');
-        end
-        
-        function oSimRtn = exec(sSimulation, varargin)
-            % Clear all existing sims, and run provided sim (uses the
-            % default max. time/tick conditions on the sim object)
-            disp('Clearing MATLAB classes...')
-            hTimer = tic();
-            % Save all breakpoints so we can restore them after the clear
-            % command.
-            tBreakpoints = dbstatus('-completenames');
-            vhab.clear();
+            
+            
             disp(['Classes cleared in ', num2str(toc(hTimer)), ' seconds!'])
             
             % Restore breakpoints if there were any.
-            if numel(tBreakpoints) > 0
+            if bDontPreserveBreakpoints && (numel(tBreakpoints) > 0)
                 dbstop(tBreakpoints);
             end
+        end
+        
+        
+        % The .exec method is basically just a shorthand for doing that:
+        %   vhab.clear(); oSim = vhab.sim(...); oSim.run();
+        function oSimRtn = exec(sSimulation, ptConfigParams, tSolverParams, varargin)
             
-            sSimulation = vhab.sim(sSimulation, varargin{:});
+            % Clear all existing sims, and run provided sim (uses the
+            % default max. time/tick conditions on the sim object)
+            vhab.clear();
             
-            oSim = vhab.poSims(sSimulation);
+            % Default values for those parameters, so constructor for the
+            % simulation does not have to check if they are present!
+            if nargin < 2 || isempty(ptConfigParams), ptConfigParams = containers.Map(); end
+            if nargin < 3 || isempty(tSolverParams),  tSolverParams   = struct(); end
             
-            disp('Initialization complete!')
-            disp('--------------------------------------')
-            disp('Starting simulation run...')
+            oSim = vhab.sim(sSimulation, ptConfigParams, tSolverParams, varargin{:});
+            
+            assignin('base', 'oLastSimObj', oSim);
+            
             oSim.run();
             
-            
-            if nargout >= 1, oSimRtn = oSim; end;
+            if nargout >= 1, oSimRtn = oSim; end
         end
         
         
-        function setReportInterval(iTicks, fTime)
-            % Set the interval in which the tick and the sim time are
-            % reported to the console.
-            
-            pOptions = vhab.pOptions;
-            
-            if ~isempty(iTicks)
-                pOptions('iTickRepIntv') = iTicks;
-            end
-            
-            if nargin >= 2
-                pOptions('iTimeRepIntv') = fTime;
-            end
-        end
-        
-        function setDump(bDump)
-            pOptions = vhab.pOptions;
-            
-            if nargin < 1 || isempty(bDump), bDump = false; end;
-            
-            pOptions('bDump') = ~~bDump;
-            
-            if nargin >= 2
-                pOptions('sHost') = sHost;
-            end
-            
-            
-            % Also set config in base - create serializers
-            base.activateSerializers();
-        end
-        
-        function disp(oEvt)
-            pOptions = vhab.pOptions;
-            
-            
-            oSim     = oEvt.oCaller;
-            %pOptions = vhab.pOptions;
-            %TODO better reporting options ... see below
-            
-            
-            % LOGGER / Serializer (ignore for now)
-            
-            %disp('#######################################################');
-            %disp(vhab.pOptions('bDump'));
-            %disp('#######################################################');
-            if pOptions('bDump')
-                %TODO-OKT14 this host thing is a bad hack, probably doesn't always work so change the serializer, either implement some nice way to
-                %           send options to serializer (host), or at least serializer should prefix every sURL with something,
-                %           so URIs can really be identified (e.g. 'uri:/matter/store/abc' or so) - or just localhost/127.0.0.1?
-                % AND also the Inf/NaN stuff!
-                
-                sHost = pOptions('sHost');
-                
-                if ~isempty(sHost)
-                    %disp([ '>>{{>>' strrep(base.dump(), '":"/', [ '":"' sHost '/' ]) '<<}}<<' ]);
-                    disp([ '>>{{>>' strrep(strrep(base.dump(), '"/', [ '"' sHost '/' ]), ':Inf', ':null') '<<}}<<' ]);
-                else
-                    disp([ '>>{{>>' strrep(base.dump(), ':Inf', ':null') '<<}}<<' ]);
-                end
-                
-                
-                return;
-            end
-            
-            
-            
-            
-            if mod(oSim.oTimer.iTick, vhab.pOptions('iTickRepIntv')) == 0
-                %TODO store last tick disp fTime on some containers.Map!
-                %disp([ num2str(oSim.oTimer.iTick) ' (' num2str(oRoot.oData.oTimer.fTime - fLastTickDisp) 's)' ]);
-                %fLastTickDisp = oRoot.oData.oTimer.fTime;
-                fDeltaTime = oSim.oTimer.fTime - oSim.oTimer.fLastTickDisp;
-                oSim.oTimer.fLastTickDisp = oSim.oTimer.fTime;
-                %disp([ num2str(oSim.oTimer.iTick), ' (', num2str(oSim.oTimer.fTime), 's) (Delta Time ', num2str(fDeltaTime), 's)']);
-                fprintf('%i\t(%fs)\t(Tick Delta %fs)\n', oSim.oTimer.iTick, oSim.oTimer.fTime, fDeltaTime);
-                
-                if exist('STOP', 'file') == 2
-                    oSim.iSimTicks = oSim.oTimer.iTick + 5;
-                    oSim.bUseTime  = false;
-                end
-            end
-            
-            %TODO see above, store somewhere. For Sim vs. Real Time, use
-            %     the oSim attrs fTime <-> fRuntimeTick, fRuntimeLog
-            %     -> sim can be executed in separate runs, using advanceTo
-            %        or the likes. Should sim store data, e.g. the start
-            %        time (system time) for all runs, and map the runtime
-            %        attributes to those runs? (sim vs. real time can be
-            %        examined for each run separately ...)
-            
-            %             if oRoot.oData.oTimer.fTime >= fNextDisp
-            %                 fNextDisp = fNextDisp + 60;
-            %                 fElapsed  = fElapsed + toc(hElapsed);
-            %
-            %                 disp([ 'Sim  Time: ' tools.secs2hms(oRoot.oData.oTimer.fTime) ]);
-            %                 disp([ 'Real Time: ' tools.secs2hms(fElapsed) ]);
-            %
-            %                 hElapsed = tic();
-            %             end
-        end
         
         
-        function plot(sSim, tOpt)
-            %TODO implement configurable plot functionality?
-            %     tOpt on first level -> plot with name, axis labels etc
-            %     then 'tData' -> reference mfLog entries and provide name
-            %     --> tOpt on simulation object (like csLogs)
-        end
+%         function runner(this, tCfg)
+%             % FROM runner_*
+%             % Allow different configs (solver props and / or ptCfgs)
+%             % Create all combinations before running
+%             % ONE parfor loop, not nested!
+%         end
+        
     end
     
 end

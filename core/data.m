@@ -7,7 +7,6 @@ classdef data < dynamicprops % & event.source
     
     properties (SetAccess = protected, GetAccess = public)
         oParent;
-        %tiEvents = struct(); % Store the ids for the 'change.*' events on the parent
         % Event ids for parent
         aiEvents = [ 0 0 ];
         
@@ -52,7 +51,7 @@ classdef data < dynamicprops % & event.source
             % on if exists on parent, else just set to []
             
             % Preset xValue if not provided
-            if nargin < 2, xValue = []; end;
+            if nargin < 2, xValue = []; end
             
             
             % No value - check if exists in parent, activate syncing!
@@ -99,7 +98,7 @@ classdef data < dynamicprops % & event.source
             % switches back to sync with parent.
             
             % Check if property exists
-            if ~isfield(this.toProps, sKey), return; end;
+            if ~isfield(this.toProps, sKey), return; end
             
             if ~isempty(this.oParent) && isfield(this.oParent.toProps, sKey) %any(strcmp(properties(this.oParent), sKey))
                 % delete tbLocal, set parent value and trigger change!
@@ -107,7 +106,6 @@ classdef data < dynamicprops % & event.source
                 this.(sKey) = this.oParent.(sKey);
             else
                 this.tbLocal = rmfield(this.tbLocal, sKey);
-                xOldValue    = this.(sKey);
                 
                 % Remove property meta object (deletes property) and entry
                 % in the props struct
@@ -115,9 +113,6 @@ classdef data < dynamicprops % & event.source
                 
                 this.toProps = rmfield(this.toProps, sKey);
                 
-                % For now, inactive. Maybe replace with Matlab triggers?
-                % Branch 'logging' needs this removed!
-                %this.trigger([ 'delete.' sKey ], struct('sKey', sKey, 'xOldValue', xOldValue));
             end
         end
         
@@ -228,4 +223,3 @@ classdef data < dynamicprops % & event.source
         end
     end
 end
-

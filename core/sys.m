@@ -1,33 +1,23 @@
 classdef sys < base & event.source
     %SYS Represents a generic system (dotted line ;)
-    %   Detailed explanation goes here
     
     properties (SetAccess = protected, GetAccess = public)
         % Name of the system - has to be struct-compatible!
-        % @type string
         sName;
         
         % Parent system
-        %TODO need several hierarchies, e.g. a matter parent, but also
-        %     energy, geometric, command parents and children?
-        % @type object
         oParent;
         
+        % Root system. Special sys which inherits from systems.root. Does
+        % not have a real oParent (references itself). Generally, special
+        % system that contains additional data about the hierarchy.
+        oRoot;
+        
         % Child systems
-        %TODO could also be a mixin aoChildren, "sys" as mutual interface?
-        % @type struct
-        % @types object
         toChildren = struct();
-        %TODO transient - restore on loadobj from toChildren - for now
-        %     dumped as struct dumping is not yet implemented
-        % Xtype cell
-        % Xtypes string
         csChildren = {};
         iChildren  = 0;
         
-        % Data attached to the system - inherited from parent!
-        % @XXtype object
-        oData;
     end
     
     methods
@@ -37,6 +27,7 @@ classdef sys < base & event.source
             % sys parameters:
             %   oParent     - parent system
             %   sName       - name of this system
+            this@base();
             
             % It MAY happen that the sys constructor is called several
             % times, if a sys derives e.g. from matter.container AND timed,
@@ -51,15 +42,11 @@ classdef sys < base & event.source
                 
             % Only need to set the parent if not set yet    
             else
-                %CHECK also ensure that name is the same?
                 this.sName = sName;
                 this.setParent(oParent);
             end
         end
-        
     end
-    
-    
     %% Protected methods - execute system etc
     methods (Access = protected)
         function exec(this, oTimer)
@@ -70,25 +57,6 @@ classdef sys < base & event.source
     
     %% Methods handling the system relations - parent, child, data
     methods
-        function this = setData(this, oData)
-            if this.oData == oData
-                return;
-            end
-            
-            this.oData = oData;
-            
-            %TODO implement a updateData method which checks the parent
-            %     object for the oData. Only updates the local oData if it
-            %     wasn't manually set through setData (don't inherit the
-            %     data object from the parent).
-            %     Child data object PARENT however should always point to
-            %     the systems parent data object, so it is possible to only
-            %     overwrite certain attributes.
-            for iI = 1:this.iChildren
-               this.getChild(iI).setData(oData);
-            end
-        end
-        
         function this = setParent(this, oParent)
             if ~isa(oParent, 'sys')
                 this.throw('setParent', 'Parent object has to inherit from "sys"!');
@@ -112,9 +80,8 @@ classdef sys < base & event.source
             % has the oParent set to itself
             this.oParent.addChild(this);
             
-            % Get data from parent
-            %this.oData = this.oParent.oData;
-            this.setData(this.oParent.oData);
+            % Get root system from parent
+            this.oRoot = this.oParent.oRoot;
         end
         
         function this = removeChild(this, oChild)
@@ -166,8 +133,10 @@ classdef sys < base & event.source
             
             % Easiest way just try/catch ...
             try
-                if ischar(xIndex), oChild = this.toChildren.(xIndex);
-                else               oChild = this.toChildren.(this.csChildren{xIndex});
+                if ischar(xIndex)
+                    oChild = this.toChildren.(xIndex);
+                else
+                    oChild = this.toChildren.(this.csChildren{xIndex});
                 end
             catch %#ok<CTCH>
                 oChild = [];
@@ -185,11 +154,8 @@ classdef sys < base & event.source
                 
             % Int or char - use getChild    
             else
-                % 
                 bIs = ~isempty(this.getChild(xIndex));
             end
         end
     end
-    
 end
-

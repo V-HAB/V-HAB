@@ -4,16 +4,6 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     %   flow connected to each port. Provides methods for managing the
     %   connected flows and their flow rates
     %
-    %TODO
-    %   - diameters for each port -> could do stuff like increasing the
-    %     pressure or decreasing the velocity. Or match of flows can be
-    %     connected, e.g. some adapter/geometry definition?
-    %   - only support two ports here, and for splitter-comps special base
-    %     class anyway - needs to behave phase/store-like ... DONE
-    %   - THROW OUT the afFR stuff? If we use createBranch etc, we know for
-    %     sure that the procs where connected in the 'right' direction
-    
-    
     properties (SetAccess = private, GetAccess = private)
         % Struct with function handles returned by the flow that allow
         % manipulation of the matter properties
@@ -32,38 +22,33 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         
         % Connected matter flows (one for each port possible), indexed
         % according to port name in csPorts
-        % @type array
-        % @types object
         aoFlows = matter.flow.empty();
         
         % Sign. Depending on the "side" of the flow this processor is
         % connected to, the flow rate set for that flow is either out or in
         % when positive. This array here is accordingly filled with 1 / -1.
-        % @type array
-        % @types int
         aiSign = [ 0 0 ];
         
         % Matter table
-        % @type object
         oMT;
         
+        % Timer
+        oTimer;
+        
         % Name of processor.
-        % @type string
         sName;
-        
-        %TODO Need something like type, as for phases? Define what types of
-        %     phases can be used with this processor?
-        
         
         % Reference to the branch object
         oBranch;
+        
+        % Container (vsys) the f2f belongs to
+        oContainer;
+        
         
         % Sealed?
         bSealed = false;
         
         % Supported sovling mechanisms.
-        %TODO should access be protected, and obj passed to solver another
-        %     way (instead of solver directly accessing it)?
         toSolve = struct();
     end
     
@@ -77,27 +62,59 @@ classdef f2f < base & matlab.mixin.Heterogeneous
         % which this f2f belongs needs to call a method in this processor
         % manually, e.g. in .exec().
         fHeatFlow = 0;
+        
+        % Heat flow object. If set, fPower on obj written to fHeatFlow
+        oHeatFlowObject;
+        
+        iHeatFlowDirection;
+        
+        bActive = false;
+        
+        % Pressure difference of the f2f component in [Pa]
+        fDeltaPressure = 0;
     end
     
     
     
     methods
-        function this = f2f(oMT, sName)
+        function this = f2f(oContainer, sName)
             % Constructor for the f2f matter processor class. If no csPorts
             % are provided, two default ones (left, right) are created.
             
-            % Matter table and name
-            this.oMT   = oMT;
             this.sName = sName;
+            
+            
+            this.oContainer = oContainer;
+            this.oContainer.addProcF2F(this);
+            
+            this.oMT    = this.oContainer.oMT;
+            this.oTimer = this.oContainer.oTimer;
             
             % Preset the flow array with a default, zero FR matter flow
             for iI = 1:this.iPorts
-                this.aoFlows(iI) = matter.flow(this.oMT, []); 
+                this.aoFlows(iI) = matter.flow(); 
             end
             
             % Create map for the func handles
             this.pthFlow = containers.Map('KeyType', 'single', 'ValueType', 'any');
         end
+        
+        
+        function setHeatFlowObject(this, oHeatFlow, iSign)
+            if ~isempty(this.oHeatFlowObject)
+                this.throw('setHeatFlowObject', 'Already one heat flow set!');
+            end
+            
+            if nargin < 3 || isempty(iSign) || (iSign ~= -1), iSign = 1; end
+            
+            this.oHeatFlowObject    = oHeatFlow;
+            this.iHeatFlowDirection = iSign;
+            
+            this.oHeatFlowObject.bind('update', @this.updateFromHeatFlowObject);
+            
+            this.updateFromHeatFlowObject();
+        end
+        
         
         
         function seal(this, oBranch)
@@ -106,6 +123,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             end
             
             this.oBranch = oBranch;
+            %this.oMT     = oBranch.oMT;
             this.bSealed = true;
         end
     end
@@ -135,7 +153,12 @@ classdef f2f < base & matlab.mixin.Heterogeneous
             end
             
             % All ports in use (iIdx empty)?
-            if isempty(iIdx), this.throw('addFlow', 'Flow has no free port, seems like its already connected ... used again in createBranch, by mistake?'); end;
+            if isempty(iIdx)
+                this.throw('addFlow', ['The f2f-processor ''',this.sName,...
+                           ''' is already in use by another branch.\n', ...
+                           'Please check the definition of the following branch: ',...
+                           oFlow.oBranch.sName]); 
+            end
             
             % Set the flow obj - when we call the addProc of the flow
             % object, it checks if it exists on aoFlows!
@@ -149,7 +172,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
                 % method is protected, it can be called from outside
                 % through that! Wrap in anonymous function so no way to
                 % remove another flow.
-                [ iSign, thFlow ] = oFlow.addProc(this, @() this.removeFlow(oFlow));
+                [ iSign, ~ ] = oFlow.addProc(this, @() this.removeFlow(oFlow));
             
             catch oErr
                 % Reset back to default MF
@@ -166,6 +189,16 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     
     
     methods (Access = protected)
+        function updateFromHeatFlowObject(this, ~)
+            this.fHeatFlow = this.oHeatFlowObject.fPower * this.iHeatFlowDirection;
+            
+            % On first call (during construction), .seal not yet done so
+            % branch unknown. But no outdated needed.
+            if ~isempty(this.oBranch)
+                this.oBranch.setOutdated();
+            end
+        end
+        
         function supportSolver(this, sType, varargin)
             handleClassConstructor = str2func([ 'solver.matter.base.type.' sType ]);
             
@@ -184,8 +217,11 @@ classdef f2f < base & matlab.mixin.Heterogeneous
                 this.throw('removeFlow', 'Flow doesn''t exist');
             end
             
-            if isvalid(this.oMT), this.aoFlows(iIdx) = this.oMT.oFlowZero;
-            else                  this.aoFlows(iIdx) = []; % Seems like deconstruction of all objs, oMT invalid!
+            if isvalid(this.oMT) 
+                aiIndexes = 1:length(this.aoFlows);
+                this.aoFlows = this.aoFlows(aiIndexes ~= iIdx);
+            else
+                this.aoFlows(iIdx) = []; % Seems like deconstruction of all objs, oMT invalid!
             end
             
             this.aiSign(iIdx)  = 0;
@@ -194,19 +230,18 @@ classdef f2f < base & matlab.mixin.Heterogeneous
     end
     
     % Protected methods - get flow rates, set matter properties
-    %CHECK Also sealed, or should it be possible to overload?
     methods (Access = protected, Sealed = true)
         function afFRs = getFRs(this)
             % Get flow rate of all ports, adjusted with the according sign
             % to ensure that negative FR always means an outflow of mass!
+            fSecondFlowRate = this.aoFlows(2).fFlowRate * this.aiSign(2);
+            fFirstFlowRate  = this.aoFlows(1).fFlowRate * this.aiSign(1);
             
-            afFRs = [ this.aoFlows.fFlowRate ] .* this.aiSign;
+            afFRs = [ fFirstFlowRate fSecondFlowRate ];
         end
         
         
         function [ oFlowIn, oFlowOut ] = getFlows(this, fFlowRate)
-            afFRs = this.getFRs();
-            
             
             if nargin > 1
                 if (fFlowRate >= 0)
@@ -219,7 +254,7 @@ classdef f2f < base & matlab.mixin.Heterogeneous
                 
                 return;
             end
-            
+            afFRs = [this.aoFlows(1).fFlowRate * this.aiSign(1) this.aoFlows(2).fFlowRate * this.aiSign(2)];
             
             if ~any(afFRs)
                 %CHECK Does it really make sense to do this, just because
@@ -275,9 +310,8 @@ classdef f2f < base & matlab.mixin.Heterogeneous
                 end
                 
             else
-                if fFlowRate == 0, this.throw('get', 'Can''t get when flow rate is zero!'); end;
+                if fFlowRate == 0, this.throw('get', 'Can''t get when flow rate is zero!'); end
                 
-                % Dirty (?) ... bool true = 1, false = 0 -> index 2 / 1
                 oFlow = this.aoFlows((fFlowRate > 0) + 1);
             end
         end

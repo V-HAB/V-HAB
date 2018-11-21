@@ -12,7 +12,7 @@ classdef gas < matter.manips.vol
     methods
         function this = gas(sName, oPhase, sType)
             % Type could be is isentropic, isothermal etc
-            if nargin < 3, sType = []; end;
+            if nargin < 3, sType = []; end
             
             this@matter.manips.vol(sName, oPhase, 'gas', sType);
         end

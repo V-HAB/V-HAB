@@ -1,186 +1,157 @@
 classdef gas < matter.phase
-    %GAS Describes a volume of gas
-    %   Detailed explanation goes here
-    %
-    %TODO
-    %   - support empty / zero volume (different meanings?)
-    %   - if gas is solved in a fluid, different sutff ... don't really
-    %     need the fVolume, right? Just pressure of fluid, so need a linked
-    %     fluid phase, or also do through store (so own store that supports
-    %     that ...). Then a p2p proc to move gas out of the solvent into
-    %     the outer gas phase depending on partial pressures ...
-
+    % GAS Describes a volume of ideally mixed gas using ideal gas
+    % assumptions. Must be located inside a store to work!
+    
     properties (Constant)
 
-        % State of matter in phase (e.g. gas, liquid, ?)
-        % @type string
-        %TODO: rename to |sMatterState|
+        % State of matter in phase (e.g. gas, liquid, solid)
         sType = 'gas';
 
     end
 
     properties (SetAccess = protected, GetAccess = public)
         
-        fVolume;                % Volume in m^3
-        fPressure;              % Pressure in Pa
-        afPP;                   % Partial pressures in Pa
+        % Volume in m^3
+        fVolume;       
         
-        fMassToPressure;        % Coefficient for pressure = COEFF * mass
-                                % depends on current matter properties
+        % Pressure in Pa
+        fPressure;              
+        
+        % Partial pressures in Pa
+        afPP;   
+        
+        % Substance concentrations in ppm
+        afPartsPerMillion;
+        
+        % Coefficient for pressure = COEFF * mass,  depends on current 
+        % matter properties
+        fMassToPressure;  
+        
+        % Relative humidity in the phase, see this.update() for details on
+        % the calculation.
+        rRelHumidity
+    
     end
     
-    properties (Dependent = true)
-        rRelHumidity;           % Relative Humidity in %
-    end
     
     methods
-        % oStore    : Name of parent store
-        % sName     : Name of phase
-        % tfMasses  : Struct containing mass value for each species
-        % fVolume   : Volume of the phase
-        % fTemp     : Temperature of matter in phase
-        %
-        %TODO fVolume is stupid - needs to be set by store!
-        function this = gas(oStore, sName, tfMasses, fVolume, fTemp)
-            %TODO
-            %   - not all params required, use defaults?
-            %   - volume from store ...?
-            
-            this@matter.phase(oStore, sName, tfMasses, fTemp);
+        % oStore        : Name of parent store
+        % sName         : Name of phase
+        % tfMasses      : Struct containing mass value for each species
+        % fVolume       : Volume of the phase
+        % fTemperature  : Temperature of matter in phase
+        function this = gas(oStore, sName, tfMasses, fVolume, fTemperature)
+            this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             % Get volume from 
-            if nargin < 4 || isempty(fVolume), fVolume = oStore.fVolume; end;
+            if nargin < 4 || isempty(fVolume), fVolume = oStore.fVolume; end
             
             this.fVolume  = fVolume;
             this.fDensity = this.fMass / this.fVolume;
-        end
-        
-        % Function rRelHumidity calculates the relative humidity of the gas
-        % by using the MAGNUS Formula(validity: -45[C] <= T <= 60[C], for
-        % water); Formula is only correct for pure steam, not the mixture
-        % of air and water; enhancement factors can be used by a
-        % Poynting-Correction (pressure and temperature dependent); the values of the enhancement factors are in
-        % the range of 1+- 10^-3; thus they are neglected.
-        % Source: Important new Values of the Physical Constants of 1986, Vapour
-        % Pressure Formulations based on ITS-90, and Psychrometer Formulae. In: Z. Meteorol.
-        % 40, 5, S. 340-344, (1990)
-        %TODO don't like the getter method. Slow! RH should be calculated
-        %     in .update() method and stored on this.rRelHumidity!
-        function rRelHumidity = get.rRelHumidity(this)
-            if this.afMass(this.oMT.tiN2I.H2O)
-                fSaturationVapourPressure=6.11213 * exp(17.62 * (this.fTemp-273.15) / (243.12 + (this.fTemp-273.15))) * 100; % calculate saturation vapour pressure [Pa]; MAGNUS Formula; validity: -45???C <= T <= 60???C, for water
-                rRelHumidity = this.afPP(this.oMT.tiN2I.H2O)/fSaturationVapourPressure; %calculate relative humidity
+            
+            this.fMassToPressure = this.calculatePressureCoefficient();
+            this.fPressure = this.fMass * this.fMassToPressure;
+            this.fPressureLastHeatCapacityUpdate = this.fPressure;
+            
+            
+            [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
+            
+            if this.afPP(this.oMT.tiN2I.H2O)
+                % calculate saturation vapour pressure [Pa];
+                fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
+                % calculate relative humidity
+                this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
             else
-                rRelHumidity = 0;
+                this.rRelHumidity = 0;
             end
         end
         
         
-        
-        function bSuccess = setVolume(this, fVolume)
+        function bSuccess = setVolume(this, fNewVolume)
             % Changes the volume of the phase. If no processor for volume
             % change registered, do nothing.
-            %
-            %TODO see above, needs to be redone (processors/manipulator)
             
-            bSuccess = this.setParameter('fVolume', fVolume);
+            bSuccess = this.setParameter('fVolume', fNewVolume);
             
             return;
-            
-            %TODO with events:
-            this.trigger('set.fVolume', struct('fVolume', fVolume, 'setAttribute', @this.setAttribute));
-            
-            % See human, events return data which is processed here??
-            % What is several events are registered? Different types of
-            % volume change etc ...? Normally just ENERGY should be
-            % provided to change the volume, and the actual change in
-            % volume is returned ...
-            % See above, manipulators instead of processors. For each
-            % phase, user needs to decide if e.g. isobaric or isochoric
-            % change of volume.
         end
-        
-        
-        function this = update(this)
-            update@matter.phase(this);
-            
-            %TODO coeff m to p: also in liquids, plasma. Not solids, right?
-            %     calc afPPs, rel humidity, ... --> in matter table!
-            %
-            
-            % Check for volume not empty, when called from constructor
-            %TODO see above, generally support empty volume? Treat a zero
-            %     and an empty ([]) volume differently?
-            if ~isempty(this.fVolume)
-                this.fMassToPressure = this.calculatePressureCoefficient();
-                
-                %this.fPressure = sum(this.afMass) * this.fMassToPressure;
-                this.fPressure = this.fMass * this.fMassToPressure;
-                this.afPP      = this.getPartialPressures();
-                this.fDensity  = this.fMass / this.fVolume;
-            else
-                this.fPressure = 0;
-            end
-        end
-        
-        function [ afPartialPressures ] = getPartialPressures(this)
-            %TODO see @matter.flow.getPartialPressures
-            %     PROTECTED! automatically called in .update() -> afPPs!
-            
-            % No mass? 
-            if this.fMass == 0
-                % Partials have to be zero, as fMass is zero which is the
-                % sum() of afMass. arPartials derived from afMass.
-                afPartialPressures = this.arPartialMass;
-            else
-                % Calculating the number of mols for each species
-                afMols = this.arPartialMass ./ this.oStore.oMT.afMolMass;
-                % Calculating the total number of mols
-                fGasAmount = sum(afMols);
-                % Calculating the partial amount of each species by mols
-                arFractions = afMols ./ fGasAmount;
-                % Calculating the partial pressures by multiplying with the
-                % total pressure in the phase
-                afPartialPressures = arFractions .* this.fPressure;
-            end
-        end
-        
         
         function fMassToPressure = calculatePressureCoefficient(this)
             % p = m * (R_m * T / M / V)
             %
-            %TODO matter table -> store mol mass this.fMolMass as kg/mol!
-            %     move this calc to matter.table.calcGasPressure, or do
-            %     some matter.helper.table.gas.pressure or so?
             
-            fMassToPressure = matter.table.Const.fUniversalGas * this.fTemp / ((this.fMolMass / 1000) * this.fVolume);
+            fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
             
-            %TODO mol mass zero if no mass - NaN, or Inf if mass zero
             if isnan(fMassToPressure) || isinf(fMassToPressure)
                 fMassToPressure = 0;
             end
         end
 
+        function seal(this)
 
-        function setProperty(this, sAttribute, xValue)
-            this.(sAttribute) = xValue;
-        end
-
-
-        function seal(this, oData)
-
-            seal@matter.phase(this, oData);
-
-            % Auto-Set rMaxChange.
-            this.rMaxChange = sif(this.fVolume <= 0.25, this.fVolume, 0.25) / oData.rUpdateFrequency;
+            seal@matter.phase(this);
 
         end
-
+        
+        function setTemperature(this, oCaller, fTemperature)
+            % This function can only be called from the ascociated capacity
+            % (TO DO: Implement the check) and ensure that the temperature
+            % calculated in the thermal capacity is identical to the phase
+            % temperature (by using a set function in the capacity that
+            % always calls this function as well)
+            if ~isa(oCaller, 'thermal.capacity')
+                this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by capacity objects. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
+            end
+                
+            this.fTemperature = fTemperature;
+            
+            if ~isempty(this.fVolume)
+                this.fMassToPressure = this.calculatePressureCoefficient();
+            end
+        end
     end
     
     
     %% Protected methods, called internally to update matter properties %%%
     methods (Access = protected)
+        function this = update(this)
+            update@matter.phase(this);
+            
+            % Check for volume not empty, when called from constructor
+            if ~isempty(this.fVolume)
+                this.fMassToPressure = this.calculatePressureCoefficient();
+                
+                this.fPressure = this.fMass * this.fMassToPressure;
+                [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);
+                this.fDensity = this.fMass / this.fVolume;
+                
+                
+                % Function rRelHumidity calculates the relative humidity of
+                % the gas by using the MAGNUS Formula(validity: 
+                % -45[C] <= T <= 60[C], for water); Formula is only correct 
+                % for pure steam, not the mixture of air and water; 
+                % enhancement factors can be used by a Poynting-Correction 
+                % (pressure and temperature dependent); the values of the 
+                % enhancement factors are in the range of 1+- 10^-3; thus 
+                % they are neglected.
+                % Source: Important new Values of the Physical Constants of 
+                % 1986, Vapour Pressure Formulations based on ITS-90, and 
+                % Psychrometer Formulae. In: Z. Meteorol. 40, 5,
+                % S. 340-344, (1990)
+                
+                if this.afMass(this.oMT.tiN2I.H2O)
+                    % calculate saturation vapour pressure [Pa];
+                    fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
+                    % calculate relative humidity
+                    this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
+                else
+                    this.rRelHumidity = 0;
+                end
+            else
+                this.fPressure = 0;
+            end
+        end
+        
         function setAttribute(this, sAttribute, xValue)
             % Internal helper, see @matter.phase class.
             %

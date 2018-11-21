@@ -1,5 +1,5 @@
 function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
-            HLLC(fPressureLeft, fDensityLeft, fFlowSpeedLeft, fInternalEnergyLeft,...
+            HLLC(oSystem, fPressureLeft, fDensityLeft, fFlowSpeedLeft, fInternalEnergyLeft,...
             fPressureRight, fDensityRight, fFlowSpeedRight, fInternalEnergyRight, fTemperatureLeft, fTemperatureRight)
 % approximate HLLC Riemann Solver
 % This code contains a HLLC Riemann Solver used to solve shock and normal
@@ -53,51 +53,10 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
                'First try decreasing the Courant Number other possible',...
                'error might be wrong temperature in the system']);
     end
-
-    %TO DO make dependant on matter table or better take the density_0 from table
-    %density at one fixed datapoint
-    fFixDensity = 998.21;        %g/dm³
-    %temperature for the fixed datapoint
-    fFixTemperature = 293.15;           %K
-    %Molar Mass of the compound
-    fMolMassH2O = 18.01528;       %g/mol
-    %critical temperature
-    fCriticalTemperature = 647.096;         %K
-    %critical pressure
-    fCriticalPressure = 220.64*10^5;      %N/m² = Pa
-
-    %boiling point normal pressure
-    fBoilingPressure = 1.01325*10^5;      %N/m² = Pa
-    %normal boiling point temperature
-    fBoilingTemperature = 373.124;      %K
-
-    %the Density at very low Pressure is calculated as one required
-    %Datapoint for the Bulk Modulus
-    fDensity_0 = solver.matter.fdm_liquid.functions.LiquidDensity(max(fTemperatureLeft,fTemperatureRight), 1, fFixDensity, fFixTemperature, fMolMassH2O, ...
-        fCriticalTemperature, fCriticalPressure, fBoilingPressure, fBoilingTemperature);
-
-    %ensures that the reference Density at low pressure is lower than the
-    %other densities
-    if fDensity_0 >= fDensityLeft
-            fDensity_0 = fDensityLeft - 0.1;
-    end
-    if fDensity_0 >= fDensityRight
-            fDensity_0 = fDensityRight - 0.1;
-    end
-    while fDensity_0 >= fDensityLeft || fDensity_0 >= fDensityRight
-        fDensity_0 = fDensity_0 - 0.01;
-    end
     
-    %The Bulk Modulus is calculated according to [8] page 967
-    %equation (5)
-    fBulkModulusLeft = ((1/fDensity_0)*fPressureLeft)/((1/fDensity_0)-...
-                        (1/fDensityLeft));
-    fBulkModulusRight = ((1/fDensity_0)*fPressureRight)/((1/fDensity_0)-...
-                        (1/fDensityRight));
-
-    %The speed of sound for the two initial states is calculated                
-    fSonicSpeedLeft = sqrt(fBulkModulusLeft/fDensityLeft);
-    fSonicSpeedRight = sqrt(fBulkModulusRight/fDensityRight);
+    %The speed of sound for the two initial states is calculated  
+    fSonicSpeedRight= oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureRight, fPressureRight);
+    fSonicSpeedLeft = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureLeft, fPressureLeft);
 
 
     %%
@@ -112,42 +71,22 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
 
     %then the values in the star region are calculated according to [5]
     %page 299 equation (9.20)
-    fPressureStarPVRS = 0.5*(fPressureLeft+fPressureRight)+0.5*(fFlowSpeedLeft-...
-                    fFlowSpeedRight)*(fAverageDensity*fAverageSonicSpeed);
+    fFlowSpeedStarPVRS = 0.5*(fFlowSpeedLeft + fFlowSpeedRight) + (fPressureLeft - fPressureRight) / (2*fAverageDensity*fAverageSonicSpeed);             
 
-    fFlowSpeedStarPVRS = 0.5*(fFlowSpeedLeft+fFlowSpeedRight)+(fPressureLeft-...
-                    fPressureRight)/(2*fAverageDensity*fAverageSonicSpeed);             
+    fDensityLeftStarPVRS = fDensityLeft + (fFlowSpeedLeft-fFlowSpeedStarPVRS) * (fAverageDensity/fAverageSonicSpeed);            
 
-    fDensityLeftStarPVRS = fDensityLeft+(fFlowSpeedLeft-fFlowSpeedStarPVRS)*...
-                        (fAverageDensity/fAverageSonicSpeed);            
+    fDensityRightStarPVRS = fDensityRight + (fFlowSpeedStarPVRS-fFlowSpeedRight) * (fAverageDensity/fAverageSonicSpeed);               
 
-    fDensityRightStarPVRS = fDensityRight+(fFlowSpeedStarPVRS-fFlowSpeedRight)*...
-                        (fAverageDensity/fAverageSonicSpeed);               
-
-    %ensures that the reference Density at low pressure is lower than the
-    %other densities
-    if fDensity_0 >= fDensityLeftStarPVRS
-            fDensity_0 = fDensityLeftStarPVRS - 0.1;
+    if abs((fDensityRightStarPVRS-fDensityRight)/fDensityRight) < 0.01 %density changed by less than 1%
+        fSonicSpeedRightStarPVRS = fSonicSpeedRight;
+    else
+        fSonicSpeedRightStarPVRS = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureRight, fDensityRightStarPVRS, true);
     end
-	if fDensity_0 >= fDensityRightStarPVRS
-            fDensity_0 = fDensityRightStarPVRS - 0.1;
-	end
-  	while fDensity_0 >= fDensityLeftStarPVRS || fDensity_0 >= fDensityRightStarPVRS
-        fDensity_0 = fDensity_0 - 0.01;
+    if abs((fDensityRightStarPVRS-fDensityLeft)/fDensityLeft) < 0.01 %density changed by less than 1%
+        fSonicSpeedLeftStarPVRS = fSonicSpeedLeft;
+    else
+        fSonicSpeedLeftStarPVRS = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureLeft, fDensityLeftStarPVRS, true);
     end
-                    
-    %from these values the bulk modulus for the two star regions can be 
-    %calculated                
-    fBulkModulusLeftStarPVRS = ((1/fDensity_0)*fPressureStarPVRS)/((1/fDensity_0)-...
-                        (1/fDensityLeftStarPVRS));
-    fBulkModulusRightStarPVRS = ((1/fDensity_0)*fPressureStarPVRS)/((1/fDensity_0)-...
-                        (1/fDensityRightStarPVRS));
-
-    %using the bulk moduli the speed of sound in the star region can be 
-    %calculated                
-    fSonicSpeedLeftStarPVRS = sqrt(fBulkModulusLeftStarPVRS/fDensityLeftStarPVRS);
-    fSonicSpeedRightStarPVRS = sqrt(fBulkModulusRightStarPVRS/fDensityRightStarPVRS);  
-
     %estimated wave speeds using the PVRS
     %left and right wave speed according to [7] page 28 equation (14)
     fWaveSpeedLeftPVRS = min((fFlowSpeedLeft-fSonicSpeedLeft),(fFlowSpeedStarPVRS-...
@@ -179,38 +118,17 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
 
     fDensityRightStarTemp = fDensityRight*((fWaveSpeedRightPVRS-fFlowSpeedRight)/...
                            (fWaveSpeedRightPVRS-fWaveSpeedStarPVRS));
- 
-    %the pressure can be calculated according to [5] page 324 equation
-    %(10.36)
-	fPressureStarTemp = fPressureLeft+fDensityLeft*(fWaveSpeedLeftPVRS-...
-                            fFlowSpeedLeft)*(fWaveSpeedStarPVRS-fFlowSpeedLeft);   
-
-    if fPressureStarTemp < 0
-        fPressureStarTemp = 1;
-    end
-    %ensures that the reference Density at low pressure is lower than the
-    %other densities
-    if fDensity_0 >= fDensityLeftStarTemp
-        fDensity_0 = fDensityLeftStarTemp - 0.1;
-    end
-	if fDensity_0 >= fDensityRightStarTemp
-        fDensity_0 = fDensityRightStarTemp - 0.1;
-	end
-    while fDensity_0 >= fDensityLeftStarTemp || fDensity_0 >= fDensityRightStarTemp
-        fDensity_0 = fDensity_0 - 0.01;
-    end
-    
                        
-    %the new values are again used to calculate the bulk moduli and then 
-    %the sonic speed                   
-    fBulkModulusLeftStarTemp = ((1/fDensity_0)*fPressureStarTemp)/((1/fDensity_0)-...
-                        (1/fDensityLeftStarTemp));
-    fBulkModulusRightStarTemp = ((1/fDensity_0)*fPressureStarTemp)/((1/fDensity_0)-...
-                        (1/fDensityRightStarTemp));
-
-    fSonicSpeedLeftStarTemp = sqrt(fBulkModulusLeftStarTemp/fDensityLeftStarTemp);
-    fSonicSpeedRightStarTemp = sqrt(fBulkModulusRightStarTemp/fDensityRightStarTemp);
-
+    if abs((fDensityRightStarTemp-fDensityRightStarPVRS)/fDensityRightStarPVRS) < 0.01 %density changed by less than 1%
+        fSonicSpeedRightStarTemp = fSonicSpeedRightStarPVRS;
+    else
+        fSonicSpeedRightStarTemp = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureRight, fDensityRightStarTemp, true);
+    end
+    if abs((fDensityLeftStarTemp-fDensityLeftStarPVRS)/fDensityLeftStarPVRS) < 0.01 %density changed by less than 1%
+        fSonicSpeedLeftStarTemp = fSonicSpeedLeftStarPVRS;
+    else
+        fSonicSpeedLeftStarTemp = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureLeft, fDensityLeftStarTemp, true);
+    end
     %with these values new wave speed estimates based on the HLLC Riemann
     %solver are derived
     %left and right wave speed according to [7] page 28 equation (14)
@@ -259,30 +177,24 @@ function [mGodunovFlux, fMaxWaveSpeed, fPressureStar] = ...
     fPressureStar = fPressureLeft+fDensityLeft*(fWaveSpeedLeftTemp-...
                             fFlowSpeedLeft)*(fWaveSpeedStarTemp-fFlowSpeedLeft);   
 
+   	%negative Pressures are physically impossible therefore if an
+    %unfortunate combination of values results in negative pressure the
+    %pressure is considered to be very low (1 Pa) instead
     if fPressureStar < 0
         fPressureStar = 1;
     end
-    %ensures that the reference Density at low pressure is lower than the
-    %other densities
-    if fDensity_0 >= fDensityLeftStar
-    	fDensity_0 = fDensityLeftStar - 0.1;
+    
+    if abs((fDensityRightStar-fDensityRightStarTemp)/fDensityRightStarTemp) < 0.01 %density changed by less than 1%
+        fSonicSpeedRightStar = fSonicSpeedRightStarTemp;
+    else
+        fSonicSpeedRightStar = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureRight, fDensityRightStar, true);
     end
-    if fDensity_0 >= fDensityRightStar
-        fDensity_0 = fDensityRightStar - 0.1;
+    if abs((fDensityRightStar-fDensityRightStarTemp)/fDensityRightStarTemp) < 0.01 %density changed by less than 1%
+        fSonicSpeedLeftStar = fSonicSpeedLeftStarTemp;
+    else
+        fSonicSpeedLeftStar = oSystem.oBranch.oContainer.oMT.calculateSpeedOfSound(oSystem.sPhase, oSystem.oBranch.aoFlows(1,1).arPartialMass, fTemperatureLeft, fDensityLeftStar, true);
     end
-    while fDensity_0 >= fDensityLeftStar || fDensity_0 >= fDensityRightStar
-        fDensity_0 = fDensity_0 - 0.01;
-    end                                                   
-                       
-    %calculating the Bulk Moduli and the sonic speed for final estimate                   
-    fBulkModulusLeftStar = ((1/fDensity_0)*fPressureStar)/((1/fDensity_0)-...
-                        (1/fDensityLeftStar));
-    fBulkModulusRightStar = ((1/fDensity_0)*fPressureStar)/((1/fDensity_0)-...
-                        (1/fDensityRightStar));
-
-    fSonicSpeedLeftStar = sqrt(fBulkModulusLeftStar/fDensityLeftStar);
-    fSonicSpeedRightStar = sqrt(fBulkModulusRightStar/fDensityRightStar);
-
+    
     %with these values the final wave speed estimates are                   
     %left and right wave speed according to [7] page 28 equation (14)
     fWaveSpeedLeft = min((fFlowSpeedLeft-fSonicSpeedLeft),(fFlowSpeedStar-...

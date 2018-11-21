@@ -6,11 +6,12 @@ classdef event < handle
     properties (SetAccess = private, GetAccess = public)
         sType;
         oCaller;
-        xData;
     end
     
     properties (Access = public)
+        % Payload data for the event
         tData;
+        xData;
         
         % Store current token for setInterval calls etc - e.g.
         % oEvent.oCaller.setTimeout(oEvent.sToken, 245)
@@ -50,18 +51,5 @@ classdef event < handle
                 this.modifyFilterCb(this, varargin{:});
             end
         end
-        
-%         function setInterval(this, iInterval)
-%             if ~isempty(this.sToken)
-%                 this.oCaller.setCallbackInterval(this.sToken, iInterval);
-%             end
-%         end
-%         
-%         function setTimeout(this, iInterval)
-%             if ~isempty(this.sToken)
-%                 this.oCaller.setCallbackTimeout(this.sToken, iInterval);
-%             end
-%         end
     end
-    
 end

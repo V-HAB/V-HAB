@@ -1,0 +1,4 @@
+Substance Name,Molar Mass,Specific Gas Constant,Standard Density,Standard Specific Heat Capacity
+sName,fMolarMass,fSpecificGasConstant,fStandardDensity,fStandardSpecificHeatCapacity
+-,kg/mol,J/(kg*K),kg/m3,J/(kg*K)
+Ammonia,0.0170305,488.210104,0.72908,2166.2

@@ -29,14 +29,45 @@ classdef Example < vsys
             % well!).
             this@vsys(oParent, sName);
             
+            
+            %TODO -> DOCUMENT!
+            %   -> here, just process Ctor params and set e.g. defualt
+            %      properties
+            %   -> ALSO, add subsystems
+            
+            
+            % Adding the subsystem
+            tutorials.subsystems.subsystems.ExampleSubsystem(this, 'SubSystem');
+            
+            
+            
+            
+            % THEN do this:
+            eval(this.oRoot.oCfgParams.configCode(this));
+            % -> COnfig params
+            
+            
+            
+            
+            
+            % MAtter stuff in createMatterStructure, solvers in
+            % createSovlerStructure. Stuff like connectIfs has to be done
+            % in createMatterStructure!
+            
+        end
+        
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+            
             % Creating a store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_1', 1));
+            matter.store(this, 'Tank_1', 1);
             
             % Adding a phase to the store 'Tank_1', 2 m^3 air
-            oGasPhase = this.toStores.Tank_1.createPhase('air', 2);
+            oGasPhase = this.toStores.Tank_1.createPhase('air', 1, 293, 0.5, 2e5);
             
             % Creating a second store, volume 1 m^3
-            this.addStore(matter.store(this.oData.oMT, 'Tank_2', 1));
+            matter.store(this, 'Tank_2', 1);
             
             % Adding a phase to the store 'Tank_2', 1 m^3 air
             oAirPhase = this.toStores.Tank_2.createPhase('air', 1);
@@ -45,31 +76,51 @@ classdef Example < vsys
             matter.procs.exmes.gas(oGasPhase, 'Port_1');
             matter.procs.exmes.gas(oAirPhase, 'Port_2');
             
-            %% Adding the subsystem
-            oSubSys = tutorials.subsystems.subsystems.ExampleSubsystem(this, 'SubSystem');
             
                         
             %% Adding some pipes
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe1', 1, 0.005));
-            this.addProcF2F(components.pipe(this.oData.oMT, 'Pipe2', 1, 0.005));
+            components.matter.pipe(this, 'Pipe1', 1, 0.005);
+            components.matter.pipe(this, 'Pipe2', 1, 0.005);
             
             % Creating the flowpath (=branch) into a subsystem
             % Input parameter format is always: 
             % 'Interface port name', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            this.createBranch('SubsystemInput', {'Pipe1'}, 'Tank_1.Port_1');
+            matter.branch(this, 'SubsystemInput', {'Pipe1'}, 'Tank_1.Port_1');
             
             % Creating the flowpath (=branch) out of a subsystem
             % Input parameter format is always: 
             % 'Interface port name', {'f2f-processor, 'f2fprocessor'}, 'store.exme'
-            this.createBranch('SubsystemOutput', {'Pipe2'}, 'Tank_2.Port_2');
+            matter.branch(this, 'SubsystemOutput', {'Pipe2'}, 'Tank_2.Port_2');
+            
+            
+            
+            
+            %%% NOTE!!! setIfFlows has to be done in createMatterStructure!
             
             % Now we need to connect the subsystem with the top level system (this one). This is
             % done by a method provided by the subsystem.
-            oSubSys.setIfFlows('SubsystemInput', 'SubsystemOutput');
+            this.toChildren.SubSystem.setIfFlows('SubsystemInput', 'SubsystemOutput');
+            
+            
             
             % Seal - means no more additions of stores etc can be done to
             % this system.
-            this.seal();
+            %this.seal();
+            % NOT ANY MORE!
+        end
+        
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            
+            
+            % SOLVERS ETC!
+            
+            % specific properties for rMaxChange etc, possibly depending on
+            % this.tSolverProperties.XXX
+            % OR this.oRoot.tSolverProperties !!!
+            
+            this.setThermalSolvers();
         end
     end
     

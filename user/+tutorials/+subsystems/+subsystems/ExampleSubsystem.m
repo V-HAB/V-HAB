@@ -14,22 +14,58 @@ classdef ExampleSubsystem < vsys
             
             this@vsys(oParent, sName);
             
+            eval(this.oRoot.oCfgParams.configCode(this));
+            
+        end
+        
+        
+        function createMatterStructure(this)
+            createMatterStructure@vsys(this);
+            
             % Creating a filter as shown in the p2p Example
-            this.addStore(tutorials.subsystems.components.Filter(this.oData.oMT, 'Filter', 10));
+            tutorials.subsystems.components.Filter(this, 'Filter', 10);
             
             % Creating the branch from the parent system into this subsystem
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'Interface port name'
-            this.createBranch('Filter.FilterIn', {}, 'Inlet');
+            matter.branch(this, 'Filter.FilterIn', {}, 'Inlet');
             
             % Creating the branch out of this subsystem into the parent system 
             % Input parameter format is always: 
             % 'store.exme', {'f2f-processor, 'f2fprocessor'}, 'Interface port name'
-            this.createBranch('Filter.FilterOut', {}, 'Outlet');
-                                      
-            % Seal - systems always have to do that!
-            this.seal();
+            matter.branch(this, 'Filter.FilterOut', {}, 'Outlet');
             
+        end
+        
+        function createSolverStructure(this)
+            createSolverStructure@vsys(this);
+            
+            % Create the solver instances. Generally, this can be done here
+            % or directly within the vsys (after the .seal() command).
+            solver.matter.interval.branch(this.aoBranches(1));
+            solver.matter.interval.branch(this.aoBranches(2));
+            
+            
+            
+            % Phases
+            
+            oFilterFlowPhase = this.toStores.Filter.aoPhases(1);
+            oFilterBedPhase  = this.toStores.Filter.aoPhases(2);
+            
+            % To ensure that both branches are always re-calculated at the
+            % same time, we set the flow phase of the filter, in the center
+            % of the system, between the two branches, to synced. This
+            % causes both branches to be re-calculated after every phase
+            % update.
+            oFilterFlowPhase.bSynced   = true;
+            
+            % We are not really interested in the pressure, heat capacity
+            % etc. of the filtered phase, so we don't need to re-calculate
+            % it often. So we set a large maximum change. 
+            tTimeStepProperties.rMaxChange = 0.5;
+            oFilterBedPhase.setTimeStepProperties(tTimeStepProperties);
+
+            this.setThermalSolvers();
         end
         
         function setIfFlows(this, sInlet, sOutlet)

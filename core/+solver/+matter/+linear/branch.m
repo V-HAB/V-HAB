@@ -14,6 +14,10 @@ classdef branch < solver.matter.base.branch
         
         iDampFR    = 0;
         
+        % A helper array that saves the last iDampFR flow rates for
+        % averaging. 
+        afFlowRatesForDampening;
+        
         % Fixed time step - set to empty ([]) to deactivate
         fFixedTS = [];
         
@@ -27,6 +31,8 @@ classdef branch < solver.matter.base.branch
         
         fTimeStep = 0;
         
+        
+        oTimer;
     end
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,8 +44,18 @@ classdef branch < solver.matter.base.branch
         function this = branch(oBranch, rMaxChange, iRemChange)
             this@solver.matter.base.branch(oBranch, [], 'hydraulic');
             
-            if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end;
-            if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end;
+            this.fCoeffFR = 0.00000133 * 20;
+            
+            if nargin >= 2 && ~isempty(rMaxChange), this.rMaxChange = rMaxChange; end
+            if nargin >= 3 && ~isempty(iRemChange), this.iRemChange = iRemChange; end
+            
+            % Now we register the solver at the timer, specifying the post
+            % tick level in which the solver should be executed. For more
+            % information on the execution view the timer documentation.
+            % Registering the solver with the timer provides a function as
+            % output that can be used to bind the post tick update in a
+            % tick resulting in the post tick calculation to be executed
+            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
             
         end
     end
@@ -47,8 +63,12 @@ classdef branch < solver.matter.base.branch
     methods (Access = protected)
         %% Branch update method
         function update(this)
-            if this.oBranch.oContainer.oTimer.fTime < this.fLastUpdate
+            if this.oTimer.fTime < this.fLastUpdate
                 return;
+            end
+            
+            if this.oBranch.oTimer.fTime == 0
+                this.afFlowRatesForDampening = zeros(1, this.iDampFR);
             end
             
             % Checking if there are any active processors in the branch,
@@ -73,7 +93,7 @@ classdef branch < solver.matter.base.branch
             end
             
             % Getting all hydraulic diameters and lengths
-            afHydrDiam   = [ this.aoSolverProps.fHydrDiam ];
+            afHydrDiam   = [ this.aoSolverProps.fHydrDiam   ];
             afHydrLength = [ this.aoSolverProps.fHydrLength ];
             
             % Find all components with negative hydraulic diameters
@@ -83,13 +103,17 @@ classdef branch < solver.matter.base.branch
                 % sum them up and create new arrays with just the
                 % components producing pressure drops
                 fPressureRises = sum(this.aoSolverProps(afNegHydrDiam).fDeltaPressure);
-                afPosHydrDiam = afHydrDiam(afHydrDiam>0);
-                afHydrLength  = afHydrLength(afHydrDiam>0);
+                afPosHydrDiam  = afHydrDiam(afHydrDiam>0);
+                afHydrLength   = afHydrLength(afHydrDiam>0);
             else
                 fPressureRises = 0;
-                afPosHydrDiam = afHydrDiam;
+                afPosHydrDiam  = afHydrDiam;
             end
             
+            if any(afHydrLength == 0)
+                afPosHydrDiam(afHydrLength == 0) = [];
+                afHydrLength(afHydrLength == 0)  = [];
+            end
            
             %TODO real calcs, also derive pressures/temperatures
             %     check active components - get pressure rise / hydr.
@@ -109,9 +133,42 @@ classdef branch < solver.matter.base.branch
             % Damp flow rate?
             %TODO only if it gets bigger or smaller? Time-specific? Right
             %     now tick length not taken into account ...
-            fFlowRate = (fFlowRate + this.iDampFR * this.fFlowRate) / (1 + this.iDampFR);
+            %fFlowRate = (fFlowRate + this.iDampFR * this.fFlowRate) / (1 + this.iDampFR);
 
+            if this.iDampFR ~= 0
+                % Damp the flow rate, if iDampFR is non-zero.
+                fFlowRate = (sum(this.afFlowRatesForDampening) + fFlowRate) / (this.iDampFR + 1);
+                this.afFlowRatesForDampening = [ this.afFlowRatesForDampening(2:end) fFlowRate ];
+                bRecalculateFlowProperties = true;
+            else
+                bRecalculateFlowProperties = false;
+            end
             
+            % If we actually damped the flow rate, we need to run the
+            % solver specific method on all processors again, since some of
+            % them might need to update some internal values, such as the
+            % heat flow. 
+            %TODO To avoid this, maybe the heat flow should be specific
+            %rather than absolute? 
+            if this.iDampFR ~= 0 && bRecalculateFlowProperties
+                for iI = 1:length(abActiveProcs)
+                    if abActiveProcs(iI)
+                        % There are two kinds of processors: Ones that create a
+                        % pressure rise and ones that just change their
+                        % hydraulic parameters. The latter just needs to be
+                        % updated, but the former needs to write a new value
+                        % for fDeltaPressure to the solver type object. This is
+                        % only done, if the updateDeltaPressure() method is
+                        % called with one or more return values. This is the
+                        % reason for the following if-condition.
+                        if this.aoSolverProps(iI).fHydrDiam < 0
+                            [~] = this.aoSolverProps(iI).updateDeltaPressure();
+                        else
+                            this.aoSolverProps(iI).updateDeltaPressure();
+                        end
+                    end
+                end
+            end
             
             if ~isempty(this.fFixedTS)
                 if this.fTimeStep ~= this.fFixedTS
@@ -132,15 +189,9 @@ classdef branch < solver.matter.base.branch
                 % causing the new time step to be NaN. If that happens, the
                 % branch will never be updated again. So we set rChange to
                 % zero if this happens. 
-                rChange = sif(isnan(rChange), 0, rChange);
-
-                % Old time step
-                fOldStep = this.fTimeStep;
-
-                if fOldStep < this.oBranch.oContainer.oTimer.fTimeStep
-                    fOldStep = this.oBranch.oContainer.oTimer.fTimeStep;
+                if isnan(rChange)
+                    rChange = 0;
                 end
-
                 % Change in flow rate direction? Min. time step!
                 if (rChange < 0) || isinf(rChange) || (this.iSignChangeFRCnt > 1)
                     fNewStep = 0;
@@ -161,13 +212,18 @@ classdef branch < solver.matter.base.branch
                     if this.rFlowRateChange > this.rMaxChange, fNewStep = 0;
                     else
                         % Interpolate
-                        fNewStep = interp1([ 0 this.rSetChange this.rMaxChange ], [ 2 * fOldStep fOldStep 0 ], this.rFlowRateChange, 'linear', 'extrap');
+                        %fNewStep = interp1([ 0 this.rSetChange this.rMaxChange ], [ 2 * fOldStep fOldStep 0 ], this.rFlowRateChange, 'linear', 'extrap');
+                        
+                        %fInt = interp1([ 0 this.rMaxChange ], [ 1 0 ], this.rFlowRateChange, 'linear', 'extrap');
+                        fInt = 1 - this.rFlowRateChange / this.rMaxChange;
+                        iI = 3; %this.fSensitivity;
+                        fNewStep = fInt.^iI * this.fMaxStep + this.oTimer.fMinimumTimeStep;
                     end
                 end
 
-                if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end;
+                if fNewStep > this.fMaxStep, fNewStep = this.fMaxStep; end
 
-                this.setTimeStep(fNewStep);
+                this.setTimeStep(fNewStep, true);
                 this.fTimeStep = fNewStep;
             end
             

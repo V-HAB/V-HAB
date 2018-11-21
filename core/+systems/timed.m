@@ -4,17 +4,12 @@ classdef timed < sys
     %   execution, or set a fixed interval for calling the exec method. The
     %   setTimestep method can be used to adjust that interval at any time
     %   in the simulation.
-    %
-    %NOTE make sure the .exec() method here is called to trigger 'exec' or
-    %     trigger that event manually in child class.
     
     properties (SetAccess = protected, GetAccess = public)
        % Reference to timer object
-       % @type object
        oTimer;
        
        % Current time step
-       % @type float
        fTimeStep;
        
        fLastExec     = -1;
@@ -29,20 +24,16 @@ classdef timed < sys
     end
     
     methods
-        function this = timed(oParent, sName, xTimer, fTimeStep)
+        function this = timed(oParent, sName, fTimeStep)
             this@sys(oParent, sName);
             
-            % Get timer from payload data or directly provided ...
-            if ischar(xTimer), this.oTimer = this.oData.(xTimer);
-            else               this.oTimer = xTimer;
-            end
+            this.oTimer = oParent.oTimer;
             
-            if nargin >= 4 && ~isempty(fTimeStep)
+            if nargin >= 3 && ~isempty(fTimeStep)
                 this.setTimeStep(fTimeStep);
             else
                 % Set execution with each tick!
                 this.setTimeStep();
-                %this.fTimeStep = this.oTimer.fTimeStep;
             end
         end
     end
@@ -52,9 +43,6 @@ classdef timed < sys
         function exec(this, ~)
             % Specifically don't call the sys exec - we do trigger event
             % here with time provided!
-            %TODO need to extend that logic. Problably need pre/post exec
-            %     triggers? Should child systems call the parent exec
-            %     method before or after they actually execute?
             
             this.fLastTimeStep = this.oTimer.fTime - this.fLastExec;
             
@@ -69,13 +57,12 @@ classdef timed < sys
             % parent! If -1, dependent (each timer exec).
             
             % No fTimeStep provided?
-            if nargin < 2 || isempty(fTimeStep), fTimeStep = -1; end;
+            if nargin < 2 || isempty(fTimeStep), fTimeStep = -1; end
             
             % Set as obj property/attribute
             this.fTimeStep = fTimeStep;
             
             % If logical false - link to parent
-            %if fTimeStep == -1
             if islogical(fTimeStep) && ~fTimeStep
                 % Unregister with timer if we're registered!
                 if ~isempty(this.unbindCB)
@@ -97,7 +84,11 @@ classdef timed < sys
                 
                 % Not yet registered on timer?
                 if isempty(this.unbindCB)
-                    [ this.setTimeStepCB this.unbindCB ] = this.oTimer.bind(@this.exec, fTimeStep);
+                    [ this.setTimeStepCB, this.unbindCB ] = this.oTimer.bind(@this.exec, fTimeStep, struct(...
+                        'sMethod', 'exec', ...
+                        'sDescription', 'The .exec method of a timed system', ...
+                        'oSrcObj', this ...
+                    ));
                     
                 % Set new time step
                 else
@@ -106,9 +97,8 @@ classdef timed < sys
                 
                 % If time step is 0, means we registered on the global time
                 % step -> write to this sys
-                if this.fTimeStep == 0, this.fTimeStep = this.oTimer.fTimeStep; end;
+                if this.fTimeStep == 0, this.fTimeStep = this.oTimer.fMinimumTimeStep; end
             end
         end
     end
 end
-

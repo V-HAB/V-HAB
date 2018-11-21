@@ -2,21 +2,9 @@ classdef branch < base & event.source
     %BRANCH Basic solver branch class
     %   This is the base class for all matter flow solvers in V-HAB, all
     %   other solver branch classes inherit from this class. 
-    %
-    %TODO
-    %   - fFlowRate protected, not prive, and add setter?
-    %   - check - setTimeStep means solver .update() method is executed by the
-    %     timer during the 'normal' update call for e.g. phases etc.
-    %     If a phase triggers an solver .update, that happens in the post tick
-    %     loop.
-    %     Any problems with that? Possible that solver called multiple times at
-    %     a tick - shouldn't be a problem right?
-
+    
     properties (SetAccess = private, GetAccess = private)
-        %TODO how to serialize function handles? Do differently in the
-        %     first place, e.g. with some internal 'passphrase' that is
-        %     generated and returned on registerHandlerFR and checked on
-        %     setFlowRate?
+        % handle from th
         setBranchFR;
     end
     
@@ -26,19 +14,21 @@ classdef branch < base & event.source
     end
     
     properties (SetAccess = private, GetAccess = public)
+        % Reference to the matter.branch object this solver calculates
         oBranch;
+        
+        % Current flowrate of the branch, only set during post tick
+        % calculation!
         fFlowRate = 0;
         
+        % last total time in seconds at which this solver was updated
         fLastUpdate = -10;
-        
-        
-        % Branch to sync to - if that branch is executed/updated, also
-        % update here!
-        oSyncedSolver;
-        bUpdateTrigger = false;
+    
     end
     
-    properties (SetAccess = private, GetAccess = protected, Transient = true)
+    properties (SetAccess = private, GetAccess = protected)
+        % Handle bound to the specific solver which can be used to set the
+        % flowrate
         bRegisteredOutdated = false;
     end
     
@@ -48,19 +38,44 @@ classdef branch < base & event.source
         
         % Cached solving objects (from [procs].toSolver.hydraulic)
         aoSolverProps;
+        
+        % Reference to the matter table
+        % @type object
+        oMT;
+    end
+    
+    
+    properties (SetAccess = protected, GetAccess = public)
+        
+        % This is the handle to bind a post tick update for the solver.
+        % Note solvers should ONLY be updated in the post tick! Simply use
+        % the XXX.hBindPostTickUpdate() to bind and update
+        hBindPostTickUpdate;
+        % This is the same as above but for the time step calculation of
+        % the solver, if one is used
+        hBindPostTickTimeStepCalculation;
+        
+        % See matter.branch, bTriggerSetFlowRate, for more!
+        bTriggerUpdateCallbackBound = false;
+        bTriggerRegisterUpdateCallbackBound = false;
     end
     
     
     methods
         function this = branch(oBranch, fInitialFlowRate, sSolverType)
-            this.oBranch = oBranch;
             
+            if isempty(oBranch.coExmes{1}) || isempty(oBranch.coExmes{2})
+                this.throw('branch:constructor',['The interface branch %s is not properly connected.\n',...
+                                     'Please make sure you call connectIF() on the subsystem.'], oBranch.sName);
+            end
+            
+            this.oBranch = oBranch;
+            this.oMT     = oBranch.oMT;
             
             if nargin >= 3 && ~isempty(sSolverType)
                 this.sSolverType = sSolverType;
                 
                 % Cache the solver objects for quick access later
-                %TODO re-cache if e.g. branch re-connected to another IF!
                 this.aoSolverProps = solver.matter.base.type.(this.sSolverType).empty(0, size(this.oBranch.aoFlowProcs, 2));
                 
                 for iP = 1:length(this.oBranch.aoFlowProcs)
@@ -72,14 +87,14 @@ classdef branch < base & event.source
                 end
             end
             
-            
-            
             % Branch allows only one solver to take control
             this.setBranchFR = this.oBranch.registerHandlerFR(this);
             
-            % Use branches container timer reference to bind for time step
-            %CHECK nope, Infinity, right?
-            this.setTimeStep = this.oBranch.oContainer.oTimer.bind(@(~) this.update(), inf);
+            this.setTimeStep = this.oBranch.oTimer.bind(@this.executeUpdate, inf, struct(...
+                'sMethod', 'executeUpdate', ...
+                'sDescription', 'ExecuteUpdate in solver which does massupdate and then registers .update in post tick!', ...
+                'oSrcObj', this ...
+            ));
             
             % Initial flow rate?
             if (nargin >= 2) && ~isempty(fInitialFlowRate)
@@ -88,65 +103,90 @@ classdef branch < base & event.source
             
             % If the branch triggers the 'outdated' event, need to
             % re-calculate the flow rate!
-            this.oBranch.bind('outdated', @this.registerUpdate);
+            this.oBranch.bind('outdated', @this.executeUpdate);
+            
         end
         
-        
-        function syncToSolver(this, oSolver)
-            % 
-            %
-            %TODO
-            % Allow several synced solvers!!
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
+            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
             
-            if ~isempty(this.oSyncedSolver)
-                this.throw('syncToSolver', 'Cannot set another synced solver');
+            if strcmp(sType, 'update')
+                this.bTriggerUpdateCallbackBound = true;
+            
+            elseif strcmp(sType, 'register_update')
+                this.bTriggerRegisterUpdateCallbackBound = true;
+            
             end
+        end
+    end
+    
+    methods (Access = private)
+        function executeUpdate(this, ~)
+            if ~base.oLog.bOff, this.out(1, 1, 'executeUpdate', 'Call massupdate on both branches, depending on flow rate %f', { this.oBranch.fFlowRate }); end
             
-            this.oSyncedSolver = oSolver;
-            this.oSyncedSolver.bind('update', @(~) this.syncedUpdateCall());
+            % if the mass branch is outdated it means the flowrate changed,
+            % which requires us to update the corresponding thermal branch
+            % as well
+            this.oBranch.oThermalBranch.setOutdated();
+            
+            this.registerUpdate();
         end
     end
     
     methods (Access = protected)
-        function this = registerUpdate(this, ~)
-            this.oBranch.oContainer.oTimer.bindPostTick(@this.update);
-            this.bRegisteredOutdated = true;
-        end
         
-        
-        function syncedUpdateCall(this)
-            % Prevent loops
-            if ~this.bUpdateTrigger
-                this.update();
+        function registerUpdate(this, ~)
+            % This functions registers a post tick update for this branch
+            % in the timer. The post tick level is specified by the solver
+            if this.bRegisteredOutdated
+                return;
             end
+            
+            % performs the massupdate on both sides since we first have to
+            % finish transferring mass at the current flowrate in both
+            % phases before we can change the flowrate. Otherwise the mass
+            % balance would be incorrect
+            for iE = 1:2
+                this.oBranch.coExmes{iE}.oPhase.registerMassupdate();
+            end
+            
+            % Allows other functions to register an event to this trigger
+            % and provides the post tick level for the ones who register
+            if this.bTriggerRegisterUpdateCallbackBound
+                this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
+            end
+
+            if ~base.oLog.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end
+            
+            this.bRegisteredOutdated = true;
+            % this finally binds the update function to the specified post
+            % tick level
+            this.hBindPostTickUpdate();
         end
         
         function update(this, fFlowRate, afPressures)
             % Inherited class can overload .update and write this.fFlowRate
             % and subsequently CALL THE PARENT METHOD by
             % update@solver.matter.base.branch(this);
-            % (??)
             
-            %TODO 13
-            %   - names of solver packates? matter/basic/...?
-            %   - also afPressures, afTemps for setBranchFR?
-            %   - some solvers need possibility to preset flows with the
-            %       mol mass, ..
-            %       => NOT NOW! Solver just uses old values, and has to
-            %       make sure that a short time step (0!!) is set when the
-            %       flow rate direction changed!!
-            %       -> setFlowRate automatically updates all!
+            if ~base.oLog.bOff, this.out(1, 1, 'update', 'Setting flow rate %f for branch %s', { fFlowRate, this.oBranch.sName }); end
             
-            this.fLastUpdate = this.oBranch.oContainer.oTimer.fTime;
+            this.fLastUpdate = this.oBranch.oTimer.fTime;
             
             if nargin >= 2
 
                 % If mass in inflowing tank is smaller than the precision
-                % ofthe simulation, set flow rate to zero
-                oIn = this.oBranch.coExmes{sif(fFlowRate >= 0, 1, 2)}.oPhase;
-
-                if tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
+                % of the simulation, set flow rate and delta pressures to
+                % zero
+                if fFlowRate >= 0
+                    oIn = this.oBranch.coExmes{1}.oPhase;
+                else
+                    oIn = this.oBranch.coExmes{2}.oPhase;
+                end
+                
+                if ~oIn.bFlow && tools.round.prec(oIn.fMass, oIn.oStore.oTimer.iPrecision) == 0
                     fFlowRate = 0;
+                    afPressures = zeros(1, this.oBranch.iFlowProcs);
                 end
 
                 this.fFlowRate = fFlowRate;
@@ -165,9 +205,9 @@ classdef branch < base & event.source
             
             this.setBranchFR(this.fFlowRate, afPressures);
             
-            this.bUpdateTrigger = true;
-            this.trigger('update');
-            this.bUpdateTrigger = false;
+            if this.bTriggerUpdateCallbackBound
+                this.trigger('update');
+            end
         end
     end
 end

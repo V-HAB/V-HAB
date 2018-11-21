@@ -1,4 +1,4 @@
-classdef AbsorberExample < matter.procs.p2ps.flow
+classdef AbsorberExample < matter.procs.p2ps.stationary & event.source
     %ABSORBEREXAMPLE An example for a p2p processor implementation
     %   The actual logic behind the absorbtion behavior is not based on any
     %   specific physical system. It is just implemented in a way to
@@ -21,16 +21,25 @@ classdef AbsorberExample < matter.procs.p2ps.flow
         
         % Ratio of actual loading and maximum load
         rLoad;
+        
+        
+        % Exponent for characeristics (e.g. 0 -> no reduction through
+        % loaded bed, 1 = linear,2 exponential etc.)
+        fCharacteristics = 1;
     end
     
     
     methods
-        function this = AbsorberExample(oStore, sName, sPhaseIn, sPhaseOut, sSubstance, fCapacity)
-            this@matter.procs.p2ps.flow(oStore, sName, sPhaseIn, sPhaseOut);
+        function this = AbsorberExample(oStore, sName, sPhaseIn, sPhaseOut, sSubstance, fCapacity, fCharacteristics)
+            this@matter.procs.p2ps.stationary(oStore, sName, sPhaseIn, sPhaseOut);
             
             % Species to absorb, max absorption
             this.sSubstance  = sSubstance;
             this.fCapacity = fCapacity;
+            
+            if nargin >= 7
+                this.fCharacteristics = fCharacteristics;
+            end
             
             % The p2p processor can specify which substance it wants to
             % extract from the phase. A vector with relative values has to
@@ -46,6 +55,10 @@ classdef AbsorberExample < matter.procs.p2ps.flow
         end
         
         function update(this)
+            
+            %disp(this.oStore.oTimer.iTick);
+            %disp('--------- P2P UPDATE pre ----------------');
+            
             % Called whenever a flow rate changes. The two EXMES (oIn/oOut)
             % have an oPhase attribute that allows us to get the phases on
             % the left/right side.
@@ -76,6 +89,7 @@ classdef AbsorberExample < matter.procs.p2ps.flow
             % Nothing flows in, so nothing absorbed ...
             if isempty(afFlowRate)
                 this.setMatterProperties(0, this.arExtractPartials);
+                this.trigger('update', 0);
                 
                 return;
             end
@@ -86,19 +100,43 @@ classdef AbsorberExample < matter.procs.p2ps.flow
             % species flowing into the filter.
             afFlowRate = afFlowRate .* mrPartials(:, iSpecies);
             
+            
+            if this.fCharacteristics > 0
+                rAdsorp = (1 - this.rLoad^this.fCharacteristics);
+            else
+                rAdsorp = 1;
+            end
+            
             %keyboard();
             % Sum up flow rates and use the load of the filter to reduce 
             % the flow rate accordingly
-            fFlowRate = (1 - this.rLoad) * sum(afFlowRate);
+            fFlowRate = rAdsorp * sum(afFlowRate);
             
             % Test ...
-            %fFlowRate = 0;
+%             if this.oIn.oPhase.oTimer.iTick > 30
+%                 fFlowRate = 1e-5;
+%             else
+%                 fFlowRate = 0;
+%             end
+            
+            %%%disp([ 'UPDATE p2p: ' this.sName ' to ' num2str(fFlowRate) ]);
             
             % Set the new flow rate. If the second parameter (partial
             % masses to extract) is not provided, the partial masses from
             % the phase itself are used (i.e. extracting all species
             % equally).
+            if fFlowRate < 0
+                fMassChangeSinceUpdate = this.oOut.oPhase.afCurrentTotalInOuts(iSpecies) * (this.oTimer.fTime - this.oOut.oPhase.fLastMassUpdate);
+                fTimeStep = abs((this.oOut.oPhase.afMass(iSpecies) + fMassChangeSinceUpdate) / fFlowRate);
+                this.oOut.oPhase.oStore.setNextTimeStep(fTimeStep);
+            end
+            
             this.setMatterProperties(fFlowRate, this.arExtractPartials);
+            
+            
+            this.trigger('update', fFlowRate);
+            
+            %disp('--------- P2P UPDATE post ----------------');
         end
     end
     
