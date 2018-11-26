@@ -304,51 +304,15 @@ classdef table < base
             
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Adding nutritional data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Importing additional data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            % The actual substances are also included in 'MatterData.csv',
-            % this part of the code adds the nutritional data to these
-            % substances.
-            
-            % read from .csv file
-            this.ttxNutrientData = importNutrientData();
-            
-            % get all edible substances
-            this.csEdibleSubstances = fieldnames(this.ttxNutrientData);
-            
-            %%%%%%%%%%%%
-            % WARNING! %
-            %%%%%%%%%%%%
-            
-            % right now, Drybean has been substituted with values from
-            % Kidney Beans and Redbeets have been substituted with Beets.
-            % BVAD uses those substances but they are not listed on the
-            % USDA Food Database as of time of writing.
-            % Nutrients are always linked to the USDA NDB No. (iUSDAID in
-            % the file), so check that if unsure!
-            
-            %%%%%%%%%%%%
-            
-            % loop over all edible substances
-            for iJ = 1:length(this.csEdibleSubstances)
-                try
-                    if strcmp(this.csEdibleSubstances{iJ}, this.csSubstances{this.tiN2I.(this.csEdibleSubstances{iJ})})
-                        this.ttxMatter.(this.csEdibleSubstances{iJ}).txNutrientData = this.ttxNutrientData.(this.csEdibleSubstances{iJ});
-                    end
-                catch
-                    % substance not represented in matter table, but not an
-                    % issue as long as this food type is not used in sim
-                end
-            end
-            
-            %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Adding absorber data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-            % The actual substances are also included in 'MatterData.csv',
-            % this part of the code adds the absorber data to these
-            % substances.
+            % All substances in the matter table are included in the
+            % 'MatterData.csv' file with their basic information. In some
+            % cases, however, additional information is required for a
+            % substance. The following functions import these data into the
+            % matter table. 
+            importNutrientData(this);
             importAbsorberData(this);
             
             
@@ -369,25 +333,6 @@ classdef table < base
             % matter table and the data has been saved for future use.
             % Let the simulations begin!
             
-        end
-        
-        %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Helper methods %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function csSubstanceList = getSubstancesFromVector(this, mfSubstances)
-            csSubstanceList = this.asI2N(mfSubstances ~= 0);
-        end
-        
-        function mbAreInside = areSubstancesInVector(this, csSubstances, mfSubstances)
-            csSubstanceList = this.getSubstancesFromVector(mfSubstances);
-            if ~iscell(csSubstances)
-                csSubstances = {csSubstances};
-            end
-            iNumSubstances = numel(csSubstances);
-            mbAreInside = false(iNumSubstances, 1);
-            for i = 1:iNumSubstances
-                mbAreInside(i) = any(strcmp(csSubstances{i}, csSubstanceList));
-            end
         end
     end
     
