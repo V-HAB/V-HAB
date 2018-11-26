@@ -1,4 +1,4 @@
-classdef AntoineParameters
+classdef AntoineData
     %ANTOINEPARAMETERS Constant class containing parameters for the Antoine
     %equation to calculate vapor pressure
     % 

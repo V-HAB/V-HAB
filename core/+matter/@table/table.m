@@ -314,7 +314,7 @@ classdef table < base
             % matter table. 
             importNutrientData(this);
             importAbsorberData(this);
-            
+            importAntoineData(this);
             
             %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % Saving the data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

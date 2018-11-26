@@ -1,4 +1,4 @@
-function fVaporPressure = calculateVaporPressure(~, fTemperature, sSubstance)
+function fVaporPressure = calculateVaporPressure(this, fTemperature, sSubstance)
 %CALCULATEVAPORPRESSURE Calculates the vapor pressure for a given substance
 %at a given temperature
 % The vapor pressure over temperature is required for the calculation of
@@ -6,13 +6,14 @@ function fVaporPressure = calculateVaporPressure(~, fTemperature, sSubstance)
 % the substance is liquid for any pressure is 0 and if it is a gas for any
 % pressure it is inf.
     
-% First it is necessary to decide for which substance the vapor pressure
-% should be calculated
+% Getting the Antoine parameters for the selected substance
+tAntoineParameters = this.ttxMatter.(sSubstance).tAntoineParameters;
 
-AntoineData = matter.data.AntoineParameters.(sSubstance);
+% Extracting the limits from the range
+mfLimits = [tAntoineParameters.Range.mfLimits];
 
-mfLimits = [AntoineData.Range(:).mfLimits];
-
+% Now we need to check where the current temperature lies relative to the
+% range limits.
 if fTemperature < mfLimits(1)
     % For temperature below the limits the substance is liquid and the
     % vapor pressure is 0
@@ -23,14 +24,14 @@ elseif fTemperature > mfLimits(end)
     % vapor pressure is inf
     fVaporPressure = inf;
 else
-    for iRange = 1:length(AntoineData.Range)
-        if (fTemperature >= AntoineData.Range(iRange).mfLimits(1)) &&...
-                (fTemperature <= AntoineData.Range(iRange).mfLimits(2))
+    for iRange = 1:length(tAntoineParameters.Range)
+        if (fTemperature >= tAntoineParameters.Range(iRange).mfLimits(1)) &&...
+                (fTemperature <= tAntoineParameters.Range(iRange).mfLimits(2))
             % In between the limits the respective antoine parameters from the
             % NIST chemistry webbook for the respective substance are used
-            fA = AntoineData.Range(iRange).fA;
-            fB = AntoineData.Range(iRange).fB;
-            fC = AntoineData.Range(iRange).fC;
+            fA = tAntoineParameters.Range(iRange).fA;
+            fB = tAntoineParameters.Range(iRange).fB;
+            fC = tAntoineParameters.Range(iRange).fC;
 
             % Antoine Equation, taken from http://webbook.nist.gov
             fVaporPressure = (10^(fA -(fB/(fTemperature+fC))))*10^5;
