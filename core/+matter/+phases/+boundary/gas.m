@@ -114,24 +114,34 @@ classdef gas < matter.phases.boundary.boundary
                 this.fMass = sum(this.afMass);
             end
             
-            % Now we calculate other derived values with the new parameters
-            this.fMassToPressure = this.fPressure/this.fMass;
-            this.fMolarMass      = sum(this.afMass .* this.oMT.afMolarMass) / this.fMass;
-            
-            this.afPartsPerMillion = (this.afMass .* this.fMolarMass) ./ (this.oMT.afMolarMass .* this.fMass) * 1e6;
-            
-            this.arPartialMass = this.afMass/this.fMass;
-            
-            % V/m = p*R*T;
-            this.fDensity = this.fPressure * (this.oMT.Const.fUniversalGas / this.fMolarMass) * this.fTemperature;
-            
-            if this.afPP(this.oMT.tiN2I.H2O)
-                % calculate saturation vapour pressure [Pa];
-                fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
-                % calculate relative humidity
-                this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
+            if this.fMass ~= 0
+                % Now we calculate other derived values with the new parameters
+                this.fMassToPressure = this.fPressure/this.fMass;
+                this.fMolarMass      = sum(this.afMass .* this.oMT.afMolarMass) / this.fMass;
+                
+                this.afPartsPerMillion = (this.afMass .* this.fMolarMass) ./ (this.oMT.afMolarMass .* this.fMass) * 1e6;
+                
+                this.arPartialMass = this.afMass/this.fMass;
+                
+                % V/m = p*R*T;
+                this.fDensity = this.fPressure * (this.oMT.Const.fUniversalGas / this.fMolarMass) * this.fTemperature;
+                
+                if this.afPP(this.oMT.tiN2I.H2O)
+                    % calculate saturation vapour pressure [Pa];
+                    fSaturationVapourPressure = this.oMT.calculateVaporPressure(this.fTemperature, 'H2O');
+                    % calculate relative humidity
+                    this.rRelHumidity = this.afPP(this.oMT.tiN2I.H2O) / fSaturationVapourPressure;
+                else
+                    this.rRelHumidity = 0;
+                end
+                
             else
-                this.rRelHumidity = 0;
+                this.fMassToPressure = 0;
+                this.fMolarMass = 0;
+                this.afPartsPerMillion = zeros(1, this.oMT.iSubstances);
+                this.arPartialMass = zeros(1, this.oMT.iSubstances);
+                this.fDensity = 0;
+                this.afPP = zeros(1, this.oMT.iSubstances);
             end
             
             % We also need to reset some thermal values (e.g. total heat
