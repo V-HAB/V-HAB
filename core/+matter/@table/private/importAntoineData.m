@@ -14,7 +14,7 @@ iNumberOfSubstances = length(csSubstances);
 % Now we loop through each of the substances and add the data to the
 % ttxMatter struct.
 for iSubstance = 1:iNumberOfSubstances
-    this.ttxMatter.(csSubstances{iSubstance}).tAntoineParameters = matter.data.AntoineData.(csSubstances{iSubstance});
+    this.ttxMatter.(csSubstances{iSubstance}).cxAntoineParameters = matter.data.AntoineData.(csSubstances{iSubstance});
 end
 
 end
