@@ -36,14 +36,9 @@ classdef Example < vsys
             createMatterStructure@vsys(this);
             
             % Atmos - Capacity
-            fVolume = 1e10;
-            matter.store(this, 'Space', 1e10);
+            matter.store(this, 'Space', Inf);
             
-            tfPartialPressure = struct('N2', 0);
-            fTemperature      = 3;
-            rRelativeHumidity = 0;
-
-            this.toStores.Space.createPhase('gas', 'vacuum',  fVolume, tfPartialPressure, fTemperature, rRelativeHumidity);
+            this.toStores.Space.createPhase('vacuum','VacuumPhase');
             
             % Creating a store, volume 1 m^3
             fZeoliteMass = 4;
@@ -110,7 +105,7 @@ classdef Example < vsys
             
             oCapacitySolidTank_1 = this.toStores.Tank_1.toPhases.FilteredPhase.oCapacity;
             
-            oCapacitySpace = this.toStores.Space.toPhases.vacuum.oCapacity;
+            oCapacitySpace = this.toStores.Space.toPhases.VacuumPhase.oCapacity;
             
             oCapacityTank_2 = this.toStores.Tank_2.toPhases.Tank2Air.oCapacity;
             oHeatSource = thermal.heatsource('Heater', 0);

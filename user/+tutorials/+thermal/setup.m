@@ -117,7 +117,7 @@ classdef setup < simulation.infrastructure
             oLog.addValue('Example:s:Tank_1.toPhases.Tank1Air',         'fTemperature', 'K', 'Temperature Air 1');
             oLog.addValue('Example:s:Tank_1.toPhases.FilteredPhase',    'fTemperature', 'K', 'Temperature Solid 1');
             oLog.addValue('Example:s:Tank_2.toPhases.Tank2Air',         'fTemperature', 'K', 'Temperature Air 2');
-            oLog.addValue('Example:s:Space.toPhases.vacuum',            'fTemperature', 'K', 'Temperature Space');
+            oLog.addValue('Example:s:Space.toPhases.VacuumPhase',       'fTemperature', 'K', 'Temperature Space');
             
             oLog.addValue('Example:c:SubSystem:s:Filter.toPhases.FlowPhase',        'fTemperature', 'K', 'Temperature Filter Flow');
             oLog.addValue('Example:c:SubSystem:s:Filter.toPhases.FlowPhase',        'fPressure',    'Pa','Pressure Filter Flow');
