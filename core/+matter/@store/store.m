@@ -498,7 +498,7 @@ classdef store < base
             % If the first item of varargin is a string, then it is a
             % user-provided name for the phase to be created. If it is
             % anything else, it is one of the parameters.
-            if ischar(varargin{1})
+            if ~isempty(varargin) && ischar(varargin{1})
                 sPhaseName   = varargin{1};
                 cPhaseParams = varargin(2:end);
             else
