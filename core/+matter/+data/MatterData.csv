@@ -8,7 +8,7 @@ NO3,Nitrate,liquid,0.0620049,,,804,1860,,,
 Urine,Urine,liquid,0.018,,,1000,,,,
 CH4,Methane,gas,0.01604246,90.7,111.66,0.668,8916.7,,,
 Plastic,Plastic,solid,0.04347,,,980,,,,
-H2O2,Hydrogen Peroxide,liquid,0.03401468,272.72,423.3,1450,1267,,,http://webbook.nist.gov/cgi/inchi/InChI%3D1S/H2O2/c1-2/h1-2H
+H2O2,Hydrogen Peroxide,liquid,0.03401468,272.72,423.3,1450,1267,,,,http://webbook.nist.gov/cgi/inchi/InChI%3D1S/H2O2/c1-2/h1-2H
 O3,Ozone,gas,0.0479982,81,161,2.144,,,,
 KO2,Potassium Superoxide,solid,0.0711,653.15,,2140,,,,
 KOH,Potassium Hydroxide,solid,0.05611,633.15,1593.15,2044,1180,,,
@@ -256,9 +256,9 @@ Human_Skin,Human_Skin,solid,0.03,,,1090,3391,,,
 Human_Fat_Subcutaneous,Human_Fat_Subcutaneous,solid,0.03,,,909.4,2348,,,
 Human_Bone,Human_Bone,solid,0.03,,,1750,1500,,,
 Human_Blood,Human_Blood,liquid,0.03,,,1060,3594,,,
-Clothing_Sweat,Clothing – Sweatshirt/Longsleeve,solid,0.03,,,500,1000,,,https://de.wikipedia.org/wiki/Baumwolle ? And from above – Cellulose?
-Clothing_Nomex_Tough,Nomex ,solid,0.03,,,50,1000,,,http://www.ibena.com/tl_files/files/protect/downloads/Product%20overview%20fabric%20for%20firefighting%20and%20emergency%20services%20EN.pdf - Weight 200g/m^2 → thickness assumed to be 0.4cm → kg/m^3 → 200/1000 / 0.04 → thinner??
-Clothing_Goretex_Flameliner,Gore-Tex Flameliner,solid,0.03,,,250,1000,,,guessed
+Clothing_Sweat,Clothing – Sweatshirt/Longsleeve,solid,0.03,,,500,1000,,,,https://de.wikipedia.org/wiki/Baumwolle ? And from above – Cellulose?
+Clothing_Nomex_Tough,Nomex ,solid,0.03,,,50,1000,,,,http://www.ibena.com/tl_files/files/protect/downloads/Product%20overview%20fabric%20for%20firefighting%20and%20emergency%20services%20EN.pdf - Weight 200g/m^2 → thickness assumed to be 0.4cm → kg/m^3 → 200/1000 / 0.04 → thinner??
+Clothing_Goretex_Flameliner,Gore-Tex Flameliner,solid,0.03,,,250,1000,,,,guessed
 CabbageEdibleWet,CabbageEdibleWet,liquid,0.02307,,,804,1860,,,
 CabbageInedibleWet,CabbageInedibleWet,liquid,0.02307,,,804,1860,,,
 CabbageEdibleWet,CabbageEdibleWet,solid,0.02307,,,804,1860,,,
@@ -275,6 +275,10 @@ ChardEdibleWet,ChardEdibleWet,liquid,0.02307,,,804,1860,,,
 ChardInedibleWet,ChardInedibleWet,liquid,0.02307,,,804,1860,,,
 ChardEdibleWet,ChardEdibleWet,solid,0.02307,,,804,1860,,,
 ChardInedibleWet,ChardInedibleWet,solid,0.02307,,,804,1860,,,
+ChufaEdibleWet,ChufaEdibleWet,liquid,0.02307,,,804,1860,,,
+ChufaInedibleWet,ChufaInedibleWet,liquid,0.02307,,,804,1860,,,
+ChufaEdibleWet,ChufaEdibleWet,solid,0.02307,,,804,1860,,,
+ChufaInedibleWet,ChufaInedibleWet,solid,0.02307,,,804,1860,,,
 DrybeanEdibleWet,DrybeanEdibleWet,liquid,0.02307,,,804,1860,,,
 DrybeanIndibleWet,DrybeanIndibleWet,liquid,0.02307,,,804,1860,,,
 DrybeanEdibleWet,DrybeanEdibleWet,solid,0.02307,,,804,1860,,,
