@@ -3,7 +3,12 @@ classdef vhab
     %   This static class provides methods to initialize the MATLAB
     %   environment and methods to construct and run V-HAB simulations.
     
+    % All methods in this class are static, meaning they can be called
+    % directly from the console using the 'vhab.<method_name>' syntax. It
+    % also means that no object will be instantiated from this class, hence
+    % there is also no constructor method and no properties. 
     methods (Static = true)
+        
         function init()
             %INIT A function that initializes the MATLAB environment so it
             % is ready to construct and run simulations.
