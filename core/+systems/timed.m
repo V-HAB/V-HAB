@@ -51,19 +51,19 @@ classdef timed < sys
             this.fLastExec = this.oTimer.fTime;
         end
         
-        function setTimeStep(this, fTimeStep)
-            % Sets the time step for fTimeStep > 0. If fTimeStep not
+        function setTimeStep(this, xTimeStep)
+            % Sets the time step for xTimeStep > 0. If xTimeStep not
             % provided or 0, global time step. If logical false, link to 
-            % parent! If -1, dependent (each timer exec).
+            % parent! If -1 execute every simulation tick (default).
             
-            % No fTimeStep provided?
-            if nargin < 2 || isempty(fTimeStep), fTimeStep = -1; end
+            % No xTimeStep provided?
+            if nargin < 2 || isempty(xTimeStep), xTimeStep = -1; end
             
             % Set as obj property/attribute
-            this.fTimeStep = fTimeStep;
+            this.fTimeStep = xTimeStep;
             
             % If logical false - link to parent
-            if islogical(fTimeStep) && ~fTimeStep
+            if islogical(xTimeStep) && ~xTimeStep
                 % Unregister with timer if we're registered!
                 if ~isempty(this.unbindCB)
                     this.unbindCB();
@@ -84,7 +84,7 @@ classdef timed < sys
                 
                 % Not yet registered on timer?
                 if isempty(this.unbindCB)
-                    [ this.setTimeStepCB, this.unbindCB ] = this.oTimer.bind(@this.exec, fTimeStep, struct(...
+                    [ this.setTimeStepCB, this.unbindCB ] = this.oTimer.bind(@this.exec, xTimeStep, struct(...
                         'sMethod', 'exec', ...
                         'sDescription', 'The .exec method of a timed system', ...
                         'oSrcObj', this ...
@@ -92,7 +92,7 @@ classdef timed < sys
                     
                 % Set new time step
                 else
-                    this.setTimeStepCB(fTimeStep);
+                    this.setTimeStepCB(xTimeStep);
                 end
                 
                 % If time step is 0, means we registered on the global time
