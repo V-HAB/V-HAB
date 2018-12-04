@@ -90,6 +90,8 @@ classdef (Abstract) sys < base & event.source
             
             % Remove
             this.toChildren = rmfield(this.toChildren, oChild.sName);
+            this.csChildren{strcmp(this.csChildren, oChild.sName)} = [];
+            this.iChildren = this.iChildren - 1;
         end
         
         function this = addChild(this, oChild)
