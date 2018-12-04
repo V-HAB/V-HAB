@@ -61,13 +61,6 @@ classdef vhab
             end
             
             
-            % FLUSH serializers / loggers
-            % Only required if we're already initialized
-            if exist('base','file') > 0
-                base.flush();
-            end
-            
-            
             disp('Clearing MATLAB classes...');
             hTimer = tic();
             % Save all breakpoints so we can restore them after the clear
