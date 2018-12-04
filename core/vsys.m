@@ -28,16 +28,6 @@ classdef (Abstract) vsys < matter.container & thermal.container & electrical.con
         
         end
         
-        function createGeometricStructure(this)
-            % Call in child elems
-            csChildren = fieldnames(this.toChildren);
-            
-            for iC = 1:length(csChildren)
-                sChild = csChildren{iC};
-                this.toChildren.(sChild).createGeometricStructure();
-            end
-        end
-
         function createSolverStructure(this)
             % Call in child elems
             csChildren = fieldnames(this.toChildren);
@@ -46,19 +36,6 @@ classdef (Abstract) vsys < matter.container & thermal.container & electrical.con
                 sChild = csChildren{iC};
                 this.toChildren.(sChild).createSolverStructure();
             end
-        end
-        
-        function seal(this)
-            
-            if this.bSealed
-                this.throw('seal', 'Already sealed');
-            end
-            
-            this.sealMatterStructure();
-            this.sealElectricalStructure();
-            this.sealThermalStructure();
-            
-            this.bSealed = true;
         end
         
     end
