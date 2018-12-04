@@ -1,4 +1,3 @@
-classdef vsys < matter.container & thermal.container & electrical.container & systems.timed
     %VSYS Typical system in VHAB
     %   Derives from matter.container and the systems.timed class, i.e. 
     %   contains matter stores/processors and is executed with the parent 
@@ -8,6 +7,7 @@ classdef vsys < matter.container & thermal.container & electrical.container & sy
     %   Also derives from electrical container to include electrical
     %   circuits and their associated solvers, also coupled to current time
     %   step.
+classdef (Abstract) vsys < matter.container & thermal.container & electrical.container & systems.timed
     
     properties (SetAccess = protected, GetAccess = public)
         bSealed;

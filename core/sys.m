@@ -1,5 +1,5 @@
-classdef sys < base & event.source
     %SYS Represents a generic system (dotted line ;)
+classdef (Abstract) sys < base & event.source
     
     properties (SetAccess = protected, GetAccess = public)
         % Name of the system - has to be struct-compatible!
