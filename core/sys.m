@@ -47,14 +47,7 @@ classdef sys < base & event.source
             end
         end
     end
-    %% Protected methods - execute system etc
-    methods (Access = protected)
-        function exec(this, oTimer)
-            % Trigger 'exec' e.g. for children to bind to
-            this.trigger('exec', oTimer);
-        end
-    end
-    
+   
     %% Methods handling the system relations - parent, child, data
     methods
         function this = setParent(this, oParent)
