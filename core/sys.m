@@ -1,8 +1,10 @@
-    %SYS Represents a generic system (dotted line ;)
 classdef (Abstract) sys < base & event.source
+    %SYS Represents a generic system object
+    %   The class is defined as abstract, since the actual systems objects
+    %   will need to incorporate domain-specific properties and methods. 
     
     properties (SetAccess = protected, GetAccess = public)
-        % Name of the system - has to be struct-compatible!
+        % Name of the system
         sName;
         
         % Parent system
@@ -13,9 +15,13 @@ classdef (Abstract) sys < base & event.source
         % system that contains additional data about the hierarchy.
         oRoot;
         
-        % Child systems
+        % Child system objects in a struct
         toChildren = struct();
+        
+        % The names of the child systems as strings in a cell
         csChildren = {};
+        
+        % Number of child systems
         iChildren  = 0;
         
     end
@@ -51,14 +57,19 @@ classdef (Abstract) sys < base & event.source
     %% Methods handling the system relations - parent, child, data
     methods
         function this = setParent(this, oParent)
+            % This method sets the parent object property of this class and
+            % adds itself to the parent object as a child. 
+            
+            % Making sure our parent is actually a sys
             if ~isa(oParent, 'sys')
                 this.throw('setParent', 'Parent object has to inherit from "sys"!');
             
-            % Don't set if already right ... (?)
+            % Don't set if already set correctly
             elseif ~isempty(this.oParent) && oParent == this.oParent
                 return;
             
-            % Remove from old parent
+            % If we are chaning the parent, we first need to remove us from
+            % old parent
             elseif ~isempty(this.oParent)
                 % removeChild checks if oParent is empty
                 oOldParent = this.oParent;
@@ -67,6 +78,7 @@ classdef (Abstract) sys < base & event.source
                 oOldParent.removeChild(this);
             end
             
+            % Setting the oParent property
             this.oParent = oParent;
             
             % The addChild method checks if the provided object isa sys and
@@ -88,7 +100,7 @@ classdef (Abstract) sys < base & event.source
                 this.throw('removeChild', 'Child object oParent is not empty.');
             end
             
-            % Remove
+            % Remove child object from the different properties
             this.toChildren = rmfield(this.toChildren, oChild.sName);
             this.csChildren{strcmp(this.csChildren, oChild.sName)} = [];
             this.iChildren = this.iChildren - 1;
@@ -145,8 +157,7 @@ classdef (Abstract) sys < base & event.source
             if isa(xIndex, 'sys')
                 
                 bIs = isfield(this.toChildren, xIndex.sName) && (this.toChildren.(xIndex.sName) == xIndex);
-                
-                
+            
             % Int or char - use getChild    
             else
                 bIs = ~isempty(this.getChild(xIndex));

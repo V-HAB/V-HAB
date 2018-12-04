@@ -1,12 +1,18 @@
 classdef base < handle
+    %BASE Base handle object class 
+    %   All other classes in V-HAB inherit from base or a subclass of base.
     
     properties (SetAccess = private, GetAccess = public)
-        % Reference to meta class and package/class path
+        % Reference to meta class
         oMeta;
+        
+        % Reference to package/class path
         sURL;
         
-        % Unique id for object instance, class name
+        % Unique id for object instance
         sUUID;
+        
+        % Class name
         sEntity;
     end
     
@@ -17,29 +23,25 @@ classdef base < handle
     
     methods
         function this = base()
-            
-            %NOTE for e.g. vsys, base constructor called several times, as
-            %     every parent class does eventually call the base
-            %     constructor. So if oMeta, sEntity, sUUID already set -
-            %     don't do anything in here.
+            % For e.g. vsys, the base constructor is called several times,
+            % as every parent class does eventually call the base
+            % constructor. So if sUUID is already set - don't do anything
+            % in here.
             if ~isempty(this.sUUID)
                 return;
             end
             
-            
-            %TODO should only do that once, probably? Or Matlab smart enough to only create the metaclass instance once?
-            %      remove oMeta, sEntity and sURL, just leave uuid? Wouldn't be needed anyways (type checks done with isa() etc ...) and just store in dumper/vhab static class?
+            % Creating the metaclass object
             this.oMeta   = metaclass(this);
+            
+            % Setting the sEntity string to the class name
             this.sEntity = this.oMeta.Name;
             
+            % Generating the Universally Unique Identifier (UUID)
             this.sUUID = tools.getPseudoUUID();
             
             % URL - used as identification for logging
-            %CHECK prefix something like localhost?
             this.sURL = [ '/' strrep(this.sEntity, '.', '/') '/' this.sUUID ];
-            
-            
-            
             
             % Adding this object to the logger
             if ~isa(this, 'tools.logger')
@@ -50,7 +52,7 @@ classdef base < handle
     end
     
     methods (Access = protected)
-        %% LOG/DEBG HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function this = out(this, varargin)
             % This function can be used to output debug/log info. The
             % minimal function call is:
@@ -140,7 +142,6 @@ classdef base < handle
             end
             
             
-            
             % Now check if current AND next elem are strings - if yes,
             % thats sIdentifier and sMessage. Else, that'd be sMessage and
             % cParams!
@@ -161,24 +162,19 @@ classdef base < handle
                 cParams = {};
             end
             
-            
             % All params collected, pass to logger which triggers an event.
             base.oLog.output(this, iLevel, iVerbosity, sIdentifier, sMessage, cParams);
         end
         
-        
-        %% ERROR HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
         function throw(this, sIdent, sMsg, varargin)
             % Wrapper for throwing errors - includes path to the class
-            
             error([ strrep(this.sURL(2:end), '/', ':') ':' sIdent ], sMsg, varargin{:});
         end
         
         function warn(this, sIdent, sMsg, varargin)
             % See throw
-            
             warning([ strrep(this.sURL(2:end), '/', ':') ':' sIdent ], sMsg, varargin{:});
         end
     end
+    
 end
