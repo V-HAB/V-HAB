@@ -561,7 +561,10 @@ for iFigure = 1:length(this.coFigures)
             title('Evolution of Simulation Time vs. Simulation Ticks');
             set(oTimePlotFigure, 'name', [ 'Time Plot for ' this.oSimulationInfrastructure.sName ' - (' this.oSimulationInfrastructure.sCreated ')' ]');
             
-            % Since some later commandy may assume that the current figure
+            oButton = uicontrol(oTimePlotFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
+            oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
+            
+            % Since some later command may assume that the current figure
             % is still the main figure with all the plots, we set the
             % 'CurrentFigure' property of the graphics root object back to
             % that one.
