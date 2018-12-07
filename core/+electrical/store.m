@@ -1,4 +1,4 @@
-classdef store < base
+classdef (Abstract) store < base
     %STORE A class describing a store of electrical energy
     %   This abstract class describes a device that stores electrical
     %   energy. An example would be a battery. Stores have only two
@@ -114,5 +114,13 @@ classdef store < base
         
     end
     
+    methods (Abstract) 
+        % Abstract method calculateTimeStep() needs to be implemented by
+        % child classes in order to provide the timer with a time step at
+        % which to update the store. This is defined as abstract since the
+        % actual time step calculation largely depends on the type of store
+        % being implemented. 
+        calculateTimeStep(this)
+    end
     
 end

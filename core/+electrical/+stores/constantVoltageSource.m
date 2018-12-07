@@ -30,8 +30,10 @@ classdef constantVoltageSource < electrical.store
             
         end
         
-        function update(this)
-            update@electrical.store(this);
+        function calculateTimeStep(this)
+            %CALCULATETIMESTEP Sets the default, fixed time step 
+            this.hSetTimeStep(this.fFixedTimeStep);
+            
         end
         
     end
