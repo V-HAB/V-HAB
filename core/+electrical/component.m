@@ -1,4 +1,4 @@
-classdef component < base
+classdef (Abstract) component < base
     %COMPONENT Describes an electrical component
     %   This abstract class is the foundation for all electrical components
     %   in V-HAB, e.g. resistors, capacitors, etc. 

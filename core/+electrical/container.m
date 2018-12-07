@@ -1,4 +1,4 @@
-classdef container < sys
+classdef (Abstract) container < sys
     %CONTAINER A system that contains electrical objects
     %   Container is the base class of the electrical domain in V-HAB. It
     %   contains the circuits and provides methods for adding them. 
