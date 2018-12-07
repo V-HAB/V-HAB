@@ -30,23 +30,11 @@ classdef branch < base.branch
     end
     
     properties (SetAccess = private, GetAccess = public)
-        % Flow rate handler - only one can be set!
-        oHandler;
-        
         % Thermal branch which solves the thermal energy transport of this
         % matter branch
         oThermalBranch;
     end
     
-    properties (SetAccess = private, GetAccess = private)
-        % Function handle to the protected flow method setData, used to
-        % update values within the flow objects array
-        hSetFlowData;
-        % Callback from the interface flow seal method, can be used to
-        % disconnect the i/f flow and the according f2f proc in the supsys
-        hRemoveIfProc;
-    end
-        
     methods
         function this = branch(oContainer, xLeft, csProcs, xRight, sCustomName)
             % Can be called with either stores/ports, phase object handles
@@ -159,22 +147,6 @@ classdef branch < base.branch
             end
         end
         
-        function setFlowRate = registerHandlerFR(this, oHandler)
-            % Only one handler can be registered
-            %   and gets a fct handle to the internal setFlowRate method.
-            %   One solver obj per branch, atm no possibility for de-
-            %   connect that one.
-            
-            if ~isempty(this.oHandler)
-                this.throw('registerHandlerFR', 'Can only set one handler!');
-            end
-            
-            this.oHandler = oHandler;
-            
-            setFlowRate   = @this.setFlowRate;
-        end
-        
-    
         function oExme = getInEXME(this)
 
             if this.fFlowRate == 0
@@ -215,12 +187,7 @@ classdef branch < base.branch
                 this.bTriggerSetFlowRateCallbackBound = true;
             end
         end
-    end
-    
-    
-    % Methods provided to a connected subsystem branch
-    methods (Access = protected)
-        
+   
         function setFlowRate(this, fFlowRate, afPressure)
             % Set flowrate for all flow objects
             %

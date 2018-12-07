@@ -1,4 +1,4 @@
-classdef flow < base & matlab.mixin.Heterogeneous
+classdef flow < base
     %FLOW A class describing the flow of matter during a discrete timestep
     %   The MatterFlow class is one of the three smalles building blocks in
     %   this simulation. It is used to describe a homogenous flow of matter 
@@ -266,12 +266,6 @@ classdef flow < base & matlab.mixin.Heterogeneous
             % Provide struct with function handles allowing manipulation
             % of matter properties through the protected methods below!
             thFuncs = struct();
-        end
-        
-        % Seems like we need to do that for heterogeneous, if we want to
-        % compare the objects in the mixin array with one object ...
-        function varargout = eq(varargin)
-            varargout{:} = eq@base(varargin{:});
         end
     end
     
