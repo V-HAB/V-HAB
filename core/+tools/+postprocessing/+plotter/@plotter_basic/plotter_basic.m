@@ -357,20 +357,47 @@ classdef plotter_basic < base
         
         function createDefaultPlot(this)
             % If the user did not create any figures, this method is called
-            % and is used to create a default plot with some general
-            % values grouped by unit. 
+            % and is used to create a default plot with all unique values
+            % grouped by unit.
             
             % For easier reading we get a reference to the logger object of
             % this plotter. 
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             
-            % Defining the units of the items we want to plot and the
-            % according plot titles. 
-            csUnits  = {'kg', 'kg/s', 'Pa', 'K'};
-            csTitles = {'Masses', 'Flow Rates', 'Pressures', 'Temperatures'};
+            % Getting all of the expressions and units for each log value
+            csValues = [{oLogger.tLogValues.sExpression};...
+                        {oLogger.tLogValues.sUnit}];
+                    
+            % In order to group the log items together in a way that makes
+            % sense, we group them by their expression. So we need to find
+            % the unique expression values.
+            [csExpressions, abUnique, ~] = unique(csValues(1,:));
             
-            % Initializing the plots cell and the plot options struct.
-            coPlots = cell(3,2);
+            % With the unique expressions we can also determine their units
+            csUnits = csValues(2, abUnique);
+            
+            % To create the titles for each plot, we get the lables for the
+            % units from the logger.
+            csTitles = values(oLogger.poUnitsToLabels, csUnits);
+            
+            % The lables are singular, e.g. 'Mass', 'Voltage', etc. To make
+            % the titles nicer, we pluralize those words. 
+            for iI = 1:length(csTitles)
+                switch csTitles{iI}(end)
+                    case 'y'
+                        csTitles{iI}(end:end+2) = 'ies';
+                    case 's'
+                        csTitles{iI}(end+1:end+2) = 'es';
+                    otherwise
+                        csTitles{iI}(end+1) = 's';
+                end
+            end
+            
+            % Initializing the plots cell, a plot counter and the plot
+            % options struct.
+            iNumberOfPlots = length(abUnique);
+            coPlots = cell(iNumberOfPlots,1);
+            
             tPlotOptions = struct();
             
             % We will be only using one unit in each plot
@@ -381,20 +408,24 @@ classdef plotter_basic < base
             for iI = 1:length(csUnits)
                 % Using the logger's find() method we get the indexes for
                 % all values with the same unit.
-                tFilter = struct('sUnit', csUnits{iI});
+                tFilter = struct('sExpression', csExpressions{iI});
                 aiIndexes = oLogger.find([], tFilter);
                 
-                % Now we can create the plot object and write it to the
-                % coPlots cell.
-                tPlotOptions.csUniqueUnits  = csUnits{iI};
-                coPlots{iI} = tools.postprocessing.plotter.plot(csTitles{iI}, aiIndexes, tPlotOptions);
+                % Checking if we found anything
+                if ~isempty(aiIndexes)
+                    % Now we can create the plot object and write it to the
+                    % coPlots cell.
+                    tPlotOptions.csUniqueUnits  = csUnits{iI};
+                    coPlots{iI} = this.definePlot(tools.convertArrayToCell(aiIndexes), csTitles{iI}, tPlotOptions);
+                    
+                end
             end
             
             % Finally we create one figure object, turn on the time plot
             % and write it to the coFigures property of this plotter. 
-            tFigureOptions = struct('bTimePlot', true);
+            tFigureOptions = struct('bTimePlot', true, 'bArrangePlotsInSquare', true);
             sName = [ this.oSimulationInfrastructure.sName ' - (' this.oSimulationInfrastructure.sCreated ')' ];
-            this.coFigures{end+1} = tools.postprocessing.plotter.figure(sName, coPlots, tFigureOptions);
+            this.defineFigure(coPlots, sName, tFigureOptions);
         end
         
         
