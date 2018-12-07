@@ -1,51 +1,67 @@
 classdef store < base
-    %SOURCE Summary of this class goes here
-    %   Detailed explanation goes here
+    %STORE A class describing a store of electrical energy
+    %   This abstract class describes a device that stores electrical
+    %   energy. An example would be a battery. Stores have only two
+    %   terminals, one positive and one negative. The main property is it's
+    %   capacity in Joule or Watt seconds. 
+    %   A calculateTimeStep() method is provided 
     
-    properties (SetAccess = private, GetAccess = public)
-        % Reference to the circuit (electrical.circuit) in which this source is 
-        % contained
+    properties (SetAccess = protected, GetAccess = public)
+        % Reference to the circuit (electrical.circuit) in which this store
+        % is contained
         oCircuit;
         
-        % Name of source
-        % @type string
+        % Name of store
         sName;
         
         % How much charge is contained in this source? Initialized as inf,
         % because that is the most common application. If this is a battery
         % or some other type of electrical energy storage device, the
-        % value will be changed. 
+        % value will be changed. Unit is [Ws] or [J]. 
         fCapacity = inf; 
         
+        % References to the positive and electrical terminals of this
+        % store.
         oPositiveTerminal;
         oNegativeTerminal;
         
-        
+        % A boolean describing the state of this store. If it is sealed,
+        % nothing about its configuration can be changed. 
         bSealed = false;
         
-        % Timer object, needs to inherit from / implement event.timer
+        % Reference to timer object
         oTimer;
+        
+        % Point in time at which the update() method was last executed.
         fLastUpdate = 0;
+        
+        % Time step of this store.
         fTimeStep = 0;
         
         % Fixed time step for updating
-        %TODO This is currently set to a fixed value of one. The
-        %calculateTimeStep() method has to be extended to calculate a
-        %proper, dynamic time step depending on the actual in and outflows
-        %and the capacity. 
         fFixedTimeStep = 1;
         
-        setTimeStep;
+        % A handle to the set time step method for this specific object as
+        % a child of the timer object
+        hSetTimeStep;
     end
     
     methods
         function this = store(oCircuit, sName, fCapacity)
             % Create an electrical store object. 
             
+            % Setting the reference to the parent circuit object in which
+            % this store is contained
             this.oCircuit = oCircuit;
+            
+            % Setting the name property
             this.sName    = sName;
+            
+            % Setting the reference to the timer object.
             this.oTimer   = oCircuit.oTimer;
             
+            % If the user passed in a value for the capacity, we set that
+            % property here, otherwise it remains the default value of Inf.
             if nargin > 2
                 this.fCapacity = fCapacity;
             end
@@ -53,114 +69,40 @@ classdef store < base
             % Add this store object to the electrical.circuit
             this.oCircuit.addStore(this);
             
+            % Creating two terminals, one for the positive and one for the
+            % negative port of this store. 
             this.oPositiveTerminal = electrical.terminal(this);
             this.oNegativeTerminal = electrical.terminal(this);
             
         end
         
-%         function addTerminal(this, oTerminal)
-%             if oTerminal.iSign < 0
-%                 if isempty(this.oNegativeTerminal)
-%                     this.throw('addTerminal','This electrical store (%s) already has a negative terminal.',this.sName);
-%                 else
-%                     this.oNegativeTerminal = oTerminal;
-%                 end
-%             else 
-%                 if isempty(this.oNegativeTerminal)
-%                     this.throw('addTerminal','This electrical store (%s) already has a positive terminal.',this.sName);
-%                 else
-%                     this.oPositiveTerminal = oTerminal;
-%                 end
-%                 
-%             end
-%         end
-        
-        
-        function exec(this)
-            %CHECK Do we need this here? Is copied from matter.store
-        end
-        
         function update(this)
+            %UPDATE Re-calculates the time step and sets fLastUpdate
+            
             % Re-calculate the time step
             this.calculateTimeStep();
             
+            % Saving the last update time
             this.fLastUpdate = this.oTimer.fTime;
         end
         
-        function calculateTimeStep(this)
-            if isempty(this.fFixedTimeStep)
-                %TODO Implement dynamic time step calculation
-            else
-                this.setTimeStep(this.fFixedTimeStep);
-            end
-        end
-        
-        
-        
-        function setNextTimeStep(this, fTimeStep)
-            % This method is called from the phase object during its
-            % calculation of a new timestep. The phase.calculateTimeStep()
-            % method is called in the post-tick of every mass update (NOT
-            % phase update!). Within a tick, the first thing that is done,
-            % is the calling of store.update(). This sets the fTimeStep
-            % property of the store to the default time step (currently 60
-            % seconds). After that the phases are updated, which also calls
-            % calculateTimeStep(). In this function
-            % (store.setNextTimeStep()), the store's time step is only set,
-            % if the phase time step is smaller than the currently set time
-            % step. This ensures, that the slowest phase sets the time step
-            % of the store it is in. 
-            
-            % So we will first get the next execution time based on the
-            % current time step and the last time this store was updated.
-            fCurrentNextExec = this.fLastUpdate + this.fTimeStep;
-            
-            % Since the fTimeStep parameter that is passed on by the phase
-            % that called this method is based on the current time, we
-            % calculate the potential new execution time based on the
-            % timer's current time, rather than the last update time for
-            % this store.
-            fNewNextExec     = this.oTimer.fTime + fTimeStep;
-            
-            % Now we can compare the current next execution time and the
-            % potential new execution time. If the new execution time would
-            % be AFTER the current execution time, it means that the phase
-            % that is currently calling this method is faster than a
-            % previous caller. In this case we do nothing and just return.
-            if fCurrentNextExec < fNewNextExec
-                return;
-            end
-            
-            % The new time step is smaller than the old one, so we can
-            % actually set then new timestep. The setTimeStep() method
-            % calls a function in the timer object that will update the
-            % timer values accordingly. This is important because otherwise
-            % the time step updates that happen during post-tick operations
-            % would not be taken into account when the timer calculates the
-            % overall time step during the next tick.
-            this.setTimeStep(fTimeStep, true);
-            
-            % Finally we set this stores fTimeStep property to the new time
-            % step.
-            this.fTimeStep = fTimeStep;
-        end
-    end
-    
-    
-    methods
-        
         function seal(this)
+            %SEAL Seals this store so nothing can be changed later on
             
-            if this.bSealed, return; end;
+            % Return if we are already sealed
+            if this.bSealed, return; end
             
             % Bind the .update method to the timer, with a time step of 0
             % (i.e. smallest step), will be adapted after each .update
-            this.setTimeStep = this.oTimer.bind(@(~) this.update(), 0);
+            this.hSetTimeStep = this.oTimer.bind(@(~) this.update(), 0);
             
+            % Setting the bSealed property to true
             this.bSealed = true;
         end
         
         function oTerminal = getTerminal(this, sTerminalName)
+            %GETTERMINAL Method to get a reference to either the positive or negative terminal of a store
+            
             if strcmp(sTerminalName, 'positive')
                 oTerminal = this.oPositiveTerminal;
             elseif strcmp(sTerminalName, 'negative')
@@ -170,28 +112,7 @@ classdef store < base
             end
         end
         
-        
-        
-        function addP2P(this, oProcP2P)
-            % Get sName from oProcP2P, add to toProcsP2P
-            %
-            %TODO better way of handling stationary and flow p2ps!
-            
-            if this.bSealed
-                this.throw('addP2P', 'Store already sealed!');
-            elseif isfield(this.toProcsP2P, oProcP2P.sName)
-                this.throw('addP2P', 'P2P proc already exists!');
-            elseif this ~= oProcP2P.oStore
-                this.throw('addP2P', 'P2P proc does not have this store set as parent store!');
-            end
-            
-            this.toProcsP2P.(oProcP2P.sName) = oProcP2P;
-        end
     end
     
     
-    
-   
-    
 end
-
