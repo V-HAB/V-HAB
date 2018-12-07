@@ -29,10 +29,10 @@ classdef branch < base.branch
         iIfConductors;
     end
     
-    properties (SetAccess = private, GetAccess = public)
-        % heat flow handler - only one can be set!
-        oHandler;
-    end
+%     properties (SetAccess = private, GetAccess = public)
+%         % heat flow handler - only one can be set!
+%         oHandler;
+%     end
     
     methods
         
@@ -106,21 +106,6 @@ classdef branch < base.branch
             this.iConductors = length(this.coConductors);
         end
         
-        function setHeatFlow = registerHandlerHeatFlow(this, oHandler)
-            % Only one handler can be registered
-            %   and gets a fct handle to the internal setHeatFlow method.
-            %   One solver obj per branch, atm no possibility for de-
-            %   connect that one.
-            
-            if ~isempty(this.oHandler)
-                this.throw('registerHandlerFR', 'Can only set one handler!');
-            end
-            
-            this.oHandler = oHandler;
-            
-            setHeatFlow   = @this.setHeatFlow;
-        end
-        
         function [ this, unbindCallback ] = bind(this, sType, callBack)
             [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
             
@@ -129,10 +114,6 @@ classdef branch < base.branch
                 this.bTriggersetHeatFlowCallbackBound = true;
             end
         end
-        
-    end
-    
-    methods (Access = protected)
         
         function setHeatFlow(this, fHeatFlow, afTemperatures)
             
@@ -160,6 +141,7 @@ classdef branch < base.branch
             end
         end
     end
+    
     methods (Sealed = true)
         function seal(this)
             % Seal aoFlows, get FR func handle

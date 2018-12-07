@@ -90,7 +90,10 @@ classdef Example_313 < vsys
             
             
             % Diam, Length
-            oFilterGeo = geometry.volumes.cylinder(0.075, 0.35);
+            fDiameter = 0.075;
+            fLength   = 0.35;
+            fVolume   = pi * (fDiameter/2)^2 * fLength;
+            
             % STABLE FOR THAT:
             %oFilterGeo = geometry.volumes.cube(0.5);
             %   and struct('rUpdateFrequency', 10)
@@ -98,9 +101,9 @@ classdef Example_313 < vsys
             
             for iBed = 1:length(csBeds)
                 sBed = [ 'Bed' csBeds{iBed} ];
-                oBed = matter.store(this, sBed, oFilterGeo.fVolume);
+                oBed = matter.store(this, sBed, fVolume);
                 
-                oBed.createPhase('N2Atmosphere', oFilterGeo.fVolume);
+                oBed.createPhase('N2Atmosphere', fVolume);
                 
                 
                 %ttBranches = struct(...
