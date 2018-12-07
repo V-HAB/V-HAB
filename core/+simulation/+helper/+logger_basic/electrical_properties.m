@@ -113,6 +113,7 @@ for iC = 1:length(csCircuits)
              % Voltage drop
             tLogProps(iV).sObjectPath = sComponentPath;
             tLogProps(iV).sExpression = 'fVoltageDrop';
+            tLogProps(iV).sUnit       = 'V';
             tLogProps(iV).sLabel = [ 'Resistor Voltage Drop (', oVsys.sName, ' - ', oCircuit.sName, ' - ', oComponent.sName, ')' ];
             iV = iV + 1;
         end
