@@ -73,7 +73,7 @@ classdef branch < base & event.source
             end
             
             % Branch allows only one solver to take control
-            this.setBranchHeatFlow = this.oBranch.registerHandlerHeatFlow(this);
+            this.setBranchHeatFlow = this.oBranch.registerHandler(this);
             
             this.setTimeStep = this.oBranch.oTimer.bind(@this.executeUpdate, inf, struct(...
                 'sMethod', 'executeUpdate', ...

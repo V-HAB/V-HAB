@@ -1,40 +1,43 @@
-classdef branch < base & event.source
-    %BRANCH Describes flow path between two ExMe processors
+classdef (Abstract) branch < base & event.source
+    %BRANCH Abstract class describing the flow path between two objects
+    %	This class is used as the base class for all branches in all 
+    %	domains of V-HAB. Generally speaking it is a connection between two
+    %	objects through which something can flow, e.g. matter or energy. 
     %   The positive flow direction is defined as 'from left to right', the
-    %   left side being the ExMe that is given via the second input 
-    %   parameter and the right side being the ExMe that is given as the 
+    %   left side being the port that is given via the second input 
+    %   parameter and the right side being the port that is given as the 
     %   fourth input parameter. 
-    %   In between the ExMes there can be any number of flow to flow 
-    %   processors that influence the behaviour of the flow between the two 
-    %   exams, either through pressure or temperature changes.
+    %   In between the ports there can be any number of components that 
+    %   influence the behaviour of the flow between the two ports. 
     %
-    %   Inputs are the parent store (oContainer), the left ExMe (xLeft), a 
-    %   cell array of f2f processors (csProcs) and the right ExMe (xRight). 
-    %   The ExMes are given either as a string in the following format: 
-    %   <store name>.<ExMe Name>, or implicitly by passing in a phase
-    %   object handle as the second or fourth input parameter. 
+    %   Inputs are the parent container (oContainer), the left port (xLeft), a 
+    %   cell array of components (csProcs) and the right port (xRight). 
+    %
+    %   The ports are given in a specific way depending on the domain in which
+    %	this branch is created. See the derived child classes for more 
+    %	information. 
+    %	
     %   If one of the ends of the branch is an interface to other system 
     %   levels, the string can be anything as long as it doesn't contain a 
     %   period character('.'). If the interface is to a higher system
-    %   level, it has to be given instead of the right ExMe. If the
+    %   level, it has to be given instead of the right port. If the
     %   interface is to a lower system level, it has to be given instead of
-    %   the left ExMe.
+    %   the left port.
     %
     %   The constructor recognises if this is an interface branch or not 
-    %   and accordingly creates the branch object and the matter.flow 
-    %   objects between the f2f processors and exme processors.
+    %   and accordingly creates the branch object and the flow objects
+    %   objects between the components and ports.
     
     properties (SetAccess = protected, GetAccess = public)
-        % Reference to the parent matter container
+        % Reference to the parent container
         oContainer;
         
-        % Created from the store/interface names provided to the
-        % createBranch method on matter.container (store1_port1__ifName, or
-        % store1_port1__otherStore_somePort)
+        % A name for the branch object. This is automatically created 
+        % from the port names provided to the constructor. 
         sName;
         
         % Optional property where the user can define a specific name for
-        % the branch to easier identify it in the toBranches struct (which
+        % the branch to easier identify it in the branches struct (which
         % uses the custom names, if they are available)
         sCustomName;
         
@@ -45,22 +48,26 @@ classdef branch < base & event.source
         % Interfaces left/right?
         abIf = [ false; false ];
         
-        % When branch fully connected, contains references to the EXMEs at
-        % the end of the branch (also if several branches coupled, will be
-        % automatically set for branch on the left side
-        %coPhases = { matter.phase.empty(1, 0); matter.phase.empty(1, 0) };
-        %coPhases = { []; [] };
+        % When the branch is fully connected, contains references to the 
+        % EXMEs at the end of the branch (also if several branches 
+        % coupled, will be automatically set for branch on the left 
         coExmes = { []; [] };
         
         % Connected branches on the left (index 1, branch in subsystem) or
         % the right (index 2, branch in supsystem) side?
-        coBranches = { matter.branch.empty(1, 0); matter.branch.empty(1, 0) };
+        coBranches = { []; [] };
         
+        % A boolean variable indicating if this branch has been completely
+        % assembled yet. 
         bSealed = false;
         
         % Does the branch need an update of e.g. a flow rate solver? Can be
         % set e.g. through a flow proc that changed some internal state.
         bOutdated = false;
+        
+        % A reference to the solver object which is used to calculate the
+        % flow through this branch.
+        oHandler;
     end
     
     properties (SetAccess = private, GetAccess = public)
@@ -71,12 +78,12 @@ classdef branch < base & event.source
         oTimer;
     end
     
-    properties (SetAccess = private, GetAccess = private)
+    properties (SetAccess = protected, GetAccess = protected)
         % Function handle to the protected flow method setData, used to
         % update values within the flow objects array
         hSetFlowData;
         
-        % Callback function handle; called when a new branch is connected
+        % Callback function handle called when a new branch is connected
         % here on the right side to tell the branch on the left side, if
         % one exists, to update its flow rate handles and right phase
         hUpdateConnectedBranches;
@@ -95,6 +102,8 @@ classdef branch < base & event.source
         
         % Specifies the type of branch, e.g. matter or thermal
         sType;
+        
+       
     end
     
     methods
@@ -103,17 +112,32 @@ classdef branch < base & event.source
             % or interface names (all combinations possible). Connections
             % are always done from subsystem to system.
             
-            % Reference to the matter.container and some shorthand refs.
+            % Setting the reference to the matter.container
             this.oContainer = oContainer;
-            this.oMT        = oContainer.oRoot.oMT;
-            this.oTimer     = oContainer.oRoot.oTimer;
-            this.sType      = sType;
+            
+            % Getting a local reference to the root system. If the branch
+            % is electrical, the oContainer input argument is a circuit, so
+            % we need to get the root system from its parent system. 
+            if strcmp(sType, 'matter') || strcmp(sType, 'thermal')
+                oRoot = oContainer.oRoot;
+            elseif strcmp(sType, 'electrical')
+                oRoot = oContainer.oParent.oRoot;
+            end
+            
+            % Setting the reference to the matter table object
+            this.oMT = oRoot.oMT;
+            
+            % Setting the reference to the timer object
+            this.oTimer = oRoot.oTimer;
+            
+            % Setting the branch type
+            this.sType = sType;
             
             %% Handle the left side of the branch
             sLeftSideName = this.handleSide('left', xLeft);
             
             % adds the procs to the branch and if necessary creates the
-            % flow (domain specific function!
+            % flow (domain specific function!)
             this.createProcs(csProcs);
             
             %% Handle the right side of the branch
@@ -161,7 +185,7 @@ classdef branch < base & event.source
             % See container -> connectIF, need to get all left names of
             % branches of parent system, since they depict the interfaces
             % to subsystems
-            if strcmp(this.sType, 'matter')
+            if strcmp(this.sType, 'matter') || strcmp(this.sType, 'electrical')
                 sBranches = 'aoBranches';
             elseif strcmp(this.sType, 'thermal')
                 sBranches = 'aoThermalBranches';
@@ -443,8 +467,6 @@ classdef branch < base & event.source
             % changed (closing a valve).
             
             % Only trigger if not yet set
-            %CHECK inactivated here --> solvers and other "clients" should
-            %      check themselves!
             if ~this.bOutdated
                 this.bOutdated = true;
 
@@ -454,14 +476,27 @@ classdef branch < base & event.source
             end
         end
         
-        function update(~)
-            %TODO just get the matter properties from the inflowing EXME
-            %     and set (arPartialMass, Molar Mass, Heat Capacity)?
+        function setFlowRate = registerHandler(this, oHandler)
+            %REGISTERHANDLER Sets the solver and returns handle to
+            % setFlowRate() method
+            
+            % Checking if a handler (=solver) has already been set
+            if ~isempty(this.oHandler)
+                this.throw('registerHandler', 'Can only set one handler!');
+            end
+            
+            % Setting the handler property
+            this.oHandler = oHandler;
+            
+            if strcmp(this.sType, 'thermal')
+                setFlowRate   = @this.setHeatFlow;
+            else
+                setFlowRate   = @this.setFlowRate;
+            end
         end
     end
     
     
-    % Methods provided to a connected subsystem branch
     methods (Access = protected)
         
         function sSideName = handleSide(this, sSide, xInput)
@@ -479,17 +514,17 @@ classdef branch < base & event.source
             end
             
             % The xInput input parameter can have one of three forms: 
-            %   - <StoreName>.<ExMeName>
+            %   - <PartName>.<PortName>
             %   - <InterfaceName>
-            %   - phase object handle
+            %   - object handle
             %
             % The following code is there to determine which of the three
             % it is. 
             
-            % If xInput is a phase object handle, we need to create an
-            % ExMe for that phase. This will be captured in the boolean
-            % variable below.
-            bCreateExMe = false;
+            % If xInput is an object handle, we need to create a port for
+            % that object. This will be captured in the boolean variable
+            % below.
+            bCreatePort = false;
             
             % If xInput is the name of an interface, this boolean variale
             % will be set to true. 
@@ -497,9 +532,9 @@ classdef branch < base & event.source
             
             % Check what type of variable xInput is, it can be either a
             % string or a phase object handle.
-            if isa(xInput,'matter.phase')
+            if isa(xInput,'matter.phase') || isa(xInput,'thermal.capacity') || isa(xInput,'electrical.component') || isa(xInput,'electrical.node')
                 % It's a phase object, so we set the boolean to true.
-                bCreateExMe = true;
+                bCreatePort = true;
             elseif ~contains(xInput, '.')
                 % It's not a phase and the string provided does not contain
                 % the '.' character, therfore it must be an interface name.
@@ -514,7 +549,7 @@ classdef branch < base & event.source
                 % Checking if the interface name is already present in this
                 % system. Only do this if there any branches at all, of course.
                 
-                if strcmp(this.sType, 'matter')
+                if strcmp(this.sType, 'matter') || strcmp(this.sType, 'electrical')
                     sBranches = 'aoBranches';
                 elseif strcmp(this.sType, 'thermal')
                     sBranches = 'aoThermalBranches';
@@ -534,6 +569,8 @@ classdef branch < base & event.source
                         iLength = length(this.aoFlows);
                     elseif strcmp(this.sType, 'thermal')
                         iLength = length(this.coConductors);
+                    elseif strcmp(this.sType, 'electrical')
+                        iLength = length(this.coConductors);
                     end
                     this.setIfLength(iLength);
                 end
@@ -542,86 +579,126 @@ classdef branch < base & event.source
                 % This side is not an interface, so we are either starting
                 % or ending a branch here. 
                 
-                if bCreateExMe
-                    % This side was provided as a phase onbject, so we need
-                    % to create an ExMe there first.
+                if bCreatePort
+                    % This side was provided as an object, so we need to
+                    % create a port there first.
                     
-                    % To automatically generate the ExMe name
+                    % To automatically generate the port name, we need to
+                    % get the struct with ports.
                     if strcmp(this.sType, 'matter')
-                        toProcsEXME = xInput.toProcsEXME;
+                        toPorts = xInput.toProcsEXME;
                     elseif strcmp(this.sType, 'thermal')
-                        toProcsEXME = xInput.oCapacity.toProcsEXME;
+                        toPorts = xInput.oCapacity.toProcsEXME;
+                    elseif strcmp(this.sType, 'electrical')
+                        toPorts = xInput.toTerminals;
                     end
                     
-                    if isempty(toProcsEXME)
+                    % Now we can calculate the port number
+                    if isempty(toPorts)
                         iNumber = 1;
                     else
-                        iNumber = numel(fieldnames(toProcsEXME)) + 1;
+                        iNumber = numel(fieldnames(toPorts)) + 1;
                     end
                     
+                    % And with the port number we can create a unique port
+                    % name. 
                     sPortName = sprintf('Port_%i',iNumber);
                     
+                    % Now we can actually create the port on the object and
+                    % give it its name. We also set the side name,
+                    % depending on the domain we are in. The side name is
+                    % of the format <ObjectName>__<PortName> and  the
+                    % object can either be a matter store, a thermal
+                    % capacity, an electrical component or an electrical
+                    % node.
                     if strcmp(this.sType, 'matter')
                         oPort = matter.procs.exmes.(xInput.sType)(xInput, sPortName);
+                        sSideName = [xInput.oStore.sName, '__', sPortName];
                     elseif strcmp(this.sType, 'thermal')
                         oPort = thermal.procs.exme(xInput.oCapacity, sPortName);
+                        sSideName = [xInput.oStore.sName, '__', sPortName];
+                    elseif strcmp(this.sType, 'electrical')
+                        oPort = electrical.terminal(xInput, sPortName);
+                        sSideName = [xInput.sName, '__', sPortName];
                     end
                     
-                    % The side name is of the format
-                    % <StoreName>__<ExMeName>.
-                    sSideName = [xInput.oStore.sName, '__', sPortName];
+                    
                 else
-                    % xInput is a string containing the name of a store and
-                    % an ExMe.
+                    % xInput is a string containing the name of an object
+                    % and a port.
                     
-                    % Split to store name / port name
-                    [ sStore, sPort ] = strtok(xInput, '.');
+                    % Split to object name / port name
+                    [ sObject, sPort ] = strtok(xInput, '.');
                     
-                    % Check if store exists
-                    if ~isfield(this.oContainer.toStores, sStore)
-                        this.throw('branch', 'Can''t find provided store %s on parent system', sStore); 
+                    % Check if object exists
+                    if strcmp(this.sType, 'matter') || strcmp(this.sType, 'thermal')
+                        if ~isfield(this.oContainer.toStores, sObject)
+                            this.throw('branch', 'Can''t find provided store %s on parent system', sObject);
+                        end
+                    elseif strcmp(this.sType, 'electrical')
+                        if ~isfield(this.oContainer.toStores, sObject) && ~isfield(this.oContainer.toNodes, sObject)
+                            this.throw('branch', 'Can''t find provided store or node %s on parent system', sObject);
+                        end
                     end
                     
-                    % Get a handle to the ExMe 
+                    % Get a handle to the port depending on the domain 
                     if strcmp(this.sType, 'matter')
-                        oPort = this.oContainer.toStores.(sStore).getPort(sPort(2:end));
+                        oPort = this.oContainer.toStores.(sObject).getPort(sPort(2:end));
                         
-                        % Since we will be creating a thermal branch to run in
-                        % parallel with this matter branch, we need to create a
-                        % thermal ExMe that corresponds to this matter ExMe.
+                        % Since we will be creating a thermal branch to run
+                        % in parallel with this matter branch, we need to
+                        % create a thermal ExMe that corresponds to this
+                        % matter ExMe.
                         thermal.procs.exme(oPort.oPhase.oCapacity, sPort(2:end));
                         
                     elseif strcmp(this.sType, 'thermal')
-                        oPort = this.oContainer.toStores.(sStore).getThermalPort(sPort(2:end));
+                        oPort = this.oContainer.toStores.(sObject).getThermalPort(sPort(2:end));
+                    elseif strcmp(this.sType, 'electrical')
+                        % The object we are looking at can either be an an
+                        % electrial store or an electrical node. To
+                        % successfully get the port, we have to try both.
+                        try
+                            oPort = this.oContainer.toNodes.(sObject).getTerminal(sPort(2:end));
+                        catch
+                            oPort = this.oContainer.toStores.(sObject).getTerminal(sPort(2:end));
+                        end
+                        
                     end
                     
                     % The side name is of the format
-                    % <StoreName>__<ExMeName>, so we just need to do some
+                    % <StoreName>__<PortName>, so we just need to do some
                     % replacing in the xInput variable.
                     sSideName = strrep(xInput, '.', '__');
                 end
                 
-                if strcmp(this.sType, 'matter')
+                if strcmp(this.sType, 'matter') || strcmp(this.sType, 'electrical')
                     % We create branches from left to right. If this is a
-                    % left side, we need to create the first flow object. If
-                    % this is a right side, we can just use the last flow
-                    % object in the aoFlows property. 
+                    % left side, we need to create the first flow object.
+                    % If this is a right side, we can just use the last
+                    % flow object in the aoFlows property.
                     switch sSide
                         case 'left'
                             % Create a flow
-                            oFlow = matter.flow(this);
+                            if strcmp(this.sType, 'matter')
+                                oFlow = matter.flow(this);
+                            elseif strcmp(this.sType, 'electrical')
+                                oFlow = electrical.flow(this);
+                                
+                            end
 
                             % Add flow to index
                             aoFlows = [this.aoFlows, oFlow];
                             this.setFlows(aoFlows);
+                            
                         case 'right'
                             % It may be the case that a branch has no flow
-                            % objects if there are no f2f processors and this
-                            % branch has an interface on the left side or if it
-                            % is a pass-through branch. The latter case will
-                            % cause an error later on when the subsystem is
-                            % connected. The former case is okay as long as the
-                            % solver used on this branch can handle that.
+                            % objects if there are no f2f processors and
+                            % this branch has an interface on the left side
+                            % or if it is a pass-through branch. The latter
+                            % case will cause an error later on when the
+                            % subsystem is connected. The former case is
+                            % okay as long as the solver used on this
+                            % branch can handle that.
                             if ~isempty(this.aoFlows)
                                 oFlow = this.aoFlows(end);
                             else
@@ -638,10 +715,16 @@ classdef branch < base & event.source
                 % Add port to the coExmes property
                 this.coExmes{iSideIndex} = oPort;
                 
+                if strcmp(this.sType, 'electrical')
+                    % Add the terminal to the coTerminals property
+                    this.setTerminal(oPort, iSideIndex);
+                end
+                
                 if strcmp(this.sType, 'thermal')
                     % Add the branch to the exmes of this branch
                     this.coExmes{iSideIndex}.addBranch(this);
                 end
+                
             end
         end
         
@@ -706,5 +789,13 @@ classdef branch < base & event.source
                 
             end
         end
+    end
+    
+    methods (Abstract)
+        % All derived branch classes need to implement this method which is
+        % used in the constructor to add the processors or components that
+        % are passed in as strings to the branch. This is highly specific
+        % to the domain the branch is created in. 
+        createProcs(this)
     end
 end

@@ -345,7 +345,7 @@ classdef branch < base & event.source
             this.chSetBranchFlowRate = cell(1, this.iBranches);
             
             for iB = 1:this.iBranches 
-                this.chSetBranchFlowRate{iB} = this.aoBranches(iB).registerHandlerFR(this);
+                this.chSetBranchFlowRate{iB} = this.aoBranches(iB).registerHandler(this);
                 
                 this.aoBranches(iB).bind('outdated', @this.registerUpdate);
             end

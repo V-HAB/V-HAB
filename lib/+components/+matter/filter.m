@@ -17,8 +17,9 @@ classdef filter < matter.store
         % Parent system
         oParentSys;
         
-        % Geometry object
-        oGeometry;
+        % Volume of this filter
+        fVolume;
+        
         % Void fraction (porosity) to correctly set the volumes
         rVoidFraction;
         
@@ -78,12 +79,10 @@ classdef filter < matter.store
                     f_x = tParameters.tGeometry.fLength;
                     f_y = tParameters.tGeometry.fWidth;
                     f_z = tParameters.tGeometry.fHeight;
-                    oGeometry = geometry.volumes.cuboid(f_x, f_y, f_z);
+                    fVolume = f_x * f_y * f_z;
                 elseif strcmp('cylinder', tParameters.tGeometry.sShape)
                     % Cylinder: Input parameters are diameter, length
-                    f_x = tParameters.tGeometry.fHeight;
-                    f_D = tParameters.tGeometry.fRadius * 2;
-                    oGeometry = geometry.volumes.cylinder(f_D, f_x);
+                    fVolume = pi * tParameters.tGeometry.fRadius^2 * tParameters.tGeometry.fHeight;
                 else
                     error('Filter: The type of filter shape you have entered (%s) is not supported by the Filter. Please use either ''cuboid'' or ''cylinder''.',tParameters.tGeometry.sShape);
                 end
@@ -98,7 +97,7 @@ classdef filter < matter.store
                     % Use default values if no size has been assigned
                     if ~exist('oGeo', 'var')
                         % Cylinder: Input parameters are (diameter, length)
-                        oGeometry = geometry.volumes.cylinder(0.06, 0.3);
+                        fVolume = pi * 0.03^2 * 0.3;
                     end
                     rVoidFraction = 0.4;
                     
@@ -117,7 +116,7 @@ classdef filter < matter.store
                         f_y = 0.1097;    %[m]
                         f_z = 0.0586;    %[m]
                         % Cuboid: Input parameters are (x-,y-,z-dimensions)
-                        oGeometry = geometry.volumes.cuboid(f_x,f_y,f_z);
+                        fVolume = f_x * f_y * f_z;
                     end
                     % Setting the void fraction for the SA9T amine sorbent.
                     % Value taken from AIAA-2011-5243.
@@ -133,7 +132,7 @@ classdef filter < matter.store
                         f_y = 0.1764;      %[m]
                         f_z = 0.1764;      %[m]
                         % Cuboid: Input parameters are x-, y-, z-dimensions
-                        oGeometry = geometry.volumes.cuboid(f_x,f_y,f_z);
+                        fVolume = f_x * f_y * f_z;
                     end
                     rVoidFraction = 0.510;
          
@@ -144,7 +143,7 @@ classdef filter < matter.store
             end              
             
             % Creating a store based on the volume
-            this@matter.store(oParentSys, sName, oGeometry.fVolume);
+            this@matter.store(oParentSys, sName, fVolume);
             
             % Temperature
             % can be set individually
@@ -180,7 +179,7 @@ classdef filter < matter.store
             this.sType = sType;
             
             % Assigning the filter's properties (save for setVolume function)
-            this.oGeometry = oGeometry;
+            this.fVolume = fVolume;
             this.rVoidFraction = rVoidFraction;
             
             
@@ -200,19 +199,19 @@ classdef filter < matter.store
             % the filter and does that correctly
             if ~isempty(sAtmosphereHelper)
                 try
-                    oFlowPhase = this.createPhase(sAtmosphereHelper, 'FlowPhase', oGeometry.fVolume * rVoidFraction, fTemperature, rRelativeHumidity, fPressure);
+                    oFlowPhase = this.createPhase(sAtmosphereHelper, 'FlowPhase', this.fVolume * rVoidFraction, fTemperature, rRelativeHumidity, fPressure);
                 catch 
                     this.throw('Generic Filter', 'The provided atmosphere helper (%s) is invalid!', sAtmosphereHelper);
                 end
             else
                 % Otherwise: use SuitAtmosphere as default value
-                oFlowPhase = this.createPhase('SuitAtmosphere', 'FlowPhase', oGeometry.fVolume * rVoidFraction, fTemperature, rRelativeHumidity, fPressure);
+                oFlowPhase = this.createPhase('SuitAtmosphere', 'FlowPhase', this.fVolume * rVoidFraction, fTemperature, rRelativeHumidity, fPressure);
             end
             
             % Creating the phase representing the filter volume manually.
             % gas(oStore, sName, tfMasses, fVolume, fTemp)
-            tfMass.AmineSA9T = this.oMT.ttxMatter.AmineSA9T.ttxPhases.tSolid.Density * this.oGeometry.fVolume * (1-this.rVoidFraction);
-            matter.phases.mixture(this, 'FilteredPhase', 'solid', tfMass, this.oGeometry.fVolume, fTemperature, fPressure);
+            tfMass.AmineSA9T = this.oMT.ttxMatter.AmineSA9T.ttxPhases.tSolid.Density * this.fVolume * (1-this.rVoidFraction);
+            matter.phases.mixture(this, 'FilteredPhase', 'solid', tfMass, this.fVolume, fTemperature, fPressure);
 
             % Fixed Time Step
             if exist('fFixedTimeStep','var')
@@ -247,9 +246,9 @@ classdef filter < matter.store
             % Overwriting the matter.store setVolume which would give both
             % gas phases the full volume.
             % Flow phase
-            this.toPhases.FlowPhase.setVolume(this.oGeometry.fVolume * this.rVoidFraction);
+            this.toPhases.FlowPhase.setVolume(this.fVolume * this.rVoidFraction);
             % Sorbent phase
-%             this.toPhases.FilteredPhase.setVolume(this.oGeometry.fVolume * (1-this.rVoidFraction) * 2);
+%             this.toPhases.FilteredPhase.setVolume(this.fVolume * (1-this.rVoidFraction) * 2);
         end
         
     end
