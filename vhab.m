@@ -87,12 +87,6 @@ classdef vhab
                 % Ignore all errors that occur. 
             end
             
-            % FLUSH serializers / loggers
-            % Only required if we're already initialized
-            if exist('base','file') > 0
-                base.flush();
-            end
-            
             % Telling the user what's going on
             disp('Clearing MATLAB classes...');
             

@@ -1,222 +1,58 @@
 classdef base < handle
-    %BASE Base handle obj class all other classes in V-HAB inherit from
-    % base or a subclass of base
-    %   Sets uuid, meta class, type usw
-    %
-    %NOTE prefixes:
-    %   i = integer, f = float, r = ratio (percent), s = string, b = bool
-    %   a = array, m = matrix, c = cell, t = struct
-    %   o = object, h = handle (file, graphics, function, ...), p = map
-    %   x = mixed / undef
-    %
-    %   "Awesome" when mixed, e.g. taiSomething would be a struct, with 
-    %   each field holding an array of integers.
-    %   For a struct with non-uniform values, the key should contain the
-    %   prefix, e.g. tSomething and then tSomething.fVal, tSomething.sName
-    %   (the tSomething could also be named txSomething - more clear).
-    %   Struct-hierarchy e.g. ttxMatter - each field of main struct
-    %   contains another struct (or several?), with mixed values (the x
-    %   specifically says mixed values, could be omitted since in this
-    %   example (from @matter.table), the values are containing the prefix,
-    %   e.g. fMolarMass).
-    
-    %% Static methods/attrs - helpers etc %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    % Section covers stuff needed for logging - ignore!
-    properties (GetAccess = private, Constant)
-        % Handle object -> exactly one instance created as soon as the base
-        % class becomes available within the Matlab path. Contains infos
-        % about the different classes, etc.
-        % Also used to handle serialization, stores references to all
-        % created objects of all classes derived from base.
-        pDumper = containers.Map({ 'bSerialize', 'coSerializers', 'poSerializers', 'aiSerializers', 'csSerialized' }, { false, {}, containers.Map(), 0, {} });
-        
-        
-    end
-    
-    
-    properties (GetAccess = public, Constant)
-        % Registered loggers
-        oLog = tools.logger();
-    end
-    
-    % Section covers stuff needed for logging - ignore!
-    methods (Static = true)
-        
-        function activateSerializers()
-            pDumper = base.pDumper;
-            
-            pDumper('bSerialize') = true;
-        end
-        
-        function flush()
-            pDumper = base.pDumper;
-            aiSerializers = pDumper('aiSerializers');
-            coSerializers = pDumper('coSerializers');
-            poSerializers = pDumper('poSerializers');
-            
-            %poSerializers.remove(poSerializers.keys());
-            %return;
-            
-            for iS = aiSerializers
-                if iS < 1, continue; end
-                
-                %delete(coSerializers{iS});
-                coSerializers{iS}.flush();
-                delete(coSerializers{iS});
-            end
-            
-            %poSerializers.remove(poSerializers.keys());
-            
-            
-            
-            base.oLog.flush();
-            %delete(base.oLog);
-        end
-        
-        
-        function sJSON = dump()
-            % Past/future - dump to socket; right now - just return!
-            
-            %return;
-            
-            pDumper = base.pDumper;
-            aiSerializers = pDumper('aiSerializers');
-            coSerializers = pDumper('coSerializers');
-            csSerialized  = pDumper('csSerialized');
-            
-            for iS = aiSerializers
-                coSerializers{iS}.serialize();
-                
-                csSerialized{iS} = [ coSerializers{iS}.csSerialized{:} ];
-            end
-            
-            pDumper('csSerialized') = csSerialized;
-            
-            %dd = int8([ '<' tools.JSON.dump(cSerialized) '>' ]);
-            %dd = tools.JSON.dump(cSerialized);
-            sJSON = [ csSerialized{:} ];
-            sJSON = [ '{' sJSON(1:(end - 1)) '}' ];
-            %disp([ '{' sS(1:(end - 1)) '}' ]);
-            
-            
-            
-            %if isempty(base.oCO.oSocket), base.createSocket(); end;
-            
-            %tools.net.jtcp('write', base.oCO.oSocket, int8([ '<' tools.JSON.dump(ptObjs) '>' ]))
-        end
-        
-        
-        function oObj = getObj(sUrl)
-            sBaseUrl     = sUrl(1:(find(sUrl == '/', 1, 'last' ) - 1));
-            sPath        = sBaseUrl((find(sBaseUrl == '/', 1, 'first') + 1):end);
-            sId          = sUrl((find(sUrl == '/', 1, 'last') + 1):end);
-            pDumper      = base.pDumper;
-            pSerializers = pDumper('poSerializers');
-            oObj         = [];
-            sPath        = strrep(sPath, '/', '.');
-            
-            if pSerializers.isKey(sPath)
-                oSer = pSerializers(sPath);
-                iIdx = find(strcmp({ oSer.aoObjects.sURL }, sUrl((find(sUrl == '/', 1, 'first')):end)));
-                
-                if ~isempty(iIdx)
-                    oObj = oSer.aoObjects(iIdx(1));
-                end
-            end
-        end
-        
-        
-        % Kind of 'static' events (i.e. bound to the class, not the object)
-        function [ oObj, iId ] = signal(sSignal, varargin)
-            oObj = '';
-            iId  = [];
-            
-            if strcmp(sSignal, 'log')
-                iId = base.oLog.bind(varargin{:});
-                
-                oObj = base.oLog;
-            end
-        end
-    end
-    
-    %% Attributes and constructor %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %BASE Base handle object class 
+    %   All other classes in V-HAB inherit from base or a subclass of base.
     
     properties (SetAccess = private, GetAccess = public)
-        % Reference to meta class and package/class path
+        % Reference to meta class
         oMeta;
+        
+        % Reference to package/class path
         sURL;
         
-        % Unique id for object instance, class name
+        % Unique id for object instance
         sUUID;
+        
+        % Class name
         sEntity;
     end
     
+    properties (GetAccess = public, Constant)
+        % Registered logger
+        oLog = tools.logger();
+    end
     
     methods
         function this = base()
-            
-            %NOTE for e.g. vsys, base constructor called several times, as
-            %     every parent class does eventually call the base
-            %     constructor. So if oMeta, sEntity, sUUID already set -
-            %     don't do anything in here.
+            % For e.g. vsys, the base constructor is called several times,
+            % as every parent class does eventually call the base
+            % constructor. So if sUUID is already set - don't do anything
+            % in here.
             if ~isempty(this.sUUID)
                 return;
             end
             
-            
-            %TODO should only do that once, probably? Or Matlab smart enough to only create the metaclass instance once?
-            %      remove oMeta, sEntity and sURL, just leave uuid? Wouldn't be needed anyways (type checks done with isa() etc ...) and just store in dumper/vhab static class?
+            % Creating the metaclass object
             this.oMeta   = metaclass(this);
+            
+            % Setting the sEntity string to the class name
             this.sEntity = this.oMeta.Name;
             
+            % Generating the Universally Unique Identifier (UUID)
             this.sUUID = tools.getPseudoUUID();
             
             % URL - used as identification for logging
-            %CHECK prefix something like localhost?
             this.sURL = [ '/' strrep(this.sEntity, '.', '/') '/' this.sUUID ];
-            
-            
-            
             
             % Adding this object to the logger
             if ~isa(this, 'tools.logger')
                 base.oLog.add(this);
             end
-            
-            
-            
-            
-            % Matlab sometime acts weird when accessing static attributes that are handle objects ...
-            % This way it normally works (see last two lines of method)
-            pDumper = this.pDumper;
-            
-            % Should we initialize the serializer?
-            if ~pDumper('bSerialize'), return; end
-            
-            poSerializers = pDumper('poSerializers');
-            coSerializers = pDumper('coSerializers');
-            
-            if ~poSerializers.isKey(this.sEntity)
-                % New serializer for this class
-                poSerializers(this.sEntity) = tools.serializer(this.oMeta);
-                coSerializers{end + 1}      = poSerializers(this.sEntity);
-            end
-            
-            oSerializer = poSerializers(this.sEntity);
-            oSerializer.addObj(this);
-            
-            
-            pDumper('coSerializers') = coSerializers;
-            pDumper('aiSerializers') = 1:length(coSerializers);
-            
-            
         end
         
     end
     
     methods (Access = protected)
-        %% LOG/DEBG HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function this = out(this, varargin)
             % This function can be used to output debug/log info. The
             % minimal function call is:
@@ -306,7 +142,6 @@ classdef base < handle
             end
             
             
-            
             % Now check if current AND next elem are strings - if yes,
             % thats sIdentifier and sMessage. Else, that'd be sMessage and
             % cParams!
@@ -327,24 +162,19 @@ classdef base < handle
                 cParams = {};
             end
             
-            
             % All params collected, pass to logger which triggers an event.
             base.oLog.output(this, iLevel, iVerbosity, sIdentifier, sMessage, cParams);
         end
         
-        
-        %% ERROR HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
         function throw(this, sIdent, sMsg, varargin)
             % Wrapper for throwing errors - includes path to the class
-            
             error([ strrep(this.sURL(2:end), '/', ':') ':' sIdent ], sMsg, varargin{:});
         end
         
         function warn(this, sIdent, sMsg, varargin)
             % See throw
-            
             warning([ strrep(this.sURL(2:end), '/', ':') ':' sIdent ], sMsg, varargin{:});
         end
     end
+    
 end

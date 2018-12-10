@@ -91,7 +91,8 @@ classdef console_output < simulation.monitor
             
             
             % Register on logger / debugger
-            [ this.oLogger, this.iLogBindId ] = base.signal('log', @this.printOutput, @this.filterObjByRootlineToSimContainer, this);
+            this.iLogBindId = base.oLog.bind(@this.printOutput, @this.filterObjByRootlineToSimContainer, this);
+            this.oLogger = base.oLog;
         end
         
         
