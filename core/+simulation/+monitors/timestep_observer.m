@@ -44,11 +44,11 @@ classdef timestep_observer < simulation.monitor
             oSim   = oInfra.oSimulationContainer;
             oTimer = oSim.oTimer;
             
-            % Minimal Time Step is the minimum value in afTimeStep
-            fMinStep = min(oTimer.afTimeStep(oTimer.afTimeStep >= 0));
+            % Minimal Time Step is the minimum value in afTimeSteps
+            fMinStep = min(oTimer.afTimeSteps(oTimer.afTimeSteps >= 0));
 
-            miIndexMinStep = find(oTimer.afTimeStep == fMinStep);
-            % The time steps in afTimeStep belong to the respective callback within
+            miIndexMinStep = find(oTimer.afTimeSteps == fMinStep);
+            % The time steps in afTimeSteps belong to the respective callback within
             csReports = cell(length(miIndexMinStep),1);
             for iIndex = 1:length(miIndexMinStep)
                 tInfo = functions(oTimer.cCallBacks{miIndexMinStep(iIndex)});

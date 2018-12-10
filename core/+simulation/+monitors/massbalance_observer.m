@@ -92,7 +92,7 @@ classdef massbalance_observer < simulation.monitor
             % Since we execute after all timer operations are finished we
             % can calculate the next time step to see if the mass balance
             % error exceeds the accuracy
-            fTimeStep = min(aoPhases(1).oTimer.afTimeStep + aoPhases(1).oTimer.afLastExec) - aoPhases(1).oTimer.fTime;
+            fTimeStep = min(aoPhases(1).oTimer.afTimeSteps + aoPhases(1).oTimer.afLastExec) - aoPhases(1).oTimer.fTime;
             
             % Include a calculation if the afCurrentTotalInOuts of each
             % phase corresponds to the total flowrate of all attached
