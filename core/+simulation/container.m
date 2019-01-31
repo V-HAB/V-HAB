@@ -1,11 +1,8 @@
 classdef container < systems.root
-    %CONTAINER Summary this is the basic container class which provides the
-    % general framework for all types (matter, thermal, electrical...) of
-    % containers that make up the vsys in the final simulation. It provides
-    % the generally necessary properties and methods for all the child
-    % classes, which then implement the more specific methods and
-    % properties. The vsys is then a combination of the inidivdual
-    % containers
+    %CONTAINER Base class for simulation models
+    % This is the basic container class which provides the general
+    % framework for models to be created in V-HAB. It is the root system
+    % for each simulation. 
     
     properties (SetAccess = private, GetAccess = public)
         % Global timer object
@@ -14,8 +11,9 @@ classdef container < systems.root
         % Global / unique matter table
         oMT;
         
-        % Reference to the configuration object for vsystems (supporting
-        % that feature, see simulation.configuration_parameters)
+        % Reference to the configuration object for vsys. For more
+        % information on that feature, see
+        % simulation.configuration_parameters.
         oCfgParams;
         
         % Global solver tuning parameters
@@ -44,20 +42,19 @@ classdef container < systems.root
     
     methods
         function this = container(sName, oTimer, oMT, oCfgParams, tSolverParams)
+            % Calling the parent constructor
             this@systems.root(sName);
             
+            % Setting the object properties according to the input
+            % arguments
             this.oTimer     = oTimer;
             this.oMT        = oMT;
             this.oCfgParams = oCfgParams;
             
+            % Setting the solver parameters, if they were provided. 
             if nargin >= 5
                 this.tSolverParams = tools.struct.mergeStructs(this.tSolverParams, tSolverParams);
             end
-        end
-        
-        
-        function this = addChild(this, oChild)
-            addChild@systems.root(this, oChild);
         end
     end
 end
