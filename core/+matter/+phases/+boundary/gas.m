@@ -96,7 +96,7 @@ classdef gas < matter.phases.boundary.boundary
                 
                 % Now we calculate the molar mass fractions, since these
                 % represent the partial pressure fractions as well
-                afMols = this.afMass .* this.oMT.afMolarMass;
+                afMols = this.afMass ./ this.oMT.afMolarMass;
                 arMolFractions = afMols/sum(afMols);
                 % And then set the correct partial pressure composition for
                 % the phase

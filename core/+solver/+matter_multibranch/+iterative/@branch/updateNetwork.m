@@ -38,14 +38,13 @@ function updateNetwork(this, bForceP2Pcalc)
                 % it must ensured that all branches upstream of the current
                 % branch are already update and the phase partial masses
                 % are set correctly for this to work!
-                if fFlowRate < 0
-                    coCurrentProcExme = oCurrentBranch.coExmes(1);
-                elseif fFlowRate > 0
-                    coCurrentProcExme = oCurrentBranch.coExmes(2);
-                else
-                    coCurrentProcExme = oCurrentBranch.coExmes;
-                end
                 
+                % TO DO: Find a way to prevent us from having to update
+                % each of the two phases for the branch, while also
+                % allowing cases where e.g. a flow is used with a manual
+                % branch as input, a P2P inside the flow node and a
+                % multisolver branch as output
+                coCurrentProcExme = oCurrentBranch.coExmes;
                 % if the flowrate is zero we update both phases, to be sure
                 % to update all P2Ps
                 for iPhase = 1:length(coCurrentProcExme)
