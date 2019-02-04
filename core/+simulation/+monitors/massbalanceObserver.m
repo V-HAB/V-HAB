@@ -1,13 +1,14 @@
-classdef massbalance_observer < simulation.monitor
-    % massbalance_observer is a monitor to track the mass transfers in your
-    % system and identify the locations where mass balance errors (which
-    % are not a result of mass lost errors) occur. If your system has a
-    % high mass lost value, first fix that and if after that a high mass
-    % balance error remains, use this monitor to identify the locations for
-    % these mass balance errors. Mass balance differs from the mass lost
-    % value as mass lost occurs whenever a substance within a phase reaches
-    % a value of less than 0. Mass balance on the other hand occurs if the
-    % flowrates do not sum up to zero over the whole vsys.
+classdef massbalanceObserver < simulation.monitor
+    %MASSBALANCEOBSERVER Enables tracking of mass transfers
+    % The massbalance observer is a monitor to track the mass transfers in
+    % your system and identify the locations where mass balance errors
+    % (which are not a result of mass lost errors) occur. If your system
+    % has a high mass lost value, first fix that and if after that a high
+    % mass balance error remains, use this monitor to identify the
+    % locations for these mass balance errors. Mass balance differs from
+    % the mass lost value as mass lost occurs whenever a substance within a
+    % phase reaches a value of less than 0. Mass balance on the other hand
+    % occurs if the flowrates do not sum up to zero over the whole vsys.
     %
     % Please note that this monitor is not complete and cannot find all
     % possible mass balance errors, but quite a lot of the common errors
@@ -59,7 +60,7 @@ classdef massbalance_observer < simulation.monitor
     end
     
     methods
-        function this = massbalance_observer(oSimulationInfrastructure, fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints)
+        function this = massbalanceObserver(oSimulationInfrastructure, fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints)
             this@simulation.monitor(oSimulationInfrastructure, { 'step_post' });
             
             if nargin > 1

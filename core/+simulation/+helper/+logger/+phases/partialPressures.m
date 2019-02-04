@@ -1,4 +1,4 @@
-function tLogProps = partial_pressures(tLogProps, oPhase, csSubstances)
+function tLogProps = partialPressures(tLogProps, oPhase, csSubstances)
 %PARTIAL_PRESSURES is a helper to log the partial pressures of the provided
 % phase for the provided substances. If no substances are provided Air
 % composition is assumed

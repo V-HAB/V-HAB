@@ -13,7 +13,7 @@ classdef container < systems.root
         
         % Reference to the configuration object for vsys. For more
         % information on that feature, see
-        % simulation.configuration_parameters.
+        % simulation.configurationParameters.
         oCfgParams;
         
         % Global solver tuning parameters

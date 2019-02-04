@@ -85,14 +85,14 @@ classdef infrastructure < base & event.source
         % files for more information. 
         ttMonitorCfg = struct(...
             ... % Logs the simulation process in the console - params are major, minor tick
-            'oConsoleOutput', struct('sClass', 'simulation.monitors.console_output', 'cParams', {{ 100, 10 }}), ...
+            'oConsoleOutput', struct('sClass', 'simulation.monitors.consoleOutput', 'cParams', {{ 100, 10 }}), ...
             ... % Logs specific simulation values, can be specified throug helpers
             ... % First param is bDumpToMat --> active?
             'oLogger', struct('sClass', 'simulation.monitors.logger', 'cParams', {{ false }}), ...
             ... % Allows to e.g. pause the simulation
-            'oExecutionControl', struct('sClass', 'simulation.monitors.execution_control'), ...
+            'oExecutionControl', struct('sClass', 'simulation.monitors.executionControl'), ...
             ... % Logs mass loss/gain, TODO warn if too much mass loss / gain
-            'oMatterObserver', struct('sClass', 'simulation.monitors.matter_observer') ...
+            'oMatterObserver', struct('sClass', 'simulation.monitors.matterObserver') ...
         );
         
         % A struct that contains the different monitor objects.
@@ -206,7 +206,7 @@ classdef infrastructure < base & event.source
             disp(['Matter Table created in ', num2str(toc(hTimer)), ' seconds.'])
             
             % Getting the object containing the configuration parameters. 
-            oCfgParams = simulation.configuration_parameters(ptConfigParams);
+            oCfgParams = simulation.configurationParameters(ptConfigParams);
             
             % Create the root object for the simulation, referencing the
             % global objects. Also the hierarchy root for the systems.

@@ -1,5 +1,5 @@
-classdef configuration_parameters < base
-    %CONFIGURATION_PARAMETERS class framework to provide configuration parameters for simulations
+classdef configurationParameters < base
+    %CONFIGURATIONPARAMETERS class framework to provide configuration parameters for simulations
     % These can be handed into the simulation by a container map through
     % the setup vhab.exec command and are finally stored in this class in
     % simulation.infrastructure and added as property. The idea here is to
@@ -16,13 +16,13 @@ classdef configuration_parameters < base
     end
     
     methods
-        function this = configuration_parameters(ptConfigParams)
+        function this = configurationParameters(ptConfigParams)
             % Setting the property
             this.ptConfigParams = ptConfigParams;
         end
         
         function [ tParams, csKeys ] = get(this, oVsys)
-            % Extracts the configuration parameters for a specific system
+            %GET Extracts the configuration parameters for a specific system
             % In the containersMap() variable the system objects within a
             % model are referenced as strings. These strings can either
             % contain the path to the constructor of the vsys object (e.g. 
@@ -86,7 +86,7 @@ classdef configuration_parameters < base
         end
         
         function sCode = configCode(this, oVsys)  %#ok<INUSD>
-            % Returns code that can be directly evaluated in the vsys object
+            %CONFIGCODE Returns code that can be directly evaluated in the vsys object
             % The execution of this code will actually set the parameters
             % on the vsys objects. 
             % For now this code is just a static string variable. However,

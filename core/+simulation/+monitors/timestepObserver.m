@@ -1,6 +1,5 @@
-classdef timestep_observer < simulation.monitor
-    %TIMESTEP_OBSERVER This is a monitor to track the smallest time step in 
-    % your simulation. 
+classdef timestepObserver < simulation.monitor
+    %TIMESTEPOBSERVER Tracks the smallest time step in a simulation
     % It will identify the part of V-HAB that currently has the smallest
     % time step, if you provided a limit the monitor will display the
     % component and tick in which a timestep smaller than your limit
@@ -12,7 +11,7 @@ classdef timestep_observer < simulation.monitor
     % to add this monitor to your simulation simply go to your setup file
     % and define 
     %
-    % ttMonitorConfig = struct('oTimeStepObserver', struct('sClass', 'simulation.monitors.timestep_observer', 'cParams', {{ 0 }}));
+    % ttMonitorConfig = struct('oTimeStepObserver', struct('sClass', 'simulation.monitors.timestepObserver', 'cParams', {{ 0 }}));
     %
     % Instead of 0 you can provide the limit for the time step!
     
@@ -24,7 +23,7 @@ classdef timestep_observer < simulation.monitor
     end
     
     methods
-        function this = timestep_observer(oSimulationInfrastructure, fLimit)
+        function this = timestepObserver(oSimulationInfrastructure, fLimit)
             this@simulation.monitor(oSimulationInfrastructure, { 'step_post' });
             
             if nargin >= 2

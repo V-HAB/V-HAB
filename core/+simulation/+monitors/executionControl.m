@@ -1,5 +1,5 @@
-classdef execution_control < simulation.monitor
-    %EXECUTION_CONTROL this class controlls the execution of the V-HAB
+classdef executionControl < simulation.monitor
+    %EXECUTIONCONTROL this class controlls the execution of the V-HAB
     % simulation and allows the user to stop a simulation by creating a
     % STOP.m file in the V-HAB directory.
     
@@ -14,7 +14,7 @@ classdef execution_control < simulation.monitor
     end
     
     methods
-        function this = execution_control(oSimulationInfrastructure)
+        function this = executionControl(oSimulationInfrastructure)
             this@simulation.monitor(oSimulationInfrastructure, { 'step_post', 'init_post' });
             
         end

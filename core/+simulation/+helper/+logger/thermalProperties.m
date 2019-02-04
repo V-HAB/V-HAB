@@ -1,4 +1,4 @@
-function tLogProps = thermal_properties(tLogProps, oVsys, tConfigStruct)
+function tLogProps = thermalProperties(tLogProps, oVsys, tConfigStruct)
 %THERMAL_PROPERTIES Logs typical relevant thermal properties, e.g. capacities, ...
 %   If the tConfigStruct is given it will configure which capacities and
 %   conductors will be logged.

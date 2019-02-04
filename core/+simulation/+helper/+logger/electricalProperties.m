@@ -1,4 +1,4 @@
-function tLogProps = electrical_properties(tLogProps, oVsys, csCircuits)
+function tLogProps = electricalProperties(tLogProps, oVsys, csCircuits)
 % ELECTRICAL_PROPERTIES Logs typically relevant electrical properties
 %   Logs branch currents, node voltages, resistances, powers  
 

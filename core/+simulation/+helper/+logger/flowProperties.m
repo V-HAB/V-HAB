@@ -1,4 +1,4 @@
-function tLogProps = flow_props(tLogProps, oVsys, csStores)
+function tLogProps = flowProperties(tLogProps, oVsys, csStores)
 %FLOW_PROPS Logs typical relevant flow props for all or selected phases and
 %branches
 %   If csStores is not given, this function will return logging properties

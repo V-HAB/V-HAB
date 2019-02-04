@@ -23,7 +23,7 @@ function [ coRootLine, sPath ] = getObjRootline(oObj)
         'simulation.infrastructure', '', '';
         'event.timer', '', '';
         'matter.table', '', '';
-        'simulation.configuration_parameters', '', '';
+        'simulation.configurationParameters', '', '';
         'simulation.monitor', '', '';
         'tools.postprocessing.plotter.plotter_basic', '', '';
     };

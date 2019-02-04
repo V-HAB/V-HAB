@@ -1,9 +1,9 @@
-classdef console_output < simulation.monitor
-    %CONSOLE_OUTPUT supports the debugging features of V-HAB. The user can
+classdef consoleOutput < simulation.monitor
+    %CONSOLEOUTPUT supports the debugging features of V-HAB. The user can
     % set output levels:
     % 1 (MESSAGE), 2 (INFO), 3 (NOTICE), 4 (WARN) and 5 (ERROR)
     %
-    % To decide how much information the console_output should provide.
+    % To decide how much information the consoleOutput should provide.
     
     
     properties (SetAccess = protected, GetAccess = public)
@@ -76,7 +76,7 @@ classdef console_output < simulation.monitor
     
     
     methods
-        function this = console_output(oSimulationInfrastructure, iMajorReportingInterval, iMinorReportingInterval)
+        function this = consoleOutput(oSimulationInfrastructure, iMajorReportingInterval, iMinorReportingInterval)
             this@simulation.monitor(oSimulationInfrastructure, { 'init_post', 'step_post', 'pause', 'finish', 'run' });
             
             if nargin >= 2 && ~isempty(iMajorReportingInterval)

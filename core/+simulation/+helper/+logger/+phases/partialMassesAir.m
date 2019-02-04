@@ -1,4 +1,4 @@
-function tLogProps = air_partials(tLogProps, oVsys, csSubstances)
+function tLogProps = partialMassesAir(tLogProps, oVsys, csSubstances)
 %AIR_PARTIALS is a helper function to log the partial masses of air (or if
 % specified other partial masses) of all phases and stores inside of the
 % provided Vsys

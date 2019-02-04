@@ -19,11 +19,11 @@ classdef setup < simulation.infrastructure
             
             % Possible to change the constructor paths and params for the
             % monitors
-            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestep_observer';
+            ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
             ttMonitorConfig.oLogger.cParams = {true};
             
-%             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalance_observer';
+%             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
 %             fAccuracy = 1e-8;
 %             fMaxMassBalanceDifference = inf;
 %             bSetBreakPoints = false;
