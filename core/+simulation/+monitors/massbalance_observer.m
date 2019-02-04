@@ -60,7 +60,7 @@ classdef massbalance_observer < simulation.monitor
     
     methods
         function this = massbalance_observer(oSimulationInfrastructure, fAccuracy, fMaxMassBalanceDifference, bSetBreakPoints)
-            this@simulation.monitor(oSimulationInfrastructure, { 'tick_post' });
+            this@simulation.monitor(oSimulationInfrastructure, { 'step_post' });
             
             if nargin > 1
                 this.fAccuracy = fAccuracy;
@@ -79,7 +79,7 @@ classdef massbalance_observer < simulation.monitor
     
     methods (Access = protected)
         
-        function onTickPost(this, ~)
+        function onStepPost(this, ~)
             
             oInfra = this.oSimulationInfrastructure;
             oSim   = oInfra.oSimulationContainer;

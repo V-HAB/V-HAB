@@ -3,7 +3,7 @@ classdef infrastructure < base & event.source
     %   Objects instatiated from this class contain all necessary
     %   information to run a V-HAB simulation. They include the root vsys
     %   object, the timer and data objects and logged simulation data.
-    %   It also contains the tick() method which advances the timer one
+    %   It also contains the step() method which advances the timer one
     %   time step (or tick) ahead until the total simulated time has
     %   reached the user-defined value.
     %   Put differently, objects instantiated from this class are the
@@ -342,7 +342,7 @@ classdef infrastructure < base & event.source
                 end
                 
                 % This call performs one single simulation step.
-                this.tick();
+                this.step();
             end
         end
         
@@ -421,8 +421,8 @@ classdef infrastructure < base & event.source
         
         
         
-        function tick(this)
-            %TICK This method performs one simulation step
+        function step(this)
+            %STEP This method performs one simulation step
             %   The actual time of this simulation step is calculated in
             %   the timer. 
             
@@ -430,7 +430,7 @@ classdef infrastructure < base & event.source
             % these tasks take, so we start a timer before the event is
             % posted and add the end time to the fRuntimeOther property.
             hTimer = tic();
-            this.trigger('tick_pre');
+            this.trigger('step_pre');
             this.fRuntimeOther = this.fRuntimeOther + toc(hTimer);
             
             
@@ -447,7 +447,7 @@ classdef infrastructure < base & event.source
             % Triggering the post step event. The same procedure as every
             % year, James. 
             hTimer = tic();
-            this.trigger('tick_post');
+            this.trigger('step_post');
             this.fRuntimeOther = this.fRuntimeOther + toc(hTimer);
             
             % Now we check to see if the simulation has reached the

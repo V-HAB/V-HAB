@@ -48,7 +48,7 @@ classdef matter_observer < simulation.monitor
     
     methods
         function this = matter_observer(oSimulationInfrastructure)
-            this@simulation.monitor(oSimulationInfrastructure, { 'tick_post', 'init_post', 'finish', 'pause' });
+            this@simulation.monitor(oSimulationInfrastructure, { 'step_post', 'init_post', 'finish', 'pause' });
             
         end
     end
@@ -56,13 +56,12 @@ classdef matter_observer < simulation.monitor
     
     methods (Access = protected)
         
-        function onTickPost(this, ~)
-            oInfra = this.oSimulationInfrastructure;
-            oSim   = oInfra.oSimulationContainer;
-            oMT    = oSim.oMT;
+        function onStepPost(this, ~)
+            
+            oMT    = this.oSimulationInfrastructure.oSimulationContainer.oMT;
             
             if ~isempty(this.aoPhases)
-                if mod(oSim.oTimer.iTick, this.iMassLogInterval) == 0
+                if mod(this.oSimulationInfrastructure.oSimulationContainer.oTimer.iTick, this.iMassLogInterval) == 0
                     iIdx = size(this.mfTotalMass, 1) + 1;
                     
                     % Total mass: sum over all mass stored in all phases, for each

@@ -15,7 +15,7 @@ classdef execution_control < simulation.monitor
     
     methods
         function this = execution_control(oSimulationInfrastructure)
-            this@simulation.monitor(oSimulationInfrastructure, { 'tick_post', 'init_post' });
+            this@simulation.monitor(oSimulationInfrastructure, { 'step_post', 'init_post' });
             
         end
     end
@@ -23,7 +23,7 @@ classdef execution_control < simulation.monitor
     
     methods (Access = protected)
         
-        function onTickPost(this, ~)
+        function onStepPost(this, ~)
             oInfra = this.oSimulationInfrastructure;
             oSim   = oInfra.oSimulationContainer;
             
@@ -39,7 +39,7 @@ classdef execution_control < simulation.monitor
                 
                 if bPauseGeneral || bPauseSpecific
                     if oSim.oTimer.iTick == 0
-                        this.throw('onTickPost','You still have your STOP file in the main directory. Please remove it and restart the simulation.');
+                        this.throw('onStepPost','You still have your STOP file in the main directory. Please remove it and restart the simulation.');
                     else
                         oInfra.pause();
                     end

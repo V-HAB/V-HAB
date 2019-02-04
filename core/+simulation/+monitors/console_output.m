@@ -77,8 +77,7 @@ classdef console_output < simulation.monitor
     
     methods
         function this = console_output(oSimulationInfrastructure, iMajorReportingInterval, iMinorReportingInterval)
-            %this@simulation.monitor(oSimulationInfrastructure, struct('tick_post', 'logData', 'init_post', 'init'));
-            this@simulation.monitor(oSimulationInfrastructure, { 'init_post', 'tick_post', 'pause', 'finish', 'run' });
+            this@simulation.monitor(oSimulationInfrastructure, { 'init_post', 'step_post', 'pause', 'finish', 'run' });
             
             if nargin >= 2 && ~isempty(iMajorReportingInterval)
                 this.iMajorReportingInterval = iMajorReportingInterval;
@@ -88,17 +87,13 @@ classdef console_output < simulation.monitor
                 this.iMinorReportingInterval = iMinorReportingInterval;
             end
             
-            
-            
             % Register on logger / debugger
             [ this.oLogger, this.iLogBindId ] = base.signal('log', @this.printOutput, @this.filterObjByRootlineToSimContainer, this);
         end
         
-        
         function delete(this)
             this.oLogger.unbind(this.iLogBindId);
         end
-        
         
         function this = setReportingInterval(this, iTicks, iMinorTicks)
             % Set the interval in which the tick and the sim time are
@@ -162,30 +157,6 @@ classdef console_output < simulation.monitor
             this.iMaxVerbosity = iVerbosity;
         end
         
-        
-        % Local options for obj
-%         function setObjThresholds(this, oObj, iLevel, iVerbosity)
-%             % if iLevel empty - remove entry!
-%             
-%             if ischar(oObj)
-%                 sUuid = oObj;
-%             else
-%                 sUuid = oObj.sUUID;
-%             end
-%             
-%             
-%             this.ttObjSettings.(sUuid) = struct('iLevel', iLevel, 'iVerbosity', iVerbosity);
-%         end
-        %TODO setTypeThresholds? I.e. sType (isa!), iLevel, iVerbosity?
-        %       -> print all messages from matter.phase etc?
-        % --> JUST use sEntity field, NOT isa! Then use same test as for
-        % sIdentifier, jut with tPayload.oObj.sEntity
-        
-        
-        
-        
-        
-        
         % Types filters
         function this = resetTypesFilters(this)
             % Resets all type filters, see addTypeToFilter
@@ -208,8 +179,6 @@ classdef console_output < simulation.monitor
             %           an object of a derived class)
             
             if ~any(strcmp(this.csTypes, sType))
-                %this.iTypes  = this.iTypes + 1;
-                %this.csTypes{this.iTypes} = sType;
                 this.csTypes{end + 1} = sType;
             end
         end
@@ -224,7 +193,6 @@ classdef console_output < simulation.monitor
                 this.csTypes(iIdx) = [];
             end
         end
-        
         
         % Identifiers filters
         function this = resetIdentFilters(this)
@@ -291,9 +259,6 @@ classdef console_output < simulation.monitor
             end
         end
         
-        
-        
-        
         % Uuid filters
         function this = resetUuidFilters(this)
             % See addUuidFilter
@@ -318,7 +283,6 @@ classdef console_output < simulation.monitor
                 this.csUuids(iIdx) = [];
             end
         end
-        
         
         % Path filters
         function this = resetPathsFilters(this)
@@ -393,24 +357,6 @@ classdef console_output < simulation.monitor
                     return;
                 end
             end
-            
-            
-%             if this.iTypes > 0
-%                 bFound = false;
-%                 
-%                 for iT = 1:this.iTypes
-%                     if isa(tPayload.oObj, this.csTypes{iT})
-%                         bFound = true;
-%                         
-%                         break;
-%                     end
-%                 end
-%                 
-%                 if ~bFound, return; end;
-%             end
-
-
-            
             
             % Filter by rootline path?
             if ~isempty(this.csPaths)
@@ -516,8 +462,6 @@ classdef console_output < simulation.monitor
             this.sLastOutObjectUuid = sFullUuid;
         end
         
-        
-        %TODO very v-hab specific - move to vhab.simulation.monitors.*?
         function bOurs = filterObjByRootlineToSimContainer(this, oObj)
             % During init, matter structure not yet created, but we know it
             % belongs to 'our' sim.
@@ -589,39 +533,21 @@ classdef console_output < simulation.monitor
         end
         
         
-        function onTickPost(this, ~)
+        function onStepPost(this, ~)
             
             oSim = this.oSimulationInfrastructure.oSimulationContainer;
             
             
             % Minor tick?
             if (this.iMinorReportingInterval > 0) && (mod(oSim.oTimer.iTick, this.iMinorReportingInterval) == 0) && (oSim.oTimer.fTime > 0)
-                % Major tick -> remove printed minor tick characters
-                if (mod(oSim.oTimer.iTick, this.iMajorReportingInterval) == 0)
-                    %fprintf('\n');
-                    
-                    % Removed - not really able to handle e.g. other log
-                    % messages from other code.
-                    %TODO as soon as debug class exists, could be handled 
-                    %     through that (used instead of disp/fprintf)
-                    %iDeleteChars = 1 * ceil(this.iMajorReportingInterval / this.iMinorReportingInterval) - 1;
-                    %fprintf(repmat('\b', 1, iDeleteChars));
-                else
-                    %fprintf('%f\t', oSim.oTimer.fTime);
-                    
+                if (mod(oSim.oTimer.iTick, this.iMajorReportingInterval) ~= 0)
                     fprintf('\b .\n');
                 end
             end
             
             if mod(oSim.oTimer.iTick, this.iMajorReportingInterval) == 0
-                %TODO store last tick disp fTime on some containers.Map!
-                %disp([ num2str(oSim.oTimer.iTick) ' (' num2str(oRoot.oData.oTimer.fTime - fLastTickDisp) 's)' ]);
-                %fLastTickDisp = oRoot.oData.oTimer.fTime;
-                
                 fDeltaTime = oSim.oTimer.fTime - this.fLastTickDisp;
                 this.fLastTickDisp = oSim.oTimer.fTime;
-                
-                %disp([ num2str(oSim.oTimer.iTick), ' (', num2str(oSim.oTimer.fTime), 's) (Delta Time ', num2str(fDeltaTime), 's)']);
                 
                 sFloat = [ '%.' num2str(7) 'f' ];
                 

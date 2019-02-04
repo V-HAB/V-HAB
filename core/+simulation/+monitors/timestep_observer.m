@@ -25,7 +25,7 @@ classdef timestep_observer < simulation.monitor
     
     methods
         function this = timestep_observer(oSimulationInfrastructure, fLimit)
-            this@simulation.monitor(oSimulationInfrastructure, { 'tick_post' });
+            this@simulation.monitor(oSimulationInfrastructure, { 'step_post' });
             
             if nargin >= 2
                 this.fLimit = fLimit;
@@ -38,11 +38,9 @@ classdef timestep_observer < simulation.monitor
     
     methods (Access = protected)
         
-        function onTickPost(this, ~)
+        function onStepPost(this, ~)
             
-            oInfra = this.oSimulationInfrastructure;
-            oSim   = oInfra.oSimulationContainer;
-            oTimer = oSim.oTimer;
+            oTimer = this.oSimulationInfrastructure.oSimulationContainer.oTimer;
             
             % Minimal Time Step is the minimum value in afTimeStep
             fMinStep = min(oTimer.afTimeStep(oTimer.afTimeStep >= 0));
