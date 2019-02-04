@@ -88,7 +88,7 @@ classdef infrastructure < base & event.source
             'oConsoleOutput', struct('sClass', 'simulation.monitors.console_output', 'cParams', {{ 100, 10 }}), ...
             ... % Logs specific simulation values, can be specified throug helpers
             ... % First param is bDumpToMat --> active?
-            'oLogger', struct('sClass', 'simulation.monitors.logger_basic', 'cParams', {{ false }}), ...
+            'oLogger', struct('sClass', 'simulation.monitors.logger', 'cParams', {{ false }}), ...
             ... % Allows to e.g. pause the simulation
             'oExecutionControl', struct('sClass', 'simulation.monitors.execution_control'), ...
             ... % Logs mass loss/gain, TODO warn if too much mass loss / gain
@@ -556,5 +556,3 @@ classdef infrastructure < base & event.source
         end
     end
 end
-
-	

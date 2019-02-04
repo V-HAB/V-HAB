@@ -1,5 +1,6 @@
-classdef logger_basic < simulation.monitor
-    %LOGGER_BASIC provides the necessary structure to log values from the
+classdef logger < simulation.monitor
+    %LOGGER Logs simulation results
+    % This class provides the necessary structure to log values from the
     % simulation into a persistent log file. If values are not selected for
     % the log only the currently stored values from the current tick can be
     % accessed in the oLastSimObj
@@ -87,13 +88,13 @@ classdef logger_basic < simulation.monitor
     end
     
     methods
-        function this = logger_basic(oSimulationInfrastructure, bDumpToMat, iPreallocRows)
+        function this = logger(oSimulationInfrastructure, bDumpToMat, iPreallocRows)
             % bDumpToMat -> each time preallocation happens, dump data to
             % .mat file instead and empty mfLog? After the simulation, the
             % data needs to be re-read with this.readDataFromMat()
             %   
             
-            this@simulation.monitor(oSimulationInfrastructure, { 'tick_post', 'init_post', 'finish' });
+            this@simulation.monitor(oSimulationInfrastructure, { 'step_post', 'init_post', 'finish' });
             
             % Setting the storage directory for dumping
             fCreated = now();
@@ -123,7 +124,7 @@ classdef logger_basic < simulation.monitor
             %               reference itself.
             % - xHelper     A reference to the helper class. Can ether be a
             %               string or a function handle. If string, check
-            %               s2f('sim.helper.logger_basic.' xHelper), if not
+            %               s2f('sim.helper.logger.' xHelper), if not
             %               present, check global s2f(xHelper)
             %
             % Any additional arguments that are provided beyond these two
@@ -145,8 +146,8 @@ classdef logger_basic < simulation.monitor
             
             % Helper can be function handle, or name of the function.
             if ischar(xHelper)
-                if ~isempty(which([ 'simulation.helper.logger_basic.' xHelper ]))
-                    xHelper = str2func([ 'simulation.helper.logger_basic.' xHelper ]);
+                if ~isempty(which([ 'simulation.helper.logger.' xHelper ]))
+                    xHelper = str2func([ 'simulation.helper.logger.' xHelper ]);
                     
                 elseif ~isempty(which(xHelper))
                     xHelper = str2func(xHelper);
@@ -968,12 +969,12 @@ classdef logger_basic < simulation.monitor
             try
                 this.logDataEvald = eval([ '@() ' sCmd ]);
             catch oError
-                this.throw('logger_basic','Something went wrong during logging. Please check your setup file.\nMessage: %s', oError.message);
+                this.throw('logger','Something went wrong during logging. Please check your setup file.\nMessage: %s', oError.message);
             end
         end
         
         
-        function onTickPost(this, ~)
+        function onStepPost(this, ~)
             
             try
                 this.mfLog(this.iLogIdx + 1, :) = this.logDataEvald();
