@@ -110,7 +110,7 @@ classdef gas < matter.phases.boundary.boundary
                 this.afPP = tProperties.afPP;
                 
                 arMolFractions = this.afPP ./ sum(this.afPP);
-                this.afMass = arMolFractions ./ this.afMolarMass;
+                this.afMass = arMolFractions ./ this.oMT.afMolarMass;
                 this.fMass = sum(this.afMass);
             end
             
