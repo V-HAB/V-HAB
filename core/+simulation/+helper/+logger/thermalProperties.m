@@ -1,96 +1,178 @@
-function tLogProps = thermalProperties(tLogProps, oVsys, tConfigStruct)
-%THERMAL_PROPERTIES Logs typical relevant thermal properties, e.g. capacities, ...
-%   If the tConfigStruct is given it will configure which capacities and
-%   conductors will be logged.
+function tLogProps = thermalProperties(tLogProps, oVsys, csStores)
+%THERMALPROPERTIES Logs typical relevant thermal props in a system
+%   If csStores is not given, this function will return logging properties
+%   for the temperatures, heat capacities and heat source flows of all
+%   capacities in the system defined by oVsys. It will also return the
+%   logging properties for the heat flows of all branches in the system. If
+%   csStores given, only those stores and branches connected to any of
+%   their phases are logged!
 
-csConfigCells = {'csCapacities', 'csLinearConductors', 'csFluidicConductors', 'csRadiativeConductors'};
-
-%TODO only branches that are connected to phases of the selected stores
-%       just collect exmes and compare coExmes{1/2}
-
-if nargin < 3
-    csCapacities          = oVsys.poCapacities.keys(); %!!!
-    csLinearConductors    = oVsys.poLinearConductors.keys();
-    csFluidicConductors   = oVsys.poFluidicConductors.keys();
-    csRadiativeConductors = oVsys.poRadiativeConductors.keys();
-    
-%TODO Make this actually work with the config struct in an intelligent way
-% else 
-%     csFieldNames = fieldnames(tConfigStruct);
-%     for iI = 1:length(tConfigStruct)
-%         if any(strcmp(csConfigCells, csFieldNames{iI}))
-%             
-%             %if isempty(tConfigStruct.
-%             csResult = eval([csFieldNames{iI}, '= tConfigStruct.(csFieldNames{iI})']);
-%             
-%         end
-%     end
+% Checking for the csStores input argument
+if nargin < 3 || isempty(csStores)
+    csStores = fieldnames(oVsys.toStores);
+    bStoresGiven = false;
+else
+    bStoresGiven = true;
 end
 
-sPath = simulation.helper.paths.getSysPath(oVsys);
+% Getting the path to the vsys object
+sPath = simulation.helper.paths.getSystemPath(oVsys);
 
+% Initializing a counter for all the values we want to log.
+iNumberOfValues = 1;
 
-iV = 1;
+%% Capacity Properties
 
+% Going through the csStores cell
+for iStore = 1:length(csStores)
+    % Setting some local variables to make the code more legigible
+    oStore     = oVsys.toStores.(csStores{iStore});
+    sStorePath = [ sPath '.toStores.' oStore.sName ];
+    
+    % Going through all the phases of the store and getting the logging
+    % properties of their associated capacity objects
+    for iPhase = 1:length(oStore.aoPhases)
+        % Getting the path to the current capacity
+        sCapacityPath = [ sStorePath '.toPhases.' oStore.aoPhases(iPhase).sName '.oCapacity'];
+        
+        %% Temperature
+        
+        % Adding the phase path
+        tLogProps(iNumberOfValues).sObjectPath = sCapacityPath;
+        
+        % Adding an expression that will be eval'd to extract the actual
+        % log value from the object
+        tLogProps(iNumberOfValues).sExpression = 'fTemperature';
+        
+        % Adding a label that will be used during plotting in the legend.
+        % Phase name and capacity name are the same. 
+        tLogProps(iNumberOfValues).sLabel = [ 'Capacity Temperature (' oVsys.sName ' - ' oStore.sName ' - ' oStore.aoPhases(iPhase).sName ')' ];
+        
+        % Incrementing the value counter
+        iNumberOfValues = iNumberOfValues + 1;
+        
+        %% Total Heat Capacity
+        
+        % Adding the phase path
+        tLogProps(iNumberOfValues).sObjectPath = sCapacityPath;
+        
+        % Adding an expression that will be eval'd to extract the actual
+        % log value from the object
+        tLogProps(iNumberOfValues).sExpression = 'fTotalHeatCapacity';
+        
+        % Adding a label that will be used during plotting in the legend.
+        % Phase name and capacity name are the same. 
+        tLogProps(iNumberOfValues).sLabel = [ 'Total Heat Capacity (' oVsys.sName ' - ' oStore.sName ' - ' oStore.aoPhases(iPhase).sName ')' ];
+    
+        % Incrementing the value counter
+        iNumberOfValues = iNumberOfValues + 1;
+        
+        %% Specific Heat Capacity
+        
+        % Adding the phase path
+        tLogProps(iNumberOfValues).sObjectPath = sCapacityPath;
+        
+        % Adding an expression that will be eval'd to extract the actual
+        % log value from the object
+        tLogProps(iNumberOfValues).sExpression = 'fSpecificHeatCapacity';
+        
+        % Adding a label that will be used during plotting in the legend.
+        % Phase name and capacity name are the same. 
+        tLogProps(iNumberOfValues).sLabel = [ 'Specific Heat Capacity (' oVsys.sName ' - ' oStore.sName ' - ' oStore.aoPhases(iPhase).sName ')' ];
+    
+        % Incrementing the value counter
+        iNumberOfValues = iNumberOfValues + 1;
+        
+        %% Current Heat Flow
+        
+        % Adding the phase path
+        tLogProps(iNumberOfValues).sObjectPath = sCapacityPath;
+        
+        % Adding an expression that will be eval'd to extract the actual
+        % log value from the object
+        tLogProps(iNumberOfValues).sExpression = 'fCurrentHeatFlow';
+        
+        % Adding a label that will be used during plotting in the legend.
+        % Phase name and capacity name are the same. 
+        tLogProps(iNumberOfValues).sLabel = [ 'Capacity Heat Flow (' oVsys.sName ' - ' oStore.sName ' - ' oStore.aoPhases(iPhase).sName ')' ];
+        
+        % Adding a unit explicitly because the auto-convert from expression
+        % to unit doesn't work for 'fCurrentHeatFlow', only for
+        % 'fHeatFlow'.
+        tLogProps(iNumberOfValues).sUnit = 'W';
+    
+        % Incrementing the value counter
+        iNumberOfValues = iNumberOfValues + 1;
+        
+        
+    end
+end
 
-for iI = 1:length(csCapacities)
-    oCapacity     = oVsys.poCapacities(csCapacities{iI});
-    if isa(oCapacity.oMatterObject, 'thermal.dummymatter')
-        sStorePath    = [ sPath, '.toStores.', oCapacity.oMatterObject.sName ];
-        sCapacityPath = [ sStorePath, '.toPhases.', oCapacity.oMatterObject.aoPhases(1).sName ];
-    else
-        % Rewritten, use poCapacities() to access the matter object, as the
-        % matter and thermal nodes might not be on the same system!
-        %sStorePath    = [ sPath, '.toStores.', oCapacity.oMatterObject.oStore.sName ];
-        %sCapacityPath = [ sStorePath, '.toPhases.', oCapacity.oMatterObject.sName ];
-        sCapacityPath = [ sPath, '.poCapacities(''', oCapacity.sName, ''').oMatterObject' ];
+%% Branch Properties
+
+% If the csStores input argument is given, we need to get all branches that
+% are connected to the capacities of the stores in that cell.
+if bStoresGiven
+    % Initializing some variables
+    aoThermalBranches = thermal.branch.empty(0,oVsys.iThermalBranches);
+    iBranch = 1;
+    
+    % Going throuhg all stores
+    for iStore = 1:length(csStores)
+        % Setting a local variable for the store to make the code more
+        % legigible
+        oStore = oVsys.toStores.(csStores{iStore});
+        
+        % Going throuhg all the phases of the current store
+        for iPhase = 1:oStore.iPhases
+            % Going through all the exmes of the current phase's capacity
+            for iEXME = 1:oStore.aoPhases(iPhase).oCapacity.iProcsEXME
+                % We we need to check if the branch object has already been
+                % added to the aoBranches array. On the first iteration,
+                % that is not needed.
+                if iBranch == 1 || ~any(arrayfun(@(oArray) isequal(oArray, oStore.aoPhases(iPhase).oCapacity.aoExmes(iEXME).oBranch), aoThermalBranches))
+                    % All conditions have been met and we can add the
+                    % current branch to the aoBranches array.
+                    aoThermalBranches(iBranch) = oStore.aoPhases(iPhase).oCapacity.aoExmes(iEXME).oBranch;
+                    % Incrementing the branch counter
+                    iBranch = iBranch + 1;
+                end
+                
+            end
+        end
     end
     
-    
-    % Total Heat Capacity
-    tLogProps(iV).sObjectPath = sCapacityPath;
-    tLogProps(iV).sExpression = 'fTotalHeatCapacity';
-    tLogProps(iV).sLabel      = [ 'Total Heat Capacity (' oVsys.sName ' - ' oCapacity.sName ')' ];
-    
-    iV = iV + 1;
-    
-    tLogProps(iV).sObjectPath = sCapacityPath;
-    tLogProps(iV).sExpression = 'fSpecificHeatCapacity';
-    tLogProps(iV).sLabel = [ 'Specific Heat Capacity (' oVsys.sName ' - ' oCapacity.sName ')' ];
-    
-    iV = iV + 1;
+else
+    % In this case the csStores input argument is NOT set, so we can just
+    % use all branches in the vsys object.
+    aoThermalBranches = oVsys.aoThermalBranches;
 end
 
-for iI = 1:length(csLinearConductors)
-    oConductor = oVsys.poLinearConductors(csLinearConductors{iI});
+% Going through all branches
+for iBranch = 1:length(aoThermalBranches)
+    % Getting the current branch object
+    oBranch = aoThermalBranches(iBranch);
     
-    tLogProps(iV).sObjectPath = [ sPath '.poLinearConductors(''' oConductor.sName ''')'];
-    tLogProps(iV).sExpression = 'fConductivity';
-    tLogProps(iV).sLabel = [ 'Conductivity (' oVsys.sName ' - ' oConductor.sName ')' ];
+    % Checking if the branch has a custom name or not 
+    if ~isempty(oBranch.sCustomName)
+        sBranchName = oBranch.sCustomName;
+    else
+        sBranchName = oBranch.sName;
+    end
     
-    iV = iV + 1;
+    % Setting the log property accordingly
+    tLogProps(iNumberOfValues).sObjectPath = [ sPath '.toThermalBranches.' sBranchName ];
+    
+    % Adding an expression that will be eval'd to extract the actual log
+    % value from the object
+    tLogProps(iNumberOfValues).sExpression = 'fHeatFlow';
+    
+    % Adding a label that will be used during plotting in the legend
+    tLogProps(iNumberOfValues).sLabel = [ 'Heat Flow Rate (' oVsys.sName ' - ' sBranchName ')' ];
+    
+    % Incrementing the value counter
+    iNumberOfValues = iNumberOfValues + 1;
 end
-
-for iI = 1:length(csFluidicConductors)
-    oConductor = oVsys.poFluidicConductors(csFluidicConductors{iI});
-    
-    tLogProps(iV).sObjectPath = [ sPath '.poFluidicConductors(''' oConductor.sName ''')'];
-    tLogProps(iV).sExpression = 'fConductivity';
-    tLogProps(iV).sLabel = [ 'Conductivity (' oVsys.sName ' - ' oConductor.sName ')' ];
-    
-    iV = iV + 1;
-end
-
-for iI = 1:length(csRadiativeConductors)
-    oConductor = oVsys.poRadiativeConductors(csRadiativeConductors{iI});
-    
-    tLogProps(iV).sObjectPath = [ sPath '.poRadiativeConductors(''' oConductor.sName ''')'];
-    tLogProps(iV).sExpression = 'fConductivity';
-    tLogProps(iV).sLabel = [ 'Conductivity (' oVsys.sName ' - ' oConductor.sName ')' ];
-    
-    iV = iV + 1;
-end
-
 
 end
 

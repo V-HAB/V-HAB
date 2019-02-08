@@ -43,7 +43,7 @@ classdef configurationParameters < base
             sConstructor = oVsys.oMeta.Name;
             
             % Using the helper to extract the path to this vsys object.
-            sSysPath     = simulation.helper.paths.getSysPath(oVsys);
+            sSystemPath = simulation.helper.paths.getSystemPath(oVsys);
             
             % Getting the keys for all system objects referenced in the
             % configuration parameters map.
@@ -71,7 +71,7 @@ classdef configurationParameters < base
                 % (e.g. 'Example.toChildren.Subsystem').
                 sKey = simulation.helper.paths.convertShorthandToFullPath(csSystems{iP});
                 
-                if strcmp(sKey, sSysPath)
+                if strcmp(sKey, sSystemPath)
                     % We found a matching system path, so we add the
                     % parameters to the return variable. If the same
                     % parameters were also defined using the constructor

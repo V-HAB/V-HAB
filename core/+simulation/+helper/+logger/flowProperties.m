@@ -1,6 +1,5 @@
 function tLogProps = flowProperties(tLogProps, oVsys, csStores)
-%FLOW_PROPS Logs typical relevant flow props for all or selected phases and
-%branches
+%FLOWPROPERTIES Logs typical relevant flow props in a system
 %   If csStores is not given, this function will return logging properties
 %   for the masses, temperatures and, if applicable, pressures, of all
 %   phases in the system defined by oVsys. It will also return the logging
@@ -17,42 +16,62 @@ else
 end
 
 % Getting the path to the vsys object
-sPath = simulation.helper.paths.getSysPath(oVsys);
+sPath = simulation.helper.paths.getSystemPath(oVsys);
 
 % Initializing a counter for all the values we want to log.
-iValue = 1;
+iNumberOfValues = 1;
 
 %% Phase Properties
 
 % Going through the csStores cell
-for iS = 1:length(csStores)
+for iStore = 1:length(csStores)
     % Setting some local variables to make the code more legigible
-    oStore     = oVsys.toStores.(csStores{iS});
+    oStore     = oVsys.toStores.(csStores{iStore});
     sStorePath = [ sPath '.toStores.' oStore.sName ];
     
-    % Going throuhg all the phases of the store and getting the logging
+    % Going through all the phases of the store and getting the logging
     % properties
-    for iP = 1:length(oStore.aoPhases)
+    for iPhase = 1:length(oStore.aoPhases)
         % Setting some local variables to make the code more legigible
-        oPhase     = oStore.aoPhases(iP);
+        oPhase     = oStore.aoPhases(iPhase);
         sPhasePath = [ sStorePath '.toPhases.' oPhase.sName ];
         
-        % Mass
-        tLogProps(iValue).sObjectPath = sPhasePath;
-        tLogProps(iValue).sExpression = 'this.fMass + this.fCurrentTotalMassInOut * (this.oTimer.fTime - this.fLastMassUpdate)';
-        tLogProps(iValue).sLabel = [ 'Phase Mass (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
-        tLogProps(iValue).sUnit = 'kg'; % the auto-convert is only for fMass directly, not for the calculation above
+        %% Mass
+        
+        % Adding the phase path
+        tLogProps(iNumberOfValues).sObjectPath = sPhasePath;
+        
+        % Adding an expression that will be eval'd to extract the actual
+        % log value from the object
+        tLogProps(iNumberOfValues).sExpression = 'this.fMass + this.fCurrentTotalMassInOut * (this.oTimer.fTime - this.fLastMassUpdate)';
+        
+        % Adding a label that will be used during plotting in the legend
+        tLogProps(iNumberOfValues).sLabel = [ 'Phase Mass (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
+        
+        % Adding a unit explicitly because the auto-convert from expression
+        % to unit only works for 'fMass' directly, not for the calculation
+        % above
+        tLogProps(iNumberOfValues).sUnit = 'kg';
         
         % Incrementing the value counter
-        iValue = iValue + 1;
+        iNumberOfValues = iNumberOfValues + 1;
         
-        % Temperature
-        tLogProps(iValue).sObjectPath = sPhasePath;
-        tLogProps(iValue).sExpression = 'fTemperature';
-        tLogProps(iValue).sLabel = [ 'Phase Temp (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
+        %% Temperature
+        
+        % Adding the phase path
+        tLogProps(iNumberOfValues).sObjectPath = sPhasePath;
+        
+        % Adding an expression that will be eval'd to extract the actual
+        % log value from the object
+        tLogProps(iNumberOfValues).sExpression = 'fTemperature';
+        
+        % Adding a label that will be used during plotting in the legend
+        tLogProps(iNumberOfValues).sLabel = [ 'Phase Temp (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
     
         % Incrementing the value counter
-        iValue = iValue + 1;
+        iNumberOfValues = iNumberOfValues + 1;
+        
+        %% Pressure 
         
         % We only need to get the pressure if the phase is gas or liquid
         switch oPhase.sType
@@ -68,13 +87,24 @@ for iS = 1:length(csStores)
         
         % Depending on the value of bLog we add the pressure as a log value
         if bLog == true
-            tLogProps(iValue).sExpression = sExpression;
-            tLogProps(iValue).sObjectPath = sPhasePath;
-            tLogProps(iValue).sLabel = [ 'Phase Pressure (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
-            tLogProps(iValue).sUnit = 'Pa'; % the auto-convert is only for fMass directly, not for the calculation above
+            % Adding the phase path
+            tLogProps(iNumberOfValues).sObjectPath = sPhasePath;
+            
+            % Adding the expression that will be eval'd to extract the
+            % actual log value from the object
+            tLogProps(iNumberOfValues).sExpression = sExpression;
+            
+            % Adding a label that will be used during plotting in the
+            % legend
+            tLogProps(iNumberOfValues).sLabel = [ 'Phase Pressure (' oVsys.sName ' - ' oStore.sName ' - ' oPhase.sName ')' ];
+            
+            % Adding a unit explicitly because the auto-convert from
+            % expression to unit only works for 'fPressure' directly, not
+            % for the calculation above
+            tLogProps(iNumberOfValues).sUnit = 'Pa';
             
             % Incrementing the value counter
-            iValue = iValue + 1;
+            iNumberOfValues = iNumberOfValues + 1;
         end
     end
 end
@@ -130,17 +160,20 @@ for iBranch = 1:length(aoBranches)
     % Checking if the branch has a custom name or not and adding it
     % accordingly.
     if ~isempty(oBranch.sCustomName)
-        tLogProps(iValue).sObjectPath = [ sPath ':b:' oBranch.sCustomName ];
+        tLogProps(iNumberOfValues).sObjectPath = [ sPath ':b:' oBranch.sCustomName ];
     else
-        tLogProps(iValue).sObjectPath = [ sPath ':b:' oBranch.sName ];
+        tLogProps(iNumberOfValues).sObjectPath = [ sPath ':b:' oBranch.sName ];
     end
     
-    % Adding the expressionand lable
-    tLogProps(iValue).sExpression = 'fFlowRate';
-    tLogProps(iValue).sLabel = [ 'Flow Rate (' oVsys.sName ' - ' oBranch.sName ')' ];
+    % Adding an expression that will be eval'd to extract the actual log
+    % value from the object
+    tLogProps(iNumberOfValues).sExpression = 'fFlowRate';
+    
+    % Adding a label that will be used during plotting in the legend
+    tLogProps(iNumberOfValues).sLabel = [ 'Flow Rate (' oVsys.sName ' - ' oBranch.sName ')' ];
     
     % Incrementing the value counter
-    iValue = iValue + 1;
+    iNumberOfValues = iNumberOfValues + 1;
 end
 
 end
