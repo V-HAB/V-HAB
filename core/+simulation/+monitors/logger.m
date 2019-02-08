@@ -5,17 +5,47 @@ classdef logger < simulation.monitor
     % the log only the currently stored values from the current tick can be
     % accessed in the oLastSimObj
     
+    % Pre-run configuration of log items
+    %
+    % addValueToLog() main method to add stuff to the log. Two ways to get
+    % there: 1. addValue() to add one specific value or 2. add() to use a
+    % helper. 
+    % 
+    % Also available: addVirtualValue(). Add calculations, conversions etc.
+    % even after a simulation has run.
+    %
+    % After initialization do pre-allocation of logging variables in
+    % onInitPost()
+    %
+    %
+    % Stuff that happens during a simulation
+    % 
+    % Of course actual logging in onStepPost()
+    %
+    % bDumpToMat -> each time preallocation happens, dump data to .mat file
+    % instead and empty mfLog? After the simulation, the data needs to be
+    % re-read with this.readDataFromMat()
+    %
+    % Stuff for after a simulation
+    % Needs to interface with plotter
+    % 
+    % get(), find(), getNumberOfUnits(), readDataFromMat(), onFinish()
+    
+            
+    
     properties (GetAccess = public, Constant = true)
-        % The properties enable automatic label generation for the plots.
-        % They map specific quantities from the V-HAB simulation to
+        % These properties enable automatic label generation for the plots.
+        % They map specific expressions from the V-HAB simulation to
         % specific physical values and units. If you receive an error
         % pointing you here because the unit is missing from this property
         % you can either add the corresponding values or use a custom label
         % for your axis.
         %
-        % Loops through keys, comparison only with length of key
-        % -> 'longer' keys need to be defined first (fMass * fMassToPress)
-        poExpressionToUnit = containers.Map(...
+        % The methods of this class loop through the keys and compare them
+        % to the provided expressions. The comparison is by length of each
+        % key so 'longer' keys need to be defined first 
+        % (e.g. 'this.fMass * this.fMassToPressure').
+        poExpressionToUnit = containers.Map(... 
             { 'this.fMass * this.fMassToPressure', 'fMassToPressure', 'fMass', 'afMass', 'fFlowRate', 'fTemperature', 'fPressure', 'afPP', 'fTotalHeatCapacity', 'fSpecificHeatCapacity', 'fConductivity', 'fPower', 'fCapacity', 'fResistance', 'fInductivity', 'fCurrent', 'fVoltage', 'fCharge', 'fBatteryCharge'}, ...
             { 'Pa',                                'Pa/kg',           'kg',    'kg',     'kg/s',      'K',            'Pa',        'Pa',   'J/K',                'J/kgK',                 'W/K',           'W',      'F',         '?',           'H',            'A',        'V',        'C',       'Ah'            }  ...
         );
@@ -89,11 +119,6 @@ classdef logger < simulation.monitor
     
     methods
         function this = logger(oSimulationInfrastructure, bDumpToMat, iPreallocRows)
-            % bDumpToMat -> each time preallocation happens, dump data to
-            % .mat file instead and empty mfLog? After the simulation, the
-            % data needs to be re-read with this.readDataFromMat()
-            %   
-            
             this@simulation.monitor(oSimulationInfrastructure, { 'step_post', 'init_post', 'finish' });
             
             % Setting the storage directory for dumping
@@ -108,68 +133,6 @@ classdef logger < simulation.monitor
                 this.iPreallocData = iPreallocRows * 100;
             end
         end
-        
-        
-        
-        function tiLogIndices = add(this, xVsys, xHelper, varargin)
-            % This method can be used to add multiple items to the log
-            % using helpers. It returns a struct array with the log item's
-            % names as field names and their indexes in the tLogValues
-            % struct array as values. 
-            %
-            % add() requires the following input arguments:
-            % - xVsys       A reference to a vsys object. Can either be a 
-            %               path as a string (e.g.
-            %               sys1/subsys1/subsubsys2), or the object
-            %               reference itself.
-            % - xHelper     A reference to the helper class. Can ether be a
-            %               string or a function handle. If string, check
-            %               s2f('sim.helper.logger.' xHelper), if not
-            %               present, check global s2f(xHelper)
-            %
-            % Any additional arguments that are provided beyond these two
-            % are passed on to the helper class. 
-            
-            
-            % RETURN from helper --> should be struct --> add to tLogValues
-            tEmptyLogProps = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {});
-            
-            % Vsys object can be provided directly, or a string containing
-            % the path to the vsys can be passed.
-            if ischar(xVsys)
-                sVsys = simulation.helper.paths.convertShorthandToFullPath(xVsys);
-                
-                oVsys = eval([ 'this.oSimulationInfrastructure.oSimulationContainer.toChildren.' sVsys ]);
-            else
-                oVsys = xVsys;
-            end
-            
-            % Helper can be function handle, or name of the function.
-            if ischar(xHelper)
-                if ~isempty(which([ 'simulation.helper.logger.' xHelper ]))
-                    xHelper = str2func([ 'simulation.helper.logger.' xHelper ]);
-                    
-                elseif ~isempty(which(xHelper))
-                    xHelper = str2func(xHelper);
-                    
-                else
-                    this.throw('add', 'Helper "%s" not found!', xHelper);
-                end
-            end
-            
-            % Helper needs to return struct array
-            tNewLogProps = xHelper(tEmptyLogProps, oVsys, varargin{:});
-            tiLogIndices = struct();
-            
-            % Merge
-            for iL = 1:length(tNewLogProps)
-                iIndex = this.addValueToLog(tNewLogProps(iL));
-                
-                % Get from this.tLogValues, maybe sName was empty!
-                tiLogIndices.(this.tLogValues(iIndex).sName) = iIndex;
-            end
-        end
-        
         
         function iIdx = addValue(this, sObjectPath, sExpression, sUnit, sLabel, sName)
             % This method adds a user-defined item to the log. The item 
@@ -221,6 +184,64 @@ classdef logger < simulation.monitor
             iIdx = this.addValueToLog(tProp);
         end
         
+        function ciLogIndexes = add(this, xObject, xHelper, varargin)
+            % This method can be used to add multiple items to the log
+            % using helpers. It returns a struct array with the log item's
+            % names as field names and their indexes in the tLogValues
+            % struct array as values. 
+            %
+            % add() requires the following input arguments:
+            % - xObject     A reference to a simulation object (e.g. vsys,
+            %               phase, store, branch, etc.). xObject can be
+            %               passed in either as a path string (e.g.
+            %               sys1/subsys1/subsubsys2), or the object
+            %               reference itself.
+            % - xHelper     A reference to the helper class. Can ether be a
+            %               string or a function handle. 
+            %
+            % Any additional arguments that are provided beyond these two
+            % are passed on to the helper class. 
+            
+            
+            % RETURN from helper --> should be struct --> add to tLogValues
+            tEmptyLogProps = struct('sObjectPath', {}, 'sExpression', {}, 'sName', {}, 'sUnit', {}, 'sLabel', {});
+            
+            % The object can be provided directly, or as a string
+            % containing the path to the object can be passed in.
+            if ischar(xObject)
+                % If the string is in shorthand, we convert it to the full
+                % path first.
+                sObject = simulation.helper.paths.convertShorthandToFullPath(xObject);
+                
+                % Now we get the reference to the actual object.
+                oObject = eval([ 'this.oSimulationInfrastructure.oSimulationContainer.toChildren.' sObject ]);
+            else
+                % The object was passed in directly, so we can use it. 
+                oObject = xObject;
+            end
+            
+            % Helper can be function handle, or name of the function.
+            if ischar(xHelper)
+                if ~isempty(which([ 'simulation.helper.logger.' xHelper ]))
+                    hHelper = str2func([ 'simulation.helper.logger.' xHelper ]);
+                    
+                elseif ~isempty(which(xHelper))
+                    hHelper = str2func(xHelper);
+                    
+                else
+                    this.throw('add', 'Helper "%s" not found!', xHelper);
+                end
+            end
+            
+            tNewLogProps = hHelper(tEmptyLogProps, oObject, varargin{:});
+            
+            iNumberOfItems = length(tNewLogProps);
+            ciLogIndexes = cell(iNumberOfItems,1);
+            
+            for iLogItem = 1:iNumberOfItems
+                ciLogIndexes{iLogItem} = this.addValueToLog(tNewLogProps(iLogItem));
+            end
+        end
         
         function iIndex = addVirtualValue(this, sExpression, sUnit, sLabel, sName)
             % This method allows users to add virtual values to the log,
@@ -251,8 +272,8 @@ classdef logger < simulation.monitor
             %
             %NOTE virtual values themselves are not available in subsequent
             %     calls to addVirtualValue - this could be implemented, but
-            %     a check would have to exist that calculates required virt
-            %     values on the fly!
+            %     a check would have to exist that calculates required
+            %     virtual values on the fly!
             
             
             % negative idx
@@ -670,11 +691,11 @@ classdef logger < simulation.monitor
             aiDumps = [];
             
             if isempty(tDir)
-                fprintf('LOGGER: No dumped data files available, aborting.\n');
+                fprintf('[Logger] No dumped data files available, aborting.\n');
                 return;
             end
             
-            fprintf(['LOGGER: reading data from .mat files - NOTE: logger will probably fail if the simulation is continued using this oLastSimObj!\n', ...
+            fprintf(['[Logger] reading data from .mat files - NOTE: logger will probably fail if the simulation is continued using this oLastSimObj!\n', ...
                      'To avoid problems, delete the oLastSimObj and reload the object from the data/runs folder.\n']);
             
             
@@ -701,7 +722,7 @@ classdef logger < simulation.monitor
 
             % Actually read the mat files
             for iF = 1:length(aiDumps) % length(aiDumps):-1:1
-                fprintf('LOGGER: reading mat file dump_%i.mat ...', aiDumps(iF));
+                fprintf('[Logger] reading mat file dump_%i.mat ...', aiDumps(iF));
                 
                 tFile = load([ sDir 'dump_' num2str(aiDumps(iF)) '.mat' ]);
                 
@@ -954,7 +975,7 @@ classdef logger < simulation.monitor
             this.iAllocated = this.iPrealloc;
             
             
-            fprintf('LOGGER: allocating rows:%i\n', this.iPrealloc);
+            fprintf('[Logger] Allocating %i rows\n', this.iPrealloc);
             
             % Create pre-evald loggin' function!
             
@@ -1061,7 +1082,7 @@ classdef logger < simulation.monitor
         
         function onFinish(this, ~)
             if this.bDumpToMat
-                if ~isdir([ 'data/runs/' this.sStorageDirectory ])
+                if ~isfolder([ 'data/runs/' this.sStorageDirectory ])
                     mkdir([ 'data/runs/' this.sStorageDirectory ]);
                 end
                 
@@ -1079,7 +1100,7 @@ classdef logger < simulation.monitor
         
         function dumpToMat(this)
             % First we check if the 
-            if ~isdir([ 'data/runs/' this.sStorageDirectory ])
+            if ~isfolder([ 'data/runs/' this.sStorageDirectory ])
                 mkdir([ 'data/runs/' this.sStorageDirectory ]);
             end
             
