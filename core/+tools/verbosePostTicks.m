@@ -1,4 +1,5 @@
-function [tbPostTickControl] = verbosePostTicks(oTimer)
+function tbPostTickControl = verbosePostTicks(oTimer)
+    %VERBOSEPOSTTICKS Helper to make the post tick boolean matrix human-readable
     % This function translates the 3 dimensional boolean array
     % mbPostTickControl which controls post tick execution into a more
     % verbose struct where indexing with the post tick group names and
@@ -11,7 +12,7 @@ function [tbPostTickControl] = verbosePostTicks(oTimer)
             cxPostTicks = oTimer.txPostTicks.(oTimer.csPostTickGroups{iGroup}).(csLevel{iLevel});
             if ~isempty(cxPostTicks)
                 for iTick = 1:length(cxPostTicks)
-                    mbControl(iTick) = oTimer.mbPostTickControl(iGroup, iLevel, iTick); %#ok
+                    mbControl(iTick) = oTimer.mbPostTickControl(iGroup, iLevel, iTick);
                 end
                 
             else
