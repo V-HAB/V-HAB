@@ -117,14 +117,14 @@ classdef gas < matter.phases.boundary.boundary
             if this.fMass ~= 0
                 % Now we calculate other derived values with the new parameters
                 this.fMassToPressure = this.fPressure/this.fMass;
-                this.fMolarMass      = sum(this.afMass .* this.oMT.afMolarMass) / this.fMass;
+                this.fMolarMass      = this.fMass ./ sum(this.afMass ./ this.oMT.afMolarMass);
                 
-                this.afPartsPerMillion = (this.afMass .* this.fMolarMass) ./ (this.oMT.afMolarMass .* this.fMass) * 1e6;
+                this.afPartsPerMillion = (this.afMass ./ this.fMolarMass) ./ (this.oMT.afMolarMass ./ this.fMass) * 1e6;
                 
                 this.arPartialMass = this.afMass/this.fMass;
                 
-                % V/m = p*R*T;
-                this.fDensity = this.fPressure * (this.oMT.Const.fUniversalGas / this.fMolarMass) * this.fTemperature;
+                % V/m = p/R*T
+                this.fDensity = this.fPressure / ((this.oMT.Const.fUniversalGas / this.fMolarMass) * this.fTemperature);
                 
                 if this.afPP(this.oMT.tiN2I.H2O)
                     % calculate saturation vapour pressure [Pa];

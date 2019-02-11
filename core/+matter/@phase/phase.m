@@ -21,7 +21,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         
         % Mean Density of mixture; not updated by this class, has to be
         % handled by a deriving class.
-        fDensity = -1; % [kg/m^3]
+        fDensity = nan; % [kg/m^3]
 
         % Total negative masses per substance encountered during mass
         % update. This data is only kept for debugging/logging purposes.
