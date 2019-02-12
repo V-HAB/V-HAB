@@ -95,7 +95,7 @@ classdef plotter_basic < base
             
             % Getting the number of units and their strings from the logger
             % object
-            [ iNumberOfUnits, csUniqueUnits ] = oLogger.getNumberOfUnits(aiIndexes);
+            [ iNumberOfUnits, csUniqueUnits ] = this.getNumberOfUnits(oLogger, aiIndexes);
             
             % If the number of units is larger than two and nothing else is
             % defined, we will set the csUnitOverride cell to the default
@@ -433,6 +433,39 @@ classdef plotter_basic < base
             % Now we join all of the unique, non-empty items in the labels
             % cell using a forward slash to separate them.
             sLabel = strjoin(unique(csLabels(~cellfun(@isempty, csLabels))), ' / ');
+        end
+        
+         function [ iNumberOfUnits, csUniqueUnits ] = getNumberOfUnits(oLogger, aiIndexes)
+            %GETNUMBEROFUNITS Returns information on the units of the provided items
+            % This function determines the number of units in a single plot
+            % and returns the value as an integer as well as a cell
+            % containing all units. 
+            
+            % Initializing a cell that can hold all of the unit strings.
+            csUnits = cell(length(aiIndexes),1);
+            
+            % Going through each of the indexes being queried and getting
+            % the information
+            for iI = 1:length(aiIndexes)
+                % For easier reading we get the current index into a local
+                % variable.
+                iIndex = aiIndexes(iI);
+                
+                % If the index is smaller than zero, this indicates that we
+                % are dealing with a virtual value; one that was not logged
+                % directly, but calculated from other logged values. We
+                % have to get the units from somewhere else then. 
+                if iIndex < 0
+                    csUnits{iI} = oLogger.tVirtualValues(-1 * iIndex).sUnit;
+                else
+                    csUnits{iI} = oLogger.tLogValues(iIndex).sUnit;
+                end
+            end
+            
+            % Now we can just get the number of unique entries in the cell
+            % and we have what we came for!
+            csUniqueUnits  = unique(csUnits);
+            iNumberOfUnits = length(csUniqueUnits);
         end
         
         function generatePlot(oPlot, afTime, mfData, tLogProps, sLabelY, sTimeUnit)

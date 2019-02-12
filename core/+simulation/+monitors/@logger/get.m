@@ -1,20 +1,20 @@
-function [ aafData, afTime, atConfiguration ] = get(this, aiIndexes, sIntervalMode, fIntervalValue)
+function [ mfData, afTime, atConfiguration ] = get(this, aiIndexes, sIntervalMode, fIntervalValue)
+%GET Retrieves data from log for selected items
 % This method gets the actual logged data from the mfLog property in
 % addition to the configuration data struct and returns both in arrays. The
 % aiIndex input parameters is an array of integers representing the log
 % item's indexes in the mfLog matrix.
 
-% First we need get the actual last tick of the simulation. That is not
-% logged anywhere and the only indication of how log we have run is the
-% length of the afTime property. We need the last tick so we can truncate
-% the mfLog data, because it is preallocated, meaning there are most likely
-% hundreds of rows filled with NaNs at the end, that would mess up
-% everything.
-iTick = length(this.afTime);
-aafLogTmp = this.mfLog(1:iTick, :);
+% First we need get the actual last tick of the simulation. We need the
+% last tick so we can truncate the mfLog data, because it is preallocated,
+% meaning there are most likely hundreds of rows filled with NaNs at the
+% end, that would mess up everything. We need to add one to the last tick
+% because the log also contains data for tick 0. 
+iTick = this.oSimulationInfrastructure.oSimulationContainer.oTimer.iTick + 1;
+mfLogTmp = this.mfLog(1:iTick, :);
 
 % We now initialize our return array with NaNs
-aafData = nan(size(aafLogTmp, 1), length(aiIndexes));
+mfData = nan(size(mfLogTmp, 1), length(aiIndexes));
 
 % Going through each of the indexes being queried and getting the
 % information
@@ -37,10 +37,9 @@ for iI = 1:length(aiIndexes)
         tConfiguration.sObjectPath = [];
         tConfiguration.iIndex      = iIndex;
         
-        
         % Using the function handle stored with the virtual value we now
         % perform the calculations that are to be made here.
-        afData = tConfiguration.calculationHandle(aafLogTmp);
+        afData = tConfiguration.calculationHandle(mfLogTmp);
         
         % Finally, to be equal to a normally logged value, we remove field
         % containing the function handle.
@@ -48,15 +47,15 @@ for iI = 1:length(aiIndexes)
     else
         % The current index is not a virtual value so we can just copy the
         % data from the log matrix and the tLogValues property.
-        afData = aafLogTmp(:, iIndex);
+        afData = mfLogTmp(:, iIndex);
         tConfiguration  = this.tLogValues(iIndex);
     end
     
     % Copying the data from the current index into the return variable.
-    aafData(:, iI) = afData;
+    mfData(:, iI) = afData;
     
     % If this is the first loop iteration, we initialize the return
-    % variable for the configuration data here. If it a following
+    % variable for the configuration data here. If it's a following
     % iteration, we append the array.
     if iI == 1
         atConfiguration = tConfiguration;
@@ -117,14 +116,14 @@ if nargin > 2
     
     % Using our abDeleteData boolean array we can now delete all of the
     % unneded data rows in the aafData array.
-    aafData(abDeleteData,:) = [];
+    mfData(abDeleteData,:) = [];
     
     % We also need to provide an array with the time steps of the selected
     % data rows. we get this by only getting those items that were not
     % deleted from the afTime property of the logger.
     afTime = this.afTime(~abDeleteData);
 else
-    % No interval is set, so we have to do nothing with aafData and can
+    % No interval is set, so we have to do nothing with mfData and can
     % just use afTime as is.
     afTime = this.afTime;
 end

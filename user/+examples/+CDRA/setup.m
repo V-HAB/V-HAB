@@ -148,7 +148,7 @@ classdef setup < simulation.infrastructure
             close all
           
             try
-                this.toMonitors.oLogger.readDataFromMat;
+                this.toMonitors.oLogger.readFromMat;
             catch
                 disp('no data outputted yet')
             end

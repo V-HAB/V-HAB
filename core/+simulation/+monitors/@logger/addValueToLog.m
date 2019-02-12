@@ -1,10 +1,11 @@
 function iIndex = addValueToLog(this, tLogProp)
+%ADDVALUETOLOG Adds one value to the log
 % This method adds a value to the tLogValues struct array property and
 % returns its index.
 
 % Initializing a local variable to hold the object from which we want to
 % add a property to the log.
-oObj   = [];
+oObject   = [];
 
 % Replace shorthand to full path (e.g. :s: to .toStores.) and prefix so
 % object is reachable through eval().
@@ -12,16 +13,16 @@ tLogProp.sObjectPath = simulation.helper.paths.convertShorthandToFullPath(tLogPr
 
 % Making sure that the object exists.
 try
-    oObj = eval([ 'this.oSimulationInfrastructure.oSimulationContainer.toChildren.' tLogProp.sObjectPath ]);
+    oObject = eval([ 'this.oSimulationInfrastructure.oSimulationContainer.toChildren.' tLogProp.sObjectPath ]);
     
     % The object exists so now we can set the UUID field in the tLogProp
     % struct.
-    tLogProp.sObjUuid = oObj.sUUID;
-catch oErr
-    assignin('base', 'oLastErr', oErr);
-    this.throw('addValueToLog', 'Object does not seem to exist: %s \n(message was: %s)', tLogProp.sObjectPath, oErr.message);
+    tLogProp.sObjUuid = oObject.sUUID;
+catch oError
+    % The object doesn't exist, so we let the user know.
+    assignin('base', 'oLastErr', oError);
+    this.throw('addValueToLog', 'Object does not seem to exist: %s \n(message was: %s)', tLogProp.sObjectPath, oError.message);
 end
-
 
 % Now we have to check to see if the item we are adding already exists in
 % the tLogValues struct. If it does, we can just get its index and return.
@@ -59,6 +60,10 @@ if any(aiObjMatches)
     end
 end
 
+% Okay, so the item does not yet exist in the log, so we have to create a
+% new entry for it. Before we can do that, we need to complete all of the
+% required information that needs to be stored in tLogProp.
+
 % If the user did not provide a name for this item, we generate it
 % automatically from the information we have, which is the expression to be
 % evaluated and the object.
@@ -84,41 +89,37 @@ if ~isfield(tLogProp, 'sName') || isempty(tLogProp.sName)
     end
     
     % Now we can set the name with the appended UUID.
-    tLogProp.sName = [sName, '_', oObj.sUUID];
+    tLogProp.sName = [sName, '_', oObject.sUUID];
     
 end
-
 
 % If the user did not provide a unit string, we can try to find it in the
 % poExpressionToUnit map.
 if ~isfield(tLogProp, 'sUnit') || isempty(tLogProp.sUnit)
-    % Setting the fallback unit to '-'
-    tLogProp.sUnit = '-';
-    
-    % Getting a cell with all the expressions that we have units for
-    csKeys = this.poExpressionToUnit.keys();
-    
-    % See if any expressions match the one we are looking for.
-    abIndex =  strcmp(csKeys, tLogProp.sExpression);
-    if any(abIndex) && sum(abIndex) == 1
-        % We have a match, so we can set the field accordingly.
-        tLogProp.sUnit = this.poExpressionToUnit(csKeys{abIndex});
+    % Trying to get the unit from the map
+    try
+        tLogProp.sUnit = this.poExpressionToUnit(tLogProp.sExpression);
+    catch oError
+        % If there is no key for this expression, we fall back to unitless,
+        % for all other errors we rethrow. 
+        if strcmp(oError.identifier, 'MATLAB:Containers:Map:NoKey')
+            % Setting the fallback unit to '-'
+            tLogProp.sUnit = '-';
+        else
+            rethrow(oError);
+        end
     end
 end
 
-
 % If the user did not provide a label, we will build one here.
 if ~isfield(tLogProp, 'sLabel') || isempty(tLogProp.sLabel)
-    
     % First we'll check if the object we are logging from has a sName
     % property. We want to use that name for our label. If there is no such
     % property, we just use the object's path.
     try
-        tLogProp.sLabel = oObj.sName;
-        
+        tLogProp.sLabel = oObject.sName;
     catch
         tLogProp.sLabel = tLogProp.sObjectPath;
-        
     end
     
     % If a unit is given hat is included in the poUnitsToLabels map, then
@@ -126,18 +127,17 @@ if ~isfield(tLogProp, 'sLabel') || isempty(tLogProp.sLabel)
     % the expression to be evaluated.
     try
         tLogProp.sLabel = [ tLogProp.sLabel ' - ' this.poUnitsToLabels(tLogProp.sUnit) ];
-        
     catch
         tLogProp.sLabel = tLogProp.sExpression;
-        
     end
 end
 
+% Setting the return variable
+iIndex = length(this.tLogValues) + 1;
 
-
-% Now we are finally done and can add the element to log struct array
-iIndex          = length(this.tLogValues) + 1;
+% Calculating the index of this item within the logging struct.
 tLogProp.iIndex = iIndex;
 
+% Now we are finally done and can add the element to log struct array
 this.tLogValues(tLogProp.iIndex) = tLogProp;
 end

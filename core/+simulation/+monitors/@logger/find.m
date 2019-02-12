@@ -1,14 +1,17 @@
 function aiIndex = find(this, cxItems, tFilter)
+%FIND Returns log indexes of selected items
 % This method returns an array of integers for the items that are contained
 % in the cxItems variable. This variable can either be empty or a cell. The
 % cell can contain either integers representing the index of the item
-% within the log matrix, strings representing the lable of the item or
+% within the log matrix, strings representing the label of the item or
 % strings representing the name of the item. This method will detect which
 % one it is and extract the index accordingly. Using the tFilter input
 % argument, the selection of items can be reduced by providing a struct
 % containing filter criteria. These can be any values of the fields of the
 % tLogValues struct, however it is mostly used to filter by unit (key
 % 'sUnit') or a specific system or object (key 'sObjectPath').
+% If the cxItems input argument is left empty, all indexes will be
+% returned, pending the application of any filters. 
 
 %% Getting Indexes
 
