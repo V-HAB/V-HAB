@@ -18,7 +18,7 @@ classdef infrastructure < base & event.source
     %   tickTo() and tick(). For more explanation on these methods, please
     %   refer to their descriptions in the code below. 
     
-    properties (SetAccess = public, GetAccess = public)
+    properties (SetAccess = protected, GetAccess = public)
         % Default number of ticks
         iSimTicks = 100;
         
@@ -41,8 +41,8 @@ classdef infrastructure < base & event.source
         bPlayFinishSound = false;
     end
     
-    
-    
+    % The following properties have private SetAccess due to the
+    % fundamental nature of this class.
     properties (SetAccess = private, GetAccess = public)
         % Name of the simulation
         sName;
@@ -69,17 +69,7 @@ classdef infrastructure < base & event.source
         % initialized, e.g. create*Structure, event init_post was sent
         % etc.?
         bInitialized = false;
-    end
     
-    properties (GetAccess = public, Dependent = true)
-        % This factor represents the simulated time / elapsed time. It
-        % therefore represents how much faster than real time the
-        % simulation is (if the factor is larger than 1) or how much slower
-        % it is (smaller than 1)
-        fSimFactor;
-    end
-
-    properties (SetAccess = private, GetAccess = public)
         % Defining the default monitors. These can be overwritten in each
         % simulation's setup.m file. See the individual monitor's class
         % files for more information. 
@@ -97,6 +87,16 @@ classdef infrastructure < base & event.source
         
         % A struct that contains the different monitor objects.
         toMonitors = struct();
+    end
+    
+    % It is unknown why this property requires the dependent attribute to
+    % be set to true.
+    properties (GetAccess = public, Dependent = true)
+        % This factor represents the simulated time / elapsed time. It
+        % therefore represents how much faster than real time the
+        % simulation is (if the factor is larger than 1) or how much slower
+        % it is (smaller than 1)
+        fSimFactor;
     end
     
     methods

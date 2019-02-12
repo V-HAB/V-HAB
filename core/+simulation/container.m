@@ -4,6 +4,8 @@ classdef container < systems.root
     % framework for models to be created in V-HAB. It is the root system
     % for each simulation. 
     
+    % Since this is such a basic class, all of its properties have private
+    % SetAccess. 
     properties (SetAccess = private, GetAccess = public)
         % Global timer object
         oTimer;

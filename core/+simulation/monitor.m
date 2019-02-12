@@ -4,12 +4,16 @@ classdef (Abstract) monitor < base & event.source
     %   most importantly the automatic binding to events posted by the
     %   simulation infrastructure.
     
+    % Private SetAccess to make sure there is only one place where this
+    % property can be set.
     properties (SetAccess = private, GetAccess = public)
         % A reference to the simulation infrastructure object
         oSimulationInfrastructure;
     end
     
-    
+    % Private SetAccess to make sure there is only one place where this
+    % property can be set and protected GetAccess because this
+    % information should only be visible to the derived classes. 
     properties (SetAccess = private, GetAccess = protected)
         % A struct containing the links between the events that the
         % simulation infrastructure object announces and the methods of

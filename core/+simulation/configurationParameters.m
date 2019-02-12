@@ -9,7 +9,7 @@ classdef configurationParameters < base
     % parameter objects is passed in and each simulation then uses it's
     % individual set of parameters. 
     
-    properties
+    properties (SetAccess = protected, GetAccess = public)
         % A containersMap() object conainting the names of the vsys object
         % properties and the values that are to be set. 
         ptConfigParams;
@@ -47,7 +47,7 @@ classdef configurationParameters < base
             
             % Getting the keys for all system objects referenced in the
             % configuration parameters map.
-            csSystems  = this.ptConfigParams.keys();
+            csSystems = this.ptConfigParams.keys();
             
             % Initializing the return variable that will contain the
             % parameters
