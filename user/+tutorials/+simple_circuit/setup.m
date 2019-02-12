@@ -9,6 +9,7 @@ classdef setup < simulation.infrastructure
     %   - provide methods for plotting the results
     
     properties
+        tiLogValues;
     end
     
     methods
@@ -68,18 +69,34 @@ classdef setup < simulation.infrastructure
             
             oLog = this.toMonitors.oLogger;
             
-            oLog.add('Example', 'electrical_properties');
+            this.tiLogValues = oLog.add('Example', 'electricalProperties');
         
-
-            %% Define plots
         end
         
         function plot(this) % Plotting the results
-            
+            % First we get a handle to the plotter object associated with
+            % this simulation.
             oPlotter = plot@simulation.infrastructure(this);
             
-%             oPlotter.definePlotAllWithFilter('V', 'Voltages');
-%             oPlotter.definePlotAllWithFilter('A', 'Currents');
+            % Converting the tiLogValues struct into a cell with just the
+            % values of the indexes
+            ciLogValues = struct2cell(this.tiLogValues);
+            
+            % Defining a filter for voltages
+            tPlotOptions = struct('tUnitFilter', struct('sUnit','V'));
+            % Creating the voltage plot
+            coPlots{1,1} = oPlotter.definePlot(ciLogValues, 'Voltages', tPlotOptions);
+            
+            % Defining a filter for currents
+            tPlotOptions = struct('tUnitFilter', struct('sUnit','A'));
+            % Creating the current plot
+            coPlots{2,1} = oPlotter.definePlot(ciLogValues, 'Currents', tPlotOptions);
+            
+            % Defining the figure
+            oPlotter.defineFigure(coPlots, 'Results');
+            
+            % Plotting 
+            oPlotter.plot();
         end
         
     end
