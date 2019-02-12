@@ -51,7 +51,7 @@ classdef branch < solver.matter.base.branch
             % Registering the solver with the timer provides a function as
             % output that can be used to bind the post tick update in a
             % tick resulting in the post tick calculation to be executed
-            this.hBindPostTickUpdate      = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
+            this.hBindPostTickUpdate = this.oBranch.oTimer.registerPostTick(@this.update, 'matter' , 'solver');
             
             this.setTimeStep(this.fTimeStep);
             

@@ -31,16 +31,8 @@ classdef vhab
             % The old V-HAB projects are collected in one big project that
             % is located in the 'old' folder. Users may or may not have
             % this project, so we check for the folder.
-            % Older versions of MATLAB don't yet know of the isfolder()
-            % method, so we check for that. 
-            if verLessThan('matlab', '9.4')
-                if isdir([ strrep(pwd(), '\', '/') '/old' ]) %#ok<ISDIR>
-                    addpath([ strrep(pwd(), '\', '/') '/old' ]);
-                end
-            else
-                if isfolder([ strrep(pwd(), '\', '/') '/old' ])
-                    addpath([ strrep(pwd(), '\', '/') '/old' ]);
-                end
+            if isfolder([ strrep(pwd(), '\', '/') '/old' ])
+                addpath([ strrep(pwd(), '\', '/') '/old' ]);
             end
         end
         
