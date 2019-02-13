@@ -86,13 +86,13 @@ classdef consoleOutput < simulation.monitor
     % These properties should not be accessed via the consoleOutput class,
     % so their GetAccess is protected. 
     properties (SetAccess = protected, GetAccess = protected)
-        % Reference to the logger object of this simulation
-        oLogger;
+        % Reference to the debugOutput object of this simulation
+        oDebugOutput;
         
         % Integer capturing the ID under which this monitor is bound to the
-        % logger object. This information is required to delete the
+        % debugOutput object. This information is required to delete the
         % monitor, if necessary. 
-        iLogBindId;
+        iDebugBindId;
     end
     
     
@@ -113,12 +113,12 @@ classdef consoleOutput < simulation.monitor
                 this.iMinorReportingInterval = iMinorReportingInterval;
             end
             
-            % Registering this object on the logger
-            this.iLogBindId = base.oDebug.bind(@this.printOutput, @this.filterObjByRootlineToSimContainer, this);
+            % Registering this object on the debugger
+            this.iDebugBindId = base.oDebug.bind(@this.printOutput, @this.filterObjByRootlineToSimContainer, this);
             
-            % Setting the oLogger property so we can access it from the
+            % Setting the oDebugOutput property so we can access it from the
             % methods in this class. 
-            this.oLogger = base.oDebug;
+            this.oDebugOutput = base.oDebug;
         end
         
         function this = setReportingInterval(this, iMajorTicks, iMinorTicks)
@@ -277,25 +277,25 @@ classdef consoleOutput < simulation.monitor
         %% Global methods for the debugging output
         
         function delete(this)
-            % Deletes this output object from the logger. 
-            this.oLogger.unbind(this.iLogBindId);
+            % Deletes this output object from the debugger. 
+            this.oDebugOutput.unbind(this.iDebugBindId);
         end
         
-        function this = setLogOff(this)
+        function this = setDebugOff(this)
             % Turns the debugging output off
-            this.oLogger.setOutputState(false);
+            this.oDebugOutput.setOutputState(false);
         end
         
-        function this = setLogOn(this)
+        function this = setDebugOn(this)
             % Globally activates the debugging output. 
             % This should only be done when currently debugging, as it
             % slows down the simulation.
-            this.oLogger.setOutputState(true);
+            this.oDebugOutput.setOutputState(true);
         end
         
         function this = toggleShowStack(this)
             % When printing a debug message, include the stack output?
-            this.oLogger.toggleCreateStack();
+            this.oDebugOutput.toggleCreateStack();
         end
         
         function this = setLevel(this, iLevel)
@@ -723,7 +723,7 @@ classdef consoleOutput < simulation.monitor
             
             % If the user selected to also have the stack of the message
             % provider be printed, we do it here. 
-            if this.oLogger.bCreateStack
+            if this.oDebugOutput.bCreateStack
                 fprintf('     STACK');
                 fprintf(' <- %s', tPayload.tStack(:).name);
                 fprintf('\n\n');
