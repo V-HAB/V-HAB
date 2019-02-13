@@ -403,9 +403,11 @@ classdef timer < base
             % callbacks
             
             this.cCallBacks(iCB)  = [];
-            this.afTimeSteps(iCB) = [];
+            this.afTimeStep(iCB)  = [];
+            this.abDependent(iCB) = [];
             this.afLastExec(iCB)  = [];
             this.ctPayload(iCB)   = [];
+
         end
     end
     
@@ -442,10 +444,10 @@ classdef timer < base
     
     
     % Only the simulation.infrastructore object is allowed to call the
-    % step() method, so we restrict the access here. 
+    % tick() method, so we restrict the access here. 
     methods (Access = {?simulation.infrastructure})
         
-        function step(this)
+        function tick(this)
             % Advance the timer one (global) time step
             
             % If time is -1 the min. time step - first tick, advance to zero

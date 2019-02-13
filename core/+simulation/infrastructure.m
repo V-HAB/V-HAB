@@ -434,13 +434,13 @@ classdef infrastructure < base & event.source
             this.fRuntimeOther = this.fRuntimeOther + toc(hTimer);
             
             
-            % Now we call the step() method of the timer object where the
+            % Now we call the tick() method of the timer object where the
             % simulation model is advanced by one tick. Again, since we
             % want to track how long this takes, we start a timer before
             % the call is made and add the end time to the fRuntimeTick
             % property.
             hTimer = tic();
-            this.oSimulationContainer.oTimer.step();
+            this.oSimulationContainer.oTimer.tick();
             this.fRuntimeTick = this.fRuntimeTick + toc(hTimer);
             
             
