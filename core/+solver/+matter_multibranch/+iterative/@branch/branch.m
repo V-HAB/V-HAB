@@ -202,6 +202,8 @@ classdef branch < base & event.source
         iLastWarn = -1000;
         
         bFinalLoop = false;
+        
+        bRegisteredOutdated = false;
     end
     
     properties (SetAccess = private, GetAccess = protected) %, Transient = true)
@@ -209,7 +211,6 @@ classdef branch < base & event.source
         % method (loadobj) to be implemented in this class, so when the
         % simulation is re-loaded from a .mat file, the properties are
         % reset to their proper values.
-        bRegisteredOutdated = false;
         
         hBindPostTickUpdate;
         hBindPostTickTimeStepCalculation;
@@ -500,6 +501,10 @@ classdef branch < base & event.source
                 this.piObjUuidsToColIndex(oBranch.sUUID) = iColIndex;
                 this.poColIndexToObj(iColIndex) = oBranch;
                 
+                oBranch.bind('outdated', @this.registerUpdate);
+                if oBranch.bOutdated
+                    this.registerUpdate();
+                end
                 % Init
                 this.chSetBranchFlowRate{iBranch}(0, []);
                 

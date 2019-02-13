@@ -348,7 +348,9 @@ function update(this)
         
         % Check if we have to rebuilt the update level matrix
         if any(sign(afPrevFrs) ~= sign(this.afFlowRates)) || any(this.afFlowRates(afPrevFrs == 0)) ||...
-                this.iNumberOfExternalBoundaryBranches ~= sum(this.mbExternalBoundaryBranches)
+                this.iNumberOfExternalBoundaryBranches ~= sum(this.mbExternalBoundaryBranches) || ...
+                isempty(this.iBranchUpdateLevels)
+            
             
             this.updateBranchLevelNetwork(mfPhasePressuresAndFlowRates, afBoundaryConditions, iStartZeroSumEquations, iNewRows, aiNewRowToOriginalRow, aiNewColToOriginalCol);
             
@@ -399,12 +401,19 @@ function update(this)
             if ~base.oDebug.bOff, this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(iB) }); end
         end
     end
+    
+    % Since the last update of the partial mass composition of the flow
+    % phases was done before the newest branch flowrates were calculated,
+    % we have to update this now. However, the P2Ps are not allowed to
+    % update because otherwise the conservation of mass over the flow nodes
+    % would no longer be valid!
+    this.updateNetwork(false);
+    
     % Ok now go through results - variable pressure phase pressures and
     % branch flow rates - and set! This must be done in the update order of
     % the branches to ensure that the variable pressure phase have already
     % inflows, otherwise it is possible that nothing flows because the
     % arPartialMass values of the flow nodes are still 0
-    
     for iBL = 1:this.iBranchUpdateLevels
         
         miCurrentBranches = find(this.mbBranchesPerUpdateLevel(iBL,:));

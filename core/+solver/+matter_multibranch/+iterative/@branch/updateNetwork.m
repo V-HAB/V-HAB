@@ -33,8 +33,6 @@ function updateNetwork(this, bForceP2Pcalc)
                 
                 oCurrentBranch   = this.aoBranches(iB);
                 
-                fFlowRate = this.afFlowRates(iB);
-                
                 % it must ensured that all branches upstream of the current
                 % branch are already update and the phase partial masses
                 % are set correctly for this to work!
