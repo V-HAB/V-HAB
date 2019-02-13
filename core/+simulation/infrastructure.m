@@ -522,9 +522,9 @@ classdef infrastructure < base & event.source
             % Checking if a certain logger is specified and then getting
             % either that one or the default logger. 
             if nargin >= 2
-                oPlotter = tools.postprocessing.plotter.plotter(this, sLogger);
+                oPlotter = tools.postprocessing.plotter(this, sLogger);
             else
-                oPlotter = tools.postprocessing.plotter.plotter(this);
+                oPlotter = tools.postprocessing.plotter(this);
             end
         end
 

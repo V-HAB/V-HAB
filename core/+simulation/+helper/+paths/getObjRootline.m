@@ -33,7 +33,7 @@ cParentRefs = {
     'matter.table', '', '';
     'simulation.configurationParameters', '', '';
     'simulation.monitor', '', '';
-    'tools.postprocessing.plotter.plotter', '', '';
+    'tools.postprocessing.plotter', '', '';
     };
 
 
