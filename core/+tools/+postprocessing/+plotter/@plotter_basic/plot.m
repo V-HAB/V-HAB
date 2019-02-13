@@ -619,15 +619,13 @@ for iFigure = 1:length(this.coFigures)
     % the drawnow method.
     drawnow();
     
+    % Maximize the figure window to fill the whole screen.
+    set(oFigure, 'WindowState', 'maximized');
+    
     % If the user selected to turn on the plot tools, we turn them on now.
-    % They are off by default. Turing on the plot tools will automatically
-    % maximize the figure. If plot tools are not turned on, we have to
-    % maximize it manually.
+    % They are off by default. 
     if isfield(this.coFigures{iFigure}.tFigureOptions, 'bPlotTools') && this.coFigures{iFigure}.tFigureOptions.bPlotTools == true
         plottools(oFigure, 'on');
-    else
-        % Maximize figure
-        set(oFigure, 'units','normalized','OuterPosition', [0 0 1 1]);
     end
     
     % Finally we write the coHandles cell to the UserData struct of the
