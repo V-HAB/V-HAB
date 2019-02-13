@@ -9,7 +9,8 @@ classdef setup < simulation.infrastructure
     %   - provide methods for plotting the results
     
     properties
-        % This class does not have any properties.
+        % A cell containing all log items
+        ciLogValues;
     end
     
     methods
@@ -35,26 +36,41 @@ classdef setup < simulation.infrastructure
         
         % Logging function
         function configureMonitors(this)
+            %% Logging
             % To make the code more legible, we create a local variable for
             % the logger object.
-            oLogger = this.toMonitors.oLogger;
-            
-            % Using a helper, we add a bunch of values to the log.
-            oLogger.add('Example', 'electrical_properties');
+
+            oLog = this.toMonitors.oLogger;
+
+            % Creating a cell setting the log items. You need to know the
+            % exact structure of your model to set log items, so do this
+            % when you are done modelling and ready to run a simulation. 
+            this.ciLogValues = oLog.add('Example', 'electricalProperties');
         
         end
         
-        % Plotting function
-        function plot(this)
+        function plot(this) % Plotting the results
             % First we get a handle to the plotter object associated with
             % this simulation.
             oPlotter = plot@simulation.infrastructure(this);
             
-            % We're not going to define any plots, that will cause the
-            % plotter to create a default plot for us, which is good enough
-            % in this case. 
-            oPlotter.plot();
+            % Defining a filter for voltages
+            %tPlotOptions = struct('tUnitFilter', struct('sUnit','V'));
+            tPlotOptions = struct(); 
+            % Creating the voltage plot
+            coPlots{1,1} = oPlotter.definePlot(this.ciLogValues, 'Voltages', tPlotOptions);
             
+            % Defining a filter for currents
+            %tPlotOptions = struct('tUnitFilter', struct('sUnit','A'));
+            tPlotOptions = struct(); 
+            % Creating the current plot
+            coPlots{2,1} = oPlotter.definePlot(this.ciLogValues, 'Currents', tPlotOptions);
+            
+            % Defining the figure
+            oPlotter.defineFigure(coPlots, 'Results');
+            
+            % Plotting 
+            oPlotter.plot();
         end
         
     end

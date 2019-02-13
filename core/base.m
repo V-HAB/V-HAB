@@ -72,7 +72,7 @@ classdef base < handle
             % this.out(4, 2, 'inputs', 'Other relevant variables, e.g. if param X based on those.');
             % this.out(4, 3, 'inputs', 'Even more ...');
             % 
-            % Using the methods in the console_output simulation monitor,
+            % Using the methods in the consoleOutput simulation monitor,
             % the minimum level for a message to be displayed, and the
             % maximum verbosity can be set. Both values do not have an
             % upper limit, i.e. one could call this.out(100, 'my msg') and 

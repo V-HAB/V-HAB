@@ -1,6 +1,6 @@
-classdef matter_observer < simulation.monitor
-    %MATTER_OBSERVER logs the overall mass balance and mass lost. The
-    % difference is that mass balance is: 
+classdef matterObserver < simulation.monitor
+    %MATTEROBSERVER logs the overall mass balance and mass lost
+    % The difference is that mass balance is: 
     % sum(Mass of all Phases at tick 1) - sum(Mass of all Phases at final tick) 
     % Which means a positive mass balance is actually a reduction in mass
     %
@@ -17,7 +17,7 @@ classdef matter_observer < simulation.monitor
     % overwriting a negative value with 0 produces mass! This value should
     % be small, otherwise you have an error in your time step settings!
     %
-    % For debugging you can also try using the massbalance_observer, which
+    % For debugging you can also try using the massbalanceObserver, which
     % tries to find the locations in your simulation where the errors occur
     
     properties (SetAccess = protected, GetAccess = public)
@@ -47,8 +47,8 @@ classdef matter_observer < simulation.monitor
     end
     
     methods
-        function this = matter_observer(oSimulationInfrastructure)
-            this@simulation.monitor(oSimulationInfrastructure, { 'tick_post', 'init_post', 'finish', 'pause' });
+        function this = matterObserver(oSimulationInfrastructure)
+            this@simulation.monitor(oSimulationInfrastructure, { 'step_post', 'init_post', 'finish', 'pause' });
             
         end
     end
@@ -56,13 +56,12 @@ classdef matter_observer < simulation.monitor
     
     methods (Access = protected)
         
-        function onTickPost(this, ~)
-            oInfra = this.oSimulationInfrastructure;
-            oSim   = oInfra.oSimulationContainer;
-            oMT    = oSim.oMT;
+        function onStepPost(this, ~)
+            
+            oMT    = this.oSimulationInfrastructure.oSimulationContainer.oMT;
             
             if ~isempty(this.aoPhases)
-                if mod(oSim.oTimer.iTick, this.iMassLogInterval) == 0
+                if mod(this.oSimulationInfrastructure.oSimulationContainer.oTimer.iTick, this.iMassLogInterval) == 0
                     iIdx = size(this.mfTotalMass, 1) + 1;
                     
                     % Total mass: sum over all mass stored in all phases, for each

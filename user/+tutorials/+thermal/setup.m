@@ -36,7 +36,7 @@ classdef setup < simulation.infrastructure
             
             % Possible to change the constructor paths and params for the
             % monitors
-            ttMonitorConfig = struct('oTimeStepObserver', struct('sClass', 'simulation.monitors.timestep_observer', 'cParams', {{ 0 }}));
+            ttMonitorConfig = struct('oTimeStepObserver', struct('sClass', 'simulation.monitors.timestepObserver', 'cParams', {{ 0 }}));
             
             %%%ttMonitorConfig.oConsoleOutput = struct('cParams', {{ 50 5 }});
             

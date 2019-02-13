@@ -17,6 +17,16 @@ end
 % logger object here.
 oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
 
+% The logger has the option to periodically dump simulation data into mat
+% files to keep the memory usage down and to provide save points during
+% long simulations. Before we do anything, we need to check if this has
+% been done and if the data has been re-loaded into the simulation object.
+% The data has already been re-loaded if the first entry in the afTime
+% array is zero. 
+if oLogger.bDumpToMat && oLogger.afTime(1) ~= 0
+    oLogger.readFromMat();
+end
+
 % Now we loop through each item in the coFigures cell and create an
 % individual figure for each of them.
 for iFigure = 1:length(this.coFigures)

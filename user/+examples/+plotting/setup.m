@@ -16,7 +16,7 @@ classdef setup < simulation.infrastructure
         % Constructor function
         function this = setup(varargin) 
             
-            ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalance_observer';
+            ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
             fAccuracy = 1e-8;
             fMaxMassBalanceDifference = inf;
             bSetBreakPoints = false;

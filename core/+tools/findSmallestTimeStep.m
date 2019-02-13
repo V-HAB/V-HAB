@@ -1,5 +1,5 @@
 function [  ] = findSmallestTimeStep( oInput )
-    % This function is used to read the data that the timestep_observer
+    % This function is used to read the data that the timestepObserver
     % stored for debugging and displays the location, tick and timestep of
     % the component with the smallest timestep in the last 100 ticks.
     % Simply call it after finishing or pausing a simulation by typing
