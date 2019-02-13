@@ -1,5 +1,5 @@
-classdef plotter_basic < base
-    %PLOTTER_BASIC Default plotter class for V-HAB simulations
+classdef plotter < base
+    %PLOTTER Plotter class for V-HAB simulations
     %   The object instantiated from this class contains a cell of objects
     %   that are used to create user-defined figures using data from the
     %   simulation logger. 
@@ -21,7 +21,7 @@ classdef plotter_basic < base
     end
     
     methods
-        function this = plotter_basic(oSimulationInfrastructure, sLogger)
+        function this = plotter(oSimulationInfrastructure, sLogger)
             % Constructor method for this class.
             
             this.oSimulationInfrastructure = oSimulationInfrastructure;
