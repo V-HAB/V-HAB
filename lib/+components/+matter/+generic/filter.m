@@ -118,7 +118,7 @@ classdef filter < matter.procs.p2ps.flow
             % ROUND
             %fFlowRate = tools.round.prec(fFlowRate, this.oIn.oTimer.iPrecision);
             
-            if ~base.oLog.bOff
+            if ~base.oDebug.bOff
                 this.out(1, 1, 'calc-fr', 'p2p calc flowrate of %s, ads rate %f is: %.34f', { this.sName, rAdsorp, fFlowRate });
                 this.out(1, 2, 'calc-fr', '%.16f\t', { afFlowRate });
             end
@@ -126,7 +126,7 @@ classdef filter < matter.procs.p2ps.flow
         
         function update(this)
             
-            if ~base.oLog.bOff, this.out(1, 1, 'set-fr', 'p2p update flowrate of %s', { this.sName }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'set-fr', 'p2p update flowrate of %s', { this.sName }); end
             %keyboard();
             [ afFlowRate, aarPartials ] = this.getInFlows();
             

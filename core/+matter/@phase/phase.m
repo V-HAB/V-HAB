@@ -302,8 +302,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % bind post tick updates. These functions are stored as
             % properties and can then simply be called with e.g. 
             % this.hBindPostTickMassUpdate();
-            this.hBindPostTickMassUpdate  = this.oTimer.registerPostTick(@this.massupdate,   'matter',        'phase_massupdate');
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,       'matter',        'phase_update');
+            this.hBindPostTickMassUpdate  = this.oTimer.registerPostTick(@this.massupdate,        'matter',        'phase_massupdate');
+            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,            'matter',        'phase_update');
             this.hBindPostTickTimeStep    = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics' , 'timestep');
         end
 
@@ -683,7 +683,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 return;
             end
             
-            if ~base.oLog.bOff, this.out(tools.logger.INFO, 1, 'exec', 'Execute massupdate in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
+            if ~base.oDebug.bOff, this.out(tools.debugOutput.INFO, 1, 'exec', 'Execute massupdate in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
 
             % Immediately set fLastMassUpdate, so if there's a recursive call
             % to massupdate, e.g. by a p2ps.flow, nothing happens!
@@ -696,14 +696,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             %[ afTotalInOuts, mfInflowDetails ] = this.getTotalMassChange();
             afTotalInOuts = this.afCurrentTotalInOuts;
             
-            if ~base.oLog.bOff, this.out(1, 2, 'total-fr', 'Total flow rate in %s-%s: %.20f', { this.oStore.sName, this.sName, sum(afTotalInOuts) }); end
+            if ~base.oDebug.bOff, this.out(1, 2, 'total-fr', 'Total flow rate in %s-%s: %.20f', { this.oStore.sName, this.sName, sum(afTotalInOuts) }); end
             
             % Check manipulator
             if ~isempty(this.toManips.substance) && ~isempty(this.toManips.substance.afPartialFlows)
                 % Add the changes from the manipulator to the total inouts
                 afTotalInOuts = afTotalInOuts + this.toManips.substance.afPartialFlows;
                 
-                if ~base.oLog.bOff, this.out(tools.logger.MESSAGE, 1, 'manip-substance', 'Has substance manipulator'); end % directly follows message above, so don't output name
+                if ~base.oDebug.bOff, this.out(tools.debugOutput.MESSAGE, 1, 'manip-substance', 'Has substance manipulator'); end % directly follows message above, so don't output name
             end
             
             % Cache total mass in/out so the EXMEs can use that
@@ -729,9 +729,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.afMassGenerated(abNegative) = this.afMassGenerated(abNegative) - this.afMass(abNegative);
                 this.afMass(abNegative) = 0;
                 
-                if ~base.oLog.bOff
-                    this.out(tools.logger.NOTICE, 1, 'negative-mass', 'Got negative mass, added to mass lost.', {}); % directly follows message above, so don't output name
-                    %this.out(3, 2, 'negative-mass', 'TODO: output all substance names with negative masses!');
+                if ~base.oDebug.bOff
+                    this.out(tools.debugOutput.NOTICE, 1, 'negative-mass', 'Got negative mass, added to mass lost.', {}); % directly follows message above, so don't output name
                     this.out(3, 2, 'negative-mass', '%s\t', this.oMT.csI2N(abNegative));
                 end
                 
@@ -772,12 +771,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         function this = update(this)
             % Only update if not yet happened at the current time.
             if (this.oTimer.fTime <= this.fLastUpdate) || (this.oTimer.fTime < 0)
-                if ~base.oLog.bOff, this.out(2, 1, 'update', 'Skip update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
+                if ~base.oDebug.bOff, this.out(2, 1, 'update', 'Skip update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
                 
                 return;
             end
             
-            if ~base.oLog.bOff, this.out(2, 1, 'update', 'Execute update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
+            if ~base.oDebug.bOff, this.out(2, 1, 'update', 'Execute update in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
             
             % Store update time
             this.fLastUpdate = this.oTimer.fTime;

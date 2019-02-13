@@ -14,7 +14,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
         bForceP2Pcalc = false;
     end
     
-    if ~base.oLog.bOff, this.out(1, 3, 'props', 'Mean density: %f', { fDensity }); end
+    if ~base.oDebug.bOff, this.out(1, 3, 'props', 'Mean density: %f', { fDensity }); end
     
     this.afPressureDropCoeffsSum = nan(1, this.iBranches);
     
@@ -65,7 +65,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
                 
                 
                 
-                if ~base.oLog.bOff, this.out(1, 3, 'props', 'Phase %s-%s: Pressure %f', { oP.oStore.sName, oP.sName, oE.getPortProperties() }); end
+                if ~base.oDebug.bOff, this.out(1, 3, 'props', 'Phase %s-%s: Pressure %f', { oP.oStore.sName, oP.sName, oE.getPortProperties() }); end
                 
             else
                 iCol = this.piObjUuidsToColIndex(oP.sUUID);

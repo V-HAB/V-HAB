@@ -99,7 +99,7 @@ end
 
 
 
-if ~base.oLog.bOff, this.out(1, 1, 'store-update', 'UPDATE store %s-%s and set last update!', { this.oContainer.sName, this.sName }); end
+if ~base.oDebug.bOff, this.out(1, 1, 'store-update', 'UPDATE store %s-%s and set last update!', { this.oContainer.sName, this.sName }); end
 
 
 % Update phases

@@ -186,7 +186,7 @@ classdef Example < vsys
             fHeatFlow = 100 * sin(this.oTimer.fTime/10);
             this.toStores.Tank_1.toPhases.Tank1Air.oCapacity.toHeatSources.Heater.setHeatFlow(fHeatFlow)
             
-            if ~base.oLog.bOff, this.out(2, 1, 'exec', 'Exec vsys %s', { this.sName }); end
+            if ~base.oDebug.bOff, this.out(2, 1, 'exec', 'Exec vsys %s', { this.sName }); end
         end
         
      end

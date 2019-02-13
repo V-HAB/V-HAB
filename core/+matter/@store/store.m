@@ -176,7 +176,7 @@ classdef store < base
             % this store.
             fNewNextExec     = this.oTimer.fTime + fTimeStep;
             
-            if ~base.oLog.bOff, this.out(1, 1, 'check-set-new-ts', 'Set new TS in store %s-%s ?? Current Next Exec: %.16f s - New next Exec: %.16f s - New Time Step: %.16f s', { this.oContainer.sName, this.sName, this.fNextExec, fNewNextExec, fTimeStep }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'check-set-new-ts', 'Set new TS in store %s-%s ?? Current Next Exec: %.16f s - New next Exec: %.16f s - New Time Step: %.16f s', { this.oContainer.sName, this.sName, this.fNextExec, fNewNextExec, fTimeStep }); end
             
             % Now we can compare the current next execution time and the
             % potential new execution time. If the new execution time would
@@ -187,7 +187,7 @@ classdef store < base
                 return;
             end
             
-            if ~base.oLog.bOff, this.out(1, 1, 'set-new-ts', 'New TS in Store %s-%s: %.16f s - Next Exec: %.16f s', { this.oContainer.sName, this.sName, fTimeStep, fNewNextExec }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'set-new-ts', 'New TS in Store %s-%s: %.16f s - Next Exec: %.16f s', { this.oContainer.sName, this.sName, fTimeStep, fNewNextExec }); end
             
             % The new time step is smaller than the old one, so we can
             % actually set then new timestep. The setTimeStep() method

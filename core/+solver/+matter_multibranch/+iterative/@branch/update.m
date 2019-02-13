@@ -7,7 +7,7 @@ function update(this)
     this.fLastUpdate         = this.oTimer.fTime;
     this.bRegisteredOutdated = false;
     
-    if ~base.oLog.bOff
+    if ~base.oDebug.bOff
         this.out(1, 1, 'update', 'Update multi flow rate solver');
         this.out(1, 2, 'update', 'B %s\t', { this.aoBranches.sName });
     end
@@ -262,7 +262,7 @@ function update(this)
             
         end
         
-        if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { this.iIteration, rError }); end
+        if ~base.oDebug.bOff, this.out(1, 2, 'solve-flow-rates', 'Iteration: %i with error %.12f', { this.iIteration, rError }); end
         
         if this.iIteration > this.iMaxIterations
             % if you reach this, please view debugging tipps at the
@@ -296,7 +296,7 @@ function update(this)
     % case) where all desorption flowrates from the flow node p2ps are
     % summed up!
     
-    if ~base.oLog.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration }); end
+    if ~base.oDebug.bOff, this.out(1, 1, 'solve-flow-rates', 'Iterations: %i', { this.iIteration }); end
     
     for iColumn = 1:length(this.csObjUuidsToColIndex)
         oObj = this.poColIndexToObj(iColumn);
@@ -304,7 +304,7 @@ function update(this)
         if isa(oObj, 'matter.branch')
             iB = find(this.aoBranches == oObj, 1);
             
-            if ~base.oLog.bOff, this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(iB) }); end
+            if ~base.oDebug.bOff, this.out(1, 2, 'solve-flow-rates', 'Branch: %s\t%.24f', { oObj.sName, this.afFlowRates(iB) }); end
         end
     end
     % Ok now go through results - variable pressure phase pressures and

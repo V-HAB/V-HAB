@@ -1,5 +1,5 @@
-classdef logger < event.source % base % & 
-    %LOGGER Summary of this class goes here
+classdef debugOutput < event.source % base % & 
+    %DEBUGOUTPUT Summary of this class goes here
     %   Detailed explanation goes here
     
     

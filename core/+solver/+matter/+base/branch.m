@@ -122,7 +122,7 @@ classdef branch < base & event.source
     
     methods (Access = private)
         function executeUpdate(this, ~)
-            if ~base.oLog.bOff, this.out(1, 1, 'executeUpdate', 'Call massupdate on both branches, depending on flow rate %f', { this.oBranch.fFlowRate }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'executeUpdate', 'Call massupdate on both branches, depending on flow rate %f', { this.oBranch.fFlowRate }); end
             
             % if the mass branch is outdated it means the flowrate changed,
             % which requires us to update the corresponding thermal branch
@@ -156,7 +156,7 @@ classdef branch < base & event.source
                 this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
             end
 
-            if ~base.oLog.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end
+            %if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end
             
             this.bRegisteredOutdated = true;
             % this finally binds the update function to the specified post
@@ -169,7 +169,7 @@ classdef branch < base & event.source
             % and subsequently CALL THE PARENT METHOD by
             % update@solver.matter.base.branch(this);
             
-            if ~base.oLog.bOff, this.out(1, 1, 'update', 'Setting flow rate %f for branch %s', { fFlowRate, this.oBranch.sName }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'update', 'Setting flow rate %f for branch %s', { fFlowRate, this.oBranch.sName }); end
             
             this.fLastUpdate = this.oBranch.oTimer.fTime;
             

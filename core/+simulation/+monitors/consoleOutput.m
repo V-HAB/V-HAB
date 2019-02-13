@@ -114,11 +114,11 @@ classdef consoleOutput < simulation.monitor
             end
             
             % Registering this object on the logger
-            this.iLogBindId = base.oLog.bind(@this.printOutput, @this.filterObjByRootlineToSimContainer, this);
+            this.iLogBindId = base.oDebug.bind(@this.printOutput, @this.filterObjByRootlineToSimContainer, this);
             
             % Setting the oLogger property so we can access it from the
             % methods in this class. 
-            this.oLogger = base.oLog;
+            this.oLogger = base.oDebug;
         end
         
         function this = setReportingInterval(this, iMajorTicks, iMinorTicks)
