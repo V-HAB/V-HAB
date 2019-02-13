@@ -74,13 +74,36 @@ classdef plotter_basic < base
             % this plotter. 
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             
+            % The user may have selected to filter the results being
+            % displayed here. To do that, a field in the tPlotOptions
+            % struct must be called 'tFilter' and itself contain a struct
+            % with the proper information on which logging properties
+            % should be filtered out. The filter will be applied in the
+            % next step using the find() method of the logger, please see
+            % logger.m for more details. 
+            % Checking if there is a filter at all.
+            if isfield(tPlotOptions, 'tFilter')
+                % Checking if there is a struct present and setting it.
+                if isstruct(tPlotOptions.tFilter)
+                    tFilter = tPlotOptions.tFilter;
+                else
+                    % Telling the user something went wrong.
+                    error('The filter you have provided (%s) needs to be a struct.');
+                end
+            else
+                % If there is no filter, we can just pass in empty. 
+                tFilter = [];
+            end
+            
             % Internally, the identifier for each log item is its index in
             % the logger's data struct. The user-facing API, however,
             % allows using not just the indexes, but also the strings that
             % represent the names and lables of each log item. Here we are
             % calling the find() method on the logger to translate all
             % items in cxPlotValues into indexes. 
-            aiIndexes = oLogger.find(cxPlotValues);
+            % If the user defined any filters to be applied to the plot
+            % values, they will also be applied within the find() method.
+            aiIndexes = oLogger.find(cxPlotValues, tFilter);
             
             % A plot can only have two y axes, one on the left and one on
             % the right. If cxPlotValues contains values in one or two
@@ -428,7 +451,7 @@ classdef plotter_basic < base
             this.defineFigure(coPlots, sName, tFigureOptions);
         end
         
-        
+       
     end
     
     
@@ -457,7 +480,7 @@ classdef plotter_basic < base
                 else
                     % If there is no entry in the units to labels map we
                     % throw an error. 
-                    error('Unknown unit ''%s''. Please edit the poExpressionToUnit and poUnitsToLabels properties of logger_basic.m to include it.', tLogProps(iP).sUnit);
+                    error('Unknown unit ''%s''. Please edit the poExpressionToUnit and poUnitsToLabels properties of logger.m to include it.', tLogProps(iP).sUnit);
                 end
             end
             
