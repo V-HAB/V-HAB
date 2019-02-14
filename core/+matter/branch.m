@@ -67,11 +67,32 @@ classdef branch < base.branch
                 % Branches without a f2f can exist (e.g. manual branches)
                 % however for the thermal branch we always require at least
                 % one conductor
+                
+                % Constructing the name of the thermal conductor by adding
+                % the string '_Conductor' to either the custom name or
+                % regular name of this branch. 
                 if ~isempty(this.sCustomName)
                     csProcs{1} = [this.sCustomName, '_Conductor'];
                 else
                     csProcs{1} = [this.sName, '_Conductor'];
                 end
+                
+                % Since this name will be used as a struct field name, we
+                % need to make sure it doesn't exceed the maximum field
+                % name length of 63 characters. 
+                if length(csProcs{1}) > 63
+                    % Generating some messages for the debugger
+                    this.out(3,1,'matter.branch','Truncating automatically generated thermal conductor name.');
+                    this.out(3,2,'matter.branch','Old name: %s', csProcs(1));
+                    
+                    % Truncating the name
+                    csProcs{1} = csProcs{1}(1:63);
+                    
+                    % More debugging output
+                    this.out(3,2,'matter.branch','New name: %s', csProcs(1));
+                    
+                end
+                
                 thermal.procs.conductors.fluidic(this.oContainer, csProcs{1}, this);
             end
             
