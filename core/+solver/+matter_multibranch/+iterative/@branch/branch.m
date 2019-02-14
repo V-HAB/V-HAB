@@ -496,7 +496,7 @@ classdef branch < base & event.source
         function registerUpdate(this, ~)
             % this function registers an update
             % TO DO: provide more information on this in the wiki
-            if ~base.oLog.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'reg-post-tick', 'Multi-Solver - register outdated? [%i]', { ~this.bRegisteredOutdated }); end
             
             if this.bRegisteredOutdated
                 return;

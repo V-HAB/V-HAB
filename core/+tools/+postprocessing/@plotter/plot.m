@@ -561,7 +561,10 @@ for iFigure = 1:length(this.coFigures)
             title('Evolution of Simulation Time vs. Simulation Ticks');
             set(oTimePlotFigure, 'name', [ 'Time Plot for ' this.oSimulationInfrastructure.sName ' - (' this.oSimulationInfrastructure.sCreated ')' ]');
             
-            % Since some later commandy may assume that the current figure
+            oButton = uicontrol(oTimePlotFigure,'String','Save','FontSize',10,'Position',[ 0 0 50 30]);
+            oButton.Callback = @tools.postprocessing.plotter.helper.saveFigureAs;
+            
+            % Since some later command may assume that the current figure
             % is still the main figure with all the plots, we set the
             % 'CurrentFigure' property of the graphics root object back to
             % that one.
@@ -616,15 +619,13 @@ for iFigure = 1:length(this.coFigures)
     % the drawnow method.
     drawnow();
     
+    % Maximize the figure window to fill the whole screen.
+    set(oFigure, 'WindowState', 'maximized');
+    
     % If the user selected to turn on the plot tools, we turn them on now.
-    % They are off by default. Turing on the plot tools will automatically
-    % maximize the figure. If plot tools are not turned on, we have to
-    % maximize it manually.
+    % They are off by default. 
     if isfield(this.coFigures{iFigure}.tFigureOptions, 'bPlotTools') && this.coFigures{iFigure}.tFigureOptions.bPlotTools == true
         plottools(oFigure, 'on');
-    else
-        % Maximize figure
-        set(oFigure, 'units','normalized','OuterPosition', [0 0 1 1]);
     end
     
     % Finally we write the coHandles cell to the UserData struct of the

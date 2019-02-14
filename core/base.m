@@ -17,8 +17,8 @@ classdef base < handle
     end
     
     properties (GetAccess = public, Constant)
-        % Registered logger
-        oLog = tools.logger();
+        % Registered debugger
+        oDebug = tools.debugOutput();
     end
     
     methods
@@ -44,8 +44,8 @@ classdef base < handle
             this.sURL = [ '/' strrep(this.sEntity, '.', '/') '/' this.sUUID ];
             
             % Adding this object to the logger
-            if ~isa(this, 'tools.logger')
-                base.oLog.add(this);
+            if ~isa(this, 'tools.debugOutput')
+                base.oDebug.add(this);
             end
         end
         
@@ -82,7 +82,7 @@ classdef base < handle
             % with oLastSimObj.toMonitors.oConsoleOutput.setLogOn(). If the
             % parameters generated for this.out are more complex, i.e.
             % consume time, the global logging flag can be checked:
-            % if ~base.oLog.bOff, (... prepare params and call .out() ...)
+            % if ~base.oDebug.bOff, (... prepare params and call .out() ...)
             %
             % The console output monitor contains various methods to filter
             % the logging output:
@@ -111,7 +111,7 @@ classdef base < handle
             
             
             % Flag to globally switch off logging!
-            if base.oLog.bOff, return; end
+            if base.oDebug.bOff, return; end
             
             
             % varargin:
@@ -163,7 +163,7 @@ classdef base < handle
             end
             
             % All params collected, pass to logger which triggers an event.
-            base.oLog.output(this, iLevel, iVerbosity, sIdentifier, sMessage, cParams);
+            base.oDebug.output(this, iLevel, iVerbosity, sIdentifier, sMessage, cParams);
         end
         
         function throw(this, sIdent, sMsg, varargin)

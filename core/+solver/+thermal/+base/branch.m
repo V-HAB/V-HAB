@@ -103,7 +103,7 @@ classdef branch < base & event.source
     
     methods (Access = private)
         function executeUpdate(this, ~)
-            if ~base.oLog.bOff, this.out(1, 1, 'executeUpdate', 'Call updateTemperature on both branches, depending on flow rate %f', { this.oBranch.fHeatFlow }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'executeUpdate', 'Call updateTemperature on both branches, depending on flow rate %f', { this.oBranch.fHeatFlow }); end
             
             if this.oBranch.fHeatFlow >= 0
                 aiExmes = 1:2;
@@ -129,7 +129,7 @@ classdef branch < base & event.source
                 this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
             end
 
-            if ~base.oLog.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end
+            %if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end
             
             this.bRegisteredOutdated = true;
             this.hBindPostTickUpdate();
@@ -141,7 +141,7 @@ classdef branch < base & event.source
             % update@solver.matter.base.branch(this);
             
             
-            if ~base.oLog.bOff, this.out(1, 1, 'update', 'Setting heat flow %f for branch %s', { fHeatFlow, this.oBranch.sName }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'update', 'Setting heat flow %f for branch %s', { fHeatFlow, this.oBranch.sName }); end
             
             this.fLastUpdate = this.oBranch.oTimer.fTime;
             

@@ -68,7 +68,7 @@ classdef (Abstract) vsys < matter.container & thermal.container & electrical.con
             % of a sytem are calculated.
             
             % Debugging output for each execution
-            if ~base.oLog.bOff, this.out(2, 1, 'exec', 'vsys.exec system "%s"', { this.sName }); end
+            if ~base.oDebug.bOff, this.out(2, 1, 'exec', 'vsys.exec system "%s"', { this.sName }); end
             
             % Calling the exec method of the parent class. 
             exec@systems.timed(this);

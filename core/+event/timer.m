@@ -491,7 +491,7 @@ classdef timer < base
             for iE = 1:length(aiExec)
                 this.cCallBacks{aiExec(iE)}(this);
                 
-                if ~base.oLog.bOff
+                if ~base.oDebug.bOff
                     tPayload = this.ctPayload{aiExec(iE)};
 
                     this.out(1, 1, 'exec', 'Exec callback %i: %s', { aiExec(iE) func2str(this.cCallBacks{aiExec(iE)}) });
@@ -514,9 +514,8 @@ classdef timer < base
             this.afLastExec(abExec) = this.fTime;
             
             
-            if ~base.oLog.bOff
+            if ~base.oDebug.bOff
                 this.out(1, 1, 'post-tick', 'Running post-tick tasks!');
-                this.out(1, 2, 'post-tick-num', 'Amount of cbs: %i\t', { this.aiPostTickMax });
             end
             
             %% Execute Post Ticks

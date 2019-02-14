@@ -1,5 +1,5 @@
-classdef plotter_basic < base
-    %PLOTTER_BASIC Default plotter class for V-HAB simulations
+classdef plotter < base
+    %PLOTTER Plotter class for V-HAB simulations
     %   The object instantiated from this class contains a cell of objects
     %   that are used to create user-defined figures using data from the
     %   simulation logger. 
@@ -21,7 +21,7 @@ classdef plotter_basic < base
     end
     
     methods
-        function this = plotter_basic(oSimulationInfrastructure, sLogger)
+        function this = plotter(oSimulationInfrastructure, sLogger)
             % Constructor method for this class.
             
             this.oSimulationInfrastructure = oSimulationInfrastructure;
@@ -74,13 +74,36 @@ classdef plotter_basic < base
             % this plotter. 
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             
+            % The user may have selected to filter the results being
+            % displayed here. To do that, a field in the tPlotOptions
+            % struct must be called 'tFilter' and itself contain a struct
+            % with the proper information on which logging properties
+            % should be filtered out. The filter will be applied in the
+            % next step using the find() method of the logger, please see
+            % logger.m for more details. 
+            % Checking if there is a filter at all.
+            if isfield(tPlotOptions, 'tFilter')
+                % Checking if there is a struct present and setting it.
+                if isstruct(tPlotOptions.tFilter)
+                    tFilter = tPlotOptions.tFilter;
+                else
+                    % Telling the user something went wrong.
+                    error('The filter you have provided (%s) needs to be a struct.');
+                end
+            else
+                % If there is no filter, we can just pass in empty. 
+                tFilter = [];
+            end
+            
             % Internally, the identifier for each log item is its index in
             % the logger's data struct. The user-facing API, however,
             % allows using not just the indexes, but also the strings that
             % represent the names and lables of each log item. Here we are
             % calling the find() method on the logger to translate all
             % items in cxPlotValues into indexes. 
-            aiIndexes = oLogger.find(cxPlotValues);
+            % If the user defined any filters to be applied to the plot
+            % values, they will also be applied within the find() method.
+            aiIndexes = oLogger.find(cxPlotValues, tFilter);
             
             % A plot can only have two y axes, one on the left and one on
             % the right. If cxPlotValues contains values in one or two
@@ -357,20 +380,47 @@ classdef plotter_basic < base
         
         function createDefaultPlot(this)
             % If the user did not create any figures, this method is called
-            % and is used to create a default plot with some general
-            % values grouped by unit. 
+            % and is used to create a default plot with all unique values
+            % grouped by unit.
             
             % For easier reading we get a reference to the logger object of
             % this plotter. 
             oLogger = this.oSimulationInfrastructure.toMonitors.(this.sLogger);
             
-            % Defining the units of the items we want to plot and the
-            % according plot titles. 
-            csUnits  = {'kg', 'kg/s', 'Pa', 'K'};
-            csTitles = {'Masses', 'Flow Rates', 'Pressures', 'Temperatures'};
+            % Getting all of the expressions and units for each log value
+            csValues = [{oLogger.tLogValues.sExpression};...
+                        {oLogger.tLogValues.sUnit}];
+                    
+            % In order to group the log items together in a way that makes
+            % sense, we group them by their expression. So we need to find
+            % the unique expression values.
+            [csExpressions, abUnique, ~] = unique(csValues(1,:));
             
-            % Initializing the plots cell and the plot options struct.
-            coPlots = cell(3,2);
+            % With the unique expressions we can also determine their units
+            csUnits = csValues(2, abUnique);
+            
+            % To create the titles for each plot, we get the lables for the
+            % units from the logger.
+            csTitles = values(oLogger.poUnitsToLabels, csUnits);
+            
+            % The lables are singular, e.g. 'Mass', 'Voltage', etc. To make
+            % the titles nicer, we pluralize those words. 
+            for iI = 1:length(csTitles)
+                switch csTitles{iI}(end)
+                    case 'y'
+                        csTitles{iI}(end:end+2) = 'ies';
+                    case 's'
+                        csTitles{iI}(end+1:end+2) = 'es';
+                    otherwise
+                        csTitles{iI}(end+1) = 's';
+                end
+            end
+            
+            % Initializing the plots cell, a plot counter and the plot
+            % options struct.
+            iNumberOfPlots = length(abUnique);
+            coPlots = cell(iNumberOfPlots,1);
+            
             tPlotOptions = struct();
             
             % We will be only using one unit in each plot
@@ -381,23 +431,27 @@ classdef plotter_basic < base
             for iI = 1:length(csUnits)
                 % Using the logger's find() method we get the indexes for
                 % all values with the same unit.
-                tFilter = struct('sUnit', csUnits{iI});
+                tFilter = struct('sExpression', csExpressions{iI});
                 aiIndexes = oLogger.find([], tFilter);
                 
-                % Now we can create the plot object and write it to the
-                % coPlots cell.
-                tPlotOptions.csUniqueUnits  = csUnits{iI};
-                coPlots{iI} = tools.postprocessing.plotter.plot(csTitles{iI}, aiIndexes, tPlotOptions);
+                % Checking if we found anything
+                if ~isempty(aiIndexes)
+                    % Now we can create the plot object and write it to the
+                    % coPlots cell.
+                    tPlotOptions.csUniqueUnits  = csUnits{iI};
+                    coPlots{iI} = this.definePlot(tools.convertArrayToCell(aiIndexes), csTitles{iI}, tPlotOptions);
+                    
+                end
             end
             
             % Finally we create one figure object, turn on the time plot
             % and write it to the coFigures property of this plotter. 
-            tFigureOptions = struct('bTimePlot', true);
+            tFigureOptions = struct('bTimePlot', true, 'bArrangePlotsInSquare', true);
             sName = [ this.oSimulationInfrastructure.sName ' - (' this.oSimulationInfrastructure.sCreated ')' ];
-            this.coFigures{end+1} = tools.postprocessing.plotter.figure(sName, coPlots, tFigureOptions);
+            this.defineFigure(coPlots, sName, tFigureOptions);
         end
         
-        
+       
     end
     
     
@@ -426,7 +480,7 @@ classdef plotter_basic < base
                 else
                     % If there is no entry in the units to labels map we
                     % throw an error. 
-                    error('Unknown unit ''%s''. Please edit the poExpressionToUnit and poUnitsToLabels properties of logger_basic.m to include it.', tLogProps(iP).sUnit);
+                    error('Unknown unit ''%s''. Please edit the poExpressionToUnit and poUnitsToLabels properties of logger.m to include it.', tLogProps(iP).sUnit);
                 end
             end
             

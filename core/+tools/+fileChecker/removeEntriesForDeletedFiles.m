@@ -101,18 +101,10 @@ for iI = 1:length(csFieldNames)
         % Now we check if the folder exists. This should work for all
         % package '+' and class '@' folders. If not, we'll try some more
         % stuff. 
-        if verLessThan('matlab', '9.4')
-            if ~isdir([sPath, sNewPath])  %#ok<ISDIR>
-                bContinue = true;
-            else
-                bContinue = false;
-            end
+        if ~isfolder([sPath, sNewPath])
+            bContinue = true;
         else
-            if ~isfolder([sPath, sNewPath])
-                bContinue = true;
-            else
-                bContinue = false;
-            end
+            bContinue = false;
         end
         
         if bContinue

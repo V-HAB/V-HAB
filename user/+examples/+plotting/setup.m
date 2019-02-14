@@ -178,7 +178,32 @@ classdef setup < simulation.infrastructure
             coPlots{2,1} = oPlotter.definePlot({'"Branch Flow Rate"'}, 'Flowrate', tPlotOptions);
             oPlotter.defineFigure(coPlots, 'Tank Temperatures');
             
-
+            % For 'quick and dirty' logging and plotting, helpers may be
+            % used such as the one found in
+            % simuation.helper.logger.flowProperties. This helper will log
+            % all temperatures, all pressures, all masses and all flow
+            % rates in a provided system. In order to plot these in a
+            % somewhat organized way, we might want to group them together
+            % by unit. To do that, the tPlotOptions struct can contain a
+            % struct called tFilter that then contains the filtering
+            % information. Below an example is given where we only plot
+            % temperatures, so filtering by the unit string 'K'.
+            
+            % First we need to get the log indexes of all items in the
+            % logger. 
+            ciIndexes = tools.convertArrayToCell(1:this.toMonitors.oLogger.iNumberOfLogItems);
+            
+            % Now we set the tPlotOptions struct
+            tPlotOptions = struct();
+            tPlotOptions.tFilter = struct('sUnit','K');
+            
+            % Creating the plot object 
+            coPlots = {oPlotter.definePlot(ciIndexes,'Temperatures',tPlotOptions)};
+            
+            % And finally another figure.
+            oPlotter.defineFigure(coPlots, 'All Temperatures');
+            
+            % Doing the actual plotting. 
             oPlotter.plot();
         end
         

@@ -169,7 +169,7 @@ classdef capacity < base & event.source
                (max(abs(this.arPartialMassLastHeatCapacityUpdate - this.oPhase.arPartialMass)) > 0.01)
                 
            
-                if ~base.oLog.bOff
+                if ~base.oDebug.bOff
                     this.out(1, 1, 'name', '%s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName });
 
                     this.out(1, 2, 'last', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
@@ -187,7 +187,7 @@ classdef capacity < base & event.source
                 this.arPartialMassLastHeatCapacityUpdate = this.oPhase.arPartialMass;
                 
                 
-                if ~base.oLog.bOff
+                if ~base.oDebug.bOff
                     this.out(1, 2, 'curr', 'fSpecificHeatCapacity:              %f [J/(kg*K)]', { this.fSpecificHeatCapacity });
                     this.out(1, 2, 'curr', 'fMass:                              %f [kg]', { sum(this.arPartialMassLastHeatCapacityUpdate) });
                     this.out(1, 2, 'curr', 'fPressureLastHeatCapacityUpdate:    %f [Pa]', { this.fPressureLastHeatCapacityUpdate });
@@ -331,7 +331,7 @@ classdef capacity < base & event.source
             % Return if no time has passed
             if fLastStep == 0
                 
-                if ~base.oLog.bOff, this.out(2, 1, 'skip', 'Skipping temperatureupdate in %s-%s-%s\tset branches outdated? %i', { this.oPhase.oStore.oContainer.sName, this.oPhase.oStore.sName, this.sName, bSetBranchesOutdated }); end
+                if ~base.oDebug.bOff, this.out(2, 1, 'skip', 'Skipping temperatureupdate in %s-%s-%s\tset branches outdated? %i', { this.oPhase.oStore.oContainer.sName, this.oPhase.oStore.sName, this.sName, bSetBranchesOutdated }); end
                 
                 %NOTE need that in case .exec sets flow rate in manual branch triggering massupdate,
                 %     and later in that tick phase does .update -> branches won't be set outdated!
@@ -582,7 +582,7 @@ classdef capacity < base & event.source
                 fNewStep = this.rMaxChange / rTemperatureChangePerSecond;
                 
                 if fNewStep < 0
-                    if ~base.oLog.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
+                    if ~base.oDebug.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
                 end
                 
                 % If our newly calculated time step is larger than the
