@@ -18,7 +18,12 @@ function sUUID = getPseudoUUID()
     % In order to be even more sure that the UUIDs we create here are
     % random, we seed the random number generator that MATLAB uses with the
     % current time. 
-    rng('shuffle');
+    %NOTE: This has been disabled because it costs an extreme amount of
+    %time to perform, especially when creating simulations with many
+    %objects. (On the order of one minute total for Claas' PLSS model) If
+    %we ever run into problems regarding the unique-ness of the UUID, we
+    %can reactivate it. 
+    %rng('shuffle');
     
     % For the first ID character, skip the numeric characters in
     % |cHexChars|, i.e. start with (one-based) index |11 -> 'A'|. Add a
