@@ -55,7 +55,7 @@ classdef container < systems.root
             
             % Setting the solver parameters, if they were provided. 
             if nargin >= 5
-                this.tSolverParams = tools.struct.mergeStructs(this.tSolverParams, tSolverParams);
+                this.tSolverParams = tools.mergeStructs(this.tSolverParams, tSolverParams);
             end
         end
     end

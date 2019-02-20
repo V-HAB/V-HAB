@@ -59,7 +59,7 @@ classdef configurationParameters < base
                 if strcmp(csSystems{iP}, sConstructor)
                     % We found a matching constructor path, so we add the
                     % parameters to the return variable.
-                    tParams = tools.struct.mergeStructs(tParams, this.ptConfigParams(csSystems{iP}));
+                    tParams = tools.mergeStructs(tParams, this.ptConfigParams(csSystems{iP}));
                 end
             end
             
@@ -76,7 +76,7 @@ classdef configurationParameters < base
                     % parameters to the return variable. If the same
                     % parameters were also defined using the constructor
                     % path, then they will be overwritten here. 
-                    tParams = tools.struct.mergeStructs(tParams, this.ptConfigParams(csSystems{iP}));
+                    tParams = tools.mergeStructs(tParams, this.ptConfigParams(csSystems{iP}));
                 end
             end
             
