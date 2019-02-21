@@ -417,9 +417,7 @@ classdef capacity < base & event.source
             
             % Trigger branch solver updates in post tick for all branches
             % whose heatflow is currently flowing INTO the capacity
-            if this.bSynced || bSetBranchesOutdated
-                this.setBranchesOutdated();
-            end
+            this.setBranchesOutdated();
             
             % Capacity sets new time step (registered with parent store, used
             % for all phases of that store)
