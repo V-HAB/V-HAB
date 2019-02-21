@@ -168,7 +168,7 @@ for iBranch = 1:length(aoThermalBranches)
     tLogProps(iNumberOfValues).sExpression = 'fHeatFlow';
     
     % Adding a label that will be used during plotting in the legend
-    tLogProps(iNumberOfValues).sLabel = [ 'Heat Flow Rate (' oVsys.sName ' - ' sBranchName ')' ];
+    tLogProps(iNumberOfValues).sLabel = [ 'Branch Heat Flow (' oVsys.sName ' - ' sBranchName ')' ];
     
     % Incrementing the value counter
     iNumberOfValues = iNumberOfValues + 1;
