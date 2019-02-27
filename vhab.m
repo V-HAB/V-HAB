@@ -70,15 +70,6 @@ classdef vhab
                 bDontPreserveBreakpoints = false;
             end
             
-            % If an old simulation obj exists in the base workspace, remove
-            % that explicitly just to make sure ...
-            try
-                oSim = evalin('base', 'oLastSimObj');
-                delete(oSim);
-            catch
-                % Ignore all errors that occur. 
-            end
-            
             % Telling the user what's going on
             disp('Clearing MATLAB classes...');
             
@@ -87,6 +78,18 @@ classdef vhab
             % several seconds, we know something is not working correctly.
             % So we start a timer here. 
             hTimer = tic();
+            
+            % If an old simulation obj exists in the base workspace, remove
+            % that explicitly just to make sure ...
+            try
+                evalin('base', 'delete(oLastSimObj)');
+            catch oError  %#ok<NASGU>
+                % Ignore all errors that occur. 
+            end
+            
+            % FLUSH serializers / loggers
+            % Only required if we're already initialized
+            base.flush();
             
             % Save all breakpoints so we can restore them after the clear
             % command.

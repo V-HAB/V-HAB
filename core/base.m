@@ -177,4 +177,10 @@ classdef base < handle
         end
     end
     
+    methods (Static)
+        function flush()
+            base.oDebug.flush();
+        end
+    end
+    
 end

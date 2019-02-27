@@ -110,7 +110,8 @@ classdef debugOutput < event.source % base % &
             this.chFilters   = {};
             this.coHandlers  = {};
             
-            this.tiUuidsToCallback  = struct();
+            this.tiUuidsToCallback = [];
+            this.tiUuidsToCallback = struct();
             
             this.bCollect    = false;
             this.tCollection = struct('oObj', {}, 'iLevel', {}, 'iVerbosity', {}, 'sIdentifier', {}, 'sMessage', {}, 'cParams', {});
