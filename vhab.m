@@ -87,9 +87,15 @@ classdef vhab
                 % Ignore all errors that occur. 
             end
             
-            % FLUSH serializers / loggers
-            % Only required if we're already initialized
-            base.flush();
+            % Flushing the logger. This is of course only required if we
+            % have already run a simulation in this MATLAB session. If this
+            % is the first run after a MATLAB restart, the file base will
+            % not be found on the path because vhab.init() is run after
+            % vhab.clear(). So we check for the existance of the file on
+            % the path. 
+            if isfile('base')
+                base.flush();
+            end
             
             % Save all breakpoints so we can restore them after the clear
             % command.
