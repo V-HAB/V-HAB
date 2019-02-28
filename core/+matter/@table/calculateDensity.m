@@ -34,6 +34,9 @@ if length(varargin) == 1
         % If the flowrate is 0 use density of phase
         if varargin{1}.fFlowRate == 0
             fDensity = oPhase.fDensity;
+            if isempty(fDensity)
+                fDensity = oPhase.fMass / oPhase.fVolume;
+            end
             return
         end
     end
