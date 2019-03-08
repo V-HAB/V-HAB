@@ -130,9 +130,10 @@ classdef capacity < base & event.source
             
             % Set name of capacity.
             this.sName = oPhase.sName;
+            
             %% Register post tick callbacks for massupdate and update        
-            this.hBindPostTickTemperatureUpdate  = this.oTimer.registerPostTick(@this.updateTemperature,  'thermal' , 'capacity_temperatureupdate');
-            this.hBindPostTickTimeStep           = this.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
+            this.hBindPostTickTemperatureUpdate = this.oTimer.registerPostTick(@this.updateTemperature, 'thermal', 'capacity_temperatureupdate');
+            this.hBindPostTickTimeStep          = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
             
             this.hBindPostTickTemperatureUpdate();
             
@@ -547,12 +548,12 @@ classdef capacity < base & event.source
                 abEXMEsWithNaNs = isnan([this.aoExmes.fHeatFlow]);
                 
                 if any(abEXMEsWithNaNs)
-                    error('Error in capacity ''%s''. The heat flow from EXME ''%s'' is NaN.', this.sName, this.aoExmes(abEXMEsWithNaNs).sName);
+                    error('Error in capacity ''%s''. The heat flow from EXME ''%s'' is NaN.\n', this.sName, this.aoExmes(abEXMEsWithNaNs).sName);
                 else
                     % It's not from the EXMEs so it has to be from one of
                     % the connected heat sources. 
                     abHeatSourcesWithNaNs = isnan([this.aoHeatSource.fHeatFlow]);
-                    error('Error in capacity ''%s''. The heat flow from heatsource ''%s'' is NaN.', this.sName, this.aoHeatSource(abHeatSourcesWithNaNs).sName);
+                    error('Error in capacity ''%s''. The heat flow from heatsource ''%s'' is NaN.\n', this.sName, this.aoHeatSource(abHeatSourcesWithNaNs).sName);
                 end
             end
             

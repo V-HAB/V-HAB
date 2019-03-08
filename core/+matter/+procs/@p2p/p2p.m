@@ -149,7 +149,7 @@ classdef p2p < matter.flow
             this.coExmes = {this.oIn, this.oOut};
             
             %% Register the post tick update for the P2P at the timer
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,      'matter' , 'P2Ps');
+            this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'matter', 'P2Ps');
         end
     end
     

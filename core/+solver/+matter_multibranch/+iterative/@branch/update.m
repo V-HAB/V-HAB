@@ -58,7 +58,7 @@ function update(this)
     % These values are only used for debugging. Therefore they are also
     % initialized with nans (as nans are ignored during plotting)
     mfFlowRates = nan(this.iMaxIterations, this.iBranches);
-    afP2PFlows = nan(this.iMaxIterations, this.iBranches);
+    afP2PFlows  = nan(this.iMaxIterations, this.iBranches);
     
     while abs(rError) > rErrorMax || this.bFinalLoop %|| iIteration < 5
         this.iIteration = this.iIteration + 1;
@@ -96,9 +96,9 @@ function update(this)
             afP2PFlows(iP2PUpdates, 1:length(afP2PFlowsHelper)) = afP2PFlowsHelper;
             
             if ~bP2POscillationDetected && iP2PUpdates > 3
-                afP2PDiffLastCalc   = afP2PFlows(iP2PUpdates,:)   - afP2PFlows(iP2PUpdates-1,:);
-                afP2PDiff1          = afP2PFlows(iP2PUpdates,:)   - afP2PFlows(iP2PUpdates-2,:);
-                afP2PDiff2          = afP2PFlows(iP2PUpdates-1,:) - afP2PFlows(iP2PUpdates-3,:);
+                afP2PDiffLastCalc = afP2PFlows(iP2PUpdates,:)   - afP2PFlows(iP2PUpdates-1,:);
+                afP2PDiff1        = afP2PFlows(iP2PUpdates,:)   - afP2PFlows(iP2PUpdates-2,:);
+                afP2PDiff2        = afP2PFlows(iP2PUpdates-1,:) - afP2PFlows(iP2PUpdates-3,:);
                 
                 if ~ bP2POscillationDetected && (any(afP2PDiffLastCalc > (afP2PDiff1 * 100)) || any((afP2PDiffLastCalc > (afP2PDiff2 * 100))))
                     % If this is true the P2Ps are recalculated in every

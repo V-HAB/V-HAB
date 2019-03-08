@@ -106,7 +106,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
         bExternalBranch = false;
         % Connected branches - col indices in matrix
         for iB = 1:oP.iProcsEXME
-            % P2ps definitely not sovled by this solver.
+            % P2Ps definitely not solved by this solver.
             if isa(oP.coProcsEXME{iB}.oFlow, 'matter.procs.p2p')
                 continue;
             end

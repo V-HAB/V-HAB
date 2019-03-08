@@ -218,7 +218,10 @@ classdef container < sys
             for iBranch = 1:length(this.aoThermalBranches)
                 % If the branch handler is empty, there is an error. 
                 if isempty(this.aoThermalBranches(iBranch).oHandler)
-                    error('Error in System ''%s''. The branch ''%s'' has no solver.', this.sName, this.aoThermalBranches(iBranch).sName);
+                    error(['Error in System ''%s''. The branch ''%s'' has no solver.\n', ... 
+                           'Make sure you are calling the setThermalSolvers() method in the \n',...
+                           'createSolverStructure() method in ''%s''.'], ...
+                           this.sName, this.aoThermalBranches(iBranch).sName, this.sName);
                 end
                 
             end

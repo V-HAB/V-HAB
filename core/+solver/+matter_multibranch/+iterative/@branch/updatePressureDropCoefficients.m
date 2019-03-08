@@ -25,7 +25,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
         bPressureDrop = true;
         
         % if the branch contains an active component, it is not allowed to
-        % have any other f2f procs! And both sides must be fas flow nodes.
+        % have any other f2f procs! And both sides must be gas flow nodes.
         % But this is not checked here for speed reasons. This information
         % is also provided at the beginning in the rules for solver
         % implementation section! Therefore the user should be aware of it

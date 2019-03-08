@@ -532,7 +532,7 @@ classdef flow < base
                 % If only one flow, no f2f exists --> set pressure, temp
                 % according to IN exme
                 if iL == 1
-                    oThis.fPressure    = fPortPress;
+                    oThis.fPressure = fPortPress;
                 end
                 
                 

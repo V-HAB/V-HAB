@@ -24,7 +24,7 @@ classdef consoleOutput < simulation.monitor
         %% General Properties
         
         % Interval in ticks after which a new line is added to the command
-        % window output containting the current time, tick and delta time
+        % window output containing the current time, tick and delta time
         % since the last major interval.
         iMajorReportingInterval = 100;
         

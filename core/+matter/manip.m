@@ -58,7 +58,7 @@ classdef manip < base
             % detachManipulator() method.
             this.hDetach = this.oPhase.addManipulator(this);
             
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update,      'matter' , 'manips');
+            this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'matter', 'manips');
         end
         
         function delete(this)

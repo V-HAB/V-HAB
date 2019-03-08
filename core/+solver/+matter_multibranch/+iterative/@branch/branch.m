@@ -361,8 +361,8 @@ classdef branch < base & event.source
             % before the tick ends. Therefore residual solvers should only be
             % used as input with a boundary phase inbetween that reaches the
             % necessary pressure to supply the system the correct flowrate
-            this.hBindPostTickUpdate      = this.oTimer.registerPostTick(@this.update, 'matter' , 'multibranch_solver');
-            this.hBindPostTickTimeStepCalculation = this.oTimer.registerPostTick(@this.calculateTimeStep,      'post_physics' , 'timestep');
+            this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'matter', 'multibranch_solver');
+            this.hBindPostTickTimeStepCalculation = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
             
             this.initialize();
         end
@@ -461,7 +461,7 @@ classdef branch < base & event.source
                             iColIndex = iColIndex + 1;
 
                             this.piObjUuidsToColIndex(oPhase.sUUID) = iColIndex;
-                            this.poColIndexToObj(iColIndex)     = oPhase;
+                            this.poColIndexToObj(iColIndex) = oPhase;
                         end
                         
                     % 'Real' phase - boundary condition
@@ -480,7 +480,7 @@ classdef branch < base & event.source
                 oBranch = this.aoBranches(iBranch);
                 
                 this.piObjUuidsToColIndex(oBranch.sUUID) = iColIndex;
-                this.poColIndexToObj(iColIndex)     = oBranch;
+                this.poColIndexToObj(iColIndex) = oBranch;
                 
                 % Init
                 this.chSetBranchFlowRate{iBranch}(0, []);
@@ -534,7 +534,7 @@ classdef branch < base & event.source
             end
             
             % This calculation compares the mass change of only the
-            % connected boundary phases, which actually exchange masse. For
+            % connected boundary phases, which actually exchange mass. For
             % them the total mass change is compared to calculate the
             % maximum allowable time step. However, temperature changes are
             % neglected here so in some cases this limitation might not be
