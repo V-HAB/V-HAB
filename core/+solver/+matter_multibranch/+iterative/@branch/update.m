@@ -50,6 +50,7 @@ function update(this)
     % is repeated again until the solver reaches overall convergence
     % Initially true so that in the first tick the matrices are calculated!
     this.bFinalLoop = true;
+    bPressureError = false;
     
     % parameters necessary in case the P2P flowrates oscillate
     iP2PUpdates = 0;
@@ -60,7 +61,9 @@ function update(this)
     mfFlowRates = nan(this.iMaxIterations, this.iBranches);
     afP2PFlows  = nan(this.iMaxIterations, this.iBranches);
     
-    while abs(rError) > rErrorMax || this.bFinalLoop %|| iIteration < 5
+    this.fInitializationFlowRate = this.oTimer.fMinimumTimeStep;
+    
+    while abs(rError) > rErrorMax || this.bFinalLoop || bPressureError %|| iIteration < 5
         this.iIteration = this.iIteration + 1;
         
         % if we have reached convergence recalculate the p2ps
@@ -198,6 +201,8 @@ function update(this)
         
         warning('on','all');
         
+        
+        bPressureError = false;
         % translate the calculated results into branch flowrates or
         % gas flow node pressures
         for iColumn = 1:iNewRows
@@ -222,8 +227,25 @@ function update(this)
                     this.afFlowRates(iB) = (this.afFlowRates(iB) * 3 + afResults(iColumn)) / 4;
                 end
             elseif isa(oObj, 'matter.phases.flow.flow')
-                oObj.setPressure(afResults(iColumn));
+                if afResults(iColumn) < 0
+                    % This case occurs for example if a manual solver
+                    % flowrate is used as boundary condition and forces the
+                    % loop flowrates to high values, while the
+                    % initialization is at low flow rates
+                    bPressureError = true;
+                else
+                    oObj.setPressure(afResults(iColumn));
+                end
             end
+        end
+        
+        if bPressureError
+            this.fInitializationFlowRate = 10 * this.fInitializationFlowRate;
+            if this.fInitializationFlowRate > max(abs(afBoundaryConditions(iStartZeroSumEquations:end)))
+                this.fInitializationFlowRate = max(abs(afBoundaryConditions(iStartZeroSumEquations:end)));
+            end
+            
+            this.afFlowRates = afPrevFrs;
         end
         
         % for the branches which were removed beforehand because they have
@@ -248,7 +270,7 @@ function update(this)
         % otherwise it continues normally again
         if this.bFinalLoop && rError < this.fMaxError
             this.bFinalLoop = false;
-        elseif rError < this.fMaxError
+        elseif rError < this.fMaxError && ~bPressureError
             this.bFinalLoop = true;
         else
             this.bFinalLoop = false;

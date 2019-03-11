@@ -87,7 +87,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
             % aafPhasePressuresAndFlowRates matrix at the corresping index
             if fFlowRate == 0
                 % for no flowrate we check the drops with a very small flow
-                fFlowRate = this.oTimer.fMinimumTimeStep;
+                fFlowRate = this.fInitializationFlowRate;
                 
                 % Negative pressure difference? Negative guess!
                 if oB.coExmes{1}.getPortProperties() < oB.coExmes{2}.getPortProperties()

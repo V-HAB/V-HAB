@@ -317,6 +317,8 @@ classdef branch < base & event.source
         % the update level calculation
         mbExternalBoundaryBranches;
         iNumberOfExternalBoundaryBranches = 0;
+        
+        fInitializationFlowRate;
     end
     
     
