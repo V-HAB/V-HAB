@@ -294,9 +294,6 @@ classdef branch < base & event.source
         afFlowRates;
         arPartialsFlowRates;
         
-        % Temporary - active flow f2f procs - pressure rise (or drop)
-        afTmpPressureRise;
-        
         % Matrix that translated the index of a branch from aoBranches to a
         % row in the solution matrix
         miBranchIndexToRowID;
@@ -351,8 +348,6 @@ classdef branch < base & event.source
             this.oTimer     = this.aoBranches(1).oTimer;
             
             % Preset
-            this.afTmpPressureRise = zeros(1, this.iBranches);
-            
             this.chSetBranchFlowRate = cell(1, this.iBranches);
             
             for iB = 1:this.iBranches 

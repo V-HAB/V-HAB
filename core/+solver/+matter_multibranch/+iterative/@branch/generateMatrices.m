@@ -59,8 +59,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
                 % -C * FR = P_right - P_left     | *-1
                 % C * FR  = - P_right + P_left
                 afBoundaryConditions(iRow) = afBoundaryConditions(iRow) ...
-                    - iSign * oE.getPortProperties(); %oP.fPressure;
-                
+                    - iSign * oE.getPortProperties(); 
                 
                 % In case the pressure difference is smaller than our
                 % minimum pressure difference, we set the boundary

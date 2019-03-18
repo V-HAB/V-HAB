@@ -177,7 +177,7 @@ function update(this)
             
         end
         
-        % now we actuall remove the values
+        % Now we actually remove the values
         aafPhasePressuresAndFlowRates(:, mbRemoveColumn) = [];
         aafPhasePressuresAndFlowRates(mbRemoveRow,:) = [];
         afBoundaryConditions((this.miBranchIndexToRowID(mbZeroFlowBranches)),:) = [];
@@ -219,7 +219,6 @@ function update(this)
         afResults = aafPhasePressuresAndFlowRates \ afBoundaryConditions;
         
         warning('on','all');
-        
         
         bPressureError = false;
 
@@ -272,18 +271,19 @@ function update(this)
             this.afFlowRates = afPrevFrs;
         end
         
-        % for the branches which were removed beforehand because they have
+        % For the branches which were removed beforehand because they have
         % 0 flowrate anyway, we set this
         for iZeroBranch = 1:iZeroFlowBranches
             iB = find(this.aoBranches == aoZeroFlowBranches(iZeroBranch), 1);
             % necessary if e.g. checkvalves are used
             this.afFlowRates(iB) = 0.75 * this.afFlowRates(iB);
         end
-        % now we store the calculated flowrates in the matrix, which is
+        
+        % Now we store the calculated flowrates in the matrix, which is
         % quite usefull for debugging purposes
         mfFlowRates(this.iIteration,:) = this.afFlowRates;
         
-        % flowrates smaller than 1e-8 are respected, but no longer
+        % Flowrates smaller than 1e-8 are respected, but no longer
         % considered as errors
         afFrsDiff  = tools.round.prec(abs(this.afFlowRates - afPrevFrs), 8);
         
@@ -335,7 +335,7 @@ function update(this)
     % However, in the desorption case it is still possible that now mass is
     % put into the flow nodes. To solve this either the P2Ps should have a
     % flowrate of 0 in case nothing flows through the flow nodes, or a
-    % solution muste be found where it is allowed that desorption occurs
+    % solution must be found where it is allowed that desorption occurs
     % for no flow through the phase. Or the solution could be that if
     % nothing flows through the flow nodes, the desorption takes place
     % directly in a boundary phase (the P2P would have decide what is the

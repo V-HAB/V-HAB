@@ -68,16 +68,9 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                 % in the determination of flow rate coefficients.
                 bPressureDrop = true;
             else
-                fPressureRise = -1 * fPressureRise;
-                % the pressure rise is not used directly but smoothed out
-                % (TO DO: Check if this actually makes sense)
-                fPressureRise = (this.afTmpPressureRise(iB) * 33 + fPressureRise) / 34;
-                
-                this.afTmpPressureRise(iB) = fPressureRise;
-                
                 % Boundary condition for this case can be non zero, both
                 % sides must be variable pressure phases
-                afBoundaryConditions(iRow) = -fPressureRise;
+                afBoundaryConditions(iRow) = fPressureRise;
                 
                 this.afPressureDropCoeffsSum(iB) = 0;
             end
