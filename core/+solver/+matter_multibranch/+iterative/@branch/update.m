@@ -249,7 +249,7 @@ function update(this)
                     % in order for the solver to converge better
                     % the flowrates are smoothed out with this
                     % calculation
-                    this.afFlowRates(iB) = (this.afFlowRates(iB) * 3 + afResults(iColumn)) / 4;
+                    this.afFlowRates(iB) = (this.afFlowRates(iB) * 5 + afResults(iColumn)) / 6;
                 end
             elseif isa(oObj, 'matter.phases.flow.flow')
                 if afResults(iColumn) < 0
