@@ -226,6 +226,8 @@ function update(this)
             this.throw('solver', 'NaNs in the Multi-Branch Solver Results!');
         end
         
+        toPhasesWithNegativePressures = struct();
+        
         % translate the calculated results into branch flowrates or
         % gas flow node pressures
         for iColumn = 1:iNewRows
@@ -254,21 +256,15 @@ function update(this)
                     % This case occurs for example if a manual solver
                     % flowrate is used as boundary condition and forces the
                     % loop flowrates to high values, while the
-                    % initialization is at low flow rates
-                    bPressureError = true;
+                    % initialization is at low flow rates. We ignore this
+                    % value here and hopefully the solver will calculate
+                    % something better in the next iteration. Just in case,
+                    % we record the objects here to help with debugging. 
+                    toPhasesWithNegativePressures.(oObj.sUUID) = oObj;
                 else
                     oObj.setPressure(afResults(iColumn));
                 end
             end
-        end
-        
-        if bPressureError
-            this.fInitializationFlowRate = 10 * this.fInitializationFlowRate;
-            if this.fInitializationFlowRate > max(abs(afBoundaryConditions(iStartZeroSumEquations:end)))
-                this.fInitializationFlowRate = max(abs(afBoundaryConditions(iStartZeroSumEquations:end)));
-            end
-            
-            this.afFlowRates = afPrevFrs;
         end
         
         % For the branches which were removed beforehand because they have
