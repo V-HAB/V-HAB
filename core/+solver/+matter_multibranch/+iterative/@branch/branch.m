@@ -545,7 +545,19 @@ classdef branch < base & event.source
             % Bound to a post tick level after the residual branches.
             % Then all external flowrates are fix for this tick as well and
             % the calculated time step is definitly correct!
-            %
+            
+            % In order to assure a smooth startup of the simulated system,
+            % we set the minimum time step for the first 12 ticks. There
+            % are many systems that include checks for fTime == 0, so by
+            % slowly starting the solver we get rid of weird effects
+            % regarding solver time step jumps right at the beginning. 
+            if this.oTimer.iTick < 13
+                this.setTimeStep(this.fMinimumTimeStep);
+                this.out(1,1,'Multi-Solver','Setting Minimum Time Step: %e', {this.fMinimumTimeStep});
+                this.out(1,2,'Multi-Solver','Setting the minimum time step for the first 12 ticks ensures smooth startup of the simulation.', {});
+                return;
+            end
+            
             % Now check for the maximum allowable time step with the
             % current flow rate (the pressure differences in the branches
             % are not allowed to change their sign within one tick)
