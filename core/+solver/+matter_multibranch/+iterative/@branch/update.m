@@ -139,9 +139,8 @@ function update(this)
             mbRemoveRow = false(1,length(aafPhasePressuresAndFlowRates));
             mbRemoveColumn = false(1,length(aafPhasePressuresAndFlowRates));
             iZeroFlowBranches = length(aoZeroFlowBranches);
-            for iZeroFlowBranch = 1:iZeroFlowBranches
-                mbRemoveColumn(this.piObjUuidsToColIndex(aoZeroFlowBranches(iZeroFlowBranch).sUUID)) = true;
-            end
+            
+            mbRemoveColumn(cell2mat(this.piObjUuidsToColIndex.values({aoZeroFlowBranches.sUUID}))) = true;
             
             mbRemoveRow(this.miBranchIndexToRowID(mbZeroFlowBranches)) = true;
             iOriginalRows = length(mbRemoveRow);
