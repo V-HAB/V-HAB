@@ -202,6 +202,11 @@ function update(this)
         
         
         bPressureError = false;
+
+        if any(isnan(afResults))
+            this.throw('solver', 'NaNs in the Multi-Branch Solver Results!');
+        end
+        
         % translate the calculated results into branch flowrates or
         % gas flow node pressures
         for iColumn = 1:iNewRows
