@@ -377,4 +377,8 @@ function update(this)
             this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), afDeltaPressures);
         end
     end
+    
+    if this.bTriggerUpdateCallbackBound
+        this.trigger('update');
+    end
 end

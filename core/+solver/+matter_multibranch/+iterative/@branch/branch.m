@@ -319,6 +319,15 @@ classdef branch < base & event.source
         iNumberOfExternalBoundaryBranches = 0;
         
         fInitializationFlowRate;
+        
+        % As a performance enhancement, these booleans are set to true once
+        % a callback is bound to the 'update' and 'register_update'
+        % triggers, respectively. Only then are the triggers actually sent.
+        % This saves quite some computational time since the trigger()
+        % method takes some time to execute, even if nothing is bound to
+        % them.
+        bTriggerUpdateCallbackBound = false;
+        bTriggerRegisterUpdateCallbackBound = false;
     end
     
     
@@ -433,6 +442,18 @@ classdef branch < base & event.source
                 this.(sField) = tSolverProperties.(sField);
             end
         end
+        
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
+            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
+            
+            if strcmp(sType, 'update')
+                this.bTriggerUpdateCallbackBound = true;
+            
+            elseif strcmp(sType, 'register_update')
+                this.bTriggerRegisterUpdateCallbackBound = true;
+            
+            end
+        end
     end
     
     
@@ -512,6 +533,11 @@ classdef branch < base & event.source
                 end
             end
             
+            % Allows other functions to register an event to this trigger
+            if this.bTriggerRegisterUpdateCallbackBound
+                this.trigger('register_update');
+            end
+
             if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering update() method on the multi-branch solver.'); end
             
             this.hBindPostTickUpdate();
