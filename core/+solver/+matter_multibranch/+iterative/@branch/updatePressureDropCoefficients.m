@@ -140,7 +140,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
     miSigns = sign(afBoundaryHelper);
     afBoundaryHelper = abs(afBoundaryHelper);
     for iBoundary = 1:length(afBoundaryHelper)
-        abEqualize = abs(afBoundaryHelper - afBoundaryHelper(iBoundary)) < this.fMinPressureDiff;
+        abEqualize = abs(afBoundaryHelper - afBoundaryHelper(iBoundary)) < this.fMinPressureDiff & ~(afBoundaryHelper == 0);
         
         fEqualizedPressure = sum(afBoundaryHelper(abEqualize)) / sum(abEqualize);
         
