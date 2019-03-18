@@ -294,9 +294,6 @@ classdef branch < base & event.source
         afFlowRates;
         arPartialsFlowRates;
         
-        % Temporary - active flow f2f procs - pressure rise (or drop)
-        afTmpPressureRise;
-        
         % Matrix that translated the index of a branch from aoBranches to a
         % row in the solution matrix
         miBranchIndexToRowID;
@@ -319,6 +316,15 @@ classdef branch < base & event.source
         iNumberOfExternalBoundaryBranches = 0;
         
         fInitializationFlowRate;
+        
+        % As a performance enhancement, these booleans are set to true once
+        % a callback is bound to the 'update' and 'register_update'
+        % triggers, respectively. Only then are the triggers actually sent.
+        % This saves quite some computational time since the trigger()
+        % method takes some time to execute, even if nothing is bound to
+        % them.
+        bTriggerUpdateCallbackBound = false;
+        bTriggerRegisterUpdateCallbackBound = false;
     end
     
     
@@ -342,8 +348,6 @@ classdef branch < base & event.source
             this.oTimer     = this.aoBranches(1).oTimer;
             
             % Preset
-            this.afTmpPressureRise = zeros(1, this.iBranches);
-            
             this.chSetBranchFlowRate = cell(1, this.iBranches);
             
             for iB = 1:this.iBranches 
@@ -433,6 +437,18 @@ classdef branch < base & event.source
                 this.(sField) = tSolverProperties.(sField);
             end
         end
+        
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
+            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
+            
+            if strcmp(sType, 'update')
+                this.bTriggerUpdateCallbackBound = true;
+            
+            elseif strcmp(sType, 'register_update')
+                this.bTriggerRegisterUpdateCallbackBound = true;
+            
+            end
+        end
     end
     
     
@@ -512,6 +528,13 @@ classdef branch < base & event.source
                 end
             end
             
+            % Allows other functions to register an event to this trigger
+            if this.bTriggerRegisterUpdateCallbackBound
+                this.trigger('register_update');
+            end
+
+            if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering update() method on the multi-branch solver.'); end
+            
             this.hBindPostTickUpdate();
             this.hBindPostTickTimeStepCalculation();
             
@@ -522,7 +545,19 @@ classdef branch < base & event.source
             % Bound to a post tick level after the residual branches.
             % Then all external flowrates are fix for this tick as well and
             % the calculated time step is definitly correct!
-            %
+            
+            % In order to assure a smooth startup of the simulated system,
+            % we set the minimum time step for the first 12 ticks. There
+            % are many systems that include checks for fTime == 0, so by
+            % slowly starting the solver we get rid of weird effects
+            % regarding solver time step jumps right at the beginning. 
+            if this.oTimer.iTick < 13
+                this.setTimeStep(this.fMinimumTimeStep);
+                this.out(1,1,'Multi-Solver','Setting Minimum Time Step: %e', {this.fMinimumTimeStep});
+                this.out(1,2,'Multi-Solver','Setting the minimum time step for the first 12 ticks ensures smooth startup of the simulation.', {});
+                return;
+            end
+            
             % Now check for the maximum allowable time step with the
             % current flow rate (the pressure differences in the branches
             % are not allowed to change their sign within one tick)
@@ -600,6 +635,9 @@ classdef branch < base & event.source
             if fTimeStep < this.fMinimumTimeStep
                 fTimeStep = this.fMinimumTimeStep;
             end
+            
+            this.out(1,1,'Multi-Solver','New Time Step: %e', {fTimeStep});
+            
             this.setTimeStep(fTimeStep);
         end
     end

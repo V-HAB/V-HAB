@@ -14,8 +14,6 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
         bForceP2Pcalc = false;
     end
     
-    if ~base.oDebug.bOff, this.out(1, 3, 'props', 'Mean density: %f', { fDensity }); end
-    
     this.afPressureDropCoeffsSum = nan(1, this.iBranches);
     
     % One equation per branch, one per variable pressure phase
@@ -61,9 +59,15 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
                 % -C * FR = P_right - P_left     | *-1
                 % C * FR  = - P_right + P_left
                 afBoundaryConditions(iRow) = afBoundaryConditions(iRow) ...
-                    - iSign * oE.getPortProperties(); %oP.fPressure;
+                    - iSign * oE.getPortProperties(); 
                 
-                
+                % In case the pressure difference is smaller than our
+                % minimum pressure difference, we set the boundary
+                % condition to zero. That makes it easier for the solver to
+                % find a solution.
+                if iP == 2 && abs(afBoundaryConditions(iRow)) < this.fMinPressureDiff
+                    afBoundaryConditions(iRow) = 0;
+                end
                 
                 if ~base.oDebug.bOff, this.out(1, 3, 'props', 'Phase %s-%s: Pressure %f', { oP.oStore.sName, oP.sName, oE.getPortProperties() }); end
                 
@@ -77,20 +81,6 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
             % Multiplication not really necessary, only two loops
             iSign = -1 * iSign;
         end
-    end
-    
-    % We want to ignore small pressure differences (as specified by the
-    % user). Therefore we equalize pressure differences smaller than the
-    % specified limit
-    afBoundaryHelper = afBoundaryConditions(1:length(this.aoBranches));
-    miSigns = sign(afBoundaryHelper);
-    afBoundaryHelper = abs(afBoundaryHelper);
-    for iBoundary = 1:length(afBoundaryHelper)
-        abEqualize = abs(afBoundaryHelper - afBoundaryHelper(iBoundary)) < this.fMinPressureDiff;
-        
-        fEqualizedPressure = sum(afBoundaryHelper(abEqualize)) / sum(abEqualize);
-        
-        afBoundaryConditions(abEqualize) = fEqualizedPressure .* miSigns(abEqualize);
     end
     
     % Loop variable pressure phases, generate eq row to enforce sum of flow

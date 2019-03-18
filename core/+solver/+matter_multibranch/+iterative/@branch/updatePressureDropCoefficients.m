@@ -4,6 +4,10 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
     % this calculation handles only the necessary update of the pressure
     % drop coefficient
     
+    if any(isnan(afBoundaryConditions))
+        this.throw('updatePDCoeffs','NaN in the pressure drop coefficients.');
+    end
+    
     % For this we first loop through all of the branches
     for iB = 1:this.iBranches
         
@@ -64,19 +68,16 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                 % in the determination of flow rate coefficients.
                 bPressureDrop = true;
             else
-                fPressureRise = -1 * fPressureRise;
-                % the pressure rise is not used directly but smoothed out
-                % (TO DO: Check if this actually makes sense)
-                fPressureRise = (this.afTmpPressureRise(iB) * 33 + fPressureRise) / 34;
-                
-                this.afTmpPressureRise(iB) = fPressureRise;
-                
                 % Boundary condition for this case can be non zero, both
                 % sides must be variable pressure phases
-                afBoundaryConditions(iRow) = -fPressureRise;
+                afBoundaryConditions(iRow) = fPressureRise;
                 
                 this.afPressureDropCoeffsSum(iB) = 0;
             end
+        end
+        
+        if any(isnan(afBoundaryConditions))
+            this.throw('updatePDCoeffs','NaN in the pressure drop coefficients.');
         end
         
         % This part is only executed if there is a 'normal' pressure drop
@@ -109,6 +110,10 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                     afPressureDropCoeffs(iProc) = oB.aoFlowProcs(iProc).toSolve.(this.sSolverType).calculateDeltas(fFlowRate);
                 end
                 
+                if any(isnan(afPressureDropCoeffs))
+                    this.throw('updatePDCoeffs','NaN in the pressure drop coefficients.');
+                end
+                
                 % the pressure drops are linearized to drop coefficient by
                 % summing them all up and dividing them with the currently
                 % assumed flowrate (for laminar this is pretty accurate,
@@ -133,6 +138,10 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
         
     end
     
+    if any(isnan(afBoundaryConditions))
+        this.throw('updatePDCoeffs','NaN in the pressure drop coefficients.');
+    end
+    
     % We want to ignore small pressure differences (as specified by the
     % user). Therefore we equalize pressure differences smaller than the
     % specified limit in the boundary conditions!
@@ -140,11 +149,15 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
     miSigns = sign(afBoundaryHelper);
     afBoundaryHelper = abs(afBoundaryHelper);
     for iBoundary = 1:length(afBoundaryHelper)
-        abEqualize = abs(afBoundaryHelper - afBoundaryHelper(iBoundary)) < this.fMinPressureDiff;
+        abEqualize = abs(afBoundaryHelper - afBoundaryHelper(iBoundary)) < this.fMinPressureDiff & ~(afBoundaryHelper == 0);
         
         fEqualizedPressure = sum(afBoundaryHelper(abEqualize)) / sum(abEqualize);
         
         afBoundaryConditions(abEqualize) = fEqualizedPressure .* miSigns(abEqualize);
+        
+        if any(isnan(afBoundaryConditions))
+            this.throw('updatePDCoeffs','NaN in the pressure drop coefficients.');
+        end
     end
     
 end
