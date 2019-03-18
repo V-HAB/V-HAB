@@ -81,8 +81,8 @@ function update(this)
         % matrices
         if bForceP2PUpdate
             % Regenerates matrices, gets coeffs from flow procs
-            [ aafFullPhasePressuresAndFlowRates, afFullBoundaryConditions ] = this.generateMatrices(bForceP2PUpdate);
-            aafPhasePressuresAndFlowRates = aafFullPhasePressuresAndFlowRates;
+            [ mfFullPhasePressuresAndFlowRates, afFullBoundaryConditions ] = this.generateMatrices(bForceP2PUpdate);
+            mfPhasePressuresAndFlowRates = mfFullPhasePressuresAndFlowRates;
             afBoundaryConditions = afFullBoundaryConditions;
             
             % The p2ps are only updated once at the beginning and after the
@@ -111,7 +111,7 @@ function update(this)
             end
             
         else
-            [aafPhasePressuresAndFlowRates, afBoundaryConditions] = this.updatePressureDropCoefficients(aafFullPhasePressuresAndFlowRates, afFullBoundaryConditions);
+            [mfPhasePressuresAndFlowRates, afBoundaryConditions] = this.updatePressureDropCoefficients(mfFullPhasePressuresAndFlowRates, afFullBoundaryConditions);
         end
         
         % Infinite values can lead to singular matrixes in the solution
@@ -119,72 +119,122 @@ function update(this)
         % the branches are checked beforehand for pressure drops that are
         % infinite, which means nothing can flow through this branch and 0
         % flowrate must be enforced anyway (e.g. closed valve)
-        mbZeroFlowBranchesNew = isinf(this.afPressureDropCoeffsSum)';
-        % for speed optimization this is only performed if anything
+        abZeroFlowBranchesNew = isinf(this.afPressureDropCoeffsSum)';
+        
+        % For speed optimization this is only performed if anything
         % changed compared to previous steps
-        if this.iIteration == 1 || any(mbZeroFlowBranchesNew ~= mbZeroFlowBranches)
-            
-            mbZeroFlowBranches = mbZeroFlowBranchesNew;
+        if this.iIteration == 1 || any(abZeroFlowBranchesNew ~= abZeroFlowBranches)
+            % Setting the old array to the new one for the next iteration.
+            abZeroFlowBranches = abZeroFlowBranchesNew;
             
             % Also set branches which have a pressure difference of less
             % than this.fMinPressureDiff Pa as zero flow branches! This
             % also must be done in each iteration, as the gas flow nodes
             % can change their pressure
-            if all(mbZeroFlowBranches)
+            if all(abZeroFlowBranches)
                 this.afFlowRates = zeros(1, this.iBranches);
                 break
             end
-            aoZeroFlowBranches = this.aoBranches(mbZeroFlowBranches);
+            aoZeroFlowBranches = this.aoBranches(abZeroFlowBranches);
             
-            mbRemoveRow = false(1,length(aafPhasePressuresAndFlowRates));
-            mbRemoveColumn = false(1,length(aafPhasePressuresAndFlowRates));
+            % Initializing the variables we need
+            abRemoveRow = false(1,length(mfPhasePressuresAndFlowRates));
+            abRemoveColumn = false(1,length(mfPhasePressuresAndFlowRates));
             iZeroFlowBranches = length(aoZeroFlowBranches);
             
-            mbRemoveColumn(cell2mat(this.piObjUuidsToColIndex.values({aoZeroFlowBranches.sUUID}))) = true;
+            % Setting the columns we want to remove to true
+            abRemoveColumn(cell2mat(this.piObjUuidsToColIndex.values({aoZeroFlowBranches.sUUID}))) = true;
             
-            mbRemoveRow(this.miBranchIndexToRowID(mbZeroFlowBranches)) = true;
-            iOriginalRows = length(mbRemoveRow);
+            % Setting the rows we want to remove to true
+            abRemoveRow(this.miBranchIndexToRowID(abZeroFlowBranches)) = true;
             
-            iNewRows = iOriginalRows - sum(mbRemoveRow);
+            % Later we need the number of original rows to size arrays, so
+            % we just count them here. 
+            iOriginalRows = length(abRemoveRow);
             
-            % in order to remove the branches without a flow but still be
-            % able to have the correct indices for every sitation we have
-            % to build a index transformation from the full matrix to the
-            % reduced matrix and vice versa
-            miOriginalRowToNewRow = zeros(iOriginalRows, 1);
-            miOriginalColToNewCol = zeros(1, iOriginalRows);
-            for iOriginalIndex = 1:iOriginalRows
-                if mbRemoveRow(iOriginalIndex)
-                    miOriginalRowToNewRow(iOriginalIndex) = 0;
-                else
-                    miOriginalRowToNewRow(iOriginalIndex) = iOriginalIndex - sum(mbRemoveRow(1:iOriginalIndex));
-                end
+            % Calculating the number of new rows we will have once we've
+            % done the removal.
+            iNewRows = iOriginalRows - sum(abRemoveRow);
+            
+            % Generating the reference arrays that link old and new column
+            % and row indexes. Some of the returned variables are unused,
+            % but we still want to keep them around in case we need them in
+            % the future. That's why we ignore the "unused variable"
+            % warning.
+            [ aiOriginalRowToNewRow, aiNewRowToOriginalRow, ...
+              aiOriginalColToNewCol, aiNewColToOriginalCol] = ...
+                this.createReferenceArrays(iOriginalRows, abRemoveRow, abRemoveColumn); %#ok<ASGLU>
+            
+            % Getting the indexes of the boundary conditions array that we
+            % need to remove. 
+            aiRemoveIndexes = this.miBranchIndexToRowID(abZeroFlowBranches);
+            
+            % If we enclosed a flow phase with two zero flow branches, e.g.
+            % by closing two valves, then there are rows and columns with
+            % all zeros that need to be removed as well. So we create a
+            % test matrix here, remove the rows and columns we have
+            % determined so far and then check for these all-zero rows and
+            % columns. 
+            mfTest = mfPhasePressuresAndFlowRates;
+            mfTest(:, abRemoveColumn) = [];
+            mfTest(abRemoveRow,:)     = [];
+            
+            abZeroRows = ~any(mfTest,2);
+            abZeroCols = ~any(mfTest,1);
+            
+            % Initializing a counter
+            iRemovedZeroSumEquations = 0;
+            
+            % If there are any all-zero rows, there must also be all-zero
+            % columns, so we only check for one here to save some time.
+            if any(abZeroRows)
+                % Getting the rows we need to remove
+                aiRemoveAdditionalRows = aiNewRowToOriginalRow(abZeroRows);
                 
-                if mbRemoveColumn(iOriginalIndex)
-                    miOriginalColToNewCol(iOriginalIndex) = 0;
-                else
-                    miOriginalColToNewCol(iOriginalIndex) = iOriginalIndex - sum(mbRemoveColumn(1:iOriginalIndex));
-                end
+                % Adding these rows to the removal array
+                abRemoveRow(aiRemoveAdditionalRows) = true;
+                
+                % Updating the iNewRows variable with the number of
+                % additional rows we need to remove.
+                iNewRows = iNewRows - length(aiRemoveAdditionalRows);
+                
+                % Updating the aiRemoveIndexes array. This operation is
+                % only done once, so we ignore the "Variable seems to grow
+                % each iteration" warning. 
+                aiRemoveIndexes = [ aiRemoveIndexes; aiRemoveAdditionalRows ]; %#ok<AGROW>
+                
+                % Now we do the same thing for the columns. 
+                aiRemoveAdditionalCols = aiNewColToOriginalCol(abZeroCols);
+                abRemoveColumn(aiRemoveAdditionalCols) = true;
+                
+                % The columns will be in the section of the matrix
+                % containing the zero sum equations for the flow nodes. So
+                % we need to capture here how many of them we have removed
+                % so we can later correctly set the iStartZeroSumEquations
+                % variable.
+                iRemovedZeroSumEquations = length(aiRemoveAdditionalCols);
+                
+                % And finally we have to re-create the reference arrays
+                % since they will have changed. Some of the returned
+                % variables are unused, but we still want to keep them
+                % around in case we need them in the future. That's why we
+                % ignore the "unused variable" warning.
+                [ aiOriginalRowToNewRow, aiNewRowToOriginalRow, ...
+                  aiOriginalColToNewCol, aiNewColToOriginalCol] = ...
+                    this.createReferenceArrays(iOriginalRows, abRemoveRow, abRemoveColumn); %#ok<ASGLU>
+                
             end
-            
-            miNewRowToOriginalRow = zeros(iNewRows, 1);
-            miNewColToOriginalCol = zeros(1, iNewRows);
-            
-            for iNewIndex = 1:iNewRows
-                miNewRowToOriginalRow(iNewIndex) = find(miOriginalRowToNewRow == iNewIndex);
-                miNewColToOriginalCol(iNewIndex) = find(miOriginalColToNewCol == iNewIndex);
-            end
-            
         end
         
         % Now we actually remove the values
-        aafPhasePressuresAndFlowRates(:, mbRemoveColumn) = [];
-        aafPhasePressuresAndFlowRates(mbRemoveRow,:) = [];
-        afBoundaryConditions((this.miBranchIndexToRowID(mbZeroFlowBranches)),:) = [];
+        mfPhasePressuresAndFlowRates(:, abRemoveColumn) = [];
+        mfPhasePressuresAndFlowRates(abRemoveRow,:) = [];
+        afBoundaryConditions(aiRemoveIndexes,:) = [];
+        
         if ~base.oDebug.bOff
-            if any(isnan(aafPhasePressuresAndFlowRates))
+            if any(isnan(mfPhasePressuresAndFlowRates))
                 this.out(5,1, 'solver', 'NaNs in the Multi-Branch Solver Phase Pressures and/or Flow Rates!');
-                [~, aiColumns] = find(isnan(aafPhasePressuresAndFlowRates));
+                [~, aiColumns] = find(isnan(mfPhasePressuresAndFlowRates));
                 for iObject = 1:length(aiColumns)
                     sObjectType = this.poColIndexToObj(aiColumns(iObject)).sEntity;
                     sObjectName = this.poColIndexToObj(aiColumns(iObject)).sName;
@@ -206,7 +256,7 @@ function update(this)
         % which enforce zero mass change for the gas flow nodes start.
         % These equations are later used to define the branch update order
         % in flow direction
-        iStartZeroSumEquations = length(afBoundaryConditions) - length(this.csVariablePressurePhases)+1;
+        iStartZeroSumEquations = length(afBoundaryConditions) - length(this.csVariablePressurePhases) + 1 + iRemovedZeroSumEquations;
         
         % Solve
         %hT = tic();
@@ -216,7 +266,7 @@ function update(this)
         % aafPhasePressuresAndFlowRates * afResults = afBoundaryConditions
         % Where afResults contains gas flow node pressures and
         % branch flowrates
-        afResults = aafPhasePressuresAndFlowRates \ afBoundaryConditions;
+        afResults = mfPhasePressuresAndFlowRates \ afBoundaryConditions;
         
         warning('on','all');
         
@@ -236,7 +286,7 @@ function update(this)
             % from the matrix represents the row index from the vector. So
             % the column index from aafPhasePressuresAndFlowRates
             % corresponds to a row index in afResults!
-            oObj = this.poColIndexToObj(miNewColToOriginalCol(iColumn));
+            oObj = this.poColIndexToObj(aiNewColToOriginalCol(iColumn));
             
             % TO DO: if we can find a way to do this with a boolean it
             % would be a good speed optimization!
@@ -300,7 +350,7 @@ function update(this)
         if any(sign(afPrevFrs) ~= sign(this.afFlowRates)) || any(this.afFlowRates(afPrevFrs == 0)) ||...
                 this.iNumberOfExternalBoundaryBranches ~= sum(this.mbExternalBoundaryBranches)
             
-            this.updateBranchLevelNetwork(aafPhasePressuresAndFlowRates, afBoundaryConditions, iStartZeroSumEquations, iNewRows, miNewRowToOriginalRow, miNewColToOriginalCol);
+            this.updateBranchLevelNetwork(mfPhasePressuresAndFlowRates, afBoundaryConditions, iStartZeroSumEquations, iNewRows, aiNewRowToOriginalRow, aiNewColToOriginalCol);
             
         end
         
@@ -320,7 +370,7 @@ function update(this)
     % converged, the actual results must be used to ensure that the zero
     % sum of mass flows over the gas flow nodes is maintained!
     for iColumn = 1:iNewRows
-        oObj = this.poColIndexToObj(miNewColToOriginalCol(iColumn));
+        oObj = this.poColIndexToObj(aiNewColToOriginalCol(iColumn));
         
         if isa(oObj, 'matter.branch')
             iB = find(this.aoBranches == oObj, 1);
