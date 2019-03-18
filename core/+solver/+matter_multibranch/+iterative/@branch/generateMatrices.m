@@ -14,8 +14,6 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
         bForceP2Pcalc = false;
     end
     
-    if ~base.oDebug.bOff, this.out(1, 3, 'props', 'Mean density: %f', { fDensity }); end
-    
     this.afPressureDropCoeffsSum = nan(1, this.iBranches);
     
     % One equation per branch, one per variable pressure phase

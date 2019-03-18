@@ -181,6 +181,26 @@ function update(this)
         aafPhasePressuresAndFlowRates(:, mbRemoveColumn) = [];
         aafPhasePressuresAndFlowRates(mbRemoveRow,:) = [];
         afBoundaryConditions((this.miBranchIndexToRowID(mbZeroFlowBranches)),:) = [];
+        if ~base.oDebug.bOff
+            if any(isnan(aafPhasePressuresAndFlowRates))
+                this.out(5,1, 'solver', 'NaNs in the Multi-Branch Solver Phase Pressures and/or Flow Rates!');
+                [~, aiColumns] = find(isnan(aafPhasePressuresAndFlowRates));
+                for iObject = 1:length(aiColumns)
+                    sObjectType = this.poColIndexToObj(aiColumns(iObject)).sEntity;
+                    sObjectName = this.poColIndexToObj(aiColumns(iObject)).sName;
+                    this.out(5,2, 'solver', 'A NaN value has occured in the %s ''%s''.', {sObjectType, sObjectName});
+                end
+            end
+            if any(isnan(afBoundaryConditions))
+                this.out(5,1, 'solver', 'NaNs in the Multi-Branch Solver Boundary Conditions!');
+                aiRows = find(isnan(afBoundaryConditions));
+                for iObject = 1:length(aiRows)
+                    sObjectType = this.poColIndexToObj(aiRows(iObject)).sEntity;
+                    sObjectName = this.poColIndexToObj(aiRows(iObject)).sName;
+                    this.out(5,2, 'solver', 'A NaN value has occured in the %s ''%s''.', {sObjectType, sObjectName});
+                end
+            end
+        end
         
         % This index decides at which point in the matrix the equations
         % which enforce zero mass change for the gas flow nodes start.

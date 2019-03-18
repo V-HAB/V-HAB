@@ -512,6 +512,8 @@ classdef branch < base & event.source
                 end
             end
             
+            if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering update() method on the multi-branch solver.'); end
+            
             this.hBindPostTickUpdate();
             this.hBindPostTickTimeStepCalculation();
             
@@ -600,6 +602,9 @@ classdef branch < base & event.source
             if fTimeStep < this.fMinimumTimeStep
                 fTimeStep = this.fMinimumTimeStep;
             end
+            
+            this.out(1,1,'Multi-Solver','New Time Step: %e', {fTimeStep});
+            
             this.setTimeStep(fTimeStep);
         end
     end
