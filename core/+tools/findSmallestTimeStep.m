@@ -41,7 +41,7 @@ function findSmallestTimeStep(oInput)
     % Now we have found the object that set the minimum time step, so we
     % can print its report to the console. 
     for iReport = 1:length(csReports)
-        printf(['\n' csReports{iReport} '\n']);
+        fprintf(['\n' csReports{iReport} '\n']);
     end
     
 end
