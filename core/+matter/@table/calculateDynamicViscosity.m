@@ -33,10 +33,10 @@ if iNumArgs == 1 %nargin < 3
 
         % From "Berechnung von Phasengleichgewichten" Ralf Dohrn, page 147:
         % "Wie bei einem idealen Gas finden in einer Mischung idealer Gase
-        % keine Wechselwirkungen zwischen den Molekülen statt. Jede
-        % Komponente in der Mischung verhält sich so, als nähme sie als
+        % keine Wechselwirkungen zwischen den Molekuelen statt. Jede
+        % Komponente in der Mischung verhaelt sich so, als naehme sie als
         % ideales Gas allein das gesamte Volumen V bei der Temperatur T
-        % ein; sie übt den Partialdruck Pi = YiP aus, der sich in diesem
+        % ein; sie uebt den Partialdruck Pi = YiP aus, der sich in diesem
         % Fall nach dem idealen Gasgesetz berechnet."
         if strcmp(sMatterState, 'gas')
             afPP = oMatterRef.afPP;
@@ -87,7 +87,7 @@ if iNumArgs == 1 %nargin < 3
             % then you cannot just take half the total pressure/density for
             % either substance to calculate any matter properties. For
             % example if you'd take a partial density the density of water
-            % would be around 500 kg/m² and the matter table would tell you
+            % would be around 500 kg/m^3 and the matter table would tell you
             % that water is not liquid at that density. Instead for liquids
             % the overall pressure is used as partial pressure for every
             % substance
@@ -104,10 +104,10 @@ if iNumArgs == 1 %nargin < 3
 
         % From "Berechnung von Phasengleichgewichten" Ralf Dohrn, page 147:
         % "Wie bei einem idealen Gas finden in einer Mischung idealer Gase
-        % keine Wechselwirkungen zwischen den Molekülen statt. Jede
-        % Komponente in der Mischung verhält sich so, als nähme sie als
+        % keine Wechselwirkungen zwischen den Molekuelen statt. Jede
+        % Komponente in der Mischung verhaelt sich so, als naehme sie als
         % ideales Gas allein das gesamte Volumen V bei der Temperatur T
-        % ein; sie übt den Partialdruck Pi = YiP aus, der sich in diesem
+        % ein; sie uebt den Partialdruck Pi = YiP aus, der sich in diesem
         % Fall nach dem idealen Gasgesetz berechnet."
         if strcmp(oMatterRef.getInEXME().oPhase.sType, 'gas')
             afPP = oMatterRef.getInEXME().oPhase.afPP;
@@ -145,18 +145,27 @@ if iNumArgs == 1 %nargin < 3
         end
         
     elseif isa(oMatterRef, 'matter.flow')
-        sMatterState = oMatterRef.oBranch.getInEXME().oPhase.sType;
+        oPhase = oMatterRef.oBranch.getInEXME().oPhase;
+        sMatterState = oPhase.sType;
+        
         arPartialMass = oMatterRef.arPartialMass;
 
         % From "Berechnung von Phasengleichgewichten" Ralf Dohrn, page 147:
         % "Wie bei einem idealen Gas finden in einer Mischung idealer Gase
-        % keine Wechselwirkungen zwischen den Molekülen statt. Jede
-        % Komponente in der Mischung verhält sich so, als nähme sie als
+        % keine Wechselwirkungen zwischen den Molekuelen statt. Jede
+        % Komponente in der Mischung verhaelt sich so, als naehme sie als
         % ideales Gas allein das gesamte Volumen V bei der Temperatur T
-        % ein; sie übt den Partialdruck Pi = YiP aus, der sich in diesem
+        % ein; sie uebt den Partialdruck Pi = YiP aus, der sich in diesem
         % Fall nach dem idealen Gasgesetz berechnet."
         
         afPP = oMatterRef.afPartialPressure;
+        
+        if oMatterRef.fFlowRate == 0
+            arPartialMass = oPhase.arPartialMass;
+            if strcmp(sMatterState, 'gas')
+                afPP = oPhase.afPP;
+            end
+        end
 
     else
         this.throw('calculateHeatCapacity', 'Single parameter must be of type |matter.phase| or |matter.flow|.');

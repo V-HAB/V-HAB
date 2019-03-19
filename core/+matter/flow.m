@@ -330,6 +330,11 @@ classdef flow < base
             %TODO Do this using matter table!
             %fGasAmount = this.oMT.calculateMols(this);
             
+            if fGasAmount == 0
+                afPartialPressure = zeros(this.oMT.iSubstances,1);
+                return
+            end
+            
             % Calculating the partial amount of each species by mols
             arFractions = afMols ./ fGasAmount;
             % Calculating the partial pressures by multiplying with the
