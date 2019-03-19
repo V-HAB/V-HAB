@@ -236,7 +236,7 @@ classdef branch < base.branch
             this.bOutdated = false;
             
             % No pressure? Distribute equally.
-            if nargin < 3 || isempty(afPressure)
+            if nargin < 3 || isempty(afPressure) || any(isinf(afPressure))
                 fPressureDiff = (this.coExmes{1}.getPortProperties() - this.coExmes{2}.getPortProperties());
                 
                 % Each flow proc produces the same pressure drop, the sum
