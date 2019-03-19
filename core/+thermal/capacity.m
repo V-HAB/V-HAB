@@ -9,7 +9,7 @@ classdef capacity < base & event.source
         % flows
         bSynced = false;
     end
-    properties (SetAccess = protected) %, Abstract)
+    properties (GetAccess = public, SetAccess = protected)
         
         % Object properties
         
