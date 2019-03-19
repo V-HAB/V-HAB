@@ -19,8 +19,8 @@ classdef (Abstract) boundary < matter.phase
     end
     
     methods
-        function this = boundary(oStore, sName, varargin)
-            this@matter.phase(oStore, sName, varargin{1}, varargin{2}, 'boundary');
+        function this = boundary(oStore, sName, tfMass, fTemperature, varargin)
+            this@matter.phase(oStore, sName, tfMass, fTemperature, 'boundary');
             
             this.fVolume = inf;
             

@@ -34,10 +34,10 @@ classdef (Abstract) flow < matter.phase
     end
     
     methods
-        function this = flow(oStore, sName, varargin)
-            this@matter.phase(oStore, sName, varargin{1}, varargin{3});
+        function this = flow(oStore, sName, tfMass, fVolume, fTemperature)
+            this@matter.phase(oStore, sName, tfMass, fTemperature);
             
-            this.fVolume = varargin{2};
+            this.fVolume = fVolume;
             
             this.fInitialMass = this.fMass;
             

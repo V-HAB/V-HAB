@@ -32,26 +32,26 @@ classdef gas < matter.phases.boundary.boundary
     end
     
     methods
-        function this = gas(oStore, sName, varargin)
+        function this = gas(oStore, sName, tfMass, fVolume, fTemperature, fPressure)
             % to make the boundary phase compatible with phase definitions
             % of normal gas phases, if the volume is provided it is simply
             % ignored, otherwise only three parameters are required
             
-            this@matter.phases.boundary.boundary(oStore, sName, varargin{1}, varargin{3});
+            this@matter.phases.boundary.boundary(oStore, sName, tfMass, fTemperature);
             
-            if length(varargin) == 3
+            if nargin >= 4 && ~isempty(fVolume) && (nargin <= 5 || isempty(fPressure))
                 % To be compatible with the standard gas definition (which uses
                 % the volume), the boundary phase also has the volume as input,
                 % but it is only used to calculate the pressure of the gas
                 % phase
-                fVolume = varargin{2};
+                
                 % p*V = m*R*T;
                 this.fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * fVolume);
 
                 this.fPressure = this.fMass * this.fMassToPressure;
-            elseif length(varargin) >= 4
+            elseif nargin > 5 && ~isempty(fPressure)
                 
-                this.fPressure = varargin{4};
+                this.fPressure = fPressure;
                 
                 this.fMassToPressure = this.fPressure / this.fMass;
             end
@@ -94,14 +94,15 @@ classdef gas < matter.phases.boundary.boundary
                 this.afMass = tProperties.afMass;
                 this.fMass = sum(this.afMass);
                 
-                % Now we calculate the molar mass fractions, since these
-                % represent the partial pressure fractions as well
-                afMols = this.afMass ./ this.oMT.afMolarMass;
-                arMolFractions = afMols/sum(afMols);
-                % And then set the correct partial pressure composition for
-                % the phase
-                this.afPP = this.fPressure .* arMolFractions;
-                
+                if this.fMass ~= 0
+                    % Now we calculate the molar mass fractions, since these
+                    % represent the partial pressure fractions as well
+                    afMols = this.afMass ./ this.oMT.afMolarMass;
+                    arMolFractions = afMols/sum(afMols);
+                    % And then set the correct partial pressure composition for
+                    % the phase
+                    this.afPP = this.fPressure .* arMolFractions;
+                end
             % Since elseif is used afPP is ignored if afMass is provided
             elseif isfield(tProperties, 'afPP')
                 % if the partial pressures are provided the mass
