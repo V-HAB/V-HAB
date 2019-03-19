@@ -118,6 +118,10 @@ if nargin > 2
     % unneded data rows in the aafData array.
     mfData(abDeleteData,:) = [];
     
+    if length(abDeleteData) ~= length(this.afTime)
+        this.afTime(end+1) = this.afTime(end) * 2 - this.afTime(end-1);
+    end
+    
     % We also need to provide an array with the time steps of the selected
     % data rows. we get this by only getting those items that were not
     % deleted from the afTime property of the logger.
