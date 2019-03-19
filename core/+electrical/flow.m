@@ -92,7 +92,7 @@ classdef flow < base
         end
         
         
-        function delete(this)
+        function remove(this)
             %DELETE Removes references to the In/Out component, also tells that component about it, if it still exists.
             
             if ~isempty(this.oIn)  && isvalid(this.oIn),  this.thRemoveCBs.in(); end

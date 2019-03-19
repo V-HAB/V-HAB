@@ -61,7 +61,7 @@ classdef manip < base
             this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'matter', 'manips');
         end
         
-        function delete(this)
+        function remove(this)
             % Function to remove the manipulator from its phase
             if isvalid(this.oPhase)
                 this.hDetach();

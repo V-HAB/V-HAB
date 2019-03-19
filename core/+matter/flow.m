@@ -171,7 +171,7 @@ classdef flow < base
         end
         
         
-        function delete(this)
+        function remove(this)
             % Remove references to In/Out proc, also tell that proc about
             % it if it still exists
             
