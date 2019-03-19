@@ -528,50 +528,73 @@ classdef consoleOutput < simulation.monitor
             % checking if the appropriate properties of this object are
             % empty or not. Empty means no filters active. 
             
+            % In order to have multiple kinds of filters present at the
+            % same time, we need a bunch of booleans that we use after
+            % we're done checking out what kind of message we have been
+            % given.
+            bTypeFilterPresent       = false;
+            bIdentifierFilterPresent = false;
+            bUUIDFilterPresent       = false;
+            bMethodFilterPresent     = false;
+            bPathFilterPresent       = false;
+            bTypeFilterActive        = false;
+            bIdentifierFilterActive  = false;
+            bUUIDFilterActive        = false;
+            bMethodFilterActive      = false;
+            bPathFilterActive        = false;
+            
             % Checking if there are type filters
             if ~isempty(this.csTypes)
+                bTypeFilterPresent = true;
                 % Checking if the current message is from one of the
                 % filtered object types.
-                if ~any(strcmp(this.csTypes, tPayload.oObj.sEntity))
-                    % It's not on the list, so we do nothing
-                    return;
+                if any(strcmp(this.csTypes, tPayload.oObj.sEntity))
+                    % It's on the list, so we set active to true.
+                    bTypeFilterActive = true;
                 end
+                
+                
             end
             
             % Checking if there are identifier filters. Since the
             % identifier is optional, we also have to check if there is an
             % identifier given
             if ~isempty(this.csIdentifiers) && ~isempty(tPayload.sIdentifier)
+                bIdentifierFilterPresent = true;
                 % Checking if the current message carries one of the
                 % identifiers we are filtering out.
-                if ~any(strcmp(this.csIdentifiers, tPayload.sIdentifier))
-                    % It's not on the list, so we do nothing
-                    return;
+                if any(strcmp(this.csIdentifiers, tPayload.sIdentifier))
+                    % It's on the list, so we set active to true.
+                    bIdentifierFilterActive = true;
                 end
             end
             
             % Checking if there are UUID filters
             if ~isempty(this.csUuids)
+                bUUIDFilterPresent = true;
                 % Checking if the current message is from one of the
                 % objects, identified by UUID, that we are filtering out
-                if ~any(strcmp(this.csUuids, tPayload.oObj.sUUID))
-                    % It's not on the list, so we do nothing
-                    return;
+                if any(strcmp(this.csUuids, tPayload.oObj.sUUID))
+                    % It's on the list, so we set active to true.
+                    bUUIDFilterActive = true;
                 end
             end
             
             % Checking if there are method filters
             if ~isempty(this.csMethods)
+                bMethodFilterPresent = true;
                 % Checking if the current message is from one of the
                 % methods we are filtering out.
-                if ~any(strcmp(this.csMethods, tPayload.sMethod))
-                    % It's not on the list, so we do nothing
-                    return;
+                if any(strcmp(this.csMethods, tPayload.sMethod))
+                    % It's on the list, so we set active to true.
+                    bMethodFilterActive = true;
                 end
             end
             
             % Checking if there are path filters
             if ~isempty(this.csPaths)
+                bPathFilterPresent = true;
+                
                 % The tPayload input argument to this function does not
                 % explicitly contain the path to the object the message is
                 % originating from. We therefore have to extract the path
@@ -639,10 +662,19 @@ classdef consoleOutput < simulation.monitor
                     end
                 end
                 
-                if ~bMatched
-                    % It's not on the list, so we do nothing
-                    return;
+                if bMatched
+                    % It's on the list, so we set active to true.
+                    bPathFilterActive = true;
                 end
+            end
+            
+            % Building two arrays we can check against
+            abPresentFilters = [ bTypeFilterPresent, bIdentifierFilterPresent, bUUIDFilterPresent, bMethodFilterPresent, bPathFilterPresent ];
+            abActiveFilters  = [ bTypeFilterActive,  bIdentifierFilterActive,  bUUIDFilterActive,  bMethodFilterActive,  bPathFilterActive  ];
+            
+            % Unless there are present and active filters, we return.
+            if ~any(abPresentFilters & abActiveFilters)
+                return;
             end
             
             % Alright now that the filters have been dealt with, we have to

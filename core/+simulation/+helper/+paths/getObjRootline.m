@@ -16,21 +16,46 @@ function [ coRootLine, sPath ] = getObjRootline(oInputObject)
 %                   its children without the leading 'to'
 cParentRefs = {
     % Objects with parents
-    'vsys',               'Parent',    'Children';
-    'matter.store',       'Container', 'Stores';
-    'matter.branch',      'Container', 'Branches';
-    'matter.phase',       'Store',     'Phases';
-    'thermal.capacity',   'Phase',     'Capacity';
-    'thermal.branch',     'Container', 'ThermalBranches';
-    'electrical.branch',  'Circuit',   'Branches';
-    'electrical.store',   'Circuit',   'Stores';
-    'electrical.node',    'Circuit',   'Nodes';
-    'electrical.circuit', 'Parent',    'Circuits';
+    'vsys',                    'Parent',    'Children';
+    'base.branch',             'Container', 'Branches';
+    'matter.store',            'Container', 'Stores';
+    'matter.branch',           'Container', 'Branches';
+    'matter.phase',            'Store',     'Phases';
+    'matter.procs.exme',       'Phase',     'ProcsEXME';
+    'matter.procs.f2f',        'Container', 'ProcsF2F';
+    'matter.procs.p2p',        'Store',     'ProcsP2P';
+    'thermal.capacity',        'Phase',     'Capacity';
+    'thermal.branch',          'Container', 'ThermalBranches';
+    'thermal.heatsource',      'Capacity',  'HeatSources';
+    'thermal.procs.conductor', 'Container', 'ProcsConductor';
+    'thermal.procs.exme',      'Capacity',  'ProcsEXME';
+    'electrical.branch',       'Circuit',   'Branches';
+    'electrical.store',        'Circuit',   'Stores';
+    'electrical.node',         'Circuit',   'Nodes';
+    'electrical.circuit',      'Parent',    'Circuits';
+    
+    
+    % Solver objects
+    'solver.matter.base.branch', 'Branch', 'Handler';
+    'solver.matter.equalizer.branch', 'Branch', 'Handler';
+    'solver.matter.fdm_liquid.branch_liquid', 'Branch', 'Handler';
+    'solver.matter.incompressible_liquid.branch_incompressible_liquid', 'Branch', 'Handler';
+    'solver.matter.interval.branch', 'Branch', 'Handler';
+    'solver.matter.linear.branch', 'Branch', 'Handler';
+    'solver.matter.manual.branch', 'Branch', 'Handler';
+    'solver.matter.residual.branch', 'Branch', 'Handler';
+    'solver.thermal.base.branch', 'Branch', 'Handler';
+    'solver.thermal.basic.branch', 'Branch', 'Handler';
+    'solver.thermal.basic_fluidic.branch', 'Branch', 'Handler';
+    'solver.thermal.infinite.branch', 'Branch', 'Handler';
+    
+    
     
     % Objects w/o root stuff
     'simulation.infrastructure', '', '';
     'event.timer', '', '';
     'matter.table', '', '';
+    'solver.matter_multibranch.iterative.branch', '', '';
     'simulation.configurationParameters', '', '';
     'simulation.monitor', '', '';
     'tools.postprocessing.plotter', '', '';
@@ -62,11 +87,11 @@ while ~isa(oObject, 'simulation.container')
     % If there are no matches, then the object's class hasn't been defined
     % in the cParentRefs cell. So we let the user know and abort the loop.
     if ~any(abMatch)
-        warning('simulation.helper.paths.getObjRootline - obj type seems to be unknown: %s', oObject.sEntity);
+        warning('getObjRootline','simulation.helper.paths.getObjRootline - obj type seems to be unknown: %s', oObject.sEntity);
         oObject = [];
         break;
         
-    elseif isempty(cParentRefs{abMatch, 2})
+    elseif isempty(cParentRefs{find(abMatch, 1, 'last'), 2})
         % In this case, the object does not have a parent, so we abort the
         % loop.
         oObject = [];
@@ -74,7 +99,7 @@ while ~isa(oObject, 'simulation.container')
     end
     
     % Now we can get the parent object of the current object.
-    oParent = oObject.([ 'o' cParentRefs{abMatch, 2} ]);
+    oParent = oObject.([ 'o' cParentRefs{find(abMatch, 1, 'last'), 2} ]);
     
     % If the parent property of this object is empty, we abort.
     if isempty(oParent)
@@ -88,26 +113,41 @@ while ~isa(oObject, 'simulation.container')
     iNumberOfObjects = iNumberOfObjects + 1;
     
     % Now we need to find the reference to the current object in its
-    % parent. First we get the struct containing the appropriate child
-    % objects from the parent (e.g. toStores).
-    toParentChildStruct = oParent.([ 'to' cParentRefs{abMatch, 3} ]);
+    % parent. Here we need to do things differently if we have a solver
+    % object, so we check for that first. 
     
-    % Getting the field names from the struct
-    csParentChildKeys   = fieldnames(toParentChildStruct);
-    
-    % Now we loop through all the children 
-    for iChild = 1:length(csParentChildKeys)
-        % Getting the name of the next child object in the struct
-        sChildName = csParentChildKeys{iChild};
-        
-        % Comparing the current object the the one we are looking at in the
-        % parent object
-        if oObject == toParentChildStruct.(sChildName)
-            % The objects match, so we add the child's name to the path and
-            % break the for loop, so we don't do unnecessary iterations.
-            sPath = strcat('.to', cParentRefs{abMatch, 3}, '.', sChildName, sPath);
-            
+    if contains(oObject.oMeta.ContainingPackage.Name, 'solver')
+        % The solver objects don't really have any child objects, so we
+        % just assume here, that the solver object is the end of the root
+        % line. 
+        sPath = ['.o', cParentRefs{find(abMatch, 1, 'last'), 3} ];
+    else
+        % This part is for non-solver objects. 
+        if isa(oObject, 'thermal.capacity')
+            sPath = strcat('oCapacity', sPath);
             break;
+        else
+            toParentChildStruct = oParent.([ 'to' cParentRefs{find(abMatch, 1, 'last'), 3} ]);
+        end
+        
+        % Getting the field names from the struct
+        csParentChildKeys   = fieldnames(toParentChildStruct);
+        
+        % Now we loop through all the children
+        for iChild = 1:length(csParentChildKeys)
+            % Getting the name of the next child object in the struct
+            sChildName = csParentChildKeys{iChild};
+            
+            % Comparing the current object the the one we are looking at in
+            % the parent object
+            if oObject == toParentChildStruct.(sChildName)
+                % The objects match, so we add the child's name to the path
+                % and break the for loop, so we don't do unnecessary
+                % iterations.
+                sPath = strcat('.to', cParentRefs{find(abMatch, 1, 'last'), 3}, '.', sChildName, sPath);
+                
+                break;
+            end
         end
     end
     

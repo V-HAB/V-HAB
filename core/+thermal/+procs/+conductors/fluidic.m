@@ -32,6 +32,8 @@ classdef fluidic < thermal.procs.conductor
             fResistance = 1 / abs(this.oMassBranch.fFlowRate * fSpecificHeatCapacity);
             
             this.fResistance = fResistance;
+            
+            this.out(1,1,'Flow Rate: %i [kg/s], Heat Capactiy: %i [J/(kgK)]', {this.oMassBranch.fFlowRate, fSpecificHeatCapacity});
         end
         
         

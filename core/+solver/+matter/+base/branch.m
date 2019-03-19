@@ -153,10 +153,10 @@ classdef branch < base & event.source
             % Allows other functions to register an event to this trigger
             % and provides the post tick level for the ones who register
             if this.bTriggerRegisterUpdateCallbackBound
-                this.trigger('register_update', struct('iPostTickPriority', this.iPostTickPriority));
+                this.trigger('register_update');
             end
 
-            %if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering .update method on post tick prio %i for solver for branch %s', { this.iPostTickPriority, this.oBranch.sName }); end
+            if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering update() method on post tick for solver for branch %s', { this.oBranch.sName }); end
             
             this.bRegisteredOutdated = true;
             % this finally binds the update function to the specified post
