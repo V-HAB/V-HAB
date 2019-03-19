@@ -49,8 +49,8 @@ classdef (Abstract) flow < matter.phase
             
             % Set flags to identify this as flow phase and sync all solvers
             % attached to it (boolean flag is faster than isa query)
-            this.bSynced    = true;
-            this.bFlow      = true;
+            this.bSynced = true;
+            this.bFlow   = true;
             
             this.bind('update_partials',@(~)this.updatePartials());
         end

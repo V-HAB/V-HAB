@@ -128,6 +128,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % Vektor containing the partial mass flowrates from all ExMes
         % (which includes alls branches and P2Ps, but NOT the manips!)
         afCurrentTotalInOuts;
+        
         % The current flow details including further information like
         % temperature etc.
         mfCurrentInflowDetails;
@@ -141,22 +142,28 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         
         % Maximum allowed percentage change in the total mass of the phase
         rMaxChange = 0.25;
+        
         % Maximum allowed percentage change in the partial mass of the
         % phase (one entry for every substance, zero represents substances
         % that are not of interest to the user)
         arMaxChange;
+        
         % boolean to decide if any values for arMaxChange are set, if not
         % this is false and the respective calculations are skipped to save
         % calculation time
         bHasSubstanceSpecificMaxChangeValues = false;
+        
         % Maximum time step in seconds
         fMaxStep   = 20;
+        
         % Minimum time step in seconds
         fMinStep;
+        
         % Fixed (constant) time step in seconds, if this property is set
         % all other time step properties will be ignored and the set time
         % step will be used
         fFixedTimeStep;
+        
         % Precision with which mass changes are considered during time step
         % calculation
         iTimeStepPrecision = 7;

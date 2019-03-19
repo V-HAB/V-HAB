@@ -22,7 +22,7 @@ classdef conductive < thermal.procs.conductor
         end
         
         function fResistance = update(this, ~)
-            % TO DO: implement material dependcy updates here?
+            % TO DO: implement material dependency updates here?
             fResistance = this.fResistance;
         end 
     end

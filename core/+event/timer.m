@@ -569,7 +569,7 @@ classdef timer < base
                             % in this tick
                             aiPostTicksToExecute = find(abExecutePostTicks);
                             % Then we can loop through all of these indices
-                            % (only the once that should be executed) and
+                            % (only the ones that should be executed) and
                             % call their functions
                             for iIndex = 1:sum(abExecutePostTicks)
                                 iPostTick = aiPostTicksToExecute(iIndex);
