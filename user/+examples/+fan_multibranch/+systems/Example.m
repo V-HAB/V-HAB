@@ -72,7 +72,7 @@ classdef Example < vsys
             oFan = components.matter.fan(this, 'Fan', 57500);
             oFan.fPowerFactor = 0;
             
-            fRoughness = 1e-6;
+            fRoughness = 2e-3;
             % Adding a pipe to connect the tanks
             components.matter.pipe(this, 'Pipe_1', 1, 0.02, fRoughness);
             components.matter.pipe(this, 'Pipe_2', 1, 0.02, fRoughness);
