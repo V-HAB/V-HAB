@@ -141,7 +141,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         fLastSetOutdated = -10;
         
         % Maximum allowed percentage change in the total mass of the phase
-        rMaxChange = 0.25;
+        rMaxChange = 1e-3;
         
         % Maximum allowed percentage change in the partial mass of the
         % phase (one entry for every substance, zero represents substances
@@ -611,19 +611,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             this.afLastUpd = 0:(1/(iStore-1)):1;%ones(1, iStore) * 0.00001;
             
             this.rHighestMaxChangeDecrease = this.oStore.oContainer.tSolverParams.rHighestMaxChangeDecrease;
-            
-            
-            % Auto-Set rMaxChange - max. 0.25, min. 1e-5!
-            if this.fVolume <= 0.25
-                rMaxChangeTmp = this.fVolume;
-            else
-                rMaxChangeTmp = 0.25;
-            end
-            if rMaxChangeTmp <= 1e-5
-                rMaxChangeTmp = 1e-5;
-            end
-
-            this.rMaxChange = rMaxChangeTmp / this.oStore.oContainer.tSolverParams.rUpdateFrequency;
             
             % Max time step
             this.fMaxStep = this.oStore.oContainer.tSolverParams.fMaxTimeStep;
