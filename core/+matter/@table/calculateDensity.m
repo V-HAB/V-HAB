@@ -59,8 +59,14 @@ if length(varargin) == 1
         
     elseif strcmp(sMatterState, 'liquid')
         % For liquids the density has to be calculated from the matter
-        % table.
-        afPartialPressures = ones(1, this.iSubstances) * varargin{1}.fPressure;
+        % table. If the pressure of the flow is zero, as would happen
+        % during initialization, we use the pressure of the phase. 
+        fPressure = varargin{1}.fPressure;
+        if fPressure == 0
+            afPartialPressures = ones(1, this.iSubstances) * oPhase.fPressure;
+        else
+            afPartialPressures = ones(1, this.iSubstances) * fPressure;
+        end
     elseif strcmp(sMatterState, 'mixture')
         % for mixtures the actual matter type is set by the user and
         % also differs for each substance. The partial pressure for a gas

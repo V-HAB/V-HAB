@@ -67,6 +67,10 @@ classdef liquid < matter.procs.exme
             fPortPressure    = this.fPressure;
             fPortTemperature = this.fTemperature;
             
+            if isempty(this.fPressure)
+                fPortPressure = this.oPhase.fPressure;
+            end
+            
         end
         
         function [ ] = setPortAcceleration(this, fAcceleration)
