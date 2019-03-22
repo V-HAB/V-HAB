@@ -112,7 +112,7 @@ if nargin >= 3 && ~isempty(tFilter) && isstruct(tFilter)
         % Initializing some local variables for the current filter. sFilter
         % is the field name in the tLogValues struct and xsValue is the
         % value that shall be filtered. This variable can be a string or a
-        % struct. An example would be a filter for units 'W' and 'K', so
+        % cell. An example would be a filter for units 'W' and 'K', so
         % the resulting values would only be power and temperature values.
         sFilter = csFilters{iF};
         xsValue = tFilter.(sFilter);
@@ -151,6 +151,35 @@ if nargin >= 3 && ~isempty(tFilter) && isstruct(tFilter)
         % boolean array with the values to be deleted for the current
         % filter.
         abDeleteFinal = abDeleteFinal | abDelete;
+        
+    end
+    
+    % In case the filter has nothing to filter, we gather a bunch of
+    % information to tell the user exactly where things went wrong. 
+    if all(abDeleteFinal)
+        sMessage = 'Filters:\n';
+        for iFilter = 1:length(csFilters)
+            if iscell(xsValue)
+                sMessage = strcat(sMessage, csFilters{iFilter}, ' = {');
+                for iFilterItem = 1:length(xsValue)
+                    sMessage = strjoin({sMessage, [xsValue{iFilterItem}, ',']});
+                end
+                sMessage = sMessage(1:end-1);
+                sMessage = strcat(sMessage, ' }\n');
+            else
+                sMessage = strjoin({[sMessage, csFilters{iFilter}], '=', xsValue, '\n'});
+            end
+        end
+        
+        if length(csFilters) > 1
+            sMultiple = 's';
+        else
+            sMultiple = '';
+        end
+        
+        sString = strcat('\nThere are no log items for the filter%s you have applied. \n', sMessage);
+        
+        this.throw(sString, sMultiple);
     end
     
     % Finally, we remove all unwanted items from the aiIndex array.
