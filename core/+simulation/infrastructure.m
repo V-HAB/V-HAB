@@ -554,5 +554,9 @@ classdef infrastructure < base & event.source
                 fSimFactor = this.oSimulationContainer.oTimer.fTime / (this.fRuntimeTick + this.fRuntimeOther);
             end
         end
+        
+        function setSuppressConsoleOutput(this, bSuppressConsoleOutput)
+            this.bSuppressConsoleOutput = bSuppressConsoleOutput;
+        end
     end
 end
