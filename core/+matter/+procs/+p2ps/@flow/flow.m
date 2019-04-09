@@ -39,15 +39,18 @@ classdef flow < matter.procs.p2p
         %
         % You can use afPartialInFlows = sum((afInFlowRates .* aarInPartials),1);
         % to calculate the total partial inflows in kg/s
-        calculateFlowRate(this, afInFlowRates, aarInPartials);
+        calculateFlowRate(this, afInsideInFlowRate, aarInsideInPartials, afOutsideInFlowRate, aarOutsideInPartials)
+        % The Inside is considered to be the phase attached to the oIn exme
+        % of this P2P, while the outside is considered to be the phase
+        % attached to the oOut exme of this p2p.
+        
     end
     
     %% Internal helper methods
     methods (Access = protected)
         function setMatterProperties(this, fFlowRate, arPartials)
             % If p2p is updated, needs to set new flow rate through this 
-            % method, and also new partials.
-            
+            % method, and also new partials. 
             this.fLastUpdate = this.oStore.oTimer.fTime;
             
             % The phase that called update already did matterupdate, but 
