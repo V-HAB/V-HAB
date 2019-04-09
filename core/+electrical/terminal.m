@@ -40,7 +40,7 @@ classdef terminal < base
             if isa(oParent, 'electrical.node')
                 % If a specific name is given, we'll use that, otherwise
                 % the terminal gets a numeric name derived from the parent.
-                if nargin > 2
+                if nargin > 1
                     this.sName = sName;
                 else
                     % Need to do plus one here because the terminal hasn't
