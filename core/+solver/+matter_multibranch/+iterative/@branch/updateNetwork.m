@@ -73,16 +73,25 @@ function updateNetwork(this, bForceP2Pcalc)
                                 % rates of the other p2p side
                                 if oProcP2P.oIn.oPhase ~= oPhase
                                     oOtherPhase = oProcP2P.oIn.oPhase;
+                                    
+                                    [afInsideInFlowRates, aarInsideInPartials] = this.getPhaseInFlows(oOtherPhase);
+                                    
+                                    afOutsideInFlowRate = afInFlowRates;
+                                    aarOutsideInPartials = aarInPartials; 
                                 else
                                     oOtherPhase = oProcP2P.oOut.oPhase;
+                                    
+                                    [afOutsideInFlowRate, aarOutsideInPartials] = this.getPhaseInFlows(oOtherPhase);
+                                    
+                                    afInsideInFlowRates = afInFlowRates;
+                                    aarInsideInPartials = aarInPartials; 
+                                    
                                 end
                                 
-                                [afOutsideInFlowRate, aarOutsideInPartials] = this.getPhaseInFlows(oOtherPhase);
-                    
                                 % Update the P2P! (not with update function
                                 % because that is also called at different
                                 % other times!
-                                oProcP2P.calculateFlowRate(afInFlowRates, aarInPartials, afOutsideInFlowRate, aarOutsideInPartials);
+                                oProcP2P.calculateFlowRate(afInsideInFlowRates, aarInsideInPartials, afOutsideInFlowRate, aarOutsideInPartials);
                             end
                         end
                         
