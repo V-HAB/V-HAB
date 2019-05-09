@@ -23,10 +23,14 @@ else
     afPartialFlows = this.afCurrentTotalInOuts;
 end
     
-% If we have set a fixed time steop for this phase, we can just continue
+% If we have set a fixed time step for this phase, we can just continue
 % without doing any calculations.
 if ~isempty(this.fFixedTimeStep)
     fNewStep = this.fFixedTimeStep;
+% Alternativly in case we have a boundary we can just use the maximum time
+% step because any change in boundary phases is triggered externally
+elseif this.bBoundary
+    fNewStep = this.fMaxStep;
 else
     rMaxChangeFactor = 1;
     
@@ -175,8 +179,14 @@ else
     
     % For phases with zero mass, we simply limit the error within one time
     % step to 1e-8 kg
-    if this.fMass == 0 && fChange > -1e-10
-        fNewStep = abs(1e-8/fChange);
+    if this.fMass == 0
+        if fChange < 0
+            % limit error to 1e-8 kg
+            fNewStep = abs(1e-8/fChange);
+        else
+            % limit initial mass to 0.1 kg
+            fNewStep = abs(0.1 / fChange);
+        end
     end
     
     if fNewStep < 0
