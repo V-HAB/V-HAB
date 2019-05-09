@@ -18,6 +18,7 @@ classdef checkvalve < matter.procs.f2f
         bReversed = false;
         
         bCheckValve = true;
+        bOpen = true;
     end
     
     methods
@@ -48,6 +49,7 @@ classdef checkvalve < matter.procs.f2f
             % already converged. Otherwise the valve can result in
             % oscillations in iterative solvers like the iterative
             % multibranch, the iterative or the interval solver!
+            fPressureDrop = 0;
             try 
                 if ~this.oBranch.oHandler.bFinalLoop
                     fPressureDrop = this.fPressureDrop;
@@ -61,18 +63,20 @@ classdef checkvalve < matter.procs.f2f
             % No flow - no pressure drop
             if fFlowRate == 0
                 this.fPressureDrop = 0;
+                this.bOpen = true;
                 
             % NEGATIVE flow for 'normal' checkvalve (matter can only flow
             % from the left to the right side) - return inf to block flow!
             elseif ~this.bReversed && fFlowRate < 0
                 this.fPressureDrop = inf;
-                
+                this.bOpen =false;
             elseif this.bReversed && fFlowRate > 0
                 this.fPressureDrop = inf;
-                
+                this.bOpen =false;
+            else
+                this.bOpen = true;
+                fPressureDrop = this.fFlowThroughPressureDropCoefficient * fFlowRate^2;
             end
-            
-            fPressureDrop = this.fFlowThroughPressureDropCoefficient * fFlowRate^2;
         end
     end
     

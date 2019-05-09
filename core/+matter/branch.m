@@ -180,12 +180,14 @@ classdef branch < base.branch
                 if afPressure(1) >= afPressure(2); iWhichExme = 1; else; iWhichExme = 2; end
                 
                 for iI = 1:this.iFlowProcs
-                    if isa(this.aoFlowProcs(iI), 'components.matter.valve') && ~this.aoFlowProcs(iI).bValveOpen
-                        oExme = [];
+                    if isa(this.aoFlowProcs(iI), 'components.matter.valve') && ~this.aoFlowProcs(iI).bOpen
+                        oExme = this.coExmes{1};
                         return;
                     end
                     
-                    
+                    if isa(this.aoFlowProcs(iI), 'components.matter.fan')
+                        if this.aoFlowProcs(iI).iBlowDirection == 1; iWhichExme = 1; else; iWhichExme = 2; end
+                    end
                 end
             else
                 iWhichExme = (this.fFlowRate < 0) + 1;

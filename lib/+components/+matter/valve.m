@@ -1,31 +1,27 @@
 classdef valve < matter.procs.f2f
-    %VALVE Rudimentary model of a valve to set the flow rate to zero or full
+    % this is a simple closable valve, which can open and close branches.
+    % Works with interval and multibranch iterative solver
     
     properties
-        %Position of valve, true = open
-        bValveOpen;
-        
-    end
-    
-    properties (SetAccess = protected, GetAccess = public)
-        %Length and diameter of valve
-        fHydrDiameter_close;
-        fHydrDiameter_open;
-        fHydrDiam;
-        fHydrLength;
+        % Valve open or closed?
+        bOpen = true;
+        fFlowCoefficient = 1;
     end
     
     methods
-        function this = valve(oContainer, sName, bValveOpen, fLength)
+        function  this = valve(oContainer, sName, fFlowCoefficient, bOpen)
             % Input parameters:
-            %   sName:          name of the valve [char]
-            %   bValveOpen:     inital value of the valve setting [boolean]
-            %   fLength:        hydraulic length of the valve, needed for
-            %                   the solver [m]
+            %   sName:              name of the valve [char]
+            %   fFlowCoefficient:   
+            %   bOpen:              inital value of the valve setting [boolean]
             
             this@matter.procs.f2f(oContainer, sName);
             
-            this.bValveOpen = bValveOpen;
+            this.fFlowCoefficient   = fFlowCoefficient;
+            
+            if nargin >= 4 && ~isempty(bOpen) && islogical(bOpen)
+                this.bOpen = ~~bOpen;
+            end
             
             if bValveOpen
                 this.fDeltaPressure = 0;
@@ -33,85 +29,71 @@ classdef valve < matter.procs.f2f
                 this.fDeltaPressure = Inf;
             end
             
-            %If the valve closes, we need a negative diameter value which
-            %means we need a value which is not zero
-            this.fHydrDiameter_close=1;
-            
-            %If the valve opens again, we need the default setting back
-            this.fHydrDiameter_open=0;
-            
-            %Default setting of diameter of valve. Through diameter=0, the
-            %valve has no influence on the flow rate calculation of the
-            %solver, which makes sense because the valve is much thiner
-            %and shorter than the pipes around it. So it has in fact no
-            %influence on the gas flow if it is open
-            if this.bValveOpen
-                this.fHydrDiam = this.fHydrDiameter_open;
-            else
-                this.fHydrDiam = this.fHydrDiameter_close;
-            end
-            
-            
-            %Assigning the length of the valve
-            this.fHydrLength=fLength;
-            
-            
-            
-            this.supportSolver('hydraulic', this.fHydrDiam, this.fHydrLength, true, @this.update);
             this.supportSolver('callback',  @this.solverDeltas);
             this.supportSolver('manual', false);
+            this.supportSolver('coefficient',  @this.calculatePressureDropCoefficient);
         end
         
+        function fDropCoefficient = calculatePressureDropCoefficient(this, ~)
+            if this.bOpen
+                fDropCoefficient = 0;
+            else
+                fDropCoefficient = uint64(18446744073709551615);
+            end
+        end
         
-        function setValvePos(this, bValveOpen)
-            this.bValveOpen = ~~bValveOpen;
+        function fDeltaPress = solverDeltas(this, fFlowRate)
+            
+            if (this.fFlowCoefficient == 0) && this.bOpen
+                fDeltaPress = 0;
+                this.fDeltaPressure = fDeltaPress;
+                return;
+            end
+            
+            if (fFlowRate == 0)
+                fDeltaPress = 0;
+                this.fDeltaPressure = fDeltaPress;
+                return;
+            end
+            
+            if this.bOpen == 0
+                fDeltaPress = Inf;
+                return;
+            end
             
             
+            % Get in/out flow object references
+            [ oFlowIn, oFlowOut ] = this.getFlows(fFlowRate);
+            
+            % Average pressure in Pa
+            fP = (oFlowIn.fPressure + oFlowOut.fPressure) / 2;
+            
+            % No pressure at all ... normally just return, drop zero
+            if fP == 0
+                fDeltaPress = 0;
+                return;
+            end
+            
+            % Calculate density in kg/m^3 and flow rate in SLM
+            fRoh = (fP * oFlowIn.fMolarMass) / (this.oMT.Const.fUniversalGas * oFlowIn.fTemperature);
+            fFlowRate = fFlowRate * 60; % Convert to kg/min
+            fSLM = (fFlowRate / oFlowIn.fMolarMass * ...
+                   this.oMT.Const.fUniversalGas * oFlowIn.fTemperature / oFlowIn.fPressure) * 1000;
+
+               
+            % Calculate Pressure Difference in 
+            fDeltaPress =  fSLM^2 / (fRoh * this.fFlowCoefficient^2);  
+            
+            
+            %this.fDeltaPressure = fDeltaPress;
+        end
+        
+        function this = setOpen(this, bOpen)
+            this.bOpen = ~~bOpen;
+            
+            % Set branch outdated - needs to recalculate flows!
             this.oBranch.setOutdated();
         end
-        
-        function fDeltaPressure = update(this)
-            oHydr = this.toSolve.hydraulic;
-            
-            %if valve closes, assign delta pressure to erase the pressure
-            %difference within the branch
-            %if valve opens again, set everything back
-            if ~this.bValveOpen
-                
-                oHydr.fHydrDiam=-this.fHydrDiameter_close;
-                fDeltaPressure=-this.oBranch.coExmes{1}.getPortProperties();
-                
-            else
-                oHydr.fHydrDiam=this.fHydrDiameter_open;
-                fDeltaPressure=0;
-                
-            end
-            
-        end
-        
-        function [ fDeltaPressure, fDeltaTemperature ] = solverDeltas(this, ~)
-            
-            %if valve closes, assign delta pressure to erase the pressure
-            %difference within the branch
-            %if valve opens again, set everything back
-            if ~this.bValveOpen
-                
-                %this.fHydrDiam=-this.fHydrDiameter_close;
-                %this.fDeltaPressure=-this.oBranch.coExmes{1}.getPortProperties();
-                fDeltaPressure = inf;
-            else
-                %this.fHydrDiam=this.fHydrDiameter_open;
-                %this.fDeltaPressure=0;
-                fDeltaPressure = 0;
-            end
-            
-            % Set the property accordingly
-            this.fDeltaPressure = fDeltaPressure;
-            
-            % Dummy valve, so we satisfy the iterative solver with a zero
-            fDeltaTemperature = 0;
-        end
     end
-    
 end
 
