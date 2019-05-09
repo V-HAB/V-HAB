@@ -33,7 +33,7 @@ classdef liquid < matter.phase
         % sName         : Name of phase
         % tfMasses      : Struct containing mass value for each species
         % fTemperature  : Temperature of matter in phase
-        % fPress        : Pressure of matter in phase
+        % fPressure     : Pressure of matter in phase
         
         function this = liquid(oStore, sName, tfMasses, fTemperature, fPressure)
 
@@ -41,7 +41,7 @@ classdef liquid < matter.phase
             
             this.fTemperature = fTemperature;
             
-            if nargin > 5
+            if nargin > 4
                 this.fPressure    = fPressure;
             else
                 this.fPressure    = this.oMT.Standard.Pressure;
@@ -49,7 +49,11 @@ classdef liquid < matter.phase
             
             this.fDensity = this.oMT.calculateDensity(this);
             
-            this.fVolume      = this.fMass / this.fDensity;
+            if this.fMass == 0
+                this.fVolume = 0;
+            else
+                this.fVolume      = this.fMass / this.fDensity;
+            end
             
         end
         
