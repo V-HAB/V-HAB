@@ -19,7 +19,7 @@ classdef capacity < base & event.source
         
         % Associated objects
         oPhase;
-        aoHeatSource;
+        coHeatSource;
         toHeatSources;
         
         aoExmes;
@@ -78,6 +78,7 @@ classdef capacity < base & event.source
         % where these triggers are not used
         bTriggerSetCalculateHeatsourcePreCallbackBound = false;
         bTriggerSetUpdateTemperaturePostCallbackBound = false;
+        bTriggerSetCalculateFlowConstantTemperatureCallbackBound = false;
         
         
         % Index of the massupdate post tick in the corresponding cell
@@ -246,7 +247,11 @@ classdef capacity < base & event.source
 
                 this.fTotalHeatCapacity = (this.oPhase.fMass * fSpecificHeatCapacity);
 
-                this.setTemperature( fInnerEnergyBefore / this.fTotalHeatCapacity );
+                if this.fTotalHeatCapacity == 0
+                    this.setTemperature( 0 );
+                else
+                    this.setTemperature( fInnerEnergyBefore / this.fTotalHeatCapacity );
+                end
 
                 this.fSpecificHeatCapacity = fSpecificHeatCapacity;
             end
@@ -302,10 +307,10 @@ classdef capacity < base & event.source
             
             oHeatSource.setCapacity(this);
             
-            if isempty(this.aoHeatSource)
-                this.aoHeatSource = oHeatSource;
+            if isempty(this.coHeatSource)
+                this.coHeatSource = {oHeatSource};
             else
-                this.aoHeatSource(end+1) = oHeatSource;
+                this.coHeatSource{end+1} = oHeatSource;
             end
         end
         
@@ -365,31 +370,39 @@ classdef capacity < base & event.source
                 mfTemperature           = zeros(1,this.iProcsEXME);
                 for iExme = 1:this.iProcsEXME
                     if isa(this.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
+                        
                         if this.aoExmes(iExme).oBranch.oMatterObject.coExmes{1}.oPhase == this.oPhase
                             iMatterExme = 1;
+                            iOtherExme = 2;
                         else
                             iMatterExme = 2;
+                            iOtherExme = 1;
                         end
                         fFlowRate = this.aoExmes(iExme).oBranch.oMatterObject.fFlowRate * this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iMatterExme}.iSign;
                         
                         if fFlowRate > 0
                             mfFlowRate(iExme) = fFlowRate;
-                            mfSpecificHeatCapacity(iExme) = this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iMatterExme}.oFlow.fSpecificHeatCapacity;
-                            mfTemperature(iExme) = this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iMatterExme}.oFlow.fTemperature;
+                            mfSpecificHeatCapacity(iExme) = this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iOtherExme}.oFlow.fSpecificHeatCapacity;
+                            mfTemperature(iExme) = this.aoExmes(iExme).oBranch.coExmes{iOtherExme}.oCapacity.fTemperature;
                         end
                     end
                 end
                 
                 fOverallHeatCapacityFlow = sum(mfFlowRate .* mfSpecificHeatCapacity);
-                if sum(mfFlowRate) == 0
+                
+                if this.bTriggerSetCalculateFlowConstantTemperatureCallbackBound
+                    this.trigger('calculateFlowConstantTemperature');
+                end
+                
+                if fOverallHeatCapacityFlow == 0
                     % if nothing flows into the phase, it maintains the
                     % previous temperature
                     fTemperatureNew = this.fTemperature;
                 else
                     
                     fSourceHeatFlow = 0;
-                    for iSource = 1:length(this.aoHeatSource)
-                        fSourceHeatFlow = fSourceHeatFlow + this.aoHeatSource(iSource).fHeatFlow;
+                    for iSource = 1:length(this.coHeatSource)
+                        fSourceHeatFlow = fSourceHeatFlow + this.coHeatSource{iSource}.fHeatFlow;
                     end
                     
                     fTemperatureNew = (sum(mfFlowRate .* mfSpecificHeatCapacity .* mfTemperature) / fOverallHeatCapacityFlow) + fSourceHeatFlow/fOverallHeatCapacityFlow;
@@ -493,6 +506,10 @@ classdef capacity < base & event.source
             if strcmp(sType, 'updateTemperature_post')
                 this.bTriggerSetUpdateTemperaturePostCallbackBound = true;
             end
+            if strcmp(sType, 'calculateFlowConstantTemperature')
+                this.bTriggerSetCalculateFlowConstantTemperatureCallbackBound = true;
+            end
+                
         end
     end
     
@@ -531,8 +548,8 @@ classdef capacity < base & event.source
             end
             
             fSourceHeatFlow = 0;
-            for iSource = 1:length(this.aoHeatSource)
-                fSourceHeatFlow = fSourceHeatFlow + this.aoHeatSource(iSource).fHeatFlow;
+            for iSource = 1:length(this.coHeatSource)
+                fSourceHeatFlow = fSourceHeatFlow + this.coHeatSource{iSource}.fHeatFlow;
             end
             
             fNewHeatFlow = fExmeHeatFlow + fSourceHeatFlow;
@@ -552,8 +569,11 @@ classdef capacity < base & event.source
                 else
                     % It's not from the EXMEs so it has to be from one of
                     % the connected heat sources. 
-                    abHeatSourcesWithNaNs = isnan([this.aoHeatSource.fHeatFlow]);
-                    error('Error in capacity ''%s''. The heat flow from heatsource ''%s'' is NaN.\n', this.sName, this.aoHeatSource(abHeatSourcesWithNaNs).sName);
+                    abHeatSourcesWithNaNs = false(length(this.coHeatSource));
+                    for iHeatSource = 1:length(this.coHeatSource)
+                         abHeatSourcesWithNaNs(iHeatSource) = isnan(this.coHeatSource{iHeatSource}.fHeatFlow);
+                    end
+                    error('Error in capacity ''%s''. The heat flow from heatsource ''%s'' is NaN.\n', this.sName, this.coHeatSource{abHeatSourcesWithNaNs}.sName);
                 end
             end
             

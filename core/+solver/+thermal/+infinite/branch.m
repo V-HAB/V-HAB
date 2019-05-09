@@ -52,13 +52,13 @@ classdef branch < solver.thermal.base.branch
             
             % get source flowrates
             fSourceHeatFlowLeft = 0;
-            for iSource = 1:length(oCapacityLeft.aoHeatSource)
-                fSourceHeatFlowLeft = fSourceHeatFlowLeft + oCapacityLeft.aoHeatSource(iSource).fHeatFlow;
+            for iSource = 1:length(oCapacityLeft.coHeatSource)
+                fSourceHeatFlowLeft = fSourceHeatFlowLeft + oCapacityLeft.coHeatSource{iSource}.fHeatFlow;
             end
             
             fSourceHeatFlowRight = 0;
-            for iSource = 1:length(oCapacityRight.aoHeatSource)
-                fSourceHeatFlowRight = fSourceHeatFlowRight + oCapacityRight.aoHeatSource(iSource).fHeatFlow;
+            for iSource = 1:length(oCapacityRight.coHeatSource)
+                fSourceHeatFlowRight = fSourceHeatFlowRight + oCapacityRight.coHeatSource{iSource}.fHeatFlow;
             end
             
             fCurrentHeatFlowLeft    = fExmeHeatFlowLeft + fSourceHeatFlowLeft;
