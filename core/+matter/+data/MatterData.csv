@@ -1,39 +1,38 @@
-Shortcut,Name,Phase,Molar Mass,Melting Point,Boiling Point,Density,Heat Capacity,Linear Expansion Coefficient,Modulus of Elasticity,Thermal Conductivity
-sSubstance,sName,ttxPhases,fMolarMass,fMeltPoint,fBoilPoint,fDensity,fCp,fExpCoeff,fModElast,fThermalConductivity, number of properties is not limited. as long as the name is in the first row and the variablename in the second!
--,-,-,kg/mol,K,K,kg/m3,J/(kg*K),-,-,W/(m*K)
-NH3,Ammonia,gas,0.01703052,195.42,239.81,0.717,2165,,,
-H2SO4,Hydrogen Sulfate,liquid,0.09807848,283,610,1840,,,,
-NO3,Nitrate,solid,0.0620049,,,804,1860,,,
-NO3,Nitrate,liquid,0.0620049,,,804,1860,,,
-Urine,Urine,liquid,0.018,,,1000,,,,
-CH4,Methane,gas,0.01604246,90.7,111.66,0.668,8916.7,,,
-Plastic,Plastic,solid,0.04347,,,980,,,,
-H2O2,Hydrogen Peroxide,liquid,0.03401468,272.72,423.3,1450,1267,,,,http://webbook.nist.gov/cgi/inchi/InChI%3D1S/H2O2/c1-2/h1-2H
-O3,Ozone,gas,0.0479982,81,161,2.144,,,,
-KO2,Potassium Superoxide,solid,0.0711,653.15,,2140,,,,
-KOH,Potassium Hydroxide,solid,0.05611,633.15,1593.15,2044,1180,,,
-LiOH,Lithium Hydroxide,solid,0.02395,735,1197,1460,2071,,,
-H,Hydrogen,gas,0.00100794,14.15,20.25,0.084,709,,0.02,
-He,Helium,gas,0.0040026,1.15,4.25,0.17,5193,,0.1,
-Li,Lithium,solid,0.006941,453.65,1615.15,530,3582,58,1.16,
-Be,Beryllium,solid,0.009012182,1551.15,3243.15,1850,1825,12.3,10.03,
-B,Boron,solid,0.010811,2573.15,2823.15,2460,1026,,17.8,
-C,Carbon,solid,0.0120107,3923.15,5100.15,3510,709,1.2,54.5,
-C,Carbon,liquid,0.0120107,3923.15,5100.15,,600,,,
-C,Carbon,gas,0.0120107,3923.15,5100.15,,600,,,
-N,Nitrogen,gas,0.0140067,63.15,77.35,1.17,1042,,0.12,
-O,Oxygen,gas,0.0159994,54.15,90.15,1.33,92,,,
-F,Fluorine,gas,0.018998403,54.15,85.05,1.58,824,,,
-Ne,Neon,gas,0.0201797,24.15,27.15,0.84,1030,,0.1,
-Na,Sodium,solid,0.02298977,370.95,1156.15,970,1230,71,0.68,
-Mg,Magnesium,solid,0.024305,921.95,1380.15,1740,1020,26,3.54,
-Al,Aluminium,solid,0.026981538,933.55,2740.15,2700,900,23.8,7.22,
-Si,Silicon,solid,0.0280855,1683.15,2628.15,2330,700,7.6,9.88,
-P,Phosphorus,solid,0.030973761,317.25,553.15,1820,769,124,3.04,
-S,Sulfur,solid,0.032065,392.15,3104.15,2060,710,64.1,1.78,
-Cl,Chlorine,gas,0.035453,172.15,238.55,2.95,480,,,
-Ar,Argon,gas,0.039948,84.15,87.45,1.66,520,,0.16,
-K,Potassium,solid,0.0390983,336.45,1033.15,860,757,84,0.32,
+Shortcut,Name,Phase,Molar Mass,Melting Point,Boiling Point,Density,Heat Capacity,Linear Expansion Coefficient,Modulus of Elasticity,Thermal Conductivity, Charge
+sSubstance,sName,ttxPhases,fMolarMass,fMeltPoint,fBoilPoint,fDensity,fCp,fExpCoeff,fModElast,fThermalConductivity,iCharge, number of properties is not limited. as long as the name is in the first row and the variablename in the second!
+-,-,-,kg/mol,K,K,kg/m3,J/(kg*K),-,-,W/(m*K),-
+NH3,Ammonia,gas,0.01703052,195.42,239.81,0.717,2165,,,,
+H2SO4,HydrogenSulfate,liquid,0.09807848,283,610,1840,,,,,
+NO3,Nitrate,solid,0.0620049,,,804,1860,,,,
+NO3,Nitrate,liquid,0.0620049,,,804,1860,,,,
+CH4,Methane,gas,0.01604246,90.7,111.66,0.668,8916.7,,,,
+Plastic,Plastic,solid,0.04347,,,980,,,,,
+H2O2,HydrogenPeroxide,liquid,0.03401468,272.72,423.3,1450,1267,,,,,http://webbook.nist.gov/cgi/inchi/InChI%3D1S/H2O2/c1-2/h1-2H
+O3,Ozone,gas,0.0479982,81,161,2.144,,,,,
+KO2,PotassiumSuperoxide,solid,0.0711,653.15,,2140,,,,,
+KOH,PotassiumHydroxide,solid,0.05611,633.15,1593.15,2044,1180,,,,
+LiOH,LithiumHydroxide,solid,0.02395,735,1197,1460,2071,,,,
+H,Hydrogen,gas,0.00100794,14.15,20.25,0.084,709,,0.02,,
+He,Helium,gas,0.0040026,1.15,4.25,0.17,5193,,0.1,,
+Li,Lithium,solid,0.006941,453.65,1615.15,530,3582,58,1.16,,
+Be,Beryllium,solid,0.009012182,1551.15,3243.15,1850,1825,12.3,10.03,,
+B,Boron,solid,0.010811,2573.15,2823.15,2460,1026,,17.8,,
+C,Carbon,solid,0.0120107,3923.15,5100.15,3510,709,1.2,54.5,,
+C,Carbon,liquid,0.0120107,3923.15,5100.15,,600,,,,
+C,Carbon,gas,0.0120107,3923.15,5100.15,,600,,,,
+N,Nitrogen,gas,0.0140067,63.15,77.35,1.17,1042,,0.12,,
+O,Oxygen,gas,0.0159994,54.15,90.15,1.33,92,,,,
+F,Fluorine,gas,0.018998403,54.15,85.05,1.58,824,,,,
+Ne,Neon,gas,0.0201797,24.15,27.15,0.84,1030,,0.1,,
+Na,Sodium,solid,0.02298977,370.95,1156.15,970,1230,71,0.68,,
+Mg,Magnesium,solid,0.024305,921.95,1380.15,1740,1020,26,3.54,,
+Al,Aluminium,solid,0.026981538,933.55,2740.15,2700,900,23.8,7.22,,
+Si,Silicon,solid,0.0280855,1683.15,2628.15,2330,700,7.6,9.88,,
+P,Phosphorus,solid,0.030973761,317.25,553.15,1820,769,124,3.04,,
+S,Sulfur,solid,0.032065,392.15,3104.15,2060,710,64.1,1.78,,
+Cl,Chlorine,gas,0.035453,172.15,238.55,2.95,480,,,,
+Ar,Argon,gas,0.039948,84.15,87.45,1.66,520,,0.16,,
+K,Potassium,solid,0.0390983,336.45,1033.15,860,757,84,0.32,,
 Ca,Calcium,solid,0.040078,1112.15,1757.15,1540,647,22.5,1.52,
 Sc,Scandium,solid,0.04495591,1812.15,3104.15,2990,568,,4.35,
 Ti,Titanium,solid,0.047867,1933.15,3560.15,4510,523,9,10.51,
@@ -124,7 +123,7 @@ Sg,Seaborgium,solid,0.2631186,,,,,,,
 Bh,Bohrium,solid,0.2621231,,,,,,,
 Hs,Hassium,solid,0.2651306,,,,,,,
 Mt,Meitnerium,solid,0.2661378,,,,,,,
-NaCl,Sodium chloride,solid,,1074.15,1738.15,2165,,,,
+NaCl,Sodiumchloride,solid,0.05844277,1074.15,1738.15,2165,1860,,,
 C2H6,Ethane,gas,,90.15,184.15,1.264,,,,
 Brine,Brine,solid,0.06006,,,1355,1497,,,
 Brine,Brine,liquid,0.06006,,,1278,1500,,,
@@ -242,23 +241,23 @@ A7LB_Boot,A7LB_Boot,solid,0.03,,,1248.7,1216,,,
 A7LB_PLSS,A7LB_PLSS,solid,0.03,,,1345.8,1331.5,,,
 AmineSA9T,AmineSA9T,solid,0.03,,,636.7,2040,,,
 Graphite,Graphite,solid,0.0120107,3923.15,5100.15,2100,850,,,
-LiCl,Lithium Chloride,solid,,,,,,,,
+LiCl,LithiumChloride,solid,,,,,,,,
 Zeolite5A,Zeolite5A,solid,0.03,,,1190,750,,,0.152
 Zeolite5A_RK38,Zeolite5A_RK38,solid,0.03,,,1370,650,,,0.152
 Zeolite13x,Zeolite13x,solid,0.03,,,1260,650,,,0.147
 SilicaGel_40,SilicaGel_40,solid,0.03,,,1240,870,,,0.151
 Sylobead_B125,Sylobead_B125,solid,0.03,,,1240,870,,,0.151
 C42H69O13N5,Feces,solid,0.852030825,,,804,1860,,,
-C2H6O2N2,UrinSolids,solid,0.09008,,,999.1,4188.5,,,
+C2H6O2N2,UrineSolids,solid,0.09008,,,999.1,4188.5,,,
 Human,Human,solid,0.03,,,985,4184,,,
 Human_Tissue,Human_Tissue,solid,0.03,,,1059.9,3421,,,
 Human_Skin,Human_Skin,solid,0.03,,,1090,3391,,,
 Human_Fat_Subcutaneous,Human_Fat_Subcutaneous,solid,0.03,,,909.4,2348,,,
 Human_Bone,Human_Bone,solid,0.03,,,1750,1500,,,
 Human_Blood,Human_Blood,liquid,0.03,,,1060,3594,,,
-Clothing_Sweat,Clothing – Sweatshirt/Longsleeve,solid,0.03,,,500,1000,,,,https://de.wikipedia.org/wiki/Baumwolle ? And from above – Cellulose?
-Clothing_Nomex_Tough,Nomex ,solid,0.03,,,50,1000,,,,http://www.ibena.com/tl_files/files/protect/downloads/Product%20overview%20fabric%20for%20firefighting%20and%20emergency%20services%20EN.pdf - Weight 200g/m^2 ? thickness assumed to be 0.4cm ? kg/m^3 ? 200/1000 / 0.04 ? thinner??
-Clothing_Goretex_Flameliner,Gore-Tex Flameliner,solid,0.03,,,250,1000,,,,guessed
+Clothing_Sweat,ClothingSweatshirtLongsleeve,solid,0.03,,,500,1000,,,,,https://de.wikipedia.org/wiki/Baumwolle ? And from above â€“ Cellulose?
+Clothing_Nomex_Tough,Nomex,solid,0.03,,,50,1000,,,,,http://www.ibena.com/tl_files/files/protect/downloads/Product%20overview%20fabric%20for%20firefighting%20and%20emergency%20services%20EN.pdf - Weight 200g/m^2 â†’ thickness assumed to be 0.4cm â†’ kg/m^3 â†’ 200/1000 / 0.04 â†’ thinner??
+Clothing_Goretex_Flameliner,GoreTexFlameliner,solid,0.03,,,250,1000,,,,,guessed
 CabbageEdibleWet,CabbageEdibleWet,liquid,0.02307,,,804,1860,,,
 CabbageInedibleWet,CabbageInedibleWet,liquid,0.02307,,,804,1860,,,
 CabbageEdibleWet,CabbageEdibleWet,solid,0.02307,,,804,1860,,,
@@ -360,5 +359,28 @@ C16H32O2,Fat,solid,0.2564288,,,804,1860,,,
 C4H5ON,Protein,solid,0.083088875,,,804,1860,,,
 C2H2F4,Coolant,liquid,0.1020309,170,250,,
 C2H2F4,Coolant,gas,0.1020309,170,250,4.25,702.4
-BMIMAc,IonicLiquid1,liquid,0.198266,,,1052.59,1059.2,,,,Yates et al 2017 (ICES-2017-20)
-EMIMAc,IonicLiquid2,liquid,0.170212,,,1098,1000,,,,estimation
+Chlorella, CH1.75O0.42N0.15,solid,0.022595349,,,804,1860,,,
+Hplus,Hydrogenion,liquid,0.00100794,,,804,1860,,,,+1
+HCO3minus,Bicarbonate, solid,0.049300064,,,804,1860,,,,-1
+CO3twominus,Carbonate, solid,0.04919927,,,804,1860,,,,-2
+C10H14N2Na2O8,DisodiumEDTASalt,liquid,0.3362063,,,804,1860,,,,0
+C10H16N2O8,EDTA,liquid,0.29224264,,,804,1860,,,,0
+C10H5N2O8,EDTAminus,liquid,0.2912347,,,804,1860,,,,-1
+C10H14N2O8,EDTA2minus,liquid,0.29022676,,,804,1860,,,,-2
+C10H13N2O8,EDTA3minus,liquid,0.28921882,,,804,1860,,,,-3
+C10H12N2O8,EDTA4minus,liquid,0.28821088,,,804,1860,,,,-4
+H3PO4,PhosphoricAcid,liquid,0.097995181,,,804,1860,,,,0
+H2PO4,DihydrogenPhosphate,liquid,0.096987241,,,804,1860,,,,-1
+HPO4,HydrogenPhosphate,liquid,0.095979301,,,804,1860,,,,-2
+PO4,Phosphate,liquid,0.094971361,,,804,1860,,,,-3
+K2HPO4,DibasicPotassiumPhosphate,liquid,0.174175901,,,804,1860,,,,0
+KH2PO4,MonobasicPotassiumPhosphate,liquid,0.136085541,,,804,1860,,,,0
+NaNO3,SodiumNitrate,liquid,0.08499467,,,804,1860,,, ,0
+Naplus, SodiumIon,liquid,0.02298977,370.95,1156.15,970,1230,71,0.68,,+1
+Kplus, PotassiumIon,liquid,0.0390983,336.45,1033.15,860,757,84,0.32,,+1
+OHminus,HydroxideIon,liquid,0.01700734,,,804,1860,,,,-1
+COH4N2,Urea,solid,0.0605526,,,999.1,4188.5,,,,0
+COH2,UrineRest,solid,0.03002598,,,999.1,4188.5,,,,0
+NO3minus,Nitrate,liquid,0.0620049,,,804,1860,,, ,-1
+BMIMAc,IonicLiquid1,liquid,0.198266,,,1052.59,1059.2,,,,,Yates et al 2017 (ICES-2017-20)
+EMIMAc,IonicLiquid2,liquid,0.170212,,,1098,1000,,,,,estimation
