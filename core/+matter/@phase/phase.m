@@ -258,11 +258,27 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 for iI = 1:length(csKeys)
                     sKey = csKeys{iI};
 
-                    % Throw an error if the matter substance is not in the
-                    % matter table
-                    if ~isfield(this.oMT.tiN2I, sKey), this.throw('phase', 'Matter type %s unkown to matter.table', sKey); end
+                    sName = sKey;
 
-                    this.afMass(this.oMT.tiN2I.(sKey)) = tfMass.(sKey);
+                    % Throw an error if the matter substance is not in the
+                    % matter table. Valid inputs are either full name or
+                    % shortcut of the substance
+                    if ~isfield(this.oMT.tiN2I, sKey)
+                        bFoundMatterProperty = false;
+                        for iSubstance = 1:this.oMT.iSubstances
+                            if strcmpi(this.oMT.ttxMatter.(this.oMT.csSubstances{iSubstance}).sName, sKey)
+                                sKey = this.oMT.csSubstances{iSubstance};
+                                bFoundMatterProperty = true;
+                                break
+                            end
+                        end
+                        
+                        if ~bFoundMatterProperty
+                            this.throw('phase', 'Matter type %s unkown to matter.table', sKey);
+                        end
+                    end
+
+                    this.afMass(this.oMT.tiN2I.(sKey)) = tfMass.(sName);
                 end
 
                 % Calculate total mass

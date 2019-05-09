@@ -94,6 +94,12 @@ classdef table < base
         % defined in the matter table and contains the entry true for each
         % substance that can absorb something else
         abAbsorber;
+        
+        % This struct allows the conversion of shortcut to name
+        tsS2N;
+        
+        % and this vice versa
+        tsN2S;
     end
     
     %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -190,7 +196,8 @@ classdef table < base
             % this.
             this.afMolarMass = zeros(1, this.iSubstances);
             this.tiN2I       = struct();
-            
+            this.tsS2N       = struct();
+            this.tsN2S       = struct();
             % Now we go through all substances in the 'MatterData'
             % worksheet and fill the ttxMatter struct
             for iI = 1:this.iSubstances
@@ -205,7 +212,9 @@ classdef table < base
                 this.ttxMatter.(this.csSubstances{iI}).bIndividualFile = false;
                 
                 % Adding an entry to the name to index struct.
-                this.tiN2I.(this.csSubstances{iI}) = iI;
+                this.tiN2I.(this.csSubstances{iI})  = iI;
+                this.tsS2N.(this.csSubstances{iI})  = tSubstance.sName;
+                this.tsN2S.(tools.normalizePath(tSubstance.sName))       = this.csSubstances{iI};
                 
                 % If the molar mass of the substance is not directly
                 % provided by the 'MatterData' worksheet, we try to
