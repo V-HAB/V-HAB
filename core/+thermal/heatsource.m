@@ -1,7 +1,12 @@
 classdef heatsource < base & event.source
     %HEATSOURCE A heat source that is connected to a matter object
     %   Via the fHeatFlow property the inner energy of the connected matter
-    %   object will be changed accordingly. 
+    %   object will be changed accordingly. If the power is changed via the
+    %   setPower() method, the thermal container this heat source belongs
+    %   to is tainted and an update of the thermal solver is bound to the
+    %   post-tick. This thermal solver update is however only triggered, if
+    %   the change in power is greater than one milliwatt. This is to
+    %   prevent too frequent updates, which take a long time. 
     
     properties (SetAccess = protected)
         sName;
