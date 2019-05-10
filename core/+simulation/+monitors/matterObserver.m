@@ -161,7 +161,15 @@ classdef matterObserver < simulation.monitor
                 end
             end
             
-            mfTotalFinalMass = this.mfTotalMass(end, :) + sum(mfMassError,1);
+            % Total mass: sum over all mass stored in all phases, for each
+            % species separately.
+            if any([this.aoPhases.bBoundary])
+                mfTotalFinalMass = sum(reshape([ this.aoPhases(~[this.aoPhases.bBoundary]).afMass ], oSim.oMT.iSubstances, []), 2)' +...
+                                            sum(reshape([ this.aoPhases([this.aoPhases.bBoundary]).afMassChange ], oSim.oMT.iSubstances, []), 2)';
+            else
+                mfTotalFinalMass = sum(reshape([ this.aoPhases(~[this.aoPhases.bBoundary]).afMass ], oSim.oMT.iSubstances, []), 2)';
+            end
+            mfTotalFinalMass = mfTotalFinalMass + sum(mfMassError,1);
             
             % DISP balance
             fprintf('+---------------------------------- MATTER BALANCE ---------------------------------+\n');

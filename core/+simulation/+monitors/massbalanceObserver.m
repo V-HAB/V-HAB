@@ -228,18 +228,32 @@ classdef massbalanceObserver < simulation.monitor
             
             %% checks the mass balance in V-HAB and stops the simulation if it exceeds a value defined by the user
             if this.fMaxMassBalanceDifference ~= inf
-                oInfrastructure = oMT.aoPhases(1).oStore.oContainer.oRoot.oInfrastructure;
+                
+                oMatterObserver = this.oSimulationInfrastructure.toMonitors.oMatterObserver;
+                
+                
+                afInitialTotalMass = oMatterObserver.mfTotalMass(1,:);
 
-                iLength = size(oInfrastructure.toMonitors.oMatterObserver.mfTotalMass);
-                iLength = iLength(1);
-                if iLength > 1
-                    afInitialTotalMass = oInfrastructure.toMonitors.oMatterObserver.mfTotalMass(1,:);
-                    afCurrentTotalMass = oInfrastructure.toMonitors.oMatterObserver.mfTotalMass(end,:);
+                if any([oMatterObserver.aoPhases.bBoundary])
+                    afCurrentTotalMass = sum(reshape([ oMatterObserver.aoPhases(~[oMatterObserver.aoPhases.bBoundary]).afMass ], oMT.iSubstances, []), 2)' +...
+                                                sum(reshape([ oMatterObserver.aoPhases([oMatterObserver.aoPhases.bBoundary]).afMassChange ], oMT.iSubstances, []), 2)';
+                else
+                    afCurrentTotalMass = sum(reshape([ oMatterObserver.aoPhases(~[oMatterObserver.aoPhases.bBoundary]).afMass ], oMT.iSubstances, []), 2)';
+                end
 
-                    fError = abs(sum(afInitialTotalMass) - sum(afCurrentTotalMass));
-                    if fError > this.fMaxMassBalanceDifference
-                        keyboard()
+                mfMassError         = zeros(length(oMatterObserver.aoPhases), oSim.oMT.iSubstances);
+                for iPhase = 1:length(oMatterObserver.aoPhases)
+                    fTimeSinceLastMassUpdate = oSim.oTimer.fTime - oMatterObserver.aoPhases(iPhase).fLastMassUpdate;
+                    if fTimeSinceLastMassUpdate ~= 0
+                        mfMassError(iPhase,:) = oMatterObserver.aoPhases(iPhase).afCurrentTotalInOuts * fTimeSinceLastMassUpdate;
                     end
+                end
+
+                afCurrentTotalMass = afCurrentTotalMass + sum(mfMassError,1);
+            
+                fError = abs(sum(afInitialTotalMass) - sum(afCurrentTotalMass));
+                if fError > this.fMaxMassBalanceDifference
+                    keyboard()
                 end
             end
         end

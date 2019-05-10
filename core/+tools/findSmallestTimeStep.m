@@ -6,9 +6,14 @@ function findSmallestTimeStep(oInput)
     % Simply call it after finishing or pausing a simulation by typing
     % tools.findSmallestTimeStep(oLastSimObj) in your command window.
     % To activate the monitor add:
-    % ttMonitorConfig = struct('oTimeStepObserver', struct('cParams', {{ 0 }}))
+    %
+    % ttMonitorConfig = struct();
+    % ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
+    % ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
+    %
     % In the setup file instead of the usual empty ttMonitorConfig, or add
-    % it to existing ttMonitorConfig you use
+    % it to existing ttMonitorConfig you use (in that case leave out the
+    % first line to not overwrite the existing monitors!)
     
     % Getting the time step observer object, tell the user why we failed.
     try 
@@ -18,7 +23,7 @@ function findSmallestTimeStep(oInput)
         % the times step observer. If it's something else, we rethrow that
         % error. 
         if strcmp(oError.identifier, 'MATLAB:nonExistentField')
-            str = 'It seems like you did not activate the timestep observer, please go to your setup file and replace ttMonitorConfig = struct(); with ttMonitorConfig = struct(''oTimeStepObserver'', struct(''cParams'', {{ 0 }}));';
+            str = 'It seems like you did not activate the timestep observer, please go to your setup file and add the lines:\n ttMonitorConfig = struct();\n ttMonitorConfig.oTimeStepObserver.sClass = ''simulation.monitors.timestepObserver'';\n ttMonitorConfig.oTimeStepObserver.cParams = { 0 };\n before the simulation definition!';
             error('V_HAB:findSmallestTimeStep', str);
         else 
             rethrow(oError);

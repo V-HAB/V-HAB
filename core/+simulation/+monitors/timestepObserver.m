@@ -9,9 +9,12 @@ classdef timestepObserver < simulation.monitor
     % the smallest time step for the last 100 ticks.
     %
     % to add this monitor to your simulation simply go to your setup file
-    % and define 
+    % and define ttMonitorConfig as follows (if you have other monitors
+    % just leave out the fist line in order not to overwrite them!)
     %
-    % ttMonitorConfig = struct('oTimeStepObserver', struct('sClass', 'simulation.monitors.timestepObserver', 'cParams', {{ 0 }}));
+    % ttMonitorConfig = struct();
+    % ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
+    % ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
     %
     % Instead of 0 you can provide the limit for the time step!
     
