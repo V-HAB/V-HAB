@@ -17,9 +17,6 @@ classdef ConstantMassP2P < matter.procs.p2ps.stationary
         fTimeStep = 60;
     end
     properties (SetAccess = protected, GetAccess = public)
-        % parent system reference
-        oParent;
-        
         aiSubstances;
         
         afConstantMass;
@@ -28,11 +25,9 @@ classdef ConstantMassP2P < matter.procs.p2ps.stationary
     end
     
     methods
-        function this = ConstantMassP2P(oParent, oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut, csSubstances, iDirection)
+        function this = ConstantMassP2P(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut, csSubstances, iDirection)
             this@matter.procs.p2ps.stationary(oStore, sName, sPhaseAndPortIn, sPhaseAndPortOut);
 
-            this.oParent = oParent;
-            
             % the substances that shall be kept constant are transformed
             % into their respective indices and stored as indices in the
             % P2P to improve speed.

@@ -29,7 +29,7 @@ classdef CHX_p2p < matter.procs.p2ps.flow & event.source
             this.trigger('update');
         end
         
-        function calculateFlowRate(this, ~, ~)
+        function calculateFlowRate(this, ~, ~, ~, ~)
             this.update();
         end
             
