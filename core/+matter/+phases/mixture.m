@@ -21,13 +21,18 @@ classdef mixture < matter.phase
     end
     
     methods
-        function this = mixture(oStore, sName, sPhaseType, tfMasses, fVolume, fTemperature, fPressure)
+        function this = mixture(oStore, sName, sPhaseType, tfMasses, ~, fTemperature, fPressure)
             this@matter.phase(oStore, sName, tfMasses, fTemperature);
             
             this.sPhaseType = sPhaseType;
-            this.fVolume = fVolume;
-            this.fDensity = this.fMass / this.fVolume;
-            this.fPressure = fPressure;
+            if strcmp(this.sPhaseType, 'gas')
+                this.fPressure = this.fMass * this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
+            else
+                this.fPressure = fPressure;
+            end
+            this.fDensity = this.oMT.calculateDensity(this);
+            this.fVolume = this.fMass / this.fDensity;
+            
             this.fPressureLastHeatCapacityUpdate = this.fPressure;
         end
         
@@ -42,8 +47,13 @@ classdef mixture < matter.phase
             % Changes the volume of the phase. If no processor for volume
             % change registered, do nothing.
 
-            bSuccess = this.setParameter('fVolume', fVolume);
-            this.fDensity = this.fMass / this.fVolume;
+            if strcmp(this.sPhaseType, 'gas')
+                bSuccess = this.setParameter('fVolume', fVolume);
+                this.fDensity = this.fMass / this.fVolume;
+                this.fPressure = this.fMass * this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
+            else
+                error('you cannot compress solids or liquids')
+            end
         end
     end
     

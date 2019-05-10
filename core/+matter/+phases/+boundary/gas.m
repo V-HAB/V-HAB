@@ -46,10 +46,16 @@ classdef gas < matter.phases.boundary.boundary
                 % phase
                 
                 % p*V = m*R*T;
-                this.fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * fVolume);
+                if this.fMass == 0
+                    this.fMassToPressure = 0;
 
-                this.fPressure = this.fMass * this.fMassToPressure;
-            elseif nargin > 5 && ~isempty(fPressure)
+                    this.fPressure = 0;
+                else
+                    this.fMassToPressure = this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * fVolume);
+
+                    this.fPressure = this.fMass * this.fMassToPressure;
+                end
+            elseif nargin >= 4
                 
                 this.fPressure = fPressure;
                 

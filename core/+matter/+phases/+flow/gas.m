@@ -24,6 +24,8 @@ classdef gas < matter.phases.flow.flow
         function this = gas(oStore, sName, varargin)
             this@matter.phases.flow.flow(oStore, sName, varargin{:});
             
+            this.afPP = zeros(1,this.oMT.iSubstances);
+            
         end
     end
         
