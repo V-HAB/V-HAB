@@ -185,9 +185,7 @@ classdef branch < base.branch
                         return;
                     end
                     
-                    if isa(this.aoFlowProcs(iI), 'components.matter.fan')
-                        if this.aoFlowProcs(iI).iBlowDirection == 1; iWhichExme = 1; else; iWhichExme = 2; end
-                    end
+                    
                 end
             else
                 iWhichExme = (this.fFlowRate < 0) + 1;
