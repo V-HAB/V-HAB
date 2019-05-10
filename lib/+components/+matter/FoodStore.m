@@ -53,19 +53,23 @@ classdef FoodStore < matter.store
             
             txResults = this.oMT.calculateNutritionalContent(this.toPhases.Food);
             
-            % calculate mass transfer for the P2P
-            if nargin > 4
-                
-                
-                keyboard()
-                trComposition;
-                afEnergy = fEnergy ;
-                
-                afPartialMasses = 0;
+            if txResults.EdibleTotal.Mass == 0
+                afPartialMasses = zeros(1, this.oMT.iSubstances);
+                disp(['A Human is going hungry because there is nothing edible left in store ', this.sName])
             else
-                afPartialMasses = (this.toPhases.Food.arPartialMass * (txResults.EdibleTotal.Mass / txResults.EdibleTotal.TotalEnergy) * fEnergy);
+                % calculate mass transfer for the P2P
+                if nargin > 4
+
+
+                    keyboard()
+                    trComposition;
+                    afEnergy = fEnergy ;
+
+                    afPartialMasses = 0;
+                else
+                    afPartialMasses = (this.toPhases.Food.arPartialMass * (txResults.EdibleTotal.Mass / txResults.EdibleTotal.TotalEnergy) * fEnergy);
+                end
             end
-            
             % Check if sufficient food of the demanded composition is
             % available
             oP2P.setMassTransfer(afPartialMasses, fTime);
