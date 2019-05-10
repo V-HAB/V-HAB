@@ -449,6 +449,15 @@ classdef timer < base
         
         function tick(this)
             % Advance the timer one (global) time step
+                        
+            % Check if the minimum time step is sufficiently large to
+            % ensure a continoues time progress, if not increase it. This
+            % is necessary for example for long simulations, where
+            % otherwise the minimum time step can become smaller than
+            % floating point precision compared to the total sim time.
+            while (this.fTime + this.fMinimumTimeStep) == this.fTime
+                this.fMinimumTimeStep = 10 * this.fMinimumTimeStep;
+            end
             
             % If time is -1 the min. time step - first tick, advance to zero
             %if this.fTime == (-1 * this.fTimeStep)
