@@ -469,7 +469,7 @@ classdef CDRA < vsys
             % Inlet of sylobed one (the outlet requires another interface
             % because the location from which the air is supplied is
             % different
-            components.matter.valve_closable(this, 'Cycle_One_InletValve', 0);
+            components.matter.valve(this, 'Cycle_One_InletValve');
             components.matter.pipe(this, 'Cycle_One_InletPipe', fPipelength, fPipeDiameter, fFrictionFactor);
             
             sBranchName = 'CDRA_Air_In_1';
@@ -479,7 +479,7 @@ classdef CDRA < vsys
             oFlowPhase = this.toStores.Sylobead_1.toPhases.Flow_1;
             matter.procs.exmes.gas(oFlowPhase, 'Outlet');
             
-            components.matter.valve_closable(this, 'Cycle_Two_OutletValve', 0);
+            components.matter.valve(this, 'Cycle_Two_OutletValve');
             components.matter.pipe(this, 'Cycle_Two_OutletPipe', fPipelength, fPipeDiameter, fFrictionFactor);
             
             sBranchName = 'CDRA_Air_Out_2';
@@ -492,7 +492,7 @@ classdef CDRA < vsys
             oBranch = matter.branch(this, ['Sylobead_1.Outflow_', num2str(this.tGeometry.Sylobead.iCellNumber)], {'Sylobead_1_to_13x1_Pipe'}, 'Zeolite13x_1.Inflow_1', sBranchName);
             this.tMassNetwork.InternalBranches_Sylobead_1(end+1) = oBranch;
             
-            components.matter.valve_closable(this, 'Cycle_Two_InletValve', 0);
+            components.matter.valve(this, 'Cycle_Two_InletValve');
             components.matter.pipe(this, 'Cycle_Two_InletPipe', fPipelength, fPipeDiameter, fFrictionFactor);
             
             sBranchName = 'CDRA_Air_In_2';
@@ -501,7 +501,7 @@ classdef CDRA < vsys
             
             oFlowPhase = this.toStores.Sylobead_2.toPhases.Flow_1;
             matter.procs.exmes.gas(oFlowPhase, 'Outlet');
-            components.matter.valve_closable(this, 'Cycle_One_OutletValve', 0);
+            components.matter.valve(this, 'Cycle_One_OutletValve');
             components.matter.pipe(this, 'Cycle_One_OutletPipe', fPipelength, fPipeDiameter, fFrictionFactor);
             
             sBranchName = 'CDRA_Air_Out_1';
@@ -517,8 +517,8 @@ classdef CDRA < vsys
             % Interface between 13x and 5A zeolite absorber beds
             components.matter.Temp_Dummy(this, 'PreCooler_5A1', 285, 1000);
             components.matter.Temp_Dummy(this, 'PreCooler_5A2', 285, 1000);
-            components.matter.valve_closable(this, 'Valve_13x1_to_5A_1', 0);
-            components.matter.valve_closable(this, 'Valve_13x2_to_5A_2', 0);
+            components.matter.valve(this, 'Valve_13x1_to_5A_1');
+            components.matter.valve(this, 'Valve_13x2_to_5A_2');
             components.matter.pipe(this, 'Pipe_13x1_to_5A_1', fPipelength, fPipeDiameter, fFrictionFactor);
             components.matter.pipe(this, 'Pipe_13x2_to_5A_2', fPipelength, fPipeDiameter, fFrictionFactor);
             
@@ -536,8 +536,8 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oFlowPhase, 'Inlet_From_5A1');
             
             % Add valves
-            components.matter.valve_closable(this, 'Valve_5A_1_to_13x2', 0);
-            components.matter.valve_closable(this, 'Valve_5A_2_to_13x1', 0);
+            components.matter.valve(this, 'Valve_5A_1_to_13x2');
+            components.matter.valve(this, 'Valve_5A_2_to_13x1');
             components.matter.pipe(this, 'Pipe_5A_1_to_13x2', fPipelength, fPipeDiameter, fFrictionFactor);
             components.matter.pipe(this, 'Pipe_5A_2_to_13x1', fPipelength, fPipeDiameter, fFrictionFactor);
             
@@ -560,10 +560,10 @@ classdef CDRA < vsys
             matter.procs.exmes.gas(oFlow2, 'OutletVacuum');
             matter.procs.exmes.gas(oFlow2, 'OutletAirsave');
             
-            components.matter.valve_closable(this, 'Valve_5A_1_Airsave', 0);
-            components.matter.valve_closable(this, 'Valve_5A_1_Vacuum', 0);
-            components.matter.valve_closable(this, 'Valve_5A_2_Airsave', 0);
-            components.matter.valve_closable(this, 'Valve_5A_2_Vacuum', 0);
+            components.matter.valve(this, 'Valve_5A_1_Airsave');
+            components.matter.valve(this, 'Valve_5A_1_Vacuum');
+            components.matter.valve(this, 'Valve_5A_2_Airsave');
+            components.matter.valve(this, 'Valve_5A_2_Vacuum');
             components.matter.fan_simple(this, 'AirsaveFanOne', 1*10^5);
             components.matter.fan_simple(this, 'AirsaveFanTwo', 1*10^5);
             components.matter.pipe(this, 'Pipe_5A_1_Vacuum', fPipelength, fPipeDiameter, fFrictionFactor);

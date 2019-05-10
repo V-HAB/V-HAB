@@ -358,7 +358,7 @@ classdef setup < simulation.infrastructure
             oPlotter.plot();
             
             %% Get Test Data:
-            iFileID = fopen(strrep('+tutorials/+CDRA/+TestData/CDRA_Test_Data.csv','/',filesep), 'r');
+            iFileID = fopen(strrep('+examples/+CDRA/+TestData/CDRA_Test_Data.csv','/',filesep), 'r');
             
             [FilePath,~,~,~] = fopen(iFileID);
             
