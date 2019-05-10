@@ -306,11 +306,11 @@ classdef store < base
             elseif strcmp(varargin{1}, 'flow')
                 bFlowNode = true;
                 bBoundaryNode = false;
-                cInputs = {varargin{2:end}};
+                cInputs = varargin(2:end);
             elseif strcmp(varargin{1}, 'boundary')
                 bFlowNode = false;
                 bBoundaryNode = true;
-                cInputs = {varargin{2:end}};
+                cInputs = varargin(2:end);
             else
                 cInputs = varargin;
                 bFlowNode = false;
