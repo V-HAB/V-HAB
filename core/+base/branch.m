@@ -163,7 +163,7 @@ classdef (Abstract) branch < base & event.source
             end
             
             % Setting the sName property
-            this.sName = sTempName;
+            this.sName = tools.normalizePath(sTempName);
             
             % If the user provided a custom name, we also set that
             % property.
