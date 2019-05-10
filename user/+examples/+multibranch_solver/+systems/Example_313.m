@@ -119,7 +119,7 @@ classdef Example_313 < vsys
                     matter.procs.exmes.gas(oBed.aoPhases(1), sOtherStore);
                     
                     oPipe  = components.matter.pipe(this, [ 'Pipe_' sBed '_' sOtherStore    ], this.fPipeLength, this.fPipeDiameter);
-                    oValve = components.matter.valve_closable(this, [ 'Valve_' sBed '_' sOtherStore ], this.fValveFlowCoeff);
+                    oValve = components.matter.valve(this, [ 'Valve_' sBed '_' sOtherStore ]);
                     
                     if strcmp(sOtherStore, 'Splitter')
                         matter.branch(this, ...
@@ -149,9 +149,9 @@ classdef Example_313 < vsys
 %                 components.matter.pipe(this, [ 'Pipe_' sBed 'ToMergerVac' ], this.fPipeLength, this.fPipeDiameter);
 %                 
 %                 
-%                 components.matter.valve_closable(this, [ 'Pipe_SplitterTo' sBed     ], 0.5);
-%                 components.matter.valve_closable(this, [ 'Pipe_' sBed 'ToMerger'    ], 0.5);
-%                 components.matter.valve_closable(this, [ 'Pipe_' sBed 'ToMergerVac' ], 0.5);
+%                 components.matter.valve(this, [ 'Pipe_SplitterTo' sBed     ]);
+%                 components.matter.valve(this, [ 'Pipe_' sBed 'ToMerger'    ]);
+%                 components.matter.valve(this, [ 'Pipe_' sBed 'ToMergerVac' ]);
             end
             
             
@@ -170,8 +170,8 @@ classdef Example_313 < vsys
             components.matter.pipe(this, 'Pipe_BedA_Merger_2',   this.fPipeLength, this.fPipeDiameter);
             components.matter.pipe(this, 'Pipe_Merger_Atmos',    this.fPipeLength, this.fPipeDiameter);
             
-            components.matter.valve_closable(this, 'Valve_Splitter_BedA', 0.5);
-            components.matter.valve_closable(this, 'Valve_BedA_Merger', 0.5);
+            components.matter.valve(this, 'Valve_Splitter_BedA');
+            components.matter.valve(this, 'Valve_BedA_Merger');
             
             
             % To Vacuum Comps
@@ -180,8 +180,8 @@ classdef Example_313 < vsys
             components.matter.pipe(this, 'Pipe__BedA_Adsorbed__Vacuum__1', this.fPipeLength, this.fPipeDiameter / 10);
             components.matter.pipe(this, 'Pipe__BedA_Adsorbed__Vacuum__2', this.fPipeLength, this.fPipeDiameter / 10);
             
-            components.matter.valve_closable(this, 'Valve__BedA_Flow__Vacuum', 0.5, false);%.setOpen(false);
-            components.matter.valve_closable(this, 'Valve__BedA_Adsorbed__Vacuum', 0.5, false);%.setOpen(false);
+            components.matter.valve(this, 'Valve__BedA_Flow__Vacuum', false);%.setOpen(false);
+            components.matter.valve(this, 'Valve__BedA_Adsorbed__Vacuum', false);%.setOpen(false);
             
             
             
