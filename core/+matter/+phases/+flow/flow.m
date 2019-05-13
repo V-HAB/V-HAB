@@ -41,6 +41,8 @@ classdef (Abstract) flow < matter.phase
             
             this.fInitialMass = this.fMass;
             
+            this.fDensity = this.fMass / this.fVolume;
+            
             % Mass change must be zero for flow nodes, if that is not the
             % case, this enforces V-HAB to make a minimum size time step to
             % keep the error small
