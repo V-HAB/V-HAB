@@ -183,14 +183,14 @@ classdef Greenhouse < vsys
             matter.store(this, 'LeakageBuffer', 1e3);
             
             % add phase to leakage buffer store
-            oLeakageBuffer = matter.phases.gas(...
+            oLeakageBuffer = matter.phases.boundary.gas(...
                 this.toStores.LeakageBuffer, ...        % store containing phase
                 'LeakageBuffer', ...                    % phase name
                 struct(...                              % phase contents    [kg]
-                'N2', 1e-3,...
-                'CO2', 1e-3), ...
+                ), ...
                 1e3, ...                                % phase volume      [m^3]
-                fTemperatureInit);                      % phase temperature [K]
+                3,...                                   % phase temperature [K]
+                0);                                     % phase pressure [Pa]
                 
             % add exmes
             matter.procs.exmes.gas(oLeakageBuffer, 'Leakage_In_FromAtmosphere');
@@ -417,7 +417,13 @@ classdef Greenhouse < vsys
                     this.toStores.(csStoreNames{iStore}).fDefaultTimeStep = this.fTimeStep;
                 end
             end
-
+            
+            clear tTimeStepProperties
+            tTimeStepProperties.rMaxChange = inf;
+            this.toStores.BiomassSplit.toPhases.BiomassInedible.setTimeStepProperties(tTimeStepProperties);
+            this.toStores.BiomassSplit.toPhases.BiomassEdible.setTimeStepProperties(tTimeStepProperties);
+            
+            clear tTimeStepProperties
             arMaxChange = zeros(1,this.oMT.iSubstances);
             arMaxChange(this.oMT.tiN2I.H2O) = 0.05;
             arMaxChange(this.oMT.tiN2I.CO2) = 0.05;
