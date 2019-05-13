@@ -429,18 +429,25 @@ function update(this)
                 end
             end
             
-            % For constant flowrate boundary conditions it is possible that
-            % the pressure drop values are slightly of in some cases. E.g.
-            % desorbing CO2 into vacuum where the phase pressures are also
-            % very small. Therefore we limit the pressure drops from F2Fs
-            % in the branch to the total pressure difference in the branch
-            fPressureDifferenceBranch = sign(this.afFlowRates(iB)) * (this.aoBranches(iB).coExmes{1}.oPhase.fPressure - this.aoBranches(iB).coExmes{2}.oPhase.fPressure);
-            
-            if sum(afDeltaPressures) > fPressureDifferenceBranch
-                afDeltaPressures = afDeltaPressures .* (fPressureDifferenceBranch/sum(afDeltaPressures));
+            % If any pressure difference is infinite, a closed valve is
+            % present in the branch!
+            if any(isinf(abs(afDeltaPressures))) && this.afFlowRates(iB) ~= 0
+                this.chSetBranchFlowRate{iB}(0, afDeltaPressures);
+            else
+                
+                % For constant flowrate boundary conditions it is possible that
+                % the pressure drop values are slightly of in some cases. E.g.
+                % desorbing CO2 into vacuum where the phase pressures are also
+                % very small. Therefore we limit the pressure drops from F2Fs
+                % in the branch to the total pressure difference in the branch
+                fPressureDifferenceBranch = sign(this.afFlowRates(iB)) * (this.aoBranches(iB).coExmes{1}.oPhase.fPressure - this.aoBranches(iB).coExmes{2}.oPhase.fPressure);
+
+                if sum(afDeltaPressures) > fPressureDifferenceBranch
+                    afDeltaPressures = afDeltaPressures .* (fPressureDifferenceBranch/sum(afDeltaPressures));
+                end
+
+                this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), afDeltaPressures);
             end
-            
-            this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), afDeltaPressures);
         end
     end
     
