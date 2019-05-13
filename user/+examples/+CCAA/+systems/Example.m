@@ -67,10 +67,6 @@ classdef Example < vsys
             matter.procs.exmes.gas(oCabinPhase, 'Port_2');
             matter.procs.exmes.gas(oCabinPhase, 'Port_3');
             
-            % For the CCAA to function properly the cabin phase to which
-            % the CCAA is attached has to be set as reference
-            this.toChildren.CCAA.setReferencePhase(oCabinPhase);
-            
             % Coolant store for the coolant water supplied to CCAA
             matter.store(this, 'CoolantStore', 1);
             
