@@ -741,8 +741,26 @@ classdef logger < simulation.monitor
                 % return an error.
                 
                 % First we get the return array directly.
-                afValues = this.hEvaluateLogData();
-                
+                try
+                    afValues = this.hEvaluateLogData();
+                catch sInitialError
+                    % An error occured so we go through the log values to
+                    % find the error
+                    csError = cell(0);
+                    for iI = 1:this.iNumberOfLogItems
+                        try  
+                            eval([ this.csPaths{iI} ';' ]);
+                        catch sError
+                            sErrorMessage = ['\n In the ', num2str(iI), 'th log entry with the following path: \n', this.csPaths{iI},  ' \nThe following error was caught: \n ', sError.message, '\n'];
+                            csError{end+1} = sErrorMessage; %#ok<AGROW>
+                        end
+                    end
+                    fprintf('\n During logging the following errors were encountered:\n');
+                    for iError = 1:length(csError)
+                        fprintf(csError{iError});
+                    end
+                    error(sInitialError);
+                end
                 % Now we check it it is shorter than the width of mfLog
                 if length(afValues) ~= length(this.mfLog(1,:))
                     % It is shorter, so one of the items must be returning

@@ -411,11 +411,11 @@ classdef store < base
             % Get sName from oProcP2P, add to toProcsP2P
             
             if this.bSealed
-                this.throw('addP2P', 'Store already sealed!');
+                this.throw('addP2P', 'Error while adding P2P %s, the store %s is already sealed!', oProcP2P.sName, oProcP2P.oStore.sName);
             elseif isfield(this.toProcsP2P, oProcP2P.sName)
-                this.throw('addP2P', 'P2P proc already exists!');
+                this.throw('addP2P', 'Error while adding P2P %s in store %s, the P2P proc already exists!', oProcP2P.sName, oProcP2P.oStore.sName);
             elseif this ~= oProcP2P.oStore
-                this.throw('addP2P', 'P2P proc does not have this store set as parent store!');
+                this.throw('addP2P', 'Error while adding P2P %s, P2P proc does not have the store %s set as parent store but instead has the store %s as parent!', oProcP2P.sName, this.sName, oProcP2P.oStore.sName);
             end
             
             this.toProcsP2P.(oProcP2P.sName) = oProcP2P;
