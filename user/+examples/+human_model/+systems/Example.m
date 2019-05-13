@@ -48,7 +48,7 @@ classdef Example < vsys
                         
                         ctEvents{iEvent, iCrewMember}.State = 2;
                         ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  1) * 3600;
-                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  2) * 3600;
+                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  1.5) * 3600;
                         ctEvents{iEvent, iCrewMember}.Started = false;
                         ctEvents{iEvent, iCrewMember}.Ended = false;
                         ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
@@ -56,7 +56,7 @@ classdef Example < vsys
                     elseif iCrewMember==2 || iCrewMember ==5
                         ctEvents{iEvent, iCrewMember}.State = 2;
                         ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  5) * 3600;
-                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  6) * 3600;
+                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  5.5) * 3600;
                         ctEvents{iEvent, iCrewMember}.Started = false;
                         ctEvents{iEvent, iCrewMember}.Ended = false;
                         ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
@@ -64,7 +64,7 @@ classdef Example < vsys
                     elseif iCrewMember ==3 || iCrewMember == 6
                         ctEvents{iEvent, iCrewMember}.State = 2;
                         ctEvents{iEvent, iCrewMember}.Start = ((iDay-1) * 24 +  9) * 3600;
-                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  10) * 3600;
+                        ctEvents{iEvent, iCrewMember}.End = ((iDay-1) * 24 +  9.5) * 3600;
                         ctEvents{iEvent, iCrewMember}.Started = false;
                         ctEvents{iEvent, iCrewMember}.Ended = false;
                         ctEvents{iEvent, iCrewMember}.VO2_percent = 0.75;
@@ -87,7 +87,7 @@ classdef Example < vsys
                 txCrewPlaner.ctEvents = ctEvents(:, iCrewMember);
                 txCrewPlaner.tMealTimes = tMealTimes;
                 
-                components.matter.Human(this, ['Human_', num2str(iCrewMember)], true, 28, 84.5, 1.84, txCrewPlaner);
+                components.matter.Human(this, ['Human_', num2str(iCrewMember)], true, 40, 82, 1.829, txCrewPlaner);
                 
                 clear txCrewPlaner;
             end
@@ -115,6 +115,8 @@ classdef Example < vsys
             % Adding a phase to the store 'Cabin', 48 m^3 air
             oCabinPhase = matter.phases.gas(this.toStores.Cabin, 'CabinAir', cAirHelper{1}, cAirHelper{2}, cAirHelper{3});
             
+            oHeatSource = components.thermal.heatsources.ConstantTemperature('Cabin_Constant_Temperature');
+            oCabinPhase.oCapacity.addHeatSource(oHeatSource);
             
             % Creates a store for the potable water reserve
             % Potable Water Store
@@ -147,11 +149,12 @@ classdef Example < vsys
                 matter.procs.exmes.mixture(oUrinePhase,         ['Urine_In',    num2str(iHuman)]);
 
                 % Add interface branches for each human
-                matter.branch(this, ['Air_Out',         num2str(iHuman)],  	{}, ['Cabin.AirOut',                    num2str(iHuman)]);
-                matter.branch(this, ['Air_In',          num2str(iHuman)], 	{}, ['Cabin.AirIn',                     num2str(iHuman)]);
-                matter.branch(this, ['Feces',           num2str(iHuman)],  	{}, ['FecesStorage.Feces_In',           num2str(iHuman)]);
-                matter.branch(this, ['PotableWater',    num2str(iHuman)], 	{}, ['PotableWaterStorage.DrinkingOut', num2str(iHuman)]);
-                matter.branch(this, ['Urine',           num2str(iHuman)], 	{}, ['UrineStorage.Urine_In',           num2str(iHuman)]);
+                matter.branch(this, ['Air_Out',         num2str(iHuman)],  	{}, [oCabinPhase.oStore.sName,             '.AirOut',      num2str(iHuman)]);
+                matter.branch(this, ['Air_In',          num2str(iHuman)], 	{}, [oCabinPhase.oStore.sName,             '.AirIn',       num2str(iHuman)]);
+                matter.branch(this, ['Feces',           num2str(iHuman)],  	{}, [oFecesPhase.oStore.sName,             '.Feces_In',    num2str(iHuman)]);
+                matter.branch(this, ['PotableWater',    num2str(iHuman)], 	{}, [oPotableWaterPhase.oStore.sName,      '.DrinkingOut', num2str(iHuman)]);
+                matter.branch(this, ['Urine',           num2str(iHuman)], 	{}, [oUrinePhase.oStore.sName,             '.Urine_In',	num2str(iHuman)]);
+
 
                 % register each human at the food store
                 requestFood = oFoodStore.registerHuman(['Solid_Food_', num2str(iHuman)]);

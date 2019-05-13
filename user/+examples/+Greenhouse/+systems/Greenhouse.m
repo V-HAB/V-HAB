@@ -18,7 +18,7 @@ classdef Greenhouse < vsys
             
             % Custom name you want to give this specific culture, select a 
             % name that is easy for you to identify
-            tInput(1).sCultureName     = 'MyLettuceCulture';
+            tInput(1).sName            = 'MyLettuceCulture';
             % Name of the plant species, has to fit the names defined in 
             % lib/+components/*PlantModuleV2/+plantparameters/PlantParameters.csv
             tInput(1).sPlantSpecies    = 'Lettuce';
@@ -49,7 +49,7 @@ classdef Greenhouse < vsys
             % to the tInput struct (because we loop over them below).
             % Otherwise you can simply create individual input structs and
             % define the PlantCulture.m multiple times without a loop
-            tInput(2).sCultureName     = 'MySweetpotatoCulture';
+            tInput(2).sName            = 'MySweetpotatoCulture';
             tInput(2).sPlantSpecies    = 'Sweetpotato';
             tInput(2).fGrowthArea      = 5; % m^2
             tInput(2).fHarvestTime     = 120; % days
@@ -64,8 +64,9 @@ classdef Greenhouse < vsys
             for iCulture = 1:length(tInput)
                 components.matter.PlantModuleV2.PlantCulture(...
                         this, ...                   % parent system reference
-                        tInput(iCulture), ...       % input for specific culture
-                        this.fTimeStep);            % Time step initially used for this culture in [s]
+                        tInput(iCulture).sName,...
+                        this.fTimeStep,...          % Time step initially used for this culture in [s]
+                        tInput(iCulture));          % input for specific culture
             end
         end
         
@@ -92,7 +93,6 @@ classdef Greenhouse < vsys
             for iChild = 1:length(this.csChildren)
                 % culture object gets assigned using its culture name 
                 if isa(this.toChildren.(this.csChildren{iChild}), 'components.matter.PlantModuleV2.PlantCulture')
-                    this.toChildren.(this.csChildren{iChild}).setReferenceAtmosphere(oAtmosphere);
                     csPlantCultures{length(csPlantCultures)+1} = this.csChildren{iChild};
                 end
             end
@@ -349,7 +349,7 @@ classdef Greenhouse < vsys
             
             %% Create Biomass Split P2P
             
-            oConstantP2P = components.matter.P2Ps.ConstantMassP2P(this, ...
+            oConstantP2P = components.matter.P2Ps.ConstantMassP2P(...
                 this.toStores.BiomassSplit, ...
                 'EdibleInedible_Split_P2P', ...
                 'BiomassEdible.EdibleInedible_Split_P2P_Out', ...
