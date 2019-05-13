@@ -161,7 +161,7 @@ else
         if any(strcmp(sMatterState, {'gas'}))
             [ afPartialPressures, ~ ] = this.calculatePartialPressures(sMatterState, afMass, fPressure, fTemperature);
         else
-            afPartialPressures = ones(1, this.iSubstances) * this.Standard.Pressure;
+            afPartialPressures = ones(1, this.iSubstances) * fPressure;
         end
     end
     
