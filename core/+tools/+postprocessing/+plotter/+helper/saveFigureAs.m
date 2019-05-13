@@ -170,7 +170,9 @@ function saveFigureAs(hButton,~)
     % we will later produce. It is currently set to some default value,
     % most likely A4 or US letter format. We want the image to be the same
     % size as the window we're seeing on the screen, so we simply set the
-    % PaperSize equal to the actual size.
+    % PaperSize equal to the actual size. And of course we need to make
+    % sure the units are correct as well first. 
+    hFigure.PaperUnits = 'centimeters';
     hFigure.PaperSize = hFigure.Position(3:4);
     
     % Alright, now we have to change the fonts and font sizes. We don't
