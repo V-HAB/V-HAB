@@ -20,7 +20,7 @@ function [ aafPhasePressuresAndFlowRates, afBoundaryConditions ] = generateMatri
     iVariablePressurePhases = length(this.csVariablePressurePhases);
     iMatrixHeight           = this.iBranches + iVariablePressurePhases;
     
-    aafPhasePressuresAndFlowRates = zeros(iMatrixHeight, iVariablePressurePhases + this.iBranches);
+    aafPhasePressuresAndFlowRates = zeros(iMatrixHeight, iMatrixHeight);
     afBoundaryConditions          = zeros(iMatrixHeight, 1);
     
     iRow = 0;

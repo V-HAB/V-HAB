@@ -29,7 +29,7 @@ classdef gas < matter.phase
         
         % Relative humidity in the phase, see this.update() for details on
         % the calculation.
-        rRelHumidity
+        rRelHumidity;
     
     end
     

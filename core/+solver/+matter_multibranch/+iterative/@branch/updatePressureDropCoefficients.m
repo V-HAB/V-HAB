@@ -9,13 +9,13 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
     end
     
     % For this we first loop through all of the branches
-    for iB = 1:this.iBranches
+    for iBranch = 1:this.iBranches
         
         % we have to get the branch object to decide if it is
         % active or not and get the current flowrate etc.
-        oB = this.aoBranches(iB);
-        afPressureDropCoeffs = nan(1, oB.iFlowProcs);
-        fFlowRate = this.afFlowRates(iB);
+        oBranch = this.aoBranches(iBranch);
+        afPressureDrops = nan(1, oBranch.iFlowProcs);
+        fFlowRate = this.afFlowRates(iBranch);
         bActiveBranch = false;
         
         % Branches with no active components will cause a pressure drop.
@@ -34,7 +34,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
         % is also provided at the beginning in the rules for solver
         % implementation section! Therefore the user should be aware of it
         % and if not, should find it when debugging
-        if oB.aoFlowProcs(1).bActive
+        if oBranch.aoFlowProcs(1).bActive
             bActiveBranch = true;
             % Since this is an active branch, we the set the pressure drop
             % variable to false.
@@ -43,7 +43,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
         
         % now we get the corresponding row of this branch in the
         % afBoundaryConditions and aafPhasePressuresAndFlowRates matrix
-        iRow = this.miBranchIndexToRowID(iB);
+        iRow = this.miBranchIndexToRowID(iBranch);
         
         % if the branch is active we calculate the pressure rise and add it
         % to the boundary conditions
@@ -52,8 +52,8 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
             
             % Active component --> Get pressure rise based on last
             % iteration flow rate - add to boundary condition!
-            fFlowRate   = this.afFlowRates(iB);
-            oProcSolver = oB.aoFlowProcs(1).toSolve.(this.sSolverType);
+            fFlowRate   = this.afFlowRates(iBranch);
+            oProcSolver = oBranch.aoFlowProcs(1).toSolve.(this.sSolverType);
             
             % calDeltas returns POSITIVE value for pressure DROP!
             fPressureRise = oProcSolver.calculateDeltas(fFlowRate);
@@ -72,7 +72,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                 % sides must be variable pressure phases
                 afBoundaryConditions(iRow) = fPressureRise;
                 
-                this.afPressureDropCoeffsSum(iB) = 0;
+                this.afPressureDropCoeffsSum(iBranch) = 0;
             end
         end
         
@@ -91,7 +91,7 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                 fFlowRate = this.fInitializationFlowRate;
                 
                 % Negative pressure difference? Negative guess!
-                if oB.coExmes{1}.getPortProperties() < oB.coExmes{2}.getPortProperties()
+                if oBranch.coExmes{1}.getPortProperties() < oBranch.coExmes{2}.getPortProperties()
                     fFlowRate = -1 * fFlowRate;
                 end
             end
@@ -102,16 +102,16 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
             % calculation. Otherwise we get them from the individual
             % processors on the branch.
             if bActiveBranch
-                this.afPressureDropCoeffsSum(iB) = fPressureRise/abs(fFlowRate);
+                this.afPressureDropCoeffsSum(iBranch) = fPressureRise/abs(fFlowRate);
             else
                 % Now we loop through all the f2fs of the branch and
                 % calculate the pressure drops
-                for iProc = 1:oB.iFlowProcs
-                    afPressureDropCoeffs(iProc) = oB.aoFlowProcs(iProc).toSolve.(this.sSolverType).calculateDeltas(fFlowRate);
+                for iProc = 1:oBranch.iFlowProcs
+                    afPressureDrops(iProc) = oBranch.aoFlowProcs(iProc).toSolve.(this.sSolverType).calculateDeltas(fFlowRate);
                 end
                 
-                if any(isnan(afPressureDropCoeffs))
-                    this.throw('updatePDCoeffs','NaN in the pressure drop coefficients.');
+                if any(isnan(afPressureDrops))
+                    this.throw('updatePDCoeffs','NaN in the pressure drops.');
                 end
                 
                 % the pressure drops are linearized to drop coefficient by
@@ -120,26 +120,22 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
                 % for turbulent the correct relationship would be a
                 % quadratic dependency on the flowrate. TO DO: Check if
                 % implementing that increases speed of the solver!)
-                this.afPressureDropCoeffsSum(iB) = sum(afPressureDropCoeffs)/abs(fFlowRate);
+                this.afPressureDropCoeffsSum(iBranch) = sum(afPressureDrops)/abs(fFlowRate);
             end
             
             
             % now we use this as flowrate coefficient for this branch
-            fCoeffFlowRate = this.afPressureDropCoeffsSum(iB);
+            fCoeffFlowRate = this.afPressureDropCoeffsSum(iBranch);
         end
         
         % get the corresponding column from the matrix for this branch (we
         % already have the row)
-        iCol = this.piObjUuidsToColIndex(oB.sUUID);
+        iCol = this.piObjUuidsToColIndex(oBranch.sUUID);
         
         % now set the value to matrix (remember that drops are provided as
         % positive values, therefore here the sign -1 is used)
         aafPhasePressuresAndFlowRates(iRow, iCol) = -1 * fCoeffFlowRate;
         
-    end
-    
-    if any(isnan(afBoundaryConditions))
-        this.throw('updatePDCoeffs','NaN in the pressure drop coefficients.');
     end
     
     % We want to ignore small pressure differences (as specified by the

@@ -226,7 +226,7 @@ classdef (Abstract) branch < base & event.source
                     [ this.hGetBranchData, this.hSetDisconnected ] = this.coBranches{2}.setConnected(oBranch, @oBranch.updateConnectedBranches);
                 end
                 
-                % Error - reset the coBRanches
+                % Error - reset the coBranches
             catch oErr
                 this.coBranches{2} = [];
                 

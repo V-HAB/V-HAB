@@ -159,6 +159,7 @@ classdef branch < base & event.source
             if ~base.oDebug.bOff, this.out(1, 1, 'registerUpdate', 'Registering update() method on post tick for solver for branch %s', { this.oBranch.sName }); end
             
             this.bRegisteredOutdated = true;
+            
             % this finally binds the update function to the specified post
             % tick level
             this.hBindPostTickUpdate();

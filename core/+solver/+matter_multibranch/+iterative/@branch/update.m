@@ -140,7 +140,6 @@ function update(this)
             % Initializing the variables we need
             abRemoveRow = false(1,length(mfPhasePressuresAndFlowRates));
             abRemoveColumn = false(1,length(mfPhasePressuresAndFlowRates));
-            iZeroFlowBranches = length(aoZeroFlowBranches);
             
             % Setting the columns we want to remove to true
             abRemoveColumn(cell2mat(this.piObjUuidsToColIndex.values({aoZeroFlowBranches.sUUID}))) = true;
@@ -270,8 +269,6 @@ function update(this)
         
         warning('on','all');
         
-        bPressureError = false;
-
         if any(isnan(afResults))
             this.throw('solver', 'NaNs in the Multi-Branch Solver Results!');
         end
@@ -319,11 +316,8 @@ function update(this)
         
         % For the branches which were removed beforehand because they have
         % 0 flowrate anyway, we set this
-        for iZeroBranch = 1:iZeroFlowBranches
-            iB = find(this.aoBranches == aoZeroFlowBranches(iZeroBranch), 1);
-            % necessary if e.g. checkvalves are used
-            this.afFlowRates(iB) = 0.75 * this.afFlowRates(iB);
-        end
+        % necessary if e.g. checkvalves are used
+        this.afFlowRates(abZeroFlowBranches) = 0.75 * this.afFlowRates(abZeroFlowBranches);
         
         % Now we store the calculated flowrates in the matrix, which is
         % quite usefull for debugging purposes
@@ -340,7 +334,7 @@ function update(this)
         % otherwise it continues normally again
         if this.bFinalLoop && rError < this.fMaxError
             this.bFinalLoop = false;
-        elseif rError < this.fMaxError && ~bPressureError
+        elseif rError < this.fMaxError
             this.bFinalLoop = true;
         else
             this.bFinalLoop = false;

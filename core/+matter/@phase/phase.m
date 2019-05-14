@@ -299,7 +299,7 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 this.arPartialMass = this.afMass;
             end
 
-            this.fMolarMass            = this.oMT.calculateMolarMass(this.afMass);
+            this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
              
             % Mass
             this.fMass = sum(this.afMass);

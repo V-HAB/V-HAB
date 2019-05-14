@@ -347,7 +347,7 @@ function saveFigureAs(hButton,~)
     switch csTypeList{iFilterIndex, 3}
         case {2,5,6}
             %TODO Suppress the "figure is too large" warning for PDFs. 
-            % This is the PDF and SVG case. We chose the '-painters'
+            % This is the PDF, SVG and EMF case. We chose the '-painters'
             % renderer here, because that produces a vector file. In some
             % cases, this may lead to significantly smaller file sizes.
             print('-painters','-noui',[sFilePath,sFileName],sFormat);
