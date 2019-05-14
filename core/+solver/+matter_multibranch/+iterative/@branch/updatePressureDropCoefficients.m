@@ -104,10 +104,27 @@ function [aafPhasePressuresAndFlowRates, afBoundaryConditions] = updatePressureD
             if bActiveBranch
                 this.afPressureDropCoeffsSum(iBranch) = fPressureRise/abs(fFlowRate);
             else
+                if this.abCheckForChokedFlow(iBranch) == true
+                    [ bChokedFlow, fChokedFlowRate, iChokedProc, fPressureDiff ] = this.checkForChokedFlow(iBranch);
+                    
+                    if bChokedFlow
+                        fFlowRate = fChokedFlowRate;
+                    end
+                    
+                end
+                
                 % Now we loop through all the f2fs of the branch and
                 % calculate the pressure drops
                 for iProc = 1:oBranch.iFlowProcs
                     afPressureDrops(iProc) = oBranch.aoFlowProcs(iProc).toSolve.(this.sSolverType).calculateDeltas(fFlowRate);
+                end
+                
+                if this.abCheckForChokedFlow(iBranch) == true && bChokedFlow && ~any(isinf(afPressureDrops))
+                    afPressureDrops(iChokedProc) = fPressureDiff - sum(afPressureDrops(1:end ~= iChokedProc));
+                    this.abChokedBranches(iBranch) = true;
+                    this.cafChokedBranchPressureDiffs{iBranch} = afPressureDrops;
+                else
+                    this.abChokedBranches(iBranch) = false;
                 end
                 
                 if any(isnan(afPressureDrops))

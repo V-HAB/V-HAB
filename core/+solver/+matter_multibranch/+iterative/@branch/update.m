@@ -439,6 +439,10 @@ function update(this)
                 if sum(afDeltaPressures) > fPressureDifferenceBranch
                     afDeltaPressures = afDeltaPressures .* (fPressureDifferenceBranch/sum(afDeltaPressures));
                 end
+                
+                if this.abChokedBranches(iB) == true
+                    afDeltaPressures = this.cafChokedBranchPressureDiffs{iB};
+                end
 
                 this.chSetBranchFlowRate{iB}(this.afFlowRates(iB), afDeltaPressures);
             end
