@@ -587,7 +587,7 @@ classdef logger < simulation.monitor
             mfLogNew((iEndIndex + 1):end, :) = mfLogCached(~isnan(mfLogCached(:,1)),:);
             
             % Doing the same for the afTime array.
-            afTimeNew((iEndIndex + 1):end)   = afTimeCached;
+            afTimeNew((iEndIndex + 1):end)   = afTimeCached(1:iNumberOfCachedTicks); 
             
             % Now we are all done and we can set all of the properties on
             % the logger.
