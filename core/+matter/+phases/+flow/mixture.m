@@ -15,12 +15,12 @@ classdef mixture < matter.phases.flow.flow
     end
     
     methods
-        function this = mixture(oStore, sName, varargin)            
-            this@matter.phases.flow.flow(oStore, sName, varargin{2:4});
+        function this = mixture(oStore, sName, sPhaseType, tfMass, fVolume, fTemperature, fPressure)            
+            this@matter.phases.flow.flow(oStore, sName, tfMass, fVolume, fTemperature);
             
-            this.sPhaseType = varargin{1};
+            this.sPhaseType = sPhaseType;
             if length(varargin) >= 5
-                this.fPressure = varargin{5};
+                this.fPressure = fPressure;
             else
                 this.fPressure = 1e5;
             end
