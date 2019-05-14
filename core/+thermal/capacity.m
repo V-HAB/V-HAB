@@ -22,6 +22,8 @@ classdef capacity < base & event.source
         coHeatSource;
         toHeatSources;
         
+        fTotalHeatSourceHeatFlow = 0;
+        
         aoExmes;
         toProcsEXME;
         iProcsEXME = 0;
@@ -131,6 +133,9 @@ classdef capacity < base & event.source
             
             % Set name of capacity.
             this.sName = oPhase.sName;
+            
+            % Initialize the heat source cell
+            this.coHeatSource = cell.empty();
             
             %% Register post tick callbacks for massupdate and update        
             this.hBindPostTickTemperatureUpdate = this.oTimer.registerPostTick(@this.updateTemperature, 'thermal', 'capacity_temperatureupdate');
@@ -423,6 +428,9 @@ classdef capacity < base & event.source
             
             this.fLastTemperatureUpdate     = fTime;
             this.fTemperatureUpdateTimeStep = fLastStep;
+            
+            
+            this.fTotalHeatSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
             
             % The temperature is not set directly, because we want to
             % ensure that the phase and capacity have the exact same
