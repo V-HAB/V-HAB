@@ -38,11 +38,11 @@ classdef liquid < matter.phases.boundary.boundary
         % fTemperature  : Temperature of matter in phase
         % fPress        : Pressure of matter in phase
         
-        function this = liquid(oStore, sName, varargin)
+        function this = liquid(oStore, sName, tfMass, fTemperature, fPressure)
             
-            this@matter.phases.boundary.boundary(oStore, sName, varargin{1}, varargin{2});
+            this@matter.phases.boundary.boundary(oStore, sName, tfMass, fTemperature);
             
-            this.fPressure =  varargin{3};
+            this.fPressure =  fPressure;
             
             tProperties.afMass = this.afMass;
             this.setBoundaryProperties(tProperties)
