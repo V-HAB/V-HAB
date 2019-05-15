@@ -429,9 +429,6 @@ classdef capacity < base & event.source
             this.fLastTemperatureUpdate     = fTime;
             this.fTemperatureUpdateTimeStep = fLastStep;
             
-            
-            this.fTotalHeatSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
-            
             % The temperature is not set directly, because we want to
             % ensure that the phase and capacity have the exact same
             % temperature at all times
@@ -555,12 +552,9 @@ classdef capacity < base & event.source
             	this.trigger('calculateHeatsource_pre');
             end
             
-            fSourceHeatFlow = 0;
-            for iSource = 1:length(this.coHeatSource)
-                fSourceHeatFlow = fSourceHeatFlow + this.coHeatSource{iSource}.fHeatFlow;
-            end
+            this.fTotalHeatSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
             
-            fNewHeatFlow = fExmeHeatFlow + fSourceHeatFlow;
+            fNewHeatFlow = fExmeHeatFlow + this.fTotalHeatSourceHeatFlow;
             if fNewHeatFlow ~= this.fCurrentHeatFlow
                 this.setBranchesOutdated(true);
             end
