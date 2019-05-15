@@ -405,10 +405,7 @@ classdef capacity < base & event.source
                     fTemperatureNew = this.fTemperature;
                 else
                     
-                    fSourceHeatFlow = 0;
-                    for iSource = 1:length(this.coHeatSource)
-                        fSourceHeatFlow = fSourceHeatFlow + this.coHeatSource{iSource}.fHeatFlow;
-                    end
+                    fSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
                     
                     fTemperatureNew = (sum(mfFlowRate .* mfSpecificHeatCapacity .* mfTemperature) / fOverallHeatCapacityFlow) + fSourceHeatFlow/fOverallHeatCapacityFlow;
                 end
