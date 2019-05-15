@@ -19,7 +19,7 @@ classdef mixture < matter.phases.flow.flow
             this@matter.phases.flow.flow(oStore, sName, tfMass, fVolume, fTemperature);
             
             this.sPhaseType = sPhaseType;
-            if length(varargin) >= 5
+            if nargin >= 5
                 this.fPressure = fPressure;
             else
                 this.fPressure = 1e5;
