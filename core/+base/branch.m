@@ -253,6 +253,13 @@ classdef (Abstract) branch < base & event.source
                 end
 
                 oProc.addFlow(this.aoFlows(this.iIfFlow));
+            
+            elseif strcmp(this.sType, 'thermal')
+                % Is the branch we are connecting to a pass-through branch?
+                if ~all(this.abIf) && ~all(this.coBranches{2}.abIf)
+                    % Set oBranch property on other exme to us
+                    this.coBranches{2}.coExmes{2}.addBranch(this);
+                end
             end
             
             % To help with debugging, we now change this branch's sName
