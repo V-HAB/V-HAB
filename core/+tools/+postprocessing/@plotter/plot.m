@@ -40,7 +40,7 @@ for iFigure = 1:length(this.coFigures)
     % because some items in the coPlots cell may be empty. So the
     % iNumberOfPlots variables is the number of non-empty entries in
     % coPlots.
-    iNumberOfPlots  = numel(find(~cellfun(@isempty, this.coFigures{iFigure}.coPlots)));
+    iNumberOfPlots = numel(find(~cellfun(@isempty, this.coFigures{iFigure}.coPlots)));
     
     % The user may have selected to show the time vs. ticks plot in this
     % figure. If there are multiple plots in this figure, we need to check
@@ -189,6 +189,13 @@ for iFigure = 1:length(this.coFigures)
             % For better code readability, we create a local variable for
             % the plot options struct.
             tPlotOptions = this.coFigures{iFigure}.coPlots{iRow, iColumn}.tPlotOptions;
+            
+            % There are some options the user may want to set on all plots within a
+            % figure. These can be put into the tFigureOptions struct into the
+            % tGlobalPlotOptions struct. If it exists, we add it to this plot here.
+            if isfield(this.coFigures{iFigure}.tFigureOptions, 'tGlobalPlotOptions')
+                tPlotOptions = tools.mergeStructs(tPlotOptions, this.coFigures{iFigure}.tFigureOptions.tGlobalPlotOptions);
+            end
             
             % Before we get started filling the plot with data, we need to
             % do some checks of the plot options to set some variables

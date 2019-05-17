@@ -518,7 +518,7 @@ classdef plotter < base
             
             % Now we can just get the number of unique entries in the cell
             % and we have what we came for!
-            csUniqueUnits  = unique(csUnits);
+            csUniqueUnits  = unique(csUnits, 'stable');
             iNumberOfUnits = length(csUniqueUnits);
         end
         
