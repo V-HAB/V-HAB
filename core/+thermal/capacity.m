@@ -330,86 +330,126 @@ classdef capacity < base & event.source
         end
             
         function updateTemperature(this, ~)
-            % use fCurrentHeatFlow to calculate the temperature change
+            % Use fCurrentHeatFlow to calculate the temperature change
             % since the last execution fLastTemperatureUpdate
             
-            if nargin < 2
-                bSetBranchesOutdated = false;
-            end
+            % Getting the current time and calculating the last time step
             fTime     = this.oTimer.fTime;
             fLastStep = fTime - this.fLastTemperatureUpdate;
             
             % Return if no time has passed
             if fLastStep == 0
-                
                 if ~base.oDebug.bOff, this.out(2, 1, 'skip', 'Skipping temperatureupdate in %s-%s-%s\tset branches outdated? %i', { this.oPhase.oStore.oContainer.sName, this.oPhase.oStore.sName, this.sName, bSetBranchesOutdated }); end
-                
-                %NOTE need that in case .exec sets flow rate in manual branch triggering massupdate,
-                %     and later in that tick phase does .update -> branches won't be set outdated!
-                if bSetBranchesOutdated
-                    this.setBranchesOutdated();
-                end
-                
                 return;
             end
             
-            % to ensure that we calculate the new energy with the correct
+            % To ensure that we calculate the new energy with the correct
             % total heat capacity we have to get the current mass and the
             % possible mass that was added since the last mass update (in
-            % case this was not executed in the same tick)
-            % (oPhase.fMass + oPhase.fCurrentTotalInOuts * (this.oTimer.fTime
-            % - oPhase.fLastMassUpdate)) * this.fSpecificHeatCapacity
-            % There is a small error from this because the specific heat
-            % capacity is not perfectly correct. However, as the matter
-            % side controls the maximum allowed changes in composition till
-            % this is recalculated, these are acceptable errors
+            % case this was not executed in the same tick) (oPhase.fMass +
+            % oPhase.fCurrentTotalInOuts * (this.oTimer.fTime -
+            % oPhase.fLastMassUpdate)) * this.fSpecificHeatCapacity There
+            % is a small error from this because the specific heat capacity
+            % is not perfectly correct. However, as the matter side
+            % controls the maximum allowed changes in composition until
+            % this is recalculated, these are acceptable errors.
             
             
-            % in case that the phase is considered only a flowthrough phase
-            % with 0 mass (and therefore also 0 capacity by itself) the
-            % temperature calculation must be adapted to reflect this
-            % correctly
+            % In case this is a flow phase with 0 mass (and therefore also
+            % 0 capacity by itself) the temperature calculation must be
+            % adapted to reflect this correctly
             if this.oPhase.bFlow
-                mfFlowRate              = zeros(1,this.iProcsEXME);
-                mfSpecificHeatCapacity  = zeros(1,this.iProcsEXME);
-                mfTemperature           = zeros(1,this.iProcsEXME);
+                % Initializing three arrays that will hold the information
+                % gathered from all exmes connected to this capacity.
+                afMatterFlowRate       = zeros(1,this.iProcsEXME);
+                afSpecificHeatCapacity = zeros(1,this.iProcsEXME);
+                afTemperature          = zeros(1,this.iProcsEXME);
+                
+                % Looping through all the thermal exmes 
                 for iExme = 1:this.iProcsEXME
+                    % We only need to do something if the branch connected
+                    % to the exme is a basic_fluidic thermal solver branch.
+                    % If that is not the case, the exme is connected to a
+                    % basic thermal solver branch that calculates all
+                    % non-mass-based heat transfers (i.e. conduction,
+                    % convection and radiation).
                     if isa(this.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
-                        
+                        % Now we need to find out in which direction the
+                        % branch is connected. Positive is from left to
+                        % right. In this case we are looking at the coExmes
+                        % cell and here index 1 is left and index 2 is
+                        % right. 
+                        % When we compare this capacity's phase to the
+                        % phase of the matter exme at one end of the
+                        % branch, we can determine if we are at the right
+                        % or left side of that branch. 
                         if this.aoExmes(iExme).oBranch.oMatterObject.coExmes{1}.oPhase == this.oPhase
+                            % We're at the left side
                             iMatterExme = 1;
                             iOtherExme = 2;
                         else
+                            % We're at the right side
                             iMatterExme = 2;
                             iOtherExme = 1;
                         end
+                        
+                        % Now we can get the flow rate of this exme and
+                        % more importantly the sign. 
                         fFlowRate = this.aoExmes(iExme).oBranch.oMatterObject.fFlowRate * this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iMatterExme}.iSign;
                         
+                        % We only consider inflows. Outflows change the
+                        % temperature through a change in mass and thereby
+                        % total heat capacity. 
                         if fFlowRate > 0
-                            mfFlowRate(iExme) = fFlowRate;
-                            mfSpecificHeatCapacity(iExme) = this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iOtherExme}.oFlow.fSpecificHeatCapacity;
-                            mfTemperature(iExme) = this.aoExmes(iExme).oBranch.coExmes{iOtherExme}.oCapacity.fTemperature;
+                            % Setting the matter flow rate and specific
+                            % heat capacity for this exme.
+                            afMatterFlowRate(iExme) = fFlowRate;
+                            afSpecificHeatCapacity(iExme) = this.aoExmes(iExme).oBranch.oMatterObject.coExmes{iOtherExme}.oFlow.fSpecificHeatCapacity;
+                            
+                            % To get the temperature of the inflow, we need
+                            % to look at the afTemperatures array in the
+                            % thermal branch. This is necessary, because
+                            % matter f2f processors can change the
+                            % temperature via their fHeatFlow property.
+                            % This is taken into account in the thermal
+                            % solver when the afTemperatures array is
+                            % populated. Depending on which end of the
+                            % branch this capacity is located (left or
+                            % right) we get the first or last element in
+                            % the array. 
+                            if iMatterExme == 1
+                                afTemperature(iExme) = this.aoExmes(iExme).oBranch.afTemperatures(1);
+                            else
+                                afTemperature(iExme) = this.aoExmes(iExme).oBranch.afTemperatures(end);
+                            end
                         end
                     end
                 end
                 
-                fOverallHeatCapacityFlow = sum(mfFlowRate .* mfSpecificHeatCapacity);
+                % Now we can calculate the overall heat capacity flow into
+                % the phase.
+                fOverallHeatCapacityFlow = sum(afMatterFlowRate .* afSpecificHeatCapacity);
                 
+                % Triggering in case someone wants to do something here
                 if this.bTriggerSetCalculateFlowConstantTemperatureCallbackBound
                     this.trigger('calculateFlowConstantTemperature');
                 end
                 
+                % If nothing flows into the phase, we maintain the previous
+                % temperature, otherwise we calculate it using all of the
+                % information we have gathered so far.
                 if fOverallHeatCapacityFlow == 0
-                    % if nothing flows into the phase, it maintains the
-                    % previous temperature
                     fTemperatureNew = this.fTemperature;
                 else
-                    
+                    % We also need to take into account all of the heat
+                    % sources connected to this capacity.
                     fSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
                     
-                    fTemperatureNew = (sum(mfFlowRate .* mfSpecificHeatCapacity .* mfTemperature) / fOverallHeatCapacityFlow) + fSourceHeatFlow/fOverallHeatCapacityFlow;
+                    % Calculating the new temperature
+                    fTemperatureNew = (sum(afMatterFlowRate .* afSpecificHeatCapacity .* afTemperature) / fOverallHeatCapacityFlow) + fSourceHeatFlow/fOverallHeatCapacityFlow;
                 end
             else
+                % This is not a flow phase. 
                 if this.fTotalHeatCapacity == 0
                     % Setting the temperature to 293 K. If the temperature
                     % is set to zero, it will cause problems with several
@@ -417,12 +457,16 @@ classdef capacity < base & event.source
                     % calculations, even though the flow rate is zero. 
                     fTemperatureNew = 293;
                 else
-                    % Now we calculate the new temperature
+                    % Calculating the new temperature based on the current
+                    % heat flow. This value is calculated in the
+                    % calculateTimeStep() method of this class. 
                     fTemperatureNew = this.fTemperature + ((this.fCurrentHeatFlow / this.fTotalHeatCapacity) * fLastStep);
                 end
 
             end
             
+            % Setting the properties that help us determine if we need to
+            % do this again next time this method is called. 
             this.fLastTemperatureUpdate     = fTime;
             this.fTemperatureUpdateTimeStep = fLastStep;
             
@@ -439,6 +483,7 @@ classdef capacity < base & event.source
             % for all phases of that store)
             this.setOutdatedTS();
             
+            % Triggering in case someone wants to do something here
             if this.bTriggerSetUpdateTemperaturePostCallbackBound
             	this.trigger('updateTemperature_post');
             end
