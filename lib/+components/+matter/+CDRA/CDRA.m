@@ -106,7 +106,7 @@ classdef CDRA < vsys
             this.tTimeProperties.fAirSafeTime = 10*60; % [s]
             this.tTimeProperties.fLastCycleSwitch = -10000;
             
-            if nargin >= 5
+            if nargin >= 4
                 this.tInitializationOverwrite = tInitializationOverwrite;
             end
             

@@ -75,17 +75,12 @@ classdef Example < vsys
             % Adding the subsystem CCAA
             components.matter.CCAA.CCAA(this, 'CCAA', 10, this.fCoolantTemperature, tAtmosphere, sCDRA);
             
-            
-            % name for the asscociated CCAA subsystem, CDRA can only be
-            % used together with a CCAA
-            sCCAA = 'CCAA';
-            
             % Adding the subsystem CDRA
             try
                 tInitialization = oParent.oCfgParams.ptConfigParams('tInitialization');
-                components.matter.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA, tInitialization);
+                components.matter.CDRA.CDRA(this, 'CDRA', tAtmosphere, tInitialization);
             catch
-                components.matter.CDRA.CDRA(this, 'CDRA', tAtmosphere, sCCAA);
+                components.matter.CDRA.CDRA(this, 'CDRA', tAtmosphere);
             end
             eval(this.oRoot.oCfgParams.configCode(this));
             
