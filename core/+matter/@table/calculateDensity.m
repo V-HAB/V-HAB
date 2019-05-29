@@ -15,7 +15,7 @@ function fDensity = calculateDensity(this, varargin)
 % calculateDensity returns
 %  fDensitiy - density of matter in current state in kg/m^3
 
-[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, tbReference, afPartialPressures, sMatterState] = getNecessaryParameters(this, varargin{:});
+[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, tbReference, sMatterState] = getNecessaryParameters(this, varargin{:});
 
 % Check Cases where we do not have to calculate the density
 if sum(arPartialMass) == 0

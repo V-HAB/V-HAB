@@ -14,7 +14,7 @@ function fSpecificHeatCapacity = calculateSpecificHeatCapacity(this, varargin) %
 % calculateHeatCapacity returns
 %  fSpecificHeatCapacity  - specific, isobaric heat capacity of mix in J/kgK?
 
-[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, ~, ~, ~] = getNecessaryParameters(this, varargin{:});
+[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~] = getNecessaryParameters(this, varargin{:});
 
 % If no mass is given the heat capacity will be zero, so no need to do the
 % rest of the calculation.
@@ -43,8 +43,8 @@ for iI = 1:iNumIndices
     tParameters.fFirstDepValue = fTemperature;
     tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
     tParameters.sSecondDepName = 'Pressure';
-    tParameters.fSecondDepValue = afPP(aiIndices(iI));
-    tParameters.bUseIsobaricData = bUseIsobaricData;
+    tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
+    tParameters.bUseIsobaricData = true;
     
     % Now we can call the findProperty() method.
     afCp(iI) = this.findProperty(tParameters);

@@ -10,7 +10,7 @@ function fSpeedOfSound = calculateSpeedOfSound(this, varargin)
     % calculateSpeedOfSound returns
     %  fSpeedOfSound  - speed of sound in m/s
     
-    [fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, ~, ~, ~] = getNecessaryParameters(this, varargin{:});
+    [fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~] = getNecessaryParameters(this, varargin{:});
 
     % If no mass is given, the heat capacity is also zero.
     if sum(arPartialMass) == 0
@@ -40,13 +40,8 @@ function fSpeedOfSound = calculateSpeedOfSound(this, varargin)
         tParameters.sFirstDepName = 'Temperature';
         tParameters.fFirstDepValue = fTemperature;
         tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
-        if iNumArgs > 4
-            tParameters.sSecondDepName = 'Density';
-            tParameters.fSecondDepValue = fDensity;
-        else
-            tParameters.sSecondDepName = 'Pressure';
-            tParameters.fSecondDepValue = fPressure;
-        end
+        tParameters.sSecondDepName = 'Pressure';
+        tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
         tParameters.bUseIsobaricData = true;
         
         afSpeedOfSound(iI) = this.findProperty(tParameters);

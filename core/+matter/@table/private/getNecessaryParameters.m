@@ -1,4 +1,4 @@
-function [fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, tbReference, afPartialPressures, sMatterState] = getNecessaryParameters(this, varargin)
+function [fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, tbReference, sMatterState] = getNecessaryParameters(this, varargin)
 % Case one - just a phase or flow object provided
 tbReference.bPhase = false;
 tbReference.bFlow = false;

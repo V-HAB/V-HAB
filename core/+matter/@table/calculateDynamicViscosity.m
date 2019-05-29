@@ -15,7 +15,7 @@ function fEta = calculateDynamicViscosity(this, varargin)
 % calculateDynamicViscosity returns
 %  fEta - dynamic viscosity of matter in current state in kg/ms
 
-[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, ~, ~, ~] = getNecessaryParameters(this, varargin{:});
+[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~] = getNecessaryParameters(this, varargin{:});
 
 % If no mass is given the viscosity will be zero, so no need to do the rest
 % of the calculation.
@@ -36,7 +36,7 @@ for iI = 1:length(aiIndices)
     tParameters.fFirstDepValue = fTemperature;
     tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
     tParameters.sSecondDepName = 'Pressure';
-    tParameters.fSecondDepValue = afPP(aiIndices(iI));
+    tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
     tParameters.bUseIsobaricData = true;
     
     % Now we can call the findProperty() method.
