@@ -17,40 +17,11 @@ function fEta = calculateDynamicViscosity(this, varargin)
 
 [fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~] = getNecessaryParameters(this, varargin{:});
 
-% If no mass is given the viscosity will be zero, so no need to do the rest
-% of the calculation.
-if sum(arPartialMass) == 0
-    fEta = 0;
-    return;
-end
+% here decesion on when other calculations should be used could be placed
+% (see calculateDensity function for example)
 
-% Find the indices of all substances that are in the flow
-afEta = zeros(1, length(aiIndices));
+fEta = calculateProperty(this, 'Dynamic Viscosity', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures);
 
-for iI = 1:length(aiIndices)
-    % Generating the paramter struct that findProperty() requires.
-    tParameters = struct();
-    tParameters.sSubstance = this.csSubstances{aiIndices(iI)};
-    tParameters.sProperty = 'Dynamic Viscosity';
-    tParameters.sFirstDepName = 'Temperature';
-    tParameters.fFirstDepValue = fTemperature;
-    tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
-    tParameters.sSecondDepName = 'Pressure';
-    tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
-    tParameters.bUseIsobaricData = true;
-    
-    % Now we can call the findProperty() method.
-    afEta(iI) = this.findProperty(tParameters);
-end
-
-fEta = sum(afEta .* arPartialMass(aiIndices));
-
-% If none of the substances has a valid dynamic viscosity an error is thrown.
-if fEta < 0 || isnan(fEta)
-    keyboard();
-    this.throw('calculateDynamicViscosity','Error in dynamic viscosity calculation!');
-    
-end
 
 end
 

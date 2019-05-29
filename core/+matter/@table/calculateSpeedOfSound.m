@@ -10,55 +10,13 @@ function fSpeedOfSound = calculateSpeedOfSound(this, varargin)
     % calculateSpeedOfSound returns
     %  fSpeedOfSound  - speed of sound in m/s
     
-    [fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~] = getNecessaryParameters(this, varargin{:});
 
-    % If no mass is given, the heat capacity is also zero.
-    if sum(arPartialMass) == 0
-        fSpeedOfSound = 0;
-        return; % Return early.
-    end
-    
-    arPartialMass = afMasses./sum(afMasses);
-    
-    % Make sure there is no NaN in the mass vector.
-    assert(~any(isnan(arPartialMass)), 'Invalid entries in mass vector.');
+[fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~] = getNecessaryParameters(this, varargin{:});
+
+% here decesion on when other calculations should be used could be placed
+% (see calculateDensity function for example)
+
+fSpeedOfSound = calculateProperty(this, 'Speed Of Sound', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures);
 
     
-    % Find substances with a mass bigger than zero and count the results.
-    % This helps in getting only the needed data from the matter table.
-    iNumIndices = length(aiIndices);
-
-    % Initialize a new array filled with zeros. Then iterate through all
-    % indexed substances and get their specific heat capacity.
-    afSpeedOfSound = zeros(iNumIndices, 1);
-    
-    for iI = 1:iNumIndices
-        % Creating the input struct for the findProperty() method
-        tParameters = struct();
-        tParameters.sSubstance = this.csSubstances{aiIndices(iI)};
-        tParameters.sProperty = 'Speed Of Sound';
-        tParameters.sFirstDepName = 'Temperature';
-        tParameters.fFirstDepValue = fTemperature;
-        tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
-        tParameters.sSecondDepName = 'Pressure';
-        tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
-        tParameters.bUseIsobaricData = true;
-        
-        afSpeedOfSound(iI) = this.findProperty(tParameters);
-    end
-
-    % Make sure there is no NaN in the speed of sound vector.
-    assert(~any(isnan(afSpeedOfSound)), 'Invalid entries in specific heat capacity vector.');
-
-    %DEBUG
-    assert(isequal(size(afSpeedOfSound), size(arPartialMass(aiIndices)')), 'Vectors must be of same length but one transposed.');
-
-    % Multiply the speed of sound with the mass fractions. The
-    % result of the matrix multiplication is the speed of sound of
-    % the mixture.
-    fSpeedOfSound = sum(arPartialMass(aiIndices)' .* afSpeedOfSound);
-
-    % Make sure the speed of sound value is valid.
-    assert(~isnan(fSpeedOfSound) && fSpeedOfSound >= 0, ...
-        'Invalid speed of sound: %f', fSpeedOfSound);
 end

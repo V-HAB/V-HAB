@@ -16,54 +16,10 @@ function fSpecificHeatCapacity = calculateSpecificHeatCapacity(this, varargin) %
 
 [fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures, ~, ~] = getNecessaryParameters(this, varargin{:});
 
-% If no mass is given the heat capacity will be zero, so no need to do the
-% rest of the calculation.
-if sum(arPartialMass) == 0
-    fSpecificHeatCapacity = 0;
-    return;
-end
+% here decesion on when other calculations should be used could be placed
+% (see calculateDensity function for example)
 
-% Make sure there is no NaN in the mass vector.
-assert(~any(isnan(arPartialMass)), 'Invalid entries in mass vector.');
-
-% Find substances with a mass bigger than zero and count the results.
-% This helps in getting only the needed data from the matter table.
-iNumIndices = length(aiIndices);
-
-% Initialize a new array filled with zeros. Then iterate through all
-% indexed substances and get their specific heat capacity.
-afCp = zeros(iNumIndices, 1);
-
-for iI = 1:iNumIndices
-    % Creating the input struct for the findProperty() method
-    tParameters = struct();
-    tParameters.sSubstance = this.csSubstances{aiIndices(iI)};
-    tParameters.sProperty = 'Heat Capacity';
-    tParameters.sFirstDepName = 'Temperature';
-    tParameters.fFirstDepValue = fTemperature;
-    tParameters.sPhaseType = csPhase{aiPhase(aiIndices(iI))};
-    tParameters.sSecondDepName = 'Pressure';
-    tParameters.fSecondDepValue = afPartialPressures(aiIndices(iI));
-    tParameters.bUseIsobaricData = true;
-    
-    % Now we can call the findProperty() method.
-    afCp(iI) = this.findProperty(tParameters);
-end
-
-% Make sure there is no NaN in the specific heat capacity vector.
-assert(~any(isnan(afCp)), 'Invalid entries in specific heat capacity vector.');
-
-%DEBUG
-assert(isequal(size(afCp), size(arPartialMass(aiIndices)')), 'Vectors must be of same length but one transposed.');
-
-% Multiply the specific heat capacities with the mass fractions. The
-% result of the matrix multiplication is the specific heat capacity of
-% the mixture.
-fSpecificHeatCapacity = arPartialMass(aiIndices) * afCp;
-
-% Make sure the heat capacity value is valid.
-assert(~isnan(fSpecificHeatCapacity) && fSpecificHeatCapacity >= 0, ...
-    'Invalid heat capacity: %f', fSpecificHeatCapacity);
+fSpecificHeatCapacity = calculateProperty(this, 'Heat Capacity', fTemperature, arPartialMass, csPhase, aiPhase, aiIndices, afPartialPressures);
 
 % "Most physical systems exhibit a positive heat capacity. However,
 % there are some systems for which the heat capacity is negative. These
