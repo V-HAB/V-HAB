@@ -39,8 +39,8 @@ sFolderPath = createDataFolderPath();
 % last execution of this script. If yes, then all tutorials have to be
 % executed again. If no, then we only have to run the tutorials that have
 % changed. I've also included the files in the base directory with core.
-bCoreChanged = tools.checkForChanges('core');
-bLibChanged  = tools.checkForChanges('lib');
+bCoreChanged = tools.fileChecker.checkForChanges('core', 'runAllTutorials');
+bLibChanged  = tools.fileChecker.checkForChanges('lib', 'runAllTutorials');
 %TODO: only |vhab.m| should ever be of interest, so handle it separately
 bVHABChanged = checkVHABFiles();
 
@@ -79,7 +79,7 @@ for iI = 1:length(tTutorials)
     % of this script. If not, we can just skip this one, because we already
     % know it works. Unless of course the core or the library has changed.
     % In this case, all tutorials will be executed.
-    if tools.checkForChanges(fullfile(sTutorialDirectory, tTutorials(iI).name)) || bLibChanged || bCoreChanged
+    if tools.fileChecker.checkForChanges(fullfile(sTutorialDirectory, tTutorials(iI).name), 'runAllTutorials') || bLibChanged || bCoreChanged
         
         % Some nice printing for the console output
         fprintf('\n\n======================================\n');
@@ -113,6 +113,14 @@ for iI = 1:length(tTutorials)
                 % sim. Stupid behavior, but this is the workaround.
                 close('all');
                 drawnow();
+                
+                % Store information about the simulation duration and
+                % errors. This will be saved later on to allow a comparison
+                % between different version of V-HAB
+                tTutorials(iI).run.iTicks               = oLastSimObj.oSimulationContainer.oTimer.iTick;
+                tTutorials(iI).run.fTime                = oLastSimObj.oSimulationContainer.oTimer.fTime;
+                tTutorials(iI).run.fGeneratedMass       = oLastSimObj.toMonitors.oMatterObserver.fGeneratedMass;
+                tTutorials(iI).run.fTotalMassBalance    = oLastSimObj.toMonitors.oMatterObserver.fTotalMassBalance;
                 
                 % Since we've now actually completed the simulation, we can
                 % increment the counter of successful tutorials. Also we
@@ -198,13 +206,63 @@ if any(mbHasAborted)
     fprintf('=======================================\n');
     fprintf('=========== Error messages ============\n');
     fprintf('=======================================\n\n');
-    iErrorCounter = 0;
-    for tTutorial = tTutorials(mbHasAborted)
-        fprintf('=> %s Tutorial Error Message:\n\n',strrep(tTutorial.name,'+',''));
-        fprintf(2, '%s\n\n',tTutorial.sErrorReport);
-        iErrorCounter = iErrorCounter + 1;
+    iErrorCounter = sum(mbHasAborted);
+    tAbortedTutorial = tTutorials(mbHasAborted);
+    for iAbortedTutorials = 1:iErrorCounter
+        fprintf('=> %s Tutorial Error Message:\n\n',strrep(tAbortedTutorial(iAbortedTutorials).name,'+',''));
+        fprintf(2, '%s\n\n',tAbortedTutorial(iAbortedTutorials).sErrorReport);
         fprintf('--------------------------------------\n\n\n');
     end
+end
+
+bSkipComparison = false;
+try
+    tOldTutorials = load('data\OldTutorialStatus.mat');
+catch Msg
+    if strcmp(Msg.identifier, 'MATLAB:load:couldNotReadFile')
+        % if the file not yet exists, we create it!
+        sPath = fullfile('data', 'OldTutorialStatus.mat');
+        save(sPath, 'tTutorials');
+        bSkipComparison = true;
+    else
+        rethrow(Msg)
+    end
+end
+
+if ~bSkipComparison
+    fprintf('=======================================\n');
+    fprintf('=== Time and Mass Error Comparisons ===\n');
+    fprintf('=======================================\n\n');
+    fprintf('Comparisons are new values - old values!\n');
+    fprintf('--------------------------------------\n');
+    for iI = 1:length(tTutorials)
+        fprintf('%s:\n', strrep(tTutorials(iI).name,'+',''));
+
+        for iOldTutorial = 1:length(tOldTutorials.tTutorials)
+            % check if the name of the old tutorial matches the new tutorial,
+            % if it does, compare the tutorials
+            if strcmp(tTutorials(iI).name, tOldTutorials.tTutorials(iOldTutorial).name)
+
+                iTickDiff = tTutorials(iI).run.iTicks - tOldTutorials.tTutorials(iOldTutorial).run.iTicks;
+                fprintf('change in ticks compared to old status:                 %s%i\n',sBlanks, iTickDiff);
+
+                fTimeDiff = tTutorials(iI).run.fTime - tOldTutorials.tTutorials(iOldTutorial).run.fTime;
+                fprintf('change in time compared to old status:                  %s%d\n',sBlanks, fTimeDiff);
+
+                fGeneratedMassDiff = tTutorials(iI).run.fGeneratedMass - tOldTutorials.tTutorials(iOldTutorial).run.fGeneratedMass;
+                fprintf('change in generated mass compared to old status:        %s%d\n',sBlanks, fGeneratedMassDiff);
+
+                fTotalMassBalanceDiff = tTutorials(iI).run.fTotalMassBalance - tOldTutorials.tTutorials(iOldTutorial).run.fTotalMassBalance;
+                fprintf('change in total mass balance compared to old status:    %s%d\n',sBlanks, fTotalMassBalanceDiff);
+            end
+        end
+        fprintf('--------------------------------------\n');
+    end
+    fprintf('--------------------------------------\n');
+    fprintf('--------------------------------------\n\n\n');
+
+    sPath = fullfile('data', 'TutorialStatus.mat');
+    save(sPath, 'tTutorials');
 end
 
 fprintf('======================================\n');
@@ -257,9 +315,16 @@ function bChanged = checkVHABFiles()
     
     bChanged = false;
     tInfo = dir();
-    tInfo = tools.removeIllegalFilesAndFolders(tInfo);
-    tSavedInfo = struct(); %#ok<NASGU>
-    load(sSavePath,'tSavedInfo');
+    tInfo = tools.fileChecker.removeIllegalFilesAndFolders(tInfo);
+    tSavedInfo = struct();
+    try
+        load(sSavePath,'tSavedInfo');
+    catch Msg
+        if ~strcmp(Msg.identifier, 'MATLAB:ErrorRecovery:ItemNoLongerOnPath')
+            this.throw(Msg)
+        end
+    end
+        
     
     for iI = 1:length(tInfo)
         if ~tInfo(iI).isdir
