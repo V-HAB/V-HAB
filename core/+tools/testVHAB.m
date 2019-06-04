@@ -1,46 +1,46 @@
-function runAllTutorials()
-%RUNALLTUTORIALS Runs all tutorials and saves the figures to a folder
-%   This function is a debugging helper. It will run all tutorials inside
-%   the user/+tutorials folder and save the resulting figures to
-%   data/Tutorials_Testrun/ with a timestamp. The only condition for this
+function testVHAB()
+%TESTVHAB Runs all tests and saves the figures to a folder
+%   This function is a debugging helper. It will run all tests inside
+%   the user/+tests folder and save the resulting figures to
+%   data/Testrun/ with a timestamp. The only condition for this
 %   to work is that the class file that inherits from simulation.m is on
 %   the top level of the tutorial folder and is called 'setup.m'. If this
 %   is not the case, the function will throw an error. 
 
 % Initializing some counters
-iSuccessfulTutorials = 0;
-iSkippedTutorials    = 0;
-iAbortedTutorials    = 0;
+iSuccessfulTests = 0;
+iSkippedTests    = 0;
+iAbortedTests    = 0;
 
 % First we get the struct that shows us the current contents of the
-% tutorials directory. We also check which entries are directories.
-sTutorialDirectory = fullfile('user', '+tutorials');
-tTutorials   = dir(sTutorialDirectory);
-mbIsTutorial = [tTutorials.isdir];
+% tests directory. We also check which entries are directories.
+sTestDirectory = fullfile('user', '+tests');
+tTests   = dir(sTestDirectory);
+mbIsTest = [tTests.isdir];
 
 % Ignore all directories that do not start with a plus, i.e. mark all
 % entries that are not packages.
-for iI = 1:length(tTutorials)
-    if ~isequal(strfind(tTutorials(iI).name, '+'), 1)
-        mbIsTutorial(iI) = false;
+for iI = 1:length(tTests)
+    if ~isequal(strfind(tTests(iI).name, '+'), 1)
+        mbIsTest(iI) = false;
     end
 end
 % Now remove the non-package directories from the list.
-tTutorials = tTutorials(mbIsTutorial);
+tTests = tTests(mbIsTest);
 
 % Generating a dynamic folder path so all of our saved data is nice and
 % organized. The folder path will have the following format: 
-% Tutorials_Test/YYYYMMDD_Test_Run_X 
+% Test/YYYYMMDD_Test_Run_X 
 % The number at the end ('X') will be automatically incremented so you
 % don't have to worry about anything.
 sFolderPath = createDataFolderPath();
 
 % Check if there are changed files in the core or library folders since the
-% last execution of this script. If yes, then all tutorials have to be
-% executed again. If no, then we only have to run the tutorials that have
+% last execution of this script. If yes, then all tests have to be
+% executed again. If no, then we only have to run the tests that have
 % changed. I've also included the files in the base directory with core.
-bCoreChanged = tools.fileChecker.checkForChanges('core', 'runAllTutorials');
-bLibChanged  = tools.fileChecker.checkForChanges('lib', 'runAllTutorials');
+bCoreChanged = tools.fileChecker.checkForChanges('core', 'testVHAB');
+bLibChanged  = tools.fileChecker.checkForChanges('lib', 'testVHAB');
 %TODO: only |vhab.m| should ever be of interest, so handle it separately
 bVHABChanged = checkVHABFiles();
 
@@ -67,34 +67,34 @@ if any([bCoreChanged bLibChanged])
         sVerb = 'have ';
     end
     
-    fprintf('\n%s%s%s%schanged. All tutorials will be executed!\n\n', sCore, sConjunction, sLib, sVerb);
+    fprintf('\n%s%s%s%schanged. All tests will be executed!\n\n', sCore, sConjunction, sLib, sVerb);
 else
-    fprintf('\nCore and Library are both unchanged. Proceeding with tutorial execution.\n\n');
+    fprintf('\nCore and Library are both unchanged. Proceeding with test execution.\n\n');
 end
 
 % Go through each item in the struct and see if we can execute a
 % V-HAB simulation. 
-for iI = 1:length(tTutorials)
+for iI = 1:length(tTests)
     % Check if the tutorial's files have changed since the last execution 
     % of this script. If not, we can just skip this one, because we already
     % know it works. Unless of course the core or the library has changed.
     % In this case, all tutorials will be executed.
-    if tools.fileChecker.checkForChanges(fullfile(sTutorialDirectory, tTutorials(iI).name), 'runAllTutorials') || bLibChanged || bCoreChanged
+    if bLibChanged || bCoreChanged
         
         % Some nice printing for the console output
         fprintf('\n\n======================================\n');
-        fprintf('Running %s Tutorial\n',strrep(tTutorials(iI).name,'+',''));
+        fprintf('Running %s Test\n',strrep(tTests(iI).name,'+',''));
         fprintf('======================================\n\n');
     
     
         
         % If the folder has a correctly named 'setup.m' file, we can go
         % ahead and try to execute it.
-        if exist(fullfile(sTutorialDirectory, tTutorials(iI).name, 'setup.m'), 'file')
+        if exist(fullfile(sTestDirectory, tTests(iI).name, 'setup.m'), 'file')
             
             % First we construct the string that is the argument for the
             % vhab.exec() method.
-            sExecString = ['tutorials.',strrep(tTutorials(iI).name,'+',''),'.setup'];
+            sExecString = ['tests.',strrep(tTests(iI).name,'+',''),'.setup'];
             
             % Now we can finally run the simulation, but we need to catch
             % any errors inside the simulation itself
@@ -105,7 +105,7 @@ for iI = 1:length(tTutorials)
                 oLastSimObj.plot();
                 
                 % Saving the figures to the pre-determined location
-                tools.saveFigures(sFolderPath, strrep(tTutorials(iI).name,'+',''));
+                tools.saveFigures(sFolderPath, strrep(tTests(iI).name,'+',''));
                 
                 % Closing all windows so we can see the console again. The
                 % drawnow() call is necessary, because otherwise MATLAB would
@@ -117,41 +117,93 @@ for iI = 1:length(tTutorials)
                 % Store information about the simulation duration and
                 % errors. This will be saved later on to allow a comparison
                 % between different version of V-HAB
-                tTutorials(iI).run.iTicks               = oLastSimObj.oSimulationContainer.oTimer.iTick;
-                tTutorials(iI).run.fTime                = oLastSimObj.oSimulationContainer.oTimer.fTime;
-                tTutorials(iI).run.fGeneratedMass       = oLastSimObj.toMonitors.oMatterObserver.fGeneratedMass;
-                tTutorials(iI).run.fTotalMassBalance    = oLastSimObj.toMonitors.oMatterObserver.fTotalMassBalance;
+                tTests(iI).run.iTicks               = oLastSimObj.oSimulationContainer.oTimer.iTick;
+                tTests(iI).run.fTime                = oLastSimObj.oSimulationContainer.oTimer.fTime;
+                tTests(iI).run.fGeneratedMass       = oLastSimObj.toMonitors.oMatterObserver.fGeneratedMass;
+                tTests(iI).run.fTotalMassBalance    = oLastSimObj.toMonitors.oMatterObserver.fTotalMassBalance;
                 
                 % Since we've now actually completed the simulation, we can
                 % increment the counter of successful tutorials. Also we
                 % can set the string property for the final output.
-                iSuccessfulTutorials = iSuccessfulTutorials + 1;
-                tTutorials(iI).sStatus = 'Successful';
+                iSuccessfulTests = iSuccessfulTests + 1;
+                tTests(iI).sStatus = 'Successful';
             catch oException
                 % Something went wrong inside the simulation. So we tell
                 % the user and keep going. The counter for aborted
                 % tutorials is incremented and the string property for the
                 % final output is set accordingly.
                 fprintf('\nEncountered an error in the simulation. Aborting.\n');
-                iAbortedTutorials = iAbortedTutorials + 1;
-                tTutorials(iI).sStatus = 'Aborted';
-                tTutorials(iI).sErrorReport = getReport(oException);
+                iAbortedTests = iAbortedTests + 1;
+                tTests(iI).sStatus = 'Aborted';
+                tTests(iI).sErrorReport = getReport(oException);
             end
             
         else
             % In case there is no 'setup.m' file, we print this to the
             % command window, but we don't stop the skript. We increment
             % the skipped-counter and set the property.
-            disp(['The ',strrep(tTutorials(iI).name,'+',''),' Tutorial does not have a ''setup.m'' file. Skipping.']);
-            iSkippedTutorials = iSkippedTutorials + 1;
-            tTutorials(iI).sStatus = 'Skipped';
+            disp(['The ',strrep(tTests(iI).name,'+',''),' Tutorial does not have a ''setup.m'' file. Skipping.']);
+            iSkippedTests = iSkippedTests + 1;
+            tTests(iI).sStatus = 'Skipped';
+        end
+        
+        iSetup = 1;
+        while exist(fullfile(sTestDirectory, tTests(iI).name, ['setup_', iSetup,'.m']), 'file')
+            
+            % First we construct the string that is the argument for the
+            % vhab.exec() method.
+            sExecString = ['tests.',strrep(tTests(iI).name,'+',''),'.setup_', iSetup];
+            
+            % Now we can finally run the simulation, but we need to catch
+            % any errors inside the simulation itself
+            try
+                oLastSimObj = vhab.exec(sExecString);
+                
+                % Done! Let's plot stuff!
+                oLastSimObj.plot();
+                
+                % Saving the figures to the pre-determined location
+                tools.saveFigures(sFolderPath, strrep(tTests(iI).name,'+',''));
+                
+                % Closing all windows so we can see the console again. The
+                % drawnow() call is necessary, because otherwise MATLAB would
+                % just jump over the close('all') instruction and run the next
+                % sim. Stupid behavior, but this is the workaround.
+                close('all');
+                drawnow();
+                
+                % Store information about the simulation duration and
+                % errors. This will be saved later on to allow a comparison
+                % between different version of V-HAB
+                tTests(iI).run.iTicks               = oLastSimObj.oSimulationContainer.oTimer.iTick;
+                tTests(iI).run.fTime                = oLastSimObj.oSimulationContainer.oTimer.fTime;
+                tTests(iI).run.fGeneratedMass       = oLastSimObj.toMonitors.oMatterObserver.fGeneratedMass;
+                tTests(iI).run.fTotalMassBalance    = oLastSimObj.toMonitors.oMatterObserver.fTotalMassBalance;
+                
+                % Since we've now actually completed the simulation, we can
+                % increment the counter of successful tutorials. Also we
+                % can set the string property for the final output.
+                iSuccessfulTests = iSuccessfulTests + 1;
+                tTests(iI).sStatus = 'Successful';
+            catch oException
+                % Something went wrong inside the simulation. So we tell
+                % the user and keep going. The counter for aborted
+                % tutorials is incremented and the string property for the
+                % final output is set accordingly.
+                fprintf('\nEncountered an error in the simulation. Aborting.\n');
+                iAbortedTests = iAbortedTests + 1;
+                tTests(iI).sStatus = 'Aborted';
+                tTests(iI).sErrorReport = getReport(oException);
+            end
+            
+            iSetup = iSetup + 1;
         end
     else
         % If the tutorial hasn't changed since the last execution, there's
         % no need to run it again. 
-        disp(['The ',strrep(tTutorials(iI).name,'+',''),' Tutorial has not changed. Skipping.']);
-        iSkippedTutorials = iSkippedTutorials + 1;
-        tTutorials(iI).sStatus = 'Skipped';
+        disp(['The ',strrep(tTests(iI).name,'+',''),' Test has not changed. Skipping.']);
+        iSkippedTests = iSkippedTests + 1;
+        tTests(iI).sStatus = 'Skipped';
     end
     
     
@@ -165,12 +217,12 @@ end
 % actual status so they are nice and aligned.
 
 % Initializing an array
-aiNameLengths = zeros(1,length(tTutorials));
+aiNameLengths = zeros(1,length(tTests));
 
 % Getting the lengths of each of the tutorial names. (Good thing we deleted
 % the other, non-tutorial folders earlier...)
-for iI = 1:length(tTutorials)
-    aiNameLengths(iI) = length(tTutorials(iI).name);
+for iI = 1:length(tTests)
+    aiNameLengths(iI) = length(tTests(iI).name);
 end
 
 % And now we can get the length of the longest tutorial name
@@ -180,49 +232,49 @@ iColumnWidth = max(aiNameLengths);
 fprintf('\n\n======================================\n');
 fprintf('============== Summary ===============\n');
 fprintf('======================================\n\n');
-fprintf('Total Tutorials:       %i\n\n', length(tTutorials));
-fprintf('Successfully executed: %i\n',   iSuccessfulTutorials);
-fprintf('Aborted:               %i\n',   iAbortedTutorials);
-fprintf('Skipped:               %i\n',   iSkippedTutorials);
+fprintf('Total Tests:       %i\n\n', length(tTests));
+fprintf('Successfully executed: %i\n',   iSuccessfulTests);
+fprintf('Aborted:               %i\n',   iAbortedTests);
+fprintf('Skipped:               %i\n',   iSkippedTests);
 disp('--------------------------------------');
 disp('Detailed Summary:');
-for iI = 1:length(tTutorials)
+for iI = 1:length(tTests)
     % Every name should have at least two blanks of space between the colon
     % and the status, so we subtract the current name length from the
     % maximum name length and add two.
-    iWhiteSpaceLength = iColumnWidth - length(tTutorials(iI).name) + 2;
+    iWhiteSpaceLength = iColumnWidth - length(tTests(iI).name) + 2;
     % Now we make ourselves a string of blanks of the appropriate length
     % that we can insert into the output in the following line. 
     sBlanks = blanks(iWhiteSpaceLength);
     % Tada!
-    fprintf('%s:%s%s\n',strrep(tTutorials(iI).name,'+',''),sBlanks,tTutorials(iI).sStatus);
+    fprintf('%s:%s%s\n',strrep(tTests(iI).name,'+',''),sBlanks,tTests(iI).sStatus);
 end
 fprintf('--------------------------------------\n\n');
 
 % Now we print out the error messages from the tutorials that were aborted
 % if there were any.
-mbHasAborted = strcmp({tTutorials.sStatus}, 'Aborted');
+mbHasAborted = strcmp({tTests.sStatus}, 'Aborted');
 if any(mbHasAborted)
     fprintf('=======================================\n');
     fprintf('=========== Error messages ============\n');
     fprintf('=======================================\n\n');
     iErrorCounter = sum(mbHasAborted);
-    tAbortedTutorial = tTutorials(mbHasAborted);
-    for iAbortedTutorials = 1:iErrorCounter
-        fprintf('=> %s Tutorial Error Message:\n\n',strrep(tAbortedTutorial(iAbortedTutorials).name,'+',''));
-        fprintf(2, '%s\n\n',tAbortedTutorial(iAbortedTutorials).sErrorReport);
+    tAbortedTutorial = tTests(mbHasAborted);
+    for iAbortedTests = 1:iErrorCounter
+        fprintf('=> %s Test Error Message:\n\n',strrep(tAbortedTutorial(iAbortedTests).name,'+',''));
+        fprintf(2, '%s\n\n',tAbortedTutorial(iAbortedTests).sErrorReport);
         fprintf('--------------------------------------\n\n\n');
     end
 end
 
 bSkipComparison = false;
 try
-    tOldTutorials = load('data\OldTutorialStatus.mat');
+    tOldTests = load('data\OldTestStatus.mat');
 catch Msg
     if strcmp(Msg.identifier, 'MATLAB:load:couldNotReadFile')
         % if the file not yet exists, we create it!
-        sPath = fullfile('data', 'OldTutorialStatus.mat');
-        save(sPath, 'tTutorials');
+        sPath = fullfile('data', 'OldTestStatus.mat');
+        save(sPath, 'tTests');
         bSkipComparison = true;
     else
         rethrow(Msg)
@@ -235,24 +287,24 @@ if ~bSkipComparison
     fprintf('=======================================\n\n');
     fprintf('Comparisons are new values - old values!\n');
     fprintf('--------------------------------------\n');
-    for iI = 1:length(tTutorials)
-        fprintf('%s:\n', strrep(tTutorials(iI).name,'+',''));
+    for iI = 1:length(tTests)
+        fprintf('%s:\n', strrep(tTests(iI).name,'+',''));
 
-        for iOldTutorial = 1:length(tOldTutorials.tTutorials)
+        for iOldTutorial = 1:length(tOldTests.tTests)
             % check if the name of the old tutorial matches the new tutorial,
             % if it does, compare the tutorials
-            if strcmp(tTutorials(iI).name, tOldTutorials.tTutorials(iOldTutorial).name)
+            if strcmp(tTests(iI).name, tOldTests.tTests(iOldTutorial).name)
 
-                iTickDiff = tTutorials(iI).run.iTicks - tOldTutorials.tTutorials(iOldTutorial).run.iTicks;
+                iTickDiff = tTests(iI).run.iTicks - tOldTests.tTests(iOldTutorial).run.iTicks;
                 fprintf('change in ticks compared to old status:                 %s%i\n',sBlanks, iTickDiff);
 
-                fTimeDiff = tTutorials(iI).run.fTime - tOldTutorials.tTutorials(iOldTutorial).run.fTime;
+                fTimeDiff = tTests(iI).run.fTime - tOldTests.tTests(iOldTutorial).run.fTime;
                 fprintf('change in time compared to old status:                  %s%d\n',sBlanks, fTimeDiff);
 
-                fGeneratedMassDiff = tTutorials(iI).run.fGeneratedMass - tOldTutorials.tTutorials(iOldTutorial).run.fGeneratedMass;
+                fGeneratedMassDiff = tTests(iI).run.fGeneratedMass - tOldTests.tTests(iOldTutorial).run.fGeneratedMass;
                 fprintf('change in generated mass compared to old status:        %s%d\n',sBlanks, fGeneratedMassDiff);
 
-                fTotalMassBalanceDiff = tTutorials(iI).run.fTotalMassBalance - tOldTutorials.tTutorials(iOldTutorial).run.fTotalMassBalance;
+                fTotalMassBalanceDiff = tTests(iI).run.fTotalMassBalance - tOldTests.tTests(iOldTutorial).run.fTotalMassBalance;
                 fprintf('change in total mass balance compared to old status:    %s%d\n',sBlanks, fTotalMassBalanceDiff);
             end
         end
@@ -261,12 +313,12 @@ if ~bSkipComparison
     fprintf('--------------------------------------\n');
     fprintf('--------------------------------------\n\n\n');
 
-    sPath = fullfile('data', 'TutorialStatus.mat');
-    save(sPath, 'tTutorials');
+    sPath = fullfile('data', 'TestStatus.mat');
+    save(sPath, 'tTests');
 end
 
 fprintf('======================================\n');
-fprintf('===== Finished running tutorials =====\n');
+fprintf('===== Finished running tests =====\n');
 fprintf('======================================\n\n');
 
 end
@@ -282,7 +334,7 @@ function sFolderPath = createDataFolderPath()
     sTimeStamp  = datestr(now(), 'yyyymmdd');
     
     % Generating the base folder path for all figures
-    sBaseFolderPath = fullfile('data', 'figures', 'Tutorials_Test');
+    sBaseFolderPath = fullfile('data', 'figures', 'Test');
     
     % We want to give the folder a number that doesn't exist yet. So we
     % start at 1 and work our way up until we find one that's not there
