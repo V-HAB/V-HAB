@@ -14,7 +14,9 @@ if sum(arPartialMass) == 0
 end
 
 % Make sure there is no NaN in the mass vector.
-assert(~any(isnan(arPartialMass)), 'Invalid entries in mass vector.');
+if any(isnan(arPartialMass))
+    error('Invalid entries in mass vector.');
+end
 
 % Find substances with a mass bigger than zero and count the results.
 % This helps in getting only the needed data from the matter table.
@@ -41,10 +43,14 @@ for iI = 1:iNumIndices
 end
 
 % Make sure there is no NaN in the property vector.
-assert(~any(isnan(afProperty)), 'Invalid entries in specific heat capacity vector.');
+if any(isnan(afProperty))
+    error('Invalid entries in specific heat capacity vector.')
+end
 
 %DEBUG
-assert(isequal(size(afProperty), size(arPartialMass(aiIndices)')), 'Vectors must be of same length but one transposed.');
+if ~isequal(size(afProperty), size(arPartialMass(aiIndices)'))
+    error('Vectors must be of same length but one transposed.');
+end
 
 % Multiply the specific heat capacities with the mass fractions. The
 % result of the matrix multiplication is the specific heat capacity of
@@ -52,6 +58,7 @@ assert(isequal(size(afProperty), size(arPartialMass(aiIndices)')), 'Vectors must
 fProperty = arPartialMass(aiIndices) * afProperty;
 
 % Make sure the property value is valid.
-assert(~isnan(fProperty) && fProperty >= 0, ...
-    'Invalid %s: %f', sProperty, fProperty);
+if isnan(fProperty) && fProperty >= 0
+    error('Invalid %s: %f', sProperty, fProperty);
+end
 end
