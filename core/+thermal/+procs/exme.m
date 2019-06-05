@@ -1,6 +1,6 @@
 classdef exme < base
     %EXME extract/merge processor
-    %   Extracts thermal energy from and merges thermal energy into a phase.
+    %   Extracts thermal energy from and merges thermal energy into a capacity.
     
     properties (SetAccess = private, GetAccess = public)
         % Capacity the exme belongs to
@@ -24,33 +24,34 @@ classdef exme < base
         % positive iSign, while the right exme has a negative iSign
         iSign;
         
-        % In the thermal network the exmes have a heat flow property
-        % because thermal energy that is transported massbound always is in
-        % the direction of the mass transfer. The heatflow only respects
-        % the energy change that comes from the temperature difference of
-        % that transfer, and is only added to the respective exme of the
-        % receiving side. Therefore, in the thermal network the two exmes
-        % of a branch do not necessarily have the same heat flow (only for
-        % massbound transfer). The reduction/increase in thermal energy
-        % from increasing or decreasing mass is handled by the total heat
-        % capacity change
+        % In the thermal network the exmes have a heat flow property which
+        % corresponds to the thermal energy taken from the capacity (if
+        % fHeatFlow * iSign is negative) or added to the capacity (if
+        % fHeatFlow * iSign is positive).
+        %
+        % For thermal energy that is transported as mass the heatflow only
+        % respects the energy change that comes from the temperature
+        % difference of that transfer, and is only added to the respective
+        % exme of the receiving side. Therefore, in the thermal network the
+        % two exmes of a branch do not necessarily have the same heat flow
+        % (only for massbound transfer). The reduction/increase in thermal
+        % energy from increasing or decreasing mass is handled by the total
+        % heat capacity change instead and doing it through the exmes as
+        % well would result in inconsitencies
         fHeatFlow = 0;
-        
-        bHasBranch = false;
     end
     
     
     
     methods
         function this = exme(oCapacity, sName)
-            % Constructor for the exme matter processor class.
-            % oPhase is the phase the exme is attached to
-            % sName is the name of the processor
-            % Used to extract / merge matter from / into phases. Default
-            % functionality is just merging of enthalpies based on ideal
-            % conditions and extraction with the according matter
-            % properties and no "side effects".
-            % For another behaviour, derive from that proc and overload the
+            % Constructor for the exme thermal processor class. oPhase is
+            % the phase the exme is attached to sName is the name of the
+            % processor Used to extract / merge thermal energy from / into
+            % capacities. Default functionality is just merging of
+            % enthalpies based on ideal conditions and extraction with the
+            % according matter properties and no "side effects". For
+            % another behaviour, derive from that proc and overload the
             % .extract or .merge method.
             
             this.sName  = sName;
@@ -64,7 +65,7 @@ classdef exme < base
         end
         
         function addBranch(this, oBranch)
-            % Assining a branch to this exme
+            % Assigning a branch to this exme
             
             % Checking if the container is already sealed
             if this.oCapacity.oPhase.oStore.oContainer.bThermalSealed
@@ -88,16 +89,19 @@ classdef exme < base
             
             this.oBranch = oBranch;
             
+            % If this is the left side exme, a positive flow means energy
+            % is taken from the connected capacity. Therefore the sign for
+            % this exme is set to -1 for this case
             if oBranch.coExmes{1} == this
                 this.iSign = -1;
             else
                 this.iSign = 1;
             end
-            
-            this.bHasBranch = true;
         end
         
         function setHeatFlow(this, fHeatFlow)
+            % Function used by the thermal solver to set the heat flow in
+            % [W] for this exme
             this.fHeatFlow = fHeatFlow;
         end
     end
