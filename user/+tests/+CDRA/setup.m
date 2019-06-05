@@ -21,7 +21,6 @@ classdef setup < simulation.infrastructure
             % monitors
             ttMonitorConfig.oTimeStepObserver.sClass = 'simulation.monitors.timestepObserver';
             ttMonitorConfig.oTimeStepObserver.cParams = { 0 };
-            ttMonitorConfig.oLogger.cParams = {true};
             
 %             ttMonitorConfig.oMassBalanceObserver.sClass = 'simulation.monitors.massbalanceObserver';
 %             fAccuracy = 1e-8;
