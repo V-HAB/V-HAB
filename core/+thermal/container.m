@@ -1,6 +1,9 @@
 classdef container < sys
     %CONTAINER A collection of thermal capacities
-    %   Detailed explanation goes here
+    %   Container is the base class of the thermal domain in V-HAB. It
+    %   contains capacities and branches. Together with the other
+    %   containers (matter, electrical) a complete container is built which
+    %   contains all necessary functions for all the domains.    
         
     properties (SetAccess = protected, GetAccess = public)
         % Branches stored as mixin (?) array, so e.g. all flow rates can be
@@ -46,9 +49,16 @@ classdef container < sys
         end
         
         function createThermalStructure(this)
-            % Call in child elems
+            %CREATETHERMALSTRUCTURE Calls this function on all child objects
+            %   This method will contain the definiton of the thermal
+            %   system in the classes that inherit from this class. The
+            %   only thing we have to do here is therefore to call it on
+            %   all child objects.
+            
+            % Getting the names of all child systems
             csChildren = fieldnames(this.toChildren);
             
+            % now loop through all children and calld this function
             for iC = 1:length(csChildren)
                 sChild = csChildren{iC};
                 
@@ -57,15 +67,19 @@ classdef container < sys
         end
         
         function this = addProcConductor(this, oConductor)
-            % Adds a conductor.
+            % Function used to add a conductor to the system. The
+            % conductors first have to be added to the system in order for
+            % them to be available in the definition of the thermal branch
             
+            % Check if the system is already sealed. If it is we cannot add
+            % anything anymore
             if this.bThermalSealed
                 this.throw('addProcConductor', 'The container is sealed, so no conductors can be added any more.');
             end
             
-            
+            % Check if the correct input is used for this function
             if ~isa(oConductor, 'thermal.procs.conductor')
-                this.throw('addProcConductor', 'Provided object ~isa thermal.procs.conductor');
+                this.throw('addProcConductor', 'Provided object is not a thermal.procs.conductor');
                 
             elseif isfield(this.toProcsConductor, oConductor.sName)
                 this.throw('addProcConductor', 'Conductor %s already exists.', oConductor.sName);
@@ -75,6 +89,7 @@ classdef container < sys
             
             end
             
+            % if everything checks out add the conductor to the system
             this.toProcsConductor.(oConductor.sName) = oConductor;
         end
         
@@ -92,7 +107,13 @@ classdef container < sys
                 
             end
             
+            % add the branch to the array containing all thermal branches
+            % as new field
             this.aoThermalBranches(end + 1, 1)     = oThermalBranch;
+            
+            % Check if the branch has a custom name, and if it does add it
+            % to the struct containing all thermal branches using the
+            % custom name. Otherwise use the generic name
             if ~isempty(oThermalBranch.sCustomName)
                 if isfield(this.toThermalBranches, oThermalBranch.sCustomName)
                     error('A thermal branch with this custom name already exists')
@@ -105,12 +126,18 @@ classdef container < sys
         end
         
         function sealThermalStructure(this, ~)
+            % seal the thermal structure and delete no longer required
+            % "stubs" of interface branches
+            
             if this.bThermalSealed
                 this.throw('sealThermalStructure', 'Already sealed');
             end
             
+            % get the names of all children
             csChildren = fieldnames(this.toChildren);
             
+            % loop through all children and seal their thermal structure.
+            % Then set the iThermalbranches property
             for iC = 1:length(csChildren)
                 sChild = csChildren{iC};
                 

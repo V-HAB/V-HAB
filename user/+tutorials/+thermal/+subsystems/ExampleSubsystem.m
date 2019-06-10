@@ -89,8 +89,6 @@ classdef ExampleSubsystem < vsys
             
             solver.thermal.basic.branch(this.toThermalBranches.Pipe_Material_Conductor_In);
             solver.thermal.basic.branch(this.toThermalBranches.Pipe_Material_Conductor_Out);
-            
-            this.toThermalBranches.Convective_Branch.coConductors{1}.connectMatterSolverBranch();
             solver.thermal.basic.branch(this.toThermalBranches.Convective_Branch);
             
             % Phases

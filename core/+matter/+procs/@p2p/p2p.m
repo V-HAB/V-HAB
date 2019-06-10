@@ -1,4 +1,4 @@
-classdef p2p < matter.flow
+classdef p2p < matter.flow & event.source
     %P2P or Phase to Phase processor, can be used to move matter from one
     % phase to another within a single store. Allows phase change and
     % specific substance transfer to model e.g. condensation/vaporization
@@ -23,6 +23,8 @@ classdef p2p < matter.flow
         hBindPostTickUpdate;
         
         coExmes;
+        
+        bTriggersetMatterPropertiesCallbackBound = false;
     end
     
     
@@ -205,6 +207,19 @@ classdef p2p < matter.flow
                 this.setMatterProperties();
             end
         end
+        
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
+            % Overwrite the general bind function to be able and write
+            % specific trigger flags
+            [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
+            
+            % for setMatterProperties we set the Trigger to true which tells
+            % us that we actually have to trigger this. Otherwise it is not
+            % triggered saving calculation time
+            if strcmp(sType, 'setMatterProperties')
+                this.bTriggersetMatterPropertiesCallbackBound = true;
+            end
+        end
     end
     
     
@@ -347,6 +362,10 @@ classdef p2p < matter.flow
                 
             
             setMatterProperties@matter.flow(this, fFlowRate, arPartialMass, fTemperature, fPressure);
+            
+            if this.bTriggersetMatterPropertiesCallbackBound
+                this.trigger('setMatterProperties');
+            end
         end
     end
 end

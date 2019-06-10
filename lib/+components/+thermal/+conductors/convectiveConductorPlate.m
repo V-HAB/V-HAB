@@ -1,19 +1,24 @@
-classdef convectiveConductorPipe < thermal.procs.conductors.convective
+classdef convectiveConductorPlate < thermal.procs.conductors.convective
     % A convective conductor to model convective heat transfer between a
     % fluid in a pipe and the pipe wall
     
     properties (SetAccess = protected)
         % hydraulic diameter of the pipe
-        fHydraulicDiameter; % [m]
-        % length of the pipe
+        fBroadness; % [m]
+        % length of the plate
         fLength; % [m]
+        
+        % Area perpendicular to the flow passing along the plate. Necessary
+        % to calculate a flow speed from the provided mass flow rate of the
+        % matter branch
+        fFlowArea; % [m^2]
     end
     
     methods
         
-        function this = convectiveConductorPipe(oContainer, sName, oMassBranch, iFlow, fHydraulicDiameter, fLength)
+        function this = convectiveConductorPlate(oContainer, sName, oMassBranch, iFlow, fBroadness, fLength, fFlowArea)
             % Create a convective conductor to calculate convective heat
-            % transfer within a pipe. The necessary inputs are:
+            % transfer over a plat. The necessary inputs are:
             % oContainer:       The system in which the conductor is placed
             % sName:            A name for the conductor which is not
             %                   shared by other conductors within oContainer
@@ -22,18 +27,20 @@ classdef convectiveConductorPipe < thermal.procs.conductors.convective
             % iFlow:            The number of the flow  within this branch
             %                   which should be modelled by this conductor
             %                   (necessary for matter properties)
-            % fHydraulicDiameter:   The hydraulic diameter of the pipe
-            % fLength:              The length of the pipe
+            % fBroadness:       The broadness of the plate in m
+            % fLength:          The length of the plate
             
             % Calculate the heat transfer area from the provided inputs
-            fArea = fLength * pi * fHydraulicDiameter;
+            fArea = fLength * fBroadness;
             
             % create the supraclass convective conductor
             this@thermal.procs.conductors.convective(oContainer, sName, fArea, oMassBranch, iFlow)
             
+            this.fFlowArea = fFlowArea;
+            
             % store properties
-            this.fHydraulicDiameter = fHydraulicDiameter;
-            this.fLength            = fLength;
+            this.fBroadness     = fBroadness;
+            this.fLength      	= fLength;
         end
         
         function fHeatTransferCoefficient = updateHeatTransferCoefficient(this, ~)
@@ -61,11 +68,11 @@ classdef convectiveConductorPipe < thermal.procs.conductors.convective
                 fSpecificHeatCapacity = this.oMT.calculateSpecificHeatCapacity(oFlow);
 
                 % calculate the current flowspeed
-                fFlowSpeed = (oFlow.fFlowRate / fDensity) / (0.25 * pi * this.fHydraulicDiameter^2);
+                fFlowSpeed = (oFlow.fFlowRate / fDensity) / this.fFlowArea;
 
                 % calculate the convective heat transfer coefficient using a
                 % pipe as an assumption
-                fConvection_alpha = functions.calculateHeatTransferCoefficient.convectionPipe(this.fHydraulicDiameter, this.fLength, fFlowSpeed, fDynamicViscosity, fDensity, fThermalConductivity, fSpecificHeatCapacity, 0);
+                fConvection_alpha = functions.calculateHeatTransferCoefficient.convectionPlate (this.fLength, fFlowSpeed, fDynamicViscosity, fDensity, fThermalConductivity, fSpecificHeatCapacity);
 
                 % Calculate the thermal conductivity of the connection in [W/m^2 K]
                 fHeatTransferCoefficient = fConvection_alpha;

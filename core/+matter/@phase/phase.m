@@ -799,19 +799,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Now update the matter properties
             this.fMolarMass = this.oMT.calculateMolarMass(this.afMass);
             
-            % If this update was triggered by the changeInnerEnergy()
-            % method, then we already have calculated the current specific
-            % heat capacity of this phase. So we don't have to do the
-            % calculation again, we check against the timestep and only do
+            % we check against the timestep and only do
             % the calculation if it hasn't been done before.
-            %
-            % See getTotalHeatCapacity --> only recalculated if at least
-            % the minimal time difference between calculations, as
-            % specified in the fMinimalTimeBetweenHeatCapacityUpdates
-            % property, has passed. So we'll also include that here!
-            if ~isempty(this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates) && (this.oTimer.fTime >= (this.oCapacity.fLastTotalHeatCapacityUpdate + this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates))
-                bRecalculate = true;
-            elseif isempty(this.oCapacity.fMinimalTimeBetweenHeatCapacityUpdates) && ~(this.oTimer.fTime == this.oCapacity.fLastTotalHeatCapacityUpdate)
+            if ~(this.oTimer.fTime == this.oCapacity.fLastTotalHeatCapacityUpdate)
                 bRecalculate = true;
             else
                 bRecalculate = false;

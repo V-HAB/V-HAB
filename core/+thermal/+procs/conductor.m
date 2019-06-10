@@ -1,6 +1,9 @@
 classdef (Abstract) conductor < base & event.source
     %CONDUCTOR A thermal connection between two capacity objects
-    %   Detailed explanation goes here
+    %   This base class can be used to model any thermal conduction
+    %   interface between two capacities possible. Child classes that
+    %   provide radiative, convective, conductive heat transport exist as
+    %   well
     % 
     % ANALOGOUS TO: matter.proc
     
@@ -15,28 +18,36 @@ classdef (Abstract) conductor < base & event.source
         oLeft;  % The "left" side of the connection.
         oRight; % The "right" side of the connection.
         
+        % The system in which the conductor is located
         oContainer;
         
+        % The thermal branch in which this conductor is placed
         oThermalBranch;
         
+        % Reference to the matter table object
         oMT;
+        % Reference to the timer object
         oTimer;
         
+        % Check if the conductor is sealed already
         bSealed = false;
         
         % The thermal solver will need to determine which type of
         % conductor a specific object is. Since isa() is very slow, we
-        % create these three boolean variables. 
+        % create these three boolean variables to improve the speed of the
+        % check.
         bRadiative  = false;
         bConvective = false;
         bConductive = false;
     end
     
+    % Abstract properties are properties which are not defined yet on this
+    % supraclass but are mandatory properties for all subclasses. So any
+    % class that inherits from this class must implement the following
+    % properties
     properties (Abstract, SetAccess = protected)
         fResistance; % Thermal resistance of connection (unit depends on subclass).
-        
     end
-    
     
     methods
         
@@ -48,6 +59,7 @@ classdef (Abstract) conductor < base & event.source
             this.sName = sName;
             this.oContainer = oContainer;
             
+            % Add the conductor to the thermal container
             this.oContainer.addProcConductor(this);
             
             this.oMT    = this.oContainer.oMT;
@@ -57,6 +69,8 @@ classdef (Abstract) conductor < base & event.source
         
         
         function seal(this, oThermalBranch)
+            % Seal the conductor, prevent further changes and check it for
+            % consistency
             if this.bSealed
                 this.throw('seal', 'Already sealed!');
             end
@@ -68,10 +82,8 @@ classdef (Abstract) conductor < base & event.source
             end
             
             this.oThermalBranch = oThermalBranch;
-            %this.oMT     = oBranch.oMT;
+            
             this.bSealed = true;
         end
     end
-    
 end
-

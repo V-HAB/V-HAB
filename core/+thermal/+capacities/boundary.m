@@ -3,14 +3,9 @@ classdef boundary < thermal.capacity
     %   The temperature of this capacity is constant and should only be
     %   changed using the setBoundaryTemperature() method. The
     %   updateTemperature() and updateSpecificHeatCapacity() methods of the
-    %   parent class are overloaded to do nothing. 
-        
-    properties 
-        % This class does not have any properties
-    end
+    %   parent class are overloaded to do nothing.
     
     methods
-        
         function this = boundary(oPhase, fTemperature)
             % Calling the parent class constructor
             this@thermal.capacity(oPhase, fTemperature);
@@ -20,7 +15,6 @@ classdef boundary < thermal.capacity
             % capacity, so that is exactly what we are setting here. 
             this.fTotalHeatCapacity = inf;
             this.fSpecificHeatCapacity = inf;
-            
         end
         
         function setBoundaryTemperature(this, fTemperature)

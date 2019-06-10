@@ -10,28 +10,11 @@ classdef capacity < base & event.source
         bSynced = false;
     end
     properties (GetAccess = public, SetAccess = protected)
-        
-        % Object properties
-        
+        %% Basic Properties
+        % Current temperature value of this capacity. Can only be cahnged
+        % by the updateTemperature function of the capacity to prevent
+        % inconsistencies
         fTemperature;
-        
-        sName; % This object's name.
-        
-        % Associated objects
-        oPhase;
-        coHeatSource;
-        toHeatSources;
-        
-        fTotalHeatSourceHeatFlow = 0;
-        
-        aoExmes;
-        toProcsEXME;
-        iProcsEXME = 0;
-        
-        oMT;
-        oTimer;
-        
-        % Internal properties
         
         % Specific heat capacity of mixture in phase
         fSpecificHeatCapacity = 0; % [J/(K*kg)]
@@ -39,41 +22,84 @@ classdef capacity < base & event.source
         % Total heat capacity of mixture in phase
         fTotalHeatCapacity = 0; % [J/(K*kg)]
         
+        % Total heat flow produced (as in increases temperature,
+        % represented by positive sign) or consumed (reduces temperature,
+        % represented by negative sign) by the heat sources within this
+        % capacity
+        fTotalHeatSourceHeatFlow = 0; % [W]
+        
         % Property to store the current overall heat flow of this capacity
         % (positive values increase the temperature, negative values
         % decrease it)
-        fCurrentHeatFlow = 0;
+        fCurrentHeatFlow = 0; %[W]
+        
+        % The name of the capacity, which is identical to the name of the
+        % phase
+        sName;
+        
+        %% Associated objects
+        % The phase which is the matter domain representation of this
+        % capacity (as there is no capacity without matter)
+        oPhase;
+        
+        % cell array containing all heat sources within this capacity
+        coHeatSource;
+        % struct array containing all heat sources within this capacitiy
+        % with their names as the corresponding field names
+        toHeatSources;
+        
+        % object arry containing the different (thermal) exmes of this
+        % capacity. Not that each matter exme is mirrored by a thermal exme
+        % because mass transfer generally also transfers thermal energy
+        aoExmes;
+        
+        % struct containing the different (thermal) exmes with their names
+        % as field names
+        toProcsEXME;
+        
+        % integer which is equal to the total number of exmes of this
+        % capacity. Usefull to loop over the exmes
+        iProcsEXME = 0;
+        
+        % reference to the matter table object
+        oMT;
+        
+        % reference to the timer object
+        oTimer;
         
         %% Numerical properties
         % current (thermal) timestep enforced by this capacity
-        fTimeStep;
+        fTimeStep; % [s]
         
         % last time at which the temperature was updated
-        fLastTemperatureUpdate = -10;
+        fLastTemperatureUpdate = -10; %[s]
         
         % This time step is the one used internally by the
         % updateTemperature method. It can be smaller than the fTimeStep
         % property because the updateTemperature methode can also be called
         % by branches for example. See the updateMatter methode of phase.m
         % for further reference
-        fTemperatureUpdateTimeStep;
+        fTemperatureUpdateTimeStep; % [s]
         
         % maximum allowed temperature change in percent. A value of 0.5%
         % means that for a temperature of 293 K the maximum temperature
         % change is 1.47 K
-        rMaxChange = 0.005;
+        rMaxChange = 0.005; % [-]
         
-        fLastSetOutdated = -1;
+        % the last time at which this capacity was set outdated
+        fLastSetOutdated = -1; % [s]
         
-        fLastTotalHeatCapacityUpdate = 0;
+        % The last time at which the total heat capacity of this capacity
+        % was updated
+        fLastTotalHeatCapacityUpdate = 0; % [s]
         
-        % How often should the heat capacity be re-calculated?
-        fMinimalTimeBetweenHeatCapacityUpdates = 1;
-        
-        % Values to decide if the specific heat capacity requires an update
-        fPressureLastHeatCapacityUpdate;
-        fTemperatureLastHeatCapacityUpdate;
-        arPartialMassLastHeatCapacityUpdate;
+        % Values to decide if the specific heat capacity requires an
+        % update. Contain the pressure, temperature and percentual mass
+        % composition of the capacity/phase at the last time the specific
+        % heat capacity was updated
+        fPressureLastHeatCapacityUpdate;        % [Pa]
+        fTemperatureLastHeatCapacityUpdate;     % [K]
+        arPartialMassLastHeatCapacityUpdate;    % [-]
         
         % Do we need to trigger the massupdate/update events? These
         % properties were implement to improve simulation speed for cases
@@ -82,18 +108,27 @@ classdef capacity < base & event.source
         bTriggerSetUpdateTemperaturePostCallbackBound = false;
         bTriggerSetCalculateFlowConstantTemperatureCallbackBound = false;
         
-        
-        % Index of the massupdate post tick in the corresponding cell
-        % and boolean array of the timer
+        % handle to bind the post tick temperature update function to the
+        % correct post tick level. If any part wants to trigger a
+        % temperature update this is then done through this handle to
+        % ensure the correct post tick levels are used
         hBindPostTickTemperatureUpdate
         
-        % Index of the update post tick in the corresponding cell
-        % and boolean array of the timer
+        % handle to bind the post tick update function to the correct post
+        % tick level. If any part wants to trigger a update this is then
+        % done through this handle to ensure the correct post tick levels
+        % are used
         hBindPostTickUpdate
 
-        % Index of the calculate Time Step post tick
+        % handle to bind the post tick calculateTimeStep function to the
+        % correct post tick level. If any part wants to trigger a
+        % calculateTimeStep this is then done through this handle to ensure
+        % the correct post tick levels are used
         hBindPostTickTimeStep
         
+        % function registered at the timer to allow the setting of a
+        % specific time step for this capacity, which is then enforced by
+        % the timer object
         setTimeStep;
     end
     
@@ -141,6 +176,7 @@ classdef capacity < base & event.source
             this.hBindPostTickTemperatureUpdate = this.oTimer.registerPostTick(@this.updateTemperature, 'thermal', 'capacity_temperatureupdate');
             this.hBindPostTickTimeStep          = this.oTimer.registerPostTick(@this.calculateTimeStep, 'post_physics', 'timestep');
             
+            % and already register the first temperature update
             this.hBindPostTickTemperatureUpdate();
             
             % Bind the .update method to the timer, with a time step of 0
@@ -153,7 +189,6 @@ classdef capacity < base & event.source
         end
         
         function updateSpecificHeatCapacity(this)
-            
             % When a phase was empty and is being filled with matter again,
             % it may be a couple of ticks until the phase.update() method
             % is called, which updates the phase's specific heat capacity.
@@ -204,6 +239,9 @@ classdef capacity < base & event.source
         end
         
         function setTotalHeatCapacity(this, fTotalHeatCapacity)
+            % Function to overwrite the total heat capacity of this
+            % capacity and perform necessary other settings as well
+            %
             % it may seem strange at first that the total heat capacity is
             % overwritten without changing the temperature, however as a
             % change in total heat capacity (and not specific) comes from
@@ -216,7 +254,7 @@ classdef capacity < base & event.source
             %
             % Think of it like this, if  masses of identical temperature
             % are moved between container no temperature change occurs. And
-            % this basically what happens here as the difference in
+            % this is basically what happens here as the difference in
             % temperature is already handled in the thermal branch
             
             this.fTotalHeatCapacity = fTotalHeatCapacity;
@@ -231,6 +269,8 @@ classdef capacity < base & event.source
             % when the matter property is recalculated in the matter table,
             % as it is temperature (and pressure) dependent
             if this.oPhase.bFlow
+                % For flow phases we use the current inflowing masses for
+                % the specific heat capacity calculation
                 mfFlowRate              = zeros(1,this.iProcsEXME);
                 mfSpecificHeatCapacity  = zeros(1,this.iProcsEXME);
                 for iExme = 1:this.iProcsEXME
@@ -248,24 +288,24 @@ classdef capacity < base & event.source
                     this.fSpecificHeatCapacity  = sum(mfFlowRate .* mfSpecificHeatCapacity) / sum(mfFlowRate);
                 end
             else
-                fInnerEnergyBefore = this.oPhase.fMass * this.fSpecificHeatCapacity * this.fTemperature;
+                this.fSpecificHeatCapacity = fSpecificHeatCapacity;
+                % Set the new total heat capacity
+                this.setTotalHeatCapacity(this.oPhase.fMass * fSpecificHeatCapacity);
 
-                this.fTotalHeatCapacity = (this.oPhase.fMass * fSpecificHeatCapacity);
-
+                % in case the total heat capacity is 0 (as happens if no
+                % mass is present) we also set the temperature to 0
                 if this.fTotalHeatCapacity == 0
                     this.setTemperature( 0 );
-                else
-                    this.setTemperature( fInnerEnergyBefore / this.fTotalHeatCapacity );
                 end
-
-                this.fSpecificHeatCapacity = fSpecificHeatCapacity;
             end
                
         end
         
         function addProcEXME(this, oProcEXME)
-            % Adds a exme proc, i.e. a port. 
+            % Adds a (thermal) exme proc, i.e. a port. 
             
+            % Check cases which would result in inconsistencies within the
+            % simulation
             if this.oPhase.oStore.oContainer.bThermalSealed
                 this.throw('addProcEXME', 'The container to which this capacity belongs is sealed, so no ports can be added any more.');
             end
@@ -278,6 +318,7 @@ classdef capacity < base & event.source
                 this.throw('addProcEXME', 'Proc %s already exists.', oProcEXME.sName);
             end
 
+            % add exme to the struct reference and the array
             this.toProcsEXME.(oProcEXME.sName) = oProcEXME;
             
             if isempty(this.aoExmes)
@@ -286,6 +327,7 @@ classdef capacity < base & event.source
                 this.aoExmes(end+1) = oProcEXME;
             end
             
+            % increase the counter for the number of exmes by 1
             this.iProcsEXME = this.iProcsEXME + 1;
         end
         
@@ -293,7 +335,8 @@ classdef capacity < base & event.source
             % Add a heat source to this capacity object. The power set to this
             % heat source will be included in the temperature calculations.
             %
-            % Parameter oHeatSource: will be added to a local heat source.
+            % Parameter oHeatSource: will be added as a local heat source
+            % of this capacity
             % Positive power means temperature RISE.
             
             if this.oPhase.oStore.oContainer.bThermalSealed
@@ -320,12 +363,19 @@ classdef capacity < base & event.source
         end
         
         function setOutdatedTS(this)
+            % tell the timer object that heat flows entering/leaving the
+            % capacity changed or the total heat capacity changed and we
+            % therefore have to recalculate the time step to ensure that no
+            % limits are broken.
+            %
             % Only sets a boolean in the timer to true, so it does not
             % matter if we do this multiple times --> no check required
             this.hBindPostTickTimeStep();
         end
         
         function registerUpdateTemperature(this, ~)
+            % register a temperature update for this capacity in the post
+            % tick
             this.hBindPostTickTemperatureUpdate();
         end
             
@@ -365,14 +415,17 @@ classdef capacity < base & event.source
                 afSpecificHeatCapacity = zeros(1,this.iProcsEXME);
                 afTemperature          = zeros(1,this.iProcsEXME);
                 
+                % we cannot use the fCurrentHeatFlow property directly
+                % because it would contain mass based heat flows, which are
+                % not valid for flow phases
+                fSolverHeatFlow = 0;
+                
                 % Looping through all the thermal exmes 
                 for iExme = 1:this.iProcsEXME
-                    % We only need to do something if the branch connected
-                    % to the exme is a basic_fluidic thermal solver branch.
-                    % If that is not the case, the exme is connected to a
-                    % basic thermal solver branch that calculates all
-                    % non-mass-based heat transfers (i.e. conduction,
-                    % convection and radiation).
+                    % for basic_fluidic branches, the thermal branch
+                    % represent a matter based mass transfer, and therefore
+                    % we can use this to calculate the overall heat
+                    % capacity flow entering the phase
                     if isa(this.aoExmes(iExme).oBranch.oHandler, 'solver.thermal.basic_fluidic.branch')
                         % Now we need to find out in which direction the
                         % branch is connected. Positive is from left to
@@ -423,6 +476,14 @@ classdef capacity < base & event.source
                                 afTemperature(iExme) = this.aoExmes(iExme).oBranch.afTemperatures(end);
                             end
                         end
+                    else
+                        % in case a different solver is used, we need the
+                        % heat flow calculated by that solver, to add it to
+                        % the heat flows from the sources. The heat flows
+                        % from mass transport can be neglected since their
+                        % temperature is directly used to calculate the
+                        % base temperature
+                        fSolverHeatFlow = fSolverHeatFlow + this.aoExmes(iExme).fHeatFlow;
                     end
                 end
                 
@@ -446,7 +507,7 @@ classdef capacity < base & event.source
                     fSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
                     
                     % Calculating the new temperature
-                    fTemperatureNew = (sum(afMatterFlowRate .* afSpecificHeatCapacity .* afTemperature) / fOverallHeatCapacityFlow) + fSourceHeatFlow/fOverallHeatCapacityFlow;
+                    fTemperatureNew = (sum(afMatterFlowRate .* afSpecificHeatCapacity .* afTemperature) / fOverallHeatCapacityFlow) + (fSourceHeatFlow + fSolverHeatFlow)/fOverallHeatCapacityFlow;
                 end
             else
                 % This is not a flow phase. 
@@ -476,7 +537,6 @@ classdef capacity < base & event.source
             this.setTemperature(fTemperatureNew);
             
             % Trigger branch solver updates in post tick for all branches
-            % whose heatflow is currently flowing INTO the capacity
             this.setBranchesOutdated();
             
             % Capacity sets new time step (registered with parent store, used
@@ -539,11 +599,10 @@ classdef capacity < base & event.source
             this.setOutdatedTS();
         end
         
-        
+        function [ this, unbindCallback ] = bind(this, sType, callBack)
         % Catch 'bind' calls, so we can set a specific boolean property to
         % true so the .trigger() method will only be called if there are
         % callbacks registered.
-        function [ this, unbindCallback ] = bind(this, sType, callBack)
             [ this, unbindCallback ] = bind@event.source(this, sType, callBack);
             
             % Only do for set
@@ -556,7 +615,6 @@ classdef capacity < base & event.source
             if strcmp(sType, 'calculateFlowConstantTemperature')
                 this.bTriggerSetCalculateFlowConstantTemperatureCallbackBound = true;
             end
-                
         end
     end
     
@@ -572,6 +630,8 @@ classdef capacity < base & event.source
         end
         
         function setInitialHeatCapacity(this,~)
+            % Function used to set the initial heat capacity after the
+            % system has been sealed
             this.fSpecificHeatCapacity  = this.oMT.calculateSpecificHeatCapacity(this.oPhase);
             this.fTotalHeatCapacity     = sum(this.oPhase.afMass) * this.fSpecificHeatCapacity;
         end
@@ -590,6 +650,9 @@ classdef capacity < base & event.source
                 fExmeHeatFlow = fExmeHeatFlow + (this.aoExmes(iExme).iSign * this.aoExmes(iExme).fHeatFlow);
             end
             
+            % For constant temperature heat sources, we have to recalculate
+            % the heat source now with this trigger, to ensure that it used
+            % the correct heat flows from other values
             if this.bTriggerSetCalculateHeatsourcePreCallbackBound
             	this.trigger('calculateHeatsource_pre');
             end
@@ -597,6 +660,9 @@ classdef capacity < base & event.source
             this.fTotalHeatSourceHeatFlow = sum(cellfun(@(cCell) cCell.fHeatFlow, this.coHeatSource));
             
             fNewHeatFlow = fExmeHeatFlow + this.fTotalHeatSourceHeatFlow;
+            % In case the heat flow changed we trigger a update of the
+            % residual solver branches, which in the thermal domain are
+            % e.g. the infinite conduction branches
             if fNewHeatFlow ~= this.fCurrentHeatFlow
                 this.setBranchesOutdated(true);
             end
@@ -629,17 +695,24 @@ classdef capacity < base & event.source
             if this.oPhase.bFlow
                 % In a flow phase heat flows do not change temperature over
                 % time, but instead directly change the temperature.
-                % Therefore, the time step in flow phases can be infinite
+                % Therefore, the time step in flow phases can be infinite.
+                % Recalculation in this case is triggered only through
+                % changes in the branches
                 fNewStep = inf;
             elseif ~isempty(this.oPhase.fFixedTimeStep)
+                % if a fixed time step is set just use that value as time
+                % step
                 fNewStep = this.oPhase.fFixedTimeStep;
             else
-                
+                % for no heat capacity, no heat can be stored --> infinite
+                % time step
                 if this.fTotalHeatCapacity == 0 || this.fTemperature == 0
                     this.setTimeStep(inf);
                     return
                 end
                 
+                % calculate the current percentual temperature change per
+                % second
                 rTemperatureChangePerSecond = abs((this.fCurrentHeatFlow / this.fTotalHeatCapacity) / this.fTemperature);
                 
                 fNewStep = this.rMaxChange / rTemperatureChangePerSecond;
@@ -688,12 +761,16 @@ classdef capacity < base & event.source
         end
         
         function setBranchesOutdated(this, bResidual)
-            
+            % Function to set all connected branches outdated. In case that
+            % the bResidual parameter is also provided it sets only
+            % branches outdated which are considered "residual" meaning
+            % they require to be informed about even very small changes in
+            % the heat flow affecting this capacity
             if nargin < 2
                 bResidual = false;
             end
             
-            if this.fLastSetOutdated >= this.oTimer.fTime
+            if ~bResidual && this.fLastSetOutdated >= this.oTimer.fTime
                 return;
             end
             
