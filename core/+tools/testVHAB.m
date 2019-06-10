@@ -363,7 +363,7 @@ function bChanged = checkVHABFiles()
     % This is mainly just to save some space in the following code, but it
     % also defines the file name we will use to store the tSavedInfo
     % struct. 
-    sSavePath  = strrep('data/FolderStatus.mat','/',filesep);
+    sSavePath  = strrep('data/FolderStatusFortestVHAB.mat','/',filesep);
     
     bChanged = false;
     tInfo = dir();
