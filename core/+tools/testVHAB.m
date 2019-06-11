@@ -118,7 +118,8 @@ for iI = 1:length(tTests)
                 % errors. This will be saved later on to allow a comparison
                 % between different version of V-HAB
                 tTests(iI).run.iTicks               = oLastSimObj.oSimulationContainer.oTimer.iTick;
-                tTests(iI).run.fTime                = oLastSimObj.oSimulationContainer.oTimer.fTime;
+                tTests(iI).run.fRunTime             = oLastSimObj.toMonitors.oExecutionControl.oSimulationInfrastructure.fRuntimeTick;
+                tTests(iI).run.fLogTime             = oLastSimObj.toMonitors.oExecutionControl.oSimulationInfrastructure.fRuntimeOther;
                 tTests(iI).run.fGeneratedMass       = oLastSimObj.toMonitors.oMatterObserver.fGeneratedMass;
                 tTests(iI).run.fTotalMassBalance    = oLastSimObj.toMonitors.oMatterObserver.fTotalMassBalance;
                 
@@ -147,57 +148,6 @@ for iI = 1:length(tTests)
             tTests(iI).sStatus = 'Skipped';
         end
         
-        iSetup = 1;
-        while exist(fullfile(sTestDirectory, tTests(iI).name, ['setup_', iSetup,'.m']), 'file')
-            
-            % First we construct the string that is the argument for the
-            % vhab.exec() method.
-            sExecString = ['tests.',strrep(tTests(iI).name,'+',''),'.setup_', iSetup];
-            
-            % Now we can finally run the simulation, but we need to catch
-            % any errors inside the simulation itself
-            try
-                oLastSimObj = vhab.exec(sExecString);
-                
-                % Done! Let's plot stuff!
-                oLastSimObj.plot();
-                
-                % Saving the figures to the pre-determined location
-                tools.saveFigures(sFolderPath, strrep(tTests(iI).name,'+',''));
-                
-                % Closing all windows so we can see the console again. The
-                % drawnow() call is necessary, because otherwise MATLAB would
-                % just jump over the close('all') instruction and run the next
-                % sim. Stupid behavior, but this is the workaround.
-                close('all');
-                drawnow();
-                
-                % Store information about the simulation duration and
-                % errors. This will be saved later on to allow a comparison
-                % between different version of V-HAB
-                tTests(iI).run.iTicks               = oLastSimObj.oSimulationContainer.oTimer.iTick;
-                tTests(iI).run.fTime                = oLastSimObj.oSimulationContainer.oTimer.fTime;
-                tTests(iI).run.fGeneratedMass       = oLastSimObj.toMonitors.oMatterObserver.fGeneratedMass;
-                tTests(iI).run.fTotalMassBalance    = oLastSimObj.toMonitors.oMatterObserver.fTotalMassBalance;
-                
-                % Since we've now actually completed the simulation, we can
-                % increment the counter of successful tutorials. Also we
-                % can set the string property for the final output.
-                iSuccessfulTests = iSuccessfulTests + 1;
-                tTests(iI).sStatus = 'Successful';
-            catch oException
-                % Something went wrong inside the simulation. So we tell
-                % the user and keep going. The counter for aborted
-                % tutorials is incremented and the string property for the
-                % final output is set accordingly.
-                fprintf('\nEncountered an error in the simulation. Aborting.\n');
-                iAbortedTests = iAbortedTests + 1;
-                tTests(iI).sStatus = 'Aborted';
-                tTests(iI).sErrorReport = getReport(oException);
-            end
-            
-            iSetup = iSetup + 1;
-        end
     else
         % If the tutorial hasn't changed since the last execution, there's
         % no need to run it again. 
@@ -297,10 +247,13 @@ if ~bSkipComparison
 
                 iTickDiff = tTests(iI).run.iTicks - tOldTests.tTests(iOldTutorial).run.iTicks;
                 fprintf('change in ticks compared to old status:                 %s%i\n',sBlanks, iTickDiff);
+                
+                fTimeDiff = tTests(iI).run.fRunTime - tOldTests.tTests(iOldTutorial).run.fRunTime;
+                fprintf('change in run time compared to old status:                  %s%d\n',sBlanks, fTimeDiff);
 
-                fTimeDiff = tTests(iI).run.fTime - tOldTests.tTests(iOldTutorial).run.fTime;
-                fprintf('change in time compared to old status:                  %s%d\n',sBlanks, fTimeDiff);
-
+                fTimeDiffLog = tTests(iI).run.fLogTime - tOldTests.tTests(iOldTutorial).run.fLogTime;
+                fprintf('change in log time compared to old status:                  %s%d\n',sBlanks, fTimeDiffLog);
+                
                 fGeneratedMassDiff = tTests(iI).run.fGeneratedMass - tOldTests.tTests(iOldTutorial).run.fGeneratedMass;
                 fprintf('change in generated mass compared to old status:        %s%d\n',sBlanks, fGeneratedMassDiff);
 
