@@ -144,7 +144,7 @@ classdef setup < simulation.infrastructure
             % visible or not. The default is visible. 
             
             %tPlotOptions = struct('csUnitOverride', {{ 'all left' }});
-            tPlotOptions = struct('csUnitOverride', {{ {'°C'}, {'g/s','-'} }});
+            tPlotOptions = struct('csUnitOverride', {{ {'degC'}, {'g/s','-'} }});
             tPlotOptions.tLineOptions.('fr_co2').csColor = 'g';
             tPlotOptions.tLineOptions.('Nonsense').csColor = 'y';
             tPlotOptions.bLegend = false;
