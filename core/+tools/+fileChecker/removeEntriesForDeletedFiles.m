@@ -93,7 +93,7 @@ for iI = 1:length(csFieldNames)
         % usually '+'.
         if length(sFolderName) > 3 && ...
                 strcmp(sFolderName(1:3),'at_')
-            sNewPath = [ '@', sFolderName(7:end), filesep ];
+            sNewPath = [ '@', sFolderName(4:end), filesep ];
         else
             sNewPath = [ '+', sFolderName, filesep ];
         end

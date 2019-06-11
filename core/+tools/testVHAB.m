@@ -39,54 +39,56 @@ sFolderPath = createDataFolderPath();
 % last execution of this script. If yes, then all tests have to be
 % executed again. If no, then we only have to run the tests that have
 % changed. I've also included the files in the base directory with core.
-bCoreChanged = tools.fileChecker.checkForChanges('core', 'testVHAB');
-bLibChanged  = tools.fileChecker.checkForChanges('lib', 'testVHAB');
-%TODO: only |vhab.m| should ever be of interest, so handle it separately
-bVHABChanged = checkVHABFiles();
+bCoreChanged  = tools.fileChecker.checkForChanges('core', 'testVHAB');
+bLibChanged   = tools.fileChecker.checkForChanges('lib', 'testVHAB');
+bTestsChanged = tools.fileChecker.checkForChanges('user/+tests', 'testVHAB');
+bVHABChanged  = checkVHABFile();
 
 % Being a UI nerd, I needed to produce a nice dynamic user message here. 
-if any([bCoreChanged bLibChanged])
+
+abChanged = [false false false];
+if any([bCoreChanged, bVHABChanged, bLibChanged, bTestsChanged])
+    bChanged = true;
+
     if bCoreChanged || bVHABChanged
-        sCore = 'Core ';
-    else
-        sCore = '';
-        sConjunction = '';
-        sVerb = 'has ';
+        abChanged(1) = true;
     end
     
     if bLibChanged
-        sLib = 'Library ';
-    else
-        sLib = '';
-        sConjunction = '';
-        sVerb = 'has ';
+        abChanged(2) = true;
     end
     
-    if (bCoreChanged || bVHABChanged) && bLibChanged
-        sConjunction = 'and ';
-        sVerb = 'have ';
+    if bTestsChanged
+        abChanged(3) = true;
     end
     
-    fprintf('\n%s%s%s%schanged. All tests will be executed!\n\n', sCore, sConjunction, sLib, sVerb);
+    csWords = {'Core', 'Library', 'Tests'};
+    
+    switch sum(abChanged)
+        case 1
+            sString = [csWords{abChanged}, ' has '];
+        case 2
+            csWords(~abChanged) = [];
+            sString = [csWords{1}, ' and ', csWords{2}, ' have '];
+        case 3
+            sString = [csWords{1}, ', ', csWords{2}, ' and ', csWords{3}, ' have '];
+    end
+    
+    fprintf('\n%schanged. All tests will be executed!\n\n', sString);
 else
-    fprintf('\nCore and Library are both unchanged. Proceeding with test execution.\n\n');
+    bChanged = false;
+    fprintf('\nNothing has changed. No tests will be performed.\n\n');
 end
 
-% Go through each item in the struct and see if we can execute a
-% V-HAB simulation. 
-for iI = 1:length(tTests)
-    % Check if the tutorial's files have changed since the last execution 
-    % of this script. If not, we can just skip this one, because we already
-    % know it works. Unless of course the core or the library has changed.
-    % In this case, all tutorials will be executed.
-    if bLibChanged || bCoreChanged
-        
+% Only do stuff if we need to
+if bChanged
+    % Go through each item in the struct and see if we can execute a
+    % V-HAB simulation.
+    for iI = 1:length(tTests)
         % Some nice printing for the console output
         fprintf('\n\n======================================\n');
         fprintf('Running %s Test\n',strrep(tTests(iI).name,'+',''));
         fprintf('======================================\n\n');
-    
-    
         
         % If the folder has a correctly named 'setup.m' file, we can go
         % ahead and try to execute it.
@@ -148,14 +150,7 @@ for iI = 1:length(tTests)
             tTests(iI).sStatus = 'Skipped';
         end
         
-    else
-        % If the tutorial hasn't changed since the last execution, there's
-        % no need to run it again. 
-        disp(['The ',strrep(tTests(iI).name,'+',''),' Test has not changed. Skipping.']);
-        iSkippedTests = iSkippedTests + 1;
-        tTests(iI).sStatus = 'Skipped';
     end
-    
     
 end
 
@@ -182,10 +177,10 @@ iColumnWidth = max(aiNameLengths);
 fprintf('\n\n======================================\n');
 fprintf('============== Summary ===============\n');
 fprintf('======================================\n\n');
-fprintf('Total Tests:       %i\n\n', length(tTests));
-fprintf('Successfully executed: %i\n',   iSuccessfulTests);
-fprintf('Aborted:               %i\n',   iAbortedTests);
-fprintf('Skipped:               %i\n',   iSkippedTests);
+fprintf('Total Tests:  %i\n\n', length(tTests));
+fprintf('Successful:   %i\n',   iSuccessfulTests);
+fprintf('Aborted:      %i\n',   iAbortedTests);
+fprintf('Skipped:      %i\n',   iSkippedTests);
 disp('--------------------------------------');
 disp('Detailed Summary:');
 for iI = 1:length(tTests)
@@ -306,8 +301,7 @@ end
 
 
 
-function bChanged = checkVHABFiles()
-    %TODO: |vhab.m| should be the only file in root, so only check this one
+function bChanged = checkVHABFile()
     % Since we can't call this function from outside the V-HAB base
     % folder and this function would then catalog the entire directory,
     % we'll add a virtual folder here so we can still check the few files
@@ -324,9 +318,9 @@ function bChanged = checkVHABFiles()
     tSavedInfo = struct();
     try
         load(sSavePath,'tSavedInfo');
-    catch Msg
-        if ~strcmp(Msg.identifier, 'MATLAB:ErrorRecovery:ItemNoLongerOnPath')
-            this.throw(Msg)
+    catch oError
+        if ~strcmp(oError.identifier, 'MATLAB:load:couldNotReadFile')
+            rethrow(oError);
         end
     end
         
