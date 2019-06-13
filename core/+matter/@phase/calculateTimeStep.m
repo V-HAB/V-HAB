@@ -52,6 +52,11 @@ else
     % maximum change of partial mass within the phase.
     rPartialsPerSecond = max(arPartialsChange(~isinf(arPartialsChange)));
     
+    % rPartialsPerSecond can be empty if nothing is flowing in or out
+    % because the abChange property is then false for everything, resulting
+    % in an empty parameter
+    if isempty(rPartialsPerSecond), rPartialsPerSecond = 0; end
+
     % Calculating the change per second of TOTAL mass. rTotalPerSecond also
     % has the unit [1/s], giving us the percentage change per second of the
     % overall mass of the phase.

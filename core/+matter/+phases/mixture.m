@@ -32,8 +32,6 @@ classdef mixture < matter.phase
             end
             this.fDensity = this.oMT.calculateDensity(this);
             this.fVolume = this.fMass / this.fDensity;
-            
-            this.fPressureLastHeatCapacityUpdate = this.fPressure;
         end
         
         function bSuccess = setPressure(this, fPressure)

@@ -51,7 +51,6 @@ classdef gas < matter.phase
             
             this.fMassToPressure = this.calculatePressureCoefficient();
             this.fPressure = this.fMass * this.fMassToPressure;
-            this.fPressureLastHeatCapacityUpdate = this.fPressure;
             
             
             [ this.afPP, this.afPartsPerMillion ] = this.oMT.calculatePartialPressures(this);

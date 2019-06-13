@@ -747,12 +747,10 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 % their partial mass composition after the solvers are
                 % updated, which is after the initial mass updates)
                 this.setOutdatedTS();
-                % we also set the branches outdated, however within that
-                % function a check is performed whether this is a flow
-                % phase or not and only for flow phases only the outgoing
-                % branches are reupdated
-                this.setBranchesOutdated();
                 return;
+                % Note that also setting branches outdated here would lead
+                % to infinite loops within the timer and is therefore not
+                % possible!
             end
             
             if ~base.oDebug.bOff, this.out(tools.debugOutput.INFO, 1, 'exec', 'Execute massupdate in %s-%s-%s', { this.oStore.oContainer.sName, this.oStore.sName, this.sName }); end
