@@ -56,21 +56,6 @@ classdef liquid < matter.phase
             end
             
         end
-        
-        function bSuccess = setPressure(this, fPressure)
-            % Changes the pressure of the phase. If no processor for volume
-            % change registered, do nothing.
-            
-            bSuccess = this.setParameter('fPressure', fPressure);
-        end
-        
-        function bSuccess = setVolume(this, fVolume)
-            % Changes the volume of the phase. If no processor for volume
-            % change registered, do nothing.
-            
-            bSuccess = this.setParameter('fVolume', fVolume);
-            this.fDensity = this.fMass / this.fVolume;
-        end
     end
     %% Protected methods, called internally to update matter properties %%%
     methods (Access = protected)
@@ -80,14 +65,6 @@ classdef liquid < matter.phase
             for k = 1:length(this.coProcsEXME)
                 this.coProcsEXME{1, k}.update();
             end
-        end
-        
-        function setAttribute(this, sAttribute, xValue)
-            % Internal helper, see @matter.phase class.
-            %
-            %TODO throw out, all done with events hm?
-            
-            this.(sAttribute) = xValue;
         end
     end
 end

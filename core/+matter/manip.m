@@ -1,4 +1,4 @@
-classdef manip < base
+classdef (Abstract) manip < base & event.source
     %MANIP Basic manipulator class
     %   All manips in manips.[x].[y] use this as a base class. The type in
     %   the manip package path (x) defines the attribute of the phase that
@@ -28,6 +28,8 @@ classdef manip < base
         oTimer;
         
         hBindPostTickUpdate;
+        
+        bAttached;
     end
     
     properties (SetAccess = private, GetAccess = private)
@@ -39,45 +41,97 @@ classdef manip < base
         function this = manip(sName, oPhase, sRequiredType)
             if nargin >= 3, this.sRequiredType = sRequiredType; end
             
-            % If a certain type of phase type is required for this
-            % manipulator, we check for it here and throw an error if there
-            % is a mismatch.
-            if ~isempty(this.sRequiredType)
-                if isa(oPhase, [ 'matter.phases.' this.sRequiredType ])
-                    this.throw('manip', 'Provided phase (name %s, store %s) is not a "matter.phases.%s"!', oPhase.sName, oPhase.oStore.sName, this.sRequiredType);
-                end
-            end
-            
             % Setting the properties
             this.sName   = sName;
-            this.oPhase  = oPhase;
             this.oMT     = oPhase.oMT;
             this.oTimer  = oPhase.oTimer;
             
-            % Adding the manipulator to the phase, returns a handle to the
-            % detachManipulator() method.
-            this.hDetach = this.oPhase.addManipulator(this);
+            % "re"attaching the manipulator and the phase. This is a
+            % general function which would also allow us to reattach the
+            % manipulator after it has been detached from its phase
+            this.reattachManip(oPhase);
             
             this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'matter', 'manips');
         end
         
-        function remove(this)
-            % Function to remove the manipulator from its phase
-            if isvalid(this.oPhase)
+        function detachManip(this)
+            % Function to deatach the manipulator from its phase. The
+            % manipulator still exists but is no longer connected to the
+            % phase and cannot be updated. The now defunct manip can then
+            % be reattached to a different phase by using the reattachManip
+            % function.
+            % Note that any event callbacks that the manipulator had
+            % registered before will be unbound (deleted)! If you want to
+            % keep any of them you must rebind these after reattaching the
+            % manipulator!
+            if ~isempty(this.oPhase)
+                % If the manipulator had registered events all of these are
+                % unbound (deleted). If any of the events should still be
+                % valid they must be readded after reattaching the manip.
+                % However, if a callback remained that triggers a
+                % calculation within the P2P it would most likely crash
+                % after detaching the manip
+                if this.bHasCallbacks
+                    this.unbindAllEvents();
+                end
+                
                 this.hDetach();
                 this.hDetach = [];
+                this.oPhase = [];
+                this.bAttached = false;
+            end
+        end
+        
+        function reattachManip(this, oPhase)
+            % Function to reattach the manip to a phase after it has been
+            % detached or on its initialization. 
+            % Necessary input parameters are:
+            % oPhase:   a phase object which fullfills the required phase
+            %           condition of the manip specified in the
+            %           sRequiredType property.
+            
+            % Check if the manipulator is not still attached to a phase
+            if ~isempty(this.oPhase)
+                error('the manipulator %s which is supposed to be reattached to phase %s is still connected to phase %s. Use the detachManip function first to seperate the manip from its phase!', this.sName, oPhase.sName, this.oPhase.sName)
+            else
+                % If a certain type of phase type is required for this
+                % manipulator, we check for it here and throw an error if
+                % there is a mismatch.
+                if ~isempty(this.sRequiredType)
+                    % for mixture we do not check the sType property but
+                    % the sPhaseType property
+                    if strcmp(oPhase.sType, 'mixture')
+                        sCompareField = 'sPhaseType';
+                    else
+                        sCompareField = 'sType';
+                    end
+                    if ~strcmp(oPhase.(sCompareField), this.sRequiredType)
+                        this.throw('manip', 'Provided phase (name %s, store %s) is not a %s!', oPhase.sName, oPhase.oStore.sName, this.sRequiredType);
+                    end
+                end
+                % use the addManipulator function of the phase, so that we
+                % do not have to use two function calles to reattach a
+                % manipulator.
+                this.oPhase = oPhase;
+                this.hDetach = this.oPhase.addManipulator(this);
+                this.bAttached = true;
             end
         end
         
         function registerUpdate(this)
-            this.hBindPostTickUpdate();
+            % we only register update for manipulators that are currently
+            % connected to a phase
+            if this.bAttached
+                this.hBindPostTickUpdate();
+            end
         end
     end
     
     methods (Abstract = true)
+        % Every child class must implement this function with the
+        % corresponding calculation to set the according flow rates
         update(this)
     end
-    
     
     methods (Access = protected)
         function fTimeStep = getTimeStep(this)
@@ -137,4 +191,3 @@ classdef manip < base
         end
     end
 end
-

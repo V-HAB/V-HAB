@@ -1,4 +1,4 @@
-classdef flow < matter.manips.substance
+classdef (Abstract) flow < matter.manips.substance
     % flow manipulator which can be used inside of flow phases to calculate
     % mass transformations
     

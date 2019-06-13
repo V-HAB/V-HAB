@@ -33,26 +33,6 @@ classdef mixture < matter.phase
             this.fDensity = this.oMT.calculateDensity(this);
             this.fVolume = this.fMass / this.fDensity;
         end
-        
-        function bSuccess = setPressure(this, fPressure)
-            % Changes the pressure of the phase. If no processor for volume
-            % change registered, do nothing.
-
-            bSuccess = this.setParameter('fPressure', fPressure);
-        end
-
-        function bSuccess = setVolume(this, fVolume)
-            % Changes the volume of the phase. If no processor for volume
-            % change registered, do nothing.
-
-            if strcmp(this.sPhaseType, 'gas')
-                bSuccess = this.setParameter('fVolume', fVolume);
-                this.fDensity = this.fMass / this.fVolume;
-                this.fPressure = this.fMass * this.oMT.Const.fUniversalGas * this.fTemperature / (this.fMolarMass * this.fVolume);
-            else
-                error('you cannot compress solids or liquids')
-            end
-        end
     end
     
     
@@ -65,11 +45,6 @@ classdef mixture < matter.phase
             if strcmp(this.sPhaseType, 'gas')
                 this.fPressure = this.oMT.calculatePressure(this);
             end
-        end
-        
-        function setAttribute(this, sAttribute, xValue)
-            % Internal helper, see @matter.phase class.
-            this.(sAttribute) = xValue;
         end
     end
 end

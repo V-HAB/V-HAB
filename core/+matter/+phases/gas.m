@@ -65,16 +65,6 @@ classdef gas < matter.phase
             end
         end
         
-        
-        function bSuccess = setVolume(this, fNewVolume)
-            % Changes the volume of the phase. If no processor for volume
-            % change registered, do nothing.
-            
-            bSuccess = this.setParameter('fVolume', fNewVolume);
-            
-            return;
-        end
-        
         function fMassToPressure = calculatePressureCoefficient(this)
             % p = m * (R_m * T / M / V)
             %
@@ -94,10 +84,6 @@ classdef gas < matter.phase
         
         function setTemperature(this, oCaller, fTemperature)
             % This function can only be called from the ascociated capacity
-            % (TO DO: Implement the check) and ensure that the temperature
-            % calculated in the thermal capacity is identical to the phase
-            % temperature (by using a set function in the capacity that
-            % always calls this function as well)
             if ~isa(oCaller, 'thermal.capacity')
                 this.throw('setTemperature', 'The setTemperature function of the phase class can only be used by capacity objects. Please do not try to set the temperature directly, as this would lead to errors in the thermal solver');
             end
@@ -150,14 +136,5 @@ classdef gas < matter.phase
                 this.fPressure = 0;
             end
         end
-        
-        function setAttribute(this, sAttribute, xValue)
-            % Internal helper, see @matter.phase class.
-            %
-            %TODO throw out, all done with events hm?
-            
-            this.(sAttribute) = xValue;
-        end
     end
 end
-

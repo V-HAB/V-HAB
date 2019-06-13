@@ -1,4 +1,4 @@
-classdef stationary < matter.manips.substance
+classdef (Abstract) stationary < matter.manips.substance
     % stationary manipulator which can be used in normal phases to
     % calculate mass transformations
     
@@ -89,6 +89,4 @@ classdef stationary < matter.manips.substance
             afInMasses   = [ afInMasses * fTimeStep; this.oPhase.fMass ];
         end
     end
-    
 end
-
