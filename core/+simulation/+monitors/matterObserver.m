@@ -38,6 +38,11 @@ classdef matterObserver < simulation.monitor
         % References to all flows in the simulation
         aoFlows = [];
         
+        % after the sim or on pausing it the total generated mass and the
+        % total mass balance in the phases are calculated and stored in
+        % these properties
+        fGeneratedMass = [];
+        fTotalMassBalance = [];
     end
     
     properties
@@ -171,6 +176,8 @@ classdef matterObserver < simulation.monitor
             end
             mfTotalFinalMass = mfTotalFinalMass + sum(mfMassError,1);
             
+            this.fGeneratedMass     = sum(this.mfGeneratedMass(end, :));
+            this.fTotalMassBalance  = sum(mfTotalFinalMass) - sum(this.mfTotalMass(1, :));
             % DISP balance
             fprintf('+---------------------------------- MATTER BALANCE ---------------------------------+\n');
             

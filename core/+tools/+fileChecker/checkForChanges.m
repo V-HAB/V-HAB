@@ -35,6 +35,7 @@ if isempty(tSavedInfo)
         bFirstCall = true;
         bFirstRun = false;
     else
+        bFirstCall = true;
         bFirstRun = true;
     end
 else
