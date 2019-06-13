@@ -246,7 +246,7 @@ end
 bSkipComparison = false;
 if strcmp(sCompareToState, 'server')
     try
-        tOldTests = load('user\+tests\ServerTestStatus.mat');
+        tOldTests = load(strrep('data\ServerTestStatus.mat','\',filesep));
     catch Msg
         if strcmp(Msg.identifier, 'MATLAB:load:couldNotReadFile')
             % if the file does not exists we inform the user that something
@@ -258,7 +258,7 @@ if strcmp(sCompareToState, 'server')
     end
 else
     try
-        tOldTests = load('data\OldTestStatus.mat');
+        tOldTests = load(strrep('data\OldTestStatus.mat','\',filesep));
     catch Msg
         if strcmp(Msg.identifier, 'MATLAB:load:couldNotReadFile')
             % if the file not yet exists, we create it!
