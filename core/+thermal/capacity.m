@@ -483,7 +483,7 @@ classdef capacity < base & event.source
                         % from mass transport can be neglected since their
                         % temperature is directly used to calculate the
                         % base temperature
-                        fSolverHeatFlow = fSolverHeatFlow + this.aoExmes(iExme).fHeatFlow;
+                        fSolverHeatFlow = fSolverHeatFlow + this.aoExmes(iExme).iSign * this.aoExmes(iExme).fHeatFlow;
                     end
                 end
                 
@@ -713,9 +713,19 @@ classdef capacity < base & event.source
                 
                 % calculate the current percentual temperature change per
                 % second
-                rTemperatureChangePerSecond = abs((this.fCurrentHeatFlow / this.fTotalHeatCapacity) / this.fTemperature);
+                fTemperatureChangePerSecond = (this.fCurrentHeatFlow / this.fTotalHeatCapacity);
+                rTemperatureChangePerSecond = abs(fTemperatureChangePerSecond / this.fTemperature);
                 
                 fNewStep = this.rMaxChange / rTemperatureChangePerSecond;
+                
+                % similar to the mass we also limit the temperature update
+                % to prevent negative temperatures:
+                if fTemperatureChangePerSecond < 0
+                    fMaximumTimeStep = - this.fTemperature / fTemperatureChangePerSecond;
+                else
+                    fMaximumTimeStep = inf;
+                end
+                fNewStep = min(fNewStep, fMaximumTimeStep);
                 
                 if fNewStep < 0
                     if ~base.oDebug.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end

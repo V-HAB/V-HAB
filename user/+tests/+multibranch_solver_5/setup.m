@@ -1,10 +1,10 @@
-classdef setup_5 < simulation.infrastructure
+classdef setup < simulation.infrastructure
     
     properties
     end
     
     methods
-        function this = setup_5(ptConfigParams, tSolverParams, fSimTime) % Constructor function
+        function this = setup(ptConfigParams, tSolverParams, fSimTime) % Constructor function
             
             ttMonitorConfig = struct();%struct('oTimeStepObserver', struct('cParams', {{ 0 }}));
             this@simulation.infrastructure('Example_Solver_MultiBranch', ptConfigParams, tSolverParams, ttMonitorConfig);

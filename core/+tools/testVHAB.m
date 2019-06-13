@@ -1,4 +1,4 @@
-function testVHAB(sCompareToState)
+function testVHAB(sCompareToState, bForceExecution)
 %TESTVHAB Runs all tests and saves the figures to a folder
 %   This function is a debugging helper. It will run all tests inside
 %   the user/+tests folder and save the resulting figures to
@@ -32,6 +32,10 @@ else
     if  ~(strcmp(sCompareToState, 'server') ||  strcmp(sCompareToState, 'local'))
         error('Unknown state to which the testVHAB run should be compared')
     end
+end
+
+if nargin < 2
+    bForceExecution = false;
 end
 
 % Initializing some counters
@@ -108,7 +112,7 @@ else
 end
 
 % Only do stuff if we need to
-if bChanged
+if bChanged || bForceExecution
     % Go through each item in the struct and see if we can execute a
     % V-HAB simulation.
     for iI = 1:length(tTests)
