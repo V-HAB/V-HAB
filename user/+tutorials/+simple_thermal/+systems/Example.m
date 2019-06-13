@@ -55,14 +55,14 @@ classdef Example < vsys
             
             % Creating a thermal conductor between the two tanks, the
             % resistance is 1 K/W.
-            thermal.procs.conductors.conductive(this, 'Thermal_Connection', 1)
+            thermal.procs.conductors.conductive(this, 'Thermal_Connection', 1);
             
             % Getting a reference to both phases
             oPhaseCold = this.toStores.Tank_1.toPhases.Cold;
             oPhaseHot  = this.toStores.Tank_2.toPhases.Hot;
             
             % Addding a thermal branch between the two phases.
-            thermal.branch(this, oPhaseCold, {'Thermal_Connection'}, oPhaseHot)
+            thermal.branch(this, oPhaseCold, {'Thermal_Connection'}, oPhaseHot);
         end
         
         
