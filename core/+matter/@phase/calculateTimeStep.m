@@ -32,47 +32,6 @@ if ~isempty(this.fFixedTimeStep)
 elseif this.bBoundary
     fNewStep = this.fMaxStep;
 else
-    rMaxChangeFactor = 1;
-    
-    % Log the current mass and time to the history arrays
-    this.afMassLog = [ this.afMassLog(2:end) this.fMass ];
-    this.afLastUpd = [ this.afLastUpd(2:end) this.oTimer.fTime ];
-    
-    
-    %% Provision for adaptive rMaxChange
-    % Mass change in percent/second over logged time steps Convert mass
-    % change to kg/s, take mean value and divide by mean tank mass -> mean
-    % mass change in %/s (...?) If the mass is constant but unstable
-    % (jumping around a mean value), the according mass in- and decreases
-    % should cancle each other out.
-    
-    if this.rHighestMaxChangeDecrease > 0
-        
-        % max or mean?
-        fDev = mean(diff(this.afMassLog) ./ diff(this.afLastUpd)) / mean(this.afMassLog);
-        %fDev = max(abs(diff(this.afMassLog) ./ diff(this.afLastUpd))) / mean(this.afMassLog);
-        
-        % Order of magnitude of fDev
-        fDevMagnitude = abs(log(abs(fDev))./log(10));
-        
-        % Inf? -> zero change.
-        if fDevMagnitude > this.oTimer.iPrecision, fDevMagnitude = this.oTimer.iPrecision;
-        elseif isnan(fDevMagnitude),                      fDevMagnitude = 0;
-        end
-        
-        % Min deviation (order of magnitude of mass change)
-        iMaxDev = this.oTimer.iPrecision;
-        
-        
-        % Other try - exp
-        afBase = (0:0.01:1) .* iMaxDev;
-        afRes  = (0:0.01:1).^3 .* (this.rHighestMaxChangeDecrease - 1);
-        
-        rFactor = interp1(afBase, afRes, fDevMagnitude, 'linear');
-        
-        rMaxChangeFactor = 1 / (1 + rFactor);
-    end
-    
     %% Calculating the changes of mass in phase during this update.
     
     % To calculate the change in partial mass, we only use entries where
@@ -92,9 +51,6 @@ else
     % By getting the maximum of the arPartialsChange array, we have the
     % maximum change of partial mass within the phase.
     rPartialsPerSecond = max(arPartialsChange(~isinf(arPartialsChange)));
-    
-    %CHECK Why would this be empty?
-    if isempty(rPartialsPerSecond), rPartialsPerSecond = 0; end
     
     % Calculating the change per second of TOTAL mass. rTotalPerSecond also
     % has the unit [1/s], giving us the percentage change per second of the
@@ -132,7 +88,12 @@ else
     % partial mass change compared to the respective partial mass. This
     % second calculation therefore is more restrictive and is normally
     % deactivated but can be activated by setting any value of the
-    % arMaxChange property to something other than zero
+    % arMaxChange property to something other than zero. Only the
+    % substances that have non zero values will be limit by this
+    % calculation.
+    % To further reduce the impact of this calculation in cases where it
+    % isn't used a boolean operator is set by the setTimeStepProperties
+    % function to check if this part of the calculation is necessary
     if this.bHasSubstanceSpecificMaxChangeValues
         afCurrentMass = this.afMass;
         
@@ -140,14 +101,18 @@ else
         % rounded to the minimal time step to prevent extremly small
         % partial masses from delaying the simulation (otherwise the
         % timestep will go asymptotically towards zero the smaller the
-        % partial mass becomes)
+        % partial mass becomes). An additional check later on will limit
+        % the maximum allowed mass error that can occur from one substance
+        % beeing removed from a phase to 1e-8 kg.
         afCurrentMass(this.afMass < 10^(-this.iTimeStepPrecision)) = 10^(-this.iTimeStepPrecision);
         arPartialChangeToPartials = abs(afPartialFlows ./ tools.round.prec(afCurrentMass, this.iTimeStepPrecision));
         % Values where the partial mass is zero are set to zero, otherwise
         % the value for these is NaN or Inf
         arPartialChangeToPartials(this.afMass == 0) = 0;
         
-        afNewStepPartialChangeToPartials = (this.arMaxChange * rMaxChangeFactor) ./ arPartialChangeToPartials;
+        % The allowed time steps are the allowed maximum changes for each
+        % substance divided with the current change per second
+        afNewStepPartialChangeToPartials = this.arMaxChange ./ arPartialChangeToPartials;
         
         % Values where the arMaxChange value is zero are not of interest
         % for the user and are therefore set to inf time steps (setting a
@@ -170,25 +135,30 @@ else
     % To derive the timestep, we use the percentage change of the total
     % mass or the maximum percentage change of one of the substances'
     % relative masses.
-    fNewStepTotal    = (this.rMaxChange * rMaxChangeFactor) / rTotalPerSecond;
-    fNewStepPartials = (this.rMaxChange * rMaxChangeFactor) / rPartialsPerSecond;
+    fNewStepTotal    = this.rMaxChange / rTotalPerSecond;
+    fNewStepPartials = this.rMaxChange / rPartialsPerSecond;
     
-    % The new time step will be set to the smaller one of these two
-    % candidates.
+    % The new time step will be set to the smaller one of the three time
+    % step candidates
     fNewStep = min([ fNewStepTotal fNewStepPartials fNewStepPartialChangeToPartials]);
     
-    % For phases with zero mass, we simply limit the error within one time
-    % step to 1e-8 kg
+    % For phases with zero mass, we limit the error within one time
+    % step to 1e-8 kg and the allowed initial mass ( to prevent very small
+    % fill up processes) to 0.1 kg. The second logic should not happen
+    % for phases with actual physics based solvers and is therefore valid
     if this.fMass == 0
         if fChange < 0
-            % limit error to 1e-8 kg
-            fNewStep = abs(1e-8/fChange);
+            % limit error to the specified value. Stanard setting is 1e-8 kg
+            fNewStep = abs(this.fMassErrorLimit/fChange);
         else
-            % limit initial mass to 0.1 kg
-            fNewStep = abs(0.1 / fChange);
+            % limit initial mass after the phase was empty to the specified
+            % value. Standard setting is 0.1 kg
+            fNewStep = abs(this.fMaximumInitialMass / fChange);
         end
     end
     
+    % Add debugging information in case the time step was calculated to be
+    % negative
     if fNewStep < 0
         if ~base.oDebug.bOff, this.out(3, 1, 'time-step-neg', 'Phase %s-%s-%s has neg. time step of %.16f', { this.oStore.oContainer.sName, this.oStore.sName, this.sName, fNewStep }); end
     end
@@ -197,9 +167,11 @@ else
     % step set for this phase, we use this instead.
     if fNewStep > this.fMaxStep
         fNewStep = this.fMaxStep;
-        % If the time step is smaller than the set minimal time step for
-        % the phase the minimal time step is used (standard case is that
-        % fMinStep is 0, but the user can set it to a different value)
+    % If the time step is smaller than the set minimal time step for the
+    % phase the minimal time step is used (standard case is that fMinStep
+    % is 0, but the user can set it to a different value). Note that 0 does
+    % not result in an infinite loop, but would result in the minimum time
+    % step of the overall simulation to be used
     elseif fNewStep < this.fMinStep
         fNewStep = this.fMinStep;
     end
@@ -217,6 +189,9 @@ else
         % small time steps
         fMaxFlowStep = min(abs((1e-8 + this.afMass(abOutFlows)) ./ afPartialFlows(abOutFlows)));
 
+        % Now check if the previously calculated time step is larger than
+        % the maximum time step, and if that is the case use the maximum
+        % time step
         if fNewStep > fMaxFlowStep
             fNewStep = fMaxFlowStep;
             if fNewStep < this.fMinStep
@@ -225,6 +200,7 @@ else
         end
     end
     
+    % Now we add debugging outputs which can be turned on or off
     if ~base.oDebug.bOff
         this.out(1, 2, 'prev-timestep', 'PREV TS: %.16f s, Actual Time: %.16f s', { this.fTimeStep, this.oTimer.fTime });
         this.out(1, 2, 'prev-timestep', 'Last Update: %.16f s, Mass at Last Update: %.16f s', { this.fLastUpdate, this.fMassLastUpdate });
@@ -246,6 +222,12 @@ if this.fLastUpdate == this.oTimer.fTime
 else
     this.setTimeStep(fNewStep);
 end
+% For certain cases (e.g. liquid and gas in one store) the phases cannot
+% calculate their properties individually, making calculation within the
+% stores necessary. These can be turned on using the boolean
+% bNoStoreCalculation and if they are used the store time step must also be
+% set (by having each phase do this, the store receives the smallest time
+% step of all phases within it)
 if ~this.oStore.bNoStoreCalculation
     this.oStore.setNextTimeStep(fNewStep)
 end
