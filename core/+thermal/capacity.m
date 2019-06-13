@@ -111,14 +111,12 @@ classdef capacity < base & event.source
         % handle to bind the post tick temperature update function to the
         % correct post tick level. If any part wants to trigger a
         % temperature update this is then done through this handle to
-        % ensure the correct post tick levels are used
+        % ensure the correct post tick levels are used.
+        % Note that the capacity does not have an update function, as the
+        % temperature is the relevant parameter, and similar to mass that
+        % must be updated whenever the heatflow of a branch changes, as
+        % well as when the time step limits are exceeded.
         hBindPostTickTemperatureUpdate
-        
-        % handle to bind the post tick update function to the correct post
-        % tick level. If any part wants to trigger a update this is then
-        % done through this handle to ensure the correct post tick levels
-        % are used
-        hBindPostTickUpdate
 
         % handle to bind the post tick calculateTimeStep function to the
         % correct post tick level. If any part wants to trigger a
@@ -535,6 +533,9 @@ classdef capacity < base & event.source
             % ensure that the phase and capacity have the exact same
             % temperature at all times
             this.setTemperature(fTemperatureNew);
+            
+            % check if we have to update the specific heat capacity
+            this.updateSpecificHeatCapacity();
             
             % Trigger branch solver updates in post tick for all branches
             this.setBranchesOutdated();
