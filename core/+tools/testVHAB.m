@@ -1,4 +1,4 @@
-function testVHAB()
+function testVHAB(sCompareToState)
 %TESTVHAB Runs all tests and saves the figures to a folder
 %   This function is a debugging helper. It will run all tests inside
 %   the user/+tests folder and save the resulting figures to
@@ -6,6 +6,33 @@ function testVHAB()
 %   to work is that the class file that inherits from simulation.m is on
 %   the top level of the tutorial folder and is called 'setup.m'. If this
 %   is not the case, the function will throw an error. 
+%
+%   Possible inputs are:
+%   sCompareToState: a String which allows the user to select against which
+%   version of the code the current run should be compare. It can either be
+%   'server' or 'local'.
+%   For 'server' the current will be compared against the file
+%   user/+tests/ServerTestStatus.mat, which is created and maintained by
+%   the Institute of Astronautics. If you compare to this file, the
+%   execution speed will most likely differ because you are running it on a
+%   different computer, but the mass balance values should not change
+%   unless you changed something in the core.
+%   For 'local' the run will be compared against the file
+%   data/OldTestStatus.mat. In case that file does not yet exist, it will
+%   be created on the first run of this function. After it has been created
+%   once, it will not change automatically, if you want to compare to a
+%   different version of the code, you have to rename the file
+%   data/TestStatus.mat into OldTestStatus.mat and overwrite the other
+%   file. The TestStatus file is created on each run of this function and
+%   always represents the latest run of this function
+
+if nargin < 1
+    sCompareToState = 'server';
+else
+    if  ~(strcmp(sCompareToState, 'server') ||  strcmp(sCompareToState, 'local'))
+        error('Unknown state to which the testVHAB run should be compared')
+    end
+end
 
 % Initializing some counters
 iSuccessfulTests = 0;
@@ -213,16 +240,30 @@ if any(mbHasAborted)
 end
 
 bSkipComparison = false;
-try
-    tOldTests = load('data\OldTestStatus.mat');
-catch Msg
-    if strcmp(Msg.identifier, 'MATLAB:load:couldNotReadFile')
-        % if the file not yet exists, we create it!
-        sPath = fullfile('data', 'OldTestStatus.mat');
-        save(sPath, 'tTests');
-        bSkipComparison = true;
-    else
-        rethrow(Msg)
+if strcmp(sCompareToState, 'server')
+    try
+        tOldTests = load('user\+tests\ServerTestStatus.mat');
+    catch Msg
+        if strcmp(Msg.identifier, 'MATLAB:load:couldNotReadFile')
+            % if the file does not exists we inform the user that something
+            % went wrong
+            error('The file user\+tests\ServerTestStatus.mat does not exist. Please check if you accidentially deleted it and if so revert that change.')
+        else
+            rethrow(Msg)
+        end
+    end
+else
+    try
+        tOldTests = load('data\OldTestStatus.mat');
+    catch Msg
+        if strcmp(Msg.identifier, 'MATLAB:load:couldNotReadFile')
+            % if the file not yet exists, we create it!
+            sPath = fullfile('data', 'OldTestStatus.mat');
+            save(sPath, 'tTests');
+            bSkipComparison = true;
+        else
+            rethrow(Msg)
+        end
     end
 end
 
