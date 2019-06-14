@@ -1,5 +1,9 @@
 classdef ConstantTemperature < thermal.heatsource
-    % 
+    % The ConstantTemperature heat source can be used to keep a capacity at
+    % a constant temperature.
+    % A constant temperature heat source will calculate the required heat
+    % flow to maintain the temperature of the capacity in which it is
+    % placed and sets itself that heat flow to maintain the temperature.
     
     properties (SetAccess = protected, GetAccess = public)
         
