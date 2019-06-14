@@ -17,7 +17,7 @@ afTmpCurrentTotalInOuts = this.afCurrentTotalInOuts;
 this.afCurrentTotalInOuts = afChange;
 this.mfCurrentInflowDetails = mfDetails;
 
-if this.iManipulators ~= 0
+if this.iSubstanceManipulators ~= 0
     afPartialFlows = this.afCurrentTotalInOuts + this.toManips.substance.afPartialFlows;
 else
     afPartialFlows = this.afCurrentTotalInOuts;
@@ -221,7 +221,12 @@ end
 % Set the time step for this phase. If the update was also called in this
 % tick we also reset the time at which the phase was last executed thus
 % enforcing the next execution time to be exactly this.oTimer.fTime +
-% fNewStep
+% fNewStep. Otherwise we only overwrite the time step but not the time at
+% which the time step was set, because the function was called by a
+% massupdate and the last recalculation of phase properties was from an
+% earlier tick. If we used setTimeStep(fNewStep, true) in all cases the
+% update function of a phase might never be called if massupdates are
+% always triggered before!
 if this.fLastUpdate == this.oTimer.fTime
     this.setTimeStep(fNewStep, true);
 else

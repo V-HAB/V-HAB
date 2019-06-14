@@ -3,15 +3,12 @@ classdef (Abstract) manip < base & event.source
     %   All manips in manips.[x].[y] use this as a base class. The type in
     %   the manip package path (x) defines the attribute of the phase that
     %   is changed:
-    %       matter.manips.temperature.xyz can manipulate fTemperature in .update()
-    %       matter.manips.volume.gas.xyz can for example calcualte the work
-    %                           that was required for the vol change and 
-    %                           the change in temperature within the gas,
-    %                           would be called in setVolume
+    %       matter.manips.volume.xyz can change the volume, either by fixed
+    %                           values or with a change rate in m^3/s
     %       matter.manips.substances.xyz can change partial masses in a phase
     %                           within the .massupdate method
     
-    properties (SetAccess = private, GetAccess = public)
+    properties (SetAccess = protected, GetAccess = public)
         % Handle of the phase object this manipulator is attached to
         oPhase;
         
@@ -27,14 +24,45 @@ classdef (Abstract) manip < base & event.source
         % Reference to the timer
         oTimer;
         
-        hBindPostTickUpdate;
-        
+        % This boolean property is used to check if the manipulator is
+        % currently attached to a phase or not. Checking whether oPhase is
+        % empty would also be possible but that requires more calculation
+        % time
         bAttached;
     end
     
     properties (SetAccess = private, GetAccess = private)
-        % Function handle to detach the manipulator from the phase
+        % Function handle to detach the manipulator from the phase. It is a
+        % private property for set and get because it should only be set
+        % through the reattachManip function and only be called through the
+        % detachManip function. If a child class has to overload these
+        % functions to set additional values it is still required to call
+        % the functions of this parent class. (e.g. see the stationary
+        % volume manipulator for an example of this)
         hDetach;
+    end
+    
+    properties (Abstract, SetAccess = private, GetAccess = protected)
+        % The hBindPostTickUpdate function contains the handle used to bind
+        % a post tick update for this manip to the timer with the necessary
+        % inputs to perform it in the correct post tick location. Since
+        % this parameter controls the overall update order within V-HAB it
+        % is not allowed to be changed by child classes. If it becomes
+        % necessary at some point to change this by a child class this case
+        % should be discussed in depth and a solution (e.g. using a setter
+        % function which only provides that child class access) should be
+        % used. Note that this must be defined as abstract property in the
+        % parent class also to allow this class access to the function
+        hBindPostTickUpdate;
+    end
+    
+    properties (Abstract, SetAccess = private, GetAccess = public)
+        % Time at which this manipulator was last executed. This is a
+        % private property because it is set in the update function of the
+        % child classes. Since this is only the asbtract definition of this
+        % property it can be accessed by the child class which implements
+        % this
+        fLastExec; % [s]
     end
     
     methods
@@ -50,8 +78,6 @@ classdef (Abstract) manip < base & event.source
             % general function which would also allow us to reattach the
             % manipulator after it has been detached from its phase
             this.reattachManip(oPhase);
-            
-            this.hBindPostTickUpdate = this.oTimer.registerPostTick(@this.update, 'matter', 'manips');
         end
         
         function detachManip(this)

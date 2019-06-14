@@ -10,6 +10,9 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         sType;
     end
 
+    % These properties (including the mass vlaues) are not private because
+    % the subclasses for flow and boundary phases must have access to them
+    % and be allowed to change them according to their needs
     properties (SetAccess = protected, GetAccess = public)
         % Basic parameters:
 
@@ -25,6 +28,12 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % actual temperature calculation is performed in the thermal domain
         % capacity
         fTemperature; % [K]
+        
+        % Volume in m^3
+        fVolume;       
+        
+        % Pressure in Pa
+        fPressure;              
         
         % Mean Density of mixture; not updated by this class, has to be
         % handled by a deriving class.
@@ -86,9 +95,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         % for all substances combined. Used to improve pressure estimation
         % in ExMe processors.
         fCurrentTotalMassInOut = 0;
-    end
-
-    properties (SetAccess = private, GetAccess = public)
 
         % Associated matter store object
         oStore;
@@ -127,7 +133,8 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         
         % List and number of manipulators added to the phase
         toManips = struct('volume', [], 'temperature', [], 'substance', []);
-        iManipulators = 0;
+        iVolumeManipulators = 0;
+        iSubstanceManipulators = 0;
         
         
         % Storage - preserve the values calculated during calculateTimeStep
@@ -193,7 +200,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         afMassLastUpdate;
     end
 
-    properties (SetAccess = protected, GetAccess = protected)
+    % These properties are private because changing them would change the
+    % update order, which is a significant change of the core and should
+    % not be allowed without a certain hurdle. If it is necessary at some
+    % point for a child class to change the execution order, this should be
+    % discussed in depth and then a solution for this should be found (e.g.
+    % using a intermediare function that only allows that child class
+    % access to these properties)
+    properties (SetAccess = private, GetAccess = protected)
         % function handle registered at the timer object that allows this
         % phase to set a time step, which is then enforced by the timer
         setTimeStep;
@@ -208,13 +222,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
         hBindPostTickTimeStep
     end
     
-    properties (Access = public)
-        % If true, massupdate triggers all branches to re-calculate their
-        % flow rates. Use when volumes of phase compared to flow rates are
-        % small!
-        bSynced = false;
-    end
-
     methods
 
         function this = phase(oStore, sName, tfMass, fTemperature, sCaller)
@@ -524,9 +531,14 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
 
             sManipType = [];
 
-            if     isa(oManip, 'matter.manips.volume'),               sManipType = 'volume';
-            elseif isa(oManip, 'matter.manips.substance.flow'),       sManipType = 'substance';
-            elseif isa(oManip, 'matter.manips.substance.stationary'), sManipType = 'substance';
+            if	isa(oManip, 'matter.manips.volume')
+                sManipType = 'volume';
+                % Increment the number of manipulators
+                this.iVolumeManipulators = this.iVolumeManipulators + 1;
+            elseif isa(oManip, 'matter.manips.substance')
+                sManipType = 'substance';
+                % Increment the number of manipulators
+                this.iSubstanceManipulators = this.iSubstanceManipulators + 1;
             end
 
             if ~isempty(this.toManips.(sManipType))
@@ -536,8 +548,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             % Set manipulator
             this.toManips.(sManipType) = oManip;
             
-            % Increment the number of manipulators
-            this.iManipulators = this.iManipulators + 1;
 
             % Remove fct call to detach manipulator
             hRemove = @() this.detachManipulator(sManipType);
@@ -660,7 +670,6 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
                 error('Error in phase ''%s''. The flow rate of EXME ''%s'' is NaN.', this.sName, this.coProcsEXME{isnan(afTotalInOuts)}.sName);
             end
         end
-        
     end
 
 
@@ -970,13 +979,11 @@ classdef (Abstract) phase < base & matlab.mixin.Heterogeneous & event.source
             
             % To improve sim speed for phases without any manip we check
             % the iManipualtors property
-            if this.iManipulators > 0
-                if ~isempty(this.toManips.substance)
-                    this.toManips.substance.registerUpdate();
-                end
-                if ~isempty(this.toManips.volume)
-                    this.toManips.volume.registerUpdate();
-                end
+            if this.iSubstanceManipulators > 0
+                this.toManips.substance.registerUpdate();
+            end
+            if this.iVolumeManipulators > 0
+                this.toManips.volume.registerUpdate();
             end
             % same as for the manips, for improved sim speed we first check
             % if there are P2Ps

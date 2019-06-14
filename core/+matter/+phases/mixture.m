@@ -13,10 +13,6 @@ classdef mixture < matter.phase
     
     properties (SetAccess = protected, GetAccess = public)
         
-        % Volume in m^3
-        fVolume;
-        fPressure;
-
         sPhaseType;
     end
     

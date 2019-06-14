@@ -5,7 +5,7 @@ classdef ConstantMassP2P < matter.procs.p2ps.stationary
     % overwritten by using the setSubstances function which will set the
     % constant mass to the current values in the In phase again, for the
     % newly defined substances.
-    properties (SetAccess = public, GetAccess = public)
+    properties (SetAccess = protected, GetAccess = public)
         % Allows the user to define if mass is only allowed to flow in
         % positive direction (value of 1) , only in negative direction
         % (value of -1) or in both directions (value of 0)

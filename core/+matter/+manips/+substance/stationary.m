@@ -2,10 +2,6 @@ classdef (Abstract) stationary < matter.manips.substance
     % stationary manipulator which can be used in normal phases to
     % calculate mass transformations
     
-    properties (SetAccess = protected)
-        afPartialFlows;
-    end
-    
     methods
         function this = stationary(sName, oPhase)
             this@matter.manips.substance(sName, oPhase);
@@ -16,17 +12,6 @@ classdef (Abstract) stationary < matter.manips.substance
                 % manip in a normal phase please use the stationary manip type!
                 this.throw('manip', 'The stationary manip %s is located in a flow phase. For flow phases use flow manips!', this.sName);
             end
-        end
-        
-        function update(this, afPartialFlows)
-            % Checking if any of the flow rates being set are NaNs. It is
-            % necessary to do this here so the origin of NaNs can be found
-            % easily during debugging. 
-            if any(isnan(afPartialFlows))
-                error('Error in manipulator %s. Some of the flow rates are NaN.', this.sName);
-            end
-            
-            this.afPartialFlows = afPartialFlows;
         end
     end
     

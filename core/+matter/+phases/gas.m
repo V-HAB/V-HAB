@@ -10,13 +10,6 @@ classdef gas < matter.phase
     end
 
     properties (SetAccess = protected, GetAccess = public)
-        
-        % Volume in m^3
-        fVolume;       
-        
-        % Pressure in Pa
-        fPressure;              
-        
         % Partial pressures in Pa
         afPP;   
         

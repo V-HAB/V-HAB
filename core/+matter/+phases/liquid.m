@@ -11,13 +11,6 @@ classdef liquid < matter.phase
 
     properties (SetAccess = protected, GetAccess = public)
         
-        fVolume;                % Volume in m^3
-        
-        % Pressure in Pa
-        % the pressure in the tank without the influence of gravity or
-        % acceleration even if these effects exist
-        fPressure;
-        
         fDynamicViscosity;      % Dynamic Viscosity in Pa*s
         
         fLastUpdateLiquid = 0;

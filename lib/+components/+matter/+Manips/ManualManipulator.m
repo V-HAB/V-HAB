@@ -4,15 +4,13 @@ classdef ManualManipulator < matter.manips.substance.stationary
     % see if the flowrates add up to zero and if that is not the case tries
     % to equalize the flow rates.
     
-    properties
+    properties (SetAccess = protected, GetAccess = public)
         % parent system reference
         oParent;
         
-        afManualFlowRates;
-        
-        fLastExec = 0;
-        
-        fTotalError = 0;
+        % Property to store the manual flow rates in kg/s for each
+        % substance that the user defned using the setFlowRate function
+        afManualFlowRates; % [kg/s]
     end
     
     methods
@@ -57,20 +55,14 @@ classdef ManualManipulator < matter.manips.substance.stationary
             
             this.afManualFlowRates = afFlowRates;
             
+            % call the update function to set the manual flow rates as
+            % manipualtor flow rates
             this.update()
         end
         
         function update(this, ~)
-            
-            %% Calculates the mass error for this manipulator
-            fTimeStep = this.oTimer.fTime - this.fLastExec;
-            fError = sum(this.afManualFlowRates);
-            this.fTotalError = this.fTotalError + (fError * fTimeStep);
-            
             %% sets the flowrate values
-            update@matter.manips.substance.stationary(this, this.afManualFlowRates);
-            
-            this.fLastExec = this.oTimer.fTime;
+            update@matter.manips.substance(this, this.afManualFlowRates);
         end
     end
 end

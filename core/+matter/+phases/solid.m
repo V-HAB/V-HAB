@@ -9,12 +9,6 @@ classdef solid < matter.phase
 
     end
 
-    properties (SetAccess = protected, GetAccess = public)
-        fVolume = 0;     % Volume of all solid substances in m^3
-        fPressure = 1e5; % Placeholder/compatibility "pressure" since solids do not have an actual pressure.
-        
-    end
-    
     methods
         
         function this = solid(oStore, sName, tfMasses, fTemperature)
